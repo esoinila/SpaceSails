@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SpaceSails.Client/SpaceSails.Client.csproj" />
+    <Project Path="src/SpaceSails.Contracts/SpaceSails.Contracts.csproj" />
+    <Project Path="src/SpaceSails.Core/SpaceSails.Core.csproj" />
+    <Project Path="src/SpaceSails.Server/SpaceSails.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SpaceSails.Core.Tests/SpaceSails.Core.Tests.csproj" />
+    <Project Path="tests/SpaceSails.Server.Tests/SpaceSails.Server.Tests.csproj" />
+  </Folder>
+</Solution>
