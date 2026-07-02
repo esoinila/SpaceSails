@@ -6,6 +6,7 @@ A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, 
 
 - [Big picture / vision](docs/SpaceSails_plan_big_picture.md)
 - [Detailed implementation plan](docs/SpaceSails_plan_detailed.md) — milestones, architecture, working agreement
+- [Coding helpers](docs/coding-helpers.md) — driving the `grok` & `gemini` CLIs headlessly to offload implementation
 
 ## Stack
 

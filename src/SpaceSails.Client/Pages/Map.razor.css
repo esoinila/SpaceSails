@@ -1,0 +1,35 @@
+/* Canvas/HUD layer only — everything else in the app stays plain Razor + Bootstrap. */
+
+.map-page {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: #06090f;
+}
+
+.map-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: grab;
+}
+
+.map-canvas:active {
+    cursor: grabbing;
+}
+
+.map-hud {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    pointer-events: none;
+    max-width: calc(100% - 1.5rem);
+}
+
+.map-hud .btn-toolbar,
+.map-hud .map-readouts {
+    pointer-events: auto;
+}
