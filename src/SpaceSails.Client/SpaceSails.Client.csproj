@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- Required by the System.Runtime.InteropServices.JavaScript JSImport/JSExport source generator
+         (used by the M2 canvas renderer interop), which emits pointer-based marshalling code. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,5 +19,28 @@
     <ProjectReference Include="..\SpaceSails.Core\SpaceSails.Core.csproj" />
     <ProjectReference Include="..\SpaceSails.Contracts\SpaceSails.Contracts.csproj" />
   </ItemGroup>
+
+  <!-- Serve the shared scenario files as WASM static assets (fetched at runtime via HttpClient;
+       File.ReadAllText is unavailable in the browser). scenarios/ at the repo root stays the
+       canonical copy; this target mirrors it into wwwroot/scenarios before the SDK's static web
+       asset discovery runs.
+
+       A plain `<Content Include Link=...>` pointing outside wwwroot (the M0/M1 approach) is
+       correctly picked up by the *build-time* manifest (asset hash/length are computed from the
+       true source path), but the static-web-assets dev server resolves each asset's physical file
+       from ContentRoot + RelativePath at *request* time, and ContentRoot for a Link'd item is the
+       project's wwwroot — where no such file physically exists. The dev server then serves the
+       route with a 200 and a zero-length body instead of an error, which is silent and easy to
+       miss until something actually fetches the file at runtime (M2 is the first milestone that
+       does). Materializing a real file under wwwroot sidesteps the mismatch entirely. -->
+  <Target Name="CopyScenariosIntoWwwroot" BeforeTargets="ResolveStaticWebAssetsInputs;AssignTargetPaths;GetCopyToOutputDirectoryItems">
+    <ItemGroup>
+      <ScenarioSourceFile Include="..\..\scenarios\*.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ScenarioSourceFile)" DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\scenarios" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <Content Include="wwwroot\scenarios\*.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 
 </Project>
