@@ -10,8 +10,17 @@ public enum ManeuverAction
     Decelerate,
 }
 
-/// <summary>A scheduled control input: at <paramref name="SimTime"/>, fire <paramref name="Pulses"/> pulses of <paramref name="Action"/>.</summary>
-public readonly record struct ManeuverNode(double SimTime, ManeuverAction Action, int Pulses = 1);
+/// <summary>
+/// A scheduled control input: at <paramref name="SimTime"/>, fire <paramref name="Pulses"/>
+/// pulses of <paramref name="Action"/>. <paramref name="Percent"/> is the per-pulse strength
+/// as a free double (owner request, M16c: "make the thrust amount float instead of 0.1 or 1");
+/// 0 keeps the legacy quanta — ±10%, or ±1% when <paramref name="Fine"/> is set.
+/// </summary>
+public readonly record struct ManeuverNode(double SimTime, ManeuverAction Action, int Pulses = 1, bool Fine = false, double Percent = 0)
+{
+    /// <summary>Effective per-pulse percentage, resolving the legacy Fine flag.</summary>
+    public double EffectivePercent => Percent > 0 ? Percent : (Fine ? 1.0 : 10.0);
+}
 
 /// <summary>
 /// A ship's flight plan: an ordered maneuver schedule. The same type serves the player's plotted
@@ -21,6 +30,8 @@ public sealed class ManeuverPlan
 {
     public const double AccelerateFactor = 1.1;
     public const double DecelerateFactor = 0.9;
+    public const double FineAccelerateFactor = 1.01;
+    public const double FineDecelerateFactor = 0.99;
 
     public static readonly ManeuverPlan Empty = new([]);
 
@@ -49,7 +60,9 @@ public sealed class ManeuverPlan
 
             if (node.SimTime >= fromInclusive)
             {
-                double pulse = node.Action == ManeuverAction.Accelerate ? AccelerateFactor : DecelerateFactor;
+                double pulse = node.Action == ManeuverAction.Accelerate
+                    ? 1.0 + node.EffectivePercent / 100.0
+                    : 1.0 - node.EffectivePercent / 100.0;
                 for (int i = 0; i < node.Pulses; i++)
                 {
                     factor *= pulse;

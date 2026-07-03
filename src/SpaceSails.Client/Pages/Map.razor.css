@@ -132,3 +132,13 @@
     min-width: 3.2rem;
     text-align: right;
 }
+
+.map-plot-percent {
+    width: 5.5rem;
+    flex: 0 0 auto;
+}
+
+.map-plot-node-selected {
+    outline: 1px solid rgba(150, 220, 255, 0.7);
+    border-radius: 0.25rem;
+}

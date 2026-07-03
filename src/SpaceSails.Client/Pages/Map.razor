@@ -93,7 +93,10 @@
             }
             <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
             <hr />
-            <div>Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s</div>
+            <div>
+                Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                <span class="text-secondary">(circular here: @((CircularSpeedHere / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s)</span>
+            </div>
             <div>Mass pulses: @_reactionMassPulses / @ReactionMassCapacity</div>
             <div>Credits: @_credits.ToString("N0", CultureInfo.InvariantCulture)</div>
             <div>Cargo: @_cargoUnits / @CargoCapacity units@(_cargoValue > 0 ? $" (worth {_cargoValue:N0} cr)" : "")</div>
@@ -161,7 +164,7 @@
                     <div class="map-plot-nodes">
                         @foreach (PlanNode node in _planNodes)
                         {
-                            <div class="d-flex align-items-center gap-1 mb-1 @(node.Stale ? "text-decoration-line-through text-secondary" : "")">
+                            <div class="d-flex align-items-center gap-1 mb-1 @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
                                 <span class="flex-grow-1">@FormatSimTime(node.SimTime)</span>
                                 <div class="btn-group btn-group-sm" role="group" aria-label="Burn direction">
                                     <button type="button"
@@ -175,6 +178,13 @@
                                 <input type="number" class="form-control form-control-sm map-plot-pulses"
                                        min="1" max="@MaxNodePulses" value="@node.Pulses"
                                        @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
+                                <div class="input-group input-group-sm map-plot-percent">
+                                    <input type="number" class="form-control form-control-sm"
+                                           min="0.01" max="50" step="0.1" value="@node.Percent"
+                                           title="Per-pulse thrust strength in percent — any decimal"
+                                           @onchange="e => SetPercent(node, e)" @onkeydown:stopPropagation="true" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                                 <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
                                         @onclick="() => RetimeToScrub(node)">@@</button>
                                 <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
@@ -607,6 +617,7 @@
         public double SimTime;
         public ManeuverAction Action;
         public int Pulses = 1;
+        public double Percent = 10;      // per-pulse strength, any positive double
         public bool Stale;
         public bool Executed;
     }
@@ -639,6 +650,24 @@
     private const int ScopeSizePx = 280;
     private ScopeView? _scopeView;
     private bool _showScope = true;
+    // The pilot's most-wanted number (owner, M16): the speed that holds a circular sun orbit
+    // at the ship's CURRENT distance. Match it (tangentially) and you coast forever — the
+    // difference between "matching the radius" and "matching the orbit".
+    private double CircularSpeedHere
+    {
+        get
+        {
+            double r = _ship.Position.Length;
+            if (r <= 0 || _ephemeris is null) return 0;
+            double mu = 0;
+            foreach (CelestialBody body in _ephemeris.Bodies)
+            {
+                if (body.ParentId is null && body.Mu > mu) mu = body.Mu;
+            }
+            return Math.Sqrt(mu / r);
+        }
+    }
+
     private void ToggleScope() => _showScope = !_showScope;
 
     private void ToggleDeck()
@@ -1567,7 +1596,16 @@
             RgbaColor color = node.Stale
                 ? StaleNodeColor
                 : node.Action == ManeuverAction.Accelerate ? AccelNodeColor : DecelNodeColor;
-            _renderer!.DrawCircle(sx, sy, 5f, color, color);
+            bool selected = ReferenceEquals(node, _selectedPlanNode);
+            _renderer!.DrawCircle(sx, sy, selected ? 6.5f : 5f, color, color);
+            if (selected)
+            {
+                _renderer!.DrawCircle(sx, sy, 10f, null, new RgbaColor(255, 255, 255, 160), 1.5f);
+            }
+            if (Math.Abs(node.Percent - 10) > 0.001)
+            {
+                _renderer!.DrawText(sx, sy - 12, $"{node.Percent:0.##}%", new RgbaColor(150, 220, 255, 200), "9px monospace", TextAlign.Center);
+            }
         }
     }
 
@@ -1827,7 +1865,7 @@
     {
         _plan = new ManeuverPlan(
             _planNodes.Where(n => !n.Stale)
-                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses)));
+                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses, Fine: false, Percent: n.Percent)));
 
         if (_mp)
         {
@@ -1835,7 +1873,7 @@
             // caps node/pulse counts, so we send the same non-stale set the local projection uses.
             PlanNodeDto[] nodes = _planNodes
                 .Where(n => !n.Stale)
-                .Select(n => new PlanNodeDto(n.SimTime, n.Action == ManeuverAction.Accelerate, n.Pulses))
+                .Select(n => new PlanNodeDto(n.SimTime, n.Action == ManeuverAction.Accelerate, n.Pulses, false, n.Percent))
                 .ToArray();
             SendCommand(c => c.SendAsync("SetPlan", nodes));
         }
@@ -1953,6 +1991,57 @@
         SortNodes();
         RebuildPlan();
         ReprojectTrajectory();
+    }
+
+    private void SetPercent(PlanNode node, ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double p))
+        {
+            node.Percent = Math.Clamp(p, 0.01, 50);
+            RebuildPlan();
+            ReprojectTrajectory();
+        }
+    }
+
+    private PlanNode? _selectedPlanNode;
+
+    // Click a thrust node on the ribbon to select it: highlights its row and jumps the scrub
+    // to its time (owner request, M16). Returns true when a node was hit.
+    private bool TrySelectNodeAt(double clientX, double clientY)
+    {
+        if (!PlotMode || _planNodes.Count == 0 || _samples.Count == 0)
+        {
+            return false;
+        }
+
+        const double hitRadiusPx = 14;
+        PlanNode? best = null;
+        double bestSq = hitRadiusPx * hitRadiusPx;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (node.Executed)
+            {
+                continue;
+            }
+
+            (float nx, float ny) = _camera.WorldToScreen(SamplePositionAt(node.SimTime));
+            double dx = clientX - nx, dy = clientY - ny;
+            double d = dx * dx + dy * dy;
+            if (d < bestSq)
+            {
+                bestSq = d;
+                best = node;
+            }
+        }
+
+        if (best is null)
+        {
+            return false;
+        }
+
+        _selectedPlanNode = best;
+        _scrubOffsetSeconds = Math.Max(0, best.SimTime - _ship.SimTime);
+        return true;
     }
 
     private void DeleteNode(PlanNode node)
@@ -2620,6 +2709,11 @@
 
     private void OnPointerDown(PointerEventArgs e)
     {
+        if (TrySelectNodeAt(e.OffsetX, e.OffsetY))
+        {
+            return; // clicked a thrust node: select it, don't start a drag
+        }
+
         _dragging = true;
         _lastPointerX = e.ClientX;
         _lastPointerY = e.ClientY;

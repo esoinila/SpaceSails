@@ -197,6 +197,31 @@ public class SimulatorTests
         Assert.True(samples.Count <= 16, $"Sample cap exceeded: {samples.Count}.");
     }
 
+
+    [Fact]
+    public void FractionalPercentNodes_ScaleExactly()
+    {
+        var simulator = new Simulator(new EmptySpace(), timeStepSeconds: 60);
+        var plan = new ManeuverPlan([new ManeuverNode(SimTime: 0, ManeuverAction.Accelerate, Pulses: 2, Percent: 3.5)]);
+        var state = new ShipState(Vector2d.Zero, new Vector2d(1000, 0), 0);
+
+        state = simulator.Step(state, plan);
+
+        Assert.Equal(1000 * 1.035 * 1.035, state.Velocity.X, precision: 9);
+    }
+
+    [Fact]
+    public void FineManeuverNodes_ScaleByOnePercent()
+    {
+        var simulator = new Simulator(new EmptySpace(), timeStepSeconds: 60);
+        var plan = new ManeuverPlan([new ManeuverNode(SimTime: 0, ManeuverAction.Accelerate, Pulses: 3, Fine: true)]);
+        var state = new ShipState(Vector2d.Zero, new Vector2d(1000, 0), 0);
+
+        state = simulator.Step(state, plan);
+
+        Assert.Equal(1000 * 1.01 * 1.01 * 1.01, state.Velocity.X, precision: 9);
+    }
+
     internal static ScenarioDefinition LoadSol() =>
         ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json"));
 }
