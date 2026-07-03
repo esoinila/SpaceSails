@@ -1,5 +1,6 @@
 @page "/map"
 @implements IDisposable
+@implements IHandleEvent
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @using System.Globalization
@@ -128,12 +129,20 @@
                 <div class="fw-bold mb-1">Plotting</div>
                 <div class="mb-1">Scrub: @FormatSimTime(ScrubTime)</div>
                 @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
-                <input type="range" class="form-range" min="0" max="@PlotHorizonSeconds" step="3600"
+                <input type="range" class="form-range" min="0" max="@CurrentPlotHorizonSeconds" step="3600"
                        @bind="_scrubOffsetSeconds" @bind:event="oninput" @onkeydown:stopPropagation="true" />
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
                         Add burn at scrub
                     </button>
+                    <select class="form-select form-select-sm map-plot-horizon" title="Path horizon"
+                            @bind="_horizonChoice" @bind:after="ReprojectTrajectory">
+                        <option value="auto">auto</option>
+                        <option value="7">7 d</option>
+                        <option value="30">30 d</option>
+                        <option value="180">180 d</option>
+                        <option value="730">2 yr</option>
+                    </select>
                     <span>Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
                 </div>
 
@@ -420,7 +429,38 @@
     // The ribbon/projection horizon. 60 days from "now"; ProjectAdaptive keeps this cheap
     // (coarse dt in deep space, fine near a mass) and is the single source of truth for the
     // ribbon polyline, the scrub ghost-ship, and node markers.
-    private const double PlotHorizonSeconds = 60 * 24 * 3600; // 60 days
+    // The Saturn metric (owner): one plotting sit-down must cover a whole Earth->Saturn sail.
+    // The probe's reference plan (accel 12 @ day 82) arrives day 278; two years leaves slack
+    // for lazier sails. The ribbon projects at maxTimeStep 3 h to keep 730-day re-projections
+    // cheap in interpreted WASM (~5.8k steps); plan-node times still land exactly.
+    private const double PlotHorizonSeconds = 730 * 24 * 3600;
+
+    // Owner request: the future path is adjustable. AUTO follows the plan — last burn + 90
+    // days (min 30 d) — so ship-to-ship work stays tight and a plotted Saturn sail stretches
+    // the ribbon automatically; presets override.
+    private string _horizonChoice = "auto";
+    private double CurrentPlotHorizonSeconds
+    {
+        get
+        {
+            if (_horizonChoice != "auto" && double.TryParse(_horizonChoice, out double days))
+            {
+                return days * 86400;
+            }
+
+            double lastNode = 0;
+            foreach (PlanNode node in _planNodes)
+            {
+                if (!node.Stale && node.SimTime > lastNode)
+                {
+                    lastNode = node.SimTime;
+                }
+            }
+
+            double horizon = lastNode > SimTime ? lastNode - SimTime + 90 * 86400 : 30 * 86400;
+            return Math.Clamp(horizon, 30 * 86400, PlotHorizonSeconds);
+        }
+    }
     private const int MaxNodePulses = 20;
     private const int MinNodePulses = 1;
     private bool PlotMode;
@@ -544,6 +584,9 @@
     // M12 — deck view (walk your ship)
     private bool _deckMode;
     private bool _fpMode;
+    private ShuttleFlightView? _shuttleView;
+    private ShuttleFlightView.Run? _shuttleRun;
+    private NpcState? _shuttleTarget;
     private DeckView? _deckView;
     private FirstPersonView? _fpView;
     private double _avatarX = DeckPlan.SpawnX, _avatarY = DeckPlan.SpawnY, _avatarHeading; // 0 = facing the bow glass
@@ -711,9 +754,14 @@
                     : "Hold: empty. The fence weeps.");
                 break;
             case DeckPlan.ConsoleKind.Shuttle:
-                ShowPulseMessage(_captureEngaged
-                    ? "Shuttle away — boarding underway"
-                    : "Shuttle ready in the cradle. K-77 and R-3B standing by.");
+                if (_captureEngaged && SelectedCaptureTarget() is { } prey)
+                {
+                    LaunchShuttleRun(prey);
+                }
+                else
+                {
+                    ShowPulseMessage("Shuttle ready in the cradle. K-77 and R-3B standing by.");
+                }
                 break;
         }
     }
@@ -973,6 +1021,7 @@
         _scopeView = new ScopeView(new CanvasRenderer(ScopeCanvasId));
         _deckView = new DeckView(_renderer!);
         _fpView = new FirstPersonView(_renderer!);
+        _shuttleView = new ShuttleFlightView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
 
         await _focusableDiv.FocusAsync();
@@ -1158,7 +1207,7 @@
         }
 
         UpdateDockStatus();
-        UpdateCapture(_ship.SimTime - simTimeBefore);
+        UpdateCapture(dtRealSeconds);
 
         if (!_mp)
         {
@@ -1188,6 +1237,43 @@
             _camera.CenterOn(_ship.Position);
         }
 
+        if (_shuttleRun is not null)
+        {
+            // Guarded: an exception escaping a frame callback kills renderer.js's rAF chain
+            // and silently freezes the whole game — degrade to aborting the run instead.
+            try
+            {
+                UpdateShuttleRun(dtRealSeconds);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"shuttle update failed: {ex}");
+                EndShuttleRun(boarded: false, $"Shuttle fault: {ex.GetType().Name}");
+            }
+            if (_shuttleRun is not null)
+            {
+                try
+                {
+                    _shuttleView!.Draw(_viewportWidth, _viewportHeight, SimTime, _shuttleRun,
+                        _deckKeys.Contains("w"), _deckKeys.Contains("s"),
+                        _deckKeys.Contains("a"), _deckKeys.Contains("d"),
+                        _captureEngaged ? 1 : 0);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"shuttle draw failed: {ex}");
+                    EndShuttleRun(boarded: false, $"Shuttle fault: {ex.GetType().Name}");
+                }
+
+                if (highResTimestampMs - _lastHudUpdateMs > 200)
+                {
+                    _lastHudUpdateMs = highResTimestampMs;
+                    InvokeAsync(StateHasChanged);
+                }
+                return;
+            }
+        }
+
         if (_deckMode)
         {
             MoveAvatar(dtRealSeconds);
@@ -1202,7 +1288,7 @@
             {
                 _deckView!.Draw(_viewportWidth, _viewportHeight, SimTime, new DeckView.State(
                     _avatarX, _avatarY, _avatarHeading,
-                    _cargoUnits, _ship.Charge, ShuttleAway: _captureEngaged, _plasma is not null));
+                    _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null));
             }
 
             if (_showScope && _scopeView is not null)
@@ -1330,19 +1416,37 @@
     {
         if (_plasma is null) return;
 
+        // Drawn as flowing filaments, not one flat band — a single thick polyline read as "a
+        // strange rectangle" (owner report). Four narrow ribbons undulate along the axis with
+        // sim-time phase; alpha fades toward the edges.
+        Span<float> pts = stackalloc float[34];
         foreach ((string fromId, string toId, double halfWidth) in _plasma.Streams)
         {
             Vector2d a = _ephemeris!.Position(fromId, SimTime);
             Vector2d b = _ephemeris.Position(toId, SimTime);
-            (float ax, float ay) = _camera.WorldToScreen(a);
-            (float bx, float by) = _camera.WorldToScreen(b);
-            _streamScratch[0] = ax;
-            _streamScratch[1] = ay;
-            _streamScratch[2] = bx;
-            _streamScratch[3] = by;
+            Vector2d axis = b - a;
+            double len = axis.Length;
+            if (len <= 0) continue;
+            Vector2d dir = axis / len;
+            Vector2d perp = new(-dir.Y, dir.X);
 
-            float widthPx = (float)Math.Clamp(2 * halfWidth / _camera.MetersPerPixel, 1, 200);
-            _renderer!.DrawPolyline(_streamScratch.AsSpan(0, 4), StreamColor, widthPx);
+            for (int ribbon = 0; ribbon < 4; ribbon++)
+            {
+                double lane = (ribbon - 1.5) / 1.5;              // -1 … 1 across the width
+                double phase = SimTime * 4e-7 + ribbon * 1.7;
+                for (int k = 0; k <= 16; k++)
+                {
+                    double t = k / 16.0;
+                    double wobble = Math.Sin(t * 9.0 + phase) * 0.25;
+                    Vector2d world = a + dir * (len * t) + perp * (halfWidth * (lane * 0.8 + wobble));
+                    (float sx, float sy) = _camera.WorldToScreen(world);
+                    pts[k * 2] = sx;
+                    pts[k * 2 + 1] = sy;
+                }
+                byte alpha = (byte)(30 - 12 * Math.Abs(lane));
+                float widthPx = (float)Math.Clamp(halfWidth * 0.5 / _camera.MetersPerPixel, 1, 60);
+                _renderer!.DrawPolyline(pts, new RgbaColor(80, 220, 220, alpha), widthPx);
+            }
         }
     }
 
@@ -1366,19 +1470,28 @@
         _renderer!.DrawPolyline(_scratch.AsSpan(0, _samples.Count * 2), TrajectoryColor);
     }
 
-    // Ghosts of every body at the scrub time: dimmed disc, no orbit ring re-draw.
+    // Ghosts of every body at the scrub time. Deliberately loud: a filled dot with an outline
+    // ring and a faint tether from the live body — 2 px at 35% alpha vanished against the
+    // plasma stream ribbons (the owner read Venus and Mercury as "stuck").
     private void DrawGhostBodies()
     {
         ICelestialEphemeris ephemeris = _ephemeris!;
         double t = ScrubTime;
+        Span<float> tether = stackalloc float[4];
         foreach (CelestialBody body in ephemeris.Bodies)
         {
             Vector2d position = ephemeris.Position(body.Id, t);
             (float sx, float sy) = _camera.WorldToScreen(position);
-            float radiusPx = (float)Math.Max(2.0, body.BodyRadius / _camera.MetersPerPixel);
+            (float nx, float ny) = _camera.WorldToScreen(ephemeris.Position(body.Id, SimTime));
+
+            tether[0] = nx; tether[1] = ny; tether[2] = sx; tether[3] = sy;
+            _renderer!.DrawPolyline(tether, new RgbaColor(180, 200, 220, 40), 1f);
+
+            float radiusPx = (float)Math.Max(3.5, body.BodyRadius / _camera.MetersPerPixel);
             RgbaColor baseColor = BodyColor(body.Id);
-            RgbaColor ghost = baseColor with { A = GhostBodyAlpha };
+            RgbaColor ghost = baseColor with { A = 150 };
             _renderer!.DrawCircle(sx, sy, radiusPx, ghost, ghost);
+            _renderer!.DrawCircle(sx, sy, radiusPx + 2.5f, null, new RgbaColor(220, 230, 245, 120), 1.2f);
         }
     }
 
@@ -1479,6 +1592,22 @@
     
     private void OnKeyDown(KeyboardEventArgs e)
     {
+        if (_shuttleRun is not null)
+        {
+            switch (e.Key)
+            {
+                case "w" or "W" or "ArrowUp" or "a" or "A" or "ArrowLeft"
+                    or "s" or "S" or "ArrowDown" or "d" or "D" or "ArrowRight":
+                    _deckKeys.Add(Canonical(e.Key));
+                    return;
+                case "q" or "Q":
+                    EndShuttleRun(boarded: false, "Boarding run aborted — shuttle back in the cradle");
+                    return;
+                default:
+                    return;
+            }
+        }
+
         if (_deckMode && HandleDeckKey(e.Key))
         {
             return;
@@ -1564,7 +1693,7 @@
 
     private void ReprojectTrajectory()
     {
-        _samples = _simulator!.ProjectAdaptive(_ship, _plan, PlotHorizonSeconds);
+        _samples = _simulator!.ProjectAdaptive(_ship, _plan, CurrentPlotHorizonSeconds, maxTimeStep: 3 * 3600, maxSamples: 8000);
         _nextProjectionSimTime = _ship.SimTime + ProjectionRefreshSimSeconds;
     }
 
@@ -1905,7 +2034,7 @@
         }
 
         _pinnedPlan = _pinned ? BuildPinnedPlan(npc, obs) : null;
-        _predictedPath = PathPredictor.Predict(_ephemeris!, obs, _pinnedPlan, PlotHorizonSeconds, npc.Ship.ManeuverBudget);
+        _predictedPath = PathPredictor.Predict(_ephemeris!, obs, _pinnedPlan, CurrentPlotHorizonSeconds, npc.Ship.ManeuverBudget);
         _nextPredictionSimTime = _ship.SimTime + PredictionRefreshSimSeconds;
         _predictionDirty = false;
     }
@@ -2100,7 +2229,7 @@
     // set by the instant's geometry — RequiredSecondsFor grows with stand-off distance and
     // relative speed, so a tight rendezvous boards in ~30 s while a sloppy pass needs a window
     // its own geometry rarely grants. Progress is a fraction; boarding at 1.
-    private void UpdateCapture(double simAdvanced)
+    private void UpdateCapture(double dtRealSeconds)
     {
         NpcState? npc = SelectedCaptureTarget();
         if (npc is not null && CaptureRule.IsInWindow(_ship, npc.State))
@@ -2110,11 +2239,10 @@
                 AdvanceTutorial(2); // step 3: window first engages
             }
 
-            // Clamp per-frame credit to what a capped-warp frame can honestly advance —
-            // otherwise one 10000× frame that starts and ends inside the window boards
-            // instantly, skipping the hold-the-window game.
-            double credited = Math.Clamp(simAdvanced, 0, CaptureWarpCap);
-            _captureProgress += credited / CaptureRule.RequiredSecondsFor(_ship, npc.State);
+            // Boarding shuttles fly in REAL time, warp be damned (M14): passive progress
+            // accrues at wall-clock rate, so warping doesn't fast-forward a boarding and the
+            // deckhand's wait is real — while the captain who flies the run docks in seconds.
+            _captureProgress += Math.Clamp(dtRealSeconds, 0, 0.1) / CaptureRule.RequiredSecondsFor(_ship, npc.State);
             _captureEngaged = true;
             _captureTargetCallsign = npc.Ship.Callsign;
 
@@ -2238,6 +2366,53 @@
         _cargoUnits = 0;
         _cargoValue = 0;
         ShowPulseMessage("Rescue fee: all cargo confiscated");
+    }
+
+    // ---- M14: the boarding run ----
+
+    private void LaunchShuttleRun(NpcState prey)
+    {
+        double distance = (prey.State.Position - _ship.Position).Length;
+        double relSpeed = (prey.State.Velocity - _ship.Velocity).Length;
+        _shuttleTarget = prey;
+        _shuttleRun = ShuttleFlightView.Launch(distance, relSpeed, prey.Ship.Callsign, prey.Ship.IsPod);
+        _deckKeys.Clear();
+        ShowPulseMessage("Shuttle away — you have the stick");
+    }
+
+    private void UpdateShuttleRun(double dtRealSeconds)
+    {
+        ShuttleFlightView.Run run = _shuttleRun!;
+        bool windowOpen = _captureEngaged && _shuttleTarget is { Boarded: false, Arrived: false };
+        ShuttleFlightView.Update(run, dtRealSeconds,
+            _deckKeys.Contains("w"), _deckKeys.Contains("s"),
+            _deckKeys.Contains("a"), _deckKeys.Contains("d"),
+            windowOpen);
+
+        switch (run.State)
+        {
+            case ShuttleFlightView.RunState.Docked when run.StateTime > 1.6:
+                if (_shuttleTarget is { } prey && !prey.Boarded)
+                {
+                    Board(prey); // instant: the pilot earned it
+                }
+                EndShuttleRun(boarded: true, null);
+                break;
+            case ShuttleFlightView.RunState.WindowLost when run.StateTime > 1.6:
+                EndShuttleRun(boarded: false, "Window lost — shuttle recovered");
+                break;
+        }
+    }
+
+    private void EndShuttleRun(bool boarded, string? message)
+    {
+        _shuttleRun = null;
+        _shuttleTarget = null;
+        _deckKeys.Clear();
+        if (message is not null)
+        {
+            ShowPulseMessage(message);
+        }
     }
 
     private void ToggleTutorial() => _showTutorial = !_showTutorial;
@@ -2400,6 +2575,13 @@
     }
 
     private void OnPointerUp(PointerEventArgs e) => _dragging = false;
+
+    // Blazor re-renders the whole page after EVERY event by default; a held movement key
+    // repeats ~30 events/s and collapsed the frame rate to ~1.5 fps (all M12/M13 scripted
+    // walks came up short because of this). The game's HUD refresh is owned by OnTick's
+    // 200 ms throttle, so events here run WITHOUT triggering automatic re-renders.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) =>
+        callback.InvokeAsync(arg);
 
     public void Dispose()
     {
