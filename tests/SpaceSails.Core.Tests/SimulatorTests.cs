@@ -199,6 +199,49 @@ public class SimulatorTests
 
 
     [Fact]
+    public void RunAdaptive_MatchesFixedStepWithinTolerance()
+    {
+        // The live high-warp path (60 s adaptive quanta) must agree with the historic fixed
+        // 1 s integration over a 30-day Earth-vicinity cruise with a mid-course burn.
+        var ephemeris = CircularOrbitEphemeris.FromScenario(LoadSol());
+        var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
+        Vector2d earth0 = ephemeris.Position("earth", 0);
+        Vector2d v0 = (ephemeris.Position("earth", 1.0) - ephemeris.Position("earth", -1.0)) / 2.0;
+        var start = new ShipState(earth0 + earth0.Normalized() * 5e9, v0, 0);
+        var plan = new ManeuverPlan([new ManeuverNode(10 * Day + 12345.6, ManeuverAction.Accelerate, 3)]);
+
+        ShipState fixedStep = simulator.Run(start, 30 * Day, plan);
+
+        ShipState adaptive = start;
+        for (int i = 0; i < 30 * Day / 60; i++)
+        {
+            adaptive = simulator.RunAdaptive(adaptive, 60, plan);
+        }
+
+        Assert.Equal(fixedStep.SimTime, adaptive.SimTime, precision: 6);
+        double posError = (fixedStep.Position - adaptive.Position).Length / (fixedStep.Position - earth0).Length;
+        Assert.True(posError < 1e-3, $"relative divergence {posError:E2}");
+        Assert.Equal(fixedStep.Velocity.Length, adaptive.Velocity.Length, fixedStep.Velocity.Length * 1e-4);
+    }
+
+    [Fact]
+    public void RunAdaptive_IsFrameTimingInvariant()
+    {
+        // Equal quanta must yield bit-identical results however the caller groups its frames.
+        var ephemeris = CircularOrbitEphemeris.FromScenario(LoadSol());
+        var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
+        Vector2d earth0 = ephemeris.Position("earth", 0);
+        Vector2d v0 = (ephemeris.Position("earth", 1.0) - ephemeris.Position("earth", -1.0)) / 2.0;
+        var start = new ShipState(earth0 + earth0.Normalized() * 5e9, v0, 0);
+
+        ShipState a = start, b = start;
+        for (int i = 0; i < 200; i++) { a = simulator.RunAdaptive(a, 60); }
+        for (int i = 0; i < 200; i++) { b = simulator.RunAdaptive(b, 60); }
+
+        Assert.Equal(a, b);
+    }
+
+    [Fact]
     public void FractionalPercentNodes_ScaleExactly()
     {
         var simulator = new Simulator(new EmptySpace(), timeStepSeconds: 60);
