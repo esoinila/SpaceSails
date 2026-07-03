@@ -23,7 +23,7 @@ public sealed class SessionHost : BackgroundService
     private const int BroadcastEveryTicks = 2; // 5 Hz
     private const double PulseCooldownSeconds = 1.0;
     private const int ReactionMassCapacity = 250;
-    private static readonly int[] AllowedWarps = [0, 1, 10, 100, 1000, 10000];
+    // Warp is continuous now (client log slider); kept for reference of the old levels.
 
     public sealed class PlayerShip
     {
@@ -104,7 +104,7 @@ public sealed class SessionHost : BackgroundService
         }
     }
 
-    public void Pulse(string connectionId, bool accelerate)
+    public void Pulse(string connectionId, bool accelerate, bool fine = false)
     {
         lock (_gate)
         {
@@ -115,7 +115,9 @@ public sealed class SessionHost : BackgroundService
                 return;
             }
 
-            double factor = accelerate ? ManeuverPlan.AccelerateFactor : ManeuverPlan.DecelerateFactor;
+            double factor = fine
+                ? (accelerate ? 1.01 : 0.99)
+                : (accelerate ? ManeuverPlan.AccelerateFactor : ManeuverPlan.DecelerateFactor);
             ship.State = ship.State with { Velocity = ship.State.Velocity * factor };
             ship.ReactionMass--;
             ship.LastPulseSimTime = ship.State.SimTime;
@@ -168,7 +170,8 @@ public sealed class SessionHost : BackgroundService
     {
         if (_players.TryGetValue(connectionId, out PlayerShip? ship))
         {
-            ship.RequestedWarp = AllowedWarps.Contains(warp) ? warp : 1;
+            // Continuous warp (log slider on the client); 0 = pause vote.
+            ship.RequestedWarp = Math.Clamp(warp, 0, 10000);
         }
     }
 

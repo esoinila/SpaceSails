@@ -59,8 +59,8 @@ public class GameHubTests : IClassFixture<WebApplicationFactory<Program>>
         double speed0 = Math.Sqrt(join.VelocityX * join.VelocityX + join.VelocityY * join.VelocityY);
 
         await connection.InvokeAsync("RequestWarp", 1);
-        await connection.InvokeAsync("Pulse", true);
-        await connection.InvokeAsync("Pulse", true); // rejected: inside the 1 s sim cooldown
+        await connection.InvokeAsync("Pulse", true, false);
+        await connection.InvokeAsync("Pulse", true, false); // rejected: inside the 1 s sim cooldown
 
         WorldUpdateDto update = await PollUntil(() => Volatile.Read(ref latest), u => u is { ReactionMass: < 250 });
         double speed1 = Math.Sqrt(update.VelocityX * update.VelocityX + update.VelocityY * update.VelocityY);
