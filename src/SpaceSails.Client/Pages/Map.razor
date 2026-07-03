@@ -108,10 +108,10 @@
             @if (_captureEngaged)
             {
                 <hr />
-                <div class="mb-1">Boarding @_captureTargetCallsign — @((int)Math.Ceiling(CaptureRule.RequiredSeconds - _captureSeconds)) s</div>
+                <div class="mb-1">Shuttles away — boarding @_captureTargetCallsign (@((int)(_captureProgress * 100))%)</div>
                 <div class="progress" role="progressbar" aria-label="Boarding progress">
                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                         style="width: @(((int)(_captureSeconds / CaptureRule.RequiredSeconds * 100)))%"></div>
+                         style="width: @(((int)(_captureProgress * 100)))%"></div>
                 </div>
             }
         </div>
@@ -446,7 +446,7 @@
     private int _holdLevel;                            // cargo hold: 10 + 10/level
     private SensorModel _sensor = SensorModel.Default;
 
-    private double _captureSeconds;                    // accumulated sim time inside the window
+    private double _captureProgress;                   // boarding progress fraction [0,1)
     private bool _captureEngaged;
     private string? _captureTargetCallsign;
 
@@ -1660,7 +1660,7 @@
         _pinnedPlan = null;
         _predictedPath = null;
         _predictionDirty = true;
-        _captureSeconds = 0;
+        _captureProgress = 0;
 
         // Tutorial step 1: selecting a Luna pod.
         if (_selectedTargetId is not null && FindNpc(_selectedTargetId) is { Ship.IsPod: true })
@@ -1694,13 +1694,16 @@
         return npc;
     }
 
-    // Accumulate window time while the capture predicate holds; board at RequiredSeconds.
+    // Boarding shuttles (owner's design): while the window holds, progress accrues at a rate
+    // set by the instant's geometry — RequiredSecondsFor grows with stand-off distance and
+    // relative speed, so a tight rendezvous boards in ~30 s while a sloppy pass needs a window
+    // its own geometry rarely grants. Progress is a fraction; boarding at 1.
     private void UpdateCapture(double simAdvanced)
     {
         NpcState? npc = SelectedCaptureTarget();
         if (npc is not null && CaptureRule.IsInWindow(_ship, npc.State))
         {
-            if (_captureSeconds <= 0)
+            if (_captureProgress <= 0)
             {
                 AdvanceTutorial(2); // step 3: window first engages
             }
@@ -1708,19 +1711,20 @@
             // Clamp per-frame credit to what a capped-warp frame can honestly advance —
             // otherwise one 10000× frame that starts and ends inside the window boards
             // instantly, skipping the hold-the-window game.
-            _captureSeconds += Math.Clamp(simAdvanced, 0, CaptureWarpCap);
+            double credited = Math.Clamp(simAdvanced, 0, CaptureWarpCap);
+            _captureProgress += credited / CaptureRule.RequiredSecondsFor(_ship, npc.State);
             _captureEngaged = true;
             _captureTargetCallsign = npc.Ship.Callsign;
 
-            if (_captureSeconds >= CaptureRule.RequiredSeconds)
+            if (_captureProgress >= 1)
             {
                 Board(npc);
-                _captureSeconds = 0;
+                _captureProgress = 0;
             }
         }
         else
         {
-            _captureSeconds = 0;
+            _captureProgress = 0;
             _captureEngaged = false;
             _captureTargetCallsign = null;
         }

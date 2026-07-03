@@ -1,29 +1,56 @@
 namespace SpaceSails.Core;
 
 /// <summary>
-/// The piracy capture rule (plan §M6): to board a target you must hold station — inside
-/// <see cref="CaptureRadiusMeters"/> at under <see cref="MaxRelativeSpeed"/> — for
-/// <see cref="RequiredSeconds"/> of continuous sim time. Core owns the constants and the pure
-/// per-instant predicate; callers accumulate the window (client now, server from M9).
+/// The piracy capture rule (plan §M6, revised by the owner's boarding-shuttle design): the
+/// mothership doesn't dock — it opens a *window of opportunity* for small boarding craft.
+/// Inside <see cref="CaptureRadiusMeters"/> at under <see cref="MaxRelativeSpeed"/> the
+/// shuttles can fly, but their transit gets harder the sloppier the pass:
+/// <see cref="RequiredSecondsFor"/> scales boarding time with distance and relative speed.
+/// A tight rendezvous boards in ~<see cref="BaseBoardingSeconds"/>; a fast drive-by needs a
+/// long window that its own geometry rarely grants. Core owns the pure math; callers
+/// accumulate progress (client now, server post-M9).
 /// </summary>
 public static class CaptureRule
 {
-    /// <summary>Boarding range, ~the Earth–Luna distance. Tuned by an offline probe: the best
-    /// plottable two-node intercept of a Luna pod closes to ~1.6e8 m — the window must admit a
-    /// good plot + a trim pulse, or the tutorial is expert-only.</summary>
-    public const double CaptureRadiusMeters = 3e8;
+    /// <summary>Shuttle operating range. Wider than a boarding tube — the mothership can
+    /// stand off ~a lunar distance and still fly craft across.</summary>
+    public const double CaptureRadiusMeters = 5e8;
 
-    /// <summary>Max closing speed to hold a boarding tube. One ±10% pulse at interplanetary
-    /// speed is a ~3 km/s quantum, so the tolerance must be about one quantum: a genuine
-    /// rendezvous orbit plus one trim gets in; a flyby (tens of km/s) never does.</summary>
-    public const double MaxRelativeSpeed = 3000;
+    /// <summary>Max relative speed at which shuttles can chase the target down. One ±10%
+    /// pulse at interplanetary speed is a ~3 km/s quantum; shuttles forgive a bit more than
+    /// one quantum of mismatch — but they pay for it in transit time.</summary>
+    public const double MaxRelativeSpeed = 5000;
 
-    /// <summary>Continuous sim seconds the window must hold.</summary>
+    /// <summary>Boarding time for a perfect match at point-blank range.</summary>
+    public const double BaseBoardingSeconds = 30;
+
+    /// <summary>Relative speed that doubles shuttle transit time.</summary>
+    public const double RelativeSpeedPenalty = 1500;
+
+    /// <summary>Stand-off distance that doubles shuttle transit time.</summary>
+    public const double DistancePenalty = 2e8;
+
+    /// <summary>Kept for HUD scale/legacy callers: the nominal window length.</summary>
     public const double RequiredSeconds = 60;
 
     public static bool IsInWindow(ShipState player, ShipState target) =>
         (player.Position - target.Position).LengthSquared <= CaptureRadiusMeters * CaptureRadiusMeters
         && (player.Velocity - target.Velocity).LengthSquared <= MaxRelativeSpeed * MaxRelativeSpeed;
+
+    /// <summary>
+    /// Sim seconds of continuous window the shuttles need at this instant's geometry.
+    /// Tight+slow ≈ 30 s; at the envelope's sloppy corner (5 km/s, 5e8 m) ≈ 455 s — more
+    /// window than a straight-line drive-by through the envelope can provide, so genuine
+    /// flybys still fail; a rough-but-honest pass succeeds where docking never would.
+    /// </summary>
+    public static double RequiredSecondsFor(ShipState player, ShipState target)
+    {
+        double distance = (player.Position - target.Position).Length;
+        double relativeSpeed = (player.Velocity - target.Velocity).Length;
+        return BaseBoardingSeconds
+            * (1 + relativeSpeed / RelativeSpeedPenalty)
+            * (1 + distance / DistancePenalty);
+    }
 }
 
 /// <summary>What a fence pays per unit, by cargo class. He3 is the prize; pods are milk runs.</summary>
