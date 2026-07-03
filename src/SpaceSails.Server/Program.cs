@@ -1,6 +1,13 @@
 using SpaceSails.Core;
+using SpaceSails.Server;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSignalR();
+// One shared session per server (plan §M9). Registered once, exposed both as itself (hub
+// command target) and as the hosted service that runs the authoritative tick.
+builder.Services.AddSingleton<SessionHost>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<SessionHost>());
 
 var app = builder.Build();
 
@@ -11,6 +18,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
+// Explicit routing AFTER the static middlewares: WebApplication otherwise inserts UseRouting
+// at the top of the pipeline, and the endpoint that MapStaticAssets matches there collides
+// with UseBlazorFrameworkFiles' inner static-file branch (500: "reached the end of the
+// pipeline without executing the endpoint").
+app.UseRouting();
+// .NET 10 fingerprints client wwwroot assets (renderer.js -> renderer.<hash>.js) and the WASM
+// boot config imports them by the fingerprinted name. MapStaticAssets serves that mapping for
+// referenced projects; plain UseStaticFiles alone 404s the hashed names when the Server hosts
+// the client (found by the M9 two-browser accept run).
+app.MapStaticAssets();
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 
@@ -33,6 +50,8 @@ app.MapGet("/api/traffic", (ulong seed, int count) =>
         s.DepartureTime,
     }));
 });
+
+app.MapHub<GameHub>("/hubs/game");
 
 app.MapFallbackToFile("index.html");
 
