@@ -2,9 +2,45 @@
 
 <PageTitle>SpaceSails</PageTitle>
 
-<div class="container py-5 text-center">
-    <h1 class="display-4">SpaceSails 🏴‍☠️</h1>
-    <p class="lead">Solar-system sailing &amp; piracy. Plot your course — everything is moving.</p>
-    <p class="text-muted">Milestone 2 — renderer &amp; camera. See <code>docs/SpaceSails_plan_detailed.md</code>.</p>
-    <a class="btn btn-primary btn-lg" href="map">Open the system map</a>
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4">SpaceSails 🏴‍☠️</h1>
+        <p class="lead">Solar-system sailing &amp; piracy. Plot your course — everything is moving.</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        @foreach ((string slug, string title, string tag, string blurb) in Scenarios)
+        {
+            <div class="col-md-4">
+                <div class="card h-100 bg-dark text-light border-secondary">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">
+                            @title
+                            @if (tag.Length > 0)
+                            {
+                                <span class="badge bg-info text-dark ms-1">@tag</span>
+                            }
+                        </h5>
+                        <p class="card-text small flex-grow-1">@blurb</p>
+                        <a class="btn btn-primary mt-2" href="map?scenario=@slug">Launch</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
+
+@code {
+    private static readonly (string Slug, string Title, string Tag, string Blurb)[] Scenarios =
+    [
+        ("sol", "Sol", "",
+         "The real solar system, pure Newtonian. Nine worlds on rails, He3 haulers inbound from Saturn, " +
+         "and Luna's mass drivers lobbing compute-core pods. Where every pirate learns the trade."),
+        ("sol-eu", "Sol (Electric)", "EU ⚡",
+         "The same sky, awake. Hull charge builds near the Sun and inside plasma streams; vent it or glow " +
+         "on every sensor in the system. Ride the Saturn–Jupiter river — fast, bright, and watched."),
+        ("wheel", "Wheel of the World", "EU ⚡",
+         "The ancients' cosmology. Venus, Earth and Mars ride a rigid spoke around Saturn the hub. The " +
+         "spoke is not gravity's work — but your ship still obeys Newton. Harder than it looks. It looks hard."),
+    ];
+}
