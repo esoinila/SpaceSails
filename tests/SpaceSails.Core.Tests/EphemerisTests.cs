@@ -3,13 +3,14 @@ namespace SpaceSails.Core.Tests;
 public class EphemerisTests
 {
     [Fact]
-    public void SolScenario_LoadsNineBodies()
+    public void SolScenario_LoadsTenBodies()
     {
         var scenario = SimulatorTests.LoadSol();
 
         Assert.Equal("Sol", scenario.Name);
-        Assert.Equal(9, scenario.Bodies.Count);
+        Assert.Equal(10, scenario.Bodies.Count); // Sun + 8 planets + Luna (M6)
         Assert.Contains(scenario.Bodies, b => b.Id == "saturn");
+        Assert.Contains(scenario.Bodies, b => b.Id == "luna" && b.ParentId == "earth");
     }
 
     [Fact]
