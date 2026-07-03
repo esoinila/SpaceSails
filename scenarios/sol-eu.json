@@ -7,7 +7,7 @@
     { "fromBodyId": "venus",  "toBodyId": "mercury", "halfWidthM": 1.5e10 }
   ],
   "bodies": [
-    { "id": "sun",     "name": "Sun",     "parentId": null,  "mu": 1.32712440018e20, "bodyRadiusM": 6.9634e8,  "orbitRadiusM": 0,          "orbitPeriodS": 0,           "initialPhaseRad": 0 },
+    { "id": "sun",     "name": "Sun",     "parentId": null,  "mu": 1.32712440018e20, "bodyRadiusM": 6.9634e9,  "orbitRadiusM": 0,          "orbitPeriodS": 0,           "initialPhaseRad": 0 },
     { "id": "mercury", "name": "Mercury", "parentId": "sun", "mu": 2.2032e13,        "bodyRadiusM": 2.4397e6,  "orbitRadiusM": 5.791e10,   "orbitPeriodS": 7.60052e6,   "initialPhaseRad": 0.0 },
     { "id": "venus",   "name": "Venus",   "parentId": "sun", "mu": 3.24859e14,       "bodyRadiusM": 6.0518e6,  "orbitRadiusM": 1.0821e11,  "orbitPeriodS": 1.94142e7,   "initialPhaseRad": 0.9 },
     { "id": "earth",   "name": "Earth",   "parentId": "sun", "mu": 3.986004418e14,   "bodyRadiusM": 6.371e6,   "orbitRadiusM": 1.496e11,   "orbitPeriodS": 3.1558149e7, "initialPhaseRad": 1.8 },

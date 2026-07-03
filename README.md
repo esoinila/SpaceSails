@@ -40,6 +40,9 @@ Tips:
 - Add `--no-build` to start faster when nothing changed.
 - Port already in use? `./run.ps1` handles it — finds the next free port and says so
   (`-Server` for multiplayer, `-TakePort` to stop the squatter instead).
+- Blank page (or blank /guide) after the code changed? The running server is serving stale
+  fingerprinted assets — .NET 10 renames `_framework/*.js` on every build. Restart the app
+  (`Ctrl+C`, then `./run.ps1`) and reload.
 - `Ctrl+C` stops the app. Run the tests with `dotnet test SpaceSails.slnx`.
 
 How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](docs/user-guide.md)).

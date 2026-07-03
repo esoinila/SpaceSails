@@ -199,6 +199,46 @@ public class SimulatorTests
 
 
     [Fact]
+    public void OrbitInsertion_BindsAndHolds()
+    {
+        // Arrive 1e8 m over Earth at 1.2 km/s relative: the window is open, the burn costs a
+        // sane number of pulses, and after insertion the integrator holds the orbit — Earth
+        // distance stays within a few percent for a full orbital period.
+        var ephemeris = CircularOrbitEphemeris.FromScenario(LoadSol());
+        var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
+        CelestialBody earth = ephemeris.Bodies.First(b => b.Id == "earth");
+        CelestialBody sun = ephemeris.Bodies.First(b => b.Id == "sun");
+        double hill = OrbitRule.HillRadius(earth, sun.Mu);
+        Assert.InRange(hill, 1.3e9, 1.7e9); // the textbook 1.5 M km
+
+        Vector2d earthPos = ephemeris.Position("earth", 0);
+        Vector2d earthVel = (ephemeris.Position("earth", 1.0) - ephemeris.Position("earth", -1.0)) / 2.0;
+        var arrival = new ShipState(earthPos + new Vector2d(1e8, 0), earthVel + new Vector2d(0, 1200), 0);
+
+        Assert.True(OrbitRule.WindowOpen(arrival, earthPos, earthVel, earth, hill));
+        int cost = OrbitRule.PulseCost(arrival, earthPos, earthVel, earth);
+        Assert.InRange(cost, 1, 12);
+
+        ShipState orbiting = OrbitRule.Insert(arrival, earthPos, earthVel, earth);
+        Assert.True(OrbitRule.IsBound(orbiting, earthPos, earthVel, earth, hill));
+
+        double vCirc = OrbitRule.CircularSpeed(earth, 1e8);
+        double period = 2 * Math.PI * 1e8 / vCirc;
+        ShipState s = orbiting;
+        double dMin = double.MaxValue, dMax = 0;
+        for (int i = 0; i < 24; i++)
+        {
+            s = simulator.Run(s, period / 24);
+            double d = (s.Position - ephemeris.Position("earth", s.SimTime)).Length;
+            dMin = Math.Min(dMin, d);
+            dMax = Math.Max(dMax, d);
+        }
+
+        Assert.InRange(dMin / 1e8, 0.95, 1.05);
+        Assert.InRange(dMax / 1e8, 0.95, 1.05);
+    }
+
+    [Fact]
     public void RunAdaptive_MatchesFixedStepWithinTolerance()
     {
         // The live high-warp path (60 s adaptive quanta) must agree with the historic fixed

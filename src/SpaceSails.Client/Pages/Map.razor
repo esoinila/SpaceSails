@@ -101,6 +101,29 @@
             <div>Mass pulses: @_reactionMassPulses / @ReactionMassCapacity</div>
             <div>Credits: @_credits.ToString("N0", CultureInfo.InvariantCulture)</div>
             <div>Cargo: @_cargoUnits / @CargoCapacity units@(_cargoValue > 0 ? $" (worth {_cargoValue:N0} cr)" : "")</div>
+            @if (!_mp && OrbitInfo() is { } oi)
+            {
+                <div class="mt-1 small">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>
+                            🛰 Orbit @oi.Body.Name —
+                            @(oi.WindowOpen ? "window OPEN" : oi.TooFast ? "too fast (max 5.0 km/s rel)" : "get inside the Hill sphere")
+                        </span>
+                        <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
+                                disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
+                            Enter orbit (@oi.Cost p / O)
+                        </button>
+                    </div>
+                    <div class="progress map-orbit-bar" title="distance vs Hill sphere">
+                        <div class="progress-bar @(oi.Distance < oi.Hill ? "bg-success" : "bg-info")"
+                             style="width: @(Math.Clamp(100 * oi.Hill / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                    </div>
+                    <div class="progress map-orbit-bar" title="relative speed vs 5 km/s limit">
+                        <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
+                             style="width: @(Math.Clamp(100 * OrbitRule.MaxRelativeSpeed / Math.Max(oi.RelSpeed, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                    </div>
+                </div>
+            }
             <div>Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)</div>
             @if (_plasma is not null)
             {
@@ -919,14 +942,24 @@
         else
         {
             NpcState? locked = null;
+            bool lockedBySelection = false;
             double bestSq = double.MaxValue;
             foreach (NpcState npc in _npcStates)
             {
                 if (!npc.Active || npc.Arrived || !npc.CurrentlyObserved) continue;
-                if (npc.Ship.Id == _selectedTargetId) { locked = npc; break; }
+                if (npc.Ship.Id == _selectedTargetId) { locked = npc; lockedBySelection = true; break; }
                 double d = (npc.State.Position - _ship.Position).LengthSquared;
                 if (d < bestSq) { (bestSq, locked) = (d, npc); }
             }
+
+            // AUTO means the nearest OBJECT (owner, M20): a planet filling the window beats a
+            // freighter half a system away. A selected target still wins outright.
+            if (!lockedBySelection && _nearestBody is not null
+                && (_nearestBodyPosition - _ship.Position).LengthSquared < bestSq)
+            {
+                locked = null;
+            }
+
             if (locked is not null)
             {
                 return new ScopeView.Target(
@@ -1002,6 +1035,68 @@
     private CelestialBody? _nearestBody;
     private Vector2d _nearestBodyPosition;
     private Vector2d _nearestBodyVelocity;
+
+    // ---- M20: the bus stop in space ----
+    private readonly record struct OrbitAssistInfo(
+        CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
+        bool WindowOpen, bool TooFast, bool CanEngage);
+
+    private OrbitAssistInfo? OrbitInfo()
+    {
+        if (_nearestBody is not CelestialBody body || body.ParentId is null || _ephemeris is null)
+        {
+            return null; // the sun is not a bus stop; you already orbit it
+        }
+
+        CelestialBody? parent = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == body.ParentId) { parent = candidate; break; }
+        }
+        if (parent is null) return null;
+
+        double hill = OrbitRule.HillRadius(body, parent.Mu);
+        double distance = (_ship.Position - _nearestBodyPosition).Length;
+        if (distance > Math.Max(OrbitRule.IndicatorRangeHillRadii * hill, 2e9))
+        {
+            return null;
+        }
+
+        double relSpeed = (_ship.Velocity - _nearestBodyVelocity).Length;
+        bool open = OrbitRule.WindowOpen(_ship, _nearestBodyPosition, _nearestBodyVelocity, body, hill);
+        int cost = OrbitRule.PulseCost(_ship, _nearestBodyPosition, _nearestBodyVelocity, body);
+        bool bound = OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, body, hill);
+        return new OrbitAssistInfo(body, distance, relSpeed, hill, cost,
+            open && !bound, relSpeed >= OrbitRule.MaxRelativeSpeed,
+            open && !bound && cost <= _reactionMassPulses);
+    }
+
+    private void EnterOrbit()
+    {
+        if (_mp || OrbitInfo() is not { CanEngage: true } oi)
+        {
+            return;
+        }
+
+        _ship = OrbitRule.Insert(_ship, _nearestBodyPosition, _nearestBodyVelocity, oi.Body);
+        _reactionMassPulses -= oi.Cost;
+        StaleFutureNodes();
+        ShowPulseMessage($"Orbital insertion — bound to {oi.Body.Name} 🛰");
+        RendererInterop.PlayCue("board");
+    }
+
+    private void StaleFutureNodes()
+    {
+        foreach (PlanNode node in _planNodes)
+        {
+            if (!node.Stale && !node.Executed && node.SimTime > _ship.SimTime)
+            {
+                node.Stale = true;
+            }
+        }
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
     private ElementReference _focusableDiv;
 
     // M9 additions — multiplayer client. Every path is behind _mp; single player is untouched.
@@ -1488,6 +1583,15 @@
 
     private void UpdateEffectiveWarp()
     {
+        // Bound to a planet (M20)? No encounter to overshoot — let the orbit spin at up to
+        // 1000x instead of crawling on the near-body tiers.
+        if (!_mp && OrbitInfo() is { } orbitInfo
+            && OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, orbitInfo.Body, orbitInfo.Hill))
+        {
+            _effectiveWarp = Math.Min(Warp, 1000);
+            return;
+        }
+
         if (_nearestBody == null)
         {
             _effectiveWarp = Warp;
@@ -1760,6 +1864,12 @@
 
         bool pulse = false;
         double factor = 1.0;
+
+        if (e.Key is "o" or "O")
+        {
+            EnterOrbit();
+            return;
+        }
 
         // Shift = fine trim (±1%) for orbital finesse near planets; plain = the full ±10%.
         bool fine = e.ShiftKey;
@@ -2062,6 +2172,41 @@
     }
 
     private PlanNode? _selectedPlanNode;
+
+    // M20: ships and pods are clickable on the map — same effect as picking their traffic row.
+    private bool TrySelectShipAt(double clientX, double clientY)
+    {
+        const double hitRadiusPx = 12;
+        double bestSq = hitRadiusPx * hitRadiusPx;
+        string? bestId = null;
+        if (_mp)
+        {
+            foreach (ContactDto c in _mpContacts)
+            {
+                (float sx, float sy) = _camera.WorldToScreen(new Vector2d(c.PositionX, c.PositionY));
+                double dx = clientX - sx, dy = clientY - sy;
+                if (dx * dx + dy * dy < bestSq) { bestSq = dx * dx + dy * dy; bestId = c.Id; }
+            }
+        }
+        else
+        {
+            foreach (NpcState npc in _npcStates)
+            {
+                if (!npc.Active || npc.Arrived || !npc.CurrentlyObserved) continue;
+                (float sx, float sy) = _camera.WorldToScreen(npc.State.Position);
+                double dx = clientX - sx, dy = clientY - sy;
+                if (dx * dx + dy * dy < bestSq) { bestSq = dx * dx + dy * dy; bestId = npc.Ship.Id; }
+            }
+        }
+
+        if (bestId is null)
+        {
+            return false;
+        }
+
+        SelectTarget(bestId);
+        return true;
+    }
 
     // Click a thrust node on the ribbon to select it: highlights its row and jumps the scrub
     // to its time (owner request, M16). Returns true when a node was hit.
@@ -2770,6 +2915,11 @@
         if (TrySelectNodeAt(e.OffsetX, e.OffsetY))
         {
             return; // clicked a thrust node: select it, don't start a drag
+        }
+
+        if (TrySelectShipAt(e.OffsetX, e.OffsetY))
+        {
+            return; // clicked a contact: select it (scope tracks it, prediction pins to it)
         }
 
         _dragging = true;
