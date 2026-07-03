@@ -93,7 +93,10 @@
             }
             <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
             <hr />
-            <div>Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s</div>
+            <div>
+                Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                <span class="text-secondary">(circular here: @((CircularSpeedHere / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s)</span>
+            </div>
             <div>Mass pulses: @_reactionMassPulses / @ReactionMassCapacity</div>
             <div>Credits: @_credits.ToString("N0", CultureInfo.InvariantCulture)</div>
             <div>Cargo: @_cargoUnits / @CargoCapacity units@(_cargoValue > 0 ? $" (worth {_cargoValue:N0} cr)" : "")</div>
@@ -643,6 +646,24 @@
     private const int ScopeSizePx = 280;
     private ScopeView? _scopeView;
     private bool _showScope = true;
+    // The pilot's most-wanted number (owner, M16): the speed that holds a circular sun orbit
+    // at the ship's CURRENT distance. Match it (tangentially) and you coast forever — the
+    // difference between "matching the radius" and "matching the orbit".
+    private double CircularSpeedHere
+    {
+        get
+        {
+            double r = _ship.Position.Length;
+            if (r <= 0 || _ephemeris is null) return 0;
+            double mu = 0;
+            foreach (CelestialBody body in _ephemeris.Bodies)
+            {
+                if (body.ParentId is null && body.Mu > mu) mu = body.Mu;
+            }
+            return Math.Sqrt(mu / r);
+        }
+    }
+
     private void ToggleScope() => _showScope = !_showScope;
 
     private void ToggleDeck()
