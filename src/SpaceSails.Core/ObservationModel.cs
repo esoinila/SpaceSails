@@ -22,6 +22,9 @@ public sealed class SensorModel(double rangeMeters, double glareHalfAngleRad, do
     /// <summary>Defaults tuned for the Sol scenario: 1e11 m ≈ 0.67 AU, 20° glare cone at ×0.25 range.</summary>
     public static SensorModel Default { get; } = new(1.0e11, 20.0 * Math.PI / 180.0, 0.25);
 
+    /// <summary>A fully charged hull glows: it is seen (1 + this) × farther. M7.</summary>
+    public const double ChargeGlowFactor = 2.0;
+
     public double RangeMeters { get; } = rangeMeters;
     public double GlareHalfAngleRad { get; } = glareHalfAngleRad;
     public double GlareRangeFactor { get; } = glareRangeFactor;
@@ -31,7 +34,10 @@ public sealed class SensorModel(double rangeMeters, double glareHalfAngleRad, do
         Vector2d toTarget = target.Position - observerPosition;
         double distance = toTarget.Length;
 
-        double effectiveRange = RangeMeters;
+        // Sun glare dims passive detection of the target; a charged hull *radiates*, and that
+        // glow pierces glare untouched. This is the sun-side ambush tradeoff (plan §M7): the
+        // glare cone hides you only while you vent your hull dark.
+        double baseRange = RangeMeters;
         Vector2d toSun = Vector2d.Zero - observerPosition;
         double sunDistance = toSun.Length;
         if (distance > 0 && sunDistance > 0)
@@ -39,9 +45,11 @@ public sealed class SensorModel(double rangeMeters, double glareHalfAngleRad, do
             double cosAngle = (toTarget.X * toSun.X + toTarget.Y * toSun.Y) / (distance * sunDistance);
             if (cosAngle > Math.Cos(GlareHalfAngleRad))
             {
-                effectiveRange *= GlareRangeFactor;
+                baseRange *= GlareRangeFactor;
             }
         }
+
+        double effectiveRange = baseRange + RangeMeters * ChargeGlowFactor * target.Charge;
 
         if (distance > effectiveRange)
         {

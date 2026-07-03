@@ -12,11 +12,13 @@ namespace SpaceSails.Core;
 public sealed class Simulator
 {
     private readonly ICelestialEphemeris _ephemeris;
+    private readonly PlasmaEnvironment? _environment;
 
-    public Simulator(ICelestialEphemeris ephemeris, double timeStepSeconds)
+    public Simulator(ICelestialEphemeris ephemeris, double timeStepSeconds, PlasmaEnvironment? environment = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(timeStepSeconds);
         _ephemeris = ephemeris;
+        _environment = environment;
         TimeStep = timeStepSeconds;
     }
 
@@ -38,10 +40,23 @@ public sealed class Simulator
             }
         }
 
-        velocity += GravitationalAcceleration(state.Position, state.SimTime) * dt;
+        Vector2d acceleration = GravitationalAcceleration(state.Position, state.SimTime);
+        double charge = state.Charge;
+        if (_environment is not null)
+        {
+            // Hull charge relaxes toward the local ambient level, then the stream force acts on
+            // whatever charge the hull carries this step. Clamped exponential approach: stable
+            // for any dt (ProjectAdaptive can step hours at a time).
+            double ambient = _environment.AmbientCharge(state.Position, state.SimTime);
+            double blend = Math.Min(1.0, dt / PlasmaEnvironment.EquilibrationTau);
+            charge += (ambient - charge) * blend;
+            acceleration += _environment.Acceleration(state.Position, charge, state.SimTime);
+        }
+
+        velocity += acceleration * dt;
         Vector2d position = state.Position + velocity * dt;
 
-        return new ShipState(position, velocity, state.SimTime + dt);
+        return new ShipState(position, velocity, state.SimTime + dt, charge);
     }
 
     /// <summary>Advance by whole steps until at least <paramref name="durationSeconds"/> has elapsed.</summary>

@@ -11,6 +11,26 @@ public sealed record ScenarioDefinition
     public string Description { get; init; } = "";
 
     public required IReadOnlyList<BodyDefinition> Bodies { get; init; }
+
+    /// <summary>Enables the Electric Universe layer (charge, plasma streams). Off = pure Newtonian.</summary>
+    public bool ElectricUniverse { get; init; }
+
+    /// <summary>Plasma stream ribbons. Only meaningful when <see cref="ElectricUniverse"/> is true.</summary>
+    public IReadOnlyList<StreamDefinition> Streams { get; init; } = [];
+}
+
+/// <summary>
+/// A plasma stream: a straight ribbon between two bodies (endpoints track their orbits).
+/// Ships inside feel an along-stream force proportional to their charge.
+/// </summary>
+public sealed record StreamDefinition
+{
+    public required string FromBodyId { get; init; }
+
+    public required string ToBodyId { get; init; }
+
+    /// <summary>Half-width of the ribbon in meters.</summary>
+    public required double HalfWidthM { get; init; }
 }
 
 /// <summary>

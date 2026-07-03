@@ -1,6 +1,7 @@
 @page "/map"
 @implements IDisposable
 @inject HttpClient Http
+@inject NavigationManager Navigation
 @using System.Globalization
 @using SpaceSails.Client.Rendering
 @using SpaceSails.Contracts
@@ -281,6 +282,8 @@
     private ICelestialEphemeris? _ephemeris;
     private Simulator? _simulator;
     private Simulator? _npcSimulator;
+    private PlasmaEnvironment? _plasma;
+    private string _scenarioName = "";
     private ShipState _ship;
     private IReadOnlyList<TrajectorySample> _samples = [];
     private float[] _scratch = [];
@@ -443,11 +446,29 @@
 
         _started = true;
 
-        string json = await Http.GetStringAsync("scenarios/sol.json");
+        // /map?scenario=sol-eu loads scenarios/sol-eu.json; default sol. Name is sanitized to a
+        // simple slug — it becomes a URL path segment.
+        string scenarioName = "sol";
+        var uri = new Uri(Navigation.Uri);
+        foreach (string pair in uri.Query.TrimStart('?').Split('&'))
+        {
+            if (pair.StartsWith("scenario=", StringComparison.OrdinalIgnoreCase))
+            {
+                string candidate = Uri.UnescapeDataString(pair["scenario=".Length..]);
+                if (candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+                {
+                    scenarioName = candidate;
+                }
+            }
+        }
+
+        string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json");
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
+        _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
-        _simulator = new Simulator(_ephemeris, timeStepSeconds: 1.0);
-        _npcSimulator = new Simulator(_ephemeris, TrafficSchedule.NpcTimeStep);
+        _plasma = PlasmaEnvironment.FromScenario(scenario, _ephemeris);
+        _simulator = new Simulator(_ephemeris, timeStepSeconds: 1.0, _plasma);
+        _npcSimulator = new Simulator(_ephemeris, TrafficSchedule.NpcTimeStep); // NPCs chargeless in M7
 
         _ship = InitializeShipState();
         ReprojectTrajectory();
