@@ -136,19 +136,19 @@
                 @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
                 <input type="range" class="form-range" min="0" max="@CurrentPlotHorizonSeconds" step="3600"
                        @bind="_scrubOffsetSeconds" @bind:event="oninput" @onkeydown:stopPropagation="true" />
+                <div class="mb-1 d-flex justify-content-between align-items-center">
+                    <span>Path length: @FormatHorizon(CurrentPlotHorizonSeconds)</span>
+                    <button type="button" class="btn btn-sm py-0 @(_horizonChoice == "auto" ? "btn-info" : "btn-outline-light")"
+                            @onclick="SetHorizonAuto">auto</button>
+                </div>
+                @* Same full-width form-range as the scrub slider above it. *@
+                <input type="range" class="form-range" min="0" max="100" step="1"
+                       value="@HorizonSliderValue" title="Length of the navigation line (log scale)"
+                       @oninput="OnHorizonSliderInput" @onkeydown:stopPropagation="true" />
                 <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
                         Add burn at scrub
                     </button>
-                    <div class="d-flex align-items-center gap-1 map-plot-horizon">
-                        <button type="button" class="btn btn-sm py-0 @(_horizonChoice == "auto" ? "btn-info" : "btn-outline-light")"
-                                @onclick="SetHorizonAuto">auto</button>
-                        <input type="range" class="form-range" min="0" max="100" step="1"
-                               value="@HorizonSliderValue" title="Path horizon"
-                               @oninput="OnHorizonSliderInput" @onchange="OnHorizonSliderChange"
-                               @onkeydown:stopPropagation="true" />
-                        <span class="text-nowrap">@FormatHorizon(CurrentPlotHorizonSeconds)</span>
-                    </div>
                     <span>Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
                 </div>
 
@@ -456,18 +456,16 @@
     private static double SliderToDays(int t) =>
         HorizonMinDays * Math.Pow(HorizonMaxDays / HorizonMinDays, t / 100.0);
 
+    private bool _horizonDirty;
+    private double _lastHorizonReprojectMs;
+
     private void OnHorizonSliderInput(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out int t))
         {
             _horizonChoice = SliderToDays(t).ToString("F0");
+            _horizonDirty = true; // OnTick reprojects, throttled — live ribbon while dragging
         }
-    }
-
-    private void OnHorizonSliderChange(ChangeEventArgs e)
-    {
-        OnHorizonSliderInput(e);
-        ReprojectTrajectory(); // reproject on release, not per-pixel
     }
 
     private void SetHorizonAuto()
@@ -1257,6 +1255,13 @@
         if (!_mp)
         {
             UpdatePrediction();
+        }
+
+        if (_horizonDirty && highResTimestampMs - _lastHorizonReprojectMs > 250)
+        {
+            _horizonDirty = false;
+            _lastHorizonReprojectMs = highResTimestampMs;
+            ReprojectTrajectory();
         }
 
         if (_ship.SimTime >= _nextProjectionSimTime)
