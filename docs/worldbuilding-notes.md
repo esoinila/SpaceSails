@@ -63,6 +63,20 @@ distract from it.*
 - Lands naturally with M10 polish or as M9.5; no engine changes needed — it is an observation
   model + an overlay.
 
+## 6. Aboard-ship life: deck view → the boarding sequence
+
+- **Deck view v1 shipped (M12)**: top-down walkable interior — bridge/helm, scope alcove,
+  cargo hold (crates = your actual loot), shuttle bay (shuttle goes AWAY during a boarding),
+  engine room with vent panel. Consoles map to real game actions.
+- **The dream (owner, 2026-07-03)**: when the boarding window opens, *walk* to the shuttle
+  bay, board the shuttle, fly the little craft across to the prey (a short piloting minigame
+  in the gap between the two hulls — the window timer becomes YOUR timer), dock at its
+  airlock, and take the cargo from its hold room. Third-person avatar view of these interiors.
+- Mechanical sketch: shuttle flight = a small local-frame 2D scene (two hulls, relative drift
+  from the real rel-velocity — sloppier pass = faster drift = harder approach; the
+  RequiredSecondsFor math becomes literal gameplay). Prey interiors can be generated from
+  ship kind. Third-person = the same deck renderer with a camera following the avatar.
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |
@@ -72,3 +86,6 @@ distract from it.*
 | Ancient satellites | M7/M8 | Off-board NPC class with pyramid icon, no departures entry |
 | He3 moon origins | M8 | Moons in scenario JSON (parent chaining already works) |
 | Ship-side telescope | M9.5/M10 | `TelescopeModel : IObservationModel` + scope overlay; better obs → tighter prediction cones |
+| Telescope track-hold | post-M12 | holding the scope on a target improves its Observation quality → visibly tighter cone |
+| Shuttle boarding sequence | post-M12 | walk to bay → fly shuttle across (rel-velocity drift minigame) → prey interior |
+| Third-person deck camera | post-M12 | deck renderer + avatar-following camera |
