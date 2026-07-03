@@ -19,7 +19,7 @@ public sealed class GameHub : Hub
 
     public JoinResultDto Join(string callsign) => _session.Join(Context.ConnectionId, callsign);
 
-    public void Pulse(bool accelerate) => _session.Pulse(Context.ConnectionId, accelerate);
+    public void Pulse(bool accelerate, bool fine = false) => _session.Pulse(Context.ConnectionId, accelerate, fine);
 
     public void Vent() => _session.Vent(Context.ConnectionId);
 

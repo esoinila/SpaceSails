@@ -12,6 +12,14 @@
 <PageTitle>SpaceSails — Map</PageTitle>
 
 <div @ref="_focusableDiv" class="map-page" tabindex="0" @onkeydown="OnKeyDown" @onkeyup="OnKeyUp" @onfocusout="OnFocusOut">
+    @if (!_worldReady)
+    {
+        <div class="map-loading d-flex flex-column justify-content-center align-items-center">
+            <div class="spinner-border text-info mb-3" role="status" aria-label="Loading"></div>
+            <div class="text-light">Rigging the sails…</div>
+            <div class="text-secondary small mt-1">planning NPC routes, spinning up the ephemeris</div>
+        </div>
+    }
     <canvas id="@CanvasId" class="map-canvas"
             @onwheel="OnWheel" @onwheel:preventDefault="true"
             @onpointerdown="OnPointerDown" @onpointermove="OnPointerMove"
@@ -20,15 +28,12 @@
 
     <div class="map-hud">
         <div class="btn-toolbar bg-dark bg-opacity-75 rounded p-2 gap-2 align-items-center" role="toolbar" aria-label="Time warp controls">
-            <div class="btn-group me-2" role="group" aria-label="Warp level">
-                @foreach (int level in WarpLevels)
-                {
-                    <button type="button"
-                            class="btn btn-sm @(!Paused && Warp == level ? "btn-primary" : "btn-outline-light")"
-                            @onclick="() => SetWarp(level)">
-                        @level&times;
-                    </button>
-                }
+            <div class="d-flex align-items-center gap-1 me-2 map-warp-control">
+                <span class="text-light small">warp</span>
+                <input type="range" class="form-range" min="0" max="100" step="1"
+                       value="@WarpSliderValue" title="Time warp (log scale)"
+                       @oninput="OnWarpSliderInput" @onkeydown:stopPropagation="true" />
+                <span class="text-light small text-nowrap map-warp-readout">@(Paused ? "∥" : $"{Warp}×")</span>
             </div>
             <button type="button" class="btn btn-sm @(Paused ? "btn-warning" : "btn-outline-light") me-2" @onclick="TogglePause">
                 @(Paused ? "Resume" : "Pause")
@@ -372,7 +377,6 @@
 
 @code {
     private const string CanvasId = "map-canvas";
-    private static readonly int[] WarpLevels = [1, 10, 100, 1000, 10000];
     private const int OrbitSegments = 128;
 
     private static readonly RgbaColor Background = new(6, 9, 18);
@@ -397,6 +401,7 @@
     private IReadOnlyList<TrajectorySample> _samples = [];
     private float[] _scratch = [];
     private bool _started;
+    private bool _worldReady;
 
     private int _viewportWidth = 1280;
     private int _viewportHeight = 800;
@@ -1062,6 +1067,8 @@
         _shuttleView = new ShuttleFlightView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
 
+        _worldReady = true;
+        StateHasChanged();
         await _focusableDiv.FocusAsync();
 
         if (_mp)
@@ -1655,18 +1662,20 @@
         bool pulse = false;
         double factor = 1.0;
 
+        // Shift = fine trim (±1%) for orbital finesse near planets; plain = the full ±10%.
+        bool fine = e.ShiftKey;
         switch(e.Key)
         {
             case "+":
             case "=":
             case "ArrowUp":
-                factor = ManeuverPlan.AccelerateFactor;
+                factor = fine ? 1.01 : ManeuverPlan.AccelerateFactor;
                 pulse = true;
                 break;
             case "-":
             case "_":
             case "ArrowDown":
-                factor = ManeuverPlan.DecelerateFactor;
+                factor = fine ? 0.99 : ManeuverPlan.DecelerateFactor;
                 pulse = true;
                 break;
             case "p":
@@ -1697,16 +1706,20 @@
                 // Server owns the ship: send the command, gate locally only to avoid spam, and show
                 // the flash optimistically. The authoritative velocity/mass arrive in the next update.
                 _lastPulseSimTime = _ship.SimTime;
-                ShowPulseMessage(factor > 1 ? "Pulse: accelerate +10%" : "Pulse: decelerate −10%");
+                ShowPulseMessage(factor > 1
+                ? (fine ? "Trim: +1%" : "Pulse: accelerate +10%")
+                : (fine ? "Trim: −1%" : "Pulse: decelerate −10%"));
             RendererInterop.PlayCue("pulse");
-                SendCommand(c => c.SendAsync("Pulse", factor > 1));
+                SendCommand(c => c.SendAsync("Pulse", factor > 1, fine));
                 return;
             }
 
             _ship = _ship with { Velocity = _ship.Velocity * factor };
             _reactionMassPulses--;
             _lastPulseSimTime = _ship.SimTime;
-            ShowPulseMessage(factor > 1 ? "Pulse: accelerate +10%" : "Pulse: decelerate −10%");
+            ShowPulseMessage(factor > 1
+                ? (fine ? "Trim: +1%" : "Pulse: accelerate +10%")
+                : (fine ? "Trim: −1%" : "Pulse: decelerate −10%"));
             RendererInterop.PlayCue("pulse");
 
             // A live override invalidates every still-pending node (plan §4).
@@ -2548,6 +2561,16 @@
         return metersPerPixel >= metersPerAu / 100
             ? $"{metersPerPixel / metersPerAu:F4} AU/px"
             : $"{metersPerPixel:E2} m/px";
+    }
+
+    private int WarpSliderValue => (int)Math.Round(Math.Log10(Math.Clamp(Warp, 1, 10000)) * 25);
+
+    private void OnWarpSliderInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int t))
+        {
+            SetWarp((int)Math.Round(Math.Pow(10, t / 25.0)));
+        }
     }
 
     private void SetWarp(int level)
