@@ -1,13 +1,14 @@
 @page "/map"
 @implements IDisposable
 @inject HttpClient Http
+@using System.Globalization
 @using SpaceSails.Client.Rendering
 @using SpaceSails.Contracts
 @using SpaceSails.Core
 
 <PageTitle>SpaceSails — Map</PageTitle>
 
-<div class="map-page">
+<div @ref="_focusableDiv" class="map-page" tabindex="0" @onkeydown="OnKeyDown">
     <canvas id="@CanvasId" class="map-canvas"
             @onwheel="OnWheel" @onwheel:preventDefault="true"
             @onpointerdown="OnPointerDown" @onpointermove="OnPointerMove"
@@ -36,8 +37,16 @@
 
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
             <div>Sim time: @FormatSimTime(SimTime)</div>
-            <div>Warp: @(Paused ? "paused" : $"{Warp}×")</div>
+            <div>Warp: @(Paused ? "paused" : $"{_effectiveWarp}×") @(Warp != _effectiveWarp ? $"(auto-drop from {Warp}×)" : "")</div>
             <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
+            <hr />
+            <div>Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s</div>
+            <div>Mass pulses: @_reactionMassPulses</div>
+            <div>Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)</div>
+            @if (_pulseMessage is not null)
+            {
+                <div class="text-warning">@_pulseMessage</div>
+            }
         </div>
     </div>
 </div>
@@ -45,21 +54,21 @@
 @code {
     private const string CanvasId = "map-canvas";
     private static readonly int[] WarpLevels = [1, 10, 100, 1000, 10000];
-
     private const int OrbitSegments = 128;
-    private const int TrajectoryCount = 500;
-    private const int TrajectoryPoints = 48;
 
     private static readonly RgbaColor Background = new(6, 9, 18);
     private static readonly RgbaColor OrbitColor = new(80, 100, 130, 130);
-    private static readonly RgbaColor TrajectoryColor = new(60, 140, 170, 55);
     private static readonly RgbaColor ShipColor = new(255, 210, 80);
+    private static readonly RgbaColor TrajectoryColor = new(255, 165, 0);
     private static readonly RgbaColor LabelColor = new(224, 228, 236);
 
     private readonly Camera _camera = new();
     private CanvasRenderer? _renderer;
     private ICelestialEphemeris? _ephemeris;
-    private Vector2d[][] _dummyTrajectories = [];
+    private Simulator? _simulator;
+    private Simulator? _projectionSimulator;
+    private ShipState _ship;
+    private IReadOnlyList<Vector2d> _shipTrajectory = [];
     private float[] _scratch = [];
     private bool _started;
 
@@ -68,14 +77,38 @@
 
     private double SimTime;
     private int Warp = 1;
+    private int _effectiveWarp = 1;
     private bool Paused;
-    private bool FollowShip;
+    private bool FollowShip = true;
 
     private double? _lastTimestampMs;
     private double _lastHudUpdateMs;
     private bool _dragging;
     private double _lastPointerX;
     private double _lastPointerY;
+
+    // M3 additions
+    private double _simAccumulator;
+    private double _lastPulseSimTime = -PulseCooldownSeconds; // so the very first pulse isn't rejected
+    private int _reactionMassPulses = 250;
+    private const double PulseCooldownSeconds = 1.0;
+    private const double TrajectoryHorizonSeconds = 30 * 24 * 3600; // 30 days
+    // Gravity bends the real path away from a ribbon projected in the past, so re-project after
+    // this much sim time even without a pulse (≈2 real seconds at max warp — cheap: ~720 steps).
+    private const double ProjectionRefreshSimSeconds = 6 * 3600;
+    private double _nextProjectionSimTime;
+    private string? _pulseMessage;
+    private double _pulseMessageExpiresMs;
+    // The ribbon is a visual guide, so it is projected with a much coarser timestep than the live sim
+    // (plan §5: "coarsen dt for projection, never for live sim"). 30 days at the live dt=1 s would be
+    // ~2.6M integrator steps per re-projection — seconds of hitch on every pulse; at dt=1 h it is ~720.
+    private const double ProjectionTimeStepSeconds = 3600;
+    private const int MaxStepsPerFrame = 20000;
+
+    private CelestialBody? _nearestBody;
+    private Vector2d _nearestBodyPosition;
+    private Vector2d _nearestBodyVelocity;
+    private ElementReference _focusableDiv;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -89,21 +122,42 @@
         string json = await Http.GetStringAsync("scenarios/sol.json");
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
+        _simulator = new Simulator(_ephemeris, timeStepSeconds: 1.0);
+        _projectionSimulator = new Simulator(_ephemeris, ProjectionTimeStepSeconds);
 
-        _dummyTrajectories = GenerateDummyTrajectories(TrajectoryCount, TrajectoryPoints);
-        _scratch = new float[TrajectoryPoints * 2];
+        _ship = InitializeShipState();
+        ReprojectTrajectory();
 
-        _camera.MetersPerPixel = 1.2e10; // whole-system default: outer planets near the viewport edge.
-        _camera.CenterOn(Vector2d.Zero);
+        _scratch = new float[_shipTrajectory.Count * 2 + 4];
+
+        _camera.MetersPerPixel = 3e8;
+        _camera.CenterOn(_ship.Position);
 
         await RendererInterop.EnsureModuleLoadedAsync();
-
         _renderer = new CanvasRenderer(CanvasId);
         RendererInterop.FrameTick += OnTick;
         RendererInterop.CanvasResized += OnCanvasResized;
 
         RendererInterop.InitCanvas(CanvasId);
         RendererInterop.StartLoop(CanvasId);
+
+        await _focusableDiv.FocusAsync();
+    }
+
+    private ShipState InitializeShipState()
+    {
+        double h = 1.0;
+        Vector2d p1 = _ephemeris!.Position("earth", -h);
+        Vector2d p2 = _ephemeris!.Position("earth", h);
+        Vector2d initialVelocity = (p2 - p1) / (2 * h);
+
+        // Start well clear of Earth's gravity well (~5e9 m radially outward, ~0.03 AU) so the ship is
+        // effectively in Earth's heliocentric orbit and its ±10% pulses steer that solar orbit —
+        // rather than dropped just above Earth's surface, where Earth's gravity dominates and the ship
+        // simply falls in. Velocity stays Earth's, so it starts co-moving.
+        Vector2d earthPosition = _ephemeris.Position("earth", 0);
+        Vector2d initialPosition = earthPosition + earthPosition.Normalized() * 5e9;
+        return new ShipState(initialPosition, initialVelocity, 0);
     }
 
     private void OnCanvasResized(double widthPx, double heightPx)
@@ -119,7 +173,7 @@
 
     private void OnTick(double highResTimestampMs)
     {
-        if (_renderer is null || _ephemeris is null)
+        if (_renderer is null || _ephemeris is null || _simulator is null)
         {
             return;
         }
@@ -129,49 +183,135 @@
             : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
         _lastTimestampMs = highResTimestampMs;
 
+        UpdateNearestBody();
+        UpdateEffectiveWarp();
+
         if (!Paused)
         {
-            SimTime += dtRealSeconds * Warp;
+            _simAccumulator += dtRealSeconds * _effectiveWarp;
+            _simAccumulator = Math.Min(_simAccumulator, MaxStepsPerFrame * _simulator.TimeStep); // Clamp accumulator
         }
 
-        Vector2d shipPosition = DummyShipPosition(SimTime);
+        int stepsThisFrame = 0;
+        while (_simAccumulator >= _simulator.TimeStep)
+        {
+            if (stepsThisFrame >= MaxStepsPerFrame)
+            {
+                _simAccumulator = 0;
+                break;
+            }
+            _ship = _simulator.Step(_ship, plan: null);
+            _simAccumulator -= _simulator.TimeStep;
+            stepsThisFrame++;
+        }
+        SimTime = _ship.SimTime;
+
+        if (_ship.SimTime >= _nextProjectionSimTime)
+        {
+            ReprojectTrajectory();
+        }
+
+        if (_pulseMessage is not null && highResTimestampMs > _pulseMessageExpiresMs)
+        {
+            _pulseMessage = null;
+        }
+
         if (FollowShip)
         {
-            _camera.CenterOn(shipPosition);
+            _camera.CenterOn(_ship.Position);
         }
 
         _camera.SetViewport(_viewportWidth, _viewportHeight);
         _renderer.BeginFrame(_viewportWidth, _viewportHeight, Background);
 
-        DrawDummyTrajectories();
+        DrawShipTrajectory();
         DrawCelestialBodies();
-        DrawShip(shipPosition);
+        DrawShip(_ship.Position);
 
         _renderer.EndFrame();
-
-        // Redrawing the canvas happens every animation frame (the perf gate); re-rendering the
-        // Bootstrap HUD text every frame would add Blazor diffing cost for no visible benefit, so
-        // it's throttled to a few times a second instead.
+        
         if (highResTimestampMs - _lastHudUpdateMs > 200)
         {
             _lastHudUpdateMs = highResTimestampMs;
             InvokeAsync(StateHasChanged);
         }
     }
-
-    private void DrawDummyTrajectories()
+    
+    private void UpdateNearestBody()
     {
-        foreach (Vector2d[] trajectory in _dummyTrajectories)
+        double minDistanceSq = double.MaxValue;
+        foreach (var body in _ephemeris!.Bodies)
         {
-            for (int i = 0; i < trajectory.Length; i++)
+            var bodyPos = _ephemeris.Position(body.Id, SimTime);
+            double distSq = (_ship.Position - bodyPos).LengthSquared;
+            if (distSq < minDistanceSq)
             {
-                (float x, float y) = _camera.WorldToScreen(trajectory[i]);
-                _scratch[i * 2] = x;
-                _scratch[i * 2 + 1] = y;
+                minDistanceSq = distSq;
+                _nearestBody = body;
+                _nearestBodyPosition = bodyPos;
             }
-
-            _renderer!.DrawPolyline(_scratch.AsSpan(0, trajectory.Length * 2), TrajectoryColor);
         }
+
+        if (_nearestBody is not null)
+        {
+            // Same numeric derivative as the ship's initial state — can't disagree with the ephemeris.
+            const double h = 1.0;
+            _nearestBodyVelocity = (_ephemeris.Position(_nearestBody.Id, SimTime + h)
+                                  - _ephemeris.Position(_nearestBody.Id, SimTime - h)) / (2 * h);
+        }
+    }
+
+    private void UpdateEffectiveWarp()
+    {
+        if (_nearestBody == null)
+        {
+            _effectiveWarp = Warp;
+            return;
+        }
+
+        // Absolute tiers with a body-radius floor so the Sun's huge radius still gets a sane
+        // (small) zone while planets use encounter-scale distances. Pure BodyRadius multiples
+        // don't work: ×5000 on the Sun caps warp across ~23 AU, i.e. the whole inner system.
+        double distance = (_ship.Position - _nearestBodyPosition).Length;
+        double encounterRadius = Math.Max(1e9, _nearestBody.BodyRadius * 30);   // ~3 lunar distances at Earth
+        double closeRadius = Math.Max(1e8, _nearestBody.BodyRadius * 6);
+        double grazingRadius = _nearestBody.BodyRadius * 3;
+
+        int cap = int.MaxValue;
+        if (distance < grazingRadius)
+        {
+            cap = 10;
+        }
+        else if (distance < closeRadius)
+        {
+            cap = 100;
+        }
+        else if (distance < encounterRadius)
+        {
+            cap = 1000;
+        }
+
+        _effectiveWarp = Math.Min(Warp, cap);
+    }
+
+    private void DrawShipTrajectory()
+    {
+        if (_shipTrajectory.Count < 2) return;
+
+        int requiredSize = _shipTrajectory.Count * 2;
+        if (_scratch.Length < requiredSize)
+        {
+            _scratch = new float[requiredSize];
+        }
+
+        for (int i = 0; i < _shipTrajectory.Count; i++)
+        {
+            (float x, float y) = _camera.WorldToScreen(_shipTrajectory[i]);
+            _scratch[i * 2] = x;
+            _scratch[i * 2 + 1] = y;
+        }
+
+        _renderer!.DrawPolyline(_scratch.AsSpan(0, _shipTrajectory.Count * 2), TrajectoryColor);
     }
 
     private void DrawCelestialBodies()
@@ -202,7 +342,10 @@
             RgbaColor color = BodyColor(body.Id);
 
             _renderer!.DrawCircle(sx, sy, radiusPx, color, color);
-            _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, LabelColor);
+            if (_camera.MetersPerPixel < body.BodyRadius * 500)
+            {
+                 _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, LabelColor);
+            }
         }
     }
 
@@ -212,49 +355,60 @@
         _renderer!.DrawCircle(sx, sy, 4f, ShipColor, ShipColor);
         _renderer!.DrawText(sx + 8, sy - 6, "Ship", ShipColor);
     }
-
-    /// <summary>
-    /// A dummy ship for the follow-toggle: a simple analytic circular orbit (no gravity
-    /// integration) between Earth and Mars. Good enough for M2 per the spec — Simulator-driven
-    /// ships arrive with the flight-plotting milestone.
-    /// </summary>
-    private static Vector2d DummyShipPosition(double simTime)
+    
+    private void OnKeyDown(KeyboardEventArgs e)
     {
-        const double radius = 1.9e11;
-        const double period = 4.6e7;
-        double angle = 1.2 + Math.Tau * simTime / period;
-        return new Vector2d(radius * Math.Cos(angle), radius * Math.Sin(angle));
-    }
+        bool pulse = false;
+        double factor = 1.0;
 
-    /// <summary>
-    /// 500 real multi-point polylines, generated once (deterministic — fixed seed) and redrawn
-    /// every frame: the M2 perf gate. Sine-wobbled rings scattered across the system's radial span.
-    /// </summary>
-    private static Vector2d[][] GenerateDummyTrajectories(int count, int pointsPerLine)
-    {
-        var rng = new Random(20260702);
-        var trajectories = new Vector2d[count][];
-
-        for (int t = 0; t < count; t++)
+        switch(e.Key)
         {
-            double baseRadius = 3e10 + rng.NextDouble() * 4.4e12;
-            double phase = rng.NextDouble() * Math.Tau;
-            double wobbleAmplitude = baseRadius * (0.01 + rng.NextDouble() * 0.05);
-            double wobbleFrequency = 3 + rng.NextDouble() * 9;
-
-            var points = new Vector2d[pointsPerLine];
-            for (int i = 0; i < pointsPerLine; i++)
-            {
-                double fraction = (double)i / (pointsPerLine - 1);
-                double angle = phase + fraction * Math.Tau;
-                double radius = baseRadius + wobbleAmplitude * Math.Sin(angle * wobbleFrequency);
-                points[i] = new Vector2d(radius * Math.Cos(angle), radius * Math.Sin(angle));
-            }
-
-            trajectories[t] = points;
+            case "+":
+            case "=":
+            case "ArrowUp":
+                factor = ManeuverPlan.AccelerateFactor;
+                pulse = true;
+                break;
+            case "-":
+            case "_":
+            case "ArrowDown":
+                factor = ManeuverPlan.DecelerateFactor;
+                pulse = true;
+                break;
         }
 
-        return trajectories;
+        if (pulse)
+        {
+            if (_reactionMassPulses <= 0)
+            {
+                ShowPulseMessage("Out of reaction mass");
+                return;
+            }
+            if (_ship.SimTime < _lastPulseSimTime + PulseCooldownSeconds)
+            {
+                ShowPulseMessage("Pulse drive cooling down…");
+                return;
+            }
+
+            _ship = _ship with { Velocity = _ship.Velocity * factor };
+            _reactionMassPulses--;
+            _lastPulseSimTime = _ship.SimTime;
+            ShowPulseMessage(factor > 1 ? "Pulse: accelerate +10%" : "Pulse: decelerate −10%");
+
+            ReprojectTrajectory();
+        }
+    }
+
+    private void ReprojectTrajectory()
+    {
+        _shipTrajectory = _projectionSimulator!.Project(_ship, null, TrajectoryHorizonSeconds);
+        _nextProjectionSimTime = _ship.SimTime + ProjectionRefreshSimSeconds;
+    }
+
+    private void ShowPulseMessage(string message)
+    {
+        _pulseMessage = message;
+        _pulseMessageExpiresMs = (_lastTimestampMs ?? 0) + 1500;
     }
 
     private static RgbaColor BodyColor(string id) => id switch
@@ -275,6 +429,16 @@
     {
         TimeSpan span = TimeSpan.FromSeconds(Math.Clamp(simTime, 0, TimeSpan.MaxValue.TotalSeconds - 1));
         return $"{(int)span.TotalDays}d {span.Hours:00}h {span.Minutes:00}m";
+    }
+    
+    private static string FormatDistance(double meters)
+    {
+        const double metersPerAu = 1.495978707e11;
+        if (meters >= metersPerAu / 10)
+            return $"{meters/metersPerAu:F2} AU";
+        if (meters >= 1e9)
+            return $"{meters/1e9:F2} M km";
+        return $"{meters/1000:F0} km";
     }
 
     private static string FormatZoom(double metersPerPixel)
