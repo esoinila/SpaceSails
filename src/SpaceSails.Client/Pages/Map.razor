@@ -33,8 +33,11 @@
             <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light") me-2" @onclick="ToggleFollow">
                 Follow Ship
             </button>
-            <button type="button" class="btn btn-sm @(PlotMode ? "btn-success" : "btn-outline-light")" @onclick="TogglePlotMode">
+            <button type="button" class="btn btn-sm @(PlotMode ? "btn-success" : "btn-outline-light") me-2" @onclick="TogglePlotMode">
                 @(PlotMode ? "Play" : "Plot")
+            </button>
+            <button type="button" class="btn btn-sm @(_showTraffic ? "btn-primary" : "btn-outline-light")" @onclick="ToggleTraffic">
+                Traffic
             </button>
         </div>
 
@@ -101,6 +104,54 @@
             </div>
         }
     </div>
+
+    @if (_showTraffic)
+    {
+        <div class="map-traffic">
+            <div class="card bg-dark bg-opacity-75 text-light">
+                <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold small">Traffic board</span>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleTraffic"></button>
+                </div>
+                <div class="card-body p-0 map-traffic-scroll">
+                    <table class="table table-sm table-dark table-hover align-middle mb-0 small">
+                        <thead>
+                            <tr>
+                                <th>Callsign</th>
+                                <th>Cargo</th>
+                                <th>Route</th>
+                                <th>Departs</th>
+                                <th>Last seen</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (NpcState npc in _npcStates)
+                            {
+                                <tr class="map-traffic-row @(npc.Ship.Id == _selectedTargetId ? "table-primary" : "")"
+                                    @onclick="() => SelectTarget(npc.Ship.Id)">
+                                    <td>@npc.Ship.Callsign</td>
+                                    <td>@npc.Ship.CargoClass</td>
+                                    <td>@RouteLabel(npc.Ship)</td>
+                                    <td>@FormatDeparture(npc.Ship.DepartureTime)</td>
+                                    <td>@(npc.LastObservation is { } o ? FormatSimTime(o.SimTime) : "—")</td>
+                                    <td>@StatusLabel(npc)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (SelectedTrackedTarget() is { } sel)
+                {
+                    <div class="card-footer py-1">
+                        <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light")" @onclick="TogglePin">
+                            Pin: brakes at @BodyName(sel.Ship.DestinationId)
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -123,6 +174,7 @@
     private CanvasRenderer? _renderer;
     private ICelestialEphemeris? _ephemeris;
     private Simulator? _simulator;
+    private Simulator? _npcSimulator;
     private ShipState _ship;
     private IReadOnlyList<TrajectorySample> _samples = [];
     private float[] _scratch = [];
@@ -171,6 +223,48 @@
 
     private double ScrubTime => _ship.SimTime + _scrubOffsetSeconds;
 
+    // M5 additions — traffic & prediction
+    private const double SensorSweepSimSeconds = 60;            // sensor cadence, sim seconds
+    private const double NpcDespawnRadius = 1e10;               // matches RoutePlanner.ArrivalToleranceMeters
+    private const double PredictionRefreshSimSeconds = 6 * 3600; // periodic cone re-solve
+    private const double TrackedWindowSimSeconds = 2 * 3600;    // "Tracked" if seen within this
+    private const double DaySeconds = 86400;
+    private const int ConeTargetPoints = 300;                   // stride the cone down to ~this many points
+    private const double ConeMaxHalfWidthMeters = 3e11;        // ~2 AU: stop drawing where prediction is meaningless
+
+    private static readonly RgbaColor NpcColor = new(200, 120, 255);
+    private static readonly RgbaColor NpcLastSeenColor = new(200, 120, 255, 90);
+    private static readonly RgbaColor ConeCenterColor = new(150, 150, 220, 140);
+    private static readonly RgbaColor ConeBoundaryColor = new(150, 150, 220, 80);
+
+    private NpcState[] _npcStates = [];
+    private bool _showTraffic;
+    private string? _selectedTargetId;
+    private bool _pinned;
+    private ManeuverPlan? _pinnedPlan;
+    private PredictedPath? _predictedPath;
+    private bool _predictionDirty;
+    private double _nextSweepSimTime;
+    private double _nextPredictionSimTime;
+
+    // Scratch buffers for the prediction cone polylines — reused each frame, no per-frame heap churn.
+    private float[] _coneCenter = [];
+    private float[] _coneUpper = [];
+    private float[] _coneLower = [];
+
+    // Live state of one NPC: its immutable schedule entry plus its evolving simulation state and
+    // observation history. Mirrors PlanNode's role — mutable client-side wrapper over Core records.
+    private sealed class NpcState
+    {
+        public required NpcShip Ship;
+        public ShipState State;
+        public bool Active;
+        public bool Arrived;
+        public bool CurrentlyObserved;   // seen in the most recent sweep
+        public Observation? LastObservation;
+        public int ObservationCount;
+    }
+
     // Editable client-side node. ManeuverNode is an immutable value type with no notion of
     // "stale"/"executed", so plotting mode tracks those flags here and rebuilds the immutable
     // ManeuverPlan from the non-stale nodes after every edit.
@@ -201,9 +295,17 @@
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
         _simulator = new Simulator(_ephemeris, timeStepSeconds: 1.0);
+        _npcSimulator = new Simulator(_ephemeris, TrafficSchedule.NpcTimeStep);
 
         _ship = InitializeShipState();
         ReprojectTrajectory();
+
+        // Generate traffic once from the same deterministic Core planner the server uses. This does a
+        // few seconds of planning work; yield first so the initial (empty) map paints and stays
+        // responsive, then build the NPC live-state wrappers.
+        await Task.Yield();
+        IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
+        _npcStates = traffic.Select(s => new NpcState { Ship = s }).ToArray();
 
         _scratch = new float[_samples.Count * 2 + 4];
 
@@ -288,6 +390,16 @@
             AccountForFiredNodes();
         }
 
+        StepNpcs();
+
+        if (_ship.SimTime >= _nextSweepSimTime)
+        {
+            SweepSensors();
+            _nextSweepSimTime = _ship.SimTime + SensorSweepSimSeconds;
+        }
+
+        UpdatePrediction();
+
         if (_ship.SimTime >= _nextProjectionSimTime)
         {
             ReprojectTrajectory();
@@ -307,6 +419,7 @@
         _renderer.BeginFrame(_viewportWidth, _viewportHeight, Background);
 
         DrawShipTrajectory();
+        DrawPredictionCone();
         if (PlotMode)
         {
             DrawGhostBodies();
@@ -317,6 +430,7 @@
         {
             DrawGhostShip();
         }
+        DrawNpcs();
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -764,6 +878,297 @@
             ShowPulseMessage($"Plan: {firedPulses} pulse{(firedPulses == 1 ? "" : "s")} fired");
         }
     }
+
+    // ---- M5: traffic, sensors, prediction ----
+
+    // Keep every active NPC in lockstep with the player: after the player's stepping loop, catch
+    // each NPC up to the player's SimTime. NPCs use Core's fixed NpcTimeStep (60 s), not the
+    // player's dt=1 s — 8 NPCs × 10000 fine steps per frame at max warp brought interpreted WASM
+    // to ~1 fps, and NPC accuracy needs are meters-scale at dt=60. The ≤59 s overshoot past the
+    // player's SimTime is subpixel at map zoom. Also heals a mid-frame activation (the ship
+    // starts from InitialState and immediately catches up).
+    private void StepNpcs()
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Arrived)
+            {
+                continue;
+            }
+
+            if (!npc.Active)
+            {
+                if (_ship.SimTime < npc.Ship.ActivationTime)
+                {
+                    continue;
+                }
+
+                npc.Active = true;
+                npc.State = npc.Ship.InitialState;
+            }
+
+            while (npc.State.SimTime < _ship.SimTime)
+            {
+                npc.State = _npcSimulator!.Step(npc.State, npc.Ship.Plan);
+            }
+
+            // Despawn: past its last planned node and parked within tolerance of the destination body.
+            IReadOnlyList<ManeuverNode> nodes = npc.Ship.Plan.Nodes;
+            double lastNodeTime = nodes.Count > 0 ? nodes[^1].SimTime : npc.Ship.ActivationTime;
+            if (npc.State.SimTime >= lastNodeTime)
+            {
+                Vector2d destination = _ephemeris!.Position(npc.Ship.DestinationId, npc.State.SimTime);
+                if ((npc.State.Position - destination).Length <= NpcDespawnRadius)
+                {
+                    npc.Arrived = true;
+                }
+            }
+        }
+    }
+
+    // Sensor sweep: honor-system client-side filtering (server enforces it from M9). Each active,
+    // non-arrived NPC is either currently visible or falls back to its dim last-seen marker.
+    private void SweepSensors()
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            npc.CurrentlyObserved = false;
+            if (!npc.Active || npc.Arrived)
+            {
+                continue;
+            }
+
+            if (SensorModel.Default.TryObserve(_ship.Position, npc.Ship.Id, npc.State, _ship.SimTime, out Observation obs))
+            {
+                npc.LastObservation = obs;
+                npc.ObservationCount++;
+                npc.CurrentlyObserved = true;
+                if (npc.Ship.Id == _selectedTargetId)
+                {
+                    // A fresh contact resets Δt — the cone snaps tight ("tightens as you shadow").
+                    _predictionDirty = true;
+                }
+            }
+        }
+    }
+
+    // Re-solve the prediction cone for the selected target on a fresh observation, a pin change, or
+    // the periodic refresh. Cheap between solves — the cached path is redrawn each frame.
+    private void UpdatePrediction()
+    {
+        NpcState? npc = _selectedTargetId is null ? null : FindNpc(_selectedTargetId);
+        if (npc?.LastObservation is not { } obs)
+        {
+            _predictedPath = null;
+            _pinnedPlan = null;
+            return;
+        }
+
+        if (_ship.SimTime >= _nextPredictionSimTime)
+        {
+            _predictionDirty = true;
+        }
+
+        if (!_predictionDirty && _predictedPath is not null)
+        {
+            return;
+        }
+
+        _pinnedPlan = _pinned ? BuildPinnedPlan(npc, obs) : null;
+        _predictedPath = PathPredictor.Predict(_ephemeris!, obs, _pinnedPlan, PlotHorizonSeconds);
+        _nextPredictionSimTime = _ship.SimTime + PredictionRefreshSimSeconds;
+        _predictionDirty = false;
+    }
+
+    private ManeuverPlan BuildPinnedPlan(NpcState npc, Observation obs)
+    {
+        double horizon = Math.Max(60 * DaySeconds, npc.Ship.EstimatedArrivalTime - obs.SimTime + 30 * DaySeconds);
+        return PathPredictor.BrakeAtHypothesis(_ephemeris!, obs, npc.Ship.DestinationId, horizon);
+    }
+
+    // NPC markers: solid dot + callsign only while currently observed; otherwise a dim hollow marker
+    // at the last known position for any ship ever seen.
+    private void DrawNpcs()
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Arrived)
+            {
+                continue;
+            }
+
+            if (npc.Active && npc.CurrentlyObserved)
+            {
+                (float sx, float sy) = _camera.WorldToScreen(npc.State.Position);
+                _renderer!.DrawCircle(sx, sy, 4f, NpcColor, NpcColor);
+                _renderer!.DrawText(sx + 8, sy - 6, npc.Ship.Callsign, NpcColor);
+            }
+            else if (npc.LastObservation is { } obs)
+            {
+                (float sx, float sy) = _camera.WorldToScreen(obs.Position);
+                _renderer!.DrawCircle(sx, sy, 4f, null, NpcLastSeenColor);
+            }
+        }
+    }
+
+    // The prediction cone: center line plus two boundaries offset ±HalfWidthAt(t) perpendicular to the
+    // local path direction. Drawn from the current sim time forward so the near end visibly widens
+    // while the target is unobserved (Δt grows) and snaps tight on the next contact.
+    private void DrawPredictionCone()
+    {
+        PredictedPath? path = _predictedPath;
+        if (path is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<TrajectorySample> s = path.Samples;
+        if (s.Count < 2)
+        {
+            return;
+        }
+
+        int start = 0;
+        while (start < s.Count - 1 && s[start].SimTime < _ship.SimTime)
+        {
+            start++;
+        }
+
+        int remaining = s.Count - start;
+        if (remaining < 2)
+        {
+            return;
+        }
+
+        int stride = Math.Max(1, remaining / ConeTargetPoints);
+        int maxPoints = remaining / stride + 2;
+        int maxFloats = maxPoints * 2;
+        if (_coneCenter.Length < maxFloats)
+        {
+            _coneCenter = new float[maxFloats];
+            _coneUpper = new float[maxFloats];
+            _coneLower = new float[maxFloats];
+        }
+
+        int w = 0;
+        void Emit(int i)
+        {
+            TrajectorySample sample = s[i];
+            int prev = Math.Max(0, i - stride);
+            int next = Math.Min(s.Count - 1, i + stride);
+            Vector2d dir = (s[next].Position - s[prev].Position).Normalized();
+            Vector2d perp = new(-dir.Y, dir.X);
+            double halfWidth = path.HalfWidthAt(sample.SimTime);
+
+            (float cx, float cy) = _camera.WorldToScreen(sample.Position);
+            (float ux, float uy) = _camera.WorldToScreen(sample.Position + perp * halfWidth);
+            (float lx, float ly) = _camera.WorldToScreen(sample.Position - perp * halfWidth);
+            _coneCenter[w] = cx; _coneUpper[w] = ux; _coneLower[w] = lx;
+            _coneCenter[w + 1] = cy; _coneUpper[w + 1] = uy; _coneLower[w + 1] = ly;
+            w += 2;
+        }
+
+        int last = start;
+        for (int i = start; i < s.Count; i += stride)
+        {
+            // Beyond ~2 AU of uncertainty the cone means "could be anywhere" — drawing it just
+            // fans giant lines across the map. Truncate the whole track there.
+            if (path.HalfWidthAt(s[i].SimTime) > ConeMaxHalfWidthMeters)
+            {
+                break;
+            }
+
+            Emit(i);
+            last = i;
+        }
+        if (last != s.Count - 1 && path.HalfWidthAt(s[^1].SimTime) <= ConeMaxHalfWidthMeters)
+        {
+            Emit(s.Count - 1);
+        }
+
+        if (w < 4)
+        {
+            return;
+        }
+
+        _renderer!.DrawPolyline(_coneUpper.AsSpan(0, w), ConeBoundaryColor);
+        _renderer!.DrawPolyline(_coneLower.AsSpan(0, w), ConeBoundaryColor);
+        _renderer!.DrawPolyline(_coneCenter.AsSpan(0, w), ConeCenterColor);
+    }
+
+    private NpcState? FindNpc(string id)
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == id)
+            {
+                return npc;
+            }
+        }
+
+        return null;
+    }
+
+    private void ToggleTraffic() => _showTraffic = !_showTraffic;
+
+    private void SelectTarget(string id)
+    {
+        _selectedTargetId = _selectedTargetId == id ? null : id;
+        _pinned = false;
+        _pinnedPlan = null;
+        _predictedPath = null;
+        _predictionDirty = true;
+    }
+
+    private void TogglePin()
+    {
+        _pinned = !_pinned;
+        _predictionDirty = true;
+    }
+
+    // The selected target, but only when it carries an observation (the pin toggle needs one).
+    private NpcState? SelectedTrackedTarget()
+    {
+        NpcState? npc = _selectedTargetId is null ? null : FindNpc(_selectedTargetId);
+        return npc?.LastObservation is not null ? npc : null;
+    }
+
+    private string StatusLabel(NpcState npc)
+    {
+        if (npc.Arrived)
+        {
+            return "Arrived";
+        }
+        if (!npc.Active)
+        {
+            return "Scheduled";
+        }
+        if (npc.LastObservation is not { } obs)
+        {
+            return "En route";
+        }
+
+        return _ship.SimTime - obs.SimTime <= TrackedWindowSimSeconds ? "Tracked" : "Lost";
+    }
+
+    private string RouteLabel(NpcShip ship) => $"{BodyName(ship.OriginId)}→{BodyName(ship.DestinationId)}";
+
+    private string BodyName(string id)
+    {
+        foreach (CelestialBody body in _ephemeris!.Bodies)
+        {
+            if (body.Id == id)
+            {
+                return body.Name;
+            }
+        }
+
+        return id;
+    }
+
+    // Departures board: mid-flight ships carry a virtual past departure — show it as history ("-42d").
+    private static string FormatDeparture(double simTime) =>
+        simTime < 0 ? $"-{(int)TimeSpan.FromSeconds(-simTime).TotalDays}d" : FormatSimTime(simTime);
 
     private static RgbaColor BodyColor(string id) => id switch
     {
