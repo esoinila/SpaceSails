@@ -32,7 +32,7 @@ function reportSize(entry, canvasId) {
     ensureExports().then((rendererInterop) => rendererInterop.OnResize(rect.width, rect.height));
 }
 
-export function initCanvas(canvasId) {
+export function initCanvas(canvasId, observeResize) {
     const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById(canvasId));
     if (!canvas) {
         throw new Error(`renderer.js: no canvas element with id "${canvasId}"`);
@@ -42,9 +42,13 @@ export function initCanvas(canvasId) {
     const entry = { canvas, ctx, rafId: null, running: false };
     canvases.set(canvasId, entry);
 
-    const observer = new ResizeObserver(() => reportSize(entry, canvasId));
-    observer.observe(canvas);
-    reportSize(entry, canvasId);
+    // Secondary canvases (the scope inset) must NOT report their size: OnResize feeds the
+    // main map viewport, and a 280px inset would shrink the whole world.
+    if (observeResize) {
+        const observer = new ResizeObserver(() => reportSize(entry, canvasId));
+        observer.observe(canvas);
+        reportSize(entry, canvasId);
+    }
 }
 
 export function drawFrame(canvasId, buffer, length) {

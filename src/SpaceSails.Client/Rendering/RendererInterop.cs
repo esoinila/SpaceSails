@@ -33,7 +33,7 @@ internal static partial class RendererInterop
         _moduleLoadTask ??= JSHost.ImportAsync(ModuleName, "../renderer.js");
 
     [JSImport("initCanvas", ModuleName)]
-    internal static partial void InitCanvas(string canvasId);
+    internal static partial void InitCanvas(string canvasId, bool observeResize);
 
     [JSImport("startLoop", ModuleName)]
     internal static partial void StartLoop(string canvasId);
