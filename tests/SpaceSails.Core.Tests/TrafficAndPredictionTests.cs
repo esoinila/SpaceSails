@@ -176,4 +176,37 @@ public class TrafficAndPredictionTests
         Assert.InRange(when / Day, 200, 400);
         Assert.Equal(730 * Day, sail[^1].SimTime); // the horizon truly covers the voyage
     }
+
+    [Fact]
+    public void ClosestApproach_FlagsAVenusThreading()
+    {
+        // A ship placed on a line that passes 1000 km over Venus's cloud tops: the planner
+        // must call Venus the most severe pass, and a path through the planet must say Impact.
+        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var samples = new List<TrajectorySample>();
+        for (int i = 0; i <= 100; i++)
+        {
+            double t = i * 1000.0;
+            // Co-moving flyby: constant 1000 km of clearance sideways, sweeping past along-track.
+            Vector2d offset = new(6.0518e6 + 1e6, (t - 50000) * 30);
+            samples.Add(new TrajectorySample(t, ephemeris.Position("venus", t) + offset));
+        }
+
+        ClosestApproach.Pass? pass = ClosestApproach.MostSevere(samples, ephemeris);
+
+        Assert.NotNull(pass);
+        Assert.Equal("venus", pass.Value.BodyId);
+        Assert.False(pass.Value.Impact);
+        Assert.True(pass.Value.Severity is > 1.0 and < 2.0, $"severity {pass.Value.Severity}");
+
+        // Now thread the planet itself.
+        for (int i = 0; i < samples.Count; i++)
+        {
+            double t = i * 1000.0;
+            samples[i] = new TrajectorySample(t, ephemeris.Position("venus", t) + new Vector2d(0, (t - 50000) * 30));
+        }
+
+        ClosestApproach.Pass? impact = ClosestApproach.MostSevere(samples, ephemeris);
+        Assert.True(impact!.Value.Impact, "a path through Venus must be flagged as an impact");
+    }
 }

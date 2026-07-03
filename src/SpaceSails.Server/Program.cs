@@ -57,6 +57,47 @@ app.MapHub<GameHub>("/hubs/game");
 
 app.MapFallbackToFile("index.html");
 
-app.Run();
+// Pre-flight berth check: catching AddressInUseException later still lets the hosting
+// logger dump a stack trace first. Probing the port up front keeps the failure to one
+// friendly paragraph (owner request, M18: "something non-exceptiony").
+string urls = app.Configuration["urls"] ?? Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "";
+foreach (string url in urls.Split(';', StringSplitOptions.RemoveEmptyEntries))
+{
+    if (Uri.TryCreate(url.Replace("+", "localhost").Replace("*", "localhost"), UriKind.Absolute, out Uri? uri))
+    {
+        try
+        {
+            var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, uri.Port);
+            probe.Start();
+            probe.Stop();
+        }
+        catch (System.Net.Sockets.SocketException)
+        {
+            PrintPortTaken(uri.Port);
+            Environment.Exit(1);
+        }
+    }
+}
+
+try
+{
+    app.Run();
+}
+catch (IOException ex) when (ex.InnerException is Microsoft.AspNetCore.Connections.AddressInUseException)
+{
+    PrintPortTaken(0); // backstop for binds the pre-flight probe could not model
+    Environment.Exit(1);
+}
+
+static void PrintPortTaken(int port)
+{
+    string berth = port > 0 ? $"Port {port} is" : "The port is";
+    Console.Error.WriteLine();
+    Console.Error.WriteLine($"  ⚓ {berth} already taken — another SpaceSails (or something else) is moored there.");
+    Console.Error.WriteLine("     Either play in the browser tab that instance is serving, stop it, or run on");
+    Console.Error.WriteLine($"     a different berth:  dotnet run --project src/SpaceSails.Server --urls http://localhost:{(port > 0 ? port + 1 : 5296)}");
+    Console.Error.WriteLine("     (Tip: ./run.ps1 finds a free port for you.)");
+    Console.Error.WriteLine();
+}
 
 public partial class Program;
