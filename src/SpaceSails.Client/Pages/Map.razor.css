@@ -132,3 +132,14 @@
     min-width: 3.2rem;
     text-align: right;
 }
+
+.map-plot-fine {
+    min-width: 3rem;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.map-plot-node-selected {
+    outline: 1px solid rgba(150, 220, 255, 0.7);
+    border-radius: 0.25rem;
+}

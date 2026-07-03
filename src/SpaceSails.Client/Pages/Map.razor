@@ -161,7 +161,7 @@
                     <div class="map-plot-nodes">
                         @foreach (PlanNode node in _planNodes)
                         {
-                            <div class="d-flex align-items-center gap-1 mb-1 @(node.Stale ? "text-decoration-line-through text-secondary" : "")">
+                            <div class="d-flex align-items-center gap-1 mb-1 @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
                                 <span class="flex-grow-1">@FormatSimTime(node.SimTime)</span>
                                 <div class="btn-group btn-group-sm" role="group" aria-label="Burn direction">
                                     <button type="button"
@@ -175,6 +175,9 @@
                                 <input type="number" class="form-control form-control-sm map-plot-pulses"
                                        min="1" max="@MaxNodePulses" value="@node.Pulses"
                                        @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
+                                <button type="button" class="btn btn-sm @(node.Fine ? "btn-info" : "btn-outline-secondary") map-plot-fine"
+                                        title="Toggle fine pulses (±1% instead of ±10%)"
+                                        @onclick="() => ToggleFine(node)">@(node.Fine ? "1%" : "10%")</button>
                                 <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
                                         @onclick="() => RetimeToScrub(node)">@@</button>
                                 <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
@@ -607,6 +610,7 @@
         public double SimTime;
         public ManeuverAction Action;
         public int Pulses = 1;
+        public bool Fine;                // ±1% trims instead of ±10% hammers
         public bool Stale;
         public bool Executed;
     }
@@ -1567,7 +1571,16 @@
             RgbaColor color = node.Stale
                 ? StaleNodeColor
                 : node.Action == ManeuverAction.Accelerate ? AccelNodeColor : DecelNodeColor;
-            _renderer!.DrawCircle(sx, sy, 5f, color, color);
+            bool selected = ReferenceEquals(node, _selectedPlanNode);
+            _renderer!.DrawCircle(sx, sy, selected ? 6.5f : 5f, color, color);
+            if (selected)
+            {
+                _renderer!.DrawCircle(sx, sy, 10f, null, new RgbaColor(255, 255, 255, 160), 1.5f);
+            }
+            if (node.Fine)
+            {
+                _renderer!.DrawText(sx, sy - 12, "1%", new RgbaColor(150, 220, 255, 200), "9px monospace", TextAlign.Center);
+            }
         }
     }
 
@@ -1827,7 +1840,7 @@
     {
         _plan = new ManeuverPlan(
             _planNodes.Where(n => !n.Stale)
-                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses)));
+                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses, n.Fine)));
 
         if (_mp)
         {
@@ -1835,7 +1848,7 @@
             // caps node/pulse counts, so we send the same non-stale set the local projection uses.
             PlanNodeDto[] nodes = _planNodes
                 .Where(n => !n.Stale)
-                .Select(n => new PlanNodeDto(n.SimTime, n.Action == ManeuverAction.Accelerate, n.Pulses))
+                .Select(n => new PlanNodeDto(n.SimTime, n.Action == ManeuverAction.Accelerate, n.Pulses, n.Fine))
                 .ToArray();
             SendCommand(c => c.SendAsync("SetPlan", nodes));
         }
@@ -1953,6 +1966,54 @@
         SortNodes();
         RebuildPlan();
         ReprojectTrajectory();
+    }
+
+    private void ToggleFine(PlanNode node)
+    {
+        node.Fine = !node.Fine;
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    private PlanNode? _selectedPlanNode;
+
+    // Click a thrust node on the ribbon to select it: highlights its row and jumps the scrub
+    // to its time (owner request, M16). Returns true when a node was hit.
+    private bool TrySelectNodeAt(double clientX, double clientY)
+    {
+        if (!PlotMode || _planNodes.Count == 0 || _samples.Count == 0)
+        {
+            return false;
+        }
+
+        const double hitRadiusPx = 14;
+        PlanNode? best = null;
+        double bestSq = hitRadiusPx * hitRadiusPx;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (node.Executed)
+            {
+                continue;
+            }
+
+            (float nx, float ny) = _camera.WorldToScreen(SamplePositionAt(node.SimTime));
+            double dx = clientX - nx, dy = clientY - ny;
+            double d = dx * dx + dy * dy;
+            if (d < bestSq)
+            {
+                bestSq = d;
+                best = node;
+            }
+        }
+
+        if (best is null)
+        {
+            return false;
+        }
+
+        _selectedPlanNode = best;
+        _scrubOffsetSeconds = Math.Max(0, best.SimTime - _ship.SimTime);
+        return true;
     }
 
     private void DeleteNode(PlanNode node)
@@ -2620,6 +2681,11 @@
 
     private void OnPointerDown(PointerEventArgs e)
     {
+        if (TrySelectNodeAt(e.OffsetX, e.OffsetY))
+        {
+            return; // clicked a thrust node: select it, don't start a drag
+        }
+
         _dragging = true;
         _lastPointerX = e.ClientX;
         _lastPointerY = e.ClientY;

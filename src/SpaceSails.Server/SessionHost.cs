@@ -161,7 +161,8 @@ public sealed class SessionHost : BackgroundService
                 .Select(n => new ManeuverNode(
                     n.SimTime,
                     n.Accelerate ? ManeuverAction.Accelerate : ManeuverAction.Decelerate,
-                    Math.Clamp(n.Pulses, 1, 20))));
+                    Math.Clamp(n.Pulses, 1, 20),
+                    n.Fine)));
             ship.PlanMassAccountedThrough = _simTime;
         }
     }
