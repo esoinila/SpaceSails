@@ -20,7 +20,10 @@ public sealed record NpcShip(
     double EstimatedArrivalTime,
     int CargoUnits,
     double ManeuverBudget,
-    bool IsPod)
+    bool IsPod,
+    string? DepotBodyId = null,
+    double DepotOrbitRadius = 0,
+    double DepotPhase = 0)
 {
     /// <summary>Equivalent acceleration a pilot could plausibly hide between observations.
     /// Feeds the prediction cone; a mass-driver pod has no engine at all.</summary>
@@ -115,6 +118,76 @@ public static class TrafficSchedule
     /// plan is empty — no engine, no future maneuvers, <c>ManeuverBudget = 0</c>: a pod's
     /// prediction cone never opens. The tutorial prey and the pirate's milk run.
     /// </summary>
+    /// <summary>
+    /// One plunderable cargo depot in orbit around every planet (M22, owner: "surely there is
+    /// something to steal on every planet orbit"). Depots ride RAILS — their state is a pure
+    /// function of sim time (planet position + circular offset), costing nothing to step and
+    /// never drifting. Cargo flavor follows the worldbuilding: compute cores at Mercury, He3
+    /// in the outer system.
+    /// </summary>
+    public static IReadOnlyList<NpcShip> GenerateDepots(ICelestialEphemeris ephemeris, ulong seed)
+    {
+        var rng = new DeterministicRandom(seed);
+        var depots = new List<NpcShip>();
+        int n = 0;
+        foreach (CelestialBody body in ephemeris.Bodies)
+        {
+            if (body.ParentId != "sun")
+            {
+                continue; // planets only: moons share their planet's depot
+            }
+
+            CelestialBody sun = ephemeris.Bodies.First(b => b.ParentId is null);
+            double hill = body.OrbitRadius * Math.Pow(body.Mu / (3 * sun.Mu), 1.0 / 3.0);
+            double radius = Math.Max(body.BodyRadius * 8, hill * 0.25);
+            double phase = rng.NextDouble() * Math.PI * 2;
+            string cargo = body.Id switch
+            {
+                "mercury" => "Compute cores",
+                "venus" => "Alloys",
+                "earth" => "Machinery",
+                "mars" => "Ice",
+                _ => "He3",
+            };
+
+            depots.Add(new NpcShip(
+                Id: $"depot-{body.Id}",
+                Callsign: $"{body.Name} Depot",
+                CargoClass: cargo,
+                OriginId: body.Id,
+                DestinationId: body.Id,
+                Personality: RoutePersonality.Economical,
+                DepartureTime: 0,
+                ActivationTime: 0,
+                InitialState: DepotState($"depot-{body.Id}", body.Id, radius, phase, ephemeris, 0),
+                Plan: new ManeuverPlan([]),
+                EstimatedArrivalTime: double.MaxValue,
+                CargoUnits: 4,
+                ManeuverBudget: 0,
+                IsPod: false,
+                DepotBodyId: body.Id,
+                DepotOrbitRadius: radius,
+                DepotPhase: phase));
+            n++;
+        }
+
+        return depots;
+    }
+
+    /// <summary>Rails state of a depot at a given time: planet position plus circular orbit.</summary>
+    public static ShipState DepotState(string id, string bodyId, double radius, double phase, ICelestialEphemeris ephemeris, double simTime)
+    {
+        CelestialBody body = ephemeris.Bodies.First(b => b.Id == bodyId);
+        double angularRate = Math.Sqrt(body.Mu / (radius * radius * radius));
+        double angle = phase + angularRate * simTime;
+        Vector2d center = ephemeris.Position(bodyId, simTime);
+        double h = 1.0;
+        Vector2d centerVel = (ephemeris.Position(bodyId, simTime + h) - ephemeris.Position(bodyId, simTime - h)) / (2 * h);
+        var offset = new Vector2d(Math.Cos(angle), Math.Sin(angle)) * radius;
+        var tangent = new Vector2d(-Math.Sin(angle), Math.Cos(angle)) * (angularRate * radius);
+        return new ShipState(center + offset, centerVel + tangent, simTime);
+    }
+
     public static IReadOnlyList<NpcShip> GeneratePods(ICelestialEphemeris ephemeris, ulong seed, int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);

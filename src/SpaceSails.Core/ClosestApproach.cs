@@ -27,12 +27,31 @@ public static class ClosestApproach
         ICelestialEphemeris ephemeris,
         int maxEvaluationsPerBody = 400)
     {
-        if (samples.Count < 2)
+        Pass? best = null;
+        foreach (Pass pass in Passes(samples, ephemeris, maxEvaluationsPerBody))
         {
-            return null;
+            if (best is null || pass.Severity < best.Value.Severity)
+            {
+                best = pass;
+            }
         }
 
-        Pass? best = null;
+        return best;
+    }
+
+    /// <summary>The closest pass for every body along the path (M22: the arm-insertion button
+    /// wants the tightest PLANET pass even when the fat sun is the most severe overall).</summary>
+    public static IReadOnlyList<Pass> Passes(
+        IReadOnlyList<TrajectorySample> samples,
+        ICelestialEphemeris ephemeris,
+        int maxEvaluationsPerBody = 400)
+    {
+        if (samples.Count < 2)
+        {
+            return [];
+        }
+
+        var passes = new List<Pass>();
         int stride = Math.Max(1, samples.Count / maxEvaluationsPerBody);
         foreach (CelestialBody body in ephemeris.Bodies)
         {
@@ -61,14 +80,10 @@ public static class ClosestApproach
             }
 
             (double dist, double t, Vector2d pos) = RefineBetweenSamples(samples, min, body.Id, ephemeris, minDist);
-
-            if (best is null || dist / body.BodyRadius < best.Value.Severity)
-            {
-                best = new Pass(body.Id, body.Name, body.BodyRadius, dist, t, pos);
-            }
+            passes.Add(new Pass(body.Id, body.Name, body.BodyRadius, dist, t, pos));
         }
 
-        return best;
+        return passes;
     }
 
     private static double Distance(TrajectorySample sample, string bodyId, ICelestialEphemeris ephemeris) =>
