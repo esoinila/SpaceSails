@@ -30,8 +30,11 @@
             <button type="button" class="btn btn-sm @(Paused ? "btn-warning" : "btn-outline-light") me-2" @onclick="TogglePause">
                 @(Paused ? "Resume" : "Pause")
             </button>
-            <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light")" @onclick="ToggleFollow">
+            <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light") me-2" @onclick="ToggleFollow">
                 Follow Ship
+            </button>
+            <button type="button" class="btn btn-sm @(PlotMode ? "btn-success" : "btn-outline-light")" @onclick="TogglePlotMode">
+                @(PlotMode ? "Play" : "Plot")
             </button>
         </div>
 
@@ -48,6 +51,55 @@
                 <div class="text-warning">@_pulseMessage</div>
             }
         </div>
+
+        @if (PlotMode)
+        {
+            <div class="map-plot bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
+                <div class="fw-bold mb-1">Plotting</div>
+                <div class="mb-1">Scrub: @FormatSimTime(ScrubTime)</div>
+                @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
+                <input type="range" class="form-range" min="0" max="@PlotHorizonSeconds" step="3600"
+                       @bind="_scrubOffsetSeconds" @bind:event="oninput" @onkeydown:stopPropagation="true" />
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
+                        Add burn at scrub
+                    </button>
+                    <span>Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
+                </div>
+
+                @if (_planNodes.Count == 0)
+                {
+                    <div class="text-secondary">No maneuver nodes. Scrub to a future time and add a burn.</div>
+                }
+                else
+                {
+                    <div class="map-plot-nodes">
+                        @foreach (PlanNode node in _planNodes)
+                        {
+                            <div class="d-flex align-items-center gap-1 mb-1 @(node.Stale ? "text-decoration-line-through text-secondary" : "")">
+                                <span class="flex-grow-1">@FormatSimTime(node.SimTime)</span>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Burn direction">
+                                    <button type="button"
+                                            class="btn @(node.Action == ManeuverAction.Accelerate ? "btn-success" : "btn-outline-secondary")"
+                                            @onclick="() => SetAction(node, ManeuverAction.Accelerate)">+</button>
+                                    <button type="button"
+                                            class="btn @(node.Action == ManeuverAction.Decelerate ? "btn-warning" : "btn-outline-secondary")"
+                                            @onclick="() => SetAction(node, ManeuverAction.Decelerate)">&minus;</button>
+                                </div>
+                                @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
+                                <input type="number" class="form-control form-control-sm map-plot-pulses"
+                                       min="1" max="@MaxNodePulses" value="@node.Pulses"
+                                       @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
+                                <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
+                                        @onclick="() => RetimeToScrub(node)">@@</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
+                                        @onclick="() => DeleteNode(node)">&times;</button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
     </div>
 </div>
 
@@ -61,14 +113,18 @@
     private static readonly RgbaColor ShipColor = new(255, 210, 80);
     private static readonly RgbaColor TrajectoryColor = new(255, 165, 0);
     private static readonly RgbaColor LabelColor = new(224, 228, 236);
+    private static readonly RgbaColor GhostShipColor = new(255, 210, 80, 120);
+    private static readonly RgbaColor AccelNodeColor = new(80, 220, 120);
+    private static readonly RgbaColor DecelNodeColor = new(240, 120, 80);
+    private static readonly RgbaColor StaleNodeColor = new(140, 140, 140, 128);
+    private const byte GhostBodyAlpha = 90; // ~35% of 255
 
     private readonly Camera _camera = new();
     private CanvasRenderer? _renderer;
     private ICelestialEphemeris? _ephemeris;
     private Simulator? _simulator;
-    private Simulator? _projectionSimulator;
     private ShipState _ship;
-    private IReadOnlyList<Vector2d> _shipTrajectory = [];
+    private IReadOnlyList<TrajectorySample> _samples = [];
     private float[] _scratch = [];
     private bool _started;
 
@@ -92,18 +148,40 @@
     private double _lastPulseSimTime = -PulseCooldownSeconds; // so the very first pulse isn't rejected
     private int _reactionMassPulses = 250;
     private const double PulseCooldownSeconds = 1.0;
-    private const double TrajectoryHorizonSeconds = 30 * 24 * 3600; // 30 days
     // Gravity bends the real path away from a ribbon projected in the past, so re-project after
-    // this much sim time even without a pulse (≈2 real seconds at max warp — cheap: ~720 steps).
+    // this much sim time even without a pulse (≈2 real seconds at max warp).
     private const double ProjectionRefreshSimSeconds = 6 * 3600;
     private double _nextProjectionSimTime;
     private string? _pulseMessage;
     private double _pulseMessageExpiresMs;
-    // The ribbon is a visual guide, so it is projected with a much coarser timestep than the live sim
-    // (plan §5: "coarsen dt for projection, never for live sim"). 30 days at the live dt=1 s would be
-    // ~2.6M integrator steps per re-projection — seconds of hitch on every pulse; at dt=1 h it is ~720.
-    private const double ProjectionTimeStepSeconds = 3600;
     private const int MaxStepsPerFrame = 20000;
+
+    // M4 additions — plotting mode
+    // The ribbon/projection horizon. 60 days from "now"; ProjectAdaptive keeps this cheap
+    // (coarse dt in deep space, fine near a mass) and is the single source of truth for the
+    // ribbon polyline, the scrub ghost-ship, and node markers.
+    private const double PlotHorizonSeconds = 60 * 24 * 3600; // 60 days
+    private const int MaxNodePulses = 20;
+    private const int MinNodePulses = 1;
+    private bool PlotMode;
+    private int _warpBeforePlot = 1;
+    private double _scrubOffsetSeconds;
+    private readonly List<PlanNode> _planNodes = [];
+    private ManeuverPlan _plan = ManeuverPlan.Empty;
+
+    private double ScrubTime => _ship.SimTime + _scrubOffsetSeconds;
+
+    // Editable client-side node. ManeuverNode is an immutable value type with no notion of
+    // "stale"/"executed", so plotting mode tracks those flags here and rebuilds the immutable
+    // ManeuverPlan from the non-stale nodes after every edit.
+    private sealed class PlanNode
+    {
+        public double SimTime;
+        public ManeuverAction Action;
+        public int Pulses = 1;
+        public bool Stale;
+        public bool Executed;
+    }
 
     private CelestialBody? _nearestBody;
     private Vector2d _nearestBodyPosition;
@@ -123,12 +201,11 @@
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
         _simulator = new Simulator(_ephemeris, timeStepSeconds: 1.0);
-        _projectionSimulator = new Simulator(_ephemeris, ProjectionTimeStepSeconds);
 
         _ship = InitializeShipState();
         ReprojectTrajectory();
 
-        _scratch = new float[_shipTrajectory.Count * 2 + 4];
+        _scratch = new float[_samples.Count * 2 + 4];
 
         _camera.MetersPerPixel = 3e8;
         _camera.CenterOn(_ship.Position);
@@ -200,11 +277,16 @@
                 _simAccumulator = 0;
                 break;
             }
-            _ship = _simulator.Step(_ship, plan: null);
+            _ship = _simulator.Step(_ship, _plan);
             _simAccumulator -= _simulator.TimeStep;
             stepsThisFrame++;
         }
         SimTime = _ship.SimTime;
+
+        if (stepsThisFrame > 0)
+        {
+            AccountForFiredNodes();
+        }
 
         if (_ship.SimTime >= _nextProjectionSimTime)
         {
@@ -225,7 +307,16 @@
         _renderer.BeginFrame(_viewportWidth, _viewportHeight, Background);
 
         DrawShipTrajectory();
+        if (PlotMode)
+        {
+            DrawGhostBodies();
+        }
         DrawCelestialBodies();
+        DrawNodeMarkers();
+        if (PlotMode)
+        {
+            DrawGhostShip();
+        }
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -296,22 +387,86 @@
 
     private void DrawShipTrajectory()
     {
-        if (_shipTrajectory.Count < 2) return;
+        if (_samples.Count < 2) return;
 
-        int requiredSize = _shipTrajectory.Count * 2;
+        int requiredSize = _samples.Count * 2;
         if (_scratch.Length < requiredSize)
         {
             _scratch = new float[requiredSize];
         }
 
-        for (int i = 0; i < _shipTrajectory.Count; i++)
+        for (int i = 0; i < _samples.Count; i++)
         {
-            (float x, float y) = _camera.WorldToScreen(_shipTrajectory[i]);
+            (float x, float y) = _camera.WorldToScreen(_samples[i].Position);
             _scratch[i * 2] = x;
             _scratch[i * 2 + 1] = y;
         }
 
-        _renderer!.DrawPolyline(_scratch.AsSpan(0, _shipTrajectory.Count * 2), TrajectoryColor);
+        _renderer!.DrawPolyline(_scratch.AsSpan(0, _samples.Count * 2), TrajectoryColor);
+    }
+
+    // Ghosts of every body at the scrub time: dimmed disc, no orbit ring re-draw.
+    private void DrawGhostBodies()
+    {
+        ICelestialEphemeris ephemeris = _ephemeris!;
+        double t = ScrubTime;
+        foreach (CelestialBody body in ephemeris.Bodies)
+        {
+            Vector2d position = ephemeris.Position(body.Id, t);
+            (float sx, float sy) = _camera.WorldToScreen(position);
+            float radiusPx = (float)Math.Max(2.0, body.BodyRadius / _camera.MetersPerPixel);
+            RgbaColor baseColor = BodyColor(body.Id);
+            RgbaColor ghost = baseColor with { A = GhostBodyAlpha };
+            _renderer!.DrawCircle(sx, sy, radiusPx, ghost, ghost);
+        }
+    }
+
+    // Ghost ship marker at the projected path position for the scrub time.
+    private void DrawGhostShip()
+    {
+        if (_samples.Count == 0) return;
+        Vector2d position = SamplePositionAt(ScrubTime);
+        (float sx, float sy) = _camera.WorldToScreen(position);
+        _renderer!.DrawCircle(sx, sy, 4f, GhostShipColor, GhostShipColor);
+    }
+
+    // Filled dots on the ribbon where each maneuver node fires.
+    private void DrawNodeMarkers()
+    {
+        if (_planNodes.Count == 0 || _samples.Count == 0) return;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (node.Executed) continue;
+            Vector2d position = SamplePositionAt(node.SimTime);
+            (float sx, float sy) = _camera.WorldToScreen(position);
+            RgbaColor color = node.Stale
+                ? StaleNodeColor
+                : node.Action == ManeuverAction.Accelerate ? AccelNodeColor : DecelNodeColor;
+            _renderer!.DrawCircle(sx, sy, 5f, color, color);
+        }
+    }
+
+    // Position on the projected path at a given sim time, linearly interpolated between the two
+    // bracketing samples. Clamps to the endpoints outside the projected horizon.
+    private Vector2d SamplePositionAt(double simTime)
+    {
+        IReadOnlyList<TrajectorySample> s = _samples;
+        if (s.Count == 0) return _ship.Position;
+        if (simTime <= s[0].SimTime) return s[0].Position;
+        if (simTime >= s[^1].SimTime) return s[^1].Position;
+
+        int lo = 0, hi = s.Count - 1;
+        while (hi - lo > 1)
+        {
+            int mid = (lo + hi) >> 1;
+            if (s[mid].SimTime <= simTime) lo = mid; else hi = mid;
+        }
+
+        TrajectorySample a = s[lo];
+        TrajectorySample b = s[hi];
+        double span = b.SimTime - a.SimTime;
+        double f = span > 0 ? (simTime - a.SimTime) / span : 0;
+        return a.Position + (b.Position - a.Position) * f;
     }
 
     private void DrawCelestialBodies()
@@ -375,6 +530,10 @@
                 factor = ManeuverPlan.DecelerateFactor;
                 pulse = true;
                 break;
+            case "p":
+            case "P":
+                TogglePlotMode();
+                return;
         }
 
         if (pulse)
@@ -395,13 +554,30 @@
             _lastPulseSimTime = _ship.SimTime;
             ShowPulseMessage(factor > 1 ? "Pulse: accelerate +10%" : "Pulse: decelerate −10%");
 
+            // A live override invalidates every still-pending node (plan §4).
+            bool anyStaled = false;
+            foreach (PlanNode node in _planNodes)
+            {
+                if (!node.Stale && !node.Executed && node.SimTime > _ship.SimTime)
+                {
+                    node.Stale = true;
+                    anyStaled = true;
+                }
+            }
+
+            if (anyStaled)
+            {
+                RebuildPlan();
+                ShowPulseMessage("Plan invalidated downstream");
+            }
+
             ReprojectTrajectory();
         }
     }
 
     private void ReprojectTrajectory()
     {
-        _shipTrajectory = _projectionSimulator!.Project(_ship, null, TrajectoryHorizonSeconds);
+        _samples = _simulator!.ProjectAdaptive(_ship, _plan, PlotHorizonSeconds);
         _nextProjectionSimTime = _ship.SimTime + ProjectionRefreshSimSeconds;
     }
 
@@ -409,6 +585,184 @@
     {
         _pulseMessage = message;
         _pulseMessageExpiresMs = (_lastTimestampMs ?? 0) + 1500;
+    }
+
+    // ---- Plotting mode ----
+
+    private void TogglePlotMode()
+    {
+        if (PlotMode)
+        {
+            ExitPlotMode();
+        }
+        else
+        {
+            EnterPlotMode();
+        }
+    }
+
+    private void EnterPlotMode()
+    {
+        _warpBeforePlot = Warp;
+        PlotMode = true;
+        Paused = true;
+        _scrubOffsetSeconds = 0;
+        ReprojectTrajectory();
+    }
+
+    private void ExitPlotMode()
+    {
+        PlotMode = false;
+        Paused = false;
+        Warp = _warpBeforePlot <= 0 ? 1 : _warpBeforePlot;
+        ReprojectTrajectory();
+    }
+
+    // Rebuild the immutable plan the sim executes from the non-stale nodes. Past/executed nodes are
+    // harmless to include (their firing window has passed), so the same plan serves projection too.
+    private void RebuildPlan()
+    {
+        _plan = new ManeuverPlan(
+            _planNodes.Where(n => !n.Stale)
+                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses)));
+    }
+
+    // Reaction-mass claimed by still-pending (non-stale, future) nodes.
+    private int PlannedPulseTotal()
+    {
+        int total = 0;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (!node.Stale && node.SimTime > _ship.SimTime)
+            {
+                total += node.Pulses;
+            }
+        }
+
+        return total;
+    }
+
+    private void AddBurnAtScrub()
+    {
+        double t = Math.Floor(ScrubTime);
+        if (t <= _ship.SimTime)
+        {
+            ShowPulseMessage("Can't plan a burn in the past");
+            return;
+        }
+        if (PlannedPulseTotal() + 1 > _reactionMassPulses)
+        {
+            ShowPulseMessage("Not enough reaction mass");
+            return;
+        }
+
+        _planNodes.Add(new PlanNode { SimTime = t, Action = ManeuverAction.Accelerate, Pulses = 1 });
+        SortNodes();
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    private void SetAction(PlanNode node, ManeuverAction action)
+    {
+        if (node.Action == action)
+        {
+            return;
+        }
+
+        node.Action = action;
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    private void SetPulses(PlanNode node, ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
+        {
+            return;
+        }
+
+        value = Math.Clamp(value, MinNodePulses, MaxNodePulses);
+        if (value == node.Pulses)
+        {
+            return;
+        }
+
+        // Budget check counts this node's new pulses in place of its old ones.
+        int othersTotal = PlannedPulseTotal();
+        if (!node.Stale && node.SimTime > _ship.SimTime)
+        {
+            othersTotal -= node.Pulses;
+        }
+        if (othersTotal + value > _reactionMassPulses)
+        {
+            ShowPulseMessage("Not enough reaction mass");
+            return;
+        }
+
+        node.Pulses = value;
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    // Re-time to the scrub time. Un-stales the node (plan §4: re-timing repairs it).
+    private void RetimeToScrub(PlanNode node)
+    {
+        double t = Math.Floor(ScrubTime);
+        if (t <= _ship.SimTime)
+        {
+            ShowPulseMessage("Can't plan a burn in the past");
+            return;
+        }
+
+        // If it was stale/executed it re-enters the budget; check it fits.
+        int othersTotal = PlannedPulseTotal();
+        bool wasPending = !node.Stale && node.SimTime > _ship.SimTime;
+        if (wasPending)
+        {
+            othersTotal -= node.Pulses;
+        }
+        if (othersTotal + node.Pulses > _reactionMassPulses)
+        {
+            ShowPulseMessage("Not enough reaction mass");
+            return;
+        }
+
+        node.SimTime = t;
+        node.Stale = false;
+        node.Executed = false;
+        SortNodes();
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    private void DeleteNode(PlanNode node)
+    {
+        _planNodes.Remove(node);
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    private void SortNodes() => _planNodes.Sort((a, b) => a.SimTime.CompareTo(b.SimTime));
+
+    // After live stepping, settle mass for any node whose firing window has passed. The window rule
+    // in Simulator.Step fires each node once; this mirrors that once for the mass budget/HUD.
+    private void AccountForFiredNodes()
+    {
+        int firedPulses = 0;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (!node.Executed && !node.Stale && node.SimTime < _ship.SimTime)
+            {
+                node.Executed = true;
+                firedPulses += node.Pulses;
+            }
+        }
+
+        if (firedPulses > 0)
+        {
+            _reactionMassPulses = Math.Max(0, _reactionMassPulses - firedPulses);
+            ShowPulseMessage($"Plan: {firedPulses} pulse{(firedPulses == 1 ? "" : "s")} fired");
+        }
     }
 
     private static RgbaColor BodyColor(string id) => id switch
@@ -451,11 +805,23 @@
 
     private void SetWarp(int level)
     {
+        PlotMode = false;
         Warp = level;
         Paused = false;
     }
 
-    private void TogglePause() => Paused = !Paused;
+    // Unpausing from inside plot mode is "press play": leave plotting properly (restores warp)
+    // instead of running the sim with the plot card still open.
+    private void TogglePause()
+    {
+        if (PlotMode && Paused)
+        {
+            ExitPlotMode();
+            return;
+        }
+
+        Paused = !Paused;
+    }
 
     private void ToggleFollow() => FollowShip = !FollowShip;
 
