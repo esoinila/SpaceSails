@@ -133,10 +133,9 @@
     text-align: right;
 }
 
-.map-plot-fine {
-    min-width: 3rem;
-    padding-top: 0;
-    padding-bottom: 0;
+.map-plot-percent {
+    width: 5.5rem;
+    flex: 0 0 auto;
 }
 
 .map-plot-node-selected {

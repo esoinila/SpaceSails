@@ -12,7 +12,7 @@ public sealed record JoinResultDto(
     int ReactionMass);
 
 /// <summary>A maneuver node as sent over the wire (client plan → server execution).</summary>
-public sealed record PlanNodeDto(double SimTime, bool Accelerate, int Pulses, bool Fine = false);
+public sealed record PlanNodeDto(double SimTime, bool Accelerate, int Pulses, bool Fine = false, double Percent = 0);
 
 /// <summary>
 /// One ship the receiving player can currently see. Contacts outside sensor range are not

@@ -178,9 +178,13 @@
                                 <input type="number" class="form-control form-control-sm map-plot-pulses"
                                        min="1" max="@MaxNodePulses" value="@node.Pulses"
                                        @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
-                                <button type="button" class="btn btn-sm @(node.Fine ? "btn-info" : "btn-outline-secondary") map-plot-fine"
-                                        title="Toggle fine pulses (±1% instead of ±10%)"
-                                        @onclick="() => ToggleFine(node)">@(node.Fine ? "1%" : "10%")</button>
+                                <div class="input-group input-group-sm map-plot-percent">
+                                    <input type="number" class="form-control form-control-sm"
+                                           min="0.01" max="50" step="0.1" value="@node.Percent"
+                                           title="Per-pulse thrust strength in percent — any decimal"
+                                           @onchange="e => SetPercent(node, e)" @onkeydown:stopPropagation="true" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                                 <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
                                         @onclick="() => RetimeToScrub(node)">@@</button>
                                 <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
@@ -613,7 +617,7 @@
         public double SimTime;
         public ManeuverAction Action;
         public int Pulses = 1;
-        public bool Fine;                // ±1% trims instead of ±10% hammers
+        public double Percent = 10;      // per-pulse strength, any positive double
         public bool Stale;
         public bool Executed;
     }
@@ -1598,9 +1602,9 @@
             {
                 _renderer!.DrawCircle(sx, sy, 10f, null, new RgbaColor(255, 255, 255, 160), 1.5f);
             }
-            if (node.Fine)
+            if (Math.Abs(node.Percent - 10) > 0.001)
             {
-                _renderer!.DrawText(sx, sy - 12, "1%", new RgbaColor(150, 220, 255, 200), "9px monospace", TextAlign.Center);
+                _renderer!.DrawText(sx, sy - 12, $"{node.Percent:0.##}%", new RgbaColor(150, 220, 255, 200), "9px monospace", TextAlign.Center);
             }
         }
     }
@@ -1861,7 +1865,7 @@
     {
         _plan = new ManeuverPlan(
             _planNodes.Where(n => !n.Stale)
-                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses, n.Fine)));
+                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses, Fine: false, Percent: n.Percent)));
 
         if (_mp)
         {
@@ -1869,7 +1873,7 @@
             // caps node/pulse counts, so we send the same non-stale set the local projection uses.
             PlanNodeDto[] nodes = _planNodes
                 .Where(n => !n.Stale)
-                .Select(n => new PlanNodeDto(n.SimTime, n.Action == ManeuverAction.Accelerate, n.Pulses, n.Fine))
+                .Select(n => new PlanNodeDto(n.SimTime, n.Action == ManeuverAction.Accelerate, n.Pulses, false, n.Percent))
                 .ToArray();
             SendCommand(c => c.SendAsync("SetPlan", nodes));
         }
@@ -1989,11 +1993,14 @@
         ReprojectTrajectory();
     }
 
-    private void ToggleFine(PlanNode node)
+    private void SetPercent(PlanNode node, ChangeEventArgs e)
     {
-        node.Fine = !node.Fine;
-        RebuildPlan();
-        ReprojectTrajectory();
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double p))
+        {
+            node.Percent = Math.Clamp(p, 0.01, 50);
+            RebuildPlan();
+            ReprojectTrajectory();
+        }
     }
 
     private PlanNode? _selectedPlanNode;

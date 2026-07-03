@@ -162,7 +162,8 @@ public sealed class SessionHost : BackgroundService
                     n.SimTime,
                     n.Accelerate ? ManeuverAction.Accelerate : ManeuverAction.Decelerate,
                     Math.Clamp(n.Pulses, 1, 20),
-                    n.Fine)));
+                    n.Fine,
+                    n.Percent <= 0 ? 0 : Math.Clamp(n.Percent, 0.01, 50))));
             ship.PlanMassAccountedThrough = _simTime;
         }
     }
