@@ -30,6 +30,21 @@
 }
 
 .map-hud .btn-toolbar,
-.map-hud .map-readouts {
+.map-hud .map-readouts,
+.map-hud .map-plot {
     pointer-events: auto;
+}
+
+.map-plot {
+    width: 22rem;
+    max-width: 100%;
+}
+
+.map-plot-nodes {
+    max-height: 14rem;
+    overflow-y: auto;
+}
+
+.map-plot-pulses {
+    width: 3.75rem;
 }
