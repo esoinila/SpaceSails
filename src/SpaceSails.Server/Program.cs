@@ -1,6 +1,13 @@
 using SpaceSails.Core;
+using SpaceSails.Server;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSignalR();
+// One shared session per server (plan §M9). Registered once, exposed both as itself (hub
+// command target) and as the hosted service that runs the authoritative tick.
+builder.Services.AddSingleton<SessionHost>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<SessionHost>());
 
 var app = builder.Build();
 
@@ -33,6 +40,8 @@ app.MapGet("/api/traffic", (ulong seed, int count) =>
         s.DepartureTime,
     }));
 });
+
+app.MapHub<GameHub>("/hubs/game");
 
 app.MapFallbackToFile("index.html");
 
