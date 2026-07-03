@@ -336,6 +336,17 @@
             </div>
         </div>
     }
+    <div class="map-scope @(_showScope ? "" : "d-none")">
+        <div class="card bg-dark bg-opacity-75 text-light">
+            <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                <span class="fw-bold small">Scope 🔭</span>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleScope"></button>
+            </div>
+            <div class="card-body p-1">
+                <canvas id="@ScopeCanvasId" class="map-scope-canvas"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
 @code {
@@ -518,6 +529,73 @@
     private static readonly RgbaColor StreamColor = new(80, 200, 220, 36);
     private static readonly RgbaColor ArcHaloColor = new(255, 240, 120, 150);
 
+    // M11 — the telescope (worldbuilding notes §5)
+    private const string ScopeCanvasId = "scope-canvas";
+    private const int ScopeSizePx = 280;
+    private ScopeView? _scopeView;
+    private bool _showScope = true;
+    private void ToggleScope() => _showScope = !_showScope;
+
+    // Auto-lock priority: the selected tracked target, else the nearest currently-observed
+    // contact, else the nearest celestial body — the scope always has something to show a
+    // pirate. Optical truth only: unobserved ships never appear (hidden info stays hidden).
+    private ScopeView.Target PickScopeTarget()
+    {
+        if (_mp)
+        {
+            ContactDto? best = null;
+            double bestSq = double.MaxValue;
+            foreach (ContactDto c in _mpContacts)
+            {
+                double d = (new Vector2d(c.PositionX, c.PositionY) - _ship.Position).LengthSquared;
+                if (c.Id == _selectedTargetId) { best = c; break; }
+                if (d < bestSq) { (bestSq, best) = (d, c); }
+            }
+            if (best is not null)
+            {
+                return new ScopeView.Target(
+                    best.Kind switch { "pod" => ScopeView.TargetKind.Pod, "player" => ScopeView.TargetKind.Player, _ => ScopeView.TargetKind.Freighter },
+                    best.Callsign, best.CargoClass,
+                    new Vector2d(best.PositionX, best.PositionY), new Vector2d(best.VelocityX, best.VelocityY),
+                    0, NpcColor, InPlasmaAt(new Vector2d(best.PositionX, best.PositionY)));
+            }
+        }
+        else
+        {
+            NpcState? locked = null;
+            double bestSq = double.MaxValue;
+            foreach (NpcState npc in _npcStates)
+            {
+                if (!npc.Active || npc.Arrived || !npc.CurrentlyObserved) continue;
+                if (npc.Ship.Id == _selectedTargetId) { locked = npc; break; }
+                double d = (npc.State.Position - _ship.Position).LengthSquared;
+                if (d < bestSq) { (bestSq, locked) = (d, npc); }
+            }
+            if (locked is not null)
+            {
+                return new ScopeView.Target(
+                    locked.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
+                    locked.Ship.Callsign, $"cargo: {locked.Ship.CargoClass} ({locked.Ship.CargoUnits}u)",
+                    locked.State.Position, locked.State.Velocity,
+                    0, NpcColor, InPlasmaAt(locked.State.Position));
+            }
+        }
+
+        if (_nearestBody is CelestialBody body)
+        {
+            return new ScopeView.Target(
+                ScopeView.TargetKind.Body, body.Name, null,
+                _nearestBodyPosition, _nearestBodyVelocity,
+                body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition));
+        }
+
+        return new ScopeView.Target(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
+    }
+
+    private bool InPlasmaAt(Vector2d position) =>
+        _plasma is not null && _plasma.AmbientCharge(position, SimTime) >= 1.0;
+
+
     private CelestialBody? _nearestBody;
     private Vector2d _nearestBodyPosition;
     private Vector2d _nearestBodyVelocity;
@@ -623,7 +701,9 @@
         RendererInterop.FrameTick += OnTick;
         RendererInterop.CanvasResized += OnCanvasResized;
 
-        RendererInterop.InitCanvas(CanvasId);
+        RendererInterop.InitCanvas(CanvasId, observeResize: true);
+        RendererInterop.InitCanvas(ScopeCanvasId, observeResize: false);
+        _scopeView = new ScopeView(new CanvasRenderer(ScopeCanvasId));
         RendererInterop.StartLoop(CanvasId);
 
         await _focusableDiv.FocusAsync();
@@ -866,6 +946,11 @@
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
+
+        if (_showScope && _scopeView is not null)
+        {
+            _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
+        }
         
         if (highResTimestampMs - _lastHudUpdateMs > 200)
         {
