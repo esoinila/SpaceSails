@@ -135,14 +135,15 @@
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
                         Add burn at scrub
                     </button>
-                    <select class="form-select form-select-sm map-plot-horizon" title="Path horizon"
-                            @bind="_horizonChoice" @bind:after="ReprojectTrajectory">
-                        <option value="auto">auto</option>
-                        <option value="7">7 d</option>
-                        <option value="30">30 d</option>
-                        <option value="180">180 d</option>
-                        <option value="730">2 yr</option>
-                    </select>
+                    <div class="d-flex align-items-center gap-1 map-plot-horizon">
+                        <button type="button" class="btn btn-sm py-0 @(_horizonChoice == "auto" ? "btn-info" : "btn-outline-light")"
+                                @onclick="SetHorizonAuto">auto</button>
+                        <input type="range" class="form-range" min="0" max="100" step="1"
+                               value="@HorizonSliderValue" title="Path horizon"
+                               @oninput="OnHorizonSliderInput" @onchange="OnHorizonSliderChange"
+                               @onkeydown:stopPropagation="true" />
+                        <span class="text-nowrap">@FormatHorizon(CurrentPlotHorizonSeconds)</span>
+                    </div>
                     <span>Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
                 </div>
 
@@ -439,6 +440,42 @@
     // days (min 30 d) — so ship-to-ship work stays tight and a plotted Saturn sail stretches
     // the ribbon automatically; presets override.
     private string _horizonChoice = "auto";
+    private const double HorizonMinDays = 5, HorizonMaxDays = 730;
+
+    // Log-scale mapping so the slider is as precise at 7 days as at 2 years.
+    private int HorizonSliderValue =>
+        _horizonChoice == "auto"
+            ? (int)Math.Round(100 * Math.Log(Math.Clamp(CurrentPlotHorizonSeconds / 86400, HorizonMinDays, HorizonMaxDays) / HorizonMinDays) / Math.Log(HorizonMaxDays / HorizonMinDays))
+            : (int)Math.Round(100 * Math.Log(double.Parse(_horizonChoice) / HorizonMinDays) / Math.Log(HorizonMaxDays / HorizonMinDays));
+
+    private static double SliderToDays(int t) =>
+        HorizonMinDays * Math.Pow(HorizonMaxDays / HorizonMinDays, t / 100.0);
+
+    private void OnHorizonSliderInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int t))
+        {
+            _horizonChoice = SliderToDays(t).ToString("F0");
+        }
+    }
+
+    private void OnHorizonSliderChange(ChangeEventArgs e)
+    {
+        OnHorizonSliderInput(e);
+        ReprojectTrajectory(); // reproject on release, not per-pixel
+    }
+
+    private void SetHorizonAuto()
+    {
+        _horizonChoice = "auto";
+        ReprojectTrajectory();
+    }
+
+    private static string FormatHorizon(double seconds)
+    {
+        double days = seconds / 86400;
+        return days >= 365 ? $"{days / 365:F1} yr" : $"{days:F0} d";
+    }
     private double CurrentPlotHorizonSeconds
     {
         get
@@ -584,6 +621,7 @@
     // M12 — deck view (walk your ship)
     private bool _deckMode;
     private bool _fpMode;
+    private double _deckPanX, _deckPanY;
     private ShuttleFlightView? _shuttleView;
     private ShuttleFlightView.Run? _shuttleRun;
     private NpcState? _shuttleTarget;
@@ -1288,7 +1326,8 @@
             {
                 _deckView!.Draw(_viewportWidth, _viewportHeight, SimTime, new DeckView.State(
                     _avatarX, _avatarY, _avatarHeading,
-                    _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null));
+                    _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null),
+                    _deckPanX, _deckPanY);
             }
 
             if (_showScope && _scopeView is not null)
@@ -2569,6 +2608,15 @@
         double dy = e.ClientY - _lastPointerY;
         _lastPointerX = e.ClientX;
         _lastPointerY = e.ClientY;
+
+        // In the top-down deck view the drag moves the DECK plan (its bow hides under the HUD
+        // panel otherwise); in first person and on the map it pans the camera as before.
+        if (_deckMode && !_fpMode)
+        {
+            _deckPanX += dx;
+            _deckPanY += dy;
+            return;
+        }
 
         _camera.PanByPixels(dx, dy);
         FollowShip = false; // manual pan disengages follow-ship, same as most space-game maps.

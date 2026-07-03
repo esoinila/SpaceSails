@@ -35,12 +35,12 @@ public sealed class DeckView
         _renderer = renderer;
     }
 
-    public void Draw(int widthPx, int heightPx, double simTime, in State state)
+    public void Draw(int widthPx, int heightPx, double simTime, in State state, double panX = 0, double panY = 0)
     {
         _renderer.BeginFrame(widthPx, heightPx, Floor);
 
         float scale = Math.Min(widthPx / 64f, heightPx / 28f);
-        float ox = widthPx / 2f, oy = heightPx / 2f;
+        float ox = widthPx / 2f + (float)panX, oy = heightPx / 2f + (float)panY;
         (float X, float Y) P(double dx, double dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
 
         for (int gx = -22; gx <= 28; gx += 4)
