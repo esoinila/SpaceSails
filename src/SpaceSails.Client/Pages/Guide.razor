@@ -1,0 +1,160 @@
+@page "/guide"
+
+<PageTitle>SpaceSails — Captain's Guide</PageTitle>
+
+<div class="container py-4 guide-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Captain's Guide</h1>
+        <a class="btn btn-outline-dark btn-sm" href="/">← Harbor</a>
+    </div>
+    <p class="text-secondary">
+        SpaceSails is a solar-system sailing and piracy game with honest orbital mechanics.
+        Nothing here cheats: every trajectory is integrated, every orbit obeys the sun, and the
+        hardest maneuvers are hard because physics says so. This guide covers everything currently
+        aboard.
+    </p>
+
+    <h2 id="scenarios">1. Choosing a voyage</h2>
+    <ul>
+        <li><strong>Sol</strong> — the classic system. Learn to fly here.</li>
+        <li><strong>Sol (Electric)</strong> ⚡ — same system plus a charged plasma environment:
+            a solar halo that charges your hull near the sun and flowing plasma streams between
+            planets. Charge makes you visible and eventually arcs; vent it with <kbd>V</kbd>.</li>
+        <li><strong>The Wheel</strong> — a rigid-spoke curiosity system with a plasma river,
+            for pilots who want strange skies.</li>
+        <li><strong>Join the crew</strong> — multiplayer: enter a callsign and share a live
+            session. Warp runs at the <em>slowest</em> crew member's request (the min-warp rule),
+            and you only see what your own sensors can see.</li>
+    </ul>
+
+    <h2 id="map">2. The map</h2>
+    <ul>
+        <li><strong>Drag</strong> to pan, <strong>mouse wheel</strong> to zoom, <strong>Follow Ship</strong> to re-center.</li>
+        <li><strong>Warp slider</strong> (top left) — logarithmic, 1× to 10,000×. Warp automatically
+            drops near planets and encounters so you don't overshoot the interesting parts.</li>
+        <li><strong>HUD readouts</strong> — sim time, ship speed with
+            <em>(circular here: …)</em> beside it: the speed that would hold a circular sun orbit at
+            your current distance. Match it and you coast forever; it is the difference between
+            matching a planet's <em>radius</em> and matching its <em>orbit</em>.</li>
+        <li><strong>Mass pulses</strong> — your reaction mass. Every burn spends pulses; refill by
+            docking at a market. Run dry far from port and you drift on whatever orbit you bought.</li>
+    </ul>
+
+    <h2 id="flying">3. Flying by hand</h2>
+    <ul>
+        <li><kbd>+</kbd> / <kbd>−</kbd> (or <kbd>↑</kbd>/<kbd>↓</kbd>) — thrust pulse:
+            scales your velocity ±10%. Prograde only — pulses change your speed, never your heading.</li>
+        <li><kbd>Shift</kbd> + pulse — <strong>fine trim</strong>, ±1%. For station-keeping and
+            orbit matching.</li>
+        <li><kbd>V</kbd> — vent charge (Electric scenarios).</li>
+        <li>Pulses have a short cooldown and each costs one mass pulse.</li>
+    </ul>
+    <p class="text-secondary">
+        Rule of thumb: to go <em>inward</em> (Venus, Mercury), <em>brake</em> — losing speed drops
+        your perihelion. To go <em>outward</em> (Mars, Jupiter, Saturn), accelerate. You are always
+        trading speed for altitude on an ellipse.
+    </p>
+
+    <h2 id="plotting">4. Plotting a course</h2>
+    <ul>
+        <li><strong>Plot</strong> opens the nav desk (or press <kbd>E</kbd> at the NAV POST inside
+            the ship). The sim pauses while you plan.</li>
+        <li><strong>Scrub slider</strong> — slide into the future; every planet shows a
+            <em>ghost</em> at the scrubbed time, tethered to its live position.</li>
+        <li><strong>Path length slider</strong> — how far ahead your ribbon projects (5 days to
+            2 years, log scale). <em>auto</em> follows your last burn + 90 days. Short for
+            ship-to-ship work, long for interplanetary sails.</li>
+        <li><strong>Add burn at scrub</strong> — drops a maneuver node at the scrubbed time. Each
+            node has: <strong>+/−</strong> direction, <strong>pulse count</strong>, and a
+            <strong>free percent field</strong> — any decimal from 0.01% to 50% per pulse. A 10%
+            pulse is a hammer (~3 km/s); a 0.5% node is a scalpel.</li>
+        <li><strong>Click a node marker on the ribbon</strong> to select it — its row highlights
+            and the scrub jumps to that moment. <strong>@@</strong> re-times a node to the current
+            scrub; <strong>×</strong> deletes it.</li>
+        <li>The whole trip fits one plan: Earth→Saturn is a single sit-down (the plotting horizon
+            was sized for exactly that).</li>
+    </ul>
+
+    <h3>Worked examples</h3>
+    <ul>
+        <li><strong>Mercury</strong>: one node, <em>decelerate ×3</em> (10%) at ~day 3 →
+            perihelion kisses Mercury's orbit ~day 334. At closest approach, brake twice more and
+            trim until ship speed equals <em>circular here</em> (47.9 km/s) — then cut the gas and
+            orbit forever.</li>
+        <li><strong>Saturn</strong>: one node, <em>accelerate ×12</em> at the right departure day
+            (phasing!) → Saturn's port zone in ~9 months. Use the ghosts to find the day when
+            ghost-Saturn meets your ghost-ship.</li>
+    </ul>
+
+    <h2 id="piracy">5. Piracy</h2>
+    <ul>
+        <li><strong>Traffic</strong> opens the shipping board: cargo pods and freighters with
+            routes, departure times, and last-seen data. Select one and <strong>Pin</strong> its
+            predicted path — a cone of where it can be, given its maneuver budget.</li>
+        <li>Plot an intercept so your ribbon crosses the cone, close to within the
+            <strong>capture envelope</strong> (500,000 km and 5 km/s relative), and hold it.
+            The boarding clock runs on <em>wall-clock time</em> — shuttles fly in real time, warp
+            be damned. A tighter, slower pass boards faster.</li>
+        <li>Or fly it yourself: walk to the <strong>SHUTTLE BAY</strong> while the window is
+            engaged and press <kbd>E</kbd> — see §7.</li>
+        <li>Boarded cargo goes in your hold. <strong>Dock</strong> at a market (Earth, Mars,
+            Venus — get within the port zone) to sell, refill mass pulses, and buy upgrades.
+            He3 pays best; ice pays the rent.</li>
+    </ul>
+
+    <h2 id="scope">6. The scope</h2>
+    <ul>
+        <li><strong>Scope</strong> opens the instrument screen: auto-locks the nearest interesting
+            contact, draws it (freighters, pods, players, planets, the sun, plasma wisps), and
+            reads out distance and relative speed.</li>
+        <li><strong>◀ / ▶</strong> cycle targets manually; the middle button returns to
+            <strong>AUTO</strong>.</li>
+    </ul>
+
+    <h2 id="ship">7. Inside the ship</h2>
+    <ul>
+        <li><strong>Deck</strong> — top-down plan of your pirate sail. Walk with
+            <kbd>WASD</kbd>/arrows, interact with <kbd>E</kbd>, drag the map if the bow hides
+            behind a panel. Crew: droids K-77 and R-3B stand by the shuttle; V-1K patrols.</li>
+        <li><kbd>F</kbd> — <strong>first person</strong>. Walk the corridors; the windows show the
+            real sky — the sun blazes bigger the closer you sail, and the planets are where the
+            ephemeris says they are. <kbd>Q</kbd> returns to the helm.</li>
+        <li>Consoles: <strong>HELM / NAV POST</strong> (plotting), <strong>SCOPE</strong>,
+            <strong>CANTINA</strong> (morale), <strong>CARGO HOLD</strong> (your loot as crates),
+            <strong>VENT PANEL</strong>, <strong>SHUTTLE BAY</strong>.</li>
+        <li><strong>The boarding run</strong>: with a capture window engaged, <kbd>E</kbd> at the
+            shuttle bay puts you on the stick. Cross the gap with <kbd>WASD</kbd> thrust, dock at
+            the airlock <em>below the speed limit</em> (come in hot and you bounce), and the droids
+            swarm aboard — instant boarding. <kbd>Q</kbd> aborts; losing the window auto-returns
+            the shuttle. The prey's drift is your real relative velocity — a sloppy pass by the
+            mothership makes a hard run for the pilot.</li>
+    </ul>
+
+    <h2 id="electric">8. The electric sky ⚡</h2>
+    <ul>
+        <li>Near the sun the plasma halo charges your hull; the flowing ribbons between planets
+            are <strong>plasma streams</strong> — riding one pushes you along it (charged hulls
+            feel the current).</li>
+        <li>Charge makes you glow on everyone's sensors — it pierces even sun glare — and at full
+            charge you start arcing. <kbd>V</kbd> vents.</li>
+        <li>Mercury's neighborhood runs ~75% ambient charge. Ambush country: everyone there is
+            visible, desperate, or both.</li>
+    </ul>
+
+    <h2 id="tips">9. The physics, honestly</h2>
+    <ul>
+        <li><strong>There is no drag.</strong> A circular orbit holds forever with zero thrust
+            (measured: −0.025% radius drift over a full year).</li>
+        <li>What feels like drag near a planet is the planet's gravity plus solar tide shearing
+            you off your line. Get inside a planet's sphere of influence and it owns you; match
+            speed at the same sun-distance far from it and you fly formation with it forever.</li>
+        <li>Fire your circularization at perihelion or aphelion — those are the moments your
+            velocity is purely tangential, and pulses only scale velocity, never rotate it.</li>
+        <li>Phasing beats thrust: launch day matters more than pulse count for reaching a moving
+            target. Scrub, watch the ghosts, move the node.</li>
+    </ul>
+
+    <p class="text-secondary mt-4">
+        Fair winds and following gravity, captain. 🏴‍☠️
+    </p>
+</div>
