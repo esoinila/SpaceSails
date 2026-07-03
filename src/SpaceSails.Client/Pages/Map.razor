@@ -36,8 +36,15 @@
             <button type="button" class="btn btn-sm @(PlotMode ? "btn-success" : "btn-outline-light") me-2" @onclick="TogglePlotMode">
                 @(PlotMode ? "Play" : "Plot")
             </button>
-            <button type="button" class="btn btn-sm @(_showTraffic ? "btn-primary" : "btn-outline-light")" @onclick="ToggleTraffic">
+            <button type="button" class="btn btn-sm @(_showTraffic ? "btn-primary" : "btn-outline-light") me-2" @onclick="ToggleTraffic">
                 Traffic
+            </button>
+            <button type="button" class="btn btn-sm @(_showDock ? "btn-success" : "btn-outline-light") me-2"
+                    disabled="@(!_docked)" @onclick="ToggleDock">
+                Dock
+            </button>
+            <button type="button" class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" @onclick="ToggleTutorial">
+                First hunt
             </button>
         </div>
 
@@ -47,11 +54,22 @@
             <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
             <hr />
             <div>Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s</div>
-            <div>Mass pulses: @_reactionMassPulses</div>
+            <div>Mass pulses: @_reactionMassPulses / @ReactionMassCapacity</div>
+            <div>Credits: @_credits.ToString("N0", CultureInfo.InvariantCulture)</div>
+            <div>Cargo: @_cargoUnits / @CargoCapacity units@(_cargoValue > 0 ? $" (worth {_cargoValue:N0} cr)" : "")</div>
             <div>Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)</div>
             @if (_pulseMessage is not null)
             {
                 <div class="text-warning">@_pulseMessage</div>
+            }
+            @if (_captureEngaged)
+            {
+                <hr />
+                <div class="mb-1">Boarding @_captureTargetCallsign — @((int)Math.Ceiling(CaptureRule.RequiredSeconds - _captureSeconds)) s</div>
+                <div class="progress" role="progressbar" aria-label="Boarding progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                         style="width: @(((int)(_captureSeconds / CaptureRule.RequiredSeconds * 100)))%"></div>
+                </div>
             }
         </div>
 
@@ -152,6 +170,94 @@
             </div>
         </div>
     }
+
+    @if (Adrift)
+    {
+        <div class="map-adrift">
+            <div class="alert alert-danger d-flex align-items-center gap-3 mb-0 shadow" role="alert">
+                <span class="fw-bold">Adrift — out of reaction mass.</span>
+                <button type="button" class="btn btn-sm btn-light" @onclick="RequestRescue">Request rescue</button>
+            </div>
+        </div>
+    }
+
+    @if (_showDock)
+    {
+        <div class="map-dock">
+            <div class="card bg-dark bg-opacity-75 text-light">
+                <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold small">Docked at @BodyName(_dockBodyId ?? "")</span>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleDock"></button>
+                </div>
+                <div class="card-body p-2 small">
+                    <div class="d-flex gap-2 mb-2">
+                        <button type="button" class="btn btn-sm btn-success flex-grow-1" disabled="@(_cargoValue <= 0)" @onclick="SellCargo">
+                            Sell cargo (@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-light flex-grow-1" disabled="@(_reactionMassPulses >= ReactionMassCapacity)" @onclick="RefillReactionMass">
+                            Refill mass (free)
+                        </button>
+                    </div>
+                    <div class="fw-bold mb-1">Upgrades</div>
+                    <table class="table table-sm table-dark mb-0">
+                        <tbody>
+                            <tr>
+                                <td>Reaction mass<br /><span class="text-secondary">Lv @_massLevel → cap @(ReactionMassCapacity + 150)</span></td>
+                                <td class="text-end align-middle">
+                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_massLevel))" @onclick='() => BuyUpgrade("mass")'>
+                                        @UpgradePrice(_massLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Sensor range<br /><span class="text-secondary">Lv @_sensorLevel → @FormatDistance(SensorModel.Default.RangeMeters * Math.Pow(1.4, _sensorLevel + 1))</span></td>
+                                <td class="text-end align-middle">
+                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_sensorLevel))" @onclick='() => BuyUpgrade("sensor")'>
+                                        @UpgradePrice(_sensorLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Cargo hold<br /><span class="text-secondary">Lv @_holdLevel → @(CargoCapacity + 10) units</span></td>
+                                <td class="text-end align-middle">
+                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_holdLevel))" @onclick='() => BuyUpgrade("hold")'>
+                                        @UpgradePrice(_holdLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_showTutorial)
+    {
+        <div class="map-tutorial">
+            <div class="card bg-dark bg-opacity-75 text-light">
+                <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold small">First hunt</span>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleTutorial"></button>
+                </div>
+                <div class="card-body p-2 small">
+                    @for (int i = 0; i < TutorialSteps.Length; i++)
+                    {
+                        bool done = _tutorialStep > i;
+                        bool current = _tutorialStep == i;
+                        <div class="@(done ? "text-secondary" : current ? "fw-bold text-info" : "")">
+                            @(done ? "✓" : "•") @TutorialSteps[i]
+                        </div>
+                    }
+                    @if (_tutorialStep >= TutorialSteps.Length)
+                    {
+                        <hr />
+                        <div class="text-warning">You're a pirate now. The He3 haulers from Saturn are worth 15× more.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -240,6 +346,51 @@
     private NpcState[] _npcStates = [];
     private bool _showTraffic;
     private string? _selectedTargetId;
+
+    // M6 additions — piracy economy, capture, dock, tutorial
+    // A market body's "port zone" (0.067 AU). Deliberately generous: with ±10% prograde-only
+    // pulses, *returning* to a body you've left is the hardest maneuver in the game — offline
+    // search showed post-capture orbits graze 5.1e9 from Earth for weeks without re-threading
+    // anything tighter. The player spawns inside Earth's zone (fence available immediately —
+    // natural onboarding), and the Luna-pod tutorial hunt completes within it; the real hunts
+    // (He3 haulers) still demand full interplanetary voyages between zones.
+    private const double DockRadiusMeters = 1e10;
+    private const int CaptureWarpCap = 10;            // the 60 s window must be holdable
+    private static readonly string[] MarketBodies = ["earth", "mars", "venus"];
+
+    private int _credits;
+    private int _cargoUnits;
+    private int _cargoValue;
+    private int _massLevel;                            // reaction-mass capacity: 250 + 150/level
+    private int _sensorLevel;                          // sensor range: base × 1.4/level
+    private int _holdLevel;                            // cargo hold: 10 + 10/level
+    private SensorModel _sensor = SensorModel.Default;
+
+    private double _captureSeconds;                    // accumulated sim time inside the window
+    private bool _captureEngaged;
+    private string? _captureTargetCallsign;
+
+    private bool _docked;
+    private string? _dockBodyId;
+    private bool _showDock;
+
+    private bool _showTutorial = true;
+    private int _tutorialStep;                         // 0..5 = current task, 6 = complete
+
+    private static readonly string[] TutorialSteps =
+    [
+        "Open the traffic board and select the Luna pod",
+        "Plot an intercept — enter Plot, add a burn, watch the ribbon cross its cone",
+        "Close to boarding range and match velocity",
+        "Hold the window — board it",
+        "Dock at Earth and sell",
+        "Spend it — buy an upgrade",
+    ];
+
+    private int ReactionMassCapacity => 250 + 150 * _massLevel;
+    private int CargoCapacity => 10 + 10 * _holdLevel;
+    private bool Adrift => _reactionMassPulses == 0 && !_docked;
+    private static int UpgradePrice(int level) => 2000 * (1 << level);
     private bool _pinned;
     private ManeuverPlan? _pinnedPlan;
     private PredictedPath? _predictedPath;
@@ -260,6 +411,7 @@
         public ShipState State;
         public bool Active;
         public bool Arrived;
+        public bool Boarded;             // cargo taken; keeps flying but empty (M6)
         public bool CurrentlyObserved;   // seen in the most recent sweep
         public Observation? LastObservation;
         public int ObservationCount;
@@ -304,8 +456,10 @@
         // few seconds of planning work; yield first so the initial (empty) map paints and stays
         // responsive, then build the NPC live-state wrappers.
         await Task.Yield();
+        // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
+        IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
         IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
-        _npcStates = traffic.Select(s => new NpcState { Ship = s }).ToArray();
+        _npcStates = pods.Concat(traffic).Select(s => new NpcState { Ship = s }).ToArray();
 
         _scratch = new float[_samples.Count * 2 + 4];
 
@@ -371,6 +525,7 @@
             _simAccumulator = Math.Min(_simAccumulator, MaxStepsPerFrame * _simulator.TimeStep); // Clamp accumulator
         }
 
+        double simTimeBefore = _ship.SimTime;
         int stepsThisFrame = 0;
         while (_simAccumulator >= _simulator.TimeStep)
         {
@@ -397,6 +552,9 @@
             SweepSensors();
             _nextSweepSimTime = _ship.SimTime + SensorSweepSimSeconds;
         }
+
+        UpdateDockStatus();
+        UpdateCapture(_ship.SimTime - simTimeBefore);
 
         UpdatePrediction();
 
@@ -497,6 +655,14 @@
         }
 
         _effectiveWarp = Math.Min(Warp, cap);
+
+        // A live capture window is a close encounter by definition: cap warp so the 60 s window
+        // is actually holdable. Selection alone doesn't cap — only an engaged window.
+        NpcState? captureTarget = SelectedCaptureTarget();
+        if (captureTarget is not null && CaptureRule.IsInWindow(_ship, captureTarget.State))
+        {
+            _effectiveWarp = Math.Min(_effectiveWarp, CaptureWarpCap);
+        }
     }
 
     private void DrawShipTrajectory()
@@ -774,6 +940,12 @@
         SortNodes();
         RebuildPlan();
         ReprojectTrajectory();
+
+        // Tutorial step 2: first plan node added while a pod is selected.
+        if (_selectedTargetId is not null && FindNpc(_selectedTargetId) is { Ship.IsPod: true })
+        {
+            AdvanceTutorial(1);
+        }
     }
 
     private void SetAction(PlanNode node, ManeuverAction action)
@@ -938,7 +1110,7 @@
                 continue;
             }
 
-            if (SensorModel.Default.TryObserve(_ship.Position, npc.Ship.Id, npc.State, _ship.SimTime, out Observation obs))
+            if (_sensor.TryObserve(_ship.Position, npc.Ship.Id, npc.State, _ship.SimTime, out Observation obs))
             {
                 npc.LastObservation = obs;
                 npc.ObservationCount++;
@@ -975,7 +1147,7 @@
         }
 
         _pinnedPlan = _pinned ? BuildPinnedPlan(npc, obs) : null;
-        _predictedPath = PathPredictor.Predict(_ephemeris!, obs, _pinnedPlan, PlotHorizonSeconds);
+        _predictedPath = PathPredictor.Predict(_ephemeris!, obs, _pinnedPlan, PlotHorizonSeconds, npc.Ship.ManeuverBudget);
         _nextPredictionSimTime = _ship.SimTime + PredictionRefreshSimSeconds;
         _predictionDirty = false;
     }
@@ -1118,12 +1290,187 @@
         _pinnedPlan = null;
         _predictedPath = null;
         _predictionDirty = true;
+        _captureSeconds = 0;
+
+        // Tutorial step 1: selecting a Luna pod.
+        if (_selectedTargetId is not null && FindNpc(_selectedTargetId) is { Ship.IsPod: true })
+        {
+            AdvanceTutorial(0);
+        }
     }
 
     private void TogglePin()
     {
         _pinned = !_pinned;
         _predictionDirty = true;
+    }
+
+    // ---- M6: capture, dock, economy, tutorial ----
+
+    // The current boarding candidate: selected, live, observed, not already emptied.
+    private NpcState? SelectedCaptureTarget()
+    {
+        if (_selectedTargetId is null)
+        {
+            return null;
+        }
+
+        NpcState? npc = FindNpc(_selectedTargetId);
+        if (npc is null || !npc.Active || npc.Arrived || npc.Boarded || !npc.CurrentlyObserved)
+        {
+            return null;
+        }
+
+        return npc;
+    }
+
+    // Accumulate window time while the capture predicate holds; board at RequiredSeconds.
+    private void UpdateCapture(double simAdvanced)
+    {
+        NpcState? npc = SelectedCaptureTarget();
+        if (npc is not null && CaptureRule.IsInWindow(_ship, npc.State))
+        {
+            if (_captureSeconds <= 0)
+            {
+                AdvanceTutorial(2); // step 3: window first engages
+            }
+
+            // Clamp per-frame credit to what a capped-warp frame can honestly advance —
+            // otherwise one 10000× frame that starts and ends inside the window boards
+            // instantly, skipping the hold-the-window game.
+            _captureSeconds += Math.Clamp(simAdvanced, 0, CaptureWarpCap);
+            _captureEngaged = true;
+            _captureTargetCallsign = npc.Ship.Callsign;
+
+            if (_captureSeconds >= CaptureRule.RequiredSeconds)
+            {
+                Board(npc);
+                _captureSeconds = 0;
+            }
+        }
+        else
+        {
+            _captureSeconds = 0;
+            _captureEngaged = false;
+            _captureTargetCallsign = null;
+        }
+    }
+
+    private void Board(NpcState npc)
+    {
+        int holdSpace = CargoCapacity - _cargoUnits;
+        int take = Math.Max(0, Math.Min(npc.Ship.CargoUnits, holdSpace));
+        if (take > 0)
+        {
+            _cargoUnits += take;
+            _cargoValue += take * CargoMarket.UnitValue(npc.Ship.CargoClass);
+        }
+
+        npc.Boarded = true; // keeps flying but empty; a second boarding yields nothing
+        ShowPulseMessage($"Captured {take} units of {npc.Ship.CargoClass}");
+        AdvanceTutorial(3); // step 4: first successful boarding
+    }
+
+    private void UpdateDockStatus()
+    {
+        _docked = false;
+        _dockBodyId = null;
+        foreach (string id in MarketBodies)
+        {
+            Vector2d pos = _ephemeris!.Position(id, _ship.SimTime);
+            if ((_ship.Position - pos).Length <= DockRadiusMeters)
+            {
+                _docked = true;
+                _dockBodyId = id;
+                break;
+            }
+        }
+
+        if (!_docked && _showDock)
+        {
+            _showDock = false; // drifted out of range: close the fence card
+        }
+    }
+
+    private void ToggleDock() => _showDock = !_showDock;
+
+    private void RebuildSensor()
+    {
+        double range = SensorModel.Default.RangeMeters * Math.Pow(1.4, _sensorLevel);
+        _sensor = new SensorModel(range, SensorModel.Default.GlareHalfAngleRad, SensorModel.Default.GlareRangeFactor);
+    }
+
+    private void SellCargo()
+    {
+        if (_cargoValue <= 0)
+        {
+            return;
+        }
+
+        _credits += _cargoValue;
+        ShowPulseMessage($"Sold {_cargoUnits} units for {_cargoValue:N0} credits");
+        _cargoUnits = 0;
+        _cargoValue = 0;
+        AdvanceTutorial(4); // step 5: first sale
+    }
+
+    private void RefillReactionMass()
+    {
+        _reactionMassPulses = ReactionMassCapacity;
+        ShowPulseMessage("Reaction mass topped off");
+    }
+
+    private void BuyUpgrade(string track)
+    {
+        int level = track switch
+        {
+            "mass" => _massLevel,
+            "sensor" => _sensorLevel,
+            "hold" => _holdLevel,
+            _ => 0,
+        };
+        int price = UpgradePrice(level);
+        if (_credits < price)
+        {
+            return;
+        }
+
+        _credits -= price;
+        switch (track)
+        {
+            case "mass":
+                _massLevel++;
+                break;
+            case "sensor":
+                _sensorLevel++;
+                RebuildSensor();
+                _predictionDirty = true;
+                break;
+            case "hold":
+                _holdLevel++;
+                break;
+        }
+
+        ShowPulseMessage("Upgrade installed");
+        AdvanceTutorial(5); // step 6: first upgrade
+    }
+
+    private void RequestRescue()
+    {
+        _reactionMassPulses = ReactionMassCapacity;
+        _cargoUnits = 0;
+        _cargoValue = 0;
+        ShowPulseMessage("Rescue fee: all cargo confiscated");
+    }
+
+    private void ToggleTutorial() => _showTutorial = !_showTutorial;
+
+    private void AdvanceTutorial(int completedStep)
+    {
+        if (_tutorialStep == completedStep)
+        {
+            _tutorialStep++;
+        }
     }
 
     // The selected target, but only when it carries an observation (the pin toggle needs one).
@@ -1138,6 +1485,10 @@
         if (npc.Arrived)
         {
             return "Arrived";
+        }
+        if (npc.Boarded)
+        {
+            return "Boarded";
         }
         if (!npc.Active)
         {

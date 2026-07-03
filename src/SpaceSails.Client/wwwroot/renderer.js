@@ -156,6 +156,19 @@ export async function startLoop(canvasId) {
         entry.rafId = requestAnimationFrame(frame);
     };
     entry.rafId = requestAnimationFrame(frame);
+
+    // Browsers suspend requestAnimationFrame entirely for hidden documents (tab switched,
+    // window occluded, machine locked), which would silently freeze the whole simulation —
+    // warp time stops passing the moment the player looks away. While hidden, tick from a
+    // 1 Hz interval instead (background timers are throttled to about that anyway); rendering
+    // to an invisible canvas is wasted but 1 Hz of it is free, and C#'s accumulator clamp
+    // already bounds the per-tick work. Timestamps stay on the performance.now() clock either
+    // way, so the C# dt math never sees a seam.
+    entry.hiddenTimerId = setInterval(() => {
+        if (entry.running && document.visibilityState === 'hidden') {
+            rendererInterop.Tick(performance.now());
+        }
+    }, 1000);
 }
 
 export function stopLoop(canvasId) {
@@ -168,6 +181,10 @@ export function stopLoop(canvasId) {
     if (entry.rafId !== null) {
         cancelAnimationFrame(entry.rafId);
         entry.rafId = null;
+    }
+    if (entry.hiddenTimerId) {
+        clearInterval(entry.hiddenTimerId);
+        entry.hiddenTimerId = null;
     }
 }
 

@@ -8,13 +8,15 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class CaptureRule
 {
-    /// <summary>Boarding range. 1e8 m ≈ a quarter of the Earth–Luna distance — generous on
-    /// purpose: closing tighter with ±10% pulses is the skill, not pixel-hunting.</summary>
-    public const double CaptureRadiusMeters = 1e8;
+    /// <summary>Boarding range, ~the Earth–Luna distance. Tuned by an offline probe: the best
+    /// plottable two-node intercept of a Luna pod closes to ~1.6e8 m — the window must admit a
+    /// good plot + a trim pulse, or the tutorial is expert-only.</summary>
+    public const double CaptureRadiusMeters = 3e8;
 
-    /// <summary>Max closing speed to hold a boarding tube. One pulse at interplanetary speed
-    /// is ~3 km/s, so 2 km/s demands a genuine rendezvous orbit, not a flyby.</summary>
-    public const double MaxRelativeSpeed = 2000;
+    /// <summary>Max closing speed to hold a boarding tube. One ±10% pulse at interplanetary
+    /// speed is a ~3 km/s quantum, so the tolerance must be about one quantum: a genuine
+    /// rendezvous orbit plus one trim gets in; a flyby (tens of km/s) never does.</summary>
+    public const double MaxRelativeSpeed = 3000;
 
     /// <summary>Continuous sim seconds the window must hold.</summary>
     public const double RequiredSeconds = 60;

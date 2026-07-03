@@ -139,8 +139,10 @@ public static class TrafficSchedule
             pods.Add(new NpcShip(
                 $"pod-{i}", $"Pod-{i + 1}", "Compute cores", "luna", destination,
                 RoutePersonality.Economical, departure, launched.SimTime, launched,
+                // 5 units × 400 cr = exactly the first upgrade (2000 cr): one clean milk run
+                // finishes the tutorial. 4 units would dead-end it 400 credits short.
                 ManeuverPlan.Empty, route.EstimatedArrivalTime,
-                CargoUnits: 4, ManeuverBudget: 0, IsPod: true));
+                CargoUnits: 5, ManeuverBudget: 0, IsPod: true));
         }
 
         return pods;

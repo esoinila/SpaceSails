@@ -46,7 +46,8 @@ public class PiracyTests
             Assert.Empty(pod.Plan.Nodes);           // mass driver: all delta-v at launch
             Assert.Equal("luna", pod.OriginId);
             Assert.Equal("Compute cores", pod.CargoClass);
-            Assert.Equal(4, pod.CargoUnits);
+            // 5 × 400 cr = exactly the first upgrade price: one pod finishes the tutorial.
+            Assert.Equal(5, pod.CargoUnits);
             Assert.True(pod.ActivationTime > pod.DepartureTime); // launched, then coasting
         }
     }
