@@ -127,3 +127,8 @@
     min-width: 3.5rem;
     text-align: right;
 }
+
+.map-horizon-readout {
+    min-width: 3.2rem;
+    text-align: right;
+}
