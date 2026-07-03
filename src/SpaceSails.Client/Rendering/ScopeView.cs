@@ -38,6 +38,9 @@ public sealed class ScopeView
     private readonly IRenderer _renderer;
     private readonly float[] _scratch = new float[64];
 
+    /// <summary>Footer tag: "◆ AUTO" in auto mode, "◆ TRACK" when the pilot picked the target.</summary>
+    public string LockLabel { get; set; } = "◆ AUTO";
+
     public ScopeView(IRenderer renderer)
     {
         _renderer = renderer;
@@ -89,15 +92,16 @@ public sealed class ScopeView
 
         DrawLockBrackets(cx, cy, s * 0.36f, simTime);
 
-        // Readouts on the circle's vertical axis — the scope element is CSS-cropped to a disc,
-        // so corner-anchored text would be eaten by the crop.
-        _renderer.DrawText(cx, 26, $"{target.Name.ToUpperInvariant()} ∙ {KindLabel(target)}", HudText, "bold 12px monospace", TextAlign.Center);
+        // Instrument-screen readouts, corner-anchored (the display is rectangular now).
+        _renderer.DrawText(8, 16, target.Name.ToUpperInvariant(), HudText, "bold 12px monospace");
+        _renderer.DrawText(s - 8, 16, KindLabel(target), HudText, "11px monospace", TextAlign.Right);
         if (target.Detail is { Length: > 0 } detail)
         {
-            _renderer.DrawText(cx, 40, detail, new RgbaColor(150, 240, 210, 160), "10px monospace", TextAlign.Center);
+            _renderer.DrawText(8, 30, detail, new RgbaColor(150, 240, 210, 160), "10px monospace");
         }
-        _renderer.DrawText(cx, s - 34, $"{FormatDistance(distance)} ∙ {relSpeed / 1000:F1} km/s rel", HudText, "bold 12px monospace", TextAlign.Center);
-        _renderer.DrawText(cx, s - 18, "◆ AUTO-LOCK", new RgbaColor(120, 255, 190, 150), "9px monospace", TextAlign.Center);
+        _renderer.DrawText(8, s - 10, FormatDistance(distance), HudText, "bold 12px monospace");
+        _renderer.DrawText(s - 8, s - 10, $"{relSpeed / 1000:F1} km/s rel", HudText, "11px monospace", TextAlign.Right);
+        _renderer.DrawText(cx, s - 10, LockLabel, new RgbaColor(120, 255, 190, 170), "9px monospace", TextAlign.Center);
 
         DrawRim(s);
         _renderer.EndFrame();
@@ -315,8 +319,16 @@ public sealed class ScopeView
 
     private void DrawRim(float s)
     {
-        _renderer.DrawCircle(s / 2, s / 2, s * 0.485f, null, ScopeRim, 2f);
-        _renderer.DrawCircle(s / 2, s / 2, s * 0.46f, null, new RgbaColor(90, 200, 190, 50), 1f);
+        // Screen bezel: frame + corner ticks + faint scanlines. An instrument, not a porthole.
+        Span<float> f = _scratch.AsSpan(0, 10);
+        f[0] = 1; f[1] = 1; f[2] = s - 1; f[3] = 1; f[4] = s - 1; f[5] = s - 1; f[6] = 1; f[7] = s - 1; f[8] = 1; f[9] = 1;
+        _renderer.DrawPolyline(f, ScopeRim, 2f);
+        for (int y = 8; y < s; y += 14)
+        {
+            Span<float> line = _scratch.AsSpan(0, 4);
+            line[0] = 2; line[1] = y; line[2] = s - 2; line[3] = y;
+            _renderer.DrawPolyline(line, new RgbaColor(120, 220, 210, 8), 1f);
+        }
     }
 
     // ---- Small vector helpers ----
