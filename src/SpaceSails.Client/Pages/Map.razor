@@ -3,6 +3,7 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @using System.Globalization
+@using Microsoft.AspNetCore.SignalR.Client
 @using SpaceSails.Client.Rendering
 @using SpaceSails.Contracts
 @using SpaceSails.Core
@@ -40,13 +41,16 @@
             <button type="button" class="btn btn-sm @(_showTraffic ? "btn-primary" : "btn-outline-light") me-2" @onclick="ToggleTraffic">
                 Traffic
             </button>
-            <button type="button" class="btn btn-sm @(_showDock ? "btn-success" : "btn-outline-light") me-2"
-                    disabled="@(!_docked)" @onclick="ToggleDock">
-                Dock
-            </button>
-            <button type="button" class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" @onclick="ToggleTutorial">
-                First hunt
-            </button>
+            @if (!_mp)
+            {
+                <button type="button" class="btn btn-sm @(_showDock ? "btn-success" : "btn-outline-light") me-2"
+                        disabled="@(!_docked)" @onclick="ToggleDock">
+                    Dock
+                </button>
+                <button type="button" class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" @onclick="ToggleTutorial">
+                    First hunt
+                </button>
+            }
         </div>
 
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
@@ -56,9 +60,25 @@
                 {
                     <span class="badge bg-info text-dark ms-1">EU ⚡</span>
                 }
+                @if (_mp)
+                {
+                    <span class="badge bg-success ms-1">MP 🛰️</span>
+                }
             </div>
+            @if (_mp)
+            {
+                <div>Crew: @_playerCount aboard</div>
+                <div>Link: @ConnectionLabel</div>
+            }
             <div>Sim time: @FormatSimTime(SimTime)</div>
-            <div>Warp: @(Paused ? "paused" : $"{_effectiveWarp}×") @(Warp != _effectiveWarp ? $"(auto-drop from {Warp}×)" : "")</div>
+            @if (_mp)
+            {
+                <div>Warp: @(_effectiveWarp == 0 ? "paused" : $"{_effectiveWarp}×") @(_effectiveWarp != Warp ? "(session)" : "")</div>
+            }
+            else
+            {
+                <div>Warp: @(Paused ? "paused" : $"{_effectiveWarp}×") @(Warp != _effectiveWarp ? $"(auto-drop from {Warp}×)" : "")</div>
+            }
             <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
             <hr />
             <div>Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s</div>
@@ -146,7 +166,42 @@
         }
     </div>
 
-    @if (_showTraffic)
+    @if (_showTraffic && _mp)
+    {
+        <div class="map-traffic">
+            <div class="card bg-dark bg-opacity-75 text-light">
+                <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold small">Contacts (@_mpContacts.Count)</span>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleTraffic"></button>
+                </div>
+                <div class="card-body p-0 map-traffic-scroll">
+                    <table class="table table-sm table-dark align-middle mb-0 small">
+                        <thead>
+                            <tr><th>Callsign</th><th>Kind</th><th>Cargo</th></tr>
+                        </thead>
+                        <tbody>
+                            @if (_mpContacts.Count == 0)
+                            {
+                                <tr><td colspan="3" class="text-secondary">No contacts in sensor range.</td></tr>
+                            }
+                            else
+                            {
+                                @foreach (ContactDto c in _mpContacts)
+                                {
+                                    <tr>
+                                        <td>@c.Callsign</td>
+                                        <td>@c.Kind</td>
+                                        <td>@(c.CargoClass ?? "—")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else if (_showTraffic)
     {
         <div class="map-traffic">
             <div class="card bg-dark bg-opacity-75 text-light">
@@ -204,7 +259,7 @@
         </div>
     }
 
-    @if (_showDock)
+    @if (_showDock && !_mp)
     {
         <div class="map-dock">
             <div class="card bg-dark bg-opacity-75 text-light">
@@ -255,7 +310,7 @@
         </div>
     }
 
-    @if (_showTutorial)
+    @if (_showTutorial && !_mp)
     {
         <div class="map-tutorial">
             <div class="card bg-dark bg-opacity-75 text-light">
@@ -414,7 +469,7 @@
 
     private int ReactionMassCapacity => 250 + 150 * _massLevel;
     private int CargoCapacity => 10 + 10 * _holdLevel;
-    private bool Adrift => _reactionMassPulses == 0 && !_docked;
+    private bool Adrift => _reactionMassPulses == 0 && !_docked && !_mp;
     private static int UpgradePrice(int level) => 2000 * (1 << level);
     private bool _pinned;
     private ManeuverPlan? _pinnedPlan;
@@ -467,6 +522,29 @@
     private Vector2d _nearestBodyVelocity;
     private ElementReference _focusableDiv;
 
+    // M9 additions — multiplayer client. Every path is behind _mp; single player is untouched.
+    private const double SnapThresholdMeters = 1e6;                 // reconcile only past this drift
+    private static readonly RgbaColor PlayerContactColor = new(120, 255, 140);
+
+    private bool _mp;
+    private string _callsign = "Corsair";
+    private string? _playerId;
+    private HubConnection? _connection;
+    // Written on a hub callback thread, read on the render-loop thread — volatile publishes the
+    // reference safely; OnTick marshals it into fields (no per-update InvokeAsync).
+    private volatile WorldUpdateDto? _latestUpdate;
+    private WorldUpdateDto? _appliedUpdate;
+    private IReadOnlyList<ContactDto> _mpContacts = [];
+    private int _playerCount;
+
+    private string ConnectionLabel => _connection?.State switch
+    {
+        HubConnectionState.Connected => "connected",
+        HubConnectionState.Connecting => "connecting",
+        HubConnectionState.Reconnecting => "reconnecting",
+        _ => "disconnected",
+    };
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _started)
@@ -490,6 +568,23 @@
                     scenarioName = candidate;
                 }
             }
+            else if (pair.StartsWith("mp=", StringComparison.OrdinalIgnoreCase))
+            {
+                _mp = pair["mp=".Length..] == "1";
+            }
+            else if (pair.StartsWith("callsign=", StringComparison.OrdinalIgnoreCase))
+            {
+                string candidate = Uri.UnescapeDataString(pair["callsign=".Length..]).Trim();
+                if (candidate.Length > 0)
+                {
+                    _callsign = candidate;
+                }
+            }
+        }
+
+        if (_mp)
+        {
+            _showTutorial = false; // server doesn't arbitrate the hunt tutorial in MP this milestone
         }
 
         string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json");
@@ -507,10 +602,15 @@
         // few seconds of planning work; yield first so the initial (empty) map paints and stays
         // responsive, then build the NPC live-state wrappers.
         await Task.Yield();
-        // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
-        IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
-        IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
-        _npcStates = pods.Concat(traffic).Select(s => new NpcState { Ship = s }).ToArray();
+        if (!_mp)
+        {
+            // Single player owns its NPC picture. In MP the server is authoritative — contacts
+            // arrive filtered per-player through WorldUpdate, so we skip local traffic generation.
+            // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
+            IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
+            IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
+            _npcStates = pods.Concat(traffic).Select(s => new NpcState { Ship = s }).ToArray();
+        }
 
         _scratch = new float[_samples.Count * 2 + 4];
 
@@ -526,6 +626,101 @@
         RendererInterop.StartLoop(CanvasId);
 
         await _focusableDiv.FocusAsync();
+
+        if (_mp)
+        {
+            await ConnectMultiplayerAsync();
+        }
+    }
+
+    // Join the shared session and start receiving authoritative updates. The local world is already
+    // built and rendering (client-side prediction); Join snaps us onto the server spawn.
+    private async Task ConnectMultiplayerAsync()
+    {
+        _connection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/hubs/game"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        // Registered before StartAsync so no update is missed. Runs on a hub thread — publish the
+        // reference via the volatile field only; OnTick applies it on the render thread.
+        _connection.On<WorldUpdateDto>("Update", update => _latestUpdate = update);
+
+        try
+        {
+            await _connection.StartAsync();
+            JoinResultDto result = await _connection.InvokeAsync<JoinResultDto>("Join", _callsign);
+            _playerId = result.PlayerId;
+            _ship = new ShipState(
+                new Vector2d(result.PositionX, result.PositionY),
+                new Vector2d(result.VelocityX, result.VelocityY),
+                result.SimTime);
+            _reactionMassPulses = result.ReactionMass;
+            SimTime = result.SimTime;
+            ReprojectTrajectory();
+            _camera.CenterOn(_ship.Position);
+        }
+        catch (Exception ex)
+        {
+            ShowPulseMessage($"Multiplayer connection failed: {ex.Message}");
+        }
+    }
+
+    // Fire-and-forget command send. The server is authoritative and revalidates everything, so a
+    // dropped/failed command is simply a no-op corrected by the next update.
+    private async void SendCommand(Func<HubConnection, Task> send)
+    {
+        HubConnection? connection = _connection;
+        if (connection is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await send(connection);
+        }
+        catch
+        {
+            // Transient (reconnecting / disconnected). Next WorldUpdate reconciles state.
+        }
+    }
+
+    // Marshal the latest authoritative snapshot into local fields at the start of a frame. Snaps the
+    // ship only on meaningful divergence (client prediction is usually already close); always adopts
+    // server-owned mass, warp and crew count, and swaps in the fresh contact picture.
+    private void ApplyPendingUpdate()
+    {
+        WorldUpdateDto? update = _latestUpdate;
+        if (update is null || ReferenceEquals(update, _appliedUpdate))
+        {
+            return;
+        }
+
+        _appliedUpdate = update;
+
+        var serverPosition = new Vector2d(update.PositionX, update.PositionY);
+        double drift = (_ship.Position - serverPosition).Length;
+        if (drift > SnapThresholdMeters || update.SimTime > _ship.SimTime)
+        {
+            _ship = _ship with
+            {
+                Position = serverPosition,
+                Velocity = new Vector2d(update.VelocityX, update.VelocityY),
+                Charge = update.Charge,
+                SimTime = update.SimTime,
+            };
+            SimTime = update.SimTime;
+            if (drift > SnapThresholdMeters)
+            {
+                ReprojectTrajectory();
+            }
+        }
+
+        _reactionMassPulses = update.ReactionMass;
+        _effectiveWarp = update.EffectiveWarp;
+        _playerCount = update.PlayerCount;
+        _mpContacts = update.Contacts; // swap reference; no per-frame allocation
     }
 
     private ShipState InitializeShipState()
@@ -567,8 +762,16 @@
             : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
         _lastTimestampMs = highResTimestampMs;
 
+        if (_mp)
+        {
+            ApplyPendingUpdate();
+        }
+
         UpdateNearestBody();
-        UpdateEffectiveWarp();
+        if (!_mp)
+        {
+            UpdateEffectiveWarp();
+        }
 
         if (!Paused)
         {
@@ -607,7 +810,10 @@
         UpdateDockStatus();
         UpdateCapture(_ship.SimTime - simTimeBefore);
 
-        UpdatePrediction();
+        if (!_mp)
+        {
+            UpdatePrediction();
+        }
 
         if (_ship.SimTime >= _nextProjectionSimTime)
         {
@@ -640,7 +846,14 @@
         {
             DrawGhostShip();
         }
-        DrawNpcs();
+        if (_mp)
+        {
+            DrawContacts();
+        }
+        else
+        {
+            DrawNpcs();
+        }
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -913,6 +1126,16 @@
                 return;
             }
 
+            if (_mp)
+            {
+                // Server owns the ship: send the command, gate locally only to avoid spam, and show
+                // the flash optimistically. The authoritative velocity/mass arrive in the next update.
+                _lastPulseSimTime = _ship.SimTime;
+                ShowPulseMessage(factor > 1 ? "Pulse: accelerate +10%" : "Pulse: decelerate −10%");
+                SendCommand(c => c.SendAsync("Pulse", factor > 1));
+                return;
+            }
+
             _ship = _ship with { Velocity = _ship.Velocity * factor };
             _reactionMassPulses--;
             _lastPulseSimTime = _ship.SimTime;
@@ -959,8 +1182,15 @@
             return;
         }
 
-        _ship = _ship with { Charge = _ship.Charge * 0.5 };
         _lastVentSimTime = _ship.SimTime;
+        if (_mp)
+        {
+            SendCommand(c => c.SendAsync("Vent"));
+            ShowPulseMessage("Venting charge");
+            return;
+        }
+
+        _ship = _ship with { Charge = _ship.Charge * 0.5 };
         ShowPulseMessage("Venting charge");
     }
 
@@ -991,6 +1221,7 @@
         Paused = true;
         _scrubOffsetSeconds = 0;
         ReprojectTrajectory();
+        SyncWarp();
     }
 
     private void ExitPlotMode()
@@ -999,6 +1230,7 @@
         Paused = false;
         Warp = _warpBeforePlot <= 0 ? 1 : _warpBeforePlot;
         ReprojectTrajectory();
+        SyncWarp();
     }
 
     // Rebuild the immutable plan the sim executes from the non-stale nodes. Past/executed nodes are
@@ -1008,6 +1240,17 @@
         _plan = new ManeuverPlan(
             _planNodes.Where(n => !n.Stale)
                       .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses)));
+
+        if (_mp)
+        {
+            // Hand the plan to the server, which owns execution. It clamps times to the future and
+            // caps node/pulse counts, so we send the same non-stale set the local projection uses.
+            PlanNodeDto[] nodes = _planNodes
+                .Where(n => !n.Stale)
+                .Select(n => new PlanNodeDto(n.SimTime, n.Action == ManeuverAction.Accelerate, n.Pulses))
+                .ToArray();
+            SendCommand(c => c.SendAsync("SetPlan", nodes));
+        }
     }
 
     // Reaction-mass claimed by still-pending (non-stale, future) nodes.
@@ -1164,6 +1407,11 @@
     // starts from InitialState and immediately catches up).
     private void StepNpcs()
     {
+        if (_mp)
+        {
+            return; // server steps and filters NPCs; contacts arrive via WorldUpdate
+        }
+
         foreach (NpcState npc in _npcStates)
         {
             if (npc.Arrived)
@@ -1205,6 +1453,11 @@
     // non-arrived NPC is either currently visible or falls back to its dim last-seen marker.
     private void SweepSensors()
     {
+        if (_mp)
+        {
+            return; // server enforces observation filtering; no local sweep in MP
+        }
+
         foreach (NpcState npc in _npcStates)
         {
             npc.CurrentlyObserved = false;
@@ -1283,6 +1536,20 @@
                 (float sx, float sy) = _camera.WorldToScreen(obs.Position);
                 _renderer!.DrawCircle(sx, sy, 4f, null, NpcLastSeenColor);
             }
+        }
+    }
+
+    // MP contact markers: the server already filtered these to what we can see, so we draw every one
+    // solid with its callsign — other players in green, NPCs/pods in the usual traffic colour. No
+    // last-seen markers this milestone: a contact that leaves range simply drops from the packet.
+    private void DrawContacts()
+    {
+        foreach (ContactDto contact in _mpContacts)
+        {
+            (float sx, float sy) = _camera.WorldToScreen(new Vector2d(contact.PositionX, contact.PositionY));
+            RgbaColor color = contact.Kind == "player" ? PlayerContactColor : NpcColor;
+            _renderer!.DrawCircle(sx, sy, 4f, color, color);
+            _renderer!.DrawText(sx + 8, sy - 6, contact.Callsign, color);
         }
     }
 
@@ -1413,9 +1680,9 @@
     // The current boarding candidate: selected, live, observed, not already emptied.
     private NpcState? SelectedCaptureTarget()
     {
-        if (_selectedTargetId is null)
+        if (_mp || _selectedTargetId is null)
         {
-            return null;
+            return null; // capture/boarding is single-player only this milestone
         }
 
         NpcState? npc = FindNpc(_selectedTargetId);
@@ -1667,6 +1934,17 @@
         PlotMode = false;
         Warp = level;
         Paused = false;
+        SyncWarp();
+    }
+
+    // MP: cast this player's warp vote. The session runs at the minimum across all players (KSP rule),
+    // so pausing (warp 0) or plotting drops the shared clock; the effective warp comes back in updates.
+    private void SyncWarp()
+    {
+        if (_mp)
+        {
+            SendCommand(c => c.SendAsync("RequestWarp", Paused ? 0 : Warp));
+        }
     }
 
     // Unpausing from inside plot mode is "press play": leave plotting properly (restores warp)
@@ -1680,6 +1958,7 @@
         }
 
         Paused = !Paused;
+        SyncWarp();
     }
 
     private void ToggleFollow() => FollowShip = !FollowShip;
@@ -1723,6 +2002,12 @@
         if (_started)
         {
             RendererInterop.StopLoop(CanvasId);
+        }
+
+        if (_connection is not null)
+        {
+            _ = _connection.DisposeAsync(); // fire-and-forget; nothing left to await against
+            _connection = null;
         }
     }
 }
