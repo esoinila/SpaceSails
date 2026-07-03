@@ -48,3 +48,21 @@
 .map-plot-pulses {
     width: 3.75rem;
 }
+
+.map-traffic {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 32rem;
+    max-width: calc(100% - 1.5rem);
+    pointer-events: auto;
+}
+
+.map-traffic-scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.map-traffic-row {
+    cursor: pointer;
+}

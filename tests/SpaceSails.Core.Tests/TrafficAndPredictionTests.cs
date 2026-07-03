@@ -41,7 +41,7 @@ public class TrafficAndPredictionTests
         Assert.True(midFlight.Count >= 3, $"Expected several mid-flight ships, got {midFlight.Count}.");
         foreach (NpcShip ship in midFlight)
         {
-            Assert.InRange(ship.ActivationTime, 0, 3700); // catch-up lands just past t=0
+            Assert.InRange(ship.ActivationTime, 0, 7300); // catch-up (dt=2h) lands just past t=0
             Assert.Equal(ship.ActivationTime, ship.InitialState.SimTime);
             // In transit: already fallen inside its origin's orbit.
             double originRadius = ephemeris.Bodies.First(b => b.Id == ship.OriginId).OrbitRadius;

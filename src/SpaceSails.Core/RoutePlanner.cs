@@ -30,9 +30,13 @@ public static class RoutePlanner
     public const double ArrivalToleranceMeters = 1e10;
 
     private const double BurnLeadSeconds = 3600;
-    // The planner only needs 1e10 m accuracy, so it projects very coarsely: dt = 2 h keeps a
-    // Saturn-transfer search around a few hundred thousand steps — startup-cheap even in WASM.
-    private const double CoarseTimeStep = 7200;
+    // The planner only needs 1e10 m accuracy, so it searches at dt = 1 day: a candidate covers a
+    // 12.7-year horizon in ~4600 steps. This must stay cheap in *interpreted* WASM (Debug builds
+    // run the IL interpreter, ~100x slower than native) because the client generates traffic at
+    // startup — dt = 2 h froze the page for minutes there. Euler stability is fine: dt/tau < 0.01
+    // along these transfers. The live sim still flies the plan at dt = 1 s; the 1e10 m despawn
+    // radius absorbs the search-vs-flight divergence.
+    private const double CoarseTimeStep = 86400;
     private const double MaxHorizonSeconds = 4e8; // ~12.7 years — covers a slow Saturn->inner fall
 
     public static NpcRoute PlanRoute(

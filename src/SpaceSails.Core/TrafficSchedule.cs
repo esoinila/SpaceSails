@@ -28,7 +28,18 @@ public sealed record NpcShip(
 /// </summary>
 public static class TrafficSchedule
 {
-    private const double CatchUpTimeStep = 3600;
+    /// <summary>
+    /// Fixed timestep for live NPC integration. Coarser than the player's dt=1 s because a
+    /// frame at high warp must step every NPC (8 × 10000 dt=1 steps/frame froze interpreted
+    /// WASM at ~1 fps), and NPC accuracy needs are meters-scale at dt=60. One shared constant
+    /// so client and server (M9) integrate NPCs identically — determinism is law.
+    /// </summary>
+    public const double NpcTimeStep = 60;
+
+    // Coarse on purpose: catch-up replays years of transfer at startup in interpreted WASM.
+    // The resulting state is *declared* truth, so coarseness costs accuracy of the fiction, not
+    // determinism of the sim.
+    private const double CatchUpTimeStep = 7200;
     private const double Day = 86400;
 
     private static readonly string[] Callsigns =
