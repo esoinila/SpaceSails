@@ -46,6 +46,23 @@ distract from it.*
   giants themselves once scenarios support moons as bodies — `CircularOrbitEphemeris` already
   chains parents, so moon-origin departures are data, not code.
 
+## 5. Ship-side telescope — the pirate's little Hubble
+
+- A directed optical instrument, distinct from the passive sensor sweep: point it at a sky
+  position and *look*. Prey whose position is known from the departures board ("known from the
+  stars") can be found and evaluated long before sensor range: hull class, cargo guess, charge
+  glow, maybe a burn flash when it maneuvers.
+- Mechanical sketch: narrow field of view (a cone a few degrees wide) with several × the
+  passive sensor range; must be aimed and *held* on a tracked target (like venting, it
+  occupies the player's attention — the observation minigame). A successful track feeds
+  higher-quality `Observation`s into the existing `PathPredictor` (smaller `w0`/`σv` → visibly
+  tighter cone: telescope tracking literally sharpens your intercept).
+- UI: a "scope" overlay — small inset viewport rendered from the ship toward the aim point
+  with magnification, crosshair, and a track-lock indicator. `IObservationModel` already
+  abstracts what a sensor sees; a `TelescopeModel` slots beside `SensorModel`.
+- Lands naturally with M10 polish or as M9.5; no engine changes needed — it is an observation
+  model + an overlay.
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |
@@ -54,3 +71,4 @@ distract from it.*
 | Mercury compute farms | M6/M7 | Mercury as a traffic destination; glare-country ambush routes |
 | Ancient satellites | M7/M8 | Off-board NPC class with pyramid icon, no departures entry |
 | He3 moon origins | M8 | Moons in scenario JSON (parent chaining already works) |
+| Ship-side telescope | M9.5/M10 | `TelescopeModel : IObservationModel` + scope overlay; better obs → tighter prediction cones |
