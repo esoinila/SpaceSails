@@ -10,7 +10,7 @@
 
 <PageTitle>SpaceSails — Map</PageTitle>
 
-<div @ref="_focusableDiv" class="map-page" tabindex="0" @onkeydown="OnKeyDown">
+<div @ref="_focusableDiv" class="map-page" tabindex="0" @onkeydown="OnKeyDown" @onkeyup="OnKeyUp" @onfocusout="OnFocusOut">
     <canvas id="@CanvasId" class="map-canvas"
             @onwheel="OnWheel" @onwheel:preventDefault="true"
             @onpointerdown="OnPointerDown" @onpointermove="OnPointerMove"
@@ -51,6 +51,12 @@
                     First hunt
                 </button>
             }
+            <button type="button" class="btn btn-sm @(_showScope ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleScope">
+                Scope
+            </button>
+            <button type="button" class="btn btn-sm @(_deckMode ? "btn-warning" : "btn-outline-light")" @onclick="ToggleDeck">
+                Deck
+            </button>
         </div>
 
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
@@ -530,11 +536,112 @@
     private static readonly RgbaColor ArcHaloColor = new(255, 240, 120, 150);
 
     // M11 — the telescope (worldbuilding notes §5)
+    // M12 — deck view (walk your ship)
+    private bool _deckMode;
+    private DeckView? _deckView;
+    private double _avatarX = 16, _avatarY = 0, _avatarHeading;
+    private readonly HashSet<string> _deckKeys = [];
+    private const double AvatarSpeed = 9.0; // deck units per real second
+
     private const string ScopeCanvasId = "scope-canvas";
     private const int ScopeSizePx = 280;
     private ScopeView? _scopeView;
     private bool _showScope = true;
     private void ToggleScope() => _showScope = !_showScope;
+
+    private void ToggleDeck()
+    {
+        _deckMode = !_deckMode;
+        _deckKeys.Clear();
+    }
+
+    // Movement keys are held-state (smooth walk); E interacts; Q returns to the map. Returns
+    // true when the key was consumed by the deck so it can't also fire a thrust pulse.
+    private bool HandleDeckKey(string key)
+    {
+        switch (key)
+        {
+            case "w" or "W" or "ArrowUp":
+            case "a" or "A" or "ArrowLeft":
+            case "s" or "S" or "ArrowDown":
+            case "d" or "D" or "ArrowRight":
+                _deckKeys.Add(Canonical(key));
+                return true;
+            case "q" or "Q":
+                ToggleDeck();
+                return true;
+            case "e" or "E":
+                InteractAtConsole();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void OnKeyUp(KeyboardEventArgs e)
+    {
+        if (_deckMode)
+        {
+            _deckKeys.Remove(Canonical(e.Key));
+        }
+    }
+
+    private void OnFocusOut(FocusEventArgs e) => _deckKeys.Clear();
+
+    private static string Canonical(string key) => key switch
+    {
+        "W" or "ArrowUp" => "w",
+        "A" or "ArrowLeft" => "a",
+        "S" or "ArrowDown" => "s",
+        "D" or "ArrowRight" => "d",
+        _ => key,
+    };
+
+    private void MoveAvatar(double dtRealSeconds)
+    {
+        double dx = 0, dy = 0;
+        if (_deckKeys.Contains("w")) dy += 1;   // +Y = port (up on screen)
+        if (_deckKeys.Contains("s")) dy -= 1;
+        if (_deckKeys.Contains("a")) dx -= 1;
+        if (_deckKeys.Contains("d")) dx += 1;
+        if (dx == 0 && dy == 0)
+        {
+            return;
+        }
+
+        double norm = Math.Sqrt(dx * dx + dy * dy);
+        double step = AvatarSpeed * Math.Min(dtRealSeconds, 0.1);
+        (_avatarX, _avatarY) = DeckView.Move(_avatarX, _avatarY, dx / norm * step, dy / norm * step);
+        _avatarHeading = Math.Atan2(dy, dx);
+    }
+
+    private void InteractAtConsole()
+    {
+        switch (DeckView.NearestConsole(_avatarX, _avatarY))
+        {
+            case DeckView.Console.Helm:
+                ToggleDeck();
+                ShowPulseMessage("Back at the helm");
+                break;
+            case DeckView.Console.Scope:
+                ToggleScope();
+                ShowPulseMessage(_showScope ? "Scope online" : "Scope shuttered");
+                break;
+            case DeckView.Console.Vent:
+                VentCharge();
+                break;
+            case DeckView.Console.Cargo:
+                ShowPulseMessage(_cargoUnits > 0
+                    ? $"Hold: {_cargoUnits} units (worth {_cargoValue:N0} cr)"
+                    : "Hold: empty. The fence weeps.");
+                break;
+            case DeckView.Console.Shuttle:
+                ShowPulseMessage(_captureEngaged
+                    ? "Shuttle away — boarding underway"
+                    : "Shuttle ready in the cradle");
+                break;
+        }
+    }
 
     // Auto-lock priority: the selected tracked target, else the nearest currently-observed
     // contact, else the nearest celestial body — the scope always has something to show a
@@ -704,6 +811,7 @@
         RendererInterop.InitCanvas(CanvasId, observeResize: true);
         RendererInterop.InitCanvas(ScopeCanvasId, observeResize: false);
         _scopeView = new ScopeView(new CanvasRenderer(ScopeCanvasId));
+        _deckView = new DeckView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
 
         await _focusableDiv.FocusAsync();
@@ -917,6 +1025,26 @@
         if (FollowShip)
         {
             _camera.CenterOn(_ship.Position);
+        }
+
+        if (_deckMode)
+        {
+            MoveAvatar(dtRealSeconds);
+            _deckView!.Draw(_viewportWidth, _viewportHeight, SimTime, new DeckView.State(
+                _avatarX, _avatarY, _avatarHeading,
+                _cargoUnits, _ship.Charge, ShuttleAway: _captureEngaged, _plasma is not null));
+
+            if (_showScope && _scopeView is not null)
+            {
+                _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
+            }
+
+            if (highResTimestampMs - _lastHudUpdateMs > 200)
+            {
+                _lastHudUpdateMs = highResTimestampMs;
+                InvokeAsync(StateHasChanged);
+            }
+            return;
         }
 
         _camera.SetViewport(_viewportWidth, _viewportHeight);
@@ -1180,6 +1308,11 @@
     
     private void OnKeyDown(KeyboardEventArgs e)
     {
+        if (_deckMode && HandleDeckKey(e.Key))
+        {
+            return;
+        }
+
         bool pulse = false;
         double factor = 1.0;
 
