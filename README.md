@@ -40,6 +40,9 @@ Tips:
 - Add `--no-build` to start faster when nothing changed.
 - Port already in use? `./run.ps1` handles it — finds the next free port and says so
   (`-Server` for multiplayer, `-TakePort` to stop the squatter instead).
+- All run variants have scripts: `./run.ps1` (client, Release), `./run-server.ps1`
+  (multiplayer, Release), `./run-debug.ps1` / `./run-server-debug.ps1` (Debug builds for
+  development). Every variant handles taken ports; the banner names the build config.
 - Blank page (or blank /guide) after the code changed? The running server is serving stale
   fingerprinted assets — .NET 10 renames `_framework/*.js` on every build. Restart the app
   (`Ctrl+C`, then `./run.ps1`) and reload.

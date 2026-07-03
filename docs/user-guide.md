@@ -126,7 +126,7 @@ behind a panel. Crew: droids K-77 and R-3B stand by the shuttle; V-1K patrols.
 real sky — the sun blazes bigger the closer you sail, and the planets are where the
 ephemeris says they are. `Q` returns to the helm.
 - Consoles: **HELM / NAV POST** (plotting), **SCOPE**,
-**CANTINA** (morale), **CARGO HOLD** (your loot as crates),
+**CANTINA** (rum — mind the third tot), **CARGO HOLD** (your loot as crates),
 **VENT PANEL**, **SHUTTLE BAY**.
 - **The boarding run**: with a capture window engaged, `E` at the
 shuttle bay puts you on the stick. Cross the gap with `WASD` thrust, dock at
