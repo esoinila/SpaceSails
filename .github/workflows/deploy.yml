@@ -1,0 +1,56 @@
+# SpaceSails → Azure Container Apps (plan §M10).
+#
+# Manual dispatch (workflow_dispatch) so deploys are deliberate. Requires these repo secrets:
+#   AZURE_CREDENTIALS   — output of: az ad sp create-for-rbac --role contributor \
+#                           --scopes /subscriptions/<sub-id>/resourceGroups/<rg> --json-auth
+#   ACR_NAME            — Azure Container Registry name (without .azurecr.io)
+# And these repo variables (Settings → Variables):
+#   AZURE_RESOURCE_GROUP, ACA_APP_NAME, ACA_ENVIRONMENT
+#
+# First-time infra (once, locally or in Cloud Shell):
+#   az group create -n <rg> -l westeurope
+#   az acr create -n <acr> -g <rg> --sku Basic --admin-enabled true
+#   az containerapp env create -n <env> -g <rg> -l westeurope
+#   az containerapp create -n <app> -g <rg> --environment <env> \
+#     --image mcr.microsoft.com/k8se/quickstart:latest --ingress external --target-port 8080 \
+#     --min-replicas 1 --max-replicas 1
+# (min-replicas 1: the authoritative session lives in process — scale-to-zero would reset the
+#  world between visits, and >1 replica would split the crew across parallel universes.)
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and push image (ACR build — no local docker needed)
+        run: |
+          az acr build \
+            --registry ${{ secrets.ACR_NAME }} \
+            --image spacesails:${{ github.sha }} \
+            --image spacesails:latest \
+            .
+
+      - name: Deploy to Container Apps
+        run: |
+          az containerapp update \
+            --name ${{ vars.ACA_APP_NAME }} \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --image ${{ secrets.ACR_NAME }}.azurecr.io/spacesails:${{ github.sha }}
+
+      - name: Show public URL
+        run: |
+          az containerapp show \
+            --name ${{ vars.ACA_APP_NAME }} \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --query properties.configuration.ingress.fqdn -o tsv
