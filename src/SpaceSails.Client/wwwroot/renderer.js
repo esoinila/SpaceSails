@@ -203,6 +203,7 @@ function rgba(r, g, b, a) {
 let audioCtx = null;
 
 const CUES = {
+    rum: { type: 'triangle', freq: 392, to: 587, duration: 0.35, gain: 0.09 }, // a jaunty rising swagger for the rum locker
     pulse: { freq: 220, to: 440, duration: 0.09, gain: 0.06, type: 'square' },   // engine thump
     vent:  { freq: 900, to: 300, duration: 0.25, gain: 0.05, type: 'sawtooth' }, // discharge hiss-fall
     board: { freq: 523, to: 784, duration: 0.35, gain: 0.08, type: 'sine' },     // prize jingle rise

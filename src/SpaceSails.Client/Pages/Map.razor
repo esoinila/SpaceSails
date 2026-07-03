@@ -767,8 +767,15 @@
     {
         double dt = Math.Min(dtRealSeconds, 0.1);
 
+        // Three tots of rum and the deck tilts (M21): the heading sways for a while. Purely
+        // cosmetic mischief — collision and interaction are unaffected.
+        double wobble = (_lastTimestampMs ?? 0) < _wobbleUntilMs
+            ? Math.Sin((_lastTimestampMs ?? 0) * 0.004) * 0.9 * dt
+            : 0;
+
         if (_fpMode)
         {
+            _avatarHeading += wobble;
             // Tank controls: A/D turn, W/S walk along the view direction.
             const double turnRate = 2.6; // rad/s
             if (_deckKeys.Contains("a")) _avatarHeading += turnRate * dt;
@@ -785,6 +792,7 @@
 
         double dx = 0, dy = 0;
         if (_deckKeys.Contains("w")) dy += 1;   // +Y = port (up on screen)
+        _ = wobble; // top-down: applied to the move vector below
         if (_deckKeys.Contains("s")) dy -= 1;
         if (_deckKeys.Contains("a")) dx -= 1;
         if (_deckKeys.Contains("d")) dx += 1;
@@ -795,6 +803,11 @@
 
         double norm = Math.Sqrt(dx * dx + dy * dy);
         double step2 = AvatarSpeed * dt;
+            if (wobble != 0 && (dx != 0 || dy != 0))
+            {
+                double a = Math.Sin((_lastTimestampMs ?? 0) * 0.004) * 0.45;
+                (dx, dy) = (dx * Math.Cos(a) - dy * Math.Sin(a), dx * Math.Sin(a) + dy * Math.Cos(a));
+            }
         (_avatarX, _avatarY) = DeckPlan.Move(_avatarX, _avatarY, dx / norm * step2, dy / norm * step2);
         _avatarHeading = Math.Atan2(dy, dx);
     }
@@ -853,8 +866,8 @@
                 break;
             case DeckPlan.ConsoleKind.Cantina:
                 ShowPulseMessage(_plasma is not null && _ship.Charge > 0.5
-                    ? "The hull hums. Coffee ripples. Vent soon."
-                    : "Coffee, black as space. The view is free.");
+                    ? PourRum("The hull hums. The rum ripples. Vent soon, then drink.")
+                    : PourRum(null));
                 break;
             case DeckPlan.ConsoleKind.Vent:
                 VentCharge();
@@ -1083,6 +1096,45 @@
         StaleFutureNodes();
         ShowPulseMessage($"Orbital insertion — bound to {oi.Body.Name} 🛰");
         RendererInterop.PlayCue("board");
+    }
+
+    // ---- M21: the rum locker ----
+    private int _rumTots;
+    private double _lastRumMs = double.MinValue;
+    private double _wobbleUntilMs = double.MinValue;
+
+    private static readonly string[] RumLines =
+    [
+        "Rum, dark as the void. The view is free.",
+        "A tot for the helm. K-77 pretends not to count.",
+        "The good bottle — saved since Luna. Today qualifies.",
+        "Grog ration doubled. Morale follows.",
+        "V-1K reports the rum locker 'adequately defended'.",
+        "To absent friends and slow freighters. 🍹",
+    ];
+
+    private static readonly string[] PlunderLines =
+    [
+        "— not a drop of blood spilled",
+        "— the crew is singing already",
+        "— rum for everyone tonight",
+        "— quartermaster's grin says it all",
+        "— droids stack it neat as you please",
+    ];
+
+    private string PourRum(string? overrideLine)
+    {
+        double now = _lastTimestampMs ?? 0;
+        _rumTots = now - _lastRumMs < 90_000 ? _rumTots + 1 : 1;
+        _lastRumMs = now;
+        RendererInterop.PlayCue("rum");
+        if (_rumTots >= 3)
+        {
+            _wobbleUntilMs = now + 25_000;
+            return "That was the third tot. The deck feels… tilty. 🍹";
+        }
+
+        return overrideLine ?? RumLines[(int)((SimTime / 60) % RumLines.Length)];
     }
 
     private void StaleFutureNodes()
@@ -2620,7 +2672,7 @@
         }
 
         npc.Boarded = true; // keeps flying but empty; a second boarding yields nothing
-        ShowPulseMessage($"Captured {take} units of {npc.Ship.CargoClass}");
+        ShowPulseMessage($"Captured {take} units of {npc.Ship.CargoClass} {PlunderLines[(int)((SimTime / 60) % PlunderLines.Length)]}");
         RendererInterop.PlayCue("board");
         AdvanceTutorial(3); // step 4: first successful boarding
     }
@@ -2662,7 +2714,7 @@
         }
 
         _credits += _cargoValue;
-        ShowPulseMessage($"Sold {_cargoUnits} units for {_cargoValue:N0} credits");
+        ShowPulseMessage($"Sold {_cargoUnits} units for {_cargoValue:N0} credits {PlunderLines[(int)((SimTime / 61) % PlunderLines.Length)]}");
         _cargoUnits = 0;
         _cargoValue = 0;
         AdvanceTutorial(4); // step 5: first sale

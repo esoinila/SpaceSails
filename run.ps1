@@ -4,13 +4,18 @@ Sets sail from the console without port drama.
   ./run.ps1 -Server      -> multiplayer server + hub (default port 5295)
   ./run.ps1 -TakePort    -> stop whatever holds the port instead of moving berth
   ./run.ps1 -Port 6000   -> ask for a specific port
+  ./run.ps1 -Debug       -> Debug build (slow in the browser; for development)
+Variant wrappers: run-server.ps1, run-debug.ps1, run-server-debug.ps1
 If the port is taken, finds the next free berth and says so - no stack traces.
 #>
 param(
     [switch]$Server,
+    [switch]$Debug,
     [switch]$TakePort,
     [int]$Port = 0
 )
+
+$config = if ($Debug) { "Debug" } else { "Release" }
 
 $project = if ($Server) { "src/SpaceSails.Server" } else { "src/SpaceSails.Client" }
 if ($Port -eq 0) { $Port = if ($Server) { 5295 } else { 5073 } }
@@ -37,5 +42,5 @@ if ($holder) {
     Write-Host ""
 }
 
-Write-Host "  SpaceSails -> http://localhost:$Port" -ForegroundColor Green
-dotnet run -c Release --project $project --urls "http://localhost:$Port"
+Write-Host "  SpaceSails -> http://localhost:$Port  [$config build]" -ForegroundColor Green
+dotnet run -c $config --project $project --urls "http://localhost:$Port"
