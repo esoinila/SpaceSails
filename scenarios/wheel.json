@@ -7,7 +7,7 @@
     { "fromBodyId": "saturn", "toBodyId": "jupiter", "halfWidthM": 3e10 }
   ],
   "bodies": [
-    { "id": "sun",     "name": "Sun",     "parentId": null,     "mu": 1.32712440018e20, "bodyRadiusM": 6.9634e8,  "orbitRadiusM": 0,          "orbitPeriodS": 0,           "initialPhaseRad": 0 },
+    { "id": "sun",     "name": "Sun",     "parentId": null,     "mu": 1.32712440018e20, "bodyRadiusM": 6.9634e9,  "orbitRadiusM": 0,          "orbitPeriodS": 0,           "initialPhaseRad": 0 },
     { "id": "saturn",  "name": "Saturn",  "parentId": "sun",    "mu": 3.7931187e16,     "bodyRadiusM": 5.8232e7,  "orbitRadiusM": 1.43353e12, "orbitPeriodS": 9.29596e8,   "initialPhaseRad": 4.5 },
 
     { "id": "venus",   "name": "Venus",   "parentId": "saturn", "mu": 3.24859e14,       "bodyRadiusM": 6.0518e6,  "orbitRadiusM": 2.5e10,     "orbitPeriodS": 1.0368e7,    "initialPhaseRad": 0.0 },

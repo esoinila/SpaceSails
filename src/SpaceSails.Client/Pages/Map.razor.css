@@ -142,3 +142,9 @@
     outline: 1px solid rgba(150, 220, 255, 0.7);
     border-radius: 0.25rem;
 }
+
+.map-orbit-bar {
+    height: 4px;
+    margin-top: 3px;
+    background: #1c2230;
+}
