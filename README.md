@@ -38,8 +38,8 @@ Tips:
 - Use `-c Release` for play — Debug WASM runs on the IL interpreter and is dramatically
   slower (choppy frames, slow plotting).
 - Add `--no-build` to start faster when nothing changed.
-- Port already in use? A previous instance is still running — stop it
-  (PowerShell: `Get-NetTCPConnection -LocalPort 5073 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`).
+- Port already in use? `./run.ps1` handles it — finds the next free port and says so
+  (`-Server` for multiplayer, `-TakePort` to stop the squatter instead).
 - `Ctrl+C` stops the app. Run the tests with `dotnet test SpaceSails.slnx`.
 
 How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](docs/user-guide.md)).

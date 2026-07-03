@@ -72,6 +72,9 @@ and the scrub jumps to that moment. **@** re-times a node to the current
 scrub; **×** deletes it.
 - The whole trip fits one plan: Earth→Saturn is a single sit-down (the plotting horizon
 was sized for exactly that).
+- **Closest pass** — the plot card names your tightest flyby along the planned path, in body
+radii, with a marker on the ribbon. Under 5 R it turns yellow; through a planet it turns red
+and says *IMPACT, captain*.
 
 
 

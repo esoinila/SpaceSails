@@ -149,6 +149,13 @@
                 <input type="range" class="form-range" min="0" max="100" step="1"
                        value="@HorizonSliderValue" title="Length of the navigation line (log scale)"
                        @oninput="OnHorizonSliderInput" @onkeydown:stopPropagation="true" />
+                @if (_closestPass is { } cp)
+                {
+                    <div class="small mb-1 @(cp.Impact ? "text-danger fw-bold" : cp.Severity < 5 ? "text-warning" : "text-secondary")">
+                        Closest pass: @cp.BodyName @FormatDistance(cp.Distance) (@cp.Severity.ToString("0.0", CultureInfo.InvariantCulture) R)
+                        @(cp.Impact ? "— IMPACT, captain! 🦜" : "")
+                    </div>
+                }
                 <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
                         Add burn at scrub
@@ -469,6 +476,14 @@
 
     private bool _horizonDirty;
     private double _lastHorizonReprojectMs;
+
+    // M18: the planner's proximity warning. Computed AFTER edits settle (300 ms idle), not per
+    // drag tick — the scan touches every body along up to 8000 samples, too heavy for a
+    // slider's oninput in interpreted WASM.
+    private ClosestApproach.Pass? _closestPass;
+    private bool _passDirty;
+    private double _lastReprojectMs;
+
 
     private void OnHorizonSliderInput(ChangeEventArgs e)
     {
@@ -1287,6 +1302,12 @@
             UpdatePrediction();
         }
 
+        if (_passDirty && highResTimestampMs - _lastReprojectMs > 300)
+        {
+            _passDirty = false;
+            _closestPass = _ephemeris is null ? null : ClosestApproach.MostSevere(_samples, _ephemeris);
+        }
+
         if (_horizonDirty && highResTimestampMs - _lastHorizonReprojectMs > 250)
         {
             _horizonDirty = false;
@@ -1394,6 +1415,7 @@
         if (PlotMode)
         {
             DrawGhostBodies();
+            DrawClosestPassMarker();
         }
         DrawCelestialBodies();
         DrawNodeMarkers();
@@ -1549,6 +1571,24 @@
         }
 
         _renderer!.DrawPolyline(_scratch.AsSpan(0, _samples.Count * 2), TrajectoryColor);
+    }
+
+    private void DrawClosestPassMarker()
+    {
+        if (_closestPass is not { } cp || cp.Severity > 25)
+        {
+            return; // beyond 25 radii nobody is embarrassed
+        }
+
+        (float sx, float sy) = _camera.WorldToScreen(cp.ShipPosition);
+        RgbaColor color = cp.Impact
+            ? new RgbaColor(255, 80, 80, 230)
+            : cp.Severity < 5 ? new RgbaColor(255, 200, 80, 220) : new RgbaColor(170, 190, 210, 160);
+        _renderer!.DrawCircle(sx, sy, 8f, null, color, 1.5f);
+        _renderer!.DrawCircle(sx, sy, 2f, color, color);
+        _renderer!.DrawText(sx, sy - 14,
+            cp.Impact ? $"IMPACT {cp.BodyName}" : $"min {cp.BodyName} {cp.Severity:0.0}R",
+            color, "10px monospace", TextAlign.Center);
     }
 
     // Ghosts of every body at the scrub time. Deliberately loud: a filled dot with an outline
@@ -1791,6 +1831,8 @@
     {
         _samples = _simulator!.ProjectAdaptive(_ship, _plan, CurrentPlotHorizonSeconds, maxTimeStep: 3 * 3600, maxSamples: 8000);
         _nextProjectionSimTime = _ship.SimTime + ProjectionRefreshSimSeconds;
+        _passDirty = true;
+        _lastReprojectMs = _lastTimestampMs ?? 0;
     }
 
     // Vent pulse (M7): halve hull charge. No-op outside an Electric Universe scenario. Unlike a
