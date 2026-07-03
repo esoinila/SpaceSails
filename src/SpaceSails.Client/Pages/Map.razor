@@ -344,8 +344,13 @@
     }
     <div class="map-scope @(_showScope ? "" : "d-none")">
         <div class="card bg-dark bg-opacity-75 text-light">
-            <div class="card-header py-1 d-flex justify-content-between align-items-center">
+            <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
                 <span class="fw-bold small">Scope 🔭</span>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Scope target">
+                    <button type="button" class="btn btn-outline-light py-0" @onclick="() => CycleScopeTarget(-1)">◀</button>
+                    <button type="button" class="btn @(_scopeManualId is null ? "btn-info" : "btn-outline-light") py-0" @onclick="() => _scopeManualId = null">AUTO</button>
+                    <button type="button" class="btn btn-outline-light py-0" @onclick="() => CycleScopeTarget(1)">▶</button>
+                </div>
                 <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleScope"></button>
             </div>
             <div class="card-body p-1">
@@ -538,8 +543,11 @@
     // M11 — the telescope (worldbuilding notes §5)
     // M12 — deck view (walk your ship)
     private bool _deckMode;
+    private bool _fpMode;
     private DeckView? _deckView;
-    private double _avatarX = 16, _avatarY = 0, _avatarHeading;
+    private FirstPersonView? _fpView;
+    private double _avatarX = DeckPlan.SpawnX, _avatarY = DeckPlan.SpawnY, _avatarHeading; // 0 = facing the bow glass
+    private readonly List<FirstPersonView.SkyBody> _skyBodies = [];
     private readonly HashSet<string> _deckKeys = [];
     private const double AvatarSpeed = 9.0; // deck units per real second
 
@@ -566,6 +574,10 @@
             case "s" or "S" or "ArrowDown":
             case "d" or "D" or "ArrowRight":
                 _deckKeys.Add(Canonical(key));
+                return true;
+            case "f" or "F":
+                _fpMode = !_fpMode;
+                _deckKeys.Clear();
                 return true;
             case "q" or "Q":
                 ToggleDeck();
@@ -599,6 +611,24 @@
 
     private void MoveAvatar(double dtRealSeconds)
     {
+        double dt = Math.Min(dtRealSeconds, 0.1);
+
+        if (_fpMode)
+        {
+            // Tank controls: A/D turn, W/S walk along the view direction.
+            const double turnRate = 2.6; // rad/s
+            if (_deckKeys.Contains("a")) _avatarHeading += turnRate * dt;
+            if (_deckKeys.Contains("d")) _avatarHeading -= turnRate * dt;
+            double walk = (_deckKeys.Contains("w") ? 1 : 0) - (_deckKeys.Contains("s") ? 1 : 0);
+            if (walk != 0)
+            {
+                double step = AvatarSpeed * dt * walk;
+                (_avatarX, _avatarY) = DeckPlan.Move(_avatarX, _avatarY,
+                    Math.Cos(_avatarHeading) * step, Math.Sin(_avatarHeading) * step);
+            }
+            return;
+        }
+
         double dx = 0, dy = 0;
         if (_deckKeys.Contains("w")) dy += 1;   // +Y = port (up on screen)
         if (_deckKeys.Contains("s")) dy -= 1;
@@ -610,44 +640,127 @@
         }
 
         double norm = Math.Sqrt(dx * dx + dy * dy);
-        double step = AvatarSpeed * Math.Min(dtRealSeconds, 0.1);
-        (_avatarX, _avatarY) = DeckView.Move(_avatarX, _avatarY, dx / norm * step, dy / norm * step);
+        double step2 = AvatarSpeed * dt;
+        (_avatarX, _avatarY) = DeckPlan.Move(_avatarX, _avatarY, dx / norm * step2, dy / norm * step2);
         _avatarHeading = Math.Atan2(dy, dx);
+    }
+
+    // Sky lights for the first-person windows, from the REAL ephemeris: world angle from the
+    // ship to each body, angular radius from its physical size and live distance — the sun
+    // blazes bigger the closer you fly.
+    private void BuildSkyBodies()
+    {
+        _skyBodies.Clear();
+        foreach (CelestialBody body in _ephemeris!.Bodies)
+        {
+            Vector2d offset = _ephemeris.Position(body.Id, SimTime) - _ship.Position;
+            double distance = offset.Length;
+            if (distance <= body.BodyRadius)
+            {
+                continue;
+            }
+
+            _skyBodies.Add(new FirstPersonView.SkyBody(
+                Math.Atan2(offset.Y, offset.X),
+                Math.Asin(Math.Clamp(body.BodyRadius / distance, 0, 1)),
+                BodyColor(body.Id),
+                body.Id == "sun"));
+        }
+    }
+
+    private string LocationHint()
+    {
+        if (_avatarX > 18) return "BRIDGE";
+        if (_avatarX < -14) return "ENGINE ROOM";
+        if (_avatarX > 4) return _avatarY > 3 ? "CANTINA" : _avatarY < -3 ? "CABINS" : "CORRIDOR";
+        if (_avatarX > -12) return _avatarY > 3 ? "SHUTTLE BAY" : _avatarY < -3 ? "CARGO HOLD" : "CORRIDOR";
+        return "CORRIDOR";
     }
 
     private void InteractAtConsole()
     {
-        switch (DeckView.NearestConsole(_avatarX, _avatarY))
+        switch (DeckPlan.NearestConsole(_avatarX, _avatarY))
         {
-            case DeckView.Console.Helm:
+            case DeckPlan.ConsoleKind.Helm:
                 ToggleDeck();
                 ShowPulseMessage("Back at the helm");
                 break;
-            case DeckView.Console.Scope:
+            case DeckPlan.ConsoleKind.NavPost:
+                ToggleDeck();
+                if (!PlotMode)
+                {
+                    TogglePlotMode();
+                }
+                ShowPulseMessage("Nav post: plotting table lit");
+                break;
+            case DeckPlan.ConsoleKind.Scope:
                 ToggleScope();
                 ShowPulseMessage(_showScope ? "Scope online" : "Scope shuttered");
                 break;
-            case DeckView.Console.Vent:
+            case DeckPlan.ConsoleKind.Cantina:
+                ShowPulseMessage(_plasma is not null && _ship.Charge > 0.5
+                    ? "The hull hums. Coffee ripples. Vent soon."
+                    : "Coffee, black as space. The view is free.");
+                break;
+            case DeckPlan.ConsoleKind.Vent:
                 VentCharge();
                 break;
-            case DeckView.Console.Cargo:
+            case DeckPlan.ConsoleKind.Cargo:
                 ShowPulseMessage(_cargoUnits > 0
                     ? $"Hold: {_cargoUnits} units (worth {_cargoValue:N0} cr)"
                     : "Hold: empty. The fence weeps.");
                 break;
-            case DeckView.Console.Shuttle:
+            case DeckPlan.ConsoleKind.Shuttle:
                 ShowPulseMessage(_captureEngaged
                     ? "Shuttle away — boarding underway"
-                    : "Shuttle ready in the cradle");
+                    : "Shuttle ready in the cradle. K-77 and R-3B standing by.");
                 break;
         }
     }
 
+    private string? _scopeManualId; // null = AUTO
+
+    // Everything the scope can look at right now: observed ships first, then every body.
+    private List<string> ScopeCandidates()
+    {
+        List<string> ids = [];
+        if (_mp)
+        {
+            foreach (ContactDto c in _mpContacts) ids.Add(c.Id);
+        }
+        else
+        {
+            foreach (NpcState npc in _npcStates)
+            {
+                if (npc.Active && !npc.Arrived && npc.CurrentlyObserved) ids.Add(npc.Ship.Id);
+            }
+        }
+        foreach (CelestialBody b in _ephemeris!.Bodies) ids.Add(b.Id);
+        return ids;
+    }
+
+    private void CycleScopeTarget(int step)
+    {
+        List<string> ids = ScopeCandidates();
+        if (ids.Count == 0) return;
+        int i = _scopeManualId is null ? (step > 0 ? -1 : 0) : ids.IndexOf(_scopeManualId);
+        _scopeManualId = ids[((i + step) % ids.Count + ids.Count) % ids.Count];
+        if (_scopeView is not null) _scopeView.LockLabel = "◆ TRACK";
+    }
+
     // Auto-lock priority: the selected tracked target, else the nearest currently-observed
     // contact, else the nearest celestial body — the scope always has something to show a
-    // pirate. Optical truth only: unobserved ships never appear (hidden info stays hidden).
+    // pirate. A manual ▶◀ pick overrides. Optical truth only: unobserved ships never appear.
     private ScopeView.Target PickScopeTarget()
     {
+        if (_scopeManualId is not null)
+        {
+            ScopeView.Target? manual = ResolveScopeTarget(_scopeManualId);
+            if (manual is not null) return manual.Value;
+            _scopeManualId = null; // target gone (arrived / out of sensor range): fall back to auto
+        }
+        if (_scopeView is not null) _scopeView.LockLabel = "◆ AUTO";
+
         if (_mp)
         {
             ContactDto? best = null;
@@ -697,6 +810,53 @@
         }
 
         return new ScopeView.Target(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
+    }
+
+    private ScopeView.Target? ResolveScopeTarget(string id)
+    {
+        if (_mp)
+        {
+            foreach (ContactDto c in _mpContacts)
+            {
+                if (c.Id == id)
+                {
+                    return new ScopeView.Target(
+                        c.Kind switch { "pod" => ScopeView.TargetKind.Pod, "player" => ScopeView.TargetKind.Player, _ => ScopeView.TargetKind.Freighter },
+                        c.Callsign, c.CargoClass,
+                        new Vector2d(c.PositionX, c.PositionY), new Vector2d(c.VelocityX, c.VelocityY),
+                        0, NpcColor, InPlasmaAt(new Vector2d(c.PositionX, c.PositionY)));
+                }
+            }
+        }
+        else
+        {
+            foreach (NpcState npc in _npcStates)
+            {
+                if (npc.Ship.Id == id && npc.Active && !npc.Arrived && npc.CurrentlyObserved)
+                {
+                    return new ScopeView.Target(
+                        npc.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
+                        npc.Ship.Callsign, $"cargo: {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)",
+                        npc.State.Position, npc.State.Velocity,
+                        0, NpcColor, InPlasmaAt(npc.State.Position));
+                }
+            }
+        }
+
+        foreach (CelestialBody body in _ephemeris!.Bodies)
+        {
+            if (body.Id == id)
+            {
+                Vector2d position = _ephemeris.Position(body.Id, SimTime);
+                const double h = 1.0;
+                Vector2d velocity = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
+                return new ScopeView.Target(
+                    ScopeView.TargetKind.Body, body.Name, null,
+                    position, velocity, body.BodyRadius, BodyColor(body.Id), InPlasmaAt(position));
+            }
+        }
+
+        return null;
     }
 
     private bool InPlasmaAt(Vector2d position) =>
@@ -812,6 +972,7 @@
         RendererInterop.InitCanvas(ScopeCanvasId, observeResize: false);
         _scopeView = new ScopeView(new CanvasRenderer(ScopeCanvasId));
         _deckView = new DeckView(_renderer!);
+        _fpView = new FirstPersonView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
 
         await _focusableDiv.FocusAsync();
@@ -1030,9 +1191,19 @@
         if (_deckMode)
         {
             MoveAvatar(dtRealSeconds);
-            _deckView!.Draw(_viewportWidth, _viewportHeight, SimTime, new DeckView.State(
-                _avatarX, _avatarY, _avatarHeading,
-                _cargoUnits, _ship.Charge, ShuttleAway: _captureEngaged, _plasma is not null));
+            if (_fpMode)
+            {
+                BuildSkyBodies();
+                double deckWorldAngle = Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X);
+                _fpView!.Draw(_viewportWidth, _viewportHeight, SimTime,
+                    _avatarX, _avatarY, _avatarHeading, deckWorldAngle, _skyBodies, LocationHint());
+            }
+            else
+            {
+                _deckView!.Draw(_viewportWidth, _viewportHeight, SimTime, new DeckView.State(
+                    _avatarX, _avatarY, _avatarHeading,
+                    _cargoUnits, _ship.Charge, ShuttleAway: _captureEngaged, _plasma is not null));
+            }
 
             if (_showScope && _scopeView is not null)
             {
