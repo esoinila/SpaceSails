@@ -209,4 +209,33 @@ public class TrafficAndPredictionTests
         ClosestApproach.Pass? impact = ClosestApproach.MostSevere(samples, ephemeris);
         Assert.True(impact!.Value.Impact, "a path through Venus must be flagged as an impact");
     }
+
+    [Fact]
+    public void OrbitalDepots_OnePerPlanet_RideRailsBoardably()
+    {
+        // M22: something to steal on every planet orbit. Depots are rails entities — at any
+        // time they sit exactly on their circular orbit, moving under the boarding speed limit
+        // relative to their planet.
+        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(ephemeris, seed: 44);
+
+        int planets = ephemeris.Bodies.Count(b => b.ParentId == "sun");
+        Assert.Equal(planets, depots.Count);
+
+        foreach (NpcShip depot in depots)
+        {
+            foreach (double t in new[] { 0.0, 86400.0, 3.7e6 })
+            {
+                ShipState state = TrafficSchedule.DepotState(
+                    depot.Id, depot.DepotBodyId!, depot.DepotOrbitRadius, depot.DepotPhase, ephemeris, t);
+                Vector2d planetPos = ephemeris.Position(depot.DepotBodyId!, t);
+                double d = (state.Position - planetPos).Length;
+                Assert.InRange(d / depot.DepotOrbitRadius, 0.999, 1.001);
+
+                Vector2d planetVel = (ephemeris.Position(depot.DepotBodyId!, t + 1) - ephemeris.Position(depot.DepotBodyId!, t - 1)) / 2.0;
+                double relSpeed = (state.Velocity - planetVel).Length;
+                Assert.True(relSpeed < CaptureRule.MaxRelativeSpeed, $"{depot.Callsign}: {relSpeed} m/s");
+            }
+        }
+    }
 }

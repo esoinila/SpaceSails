@@ -189,7 +189,8 @@ public sealed class SessionHost : BackgroundService
         _npcSimulator = new Simulator(_ephemeris, TrafficSchedule.NpcTimeStep);
 
         foreach (NpcShip ship in TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8)
-                     .Concat(TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3)))
+                     .Concat(TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3))
+                     .Concat(TrafficSchedule.GenerateDepots(_ephemeris, seed: 44)))
         {
             _npcs.Add(new NpcState { Ship = ship });
         }
@@ -259,7 +260,9 @@ public sealed class SessionHost : BackgroundService
 
                 while (npc.State.SimTime < target)
                 {
-                    npc.State = _npcSimulator.Step(npc.State, npc.Ship.Plan);
+                    npc.State = npc.Ship.DepotBodyId is not null
+                        ? TrafficSchedule.DepotState(npc.Ship.Id, npc.Ship.DepotBodyId, npc.Ship.DepotOrbitRadius, npc.Ship.DepotPhase, _ephemeris, _simTime)
+                        : _npcSimulator.Step(npc.State, npc.Ship.Plan);
                 }
             }
 

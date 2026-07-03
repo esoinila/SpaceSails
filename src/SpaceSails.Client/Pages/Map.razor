@@ -178,6 +178,21 @@
                         Closest pass: @cp.BodyName @FormatDistance(cp.Distance) (@cp.Severity.ToString("0.0", CultureInfo.InvariantCulture) R)
                         @(cp.Impact ? "— IMPACT, captain! 🦜" : "")
                     </div>
+                    @if (!_mp && _armablePass is { } ap && PassIsOrbitable(ap) is { } est)
+                    {
+                        <div class="small mb-1">
+                            <button type="button" class="btn btn-sm py-0 @(_armedOrbitBodyId == ap.BodyId ? "btn-success" : "btn-outline-info")"
+                                    @onclick="() => ToggleArmedInsertion(ap.BodyId)">
+                                🛰 @(_armedOrbitBodyId == ap.BodyId
+                                    ? $"Insertion ARMED — will orbit {ap.BodyName} (≈{est} p)"
+                                    : $"Insert at {ap.BodyName} pass — {FormatDistance(ap.Distance)} (≈{est} p)")
+                            </button>
+                        </div>
+                    }
+                }
+                else if (_armedOrbitBodyId is not null)
+                {
+                    <div class="small mb-1 text-info">🛰 Insertion armed: @_armedOrbitBodyId</div>
                 }
                 <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
@@ -506,6 +521,7 @@
     // drag tick — the scan touches every body along up to 8000 samples, too heavy for a
     // slider's oninput in interpreted WASM.
     private ClosestApproach.Pass? _closestPass;
+    private ClosestApproach.Pass? _armablePass;
     private bool _passDirty;
     private double _lastReprojectMs;
 
@@ -1049,17 +1065,20 @@
     private Vector2d _nearestBodyPosition;
     private Vector2d _nearestBodyVelocity;
 
-    // ---- M20: the bus stop in space ----
-    private readonly record struct OrbitAssistInfo(
-        CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
-        bool WindowOpen, bool TooFast, bool CanEngage);
+    // ---- M22: planned insertion — "it is part of flight planning" (owner) ----
+    private string? _armedOrbitBodyId;
 
-    private OrbitAssistInfo? OrbitInfo()
+    // A closest pass can be turned into a planned insertion when it is a planet (not the sun)
+    // and tight enough to matter. Returns the estimated pulse cost, or null when not orbitable.
+    private int? PassIsOrbitable(ClosestApproach.Pass cp)
     {
-        if (_nearestBody is not CelestialBody body || body.ParentId is null || _ephemeris is null)
+        if (_ephemeris is null) return null;
+        CelestialBody? body = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
         {
-            return null; // the sun is not a bus stop; you already orbit it
+            if (candidate.Id == cp.BodyId) { body = candidate; break; }
         }
+        if (body is null || body.ParentId is null) return null;
 
         CelestialBody? parent = null;
         foreach (CelestialBody candidate in _ephemeris.Bodies)
@@ -1067,18 +1086,142 @@
             if (candidate.Id == body.ParentId) { parent = candidate; break; }
         }
         if (parent is null) return null;
+        // Armable within 5 Hill radii: the fire-time window check is the real gate, and a
+        // slightly-loose pass still deserves the button (tighten en route with fine trims).
+        if (cp.Distance > 5 * OrbitRule.HillRadius(body, parent.Mu)) return null;
+
+        // Estimate the burn from the sampled path: finite-difference ship velocity at the pass.
+        Vector2d shipVel = SampledVelocityAt(cp.SimTime);
+        double h = 1.0;
+        Vector2d bodyVel = (_ephemeris.Position(cp.BodyId, cp.SimTime + h) - _ephemeris.Position(cp.BodyId, cp.SimTime - h)) / (2 * h);
+        var passState = new ShipState(cp.ShipPosition, shipVel, cp.SimTime);
+        Vector2d bodyPos = _ephemeris.Position(cp.BodyId, cp.SimTime);
+        return OrbitRule.PulseCost(passState, bodyPos, bodyVel, body);
+    }
+
+    private Vector2d SampledVelocityAt(double simTime)
+    {
+        for (int i = 1; i < _samples.Count; i++)
+        {
+            if (_samples[i].SimTime >= simTime)
+            {
+                double dt = _samples[i].SimTime - _samples[i - 1].SimTime;
+                return dt <= 0 ? _ship.Velocity : (_samples[i].Position - _samples[i - 1].Position) / dt;
+            }
+        }
+        return _ship.Velocity;
+    }
+
+    private void ToggleArmedInsertion(string bodyId)
+    {
+        _armedOrbitBodyId = _armedOrbitBodyId == bodyId ? null : bodyId;
+        ShowPulseMessage(_armedOrbitBodyId is null
+            ? "Insertion disarmed"
+            : $"Insertion armed — the ship will park at {_armedOrbitBodyId} when the window opens 🛰");
+    }
+
+    // Fires the armed insertion the moment its window opens during live flight.
+    private void CheckArmedInsertion()
+    {
+        if (_armedOrbitBodyId is null || _mp || _ephemeris is null || Paused)
+        {
+            return;
+        }
+
+        CelestialBody? body = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == _armedOrbitBodyId) { body = candidate; break; }
+        }
+        if (body?.ParentId is null) { _armedOrbitBodyId = null; return; }
+
+        CelestialBody? parent = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == body.ParentId) { parent = candidate; break; }
+        }
+        if (parent is null) { _armedOrbitBodyId = null; return; }
+
+        Vector2d bodyPos = _ephemeris.Position(body.Id, SimTime);
+        double h = 1.0;
+        Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
+        double hill = OrbitRule.HillRadius(body, parent.Mu);
+        if (!OrbitRule.WindowOpen(_ship, bodyPos, bodyVel, body, hill))
+        {
+            return;
+        }
+
+        int cost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
+        if (cost > _reactionMassPulses)
+        {
+            ShowPulseMessage($"Insertion window at {body.Name} — not enough mass pulses ({cost} needed)");
+            _armedOrbitBodyId = null;
+            return;
+        }
+
+        _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
+        _reactionMassPulses -= cost;
+        _armedOrbitBodyId = null;
+        StaleFutureNodes();
+        ShowPulseMessage($"Planned insertion executed — bound to {body.Name} 🛰");
+        RendererInterop.PlayCue("board");
+    }
+
+    // ---- M20: the bus stop in space ----
+    private readonly record struct OrbitAssistInfo(
+        CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
+        bool WindowOpen, bool TooFast, bool CanEngage);
+
+    private OrbitAssistInfo? OrbitInfo()
+    {
+        CelestialBody? preferred = null;
+        if (_armedOrbitBodyId is not null && _ephemeris is not null)
+        {
+            foreach (CelestialBody candidate in _ephemeris.Bodies)
+            {
+                if (candidate.Id == _armedOrbitBodyId) { preferred = candidate; break; }
+            }
+        }
+
+        if (preferred is not null && preferred.ParentId is not null)
+        {
+            // The armed target owns the panel: "Orbit Earth?" while sailing for Mars was
+            // exactly the confusion the owner reported.
+            Vector2d pos = _ephemeris!.Position(preferred.Id, SimTime);
+            double h = 1.0;
+            Vector2d vel = (_ephemeris.Position(preferred.Id, SimTime + h) - _ephemeris.Position(preferred.Id, SimTime - h)) / (2 * h);
+            return BuildOrbitInfo(preferred, pos, vel);
+        }
+
+        if (_nearestBody is not CelestialBody body || body.ParentId is null || _ephemeris is null)
+        {
+            return null; // the sun is not a bus stop; you already orbit it
+        }
+
+        return BuildOrbitInfo(body, _nearestBodyPosition, _nearestBodyVelocity);
+    }
+
+    private OrbitAssistInfo? BuildOrbitInfo(CelestialBody body, Vector2d bodyPos, Vector2d bodyVel)
+    {
+        CelestialBody? parent = null;
+        foreach (CelestialBody candidate in _ephemeris!.Bodies)
+        {
+            if (candidate.Id == body.ParentId) { parent = candidate; break; }
+        }
+        if (parent is null) return null;
 
         double hill = OrbitRule.HillRadius(body, parent.Mu);
-        double distance = (_ship.Position - _nearestBodyPosition).Length;
-        if (distance > Math.Max(OrbitRule.IndicatorRangeHillRadii * hill, 2e9))
+        double distance = (_ship.Position - bodyPos).Length;
+        bool armed = _armedOrbitBodyId == body.Id;
+        if (!armed && distance > Math.Max(OrbitRule.IndicatorRangeHillRadii * hill, 2e9))
         {
             return null;
         }
 
-        double relSpeed = (_ship.Velocity - _nearestBodyVelocity).Length;
-        bool open = OrbitRule.WindowOpen(_ship, _nearestBodyPosition, _nearestBodyVelocity, body, hill);
-        int cost = OrbitRule.PulseCost(_ship, _nearestBodyPosition, _nearestBodyVelocity, body);
-        bool bound = OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, body, hill);
+        double relSpeed = (_ship.Velocity - bodyVel).Length;
+        bool open = OrbitRule.WindowOpen(_ship, bodyPos, bodyVel, body, hill);
+        int cost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
+        bool bound = OrbitRule.IsBound(_ship, bodyPos, bodyVel, body, hill);
         return new OrbitAssistInfo(body, distance, relSpeed, hill, cost,
             open && !bound, relSpeed >= OrbitRule.MaxRelativeSpeed,
             open && !bound && cost <= _reactionMassPulses);
@@ -1238,7 +1381,8 @@
             // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
             IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
             IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
-            _npcStates = pods.Concat(traffic).Select(s => new NpcState { Ship = s }).ToArray();
+            IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44);
+            _npcStates = pods.Concat(traffic).Concat(depots).Select(s => new NpcState { Ship = s }).ToArray();
         }
 
         _scratch = new float[_samples.Count * 2 + 4];
@@ -1446,6 +1590,7 @@
         if (stepsThisFrame > 0)
         {
             AccountForFiredNodes();
+            CheckArmedInsertion();
         }
 
         StepNpcs();
@@ -1467,7 +1612,25 @@
         if (_passDirty && highResTimestampMs - _lastReprojectMs > 300)
         {
             _passDirty = false;
-            _closestPass = _ephemeris is null ? null : ClosestApproach.MostSevere(_samples, _ephemeris);
+            _closestPass = null;
+            _armablePass = null;
+            if (_ephemeris is not null)
+            {
+                double bestArmable = double.MaxValue;
+                foreach (ClosestApproach.Pass pass in ClosestApproach.Passes(_samples, _ephemeris))
+                {
+                    if (_closestPass is null || pass.Severity < _closestPass.Value.Severity)
+                    {
+                        _closestPass = pass;
+                    }
+
+                    // Armable = tightest pass by a PLANET, even when the sun ranks more severe.
+                    if (PassIsOrbitable(pass) is not null && pass.Severity < bestArmable)
+                    {
+                        (bestArmable, _armablePass) = (pass.Severity, pass);
+                    }
+                }
+            }
         }
 
         if (_horizonDirty && highResTimestampMs - _lastHorizonReprojectMs > 250)
@@ -2362,9 +2525,19 @@
                 npc.State = npc.Ship.InitialState;
             }
 
-            while (npc.State.SimTime < _ship.SimTime)
+            if (npc.Ship.DepotBodyId is not null)
             {
-                npc.State = _npcSimulator!.Step(npc.State, npc.Ship.Plan);
+                // Depots ride rails: pure function of sim time, no integration, no drift.
+                npc.State = TrafficSchedule.DepotState(
+                    npc.Ship.Id, npc.Ship.DepotBodyId, npc.Ship.DepotOrbitRadius, npc.Ship.DepotPhase,
+                    _ephemeris!, _ship.SimTime);
+            }
+            else
+            {
+                while (npc.State.SimTime < _ship.SimTime)
+                {
+                    npc.State = _npcSimulator!.Step(npc.State, npc.Ship.Plan);
+                }
             }
 
             // Despawn: past its last planned node and parked within tolerance of the destination body.
