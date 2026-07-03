@@ -5,7 +5,10 @@ namespace SpaceSails.Core;
 /// (optionally under a pinned hypothesis plan), and an uncertainty half-width that grows with
 /// time since that observation. Rendered as a cone on the map.
 /// </summary>
-public sealed record PredictedPath(Observation Source, IReadOnlyList<TrajectorySample> Samples)
+public sealed record PredictedPath(
+    Observation Source,
+    IReadOnlyList<TrajectorySample> Samples,
+    double ManeuverBudget = NpcShip.DefaultManeuverBudget)
 {
     /// <summary>Instrument position/velocity noise at the moment of observation.</summary>
     public const double BaseHalfWidthMeters = 1e7;
@@ -14,17 +17,16 @@ public sealed record PredictedPath(Observation Source, IReadOnlyList<TrajectoryS
     public const double VelocitySigma = 100;
 
     /// <summary>
-    /// Plausible unobserved maneuvering, expressed as an equivalent acceleration: a ship
-    /// pulsing ±10% (~3 km/s each) several times a day can shift ~27 km/s of Δv, i.e.
-    /// ~0.3 m/s² averaged. The cone passes the 1e9 m capture threshold after ~a day dark.
+    /// Uncertainty half-width at a sim time at or after the source observation.
+    /// <see cref="ManeuverBudget"/> is the target's plausible unobserved maneuvering as an
+    /// equivalent acceleration (a pilot pulsing ±10% several times a day averages ~0.3 m/s²;
+    /// the cone then passes the 1e9 m capture threshold after ~a day dark). A mass-driver pod
+    /// has budget 0 — its cone never opens past measurement noise.
     /// </summary>
-    public const double ManeuverBudgetAcceleration = 0.3;
-
-    /// <summary>Uncertainty half-width at a sim time at or after the source observation.</summary>
     public double HalfWidthAt(double simTime)
     {
         double dt = Math.Max(0, simTime - Source.SimTime);
-        return BaseHalfWidthMeters + VelocitySigma * dt + 0.5 * ManeuverBudgetAcceleration * dt * dt;
+        return BaseHalfWidthMeters + VelocitySigma * dt + 0.5 * ManeuverBudget * dt * dt;
     }
 }
 
@@ -40,13 +42,14 @@ public static class PathPredictor
         ICelestialEphemeris ephemeris,
         Observation observation,
         ManeuverPlan? hypothesis,
-        double horizonSeconds)
+        double horizonSeconds,
+        double maneuverBudget = NpcShip.DefaultManeuverBudget)
     {
         var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
         var state = new ShipState(observation.Position, observation.Velocity, observation.SimTime);
         IReadOnlyList<TrajectorySample> samples = simulator.ProjectAdaptive(
             state, hypothesis, horizonSeconds, maxSamples: SampleBudget(horizonSeconds));
-        return new PredictedPath(observation, samples);
+        return new PredictedPath(observation, samples, maneuverBudget);
     }
 
     // ProjectAdaptive silently stops at maxSamples; a long-horizon prediction must budget for

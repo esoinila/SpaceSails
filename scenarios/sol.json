@@ -6,6 +6,7 @@
     { "id": "mercury", "name": "Mercury", "parentId": "sun", "mu": 2.2032e13,        "bodyRadiusM": 2.4397e6,  "orbitRadiusM": 5.791e10,   "orbitPeriodS": 7.60052e6,   "initialPhaseRad": 0.0 },
     { "id": "venus",   "name": "Venus",   "parentId": "sun", "mu": 3.24859e14,       "bodyRadiusM": 6.0518e6,  "orbitRadiusM": 1.0821e11,  "orbitPeriodS": 1.94142e7,   "initialPhaseRad": 0.9 },
     { "id": "earth",   "name": "Earth",   "parentId": "sun", "mu": 3.986004418e14,   "bodyRadiusM": 6.371e6,   "orbitRadiusM": 1.496e11,   "orbitPeriodS": 3.1558149e7, "initialPhaseRad": 1.8 },
+    { "id": "luna",    "name": "Luna",    "parentId": "earth", "mu": 4.9048695e12,   "bodyRadiusM": 1.7374e6,  "orbitRadiusM": 3.844e8,    "orbitPeriodS": 2.3606e6,    "initialPhaseRad": 0.0 },
     { "id": "mars",    "name": "Mars",    "parentId": "sun", "mu": 4.282837e13,      "bodyRadiusM": 3.3895e6,  "orbitRadiusM": 2.2794e11,  "orbitPeriodS": 5.93551e7,   "initialPhaseRad": 2.7 },
     { "id": "jupiter", "name": "Jupiter", "parentId": "sun", "mu": 1.26686534e17,    "bodyRadiusM": 6.9911e7,  "orbitRadiusM": 7.7857e11,  "orbitPeriodS": 3.74336e8,   "initialPhaseRad": 3.6 },
     { "id": "saturn",  "name": "Saturn",  "parentId": "sun", "mu": 3.7931187e16,     "bodyRadiusM": 5.8232e7,  "orbitRadiusM": 1.43353e12, "orbitPeriodS": 9.29596e8,   "initialPhaseRad": 4.5 },

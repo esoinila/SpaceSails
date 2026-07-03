@@ -17,7 +17,15 @@ public sealed record NpcShip(
     double ActivationTime,
     ShipState InitialState,
     ManeuverPlan Plan,
-    double EstimatedArrivalTime);
+    double EstimatedArrivalTime,
+    int CargoUnits,
+    double ManeuverBudget,
+    bool IsPod)
+{
+    /// <summary>Equivalent acceleration a pilot could plausibly hide between observations.
+    /// Feeds the prediction cone; a mass-driver pod has no engine at all.</summary>
+    public const double DefaultManeuverBudget = 0.3;
+}
 
 /// <summary>
 /// Deterministic traffic generator: the same seed yields bit-identical schedules on client and
@@ -69,6 +77,7 @@ public static class TrafficSchedule
             var personality = (RoutePersonality)rng.NextInt(0, 3);
             string callsign = Callsigns[i % Callsigns.Length];
 
+            int cargoUnits = rng.NextInt(5, 21);
             if (isMidFlight)
             {
                 // Plan from a virtual past departure, then declare the coarse catch-up state at
@@ -83,7 +92,8 @@ public static class TrafficSchedule
                 ShipState now = catchUpSim.Run(route.DepartureState, -virtualDeparture, route.Plan);
                 ships.Add(new NpcShip(
                     $"npc-{i}", callsign, cargo, origin, destination, personality,
-                    virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime));
+                    virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
+                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false));
             }
             else
             {
@@ -91,11 +101,49 @@ public static class TrafficSchedule
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, departure, personality, rng);
                 ships.Add(new NpcShip(
                     $"npc-{i}", callsign, cargo, origin, destination, personality,
-                    departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime));
+                    departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime,
+                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false));
             }
         }
 
         return ships;
+    }
+
+    /// <summary>
+    /// Luna's mass-driver launches: ballistic compute-core pods (worldbuilding notes §1). The
+    /// driver imparts all Δv at launch, so the "burn" is folded into <c>InitialState</c> and the
+    /// plan is empty — no engine, no future maneuvers, <c>ManeuverBudget = 0</c>: a pod's
+    /// prediction cone never opens. The tutorial prey and the pirate's milk run.
+    /// </summary>
+    public static IReadOnlyList<NpcShip> GeneratePods(ICelestialEphemeris ephemeris, ulong seed, int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+
+        var rng = new DeterministicRandom(seed);
+        var launchSim = new Simulator(ephemeris, CatchUpTimeStep);
+        var pods = new List<NpcShip>(count);
+
+        for (int i = 0; i < count; i++)
+        {
+            string destination = rng.NextInt(0, 2) == 0 ? "mars" : "venus";
+            double departure = Math.Floor(rng.NextDouble(0.5 * Day, 10 * Day));
+
+            // Plan the route like a ship (one burst + coast; the arrival brake is dropped —
+            // the customer catches the pod), then run just past the burst and declare that
+            // state the launch: everything the driver gave it, nothing it can change.
+            NpcRoute route = RoutePlanner.PlanRoute(ephemeris, "earth", destination, departure, RoutePersonality.Economical, rng);
+            ManeuverNode burn = route.Plan.Nodes[0];
+            var launchPlan = new ManeuverPlan([burn]);
+            ShipState launched = launchSim.Run(route.DepartureState, (burn.SimTime - departure) + CatchUpTimeStep, launchPlan);
+
+            pods.Add(new NpcShip(
+                $"pod-{i}", $"Pod-{i + 1}", "Compute cores", "luna", destination,
+                RoutePersonality.Economical, departure, launched.SimTime, launched,
+                ManeuverPlan.Empty, route.EstimatedArrivalTime,
+                CargoUnits: 4, ManeuverBudget: 0, IsPod: true));
+        }
+
+        return pods;
     }
 
     // The probe plan and the real plan must consume identical random sequences so the schedule
