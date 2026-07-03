@@ -191,3 +191,44 @@ export function stopLoop(canvasId) {
 function rgba(r, g, b, a) {
     return `rgba(${r}, ${g}, ${b}, ${a / 255})`;
 }
+
+// ---- Audio cues (M10 polish) ----
+// Tiny WebAudio blips, no assets. The context can only start after a user gesture; the cues
+// are triggered by keyboard/click handlers, which qualify, and we lazily resume each call.
+
+let audioCtx = null;
+
+const CUES = {
+    pulse: { freq: 220, to: 440, duration: 0.09, gain: 0.06, type: 'square' },   // engine thump
+    vent:  { freq: 900, to: 300, duration: 0.25, gain: 0.05, type: 'sawtooth' }, // discharge hiss-fall
+    board: { freq: 523, to: 784, duration: 0.35, gain: 0.08, type: 'sine' },     // prize jingle rise
+    arc:   { freq: 80,  to: 60,  duration: 0.5,  gain: 0.10, type: 'sawtooth' }, // thunder growl
+};
+
+export function playCue(kind) {
+    const cue = CUES[kind];
+    if (!cue) {
+        return;
+    }
+
+    try {
+        audioCtx ??= new AudioContext();
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = cue.type;
+        osc.frequency.setValueAtTime(cue.freq, t);
+        osc.frequency.exponentialRampToValueAtTime(cue.to, t + cue.duration);
+        gain.gain.setValueAtTime(cue.gain, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + cue.duration);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + cue.duration);
+    } catch {
+        // Audio is decoration: autoplay policies or missing WebAudio must never break the game.
+    }
+}

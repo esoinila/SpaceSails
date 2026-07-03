@@ -4,6 +4,8 @@ using SpaceSails.Server;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSignalR();
+// No-op unless APPLICATIONINSIGHTS_CONNECTION_STRING is set (ACA secret in production).
+builder.Services.AddApplicationInsightsTelemetry();
 // One shared session per server (plan §M9). Registered once, exposed both as itself (hub
 // command target) and as the hosted service that runs the authoritative tick.
 builder.Services.AddSingleton<SessionHost>();

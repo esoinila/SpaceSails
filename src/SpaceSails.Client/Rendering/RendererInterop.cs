@@ -41,6 +41,11 @@ internal static partial class RendererInterop
     [JSImport("stopLoop", ModuleName)]
     internal static partial void StopLoop(string canvasId);
 
+    /// <summary>Fire an audio cue ("pulse", "vent", "board", "arc"). Decoration only — JS
+    /// swallows every audio failure, so callers never need to guard.</summary>
+    [JSImport("playCue", ModuleName)]
+    internal static partial void PlayCue(string kind);
+
     /// <summary>
     /// Flushes the whole batched command buffer for one frame in a single call. <paramref name="buffer"/>
     /// is handed to JS as a <see cref="JSType.MemoryView"/> (a short-lived view over the WASM linear

@@ -8,6 +8,34 @@
         <p class="lead">Solar-system sailing &amp; piracy. Plot your course — everything is moving.</p>
     </div>
 
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-8">
+            <details class="bg-dark text-light border border-secondary rounded p-3">
+                <summary class="fw-bold">How to play — the pirate's primer</summary>
+                <div class="small mt-2">
+                    <p><b>Everything is moving.</b> Your ship obeys gravity; your only engine fires
+                    ±10% velocity pulses (<kbd>+</kbd>/<kbd>−</kbd> or <kbd>↑</kbd>/<kbd>↓</kbd>).
+                    Warp time with the toolbar — it auto-drops near encounters.</p>
+                    <p><b>Plot, don't chase.</b> <kbd>Plot</kbd> pauses the sky: scrub the future,
+                    drop burn nodes, and watch your ribbon bend until it crosses your prey's
+                    predicted cone. Press Play and let the plan fly itself.</p>
+                    <p><b>Hunt.</b> The Traffic board lists departures. Select a target to see its
+                    prediction cone — it tightens while you shadow it, opens when you lose it.
+                    Match velocity within the boarding envelope and your shuttles do the rest:
+                    the tighter the pass, the faster the boarding.</p>
+                    <p><b>Sell, refit, repeat.</b> Dock inside a market's port zone to fence cargo
+                    and buy upgrades. Run dry of reaction mass in deep space and the rescue fee is
+                    everything in your hold.</p>
+                    <p><b>Electric skies</b> (⚡ scenarios): hull charge builds near the Sun and in
+                    plasma streams. Vent it (<kbd>v</kbd>) or glow on every sensor in the system —
+                    but a charged hull rides the streams for free momentum. In multiplayer
+                    (<code>?mp=1</code>), time passes at the <i>slowest</i> crew member's warp, and
+                    what your sensors can't see, the server never even sends you.</p>
+                </div>
+            </details>
+        </div>
+    </div>
+
     <div class="row g-4 justify-content-center">
         @foreach ((string slug, string title, string tag, string blurb) in Scenarios)
         {

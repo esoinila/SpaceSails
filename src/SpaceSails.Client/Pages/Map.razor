@@ -511,6 +511,7 @@
 
     // M7 additions — Electric Universe layer (only live when _plasma is not null)
     private const double ArcChargeThreshold = 0.9;      // hull arcs (halo + system-wide visibility)
+    private bool _wasArcing;                             // rising-edge detector for the thunder cue
     private const double VentCooldownSeconds = 1.0;     // separate budget from the thrust pulse cooldown
     private double _lastVentSimTime = -VentCooldownSeconds; // so the very first vent isn't rejected
     private float[] _streamScratch = new float[4];      // reused endpoints buffer for stream polylines
@@ -825,6 +826,14 @@
             _pulseMessage = null;
         }
 
+        // Thunder on the rising edge of an arc (M10 polish) — once per arcing episode.
+        bool arcing = _plasma is not null && _ship.Charge >= ArcChargeThreshold;
+        if (arcing && !_wasArcing)
+        {
+            RendererInterop.PlayCue("arc");
+        }
+        _wasArcing = arcing;
+
         if (FollowShip)
         {
             _camera.CenterOn(_ship.Position);
@@ -1132,6 +1141,7 @@
                 // the flash optimistically. The authoritative velocity/mass arrive in the next update.
                 _lastPulseSimTime = _ship.SimTime;
                 ShowPulseMessage(factor > 1 ? "Pulse: accelerate +10%" : "Pulse: decelerate −10%");
+            RendererInterop.PlayCue("pulse");
                 SendCommand(c => c.SendAsync("Pulse", factor > 1));
                 return;
             }
@@ -1140,6 +1150,7 @@
             _reactionMassPulses--;
             _lastPulseSimTime = _ship.SimTime;
             ShowPulseMessage(factor > 1 ? "Pulse: accelerate +10%" : "Pulse: decelerate −10%");
+            RendererInterop.PlayCue("pulse");
 
             // A live override invalidates every still-pending node (plan §4).
             bool anyStaled = false;
@@ -1187,11 +1198,13 @@
         {
             SendCommand(c => c.SendAsync("Vent"));
             ShowPulseMessage("Venting charge");
+        RendererInterop.PlayCue("vent");
             return;
         }
 
         _ship = _ship with { Charge = _ship.Charge * 0.5 };
         ShowPulseMessage("Venting charge");
+        RendererInterop.PlayCue("vent");
     }
 
     private void ShowPulseMessage(string message)
@@ -1742,6 +1755,7 @@
 
         npc.Boarded = true; // keeps flying but empty; a second boarding yields nothing
         ShowPulseMessage($"Captured {take} units of {npc.Ship.CargoClass}");
+        RendererInterop.PlayCue("board");
         AdvanceTutorial(3); // step 4: first successful boarding
     }
 
