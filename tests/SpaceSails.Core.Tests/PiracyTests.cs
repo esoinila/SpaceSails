@@ -11,12 +11,36 @@ public class PiracyTests
         var player = new ShipState(new Vector2d(0, 0), new Vector2d(30000, 0), 0);
 
         var close = new ShipState(new Vector2d(5e7, 0), new Vector2d(30000 + 1500, 0), 0);
-        var closeButFast = new ShipState(new Vector2d(5e7, 0), new Vector2d(30000 + 5000, 0), 0);
-        var slowButFar = new ShipState(new Vector2d(5e8, 0), new Vector2d(30000, 0), 0);
+        var closeButFast = new ShipState(new Vector2d(5e7, 0), new Vector2d(30000 + 6000, 0), 0);
+        var slowButFar = new ShipState(new Vector2d(6e8, 0), new Vector2d(30000, 0), 0);
 
         Assert.True(CaptureRule.IsInWindow(player, close));
         Assert.False(CaptureRule.IsInWindow(player, closeButFast));
         Assert.False(CaptureRule.IsInWindow(player, slowButFar));
+    }
+
+    [Fact]
+    public void BoardingShuttles_TightPassBoardsFast_SloppyPassNeedsAWindowItCannotGet()
+    {
+        var player = new ShipState(new Vector2d(0, 0), new Vector2d(30000, 0), 0);
+
+        // Perfect station-keeping: base boarding time.
+        var matched = new ShipState(new Vector2d(0, 0), new Vector2d(30000, 0), 0);
+        Assert.Equal(CaptureRule.BaseBoardingSeconds, CaptureRule.RequiredSecondsFor(player, matched));
+
+        // A rough-but-honest pass (2.5e8 m at 1.5 km/s rel): shuttles take ~135 s — flyable.
+        var rough = new ShipState(new Vector2d(2.5e8, 0), new Vector2d(30000 + 1500, 0), 0);
+        Assert.Equal(135, CaptureRule.RequiredSecondsFor(player, rough), tolerance: 1);
+
+        // A true flyby (tens of km/s) is excluded by the ENVELOPE, not the timer — the 5 km/s
+        // gate is the skill test; the timer adds texture inside it.
+        var flyby = new ShipState(new Vector2d(1e8, 0), new Vector2d(30000 + 30000, 0), 0);
+        Assert.False(CaptureRule.IsInWindow(player, flyby));
+
+        // Sloppier geometry always costs more shuttle time (monotonicity).
+        var sloppy = new ShipState(new Vector2d(5e8, 0), new Vector2d(30000 + 5000, 0), 0);
+        Assert.True(CaptureRule.RequiredSecondsFor(player, sloppy) > CaptureRule.RequiredSecondsFor(player, rough));
+        Assert.True(CaptureRule.RequiredSecondsFor(player, rough) > CaptureRule.RequiredSecondsFor(player, matched));
     }
 
     [Fact]
