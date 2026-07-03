@@ -145,4 +145,35 @@ public class TrafficAndPredictionTests
         // The hunch should land in the same era as the route's own arrival estimate.
         Assert.InRange(brake.SimTime, route.EstimatedArrivalTime * 0.5, route.EstimatedArrivalTime * 1.5);
     }
+
+    [Fact]
+    public void SaturnSail_FitsInOneNavDeskSitDown()
+    {
+        // The owner's route-plan-length metric: a single plotted plan must carry the ship all
+        // the way to Saturn. Reference sail found by offline probe: accelerate 12 pulses at
+        // day 82; it passes inside Saturn's 1e10 m port zone around day 278 — comfortably
+        // within the client's 730-day plotting horizon, using the client's own coarse ribbon
+        // settings (maxTimeStep 3 h).
+        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
+
+        Vector2d earth0 = ephemeris.Position("earth", 0);
+        Vector2d v0 = (ephemeris.Position("earth", 1.0) - ephemeris.Position("earth", -1.0)) / 2.0;
+        var start = new ShipState(earth0 + earth0.Normalized() * 5e9, v0, 0);
+        var plan = new ManeuverPlan([new ManeuverNode(82 * Day, ManeuverAction.Accelerate, 12)]);
+
+        IReadOnlyList<TrajectorySample> sail = simulator.ProjectAdaptive(
+            start, plan, 730 * Day, maxTimeStep: 3 * 3600, maxSamples: 8000);
+
+        double miss = double.MaxValue, when = 0;
+        foreach (TrajectorySample sample in sail)
+        {
+            double d = (ephemeris.Position("saturn", sample.SimTime) - sample.Position).Length;
+            if (d < miss) { (miss, when) = (d, sample.SimTime); }
+        }
+
+        Assert.True(miss < 1.5e10, $"The Saturn sail must reach the port zone; missed by {miss:E2} m.");
+        Assert.InRange(when / Day, 200, 400);
+        Assert.Equal(730 * Day, sail[^1].SimTime); // the horizon truly covers the voyage
+    }
 }

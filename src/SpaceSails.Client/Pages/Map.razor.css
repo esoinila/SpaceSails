@@ -107,3 +107,7 @@
     display: block;
     border-radius: 0.4rem;
 }
+
+.map-plot-horizon {
+    width: 5.2rem;
+}
