@@ -64,6 +64,7 @@
             <button type="button" class="btn btn-sm @(_deckMode ? "btn-warning" : "btn-outline-light")" @onclick="ToggleDeck">
                 Deck
             </button>
+            <button type="button" class="btn btn-sm @(_showTracking ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleTracking">Track 📡</button>
             @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
         </div>
 
@@ -387,6 +388,14 @@
                                     </button>
                                 </td>
                             </tr>
+                            <tr>
+                                <td>Telescope<br /><span class="text-secondary">Lv @_telescopeLevel → @(_telescopeLevel + 2) simultaneous tracks</span></td>
+                                <td class="text-end align-middle">
+                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_telescopeLevel >= 3 || _credits < UpgradePrice(_telescopeLevel))" @onclick='() => BuyUpgrade("telescope")'>
+                                        @(_telescopeLevel >= 3 ? "MAX" : $"{UpgradePrice(_telescopeLevel):N0} cr")
+                                    </button>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -436,11 +445,17 @@
             </div>
         </div>
     </div>
+    <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_showTracking" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1" OnClose="ToggleTracking" />
     @* SATURDAY-ANCHOR: panels — parallel lanes append one station component line each below *@
 </div>
 
 @code {
     // SATURDAY-ANCHOR: fields — parallel lanes append their station fields directly below
+    private bool _showTracking;
+    private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)
+    private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost;
+    private static readonly RgbaColor TrackedNpcColor = new(150, 255, 210);
+    private static readonly RgbaColor TrackedNpcLastSeenColor = new(120, 200, 170, 180);
     private const string CanvasId = "map-canvas";
     private const int OrbitSegments = 128;
 
@@ -2660,16 +2675,33 @@
                 continue;
             }
 
+            // Tracking-post emphasis (vision ¶14): a ship on the ledger gets a brighter marker
+            // plus a small ring sized off the ledger's own uncertainty growth (no separate
+            // PathPredictor solve here — just the same half-width formula, cheap enough to draw
+            // every frame for a handful of tracked contacts).
+            TrackedTarget track = default;
+            bool tracked = _trackingPost is not null && _trackingPost.TryGetTrack(npc.Ship.Id, out track);
+
             if (npc.Active && npc.CurrentlyObserved)
             {
                 (float sx, float sy) = _camera.WorldToScreen(npc.State.Position);
-                _renderer!.DrawCircle(sx, sy, 4f, NpcColor, NpcColor);
-                _renderer!.DrawText(sx + 8, sy - 6, npc.Ship.Callsign, NpcColor);
+                RgbaColor color = tracked ? TrackedNpcColor : NpcColor;
+                _renderer!.DrawCircle(sx, sy, 4f, color, color);
+                if (tracked)
+                {
+                    double dt = Math.Max(0, SimTime - track.LastObservation.SimTime);
+                    double uncertainty = (PredictedPath.BaseHalfWidthMeters + PredictedPath.VelocitySigma * dt)
+                        * track.UncertaintyScale(SimTime);
+                    float ringPx = (float)Math.Clamp(uncertainty / _camera.MetersPerPixel, 6, 40);
+                    _renderer!.DrawCircle(sx, sy, ringPx, null, TrackedNpcColor, 1.5f);
+                }
+
+                _renderer!.DrawText(sx + 8, sy - 6, npc.Ship.Callsign, color);
             }
             else if (npc.LastObservation is { } obs)
             {
                 (float sx, float sy) = _camera.WorldToScreen(obs.Position);
-                _renderer!.DrawCircle(sx, sy, 4f, null, NpcLastSeenColor);
+                _renderer!.DrawCircle(sx, sy, 4f, null, tracked ? TrackedNpcLastSeenColor : NpcLastSeenColor);
             }
         }
     }
@@ -2931,11 +2963,17 @@
 
     private void BuyUpgrade(string track)
     {
+        if (track == "telescope" && _telescopeLevel >= 3)
+        {
+            return; // MaxTracks cap: 1 + 3 upgrades = 4 telescopes
+        }
+
         int level = track switch
         {
             "mass" => _massLevel,
             "sensor" => _sensorLevel,
             "hold" => _holdLevel,
+            "telescope" => _telescopeLevel,
             _ => 0,
         };
         int price = UpgradePrice(level);
@@ -2957,6 +2995,9 @@
                 break;
             case "hold":
                 _holdLevel++;
+                break;
+            case "telescope":
+                _telescopeLevel++;
                 break;
         }
 
@@ -3246,4 +3287,22 @@
     }
 
     // SATURDAY-ANCHOR: methods — parallel lanes append their station methods directly below
+    private void ToggleTracking() => _showTracking = !_showTracking;
+
+    // Thin, read-only projection of the live NPC list for the tracking post — it never sees
+    // Map.razor's private NpcState, only ids/callsigns/current physical state to sweep against.
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate> TrackingCandidates()
+    {
+        var candidates = new List<SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate>(_npcStates.Length);
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Active && !npc.Arrived)
+            {
+                candidates.Add(new SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate(
+                    npc.Ship.Id, npc.Ship.Callsign, npc.State));
+            }
+        }
+
+        return candidates;
+    }
 }
