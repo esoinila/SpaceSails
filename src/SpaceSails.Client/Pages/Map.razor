@@ -64,6 +64,7 @@
             <button type="button" class="btn btn-sm @(_deckMode ? "btn-warning" : "btn-outline-light")" @onclick="ToggleDeck">
                 Deck
             </button>
+            @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
         </div>
 
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
@@ -429,9 +430,11 @@
             </div>
         </div>
     </div>
+    @* SATURDAY-ANCHOR: panels — parallel lanes append one station component line each below *@
 </div>
 
 @code {
+    // SATURDAY-ANCHOR: fields — parallel lanes append their station fields directly below
     private const string CanvasId = "map-canvas";
     private const int OrbitSegments = 128;
 
@@ -3202,4 +3205,6 @@
             _connection = null;
         }
     }
+
+    // SATURDAY-ANCHOR: methods — parallel lanes append their station methods directly below
 }
