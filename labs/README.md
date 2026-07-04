@@ -23,6 +23,9 @@ Each lesson is a tiny console app that prints its own tables straight to stdout:
 dotnet run --project labs/01-falling-is-orbiting -c Release
 dotnet run --project labs/02-the-integrator-zoo -c Release
 dotnet run --project labs/03-time-step-is-a-lie-you-choose -c Release
+dotnet run --project labs/10-fast-enough-for-ten-thousand-x -c Release
+dotnet run --project labs/11-the-electric-sandbox -c Release
+dotnet run --project labs/12-oops-at-the-moon -c Release
 ```
 
 Each lesson folder holds:
@@ -55,11 +58,17 @@ Each lesson folder holds:
 8. **Seeing through uncertainty** *(coming)* — observation → prediction cones (`PathPredictor`).
 9. **What the rails hide** *(coming)* — a true n-body toy vs. the rails ephemeris: chaos,
    sensitivity, and why patched approximations are used on purpose.
-10. **Fast enough for 10,000×** *(coming)* — the M19 performance numbers, gravity math at warp.
-11. **The Electric Sandbox** ⚡ *(coming)* — `PlasmaEnvironment` coupled with gravity, a clearly
-    labeled speculative playground.
-12. **Oops at the Moon** 🌙 *(coming)* — the finale: a shorted capacitor perturbs a moon's
-    effective μ mid-sim, computed honestly as a playable catastrophe.
+10. [**Fast enough for 10,000×**](10-fast-enough-for-ten-thousand-x/README.md) — the M5/M19
+    performance war stories, reproduced honestly on a dev machine: `RunAdaptive`'s real per-call
+    cost, one ship vs. the game's actual 23-NPC roster, and the determinism constraint
+    (byte-identical below warp 100) verified rather than asserted.
+11. [**The Electric Sandbox**](11-the-electric-sandbox/README.md) ⚡ — `PlasmaEnvironment`'s real
+    halo and stream mechanics computed straight, plus a clearly labeled speculative playground:
+    "what if effective μ depended on the electrical environment?"
+12. [**Oops at the Moon**](12-oops-at-the-moon/README.md) 🌙 — the finale: the one lesson that
+    un-rails a body. A velocity kick to Luna's orbit (the game's own ±% pulse mechanic, by
+    accident), integrated as a genuine free body — departs, degrades, or spirals in, computed
+    honestly, plus a playable `scenarios/oops.json` aftermath.
 
 ## Framing rule
 
