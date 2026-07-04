@@ -1,0 +1,379 @@
+@using SpaceSails.Core
+
+@* The tracking post (worldbuilding notes §5; vision ¶12/¶14/¶16): aim the ship's telescope at a
+   sky region, sweep it over sim time, and hold a ledger of found ships that don't advertise
+   themselves. Entirely self-contained: Map.razor only ever passes it the shared clock/geometry
+   and reads back the ledger for its own emphasis pass — no engine logic lives in Map.razor. *@
+
+<div class="tracking-post-card card bg-dark bg-opacity-75 text-light @(Visible ? "" : "d-none")">
+    <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
+        <span class="fw-bold small">Tracking post 📡</span>
+        <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+    </div>
+    <div class="card-body p-2 small">
+        <div class="d-flex gap-2">
+            <div class="tracking-rosette flex-shrink-0">
+                <svg viewBox="0 0 200 200" class="tracking-rosette-svg" aria-label="Sun-relative detection range">
+                    <polygon points="@RosettePolygonPoints()" class="tracking-rosette-envelope" />
+                    <polygon points="@WedgePolygonPoints()" class="tracking-rosette-wedge @(_activeJob is not null ? "tracking-rosette-wedge-active" : "")" />
+                    @foreach ((double x, double y, string color) in TrackedTargetDots())
+                    {
+                        <circle cx="@x" cy="@y" r="3" fill="@color" />
+                    }
+                    <line x1="100" y1="100" x2="100" y2="14" class="tracking-rosette-sunline" />
+                    <text x="100" y="10" class="tracking-rosette-label" text-anchor="middle">☉</text>
+                    <circle cx="100" cy="100" r="4" class="tracking-rosette-ship" />
+                </svg>
+            </div>
+            <div class="flex-grow-1">
+                <label class="form-label mb-0 d-block">Bearing @((int)_centerBearingDeg)°</label>
+                <input type="range" class="form-range" min="0" max="359" step="1" value="@_centerBearingDeg"
+                       @oninput="OnBearingInput" @onkeydown:stopPropagation="true" />
+                <label class="form-label mb-0 d-block">Arc width @((int)_arcWidthDeg)°</label>
+                <input type="range" class="form-range" min="5" max="360" step="1" value="@_arcWidthDeg"
+                       @oninput="OnArcInput" @onkeydown:stopPropagation="true" />
+                <select class="form-select form-select-sm mb-1" @onchange="OnProgramSelected">
+                    <option value="">— manual aim —</option>
+                    @for (int i = 0; i < _programs.Count; i++)
+                    {
+                        <option value="@i">@_programs[i].Name</option>
+                    }
+                </select>
+                @if (_activeJob is null)
+                {
+                    <button type="button" class="btn btn-sm btn-info w-100" @onclick="StartSweep">Start sweep</button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning w-100" @onclick="StopSweep">Stop sweep</button>
+                }
+            </div>
+        </div>
+
+        @if (_activeJob is not null)
+        {
+            <div class="progress tracking-progress mt-2" role="progressbar" aria-label="Sweep progress">
+                <div class="progress-bar bg-info" style="width:@(SweepProgressPercent.ToString("F0"))%"></div>
+            </div>
+        }
+        @if (_lastSweepMessage is not null)
+        {
+            <div class="text-secondary mt-1">@_lastSweepMessage</div>
+        }
+
+        <hr class="my-2" />
+
+        <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
+        @if (_ledger.Entries.Count == 0)
+        {
+            <div class="text-secondary">Nothing on the ledger yet — sweep a region to find contacts.</div>
+        }
+        else
+        {
+            <table class="table table-sm table-dark mb-0">
+                <tbody>
+                    @foreach (TrackedTarget entry in _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)))
+                    {
+                        double quality = entry.EffectiveQuality(SimTime);
+                        double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
+                        TrackingCandidate? candidate = FindCandidate(entry.ShipId);
+                        <tr>
+                            <td>
+                                @(candidate?.Callsign ?? entry.ShipId)
+                                <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
+                            </td>
+                            <td class="text-end align-middle">@daysAgo.ToString("F1")d</td>
+                            <td class="text-end align-middle text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                        @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @onclick="() => Drop(entry.ShipId)">Drop</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>A candidate ship the tracking post can sweep for — a thin projection of
+    /// Map.razor's own NPC state so this component never needs to know its private type.</summary>
+    public readonly record struct TrackingCandidate(string Id, string Callsign, ShipState State);
+
+    [Parameter, EditorRequired] public double SimTime { get; set; }
+    [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
+    [Parameter, EditorRequired] public Vector2d ShipVelocity { get; set; }
+    [Parameter] public ICelestialEphemeris? Ephemeris { get; set; }
+    [Parameter] public IReadOnlyList<TrackingCandidate> Candidates { get; set; } = [];
+    [Parameter] public int MaxTracks { get; set; } = 1;
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private const double RosetteCenterPx = 100;
+    private const double RosetteMaxRadiusPx = 82;
+    private const int RosetteSteps = 48;
+
+    private readonly TelescopeModel _telescope = new();
+    private readonly TrackedTargetLedger _ledger = new();
+
+    private double _centerBearingDeg;
+    private double _arcWidthDeg = 30;
+    private ScanJob? _activeJob;
+    private double _sweepStartSimTime;
+    private double _lastSimTime;
+    private bool _hasLastSimTime;
+    private string? _lastSweepMessage;
+    private IReadOnlyList<ScanProgram> _programs = [];
+    private double _programsBuiltAtSimTime = double.NegativeInfinity;
+
+    /// <summary>Exposed so Map.razor's NPC-draw pass can key emphasis and the tightened
+    /// prediction cone off the ledger without either side reaching into the other's internals.</summary>
+    public bool TryGetTrack(string shipId, out TrackedTarget track) => _ledger.TryGet(shipId, out track);
+
+    protected override void OnParametersSet()
+    {
+        _ledger.MaxTracks = Math.Max(1, MaxTracks);
+
+        bool timeAdvanced = _hasLastSimTime && SimTime > _lastSimTime;
+        _lastSimTime = SimTime;
+        _hasLastSimTime = true;
+
+        // Corridor programs are a pure function of (bodies, ship position, time) — cheap to
+        // recompute, but there's no reason to redo it every render tick either.
+        if (Ephemeris is not null && SimTime - _programsBuiltAtSimTime > 3600)
+        {
+            _programs = ScanPrograms.BuildPrograms(Ephemeris, ShipPosition, SimTime);
+            _programsBuiltAtSimTime = SimTime;
+        }
+
+        if (timeAdvanced && _activeJob is { } job)
+        {
+            double elapsed = SimTime - _sweepStartSimTime;
+            if (elapsed >= job.DurationSeconds)
+            {
+                CompleteSweep(job);
+            }
+        }
+
+        _ledger.AdvanceTime(SimTime);
+    }
+
+    private double SweepProgressPercent
+    {
+        get
+        {
+            if (_activeJob is not { } job || job.DurationSeconds <= 0)
+            {
+                return 0;
+            }
+
+            double elapsed = SimTime - _sweepStartSimTime;
+            return Math.Clamp(elapsed / job.DurationSeconds * 100.0, 0, 100);
+        }
+    }
+
+    private void OnBearingInput(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), out double v))
+        {
+            _centerBearingDeg = v;
+        }
+    }
+
+    private void OnArcInput(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), out double v))
+        {
+            _arcWidthDeg = v;
+        }
+    }
+
+    private void OnProgramSelected(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int index) && index >= 0 && index < _programs.Count)
+        {
+            ScanJob job = _programs[index].Job;
+            double deg = job.CenterBearingRad * 180.0 / Math.PI;
+            if (deg < 0)
+            {
+                deg += 360;
+            }
+
+            _centerBearingDeg = deg;
+            _arcWidthDeg = Math.Clamp(job.ArcWidthRad * 180.0 / Math.PI, 5, 360);
+        }
+    }
+
+    private void StartSweep()
+    {
+        double bearingRad = _centerBearingDeg * Math.PI / 180.0;
+        double arcRad = Math.Clamp(_arcWidthDeg, 1, 360) * Math.PI / 180.0;
+        _activeJob = new ScanJob(bearingRad, arcRad);
+        _sweepStartSimTime = SimTime;
+        _lastSweepMessage = "Sweeping…";
+    }
+
+    private void StopSweep()
+    {
+        _activeJob = null;
+        _lastSweepMessage = "Sweep aborted";
+    }
+
+    private void CompleteSweep(ScanJob job)
+    {
+        _activeJob = null;
+        IEnumerable<(string Id, ShipState State)> candidates = Candidates.Select(c => (c.Id, c.State));
+        IReadOnlyList<Observation> found = TrackingStation.Sweep(_telescope, job, ShipPosition, candidates, SimTime);
+
+        int added = 0, refused = 0;
+        foreach (Observation obs in found)
+        {
+            if (_ledger.Add(obs))
+            {
+                added++;
+            }
+            else
+            {
+                refused++;
+            }
+        }
+
+        _lastSweepMessage = found.Count == 0
+            ? "Sweep complete — nothing found"
+            : refused > 0
+                ? $"Sweep complete — {added} tracked, {refused} slipped (telescopes full)"
+                : $"Sweep complete — {added} contact(s) found";
+    }
+
+    private TrackingCandidate? FindCandidate(string id)
+    {
+        foreach (TrackingCandidate c in Candidates)
+        {
+            if (c.Id == id)
+            {
+                return c;
+            }
+        }
+
+        return null;
+    }
+
+    private void ConfirmNow(string shipId)
+    {
+        if (Ephemeris is null)
+        {
+            return;
+        }
+
+        TrackingCandidate? candidate = FindCandidate(shipId);
+        if (candidate is null)
+        {
+            _lastSweepMessage = "Can't confirm — contact isn't in range of the sim right now";
+            return;
+        }
+
+        bool ok = _ledger.TryConfirm(shipId, Ephemeris, _telescope, ShipPosition, candidate.Value.State, SimTime);
+        _lastSweepMessage = ok
+            ? $"Reconfirmed {candidate.Value.Callsign}"
+            : $"Lost the fix on {candidate.Value.Callsign} — try a fresh sweep";
+    }
+
+    private void Drop(string shipId) => _ledger.Drop(shipId);
+
+    // ---- Rosette (SVG) ----
+
+    // The envelope is drawn in a LOCAL frame where angle 0 = straight up = sunward (worst range)
+    // and angle π = straight down = anti-sunward (best range) — the "sun-direction egg" from the
+    // worldbuilding notes. Reusing TelescopeModel.Range itself (rather than re-deriving the
+    // formula here) means the picture can never drift from what the sweep logic actually does:
+    // a synthetic ship position on +X has its sunward direction dead on -X, so sampling look
+    // directions around that circle traces exactly the same envelope Range() would compute for
+    // any real ship, just re-expressed in sun-relative angle instead of world bearing.
+    private double EnvelopeFraction(double localAngleRad)
+    {
+        var syntheticShip = new Vector2d(1, 0);
+        var lookDir = new Vector2d(-Math.Cos(localAngleRad), Math.Sin(localAngleRad));
+        return _telescope.Range(syntheticShip, lookDir) / _telescope.BaseRange;
+    }
+
+    private double SunwardBearingRad => TrackingStation.Bearing(Vector2d.Zero - ShipPosition);
+
+    /// <summary>World bearing converted into the rosette's sun-relative local angle.</summary>
+    private double ToLocalAngle(double worldBearingRad)
+    {
+        double diff = (worldBearingRad - SunwardBearingRad) % Math.Tau;
+        if (diff < 0)
+        {
+            diff += Math.Tau;
+        }
+
+        return diff;
+    }
+
+    private (double X, double Y) RosettePoint(double localAngleRad, double radiusFraction)
+    {
+        double a = localAngleRad - Math.PI / 2; // 0 => straight up on screen
+        double r = radiusFraction * RosetteMaxRadiusPx;
+        return (RosetteCenterPx + r * Math.Cos(a), RosetteCenterPx + r * Math.Sin(a));
+    }
+
+    private string RosettePolygonPoints()
+    {
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i <= RosetteSteps; i++)
+        {
+            double localAngle = Math.Tau * i / RosetteSteps;
+            (double x, double y) = RosettePoint(localAngle, EnvelopeFraction(localAngle));
+            sb.Append(x.ToString("F1")).Append(',').Append(y.ToString("F1")).Append(' ');
+        }
+
+        return sb.ToString();
+    }
+
+    private string WedgePolygonPoints()
+    {
+        double bearingDeg = _activeJob?.CenterBearingRad * 180.0 / Math.PI ?? _centerBearingDeg;
+        double arcDeg = _activeJob?.ArcWidthRad * 180.0 / Math.PI ?? _arcWidthDeg;
+        double bearingRad = _activeJob?.CenterBearingRad ?? bearingDeg * Math.PI / 180.0;
+        double halfArc = (arcDeg * Math.PI / 180.0) / 2;
+
+        double centerLocal = ToLocalAngle(bearingRad);
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append(RosetteCenterPx.ToString("F1")).Append(',').Append(RosetteCenterPx.ToString("F1")).Append(' ');
+        const int wedgeSteps = 16;
+        for (int i = 0; i <= wedgeSteps; i++)
+        {
+            double localAngle = centerLocal - halfArc + (2 * halfArc) * i / wedgeSteps;
+            (double x, double y) = RosettePoint(localAngle, EnvelopeFraction(localAngle));
+            sb.Append(x.ToString("F1")).Append(',').Append(y.ToString("F1")).Append(' ');
+        }
+
+        return sb.ToString();
+    }
+
+    private IEnumerable<(double X, double Y, string Color)> TrackedTargetDots()
+    {
+        foreach (TrackedTarget entry in _ledger.Entries)
+        {
+            TrackingCandidate? candidate = FindCandidate(entry.ShipId);
+            Vector2d position = candidate?.State.Position ?? entry.LastObservation.Position;
+            Vector2d toTarget = position - ShipPosition;
+            if (toTarget.LengthSquared == 0)
+            {
+                continue;
+            }
+
+            double bearing = TrackingStation.Bearing(toTarget);
+            double localAngle = ToLocalAngle(bearing);
+            double range = _telescope.Range(ShipPosition, toTarget);
+            double fraction = range > 0 ? Math.Clamp(toTarget.Length / range, 0, 1) : 1;
+            (double x, double y) = RosettePoint(localAngle, fraction);
+
+            double quality = entry.EffectiveQuality(SimTime);
+            string color = quality > 0.5 ? "#7dffb0" : quality > 0.2 ? "#ffd27d" : "#ff8d7d";
+            yield return (x, y, color);
+        }
+    }
+}
