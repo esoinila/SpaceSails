@@ -23,6 +23,9 @@ Each lesson is a tiny console app that prints its own tables straight to stdout:
 dotnet run --project labs/01-falling-is-orbiting -c Release
 dotnet run --project labs/02-the-integrator-zoo -c Release
 dotnet run --project labs/03-time-step-is-a-lie-you-choose -c Release
+dotnet run --project labs/04-the-ten-percent-pulse -c Release
+dotnet run --project labs/05-transfers-without-formulas -c Release
+dotnet run --project labs/06-closest-approach-found-honestly -c Release
 ```
 
 Each lesson folder holds:
@@ -44,12 +47,13 @@ Each lesson folder holds:
 3. [**Time step is a lie you choose**](03-time-step-is-a-lie-you-choose/README.md) — fixed dt
    vs. the game's adaptive `ProjectAdaptive` on a sun-grazing hyperbolic flyby: cost vs. accuracy,
    and a case where the adaptive default doesn't automatically win.
-4. **The ±10% pulse** *(coming)* — impulse quantization and the Oberth effect, measured from the
-   game's own numbers.
-5. **Transfers without formulas** *(coming)* — Hohmann analytic (Curtis ch. 6) vs.
-   `RoutePlanner`'s grid search on Earth→Mars.
-6. **Closest approach, found honestly** *(coming)* — scanning vs. parabola-on-d² refinement, the
-   same technique the planner and the closest-pass warning use.
+4. [**The ±10% pulse**](04-the-ten-percent-pulse/README.md) — impulse quantization and the Oberth
+   effect, measured from the game's own numbers.
+5. [**Transfers without formulas**](05-transfers-without-formulas/README.md) — Hohmann analytic
+   (Curtis ch. 6) vs. `RoutePlanner`'s grid search on Earth→Mars.
+6. [**Closest approach, found honestly**](06-closest-approach-found-honestly/README.md) —
+   scanning vs. parabola-on-d² refinement, the same technique the planner and the closest-pass
+   warning use.
 7. **Hill spheres and bus stops** *(coming)* — sphere-of-influence numerically (`OrbitRule`),
    orbit insertion Δv priced in pulses.
 8. **Seeing through uncertainty** *(coming)* — observation → prediction cones (`PathPredictor`).
