@@ -95,7 +95,8 @@ matching (never turning red on an obvious intersection).
 
 *(See [traffic-board.md](features/traffic-board.md).)*
 
-1. Launch Sol. Click **Traffic**. Confirm a table of callsigns/cargo/routes appears.
+1. Launch Sol. Press `5` (or click **5 Comms** in the station tab bar) to open the Comms desk.
+   Confirm a table of callsigns/cargo/routes (the traffic board) appears.
 2. Click a row for a Luna pod (`Callsign` containing a short Earth→Mars or Earth→Venus route,
    `Status` = En route or Tracked). Confirm the row highlights.
 3. Confirm a **Pin** button appears in the card footer reading "Pin: brakes at *destination*".
@@ -170,9 +171,10 @@ sloppy high-speed intercept despite near-zero relative speed.
 *(See [dock-and-economy.md](features/dock-and-economy.md).)*
 
 1. With cargo in your hold, fly into Earth's, Mars's, or Venus's port zone.
-2. Confirm the **Dock** toolbar button becomes enabled, and click it.
-3. Confirm the dock card shows "Docked at *body*", a Sell button priced at your cargo's total
-   value, and a Refill button.
+2. Press `4` (or click **4 Trade** in the station tab bar) to open the Trade desk.
+3. Confirm the desk's right-hand panel shows "Docked at *body*", a Sell button priced at your
+   cargo's total value, and a Refill button (it shows a placeholder instead when you're not
+   docked).
 4. Click **Sell cargo**. Confirm credits increase and cargo drops to 0.
 5. Click **Refill mass**. Confirm mass pulses return to capacity.
 6. In the Upgrades table, buy a **Reaction mass** upgrade (if you have 2000+ credits). Confirm
@@ -188,7 +190,8 @@ upgrade button staying enabled/disabled incorrectly relative to your credits.
 
 *(See [deck-view.md](features/deck-view.md).)*
 
-1. Click **Deck**. Confirm a top-down interior view loads with your avatar near the bridge.
+1. Press `7` (or click **7 Deck** in the station tab bar). Confirm a top-down interior view loads
+   with your avatar near the bridge.
 2. Walk with `WASD` toward the **CANTINA**. Confirm collision stops you at walls rather than
    clipping through.
 3. Press `E` at the cantina three times, each within a few seconds of the last.
@@ -210,7 +213,7 @@ not producing a real (ephemeris-matched) sky.
 *(See [boarding-run.md](features/boarding-run.md).)*
 
 1. Get a capture window open against a selected target (see script 5 or 8).
-2. Click **Deck**, walk to the **SHUTTLE BAY**, press `E`.
+2. Press `7` for the Deck desk, walk to the **SHUTTLE BAY**, press `E`.
 3. Confirm you're now flying a shuttle with `WASD` thrust toward a visible target airlock.
 4. Fly in too fast on purpose. Confirm you **bounce** off (velocity reverses/halves) rather than
    docking, and the run continues.
@@ -250,8 +253,9 @@ venting not reducing the charge value.
 
 *(See [tracking-post.md](features/tracking-post.md).)*
 
-1. Launch Sol. Click **Track 📡**. Confirm the card opens with a sun-relative rosette, bearing/arc
-   sliders, and a program dropdown.
+1. Launch Sol. Press `2` (or click **2 Sensors** in the station tab bar) to open the Sensors desk.
+   Confirm it opens full-screen with a sun-relative rosette, bearing/arc sliders, and a program
+   dropdown, with the live map dimmed visibly behind it.
 2. Pick a corridor program from the dropdown (e.g. "Earth–Mars corridor watch"). Confirm the
    bearing/arc sliders jump to match it and the wedge on the rosette redraws.
 3. Click **Start sweep**. Confirm a progress bar appears and "Sweeping…" shows underneath.
@@ -275,19 +279,22 @@ plausible sweep, or the tracked ring never appearing on the map.
 
 1. Launch Sol with cargo in your hold (board a depot first if empty — see script 8). Orbit-assist
    into a planet with a depot (e.g. Mars).
-2. Confirm the **Local space** panel opens on its own the moment you're bound in orbit, listing at
-   least the planet's depot with a 🛰 icon and a **Trade** badge/button.
+2. Press `4` (or click **4 Trade** in the station tab bar) to open the Trade desk. Confirm it lists
+   at least the planet's depot with a 🛰 icon and a **Trade** badge/button (note: as of PR-11 the
+   panel no longer auto-opens on binding to orbit — the Trade chip on other desks updates live
+   instead; switching to the Trade desk is now a deliberate action).
 3. Click **Trade** on the depot row. Confirm a striped progress bar appears reading "Drones
-   ferrying — NN%".
+   ferrying — NN%", and the Trade summary chip on other desks (e.g. Nav) shows the same
+   "drones → *name* NN%" line.
 4. Let it run in real time (don't just warp — the transfer accrues on the wall clock). Confirm it
    completes and your cargo hold empties into credits, matching dock-and-economy sell prices.
 5. Pulse away from orbit mid-transfer on a fresh attempt. Confirm the progress bar resets/vanishes
    and no credit is paid — the envelope broke and progress was lost, no partial credit.
-6. Toggle the panel closed and back open with the **Local 🛰** button; confirm it still shows the
-   same contact list.
+6. Leave the Trade desk (press `1`) and come back (press `4`); confirm it still shows the same
+   contact list.
 
-**Broken looks like:** the panel never auto-opening on entering orbit, the Trade button staying
-enabled with an empty hold, or credits being paid out despite the transfer being interrupted.
+**Broken looks like:** the Trade button staying enabled with an empty hold, credits being paid out
+despite the transfer being interrupted, or the Trade chip not reflecting an active transfer.
 
 ---
 
@@ -297,19 +304,20 @@ enabled with an empty hold, or credits being paid out despite the transfer being
 
 1. Launch Sol. Fly to (or orbit) a haven — e.g. Ringside Exchange or Enceladus — or a far station
    beyond ~4×10¹¹ m from the sun.
-2. Click **Web 🕸**. Confirm the dark-web section shows a table of off-the-books ships instead of
-   the "not orbiting or docked at a haven…" message.
+2. Press `5` (or click **5 Comms** in the station tab bar) to open the Comms desk. Confirm the
+   dark-web section shows a table of off-the-books ships instead of the "not orbiting or docked
+   at a haven…" message, with the traffic board rendering alongside it in its own column.
 3. Buy a route tip on a listed ship. Confirm credits drop by the shown price and the button now
    reads "Known".
-4. Open **Traffic** and confirm the bought ship now appears in the table with a `🕸 stale in Nd`
-   badge next to its callsign.
-5. Back in **Web 🕸**, use the **Track 📡** panel first to get at least one tracked contact at
-   ≥50% quality, then confirm it appears under "Your sellable tracks" with a **Sell** button; click
-   it and confirm credits increase.
+4. In the same desk's traffic board column, confirm the bought ship now appears in the table with
+   a `🕸 stale in Nd` badge next to its callsign.
+5. Get at least one tracked contact at ≥50% quality first (press `2` for the Sensors desk, run a
+   sweep — see script 13), then back on the Comms desk (`5`) confirm it appears under "Your
+   sellable tracks" with a **Sell** button; click it and confirm credits increase.
 6. Pick a tracked contact in the tight-beam dropdown and click **Hail**. Confirm an inline reply
    appears (a destination for a publishing ship, "No flight plan filed" for a secretive one).
-7. Click **Laser range** on a tracked contact. Confirm a "lit up ⚠" message appears, and back in
-   the **Track 📡** panel that ship's ledger row now shows an `aware ⚠` tag.
+7. Click **Laser range** on a tracked contact. Confirm a "lit up ⚠" message appears, and back on
+   the Sensors desk (`2`) that ship's ledger row now shows an `aware ⚠` tag.
 
 **Broken looks like:** the dark-web section trading from an ordinary planet/dock, a bought tip
 never appearing on the traffic board, or laser ranging not marking the target aware.
@@ -321,7 +329,8 @@ never appearing on the traffic board, or laser ranging not marking the target aw
 *(See [war-room.md](features/war-room.md).)*
 
 1. Launch Sol. Intercept a freighter (not a pod) close enough to be inside weapon range (2×10⁸ m —
-   tighter than the boarding capture envelope). Click **Guns ⚔**.
+   tighter than the boarding capture envelope). Press `3` (or click **3 War room** in the station
+   tab bar) to open the War room desk.
 2. Confirm the tactical circle shows your ship, a weapon-range ring, and the target as a dot with a
    status badge (🏳 compliant or ⚔ stubborn).
 3. Click **Hail**. Confirm an inline threat/reply line appears matching the status badge (surrender
@@ -340,3 +349,32 @@ never appearing on the traffic board, or laser ranging not marking the target aw
 
 **Broken looks like:** Warn/Bribe enabled outside their stated ranges/conditions, heat never rising
 after a robbery, or a hunter never spawning or never breaking off at a haven.
+
+---
+
+## 17. Desk switching
+
+*(See [station-desks.md](features/station-desks.md).)*
+
+1. Launch Sol. Confirm the Nav desk is active by default: the map fills the screen, the toolbar
+   shows only warp/Pause/Follow Ship/Plot/Scope/`?`/first hunt, and a slim station tab bar
+   (`1 Nav · 2 Sensors · 3 War room · 4 Trade · 5 Comms · 6 Galley · 7 Deck`) sits top-center.
+2. Confirm a thin chip strip on the right edge shows one small summary per OTHER desk (five
+   chips while on Nav) — not the active one.
+3. Press `2`. Confirm the Sensors desk takes over the screen (tracking post full-screen, live map
+   dimmed but visible behind it) and the Nav chip now appears in the strip instead of Sensors'.
+4. Press `6`. Confirm the Galley desk appears (news wire + rum locker) with its own chip absent
+   from the strip.
+5. Click a chip (e.g. the War room chip) instead of pressing a number. Confirm it jumps to that
+   desk exactly like the key would.
+6. Press `Escape` from any desk. Confirm it returns to Nav.
+7. Press `7` to enter the Deck (walk-the-ship) desk, walk a few steps, then press `1`. Confirm it
+   leaves deck mode and returns to Nav in one step (not two).
+8. While the Plot panel's scrub slider or a maneuver-node number field has focus, press a digit
+   key. Confirm it edits the field's value — it does **not** switch desks (inputs stop the
+   keydown from reaching the desk router).
+
+**Broken looks like:** number keys not switching desks, the chip strip missing a desk or showing
+the active one, digit keys leaking into text/number/slider inputs (or vice versa — desk keys not
+working because an input silently ate them when it shouldn't have), or `7`/`1` leaving deck mode
+and Nav desk state out of sync (e.g. stuck on a blank screen).

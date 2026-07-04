@@ -4,9 +4,10 @@ What this is: the outer reaches' black market for information — buy route inte
 don't publish a timetable, sell your own [tracking post](tracking-post.md) finds, hail a tracked
 contact directly, or burn a laser fix on one at the cost of giving away your own position.
 
-Where: press the **Web 🕸** toolbar button on the map. The dark-web (buy/sell) section only works
-while you're docked or bound in orbit somewhere `IntelMarket.CanTradeIntelAt` allows — see below;
-tight-beam and laser ranging work anywhere.
+Where: the **Comms desk** — press `5` or click **5 Comms** in the station tab bar (see
+[station-desks.md](station-desks.md)). Full-screen, alongside the traffic board. The dark-web
+(buy/sell) section only works while you're docked or bound in orbit somewhere
+`IntelMarket.CanTradeIntelAt` allows — see below; tight-beam and laser ranging work anywhere.
 
 ![Dark space web](../tmp_pics/saturday/dark-web.png)
 

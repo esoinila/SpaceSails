@@ -31,6 +31,7 @@ Small, linked pages — one station or mechanic per page — under `docs/feature
 - [Local space](docs/features/local-space.md) — the "what else orbits here" panel, same-orbit/course-matched trading, drone transfers
 - [Dark space web](docs/features/dark-web.md) — buying/selling route intel, tight-beam hails, laser ranging
 - [War room](docs/features/war-room.md) — weapon range, warning shots, compliance, bribery, heat, and hunters
+- [Station desks](docs/features/station-desks.md) — the duty-station refit: full-screen desks switched by number key, the 70% rule, summary chips, the Galley
 
 ## Stack
 

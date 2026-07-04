@@ -1,0 +1,33 @@
+/* The Galley owns the screen (70% rule) — news wire on the left gets the lion's share, the rum
+   locker sits as a fixed-width card on the right so it doesn't stretch awkwardly at wide sizes. */
+
+.galley-desk {
+    display: flex;
+    gap: 1.5rem;
+    height: 100%;
+}
+
+.galley-news {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-y: auto;
+}
+
+.galley-rum {
+    flex: 0 0 20rem;
+    max-width: 20rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    height: fit-content;
+}
+
+.galley-headline {
+    font-size: 1.3rem;
+}
+
+.galley-wire-list {
+    max-height: 40vh;
+    overflow-y: auto;
+}

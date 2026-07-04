@@ -23,7 +23,10 @@
 
 .map-hud {
     position: absolute;
-    top: 0.75rem;
+    /* Clears the desk tab bar's row (top: 0.5rem, centered) regardless of viewport width — the
+       toolbar is left-anchored and can span past center at typical widths, so the two are kept
+       vertically separated rather than sharing a row. */
+    top: 3.4rem;
     left: 0.75rem;
     pointer-events: none;
     max-width: calc(100% - 1.5rem);
@@ -147,4 +150,71 @@
     height: 4px;
     margin-top: 3px;
     background: #1c2230;
+}
+
+/* ---- PR-11: duty-station desks (docs/SaturdayPlan/StationDesks.md) ---- */
+
+.desk-tab-bar {
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+    pointer-events: auto;
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.desk-tab {
+    white-space: nowrap;
+}
+
+/* Full-screen desk container (rule 1: the desk's own topic owns the screen). Sensors dims the
+   live map through behind it (rule 4); every other desk goes near-opaque. */
+.desk-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    background: rgba(6, 9, 15, 0.92);
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Extra right padding clears the desk-chip-strip's column (9.5rem wide, 0.5rem off the
+       edge) so a desk's own right-hand content (e.g. the Comms desk's traffic board) never
+       renders underneath the chips. */
+    padding: 2rem 11rem 2rem 2rem;
+    box-sizing: border-box;
+}
+
+.desk-layer-dimmed {
+    background: rgba(6, 9, 15, 0.55);
+}
+
+.desk-content {
+    width: min(96vw, 90rem);
+    height: 90vh;
+    overflow-y: auto;
+}
+
+/* Trade/Comms desks host their main station plus a secondary console (dock market / traffic
+   board) side by side — two columns instead of the old separate floating cards. */
+.desk-trade-grid,
+.desk-comms-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 0 1.5rem;
+    height: 100%;
+}
+
+.desk-side-panel {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.desk-traffic-scroll {
+    max-height: calc(90vh - 6rem);
+    overflow-y: auto;
 }

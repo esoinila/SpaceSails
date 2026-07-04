@@ -4,8 +4,10 @@ What this is: "orbiting a planet, you should see what else orbits there" — a p
 depot, station, moon, haven, and nearby ship at whatever body you're currently bound to (or
 cruising close to), plus a one-click drone trade with anything that'll take one.
 
-Where: opens automatically the moment you enter orbit around a body; toggle it manually any time
-with the **Local 🛰** toolbar button.
+Where: the **Trade desk** — press `4` or click **4 Trade** in the station tab bar (see
+[station-desks.md](station-desks.md)). Full-screen, alongside the dock market. As of PR-11 it no
+longer auto-opens on binding to orbit (a full-screen desk switch would be too disruptive
+mid-flight) — the Trade summary chip on other desks updates live instead.
 
 ![Local space](../tmp_pics/saturday/local-space.png)
 

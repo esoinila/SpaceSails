@@ -1,0 +1,49 @@
+/* Thin edge strip (StationDesks.md rule 2): narrow enough that it never blocks the map, but
+   pointer-events auto so its chips are clickable everywhere it's docked. */
+
+.desk-chip-strip {
+    position: absolute;
+    top: 4.75rem;
+    right: 0.5rem;
+    bottom: 0.75rem;
+    width: 9.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    overflow-y: auto;
+    pointer-events: auto;
+    z-index: 30;
+}
+
+.desk-chip {
+    background: rgba(8, 12, 20, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    color: #e0e4ec;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.desk-chip:hover,
+.desk-chip:focus-visible {
+    border-color: rgba(120, 200, 255, 0.6);
+    outline: none;
+}
+
+.desk-chip-title {
+    font-weight: 600;
+    margin-bottom: 0.1rem;
+}
+
+.desk-chip-icon {
+    display: inline-block;
+    width: 1rem;
+}
+
+.desk-chip-line {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

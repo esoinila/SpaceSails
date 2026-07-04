@@ -5,14 +5,17 @@
    themselves. Entirely self-contained: Map.razor only ever passes it the shared clock/geometry
    and reads back the ledger for its own emphasis pass — no engine logic lives in Map.razor. *@
 
-<div class="tracking-post-card card bg-dark bg-opacity-75 text-light @(Visible ? "" : "d-none")">
+<div class="tracking-post-card @(FullScreen ? "tracking-post-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
         <span class="fw-bold small">Tracking post 📡</span>
-        <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+        @if (!FullScreen)
+        {
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+        }
     </div>
-    <div class="card-body p-2 small">
-        <div class="d-flex gap-2">
-            <div class="tracking-rosette flex-shrink-0">
+    <div class="card-body p-2 small @(FullScreen ? "tracking-post-desk-body" : "")">
+        <div class="d-flex gap-2 @(FullScreen ? "tracking-post-desk-top" : "")">
+            <div class="tracking-rosette flex-shrink-0 @(FullScreen ? "tracking-rosette-big" : "")">
                 <svg viewBox="0 0 200 200" class="tracking-rosette-svg" aria-label="Sun-relative detection range">
                     <polygon points="@RosettePolygonPoints()" class="tracking-rosette-envelope" />
                     <polygon points="@WedgePolygonPoints()" class="tracking-rosette-wedge @(_activeJob is not null ? "tracking-rosette-wedge-active" : "")" />
@@ -70,7 +73,7 @@
         }
         else
         {
-            <table class="table table-sm table-dark mb-0">
+            <table class="table table-sm table-dark mb-0 @(FullScreen ? "tracking-ledger-table" : "")">
                 <tbody>
                     @foreach (TrackedTarget entry in _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)))
                     {
@@ -108,6 +111,7 @@
     [Parameter] public IReadOnlyList<TrackingCandidate> Candidates { get; set; } = [];
     [Parameter] public int MaxTracks { get; set; } = 1;
     [Parameter] public bool Visible { get; set; }
+    [Parameter] public bool FullScreen { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
     private const double RosetteCenterPx = 100;
@@ -130,6 +134,43 @@
     private string? _lastSweepMessage;
     private IReadOnlyList<ScanProgram> _programs = [];
     private double _programsBuiltAtSimTime = double.NegativeInfinity;
+    private string? _lastProgramName;
+
+    /// <summary>The Sensors chip's objective line (addendum, 2026-07-04 evening): what we're
+    /// looking for right now, not raw stats — a sweep in progress, else the best-quality track,
+    /// else nothing set.</summary>
+    public string ObjectiveSummary(double simTime)
+    {
+        if (_activeJob is not null)
+        {
+            return $"Sweeping {_lastProgramName ?? "custom region"}";
+        }
+
+        string? callsign = BestTrackCallsign(simTime);
+        return callsign is not null ? $"Tracking {callsign}" : "No watch set";
+    }
+
+    private string? BestTrackCallsign(double simTime)
+    {
+        TrackedTarget? best = null;
+        double bestQuality = -1;
+        foreach (TrackedTarget entry in _ledger.Entries)
+        {
+            double quality = entry.EffectiveQuality(simTime);
+            if (quality > bestQuality)
+            {
+                bestQuality = quality;
+                best = entry;
+            }
+        }
+
+        if (best is not { } target)
+        {
+            return null;
+        }
+
+        return FindCandidate(target.ShipId)?.Callsign ?? target.ShipId;
+    }
 
     /// <summary>Exposed so Map.razor's NPC-draw pass can key emphasis and the tightened
     /// prediction cone off the ledger without either side reaching into the other's internals.</summary>
@@ -221,6 +262,7 @@
 
             _centerBearingDeg = deg;
             _arcWidthDeg = Math.Clamp(job.ArcWidthRad * 180.0 / Math.PI, 5, 360);
+            _lastProgramName = _programs[index].Name;
         }
     }
 

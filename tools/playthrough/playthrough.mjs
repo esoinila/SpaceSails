@@ -1,15 +1,21 @@
-// Headless Playwright smoke test for PR-8 ("rig for silent running").
+// Headless Playwright smoke test for PR-8 ("rig for silent running") and PR-11 (the desk
+// framework — docs/SaturdayPlan/StationDesks.md).
 //
 // Proves the new-stations gameplay loop end-to-end in a real browser:
 //   1. Launch the app in Release mode (Debug WASM is ~100x slower on the IL interpreter).
 //   2. Load /map?scenario=sol, wait for world-ready ("Rigging the sails..." spinner gone).
-//   3. Track post: run a corridor scan program (using warp to pass sim time) until at least
+//   3. Desk framework (PR-11): number-key switching — '2' opens the Sensors desk full-screen,
+//      '1' returns to Nav, '5'/'3'/'4'/'6' open Comms/War room/Trade/Galley in turn, the chip
+//      strip is present throughout.
+//   4. Sensors desk: run a corridor scan program (using warp to pass sim time) until at least
 //      one contact is tracked.
-//   4. Dark web ("Web"): open the panel, note whether the market is reachable from the
-//      current position (it requires orbit-bound-at-haven/far-station; see README.md).
-//   5. War room ("Guns"): confirm the heat gauge renders at 0.
-//   6. Local space ("Local"): confirm the panel renders.
-//   7. Screenshot every station into docs/tmp_pics/saturday/.
+//   5. Comms desk: dark web + the traffic board (moved here from the old toolbar button) render
+//      side by side; note whether the market is reachable from the current position (it requires
+//      orbit-bound-at-haven/far-station; see README.md).
+//   6. War room desk: confirm the heat gauge renders at 0.
+//   7. Trade desk: confirm local space + the dock side panel render.
+//   8. Galley desk: pour a tot, confirm the rum locker updates.
+//   9. Screenshot every desk into docs/tmp_pics/saturday/.
 //
 // This is tooling, not product code — it is exempt from the Razor+Bootstrap/renderer.js-only
 // rule (repo agreement §9 applies to the game client, not test scripts).
@@ -147,8 +153,22 @@ async function main() {
     record("world-ready", true, "map-loading spinner cleared");
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "00-map-ready.png") });
 
+    // The desk framework (PR-11): number keys switch full-screen desks. Keystrokes go to the
+    // wrapping tabindex=0 div Map.razor listens on (@onkeydown), so give it focus explicitly —
+    // clicking the canvas doesn't bubble a DOM focus event up to its parent.
+    const mapPage = page.locator(".map-page");
+    await mapPage.focus();
+
+    // Chip strip (rule 2): present on every desk, right from the Nav desk we start on. Generous
+    // timeout here specifically — the WASM interpreter is still cold right after world-ready
+    // (first NPC/ephemeris population is CPU-heavy), unlike the later desk checks below which
+    // run after minutes of warped sim time have let the interpreter settle.
+    await page.locator(".desk-chip-strip").waitFor({ state: "visible", timeout: 60_000 });
+    record("desk chip strip present on Nav", true);
+
     // Crank warp to max up front — every station check below benefits from fast sim time.
     await setRangeValue(page, ".map-warp-control input[type=range]", 100);
+    await mapPage.focus();
 
     // Most of the 8 generated traffic ships are mid-flight He3 haulers already active at sim
     // start (out at Saturn/Jupiter distances — well past the telescope's 6e11 m base range from
@@ -163,11 +183,12 @@ async function main() {
     const reachedDays = await waitForSimDays(page, 15, 240_000);
     console.log(`warped forward — reached the ${reachedDays ? "" : "(partial) "}activation horizon`);
 
-    // ---- Tracking post ----
-    await page.click('button:has-text("Track 📡")');
+    // ---- Sensors desk (key '2') ----
+    await page.keyboard.press("2");
     const trackingCard = page.locator(".tracking-post-card");
-    await trackingCard.waitFor({ state: "visible", timeout: 15_000 });
-    record("tracking-post panel opens", true);
+    await trackingCard.waitFor({ state: "visible", timeout: 30_000 });
+    const trackingFullScreen = await trackingCard.evaluate((el) => el.classList.contains("tracking-post-desk"));
+    record("'2' opens the Sensors desk full-screen", trackingFullScreen, "tracking-post-desk class present");
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "01-tracking-post-open.png") });
 
     const programSelect = trackingCard.locator("select");
@@ -208,47 +229,76 @@ async function main() {
     // Also the plain filename docs/features/tracking-post.md references directly.
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "tracking-post.png") });
 
-    // Close the tracking post before opening the next station so each screenshot below is a
-    // clean single-panel shot rather than a stack of overlapping cards.
-    await page.click('button:has-text("Track 📡")');
-    await trackingCard.waitFor({ state: "hidden", timeout: 15_000 });
+    // ---- Back to Nav (key '1') ----
+    await mapPage.focus();
+    await page.keyboard.press("1");
+    await page.locator(".map-hud").waitFor({ state: "visible", timeout: 30_000 });
+    await trackingCard.waitFor({ state: "hidden", timeout: 30_000 });
+    record("'1' returns to the Nav desk", true, "map-hud (toolbar/readouts) visible again");
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "00b-nav-desk.png") });
 
-    // ---- Dark web ----
-    await page.click('button:has-text("Web 🕸")');
+    // ---- Comms desk (key '5'): dark web + the traffic board (moved off the old toolbar) ----
+    await mapPage.focus();
+    await page.keyboard.press("5");
     const darkWebCard = page.locator(".dark-web-card");
-    await darkWebCard.waitFor({ state: "visible", timeout: 15_000 });
+    await darkWebCard.waitFor({ state: "visible", timeout: 30_000 });
+    const darkWebFullScreen = await darkWebCard.evaluate((el) => el.classList.contains("dark-web-desk"));
     const darkWebText = await darkWebCard.innerText();
     const marketReachable = darkWebText.includes("Off-the-books ships the market knows about");
     record(
-      "dark web panel renders",
-      true,
+      "'5' opens the Comms desk (dark web full-screen)",
+      darkWebFullScreen,
       marketReachable
         ? "market listing reachable from current position"
         : "gated (not orbit-bound at a haven/far station) — shows expected disabled-reason message"
     );
+    const trafficBoardOnComms = await page.locator(".desk-comms-grid").getByText("Traffic board").isVisible();
+    record("traffic board renders inside the Comms desk", trafficBoardOnComms);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "03-dark-web.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "dark-web.png") });
-    await page.click('button:has-text("Web 🕸")');
-    await darkWebCard.waitFor({ state: "hidden", timeout: 15_000 });
 
-    // ---- War room ----
-    await page.click('button:has-text("Guns ⚔")');
+    // ---- War room desk (key '3') ----
+    await mapPage.focus();
+    await page.keyboard.press("3");
     const warRoomCard = page.locator(".war-room-card");
-    await warRoomCard.waitFor({ state: "visible", timeout: 15_000 });
+    await warRoomCard.waitFor({ state: "visible", timeout: 30_000 });
     const heatGaugeText = (await warRoomCard.locator(".war-room-heat-gauge").innerText()).trim();
     record("war room heat gauge renders at 0", heatGaugeText === "◌◌◌", `gauge text = "${heatGaugeText}"`);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "04-war-room.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "war-room.png") });
-    await page.click('button:has-text("Guns ⚔")');
-    await warRoomCard.waitFor({ state: "hidden", timeout: 15_000 });
 
-    // ---- Local space ----
-    await page.click('button:has-text("Local 🛰")');
+    // ---- Trade desk (key '4'): local space + the dock side panel ----
+    await mapPage.focus();
+    await page.keyboard.press("4");
     const localSpaceCard = page.locator(".local-space-card");
-    await localSpaceCard.waitFor({ state: "visible", timeout: 15_000 });
-    record("local space panel renders", true);
+    await localSpaceCard.waitFor({ state: "visible", timeout: 30_000 });
+    const dockPanelOnTrade = await page.locator(".desk-trade-grid .desk-side-panel").isVisible();
+    record("'4' opens the Trade desk (local space + dock side panel)", dockPanelOnTrade);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "05-local-space.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "local-space.png") });
+
+    // ---- Galley desk (key '6') ----
+    await mapPage.focus();
+    await page.keyboard.press("6");
+    const galleyDesk = page.locator(".galley-desk");
+    await galleyDesk.waitFor({ state: "visible", timeout: 30_000 });
+    record("'6' opens the Galley desk", true);
+    const totsBefore = await readRumTots(galleyDesk);
+    await galleyDesk.locator('button:has-text("Pour a tot")').click();
+    await sleep(500);
+    const totsAfter = await readRumTots(galleyDesk);
+    record("pouring a tot in the Galley updates the shared rum locker", totsAfter > totsBefore, `${totsBefore} -> ${totsAfter}`);
+    const chipsOnGalley = await page.locator(".desk-chip-strip .desk-chip").count();
+    record("summary chips render on the Galley desk", chipsOnGalley > 0, `${chipsOnGalley} chips`);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "06-galley.png") });
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "galley.png") });
+
+    // ---- Back to Nav once more, chip strip still present throughout ----
+    await mapPage.focus();
+    await page.keyboard.press("1");
+    await page.locator(".map-hud").waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator(".desk-chip-strip").waitFor({ state: "visible", timeout: 30_000 });
+    record("desk chip strip present back on Nav", true);
 
     if (consoleErrors.length > 0) {
       results.bugs.push({ note: "browser console errors observed", detail: consoleErrors.slice(0, 20) });
@@ -298,6 +348,12 @@ async function waitForSimDays(page, minDays, timeoutMs) {
 async function readTrackedCount(trackingCard) {
   const text = await trackingCard.innerText();
   const m = text.match(/Tracked targets \((\d+)\s*\//);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+async function readRumTots(galleyDesk) {
+  const text = await galleyDesk.innerText();
+  const m = text.match(/Tots poured:\s*(\d+)/);
   return m ? parseInt(m[1], 10) : 0;
 }
 

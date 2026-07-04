@@ -3,10 +3,11 @@
 What this is: fencing your loot, refilling your fuel, and spending credits on a permanently
 better ship.
 
-Where: fly within a market's **port zone** (about 0.067 AU — deliberately generous) and the
-**Dock** toolbar button lights up; click it (or it's already open if you were docked when you
-opened the map). Markets exist at **Earth, Mars, and Venus** only — depots and other planets are
-plunder targets, not places to sell (see [depots.md](depots.md)).
+Where: fly within a market's **port zone** (about 0.067 AU — deliberately generous), then press
+`4` (or click **4 Trade** in the station tab bar — see [station-desks.md](station-desks.md)) to
+open the Trade desk; the dock panel appears in its side column whenever you're docked. Markets
+exist at **Earth, Mars, and Venus** only — depots and other planets are plunder targets, not places
+to sell (see [depots.md](depots.md)).
 
 ## Selling cargo
 

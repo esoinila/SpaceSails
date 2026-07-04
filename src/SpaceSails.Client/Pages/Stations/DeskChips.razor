@@ -1,0 +1,45 @@
+@using SpaceSails.Client.Pages
+
+@* Summary rule (StationDesks.md rule 2): every desk except the one you're sitting at gets a
+   thin, standardized chip on this strip — the station's tightest objective summary, never a
+   full panel. Click a chip to jump to that desk. One component, reused on every desk. *@
+
+<div class="desk-chip-strip">
+    @* The captain's position (mission chip, PR-15) will dock at the top of this strip — no
+       placeholder text until that desk exists. *@
+    @foreach (ChipData chip in Chips)
+    {
+        <div class="desk-chip" role="button" tabindex="0"
+             @onclick="() => OnSelect.InvokeAsync(chip.Desk)"
+             @onkeydown="e => OnChipKeyDown(e, chip.Desk)">
+            <div class="desk-chip-title"><span class="desk-chip-icon">@chip.Icon</span> @chip.Label</div>
+            <div class="desk-chip-line">@chip.Line1</div>
+            @if (chip.Line2 is not null)
+            {
+                <div class="desk-chip-line text-secondary">@chip.Line2</div>
+            }
+            @if (chip.Line3 is not null)
+            {
+                <div class="desk-chip-line text-secondary">@chip.Line3</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>One desk's tightest objective summary — up to three short lines. Built by
+    /// Map.razor from whatever state each desk's component already exposes (never raw stats
+    /// dumps; see the addendum in docs/SaturdayPlan/StationDesks.md).</summary>
+    public readonly record struct ChipData(ShipDesk Desk, string Icon, string Label, string Line1, string? Line2 = null, string? Line3 = null);
+
+    [Parameter] public IReadOnlyList<ChipData> Chips { get; set; } = [];
+    [Parameter] public EventCallback<ShipDesk> OnSelect { get; set; }
+
+    private async Task OnChipKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e, ShipDesk desk)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await OnSelect.InvokeAsync(desk);
+        }
+    }
+}

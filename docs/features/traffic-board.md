@@ -3,8 +3,9 @@
 What this is: the shipping departures list — every cargo run and mass-driver pod you can see,
 with a predicted-path cone you can plot an intercept against.
 
-Where: press the **Traffic** toolbar button on the map. In multiplayer this becomes a live
-**Contacts** list of other players' sensor-visible ships instead (see below).
+Where: the **Comms desk** — press `5` or click **5 Comms** in the station tab bar (see
+[station-desks.md](station-desks.md)), alongside the [dark web](dark-web.md). In multiplayer this
+becomes a live **Contacts** list of other players' sensor-visible ships instead (see below).
 
 ## The board
 

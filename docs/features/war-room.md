@@ -5,7 +5,8 @@ catch-radius rings, warning shots, threats, bribery, and the **heat** a robbery 
 Gentleman's-pirate rules: sinking cargo is worthless, taxing it pays, so there's no way to actually
 destroy a ship here — only to make it heave to.
 
-Where: press the **Guns ⚔** toolbar button on the map.
+Where: the **War room desk** — press `3` or click **3 War room** in the station tab bar (see
+[station-desks.md](station-desks.md)). Full-screen, not a pop-up card.
 
 ![War room](../tmp_pics/saturday/war-room.png)
 
