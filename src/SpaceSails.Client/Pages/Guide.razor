@@ -123,8 +123,19 @@
             planned path, measured in body radii, with a marker on the ribbon. Under 5 R it turns
             yellow; through a planet it turns red and says <em>IMPACT, captain</em>. When that pass
             is a planet close enough to matter, an <strong>Insert at <em>body</em> pass</strong>
-            button appears — arm it and the ship parks itself in orbit the instant the window opens
-            during live flight (see §7). Click it again to disarm.</li>
+            button appears — arm it and the autopilot parks the ship during live flight (see §7).
+            Click it again to disarm.</li>
+        <li><strong>The navigation-target panel</strong> — with a destination set (§7), plotting
+            opens a roomy panel bottom-center that states the one thing that matters in plain
+            words: where the plotted course comes nearest the target, and whether that pass is
+            inside <strong>capture range</strong> — the distance from which the autopilot can
+            take over. Green: arm auto-orbit and you're done. Yellow: it tells you by how much
+            the course misses; trim a burn until it turns green. Buttons scrub straight to the
+            pass and arm the autopilot. On the map the destination wears a target-lock reticle
+            (live, on its ghost, and at its position at pass time, with the miss distance drawn
+            as a line).</li>
+        <li>Spent burns clean themselves off the plot card once their moment has passed —
+            executed or stale, they're history either way.</li>
     </ul>
 
     <h3>Worked examples</h3>
@@ -142,20 +153,25 @@
     <ul>
         <li>Prograde pulses can never <em>turn</em> you into a planetary orbit, so the ship does
             it for you. Get near a planet and a strip appears in the Nav HUD: <strong>🛰 Orbit
-            <em>body</em> —</strong> <em>window OPEN</em>, <em>too fast — shed n km/s</em>, or
-            <em>close in n to the window</em>, with two bars underneath for distance-vs-Hill-sphere
-            and speed-vs-limit.</li>
+            <em>body</em> —</strong> <em>window OPEN</em>, <em>in capture range</em>, or
+            <em>close in n to capture range</em>, with two bars underneath for
+            distance-vs-capture-range and speed-vs-limit.</li>
         <li><strong>Planets are clickable too</strong> — click one on the map and a small menu
             offers <strong>🎯 Set destination</strong>. The assist strip then coaches the approach
-            to <em>that</em> body from any distance (how far to the window, how much speed to
-            shed), instead of proposing whatever happens to be nearest. The chosen body wears a
-            <em>DEST</em> ring on the map; the same menu can arm the auto-insert of §6, and
-            <em>clear</em> on the strip lets it go.</li>
-        <li>Press <kbd>O</kbd> (or the panel's button) once the window is open. It's an instant
-            burn that matches the body's velocity plus local circular speed — priced honestly in
-            mass pulses by the actual Δv it takes, so arrive slow and it's cheap. Once bound, you
-            circle for free, forever: a parked ship is a stable ambush point, and warp opens up to
-            1000× while you wait.</li>
+            to <em>that</em> body from any distance, instead of proposing whatever happens to be
+            nearest. The chosen body wears a target-lock reticle on the map; <em>clear</em> on
+            the strip lets it go. (Stations aren't orbit destinations — a barge has no Hill
+            sphere. Dock at those instead.)</li>
+        <li><strong>Capture range and the autopilot</strong> — threading the bare Hill sphere by
+            hand is a needle at map scale, so the assist works from a generous <strong>capture
+            range</strong>: 5 Hill radii, never less than 0.02 AU. Inside it, press <kbd>O</kbd>
+            (or the strip's <strong>Auto-orbit</strong> button) to arm the autopilot: it fires a
+            "point at it and throttle" approach burn, trims when the sun's tide bends the fall,
+            and inserts once safely deep in the Hill sphere — every burn priced honestly in mass
+            pulses by its actual Δv, so arrive slow and it's cheap. Once the window itself is
+            open the button becomes the classic instant <strong>Enter orbit</strong>. Once bound,
+            you circle for free, forever: a parked ship is a stable ambush point, and warp opens
+            up to 1000× while you wait.</li>
         <li>The panel favors your <strong>destination</strong>, then an <strong>armed</strong>
             target, over merely-nearest — so aiming for Mercury won't get hijacked by a HUD strip
             for Venus on the way past.</li>

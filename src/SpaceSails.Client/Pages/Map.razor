@@ -127,14 +127,24 @@
                         <span>
                             @(oi.IsDestination ? "🎯" : "🛰") Orbit @oi.Body.Name — @OrbitStatusLine(oi)
                         </span>
-                        <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
-                                disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
-                            Enter orbit (@oi.Cost p / O)
-                        </button>
+                        @if (oi.WindowOpen)
+                        {
+                            <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
+                                    disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
+                                Enter orbit (@oi.Cost p / O)
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm py-0 @(oi.Armed ? "btn-success" : oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
+                                    disabled="@(!oi.InCaptureRange && !oi.Armed)" @onclick="EnterOrbit">
+                                @(oi.Armed ? "Autopilot ON — disarm" : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
+                            </button>
+                        }
                     </div>
-                    <div class="progress map-orbit-bar" title="distance vs Hill sphere">
-                        <div class="progress-bar @(oi.Distance < oi.Hill ? "bg-success" : "bg-info")"
-                             style="width: @(Math.Clamp(100 * oi.Hill / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                    <div class="progress map-orbit-bar" title="distance vs capture range">
+                        <div class="progress-bar @(oi.InCaptureRange ? "bg-success" : "bg-info")"
+                             style="width: @(Math.Clamp(100 * oi.CaptureRange / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
                     </div>
                     <div class="progress map-orbit-bar" title="relative speed vs 5 km/s limit">
                         <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
@@ -143,7 +153,7 @@
                     @if (oi.IsDestination)
                     {
                         <div class="text-secondary">
-                            @FormatDistance(oi.Distance) out · window ≤ @FormatDistance(oi.Hill) ·
+                            @FormatDistance(oi.Distance) out · capture ≤ @FormatDistance(oi.CaptureRange) ·
                             rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
                             (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
                             <a role="button" class="text-info text-decoration-none ms-1"
@@ -270,6 +280,59 @@
             </div>
         }
     </div>
+
+    @* M25: the navigation-target panel — its own box, plain words. States exactly what the
+       plotted course's nearest point to the destination needs before auto-orbit can take over:
+       "the whole point of navigation there" (owner). *@
+    @if (PlotMode && _destinationBodyId is not null)
+    {
+        <div class="map-dest-panel bg-dark bg-opacity-75 rounded p-3 text-light">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold fs-6">🎯 Navigation target: @BodyName(_destinationBodyId)</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                        @onclick="() => SetDestination(null)">clear target</button>
+            </div>
+            @if (_destinationPass is { } dp && DestinationPassInfo(dp) is { } info)
+            {
+                <div class="mb-1">
+                    Closest approach on the plotted course: <strong>@FormatDistance(dp.Distance)</strong>
+                    at @FormatSimTime(dp.SimTime)
+                    <button type="button" class="btn btn-sm btn-outline-info py-0 ms-1"
+                            @onclick="() => ScrubToDestinationPass(dp)">scrub to it</button>
+                </div>
+                @if (info.InRange)
+                {
+                    <div class="text-success mb-1">
+                        ✓ This course passes <strong>inside capture range</strong>
+                        (@FormatDistance(info.CaptureRange)). Arm the autopilot and the ship parks
+                        itself: approach burn, tidal trims, insertion.
+                    </div>
+                }
+                else
+                {
+                    <div class="text-warning mb-1">
+                        ✗ Capture range is @FormatDistance(info.CaptureRange) — this course misses it by
+                        <strong>@FormatDistance(dp.Distance - info.CaptureRange)</strong>.
+                        Trim a burn (usually brake a touch earlier) until this line turns green.
+                    </div>
+                }
+                <div class="text-secondary mb-2">
+                    Speed at the pass: @((info.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                    relative — the autopilot's burns from there cost ≈ @info.EstPulses pulses.
+                </div>
+                <button type="button" class="btn btn-sm @(_armedOrbitBodyId == dp.BodyId ? "btn-success" : info.InRange ? "btn-info" : "btn-outline-info")"
+                        @onclick="() => ToggleArmedInsertion(dp.BodyId)">
+                    🛰 @(_armedOrbitBodyId == dp.BodyId
+                        ? $"Autopilot ARMED for {dp.BodyName} — click to disarm"
+                        : $"Arm auto-orbit at {dp.BodyName}")
+                </button>
+            }
+            else
+            {
+                <div class="text-secondary">Projecting the course… the closest pass appears here in a moment.</div>
+            }
+        </div>
+    }
 
     @if (Adrift)
     {
@@ -938,6 +1001,7 @@
     // slider's oninput in interpreted WASM.
     private ClosestApproach.Pass? _closestPass;
     private ClosestApproach.Pass? _armablePass;
+    private ClosestApproach.Pass? _destinationPass;   // M25: the plotted path's closest pass by THE destination
     private bool _passDirty;
     private double _lastReprojectMs;
 
@@ -1471,6 +1535,7 @@
 
         _destinationBodyId = bodyId;
         _bodyMenuBody = null;
+        _passDirty = true; // recompute the destination's closest pass on the next tick
         ShowPulseMessage(bodyId is null
             ? "Destination cleared"
             : $"Destination set — {BodyName(bodyId)} 🎯 orbit assist tracks it now");
@@ -1500,7 +1565,7 @@
         {
             if (candidate.Id == cp.BodyId) { body = candidate; break; }
         }
-        if (body is null || body.ParentId is null) return null;
+        if (body is null || body.ParentId is null || body.Kind == BodyKind.Station) return null;
 
         CelestialBody? parent = null;
         foreach (CelestialBody candidate in _ephemeris.Bodies)
@@ -1508,9 +1573,8 @@
             if (candidate.Id == body.ParentId) { parent = candidate; break; }
         }
         if (parent is null) return null;
-        // Armable within 5 Hill radii: the fire-time window check is the real gate, and a
-        // slightly-loose pass still deserves the button (tighten en route with fine trims).
-        if (cp.Distance > 5 * OrbitRule.HillRadius(body, parent.Mu)) return null;
+        // Armable within capture range: from there the autopilot (M25) flies the rest.
+        if (cp.Distance > OrbitRule.CaptureRange(OrbitRule.HillRadius(body, parent.Mu))) return null;
 
         // Estimate the burn from the sampled path: finite-difference ship velocity at the pass.
         Vector2d shipVel = SampledVelocityAt(cp.SimTime);
@@ -1520,6 +1584,38 @@
         Vector2d bodyPos = _ephemeris.Position(cp.BodyId, cp.SimTime);
         return OrbitRule.PulseCost(passState, bodyPos, bodyVel, body);
     }
+
+    // M25: everything the navigation-target panel says about the destination's closest pass.
+    private readonly record struct DestPassInfo(double CaptureRange, bool InRange, double RelSpeed, int EstPulses);
+
+    private DestPassInfo? DestinationPassInfo(ClosestApproach.Pass cp)
+    {
+        if (_ephemeris is null) return null;
+        CelestialBody? body = null;
+        CelestialBody? parent = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == cp.BodyId) { body = candidate; }
+        }
+        if (body?.ParentId is null) return null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == body.ParentId) { parent = candidate; }
+        }
+        if (parent is null) return null;
+
+        double captureRange = OrbitRule.CaptureRange(OrbitRule.HillRadius(body, parent.Mu));
+        Vector2d shipVel = SampledVelocityAt(cp.SimTime);
+        double h = 1.0;
+        Vector2d bodyVel = (_ephemeris.Position(cp.BodyId, cp.SimTime + h) - _ephemeris.Position(cp.BodyId, cp.SimTime - h)) / (2 * h);
+        Vector2d bodyPos = _ephemeris.Position(cp.BodyId, cp.SimTime);
+        var passState = new ShipState(cp.ShipPosition, shipVel, cp.SimTime);
+        int estPulses = OrbitRule.PulseCost(passState, bodyPos, bodyVel, body);
+        return new DestPassInfo(captureRange, cp.Distance <= captureRange, (shipVel - bodyVel).Length, estPulses);
+    }
+
+    private void ScrubToDestinationPass(ClosestApproach.Pass cp) =>
+        _scrubOffsetSeconds = Math.Max(0, cp.SimTime - _ship.SimTime);
 
     private Vector2d SampledVelocityAt(double simTime)
     {
@@ -1546,7 +1642,9 @@
             : $"Insertion armed — the ship will park at {_armedOrbitBodyId} when the window opens 🛰");
     }
 
-    // Fires the armed insertion the moment its window opens during live flight.
+    // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
+    // approach the owner asked for — an approach burn, tidal trim burns as needed, and the
+    // insertion once safely deep in the Hill sphere. Every burn is Δv-priced in pulses.
     private void CheckArmedInsertion()
     {
         if (_armedOrbitBodyId is null || _ephemeris is null || Paused)
@@ -1572,35 +1670,51 @@
         double h = 1.0;
         Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
         double hill = OrbitRule.HillRadius(body, parent.Mu);
-        if (!OrbitRule.WindowOpen(_ship, bodyPos, bodyVel, body, hill))
+        switch (OrbitRule.AutopilotDecision(_ship, bodyPos, bodyVel, body, hill))
         {
-            return;
-        }
+            case OrbitRule.AutopilotAction.Approach:
+                int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel);
+                if (approachCost > _reactionMassPulses)
+                {
+                    ShowPulseMessage($"Approach burn for {body.Name} — not enough mass pulses ({approachCost} needed)");
+                    _armedOrbitBodyId = null;
+                    return;
+                }
 
-        int cost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
-        if (cost > _reactionMassPulses)
-        {
-            ShowPulseMessage($"Insertion window at {body.Name} — not enough mass pulses ({cost} needed)");
-            _armedOrbitBodyId = null;
-            return;
-        }
+                _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel);
+                _reactionMassPulses -= approachCost;
+                StaleFutureNodes();
+                ShowPulseMessage($"Approach burn — falling toward {body.Name} ({approachCost} p) 🛰");
+                return;
 
-        _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
-        _reactionMassPulses -= cost;
-        _armedOrbitBodyId = null;
-        if (_destinationBodyId == body.Id)
-        {
-            _destinationBodyId = null; // arrived
+            case OrbitRule.AutopilotAction.Insert:
+                int cost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
+                if (cost > _reactionMassPulses)
+                {
+                    ShowPulseMessage($"Insertion window at {body.Name} — not enough mass pulses ({cost} needed)");
+                    _armedOrbitBodyId = null;
+                    return;
+                }
+
+                _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
+                _reactionMassPulses -= cost;
+                _armedOrbitBodyId = null;
+                if (_destinationBodyId == body.Id)
+                {
+                    _destinationBodyId = null; // arrived
+                }
+                StaleFutureNodes();
+                ShowPulseMessage($"Autopilot insertion — bound to {body.Name} 🛰");
+                RendererInterop.PlayCue("board");
+                return;
         }
-        StaleFutureNodes();
-        ShowPulseMessage($"Planned insertion executed — bound to {body.Name} 🛰");
-        RendererInterop.PlayCue("board");
     }
 
     // ---- M20: the bus stop in space ----
     private readonly record struct OrbitAssistInfo(
         CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
-        bool WindowOpen, bool TooFast, bool CanEngage, bool IsDestination);
+        bool WindowOpen, bool TooFast, bool CanEngage, bool IsDestination,
+        double CaptureRange, bool InCaptureRange, bool Armed, int ApproachCost);
 
     private OrbitAssistInfo? OrbitInfo()
     {
@@ -1655,9 +1769,13 @@
         bool open = OrbitRule.WindowOpen(_ship, bodyPos, bodyVel, body, hill);
         int cost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
         bool bound = OrbitRule.IsBound(_ship, bodyPos, bodyVel, body, hill);
+        double captureRange = OrbitRule.CaptureRange(hill);
         return new OrbitAssistInfo(body, distance, relSpeed, hill, cost,
             open && !bound, relSpeed >= OrbitRule.MaxRelativeSpeed,
-            open && !bound && cost <= _reactionMassPulses, destination);
+            open && !bound && cost <= _reactionMassPulses, destination,
+            captureRange, distance <= captureRange && !bound,
+            _armedOrbitBodyId == body.Id,
+            OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel));
     }
 
     // One line of approach coaching: what to fix first, with a ballpark number on it.
@@ -1665,23 +1783,33 @@
     {
         string inv(double v) => v.ToString("F1", CultureInfo.InvariantCulture);
         if (oi.WindowOpen) return "window OPEN";
-        if (oi.Distance > oi.Hill)
-        {
-            string closing = $"close in {FormatDistance(oi.Distance - oi.Hill)} to the window";
-            return oi.TooFast
-                ? $"{closing}, then shed {inv((oi.RelSpeed - OrbitRule.MaxRelativeSpeed) / 1000)} km/s"
-                : closing;
-        }
-        if (oi.TooFast) return $"too fast — shed {inv((oi.RelSpeed - OrbitRule.MaxRelativeSpeed) / 1000)} km/s rel";
-        return $"too low — climb above {FormatDistance(2 * oi.Body.BodyRadius)}";
+        if (oi.Armed && oi.InCaptureRange) return "autopilot flying the approach";
+        if (oi.InCaptureRange) return "in capture range — auto-orbit can park you";
+        string closing = $"close in {FormatDistance(oi.Distance - oi.CaptureRange)} to capture range";
+        return oi.TooFast
+            ? $"{closing} (autopilot sheds the {inv((oi.RelSpeed - OrbitRule.MaxRelativeSpeed) / 1000)} km/s there)"
+            : closing;
     }
 
     private void EnterOrbit()
     {
-        if (OrbitInfo() is not { CanEngage: true } oi || _ephemeris is null)
+        if (OrbitInfo() is not { } candidate || _ephemeris is null)
         {
             return;
         }
+
+        // Outside the open window the button (and O) toggles the autopilot instead: arm it
+        // anywhere inside capture range and the ship flies the approach itself (M25).
+        if (!candidate.CanEngage)
+        {
+            if (candidate.Armed || candidate.InCaptureRange)
+            {
+                ToggleArmedInsertion(candidate.Body.Id);
+            }
+            return;
+        }
+
+        OrbitAssistInfo oi = candidate;
 
         // Insert relative to the panel's own body — it can be an armed/destination target,
         // not necessarily the nearest one whose position the tick loop caches.
@@ -1932,6 +2060,7 @@
             _passDirty = false;
             _closestPass = null;
             _armablePass = null;
+            _destinationPass = null;
             if (_ephemeris is not null)
             {
                 double bestArmable = double.MaxValue;
@@ -1946,6 +2075,11 @@
                     if (PassIsOrbitable(pass) is not null && pass.Severity < bestArmable)
                     {
                         (bestArmable, _armablePass) = (pass.Severity, pass);
+                    }
+
+                    if (pass.BodyId == _destinationBodyId)
+                    {
+                        _destinationPass = pass;
                     }
                 }
             }
@@ -2059,6 +2193,7 @@
         {
             DrawGhostBodies();
             DrawClosestPassMarker();
+            DrawDestinationPassMarker();
         }
         DrawCelestialBodies();
         DrawNodeMarkers();
@@ -2237,6 +2372,52 @@
             color, "10px monospace", TextAlign.Center);
     }
 
+    // M25: the target lock — loud enough to find at any zoom (owner: the destination was
+    // impossible to spot in plot view). A ring plus four range ticks, like a gun-camera reticle.
+    private void DrawTargetLock(float sx, float sy, float bodyRadiusPx, RgbaColor color, string? label)
+    {
+        float r = Math.Max(bodyRadiusPx + 8f, 16f);
+        _renderer!.DrawCircle(sx, sy, r, null, color, 1.6f);
+        Span<float> tick = stackalloc float[4];
+        for (int i = 0; i < 4; i++)
+        {
+            float dx = i switch { 0 => 1f, 1 => -1f, _ => 0f };
+            float dy = i switch { 2 => 1f, 3 => -1f, _ => 0f };
+            tick[0] = sx + dx * (r + 2); tick[1] = sy + dy * (r + 2);
+            tick[2] = sx + dx * (r + 10); tick[3] = sy + dy * (r + 10);
+            _renderer.DrawPolyline(tick, color, 1.6f);
+        }
+
+        if (label is not null)
+        {
+            _renderer.DrawText(sx + r + 6, sy - r, label, color);
+        }
+    }
+
+    // M25: where the plotted course comes nearest the destination — the pass point on the
+    // ribbon, the body's position at that moment under its own lock, and the miss distance
+    // drawn as a line between them.
+    private void DrawDestinationPassMarker()
+    {
+        if (_destinationPass is not { } dp || dp.BodyId != _destinationBodyId || _ephemeris is null)
+        {
+            return;
+        }
+
+        (float px, float py) = _camera.WorldToScreen(dp.ShipPosition);
+        (float bx, float by) = _camera.WorldToScreen(_ephemeris.Position(dp.BodyId, dp.SimTime));
+
+        Span<float> line = stackalloc float[4];
+        line[0] = px; line[1] = py; line[2] = bx; line[3] = by;
+        _renderer!.DrawPolyline(line, DestinationColor with { A = 130 }, 1.2f);
+
+        _renderer.DrawCircle(px, py, 5f, null, DestinationColor, 1.6f);
+        _renderer.DrawCircle(px, py, 1.5f, DestinationColor, DestinationColor);
+        _renderer.DrawText(px, py - 16, $"pass {FormatDistance(dp.Distance)}", DestinationColor, "10px monospace", TextAlign.Center);
+
+        DrawTargetLock(bx, by, 3.5f, DestinationColor with { A = 170 }, null);
+    }
+
     // Ghosts of every body at the scrub time. Deliberately loud: a filled dot with an outline
     // ring and a faint tether from the live body — 2 px at 35% alpha vanished against the
     // plasma stream ribbons (the owner read Venus and Mercury as "stuck").
@@ -2259,6 +2440,12 @@
             RgbaColor ghost = baseColor with { A = 150 };
             _renderer!.DrawCircle(sx, sy, radiusPx, ghost, ghost);
             _renderer!.DrawCircle(sx, sy, radiusPx + 2.5f, null, new RgbaColor(220, 230, 245, 120), 1.2f);
+            if (body.Id == _destinationBodyId)
+            {
+                // The destination's projected position wears the full lock — the owner couldn't
+                // find the planet at all among the ghosts.
+                DrawTargetLock(sx, sy, radiusPx, DestinationColor, "DEST");
+            }
         }
     }
 
@@ -2356,9 +2543,8 @@
             bool isDestination = body.Id == _destinationBodyId;
             if (isDestination)
             {
-                // The chosen destination reads at any zoom: a ring and a tag, like a chart pin.
-                _renderer!.DrawCircle(sx, sy, radiusPx + 6, null, DestinationColor);
-                _renderer!.DrawText(sx + radiusPx + 4, sy + radiusPx + 6, "DEST", DestinationColor);
+                // The chosen destination reads at any zoom — full gun-camera lock (M25).
+                DrawTargetLock(sx, sy, radiusPx, DestinationColor, "DEST");
             }
             if (isDestination || _camera.MetersPerPixel < body.BodyRadius * 500 || (isStation && _camera.MetersPerPixel < LabelZoomThresholdForStations))
             {
@@ -2741,7 +2927,8 @@
         double bestSq = double.MaxValue;
         foreach (CelestialBody body in _ephemeris.Bodies)
         {
-            if (body.ParentId is null) continue; // the sun is not a destination you orbit
+            if (body.ParentId is null) continue;               // the sun is not a destination you orbit
+            if (body.Kind == BodyKind.Station) continue;       // a barge has no Hill sphere — dock, don't orbit
             (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
             // Hit within the drawn disc, floored for pinprick planets and capped so a
             // zoomed-in world doesn't swallow every camera drag on the screen.
@@ -2830,6 +3017,14 @@
         {
             _reactionMassPulses = Math.Max(0, _reactionMassPulses - firedPulses);
             ShowPulseMessage($"Plan: {firedPulses} pulse{(firedPulses == 1 ? "" : "s")} fired");
+        }
+
+        // Spent burns clean themselves off the plot card (owner request): once a node's time
+        // is past it either fired (Executed) or never will (Stale) — either way it's history.
+        int removed = _planNodes.RemoveAll(n => n.SimTime < _ship.SimTime && (n.Executed || n.Stale));
+        if (removed > 0 && _selectedPlanNode is { } sel && !_planNodes.Contains(sel))
+        {
+            _selectedPlanNode = null;
         }
     }
 

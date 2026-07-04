@@ -146,6 +146,20 @@
     border-radius: 0.25rem;
 }
 
+/* M25: navigation-target panel — the plotted course's pass vs orbit success, in plain words.
+   Bottom center, deliberately roomy: it is the whole point of navigating there. */
+.map-dest-panel {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38rem;
+    max-width: calc(100% - 1.5rem);
+    pointer-events: auto;
+    z-index: 12;
+    border: 1px solid rgba(120, 220, 255, 0.5);
+}
+
 /* M24: planet click menu — anchored at the click point, above the canvas. */
 .map-body-menu {
     position: absolute;
