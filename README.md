@@ -12,6 +12,7 @@ A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, 
 - [Architecture](docs/architecture.md) — the box view, the duty-station UI shape, multiplayer-with-desks design notes, and why WebAssembly
 - [Captain's Guide](docs/user-guide.md) — every feature, how to fly, how to steal (mirrored in-game at `/guide`)
 - [Testing guide](docs/testing-guide.md) — the owner's scripted regression checklist, one playtest per major feature
+- [The Gravity Lab](labs/README.md) — a type-it-in numerical orbital mechanics tutorial series built on `SpaceSails.Core` itself, fork-run-break style
 
 ### Feature guides
 

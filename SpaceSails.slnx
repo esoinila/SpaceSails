@@ -7,4 +7,9 @@
   <Folder Name="/tests/">
     <Project Path="tests/SpaceSails.Core.Tests/SpaceSails.Core.Tests.csproj" />
   </Folder>
+  <Folder Name="/labs/">
+    <Project Path="labs/01-falling-is-orbiting/Lab01.csproj" />
+    <Project Path="labs/02-the-integrator-zoo/Lab02.csproj" />
+    <Project Path="labs/03-time-step-is-a-lie-you-choose/Lab03.csproj" />
+  </Folder>
 </Solution>
