@@ -3,7 +3,9 @@
 What this is: the top-down interior of your ship — walk between consoles instead of clicking
 buttons, and pour a tot in the cantina if you feel like it.
 
-Where: press the **Deck** toolbar button on the map.
+Where: the **Deck desk** — press `7` or click **7 Deck** in the station tab bar (see
+[station-desks.md](station-desks.md)). Pressing `1`-`6` from the deck leaves it and jumps straight
+to the matching desk.
 
 ## Moving around
 
@@ -40,6 +42,10 @@ the tot count climbs; wait longer and it resets to one. On the **third tot insid
 window**, the deck turns tilty for **25 seconds**: your movement direction wobbles noticeably, but
 collision and interactions still work exactly the same — it's a disorientation effect, not a
 penalty to what you can do. Pace your drinking, or don't; nothing but your own steering suffers.
+
+The Galley desk (`6`, see [station-desks.md](station-desks.md)) pours from the exact same rum
+ledger — a "Pour a tot" button there and interacting at the CANTINA console are two doors into one
+counter, so the tot count and wobble state stay in sync no matter which one you use.
 
 ## First person
 

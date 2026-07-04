@@ -8,13 +8,16 @@
    which button the player pressed via the OnWarningShot/OnBribe callbacks. All the compliance,
    threat-line and bribe-price math is Core's EncounterRule — this component only renders it. *@
 
-<div class="war-room-card card bg-dark bg-opacity-75 text-light @(Visible ? "" : "d-none")">
+<div class="war-room-card @(FullScreen ? "war-room-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
         <span class="fw-bold small">Gun deck ⚔</span>
-        <span class="war-room-heat-gauge" title="Heat level @HeatLevel/@EncounterRule.MaxHeatLevel">@HeatGaugeText()</span>
-        <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+        <span class="war-room-heat-gauge @(FullScreen ? "war-room-heat-gauge-big" : "")" title="Heat level @HeatLevel/@EncounterRule.MaxHeatLevel">@HeatGaugeText()</span>
+        @if (!FullScreen)
+        {
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+        }
     </div>
-    <div class="card-body p-2 small">
+    <div class="card-body p-2 small @(FullScreen ? "war-room-desk-body" : "")">
         <div class="text-secondary mb-1">@CoolingLabel()</div>
         @if (NearestHunter() is { } nh)
         {
@@ -25,8 +28,8 @@
 
         @{ IReadOnlyList<RenderContact> contacts = VisibleContacts(); }
 
-        <div class="d-flex gap-2 align-items-start">
-            <div class="war-room-scope flex-shrink-0">
+        <div class="d-flex gap-2 align-items-start @(FullScreen ? "war-room-desk-top" : "")">
+            <div class="war-room-scope flex-shrink-0 @(FullScreen ? "war-room-scope-big" : "")">
                 <svg viewBox="0 0 200 200" class="war-room-scope-svg" aria-label="Local tactical view">
                     <circle cx="100" cy="100" r="@Fmt(MaxRadiusPx)" class="war-room-view-ring" />
                     <circle cx="100" cy="100" r="@Fmt(WeaponRingPx)" class="war-room-weapon-ring" />
@@ -59,7 +62,7 @@
         }
         else
         {
-            <table class="table table-sm table-dark mb-0 mt-2">
+            <table class="table table-sm table-dark mb-0 mt-2 @(FullScreen ? "war-room-contact-table" : "")">
                 <tbody>
                     @foreach (RenderContact rc in contacts)
                     {
@@ -117,6 +120,7 @@
     [Parameter] public bool CoolingAtHaven { get; set; }
     [Parameter] public int Credits { get; set; }
     [Parameter] public bool Visible { get; set; }
+    [Parameter] public bool FullScreen { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<string> OnWarningShot { get; set; }
     [Parameter] public EventCallback<string> OnBribe { get; set; }

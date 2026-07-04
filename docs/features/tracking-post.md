@@ -4,7 +4,8 @@ What this is: the ship's telescope station — aim it at a patch of sky, sweep i
 and hold a ledger of ships that don't publish a timetable (the secretive He3 haulers and anyone
 else the [traffic board](traffic-board.md) can't already tell you about).
 
-Where: press the **Track 📡** toolbar button on the map.
+Where: the **Sensors desk** — press `2` or click **2 Sensors** in the station tab bar (see
+[station-desks.md](station-desks.md)). Full-screen, not a pop-up card.
 
 ![Tracking post](../tmp_pics/saturday/tracking-post.png)
 

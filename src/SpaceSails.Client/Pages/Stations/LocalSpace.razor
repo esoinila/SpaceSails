@@ -6,12 +6,15 @@
    drone-transfer progress (real-time accrual, envelope break-off, crediting) lives in Map.razor
    next to the boarding-shuttle progress it mirrors, so both share one clock. *@
 
-<div class="local-space-card card bg-dark bg-opacity-75 text-light @(Visible ? "" : "d-none")">
+<div class="local-space-card @(FullScreen ? "local-space-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
         <span class="fw-bold small">Local space @(BodyName is null ? "" : $"— {BodyName}")</span>
-        <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+        @if (!FullScreen)
+        {
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+        }
     </div>
-    <div class="card-body p-2 small">
+    <div class="card-body p-2 small @(FullScreen ? "local-space-desk-body" : "")">
         @if (BodyName is null)
         {
             <div class="text-secondary">Not near a body — get into orbit or close range to see what's here.</div>
@@ -22,7 +25,7 @@
         }
         else
         {
-            <ul class="list-unstyled mb-0 local-space-list">
+            <ul class="list-unstyled mb-0 local-space-list @(FullScreen ? "local-space-list-grid" : "")">
                 @foreach (CommerceRule.LocalContact contact in Contacts.OrderBy(c => c.DistanceMeters))
                 {
                     bool isActiveTrade = ActiveTradeTargetId == contact.Id;
@@ -86,6 +89,7 @@
     [Parameter] public string? ActiveTradeTargetId { get; set; }
     [Parameter] public double TradeProgress { get; set; }
     [Parameter] public string? TradeMessage { get; set; }
+    [Parameter] public bool FullScreen { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<string> OnStartTrade { get; set; }
 

@@ -42,11 +42,15 @@ The dark panel under the toolbar always shows:
 
 ## Toolbar buttons
 
-`Pause` · `Follow Ship` · `Plot` (opens the [plotting desk](plotting-desk.md)) · `Traffic` (opens
-the [traffic board](traffic-board.md)) · `Dock` (enabled only inside a market's port zone — see
-[dock-and-economy.md](dock-and-economy.md)) · `First hunt` (the built-in tutorial checklist) ·
-`Scope` (opens the [scope](scope.md)) · `?` (opens the Captain's Guide in a new tab) · `Deck`
-(walks you inside the ship — see [deck-view.md](deck-view.md)).
+As of PR-11 (see [station-desks.md](station-desks.md)) the Nav toolbar keeps only true navigation
+controls — everything else moved to its own full-screen desk:
+
+`Pause` · `Follow Ship` · `Plot` (opens the [plotting desk](plotting-desk.md)) · `Scope` (opens the
+[scope](scope.md)) · `?` (opens the Captain's Guide in a new tab) · `first hunt` (the built-in
+tutorial checklist, next to `?`).
+
+The traffic board is now on the Comms desk (`5`), the dock market on the Trade desk (`4`), and
+walking the ship on the Deck desk (`7`) — switch with the station tab bar or number keys 1-7.
 
 ## Flying by hand
 

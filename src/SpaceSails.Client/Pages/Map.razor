@@ -25,6 +25,20 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
+    @* Station tab bar (StationDesks.md rule 3): always visible, top center, works on every desk —
+       the keyboard-shortcut equivalent for players who'd rather click. *@
+    <div class="desk-tab-bar bg-dark bg-opacity-75 rounded p-1">
+        @foreach (ShipDesk desk in AllDesks)
+        {
+            <button type="button" class="btn btn-sm desk-tab @(_activeDesk == desk ? "btn-info" : "btn-outline-light")"
+                    @onclick="() => SwitchDesk(desk)">
+                @((int)desk) @DeskLabel(desk)
+            </button>
+        }
+    </div>
+
+    @if (_activeDesk == ShipDesk.Nav)
+    {
     <div class="map-hud">
         <div class="btn-toolbar bg-dark bg-opacity-75 rounded p-2 gap-2 align-items-center" role="toolbar" aria-label="Time warp controls">
             <div class="d-flex align-items-center gap-1 me-2 map-warp-control">
@@ -43,28 +57,14 @@
             <button type="button" class="btn btn-sm @(PlotMode ? "btn-success" : "btn-outline-light") me-2" @onclick="TogglePlotMode">
                 @(PlotMode ? "Play" : "Plot")
             </button>
-            <button type="button" class="btn btn-sm @(_showTraffic ? "btn-primary" : "btn-outline-light") me-2" @onclick="ToggleTraffic">
-                Traffic
-            </button>
-            <button type="button" class="btn btn-sm @(_showDock ? "btn-success" : "btn-outline-light") me-2"
-                    disabled="@(!_docked)" @onclick="ToggleDock">
-                Dock
-            </button>
-            <button type="button" class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" @onclick="ToggleTutorial">
-                First hunt
-            </button>
             <button type="button" class="btn btn-sm @(_showScope ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleScope">
                 Scope
             </button>
             <a class="btn btn-sm btn-outline-secondary" href="/guide" target="_blank" title="Captain's Guide">?</a>
-            <button type="button" class="btn btn-sm @(_deckMode ? "btn-warning" : "btn-outline-light")" @onclick="ToggleDeck">
-                Deck
-            </button>
-            <button type="button" class="btn btn-sm @(_showTracking ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleTracking">Track 📡</button>
-            <button type="button" class="btn btn-sm @(_showWarRoom ? "btn-danger" : "btn-outline-light") ms-2" @onclick="ToggleWarRoom">Guns ⚔</button>
-            <button type="button" class="btn btn-sm @(_showLocalSpace ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleLocalSpace">Local 🛰</button>
+            <a class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" role="button" @onclick="ToggleTutorial">
+                🏴 first hunt
+            </a>
             @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
-            <button type="button" class="btn btn-sm @(_showDarkWeb ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleDarkWeb">Web 🕸</button>
         </div>
 
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
@@ -228,131 +228,12 @@
         }
     </div>
 
-    @if (_showTraffic)
-    {
-        <div class="map-traffic">
-            <div class="card bg-dark bg-opacity-75 text-light">
-                <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                    <span class="fw-bold small">Traffic board</span>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleTraffic"></button>
-                </div>
-                <div class="card-body p-0 map-traffic-scroll">
-                    <table class="table table-sm table-dark table-hover align-middle mb-0 small">
-                        <thead>
-                            <tr>
-                                <th>Callsign</th>
-                                <th>Cargo</th>
-                                <th>Route</th>
-                                <th>Departs</th>
-                                <th>Last seen</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (NpcState npc in _npcStates.Where(n => n.Ship.PublishesTimetable || (_darkWeb?.KnowsRoute(n.Ship.Id) ?? false)))
-                            {
-                                <tr class="map-traffic-row @(npc.Ship.Id == _selectedTargetId ? "table-primary" : "")"
-                                    @onclick="() => SelectTarget(npc.Ship.Id)">
-                                    <td>
-                                        @npc.Ship.Callsign
-                                        @if (!npc.Ship.PublishesTimetable && _darkWeb is not null)
-                                        {
-                                            <span class="badge bg-dark border border-secondary ms-1" title="Bought intel — off the books">🕸 stale in @(_darkWeb.StaleInDays(npc.Ship.Id).ToString("F0"))d</span>
-                                        }
-                                    </td>
-                                    <td>@npc.Ship.CargoClass</td>
-                                    <td>@RouteLabel(npc.Ship)</td>
-                                    <td>@FormatDeparture(npc.Ship.DepartureTime)</td>
-                                    <td>@(npc.LastObservation is { } o ? FormatSimTime(o.SimTime) : "—")</td>
-                                    <td>@StatusLabel(npc)</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-                @if (OffBooksCount > 0)
-                {
-                    <div class="card-footer py-1 text-secondary small fst-italic">
-                        @OffBooksCount ship@(OffBooksCount == 1 ? "" : "s") operating off the books
-                    </div>
-                }
-                @if (SelectedTrackedTarget() is { } sel)
-                {
-                    <div class="card-footer py-1">
-                        <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light")" @onclick="TogglePin">
-                            Pin: brakes at @BodyName(sel.Ship.DestinationId)
-                        </button>
-                    </div>
-                }
-            </div>
-        </div>
-    }
-
     @if (Adrift)
     {
         <div class="map-adrift">
             <div class="alert alert-danger d-flex align-items-center gap-3 mb-0 shadow" role="alert">
                 <span class="fw-bold">Adrift — out of reaction mass.</span>
                 <button type="button" class="btn btn-sm btn-light" @onclick="RequestRescue">Request rescue</button>
-            </div>
-        </div>
-    }
-
-    @if (_showDock)
-    {
-        <div class="map-dock">
-            <div class="card bg-dark bg-opacity-75 text-light">
-                <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                    <span class="fw-bold small">Docked at @BodyName(_dockBodyId ?? "")</span>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleDock"></button>
-                </div>
-                <div class="card-body p-2 small">
-                    <div class="d-flex gap-2 mb-2">
-                        <button type="button" class="btn btn-sm btn-success flex-grow-1" disabled="@(_cargoValue <= 0)" @onclick="SellCargo">
-                            Sell cargo (@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr)
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-light flex-grow-1" disabled="@(_reactionMassPulses >= ReactionMassCapacity)" @onclick="RefillReactionMass">
-                            Refill mass (free)
-                        </button>
-                    </div>
-                    <div class="fw-bold mb-1">Upgrades</div>
-                    <table class="table table-sm table-dark mb-0">
-                        <tbody>
-                            <tr>
-                                <td>Reaction mass<br /><span class="text-secondary">Lv @_massLevel → cap @(ReactionMassCapacity + 150)</span></td>
-                                <td class="text-end align-middle">
-                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_massLevel))" @onclick='() => BuyUpgrade("mass")'>
-                                        @UpgradePrice(_massLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Sensor range<br /><span class="text-secondary">Lv @_sensorLevel → @FormatDistance(SensorModel.Default.RangeMeters * Math.Pow(1.4, _sensorLevel + 1))</span></td>
-                                <td class="text-end align-middle">
-                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_sensorLevel))" @onclick='() => BuyUpgrade("sensor")'>
-                                        @UpgradePrice(_sensorLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Cargo hold<br /><span class="text-secondary">Lv @_holdLevel → @(CargoCapacity + 10) units</span></td>
-                                <td class="text-end align-middle">
-                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_holdLevel))" @onclick='() => BuyUpgrade("hold")'>
-                                        @UpgradePrice(_holdLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Telescope<br /><span class="text-secondary">Lv @_telescopeLevel → @(_telescopeLevel + 2) simultaneous tracks</span></td>
-                                <td class="text-end align-middle">
-                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_telescopeLevel >= 3 || _credits < UpgradePrice(_telescopeLevel))" @onclick='() => BuyUpgrade("telescope")'>
-                                        @(_telescopeLevel >= 3 ? "MAX" : $"{UpgradePrice(_telescopeLevel):N0} cr")
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
     }
@@ -399,23 +280,309 @@
             </div>
         </div>
     </div>
-    <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_showTracking" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1" OnClose="ToggleTracking" />
-    <SpaceSails.Client.Pages.Stations.WarRoom Visible="_showWarRoom" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" OnClose="ToggleWarRoom" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
-    <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="_showLocalSpace" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" OnStartTrade="StartLocalTrade" OnClose="ToggleLocalSpace" />
-    @* SATURDAY-ANCHOR: panels — parallel lanes append one station component line each below *@
-    <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="_showDarkWeb" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnClose="ToggleDarkWeb" />
+    }
+
+    @* SATURDAY-ANCHOR: panels — the desk layer (PR-11): each non-Nav/Deck desk fills the screen
+       (rule 1 — 70% belongs to the desk's own topic) while the map/sim keeps running underneath
+       (rule 4). Sensors dims the map through; the rest go near-opaque. Parallel desk lanes
+       (PR-12/13/14) touch only their own branch of this if-chain. *@
+    @if (_activeDesk is ShipDesk.Sensors or ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley)
+    {
+        <div class="desk-layer @(_activeDesk == ShipDesk.Sensors ? "desk-layer-dimmed" : "")">
+            <div class="desk-content">
+                @if (_activeDesk == ShipDesk.Sensors)
+                {
+                    <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                }
+                else if (_activeDesk == ShipDesk.WarRoom)
+                {
+                    <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
+                }
+                else if (_activeDesk == ShipDesk.Trade)
+                {
+                    <div class="desk-trade-grid">
+                        <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="true" FullScreen="true" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" OnStartTrade="StartLocalTrade" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                        <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
+                            @if (_docked)
+                            {
+                                <div class="card-header py-1"><span class="fw-bold small">Docked at @BodyName(_dockBodyId ?? "")</span></div>
+                                <div class="card-body p-2 small">
+                                    <div class="d-flex gap-2 mb-2">
+                                        <button type="button" class="btn btn-sm btn-success flex-grow-1" disabled="@(_cargoValue <= 0)" @onclick="SellCargo">
+                                            Sell cargo (@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr)
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-light flex-grow-1" disabled="@(_reactionMassPulses >= ReactionMassCapacity)" @onclick="RefillReactionMass">
+                                            Refill mass (free)
+                                        </button>
+                                    </div>
+                                    <div class="fw-bold mb-1">Upgrades</div>
+                                    <table class="table table-sm table-dark mb-0">
+                                        <tbody>
+                                            <tr>
+                                                <td>Reaction mass<br /><span class="text-secondary">Lv @_massLevel → cap @(ReactionMassCapacity + 150)</span></td>
+                                                <td class="text-end align-middle">
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_massLevel))" @onclick='() => BuyUpgrade("mass")'>
+                                                        @UpgradePrice(_massLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Sensor range<br /><span class="text-secondary">Lv @_sensorLevel → @FormatDistance(SensorModel.Default.RangeMeters * Math.Pow(1.4, _sensorLevel + 1))</span></td>
+                                                <td class="text-end align-middle">
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_sensorLevel))" @onclick='() => BuyUpgrade("sensor")'>
+                                                        @UpgradePrice(_sensorLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Cargo hold<br /><span class="text-secondary">Lv @_holdLevel → @(CargoCapacity + 10) units</span></td>
+                                                <td class="text-end align-middle">
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_holdLevel))" @onclick='() => BuyUpgrade("hold")'>
+                                                        @UpgradePrice(_holdLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Telescope<br /><span class="text-secondary">Lv @_telescopeLevel → @(_telescopeLevel + 2) simultaneous tracks</span></td>
+                                                <td class="text-end align-middle">
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_telescopeLevel >= 3 || _credits < UpgradePrice(_telescopeLevel))" @onclick='() => BuyUpgrade("telescope")'>
+                                                        @(_telescopeLevel >= 3 ? "MAX" : $"{UpgradePrice(_telescopeLevel):N0} cr")
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="card-body p-2 small text-secondary">Dock at a body to sell cargo and buy upgrades.</div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (_activeDesk == ShipDesk.Comms)
+                {
+                    <div class="desk-comms-grid">
+                        <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                        <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
+                            <div class="card-header py-1"><span class="fw-bold small">Traffic board</span></div>
+                            <div class="card-body p-0 desk-traffic-scroll">
+                                <table class="table table-sm table-dark table-hover align-middle mb-0 small">
+                                    <thead>
+                                        <tr>
+                                            <th>Callsign</th>
+                                            <th>Cargo</th>
+                                            <th>Route</th>
+                                            <th>Departs</th>
+                                            <th>Last seen</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (NpcState npc in _npcStates.Where(n => n.Ship.PublishesTimetable || (_darkWeb?.KnowsRoute(n.Ship.Id) ?? false)))
+                                        {
+                                            <tr class="map-traffic-row @(npc.Ship.Id == _selectedTargetId ? "table-primary" : "")"
+                                                @onclick="() => SelectTarget(npc.Ship.Id)">
+                                                <td>
+                                                    @npc.Ship.Callsign
+                                                    @if (!npc.Ship.PublishesTimetable && _darkWeb is not null)
+                                                    {
+                                                        <span class="badge bg-dark border border-secondary ms-1" title="Bought intel — off the books">🕸 stale in @(_darkWeb.StaleInDays(npc.Ship.Id).ToString("F0"))d</span>
+                                                    }
+                                                </td>
+                                                <td>@npc.Ship.CargoClass</td>
+                                                <td>@RouteLabel(npc.Ship)</td>
+                                                <td>@FormatDeparture(npc.Ship.DepartureTime)</td>
+                                                <td>@(npc.LastObservation is { } o ? FormatSimTime(o.SimTime) : "—")</td>
+                                                <td>@StatusLabel(npc)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (OffBooksCount > 0)
+                            {
+                                <div class="card-footer py-1 text-secondary small fst-italic">
+                                    @OffBooksCount ship@(OffBooksCount == 1 ? "" : "s") operating off the books
+                                </div>
+                            }
+                            @if (SelectedTrackedTarget() is { } sel)
+                            {
+                                <div class="card-footer py-1">
+                                    <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light")" @onclick="TogglePin">
+                                        Pin: brakes at @BodyName(sel.Ship.DestinationId)
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (_activeDesk == ShipDesk.Galley)
+                {
+                    <SpaceSails.Client.Pages.Stations.Galley SimTime="SimTime" RumTots="_rumTots" WobbleActive="RumWobbleActive" LastRumLine="@_lastRumLine" OnPourRum="PourRumFromGalley" />
+                }
+            </div>
+        </div>
+    }
+
+    <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDesk" />
 </div>
 
 @code {
+    // ---- PR-11: duty-station desks (docs/SaturdayPlan/StationDesks.md) ----
+    // Every station's Visible flag is now derived from _activeDesk rather than its own bool —
+    // the old per-station toggles (_showTracking et al.) are gone; a desk is either the one
+    // you're sitting at (full screen) or it isn't (a summary chip on DeskChips).
+    private ShipDesk _activeDesk = ShipDesk.Nav;
+    private static readonly ShipDesk[] AllDesks = Enum.GetValues<ShipDesk>();
+
+    private static string DeskLabel(ShipDesk desk) => desk switch
+    {
+        ShipDesk.Nav => "Nav",
+        ShipDesk.Sensors => "Sensors",
+        ShipDesk.WarRoom => "War room",
+        ShipDesk.Trade => "Trade",
+        ShipDesk.Comms => "Comms",
+        ShipDesk.Galley => "Galley",
+        ShipDesk.Deck => "Deck",
+        _ => desk.ToString(),
+    };
+
+    /// <summary>The one place a desk switch happens, so Deck's special case (it rides the
+    /// existing _deckMode flag rather than its own bool) only needs handling once: number keys,
+    /// the tab bar, chip clicks and bridge-seat E-interactions (future PR-14) all funnel here.</summary>
+    private void SwitchDesk(ShipDesk desk)
+    {
+        if (desk == ShipDesk.Deck)
+        {
+            if (!_deckMode)
+            {
+                ToggleDeck();
+            }
+            _activeDesk = ShipDesk.Deck;
+            return;
+        }
+
+        if (_deckMode)
+        {
+            ToggleDeck();
+        }
+        _activeDesk = desk;
+    }
+
+    /// <summary>The Galley's "Pour a tot" button funnels through the exact same PourRum the deck
+    /// cantina console uses (see InteractAtConsole's Cantina case) — one rum ledger, two doors.</summary>
+    private void PourRumFromGalley() => ShowPulseMessage(PourRum(null));
+
+    private bool RumWobbleActive => (_lastTimestampMs ?? 0) < _wobbleUntilMs;
+
+    private static string HeatFlames(int level) => level switch
+    {
+        <= 0 => "◌",
+        1 => "🔥",
+        2 => "🔥🔥",
+        _ => "🔥🔥🔥",
+    };
+
+    private double? NearestHunterDistance()
+    {
+        double? best = null;
+        foreach (HunterState hunter in _hunters)
+        {
+            double d = (hunter.State.Position - _ship.Position).Length;
+            if (best is null || d < best)
+            {
+                best = d;
+            }
+        }
+
+        return best;
+    }
+
+    // Addendum (owner, 2026-07-04 evening): a chip is the station's tightest CURRENT-OBJECTIVE
+    // summary, not a raw-stats dump — see docs/SaturdayPlan/StationDesks.md.
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.DeskChips.ChipData> BuildDeskChips()
+    {
+        var chips = new List<SpaceSails.Client.Pages.Stations.DeskChips.ChipData>();
+        if (_activeDesk != ShipDesk.Nav) chips.Add(NavChip());
+        if (_activeDesk != ShipDesk.Sensors) chips.Add(SensorsChip());
+        if (_activeDesk != ShipDesk.WarRoom) chips.Add(WarRoomChip());
+        if (_activeDesk != ShipDesk.Trade) chips.Add(TradeChip());
+        if (_activeDesk != ShipDesk.Comms) chips.Add(CommsChip());
+        if (_activeDesk != ShipDesk.Galley) chips.Add(GalleyChip());
+        return chips;
+    }
+
+    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData NavChip()
+    {
+        string objective = _armedOrbitBodyId is not null
+            ? $"→ {BodyName(_armedOrbitBodyId)} orbit"
+            : _planNodes.Count > 0
+                ? "on plotted course"
+                : "free sailing";
+        string speedLine = $"{(_ship.Velocity.Length / 1000).ToString("F1", CultureInfo.InvariantCulture)} km/s · {(Paused ? "∥" : $"{Warp}×")}";
+        string? passLine = _closestPass is { } cp && (cp.Impact || cp.Severity < 5)
+            ? $"pass: {cp.BodyName} {FormatDistance(cp.Distance)}{(cp.Impact ? " IMPACT" : "")}"
+            : null;
+        return new(ShipDesk.Nav, "🧭", "Nav", objective, speedLine, passLine);
+    }
+
+    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData SensorsChip()
+    {
+        string objective = _trackingPost?.ObjectiveSummary(SimTime) ?? "no watch set";
+        string tracks = $"{_trackingPost?.Entries.Count ?? 0}/{_telescopeLevel + 1} tracks";
+        return new(ShipDesk.Sensors, "📡", "Sensors", objective, tracks);
+    }
+
+    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData WarRoomChip()
+    {
+        double? nearest = NearestHunterDistance();
+        string line = _heat.Level <= 0 && nearest is null
+            ? "quiet skies"
+            : $"heat {HeatFlames(_heat.Level)} · hunter {(nearest is { } d ? FormatDistance(d) : "—")}";
+        return new(ShipDesk.WarRoom, "⚔", "War room", line);
+    }
+
+    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData TradeChip()
+    {
+        if (_localTradeTargetId is not null)
+        {
+            string name = _localTradeTargetId;
+            foreach (CommerceRule.LocalContact c in LocalContacts())
+            {
+                if (c.Id == _localTradeTargetId)
+                {
+                    name = c.Name;
+                    break;
+                }
+            }
+
+            return new(ShipDesk.Trade, "🛰", "Trade", $"drones → {name} {(int)(_localTradeProgress * 100)}%");
+        }
+
+        return new(ShipDesk.Trade, "🛰", "Trade", $"{_credits:N0} cr", $"{_cargoUnits}/{CargoCapacity} cargo");
+    }
+
+    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData CommsChip()
+    {
+        string? freshest = _darkWeb?.FreshestIntelSummary(SimTime);
+        return new(ShipDesk.Comms, "🕸", "Comms", freshest is not null ? $"intel: {freshest}" : "no whispers");
+    }
+
+    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData GalleyChip()
+    {
+        string tots = $"{_rumTots} tot{(_rumTots == 1 ? "" : "s")} poured";
+        string wobble = RumWobbleActive ? "wobble active 🍹" : "steady legs";
+        return new(ShipDesk.Galley, "🍹", "Galley", tots, wobble);
+    }
+
     // SATURDAY-ANCHOR: fields — parallel lanes append their station fields directly below
-    private bool _showDarkWeb;
     private SpaceSails.Client.Pages.Stations.DarkWeb? _darkWeb;
-    private bool _showTracking;
     private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost;
 
     // PR-7: the gun deck — heat, hunters, war-room (vision par. 18).
-    private bool _showWarRoom;
     private HeatState _heat = HeatState.None;
     private readonly List<HunterState> _hunters = [];
     private int _hunterSeq;
@@ -427,7 +594,6 @@
     private static readonly RgbaColor TrackedNpcLastSeenColor = new(120, 200, 170, 180);
 
     // ---- PR-5: orbital commerce — trade from orbit or course-matched with drones ----
-    private bool _showLocalSpace;
     private SpaceSails.Client.Pages.Stations.LocalSpace? _localSpace;
     // The body the ship is gravitationally bound to right now (M20 orbit rules) — ground truth
     // for CommerceRule's "same orbit" case, independent of the orbit-assist UI's armed/nearest
@@ -615,7 +781,6 @@
     private static readonly RgbaColor ConeBoundaryColor = new(150, 150, 220, 80);
 
     private NpcState[] _npcStates = [];
-    private bool _showTraffic;
     private string? _selectedTargetId;
 
     // M6 additions — piracy economy, capture, dock, tutorial
@@ -643,7 +808,6 @@
 
     private bool _docked;
     private string? _dockBodyId;
-    private bool _showDock;
 
     private bool _showTutorial = true;
     private int _tutorialStep;                         // 0..5 = current task, 6 = complete
@@ -774,7 +938,7 @@
                 _deckKeys.Clear();
                 return true;
             case "q" or "Q":
-                ToggleDeck();
+                SwitchDesk(ShipDesk.Nav);
                 return true;
             case "e" or "E":
                 InteractAtConsole();
@@ -889,11 +1053,11 @@
         switch (DeckPlan.NearestConsole(_avatarX, _avatarY))
         {
             case DeckPlan.ConsoleKind.Helm:
-                ToggleDeck();
+                SwitchDesk(ShipDesk.Nav);
                 ShowPulseMessage("Back at the helm");
                 break;
             case DeckPlan.ConsoleKind.NavPost:
-                ToggleDeck();
+                SwitchDesk(ShipDesk.Nav);
                 if (!PlotMode)
                 {
                     TogglePlotMode();
@@ -1219,10 +1383,11 @@
         RendererInterop.PlayCue("board");
     }
 
-    // ---- M21: the rum locker ----
+    // ---- M21: the rum locker (PR-11: shared 1:1 by the Galley desk via PourRumFromGalley) ----
     private int _rumTots;
     private double _lastRumMs = double.MinValue;
     private double _wobbleUntilMs = double.MinValue;
+    private string? _lastRumLine;
 
     private static readonly string[] RumLines =
     [
@@ -1249,13 +1414,16 @@
         _rumTots = now - _lastRumMs < 90_000 ? _rumTots + 1 : 1;
         _lastRumMs = now;
         RendererInterop.PlayCue("rum");
+        string line = _rumTots >= 3
+            ? "That was the third tot. The deck feels… tilty. 🍹"
+            : overrideLine ?? RumLines[(int)((SimTime / 60) % RumLines.Length)];
         if (_rumTots >= 3)
         {
             _wobbleUntilMs = now + 25_000;
-            return "That was the third tot. The deck feels… tilty. 🍹";
         }
 
-        return overrideLine ?? RumLines[(int)((SimTime / 60) % RumLines.Length)];
+        _lastRumLine = line;
+        return line;
     }
 
     private void StaleFutureNodes()
@@ -1903,6 +2071,23 @@
             }
         }
 
+        // Desk switching (StationDesks.md rule 3): number keys 1-7 always win, even mid-deck-walk
+        // (7 re-enters/toggles deck, 1-6 leave it) — checked before HandleDeckKey so WASD/E/F/Q
+        // never shadow them, and before the pulse switch below so digits never fire a burn.
+        // Inputs/sliders already stop propagation on their own keydown (see the plot panel's
+        // range/number fields), so typing into them never reaches this handler at all.
+        if (e.Key.Length == 1 && e.Key[0] is >= '1' and <= '7')
+        {
+            SwitchDesk((ShipDesk)(e.Key[0] - '0'));
+            return;
+        }
+
+        if (e.Key == "Escape")
+        {
+            SwitchDesk(ShipDesk.Nav);
+            return;
+        }
+
         if (_deckMode && HandleDeckKey(e.Key))
         {
             return;
@@ -2546,8 +2731,6 @@
         return null;
     }
 
-    private void ToggleTraffic() => _showTraffic = !_showTraffic;
-
     private void SelectTarget(string id)
     {
         _selectedTargetId = _selectedTargetId == id ? null : id;
@@ -2660,13 +2843,7 @@
             }
         }
 
-        if (!_docked && _showDock)
-        {
-            _showDock = false; // drifted out of range: close the fence card
-        }
     }
-
-    private void ToggleDock() => _showDock = !_showDock;
 
     private void RebuildSensor()
     {
@@ -3002,7 +3179,6 @@
     }
 
     // SATURDAY-ANCHOR: methods — parallel lanes append their station methods directly below
-    private void ToggleTracking() => _showTracking = !_showTracking;
 
     // Thin, read-only projection of the live NPC list for the tracking post — it never sees
     // Map.razor's private NpcState, only ids/callsigns/current physical state to sweep against.
@@ -3022,8 +3198,6 @@
     }
 
     // ---- PR-7: the gun deck — encounters, heat, hunters ----
-
-    private void ToggleWarRoom() => _showWarRoom = !_showWarRoom;
 
     // Whether a boarding gets the compliance speed bonus: bribed always qualifies (an inside job
     // needs no warning shot); otherwise the target must have been warned AND actually be the
@@ -3254,7 +3428,6 @@
     }
 
     // ---- PR-6: the dark space web ----
-    private void ToggleDarkWeb() => _showDarkWeb = !_showDarkWeb;
 
     /// <summary>The body the player is currently orbiting (bound, M20 sense) or docked at — null
     /// if neither, in which case the dark web has nowhere to set up shop.</summary>
@@ -3406,7 +3579,6 @@
     }
 
     // ---- PR-5: orbital commerce — trade from orbit or course-matched with drones ----
-    private void ToggleLocalSpace() => _showLocalSpace = !_showLocalSpace;
 
     // The context body Local Space shows contacts for: the body the ship is actually bound to, or
     // (per the owner's "orbiting/near a body" phrasing) whatever body is nearest when not bound —
@@ -3415,8 +3587,7 @@
 
     // Recomputed every frame from ground truth (OrbitRule.IsBound), same math UpdateEffectiveWarp
     // already relies on — not the orbit-assist UI's armed/nearest framing, which can point at a
-    // different body than the one the ship is actually bound to. Auto-shows Local Space on the
-    // rising edge of a bind (vision par. 10: proximity affordances appear when you get there).
+    // different body than the one the ship is actually bound to.
     private void UpdateOrbitedBody()
     {
         string? previous = _orbitedBodyId;
@@ -3454,10 +3625,12 @@
             }
         }
 
-        if (_orbitedBodyId is not null && _orbitedBodyId != previous)
-        {
-            _showLocalSpace = true;
-        }
+        // PR-11 deviation: this used to auto-pop the (small, floating) Local Space panel on the
+        // rising edge of a bind (vision par. 10). Now that Trade is a full-screen desk, yanking
+        // the player's whole view there mid-flight would be jarring rather than helpful — the
+        // Trade chip (TradeChip()) already updates live so the player notices the new contact,
+        // and switching desks stays a deliberate action (number key / tab / chip click).
+        _ = previous;
     }
 
     // Thin, read-only projection of the live NPC/depot list for CommerceRule — mirrors

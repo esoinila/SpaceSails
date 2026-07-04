@@ -28,3 +28,25 @@
 .local-space-progress {
     height: 6px;
 }
+
+/* Full-screen desk mode (PR-11): the Trade desk gives the contact list real width and a
+   multi-column layout instead of squeezing it into a narrow card. */
+.local-space-desk {
+    position: static;
+    width: 100%;
+    height: 100%;
+    transform: none;
+}
+
+.local-space-desk-body {
+    height: calc(100% - 2.25rem);
+    overflow-y: auto;
+}
+
+.local-space-list-grid {
+    max-height: none;
+    overflow-y: visible;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    gap: 0 1.5rem;
+}

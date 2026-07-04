@@ -7,12 +7,16 @@
    only ever passes it read-only ship/candidate state and two-way binds credits; the intel ledger
    itself lives here, same pattern as TrackingPost owning its own tracked-target ledger. *@
 
-<div class="dark-web-card card bg-dark bg-opacity-75 text-light @(Visible ? "" : "d-none")">
+<div class="dark-web-card @(FullScreen ? "dark-web-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
         <span class="fw-bold small">Comms &amp; intel 🕸</span>
-        <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+        @if (!FullScreen)
+        {
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+        }
     </div>
-    <div class="card-body p-2 small dark-web-scroll">
+    <div class="card-body p-2 small dark-web-scroll @(FullScreen ? "dark-web-desk-body" : "")">
+        <div class="dark-web-desk-col">
         <div class="fw-bold mb-1">Dark web</div>
         @if (!CanTrade)
         {
@@ -78,8 +82,10 @@
                 </table>
             }
         }
+        </div>
 
-        <hr class="my-2" />
+        <div class="dark-web-desk-col">
+        <hr class="my-2 dark-web-desk-col-rule" />
         <div class="fw-bold mb-1">Tight-beam</div>
         @if (TrackedShips.Count == 0)
         {
@@ -127,6 +133,7 @@
         {
             <div class="text-warning mt-1">@_lastRangeMessage</div>
         }
+        </div>
     </div>
 </div>
 
@@ -144,6 +151,7 @@
     [Parameter, EditorRequired] public double SimTime { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
     [Parameter] public bool Visible { get; set; }
+    [Parameter] public bool FullScreen { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
     [Parameter] public int Credits { get; set; }
@@ -177,6 +185,50 @@
     /// <summary>Exposed so Map.razor's traffic-board filter can show bought-intel ships without
     /// this component needing to know anything about how the board is rendered.</summary>
     public bool KnowsRoute(string shipId) => _ledger.Knows(shipId, SimTime);
+
+    /// <summary>The Comms chip's objective line (addendum, 2026-07-04 evening): the freshest
+    /// intel we've bought, by callsign if we can name it — "no whispers" when the ledger is
+    /// empty. Map.razor never reaches into <see cref="_ledger"/> directly, mirroring how the
+    /// tracking post exposes its own ledger only through summary methods.</summary>
+    public string? FreshestIntelSummary(double simTime)
+    {
+        RouteIntel? freshest = null;
+        foreach (RouteIntel entry in _ledger.Entries)
+        {
+            if (!entry.IsFresh(simTime))
+            {
+                continue;
+            }
+
+            if (freshest is null || entry.PurchasedAtSimTime > freshest.Value.PurchasedAtSimTime)
+            {
+                freshest = entry;
+            }
+        }
+
+        if (freshest is not { } intel)
+        {
+            return null;
+        }
+
+        foreach (TrackedShipInfo t in TrackedShips)
+        {
+            if (t.Id == intel.ShipId)
+            {
+                return t.Callsign;
+            }
+        }
+
+        foreach (MarketShip m in MarketShips)
+        {
+            if (m.Id == intel.ShipId)
+            {
+                return m.Callsign;
+            }
+        }
+
+        return intel.ShipId;
+    }
 
     /// <summary>Days until a bought tip goes stale (0 if none on file) — the board's hint text.</summary>
     public double StaleInDays(string shipId) =>
