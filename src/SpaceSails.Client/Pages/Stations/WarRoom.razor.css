@@ -1,0 +1,77 @@
+/* Standalone floating panel — same "instrument card" language as the scope/dock/tracking-post,
+   positioned in the free right-middle band of the map HUD (traffic board owns top-right, dock
+   and scope own bottom-right, tracking-post owns left-middle). */
+
+.war-room-card {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26rem;
+    max-width: calc(100% - 1.5rem);
+    pointer-events: auto;
+}
+
+.war-room-heat-gauge {
+    font-size: 0.9rem;
+    letter-spacing: 0.1rem;
+}
+
+.war-room-hunter-warning {
+    color: #ff8d7d;
+    font-weight: 600;
+}
+
+.war-room-scope-svg {
+    width: 108px;
+    height: 108px;
+    display: block;
+}
+
+.war-room-view-ring {
+    fill: rgba(120, 140, 170, 0.05);
+    stroke: rgba(120, 140, 170, 0.35);
+    stroke-width: 1;
+}
+
+.war-room-weapon-ring {
+    fill: none;
+    stroke: rgba(255, 140, 90, 0.6);
+    stroke-width: 1.2;
+    stroke-dasharray: 3 2;
+}
+
+.war-room-hunter-ring {
+    fill: none;
+    stroke: rgba(255, 90, 90, 0.55);
+    stroke-width: 1;
+    stroke-dasharray: 2 2;
+}
+
+.war-room-ship {
+    fill: #e0e4ec;
+}
+
+.war-room-hunter-dot {
+    fill: #ff5a5a;
+}
+
+.war-room-dot-compliant {
+    fill: #7dffb0;
+}
+
+.war-room-dot-stubborn {
+    fill: #ff8d7d;
+}
+
+.war-room-dot-bribed {
+    fill: #ffd27d;
+}
+
+.war-room-dot-pod {
+    fill: #b0b6c4;
+}
+
+.war-room-hail-line {
+    color: #7dd3ff;
+}

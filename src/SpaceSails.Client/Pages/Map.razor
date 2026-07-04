@@ -65,6 +65,7 @@
                 Deck
             </button>
             <button type="button" class="btn btn-sm @(_showTracking ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleTracking">Track 📡</button>
+            <button type="button" class="btn btn-sm @(_showWarRoom ? "btn-danger" : "btn-outline-light") ms-2" @onclick="ToggleWarRoom">Guns ⚔</button>
             @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
             <button type="button" class="btn btn-sm @(_showDarkWeb ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleDarkWeb">Web 🕸</button>
         </div>
@@ -453,6 +454,7 @@
         </div>
     </div>
     <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_showTracking" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1" OnClose="ToggleTracking" />
+    <SpaceSails.Client.Pages.Stations.WarRoom Visible="_showWarRoom" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" OnClose="ToggleWarRoom" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
     @* SATURDAY-ANCHOR: panels — parallel lanes append one station component line each below *@
     <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="_showDarkWeb" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnClose="ToggleDarkWeb" />
 </div>
@@ -464,6 +466,16 @@
     private bool _showTracking;
     private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost;
+
+    // PR-7: the gun deck — heat, hunters, war-room (vision par. 18).
+    private bool _showWarRoom;
+    private HeatState _heat = HeatState.None;
+    private readonly List<HunterState> _hunters = [];
+    private int _hunterSeq;
+    private double _hiddenAtHavenSinceSimTime = double.NaN; // NaN = not currently hidden
+    private static readonly RgbaColor HunterColor = new(255, 90, 90);
+    private static readonly string[] HunterCallsigns =
+        ["Debt Collector", "The Adjuster", "Repo Barque", "Fair Warning", "Lien Enforcer", "Underwriter's Claw"];
     private static readonly RgbaColor TrackedNpcColor = new(150, 255, 210);
     private static readonly RgbaColor TrackedNpcLastSeenColor = new(120, 200, 170, 180);
     private const string CanvasId = "map-canvas";
@@ -712,6 +724,8 @@
         public bool CurrentlyObserved;   // seen in the most recent sweep
         public Observation? LastObservation;
         public int ObservationCount;
+        public bool WarningShotFired;    // PR-7: heaves to (if compliant) — faster boarding
+        public bool Bribed;              // PR-7: compliant AND no heat generated when robbed
     }
 
     // Editable client-side node. ManeuverNode is an immutable value type with no notion of
@@ -1651,6 +1665,7 @@
 
         UpdateDockStatus();
         UpdateCapture(dtRealSeconds);
+        UpdateEncounters();
 
         if (!_mp)
         {
@@ -1803,6 +1818,7 @@
         else
         {
             DrawNpcs();
+            DrawHunters();
         }
         DrawShip(_ship.Position);
 
@@ -2888,7 +2904,11 @@
             // Boarding shuttles fly in REAL time, warp be damned (M14): passive progress
             // accrues at wall-clock rate, so warping doesn't fast-forward a boarding and the
             // deckhand's wait is real — while the captain who flies the run docks in seconds.
-            _captureProgress += Math.Clamp(dtRealSeconds, 0, 0.1) / CaptureRule.RequiredSecondsFor(_ship, npc.State);
+            // PR-7: a compliant (warned or bribed) target has heaved to — shuttles cross in half
+            // the time (ComplianceBoardingFactor). Stubborn ships and un-warned ones get no break.
+            double requiredSeconds = CaptureRule.RequiredSecondsFor(_ship, npc.State)
+                * (IsCompliantBoarding(npc) ? EncounterRule.ComplianceBoardingFactor : 1.0);
+            _captureProgress += Math.Clamp(dtRealSeconds, 0, 0.1) / requiredSeconds;
             _captureEngaged = true;
             _captureTargetCallsign = npc.Ship.Callsign;
 
@@ -2920,6 +2940,7 @@
         ShowPulseMessage($"Captured {take} units of {npc.Ship.CargoClass} {PlunderLines[(int)((SimTime / 60) % PlunderLines.Length)]}");
         RendererInterop.PlayCue("board");
         AdvanceTutorial(3); // step 4: first successful boarding
+        RaiseHeatFromRobbery(npc);
     }
 
     private void UpdateDockStatus()
@@ -3314,6 +3335,243 @@
         }
 
         return candidates;
+    }
+
+    // ---- PR-7: the gun deck — encounters, heat, hunters ----
+
+    private void ToggleWarRoom() => _showWarRoom = !_showWarRoom;
+
+    // Whether a boarding gets the compliance speed bonus: bribed always qualifies (an inside job
+    // needs no warning shot); otherwise the target must have been warned AND actually be the
+    // compliant type — a stubborn ship never heaves to, warned or not. Pods have no crew to
+    // comply at all.
+    private bool IsCompliantBoarding(NpcState npc)
+    {
+        if (npc.Ship.IsPod)
+        {
+            return false;
+        }
+
+        if (npc.Bribed)
+        {
+            return true;
+        }
+
+        return npc.WarningShotFired && EncounterRule.ComplianceOf(npc.Ship, _heat.Level) == ComplianceState.Compliant;
+    }
+
+    // Robbing a ship is what actually raises heat — the warning shot only narrates the ship's
+    // reaction (heave to vs. call for help); a bribed ship pays for silence, so no heat at all.
+    private void RaiseHeatFromRobbery(NpcState npc)
+    {
+        if (npc.Ship.IsPod || npc.Bribed)
+        {
+            return;
+        }
+
+        ComplianceState compliance = EncounterRule.ComplianceOf(npc.Ship, _heat.Level);
+        int amount = compliance == ComplianceState.Stubborn ? 2 : 1;
+        _heat = EncounterRule.RaiseHeat(_heat, amount, SimTime);
+        SpawnHunterForHeatEvent();
+        ShowPulseMessage(compliance == ComplianceState.Stubborn
+            ? "Her muscle's already inbound. Heat rising fast."
+            : "Word travels. Heat rising.");
+    }
+
+    // One hunter per heat event, fitting out at the nearest policed body (Earth/Mars-like —
+    // never a haven). A pure outer-reaches scenario with nothing policed in range simply sends
+    // no muscle — there's no cavalry to call.
+    private void SpawnHunterForHeatEvent()
+    {
+        if (_ephemeris is null)
+        {
+            return;
+        }
+
+        CelestialBody? origin = EncounterRule.NearestPolicedBody(_ephemeris, _ship.Position, SimTime);
+        if (origin is null)
+        {
+            return;
+        }
+
+        Vector2d originPosition = _ephemeris.Position(origin.Id, SimTime);
+        const double h = 1.0;
+        Vector2d originVelocity = (_ephemeris.Position(origin.Id, SimTime + h) - _ephemeris.Position(origin.Id, SimTime - h)) / (2 * h);
+
+        string callsign = HunterCallsigns[_hunterSeq % HunterCallsigns.Length];
+        string id = $"hunter-{_hunterSeq++}";
+        _hunters.Add(EncounterRule.SpawnHunter(id, callsign, origin.Id, originPosition, originVelocity, SimTime));
+        ShowPulseMessage($"{callsign} is fitting out at {origin.Name} — five days, then she flies.");
+    }
+
+    private void FireWarningShot(string npcId)
+    {
+        NpcState? npc = FindNpc(npcId);
+        if (npc is null || npc.Ship.IsPod || !EncounterRule.InWeaponRange(_ship, npc.State))
+        {
+            return;
+        }
+
+        npc.WarningShotFired = true;
+        ComplianceState compliance = EncounterRule.ComplianceOf(npc.Ship, _heat.Level);
+        ShowPulseMessage(compliance == ComplianceState.Stubborn
+            ? $"WARNING SHOT ACROSS THE BOW — {npc.Ship.Callsign} answers with a tight-beam call for help, not her colours"
+            : "WARNING SHOT ACROSS THE BOW — she heaves to");
+        RendererInterop.PlayCue("pulse");
+    }
+
+    private void BribeShip(string npcId)
+    {
+        NpcState? npc = FindNpc(npcId);
+        if (npc is null || npc.Bribed || npc.Ship.IsPod)
+        {
+            return;
+        }
+
+        int price = EncounterRule.BribePrice(npc.Ship);
+        if (_credits < price)
+        {
+            ShowPulseMessage("Not enough credits to grease this crew.");
+            return;
+        }
+
+        _credits -= price;
+        npc.Bribed = true;
+        ShowPulseMessage($"{npc.Ship.Callsign}'s crew take the coin — an inside job, quiet as the void.");
+    }
+
+    // Hidden at a haven (vision par. 18): bound in orbit around a body flagged IsHaven — cools
+    // heat 4x faster and, after long enough continuously hidden, breaks a hunter's pursuit.
+    private bool IsHiddenAtHaven()
+    {
+        if (_mp || _ephemeris is null || _nearestBody is not { IsHaven: true } haven || haven.ParentId is null)
+        {
+            return false;
+        }
+
+        CelestialBody? parent = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == haven.ParentId)
+            {
+                parent = candidate;
+                break;
+            }
+        }
+
+        if (parent is null)
+        {
+            return false;
+        }
+
+        double hill = OrbitRule.HillRadius(haven, parent.Mu);
+        return OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, haven, hill);
+    }
+
+    // Heat decay, hunter pursuit and break-off — all in sim time (like NPC stepping), so it
+    // scales naturally with warp instead of crawling at wall-clock rate.
+    private void UpdateEncounters()
+    {
+        if (_mp || _ephemeris is null)
+        {
+            return;
+        }
+
+        bool hidden = IsHiddenAtHaven();
+        _hiddenAtHavenSinceSimTime = hidden
+            ? (double.IsNaN(_hiddenAtHavenSinceSimTime) ? SimTime : _hiddenAtHavenSinceSimTime)
+            : double.NaN;
+        double hiddenDuration = hidden ? SimTime - _hiddenAtHavenSinceSimTime : 0;
+
+        _heat = EncounterRule.DecayHeat(_heat, SimTime, hidden);
+
+        for (int i = _hunters.Count - 1; i >= 0; i--)
+        {
+            HunterState hunter = _hunters[i];
+            while (hunter.State.SimTime < SimTime && !hunter.CaughtPlayer && !hunter.BrokenOff)
+            {
+                double stepTime = Math.Min(SimTime, hunter.State.SimTime + EncounterRule.HunterStepSeconds);
+                hunter = EncounterRule.AdvanceHunter(hunter, _ship, stepTime);
+                if (hidden)
+                {
+                    hunter = EncounterRule.ApplyBreakOff(hunter, hiddenDuration);
+                }
+            }
+
+            if (hunter.CaughtPlayer)
+            {
+                ApplyHunterCatch(hunter);
+                _hunters.RemoveAt(i);
+            }
+            else if (hunter.BrokenOff)
+            {
+                ShowPulseMessage($"{hunter.Callsign} loses your scent — safe at anchor.");
+                _hunters.RemoveAt(i);
+            }
+            else
+            {
+                _hunters[i] = hunter;
+            }
+        }
+    }
+
+    private void ApplyHunterCatch(HunterState hunter)
+    {
+        _cargoUnits = 0;
+        _cargoValue = 0;
+        _credits = Math.Max(0, _credits - EncounterRule.CatchFineCredits);
+        ShowPulseMessage($"{hunter.Callsign} runs you down — cargo seized, {EncounterRule.CatchFineCredits} cr fine. The gentleman's game has a price.");
+        RendererInterop.PlayCue("board");
+    }
+
+    private void DrawHunters()
+    {
+        foreach (HunterState hunter in _hunters)
+        {
+            (float sx, float sy) = _camera.WorldToScreen(hunter.State.Position);
+            _renderer!.DrawCircle(sx, sy, 5f, HunterColor, HunterColor);
+            _renderer!.DrawText(sx + 8, sy - 6, $"🐺 {hunter.Callsign}", HunterColor);
+
+            double distance = (hunter.State.Position - _ship.Position).Length;
+            if (distance <= EncounterRule.WeaponRangeMeters * 3)
+            {
+                float ringPx = (float)Math.Clamp(EncounterRule.CatchRadiusMeters / _camera.MetersPerPixel, 4, 200);
+                _renderer!.DrawCircle(sx, sy, ringPx, null, HunterColor, 1.5f);
+            }
+        }
+    }
+
+    // Thin, read-only projections for the war-room — it never sees Map.razor's private NpcState
+    // or HunterState, only the NpcShip/live-state pairs it needs to render (mirrors TrackingCandidates()).
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.Contact> WarRoomContacts()
+    {
+        var contacts = new List<SpaceSails.Client.Pages.Stations.WarRoom.Contact>();
+        if (_mp)
+        {
+            return contacts;
+        }
+
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Active && !npc.Arrived && !npc.Boarded && npc.CurrentlyObserved)
+            {
+                contacts.Add(new SpaceSails.Client.Pages.Stations.WarRoom.Contact(
+                    npc.Ship, npc.State, npc.WarningShotFired, npc.Bribed));
+            }
+        }
+
+        return contacts;
+    }
+
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.HunterContact> WarRoomHunters()
+    {
+        var hunters = new List<SpaceSails.Client.Pages.Stations.WarRoom.HunterContact>(_hunters.Count);
+        foreach (HunterState hunter in _hunters)
+        {
+            hunters.Add(new SpaceSails.Client.Pages.Stations.WarRoom.HunterContact(hunter.Id, hunter.Callsign, hunter.State));
+        }
+
+        return hunters;
     }
 
     // ---- PR-6: the dark space web ----
