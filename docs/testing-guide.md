@@ -378,3 +378,35 @@ after a robbery, or a hunter never spawning or never breaking off at a haven.
 the active one, digit keys leaking into text/number/slider inputs (or vice versa — desk keys not
 working because an input silently ate them when it shouldn't have), or `7`/`1` leaving deck mode
 and Nav desk state out of sync (e.g. stuck on a blank screen).
+
+---
+
+## 18. Comms room, news wire, and bridge seats
+
+*(See [news-wire.md](features/news-wire.md), [dark-web.md](features/dark-web.md), and
+[deck-view.md](features/deck-view.md).)*
+
+1. Launch Sol. Press `5` (or click **5 Comms**). Confirm the Comms desk shows a news ticker band
+   (a row of short headlines, separated by dividers) plus three consoles side by side: the
+   **departures board**, the dark web market, and tight-beam/laser ranging.
+2. Confirm the departures board's rows look roomier than before (regular row padding, not a
+   cramped `table-sm`).
+3. Press `6` (or click **6 Galley**). Confirm the news wire panel shows a headline plus an
+   "Earlier on the wire" list, each earlier line tagged "today" / "yesterday" / "*N*d ago".
+4. Board and rob a ship (see script 16). Confirm a "Piracy alert" line naming the victim appears
+   at the top of both the Comms ticker and the Galley feed, and that (once heat spawns a hunter) a
+   "fitting out at ..." line appears too.
+5. Buy a route tip on the dark web (script 15). Confirm a line naming the ship you bought appears
+   on the wire.
+6. Orbit or dock at a haven (e.g. Ringside Exchange or Enceladus). Confirm a line naming that haven
+   appears on the wire the first time you bind there (not on every frame after).
+7. Press `7` for the Deck desk. Walk to the bridge (near the bow) and confirm three more consoles
+   are visible near HELM/NAV POST/SCOPE: **COMMS SEAT**, **TACTICAL SEAT**, **TRADE SEAT**.
+8. Press `E` at each in turn. Confirm COMMS SEAT opens the Comms desk, TACTICAL SEAT opens the War
+   room desk, and TRADE SEAT opens the Trade desk — each leaving deck mode in one step.
+9. Walk to SCOPE and press `E`. Confirm it now opens the Sensors desk (not a small scope overlay).
+   Walk to CANTINA and press `E`. Confirm it opens the Galley desk, where "Pour a tot" still works.
+
+**Broken looks like:** the ticker missing or frozen on one line, a robbery/hunter/intel/haven-entry
+never appearing on the wire, the Galley and Comms feeds disagreeing about the freshest event, or a
+bridge seat not opening its desk (or opening the wrong one).

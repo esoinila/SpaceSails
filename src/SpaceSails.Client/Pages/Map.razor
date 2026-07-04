@@ -363,64 +363,86 @@
                 }
                 else if (_activeDesk == ShipDesk.Comms)
                 {
-                    <div class="desk-comms-grid">
-                        <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
-                        <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
-                            <div class="card-header py-1"><span class="fw-bold small">Traffic board</span></div>
-                            <div class="card-body p-0 desk-traffic-scroll">
-                                <table class="table table-sm table-dark table-hover align-middle mb-0 small">
-                                    <thead>
-                                        <tr>
-                                            <th>Callsign</th>
-                                            <th>Cargo</th>
-                                            <th>Route</th>
-                                            <th>Departs</th>
-                                            <th>Last seen</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (NpcState npc in _npcStates.Where(n => n.Ship.PublishesTimetable || (_darkWeb?.KnowsRoute(n.Ship.Id) ?? false)))
-                                        {
-                                            <tr class="map-traffic-row @(npc.Ship.Id == _selectedTargetId ? "table-primary" : "")"
-                                                @onclick="() => SelectTarget(npc.Ship.Id)">
-                                                <td>
-                                                    @npc.Ship.Callsign
-                                                    @if (!npc.Ship.PublishesTimetable && _darkWeb is not null)
-                                                    {
-                                                        <span class="badge bg-dark border border-secondary ms-1" title="Bought intel — off the books">🕸 stale in @(_darkWeb.StaleInDays(npc.Ship.Id).ToString("F0"))d</span>
-                                                    }
-                                                </td>
-                                                <td>@npc.Ship.CargoClass</td>
-                                                <td>@RouteLabel(npc.Ship)</td>
-                                                <td>@FormatDeparture(npc.Ship.DepartureTime)</td>
-                                                <td>@(npc.LastObservation is { } o ? FormatSimTime(o.SimTime) : "—")</td>
-                                                <td>@StatusLabel(npc)</td>
+                    @* The comms room (PR-14, StationDesks.md #14): a ticker band up top, then the
+                       three consoles side by side — (a) the departures board, roomier now that it
+                       owns its own column, then DarkWeb.razor's own two columns for (b) the dark
+                       web market and (c) tight-beam/laser ranging. All existing logic preserved;
+                       only the layout and the news feed are new. *@
+                    <div class="desk-comms-room">
+                        <div class="comms-ticker">
+                            <span class="comms-ticker-label fw-bold small">News wire 📡</span>
+                            @{ IReadOnlyList<NewsWire.NewsItem> wire = NewsFeed(CommsTickerAmbientDays); }
+                            @if (wire.Count == 0)
+                            {
+                                <span class="comms-ticker-item text-secondary small">No whispers yet.</span>
+                            }
+                            else
+                            {
+                                @foreach (NewsWire.NewsItem item in wire.Take(CommsTickerItemCount))
+                                {
+                                    <span class="comms-ticker-item small">@item.Headline</span>
+                                }
+                            }
+                        </div>
+                        <div class="desk-comms-grid">
+                            <div class="desk-side-panel comms-traffic-panel card bg-dark bg-opacity-50 text-light">
+                                <div class="card-header py-1"><span class="fw-bold small">Departures board</span></div>
+                                <div class="card-body p-0 desk-traffic-scroll">
+                                    <table class="table table-dark table-hover align-middle mb-0 small comms-traffic-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Callsign</th>
+                                                <th>Cargo</th>
+                                                <th>Route</th>
+                                                <th>Departs</th>
+                                                <th>Last seen</th>
+                                                <th>Status</th>
                                             </tr>
-                                        }
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (NpcState npc in _npcStates.Where(n => n.Ship.PublishesTimetable || (_darkWeb?.KnowsRoute(n.Ship.Id) ?? false)))
+                                            {
+                                                <tr class="map-traffic-row @(npc.Ship.Id == _selectedTargetId ? "table-primary" : "")"
+                                                    @onclick="() => SelectTarget(npc.Ship.Id)">
+                                                    <td>
+                                                        @npc.Ship.Callsign
+                                                        @if (!npc.Ship.PublishesTimetable && _darkWeb is not null)
+                                                        {
+                                                            <span class="badge bg-dark border border-secondary ms-1" title="Bought intel — off the books">🕸 stale in @(_darkWeb.StaleInDays(npc.Ship.Id).ToString("F0"))d</span>
+                                                        }
+                                                    </td>
+                                                    <td>@npc.Ship.CargoClass</td>
+                                                    <td>@RouteLabel(npc.Ship)</td>
+                                                    <td>@FormatDeparture(npc.Ship.DepartureTime)</td>
+                                                    <td>@(npc.LastObservation is { } o ? FormatSimTime(o.SimTime) : "—")</td>
+                                                    <td>@StatusLabel(npc)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                @if (OffBooksCount > 0)
+                                {
+                                    <div class="card-footer py-1 text-secondary small fst-italic">
+                                        @OffBooksCount ship@(OffBooksCount == 1 ? "" : "s") operating off the books
+                                    </div>
+                                }
+                                @if (SelectedTrackedTarget() is { } sel)
+                                {
+                                    <div class="card-footer py-1">
+                                        <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light")" @onclick="TogglePin">
+                                            Pin: brakes at @BodyName(sel.Ship.DestinationId)
+                                        </button>
+                                    </div>
+                                }
                             </div>
-                            @if (OffBooksCount > 0)
-                            {
-                                <div class="card-footer py-1 text-secondary small fst-italic">
-                                    @OffBooksCount ship@(OffBooksCount == 1 ? "" : "s") operating off the books
-                                </div>
-                            }
-                            @if (SelectedTrackedTarget() is { } sel)
-                            {
-                                <div class="card-footer py-1">
-                                    <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light")" @onclick="TogglePin">
-                                        Pin: brakes at @BodyName(sel.Ship.DestinationId)
-                                    </button>
-                                </div>
-                            }
+                            <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
                         </div>
                     </div>
                 }
                 else if (_activeDesk == ShipDesk.Galley)
                 {
-                    <SpaceSails.Client.Pages.Stations.Galley SimTime="SimTime" RumTots="_rumTots" WobbleActive="RumWobbleActive" LastRumLine="@_lastRumLine" OnPourRum="PourRumFromGalley" />
+                    <SpaceSails.Client.Pages.Stations.Galley SimTime="SimTime" Feed="NewsFeed(GalleyFeedAmbientDays).Take(GalleyFeedItemCount).ToList()" RumTots="_rumTots" WobbleActive="RumWobbleActive" LastRumLine="@_lastRumLine" OnPourRum="PourRumFromGalley" />
                 }
             </div>
         </div>
@@ -581,6 +603,47 @@
     private SpaceSails.Client.Pages.Stations.DarkWeb? _darkWeb;
     private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost;
+
+    // ---- PR-14: the news wire (docs/SaturdayPlan/StationDesks.md #14) ----
+    // The one source of truth for both the Comms ticker and the Galley's long feed: a bounded,
+    // newest-first ledger of player-triggered NewsWire.NewsEvents, blended on demand with
+    // NewsWire.Ambient's rotating scenario flavor. Core stays pure (NewsWire has no state of its
+    // own) — the mutable ledger lives here, same pattern as the tracking post's own ledger.
+    private const int MaxNewsEvents = 50;
+    private const int CommsTickerAmbientDays = 6;   // ambient days blended in behind fresh events
+    private const int CommsTickerItemCount = 5;     // the ticker shows only the freshest few
+    private const int GalleyFeedAmbientDays = 20;   // the Galley wants the long scrollback
+    private const int GalleyFeedItemCount = 25;
+    private readonly List<NewsWire.NewsEvent> _newsEvents = [];
+
+    private void PushNewsEvent(NewsWire.NewsEventKind kind, string subject, string? detail = null)
+    {
+        _newsEvents.Insert(0, new NewsWire.NewsEvent(kind, SimTime, subject, detail));
+        if (_newsEvents.Count > MaxNewsEvents)
+        {
+            _newsEvents.RemoveRange(MaxNewsEvents, _newsEvents.Count - MaxNewsEvents);
+        }
+    }
+
+    /// <summary>Player events (as headlines) blended with <paramref name="ambientCount"/> days of
+    /// rotating ambient flavor, newest first — the Comms ticker takes a short slice of this, the
+    /// Galley desk a long one.</summary>
+    private IReadOnlyList<NewsWire.NewsItem> NewsFeed(int ambientCount)
+    {
+        var items = new List<NewsWire.NewsItem>(_newsEvents.Count + ambientCount);
+        foreach (NewsWire.NewsEvent evt in _newsEvents)
+        {
+            items.Add(new NewsWire.NewsItem(evt.SimTime, NewsWire.Headline(evt)));
+        }
+
+        if (_ephemeris is not null)
+        {
+            items.AddRange(NewsWire.Ambient(_ephemeris, SimTime, ambientCount));
+        }
+
+        items.Sort((a, b) => b.SimTime.CompareTo(a.SimTime));
+        return items;
+    }
 
     // PR-7: the gun deck — heat, hunters, war-room (vision par. 18).
     private HeatState _heat = HeatState.None;
@@ -1065,13 +1128,12 @@
                 ShowPulseMessage("Nav post: plotting table lit");
                 break;
             case DeckPlan.ConsoleKind.Scope:
-                ToggleScope();
-                ShowPulseMessage(_showScope ? "Scope online" : "Scope shuttered");
+                SwitchDesk(ShipDesk.Sensors);
+                ShowPulseMessage("Scope alcove: sensors online");
                 break;
             case DeckPlan.ConsoleKind.Cantina:
-                ShowPulseMessage(_plasma is not null && _ship.Charge > 0.5
-                    ? PourRum("The hull hums. The rum ripples. Vent soon, then drink.")
-                    : PourRum(null));
+                SwitchDesk(ShipDesk.Galley);
+                ShowPulseMessage("Cantina: galley's this way");
                 break;
             case DeckPlan.ConsoleKind.Vent:
                 VentCharge();
@@ -1090,6 +1152,18 @@
                 {
                     ShowPulseMessage("Shuttle ready in the cradle. K-77 and R-3B standing by.");
                 }
+                break;
+            case DeckPlan.ConsoleKind.CommsSeat:
+                SwitchDesk(ShipDesk.Comms);
+                ShowPulseMessage("Comms seat: patched through");
+                break;
+            case DeckPlan.ConsoleKind.TacticalSeat:
+                SwitchDesk(ShipDesk.WarRoom);
+                ShowPulseMessage("Tactical seat: war room manned");
+                break;
+            case DeckPlan.ConsoleKind.TradeSeat:
+                SwitchDesk(ShipDesk.Trade);
+                ShowPulseMessage("Trade seat: ledgers open");
                 break;
         }
     }
@@ -3230,6 +3304,7 @@
         ComplianceState compliance = EncounterRule.ComplianceOf(npc.Ship, _heat.Level);
         int amount = compliance == ComplianceState.Stubborn ? 2 : 1;
         _heat = EncounterRule.RaiseHeat(_heat, amount, SimTime);
+        PushNewsEvent(NewsWire.NewsEventKind.RobberyCommitted, npc.Ship.Callsign);
         SpawnHunterForHeatEvent();
         ShowPulseMessage(compliance == ComplianceState.Stubborn
             ? "Her muscle's already inbound. Heat rising fast."
@@ -3259,6 +3334,7 @@
         string callsign = HunterCallsigns[_hunterSeq % HunterCallsigns.Length];
         string id = $"hunter-{_hunterSeq++}";
         _hunters.Add(EncounterRule.SpawnHunter(id, callsign, origin.Id, originPosition, originVelocity, SimTime));
+        PushNewsEvent(NewsWire.NewsEventKind.HunterDispatched, callsign, origin.Name);
         ShowPulseMessage($"{callsign} is fitting out at {origin.Name} — five days, then she flies.");
     }
 
@@ -3592,6 +3668,7 @@
     {
         string? previous = _orbitedBodyId;
         _orbitedBodyId = null;
+        CelestialBody? boundBody = null;
         if (_ephemeris is not null)
         {
             foreach (CelestialBody body in _ephemeris.Bodies)
@@ -3620,6 +3697,7 @@
                     _orbitedBodyId = body.Id;
                     _orbitedBodyPosition = bodyPos;
                     _orbitedBodyHillRadius = hill;
+                    boundBody = body;
                     break;
                 }
             }
@@ -3629,8 +3707,13 @@
         // rising edge of a bind (vision par. 10). Now that Trade is a full-screen desk, yanking
         // the player's whole view there mid-flight would be jarring rather than helpful — the
         // Trade chip (TradeChip()) already updates live so the player notices the new contact,
-        // and switching desks stays a deliberate action (number key / tab / chip click).
-        _ = previous;
+        // and switching desks stays a deliberate action (number key / tab / chip click). The one
+        // thing the rising edge DOES still do (PR-14) is drop a quiet line on the news wire when
+        // that new bind is a haven — the regulars notice a new hull overhead.
+        if (boundBody is { IsHaven: true } haven && _orbitedBodyId != previous)
+        {
+            PushNewsEvent(NewsWire.NewsEventKind.OrbitEnteredHaven, haven.Name);
+        }
     }
 
     // Thin, read-only projection of the live NPC/depot list for CommerceRule — mirrors

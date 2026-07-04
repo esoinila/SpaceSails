@@ -11,7 +11,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public static class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -78,6 +78,15 @@ public static class DeckPlan
         new(ConsoleKind.Cargo, -5, -6.5f, "CARGO"),
         new(ConsoleKind.Shuttle, -8, 6.5f, "SHUTTLE BAY"),
         new(ConsoleKind.Vent, -20, -4.5f, "VENT PANEL"),
+
+        // --- Bridge seats (PR-14, StationDesks.md #14): pressing E opens the matching desk
+        // without leaving the ship's own deck plan — three free spots on the bridge (x > 18),
+        // clear of the helm/nav-post/scope trio, each other, and (importantly) the avatar's own
+        // spawn point (SpawnX/SpawnY below) by a comfortable margin — nobody should see an [E]
+        // prompt before they've taken a single step.
+        new(ConsoleKind.CommsSeat, 20, -7, "COMMS SEAT"),      // mirrors Scope (20, 7) to starboard
+        new(ConsoleKind.TacticalSeat, 19.5f, 4, "TACTICAL SEAT"), // port side, near the bridge door
+        new(ConsoleKind.TradeSeat, 27, 0, "TRADE SEAT"),       // the bow-tip nook between helm and nav post
     ];
 
     public static readonly (float X, float Y, string Text)[] RoomLabels =
