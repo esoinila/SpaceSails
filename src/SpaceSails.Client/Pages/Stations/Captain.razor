@@ -1,4 +1,5 @@
 @using SpaceSails.Core
+@using SpaceSails.Client.Pages
 
 @* The captain's position (PR-15, docs/SaturdayPlan/StationDesks.md addendum, owner: "the mission
    of the ship could be the captain's position... he selects the goal of the ship"). A stately,
@@ -15,17 +16,70 @@
 }
 
 <div class="captain-desk text-light">
+    @* M26: two displays (owner) — the orders catalog, and a status board: every station's chip
+       writ large, the whole ship at a glance from the captain's chair. *@
+    <div class="captain-view-toggle">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Captain view">
+            <button type="button" class="btn @(_statusView ? "btn-outline-light" : "btn-info")"
+                    @onclick="() => _statusView = false">⚓ Orders</button>
+            <button type="button" class="btn @(_statusView ? "btn-info" : "btn-outline-light")"
+                    @onclick="() => _statusView = true">🧭 Ship status</button>
+        </div>
+    </div>
+
     <div class="captain-articles">
-        <div class="captain-articles-label">The ship's articles</div>
+        <div class="captain-articles-label">@(_statusView ? "The ship at a glance" : "The ship's articles")</div>
         <div class="captain-articles-mission">@CurrentMission.Describe()</div>
     </div>
 
+    @if (_statusView)
+    {
+        <div class="captain-status-grid">
+            @foreach (DeskChips.ChipData chip in StatusChips)
+            {
+                <div class="captain-status-card" role="button" tabindex="0"
+                     @onclick="() => OnGoToDesk.InvokeAsync(chip.Desk)"
+                     @onkeydown="e => OnStatusKeyDown(e, chip.Desk)">
+                    <div class="captain-group-header"><span class="captain-group-icon">@chip.Icon</span> @chip.Label</div>
+                    <div class="captain-status-line">@chip.Line1</div>
+                    @if (chip.Line2 is not null)
+                    {
+                        <div class="captain-status-line captain-status-dim">@chip.Line2</div>
+                    }
+                    @if (chip.Line3 is not null)
+                    {
+                        <div class="captain-status-line captain-status-dim">@chip.Line3</div>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else
+    {
     <div class="captain-groups">
         <div class="captain-group">
             <div class="captain-group-header"><span class="captain-group-icon">⛵</span> Free sailing</div>
             <div class="captain-group-flavor">No orders given. The crew keeps her trim and waits on your word.</div>
             <div class="captain-group-cards">
                 @Card(ShipMission.Default)
+            </div>
+        </div>
+
+        <div class="captain-group">
+            <div class="captain-group-header"><span class="captain-group-icon">🎯</span> Fly to</div>
+            <div class="captain-group-flavor">Set the helm for a world — Nav plots the course, the autopilot parks us in orbit.</div>
+            <div class="captain-group-cards">
+                @if (Options.FlyTo.Count == 0)
+                {
+                    <div class="captain-empty">No worlds charted to make for.</div>
+                }
+                else
+                {
+                    @foreach (ShipMission m in Options.FlyTo)
+                    {
+                        @Card(m)
+                    }
+                }
             </div>
         </div>
 
@@ -101,12 +155,25 @@
             </div>
         </div>
     </div>
+    }
 </div>
 
 @code {
     [Parameter, EditorRequired] public ShipMission CurrentMission { get; set; } = ShipMission.Default;
-    [Parameter, EditorRequired] public MissionOptions Options { get; set; } = new([], [], [], []);
+    [Parameter, EditorRequired] public MissionOptions Options { get; set; } = new([], [], [], [], []);
     [Parameter] public EventCallback<ShipMission> OnSelectMission { get; set; }
+    [Parameter] public IReadOnlyList<DeskChips.ChipData> StatusChips { get; set; } = [];
+    [Parameter] public EventCallback<ShipDesk> OnGoToDesk { get; set; }
+
+    private bool _statusView;
+
+    private async Task OnStatusKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e, ShipDesk desk)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await OnGoToDesk.InvokeAsync(desk);
+        }
+    }
 
     private bool IsSelected(ShipMission m) => CurrentMission == m;
 

@@ -16,6 +16,7 @@ public enum MissionKind
     TradeRun,
     LayLow,
     Survey,
+    FlyTo,
 }
 
 /// <summary>
@@ -50,6 +51,7 @@ public sealed record ShipMission(
         MissionKind.TradeRun => $"Trade run: {Humanize(OriginBodyId)} → {Humanize(DestinationBodyId)}",
         MissionKind.LayLow => $"Lay low: {Humanize(HavenBodyId)}",
         MissionKind.Survey => $"Survey: {Humanize(CorridorA)}–{Humanize(CorridorB)} corridor",
+        MissionKind.FlyTo => $"Make for: {Humanize(DestinationBodyId)} orbit",
         _ => "Free sailing",
     };
 
@@ -124,6 +126,22 @@ public static class MissionCatalog
         return result;
     }
 
+    /// <summary>M26: one Fly to option per orbitable world — planets and moons, not stations
+    /// (no Hill sphere to park in) and not the sun (you already orbit it).</summary>
+    public static IReadOnlyList<ShipMission> FlyToOptions(IReadOnlyList<CelestialBody> bodies)
+    {
+        var result = new List<ShipMission>();
+        foreach (CelestialBody body in bodies)
+        {
+            if (body.ParentId is not null && body.Kind != BodyKind.Station)
+            {
+                result.Add(new ShipMission(MissionKind.FlyTo, DestinationBodyId: body.Id));
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>One Lay low option per haven body in the scenario.</summary>
     public static IReadOnlyList<ShipMission> LayLowOptions(IReadOnlyList<CelestialBody> bodies)
     {
@@ -176,13 +194,15 @@ public static class MissionCatalog
         HuntOptions(ephemeris.Traffic),
         TradeRunOptions(ephemeris.Traffic),
         LayLowOptions(ephemeris.Bodies),
-        SurveyOptions(ephemeris.Traffic));
+        SurveyOptions(ephemeris.Traffic),
+        FlyToOptions(ephemeris.Bodies));
 }
 
-/// <summary>The captain's desk's four scenario-dependent selectable groups (see
+/// <summary>The captain's desk's scenario-dependent selectable groups (see
 /// <see cref="MissionCatalog.Build"/>).</summary>
 public sealed record MissionOptions(
     IReadOnlyList<ShipMission> Hunt,
     IReadOnlyList<ShipMission> TradeRuns,
     IReadOnlyList<ShipMission> LayLow,
-    IReadOnlyList<ShipMission> Survey);
+    IReadOnlyList<ShipMission> Survey,
+    IReadOnlyList<ShipMission> FlyTo);
