@@ -146,6 +146,15 @@
     border-radius: 0.25rem;
 }
 
+/* M24: planet click menu — anchored at the click point, above the canvas. */
+.map-body-menu {
+    position: absolute;
+    z-index: 20;
+    pointer-events: auto;
+    min-width: 12rem;
+    max-width: 16rem;
+}
+
 .map-orbit-bar {
     height: 4px;
     margin-top: 3px;

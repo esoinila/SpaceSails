@@ -25,6 +25,39 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
+    @* M24: planet click menu — set the body as THE destination so orbit assist tracks it. *@
+    @if (_activeDesk == ShipDesk.Nav && _bodyMenuBody is { } menuBody)
+    {
+        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+             style="left: @(_bodyMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_bodyMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold me-2">@menuBody.Name</span>
+                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close"
+                        @onclick="CloseBodyMenu"></button>
+            </div>
+            <div class="d-grid gap-1">
+                @if (_destinationBodyId == menuBody.Id)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning"
+                            @onclick="() => SetDestination(null)">
+                        ✕ Clear destination
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-info"
+                            @onclick="() => SetDestination(menuBody.Id)">
+                        🎯 Set destination — navigate to orbit
+                    </button>
+                }
+                <button type="button" class="btn btn-sm @(_armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
+                        @onclick="() => ToggleArmedInsertionFromMenu(menuBody.Id)">
+                    🛰 @(_armedOrbitBodyId == menuBody.Id ? "Auto-insert ARMED — disarm" : "Arm auto-insert at window")
+                </button>
+            </div>
+        </div>
+    }
+
     @* Station tab bar (StationDesks.md rule 3): always visible, top center, works on every desk —
        the keyboard-shortcut equivalent for players who'd rather click. Captain (PR-15) leads the
        bar with its `0` key, ahead of Nav's `1` — the captain's word comes before the helm's. *@
@@ -92,8 +125,7 @@
                 <div class="mt-1 small">
                     <div class="d-flex justify-content-between align-items-center">
                         <span>
-                            🛰 Orbit @oi.Body.Name —
-                            @(oi.WindowOpen ? "window OPEN" : oi.TooFast ? "too fast (max 5.0 km/s rel)" : "get inside the Hill sphere")
+                            @(oi.IsDestination ? "🎯" : "🛰") Orbit @oi.Body.Name — @OrbitStatusLine(oi)
                         </span>
                         <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
                                 disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
@@ -108,6 +140,16 @@
                         <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
                              style="width: @(Math.Clamp(100 * OrbitRule.MaxRelativeSpeed / Math.Max(oi.RelSpeed, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
                     </div>
+                    @if (oi.IsDestination)
+                    {
+                        <div class="text-secondary">
+                            @FormatDistance(oi.Distance) out · window ≤ @FormatDistance(oi.Hill) ·
+                            rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                            (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
+                            <a role="button" class="text-info text-decoration-none ms-1"
+                               @onclick="() => SetDestination(null)">clear</a>
+                        </div>
+                    }
                 </div>
             }
             <div>Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)</div>
@@ -632,9 +674,11 @@
     {
         string objective = _armedOrbitBodyId is not null
             ? $"→ {BodyName(_armedOrbitBodyId)} orbit"
-            : _planNodes.Count > 0
-                ? "on plotted course"
-                : "free sailing";
+            : _destinationBodyId is not null
+                ? $"→ {BodyName(_destinationBodyId)} (destination)"
+                : _planNodes.Count > 0
+                    ? "on plotted course"
+                    : "free sailing";
         string speedLine = $"{(_ship.Velocity.Length / 1000).ToString("F1", CultureInfo.InvariantCulture)} km/s · {(Paused ? "∥" : $"{Warp}×")}";
         string? passLine = _closestPass is { } cp && (cp.Impact || cp.Severity < 5)
             ? $"pass: {cp.BodyName} {FormatDistance(cp.Distance)}{(cp.Impact ? " IMPACT" : "")}"
@@ -807,6 +851,7 @@
     // planet's mineral palette); havens get a subtle crimson wash on top — pirate country, at a
     // glance. Stations stay tiny blips even zoomed in, so their label needs its own threshold.
     private static readonly RgbaColor StationColor = new(120, 220, 210);
+    private static readonly RgbaColor DestinationColor = new(120, 220, 255);
     private static readonly RgbaColor HavenAccent = new(200, 60, 90);
     private static readonly RgbaColor HavenLabelColor = new(232, 190, 200);
     private const double LabelZoomThresholdForStations = 5e9; // m/px
@@ -1410,6 +1455,41 @@
     // ---- M22: planned insertion — "it is part of flight planning" (owner) ----
     private string? _armedOrbitBodyId;
 
+    // ---- M24: destination — the body the captain MEANS to reach. Clicking a planet on the
+    // map sets it; the orbit-assist panel then coaches the approach to that body instead of
+    // whichever happens to be nearest ("Orbit Venus?" while aiming for Mercury). ----
+    private string? _destinationBodyId;
+    private CelestialBody? _bodyMenuBody;   // planet click menu: which body, where on screen
+    private double _bodyMenuX, _bodyMenuY;
+
+    private void SetDestination(string? bodyId)
+    {
+        if (bodyId is null && _armedOrbitBodyId is not null && _armedOrbitBodyId == _destinationBodyId)
+        {
+            _armedOrbitBodyId = null; // clearing the destination also stands down its auto-insert
+        }
+
+        _destinationBodyId = bodyId;
+        _bodyMenuBody = null;
+        ShowPulseMessage(bodyId is null
+            ? "Destination cleared"
+            : $"Destination set — {BodyName(bodyId)} 🎯 orbit assist tracks it now");
+        StateHasChanged();
+    }
+
+    private void ToggleArmedInsertionFromMenu(string bodyId)
+    {
+        ToggleArmedInsertion(bodyId);
+        _bodyMenuBody = null;
+        StateHasChanged();
+    }
+
+    private void CloseBodyMenu()
+    {
+        _bodyMenuBody = null;
+        StateHasChanged();
+    }
+
     // A closest pass can be turned into a planned insertion when it is a planet (not the sun)
     // and tight enough to matter. Returns the estimated pulse cost, or null when not orbitable.
     private int? PassIsOrbitable(ClosestApproach.Pass cp)
@@ -1457,6 +1537,10 @@
     private void ToggleArmedInsertion(string bodyId)
     {
         _armedOrbitBodyId = _armedOrbitBodyId == bodyId ? null : bodyId;
+        if (_armedOrbitBodyId is not null)
+        {
+            _destinationBodyId = _armedOrbitBodyId; // arming says "this is where we're going"
+        }
         ShowPulseMessage(_armedOrbitBodyId is null
             ? "Insertion disarmed"
             : $"Insertion armed — the ship will park at {_armedOrbitBodyId} when the window opens 🛰");
@@ -1504,6 +1588,10 @@
         _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
         _reactionMassPulses -= cost;
         _armedOrbitBodyId = null;
+        if (_destinationBodyId == body.Id)
+        {
+            _destinationBodyId = null; // arrived
+        }
         StaleFutureNodes();
         ShowPulseMessage($"Planned insertion executed — bound to {body.Name} 🛰");
         RendererInterop.PlayCue("board");
@@ -1512,23 +1600,25 @@
     // ---- M20: the bus stop in space ----
     private readonly record struct OrbitAssistInfo(
         CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
-        bool WindowOpen, bool TooFast, bool CanEngage);
+        bool WindowOpen, bool TooFast, bool CanEngage, bool IsDestination);
 
     private OrbitAssistInfo? OrbitInfo()
     {
+        // The chosen destination owns the panel, then an armed target: "Orbit Earth?" while
+        // sailing for Mars was exactly the confusion the owner reported. Nearest is the
+        // fallback for players who haven't picked anywhere yet.
+        string? focusId = _destinationBodyId ?? _armedOrbitBodyId;
         CelestialBody? preferred = null;
-        if (_armedOrbitBodyId is not null && _ephemeris is not null)
+        if (focusId is not null && _ephemeris is not null)
         {
             foreach (CelestialBody candidate in _ephemeris.Bodies)
             {
-                if (candidate.Id == _armedOrbitBodyId) { preferred = candidate; break; }
+                if (candidate.Id == focusId) { preferred = candidate; break; }
             }
         }
 
         if (preferred is not null && preferred.ParentId is not null)
         {
-            // The armed target owns the panel: "Orbit Earth?" while sailing for Mars was
-            // exactly the confusion the owner reported.
             Vector2d pos = _ephemeris!.Position(preferred.Id, SimTime);
             double h = 1.0;
             Vector2d vel = (_ephemeris.Position(preferred.Id, SimTime + h) - _ephemeris.Position(preferred.Id, SimTime - h)) / (2 * h);
@@ -1554,8 +1644,9 @@
 
         double hill = OrbitRule.HillRadius(body, parent.Mu);
         double distance = (_ship.Position - bodyPos).Length;
-        bool armed = _armedOrbitBodyId == body.Id;
-        if (!armed && distance > Math.Max(OrbitRule.IndicatorRangeHillRadii * hill, 2e9))
+        bool destination = _destinationBodyId == body.Id;
+        bool focused = destination || _armedOrbitBodyId == body.Id;
+        if (!focused && distance > Math.Max(OrbitRule.IndicatorRangeHillRadii * hill, 2e9))
         {
             return null;
         }
@@ -1566,18 +1657,43 @@
         bool bound = OrbitRule.IsBound(_ship, bodyPos, bodyVel, body, hill);
         return new OrbitAssistInfo(body, distance, relSpeed, hill, cost,
             open && !bound, relSpeed >= OrbitRule.MaxRelativeSpeed,
-            open && !bound && cost <= _reactionMassPulses);
+            open && !bound && cost <= _reactionMassPulses, destination);
+    }
+
+    // One line of approach coaching: what to fix first, with a ballpark number on it.
+    private string OrbitStatusLine(OrbitAssistInfo oi)
+    {
+        string inv(double v) => v.ToString("F1", CultureInfo.InvariantCulture);
+        if (oi.WindowOpen) return "window OPEN";
+        if (oi.Distance > oi.Hill)
+        {
+            string closing = $"close in {FormatDistance(oi.Distance - oi.Hill)} to the window";
+            return oi.TooFast
+                ? $"{closing}, then shed {inv((oi.RelSpeed - OrbitRule.MaxRelativeSpeed) / 1000)} km/s"
+                : closing;
+        }
+        if (oi.TooFast) return $"too fast — shed {inv((oi.RelSpeed - OrbitRule.MaxRelativeSpeed) / 1000)} km/s rel";
+        return $"too low — climb above {FormatDistance(2 * oi.Body.BodyRadius)}";
     }
 
     private void EnterOrbit()
     {
-        if (OrbitInfo() is not { CanEngage: true } oi)
+        if (OrbitInfo() is not { CanEngage: true } oi || _ephemeris is null)
         {
             return;
         }
 
-        _ship = OrbitRule.Insert(_ship, _nearestBodyPosition, _nearestBodyVelocity, oi.Body);
+        // Insert relative to the panel's own body — it can be an armed/destination target,
+        // not necessarily the nearest one whose position the tick loop caches.
+        Vector2d bodyPos = _ephemeris.Position(oi.Body.Id, SimTime);
+        double h = 1.0;
+        Vector2d bodyVel = (_ephemeris.Position(oi.Body.Id, SimTime + h) - _ephemeris.Position(oi.Body.Id, SimTime - h)) / (2 * h);
+        _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, oi.Body);
         _reactionMassPulses -= oi.Cost;
+        if (_destinationBodyId == oi.Body.Id)
+        {
+            _destinationBodyId = null; // arrived
+        }
         StaleFutureNodes();
         ShowPulseMessage($"Orbital insertion — bound to {oi.Body.Name} 🛰");
         RendererInterop.PlayCue("board");
@@ -2237,7 +2353,14 @@
             RgbaColor color = BodyColor(body);
 
             _renderer!.DrawCircle(sx, sy, radiusPx, color, color);
-            if (_camera.MetersPerPixel < body.BodyRadius * 500 || (isStation && _camera.MetersPerPixel < LabelZoomThresholdForStations))
+            bool isDestination = body.Id == _destinationBodyId;
+            if (isDestination)
+            {
+                // The chosen destination reads at any zoom: a ring and a tag, like a chart pin.
+                _renderer!.DrawCircle(sx, sy, radiusPx + 6, null, DestinationColor);
+                _renderer!.DrawText(sx + radiusPx + 4, sy + radiusPx + 6, "DEST", DestinationColor);
+            }
+            if (isDestination || _camera.MetersPerPixel < body.BodyRadius * 500 || (isStation && _camera.MetersPerPixel < LabelZoomThresholdForStations))
             {
                 RgbaColor labelColor = body.IsHaven ? HavenLabelColor : LabelColor;
                 _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, labelColor);
@@ -2602,6 +2725,42 @@
         }
 
         SelectTarget(bestId);
+        return true;
+    }
+
+    // M24: planets are clickable too — a small menu offers "set destination", so the orbit
+    // assist coaches the approach to the body the captain MEANS, not whichever is nearest.
+    private bool TrySelectBodyAt(double clientX, double clientY)
+    {
+        if (_ephemeris is null)
+        {
+            return false;
+        }
+
+        CelestialBody? best = null;
+        double bestSq = double.MaxValue;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (body.ParentId is null) continue; // the sun is not a destination you orbit
+            (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
+            // Hit within the drawn disc, floored for pinprick planets and capped so a
+            // zoomed-in world doesn't swallow every camera drag on the screen.
+            double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
+            double hit = Math.Clamp(drawnPx, 14, 80);
+            double dx = clientX - sx, dy = clientY - sy;
+            double d = dx * dx + dy * dy;
+            if (d < hit * hit && d < bestSq) { bestSq = d; best = body; }
+        }
+
+        if (best is null)
+        {
+            return false;
+        }
+
+        _bodyMenuBody = best;
+        _bodyMenuX = clientX + 14;
+        _bodyMenuY = clientY;
+        StateHasChanged(); // pointer events don't auto-render (IHandleEvent) — show the menu now
         return true;
     }
 
@@ -3333,6 +3492,11 @@
 
     private void OnPointerDown(PointerEventArgs e)
     {
+        if (_bodyMenuBody is not null)
+        {
+            CloseBodyMenu(); // any click on the map dismisses an open planet menu
+        }
+
         if (TrySelectNodeAt(e.OffsetX, e.OffsetY))
         {
             return; // clicked a thrust node: select it, don't start a drag
@@ -3341,6 +3505,11 @@
         if (TrySelectShipAt(e.OffsetX, e.OffsetY))
         {
             return; // clicked a contact: select it (scope tracks it, prediction pins to it)
+        }
+
+        if (TrySelectBodyAt(e.OffsetX, e.OffsetY))
+        {
+            return; // clicked a planet: open the destination menu
         }
 
         _dragging = true;
