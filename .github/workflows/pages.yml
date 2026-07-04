@@ -32,9 +32,15 @@ jobs:
       - name: Publish client
         run: dotnet publish src/SpaceSails.Client -c Release -o publish
 
-      - name: Prepare static site (base href, SPA 404, .nojekyll, README)
+      - name: Prepare static site (base href, cache-bust CSS, SPA 404, .nojekyll, README)
         run: |
           sed -i 's#<base href="/" />#<base href="/SpaceSails-play/" />#' publish/wwwroot/index.html
+          # Cache-bust the stylesheets: the scoped-CSS bundle's b-xxx attributes are regenerated
+          # per build, so a browser-cached stale stylesheet against fresh DLLs silently kills all
+          # scoped styles (the postage-stamp-map incident). Standalone WASM publish only
+          # fingerprints _framework assets, so stamp a per-build query string instead.
+          V="${GITHUB_SHA::9}"
+          sed -i "s#href=\"lib/bootstrap/dist/css/bootstrap.min.css\"#href=\"lib/bootstrap/dist/css/bootstrap.min.css?v=$V\"#; s#href=\"css/app.css\"#href=\"css/app.css?v=$V\"#; s#href=\"SpaceSails.Client.styles.css\"#href=\"SpaceSails.Client.styles.css?v=$V\"#" publish/wwwroot/index.html
           cp publish/wwwroot/index.html publish/wwwroot/404.html
           touch publish/wwwroot/.nojekyll
           printf '# SpaceSails 🏴‍☠️ — play\n\nA solar-system-scale sailing and piracy game. **Play: https://esoinila.github.io/SpaceSails-play/**\n\nBuilt Blazor WASM artifacts, auto-published from a private source repo.\n' > publish/wwwroot/README.md
