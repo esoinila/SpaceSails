@@ -171,18 +171,23 @@ sloppy high-speed intercept despite near-zero relative speed.
 *(See [dock-and-economy.md](features/dock-and-economy.md).)*
 
 1. With cargo in your hold, fly into Earth's, Mars's, or Venus's port zone.
-2. Press `4` (or click **4 Trade** in the station tab bar) to open the Trade desk.
-3. Confirm the desk's right-hand panel shows "Docked at *body*", a Sell button priced at your
-   cargo's total value, and a Refill button (it shows a placeholder instead when you're not
+2. Press `4` (or click **4 Trade** in the station tab bar) to open the Trade desk — a three-column
+   trading floor as of PR-13 (local space contacts, dock market, cargo manifest).
+3. Confirm the middle "Dock market" panel shows a "Docked at *body*" badge, a Sell button priced at
+   your cargo's total value, and a Refill button (it shows a placeholder instead when you're not
    docked).
-4. Click **Sell cargo**. Confirm credits increase and cargo drops to 0.
-5. Click **Refill mass**. Confirm mass pulses return to capacity.
-6. In the Upgrades table, buy a **Reaction mass** upgrade (if you have 2000+ credits). Confirm
+4. Confirm the right-hand "Cargo manifest" panel lists each cargo class in your hold with its
+   units and estimated value, and a Total row matching the Sell button's price.
+5. Click **Sell cargo**. Confirm credits increase, cargo drops to 0, and the manifest panel now
+   reads "Hold empty."
+6. Click **Refill mass**. Confirm mass pulses return to capacity.
+7. In the Upgrades table, buy a **Reaction mass** upgrade (if you have 2000+ credits). Confirm
    the level increments, the displayed capacity increases by 150, and the next price roughly
    doubles.
 
-**Broken looks like:** Dock button never enabling inside the zone, sell not paying out, or an
-upgrade button staying enabled/disabled incorrectly relative to your credits.
+**Broken looks like:** Dock button never enabling inside the zone, sell not paying out, the
+manifest total disagreeing with the Sell button's price, or an upgrade button staying
+enabled/disabled incorrectly relative to your credits.
 
 ---
 
@@ -330,25 +335,33 @@ never appearing on the traffic board, or laser ranging not marking the target aw
 
 1. Launch Sol. Intercept a freighter (not a pod) close enough to be inside weapon range (2×10⁸ m —
    tighter than the boarding capture envelope). Press `3` (or click **3 War room** in the station
-   tab bar) to open the War room desk.
-2. Confirm the tactical circle shows your ship, a weapon-range ring, and the target as a dot with a
-   status badge (🏳 compliant or ⚔ stubborn).
-3. Click **Hail**. Confirm an inline threat/reply line appears matching the status badge (surrender
+   tab bar) to open the War room desk — full-screen as of PR-13, the tactical circle filling the
+   left ~60% of the screen with a range-scale selector above it and the heat gauge blown up large
+   in its bottom-left corner.
+2. Confirm the tactical circle shows your ship, a weapon-range ring, and the target as a dot; the
+   right-hand contact list shows a status badge (🏳 compliant or ⚔ stubborn).
+3. Click one of the four range-scale buttons (100,000 km / 500,000 km / 1 M km / 5 M km). Confirm
+   the circle's rings and dots rescale to match.
+4. Click **Hail**. Confirm an inline threat/reply line appears matching the status badge (surrender
    line if compliant, defiance line if stubborn).
-4. Click **Warn**. Confirm the button is only enabled while inside weapon range; if the target's
+5. Click **Warn**. Confirm the button is only enabled while inside weapon range; if the target's
    compliant, board it and confirm boarding completes in roughly half the usual time.
-5. On a different ship, click **Bribe** instead. Confirm credits drop by the shown price, the badge
+6. On a different ship, click **Bribe** instead. Confirm credits drop by the shown price, the badge
    changes to **🤝 bribed**, and the button disables itself afterward.
-6. Board and rob a (non-bribed) compliant or stubborn ship. Confirm the heat gauge in the header
-   ticks up at least one flame (`◌◌◌` → `🔥◌◌`) and the cooling line shows a decay rate.
-7. Warp forward several sim-days. Confirm heat decays by one level roughly on schedule (20 days per
+7. Board and rob a (non-bribed) compliant or stubborn ship. Confirm the heat gauge in the tactical
+   circle's corner ticks up at least one flame (`◌◌◌` → `🔥◌◌`) and the cooling line shows a decay
+   rate.
+8. Warp forward several sim-days. Confirm heat decays by one level roughly on schedule (20 days per
    level, or 4× faster if you dock/orbit at a haven the whole time).
-8. After a heat-raising robbery, confirm a hunter eventually appears (bearing/distance line in the
-   header, red 🐺 marker on the map) and that hiding in continuous haven orbit for a couple of
-   sim-days makes it break off.
+9. After a heat-raising robbery, confirm a hunter eventually appears: a red dot with a 🐺 wolf
+   glyph on the tactical circle, its own row in the desk's hunter readout (bearing, distance,
+   closing speed), and — once it's within 2× weapon range — a pulsing threat line from your ship
+   straight to it. Confirm hiding in continuous haven orbit for a couple of sim-days makes it
+   break off.
 
-**Broken looks like:** Warn/Bribe enabled outside their stated ranges/conditions, heat never rising
-after a robbery, or a hunter never spawning or never breaking off at a haven.
+**Broken looks like:** Warn/Bribe enabled outside their stated ranges/conditions, the range
+selector not rescaling the circle, heat never rising after a robbery, or a hunter never spawning,
+never getting a threat line up close, or never breaking off at a haven.
 
 ---
 

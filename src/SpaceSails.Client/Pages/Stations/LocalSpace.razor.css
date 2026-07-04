@@ -29,8 +29,10 @@
     height: 6px;
 }
 
-/* Full-screen desk mode (PR-11): the Trade desk gives the contact list real width and a
-   multi-column layout instead of squeezing it into a narrow card. */
+/* Full-screen desk mode (PR-11, widened PR-13 as the Trade desk grew a third column for the
+   cargo manifest): the contact list still gets real width and a multi-column layout instead of
+   squeezing it into a narrow card, just tuned to a narrower first column now that the dock
+   market and manifest sit alongside it. */
 .local-space-desk {
     position: static;
     width: 100%;
@@ -41,12 +43,17 @@
 .local-space-desk-body {
     height: calc(100% - 2.25rem);
     overflow-y: auto;
+    font-size: 0.95rem;
 }
 
 .local-space-list-grid {
     max-height: none;
     overflow-y: visible;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-    gap: 0 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 0 1.25rem;
+}
+
+.local-space-desk-body .local-space-row {
+    padding-bottom: 0.9rem;
 }

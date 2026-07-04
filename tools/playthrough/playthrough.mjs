@@ -12,8 +12,10 @@
 //   5. Comms desk: dark web + the traffic board (moved here from the old toolbar button) render
 //      side by side; note whether the market is reachable from the current position (it requires
 //      orbit-bound-at-haven/far-station; see README.md).
-//   6. War room desk: confirm the heat gauge renders at 0.
-//   7. Trade desk: confirm local space + the dock side panel render.
+//   6. War room desk (PR-13): confirm the heat gauge renders at 0 and the desk's centerpiece —
+//      the big tactical circle plus its range-scale selector — renders full-screen.
+//   7. Trade desk (PR-13): confirm local space + the dock side panel + the cargo manifest column
+//      (the trading floor's three columns) render.
 //   8. Galley desk: pour a tot, confirm the rum locker updates.
 //   9. Screenshot every desk into docs/tmp_pics/saturday/.
 //
@@ -264,16 +266,25 @@ async function main() {
     await warRoomCard.waitFor({ state: "visible", timeout: 30_000 });
     const heatGaugeText = (await warRoomCard.locator(".war-room-heat-gauge").innerText()).trim();
     record("war room heat gauge renders at 0", heatGaugeText === "◌◌◌", `gauge text = "${heatGaugeText}"`);
+    // PR-13: the desk's centerpiece is the ~60%-wide tactical circle (war-room-scope-big) with
+    // the range-scale selector above it — confirm both render full-screen, not just the card.
+    const tacticalCircleVisible = await page.locator(".war-room-scope-big").isVisible();
+    record("war room tactical circle (centerpiece) renders full-screen", tacticalCircleVisible);
+    const rangeSelectorVisible = await page.locator(".war-room-range-group").isVisible();
+    record("war room range-scale selector renders", rangeSelectorVisible);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "04-war-room.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "war-room.png") });
 
-    // ---- Trade desk (key '4'): local space + the dock side panel ----
+    // ---- Trade desk (key '4'): local space + the dock side panel + cargo manifest ----
     await mapPage.focus();
     await page.keyboard.press("4");
     const localSpaceCard = page.locator(".local-space-card");
     await localSpaceCard.waitFor({ state: "visible", timeout: 30_000 });
-    const dockPanelOnTrade = await page.locator(".desk-trade-grid .desk-side-panel").isVisible();
+    const dockPanelOnTrade = await page.locator(".desk-trade-grid .desk-side-panel").first().isVisible();
     record("'4' opens the Trade desk (local space + dock side panel)", dockPanelOnTrade);
+    // PR-13: the trading floor's third column — the cargo manifest read-model over the hold.
+    const manifestPanelVisible = await page.locator(".trade-manifest-panel").isVisible();
+    record("trade desk cargo manifest panel (centerpiece column) renders", manifestPanelVisible);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "05-local-space.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "local-space.png") });
 
