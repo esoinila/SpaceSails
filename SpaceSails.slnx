@@ -14,5 +14,8 @@
     <Project Path="labs/04-the-ten-percent-pulse/Lab04.csproj" />
     <Project Path="labs/05-transfers-without-formulas/Lab05.csproj" />
     <Project Path="labs/06-closest-approach-found-honestly/Lab06.csproj" />
+    <Project Path="labs/07-hill-spheres-and-bus-stops/Lab07.csproj" />
+    <Project Path="labs/08-seeing-through-uncertainty/Lab08.csproj" />
+    <Project Path="labs/09-what-the-rails-hide/Lab09.csproj" />
   </Folder>
 </Solution>

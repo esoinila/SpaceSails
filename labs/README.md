@@ -26,6 +26,9 @@ dotnet run --project labs/03-time-step-is-a-lie-you-choose -c Release
 dotnet run --project labs/04-the-ten-percent-pulse -c Release
 dotnet run --project labs/05-transfers-without-formulas -c Release
 dotnet run --project labs/06-closest-approach-found-honestly -c Release
+dotnet run --project labs/07-hill-spheres-and-bus-stops -c Release
+dotnet run --project labs/08-seeing-through-uncertainty -c Release
+dotnet run --project labs/09-what-the-rails-hide -c Release
 ```
 
 Each lesson folder holds:
@@ -54,11 +57,15 @@ Each lesson folder holds:
 6. [**Closest approach, found honestly**](06-closest-approach-found-honestly/README.md) —
    scanning vs. parabola-on-d² refinement, the same technique the planner and the closest-pass
    warning use.
-7. **Hill spheres and bus stops** *(coming)* — sphere-of-influence numerically (`OrbitRule`),
-   orbit insertion Δv priced in pulses.
-8. **Seeing through uncertainty** *(coming)* — observation → prediction cones (`PathPredictor`).
-9. **What the rails hide** *(coming)* — a true n-body toy vs. the rails ephemeris: chaos,
-   sensitivity, and why patched approximations are used on purpose.
+7. [**Hill spheres and bus stops**](07-hill-spheres-and-bus-stops/README.md) — sphere-of-influence
+   checked numerically against `OrbitRule`'s formula (a jagged stability structure, not a clean
+   line), plus orbit-insertion Δv priced in pulses and why the 5 km/s window exists.
+8. [**Seeing through uncertainty**](08-seeing-through-uncertainty/README.md) — a real NPC's
+   observation → prediction cone (`PathPredictor`) checked against its true hidden flight, then
+   telescope track quality (`TrackingStation`) converted directly into boarding-envelope odds.
+9. [**What the rails hide**](09-what-the-rails-hide/README.md) — a true from-scratch n-body
+   integrator vs. the rails ephemeris: per-planet drift, transfer-plan divergence, sensitivity to a
+   1-meter nudge, and why patched approximations are used on purpose (and where they aren't safe).
 10. **Fast enough for 10,000×** *(coming)* — the M19 performance numbers, gravity math at warp.
 11. **The Electric Sandbox** ⚡ *(coming)* — `PlasmaEnvironment` coupled with gravity, a clearly
     labeled speculative playground.
