@@ -243,3 +243,100 @@ shuttle not returning when the window closes.
 
 **Broken looks like:** charge never climbing near the sun, arcing warning never appearing, or
 venting not reducing the charge value.
+
+---
+
+## 13. Tracking post scan-to-track
+
+*(See [tracking-post.md](features/tracking-post.md).)*
+
+1. Launch Sol. Click **Track 📡**. Confirm the card opens with a sun-relative rosette, bearing/arc
+   sliders, and a program dropdown.
+2. Pick a corridor program from the dropdown (e.g. "Earth–Mars corridor watch"). Confirm the
+   bearing/arc sliders jump to match it and the wedge on the rosette redraws.
+3. Click **Start sweep**. Confirm a progress bar appears and "Sweeping…" shows underneath.
+4. Warp forward until the sweep completes (a full 360° takes 6 sim-hours; a narrow wedge is
+   faster). Confirm a message like "Sweep complete — N contact(s) found" (or "nothing found").
+5. If something was found, confirm it appears in the **Tracked targets** table with a quality bar
+   and days-since-confirm.
+6. Click **Confirm** on a tracked entry. Confirm the message reports either a reconfirm (quality
+   bar rises) or "Lost the fix… try a fresh sweep".
+7. Return to the map and confirm the tracked ship draws with a brighter marker and a thin ring
+   around it (versus an untracked ship's plain dot).
+
+**Broken looks like:** the sweep never completing, the ledger never gaining an entry despite a
+plausible sweep, or the tracked ring never appearing on the map.
+
+---
+
+## 14. Local space trade
+
+*(See [local-space.md](features/local-space.md).)*
+
+1. Launch Sol with cargo in your hold (board a depot first if empty — see script 8). Orbit-assist
+   into a planet with a depot (e.g. Mars).
+2. Confirm the **Local space** panel opens on its own the moment you're bound in orbit, listing at
+   least the planet's depot with a 🛰 icon and a **Trade** badge/button.
+3. Click **Trade** on the depot row. Confirm a striped progress bar appears reading "Drones
+   ferrying — NN%".
+4. Let it run in real time (don't just warp — the transfer accrues on the wall clock). Confirm it
+   completes and your cargo hold empties into credits, matching dock-and-economy sell prices.
+5. Pulse away from orbit mid-transfer on a fresh attempt. Confirm the progress bar resets/vanishes
+   and no credit is paid — the envelope broke and progress was lost, no partial credit.
+6. Toggle the panel closed and back open with the **Local 🛰** button; confirm it still shows the
+   same contact list.
+
+**Broken looks like:** the panel never auto-opening on entering orbit, the Trade button staying
+enabled with an empty hold, or credits being paid out despite the transfer being interrupted.
+
+---
+
+## 15. Dark web intel buy/sell + laser ranging
+
+*(See [dark-web.md](features/dark-web.md).)*
+
+1. Launch Sol. Fly to (or orbit) a haven — e.g. Ringside Exchange or Enceladus — or a far station
+   beyond ~4×10¹¹ m from the sun.
+2. Click **Web 🕸**. Confirm the dark-web section shows a table of off-the-books ships instead of
+   the "not orbiting or docked at a haven…" message.
+3. Buy a route tip on a listed ship. Confirm credits drop by the shown price and the button now
+   reads "Known".
+4. Open **Traffic** and confirm the bought ship now appears in the table with a `🕸 stale in Nd`
+   badge next to its callsign.
+5. Back in **Web 🕸**, use the **Track 📡** panel first to get at least one tracked contact at
+   ≥50% quality, then confirm it appears under "Your sellable tracks" with a **Sell** button; click
+   it and confirm credits increase.
+6. Pick a tracked contact in the tight-beam dropdown and click **Hail**. Confirm an inline reply
+   appears (a destination for a publishing ship, "No flight plan filed" for a secretive one).
+7. Click **Laser range** on a tracked contact. Confirm a "lit up ⚠" message appears, and back in
+   the **Track 📡** panel that ship's ledger row now shows an `aware ⚠` tag.
+
+**Broken looks like:** the dark-web section trading from an ordinary planet/dock, a bought tip
+never appearing on the traffic board, or laser ranging not marking the target aware.
+
+---
+
+## 16. War room warning-shot / bribe / heat loop
+
+*(See [war-room.md](features/war-room.md).)*
+
+1. Launch Sol. Intercept a freighter (not a pod) close enough to be inside weapon range (2×10⁸ m —
+   tighter than the boarding capture envelope). Click **Guns ⚔**.
+2. Confirm the tactical circle shows your ship, a weapon-range ring, and the target as a dot with a
+   status badge (🏳 compliant or ⚔ stubborn).
+3. Click **Hail**. Confirm an inline threat/reply line appears matching the status badge (surrender
+   line if compliant, defiance line if stubborn).
+4. Click **Warn**. Confirm the button is only enabled while inside weapon range; if the target's
+   compliant, board it and confirm boarding completes in roughly half the usual time.
+5. On a different ship, click **Bribe** instead. Confirm credits drop by the shown price, the badge
+   changes to **🤝 bribed**, and the button disables itself afterward.
+6. Board and rob a (non-bribed) compliant or stubborn ship. Confirm the heat gauge in the header
+   ticks up at least one flame (`◌◌◌` → `🔥◌◌`) and the cooling line shows a decay rate.
+7. Warp forward several sim-days. Confirm heat decays by one level roughly on schedule (20 days per
+   level, or 4× faster if you dock/orbit at a haven the whole time).
+8. After a heat-raising robbery, confirm a hunter eventually appears (bearing/distance line in the
+   header, red 🐺 marker on the map) and that hiding in continuous haven orbit for a couple of
+   sim-days makes it break off.
+
+**Broken looks like:** Warn/Bribe enabled outside their stated ranges/conditions, heat never rising
+after a robbery, or a hunter never spawning or never breaking off at a haven.

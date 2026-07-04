@@ -4,7 +4,6 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @using System.Globalization
-@using Microsoft.AspNetCore.SignalR.Client
 @using SpaceSails.Client.Rendering
 @using SpaceSails.Contracts
 @using SpaceSails.Core
@@ -47,16 +46,13 @@
             <button type="button" class="btn btn-sm @(_showTraffic ? "btn-primary" : "btn-outline-light") me-2" @onclick="ToggleTraffic">
                 Traffic
             </button>
-            @if (!_mp)
-            {
-                <button type="button" class="btn btn-sm @(_showDock ? "btn-success" : "btn-outline-light") me-2"
-                        disabled="@(!_docked)" @onclick="ToggleDock">
-                    Dock
-                </button>
-                <button type="button" class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" @onclick="ToggleTutorial">
-                    First hunt
-                </button>
-            }
+            <button type="button" class="btn btn-sm @(_showDock ? "btn-success" : "btn-outline-light") me-2"
+                    disabled="@(!_docked)" @onclick="ToggleDock">
+                Dock
+            </button>
+            <button type="button" class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" @onclick="ToggleTutorial">
+                First hunt
+            </button>
             <button type="button" class="btn btn-sm @(_showScope ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleScope">
                 Scope
             </button>
@@ -78,25 +74,9 @@
                 {
                     <span class="badge bg-info text-dark ms-1">EU ⚡</span>
                 }
-                @if (_mp)
-                {
-                    <span class="badge bg-success ms-1">MP 🛰️</span>
-                }
             </div>
-            @if (_mp)
-            {
-                <div>Crew: @_playerCount aboard</div>
-                <div>Link: @ConnectionLabel</div>
-            }
             <div>Sim time: @FormatSimTime(SimTime)</div>
-            @if (_mp)
-            {
-                <div>Warp: @(_effectiveWarp == 0 ? "paused" : $"{_effectiveWarp}×") @(_effectiveWarp != Warp ? "(session)" : "")</div>
-            }
-            else
-            {
-                <div>Warp: @(Paused ? "paused" : $"{_effectiveWarp}×") @(Warp != _effectiveWarp ? $"(auto-drop from {Warp}×)" : "")</div>
-            }
+            <div>Warp: @(Paused ? "paused" : $"{_effectiveWarp}×") @(Warp != _effectiveWarp ? $"(auto-drop from {Warp}×)" : "")</div>
             <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
             <hr />
             <div>
@@ -106,7 +86,7 @@
             <div>Mass pulses: @_reactionMassPulses / @ReactionMassCapacity</div>
             <div>Credits: @_credits.ToString("N0", CultureInfo.InvariantCulture)</div>
             <div>Cargo: @_cargoUnits / @CargoCapacity units@(_cargoValue > 0 ? $" (worth {_cargoValue:N0} cr)" : "")</div>
-            @if (!_mp && OrbitInfo() is { } oi)
+            @if (OrbitInfo() is { } oi)
             {
                 <div class="mt-1 small">
                     <div class="d-flex justify-content-between align-items-center">
@@ -183,7 +163,7 @@
                         Closest pass: @cp.BodyName @FormatDistance(cp.Distance) (@cp.Severity.ToString("0.0", CultureInfo.InvariantCulture) R)
                         @(cp.Impact ? "— IMPACT, captain! 🦜" : "")
                     </div>
-                    @if (!_mp && _armablePass is { } ap && PassIsOrbitable(ap) is { } est)
+                    @if (_armablePass is { } ap && PassIsOrbitable(ap) is { } est)
                     {
                         <div class="small mb-1">
                             <button type="button" class="btn btn-sm py-0 @(_armedOrbitBodyId == ap.BodyId ? "btn-success" : "btn-outline-info")"
@@ -248,42 +228,7 @@
         }
     </div>
 
-    @if (_showTraffic && _mp)
-    {
-        <div class="map-traffic">
-            <div class="card bg-dark bg-opacity-75 text-light">
-                <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                    <span class="fw-bold small">Contacts (@_mpContacts.Count)</span>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleTraffic"></button>
-                </div>
-                <div class="card-body p-0 map-traffic-scroll">
-                    <table class="table table-sm table-dark align-middle mb-0 small">
-                        <thead>
-                            <tr><th>Callsign</th><th>Kind</th><th>Cargo</th></tr>
-                        </thead>
-                        <tbody>
-                            @if (_mpContacts.Count == 0)
-                            {
-                                <tr><td colspan="3" class="text-secondary">No contacts in sensor range.</td></tr>
-                            }
-                            else
-                            {
-                                @foreach (ContactDto c in _mpContacts)
-                                {
-                                    <tr>
-                                        <td>@c.Callsign</td>
-                                        <td>@c.Kind</td>
-                                        <td>@(c.CargoClass ?? "—")</td>
-                                    </tr>
-                                }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    }
-    else if (_showTraffic)
+    @if (_showTraffic)
     {
         <div class="map-traffic">
             <div class="card bg-dark bg-opacity-75 text-light">
@@ -353,7 +298,7 @@
         </div>
     }
 
-    @if (_showDock && !_mp)
+    @if (_showDock)
     {
         <div class="map-dock">
             <div class="card bg-dark bg-opacity-75 text-light">
@@ -412,7 +357,7 @@
         </div>
     }
 
-    @if (_showTutorial && !_mp)
+    @if (_showTutorial)
     {
         <div class="map-tutorial">
             <div class="card bg-dark bg-opacity-75 text-light">
@@ -456,9 +401,9 @@
     </div>
     <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_showTracking" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1" OnClose="ToggleTracking" />
     <SpaceSails.Client.Pages.Stations.WarRoom Visible="_showWarRoom" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" OnClose="ToggleWarRoom" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
-    <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="_showLocalSpace" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="_orbitedBodyId" ContextBodyId="LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" ActiveTradeTargetId="_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="_localTradeMessage" OnStartTrade="StartLocalTrade" OnClose="ToggleLocalSpace" />
+    <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="_showLocalSpace" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" OnStartTrade="StartLocalTrade" OnClose="ToggleLocalSpace" />
     @* SATURDAY-ANCHOR: panels — parallel lanes append one station component line each below *@
-    <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="_showDarkWeb" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnClose="ToggleDarkWeb" />
+    <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="_showDarkWeb" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnClose="ToggleDarkWeb" />
 </div>
 
 @code {
@@ -715,7 +660,7 @@
 
     private int ReactionMassCapacity => 250 + 150 * _massLevel;
     private int CargoCapacity => 10 + 10 * _holdLevel;
-    private bool Adrift => _reactionMassPulses == 0 && !_docked && !_mp;
+    private bool Adrift => _reactionMassPulses == 0 && !_docked;
     private static int UpgradePrice(int level) => 2000 * (1 << level);
     private bool _pinned;
     private ManeuverPlan? _pinnedPlan;
@@ -991,16 +936,9 @@
     private List<string> ScopeCandidates()
     {
         List<string> ids = [];
-        if (_mp)
+        foreach (NpcState npc in _npcStates)
         {
-            foreach (ContactDto c in _mpContacts) ids.Add(c.Id);
-        }
-        else
-        {
-            foreach (NpcState npc in _npcStates)
-            {
-                if (npc.Active && !npc.Arrived && npc.CurrentlyObserved) ids.Add(npc.Ship.Id);
-            }
+            if (npc.Active && !npc.Arrived && npc.CurrentlyObserved) ids.Add(npc.Ship.Id);
         }
         foreach (CelestialBody b in _ephemeris!.Bodies) ids.Add(b.Id);
         return ids;
@@ -1028,54 +966,32 @@
         }
         if (_scopeView is not null) _scopeView.LockLabel = "◆ AUTO";
 
-        if (_mp)
+        NpcState? locked = null;
+        bool lockedBySelection = false;
+        double bestSq = double.MaxValue;
+        foreach (NpcState npc in _npcStates)
         {
-            ContactDto? best = null;
-            double bestSq = double.MaxValue;
-            foreach (ContactDto c in _mpContacts)
-            {
-                double d = (new Vector2d(c.PositionX, c.PositionY) - _ship.Position).LengthSquared;
-                if (c.Id == _selectedTargetId) { best = c; break; }
-                if (d < bestSq) { (bestSq, best) = (d, c); }
-            }
-            if (best is not null)
-            {
-                return new ScopeView.Target(
-                    best.Kind switch { "pod" => ScopeView.TargetKind.Pod, "player" => ScopeView.TargetKind.Player, _ => ScopeView.TargetKind.Freighter },
-                    best.Callsign, best.CargoClass,
-                    new Vector2d(best.PositionX, best.PositionY), new Vector2d(best.VelocityX, best.VelocityY),
-                    0, NpcColor, InPlasmaAt(new Vector2d(best.PositionX, best.PositionY)));
-            }
+            if (!npc.Active || npc.Arrived || !npc.CurrentlyObserved) continue;
+            if (npc.Ship.Id == _selectedTargetId) { locked = npc; lockedBySelection = true; break; }
+            double d = (npc.State.Position - _ship.Position).LengthSquared;
+            if (d < bestSq) { (bestSq, locked) = (d, npc); }
         }
-        else
+
+        // AUTO means the nearest OBJECT (owner, M20): a planet filling the window beats a
+        // freighter half a system away. A selected target still wins outright.
+        if (!lockedBySelection && _nearestBody is not null
+            && (_nearestBodyPosition - _ship.Position).LengthSquared < bestSq)
         {
-            NpcState? locked = null;
-            bool lockedBySelection = false;
-            double bestSq = double.MaxValue;
-            foreach (NpcState npc in _npcStates)
-            {
-                if (!npc.Active || npc.Arrived || !npc.CurrentlyObserved) continue;
-                if (npc.Ship.Id == _selectedTargetId) { locked = npc; lockedBySelection = true; break; }
-                double d = (npc.State.Position - _ship.Position).LengthSquared;
-                if (d < bestSq) { (bestSq, locked) = (d, npc); }
-            }
+            locked = null;
+        }
 
-            // AUTO means the nearest OBJECT (owner, M20): a planet filling the window beats a
-            // freighter half a system away. A selected target still wins outright.
-            if (!lockedBySelection && _nearestBody is not null
-                && (_nearestBodyPosition - _ship.Position).LengthSquared < bestSq)
-            {
-                locked = null;
-            }
-
-            if (locked is not null)
-            {
-                return new ScopeView.Target(
-                    locked.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
-                    locked.Ship.Callsign, $"cargo: {locked.Ship.CargoClass} ({locked.Ship.CargoUnits}u)",
-                    locked.State.Position, locked.State.Velocity,
-                    0, NpcColor, InPlasmaAt(locked.State.Position));
-            }
+        if (locked is not null)
+        {
+            return new ScopeView.Target(
+                locked.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
+                locked.Ship.Callsign, $"cargo: {locked.Ship.CargoClass} ({locked.Ship.CargoUnits}u)",
+                locked.State.Position, locked.State.Velocity,
+                0, NpcColor, InPlasmaAt(locked.State.Position));
         }
 
         if (_nearestBody is CelestialBody body)
@@ -1091,32 +1007,15 @@
 
     private ScopeView.Target? ResolveScopeTarget(string id)
     {
-        if (_mp)
+        foreach (NpcState npc in _npcStates)
         {
-            foreach (ContactDto c in _mpContacts)
+            if (npc.Ship.Id == id && npc.Active && !npc.Arrived && npc.CurrentlyObserved)
             {
-                if (c.Id == id)
-                {
-                    return new ScopeView.Target(
-                        c.Kind switch { "pod" => ScopeView.TargetKind.Pod, "player" => ScopeView.TargetKind.Player, _ => ScopeView.TargetKind.Freighter },
-                        c.Callsign, c.CargoClass,
-                        new Vector2d(c.PositionX, c.PositionY), new Vector2d(c.VelocityX, c.VelocityY),
-                        0, NpcColor, InPlasmaAt(new Vector2d(c.PositionX, c.PositionY)));
-                }
-            }
-        }
-        else
-        {
-            foreach (NpcState npc in _npcStates)
-            {
-                if (npc.Ship.Id == id && npc.Active && !npc.Arrived && npc.CurrentlyObserved)
-                {
-                    return new ScopeView.Target(
-                        npc.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
-                        npc.Ship.Callsign, $"cargo: {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)",
-                        npc.State.Position, npc.State.Velocity,
-                        0, NpcColor, InPlasmaAt(npc.State.Position));
-                }
+                return new ScopeView.Target(
+                    npc.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
+                    npc.Ship.Callsign, $"cargo: {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)",
+                    npc.State.Position, npc.State.Velocity,
+                    0, NpcColor, InPlasmaAt(npc.State.Position));
             }
         }
 
@@ -1202,7 +1101,7 @@
     // Fires the armed insertion the moment its window opens during live flight.
     private void CheckArmedInsertion()
     {
-        if (_armedOrbitBodyId is null || _mp || _ephemeris is null || Paused)
+        if (_armedOrbitBodyId is null || _ephemeris is null || Paused)
         {
             return;
         }
@@ -1308,7 +1207,7 @@
 
     private void EnterOrbit()
     {
-        if (_mp || OrbitInfo() is not { CanEngage: true } oi)
+        if (OrbitInfo() is not { CanEngage: true } oi)
         {
             return;
         }
@@ -1373,29 +1272,6 @@
     }
     private ElementReference _focusableDiv;
 
-    // M9 additions — multiplayer client. Every path is behind _mp; single player is untouched.
-    private const double SnapThresholdMeters = 1e6;                 // reconcile only past this drift
-    private static readonly RgbaColor PlayerContactColor = new(120, 255, 140);
-
-    private bool _mp;
-    private string _callsign = "Corsair";
-    private string? _playerId;
-    private HubConnection? _connection;
-    // Written on a hub callback thread, read on the render-loop thread — volatile publishes the
-    // reference safely; OnTick marshals it into fields (no per-update InvokeAsync).
-    private volatile WorldUpdateDto? _latestUpdate;
-    private WorldUpdateDto? _appliedUpdate;
-    private IReadOnlyList<ContactDto> _mpContacts = [];
-    private int _playerCount;
-
-    private string ConnectionLabel => _connection?.State switch
-    {
-        HubConnectionState.Connected => "connected",
-        HubConnectionState.Connecting => "connecting",
-        HubConnectionState.Reconnecting => "reconnecting",
-        _ => "disconnected",
-    };
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _started)
@@ -1419,23 +1295,6 @@
                     scenarioName = candidate;
                 }
             }
-            else if (pair.StartsWith("mp=", StringComparison.OrdinalIgnoreCase))
-            {
-                _mp = pair["mp=".Length..] == "1";
-            }
-            else if (pair.StartsWith("callsign=", StringComparison.OrdinalIgnoreCase))
-            {
-                string candidate = Uri.UnescapeDataString(pair["callsign=".Length..]).Trim();
-                if (candidate.Length > 0)
-                {
-                    _callsign = candidate;
-                }
-            }
-        }
-
-        if (_mp)
-        {
-            _showTutorial = false; // server doesn't arbitrate the hunt tutorial in MP this milestone
         }
 
         string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json");
@@ -1453,16 +1312,11 @@
         // few seconds of planning work; yield first so the initial (empty) map paints and stays
         // responsive, then build the NPC live-state wrappers.
         await Task.Yield();
-        if (!_mp)
-        {
-            // Single player owns its NPC picture. In MP the server is authoritative — contacts
-            // arrive filtered per-player through WorldUpdate, so we skip local traffic generation.
-            // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
-            IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
-            IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
-            IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44);
-            _npcStates = pods.Concat(traffic).Concat(depots).Select(s => new NpcState { Ship = s }).ToArray();
-        }
+        // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
+        IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
+        IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
+        IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44);
+        _npcStates = pods.Concat(traffic).Concat(depots).Select(s => new NpcState { Ship = s }).ToArray();
 
         _scratch = new float[_samples.Count * 2 + 4];
 
@@ -1485,101 +1339,6 @@
         _worldReady = true;
         StateHasChanged();
         await _focusableDiv.FocusAsync();
-
-        if (_mp)
-        {
-            await ConnectMultiplayerAsync();
-        }
-    }
-
-    // Join the shared session and start receiving authoritative updates. The local world is already
-    // built and rendering (client-side prediction); Join snaps us onto the server spawn.
-    private async Task ConnectMultiplayerAsync()
-    {
-        _connection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/hubs/game"))
-            .WithAutomaticReconnect()
-            .Build();
-
-        // Registered before StartAsync so no update is missed. Runs on a hub thread — publish the
-        // reference via the volatile field only; OnTick applies it on the render thread.
-        _connection.On<WorldUpdateDto>("Update", update => _latestUpdate = update);
-
-        try
-        {
-            await _connection.StartAsync();
-            JoinResultDto result = await _connection.InvokeAsync<JoinResultDto>("Join", _callsign);
-            _playerId = result.PlayerId;
-            _ship = new ShipState(
-                new Vector2d(result.PositionX, result.PositionY),
-                new Vector2d(result.VelocityX, result.VelocityY),
-                result.SimTime);
-            _reactionMassPulses = result.ReactionMass;
-            SimTime = result.SimTime;
-            ReprojectTrajectory();
-            _camera.CenterOn(_ship.Position);
-        }
-        catch (Exception ex)
-        {
-            ShowPulseMessage($"Multiplayer connection failed: {ex.Message}");
-        }
-    }
-
-    // Fire-and-forget command send. The server is authoritative and revalidates everything, so a
-    // dropped/failed command is simply a no-op corrected by the next update.
-    private async void SendCommand(Func<HubConnection, Task> send)
-    {
-        HubConnection? connection = _connection;
-        if (connection is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await send(connection);
-        }
-        catch
-        {
-            // Transient (reconnecting / disconnected). Next WorldUpdate reconciles state.
-        }
-    }
-
-    // Marshal the latest authoritative snapshot into local fields at the start of a frame. Snaps the
-    // ship only on meaningful divergence (client prediction is usually already close); always adopts
-    // server-owned mass, warp and crew count, and swaps in the fresh contact picture.
-    private void ApplyPendingUpdate()
-    {
-        WorldUpdateDto? update = _latestUpdate;
-        if (update is null || ReferenceEquals(update, _appliedUpdate))
-        {
-            return;
-        }
-
-        _appliedUpdate = update;
-
-        var serverPosition = new Vector2d(update.PositionX, update.PositionY);
-        double drift = (_ship.Position - serverPosition).Length;
-        if (drift > SnapThresholdMeters || update.SimTime > _ship.SimTime)
-        {
-            _ship = _ship with
-            {
-                Position = serverPosition,
-                Velocity = new Vector2d(update.VelocityX, update.VelocityY),
-                Charge = update.Charge,
-                SimTime = update.SimTime,
-            };
-            SimTime = update.SimTime;
-            if (drift > SnapThresholdMeters)
-            {
-                ReprojectTrajectory();
-            }
-        }
-
-        _reactionMassPulses = update.ReactionMass;
-        _effectiveWarp = update.EffectiveWarp;
-        _playerCount = update.PlayerCount;
-        _mpContacts = update.Contacts; // swap reference; no per-frame allocation
     }
 
     private ShipState InitializeShipState()
@@ -1621,16 +1380,8 @@
             : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
         _lastTimestampMs = highResTimestampMs;
 
-        if (_mp)
-        {
-            ApplyPendingUpdate();
-        }
-
         UpdateNearestBody();
-        if (!_mp)
-        {
-            UpdateEffectiveWarp();
-        }
+        UpdateEffectiveWarp();
 
         if (!Paused)
         {
@@ -1686,10 +1437,7 @@
         UpdateEncounters();
         UpdateLocalTrade(dtRealSeconds);
 
-        if (!_mp)
-        {
-            UpdatePrediction();
-        }
+        UpdatePrediction();
 
         if (_passDirty && highResTimestampMs - _lastReprojectMs > 300)
         {
@@ -1830,15 +1578,8 @@
         {
             DrawGhostShip();
         }
-        if (_mp)
-        {
-            DrawContacts();
-        }
-        else
-        {
-            DrawNpcs();
-            DrawHunters();
-        }
+        DrawNpcs();
+        DrawHunters();
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -1883,7 +1624,7 @@
     {
         // Bound to a planet (M20)? No encounter to overshoot — let the orbit spin at up to
         // 1000x instead of crawling on the near-body tiers.
-        if (!_mp && OrbitInfo() is { } orbitInfo
+        if (OrbitInfo() is { } orbitInfo
             && OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, orbitInfo.Body, orbitInfo.Hill))
         {
             _effectiveWarp = Math.Min(Warp, 1000);
@@ -2215,19 +1956,6 @@
                 return;
             }
 
-            if (_mp)
-            {
-                // Server owns the ship: send the command, gate locally only to avoid spam, and show
-                // the flash optimistically. The authoritative velocity/mass arrive in the next update.
-                _lastPulseSimTime = _ship.SimTime;
-                ShowPulseMessage(factor > 1
-                ? (fine ? "Trim: +1%" : "Pulse: accelerate +10%")
-                : (fine ? "Trim: −1%" : "Pulse: decelerate −10%"));
-            RendererInterop.PlayCue("pulse");
-                SendCommand(c => c.SendAsync("Pulse", factor > 1, fine));
-                return;
-            }
-
             _ship = _ship with { Velocity = _ship.Velocity * factor };
             _reactionMassPulses--;
             _lastPulseSimTime = _ship.SimTime;
@@ -2280,14 +2008,6 @@
         }
 
         _lastVentSimTime = _ship.SimTime;
-        if (_mp)
-        {
-            SendCommand(c => c.SendAsync("Vent"));
-            ShowPulseMessage("Venting charge");
-        RendererInterop.PlayCue("vent");
-            return;
-        }
-
         _ship = _ship with { Charge = _ship.Charge * 0.5 };
         ShowPulseMessage("Venting charge");
         RendererInterop.PlayCue("vent");
@@ -2320,7 +2040,6 @@
         Paused = true;
         _scrubOffsetSeconds = 0;
         ReprojectTrajectory();
-        SyncWarp();
     }
 
     private void ExitPlotMode()
@@ -2329,7 +2048,6 @@
         Paused = false;
         Warp = _warpBeforePlot <= 0 ? 1 : _warpBeforePlot;
         ReprojectTrajectory();
-        SyncWarp();
     }
 
     // Rebuild the immutable plan the sim executes from the non-stale nodes. Past/executed nodes are
@@ -2339,17 +2057,6 @@
         _plan = new ManeuverPlan(
             _planNodes.Where(n => !n.Stale)
                       .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses, Fine: false, Percent: n.Percent)));
-
-        if (_mp)
-        {
-            // Hand the plan to the server, which owns execution. It clamps times to the future and
-            // caps node/pulse counts, so we send the same non-stale set the local projection uses.
-            PlanNodeDto[] nodes = _planNodes
-                .Where(n => !n.Stale)
-                .Select(n => new PlanNodeDto(n.SimTime, n.Action == ManeuverAction.Accelerate, n.Pulses, false, n.Percent))
-                .ToArray();
-            SendCommand(c => c.SendAsync("SetPlan", nodes));
-        }
     }
 
     // Reaction-mass claimed by still-pending (non-stale, future) nodes.
@@ -2484,24 +2191,12 @@
         const double hitRadiusPx = 12;
         double bestSq = hitRadiusPx * hitRadiusPx;
         string? bestId = null;
-        if (_mp)
+        foreach (NpcState npc in _npcStates)
         {
-            foreach (ContactDto c in _mpContacts)
-            {
-                (float sx, float sy) = _camera.WorldToScreen(new Vector2d(c.PositionX, c.PositionY));
-                double dx = clientX - sx, dy = clientY - sy;
-                if (dx * dx + dy * dy < bestSq) { bestSq = dx * dx + dy * dy; bestId = c.Id; }
-            }
-        }
-        else
-        {
-            foreach (NpcState npc in _npcStates)
-            {
-                if (!npc.Active || npc.Arrived || !npc.CurrentlyObserved) continue;
-                (float sx, float sy) = _camera.WorldToScreen(npc.State.Position);
-                double dx = clientX - sx, dy = clientY - sy;
-                if (dx * dx + dy * dy < bestSq) { bestSq = dx * dx + dy * dy; bestId = npc.Ship.Id; }
-            }
+            if (!npc.Active || npc.Arrived || !npc.CurrentlyObserved) continue;
+            (float sx, float sy) = _camera.WorldToScreen(npc.State.Position);
+            double dx = clientX - sx, dy = clientY - sy;
+            if (dx * dx + dy * dy < bestSq) { bestSq = dx * dx + dy * dy; bestId = npc.Ship.Id; }
         }
 
         if (bestId is null)
@@ -2592,11 +2287,6 @@
     // starts from InitialState and immediately catches up).
     private void StepNpcs()
     {
-        if (_mp)
-        {
-            return; // server steps and filters NPCs; contacts arrive via WorldUpdate
-        }
-
         foreach (NpcState npc in _npcStates)
         {
             if (npc.Arrived)
@@ -2648,11 +2338,6 @@
     // non-arrived NPC is either currently visible or falls back to its dim last-seen marker.
     private void SweepSensors()
     {
-        if (_mp)
-        {
-            return; // server enforces observation filtering; no local sweep in MP
-        }
-
         foreach (NpcState npc in _npcStates)
         {
             npc.CurrentlyObserved = false;
@@ -2760,20 +2445,6 @@
                 (float sx, float sy) = _camera.WorldToScreen(obs.Position);
                 _renderer!.DrawCircle(sx, sy, 4f, null, tracked ? TrackedNpcLastSeenColor : NpcLastSeenColor);
             }
-        }
-    }
-
-    // MP contact markers: the server already filtered these to what we can see, so we draw every one
-    // solid with its callsign — other players in green, NPCs/pods in the usual traffic colour. No
-    // last-seen markers this milestone: a contact that leaves range simply drops from the packet.
-    private void DrawContacts()
-    {
-        foreach (ContactDto contact in _mpContacts)
-        {
-            (float sx, float sy) = _camera.WorldToScreen(new Vector2d(contact.PositionX, contact.PositionY));
-            RgbaColor color = contact.Kind == "player" ? PlayerContactColor : NpcColor;
-            _renderer!.DrawCircle(sx, sy, 4f, color, color);
-            _renderer!.DrawText(sx + 8, sy - 6, contact.Callsign, color);
         }
     }
 
@@ -2904,9 +2575,9 @@
     // The current boarding candidate: selected, live, observed, not already emptied.
     private NpcState? SelectedCaptureTarget()
     {
-        if (_mp || _selectedTargetId is null)
+        if (_selectedTargetId is null)
         {
-            return null; // capture/boarding is single-player only this milestone
+            return null;
         }
 
         NpcState? npc = FindNpc(_selectedTargetId);
@@ -3245,17 +2916,6 @@
         PlotMode = false;
         Warp = level;
         Paused = false;
-        SyncWarp();
-    }
-
-    // MP: cast this player's warp vote. The session runs at the minimum across all players (KSP rule),
-    // so pausing (warp 0) or plotting drops the shared clock; the effective warp comes back in updates.
-    private void SyncWarp()
-    {
-        if (_mp)
-        {
-            SendCommand(c => c.SendAsync("RequestWarp", Paused ? 0 : Warp));
-        }
     }
 
     // Unpausing from inside plot mode is "press play": leave plotting properly (restores warp)
@@ -3269,7 +2929,6 @@
         }
 
         Paused = !Paused;
-        SyncWarp();
     }
 
     private void ToggleFollow() => FollowShip = !FollowShip;
@@ -3339,12 +2998,6 @@
         if (_started)
         {
             RendererInterop.StopLoop(CanvasId);
-        }
-
-        if (_connection is not null)
-        {
-            _ = _connection.DisposeAsync(); // fire-and-forget; nothing left to await against
-            _connection = null;
         }
     }
 
@@ -3475,7 +3128,7 @@
     // heat 4x faster and, after long enough continuously hidden, breaks a hunter's pursuit.
     private bool IsHiddenAtHaven()
     {
-        if (_mp || _ephemeris is null || _nearestBody is not { IsHaven: true } haven || haven.ParentId is null)
+        if (_ephemeris is null || _nearestBody is not { IsHaven: true } haven || haven.ParentId is null)
         {
             return false;
         }
@@ -3503,7 +3156,7 @@
     // scales naturally with warp instead of crawling at wall-clock rate.
     private void UpdateEncounters()
     {
-        if (_mp || _ephemeris is null)
+        if (_ephemeris is null)
         {
             return;
         }
@@ -3577,11 +3230,6 @@
     private IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.Contact> WarRoomContacts()
     {
         var contacts = new List<SpaceSails.Client.Pages.Stations.WarRoom.Contact>();
-        if (_mp)
-        {
-            return contacts;
-        }
-
         foreach (NpcState npc in _npcStates)
         {
             if (npc.Active && !npc.Arrived && !npc.Boarded && npc.CurrentlyObserved)
@@ -3806,7 +3454,7 @@
             }
         }
 
-        if (_orbitedBodyId is not null && _orbitedBodyId != previous && !_mp)
+        if (_orbitedBodyId is not null && _orbitedBodyId != previous)
         {
             _showLocalSpace = true;
         }
@@ -3836,7 +3484,7 @@
 
     private IReadOnlyList<CommerceRule.LocalContact> LocalContacts()
     {
-        if (_mp || _ephemeris is null || LocalSpaceBodyId is not { } bodyId)
+        if (_ephemeris is null || LocalSpaceBodyId is not { } bodyId)
         {
             return [];
         }
@@ -3846,7 +3494,7 @@
 
     private void StartLocalTrade(string contactId)
     {
-        if (_mp || _cargoValue <= 0 || _localTradeTargetId is not null)
+        if (_cargoValue <= 0 || _localTradeTargetId is not null)
         {
             return;
         }
@@ -3873,7 +3521,7 @@
             return;
         }
 
-        if (_mp || _ephemeris is null || _cargoValue <= 0)
+        if (_ephemeris is null || _cargoValue <= 0)
         {
             CancelLocalTrade("Drone transfer aborted");
             return;

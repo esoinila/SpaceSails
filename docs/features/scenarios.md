@@ -30,5 +30,31 @@ The map page reads three optional query parameters at load:
 You can combine `scenario=` with `mp=1` to run a shared multiplayer session on any scenario, not
 just Sol.
 
+## Stations and havens (the outer reaches)
+
+Beyond ordinary planets and moons, a scenario body can be tagged with a `kind`:
+
+- **`"station"`** — a lightweight orbital POI (no real gravity — `mu: 0`, just a small marker
+  radius): compute farms, satellite works, trading posts. Sol has **Mercury Compute Farms** (low
+  Mercury orbit), **Highport Satellite Works** (Earth LEO), and **Ringside Exchange** (Saturn orbit,
+  near Titan).
+- **`"moon"`** — an ordinary moon (Luna, Titan, Enceladus, Europa, Ganymede, Callisto in Sol).
+- **`haven: true`** — a pirate haven: trade and repair, no questions asked, per the "scum and
+  villainy work the outer reaches" theme. Sol's havens are **Enceladus** and **Ringside Exchange**
+  (which is both a station and a haven).
+
+On the map, station bodies draw as a small, distinctly colored **teal blip** regardless of id, and
+haven bodies get a subtle **crimson tint** on their marker and label — a quick visual cue for
+"something to trade at" versus "just scenery" while zoomed out. Every station and haven also gets
+its own [orbital depot](depots.md), so there's always something to steal there too.
+
+Scenario authors: a `ScenarioDefinition` can also carry an optional `traffic` section (`routes`,
+each with `from`/`to`/`cargo`/`weight`/`publishesTimetable`, plus `podLaunchers`) to drive NPC
+traffic from data instead of the hardcoded Sol tables — see the [traffic
+board](traffic-board.md#off-the-books-ships) for what `publishesTimetable: false` does to a route's
+ships.
+
 See also: [electric-sky.md](electric-sky.md) for what the `EU ⚡` scenarios add,
-[map-and-warp.md](map-and-warp.md) for the view all scenarios share.
+[map-and-warp.md](map-and-warp.md) for the view all scenarios share,
+[local-space.md](local-space.md) for what stations/havens offer once you're in orbit near one,
+[dark-web.md](dark-web.md) for the far-trading-post/haven intel trade.

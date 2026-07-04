@@ -125,13 +125,77 @@
             The boarding clock runs on <em>wall-clock time</em> — shuttles fly in real time, warp
             be damned. A tighter, slower pass boards faster.</li>
         <li>Or fly it yourself: walk to the <strong>SHUTTLE BAY</strong> while the window is
-            engaged and press <kbd>E</kbd> — see §7.</li>
+            engaged and press <kbd>E</kbd> — see §11.</li>
         <li>Boarded cargo goes in your hold. <strong>Dock</strong> at a market (Earth, Mars,
             Venus — get within the port zone) to sell, refill mass pulses, and buy upgrades.
             He3 pays best; ice pays the rent.</li>
     </ul>
 
-    <h2 id="scope">6. The scope</h2>
+    <h2 id="tracking-post">6. The tracking post 📡</h2>
+    <ul>
+        <li><strong>Track 📡</strong> aims the ship's telescope at a bearing and arc; <strong>Start
+            sweep</strong> spends sim time (a full 360° survey takes 6 hours) to find ships the
+            traffic board can't — secretive haulers that never publish a timetable.</li>
+        <li>Detection range depends on look direction relative to the sun: a rosette shows the
+            egg-shape live. Pointed straight at the sun you're nearly blind (8% of the telescope's
+            6×10<sup>11</sup> m base range); pointed straight away from it (anti-sunward) you see
+            the full range — the pirate's best hunting angle.</li>
+        <li>Ready-made <strong>scanning programs</strong> cover every known trade corridor, so you
+            don't have to eyeball the aim.</li>
+        <li>Found contacts join the <strong>tracked-targets ledger</strong>. <strong>Confirm</strong>
+            is a cheap re-look at a target's predicted position that bumps quality back up; skip it
+            too long, or the target burns hard enough to slip the cone, and the lock decays until
+            it's lost.</li>
+        <li><strong>Telescope count</strong> — an upgrade at the dock — caps how many ships you can
+            hold on the ledger at once (1 at base, up to 4 at max). A well-tracked ship also draws
+            with a tighter ring on the map itself.</li>
+    </ul>
+
+    <h2 id="local-space">7. Local space 🛰</h2>
+    <ul>
+        <li>Entering orbit opens a <strong>Local space</strong> panel on its own (toggle any time
+            with <strong>Local 🛰</strong>) listing everything else parked at that body — depots 🛰,
+            stations 🏭, moons 🌙, havens 🏴, ships 🚀 — each tagged Trade / Fence / Board.</li>
+        <li>Trading needs either the <strong>same orbit</strong> as the counterpart, or a
+            <strong>course match</strong> (within 500,000 km, under 2 km/s relative speed) with a
+            moving partner — friendlier than boarding, since cargo drones aren't chasing anyone.</li>
+        <li><strong>Trade</strong> ferries your whole hold over real time (a striped progress bar,
+            ~20 seconds per cargo unit at a clean match) at the same prices as docking — a second
+            place to make the same sale. Drift out of range mid-transfer and the progress is lost.</li>
+    </ul>
+
+    <h2 id="dark-web">8. The dark space web 🕸</h2>
+    <ul>
+        <li><strong>Web 🕸</strong> opens the black market in information — only for business at a
+            pirate haven or a far trading post (any station beyond 4×10<sup>11</sup> m from the sun).</li>
+        <li><strong>Buy</strong> a route tip on an off-the-books ship and it shows up on your own
+            traffic board with a stale-in-N-days badge; farther from Earth, tips are cheaper.
+            <strong>Sell</strong> your own tracking-post finds once they're 50%+ quality — selling
+            never erases the track.</li>
+        <li><strong>Tight-beam</strong> hails a tracked contact directly; <strong>Laser range</strong>
+            trades a perfect instant fix for lighting yourself up — the target now knows roughly
+            where the shot came from. Passive sweeping never gives you away; these two are the
+            deliberate exceptions.</li>
+    </ul>
+
+    <h2 id="war-room">9. The war room ⚔</h2>
+    <ul>
+        <li><strong>Guns ⚔</strong> opens the tactical circle: your ship at the center, a weapon-range
+            ring (2×10<sup>8</sup> m), and a catch-radius ring around any hunter on your tail.</li>
+        <li><strong>Warn</strong> a target in weapon range — compliant ships heave to and board at
+            half the usual time; stubborn ones call their own muscle instead, and which is which
+            never changes for a given ship. <strong>Hail</strong> for an in-character reply,
+            <strong>Bribe</strong> for guaranteed compliance with zero heat generated.</li>
+        <li>Robbing a ship (not just warning it) raises <strong>heat</strong>, a 0–3 gauge that
+            decays one level per 20 days — four times faster hidden in orbit at a haven. Enough heat
+            spawns a <strong>hunter</strong>: hired muscle that fits out for 5 days, then hunts you
+            down. Get caught and it seizes your hold plus a 500 cr fine; hide at a haven for 2 days
+            straight and it breaks off.</li>
+        <li>Havens are the release valve: cool your heat, trade cargo (and intel, at a far trading
+            post), and repair — no questions asked.</li>
+    </ul>
+
+    <h2 id="scope">10. The scope</h2>
     <ul>
         <li><strong>Scope</strong> opens the instrument screen: auto-locks the nearest interesting
             contact, draws it (freighters, pods, players, planets, the sun, plasma wisps), and
@@ -140,7 +204,7 @@
             <strong>AUTO</strong>.</li>
     </ul>
 
-    <h2 id="ship">7. Inside the ship</h2>
+    <h2 id="ship">11. Inside the ship</h2>
     <ul>
         <li><strong>Deck</strong> — top-down plan of your pirate sail. Walk with
             <kbd>WASD</kbd>/arrows, interact with <kbd>E</kbd>, drag the map if the bow hides
@@ -159,7 +223,7 @@
             mothership makes a hard run for the pilot.</li>
     </ul>
 
-    <h2 id="electric">8. The electric sky ⚡</h2>
+    <h2 id="electric">12. The electric sky ⚡</h2>
     <ul>
         <li>Near the sun the plasma halo charges your hull; the flowing ribbons between planets
             are <strong>plasma streams</strong> — riding one pushes you along it (charged hulls
@@ -170,7 +234,7 @@
             visible, desperate, or both.</li>
     </ul>
 
-    <h2 id="tips">9. The physics, honestly</h2>
+    <h2 id="tips">13. The physics, honestly</h2>
     <ul>
         <li><strong>There is no drag.</strong> A circular orbit holds forever with zero thrust
             (measured: −0.025% radius drift over a full year).</li>

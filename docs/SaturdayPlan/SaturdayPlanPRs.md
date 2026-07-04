@@ -3,6 +3,13 @@
 *Derived from [SaturdayPlanVision.md](SaturdayPlanVision.md), 2026-07-04. Goal: big PRs that
 don't block each other, so several can be coded in parallel while the owner is away.*
 
+**Status: all nine PRs in this plan are merged (or, for PR-8, opened).** PR-0 #25 · PR-1 #26 ·
+PR-2 #27 · PR-3 #29 · PR-4 #28 · PR-5 #32 · PR-6 #30 · PR-7 #31 · PR-8 #35 (this one —
+integration/cleanup, closing out the plan). The per-PR handoff notes (`pr3-notes.md`,
+`pr5-notes.md`, `pr6-notes.md`, `pr7-notes.md`) that fed PR-8's docs pass have been folded into
+the real `docs/features/*` pages and removed. (Follow-on work beyond this plan's original scope
+— PR-9 #33, PR-10 #34 — has since started in parallel; not covered by this document.)
+
 ## The vision, distilled into features
 
 | # | Feature | Vision source |
@@ -44,12 +51,12 @@ don't block each other, so several can be coded in parallel while the owner is a
 
 ## The PRs
 
-### PR-0 — anchors + plan (tiny, direct to main, first)
+### PR-0 — anchors + plan (tiny, direct to main, first) — MERGED #25
 Marker anchors in Map.razor + this plan doc. Everything else branches after this lands.
 
 ### Wave 1 — fully independent of each other
 
-**PR-1 · 🏴 Set sail on GitHub Pages** *(F1)*
+**PR-1 · 🏴 Set sail on GitHub Pages** *(F1)* — MERGED #26
 - `.github/workflows/pages.yml`: `dotnet publish` `SpaceSails.Client` → rewrite
   `<base href="/spaceSails/">` → `.nojekyll` + `404.html` (copy of index.html for SPA deep
   links) → `actions/upload-pages-artifact` + `deploy-pages` (HordeDefence pattern).
@@ -61,7 +68,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
 - README: play-now link at the top.
 - Touches: workflows, slnx, archive/, Home.razor, README. Map.razor: zero.
 
-**PR-2 · 📚 The ship's library** *(F2 + F3)*
+**PR-2 · 📚 The ship's library** *(F2 + F3)* — MERGED #27
 - `docs/features/` — one small page per station: map & warp, plotting desk, traffic board,
   scope, orbit assist & insertion, depots, dock & economy, deck view & cantina, boarding run,
   electric sky. Screenshots where cheap (headless Playwright).
@@ -72,7 +79,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
 - README gains a linked docs index. UI-complexity review notes filed as issues for the lanes.
 - Touches: docs/**, README. Code: none.
 
-**PR-3 · 🌌 The outer reaches** *(F4)*
+**PR-3 · 🌌 The outer reaches** *(F4)* — MERGED #29
 - Scenario schema: moons (parent-chaining already works) — Titan, Europa, Ganymede, Enceladus,
   Luna stays; named **stations** as lightweight orbital bodies/POIs: Mercury polar compute
   farms, satellite factories, orbital trading posts, pirate havens on small outer moons.
@@ -84,7 +91,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
 - Touches: Contracts/Scenario.cs, scenarios/*.json, Core/TrafficSchedule.cs + RoutePlanner,
   traffic-board panel (filter), map body rendering. Map.razor: anchor lines only.
 
-**PR-4 · 🔭 The tracking post** *(F6)*
+**PR-4 · 🔭 The tracking post** *(F6)* — MERGED #28
 - Core `TrackingStation.cs` + `TelescopeModel`: aim at a sky region (bearing + arc), passive
   detection with **sun-relative range envelope** (near-blind sunward, far anti-sunward),
   integration time, and a **tracked-targets ledger** — once found, cheap periodic re-confirm
@@ -99,7 +106,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
 
 ### Wave 2 — starts once its Wave-1 parent merges (still parallel with each other)
 
-**PR-5 · 🛰 Orbital commerce** *(F5; parent: PR-3 for posts/moons)*
+**PR-5 · 🛰 Orbital commerce** *(F5; parent: PR-3 for posts/moons)* — MERGED #32
 - Core `CommerceRule.cs`: trading allowed only when (a) in orbit at the same body as the
   counterpart, or (b) course-matched within envelope for long enough — cargo-drone transfer
   time reuses the boarding `RequiredSecondsFor` math (drones = the honest twin of the
@@ -109,7 +116,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
   intel, fence). Visual ring indicators on the map.
 - Touches: new Core file + tests, LocalSpace component. Map.razor: anchor lines only.
 
-**PR-6 · 🕸 The dark space web** *(F7; parents: PR-3 flag, PR-4 ledger)*
+**PR-6 · 🕸 The dark space web** *(F7; parents: PR-3 flag, PR-4 ledger)* — MERGED #30
 - Core `IntelMarket.cs`: intel goods = route/timetable of secretive ships. Sold at pirate
   havens & far trading posts (distance-from-Earth prices it); bought intel injects entries
   into *your* departures board (with confidence/staleness). Your tracking-post ledger entries
@@ -119,7 +126,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
   anyone watching (pirate etiquette: passive only near prey).
 - Touches: new Core file + tests, intel UI inside dock/local-space panel + tracking post hooks.
 
-**PR-7 · ⚔️ The gun deck** *(F8; parent: PR-3 for havens; pairs with PR-5's local-space panel)*
+**PR-7 · ⚔️ The gun deck** *(F8; parent: PR-3 for havens; pairs with PR-5's local-space panel)* — MERGED #31
 - Core `WeaponsRule.cs` + `EncounterState`: circular weapon ranges, warning shot →
   compliance model (freighter heaves to vs. calls muscle), threats/diplomacy/bribery
   (crew sabotage option), loot transfer, then **heat**: hired muscle spawns on intercept
@@ -131,7 +138,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
 
 ### Wave 3 — integration & cleanup (single lane, after everything merges)
 
-**PR-8 · 🧹 Rig for silent running**
+**PR-8 · 🧹 Rig for silent running** — #35
 - Strip `_mp` branches + SignalR from Map.razor & csproj (MP already archived by PR-1).
 - Docs pass: every new station gets its `docs/features/` page + testing-guide section;
   user-guide updated; README index complete.

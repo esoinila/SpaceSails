@@ -59,11 +59,10 @@ it better") for later lanes to act on. No code was changed to produce this list.
 
 ## Boarding run (`docs/features/boarding-run.md`)
 
-- The shuttle minigame's dock-speed limit (docs: "below the speed limit") has no numeric HUD
-  readout during the flight — the player has to judge speed purely by eye against the dock zone,
-  then get bounced if wrong, with no on-screen number telling them how close they were. A small
-  speed readout (or a color-coded approach indicator) would turn "guess and bounce" into
-  "aim for the number."
+*(Correction: verified false — `ShuttleFlightView.cs` already renders a live `range {gap:F0}  ∙
+closing {speed:F0} (dock ≤ {DockSpeedLimit})` readout during the flight (line 178), e.g. "range
+1234  ∙  closing 42 (dock ≤ 55)", with `DockSpeedLimit = 55` px/s and the closing-speed text
+color-coded (glow color under the limit, amber over it). No action needed.)*
 
 ## Electric sky (`docs/features/electric-sky.md`)
 
