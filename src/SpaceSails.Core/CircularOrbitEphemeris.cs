@@ -10,11 +10,13 @@ public sealed class CircularOrbitEphemeris : ICelestialEphemeris
 {
     private readonly Dictionary<string, CelestialBody> _byId;
     private readonly List<CelestialBody> _bodies;
+    private readonly TrafficDefinition? _traffic;
 
-    public CircularOrbitEphemeris(IEnumerable<CelestialBody> bodies)
+    public CircularOrbitEphemeris(IEnumerable<CelestialBody> bodies, TrafficDefinition? traffic = null)
     {
         _bodies = [.. bodies];
         _byId = _bodies.ToDictionary(b => b.Id);
+        _traffic = traffic;
 
         foreach (CelestialBody body in _bodies)
         {
@@ -27,9 +29,20 @@ public sealed class CircularOrbitEphemeris : ICelestialEphemeris
 
     public static CircularOrbitEphemeris FromScenario(ScenarioDefinition scenario) =>
         new(scenario.Bodies.Select(b => new CelestialBody(
-            b.Id, b.Name, b.ParentId, b.Mu, b.BodyRadiusM, b.OrbitRadiusM, b.OrbitPeriodS, b.InitialPhaseRad)));
+            b.Id, b.Name, b.ParentId, b.Mu, b.BodyRadiusM, b.OrbitRadiusM, b.OrbitPeriodS, b.InitialPhaseRad,
+            ParseKind(b.Kind), b.Haven)),
+            scenario.Traffic);
+
+    private static BodyKind ParseKind(string kind) => kind switch
+    {
+        "moon" => BodyKind.Moon,
+        "station" => BodyKind.Station,
+        _ => BodyKind.Planet,
+    };
 
     public IReadOnlyList<CelestialBody> Bodies => _bodies;
+
+    public TrafficDefinition? Traffic => _traffic;
 
     public Vector2d Position(string bodyId, double simTime)
     {

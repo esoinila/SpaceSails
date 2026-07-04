@@ -68,7 +68,9 @@ public class PiracyTests
             Assert.True(pod.IsPod);
             Assert.Equal(0, pod.ManeuverBudget);
             Assert.Empty(pod.Plan.Nodes);           // mass driver: all delta-v at launch
-            Assert.Equal("luna", pod.OriginId);
+            // Sol's scenario now offers two launch sites (Luna, Mercury Compute Farms) — either
+            // is a valid mass-driver origin (PR-3: pods from Luna and Mercury both).
+            Assert.Contains(pod.OriginId, (string[])["luna", "mercury-compute"]);
             Assert.Equal("Compute cores", pod.CargoClass);
             // 5 × 400 cr = exactly the first upgrade price: one pod finishes the tutorial.
             Assert.Equal(5, pod.CargoUnits);
@@ -77,18 +79,21 @@ public class PiracyTests
     }
 
     [Fact]
-    public void Pod_LaunchState_IsEscapingEarthToward_ItsDestination()
+    public void Pod_LaunchState_IsEscapingItsPlanetToward_ItsDestination()
     {
         var ephemeris = Sol();
         NpcShip pod = TrafficSchedule.GeneratePods(ephemeris, seed: 7, count: 1)[0];
 
-        // The launch state must carry more than Earth's orbital velocity alone — the mass
-        // driver's burn is folded in (outward transfers accelerate prograde).
+        // The launch state must carry more than the launch site's planet's orbital velocity
+        // alone — the mass driver's burn is folded in (outward transfers accelerate prograde).
+        // The pod's cosmetic origin is the launch site itself (Luna, Mercury Compute Farms, ...);
+        // TrafficSchedule plans the physics from that site's planet (its own Luna-pod shortcut).
+        string planetId = ephemeris.Bodies.First(b => b.Id == pod.OriginId).ParentId!;
         const double h = 1.0;
-        Vector2d earthVelocity = (ephemeris.Position("earth", pod.ActivationTime + h)
-                                - ephemeris.Position("earth", pod.ActivationTime - h)) / (2 * h);
-        double relativeSpeed = (pod.InitialState.Velocity - earthVelocity).Length;
-        Assert.True(relativeSpeed > 1000, $"Pod launch is only {relativeSpeed:F0} m/s relative to Earth.");
+        Vector2d planetVelocity = (ephemeris.Position(planetId, pod.ActivationTime + h)
+                                - ephemeris.Position(planetId, pod.ActivationTime - h)) / (2 * h);
+        double relativeSpeed = (pod.InitialState.Velocity - planetVelocity).Length;
+        Assert.True(relativeSpeed > 1000, $"Pod launch is only {relativeSpeed:F0} m/s relative to {planetId}.");
     }
 
     [Fact]

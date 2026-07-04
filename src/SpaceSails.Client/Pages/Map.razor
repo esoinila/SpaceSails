@@ -300,7 +300,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (NpcState npc in _npcStates)
+                            @foreach (NpcState npc in _npcStates.Where(n => n.Ship.PublishesTimetable))
                             {
                                 <tr class="map-traffic-row @(npc.Ship.Id == _selectedTargetId ? "table-primary" : "")"
                                     @onclick="() => SelectTarget(npc.Ship.Id)">
@@ -315,6 +315,12 @@
                         </tbody>
                     </table>
                 </div>
+                @if (OffBooksCount > 0)
+                {
+                    <div class="card-footer py-1 text-secondary small fst-italic">
+                        @OffBooksCount ship@(OffBooksCount == 1 ? "" : "s") operating off the books
+                    </div>
+                }
                 @if (SelectedTrackedTarget() is { } sel)
                 {
                     <div class="card-footer py-1">
@@ -448,6 +454,20 @@
     private static readonly RgbaColor DecelNodeColor = new(240, 120, 80);
     private static readonly RgbaColor StaleNodeColor = new(140, 140, 140, 128);
     private const byte GhostBodyAlpha = 90; // ~35% of 255
+
+    // PR-3 outer-reaches rendering: stations read as built things (a synthetic teal, not a
+    // planet's mineral palette); havens get a subtle crimson wash on top — pirate country, at a
+    // glance. Stations stay tiny blips even zoomed in, so their label needs its own threshold.
+    private static readonly RgbaColor StationColor = new(120, 220, 210);
+    private static readonly RgbaColor HavenAccent = new(200, 60, 90);
+    private static readonly RgbaColor HavenLabelColor = new(232, 190, 200);
+    private const double LabelZoomThresholdForStations = 5e9; // m/px
+
+    private static RgbaColor Tinted(RgbaColor c, RgbaColor accent, double amount) => new(
+        (byte)Math.Clamp(c.R * (1 - amount) + accent.R * amount, 0, 255),
+        (byte)Math.Clamp(c.G * (1 - amount) + accent.G * amount, 0, 255),
+        (byte)Math.Clamp(c.B * (1 - amount) + accent.B * amount, 0, 255),
+        c.A);
 
     private readonly Camera _camera = new();
     private CanvasRenderer? _renderer;
@@ -2034,13 +2054,20 @@
 
             Vector2d position = ephemeris.Position(body.Id, SimTime);
             (float sx, float sy) = _camera.WorldToScreen(position);
-            float radiusPx = (float)Math.Max(2.0, body.BodyRadius / _camera.MetersPerPixel);
-            RgbaColor color = BodyColor(body.Id);
+            bool isStation = body.Kind == BodyKind.Station;
+            float radiusPx = (float)Math.Max(isStation ? 1.5 : 2.0, body.BodyRadius / _camera.MetersPerPixel);
+            if (isStation)
+            {
+                radiusPx = Math.Min(radiusPx, 3.5f); // a built thing, not a world — stays a small blip
+            }
+
+            RgbaColor color = BodyColor(body);
 
             _renderer!.DrawCircle(sx, sy, radiusPx, color, color);
-            if (_camera.MetersPerPixel < body.BodyRadius * 500)
+            if (_camera.MetersPerPixel < body.BodyRadius * 500 || (isStation && _camera.MetersPerPixel < LabelZoomThresholdForStations))
             {
-                 _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, LabelColor);
+                RgbaColor labelColor = body.IsHaven ? HavenLabelColor : LabelColor;
+                _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, labelColor);
             }
         }
     }
@@ -3009,6 +3036,10 @@
         return npc?.LastObservation is not null ? npc : null;
     }
 
+    // Secretive haulers (He3 out of pirate country) never hit the public board, but they're
+    // still out there — a quiet nod that the outer reaches don't run on the same rules (PR-3).
+    private int OffBooksCount => _npcStates.Count(n => !n.Ship.PublishesTimetable);
+
     private string StatusLabel(NpcState npc)
     {
         if (npc.Arrived)
@@ -3063,6 +3094,14 @@
         "neptune" => new RgbaColor(90, 110, 230),
         _ => new RgbaColor(200, 200, 200),
     };
+
+    // Kind/haven-aware map marker color (PR-3): a station reads as built (synthetic teal)
+    // regardless of its id; a haven gets a subtle crimson wash on top of whatever it is.
+    private static RgbaColor BodyColor(CelestialBody body)
+    {
+        RgbaColor color = body.Kind == BodyKind.Station ? StationColor : BodyColor(body.Id);
+        return body.IsHaven ? Tinted(color, HavenAccent, 0.35) : color;
+    }
 
     private static string FormatSimTime(double simTime)
     {
