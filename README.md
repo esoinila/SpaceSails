@@ -9,7 +9,24 @@ A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, 
 - [Big picture / vision](docs/SpaceSails_plan_big_picture.md)
 - [Detailed implementation plan](docs/SpaceSails_plan_detailed.md) — milestones, architecture, working agreement
 - [Coding helpers](docs/coding-helpers.md) — driving the `grok` & `gemini` CLIs headlessly to offload implementation
-- [Captain's Guide](docs/user-guide.md) — every feature, how to fly, how to steal
+- [Captain's Guide](docs/user-guide.md) — every feature, how to fly, how to steal (mirrored in-game at `/guide`)
+- [Testing guide](docs/testing-guide.md) — the owner's scripted regression checklist, one playtest per major feature
+
+### Feature guides
+
+Small, linked pages — one station or mechanic per page — under `docs/features/`:
+
+- [Map & warp](docs/features/map-and-warp.md) — the main view, time controls, hand-flying
+- [Plotting desk](docs/features/plotting-desk.md) — scrub, burn nodes, closest-pass warning, planned insertion
+- [Traffic board](docs/features/traffic-board.md) — departures, prediction cones, plotting an intercept
+- [Scope](docs/features/scope.md) — the close-up instrument view, auto-lock vs. manual
+- [Orbit assist](docs/features/orbit-assist.md) — the one-button "enter orbit" mechanic and its Δv cost
+- [Orbital depots](docs/features/depots.md) — the one plunderable cargo depot per planet
+- [Dock & economy](docs/features/dock-and-economy.md) — selling cargo, refueling, buying upgrades
+- [Deck view & cantina](docs/features/deck-view.md) — walking the ship, consoles, the rum-wobble mechanic
+- [Boarding run](docs/features/boarding-run.md) — the capture window, automatic timer, and shuttle minigame
+- [Electric sky](docs/features/electric-sky.md) — hull charge, arcing, venting, plasma streams
+- [Scenarios](docs/features/scenarios.md) — the three voyages and the `?scenario=` query string
 
 ## Stack
 
