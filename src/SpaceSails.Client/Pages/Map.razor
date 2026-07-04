@@ -1437,6 +1437,15 @@
             if (manual is not null) return manual.Value;
             _scopeManualId = null; // target gone (arrived / out of sensor range): fall back to auto
         }
+
+        // M25: the destination owns the scope (owner: "the destination should also be pictured
+        // in the video box"). Manual prev/next cycling above still overrides it.
+        if (_destinationBodyId is not null && ResolveScopeTarget(_destinationBodyId) is { } dest)
+        {
+            if (_scopeView is not null) _scopeView.LockLabel = "🎯 DEST";
+            return dest;
+        }
+
         if (_scopeView is not null) _scopeView.LockLabel = "◆ AUTO";
 
         NpcState? locked = null;
@@ -2415,7 +2424,8 @@
         _renderer.DrawCircle(px, py, 1.5f, DestinationColor, DestinationColor);
         _renderer.DrawText(px, py - 16, $"pass {FormatDistance(dp.Distance)}", DestinationColor, "10px monospace", TextAlign.Center);
 
-        DrawTargetLock(bx, by, 3.5f, DestinationColor with { A = 170 }, null);
+        // The far end of the miss line is just a dot — only the scrub-time ghost wears a lock.
+        _renderer.DrawCircle(bx, by, 3f, DestinationColor with { A = 170 }, DestinationColor with { A = 170 });
     }
 
     // Ghosts of every body at the scrub time. Deliberately loud: a filled dot with an outline
@@ -2541,9 +2551,11 @@
 
             _renderer!.DrawCircle(sx, sy, radiusPx, color, color);
             bool isDestination = body.Id == _destinationBodyId;
-            if (isDestination)
+            if (isDestination && !PlotMode)
             {
                 // The chosen destination reads at any zoom — full gun-camera lock (M25).
+                // In plot mode the GHOST carries the one and only lock (owner: three targets on
+                // screen made the scrub read as frozen — he was watching the live body).
                 DrawTargetLock(sx, sy, radiusPx, DestinationColor, "DEST");
             }
             if (isDestination || _camera.MetersPerPixel < body.BodyRadius * 500 || (isStation && _camera.MetersPerPixel < LabelZoomThresholdForStations))
