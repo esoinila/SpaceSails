@@ -66,6 +66,7 @@
             </button>
             <button type="button" class="btn btn-sm @(_showTracking ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleTracking">Track 📡</button>
             <button type="button" class="btn btn-sm @(_showWarRoom ? "btn-danger" : "btn-outline-light") ms-2" @onclick="ToggleWarRoom">Guns ⚔</button>
+            <button type="button" class="btn btn-sm @(_showLocalSpace ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleLocalSpace">Local 🛰</button>
             @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
             <button type="button" class="btn btn-sm @(_showDarkWeb ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleDarkWeb">Web 🕸</button>
         </div>
@@ -455,6 +456,7 @@
     </div>
     <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_showTracking" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1" OnClose="ToggleTracking" />
     <SpaceSails.Client.Pages.Stations.WarRoom Visible="_showWarRoom" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" OnClose="ToggleWarRoom" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
+    <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="_showLocalSpace" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="_orbitedBodyId" ContextBodyId="LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" ActiveTradeTargetId="_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="_localTradeMessage" OnStartTrade="StartLocalTrade" OnClose="ToggleLocalSpace" />
     @* SATURDAY-ANCHOR: panels — parallel lanes append one station component line each below *@
     <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="_showDarkWeb" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnClose="ToggleDarkWeb" />
 </div>
@@ -478,6 +480,21 @@
         ["Debt Collector", "The Adjuster", "Repo Barque", "Fair Warning", "Lien Enforcer", "Underwriter's Claw"];
     private static readonly RgbaColor TrackedNpcColor = new(150, 255, 210);
     private static readonly RgbaColor TrackedNpcLastSeenColor = new(120, 200, 170, 180);
+
+    // ---- PR-5: orbital commerce — trade from orbit or course-matched with drones ----
+    private bool _showLocalSpace;
+    private SpaceSails.Client.Pages.Stations.LocalSpace? _localSpace;
+    // The body the ship is gravitationally bound to right now (M20 orbit rules) — ground truth
+    // for CommerceRule's "same orbit" case, independent of the orbit-assist UI's armed/nearest
+    // framing. Cached alongside its position/Hill radius so DrawNpcs can ring-highlight co-orbiting
+    // contacts without recomputing them.
+    private string? _orbitedBodyId;
+    private Vector2d _orbitedBodyPosition;
+    private double _orbitedBodyHillRadius;
+    private string? _localTradeTargetId;                // LocalContact id mid-transfer, if any
+    private double _localTradeProgress;                  // drone transfer progress fraction [0,1)
+    private string? _localTradeMessage;
+    private static readonly RgbaColor LocalContactRingColor = new(120, 200, 255, 150);
     private const string CanvasId = "map-canvas";
     private const int OrbitSegments = 128;
 
@@ -1664,8 +1681,10 @@
         }
 
         UpdateDockStatus();
+        UpdateOrbitedBody();
         UpdateCapture(dtRealSeconds);
         UpdateEncounters();
+        UpdateLocalTrade(dtRealSeconds);
 
         if (!_mp)
         {
@@ -2708,6 +2727,13 @@
             TrackedTarget track = default;
             bool tracked = _trackingPost is not null && _trackingPost.TryGetTrack(npc.Ship.Id, out track);
 
+            // PR-5: a subtle ring for anything co-orbiting the body the ship is currently bound to
+            // (the same "local space" set CommerceRule.ContactsAt would list) — the proximity
+            // affordance made visible on the map itself, not just in the Local Space panel.
+            bool coOrbiting = _orbitedBodyId is not null && (npc.Ship.DepotBodyId == _orbitedBodyId
+                || (npc.Ship.DepotBodyId is null
+                    && (npc.State.Position - _orbitedBodyPosition).LengthSquared <= _orbitedBodyHillRadius * _orbitedBodyHillRadius));
+
             if (npc.Active && npc.CurrentlyObserved)
             {
                 (float sx, float sy) = _camera.WorldToScreen(npc.State.Position);
@@ -2720,6 +2746,11 @@
                         * track.UncertaintyScale(SimTime);
                     float ringPx = (float)Math.Clamp(uncertainty / _camera.MetersPerPixel, 6, 40);
                     _renderer!.DrawCircle(sx, sy, ringPx, null, TrackedNpcColor, 1.5f);
+                }
+
+                if (coOrbiting)
+                {
+                    _renderer!.DrawCircle(sx, sy, 7f, null, LocalContactRingColor, 1f);
                 }
 
                 _renderer!.DrawText(sx + 8, sy - 6, npc.Ship.Callsign, color);
@@ -3724,5 +3755,170 @@
         _trackingPost.ApplyObservation(obs);
         _trackingPost.MarkAware(shipId);
         ShowPulseMessage($"Laser ranged {npc.Ship.Callsign} — exact fix, but you're lit up ⚠");
+    }
+
+    // ---- PR-5: orbital commerce — trade from orbit or course-matched with drones ----
+    private void ToggleLocalSpace() => _showLocalSpace = !_showLocalSpace;
+
+    // The context body Local Space shows contacts for: the body the ship is actually bound to, or
+    // (per the owner's "orbiting/near a body" phrasing) whatever body is nearest when not bound —
+    // so the panel still has something useful to show while just cruising close to a bus stop.
+    private string? LocalSpaceBodyId => _orbitedBodyId ?? _nearestBody?.Id;
+
+    // Recomputed every frame from ground truth (OrbitRule.IsBound), same math UpdateEffectiveWarp
+    // already relies on — not the orbit-assist UI's armed/nearest framing, which can point at a
+    // different body than the one the ship is actually bound to. Auto-shows Local Space on the
+    // rising edge of a bind (vision par. 10: proximity affordances appear when you get there).
+    private void UpdateOrbitedBody()
+    {
+        string? previous = _orbitedBodyId;
+        _orbitedBodyId = null;
+        if (_ephemeris is not null)
+        {
+            foreach (CelestialBody body in _ephemeris.Bodies)
+            {
+                if (body.ParentId is null)
+                {
+                    continue; // the sun: everyone "orbits" it, not a bus stop
+                }
+
+                CelestialBody? parent = null;
+                foreach (CelestialBody candidate in _ephemeris.Bodies)
+                {
+                    if (candidate.Id == body.ParentId) { parent = candidate; break; }
+                }
+                if (parent is null)
+                {
+                    continue;
+                }
+
+                Vector2d bodyPos = _ephemeris.Position(body.Id, SimTime);
+                const double h = 1.0;
+                Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
+                double hill = OrbitRule.HillRadius(body, parent.Mu);
+                if (OrbitRule.IsBound(_ship, bodyPos, bodyVel, body, hill))
+                {
+                    _orbitedBodyId = body.Id;
+                    _orbitedBodyPosition = bodyPos;
+                    _orbitedBodyHillRadius = hill;
+                    break;
+                }
+            }
+        }
+
+        if (_orbitedBodyId is not null && _orbitedBodyId != previous && !_mp)
+        {
+            _showLocalSpace = true;
+        }
+    }
+
+    // Thin, read-only projection of the live NPC/depot list for CommerceRule — mirrors
+    // TrackingCandidates()'s role for the tracking post.
+    private IReadOnlyList<CommerceRule.LocalShip> LocalShips()
+    {
+        var ships = new List<CommerceRule.LocalShip>(_npcStates.Length);
+        foreach (NpcState npc in _npcStates)
+        {
+            // StepNpcs's despawn check flags a depot "Arrived" the instant it's created (its
+            // destination IS its own body, always within despawn tolerance) — correct for the
+            // traffic board's status column, wrong here: a depot is a perpetual fixture, never
+            // actually gone. Only exclude Arrived for ships that can genuinely leave.
+            if (npc.Arrived && npc.Ship.DepotBodyId is null)
+            {
+                continue;
+            }
+
+            ships.Add(new CommerceRule.LocalShip(npc.Ship.Id, npc.Ship.Callsign, npc.State, npc.Ship.DepotBodyId));
+        }
+
+        return ships;
+    }
+
+    private IReadOnlyList<CommerceRule.LocalContact> LocalContacts()
+    {
+        if (_mp || _ephemeris is null || LocalSpaceBodyId is not { } bodyId)
+        {
+            return [];
+        }
+
+        return CommerceRule.ContactsAt(_ephemeris, LocalShips(), SimTime, bodyId);
+    }
+
+    private void StartLocalTrade(string contactId)
+    {
+        if (_mp || _cargoValue <= 0 || _localTradeTargetId is not null)
+        {
+            return;
+        }
+
+        _localTradeTargetId = contactId;
+        _localTradeProgress = 0;
+        _localTradeMessage = "Drones away — cargo transfer in progress";
+    }
+
+    private void CancelLocalTrade(string message)
+    {
+        _localTradeTargetId = null;
+        _localTradeProgress = 0;
+        _localTradeMessage = message;
+    }
+
+    // Drone transfer progress accrues in REAL time (M14's boarding-shuttle pattern) so warping
+    // doesn't fast-forward a transfer. Breaks off — progress lost — the moment the envelope
+    // (CommerceRule.CanTrade) stops holding, e.g. the target ship burns away mid-transfer.
+    private void UpdateLocalTrade(double dtRealSeconds)
+    {
+        if (_localTradeTargetId is not { } targetId)
+        {
+            return;
+        }
+
+        if (_mp || _ephemeris is null || _cargoValue <= 0)
+        {
+            CancelLocalTrade("Drone transfer aborted");
+            return;
+        }
+
+        CommerceRule.LocalContact? target = null;
+        foreach (CommerceRule.LocalContact c in LocalContacts())
+        {
+            if (c.Id == targetId) { target = c; break; }
+        }
+
+        if (target is not { } contact || (contact.Actions & CommerceRule.ActionKind.Trade) == 0)
+        {
+            CancelLocalTrade("Drones lost the contact — transfer aborted");
+            return;
+        }
+
+        string? partnerOrbitBodyId = contact.Kind == CommerceRule.LocalContactKind.Ship ? null : LocalSpaceBodyId;
+        if (!CommerceRule.CanTrade(_ship, contact.Position, contact.Velocity, _orbitedBodyId, partnerOrbitBodyId))
+        {
+            CancelLocalTrade("Course match lost — drones recalled, transfer aborted");
+            return;
+        }
+
+        double relSpeed = (_ship.Velocity - contact.Velocity).Length;
+        double distance = (_ship.Position - contact.Position).Length;
+        double seconds = CommerceRule.DroneTransferSeconds(relSpeed, distance, _cargoUnits);
+        _localTradeProgress += Math.Clamp(dtRealSeconds, 0, 0.1) / seconds;
+
+        if (_localTradeProgress >= 1)
+        {
+            int units = _cargoUnits;
+            int value = _cargoValue;
+            _credits += value;
+            _cargoUnits = 0;
+            _cargoValue = 0;
+            _localTradeTargetId = null;
+            _localTradeProgress = 0;
+            _localTradeMessage = $"Drones delivered {units} units for {value:N0} credits";
+            RendererInterop.PlayCue("board");
+            AdvanceTutorial(4); // step 5: first sale (same milestone the dock's SellCargo hits)
+        }
+        else
+        {
+            _localTradeMessage = $"Drones ferrying — {(int)(_localTradeProgress * 100)}%";
+        }
     }
 }

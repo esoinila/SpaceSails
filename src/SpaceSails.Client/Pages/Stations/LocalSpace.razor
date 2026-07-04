@@ -1,0 +1,122 @@
+@using SpaceSails.Core
+
+@* Proximity affordances (vision par. 10, PR-5): "orbiting a planet, you should see what else
+   orbits there." Map.razor builds the contact list with Core.CommerceRule.ContactsAt and hands it
+   here read-only; this component only renders it and asks Map.razor to start a trade — the actual
+   drone-transfer progress (real-time accrual, envelope break-off, crediting) lives in Map.razor
+   next to the boarding-shuttle progress it mirrors, so both share one clock. *@
+
+<div class="local-space-card card bg-dark bg-opacity-75 text-light @(Visible ? "" : "d-none")">
+    <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
+        <span class="fw-bold small">Local space @(BodyName is null ? "" : $"— {BodyName}")</span>
+        <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+    </div>
+    <div class="card-body p-2 small">
+        @if (BodyName is null)
+        {
+            <div class="text-secondary">Not near a body — get into orbit or close range to see what's here.</div>
+        }
+        else if (Contacts.Count == 0)
+        {
+            <div class="text-secondary">Nothing else orbits here.</div>
+        }
+        else
+        {
+            <ul class="list-unstyled mb-0 local-space-list">
+                @foreach (CommerceRule.LocalContact contact in Contacts.OrderBy(c => c.DistanceMeters))
+                {
+                    bool isActiveTrade = ActiveTradeTargetId == contact.Id;
+                    bool canTrade = CanTradeWith(contact);
+                    <li class="local-space-row mb-2 pb-2">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="local-space-icon">@Icon(contact.Kind)</span>
+                            <span class="flex-grow-1">@contact.Name</span>
+                            <span class="text-secondary">@FormatDistance(contact.DistanceMeters)</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1 mt-1">
+                            @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0)
+                            {
+                                <span class="badge bg-success">Trade</span>
+                            }
+                            @if ((contact.Actions & CommerceRule.ActionKind.Fence) != 0)
+                            {
+                                <span class="badge bg-danger">Fence</span>
+                            }
+                            @if ((contact.Actions & CommerceRule.ActionKind.Board) != 0)
+                            {
+                                <span class="badge bg-secondary">Board</span>
+                            }
+                            @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0 && !isActiveTrade)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 ms-auto"
+                                        disabled="@(CargoValue <= 0 || !canTrade || ActiveTradeTargetId is not null)"
+                                        title="@(canTrade ? "" : "Out of range — get in orbit here or match course")"
+                                        @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
+                                    Trade
+                                </button>
+                            }
+                        </div>
+                        @if (isActiveTrade)
+                        {
+                            <div class="mt-1">
+                                <div class="text-info">@(TradeMessage ?? "Drones ferrying…")</div>
+                                <div class="progress local-space-progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                                         style="width:@(((int)(TradeProgress * 100)))%"></div>
+                                </div>
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public bool Visible { get; set; }
+    [Parameter] public string? BodyName { get; set; }
+    [Parameter] public string? OrbitBodyId { get; set; }
+    [Parameter] public string? ContextBodyId { get; set; }
+    [Parameter] public IReadOnlyList<CommerceRule.LocalContact> Contacts { get; set; } = [];
+    [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
+    [Parameter, EditorRequired] public Vector2d ShipVelocity { get; set; }
+    [Parameter] public int CargoUnits { get; set; }
+    [Parameter] public int CargoValue { get; set; }
+    [Parameter] public string? ActiveTradeTargetId { get; set; }
+    [Parameter] public double TradeProgress { get; set; }
+    [Parameter] public string? TradeMessage { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnStartTrade { get; set; }
+
+    // Depots/stations/havens are on rails at ContextBodyId — definitionally "in orbit" there, so
+    // they satisfy CommerceRule.CanTrade's same-body case whenever the player is bound to that
+    // body too. A passing Ship contact isn't assumed to share an orbit — it only trades when it's
+    // genuinely course-matched (or the player later boards it, elsewhere).
+    private bool CanTradeWith(CommerceRule.LocalContact contact)
+    {
+        string? partnerOrbitBodyId = contact.Kind == CommerceRule.LocalContactKind.Ship ? null : ContextBodyId;
+        var player = new ShipState(ShipPosition, ShipVelocity, 0);
+        return CommerceRule.CanTrade(player, contact.Position, contact.Velocity, OrbitBodyId, partnerOrbitBodyId);
+    }
+
+    private static string Icon(CommerceRule.LocalContactKind kind) => kind switch
+    {
+        CommerceRule.LocalContactKind.Depot => "🛰",
+        CommerceRule.LocalContactKind.Station => "🏭",
+        CommerceRule.LocalContactKind.Moon => "🌙",
+        CommerceRule.LocalContactKind.Haven => "🏴",
+        CommerceRule.LocalContactKind.Ship => "🚀",
+        _ => "•",
+    };
+
+    private static string FormatDistance(double meters)
+    {
+        const double metersPerAu = 1.495978707e11;
+        if (meters >= metersPerAu / 10)
+            return $"{meters / metersPerAu:F2} AU";
+        if (meters >= 1e9)
+            return $"{meters / 1e9:F2} M km";
+        return $"{meters / 1000:F0} km";
+    }
+}
