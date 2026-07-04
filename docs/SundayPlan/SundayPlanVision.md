@@ -52,6 +52,29 @@ fly themselves.
    are rare; manual flight stays the skill the game teaches.
 5. **F5 · Lab lesson 13**: "Shooting, literally" — the BVP, Newton on the integrator, and
    dispersion-from-uncertainty; every number from a live probe run, as always.
+6. **F6 · Piloting tips from firing solutions** (owner, late addition): the solver's outputs
+   become flight instruction — in-game tips/examples derived from computed solutions ("to
+   hit a spot 40° off your track, burn like THIS"), so the new mechanic teaches by worked
+   example and manual flying feels familiar faster. Fits the guide and/or contextual hints
+   at the gun deck and nav desk.
+
+## The soul of it: secretly edutainment
+
+The owner's first programming job (SoittoPeli, 1998) was music edutainment for children —
+gen-AI accompaniment from a Kohonen neural network, the singing game added to make it fun.
+SpaceSails carries the same DNA on purpose: a piracy game on the surface, a numerical-methods
+and orbital-mechanics classroom underneath (the Gravity Lab, and now fire control as the
+shooting-method lesson). Keep building features so that playing them well quietly teaches
+the real thing.
+
+## Paper draft (owner request, details to confirm)
+
+The owner wants a paper draft in the repo, linked from the README ("the SIGGRAPH paper
+draft"). To confirm with him at session start: venue/framing — options: (a) SIGGRAPH-style
+(real-time deterministic WASM simulation + the duty-station UI), (b) games/education venue
+(the secretly-edutainment method: a game whose lab IS its engine), (c) an experience-report
+angle (human PO + AI head coder building 23 PRs in a day). Draft lives in docs/paper/,
+gets a prominent README link like the labs.
 
 ## Carried backlog (from Saturday's task list)
 
