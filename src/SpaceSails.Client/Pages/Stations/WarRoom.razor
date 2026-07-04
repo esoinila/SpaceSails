@@ -6,94 +6,206 @@
    hired muscle a robbery calls down. Entirely self-contained like TrackingPost — Map.razor only
    feeds it contacts + heat/hunter state (thin DTOs, never its private NpcState) and reads back
    which button the player pressed via the OnWarningShot/OnBribe callbacks. All the compliance,
-   threat-line and bribe-price math is Core's EncounterRule — this component only renders it. *@
+   threat-line and bribe-price math is Core's EncounterRule — this component only renders it.
+
+   Desk layout (PR-13, StationDesks.md's 70% rule): full-screen, the tactical circle owns the
+   left ~60% of the desk (range-scale selector above it, the heat gauge blown up large in its
+   bottom-left corner), and the right column holds a menacing hunter readout plus a roomy
+   contact side-list — hail/warn/bribe stay exactly where they were, just given room to breathe. *@
 
 <div class="war-room-card @(FullScreen ? "war-room-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
         <span class="fw-bold small">Gun deck ⚔</span>
-        <span class="war-room-heat-gauge @(FullScreen ? "war-room-heat-gauge-big" : "")" title="Heat level @HeatLevel/@EncounterRule.MaxHeatLevel">@HeatGaugeText()</span>
         @if (!FullScreen)
         {
+            <span class="war-room-heat-gauge" title="Heat level @HeatLevel/@EncounterRule.MaxHeatLevel">@HeatGaugeText()</span>
             <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
         }
     </div>
     <div class="card-body p-2 small @(FullScreen ? "war-room-desk-body" : "")">
-        <div class="text-secondary mb-1">@CoolingLabel()</div>
-        @if (NearestHunter() is { } nh)
-        {
-            <div class="war-room-hunter-warning mb-2">
-                🐺 @nh.Callsign closing — @FormatRange(nh.Distance) at bearing @((int)nh.BearingDeg)°
-            </div>
-        }
-
         @{ IReadOnlyList<RenderContact> contacts = VisibleContacts(); }
+        @{ IReadOnlyList<RenderHunter> renderHunters = RenderHunters(); }
 
-        <div class="d-flex gap-2 align-items-start @(FullScreen ? "war-room-desk-top" : "")">
-            <div class="war-room-scope flex-shrink-0 @(FullScreen ? "war-room-scope-big" : "")">
-                <svg viewBox="0 0 200 200" class="war-room-scope-svg" aria-label="Local tactical view">
-                    <circle cx="100" cy="100" r="@Fmt(MaxRadiusPx)" class="war-room-view-ring" />
-                    <circle cx="100" cy="100" r="@Fmt(WeaponRingPx)" class="war-room-weapon-ring" />
-                    @foreach (HunterContact hunter in Hunters)
-                    {
-                        (double hx, double hy) = ScreenPoint(hunter.State.Position);
-                        <circle cx="@Fmt(hx)" cy="@Fmt(hy)" r="@Fmt(MetersToPx(EncounterRule.CatchRadiusMeters))" class="war-room-hunter-ring" />
-                    }
-                    @foreach (RenderContact rc in contacts)
-                    {
-                        <circle cx="@Fmt(rc.X)" cy="@Fmt(rc.Y)" r="4" class="@ContactDotClass(rc)" />
-                    }
-                    @foreach (HunterContact hunter in Hunters)
-                    {
-                        (double hx, double hy) = ScreenPoint(hunter.State.Position);
-                        <circle cx="@Fmt(hx)" cy="@Fmt(hy)" r="5" class="war-room-hunter-dot" />
-                    }
-                    <circle cx="100" cy="100" r="4" class="war-room-ship" />
-                </svg>
-            </div>
-            <div class="flex-grow-1 text-secondary">
-                <div>Contacts within @FormatRange(ViewRangeMeters)</div>
-                <div>Weapon range: @FormatRange(EncounterRule.WeaponRangeMeters)</div>
-            </div>
-        </div>
-
-        @if (contacts.Count == 0)
+        @if (!FullScreen)
         {
-            <div class="text-secondary mt-2">Nothing close enough to aim at.</div>
+            <div class="text-secondary mb-1">@CoolingLabel()</div>
+            @if (NearestHunter() is { } nhCompact)
+            {
+                <div class="war-room-hunter-warning mb-2">
+                    🐺 @nhCompact.Callsign closing — @FormatRange(nhCompact.Distance) at bearing @((int)nhCompact.BearingDeg)°
+                </div>
+            }
         }
         else
         {
-            <table class="table table-sm table-dark mb-0 mt-2 @(FullScreen ? "war-room-contact-table" : "")">
-                <tbody>
-                    @foreach (RenderContact rc in contacts)
-                    {
-                        bool inWeaponRange = EncounterRule.InWeaponRange(new ShipState(ShipPosition, ShipVelocity, SimTime), rc.Contact.State);
-                        int bribePrice = EncounterRule.BribePrice(rc.Contact.Ship);
-                        <tr>
-                            <td>
-                                @rc.Contact.Ship.Callsign
-                                <div class="text-secondary">@FormatRange(rc.Distance) — @StatusBadge(rc)</div>
-                            </td>
-                            <td class="text-end align-middle text-nowrap">
-                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" @onclick="() => Hail(rc)">Hail</button>
-                                <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
-                                        disabled="@(!inWeaponRange || rc.Contact.Ship.IsPod)"
-                                        @onclick="() => OnWarningShot.InvokeAsync(rc.Contact.Ship.Id)">
-                                    Warn
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
-                                        disabled="@(rc.Contact.Bribed || rc.Contact.Ship.IsPod || Credits < bribePrice)"
-                                        @onclick="() => OnBribe.InvokeAsync(rc.Contact.Ship.Id)">
-                                    Bribe (@bribePrice cr)
-                                </button>
-                            </td>
-                        </tr>
-                        @if (_hailLines.TryGetValue(rc.Contact.Ship.Id, out string? line))
+            <div class="war-room-range-group btn-group btn-group-sm mb-2" role="group" aria-label="Tactical view range">
+                @foreach (double range in RangePresets)
+                {
+                    <button type="button" class="btn @(range == _viewRangeMeters ? "btn-info" : "btn-outline-info")"
+                            @onclick="() => _viewRangeMeters = range">
+                        @FormatRange(range)
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="@(FullScreen ? "war-room-desk-grid" : "d-flex gap-2 align-items-start")">
+            <div class="@(FullScreen ? "war-room-tactical-col" : "")">
+                <div class="war-room-scope flex-shrink-0 @(FullScreen ? "war-room-scope-big" : "")">
+                    <svg viewBox="0 0 200 200" class="war-room-scope-svg" aria-label="Local tactical view">
+                        <circle cx="100" cy="100" r="@Fmt(MaxRadiusPx)" class="war-room-view-ring" />
+                        <circle cx="100" cy="100" r="@Fmt(WeaponRingPx)" class="war-room-weapon-ring" />
+                        @foreach (RenderHunter h in renderHunters)
                         {
-                            <tr><td colspan="2" class="war-room-hail-line fst-italic">@line</td></tr>
+                            <circle cx="@Fmt(h.X)" cy="@Fmt(h.Y)" r="@Fmt(MetersToPx(EncounterRule.CatchRadiusMeters))" class="war-room-hunter-ring" />
                         }
+                        @foreach (RenderHunter h in renderHunters)
+                        {
+                            @if (h.ThreatLine)
+                            {
+                                <line x1="100" y1="100" x2="@Fmt(h.X)" y2="@Fmt(h.Y)" class="war-room-threat-line" />
+                            }
+                        }
+                        @foreach (RenderContact rc in contacts)
+                        {
+                            <circle cx="@Fmt(rc.X)" cy="@Fmt(rc.Y)" r="4" class="@ContactDotClass(rc)" />
+                        }
+                        @foreach (RenderHunter h in renderHunters)
+                        {
+                            <circle cx="@Fmt(h.X)" cy="@Fmt(h.Y)" r="6" class="war-room-hunter-dot" />
+                            @HunterLabelMarkup(h)
+                        }
+                        <circle cx="100" cy="100" r="4" class="war-room-ship" />
+                    </svg>
+                    @if (FullScreen)
+                    {
+                        <div class="war-room-heat-corner">
+                            <div class="war-room-heat-gauge war-room-heat-gauge-big" title="Heat level @HeatLevel/@EncounterRule.MaxHeatLevel">@HeatGaugeText()</div>
+                            <div class="war-room-heat-level-label">Heat @HeatLevel/@EncounterRule.MaxHeatLevel</div>
+                            <div class="text-secondary war-room-heat-cooling">@CoolingLabel()</div>
+                            @if (CoolingAtHaven)
+                            {
+                                <div class="badge bg-danger-subtle text-danger-emphasis mt-1">🏴 hiding at haven</div>
+                            }
+                        </div>
                     }
-                </tbody>
-            </table>
+                </div>
+                @if (FullScreen)
+                {
+                    <div class="text-secondary mt-2">
+                        Contacts within @FormatRange(_viewRangeMeters) · Weapon range @FormatRange(EncounterRule.WeaponRangeMeters)
+                    </div>
+                }
+            </div>
+            <div class="@(FullScreen ? "war-room-side-col" : "flex-grow-1 text-secondary")">
+                @if (!FullScreen)
+                {
+                    <div>Contacts within @FormatRange(_viewRangeMeters)</div>
+                    <div>Weapon range: @FormatRange(EncounterRule.WeaponRangeMeters)</div>
+                }
+                else
+                {
+                    @if (NearestHunter() is { } nh)
+                    {
+                        <div class="war-room-hunter-warning mb-2">
+                            🐺 @nh.Callsign closing — @FormatRange(nh.Distance) at bearing @((int)nh.BearingDeg)°
+                        </div>
+                    }
+                    @if (renderHunters.Count > 0)
+                    {
+                        <div class="war-room-hunter-list mb-2">
+                            @foreach (RenderHunter h in renderHunters)
+                            {
+                                <div class="war-room-hunter-row">
+                                    <span class="war-room-hunter-row-name">🐺 @h.Callsign</span>
+                                    <span class="text-secondary">@FormatRange(h.Distance) · brg @((int)h.BearingDeg)° · @FormatClosingSpeed(h.ClosingSpeed)</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    <div class="war-room-contact-list">
+                        @if (contacts.Count == 0)
+                        {
+                            <div class="text-secondary">Nothing close enough to aim at.</div>
+                        }
+                        else
+                        {
+                            @foreach (RenderContact rc in contacts)
+                            {
+                                bool inWeaponRangeDesk = EncounterRule.InWeaponRange(new ShipState(ShipPosition, ShipVelocity, SimTime), rc.Contact.State);
+                                int bribePriceDesk = EncounterRule.BribePrice(rc.Contact.Ship);
+                                <div class="war-room-contact-row mb-2 pb-2">
+                                    <div class="d-flex justify-content-between align-items-center gap-1">
+                                        <span class="fw-bold">@rc.Contact.Ship.Callsign</span>
+                                        <span class="@StatusBadgeClass(rc)">@StatusBadge(rc)</span>
+                                    </div>
+                                    <div class="text-secondary">@FormatRange(rc.Distance)</div>
+                                    <div class="d-flex gap-1 mt-1">
+                                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" @onclick="() => Hail(rc)">Hail</button>
+                                        <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
+                                                disabled="@(!inWeaponRangeDesk || rc.Contact.Ship.IsPod)"
+                                                @onclick="() => OnWarningShot.InvokeAsync(rc.Contact.Ship.Id)">
+                                            Warn
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
+                                                disabled="@(rc.Contact.Bribed || rc.Contact.Ship.IsPod || Credits < bribePriceDesk)"
+                                                @onclick="() => OnBribe.InvokeAsync(rc.Contact.Ship.Id)">
+                                            Bribe (@bribePriceDesk cr)
+                                        </button>
+                                    </div>
+                                    @if (_hailLines.TryGetValue(rc.Contact.Ship.Id, out string? lineDesk))
+                                    {
+                                        <div class="war-room-hail-line fst-italic mt-1">@lineDesk</div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (!FullScreen)
+        {
+            @if (contacts.Count == 0)
+            {
+                <div class="text-secondary mt-2">Nothing close enough to aim at.</div>
+            }
+            else
+            {
+                <table class="table table-sm table-dark mb-0 mt-2">
+                    <tbody>
+                        @foreach (RenderContact rc in contacts)
+                        {
+                            bool inWeaponRange = EncounterRule.InWeaponRange(new ShipState(ShipPosition, ShipVelocity, SimTime), rc.Contact.State);
+                            int bribePrice = EncounterRule.BribePrice(rc.Contact.Ship);
+                            <tr>
+                                <td>
+                                    @rc.Contact.Ship.Callsign
+                                    <div class="text-secondary">@FormatRange(rc.Distance) — @StatusBadge(rc)</div>
+                                </td>
+                                <td class="text-end align-middle text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" @onclick="() => Hail(rc)">Hail</button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
+                                            disabled="@(!inWeaponRange || rc.Contact.Ship.IsPod)"
+                                            @onclick="() => OnWarningShot.InvokeAsync(rc.Contact.Ship.Id)">
+                                        Warn
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
+                                            disabled="@(rc.Contact.Bribed || rc.Contact.Ship.IsPod || Credits < bribePrice)"
+                                            @onclick="() => OnBribe.InvokeAsync(rc.Contact.Ship.Id)">
+                                        Bribe (@bribePrice cr)
+                                    </button>
+                                </td>
+                            </tr>
+                            @if (_hailLines.TryGetValue(rc.Contact.Ship.Id, out string? line))
+                            {
+                                <tr><td colspan="2" class="war-room-hail-line fst-italic">@line</td></tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
         }
     </div>
 </div>
@@ -111,6 +223,10 @@
 
     private readonly record struct NearestHunterInfo(string Callsign, double Distance, double BearingDeg);
 
+    /// <summary>A hunter, ready to draw: screen position, bearing, distance, closing speed and
+    /// whether it's close enough (within 2x weapon range) to earn a threat line on the circle.</summary>
+    private readonly record struct RenderHunter(string Callsign, double Distance, double BearingDeg, double ClosingSpeed, double X, double Y, bool ThreatLine);
+
     [Parameter, EditorRequired] public double SimTime { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipVelocity { get; set; }
@@ -125,7 +241,11 @@
     [Parameter] public EventCallback<string> OnWarningShot { get; set; }
     [Parameter] public EventCallback<string> OnBribe { get; set; }
 
-    private const double ViewRangeMeters = 1e9;   // war-room's local tactical radius
+    // The desk's range-scale selector (StationDesks.md PR-13): how far out the tactical circle
+    // reaches. Purely a display choice — weapon/catch rings are always drawn at their true
+    // physical radius, scaled to whichever of these the player picked.
+    private static readonly double[] RangePresets = [1e8, 5e8, 1e9, 5e9];
+    private double _viewRangeMeters = 1e9; // matches the pre-PR-13 fixed view range by default
     private const double CenterPx = 100;
     private const double MaxRadiusPx = 90;
 
@@ -133,12 +253,12 @@
 
     private double WeaponRingPx => MetersToPx(EncounterRule.WeaponRangeMeters);
 
-    private static double MetersToPx(double meters) => Math.Clamp(meters / ViewRangeMeters * MaxRadiusPx, 0, MaxRadiusPx);
+    private double MetersToPx(double meters) => Math.Clamp(meters / _viewRangeMeters * MaxRadiusPx, 0, MaxRadiusPx);
 
     private (double X, double Y) ScreenPoint(Vector2d worldPosition)
     {
         Vector2d rel = worldPosition - ShipPosition;
-        double scale = MaxRadiusPx / ViewRangeMeters;
+        double scale = MaxRadiusPx / _viewRangeMeters;
         // Screen Y grows downward; flip so "+Y in world" reads as "up" on the tactical circle.
         return (CenterPx + rel.X * scale, CenterPx - rel.Y * scale);
     }
@@ -149,7 +269,7 @@
         foreach (Contact c in Contacts)
         {
             double distance = (c.State.Position - ShipPosition).Length;
-            if (distance > ViewRangeMeters)
+            if (distance > _viewRangeMeters)
             {
                 continue;
             }
@@ -161,6 +281,51 @@
 
         list.Sort((a, b) => a.Distance.CompareTo(b.Distance));
         return list;
+    }
+
+    /// <summary>Every hunter, closing-speed and bearing computed once — regardless of view
+    /// range, so the side list and the "closing" warning line always reflect true geometry even
+    /// when a hunter is beyond the tactical circle's current zoom.</summary>
+    private IReadOnlyList<RenderHunter> RenderHunters()
+    {
+        var list = new List<RenderHunter>();
+        foreach (HunterContact h in Hunters)
+        {
+            Vector2d rel = h.State.Position - ShipPosition;
+            double distance = rel.Length;
+            double bearingDeg = Math.Atan2(rel.Y, rel.X) * 180.0 / Math.PI;
+            if (bearingDeg < 0)
+            {
+                bearingDeg += 360;
+            }
+
+            double closingSpeed = ClosingSpeedMps(rel, distance, h.State.Velocity);
+            (double x, double y) = ScreenPoint(h.State.Position);
+            bool threatLine = distance <= EncounterRule.WeaponRangeMeters * 2;
+            list.Add(new RenderHunter(h.Callsign, distance, bearingDeg, closingSpeed, x, y, threatLine));
+        }
+
+        list.Sort((a, b) => a.Distance.CompareTo(b.Distance));
+        return list;
+    }
+
+    /// <summary>Positive = the range is shrinking (the hunter is closing); negative = opening.
+    /// The radial component of relative velocity along the ship→hunter line.</summary>
+    private double ClosingSpeedMps(Vector2d shipToHunter, double distance, Vector2d hunterVelocity)
+    {
+        if (distance <= 0)
+        {
+            return 0;
+        }
+
+        Vector2d relVel = hunterVelocity - ShipVelocity;
+        return -relVel.Dot(shipToHunter / distance);
+    }
+
+    private static string FormatClosingSpeed(double metersPerSecond)
+    {
+        double kms = metersPerSecond / 1000.0;
+        return kms >= 0 ? $"closing {kms:F2} km/s" : $"opening {-kms:F2} km/s";
     }
 
     private NearestHunterInfo? NearestHunter()
@@ -210,6 +375,23 @@
         return rc.Compliance == ComplianceState.Stubborn ? "⚔ stubborn" : "🏳 compliant";
     }
 
+    /// <summary>Bootstrap badge classes for the desk's roomier contact side-list — same three
+    /// states as <see cref="StatusBadge"/>, colored so the list reads at a glance.</summary>
+    private static string StatusBadgeClass(RenderContact rc)
+    {
+        if (rc.Contact.Bribed)
+        {
+            return "badge bg-warning text-dark";
+        }
+
+        if (rc.Contact.Ship.IsPod)
+        {
+            return "badge bg-secondary";
+        }
+
+        return rc.Compliance == ComplianceState.Stubborn ? "badge bg-danger" : "badge bg-success";
+    }
+
     private static string ContactDotClass(RenderContact rc)
     {
         if (rc.Contact.Bribed)
@@ -249,6 +431,12 @@
         string where = CoolingAtHaven ? " (haven — 4× faster)" : "";
         return $"Cooling at 1 level / {days:F0}d{where}";
     }
+
+    // Razor reserves the bare <text> tag name for literal markup sections and refuses attributes
+    // on it, even inside an <svg> — so the SVG <text> label for a hunter's wolf glyph has to be
+    // built as raw markup instead of written as a normal element.
+    private static Microsoft.AspNetCore.Components.MarkupString HunterLabelMarkup(RenderHunter h) =>
+        new($"<text x=\"{Fmt(h.X + 7)}\" y=\"{Fmt(h.Y - 6)}\" class=\"war-room-hunter-label\">🐺</text>");
 
     private static string Fmt(double v) => v.ToString("F1", CultureInfo.InvariantCulture);
 

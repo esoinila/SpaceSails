@@ -300,12 +300,23 @@
                 }
                 else if (_activeDesk == ShipDesk.Trade)
                 {
+                    @* Trading floor (PR-13, StationDesks.md's 70% rule): three columns — local
+                       space contacts, the dock market (selling/upgrades, unchanged logic), and the
+                       cargo manifest read-model over _cargoByClass — so the whole trade loop
+                       (what's nearby, what you can do at the dock, what's in the hold) is visible
+                       at once instead of stacked behind pop-ups. *@
                     <div class="desk-trade-grid">
                         <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="true" FullScreen="true" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" OnStartTrade="StartLocalTrade" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
                         <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
+                            <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
+                                <span class="fw-bold small">Dock market</span>
+                                @if (_docked)
+                                {
+                                    <span class="badge bg-success">Docked at @BodyName(_dockBodyId ?? "")</span>
+                                }
+                            </div>
                             @if (_docked)
                             {
-                                <div class="card-header py-1"><span class="fw-bold small">Docked at @BodyName(_dockBodyId ?? "")</span></div>
                                 <div class="card-body p-2 small">
                                     <div class="d-flex gap-2 mb-2">
                                         <button type="button" class="btn btn-sm btn-success flex-grow-1" disabled="@(_cargoValue <= 0)" @onclick="SellCargo">
@@ -358,6 +369,55 @@
                             {
                                 <div class="card-body p-2 small text-secondary">Dock at a body to sell cargo and buy upgrades.</div>
                             }
+                        </div>
+                        <div class="desk-side-panel trade-manifest-panel card bg-dark bg-opacity-50 text-light">
+                            <div class="card-header py-1"><span class="fw-bold small">Cargo manifest</span></div>
+                            <div class="card-body p-2 small">
+                                @if (_localTradeTargetId is not null)
+                                {
+                                    <div class="trade-manifest-transfer mb-2">
+                                        <div class="text-info trade-manifest-transfer-label">@(_localTradeMessage ?? "Drones ferrying…")</div>
+                                        <div class="progress trade-manifest-progress">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width:@(((int)(_localTradeProgress * 100)))%"></div>
+                                        </div>
+                                        <div class="text-info trade-manifest-transfer-pct">@((int)(_localTradeProgress * 100))%</div>
+                                    </div>
+                                }
+                                @{ IReadOnlyList<CargoManifestEntry> manifest = CargoManifest(); }
+                                @if (manifest.Count == 0)
+                                {
+                                    <div class="text-secondary">Hold empty.</div>
+                                }
+                                else
+                                {
+                                    <table class="table table-sm table-dark mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Class</th>
+                                                <th class="text-end">Units</th>
+                                                <th class="text-end">Est. value</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (CargoManifestEntry entry in manifest)
+                                            {
+                                                <tr>
+                                                    <td>@entry.CargoClass</td>
+                                                    <td class="text-end">@entry.Units</td>
+                                                    <td class="text-end">@entry.Value.ToString("N0", CultureInfo.InvariantCulture) cr</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="fw-bold">
+                                                <td>Total</td>
+                                                <td class="text-end">@_cargoUnits/@CargoCapacity</td>
+                                                <td class="text-end">@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                }
+                            </div>
                         </div>
                     </div>
                 }
@@ -584,6 +644,29 @@
         }
 
         return new(ShipDesk.Trade, "🛰", "Trade", $"{_credits:N0} cr", $"{_cargoUnits}/{CargoCapacity} cargo");
+    }
+
+    /// <summary>One line of the Trade desk's cargo manifest panel (PR-13): what's actually in the
+    /// hold, broken down by class, with its fence value via <see cref="CargoMarket"/> — a
+    /// read-model over <see cref="_cargoByClass"/>, which Board() keeps in step with the existing
+    /// aggregate _cargoUnits/_cargoValue totals.</summary>
+    private readonly record struct CargoManifestEntry(string CargoClass, int Units, int Value);
+
+    private IReadOnlyList<CargoManifestEntry> CargoManifest()
+    {
+        var list = new List<CargoManifestEntry>();
+        foreach ((string cargoClass, int units) in _cargoByClass)
+        {
+            if (units <= 0)
+            {
+                continue;
+            }
+
+            list.Add(new CargoManifestEntry(cargoClass, units, units * CargoMarket.UnitValue(cargoClass)));
+        }
+
+        list.Sort((a, b) => b.Value.CompareTo(a.Value));
+        return list;
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData CommsChip()
@@ -860,6 +943,12 @@
     private int _credits;
     private int _cargoUnits;
     private int _cargoValue;
+    // Trade desk cargo manifest (PR-13): a per-class breakdown of the hold, alongside the
+    // pre-existing aggregate _cargoUnits/_cargoValue totals every other flow (SellCargo, drone
+    // trade, Adrift/hunter-catch confiscation) already reads/clears. Additive bookkeeping only —
+    // Board() is still the single place cargo is granted, so this dictionary and the totals never
+    // drift apart.
+    private readonly Dictionary<string, int> _cargoByClass = [];
     private int _massLevel;                            // reaction-mass capacity: 250 + 150/level
     private int _sensorLevel;                          // sensor range: base × 1.4/level
     private int _holdLevel;                            // cargo hold: 10 + 10/level
@@ -2893,6 +2982,7 @@
         {
             _cargoUnits += take;
             _cargoValue += take * CargoMarket.UnitValue(npc.Ship.CargoClass);
+            _cargoByClass[npc.Ship.CargoClass] = _cargoByClass.GetValueOrDefault(npc.Ship.CargoClass) + take;
         }
 
         npc.Boarded = true; // keeps flying but empty; a second boarding yields nothing
@@ -2936,6 +3026,7 @@
         ShowPulseMessage($"Sold {_cargoUnits} units for {_cargoValue:N0} credits {PlunderLines[(int)((SimTime / 61) % PlunderLines.Length)]}");
         _cargoUnits = 0;
         _cargoValue = 0;
+        _cargoByClass.Clear();
         AdvanceTutorial(4); // step 5: first sale
     }
 
@@ -2994,6 +3085,7 @@
         _reactionMassPulses = ReactionMassCapacity;
         _cargoUnits = 0;
         _cargoValue = 0;
+        _cargoByClass.Clear();
         ShowPulseMessage("Rescue fee: all cargo confiscated");
     }
 
@@ -3453,6 +3545,7 @@
     {
         _cargoUnits = 0;
         _cargoValue = 0;
+        _cargoByClass.Clear();
         _credits = Math.Max(0, _credits - EncounterRule.CatchFineCredits);
         ShowPulseMessage($"{hunter.Callsign} runs you down — cargo seized, {EncounterRule.CatchFineCredits} cr fine. The gentleman's game has a price.");
         RendererInterop.PlayCue("board");
@@ -3814,6 +3907,7 @@
             _credits += value;
             _cargoUnits = 0;
             _cargoValue = 0;
+            _cargoByClass.Clear();
             _localTradeTargetId = null;
             _localTradeProgress = 0;
             _localTradeMessage = $"Drones delivered {units} units for {value:N0} credits";
