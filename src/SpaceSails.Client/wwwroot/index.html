@@ -16,11 +16,16 @@
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div class="boot-screen">
+            <div class="boot-title">SpaceSails 🏴‍☠️</div>
+            <div class="boot-status" id="boot-status">Rigging the sails…</div>
+            <div class="boot-bar"><div class="boot-bar-fill" id="boot-bar-fill"></div></div>
+            <div class="boot-percent" id="boot-percent"></div>
+            <div class="boot-errors" id="boot-errors" hidden>
+                <div class="boot-errors-title">The rigging fouled — errors below. <a href="." style="color:#9fd6ff">Reload</a></div>
+                <pre id="boot-errors-list"></pre>
+            </div>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
@@ -28,6 +33,48 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+    <!-- Boot-screen driver. Inline by necessity (§9 exception): renderer.js is loaded by the
+         app itself, so nothing else exists yet to show progress or catch a failed boot. -->
+    <script>
+        (function () {
+            var errBox = document.getElementById('boot-errors');
+            var errList = document.getElementById('boot-errors-list');
+            var status = document.getElementById('boot-status');
+            function showError(msg) {
+                if (!errBox || !errList) { return; }
+                errBox.hidden = false;
+                status.textContent = 'Boot trouble — the sails did not fill.';
+                errList.textContent += msg + '\n\n';
+            }
+            // capture=true also catches resource-level failures (blocked/missing scripts,
+            // integrity mismatches), which otherwise leave a dead spinner and console-only clues.
+            window.addEventListener('error', function (e) {
+                if (e.target && (e.target.src || e.target.href)) {
+                    showError('Failed to load: ' + (e.target.src || e.target.href));
+                } else if (e.message) {
+                    showError(e.message + (e.filename ? '\n  at ' + e.filename + ':' + e.lineno : ''));
+                }
+            }, true);
+            window.addEventListener('unhandledrejection', function (e) {
+                showError('Unhandled: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
+            });
+            // Blazor reports load progress via a CSS custom property on <html>.
+            var bar = document.getElementById('boot-bar-fill');
+            var pct = document.getElementById('boot-percent');
+            var timer = setInterval(function () {
+                var app = document.getElementById('app');
+                if (!app || !document.body.contains(bar)) { clearInterval(timer); return; }
+                var v = getComputedStyle(document.documentElement).getPropertyValue('--blazor-load-percentage')
+                    || getComputedStyle(app).getPropertyValue('--blazor-load-percentage');
+                v = parseInt(v, 10);
+                if (!isNaN(v)) {
+                    bar.style.width = v + '%';
+                    pct.textContent = v + '% — hauling the WebAssembly aboard';
+                    if (v >= 100) { pct.textContent = '100% — casting off'; }
+                }
+            }, 100);
+        })();
+    </script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 </body>
 
