@@ -167,6 +167,10 @@
                 </div>
             }
             <div>Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)</div>
+            @if (_activeRadar)
+            {
+                <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
+            }
             @if (_plasma is not null)
             {
                 int chargePct = (int)Math.Round(_ship.Charge * 100);
@@ -399,17 +403,27 @@
        (rule 1 — 70% belongs to the desk's own topic) while the map/sim keeps running underneath
        (rule 4). Sensors dims the map through; the rest go near-opaque. Parallel desk lanes
        (PR-12/13/14) touch only their own branch of this if-chain; PR-15 adds the Captain branch. *@
-    @if (_activeDesk is ShipDesk.Sensors or ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley or ShipDesk.Captain)
+    @* M27: the Sensors desk renders ALWAYS (d-none off-desk) — the tracking post must never be
+       destroyed: the ledger, the passive watch, and its live-scope canvas all live in it. A
+       conditionally-rendered component forgot every track on desk switch and left renderer.js
+       holding a stale canvas context (the same disease the Nav scope had). *@
+    <div class="desk-layer desk-layer-dimmed @(_activeDesk == ShipDesk.Sensors ? "" : "d-none")">
+        <div class="desk-content">
+            <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_activeDesk == ShipDesk.Sensors" FullScreen="true"
+                SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" ShipCharge="_ship.Charge"
+                Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1"
+                RadarActive="_activeRadar" OnRadarToggle="SetActiveRadar"
+                OnZoomMap="ZoomSensorsBackdrop" OnCenterShip="CenterShipOnMap"
+                OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+        </div>
+    </div>
+    @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley or ShipDesk.Captain)
     {
-        <div class="desk-layer @(_activeDesk == ShipDesk.Sensors ? "desk-layer-dimmed" : "")">
+        <div class="desk-layer">
             <div class="desk-content">
-                @if (_activeDesk == ShipDesk.Sensors)
+                @if (_activeDesk == ShipDesk.WarRoom)
                 {
-                    <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
-                }
-                else if (_activeDesk == ShipDesk.WarRoom)
-                {
-                    <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
+                    <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget" OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
                 }
                 else if (_activeDesk == ShipDesk.Trade)
                 {
@@ -790,7 +804,8 @@
         string line = _heat.Level <= 0 && nearest is null
             ? "quiet skies"
             : $"heat {HeatFlames(_heat.Level)} · hunter {(nearest is { } d ? FormatDistance(d) : "—")}";
-        return new(ShipDesk.WarRoom, "⚔", "War room", line);
+        // M27: the intercept clock rides the chip — the countdown to the initiative roll.
+        return new(ShipDesk.WarRoom, "⚔", "War room", line, InterceptChipLine());
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData TradeChip()
@@ -1628,8 +1643,7 @@
             return null;
         }
 
-        double seconds = dp.SimTime - SimTime;
-        return seconds < 86400 ? $"ETA {seconds / 3600:F0} h" : $"ETA {FormatHorizon(seconds)}";
+        return $"ETA {FormatDuration(dp.SimTime - SimTime)}";
     }
 
     // A closest pass can be turned into a planned insertion when it is a planet (not the sun)
@@ -2154,6 +2168,8 @@
                     }
                 }
             }
+
+            UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute
         }
 
         if (_horizonDirty && highResTimestampMs - _lastHorizonReprojectMs > 250)
@@ -3171,7 +3187,16 @@
                 continue;
             }
 
-            if (_sensor.TryObserve(_ship.Position, npc.Ship.Id, npc.State, _ship.SimTime, out Observation obs))
+            // M27: active radar — exact returns inside its range, sun glare and dark hulls be
+            // damned. The passive model still runs first (it can see farther).
+            bool seen = _sensor.TryObserve(_ship.Position, npc.Ship.Id, npc.State, _ship.SimTime, out Observation obs);
+            if (!seen && _activeRadar && RadarRule.InRange(_ship.Position, npc.State.Position))
+            {
+                obs = new Observation(npc.Ship.Id, _ship.SimTime, npc.State.Position, npc.State.Velocity);
+                seen = true;
+            }
+
+            if (seen)
             {
                 npc.LastObservation = obs;
                 npc.ObservationCount++;
@@ -3837,7 +3862,7 @@
     // Map.razor's private NpcState, only ids/callsigns/current physical state to sweep against.
     private IReadOnlyList<SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate> TrackingCandidates()
     {
-        var candidates = new List<SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate>(_npcStates.Length);
+        var candidates = new List<SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate>(_npcStates.Length + _hunters.Count);
         foreach (NpcState npc in _npcStates)
         {
             if (npc.Active && !npc.Arrived)
@@ -3848,8 +3873,169 @@
             }
         }
 
+        // M27: hunters are sweepable and trackable too — THE targets the telescope should mind.
+        foreach (HunterState hunter in _hunters)
+        {
+            candidates.Add(new SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate(
+                hunter.Id, hunter.Callsign, hunter.State, IsThreat: true, CargoDetail: "hired muscle"));
+        }
+
         return candidates;
     }
+
+    // ---- M27: the eyes of the ship — active radar, interest target, intercept clock ----
+
+    private bool _activeRadar;
+    private string? _interestTargetId;
+    private InterceptEstimate.Result? _intercept;
+
+    private void SetActiveRadar(bool on)
+    {
+        _activeRadar = on;
+        if (on)
+        {
+            // The ping is loud: every ship in earshot learns exactly where we are.
+            foreach (NpcState npc in _npcStates)
+            {
+                if (npc.Active && !npc.Arrived && RadarRule.HearsPing(_ship.Position, npc.State.Position))
+                {
+                    _trackingPost?.MarkAware(npc.Ship.Id);
+                }
+            }
+
+            ShowPulseMessage("Active radar ON — exact returns close in; everyone in earshot hears us 📡");
+        }
+        else
+        {
+            ShowPulseMessage("Active radar off — back to passive silence");
+        }
+
+        StateHasChanged();
+    }
+
+    private void ZoomSensorsBackdrop(double factor) =>
+        _camera.ZoomBy(factor, _viewportWidth / 2.0, _viewportHeight / 2.0);
+
+    private void CenterShipOnMap() => FollowShip = true;
+
+    private void SetInterestTarget(string id)
+    {
+        _interestTargetId = _interestTargetId == id ? null : id;
+        _intercept = null;
+        _passDirty = true; // recompute the intercept clock with the next pass scan
+        StateHasChanged();
+    }
+
+    private string? InterestTargetName()
+    {
+        if (_interestTargetId is null)
+        {
+            return null;
+        }
+
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == _interestTargetId) { return npc.Ship.Callsign; }
+        }
+
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == _interestTargetId) { return hunter.Callsign; }
+        }
+
+        return _interestTargetId;
+    }
+
+    // M27: the war room's intercept clock — our plotted course vs the interest target's
+    // gravity-only coast (the standard estimate for a freighter between burns). The threshold
+    // is the boarding envelope: the "initiative roll" moment of a piracy run.
+    private void UpdateInterceptEstimate()
+    {
+        _intercept = null;
+        if (_interestTargetId is null || _simulator is null || _samples.Count < 2)
+        {
+            return;
+        }
+
+        ShipState? target = null;
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == _interestTargetId && npc.Active && !npc.Arrived) { target = npc.State; break; }
+        }
+
+        if (target is null)
+        {
+            foreach (HunterState hunter in _hunters)
+            {
+                if (hunter.Id == _interestTargetId) { target = hunter.State; break; }
+            }
+        }
+
+        if (target is not { } t)
+        {
+            return;
+        }
+
+        double horizon = _samples[^1].SimTime - t.SimTime;
+        if (horizon <= 0)
+        {
+            return;
+        }
+
+        IReadOnlyList<TrajectorySample> theirs = _simulator.ProjectAdaptive(t, null, horizon, maxSamples: 1500);
+        _intercept = InterceptEstimate.Against(_samples, theirs, CaptureRule.CaptureRadiusMeters);
+    }
+
+    // M27: the sensor room screens the data; the war room consumes it (owner).
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.WarRoom.SensorTrack> WarRoomSensorTracks()
+    {
+        var tracks = new List<SpaceSails.Client.Pages.Stations.WarRoom.SensorTrack>();
+        if (_trackingPost is null)
+        {
+            return tracks;
+        }
+
+        foreach (TrackedTarget entry in _trackingPost.Entries)
+        {
+            string callsign = entry.ShipId;
+            ShipState state = new(entry.LastObservation.Position, entry.LastObservation.Velocity, SimTime);
+            bool isThreat = false;
+            foreach (NpcState npc in _npcStates)
+            {
+                if (npc.Ship.Id == entry.ShipId) { callsign = npc.Ship.Callsign; state = npc.State; break; }
+            }
+
+            foreach (HunterState hunter in _hunters)
+            {
+                if (hunter.Id == entry.ShipId) { callsign = hunter.Callsign; state = hunter.State; isThreat = true; break; }
+            }
+
+            tracks.Add(new SpaceSails.Client.Pages.Stations.WarRoom.SensorTrack(
+                entry.ShipId, callsign, state, entry.EffectiveQuality(SimTime), isThreat));
+        }
+
+        return tracks;
+    }
+
+    private string? InterceptChipLine()
+    {
+        if (_intercept is not { } ic || InterestTargetName() is not { } name)
+        {
+            return null;
+        }
+
+        if (ic.FirstWithinThresholdSimTime is { } t0)
+        {
+            return t0 <= SimTime
+                ? $"⚔ {name}: ENCOUNTER WINDOW"
+                : $"⏱ {name}: encounter in {FormatDuration(t0 - SimTime)}";
+        }
+
+        return $"{name}: min {FormatDistance(ic.MinDistance)} in {FormatDuration(ic.MinSimTime - SimTime)}";
+    }
+
+    private static string FormatDuration(double seconds) =>
+        seconds < 86400 ? $"{seconds / 3600:F0} h" : FormatHorizon(seconds);
 
     // ---- PR-7: the gun deck — encounters, heat, hunters ----
 
