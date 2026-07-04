@@ -9,6 +9,7 @@ A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, 
 - [Big picture / vision](docs/SpaceSails_plan_big_picture.md)
 - [Detailed implementation plan](docs/SpaceSails_plan_detailed.md) — milestones, architecture, working agreement
 - [Coding helpers](docs/coding-helpers.md) — driving the `grok` & `gemini` CLIs headlessly to offload implementation
+- [Architecture](docs/architecture.md) — the box view, the duty-station UI shape, multiplayer-with-desks design notes, and why WebAssembly
 - [Captain's Guide](docs/user-guide.md) — every feature, how to fly, how to steal (mirrored in-game at `/guide`)
 - [Testing guide](docs/testing-guide.md) — the owner's scripted regression checklist, one playtest per major feature
 
@@ -78,3 +79,14 @@ How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](
 | `archive/SpaceSails.Server` | ASP.NET Core host + SignalR hub (archived — see [archive/README.md](archive/README.md)) |
 | `scenarios/` | Scenario data files (`sol.json`, `wheel.json`) |
 | `tests/` | xUnit test projects |
+
+## Provenance
+
+The basic idea is based on a fast-paced party game the owner made at the change of the
+millennium, reincarnated here as a solo navigation-and-piracy sim. In this incarnation, Erno
+Soinila is the product owner and Claude Fable (Anthropic) is the head coder.
+
+## License
+
+[MIT](LICENSE) — fork it, learn from it, ship your own version; attribution is appreciated
+but the point of this license is that you don't need to ask.
