@@ -102,3 +102,44 @@
     font-size: 0.85rem;
     font-style: italic;
 }
+
+/* M26: the status board — every station's chip writ large; click jumps to the desk. */
+.captain-view-toggle {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    padding-top: 0.5rem;
+}
+
+.captain-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1.25rem;
+    flex: 1 1 auto;
+    align-content: start;
+}
+
+.captain-status-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.captain-status-card:hover,
+.captain-status-card:focus-visible {
+    border-color: rgba(120, 200, 255, 0.7);
+    outline: none;
+}
+
+.captain-status-line {
+    font-size: 1.05rem;
+    margin-top: 0.25rem;
+}
+
+.captain-status-dim {
+    color: rgba(224, 228, 236, 0.65);
+    font-size: 0.9rem;
+}

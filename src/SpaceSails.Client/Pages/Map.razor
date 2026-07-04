@@ -156,6 +156,10 @@
                             @FormatDistance(oi.Distance) out · capture ≤ @FormatDistance(oi.CaptureRange) ·
                             rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
                             (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
+                            @if (DestinationEta() is { } eta)
+                            {
+                                <text> · @eta</text>
+                            }
                             <a role="button" class="text-info text-decoration-none ms-1"
                                @onclick="() => SetDestination(null)">clear</a>
                         </div>
@@ -370,7 +374,11 @@
             </div>
         </div>
     }
-    <div class="map-scope @(_showScope ? "" : "d-none")">
+    }
+    @* The scope lives OUTSIDE the Nav-desk if: Blazor must never destroy this canvas — a
+       recreated element leaves renderer.js holding a stale 2D context and the scope goes
+       permanently dark after any desk switch (M26 fix). CSS hides it off-Nav instead. *@
+    <div class="map-scope @(_showScope && _activeDesk == ShipDesk.Nav ? "" : "d-none")">
         <div class="card bg-dark bg-opacity-75 text-light">
             <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
                 <span class="fw-bold small">Scope 🔭</span>
@@ -386,7 +394,6 @@
             </div>
         </div>
     </div>
-    }
 
     @* SATURDAY-ANCHOR: panels — the desk layer (PR-11): each non-Nav/Deck desk fills the screen
        (rule 1 — 70% belongs to the desk's own topic) while the map/sim keeps running underneath
@@ -612,7 +619,8 @@
                 }
                 else if (_activeDesk == ShipDesk.Captain)
                 {
-                    <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission" />
+                    <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
+                                                              StatusChips="AllStationChips()" OnGoToDesk="SwitchDesk" />
                 }
             </div>
         </div>
@@ -719,6 +727,10 @@
         return chips;
     }
 
+    // M26: the captain's status board — every station's chip, no desk excluded except his own.
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.DeskChips.ChipData> AllStationChips() =>
+        [NavChip(), SensorsChip(), WarRoomChip(), TradeChip(), CommsChip(), GalleyChip()];
+
     /// <summary>Sets the ship's mission — the only writer of <see cref="_mission"/> (the captain's
     /// desk calls this on every card click; no confirm dialog, per the addendum). The explicit
     /// StateHasChanged matters: this page suppresses Blazor's automatic per-event re-render (see
@@ -726,19 +738,35 @@
     /// OnTick's 200 ms HUD throttle — a visible beat of lag on a deliberate, rare click.</summary>
     private void SetMission(ShipMission mission)
     {
+        ShipMission previous = _mission;
         _mission = mission;
+        // M26: the captain's Fly to order steers the nav destination, and explicitly choosing
+        // Free sailing rescinds it — the two desks can never disagree about where we're bound.
+        if (mission.Kind == MissionKind.FlyTo && mission.DestinationBodyId is not null)
+        {
+            _destinationBodyId = mission.DestinationBodyId;
+            _passDirty = true;
+        }
+        else if (mission.Kind == MissionKind.FreeSailing && previous.Kind == MissionKind.FlyTo)
+        {
+            _destinationBodyId = null;
+        }
+
         StateHasChanged();
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData CaptainChip() =>
-        new(ShipDesk.Captain, "☠", "Captain", _mission.Describe());
+        new(ShipDesk.Captain, "☠", "Captain", _mission.Describe(),
+            _mission.Kind == MissionKind.FlyTo ? DestinationEta() : null);
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData NavChip()
     {
+        // M26: the ETA rides the objective line, so time-to-destination shows on every desk.
+        string eta = DestinationEta() is { } e ? $" · {e}" : "";
         string objective = _armedOrbitBodyId is not null
-            ? $"→ {BodyName(_armedOrbitBodyId)} orbit"
+            ? $"→ {BodyName(_armedOrbitBodyId)} orbit{eta}"
             : _destinationBodyId is not null
-                ? $"→ {BodyName(_destinationBodyId)} (destination)"
+                ? $"→ {BodyName(_destinationBodyId)}{eta}"
                 : _planNodes.Count > 0
                     ? "on plotted course"
                     : "free sailing";
@@ -826,7 +854,7 @@
     // this resets on reload same as everything else). Default is Free sailing until the captain
     // gives an order (docs/SaturdayPlan/StationDesks.md addendum).
     private ShipMission _mission = ShipMission.Default;
-    private MissionOptions _missionOptions = new([], [], [], []);
+    private MissionOptions _missionOptions = new([], [], [], [], []);
     private SpaceSails.Client.Pages.Stations.DarkWeb? _darkWeb;
     private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost;
@@ -1545,6 +1573,18 @@
         _destinationBodyId = bodyId;
         _bodyMenuBody = null;
         _passDirty = true; // recompute the destination's closest pass on the next tick
+
+        // M26: keep the captain's articles honest — a nav destination becomes a Fly to order
+        // when the ship had no standing order; a bigger order (Hunt, Trade run…) stands.
+        if (bodyId is not null && _mission.Kind is MissionKind.FreeSailing or MissionKind.FlyTo)
+        {
+            _mission = new ShipMission(MissionKind.FlyTo, DestinationBodyId: bodyId);
+        }
+        else if (bodyId is null && _mission.Kind == MissionKind.FlyTo)
+        {
+            _mission = ShipMission.Default;
+        }
+
         ShowPulseMessage(bodyId is null
             ? "Destination cleared"
             : $"Destination set — {BodyName(bodyId)} 🎯 orbit assist tracks it now");
@@ -1562,6 +1602,34 @@
     {
         _bodyMenuBody = null;
         StateHasChanged();
+    }
+
+    // M26: bound into orbit at the destination — the voyage is over, the orders complete.
+    private void ArrivedAt(string bodyId)
+    {
+        if (_destinationBodyId == bodyId)
+        {
+            _destinationBodyId = null;
+        }
+
+        if (_mission.Kind == MissionKind.FlyTo && _mission.DestinationBodyId == bodyId)
+        {
+            _mission = ShipMission.Default;
+        }
+    }
+
+    // M26: time to destination, from the projected course's closest pass by it. A ballpark by
+    // design — the projection refreshes every few sim-hours and on every plan edit.
+    private string? DestinationEta()
+    {
+        if (_destinationBodyId is null || _destinationPass is not { } dp
+            || dp.BodyId != _destinationBodyId || dp.SimTime <= SimTime)
+        {
+            return null;
+        }
+
+        double seconds = dp.SimTime - SimTime;
+        return seconds < 86400 ? $"ETA {seconds / 3600:F0} h" : $"ETA {FormatHorizon(seconds)}";
     }
 
     // A closest pass can be turned into a planned insertion when it is a planet (not the sun)
@@ -1708,10 +1776,7 @@
                 _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
                 _reactionMassPulses -= cost;
                 _armedOrbitBodyId = null;
-                if (_destinationBodyId == body.Id)
-                {
-                    _destinationBodyId = null; // arrived
-                }
+                ArrivedAt(body.Id);
                 StaleFutureNodes();
                 ShowPulseMessage($"Autopilot insertion — bound to {body.Name} 🛰");
                 RendererInterop.PlayCue("board");
@@ -1827,10 +1892,7 @@
         Vector2d bodyVel = (_ephemeris.Position(oi.Body.Id, SimTime + h) - _ephemeris.Position(oi.Body.Id, SimTime - h)) / (2 * h);
         _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, oi.Body);
         _reactionMassPulses -= oi.Cost;
-        if (_destinationBodyId == oi.Body.Id)
-        {
-            _destinationBodyId = null; // arrived
-        }
+        ArrivedAt(oi.Body.Id);
         StaleFutureNodes();
         ShowPulseMessage($"Orbital insertion — bound to {oi.Body.Name} 🛰");
         RendererInterop.PlayCue("board");

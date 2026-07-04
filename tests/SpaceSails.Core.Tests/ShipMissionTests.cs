@@ -29,6 +29,31 @@ public class ShipMissionTests
     }
 
     [Fact]
+    public void Describe_FlyTo_NamesTheDestination()
+    {
+        Assert.Equal("Make for: Mercury orbit",
+            new ShipMission(MissionKind.FlyTo, DestinationBodyId: "mercury").Describe());
+    }
+
+    [Fact]
+    public void Catalog_FlyTo_OffersOrbitableWorldsOnly()
+    {
+        MissionOptions catalog = MissionCatalog.Build(Sol());
+
+        Assert.Contains(catalog.FlyTo, m => m.DestinationBodyId == "mercury");
+        Assert.Contains(catalog.FlyTo, m => m.DestinationBodyId == "saturn");
+        Assert.Contains(catalog.FlyTo, m => m.DestinationBodyId == "luna");
+        // Not the sun (you already orbit it), not stations (no Hill sphere — dock instead).
+        Assert.DoesNotContain(catalog.FlyTo, m => m.DestinationBodyId == "sun");
+        Assert.All(catalog.FlyTo, m =>
+        {
+            CelestialBody body = Sol().Bodies.First(b => b.Id == m.DestinationBodyId);
+            Assert.NotEqual(BodyKind.Station, body.Kind);
+            Assert.NotNull(body.ParentId);
+        });
+    }
+
+    [Fact]
     public void Describe_HumanizesHyphenatedBodyIds()
     {
         var mission = new ShipMission(MissionKind.LayLow, HavenBodyId: "ringside-exchange");
