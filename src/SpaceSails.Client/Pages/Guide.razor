@@ -25,13 +25,59 @@
         <li><strong>Join the crew</strong> — multiplayer: enter a callsign and share a live
             session. Warp runs at the <em>slowest</em> crew member's request (the min-warp rule),
             and you only see what your own sensors can see.</li>
+        <li>Any voyage loads straight from a link: <code>/map?scenario=sol</code>, <code>sol-eu</code>,
+            or <code>wheel</code>. Append <code>&amp;mp=1&amp;callsign=YourName</code> to join
+            multiplayer directly on that scenario, no home-page click needed.</li>
     </ul>
 
-    <h2 id="map">2. The map</h2>
+    <h2 id="duty-stations">2. The duty stations</h2>
+    <p class="text-secondary">
+        The ship isn't flown from one crowded screen — it's crewed. A slim <strong>station tab
+        bar</strong> at the top center reads <code>0 Captain · 1 Nav · 2 Sensors · 3 War room ·
+        4 Trade · 5 Comms · 6 Galley · 7 Deck</code>. Click a tab, or just press its number key,
+        and that desk takes the screen. <kbd>Escape</kbd> always brings you back to Nav.
+    </p>
+    <ul>
+        <li>Each desk gives its own topic the run of the screen — roughly 70% of it, instrument
+            and all — instead of squeezing everything into small floating panels. The Sensors
+            desk shows <em>every</em> tracked target at once, not one small box; the War room's
+            tactical circle fills its half of the desk; and so on.</li>
+        <li>Every other station still rides along as a small <strong>summary chip</strong> on the
+            thin strip down the right edge of whatever desk you're on — its tightest
+            current-objective line, never a stats dump. Click a chip to jump straight to that
+            desk. The captain's mission chip leads the strip everywhere except the Captain desk
+            itself.</li>
+        <li>Number keys work from anywhere except while you're typing into a slider or number
+            field. <kbd>7</kbd> (or the <strong>7 Deck</strong> tab) drops you onto the walkable
+            deck, where sitting at a bridge console — the helm, the scope alcove, the comms seat,
+            the tactical seat, the trade seat — opens that same desk with <kbd>E</kbd>. Same
+            switch, three ways in: key, tab, or seat.</li>
+    </ul>
+
+    <h2 id="captain">3. The captain's position</h2>
+    <ul>
+        <li>Press <kbd>0</kbd> or click <strong>0 Captain</strong> — it leads the tab bar, because
+            the captain's word comes before the helm's.</li>
+        <li>The desk is one uncluttered statement of the ship's current standing order — <em>the
+            ship's articles</em> — plus every mission you can give it, grouped as <strong>Free
+            sailing</strong>, <strong>Hunt</strong> (run down a cargo class), <strong>Trade
+            run</strong> (a directed route), <strong>Lay low</strong> (a haven to hide at), and
+            <strong>Survey</strong> (chart a corridor end to end). Options come straight from the
+            scenario you're sailing.</li>
+        <li><strong>One click selects — no confirm dialog.</strong> The order updates instantly
+            and shows up as the <code>☠ Captain</code> chip on every other desk's summary strip.</li>
+        <li>The mission doesn't fly the ship for you — Nav still flies, Sensors still watches,
+            Trade still deals. It's the standing order the rest of the crew works to.</li>
+    </ul>
+
+    <h2 id="map">4. The map (the Nav desk)</h2>
     <ul>
         <li><strong>Drag</strong> to pan, <strong>mouse wheel</strong> to zoom, <strong>Follow Ship</strong> to re-center.</li>
-        <li><strong>Warp slider</strong> (top left) — logarithmic, 1× to 10,000×. Warp automatically
-            drops near planets and encounters so you don't overshoot the interesting parts.</li>
+        <li>The Nav toolbar keeps only true nav controls: the <strong>warp slider</strong>
+            (logarithmic, 1× to 10,000×; it auto-drops near planets and encounters so you don't
+            overshoot the interesting parts), <strong>Pause</strong>, <strong>Follow Ship</strong>,
+            <strong>Plot</strong>, <strong>Scope</strong>, and <strong>?</strong> for this guide.
+            Everything else moved to its own duty station — see §2.</li>
         <li><strong>HUD readouts</strong> — sim time, ship speed with
             <em>(circular here: …)</em> beside it: the speed that would hold a circular sun orbit at
             your current distance. Match it and you coast forever; it is the difference between
@@ -40,7 +86,7 @@
             docking at a market. Run dry far from port and you drift on whatever orbit you bought.</li>
     </ul>
 
-    <h2 id="flying">3. Flying by hand</h2>
+    <h2 id="flying">5. Flying by hand</h2>
     <ul>
         <li><kbd>+</kbd> / <kbd>−</kbd> (or <kbd>↑</kbd>/<kbd>↓</kbd>) — thrust pulse:
             scales your velocity ±10%. Prograde only — pulses change your speed, never your heading.</li>
@@ -55,10 +101,10 @@
         trading speed for altitude on an ellipse.
     </p>
 
-    <h2 id="plotting">4. Plotting a course</h2>
+    <h2 id="plotting">6. Plotting a course</h2>
     <ul>
-        <li><strong>Plot</strong> opens the nav desk (or press <kbd>E</kbd> at the NAV POST inside
-            the ship). The sim pauses while you plan.</li>
+        <li><strong>Plot</strong> (on the Nav desk toolbar) opens the plotting table, or press
+            <kbd>E</kbd> at the NAV POST console inside the ship. The sim pauses while you plan.</li>
         <li><strong>Scrub slider</strong> — slide into the future; every planet shows a
             <em>ghost</em> at the scrubbed time, tethered to its live position.</li>
         <li><strong>Path length slider</strong> — how far ahead your ribbon projects (5 days to
@@ -75,8 +121,10 @@
             was sized for exactly that).</li>
         <li><strong>Closest pass</strong> — the plot card names your tightest flyby along the
             planned path, measured in body radii, with a marker on the ribbon. Under 5 R it turns
-            yellow; through a planet it turns red and says <em>IMPACT, captain</em>. No more
-            threading Venus because the Space Parrot took your attention.</li>
+            yellow; through a planet it turns red and says <em>IMPACT, captain</em>. When that pass
+            is a planet close enough to matter, an <strong>Insert at <em>body</em> pass</strong>
+            button appears — arm it and the ship parks itself in orbit the instant the window opens
+            during live flight (see §7). Click it again to disarm.</li>
     </ul>
 
     <h3>Worked examples</h3>
@@ -90,87 +138,109 @@
             ghost-Saturn meets your ghost-ship.</li>
     </ul>
 
-    <h3>Orbiting a planet — the bus stops of space</h3>
+    <h2 id="orbit-assist">7. Orbit assist — the bus stops of space</h2>
     <ul>
-        <li>Prograde pulses can never <em>turn</em> you into a planetary orbit — so the ship does
-            it for you. Approach a planet and the <strong>🛰 Orbit panel</strong> appears with two
-            bars: distance versus the planet's <em>Hill sphere</em> (where its gravity owns you)
-            and relative speed versus the 5 km/s limit.</li>
-        <li>Fill both bars and the window opens: press <kbd>O</kbd> (or the button) and the ship
-            performs the insertion burn — priced honestly in mass pulses by the Δv it takes, so
-            arrive slow and it's cheap. Once bound, you circle for free, forever: a parked ship
-            is a stable ambush point, and warp opens up to 1000× while you wait.</li>
-        <li><strong>Plan it from the nav desk</strong>: when your plotted path passes near a
-            planet, the plot card offers <em>🛰 Insert at [planet] pass (≈N p)</em> — arm it and
-            the ship parks itself the moment the window opens, no reflexes required. Matching
-            velocities with a planet is flight planning, not luck.</li>
+        <li>Prograde pulses can never <em>turn</em> you into a planetary orbit, so the ship does
+            it for you. Get near a planet and a strip appears in the Nav HUD: <strong>🛰 Orbit
+            <em>body</em> —</strong> <em>window OPEN</em>, <em>too fast (max 5.0 km/s rel)</em>, or
+            <em>get inside the Hill sphere</em>, with two bars underneath for distance-vs-Hill-sphere
+            and speed-vs-limit.</li>
+        <li>Press <kbd>O</kbd> (or the panel's button) once the window is open. It's an instant
+            burn that matches the body's velocity plus local circular speed — priced honestly in
+            mass pulses by the actual Δv it takes, so arrive slow and it's cheap. Once bound, you
+            circle for free, forever: a parked ship is a stable ambush point, and warp opens up to
+            1000× while you wait.</li>
+        <li>The panel favors an <strong>armed</strong> target over merely-nearest, so plotting a
+            planned insertion at Mars (§6's Closest pass note) won't get hijacked by a HUD strip
+            for Earth on the way past.</li>
         <li>Every planet keeps an <strong>orbital depot</strong> — a parked cargo barge circling
-            it (compute cores at Mercury, He3 in the outer system). Park at the same bus stop,
-            wait for it to swing around, and board it like any prey. Surely there is something
-            to steal on every planet orbit.</li>
+            it (compute cores at Mercury, alloys at Venus, machinery at Earth, ice at Mars, He3
+            further out). Park at the same bus stop, wait for it to swing around, and board it
+            like any prey.</li>
         <li>Mind the sun: it is drawn (and enforced) fat — sun-grazing slingshots crawl through
-            wide slow-warp zones, the planner flags them, and in ⚡ scenarios they cook your hull.</li>
+            wide slow-warp zones, the planner flags them, and in ⚡ scenarios they cook your hull.
+            The sun never shows the orbit-assist panel — you already orbit it by definition.</li>
     </ul>
 
-    <h2 id="piracy">5. Piracy</h2>
+    <h2 id="piracy">8. Piracy</h2>
     <ul>
         <li>Ships and pods are <strong>clickable on the map</strong> — clicking a contact selects
-            it just like picking its traffic-board row: the scope tracks it and the prediction
-            cone pins to it. The scope's AUTO mode always shows the nearest object, planet or ship.</li>
-        <li><strong>Traffic</strong> opens the shipping board: cargo pods and freighters with
-            routes, departure times, and last-seen data. Select one and <strong>Pin</strong> its
-            predicted path — a cone of where it can be, given its maneuver budget.</li>
+            it just like picking its row on the Comms desk's departures board (§11): the scope
+            tracks it and the prediction cone pins to it. The scope's AUTO mode always shows the
+            nearest object, planet or ship.</li>
+        <li>Select a target and <strong>Pin</strong> its predicted path — a cone of where it can
+            be, given its maneuver budget.</li>
         <li>Plot an intercept so your ribbon crosses the cone, close to within the
             <strong>capture envelope</strong> (500,000 km and 5 km/s relative), and hold it.
             The boarding clock runs on <em>wall-clock time</em> — shuttles fly in real time, warp
             be damned. A tighter, slower pass boards faster.</li>
         <li>Or fly it yourself: walk to the <strong>SHUTTLE BAY</strong> while the window is
-            engaged and press <kbd>E</kbd> — see §11.</li>
+            engaged and press <kbd>E</kbd> — see §15.</li>
         <li>Boarded cargo goes in your hold. <strong>Dock</strong> at a market (Earth, Mars,
-            Venus — get within the port zone) to sell, refill mass pulses, and buy upgrades.
-            He3 pays best; ice pays the rent.</li>
+            Venus — get within the port zone) to sell, refill mass pulses, and buy upgrades from
+            the Trade desk (§10). He3 pays best; ice pays the rent.</li>
     </ul>
 
-    <h2 id="tracking-post">6. The tracking post 📡</h2>
+    <h2 id="sensors">9. The Sensors desk 📡</h2>
     <ul>
-        <li><strong>Track 📡</strong> aims the ship's telescope at a bearing and arc; <strong>Start
-            sweep</strong> spends sim time (a full 360° survey takes 6 hours) to find ships the
-            traffic board can't — secretive haulers that never publish a timetable.</li>
-        <li>Detection range depends on look direction relative to the sun: a rosette shows the
-            egg-shape live. Pointed straight at the sun you're nearly blind (8% of the telescope's
-            6×10<sup>11</sup> m base range); pointed straight away from it (anti-sunward) you see
-            the full range — the pirate's best hunting angle.</li>
-        <li>Ready-made <strong>scanning programs</strong> cover every known trade corridor, so you
-            don't have to eyeball the aim.</li>
-        <li>Found contacts join the <strong>tracked-targets ledger</strong>. <strong>Confirm</strong>
-            is a cheap re-look at a target's predicted position that bumps quality back up; skip it
-            too long, or the target burns hard enough to slip the cone, and the lock decays until
-            it's lost.</li>
-        <li><strong>Telescope count</strong> — an upgrade at the dock — caps how many ships you can
-            hold on the ledger at once (1 at base, up to 4 at max). A well-tracked ship also draws
-            with a tighter ring on the map itself.</li>
+        <li>Press <kbd>2</kbd> or click <strong>2 Sensors</strong>. The live map dims in behind
+            it — the desk's own instrument is the <strong>scope wall</strong>: one live scope
+            canvas per tracked target, all running at once, not one small inset.</li>
+        <li>A <strong>rosette</strong> shows your detection envelope live as an egg-shape relative
+            to the sun: pointed straight at the sun you're nearly blind (8% of the telescope's
+            6×10<sup>11</sup> m base range); pointed anti-sunward you see the full range — the
+            pirate's best hunting angle.</li>
+        <li>Aim by dragging the <strong>bearing</strong> and <strong>arc width</strong> sliders, or
+            pick a ready-made <strong>scanning program</strong> that covers a known trade corridor,
+            then <strong>Start sweep</strong>. A full 360° survey spends 6 sim-hours; a narrow
+            wedge is faster. Sweeping finds ships the Comms desk's departures board can't —
+            secretive haulers that never publish a timetable.</li>
+        <li>Found contacts join the <strong>tracked-targets ledger</strong>, one tile per hit on
+            the wall. <strong>Confirm</strong> is a cheap re-look at a target's predicted position
+            that bumps quality back up; skip it too long, or the target burns hard enough to slip
+            the cone, and the lock decays until it's lost. <strong>Drop</strong> frees the slot.</li>
+        <li><strong>Telescope count</strong> — an upgrade on the Trade desk's dock market — caps
+            how many ships you can hold on the ledger (and wall tiles you get) at once: 1 at base,
+            up to 4 at max.</li>
     </ul>
 
-    <h2 id="local-space">7. Local space 🛰</h2>
+    <h2 id="trade">10. The Trade desk 🛰</h2>
     <ul>
-        <li>Entering orbit opens a <strong>Local space</strong> panel on its own (toggle any time
-            with <strong>Local 🛰</strong>) listing everything else parked at that body — depots 🛰,
-            stations 🏭, moons 🌙, havens 🏴, ships 🚀 — each tagged Trade / Fence / Board.</li>
-        <li>Trading needs either the <strong>same orbit</strong> as the counterpart, or a
+        <li>Press <kbd>4</kbd> or click <strong>4 Trade</strong> for the whole trade loop in one
+            place: <strong>local space</strong> contacts on one side, the <strong>dock
+            market</strong> alongside it, and your <strong>cargo manifest</strong> (by class, with
+            fence value) on the third.</li>
+        <li><strong>Local space</strong> lists everything else parked at your current body — depots
+            🛰, stations 🏭, moons 🌙, havens 🏴, ships 🚀 — each tagged Trade / Fence / Board.
+            Trading needs either the <strong>same orbit</strong> as the counterpart, or a
             <strong>course match</strong> (within 500,000 km, under 2 km/s relative speed) with a
-            moving partner — friendlier than boarding, since cargo drones aren't chasing anyone.</li>
-        <li><strong>Trade</strong> ferries your whole hold over real time (a striped progress bar,
-            ~20 seconds per cargo unit at a clean match) at the same prices as docking — a second
-            place to make the same sale. Drift out of range mid-transfer and the progress is lost.</li>
+            moving partner. Hit <strong>Trade</strong> and drones ferry your whole hold over real
+            time (a striped progress bar, ~20 seconds per cargo unit at a clean match) at the same
+            prices as docking. Drift out of range mid-transfer and the progress is lost. Unlike the
+            old floating panel, this desk doesn't yank you here the moment you bind into orbit —
+            the Trade chip on other desks updates live instead, so you notice a new contact without
+            losing your view; switching over to deal with it is your call.</li>
+        <li>The <strong>dock market</strong> panel shows when you're actually docked: <strong>Sell
+            cargo</strong> at fence prices (He3 pays best, then compute cores, alloys, machinery;
+            ice pays the rent), <strong>Refill mass</strong> for free, and four <strong>upgrade
+            tracks</strong> — reaction-mass capacity, sensor range, cargo hold, and telescope
+            count — each a level-up that doubles in price every level.</li>
+        <li>The <strong>cargo manifest</strong> is always visible here, transfer-in-progress and
+            all, so you can see exactly what's riding in the hold without opening anything else.</li>
     </ul>
 
-    <h2 id="dark-web">8. The dark space web 🕸</h2>
+    <h2 id="comms">11. The Comms desk 🕸</h2>
     <ul>
-        <li><strong>Web 🕸</strong> opens the black market in information — only for business at a
-            pirate haven or a far trading post (any station beyond 4×10<sup>11</sup> m from the sun).</li>
-        <li><strong>Buy</strong> a route tip on an off-the-books ship and it shows up on your own
-            traffic board with a stale-in-N-days badge; farther from Earth, tips are cheaper.
-            <strong>Sell</strong> your own tracking-post finds once they're 50%+ quality — selling
+        <li>Press <kbd>5</kbd> or click <strong>5 Comms</strong>. A news ticker runs across the
+            top (see §14's Galley for the long-form wire), with the <strong>departures
+            board</strong> — cargo pods and freighters, their routes, departure times, last-seen
+            data, and a <strong>Pin</strong> button — down one side and the <strong>dark
+            web</strong> down the other.</li>
+        <li>The <strong>dark web</strong> is the black market in information — only for business at
+            a pirate haven or a far trading post (any station beyond 4×10<sup>11</sup> m from the
+            sun). <strong>Buy</strong> a route tip on an off-the-books ship and it shows up on the
+            departures board with a stale-in-N-days badge; farther from Earth, tips are cheaper.
+            <strong>Sell</strong> your own Sensors-desk finds once they're 50%+ quality — selling
             never erases the track.</li>
         <li><strong>Tight-beam</strong> hails a tracked contact directly; <strong>Laser range</strong>
             trades a perfect instant fix for lighting yourself up — the target now knows roughly
@@ -178,10 +248,12 @@
             deliberate exceptions.</li>
     </ul>
 
-    <h2 id="war-room">9. The war room ⚔</h2>
+    <h2 id="war-room">12. The War room ⚔</h2>
     <ul>
-        <li><strong>Guns ⚔</strong> opens the tactical circle: your ship at the center, a weapon-range
-            ring (2×10<sup>8</sup> m), and a catch-radius ring around any hunter on your tail.</li>
+        <li>Press <kbd>3</kbd> or click <strong>3 War room</strong> for the full-screen tactical
+            circle: your ship at the center, a weapon-range ring (2×10<sup>8</sup> m), and a
+            catch-radius ring around any hunter on your tail, with the heat gauge blown up large
+            in the corner.</li>
         <li><strong>Warn</strong> a target in weapon range — compliant ships heave to and board at
             half the usual time; stubborn ones call their own muscle instead, and which is which
             never changes for a given ship. <strong>Hail</strong> for an in-character reply,
@@ -195,26 +267,43 @@
             post), and repair — no questions asked.</li>
     </ul>
 
-    <h2 id="scope">10. The scope</h2>
+    <h2 id="scope">13. The scope</h2>
     <ul>
-        <li><strong>Scope</strong> opens the instrument screen: auto-locks the nearest interesting
-            contact, draws it (freighters, pods, players, planets, the sun, plasma wisps), and
-            reads out distance and relative speed.</li>
+        <li><strong>Scope</strong>, on the Nav toolbar, opens a small instrument overlay:
+            auto-locks the nearest interesting contact, draws it (freighters, pods, players,
+            planets, the sun, plasma wisps), and reads out distance and relative speed.</li>
         <li><strong>◀ / ▶</strong> cycle targets manually; the middle button returns to
-            <strong>AUTO</strong>.</li>
+            <strong>AUTO</strong>. For every tracked target at once, full-screen, see the Sensors
+            desk's scope wall (§9) instead.</li>
     </ul>
 
-    <h2 id="ship">11. Inside the ship</h2>
+    <h2 id="galley">14. The Galley 🍹</h2>
     <ul>
-        <li><strong>Deck</strong> — top-down plan of your pirate sail. Walk with
-            <kbd>WASD</kbd>/arrows, interact with <kbd>E</kbd>, drag the map if the bow hides
-            behind a panel. Crew: droids K-77 and R-3B stand by the shuttle; V-1K patrols.</li>
+        <li>Press <kbd>6</kbd> or click <strong>6 Galley</strong> — the desk built to prove the
+            summary strip works everywhere, and the home of ship gossip.</li>
+        <li>The <strong>news wire</strong> posts a deterministic headline per sim-day (world
+            events, plunder rumors, price gossip) plus the last several days' scrollback — the
+            same feed the Comms desk's ticker draws its short slice from.</li>
+        <li>The <strong>rum locker</strong> pours a tot on demand, wired to the exact same rum
+            ledger the deck's CANTINA console uses — tot count and the wobble stay in sync between
+            the two entry points. Mind the third tot: it makes the deck (and your steering) sway.</li>
+    </ul>
+
+    <h2 id="ship">15. Inside the ship — the Deck</h2>
+    <ul>
+        <li>Press <kbd>7</kbd> or click <strong>7 Deck</strong> — top-down plan of your pirate
+            sail. Walk with <kbd>WASD</kbd>/arrows, interact with <kbd>E</kbd>, drag the map if the
+            bow hides behind a panel. Crew: droids K-77 and R-3B stand by the shuttle; V-1K patrols.</li>
         <li><kbd>F</kbd> — <strong>first person</strong>. Walk the corridors; the windows show the
             real sky — the sun blazes bigger the closer you sail, and the planets are where the
-            ephemeris says they are. <kbd>Q</kbd> returns to the helm.</li>
-        <li>Consoles: <strong>HELM / NAV POST</strong> (plotting), <strong>SCOPE</strong>,
-            <strong>CANTINA</strong> (rum — mind the third tot), <strong>CARGO HOLD</strong> (your loot as crates),
-            <strong>VENT PANEL</strong>, <strong>SHUTTLE BAY</strong>.</li>
+            ephemeris says they are. <kbd>Q</kbd> returns to the helm (and the Nav desk).</li>
+        <li>Consoles are <strong>bridge seats</strong>: sit at one and press <kbd>E</kbd> to open
+            its desk. <strong>HELM</strong> and <strong>NAV POST</strong> open Nav (the nav post
+            also lights up the plotting table); <strong>SCOPE</strong> opens Sensors;
+            <strong>CANTINA</strong> opens the Galley (rum — mind the third tot);
+            <strong>COMMS SEAT</strong> opens Comms; <strong>TACTICAL SEAT</strong> opens the War
+            room; <strong>TRADE SEAT</strong> opens Trade. Plus <strong>CARGO</strong> (a look at
+            your hold), <strong>VENT PANEL</strong>, and the <strong>SHUTTLE BAY</strong>.</li>
         <li><strong>The boarding run</strong>: with a capture window engaged, <kbd>E</kbd> at the
             shuttle bay puts you on the stick. Cross the gap with <kbd>WASD</kbd> thrust, dock at
             the airlock <em>below the speed limit</em> (come in hot and you bounce), and the droids
@@ -223,7 +312,7 @@
             mothership makes a hard run for the pilot.</li>
     </ul>
 
-    <h2 id="electric">12. The electric sky ⚡</h2>
+    <h2 id="electric">16. The electric sky ⚡</h2>
     <ul>
         <li>Near the sun the plasma halo charges your hull; the flowing ribbons between planets
             are <strong>plasma streams</strong> — riding one pushes you along it (charged hulls
@@ -234,7 +323,7 @@
             visible, desperate, or both.</li>
     </ul>
 
-    <h2 id="tips">13. The physics, honestly</h2>
+    <h2 id="tips">17. The physics, honestly</h2>
     <ul>
         <li><strong>There is no drag.</strong> A circular orbit holds forever with zero thrust
             (measured: −0.025% radius drift over a full year).</li>
