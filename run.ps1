@@ -1,11 +1,11 @@
 ﻿<#
 Sets sail from the console without port drama.
   ./run.ps1              -> single-player client (default port 5073)
-  ./run.ps1 -Server      -> multiplayer server + hub (default port 5295)
+  ./run.ps1 -Server      -> multiplayer server + hub (default port 5295, archived — see archive/README.md)
   ./run.ps1 -TakePort    -> stop whatever holds the port instead of moving berth
   ./run.ps1 -Port 6000   -> ask for a specific port
   ./run.ps1 -Debug       -> Debug build (slow in the browser; for development)
-Variant wrappers: run-server.ps1, run-debug.ps1, run-server-debug.ps1
+Variant wrappers: run-debug.ps1 here; archive/run-server.ps1, archive/run-server-debug.ps1
 If the port is taken, finds the next free berth and says so - no stack traces.
 #>
 param(
@@ -17,7 +17,9 @@ param(
 
 $config = if ($Debug) { "Debug" } else { "Release" }
 
-$project = if ($Server) { "src/SpaceSails.Server" } else { "src/SpaceSails.Client" }
+# Multiplayer is archived (plan §PR-1, untested; single-player is the fun core) — the project
+# still builds standalone from archive/, just outside the default slnx/CI path.
+$project = if ($Server) { "archive/SpaceSails.Server" } else { "src/SpaceSails.Client" }
 if ($Port -eq 0) { $Port = if ($Server) { 5295 } else { 5073 } }
 
 $holder = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1

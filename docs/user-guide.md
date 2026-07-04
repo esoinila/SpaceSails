@@ -21,6 +21,9 @@ for pilots who want strange skies.
 - **Join the crew** — multiplayer: enter a callsign and share a live
 session. Warp runs at the *slowest* crew member's request (the min-warp rule),
 and you only see what your own sensors can see.
+- Any voyage can be loaded straight from a link: `/map?scenario=sol`,
+`sol-eu`, or `wheel`. Append `&mp=1&callsign=YourName` to join multiplayer
+directly on that scenario, no home-page click needed.
 
 
 
@@ -29,6 +32,8 @@ and you only see what your own sensors can see.
 - **Drag** to pan, **mouse wheel** to zoom, **Follow Ship** to re-center.
 - **Warp slider** (top left) — logarithmic, 1× to 10,000×. Warp automatically
 drops near planets and encounters so you don't overshoot the interesting parts.
+Above 100×, the sim advances in fixed 60-second quanta instead of every frame —
+the same clock the traffic runs on, so nothing drifts out of sync at the high end.
 - **HUD readouts** — sim time, ship speed with
 *(circular here: …)* beside it: the speed that would hold a circular sun orbit at
 your current distance. Match it and you coast forever; it is the difference between
@@ -74,7 +79,9 @@ scrub; **×** deletes it.
 was sized for exactly that).
 - **Closest pass** — the plot card names your tightest flyby along the planned path, in body
 radii, with a marker on the ribbon. Under 5 R it turns yellow; through a planet it turns red
-and says *IMPACT, captain*.
+and says *IMPACT, captain*. When that pass is a planet close enough to matter, an **Insert at
+*body* pass** button appears — arm it and the ship parks itself in orbit the instant the window
+opens during live flight (see §5). Disarm the same way, by clicking it again.
 
 
 
@@ -90,24 +97,48 @@ ghost-Saturn meets your ghost-ship.
 
 
 
-## 5. Piracy
+## 5. Orbit assist
 
-- **Traffic** opens the shipping board: cargo pods and freighters with
-routes, departure times, and last-seen data. Select one and **Pin** its
-predicted path — a cone of where it can be, given its maneuver budget.
+- Get near a planet and a strip appears in the HUD: **🛰 Orbit *body* —**
+*window OPEN*, *too fast (max 5.0 km/s rel)*, or *get inside the Hill sphere*.
+Two bars underneath show distance-vs-Hill-sphere and speed-vs-limit at a glance.
+- Press **O** (or the panel's **Enter orbit** button) once the window is open.
+It's an instant burn that matches the body's velocity plus local circular
+speed — the pulse cost scales honestly with the actual Δv needed, so a sloppy
+fast approach costs more pulses than a gentle one. The button disables itself
+if you can't afford the cost.
+- The panel favors an **armed** target over merely-nearest, so plotting a
+planned insertion at Mars won't get hijacked by a HUD strip for Earth on the
+way past — see §4's Closest pass note for arming one in advance.
+- The sun never shows this panel — you already orbit it by definition.
+
+
+
+## 6. Piracy
+
+- **Traffic** opens the shipping board: cargo pods, freighters, and one
+plunderable **orbital depot per planet** (M22 — cargo flavor follows the world:
+compute cores at Mercury, alloys at Venus, machinery at Earth, ice at Mars, He3
+everywhere further out). Depots ride a fixed circular orbit and never maneuver
+— orbit-assist into the same planet and boarding is close to the best case.
+- Select a target and **Pin** its predicted path — a cone of where it can be,
+given its maneuver budget.
 - Plot an intercept so your ribbon crosses the cone, close to within the
 **capture envelope** (500,000 km and 5 km/s relative), and hold it.
 The boarding clock runs on *wall-clock time* — shuttles fly in real time, warp
 be damned. A tighter, slower pass boards faster.
 - Or fly it yourself: walk to the **SHUTTLE BAY** while the window is
-engaged and press `E` — see §7.
+engaged and press `E` — see §8.
 - Boarded cargo goes in your hold. **Dock** at a market (Earth, Mars,
-Venus — get within the port zone) to sell, refill mass pulses, and buy upgrades.
-He3 pays best; ice pays the rent.
+Venus — get within the port zone) to **sell cargo** (He3 pays best at 1200
+cr/unit, then compute cores, alloys, machinery; ice pays the rent at 100) and
+**refill mass pulses** for free. Spend credits on three upgrade tracks —
+reaction-mass capacity, sensor range, cargo hold — each a level-up costing
+2,000 credits and doubling every level thereafter.
 
 
 
-## 6. The scope
+## 7. The scope
 
 - **Scope** opens the instrument screen: auto-locks the nearest interesting
 contact, draws it (freighters, pods, players, planets, the sun, plasma wisps), and
@@ -117,7 +148,7 @@ reads out distance and relative speed.
 
 
 
-## 7. Inside the ship
+## 8. Inside the ship
 
 - **Deck** — top-down plan of your pirate sail. Walk with
 `WASD`/arrows, interact with `E`, drag the map if the bow hides
@@ -137,7 +168,7 @@ mothership makes a hard run for the pilot.
 
 
 
-## 8. The electric sky ⚡
+## 9. The electric sky ⚡
 
 - Near the sun the plasma halo charges your hull; the flowing ribbons between planets
 are **plasma streams** — riding one pushes you along it (charged hulls
@@ -149,7 +180,7 @@ visible, desperate, or both.
 
 
 
-## 9. The physics, honestly
+## 10. The physics, honestly
 
 - **There is no drag.** A circular orbit holds forever with zero thrust
 (measured: −0.025% radius drift over a full year).
