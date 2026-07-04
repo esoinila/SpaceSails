@@ -1,0 +1,68 @@
+/* Standalone floating panel — same "instrument card" language as the scope/dock, positioned in
+   the otherwise-empty left-middle band of the map HUD. */
+
+.tracking-post-card {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24rem;
+    max-width: calc(100% - 1.5rem);
+    pointer-events: auto;
+}
+
+.tracking-rosette-svg {
+    width: 108px;
+    height: 108px;
+    display: block;
+}
+
+.tracking-rosette-envelope {
+    fill: rgba(90, 200, 190, 0.10);
+    stroke: rgba(90, 200, 190, 0.65);
+    stroke-width: 1.2;
+}
+
+.tracking-rosette-wedge {
+    fill: rgba(255, 210, 80, 0.18);
+    stroke: rgba(255, 210, 80, 0.55);
+    stroke-width: 1;
+}
+
+.tracking-rosette-wedge-active {
+    fill: rgba(120, 255, 190, 0.28);
+    stroke: rgba(120, 255, 190, 0.85);
+}
+
+.tracking-rosette-sunline {
+    stroke: rgba(255, 220, 120, 0.5);
+    stroke-width: 1;
+    stroke-dasharray: 2 2;
+}
+
+.tracking-rosette-label {
+    fill: rgba(255, 220, 120, 0.9);
+    font-size: 10px;
+}
+
+.tracking-rosette-ship {
+    fill: #e0e4ec;
+}
+
+.tracking-progress {
+    height: 6px;
+}
+
+.tracking-quality-bar {
+    height: 4px;
+    width: 100%;
+    background: #1c2230;
+    border-radius: 2px;
+    margin-top: 2px;
+}
+
+.tracking-quality-fill {
+    height: 100%;
+    background: #7dffb0;
+    border-radius: 2px;
+}
