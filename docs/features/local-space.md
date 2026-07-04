@@ -5,9 +5,11 @@ depot, station, moon, haven, and nearby ship at whatever body you're currently b
 cruising close to), plus a one-click drone trade with anything that'll take one.
 
 Where: the **Trade desk** — press `4` or click **4 Trade** in the station tab bar (see
-[station-desks.md](station-desks.md)). Full-screen, alongside the dock market. As of PR-11 it no
-longer auto-opens on binding to orbit (a full-screen desk switch would be too disruptive
-mid-flight) — the Trade summary chip on other desks updates live instead.
+[station-desks.md](station-desks.md)). Full-screen: as of PR-13 the desk is a proper trading floor
+in three columns — this panel on the left, the [dock market](dock-and-economy.md) in the middle,
+and the cargo manifest on the right (what's actually in the hold — see that doc for the
+breakdown). As of PR-11 it no longer auto-opens on binding to orbit (a full-screen desk switch
+would be too disruptive mid-flight) — the Trade summary chip on other desks updates live instead.
 
 ![Local space](../tmp_pics/saturday/local-space.png)
 

@@ -5,11 +5,24 @@ don't publish a timetable, sell your own [tracking post](tracking-post.md) finds
 contact directly, or burn a laser fix on one at the cost of giving away your own position.
 
 Where: the **Comms desk** — press `5` or click **5 Comms** in the station tab bar (see
-[station-desks.md](station-desks.md)). Full-screen, alongside the traffic board. The dark-web
-(buy/sell) section only works while you're docked or bound in orbit somewhere
-`IntelMarket.CanTradeIntelAt` allows — see below; tight-beam and laser ranging work anywhere.
+[station-desks.md](station-desks.md)). The dark-web (buy/sell) section only works while you're
+docked or bound in orbit somewhere `IntelMarket.CanTradeIntelAt` allows — see below; tight-beam
+and laser ranging work anywhere.
 
 ![Dark space web](../tmp_pics/saturday/dark-web.png)
+
+## The comms room (PR-14)
+
+The whole desk reads as one room, ears-forward:
+
+- A **news wire ticker** runs across the top — the freshest few lines off the ship's
+  [news wire](news-wire.md), always visible no matter what else you're doing at this desk.
+- Below it, three consoles side by side: the **departures board** (the traffic board, relocated
+  here from the old Nav toolbar — now roomier, in its own column instead of a cramped floating
+  card), the **dark web market** (buy/sell intel), and **tight-beam + laser ranging**.
+
+The market/sell tables and the tight-beam/laser-ranging console are exactly as described below;
+only their position in the room (and the ticker above them) is new.
 
 ## Where you can trade intel
 
@@ -62,4 +75,6 @@ an honest answer) is worth being seen.
 See also: [tracking-post.md](tracking-post.md) for how a target gets onto your ledger in the first
 place, [traffic-board.md](traffic-board.md) for the off-the-books footer bought intel fills in,
 [local-space.md](local-space.md) for trading cargo (as opposed to information) at the same kind of
-stop, [war-room.md](war-room.md) for what "lit up" can eventually cost you.
+stop, [war-room.md](war-room.md) for what "lit up" can eventually cost you, and
+[news-wire.md](news-wire.md) for the ticker across the top of this room (a bought tip drops a line
+on the wire too).

@@ -1,26 +1,33 @@
-@* The Galley desk (StationDesks.md #6, PR-11 v1): "sitting in the Galley fills the screen with
-   galley stuff (news etc.) plus summaries of the rest" — the summaries are Map.razor's shared
-   DeskChips strip, rendered on every desk; this component only owns the galley's own two things:
-   the news wire stub and the rum locker. The rum locker is wired through OnPourRum to the exact
-   same PourRum method the deck cantina console calls (Map.razor) — one rum ledger, two doors in.
-   The full news/rumor economy (deterministic generator feeding both Comms and here) is PR-14;
-   this is a pure, deterministic-by-sim-day flavor stub. *@
+@using SpaceSails.Core
+
+@* The Galley desk (StationDesks.md #6, PR-11 v1 → PR-14 real wire): "sitting in the Galley fills
+   the screen with galley stuff (news etc.) plus summaries of the rest" — the summaries are
+   Map.razor's shared DeskChips strip, rendered on every desk; this component only owns the
+   galley's own two things: the news wire and the rum locker. The rum locker is wired through
+   OnPourRum to the exact same PourRum method the deck cantina console calls (Map.razor) — one rum
+   ledger, two doors in. The news wire is now the real deal (Core/NewsWire.cs): Map.razor blends
+   its bounded NewsEvent ledger with NewsWire.Ambient's rotating scenario flavor and hands this
+   component the long feed, newest first — the Comms desk's ticker draws from the exact same
+   Map.razor helper, just a shorter slice. *@
 
 <div class="galley-desk text-light">
     <div class="galley-news">
         <div class="fw-bold mb-2">News wire 📰</div>
-        <div class="galley-headline mb-2">@NewsLineFor(SimTime)</div>
-        <div class="text-secondary small mb-3">
-            Flavor only for now — the full news &amp; rumor economy (feeding this wire and the
-            Comms desk together) arrives in PR-14. One deterministic headline per sim-day.
-        </div>
-        <div class="fw-bold mb-1 text-secondary small">Earlier on the wire</div>
-        <ul class="list-unstyled galley-wire-list">
-            @for (int daysAgo = 1; daysAgo <= 4; daysAgo++)
-            {
-                <li class="text-secondary small mb-1">@NewsLineFor(SimTime - daysAgo * SecondsPerDay)</li>
-            }
-        </ul>
+        @if (Feed.Count == 0)
+        {
+            <div class="text-secondary">No word from the wire today.</div>
+        }
+        else
+        {
+            <div class="galley-headline mb-2">@Feed[0].Headline</div>
+            <div class="fw-bold mb-1 text-secondary small">Earlier on the wire</div>
+            <ul class="list-unstyled galley-wire-list">
+                @foreach (NewsWire.NewsItem item in Feed.Skip(1))
+                {
+                    <li class="text-secondary small mb-1"><span class="text-info">@DayLabel(item.SimTime)</span> — @item.Headline</li>
+                }
+            </ul>
+        }
     </div>
     <div class="galley-rum">
         <div class="fw-bold mb-2">The rum locker 🍹</div>
@@ -42,33 +49,23 @@
     private const double SecondsPerDay = 86400.0;
 
     [Parameter, EditorRequired] public double SimTime { get; set; }
+
+    /// <summary>The blended news feed (player events + ambient flavor), newest first — built by
+    /// Map.razor's NewsFeed helper so Comms and Galley always read from one source of truth.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<NewsWire.NewsItem> Feed { get; set; } = [];
+
     [Parameter] public int RumTots { get; set; }
     [Parameter] public bool WobbleActive { get; set; }
     [Parameter] public string? LastRumLine { get; set; }
     [Parameter] public EventCallback OnPourRum { get; set; }
 
-    // Deterministic flavor lines (pure function of sim-day, no randomness) referencing real
-    // scenario names — He3/outer-reaches gossip in the spirit of worldbuilding-notes.md.
-    private static readonly string[] NewsLines =
-    [
-        "Ringside Exchange reports a glut of He3 futures — Titan haulers grumble about margins.",
-        "Word from the Mercury Compute Farms: a polar array went dark for six hours. Coincidence, surely.",
-        "A masked freighter cleared customs at Ganymede without a manifest. Nobody asked twice.",
-        "The Enceladus haven quietly doubled its docking fees. The regulars are not amused.",
-        "Rumor: a captain out of the Belt is buying old mass-driver pods for scrap — or spares.",
-        "Luna exchange prices for compute cores ticked up on 'security concerns' nobody will name.",
-        "Saturn-side gossip: the He3 route past Ringside Exchange has a new toll collector.",
-        "A trading post near the outer moons is paying premium for stale intel — no questions asked.",
-        "The Titan haulers' union is 'reviewing' its timetable policy. Read: going quiet.",
-        "Someone laser-ranged a pirate haven last week. The haven laser-ranged back.",
-        "Mercury Compute Farms hiring 'discreet' couriers. Pay in credits, not questions.",
-        "A quiet corner of the dark web is offering route intel at half price. Feels like bait.",
-    ];
-
-    private static string NewsLineFor(double simTime)
+    /// <summary>"today" / "yesterday" / "Nd ago", relative to the current sim-day — pure
+    /// arithmetic, no wall-clock, matching the determinism rule the wire itself follows.</summary>
+    private string DayLabel(double itemSimTime)
     {
-        long day = (long)Math.Floor(simTime / SecondsPerDay);
-        int index = (int)(((day % NewsLines.Length) + NewsLines.Length) % NewsLines.Length);
-        return NewsLines[index];
+        long today = (long)Math.Floor(SimTime / SecondsPerDay);
+        long day = (long)Math.Floor(itemSimTime / SecondsPerDay);
+        long delta = today - day;
+        return delta <= 0 ? "today" : delta == 1 ? "yesterday" : $"{delta}d ago";
     }
 }
