@@ -32,6 +32,7 @@ Small, linked pages — one station or mechanic per page — under `docs/feature
 - [Dark space web](docs/features/dark-web.md) — buying/selling route intel, tight-beam hails, laser ranging
 - [War room](docs/features/war-room.md) — weapon range, warning shots, compliance, bribery, heat, and hunters
 - [Station desks](docs/features/station-desks.md) — the duty-station refit: full-screen desks switched by number key, the 70% rule, summary chips, the Galley
+- [The captain's position](docs/features/captains-position.md) — the mission desk (key `0`): Hunt/Trade run/Lay low/Survey/Free sailing, and the mission chip on every desk
 
 ## Stack
 

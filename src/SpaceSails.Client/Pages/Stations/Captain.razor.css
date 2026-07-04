@@ -1,0 +1,104 @@
+/* The captain's position (PR-15): a stately, uncluttered room. The mission statement gets its
+   own quiet block up top (70% rule doesn't apply here the way it does to instrument-heavy desks —
+   there's no "big instrument", just the one thing that matters: the current order and the list of
+   orders that could replace it). */
+
+.captain-desk {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.captain-articles {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    flex: 0 0 auto;
+}
+
+.captain-articles-label {
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 0.8rem;
+    color: rgba(224, 228, 236, 0.6);
+    margin-bottom: 0.5rem;
+}
+
+.captain-articles-mission {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.captain-groups {
+    display: grid;
+    /* 12.5rem min lets all five kind-groups sit in one row at the common 1440px-wide desk
+       (desk-content is ~1232px there after the chip-strip padding); anything narrower wraps
+       gracefully and scrolls via .captain-desk's overflow-y. */
+    grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+    gap: 1.25rem;
+    flex: 1 1 auto;
+}
+
+.captain-group {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.captain-group-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.captain-group-icon {
+    display: inline-block;
+    width: 1.4rem;
+}
+
+.captain-group-flavor {
+    font-style: italic;
+    color: rgba(224, 228, 236, 0.65);
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.captain-group-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+}
+
+.captain-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.35rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.captain-card:hover,
+.captain-card:focus-visible {
+    border-color: rgba(120, 200, 255, 0.7);
+    outline: none;
+}
+
+.captain-card-selected {
+    background: rgba(120, 200, 255, 0.18);
+    border-color: rgba(120, 200, 255, 0.9);
+    font-weight: 600;
+}
+
+.captain-empty {
+    color: rgba(224, 228, 236, 0.5);
+    font-size: 0.85rem;
+    font-style: italic;
+}

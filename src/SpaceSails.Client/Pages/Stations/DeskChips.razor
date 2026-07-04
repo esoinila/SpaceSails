@@ -5,8 +5,9 @@
    full panel. Click a chip to jump to that desk. One component, reused on every desk. *@
 
 <div class="desk-chip-strip">
-    @* The captain's position (mission chip, PR-15) will dock at the top of this strip — no
-       placeholder text until that desk exists. *@
+    @* The captain's position (PR-15, the addendum): Map.razor puts the mission chip first in
+       Chips whenever the captain isn't the active desk, so it docks at the top of this strip —
+       same generic chip markup as every other desk, nothing captain-specific lives here. *@
     @foreach (ChipData chip in Chips)
     {
         <div class="desk-chip" role="button" tabindex="0"

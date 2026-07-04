@@ -26,13 +26,14 @@
     </canvas>
 
     @* Station tab bar (StationDesks.md rule 3): always visible, top center, works on every desk —
-       the keyboard-shortcut equivalent for players who'd rather click. *@
+       the keyboard-shortcut equivalent for players who'd rather click. Captain (PR-15) leads the
+       bar with its `0` key, ahead of Nav's `1` — the captain's word comes before the helm's. *@
     <div class="desk-tab-bar bg-dark bg-opacity-75 rounded p-1">
-        @foreach (ShipDesk desk in AllDesks)
+        @foreach (ShipDesk desk in TabBarOrder)
         {
             <button type="button" class="btn btn-sm desk-tab @(_activeDesk == desk ? "btn-info" : "btn-outline-light")"
                     @onclick="() => SwitchDesk(desk)">
-                @((int)desk) @DeskLabel(desk)
+                @DeskKeyLabel(desk) @DeskLabel(desk)
             </button>
         }
     </div>
@@ -285,8 +286,8 @@
     @* SATURDAY-ANCHOR: panels — the desk layer (PR-11): each non-Nav/Deck desk fills the screen
        (rule 1 — 70% belongs to the desk's own topic) while the map/sim keeps running underneath
        (rule 4). Sensors dims the map through; the rest go near-opaque. Parallel desk lanes
-       (PR-12/13/14) touch only their own branch of this if-chain. *@
-    @if (_activeDesk is ShipDesk.Sensors or ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley)
+       (PR-12/13/14) touch only their own branch of this if-chain; PR-15 adds the Captain branch. *@
+    @if (_activeDesk is ShipDesk.Sensors or ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley or ShipDesk.Captain)
     {
         <div class="desk-layer @(_activeDesk == ShipDesk.Sensors ? "desk-layer-dimmed" : "")">
             <div class="desk-content">
@@ -422,6 +423,10 @@
                 {
                     <SpaceSails.Client.Pages.Stations.Galley SimTime="SimTime" RumTots="_rumTots" WobbleActive="RumWobbleActive" LastRumLine="@_lastRumLine" OnPourRum="PourRumFromGalley" />
                 }
+                else if (_activeDesk == ShipDesk.Captain)
+                {
+                    <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission" />
+                }
             </div>
         </div>
     }
@@ -435,7 +440,12 @@
     // the old per-station toggles (_showTracking et al.) are gone; a desk is either the one
     // you're sitting at (full screen) or it isn't (a summary chip on DeskChips).
     private ShipDesk _activeDesk = ShipDesk.Nav;
-    private static readonly ShipDesk[] AllDesks = Enum.GetValues<ShipDesk>();
+
+    // PR-15: the tab bar's display order isn't the enum's declaration order — Captain's key is
+    // `0`, ahead of Nav's `1`, so it leads the bar too even though its enum value (8, tacked on
+    // after Deck so existing desk numbering never shifts) sorts last.
+    private static readonly ShipDesk[] TabBarOrder =
+        [ShipDesk.Captain, ShipDesk.Nav, ShipDesk.Sensors, ShipDesk.WarRoom, ShipDesk.Trade, ShipDesk.Comms, ShipDesk.Galley, ShipDesk.Deck];
 
     private static string DeskLabel(ShipDesk desk) => desk switch
     {
@@ -446,8 +456,13 @@
         ShipDesk.Comms => "Comms",
         ShipDesk.Galley => "Galley",
         ShipDesk.Deck => "Deck",
+        ShipDesk.Captain => "Captain",
         _ => desk.ToString(),
     };
+
+    // Captain's keyboard shortcut is `0`, not its enum value (8) — see OnKeyDown's explicit '0'
+    // case and ShipDesk's doc comment for why it's numbered last but keyed first.
+    private static string DeskKeyLabel(ShipDesk desk) => desk == ShipDesk.Captain ? "0" : ((int)desk).ToString();
 
     /// <summary>The one place a desk switch happens, so Deck's special case (it rides the
     /// existing _deckMode flag rather than its own bool) only needs handling once: number keys,
@@ -505,6 +520,9 @@
     private IReadOnlyList<SpaceSails.Client.Pages.Stations.DeskChips.ChipData> BuildDeskChips()
     {
         var chips = new List<SpaceSails.Client.Pages.Stations.DeskChips.ChipData>();
+        // PR-15: the captain's mission chip docks at the TOP of the strip on every desk but the
+        // captain's own — the reserved slot DeskChips.razor's comment refers to.
+        if (_activeDesk != ShipDesk.Captain) chips.Add(CaptainChip());
         if (_activeDesk != ShipDesk.Nav) chips.Add(NavChip());
         if (_activeDesk != ShipDesk.Sensors) chips.Add(SensorsChip());
         if (_activeDesk != ShipDesk.WarRoom) chips.Add(WarRoomChip());
@@ -513,6 +531,20 @@
         if (_activeDesk != ShipDesk.Galley) chips.Add(GalleyChip());
         return chips;
     }
+
+    /// <summary>Sets the ship's mission — the only writer of <see cref="_mission"/> (the captain's
+    /// desk calls this on every card click; no confirm dialog, per the addendum). The explicit
+    /// StateHasChanged matters: this page suppresses Blazor's automatic per-event re-render (see
+    /// IHandleEvent.HandleEventAsync below), so without it the articles headline would wait for
+    /// OnTick's 200 ms HUD throttle — a visible beat of lag on a deliberate, rare click.</summary>
+    private void SetMission(ShipMission mission)
+    {
+        _mission = mission;
+        StateHasChanged();
+    }
+
+    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData CaptainChip() =>
+        new(ShipDesk.Captain, "☠", "Captain", _mission.Describe());
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData NavChip()
     {
@@ -578,6 +610,11 @@
     }
 
     // SATURDAY-ANCHOR: fields — parallel lanes append their station fields directly below
+    // PR-15: the captain's position — session-only mission state (no save system exists yet, so
+    // this resets on reload same as everything else). Default is Free sailing until the captain
+    // gives an order (docs/SaturdayPlan/StationDesks.md addendum).
+    private ShipMission _mission = ShipMission.Default;
+    private MissionOptions _missionOptions = new([], [], [], []);
     private SpaceSails.Client.Pages.Stations.DarkWeb? _darkWeb;
     private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost;
@@ -1469,6 +1506,10 @@
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
+        // PR-15, the captain's position: the mission catalog is scenario data (cargo classes,
+        // route pairs, havens), so it's built once per scenario load alongside everything else
+        // that reads _ephemeris — never recomputed per frame or per desk switch.
+        _missionOptions = MissionCatalog.Build(_ephemeris);
         _plasma = PlasmaEnvironment.FromScenario(scenario, _ephemeris);
         _simulator = new Simulator(_ephemeris, timeStepSeconds: 1.0, _plasma);
         _npcSimulator = new Simulator(_ephemeris, TrafficSchedule.NpcTimeStep); // NPCs chargeless in M7
@@ -2079,6 +2120,14 @@
         if (e.Key.Length == 1 && e.Key[0] is >= '1' and <= '7')
         {
             SwitchDesk((ShipDesk)(e.Key[0] - '0'));
+            return;
+        }
+
+        // PR-15: the captain's position is key `0` — same digit-key rules as 1-7 above (wins
+        // mid-deck-walk, checked before HandleDeckKey/the pulse switch).
+        if (e.Key == "0")
+        {
+            SwitchDesk(ShipDesk.Captain);
             return;
         }
 

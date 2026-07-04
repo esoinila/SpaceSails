@@ -1,5 +1,5 @@
-// Headless Playwright smoke test for PR-8 ("rig for silent running") and PR-11 (the desk
-// framework — docs/SaturdayPlan/StationDesks.md).
+// Headless Playwright smoke test for PR-8 ("rig for silent running"), PR-11 (the desk
+// framework), and PR-15 (the captain's position) — docs/SaturdayPlan/StationDesks.md.
 //
 // Proves the new-stations gameplay loop end-to-end in a real browser:
 //   1. Launch the app in Release mode (Debug WASM is ~100x slower on the IL interpreter).
@@ -7,15 +7,18 @@
 //   3. Desk framework (PR-11): number-key switching — '2' opens the Sensors desk full-screen,
 //      '1' returns to Nav, '5'/'3'/'4'/'6' open Comms/War room/Trade/Galley in turn, the chip
 //      strip is present throughout.
-//   4. Sensors desk: run a corridor scan program (using warp to pass sim time) until at least
+//   4. Captain's position (PR-15): '0' opens the Captain desk full-screen and leads the tab
+//      bar; selecting a Hunt mission updates "the ship's articles" instantly, and the mission
+//      chip docks at the top of the strip back on Nav with matching text.
+//   5. Sensors desk: run a corridor scan program (using warp to pass sim time) until at least
 //      one contact is tracked.
-//   5. Comms desk: dark web + the traffic board (moved here from the old toolbar button) render
+//   6. Comms desk: dark web + the traffic board (moved here from the old toolbar button) render
 //      side by side; note whether the market is reachable from the current position (it requires
 //      orbit-bound-at-haven/far-station; see README.md).
-//   6. War room desk: confirm the heat gauge renders at 0.
-//   7. Trade desk: confirm local space + the dock side panel render.
-//   8. Galley desk: pour a tot, confirm the rum locker updates.
-//   9. Screenshot every desk into docs/tmp_pics/saturday/.
+//   7. War room desk: confirm the heat gauge renders at 0.
+//   8. Trade desk: confirm local space + the dock side panel render.
+//   9. Galley desk: pour a tot, confirm the rum locker updates.
+//  10. Screenshot every desk into docs/tmp_pics/saturday/.
 //
 // This is tooling, not product code — it is exempt from the Razor+Bootstrap/renderer.js-only
 // rule (repo agreement §9 applies to the game client, not test scripts).
@@ -165,6 +168,49 @@ async function main() {
     // run after minutes of warped sim time have let the interpreter settle.
     await page.locator(".desk-chip-strip").waitFor({ state: "visible", timeout: 60_000 });
     record("desk chip strip present on Nav", true);
+
+    // ---- Captain's position (key '0', PR-15): set a mission, confirm the chip picks it up ----
+    await page.keyboard.press("0");
+    const captainDesk = page.locator(".captain-desk");
+    await captainDesk.waitFor({ state: "visible", timeout: 30_000 });
+    const tabBarText = await page.locator(".desk-tab-bar").innerText();
+    record("'0 Captain' leads the station tab bar", /^0 Captain/.test(tabBarText.trim()), tabBarText.split("\n")[0]);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "07-captain.png") });
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "captain.png") });
+
+    // Select the first Hunt option — one click, no confirmation. "Instantly" means the click
+    // itself does it (no confirm step), not that the DOM repaints synchronously — the Blazor
+    // event->render roundtrip is still async under interpreted WASM, so wait for the headline
+    // rather than race it.
+    const firstHuntCard = captainDesk.locator(".captain-group", { hasText: "Hunt" }).locator(".captain-card").first();
+    const huntMissionText = (await firstHuntCard.innerText()).trim();
+    await firstHuntCard.click();
+    let articlesUpdated = true;
+    try {
+      await captainDesk
+        .locator(".captain-articles-mission", { hasText: huntMissionText })
+        .waitFor({ state: "visible", timeout: 15_000 });
+    } catch {
+      articlesUpdated = false;
+    }
+    const articlesText = (await captainDesk.locator(".captain-articles-mission").innerText()).trim();
+    record(
+      "selecting a Hunt mission updates the articles on the click (no confirm step)",
+      articlesUpdated,
+      `picked "${huntMissionText}", articles now "${articlesText}"`
+    );
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "08-captain-mission-set.png") });
+
+    // Back to Nav — the mission chip should now dock at the top of the strip with matching text.
+    await mapPage.focus();
+    await page.keyboard.press("1");
+    await page.locator(".map-hud").waitFor({ state: "visible", timeout: 30_000 });
+    const firstChipText = (await page.locator(".desk-chip-strip .desk-chip").first().innerText()).trim();
+    record(
+      "Captain chip docks at the top of the strip on Nav with the selected mission",
+      firstChipText.includes("Captain") && firstChipText.includes(huntMissionText),
+      firstChipText
+    );
 
     // Crank warp to max up front — every station check below benefits from fast sim time.
     await setRangeValue(page, ".map-warp-control input[type=range]", 100);

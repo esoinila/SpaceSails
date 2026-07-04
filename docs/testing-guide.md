@@ -378,3 +378,28 @@ after a robbery, or a hunter never spawning or never breaking off at a haven.
 the active one, digit keys leaking into text/number/slider inputs (or vice versa — desk keys not
 working because an input silently ate them when it shouldn't have), or `7`/`1` leaving deck mode
 and Nav desk state out of sync (e.g. stuck on a blank screen).
+
+---
+
+## 18. The captain's position — setting a mission
+
+*(See [captains-position.md](features/captains-position.md).)*
+
+1. Launch Sol. Confirm the station tab bar's leftmost entry reads **0 Captain**, ahead of
+   **1 Nav**.
+2. Press `0`. Confirm the Captain desk opens full-screen: "The ship's articles" header reading
+   **Free sailing** in large text, then five groups (Free sailing / Hunt / Trade run / Lay low /
+   Survey), each with a short flavor line and one or more selectable cards.
+3. Click a card under **Hunt** (e.g. "Hunt: He3 haulers"). Confirm the articles header updates
+   instantly to that mission's one-liner, with no confirmation prompt, and the card shows a
+   selected/highlighted state.
+4. Press `1` to return to Nav. Confirm a `☠ Captain` chip appears at the **top** of the summary
+   chip strip, its second line matching the mission you just picked.
+5. Press `6` for the Galley, `3` for the War room. Confirm the same `☠ Captain` chip (same text)
+   appears at the top of the strip on both.
+6. Click the `☠ Captain` chip from any desk. Confirm it jumps straight back to the Captain desk.
+7. Pick **Free sailing** again. Confirm the chip everywhere reverts to "Free sailing".
+
+**Broken looks like:** the Captain tab/key not present or not leading the bar, selecting a mission
+requiring a second click/confirm, the chip missing from the strip or not docked at the top, or the
+chip's text not matching the desk's own "ship's articles" headline.
