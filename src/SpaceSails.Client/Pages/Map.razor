@@ -67,6 +67,7 @@
             <button type="button" class="btn btn-sm @(_showTracking ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleTracking">Track 📡</button>
             <button type="button" class="btn btn-sm @(_showWarRoom ? "btn-danger" : "btn-outline-light") ms-2" @onclick="ToggleWarRoom">Guns ⚔</button>
             @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
+            <button type="button" class="btn btn-sm @(_showDarkWeb ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleDarkWeb">Web 🕸</button>
         </div>
 
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
@@ -302,11 +303,17 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (NpcState npc in _npcStates.Where(n => n.Ship.PublishesTimetable))
+                            @foreach (NpcState npc in _npcStates.Where(n => n.Ship.PublishesTimetable || (_darkWeb?.KnowsRoute(n.Ship.Id) ?? false)))
                             {
                                 <tr class="map-traffic-row @(npc.Ship.Id == _selectedTargetId ? "table-primary" : "")"
                                     @onclick="() => SelectTarget(npc.Ship.Id)">
-                                    <td>@npc.Ship.Callsign</td>
+                                    <td>
+                                        @npc.Ship.Callsign
+                                        @if (!npc.Ship.PublishesTimetable && _darkWeb is not null)
+                                        {
+                                            <span class="badge bg-dark border border-secondary ms-1" title="Bought intel — off the books">🕸 stale in @(_darkWeb.StaleInDays(npc.Ship.Id).ToString("F0"))d</span>
+                                        }
+                                    </td>
                                     <td>@npc.Ship.CargoClass</td>
                                     <td>@RouteLabel(npc.Ship)</td>
                                     <td>@FormatDeparture(npc.Ship.DepartureTime)</td>
@@ -449,10 +456,13 @@
     <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_showTracking" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1" OnClose="ToggleTracking" />
     <SpaceSails.Client.Pages.Stations.WarRoom Visible="_showWarRoom" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" OnClose="ToggleWarRoom" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
     @* SATURDAY-ANCHOR: panels — parallel lanes append one station component line each below *@
+    <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="_showDarkWeb" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnClose="ToggleDarkWeb" />
 </div>
 
 @code {
     // SATURDAY-ANCHOR: fields — parallel lanes append their station fields directly below
+    private bool _showDarkWeb;
+    private SpaceSails.Client.Pages.Stations.DarkWeb? _darkWeb;
     private bool _showTracking;
     private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost;
@@ -3562,5 +3572,157 @@
         }
 
         return hunters;
+    }
+
+    // ---- PR-6: the dark space web ----
+    private void ToggleDarkWeb() => _showDarkWeb = !_showDarkWeb;
+
+    /// <summary>The body the player is currently orbiting (bound, M20 sense) or docked at — null
+    /// if neither, in which case the dark web has nowhere to set up shop.</summary>
+    private CelestialBody? DarkWebCurrentBody()
+    {
+        if (_ephemeris is null)
+        {
+            return null;
+        }
+
+        if (_docked && _dockBodyId is not null)
+        {
+            foreach (CelestialBody b in _ephemeris.Bodies)
+            {
+                if (b.Id == _dockBodyId) return b;
+            }
+        }
+
+        if (_nearestBody is { ParentId: not null } nb)
+        {
+            CelestialBody? parent = null;
+            foreach (CelestialBody candidate in _ephemeris.Bodies)
+            {
+                if (candidate.Id == nb.ParentId) { parent = candidate; break; }
+            }
+
+            if (parent is not null)
+            {
+                double hill = OrbitRule.HillRadius(nb, parent.Mu);
+                if (OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, nb, hill))
+                {
+                    return nb;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private bool DarkWebCanTrade()
+    {
+        if (DarkWebCurrentBody() is not { } body)
+        {
+            return false;
+        }
+
+        return IntelMarket.CanTradeIntelAt(body, _ephemeris!.Position(body.Id, SimTime).Length);
+    }
+
+    private string DarkWebDisabledReason()
+    {
+        if (DarkWebCurrentBody() is not { } body)
+        {
+            return "Not orbiting or docked anywhere — get to a haven or a far trading post first.";
+        }
+
+        return IntelMarket.CanTradeIntelAt(body, _ephemeris!.Position(body.Id, SimTime).Length)
+            ? ""
+            : $"{body.Name} doesn't deal in stolen timetables — try a haven or a station past Mars.";
+    }
+
+    private double DarkWebDistanceFromEarth()
+    {
+        if (_ephemeris is null || DarkWebCurrentBody() is not { } body)
+        {
+            return 0;
+        }
+
+        Vector2d earth = _ephemeris.Position("earth", SimTime);
+        Vector2d here = _ephemeris.Position(body.Id, SimTime);
+        return (here - earth).Length;
+    }
+
+    // Thin, read-only projection of the off-the-books NPCs the market knows about — same
+    // philosophy as TrackingCandidates(): the dark web component never sees Map.razor's own
+    // NpcState type.
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.MarketShip> DarkWebMarketShips()
+    {
+        var ships = new List<SpaceSails.Client.Pages.Stations.DarkWeb.MarketShip>();
+        foreach (NpcState npc in _npcStates)
+        {
+            if (!npc.Ship.PublishesTimetable && npc.Active && !npc.Arrived)
+            {
+                ships.Add(new SpaceSails.Client.Pages.Stations.DarkWeb.MarketShip(
+                    npc.Ship.Id, npc.Ship.Callsign, npc.Ship.CargoClass, npc.Ship.CargoUnits, RouteLabel(npc.Ship)));
+            }
+        }
+
+        return ships;
+    }
+
+    // Thin, read-only projection of the tracking-post ledger + live NPC state, for the dark
+    // web's sell/tight-beam/laser-ranging sections.
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.TrackedShipInfo> DarkWebTrackedShips()
+    {
+        var list = new List<SpaceSails.Client.Pages.Stations.DarkWeb.TrackedShipInfo>();
+        if (_trackingPost is null)
+        {
+            return list;
+        }
+
+        foreach (TrackedTarget entry in _trackingPost.Entries)
+        {
+            NpcState? npc = null;
+            foreach (NpcState candidate in _npcStates)
+            {
+                if (candidate.Ship.Id == entry.ShipId) { npc = candidate; break; }
+            }
+
+            Vector2d position = npc?.State.Position ?? entry.LastObservation.Position;
+            Vector2d velocity = npc?.State.Velocity ?? entry.LastObservation.Velocity;
+            list.Add(new SpaceSails.Client.Pages.Stations.DarkWeb.TrackedShipInfo(
+                entry.ShipId,
+                npc?.Ship.Callsign ?? entry.ShipId,
+                npc?.Ship.CargoClass ?? "Unknown",
+                npc?.Ship.CargoUnits ?? 0,
+                entry.EffectiveQuality(SimTime),
+                position,
+                velocity,
+                npc?.Ship.PublishesTimetable ?? true,
+                npc is not null ? BodyName(npc.Ship.DestinationId) : "unknown"));
+        }
+
+        return list;
+    }
+
+    private void LaserRangeTarget(string shipId)
+    {
+        if (_trackingPost is null)
+        {
+            return;
+        }
+
+        NpcState? npc = null;
+        foreach (NpcState candidate in _npcStates)
+        {
+            if (candidate.Ship.Id == shipId) { npc = candidate; break; }
+        }
+
+        if (npc is null)
+        {
+            return;
+        }
+
+        (Observation obs, PingEvent _) = ActiveSensors.LaserRange(shipId, _ship.Position, npc.State.Position, npc.State.Velocity, SimTime);
+        _trackingPost.ApplyObservation(obs);
+        _trackingPost.MarkAware(shipId);
+        ShowPulseMessage($"Laser ranged {npc.Ship.Callsign} — exact fix, but you're lit up ⚠");
     }
 }

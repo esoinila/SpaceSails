@@ -1,0 +1,17 @@
+/* Standalone floating panel — same "instrument card" language as the tracking post, mirrored to
+   the right-middle band of the map HUD (tracking post owns left-middle). */
+
+.dark-web-card {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24rem;
+    max-width: calc(100% - 1.5rem);
+    pointer-events: auto;
+}
+
+.dark-web-scroll {
+    max-height: 70vh;
+    overflow-y: auto;
+}
