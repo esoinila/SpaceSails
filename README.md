@@ -4,6 +4,25 @@ A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, 
 
 **Play now: https://esoinila.github.io/SpaceSails-play/**
 
+## 🧮 The Gravity Lab — learn orbital mechanics by running it
+
+This repo is secretly edutainment. Twelve type-it-in lessons under [`labs/`](labs/README.md)
+teach numerical orbital mechanics on the game's own deterministic engine — fork a probe, run
+it, break it on purpose, learn the physics and the programming at once, the way magazine
+listings taught a generation to code:
+
+```bash
+dotnet run --project labs/01-falling-is-orbiting -c Release
+```
+
+Highlights: the integrator zoo measured (explicit Euler leaks 19.75% of Mercury's energy in
+50 years; the game's semi-implicit doesn't), the Oberth effect at exactly 9× from the same
+burn, a from-scratch n-body integrator quantifying what the rails ephemeris hides, and the
+finale — [*Oops at the Moon*](labs/12-oops-at-the-moon/README.md) 🌙, where careless miners
+un-rail Luna and you compute the catastrophe (playable aftermath:
+[`?scenario=oops`](https://esoinila.github.io/SpaceSails-play/map?scenario=oops)). Every
+number in every lesson comes from actually running that lesson's probe.
+
 ## Docs
 
 - [Big picture / vision](docs/SpaceSails_plan_big_picture.md)
