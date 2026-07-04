@@ -17,6 +17,52 @@ public sealed record ScenarioDefinition
 
     /// <summary>Plasma stream ribbons. Only meaningful when <see cref="ElectricUniverse"/> is true.</summary>
     public IReadOnlyList<StreamDefinition> Streams { get; init; } = [];
+
+    /// <summary>
+    /// Data-driven traffic (routes + pod launchers). Optional: scenarios without one (e.g. the
+    /// Wheel of the World) fall back to <c>TrafficSchedule</c>'s built-in hardcoded tables.
+    /// </summary>
+    public TrafficDefinition? Traffic { get; init; }
+}
+
+/// <summary>
+/// A scenario's traffic content: which cargo runs where, and which small bodies launch
+/// mass-driver pods. De-Earth-centering (vision ¶8) lives here — central-space routes publish
+/// timetables, outer-reaches routes don't have to.
+/// </summary>
+public sealed record TrafficDefinition
+{
+    public IReadOnlyList<RouteDefinition> Routes { get; init; } = [];
+
+    public IReadOnlyList<PodLauncherDefinition> PodLaunchers { get; init; } = [];
+}
+
+/// <summary>One cargo run a scenario's traffic generator can draw from.</summary>
+public sealed record RouteDefinition
+{
+    public required string From { get; init; }
+
+    public required string To { get; init; }
+
+    public required string Cargo { get; init; }
+
+    /// <summary>Relative pick weight among routes offered to a given ship (mid-flight vs. scheduled).</summary>
+    public double Weight { get; init; } = 1.0;
+
+    /// <summary>
+    /// False = a secretive hauler (He3 out of pirate country, worldbuilding notes §4): the ship
+    /// still flies and is still visible to sensors in range, it just never appears on the public
+    /// departures board (<c>NpcShip.PublishesTimetable</c>).
+    /// </summary>
+    public bool PublishesTimetable { get; init; } = true;
+}
+
+/// <summary>A mass-driver launch site (worldbuilding notes §1): a body that fires ballistic cargo pods.</summary>
+public sealed record PodLauncherDefinition
+{
+    public required string Body { get; init; }
+
+    public required string Cargo { get; init; }
 }
 
 /// <summary>
@@ -60,4 +106,15 @@ public sealed record BodyDefinition
 
     /// <summary>Angular position on the orbit at simulation time zero, in radians.</summary>
     public double InitialPhaseRad { get; init; }
+
+    /// <summary>Body classification: "planet" (default), "moon", or "station" (a lightweight
+    /// orbital POI — compute farm, factory, trading post). Unknown values fall back to "planet".</summary>
+    public string Kind { get; init; } = "planet";
+
+    /// <summary>
+    /// Marks a small, out-of-the-way body as a pirate haven (vision ¶8: scum & villainy work the
+    /// outer reaches, not next to the central powers) — trade and repair happen here, no
+    /// questions asked.
+    /// </summary>
+    public bool Haven { get; init; }
 }

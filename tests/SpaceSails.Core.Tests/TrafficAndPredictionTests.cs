@@ -43,8 +43,10 @@ public class TrafficAndPredictionTests
         {
             Assert.InRange(ship.ActivationTime, 0, 7300); // catch-up (dt=2h) lands just past t=0
             Assert.Equal(ship.ActivationTime, ship.InitialState.SimTime);
-            // In transit: already fallen inside its origin's orbit.
-            double originRadius = ephemeris.Bodies.First(b => b.Id == ship.OriginId).OrbitRadius;
+            // In transit: already fallen inside its origin's orbit. Absolute distance from the
+            // system root (not the body's local orbit radius) so this also holds for a moon
+            // origin, whose OrbitRadius is relative to its planet, not the sun.
+            double originRadius = ephemeris.Position(ship.OriginId, 0).Length;
             Assert.True(ship.InitialState.Position.Length < originRadius,
                 $"{ship.Callsign} should have left {ship.OriginId}'s orbit by t=0.");
         }
@@ -215,12 +217,14 @@ public class TrafficAndPredictionTests
     {
         // M22: something to steal on every planet orbit. Depots are rails entities — at any
         // time they sit exactly on their circular orbit, moving under the boarding speed limit
-        // relative to their planet.
+        // relative to their planet. PR-3: also one per named station and pirate haven — the
+        // outer reaches get their own bus stops too.
         var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
         IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(ephemeris, seed: 44);
 
         int planets = ephemeris.Bodies.Count(b => b.ParentId == "sun");
-        Assert.Equal(planets, depots.Count);
+        int notable = ephemeris.Bodies.Count(b => b.Kind == BodyKind.Station || b.IsHaven);
+        Assert.Equal(planets + notable, depots.Count);
 
         foreach (NpcShip depot in depots)
         {

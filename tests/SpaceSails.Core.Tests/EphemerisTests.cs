@@ -3,14 +3,20 @@ namespace SpaceSails.Core.Tests;
 public class EphemerisTests
 {
     [Fact]
-    public void SolScenario_LoadsTenBodies()
+    public void SolScenario_LoadsAllBodies()
     {
         var scenario = SimulatorTests.LoadSol();
 
         Assert.Equal("Sol", scenario.Name);
-        Assert.Equal(10, scenario.Bodies.Count); // Sun + 8 planets + Luna (M6)
+        // Sun + 8 planets + Luna (M6) + outer moons, stations and havens (PR-3, vision par. 8):
+        // Mercury Compute Farms, Highport Satellite Works, Europa/Ganymede/Callisto, Titan,
+        // Enceladus, Ringside Exchange.
+        Assert.Equal(18, scenario.Bodies.Count);
         Assert.Contains(scenario.Bodies, b => b.Id == "saturn");
         Assert.Contains(scenario.Bodies, b => b.Id == "luna" && b.ParentId == "earth");
+        Assert.Contains(scenario.Bodies, b => b.Id == "titan" && b.ParentId == "saturn" && b.Kind == "moon");
+        Assert.Contains(scenario.Bodies, b => b.Id == "mercury-compute" && b.Kind == "station");
+        Assert.Contains(scenario.Bodies, b => b.Id == "enceladus" && b.Haven);
     }
 
     [Fact]

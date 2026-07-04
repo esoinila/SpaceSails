@@ -1,3 +1,5 @@
+using SpaceSails.Contracts;
+
 namespace SpaceSails.Core;
 
 /// <summary>
@@ -23,7 +25,11 @@ public sealed record NpcShip(
     bool IsPod,
     string? DepotBodyId = null,
     double DepotOrbitRadius = 0,
-    double DepotPhase = 0)
+    double DepotPhase = 0,
+    // False = a secretive hauler (He3 out of pirate country — worldbuilding notes §4). The ship
+    // still flies and is still visible to sensors that get it in range; it just never appears on
+    // the public departures board. The hook F6/F7 (tracking + intel economy) need.
+    bool PublishesTimetable = true)
 {
     /// <summary>Equivalent acceleration a pilot could plausibly hide between observations.
     /// Feeds the prediction cone; a mass-driver pod has no engine at all.</summary>
@@ -36,6 +42,13 @@ public sealed record NpcShip(
 /// playable traffic is dominated by ships spawned mid-flight — already falling through the
 /// inner system at t=0, 20–70 days from arrival — plus a few short inner-system runs departing
 /// during the first weeks. The Saturn departure times on the board are honest history.
+///
+/// De-Earth-centering (vision ¶8): a scenario can supply a <see cref="TrafficDefinition"/>
+/// (routes + pod launchers) instead of relying on the hardcoded Sol tables below. When present,
+/// <see cref="Generate"/>/<see cref="GeneratePods"/> read it (via the optional parameter, or via
+/// <see cref="ICelestialEphemeris.Traffic"/> when the ephemeris carries one from its scenario);
+/// when absent, both fall back to the original fixed tables — byte-identical to pre-PR-3
+/// behavior, so scenarios without a traffic section (e.g. the Wheel of the World) are unaffected.
 /// </summary>
 public static class TrafficSchedule
 {
@@ -53,6 +66,12 @@ public static class TrafficSchedule
     private const double CatchUpTimeStep = 7200;
     private const double Day = 86400;
 
+    // Central-space vs. outer-reaches split for scenario-driven routes: a route touching
+    // anything past ~Mars's orbit counts as "long haul" (mid-flight ships spawned already deep
+    // in transfer); everything inside stays "short" (scheduled departures). Threshold sits
+    // between Mars (2.28e11 m) and Jupiter (7.79e11 m).
+    private const double LongHaulThresholdMeters = 4e11;
+
     private static readonly string[] Callsigns =
         ["Meridian", "Kestrel", "Long Haul", "Aurora", "Tycho's Due", "Windlass", "Half Hitch", "Barnacle", "Sable", "Pelican"];
 
@@ -62,10 +81,20 @@ public static class TrafficSchedule
     private static readonly (string Origin, string Destination, string Cargo)[] ShortRoutes =
         [("mars", "earth", "Machinery"), ("earth", "mars", "Ice"), ("venus", "earth", "Alloys")];
 
-    public static IReadOnlyList<NpcShip> Generate(ICelestialEphemeris ephemeris, ulong seed, int count)
+    private static readonly string[] FixedPodDestinations = ["mars", "venus"];
+
+    public static IReadOnlyList<NpcShip> Generate(ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition? traffic = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
+        TrafficDefinition? effective = traffic ?? ephemeris.Traffic;
+        return effective is { Routes.Count: > 0 }
+            ? GenerateFromScenario(ephemeris, seed, count, effective)
+            : GenerateFromFixedTables(ephemeris, seed, count);
+    }
+
+    private static IReadOnlyList<NpcShip> GenerateFromFixedTables(ICelestialEphemeris ephemeris, ulong seed, int count)
+    {
         var rng = new DeterministicRandom(seed);
         var catchUpSim = new Simulator(ephemeris, CatchUpTimeStep);
         var ships = new List<NpcShip>(count);
@@ -112,42 +141,170 @@ public static class TrafficSchedule
         return ships;
     }
 
+    private static IReadOnlyList<NpcShip> GenerateFromScenario(ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition traffic)
+    {
+        var rng = new DeterministicRandom(seed);
+        var catchUpSim = new Simulator(ephemeris, CatchUpTimeStep);
+        var ships = new List<NpcShip>(count);
+
+        (List<RouteDefinition> longHaul, List<RouteDefinition> shortHaul) = SplitRoutesByDistance(ephemeris, traffic.Routes);
+        IReadOnlyList<RouteDefinition> all = traffic.Routes;
+
+        int midFlight = Math.Max(1, count * 6 / 10);
+        for (int i = 0; i < count; i++)
+        {
+            bool isMidFlight = i < midFlight;
+            IReadOnlyList<RouteDefinition> pool = isMidFlight
+                ? (longHaul.Count > 0 ? longHaul : all)
+                : (shortHaul.Count > 0 ? shortHaul : all);
+            RouteDefinition chosen = PickWeighted(pool, rng);
+
+            // Route planning compares raw orbit radii one level deep (RoutePlanner), so a moon or
+            // a station orbiting a moon/planet borrows its top-level parent for the burn-direction
+            // and horizon math — the same shortcut the Luna pods have always used. The ship's
+            // displayed origin/destination stay the scenario's own ids (board flavor + lore).
+            string planFrom = PlanningBodyId(ephemeris, chosen.From);
+            string planTo = PlanningBodyId(ephemeris, chosen.To);
+
+            var personality = (RoutePersonality)rng.NextInt(0, 3);
+            string callsign = Callsigns[i % Callsigns.Length];
+            int cargoUnits = rng.NextInt(5, 21);
+
+            if (isMidFlight)
+            {
+                double lead = rng.NextDouble(20 * Day, 70 * Day);
+                NpcRoute probe = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, 0, personality, Clone(rng));
+                double transfer = probe.EstimatedArrivalTime;
+                double virtualDeparture = -(transfer - lead);
+
+                NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, virtualDeparture, personality, rng);
+                ShipState now = catchUpSim.Run(route.DepartureState, -virtualDeparture, route.Plan);
+                ships.Add(new NpcShip(
+                    $"npc-{i}", callsign, chosen.Cargo, chosen.From, chosen.To, personality,
+                    virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
+                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false,
+                    PublishesTimetable: chosen.PublishesTimetable));
+            }
+            else
+            {
+                double departure = Math.Floor(rng.NextDouble(3 * Day, 30 * Day));
+                NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, departure, personality, rng);
+                ships.Add(new NpcShip(
+                    $"npc-{i}", callsign, chosen.Cargo, chosen.From, chosen.To, personality,
+                    departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime,
+                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false,
+                    PublishesTimetable: chosen.PublishesTimetable));
+            }
+        }
+
+        return ships;
+    }
+
+    private static (List<RouteDefinition> Long, List<RouteDefinition> Short) SplitRoutesByDistance(
+        ICelestialEphemeris ephemeris, IReadOnlyList<RouteDefinition> routes)
+    {
+        var longHaul = new List<RouteDefinition>();
+        var shortHaul = new List<RouteDefinition>();
+        foreach (RouteDefinition route in routes)
+        {
+            double distance = Math.Max(DistanceFromOrigin(ephemeris, route.From), DistanceFromOrigin(ephemeris, route.To));
+            (distance >= LongHaulThresholdMeters ? longHaul : shortHaul).Add(route);
+        }
+
+        return (longHaul, shortHaul);
+    }
+
+    private static double DistanceFromOrigin(ICelestialEphemeris ephemeris, string bodyId) => ephemeris.Position(bodyId, 0).Length;
+
+    private static RouteDefinition PickWeighted(IReadOnlyList<RouteDefinition> routes, DeterministicRandom rng)
+    {
+        double total = 0;
+        foreach (RouteDefinition r in routes)
+        {
+            total += Math.Max(0.0001, r.Weight);
+        }
+
+        double pick = rng.NextDouble() * total;
+        double cumulative = 0;
+        foreach (RouteDefinition r in routes)
+        {
+            cumulative += Math.Max(0.0001, r.Weight);
+            if (pick <= cumulative)
+            {
+                return r;
+            }
+        }
+
+        return routes[^1];
+    }
+
     /// <summary>
-    /// Luna's mass-driver launches: ballistic compute-core pods (worldbuilding notes §1). The
-    /// driver imparts all Δv at launch, so the "burn" is folded into <c>InitialState</c> and the
-    /// plan is empty — no engine, no future maneuvers, <c>ManeuverBudget = 0</c>: a pod's
-    /// prediction cone never opens. The tutorial prey and the pirate's milk run.
+    /// The body to hand <see cref="RoutePlanner.PlanRoute"/> for a given scenario id: itself if
+    /// it's a direct child of the system root (a planet), otherwise its top-level ancestor one
+    /// level under the root (a moon or a station orbiting a moon/planet borrows its planet's
+    /// orbit — RoutePlanner's inward/outward and horizon math only compares raw orbit radii one
+    /// level deep).
     /// </summary>
+    private static string PlanningBodyId(ICelestialEphemeris ephemeris, string bodyId)
+    {
+        Dictionary<string, CelestialBody> byId = ephemeris.Bodies.ToDictionary(b => b.Id);
+        string current = bodyId;
+        while (byId.TryGetValue(current, out CelestialBody? body)
+               && body.ParentId is { } parentId
+               && byId.TryGetValue(parentId, out CelestialBody? parent)
+               && parent.ParentId is not null)
+        {
+            current = parentId;
+        }
+
+        return current;
+    }
+
     /// <summary>
     /// One plunderable cargo depot in orbit around every planet (M22, owner: "surely there is
-    /// something to steal on every planet orbit"). Depots ride RAILS — their state is a pure
-    /// function of sim time (planet position + circular offset), costing nothing to step and
-    /// never drifting. Cargo flavor follows the worldbuilding: compute cores at Mercury, He3
-    /// in the outer system.
+    /// something to steal on every planet orbit"), plus one at every named station and pirate
+    /// haven (vision ¶8: the outer reaches get their own bus stops too). Depots ride RAILS —
+    /// their state is a pure function of sim time (host body position + circular offset), costing
+    /// nothing to step and never drifting. Cargo flavor follows the worldbuilding: compute cores
+    /// at Mercury, He3 in the outer system.
     /// </summary>
     public static IReadOnlyList<NpcShip> GenerateDepots(ICelestialEphemeris ephemeris, ulong seed)
     {
         var rng = new DeterministicRandom(seed);
         var depots = new List<NpcShip>();
-        int n = 0;
+        CelestialBody sun = ephemeris.Bodies.First(b => b.ParentId is null);
+
         foreach (CelestialBody body in ephemeris.Bodies)
         {
-            if (body.ParentId != "sun")
+            bool isPlanet = body.ParentId == "sun";
+            bool isNotable = body.Kind == BodyKind.Station || body.IsHaven;
+            if (!isPlanet && !isNotable)
             {
-                continue; // planets only: moons share their planet's depot
+                continue; // ordinary moons share their planet's depot; only planets, stations and havens get their own
             }
 
-            CelestialBody sun = ephemeris.Bodies.First(b => b.ParentId is null);
-            double hill = body.OrbitRadius * Math.Pow(body.Mu / (3 * sun.Mu), 1.0 / 3.0);
-            double radius = Math.Max(body.BodyRadius * 8, hill * 0.25);
+            double radius;
+            if (isPlanet)
+            {
+                double hill = body.OrbitRadius * Math.Pow(body.Mu / (3 * sun.Mu), 1.0 / 3.0);
+                radius = Math.Max(body.BodyRadius * 8, hill * 0.25);
+            }
+            else
+            {
+                // Stations/havens are small POIs, not planets — no Hill-sphere math, just a marker
+                // orbit comfortably clear of the body itself.
+                radius = Math.Max(body.BodyRadius * 8, 2e6);
+            }
+
             double phase = rng.NextDouble() * Math.PI * 2;
             string cargo = body.Id switch
             {
-                "mercury" => "Compute cores",
+                "mercury" or "mercury-compute" => "Compute cores",
                 "venus" => "Alloys",
                 "earth" => "Machinery",
                 "mars" => "Ice",
-                _ => "He3",
+                _ when body.Kind == BodyKind.Station => "Machinery",
+                _ => "He3", // outer moons and havens: the black-market goods everyone's really after
             };
 
             depots.Add(new NpcShip(
@@ -168,7 +325,6 @@ public static class TrafficSchedule
                 DepotBodyId: body.Id,
                 DepotOrbitRadius: radius,
                 DepotPhase: phase));
-            n++;
         }
 
         return depots;
@@ -188,10 +344,26 @@ public static class TrafficSchedule
         return new ShipState(center + offset, centerVel + tangent, simTime);
     }
 
-    public static IReadOnlyList<NpcShip> GeneratePods(ICelestialEphemeris ephemeris, ulong seed, int count)
+    /// <summary>
+    /// Mass-driver launches: ballistic compute-core pods (worldbuilding notes §1). The driver
+    /// imparts all Δv at launch, so the "burn" is folded into <c>InitialState</c> and the plan is
+    /// empty — no engine, no future maneuvers, <c>ManeuverBudget = 0</c>: a pod's prediction cone
+    /// never opens. The tutorial prey and the pirate's milk run. Reads a scenario's pod launchers
+    /// when supplied (moon and station launch sites both — worldbuilding §3), else falls back to
+    /// the original Luna-only table, byte-identical to pre-PR-3 behavior.
+    /// </summary>
+    public static IReadOnlyList<NpcShip> GeneratePods(ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition? traffic = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
+        TrafficDefinition? effective = traffic ?? ephemeris.Traffic;
+        return effective is { PodLaunchers.Count: > 0 }
+            ? GeneratePodsFromScenario(ephemeris, seed, count, effective)
+            : GeneratePodsFromFixedLauncher(ephemeris, seed, count);
+    }
+
+    private static IReadOnlyList<NpcShip> GeneratePodsFromFixedLauncher(ICelestialEphemeris ephemeris, ulong seed, int count)
+    {
         var rng = new DeterministicRandom(seed);
         var launchSim = new Simulator(ephemeris, CatchUpTimeStep);
         var pods = new List<NpcShip>(count);
@@ -219,6 +391,49 @@ public static class TrafficSchedule
         }
 
         return pods;
+    }
+
+    private static IReadOnlyList<NpcShip> GeneratePodsFromScenario(ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition traffic)
+    {
+        var rng = new DeterministicRandom(seed);
+        var launchSim = new Simulator(ephemeris, CatchUpTimeStep);
+        var pods = new List<NpcShip>(count);
+        IReadOnlyList<PodLauncherDefinition> launchers = traffic.PodLaunchers;
+
+        for (int i = 0; i < count; i++)
+        {
+            PodLauncherDefinition launcher = launchers[rng.NextInt(0, launchers.Count)];
+            string planningOrigin = PlanningBodyId(ephemeris, launcher.Body);
+            string destination = PickPodDestination(ephemeris, planningOrigin, rng);
+            double departure = Math.Floor(rng.NextDouble(0.5 * Day, 10 * Day));
+
+            NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planningOrigin, destination, departure, RoutePersonality.Economical, rng);
+            ManeuverNode burn = route.Plan.Nodes[0];
+            var launchPlan = new ManeuverPlan([burn]);
+            ShipState launched = launchSim.Run(route.DepartureState, (burn.SimTime - departure) + CatchUpTimeStep, launchPlan);
+
+            pods.Add(new NpcShip(
+                $"pod-{i}", $"Pod-{i + 1}", launcher.Cargo, launcher.Body, destination,
+                RoutePersonality.Economical, departure, launched.SimTime, launched,
+                ManeuverPlan.Empty, route.EstimatedArrivalTime,
+                CargoUnits: 5, ManeuverBudget: 0, IsPod: true));
+        }
+
+        return pods;
+    }
+
+    private static string PickPodDestination(ICelestialEphemeris ephemeris, string planningOrigin, DeterministicRandom rng)
+    {
+        List<string> candidates = FixedPodDestinations.Concat(["earth"])
+            .Where(id => id != planningOrigin && ephemeris.Bodies.Any(b => b.Id == id))
+            .Distinct()
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            candidates = [.. FixedPodDestinations];
+        }
+
+        return candidates[rng.NextInt(0, candidates.Count)];
     }
 
     // The probe plan and the real plan must consume identical random sequences so the schedule
