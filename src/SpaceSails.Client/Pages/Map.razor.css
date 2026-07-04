@@ -199,9 +199,8 @@
     overflow-y: auto;
 }
 
-/* Trade/Comms desks host their main station plus a secondary console (dock market / traffic
-   board) side by side — two columns instead of the old separate floating cards. */
-.desk-trade-grid,
+/* Comms desk hosts its main station plus a secondary console (traffic board) side by side — two
+   columns instead of the old separate floating cards. */
 .desk-comms-grid {
     display: grid;
     grid-template-columns: 1.3fr 1fr;
@@ -209,9 +208,45 @@
     height: 100%;
 }
 
+/* Trade desk — the trading floor (PR-13): local space contacts, the dock market, and the cargo
+   manifest side by side in three columns instead of one panel hiding behind another. */
+.desk-trade-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr 1fr;
+    gap: 0 1.25rem;
+    height: 100%;
+}
+
 .desk-side-panel {
     height: 100%;
     overflow-y: auto;
+}
+
+.trade-manifest-panel .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.trade-manifest-transfer {
+    border: 1px solid rgba(125, 211, 255, 0.35);
+    border-radius: 0.4rem;
+    padding: 0.5rem;
+    background: rgba(20, 40, 55, 0.4);
+}
+
+.trade-manifest-transfer-label {
+    font-size: 0.85rem;
+}
+
+.trade-manifest-transfer-pct {
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: right;
+}
+
+.trade-manifest-progress {
+    height: 10px;
+    margin: 0.35rem 0;
 }
 
 .desk-traffic-scroll {
