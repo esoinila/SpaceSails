@@ -67,39 +67,78 @@ a, .btn-link {
         content: "An error has occurred."
     }
 
-.loading-progress {
-    position: absolute;
-    display: block;
-    width: 8rem;
-    height: 8rem;
-    inset: 20vh 0 auto 0;
-    margin: 0 auto 0 auto;
+/* Boot screen — themed loading page with live progress and surfaced errors (PR-10).
+   Driven by the inline script in index.html; Blazor supplies --blazor-load-percentage. */
+.boot-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: #060912;
+    color: #e0e4ec;
+    font-family: system-ui, sans-serif;
+    padding: 1rem;
 }
 
-    .loading-progress circle {
-        fill: none;
-        stroke: #e0e0e0;
-        stroke-width: 0.6rem;
-        transform-origin: 50% 50%;
-        transform: rotate(-90deg);
-    }
-
-        .loading-progress circle:last-child {
-            stroke: #1b6ec2;
-            stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
-            transition: stroke-dasharray 0.05s ease-in-out;
-        }
-
-.loading-progress-text {
-    position: absolute;
-    text-align: center;
+.boot-title {
+    font-size: 2rem;
     font-weight: bold;
-    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+    letter-spacing: 0.06em;
 }
 
-    .loading-progress-text:after {
-        content: var(--blazor-load-percentage-text, "Loading");
-    }
+.boot-status {
+    color: #9aa4b8;
+}
+
+.boot-bar {
+    width: min(28rem, 80vw);
+    height: 0.6rem;
+    border: 1px solid #2a3a55;
+    border-radius: 0.3rem;
+    overflow: hidden;
+    background: #0b1220;
+}
+
+.boot-bar-fill {
+    height: 100%;
+    width: var(--blazor-load-percentage, 0%);
+    background: linear-gradient(90deg, #1b6ec2, #4dd0e1);
+    transition: width 0.1s ease-out;
+}
+
+.boot-percent {
+    font-size: 0.85rem;
+    color: #9aa4b8;
+    min-height: 1.2em;
+}
+
+.boot-errors {
+    margin-top: 1rem;
+    width: min(44rem, 92vw);
+    max-height: 40vh;
+    overflow: auto;
+    border: 1px solid #7a2e3a;
+    border-radius: 0.4rem;
+    background: #1a0d12;
+    padding: 0.75rem;
+}
+
+.boot-errors-title {
+    color: #ff8fa0;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.boot-errors pre {
+    color: #ffb3be;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+}
 
 code {
     color: #c02d76;
