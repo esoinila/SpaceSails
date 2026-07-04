@@ -79,7 +79,7 @@
                         TrackingCandidate? candidate = FindCandidate(entry.ShipId);
                         <tr>
                             <td>
-                                @(candidate?.Callsign ?? entry.ShipId)
+                                @(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " aware ⚠" : "")
                                 <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
                             </td>
                             <td class="text-end align-middle">@daysAgo.ToString("F1")d</td>
@@ -117,6 +117,10 @@
     private readonly TelescopeModel _telescope = new();
     private readonly TrackedTargetLedger _ledger = new();
 
+    // PR-6 (dark space web): ships the player has laser-ranged. Purely a UI-side warning flag —
+    // Core's ledger doesn't need to know about it (PR-7 will consume "aware" for real).
+    private readonly HashSet<string> _aware = new();
+
     private double _centerBearingDeg;
     private double _arcWidthDeg = 30;
     private ScanJob? _activeJob;
@@ -130,6 +134,21 @@
     /// <summary>Exposed so Map.razor's NPC-draw pass can key emphasis and the tightened
     /// prediction cone off the ledger without either side reaching into the other's internals.</summary>
     public bool TryGetTrack(string shipId, out TrackedTarget track) => _ledger.TryGet(shipId, out track);
+
+    /// <summary>Read-only view of every current track (PR-6: the dark web sells these).</summary>
+    public IReadOnlyCollection<TrackedTarget> Entries => _ledger.Entries;
+
+    /// <summary>
+    /// Injects a confirmed observation from outside the sweep/confirm loop (PR-6: laser ranging).
+    /// Reuses the exact same reconfirm path a passive sweep hit takes, so the prediction cone
+    /// tightens through the one code path everything else already goes through — a perfect,
+    /// zero-age observation resets the elapsed-time term PathPredictor grows its cone from.
+    /// </summary>
+    public bool ApplyObservation(Observation observation) => _ledger.Add(observation);
+
+    /// <summary>Flags a target as aware it's been actively pinged (PR-6: laser ranging gives away
+    /// your position). UI-only bookkeeping — see <see cref="_aware"/>.</summary>
+    public void MarkAware(string shipId) => _aware.Add(shipId);
 
     protected override void OnParametersSet()
     {
