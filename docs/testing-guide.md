@@ -266,15 +266,17 @@ venting not reducing the charge value.
 3. Click **Start sweep**. Confirm a progress bar appears and "Sweeping…" shows underneath.
 4. Warp forward until the sweep completes (a full 360° takes 6 sim-hours; a narrow wedge is
    faster). Confirm a message like "Sweep complete — N contact(s) found" (or "nothing found").
-5. If something was found, confirm it appears in the **Tracked targets** table with a quality bar
-   and days-since-confirm.
-6. Click **Confirm** on a tracked entry. Confirm the message reports either a reconfirm (quality
+5. If something was found, confirm it appears as a live **scope wall tile** (its own little scope
+   canvas, not just a table row) with a quality bar, days-since-confirm, and distance underneath.
+6. Click **Confirm** on a tracked tile. Confirm the message reports either a reconfirm (quality
    bar rises) or "Lost the fix… try a fresh sweep".
-7. Return to the map and confirm the tracked ship draws with a brighter marker and a thin ring
+7. Confirm any remaining empty tiles (telescope slots not yet holding a track) show a dark
+   "no track — sweep to acquire" tile rather than nothing.
+8. Return to the map and confirm the tracked ship draws with a brighter marker and a thin ring
    around it (versus an untracked ship's plain dot).
 
-**Broken looks like:** the sweep never completing, the ledger never gaining an entry despite a
-plausible sweep, or the tracked ring never appearing on the map.
+**Broken looks like:** the sweep never completing, no scope-wall tile gaining a live track despite
+a plausible sweep, a tile rendering blank/broken art, or the tracked ring never appearing on the map.
 
 ---
 
@@ -322,7 +324,7 @@ despite the transfer being interrupted, or the Trade chip not reflecting an acti
 6. Pick a tracked contact in the tight-beam dropdown and click **Hail**. Confirm an inline reply
    appears (a destination for a publishing ship, "No flight plan filed" for a secretive one).
 7. Click **Laser range** on a tracked contact. Confirm a "lit up ⚠" message appears, and back on
-   the Sensors desk (`2`) that ship's ledger row now shows an `aware ⚠` tag.
+   the Sensors desk (`2`) that ship's scope-wall tile now shows an `aware ⚠` tag.
 
 **Broken looks like:** the dark-web section trading from an ordinary planet/dock, a bought tip
 never appearing on the traffic board, or laser ranging not marking the target aware.

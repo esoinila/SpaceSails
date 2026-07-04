@@ -8,7 +8,8 @@
 //      '1' returns to Nav, '5'/'3'/'4'/'6' open Comms/War room/Trade/Galley in turn, the chip
 //      strip is present throughout.
 //   4. Sensors desk: run a corridor scan program (using warp to pass sim time) until at least
-//      one contact is tracked.
+//      one contact is tracked, then confirm the scope wall (PR-12) shows a live canvas tile per
+//      telescope slot and that a filled tile appears once a track lands.
 //   5. Comms desk (PR-14): dark web + the departures board + the news ticker render together in
 //      one room; note whether the market is reachable from the current position (it requires
 //      orbit-bound-at-haven/far-station; see README.md).
@@ -230,6 +231,27 @@ async function main() {
     }
 
     record("tracking post: at least one target tracked via corridor scan", tracked, sweepDetail);
+
+    // ---- Scope wall (PR-12): a live scope tile per tracked target, not one small inset ----
+    const scopeWallTile0 = page.locator("#scope-wall-0");
+    await scopeWallTile0.waitFor({ state: "attached", timeout: 10_000 });
+    const wallCanvasCount = await page.locator(".scope-wall-canvas").count();
+    record(
+      "scope wall renders a canvas tile per telescope slot",
+      wallCanvasCount > 0,
+      `${wallCanvasCount} tile canvas(es) present`
+    );
+    if (tracked) {
+      // At least one tile should have drawn something other than the empty "no track" placeholder
+      // once a target is actually held — the filled tile's footer carries a quality bar + buttons
+      // the empty tile doesn't.
+      const filledTiles = await page.locator(".scope-wall-tile:not(.scope-wall-tile-empty)").count();
+      record(
+        "at least one scope-wall tile shows a live track (not the empty placeholder)",
+        filledTiles > 0,
+        `${filledTiles} filled tile(s)`
+      );
+    }
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "02-tracking-post-tracked.png") });
     // Also the plain filename docs/features/tracking-post.md references directly.
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "tracking-post.png") });
