@@ -3,10 +3,12 @@
 *Derived from [SaturdayPlanVision.md](SaturdayPlanVision.md), 2026-07-04. Goal: big PRs that
 don't block each other, so several can be coded in parallel while the owner is away.*
 
-**Status: all nine PRs merged.** PR-0 #25 · PR-1 #26 · PR-2 #27 · PR-3 #29 · PR-4 #28 · PR-5 #32
-· PR-6 #30 · PR-7 #31 · PR-8 #33 (this one — integration/cleanup, closing out the plan). The
-per-PR handoff notes (`pr3-notes.md`, `pr5-notes.md`, `pr6-notes.md`, `pr7-notes.md`) that fed
-PR-8's docs pass have been folded into the real `docs/features/*` pages and removed.
+**Status: all nine PRs in this plan are merged (or, for PR-8, opened).** PR-0 #25 · PR-1 #26 ·
+PR-2 #27 · PR-3 #29 · PR-4 #28 · PR-5 #32 · PR-6 #30 · PR-7 #31 · PR-8 #35 (this one —
+integration/cleanup, closing out the plan). The per-PR handoff notes (`pr3-notes.md`,
+`pr5-notes.md`, `pr6-notes.md`, `pr7-notes.md`) that fed PR-8's docs pass have been folded into
+the real `docs/features/*` pages and removed. (Follow-on work beyond this plan's original scope
+— PR-9 #33, PR-10 #34 — has since started in parallel; not covered by this document.)
 
 ## The vision, distilled into features
 
@@ -136,7 +138,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
 
 ### Wave 3 — integration & cleanup (single lane, after everything merges)
 
-**PR-8 · 🧹 Rig for silent running** — MERGED #33
+**PR-8 · 🧹 Rig for silent running** — #35
 - Strip `_mp` branches + SignalR from Map.razor & csproj (MP already archived by PR-1).
 - Docs pass: every new station gets its `docs/features/` page + testing-guide section;
   user-guide updated; README index complete.
