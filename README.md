@@ -2,7 +2,7 @@
 
 A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, controlled only by ±10% pulses on the velocity vector; routes are plotted in advance against the motion of the celestial bodies. You are a pirate intercepting Helium-3 cargo runs from Saturn.
 
-**Play now: https://esoinila.github.io/SpaceSails/**
+**Play now: https://esoinila.github.io/SpaceSails-play/**
 
 ## Docs
 

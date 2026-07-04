@@ -1,30 +1,24 @@
-# SpaceSails → GitHub Pages, single-player static publish (plan §F1, PR-1).
+# SpaceSails → esoinila/SpaceSails-play (GitHub Pages), single-player static publish.
 #
-# Multiplayer (SpaceSails.Server + SignalR) is archived under archive/ — see
-# archive/README.md. The client already builds standalone (single-player is the default;
-# ?mp=1 just won't resolve a hub on a static host, which is fine).
+# The source repo is private and the plan doesn't allow Pages on private repos, so the
+# built client is force-pushed to the public build-only repo SpaceSails-play, which serves
+# Pages from its main branch. Auth: SSH deploy key (write) on SpaceSails-play, private half
+# in this repo's PAGES_DEPLOY_KEY secret. Multiplayer (SpaceSails.Server + SignalR) is
+# archived under archive/ — see archive/README.md.
 
-name: Deploy to GitHub Pages
+name: Publish to SpaceSails-play
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,26 +32,25 @@ jobs:
       - name: Publish client
         run: dotnet publish src/SpaceSails.Client -c Release -o publish
 
-      - name: Rewrite base href for the SpaceSails Pages subpath
+      - name: Prepare static site (base href, SPA 404, .nojekyll, README)
         run: |
-          sed -i 's#<base href="/" />#<base href="/SpaceSails/" />#' publish/wwwroot/index.html
+          sed -i 's#<base href="/" />#<base href="/SpaceSails-play/" />#' publish/wwwroot/index.html
+          cp publish/wwwroot/index.html publish/wwwroot/404.html
+          touch publish/wwwroot/.nojekyll
+          printf '# SpaceSails 🏴‍☠️ — play\n\nA solar-system-scale sailing and piracy game. **Play: https://esoinila.github.io/SpaceSails-play/**\n\nBuilt Blazor WASM artifacts, auto-published from a private source repo.\n' > publish/wwwroot/README.md
 
-      - name: SPA deep-link fallback (404.html)
-        run: cp publish/wwwroot/index.html publish/wwwroot/404.html
-
-      - name: Disable Jekyll processing
-        run: touch publish/wwwroot/.nojekyll
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: publish/wwwroot
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Push build to esoinila/SpaceSails-play
+        env:
+          DEPLOY_KEY: ${{ secrets.PAGES_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          cd publish/wwwroot
+          git init -b main
+          git config user.name "spacesails-pages-bot"
+          git config user.email "erno.soinila@gmail.com"
+          git add -A
+          git commit -m "SpaceSails build ${GITHUB_SHA::9}"
+          git push --force git@github.com:esoinila/SpaceSails-play.git main
