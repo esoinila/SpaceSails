@@ -1,9 +1,17 @@
 @using SpaceSails.Core
+@using SpaceSails.Client.Rendering
+@implements IDisposable
 
 @* The tracking post (worldbuilding notes §5; vision ¶12/¶14/¶16): aim the ship's telescope at a
    sky region, sweep it over sim time, and hold a ledger of found ships that don't advertise
    themselves. Entirely self-contained: Map.razor only ever passes it the shared clock/geometry
-   and reads back the ledger for its own emphasis pass — no engine logic lives in Map.razor. *@
+   and reads back the ledger for its own emphasis pass — no engine logic lives in Map.razor.
+
+   PR-12 (the scope wall): the specialist position shows every tracked target live at once
+   instead of one small inset — one ScopeView canvas per ledger slot (max 4), redrawn straight
+   off SpaceSails.Client.Rendering.RendererInterop.FrameTick, the exact same global rAF-driven
+   event Map.razor's own scope inset rides. No new timer, no new interop — just more canvases
+   subscribed to the render loop that's already running. *@
 
 <div class="tracking-post-card @(FullScreen ? "tracking-post-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
@@ -66,43 +74,90 @@
 
         <hr class="my-2" />
 
-        <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
-        @if (_ledger.Entries.Count == 0)
+        @if (FullScreen)
         {
-            <div class="text-secondary">Nothing on the ledger yet — sweep a region to find contacts.</div>
+            <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
+            <div class="scope-wall-grid">
+                @{ List<TrackedTarget> wallOrdered = OrderedTracks(); }
+                @for (int i = 0; i < TileCount; i++)
+                {
+                    int slot = i;
+                    TrackedTarget? entry = slot < wallOrdered.Count ? wallOrdered[slot] : null;
+                    <div class="scope-wall-tile @(entry is null ? "scope-wall-tile-empty" : "")">
+                        <canvas id="@WallCanvasId(slot)" class="scope-wall-canvas"></canvas>
+                        @if (entry is { } e)
+                        {
+                            TrackingCandidate? candidate = FindCandidate(e.ShipId);
+                            double quality = e.EffectiveQuality(SimTime);
+                            double daysAgo = (SimTime - e.LastConfirmedTime) / 86400.0;
+                            Vector2d position = candidate?.State.Position ?? e.LastObservation.Position;
+                            double distance = (position - ShipPosition).Length;
+                            <div class="scope-wall-tile-footer">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-truncate">@(candidate?.Callsign ?? e.ShipId)@(_aware.Contains(e.ShipId) ? " aware ⚠" : "")</span>
+                                    <span class="text-secondary text-nowrap ms-1">@FormatWallDistance(distance)</span>
+                                </div>
+                                <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <span class="text-secondary">@daysAgo.ToString("F1")d ago</span>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                                @onclick="() => ConfirmNow(e.ShipId)">Confirm</button>
+                                        <button type="button" class="btn btn-outline-danger py-0 px-1" @onclick="() => Drop(e.ShipId)">Drop</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="scope-wall-tile-footer scope-wall-tile-empty-label">no track — sweep to acquire</div>
+                        }
+                    </div>
+                }
+            </div>
         }
         else
         {
-            <table class="table table-sm table-dark mb-0 @(FullScreen ? "tracking-ledger-table" : "")">
-                <tbody>
-                    @foreach (TrackedTarget entry in _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)))
-                    {
-                        double quality = entry.EffectiveQuality(SimTime);
-                        double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
-                        TrackingCandidate? candidate = FindCandidate(entry.ShipId);
-                        <tr>
-                            <td>
-                                @(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " aware ⚠" : "")
-                                <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
-                            </td>
-                            <td class="text-end align-middle">@daysAgo.ToString("F1")d</td>
-                            <td class="text-end align-middle text-nowrap">
-                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
-                                        @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @onclick="() => Drop(entry.ShipId)">Drop</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
+            @if (_ledger.Entries.Count == 0)
+            {
+                <div class="text-secondary">Nothing on the ledger yet — sweep a region to find contacts.</div>
+            }
+            else
+            {
+                <table class="table table-sm table-dark mb-0">
+                    <tbody>
+                        @foreach (TrackedTarget entry in OrderedTracks())
+                        {
+                            double quality = entry.EffectiveQuality(SimTime);
+                            double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
+                            TrackingCandidate? candidate = FindCandidate(entry.ShipId);
+                            <tr>
+                                <td>
+                                    @(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " aware ⚠" : "")
+                                    <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
+                                </td>
+                                <td class="text-end align-middle">@daysAgo.ToString("F1")d</td>
+                                <td class="text-end align-middle text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                            @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @onclick="() => Drop(entry.ShipId)">Drop</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
         }
     </div>
 </div>
 
 @code {
     /// <summary>A candidate ship the tracking post can sweep for — a thin projection of
-    /// Map.razor's own NPC state so this component never needs to know its private type.</summary>
-    public readonly record struct TrackingCandidate(string Id, string Callsign, ShipState State);
+    /// Map.razor's own NPC state so this component never needs to know its private type.
+    /// <see cref="IsPod"/>/<see cref="CargoDetail"/> (PR-12) let the scope wall draw the right
+    /// silhouette and detail line for a tracked target, same as Map.razor's own scope inset.</summary>
+    public readonly record struct TrackingCandidate(string Id, string Callsign, ShipState State, bool IsPod = false, string? CargoDetail = null);
 
     [Parameter, EditorRequired] public double SimTime { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
@@ -117,6 +172,17 @@
     private const double RosetteCenterPx = 100;
     private const double RosetteMaxRadiusPx = 82;
     private const int RosetteSteps = 48;
+
+    // Scope wall (PR-12): up to 4 live tiles, one per ledger slot. Matches Map.razor's own scope
+    // inset (200 px canvas, ScopeView drawn straight off the shared render loop) rather than
+    // introducing any new cadence of its own.
+    private const int WallTileSizePx = 240;
+    private static readonly RgbaColor WallTargetColor = new(200, 120, 255); // mirrors Map.razor's NpcColor
+    private static readonly ScopeView.Target EmptyWallTarget =
+        new(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
+
+    private ScopeView?[] _wallScopes = [];
+    private bool _wallFrameTickSubscribed;
 
     private readonly TelescopeModel _telescope = new();
     private readonly TrackedTargetLedger _ledger = new();
@@ -218,6 +284,110 @@
 
         _ledger.AdvanceTime(SimTime);
     }
+
+    // ---- Scope wall (PR-12) ----
+
+    /// <summary>How many tiles the wall shows — one per telescope's simultaneous-track cap,
+    /// capped at 4 (docs/features/tracking-post.md: max simultaneous tracks at max upgrade).
+    /// Zero outside FullScreen — the small floating-panel mode keeps the old ledger table.</summary>
+    private int TileCount => FullScreen ? Math.Clamp(MaxTracks, 1, 4) : 0;
+
+    private static string WallCanvasId(int index) => $"scope-wall-{index}";
+
+    /// <summary>Ledger entries sorted best-quality-first — the same order the old ledger table
+    /// used, now also what pins a track to a stable-ish wall slot.</summary>
+    private List<TrackedTarget> OrderedTracks() =>
+        _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)).ToList();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!FullScreen)
+        {
+            return;
+        }
+
+        int n = TileCount;
+        if (_wallScopes.Length == n)
+        {
+            return;
+        }
+
+        await RendererInterop.EnsureModuleLoadedAsync();
+        var scopes = new ScopeView?[n];
+        for (int i = 0; i < n; i++)
+        {
+            string id = WallCanvasId(i);
+            // observeResize:false — CRITICAL (same note as Map.razor's own scope inset): a
+            // resize-observing tile canvas would report its own small size back as the map
+            // viewport and shrink it.
+            RendererInterop.InitCanvas(id, observeResize: false);
+            scopes[i] = new ScopeView(new CanvasRenderer(id));
+        }
+        _wallScopes = scopes;
+
+        if (!_wallFrameTickSubscribed)
+        {
+            _wallFrameTickSubscribed = true;
+            RendererInterop.FrameTick += OnWallFrameTick;
+        }
+    }
+
+    /// <summary>Redraws every wall tile once per animation frame — riding the exact same global
+    /// <see cref="RendererInterop.FrameTick"/> event Map.razor's own scope inset uses, so tiles
+    /// stay live at full frame rate independent of Blazor's ~200 ms HUD render throttle. No new
+    /// timer: the loop is already running (Map.razor's <c>RendererInterop.StartLoop</c>).</summary>
+    private void OnWallFrameTick(double highResTimestampMs)
+    {
+        if (!FullScreen || !Visible || _wallScopes.Length == 0)
+        {
+            return;
+        }
+
+        List<TrackedTarget> ordered = OrderedTracks();
+        for (int i = 0; i < _wallScopes.Length; i++)
+        {
+            ScopeView? scope = _wallScopes[i];
+            if (scope is null)
+            {
+                continue;
+            }
+
+            ScopeView.Target target = i < ordered.Count ? BuildWallTarget(ordered[i]) : EmptyWallTarget;
+            scope.Draw(WallTileSizePx, SimTime, ShipPosition, ShipVelocity, target);
+        }
+    }
+
+    private ScopeView.Target BuildWallTarget(TrackedTarget entry)
+    {
+        TrackingCandidate? candidate = FindCandidate(entry.ShipId);
+        Vector2d position = candidate?.State.Position ?? entry.LastObservation.Position;
+        Vector2d velocity = candidate?.State.Velocity ?? entry.LastObservation.Velocity;
+        bool isPod = candidate?.IsPod ?? false;
+        string name = candidate?.Callsign ?? entry.ShipId;
+
+        return new ScopeView.Target(
+            isPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
+            name, candidate?.CargoDetail, position, velocity, 0, WallTargetColor, false);
+    }
+
+    private static string FormatWallDistance(double meters)
+    {
+        const double au = 1.495978707e11;
+        if (meters >= au / 10) return $"{meters / au:F2} AU";
+        if (meters >= 1e9) return $"{meters / 1e9:F1} M km";
+        return $"{meters / 1000:N0} km";
+    }
+
+    public void Dispose()
+    {
+        if (_wallFrameTickSubscribed)
+        {
+            RendererInterop.FrameTick -= OnWallFrameTick;
+            _wallFrameTickSubscribed = false;
+        }
+    }
+
+    // ---- Sweep controls ----
 
     private double SweepProgressPercent
     {

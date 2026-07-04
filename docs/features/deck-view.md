@@ -20,15 +20,30 @@ to the matching desk.
 
 ## The consoles
 
-Walking up to a console and pressing `E` is equivalent to the matching map toolbar button:
+Walking up to a console and pressing `E` opens the matching desk (see
+[station-desks.md](station-desks.md)) directly, without touching the number keys:
 
-- **HELM** / **NAV POST** — opens the [plotting desk](plotting-desk.md).
-- **SCOPE** — opens the [scope](scope.md).
-- **CANTINA** — pours a tot of rum (see below).
+- **HELM** / **NAV POST** — opens the **Nav** desk (`1`), same as the old plotting-desk shortcut;
+  the nav post also lights the plotting table.
+- **SCOPE** — opens the **Sensors** desk (`2`), the scope wall.
+- **CANTINA** — opens the **Galley** desk (`6`) — the rum locker (see below) lives there now,
+  alongside the news wire.
 - **CARGO** (in the Cargo Hold) — shows your loot as crates.
 - **VENT PANEL** — vents hull charge (Electric scenarios only — see [electric-sky.md](electric-sky.md)).
 - **SHUTTLE BAY** — launches the boarding shuttle when a capture window is engaged — see
   [boarding-run.md](boarding-run.md).
+
+## Bridge seats (PR-14)
+
+Three more consoles sit on the bridge alongside HELM/NAV POST/SCOPE — pressing `E` at one opens
+the matching desk exactly like the rest, so the whole duty roster is reachable on foot:
+
+- **COMMS SEAT** (starboard, mirroring SCOPE) — opens the **Comms** desk (`5`).
+- **TACTICAL SEAT** (port side, near the bridge door) — opens the **War room** desk (`3`).
+- **TRADE SEAT** (the bow-tip nook between HELM and NAV POST) — opens the **Trade** desk (`4`).
+
+Sitting at any bridge seat leaves deck mode the same way HELM/NAV POST/SCOPE always have — one
+`E` press, no walking required to get back once you're already there.
 
 ## Crew
 
@@ -37,15 +52,16 @@ Three droids wander the deck, purely for atmosphere — they don't affect gamepl
 
 ## The cantina — mind the third tot
 
-Interacting at the CANTINA pours a rum tot with a flavor line. Pour again within 90 seconds and
-the tot count climbs; wait longer and it resets to one. On the **third tot inside that 90-second
-window**, the deck turns tilty for **25 seconds**: your movement direction wobbles noticeably, but
-collision and interactions still work exactly the same — it's a disorientation effect, not a
-penalty to what you can do. Pace your drinking, or don't; nothing but your own steering suffers.
+Interacting at the CANTINA opens the Galley desk, where the "Pour a tot" button pours a rum tot
+with a flavor line. Pour again within 90 seconds and the tot count climbs; wait longer and it
+resets to one. On the **third tot inside that 90-second window**, the deck turns tilty for **25
+seconds**: your movement direction wobbles noticeably, but collision and interactions still work
+exactly the same — it's a disorientation effect, not a penalty to what you can do. Pace your
+drinking, or don't; nothing but your own steering suffers.
 
-The Galley desk (`6`, see [station-desks.md](station-desks.md)) pours from the exact same rum
-ledger — a "Pour a tot" button there and interacting at the CANTINA console are two doors into one
-counter, so the tot count and wobble state stay in sync no matter which one you use.
+The Galley desk (`6`, see [station-desks.md](station-desks.md)) and the CANTINA console are two
+doors into the exact same rum ledger, so the tot count and wobble state stay in sync no matter
+which one you use to get there.
 
 ## First person
 

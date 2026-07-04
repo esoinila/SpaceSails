@@ -10,12 +10,23 @@ Where: the **War room desk** — press `3` or click **3 War room** in the statio
 
 ![War room](../tmp_pics/saturday/war-room.png)
 
+## The desk layout (PR-13, StationDesks.md's 70% rule)
+
+The tactical circle is the desk's centerpiece: it owns the left ~60% of the screen (a 3:2 column
+split), tall, with a **range-scale selector** above it (100,000 km / 500,000 km / 1 M km / 5 M km)
+that only changes how far out the circle is zoomed — weapon and catch-radius rings always draw at
+their true physical size, just scaled to whichever range is picked. The **heat gauge is blown up
+large** in the tactical circle's bottom-left corner, alongside the cooling-rate line and a "hiding
+at haven" badge when applicable. The right column holds a roomier contact list (still the same
+Hail/Warn/Bribe actions and compliance badges, just with more room to read) plus a dedicated hunter
+readout — see below.
+
 ## Weapon range vs. boarding range
 
 Guns speak before shuttles fly: **weapon range is 2×10⁸ m**, well inside the boarding shuttle's
 5×10⁸ m capture envelope (see [boarding-run.md](boarding-run.md)). The tactical circle (centered on
-your ship, ~1×10⁹ m radius) draws a ring at weapon range around you and, for any active hunter, a
-ring at its catch radius.
+your ship) draws a ring at weapon range around you and, for any active hunter, a ring at its catch
+radius, at whichever zoom the range selector is set to.
 
 ## Warning shots and compliance
 
@@ -45,9 +56,10 @@ button disables itself (can't re-bribe, and disables if you're short on credits)
 
 ## Heat
 
-Robbing a ship (not just warning it) raises **heat**, a 0–3 gauge shown as flames in the header
-(`◌◌◌` → `🔥🔥🔥`). Heat decays **one level per 20 days**, **4× faster** (5 days) while you're
-hidden in orbit at a haven — the header's cooling line spells out which rate applies. A warning
+Robbing a ship (not just warning it) raises **heat**, a 0–3 gauge shown as flames (`◌◌◌` →
+`🔥🔥🔥`) — large, in the tactical circle's corner on the desk, small in the header on the old
+pop-up card. Heat decays **one level per 20 days**, **4× faster** (5 days) while you're hidden in
+orbit at a haven — the cooling line right under the gauge spells out which rate applies. A warning
 shot alone never raises heat; only an actual robbery does.
 
 ## Hunters
@@ -56,9 +68,14 @@ Every heat-raising robbery spawns one **hunter** — hired muscle — fitting ou
 nearest policed planet (inside the same 4×10¹¹ m central/outer split the traffic schedule uses,
 excluding havens: nowhere policed is pirate country). Once fitted out it's a dumb, relentless,
 thrust-limited pursuit (0.5 m/s² accel) straight at your current position, stepped in 60-second
-sim-time quanta so it scales with warp like ordinary NPC traffic. The header shows the nearest
-hunter's bearing and distance whenever one is active, and its catch-radius ring appears on the
-tactical circle once close.
+sim-time quanta so it scales with warp like ordinary NPC traffic.
+
+Hunters are drawn to be unmistakably hostile: a bright red dot with a 🐺 wolf glyph next to it on
+the tactical circle, plus its own row in the desk's hunter readout showing bearing, distance, and
+**closing speed** (the radial component of relative velocity — positive means it's gaining on you,
+negative means you're pulling away). Whenever a hunter closes to within **2× weapon range**
+(4×10⁸ m) the tactical circle draws a pulsing **threat line** from your ship straight to it — an
+unambiguous "it's in charging distance" cue. Its catch-radius ring appears once it's that close, too.
 
 A hunter **catches** you inside **3×10⁸ m** at under **3,000 m/s** relative speed: the consequence
 is your whole cargo hold seized plus a **500 cr** fine (the same shape as the ordinary Adrift

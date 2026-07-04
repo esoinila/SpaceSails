@@ -1,5 +1,6 @@
 // Headless Playwright smoke test for PR-8 ("rig for silent running"), PR-11 (the desk
-// framework), and PR-15 (the captain's position) — docs/SaturdayPlan/StationDesks.md.
+// framework), PR-12/13/14 (the desk rooms) and PR-15 (the captain's position) —
+// docs/SaturdayPlan/StationDesks.md.
 //
 // Proves the new-stations gameplay loop end-to-end in a real browser:
 //   1. Launch the app in Release mode (Debug WASM is ~100x slower on the IL interpreter).
@@ -11,14 +12,20 @@
 //      bar; selecting a Hunt mission updates "the ship's articles" instantly, and the mission
 //      chip docks at the top of the strip back on Nav with matching text.
 //   5. Sensors desk: run a corridor scan program (using warp to pass sim time) until at least
-//      one contact is tracked.
-//   6. Comms desk: dark web + the traffic board (moved here from the old toolbar button) render
-//      side by side; note whether the market is reachable from the current position (it requires
+//      one contact is tracked, then confirm the scope wall (PR-12) shows a live canvas tile per
+//      telescope slot and that a filled tile appears once a track lands.
+//   6. Comms desk (PR-14): dark web + the departures board + the news ticker render together in
+//      one room; note whether the market is reachable from the current position (it requires
 //      orbit-bound-at-haven/far-station; see README.md).
-//   7. War room desk: confirm the heat gauge renders at 0.
-//   8. Trade desk: confirm local space + the dock side panel render.
-//   9. Galley desk: pour a tot, confirm the rum locker updates.
-//  10. Screenshot every desk into docs/tmp_pics/saturday/.
+//   7. War room desk (PR-13): confirm the heat gauge renders at 0 and the desk's centerpiece —
+//      the big tactical circle plus its range-scale selector — renders full-screen.
+//   8. Trade desk (PR-13): confirm local space + the dock side panel + the cargo manifest column
+//      (the trading floor's three columns) render.
+//   9. Galley desk (PR-14): confirm the news feed renders, pour a tot, confirm the rum locker
+//      updates.
+//   10. Deck (PR-14): confirm the walkable deck loads (bridge seats are canvas-rendered, so this
+//      is a smoke check + screenshot, not a per-seat DOM assertion).
+//  11. Screenshot every desk into docs/tmp_pics/saturday/.
 //
 // This is tooling, not product code — it is exempt from the Razor+Bootstrap/renderer.js-only
 // rule (repo agreement §9 applies to the game client, not test scripts).
@@ -271,6 +278,27 @@ async function main() {
     }
 
     record("tracking post: at least one target tracked via corridor scan", tracked, sweepDetail);
+
+    // ---- Scope wall (PR-12): a live scope tile per tracked target, not one small inset ----
+    const scopeWallTile0 = page.locator("#scope-wall-0");
+    await scopeWallTile0.waitFor({ state: "attached", timeout: 10_000 });
+    const wallCanvasCount = await page.locator(".scope-wall-canvas").count();
+    record(
+      "scope wall renders a canvas tile per telescope slot",
+      wallCanvasCount > 0,
+      `${wallCanvasCount} tile canvas(es) present`
+    );
+    if (tracked) {
+      // At least one tile should have drawn something other than the empty "no track" placeholder
+      // once a target is actually held — the filled tile's footer carries a quality bar + buttons
+      // the empty tile doesn't.
+      const filledTiles = await page.locator(".scope-wall-tile:not(.scope-wall-tile-empty)").count();
+      record(
+        "at least one scope-wall tile shows a live track (not the empty placeholder)",
+        filledTiles > 0,
+        `${filledTiles} filled tile(s)`
+      );
+    }
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "02-tracking-post-tracked.png") });
     // Also the plain filename docs/features/tracking-post.md references directly.
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "tracking-post.png") });
@@ -298,8 +326,12 @@ async function main() {
         ? "market listing reachable from current position"
         : "gated (not orbit-bound at a haven/far station) — shows expected disabled-reason message"
     );
-    const trafficBoardOnComms = await page.locator(".desk-comms-grid").getByText("Traffic board").isVisible();
-    record("traffic board renders inside the Comms desk", trafficBoardOnComms);
+    const trafficBoardOnComms = await page.locator(".desk-comms-grid").getByText("Departures board").isVisible();
+    record("departures board renders inside the Comms desk", trafficBoardOnComms);
+    const commsTicker = page.locator(".comms-ticker");
+    await commsTicker.waitFor({ state: "visible", timeout: 30_000 });
+    const tickerText = (await commsTicker.innerText()).trim();
+    record("news ticker renders on the Comms desk", tickerText.length > 0, `ticker text: "${tickerText.slice(0, 80)}"`);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "03-dark-web.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "dark-web.png") });
 
@@ -310,16 +342,25 @@ async function main() {
     await warRoomCard.waitFor({ state: "visible", timeout: 30_000 });
     const heatGaugeText = (await warRoomCard.locator(".war-room-heat-gauge").innerText()).trim();
     record("war room heat gauge renders at 0", heatGaugeText === "◌◌◌", `gauge text = "${heatGaugeText}"`);
+    // PR-13: the desk's centerpiece is the ~60%-wide tactical circle (war-room-scope-big) with
+    // the range-scale selector above it — confirm both render full-screen, not just the card.
+    const tacticalCircleVisible = await page.locator(".war-room-scope-big").isVisible();
+    record("war room tactical circle (centerpiece) renders full-screen", tacticalCircleVisible);
+    const rangeSelectorVisible = await page.locator(".war-room-range-group").isVisible();
+    record("war room range-scale selector renders", rangeSelectorVisible);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "04-war-room.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "war-room.png") });
 
-    // ---- Trade desk (key '4'): local space + the dock side panel ----
+    // ---- Trade desk (key '4'): local space + the dock side panel + cargo manifest ----
     await mapPage.focus();
     await page.keyboard.press("4");
     const localSpaceCard = page.locator(".local-space-card");
     await localSpaceCard.waitFor({ state: "visible", timeout: 30_000 });
-    const dockPanelOnTrade = await page.locator(".desk-trade-grid .desk-side-panel").isVisible();
+    const dockPanelOnTrade = await page.locator(".desk-trade-grid .desk-side-panel").first().isVisible();
     record("'4' opens the Trade desk (local space + dock side panel)", dockPanelOnTrade);
+    // PR-13: the trading floor's third column — the cargo manifest read-model over the hold.
+    const manifestPanelVisible = await page.locator(".trade-manifest-panel").isVisible();
+    record("trade desk cargo manifest panel (centerpiece column) renders", manifestPanelVisible);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "05-local-space.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "local-space.png") });
 
@@ -329,6 +370,12 @@ async function main() {
     const galleyDesk = page.locator(".galley-desk");
     await galleyDesk.waitFor({ state: "visible", timeout: 30_000 });
     record("'6' opens the Galley desk", true);
+    const galleyNewsText = (await page.locator(".galley-news").innerText()).trim();
+    record(
+      "Galley news feed renders a headline",
+      galleyNewsText.length > 0 && !galleyNewsText.includes("No word from the wire"),
+      `first line: "${galleyNewsText.split("\n")[1] ?? galleyNewsText.slice(0, 80)}"`
+    );
     const totsBefore = await readRumTots(galleyDesk);
     await galleyDesk.locator('button:has-text("Pour a tot")').click();
     await sleep(500);
@@ -338,6 +385,15 @@ async function main() {
     record("summary chips render on the Galley desk", chipsOnGalley > 0, `${chipsOnGalley} chips`);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "06-galley.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "galley.png") });
+
+    // ---- Deck (key '7'): bridge seats are canvas-rendered, so this is a smoke check + a
+    // screenshot for a human to eyeball the seat layout, not a per-seat DOM assertion. ----
+    await mapPage.focus();
+    await page.keyboard.press("7");
+    await sleep(500);
+    const hudHiddenOnDeck = !(await page.locator(".map-hud").isVisible());
+    record("'7' leaves the Nav HUD for the walkable deck", hudHiddenOnDeck);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "07-deck.png") });
 
     // ---- Back to Nav once more, chip strip still present throughout ----
     await mapPage.focus();
