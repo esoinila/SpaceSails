@@ -29,6 +29,9 @@ dotnet run --project labs/06-closest-approach-found-honestly -c Release
 dotnet run --project labs/07-hill-spheres-and-bus-stops -c Release
 dotnet run --project labs/08-seeing-through-uncertainty -c Release
 dotnet run --project labs/09-what-the-rails-hide -c Release
+dotnet run --project labs/10-fast-enough-for-ten-thousand-x -c Release
+dotnet run --project labs/11-the-electric-sandbox -c Release
+dotnet run --project labs/12-oops-at-the-moon -c Release
 ```
 
 Each lesson folder holds:
@@ -71,6 +74,28 @@ Each lesson folder holds:
     labeled speculative playground.
 12. **Oops at the Moon** 🌙 *(coming)* — the finale: a shorted capacitor perturbs a moon's
     effective μ mid-sim, computed honestly as a playable catastrophe.
+4. **The ±10% pulse** *(coming)* — impulse quantization and the Oberth effect, measured from the
+   game's own numbers.
+5. **Transfers without formulas** *(coming)* — Hohmann analytic (Curtis ch. 6) vs.
+   `RoutePlanner`'s grid search on Earth→Mars.
+6. **Closest approach, found honestly** *(coming)* — scanning vs. parabola-on-d² refinement, the
+   same technique the planner and the closest-pass warning use.
+7. **Hill spheres and bus stops** *(coming)* — sphere-of-influence numerically (`OrbitRule`),
+   orbit insertion Δv priced in pulses.
+8. **Seeing through uncertainty** *(coming)* — observation → prediction cones (`PathPredictor`).
+9. **What the rails hide** *(coming)* — a true n-body toy vs. the rails ephemeris: chaos,
+   sensitivity, and why patched approximations are used on purpose.
+10. [**Fast enough for 10,000×**](10-fast-enough-for-ten-thousand-x/README.md) — the M5/M19
+    performance war stories, reproduced honestly on a dev machine: `RunAdaptive`'s real per-call
+    cost, one ship vs. the game's actual 23-NPC roster, and the determinism constraint
+    (byte-identical below warp 100) verified rather than asserted.
+11. [**The Electric Sandbox**](11-the-electric-sandbox/README.md) ⚡ — `PlasmaEnvironment`'s real
+    halo and stream mechanics computed straight, plus a clearly labeled speculative playground:
+    "what if effective μ depended on the electrical environment?"
+12. [**Oops at the Moon**](12-oops-at-the-moon/README.md) 🌙 — the finale: the one lesson that
+    un-rails a body. A velocity kick to Luna's orbit (the game's own ±% pulse mechanic, by
+    accident), integrated as a genuine free body — departs, degrades, or spirals in, computed
+    honestly, plus a playable `scenarios/oops.json` aftermath.
 
 ## Framing rule
 

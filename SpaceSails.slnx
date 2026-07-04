@@ -17,5 +17,8 @@
     <Project Path="labs/07-hill-spheres-and-bus-stops/Lab07.csproj" />
     <Project Path="labs/08-seeing-through-uncertainty/Lab08.csproj" />
     <Project Path="labs/09-what-the-rails-hide/Lab09.csproj" />
+    <Project Path="labs/10-fast-enough-for-ten-thousand-x/Lab10.csproj" />
+    <Project Path="labs/11-the-electric-sandbox/Lab11.csproj" />
+    <Project Path="labs/12-oops-at-the-moon/Lab12.csproj" />
   </Folder>
 </Solution>
