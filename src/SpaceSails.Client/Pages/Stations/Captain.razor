@@ -1,0 +1,122 @@
+@using SpaceSails.Core
+
+@* The captain's position (PR-15, docs/SaturdayPlan/StationDesks.md addendum, owner: "the mission
+   of the ship could be the captain's position... he selects the goal of the ship"). A stately,
+   uncluttered room — one big statement of the current mission, then the catalog of selectable
+   missions grouped by kind. One click selects; no confirm dialog — the captain's word is final the
+   moment it's given. *@
+
+@{
+    RenderFragment<ShipMission> Card = m =>
+        @<div class="captain-card @(IsSelected(m) ? "captain-card-selected" : "")" role="button" tabindex="0"
+              @onclick="() => Pick(m)" @onkeydown="e => OnCardKeyDown(e, m)">
+            @m.Describe()
+        </div>;
+}
+
+<div class="captain-desk text-light">
+    <div class="captain-articles">
+        <div class="captain-articles-label">The ship's articles</div>
+        <div class="captain-articles-mission">@CurrentMission.Describe()</div>
+    </div>
+
+    <div class="captain-groups">
+        <div class="captain-group">
+            <div class="captain-group-header"><span class="captain-group-icon">⛵</span> Free sailing</div>
+            <div class="captain-group-flavor">No orders given. The crew keeps her trim and waits on your word.</div>
+            <div class="captain-group-cards">
+                @Card(ShipMission.Default)
+            </div>
+        </div>
+
+        <div class="captain-group">
+            <div class="captain-group-header"><span class="captain-group-icon">☠</span> Hunt</div>
+            <div class="captain-group-flavor">Name the cargo, and we'll run down every hauler carrying it.</div>
+            <div class="captain-group-cards">
+                @if (Options.Hunt.Count == 0)
+                {
+                    <div class="captain-empty">No haulers worth the name in these waters.</div>
+                }
+                else
+                {
+                    @foreach (ShipMission m in Options.Hunt)
+                    {
+                        @Card(m)
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="captain-group">
+            <div class="captain-group-header"><span class="captain-group-icon">🛰</span> Trade run</div>
+            <div class="captain-group-flavor">Honest cargo, honest coin — and the safest way to grow the hold.</div>
+            <div class="captain-group-cards">
+                @if (Options.TradeRuns.Count == 0)
+                {
+                    <div class="captain-empty">No charted trade lanes yet.</div>
+                }
+                else
+                {
+                    @foreach (ShipMission m in Options.TradeRuns)
+                    {
+                        @Card(m)
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="captain-group">
+            <div class="captain-group-header"><span class="captain-group-icon">🍹</span> Lay low</div>
+            <div class="captain-group-flavor">Heat's rising. Find a haven, cool the trail, and let the fuss pass.</div>
+            <div class="captain-group-cards">
+                @if (Options.LayLow.Count == 0)
+                {
+                    <div class="captain-empty">No havens charted — nowhere quiet to run to.</div>
+                }
+                else
+                {
+                    @foreach (ShipMission m in Options.LayLow)
+                    {
+                        @Card(m)
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="captain-group">
+            <div class="captain-group-header"><span class="captain-group-icon">🔭</span> Survey</div>
+            <div class="captain-group-flavor">Chart the corridor end to end — every hull that passes it becomes known to us.</div>
+            <div class="captain-group-cards">
+                @if (Options.Survey.Count == 0)
+                {
+                    <div class="captain-empty">No corridor worth the watch yet.</div>
+                }
+                else
+                {
+                    @foreach (ShipMission m in Options.Survey)
+                    {
+                        @Card(m)
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ShipMission CurrentMission { get; set; } = ShipMission.Default;
+    [Parameter, EditorRequired] public MissionOptions Options { get; set; } = new([], [], [], []);
+    [Parameter] public EventCallback<ShipMission> OnSelectMission { get; set; }
+
+    private bool IsSelected(ShipMission m) => CurrentMission == m;
+
+    private Task Pick(ShipMission m) => OnSelectMission.InvokeAsync(m);
+
+    private async Task OnCardKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e, ShipMission m)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await Pick(m);
+        }
+    }
+}
