@@ -39,7 +39,29 @@ tracks it; **Stop sweep** aborts early. When it completes, every candidate whose
 inside the wedge and whose distance is within the telescope's sun-relative range at that bearing
 gets detected and added to the ledger.
 
-## The tracked-targets ledger
+## The scope wall (PR-12)
+
+The owner's brief was blunt: *"for space telescopy the specialist position could show all the
+targets not just one at the same time."* So the Sensors desk's main area is a **scope wall** — one
+live scope tile per tracked target, all rendered simultaneously (up to 4, one per telescope
+upgrade level), instead of a single small inset with a separate summary table.
+
+Each tile is a real [`ScopeView`](../../src/SpaceSails.Client/Rendering/ScopeView.cs) canvas — the
+same vector-art instrument Nav's own scope inset uses (auto-lit target, lock brackets, starfield
+parallax, plasma wisps) — aimed permanently at that one ledger entry, redrawn every animation
+frame off the shared render loop. Below the canvas, a footer strip carries what the art can't:
+
+- **Callsign** (plus an **aware ⚠** tag if you've laser-ranged it from the [dark web](dark-web.md)).
+- A **quality bar** — the same 0-100% confidence the ledger has always tracked.
+- **Days since last confirm**, and current **distance**.
+- **Confirm** (a short, cheap re-look at the target's predicted position) and **Drop** buttons,
+  right on the tile — no separate table to scroll to.
+
+An empty slot (telescope count not yet full of tracks) shows a dark, dashed "no track — sweep to
+acquire" tile instead of a target — the wall always shows exactly as many tiles as your telescope
+can hold, whether or not they're all filled.
+
+## Keeping a lock
 
 Once a sweep finds a ship, keeping the lock is cheap:
 
@@ -51,12 +73,8 @@ Once a sweep finds a ship, keeping the lock is cheap:
   the re-acquire — go sweep again.
 - Left unconfirmed past **5 days**, quality decays **20%/day** beyond that horizon. Below **5%**
   quality the entry drops off the ledger entirely — the contact is lost for good until a fresh
-  sweep finds it again.
-- **Drop** removes an entry manually (e.g. to free a slot).
-
-The ledger table shows each entry's callsign, a quality bar, days since last confirm, and Confirm/
-Drop buttons. A target you've laser-ranged from the [dark web](dark-web.md) panel shows an
-**aware ⚠** tag next to its callsign — it knows it's been pinged.
+  sweep finds it again, and its wall tile goes back to "no track — sweep to acquire".
+- **Drop** removes an entry manually (e.g. to free a slot for a higher-value contact).
 
 ## Telescope count — the upgrade axis
 

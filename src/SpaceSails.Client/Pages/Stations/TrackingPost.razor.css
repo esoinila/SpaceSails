@@ -50,6 +50,55 @@
     table-layout: fixed;
 }
 
+/* Scope wall (PR-12): the specialist's whole-desk instrument — one live scope tile per tracked
+   target, filling the remaining desk area. Responsive grid: 1 tile alone, up to 2x2 at 4. */
+.scope-wall-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    /* auto-fill (not auto-fit) with a capped track max: a lone tile gets a sane ~19rem square
+       instead of stretching to the full desk width — 2x2 naturally once 3-4 tiles are present. */
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 19rem));
+    justify-content: center;
+    gap: 0.75rem;
+    align-content: start;
+}
+
+.scope-wall-tile {
+    display: flex;
+    flex-direction: column;
+    background: #05070b;
+    border: 1px solid rgba(90, 200, 190, 0.35);
+    border-radius: 0.4rem;
+    overflow: hidden;
+    max-width: 19rem;
+}
+
+.scope-wall-tile-empty {
+    border-style: dashed;
+    border-color: rgba(150, 160, 180, 0.3);
+    opacity: 0.75;
+}
+
+.scope-wall-canvas {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: block;
+}
+
+.scope-wall-tile-footer {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.78rem;
+}
+
+.scope-wall-tile-empty-label {
+    text-align: center;
+    color: rgba(200, 210, 225, 0.55);
+    font-style: italic;
+    padding: 0.5rem;
+}
+
 .tracking-rosette-svg {
     width: 108px;
     height: 108px;

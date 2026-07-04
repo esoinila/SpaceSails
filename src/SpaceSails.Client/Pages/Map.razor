@@ -3190,7 +3190,8 @@
             if (npc.Active && !npc.Arrived)
             {
                 candidates.Add(new SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate(
-                    npc.Ship.Id, npc.Ship.Callsign, npc.State));
+                    npc.Ship.Id, npc.Ship.Callsign, npc.State,
+                    npc.Ship.IsPod, $"cargo: {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)"));
             }
         }
 
