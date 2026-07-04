@@ -17,7 +17,7 @@ plunder targets, not places to sell (see [depots.md](depots.md)).
 
 ## Upgrades
 
-Three permanent upgrade tracks, each bought as a level-up with escalating price (2000 cr, then
+Four permanent upgrade tracks, each bought as a level-up with escalating price (2000 cr, then
 doubling each level: 4000, 8000, 16000…):
 
 | Track | Effect per level |
@@ -25,6 +25,8 @@ doubling each level: 4000, 8000, 16000…):
 | Reaction mass | +150 pulse capacity (base 250) |
 | Sensor range | ×1.4 detection range (compounding) |
 | Cargo hold | +10 unit capacity (base 10) |
+| Telescope | +1 simultaneous tracked target (base 1, cap 3 levels → 4 tracks) — see the
+  [tracking post](tracking-post.md) |
 
 Each row shows your current level, what the *next* level buys, and the credit price — the buy
 button disables itself if you can't afford it.

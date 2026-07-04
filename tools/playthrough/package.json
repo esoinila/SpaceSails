@@ -1,0 +1,13 @@
+{
+  "name": "spacesails-playthrough",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Headless Playwright smoke test for the Saturday-Plan stations (Track/Local/Web/Guns).",
+  "type": "module",
+  "scripts": {
+    "playthrough": "node playthrough.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.61.1"
+  }
+}

@@ -27,6 +27,10 @@ Small, linked pages — one station or mechanic per page — under `docs/feature
 - [Boarding run](docs/features/boarding-run.md) — the capture window, automatic timer, and shuttle minigame
 - [Electric sky](docs/features/electric-sky.md) — hull charge, arcing, venting, plasma streams
 - [Scenarios](docs/features/scenarios.md) — the three voyages and the `?scenario=` query string
+- [Tracking post](docs/features/tracking-post.md) — the ship's telescope, sun-blind detection rosette, tracked-targets ledger
+- [Local space](docs/features/local-space.md) — the "what else orbits here" panel, same-orbit/course-matched trading, drone transfers
+- [Dark space web](docs/features/dark-web.md) — buying/selling route intel, tight-beam hails, laser ranging
+- [War room](docs/features/war-room.md) — weapon range, warning shots, compliance, bribery, heat, and hunters
 
 ## Stack
 
