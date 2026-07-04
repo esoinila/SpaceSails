@@ -23,6 +23,12 @@ Each lesson is a tiny console app that prints its own tables straight to stdout:
 dotnet run --project labs/01-falling-is-orbiting -c Release
 dotnet run --project labs/02-the-integrator-zoo -c Release
 dotnet run --project labs/03-time-step-is-a-lie-you-choose -c Release
+dotnet run --project labs/04-the-ten-percent-pulse -c Release
+dotnet run --project labs/05-transfers-without-formulas -c Release
+dotnet run --project labs/06-closest-approach-found-honestly -c Release
+dotnet run --project labs/07-hill-spheres-and-bus-stops -c Release
+dotnet run --project labs/08-seeing-through-uncertainty -c Release
+dotnet run --project labs/09-what-the-rails-hide -c Release
 dotnet run --project labs/10-fast-enough-for-ten-thousand-x -c Release
 dotnet run --project labs/11-the-electric-sandbox -c Release
 dotnet run --project labs/12-oops-at-the-moon -c Release
@@ -47,6 +53,27 @@ Each lesson folder holds:
 3. [**Time step is a lie you choose**](03-time-step-is-a-lie-you-choose/README.md) — fixed dt
    vs. the game's adaptive `ProjectAdaptive` on a sun-grazing hyperbolic flyby: cost vs. accuracy,
    and a case where the adaptive default doesn't automatically win.
+4. [**The ±10% pulse**](04-the-ten-percent-pulse/README.md) — impulse quantization and the Oberth
+   effect, measured from the game's own numbers.
+5. [**Transfers without formulas**](05-transfers-without-formulas/README.md) — Hohmann analytic
+   (Curtis ch. 6) vs. `RoutePlanner`'s grid search on Earth→Mars.
+6. [**Closest approach, found honestly**](06-closest-approach-found-honestly/README.md) —
+   scanning vs. parabola-on-d² refinement, the same technique the planner and the closest-pass
+   warning use.
+7. [**Hill spheres and bus stops**](07-hill-spheres-and-bus-stops/README.md) — sphere-of-influence
+   checked numerically against `OrbitRule`'s formula (a jagged stability structure, not a clean
+   line), plus orbit-insertion Δv priced in pulses and why the 5 km/s window exists.
+8. [**Seeing through uncertainty**](08-seeing-through-uncertainty/README.md) — a real NPC's
+   observation → prediction cone (`PathPredictor`) checked against its true hidden flight, then
+   telescope track quality (`TrackingStation`) converted directly into boarding-envelope odds.
+9. [**What the rails hide**](09-what-the-rails-hide/README.md) — a true from-scratch n-body
+   integrator vs. the rails ephemeris: per-planet drift, transfer-plan divergence, sensitivity to a
+   1-meter nudge, and why patched approximations are used on purpose (and where they aren't safe).
+10. **Fast enough for 10,000×** *(coming)* — the M19 performance numbers, gravity math at warp.
+11. **The Electric Sandbox** ⚡ *(coming)* — `PlasmaEnvironment` coupled with gravity, a clearly
+    labeled speculative playground.
+12. **Oops at the Moon** 🌙 *(coming)* — the finale: a shorted capacitor perturbs a moon's
+    effective μ mid-sim, computed honestly as a playable catastrophe.
 4. **The ±10% pulse** *(coming)* — impulse quantization and the Oberth effect, measured from the
    game's own numbers.
 5. **Transfers without formulas** *(coming)* — Hohmann analytic (Curtis ch. 6) vs.
