@@ -2,6 +2,8 @@
 
 A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, controlled only by ±10% pulses on the velocity vector; routes are plotted in advance against the motion of the celestial bodies. You are a pirate intercepting Helium-3 cargo runs from Saturn.
 
+**Play now: https://esoinila.github.io/SpaceSails/**
+
 ## Docs
 
 - [Big picture / vision](docs/SpaceSails_plan_big_picture.md)
@@ -11,27 +13,21 @@ A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, 
 
 ## Stack
 
-.NET 10 · Blazor WebAssembly (Razor + Bootstrap) · Canvas 2D rendering · SignalR multiplayer · Azure Container Apps
+.NET 10 · Blazor WebAssembly (Razor + Bootstrap) · Canvas 2D rendering · GitHub Pages
 
 ## Build & run
 
-Two ways to run, depending on whether you want multiplayer:
-
-**Single-player (client only)** — pure Blazor WASM, everything runs in the browser:
+**Single-player (client only)** — pure Blazor WASM, everything runs in the browser (this is
+also exactly what ships to GitHub Pages):
 
 ```bash
 dotnet run -c Release --project src/SpaceSails.Client
 # open http://localhost:5073
 ```
 
-**With multiplayer** — the server hosts the same client plus the SignalR hub, so the
-Home page's "Join the crew" card works (open two tabs or two machines with different
-callsigns; warp follows the slowest crew member):
-
-```bash
-dotnet run -c Release --project src/SpaceSails.Server
-# open http://localhost:5295
-```
+Multiplayer (SignalR hub, "Join the crew") is archived — untested, and the fun core of the
+game is single-player navigation and plotting. See [archive/README.md](archive/README.md) for
+what's there and how to bring it back.
 
 Tips:
 
@@ -39,9 +35,8 @@ Tips:
   slower (choppy frames, slow plotting).
 - Add `--no-build` to start faster when nothing changed.
 - Port already in use? `./run.ps1` handles it — finds the next free port and says so
-  (`-Server` for multiplayer, `-TakePort` to stop the squatter instead).
-- All run variants have scripts: `./run.ps1` (client, Release), `./run-server.ps1`
-  (multiplayer, Release), `./run-debug.ps1` / `./run-server-debug.ps1` (Debug builds for
+  (`-TakePort` to stop the squatter instead).
+- Run variants: `./run.ps1` (client, Release), `./run-debug.ps1` (Debug build, for
   development). Every variant handles taken ports; the banner names the build config.
 - Blank page (or blank /guide) after the code changed? The running server is serving stale
   fingerprinted assets — .NET 10 renames `_framework/*.js` on every build. Restart the app
@@ -57,6 +52,6 @@ How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](
 | `src/SpaceSails.Core` | Deterministic simulation (shared client/server) |
 | `src/SpaceSails.Contracts` | DTOs and scenario models |
 | `src/SpaceSails.Client` | Blazor WASM client |
-| `src/SpaceSails.Server` | ASP.NET Core host + SignalR hub |
+| `archive/SpaceSails.Server` | ASP.NET Core host + SignalR hub (archived — see [archive/README.md](archive/README.md)) |
 | `scenarios/` | Scenario data files (`sol.json`, `wheel.json`) |
 | `tests/` | xUnit test projects |

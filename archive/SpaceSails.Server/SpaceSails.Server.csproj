@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <!-- Archived from src/SpaceSails.Server (plan §PR-1) — paths updated one level for the move.
+       See archive/README.md to resurrect. -->
   <ItemGroup>
-    <ProjectReference Include="..\SpaceSails.Core\SpaceSails.Core.csproj" />
-    <ProjectReference Include="..\SpaceSails.Contracts\SpaceSails.Contracts.csproj" />
-    <ProjectReference Include="..\SpaceSails.Client\SpaceSails.Client.csproj" />
+    <ProjectReference Include="..\..\src\SpaceSails.Core\SpaceSails.Core.csproj" />
+    <ProjectReference Include="..\..\src\SpaceSails.Contracts\SpaceSails.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\SpaceSails.Client\SpaceSails.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

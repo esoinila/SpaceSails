@@ -20,8 +20,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Archived from tests/SpaceSails.Server.Tests (plan §PR-1) — path updated for the move.
+       See archive/README.md to resurrect. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SpaceSails.Server\SpaceSails.Server.csproj" />
+    <ProjectReference Include="..\SpaceSails.Server\SpaceSails.Server.csproj" />
   </ItemGroup>
 
 </Project>
