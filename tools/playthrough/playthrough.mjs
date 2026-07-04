@@ -1,5 +1,5 @@
-// Headless Playwright smoke test for PR-8 ("rig for silent running") and PR-11 (the desk
-// framework — docs/SaturdayPlan/StationDesks.md).
+// Headless Playwright smoke test for PR-8 ("rig for silent running"), PR-11 (the desk
+// framework) and PR-14 (the comms room + news wire — docs/SaturdayPlan/StationDesks.md).
 //
 // Proves the new-stations gameplay loop end-to-end in a real browser:
 //   1. Launch the app in Release mode (Debug WASM is ~100x slower on the IL interpreter).
@@ -9,15 +9,18 @@
 //      strip is present throughout.
 //   4. Sensors desk: run a corridor scan program (using warp to pass sim time) until at least
 //      one contact is tracked.
-//   5. Comms desk: dark web + the traffic board (moved here from the old toolbar button) render
-//      side by side; note whether the market is reachable from the current position (it requires
+//   5. Comms desk (PR-14): dark web + the departures board + the news ticker render together in
+//      one room; note whether the market is reachable from the current position (it requires
 //      orbit-bound-at-haven/far-station; see README.md).
 //   6. War room desk (PR-13): confirm the heat gauge renders at 0 and the desk's centerpiece —
 //      the big tactical circle plus its range-scale selector — renders full-screen.
 //   7. Trade desk (PR-13): confirm local space + the dock side panel + the cargo manifest column
 //      (the trading floor's three columns) render.
-//   8. Galley desk: pour a tot, confirm the rum locker updates.
-//   9. Screenshot every desk into docs/tmp_pics/saturday/.
+//   8. Galley desk (PR-14): confirm the news feed renders, pour a tot, confirm the rum locker
+//      updates.
+//   9. Deck (PR-14): confirm the walkable deck loads (bridge seats are canvas-rendered, so this
+//      is a smoke check + screenshot, not a per-seat DOM assertion).
+//  10. Screenshot every desk into docs/tmp_pics/saturday/.
 //
 // This is tooling, not product code — it is exempt from the Razor+Bootstrap/renderer.js-only
 // rule (repo agreement §9 applies to the game client, not test scripts).
@@ -254,8 +257,12 @@ async function main() {
         ? "market listing reachable from current position"
         : "gated (not orbit-bound at a haven/far station) — shows expected disabled-reason message"
     );
-    const trafficBoardOnComms = await page.locator(".desk-comms-grid").getByText("Traffic board").isVisible();
-    record("traffic board renders inside the Comms desk", trafficBoardOnComms);
+    const trafficBoardOnComms = await page.locator(".desk-comms-grid").getByText("Departures board").isVisible();
+    record("departures board renders inside the Comms desk", trafficBoardOnComms);
+    const commsTicker = page.locator(".comms-ticker");
+    await commsTicker.waitFor({ state: "visible", timeout: 30_000 });
+    const tickerText = (await commsTicker.innerText()).trim();
+    record("news ticker renders on the Comms desk", tickerText.length > 0, `ticker text: "${tickerText.slice(0, 80)}"`);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "03-dark-web.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "dark-web.png") });
 
@@ -294,6 +301,12 @@ async function main() {
     const galleyDesk = page.locator(".galley-desk");
     await galleyDesk.waitFor({ state: "visible", timeout: 30_000 });
     record("'6' opens the Galley desk", true);
+    const galleyNewsText = (await page.locator(".galley-news").innerText()).trim();
+    record(
+      "Galley news feed renders a headline",
+      galleyNewsText.length > 0 && !galleyNewsText.includes("No word from the wire"),
+      `first line: "${galleyNewsText.split("\n")[1] ?? galleyNewsText.slice(0, 80)}"`
+    );
     const totsBefore = await readRumTots(galleyDesk);
     await galleyDesk.locator('button:has-text("Pour a tot")').click();
     await sleep(500);
@@ -303,6 +316,15 @@ async function main() {
     record("summary chips render on the Galley desk", chipsOnGalley > 0, `${chipsOnGalley} chips`);
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "06-galley.png") });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, "galley.png") });
+
+    // ---- Deck (key '7'): bridge seats are canvas-rendered, so this is a smoke check + a
+    // screenshot for a human to eyeball the seat layout, not a per-seat DOM assertion. ----
+    await mapPage.focus();
+    await page.keyboard.press("7");
+    await sleep(500);
+    const hudHiddenOnDeck = !(await page.locator(".map-hud").isVisible());
+    record("'7' leaves the Nav HUD for the walkable deck", hudHiddenOnDeck);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, "07-deck.png") });
 
     // ---- Back to Nav once more, chip strip still present throughout ----
     await mapPage.focus();
