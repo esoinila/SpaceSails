@@ -16,7 +16,19 @@
 <div class="tracking-post-card @(FullScreen ? "tracking-post-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
         <span class="fw-bold small">Tracking post 📡</span>
-        @if (!FullScreen)
+        @if (FullScreen)
+        {
+            @* M27: the backdrop sun diagram is the live map — give the sensors chief its zoom. *@
+            <div class="btn-group btn-group-sm" role="group" aria-label="Backdrop map zoom">
+                <button type="button" class="btn btn-outline-light py-0" title="Zoom map out"
+                        @onclick="() => OnZoomMap.InvokeAsync(1.6)">🔍−</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Zoom map in"
+                        @onclick="() => OnZoomMap.InvokeAsync(1 / 1.6)">🔍+</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Center the ship"
+                        @onclick="() => OnCenterShip.InvokeAsync()">⌖ ship</button>
+            </div>
+        }
+        else
         {
             <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
         }
@@ -27,14 +39,28 @@
                 <svg viewBox="0 0 200 200" class="tracking-rosette-svg" aria-label="Sun-relative detection range">
                     <polygon points="@RosettePolygonPoints()" class="tracking-rosette-envelope" />
                     <polygon points="@WedgePolygonPoints()" class="tracking-rosette-wedge @(_activeJob is not null ? "tracking-rosette-wedge-active" : "")" />
-                    @foreach ((double x, double y, string color) in TrackedTargetDots())
+                    @* M27: bearing vectors from the ship to every tracked target — threats dashed red. *@
+                    @foreach ((double x, double y, string color, bool threat) in TrackedTargetDots())
                     {
-                        <circle cx="@x" cy="@y" r="3" fill="@color" />
+                        <line x1="100" y1="100" x2="@x" y2="@y"
+                              class="@(threat ? "tracking-vector tracking-vector-threat" : "tracking-vector")"
+                              stroke="@color" />
+                    }
+                    @foreach ((double x, double y, string color, bool threat) in TrackedTargetDots())
+                    {
+                        <circle cx="@x" cy="@y" r="@(threat ? 4 : 3)" fill="@color" />
+                    }
+                    @* M27: the prograde arrow — which way the ship is actually flying. *@
+                    @if (ProgradePoint() is { } fwd)
+                    {
+                        <line x1="100" y1="100" x2="@fwd.X" y2="@fwd.Y" class="tracking-prograde-line" />
+                        <circle cx="@fwd.X" cy="@fwd.Y" r="2.5" class="tracking-prograde-tip" />
                     }
                     <line x1="100" y1="100" x2="100" y2="14" class="tracking-rosette-sunline" />
                     <text x="100" y="10" class="tracking-rosette-label" text-anchor="middle">☉</text>
                     <circle cx="100" cy="100" r="4" class="tracking-rosette-ship" />
                 </svg>
+                <div class="text-secondary tracking-heading-line">@HeadingLine()</div>
             </div>
             <div class="flex-grow-1">
                 <label class="form-label mb-0 d-block">Bearing @((int)_centerBearingDeg)°</label>
@@ -58,8 +84,42 @@
                 {
                     <button type="button" class="btn btn-sm btn-outline-warning w-100" @onclick="StopSweep">Stop sweep</button>
                 }
+                @* M27: the eyes are open by default — a passive watch keeps a full-circle sweep
+                   running whenever nothing manual is queued. *@
+                <button type="button" class="btn btn-sm w-100 mt-1 @(_passiveWatch ? "btn-success" : "btn-outline-secondary")"
+                        @onclick="TogglePassiveWatch">
+                    👁 Passive watch: @(_passiveWatch ? "ON — always scanning" : "off")
+                </button>
+                <button type="button" class="btn btn-sm w-100 mt-1 @(RadarActive ? "btn-danger" : "btn-outline-danger")"
+                        @onclick="() => OnRadarToggle.InvokeAsync(!RadarActive)">
+                    📡 @(RadarActive ? "ACTIVE RADAR ON — LOUD" : "Active radar (close range — loud)")
+                </button>
             </div>
         </div>
+
+        @if (FullScreen && RadarActive)
+        {
+            <div class="sensors-radar-box mt-2">
+                <div class="fw-bold text-danger">📡 Radar returns — exact fixes inside @FormatWallDistance(RadarRule.RangeMeters); every ship in earshot now knows where we are.</div>
+                @{ List<TrackingCandidate> returns = RadarReturns(); }
+                @if (returns.Count == 0)
+                {
+                    <div class="text-secondary">No returns — nothing inside radar range.</div>
+                }
+                else
+                {
+                    @foreach (TrackingCandidate c in returns)
+                    {
+                        double rd = (c.State.Position - ShipPosition).Length;
+                        double rv = (c.State.Velocity - ShipVelocity).Length;
+                        <div class="d-flex justify-content-between">
+                            <span>@(c.IsThreat ? "🐺 " : "")@c.Callsign</span>
+                            <span class="text-secondary">@FormatWallDistance(rd) · rel @((rv / 1000).ToString("F2")) km/s</span>
+                        </div>
+                    }
+                }
+            </div>
+        }
 
         @if (_activeJob is not null)
         {
@@ -76,44 +136,64 @@
 
         @if (FullScreen)
         {
+            @* M27: one LIVE telescope that cycles through the ledger (owner: "not all of them
+               would be live viewed but it would cycle between them"), beside a card per track
+               carrying the full nav-grade picture: range, closing, bearing, and the eyes race —
+               who sees whom first, our own signature included. Click a card to pin the scope. *@
             <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
-            <div class="scope-wall-grid">
-                @{ List<TrackedTarget> wallOrdered = OrderedTracks(); }
-                @for (int i = 0; i < TileCount; i++)
-                {
-                    int slot = i;
-                    TrackedTarget? entry = slot < wallOrdered.Count ? wallOrdered[slot] : null;
-                    <div class="scope-wall-tile @(entry is null ? "scope-wall-tile-empty" : "")">
-                        <canvas id="@WallCanvasId(slot)" class="scope-wall-canvas"></canvas>
-                        @if (entry is { } e)
-                        {
-                            TrackingCandidate? candidate = FindCandidate(e.ShipId);
-                            double quality = e.EffectiveQuality(SimTime);
-                            double daysAgo = (SimTime - e.LastConfirmedTime) / 86400.0;
-                            Vector2d position = candidate?.State.Position ?? e.LastObservation.Position;
-                            double distance = (position - ShipPosition).Length;
-                            <div class="scope-wall-tile-footer">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-truncate">@(candidate?.Callsign ?? e.ShipId)@(_aware.Contains(e.ShipId) ? " aware ⚠" : "")</span>
-                                    <span class="text-secondary text-nowrap ms-1">@FormatWallDistance(distance)</span>
-                                </div>
-                                <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
-                                <div class="d-flex justify-content-between align-items-center mt-1">
-                                    <span class="text-secondary">@daysAgo.ToString("F1")d ago</span>
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-info py-0 px-1" disabled="@(candidate is null)"
-                                                @onclick="() => ConfirmNow(e.ShipId)">Confirm</button>
-                                        <button type="button" class="btn btn-outline-danger py-0 px-1" @onclick="() => Drop(e.ShipId)">Drop</button>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="scope-wall-tile-footer scope-wall-tile-empty-label">no track — sweep to acquire</div>
-                        }
+            <div class="sensors-main">
+                <div class="sensors-live flex-shrink-0">
+                    <canvas id="@LiveCanvasId" class="scope-wall-canvas"></canvas>
+                    <div class="text-secondary sensors-live-caption">
+                        @(_pinnedLiveId is not null ? "pinned — click the card again to resume cycling" : "cycling the ledger every 6 s")
                     </div>
-                }
+                </div>
+                <div class="sensors-cards flex-grow-1">
+                    @{
+                        List<TrackedTarget> orderedCards = OrderedTracks();
+                        string? liveId = CurrentLiveId(orderedCards);
+                    }
+                    @if (orderedCards.Count == 0)
+                    {
+                        <div class="text-secondary">Ledger empty — the passive watch is scanning; contacts appear here as the sweep finds them.</div>
+                    }
+                    @foreach (TrackedTarget entry in orderedCards)
+                    {
+                        TrackingCandidate? candidate = FindCandidate(entry.ShipId);
+                        double quality = entry.EffectiveQuality(SimTime);
+                        double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
+                        Vector2d position = candidate?.State.Position ?? entry.LastObservation.Position;
+                        Vector2d velocity = candidate?.State.Velocity ?? entry.LastObservation.Velocity;
+                        double distance = (position - ShipPosition).Length;
+                        double relSpeed = (velocity - ShipVelocity).Length;
+                        double closing = distance > 0 ? (ShipVelocity - velocity).Dot((position - ShipPosition) / distance) : 0;
+                        double bearingDeg = TrackingStation.Bearing(position - ShipPosition) * 180.0 / Math.PI;
+                        if (bearingDeg < 0) { bearingDeg += 360; }
+                        bool isThreat = candidate?.IsThreat ?? false;
+                        bool isLive = entry.ShipId == liveId;
+                        SightAdvantage sight = SensorModel.Default.Advantage(
+                            new ShipState(ShipPosition, ShipVelocity, SimTime, ShipCharge),
+                            new ShipState(position, velocity, SimTime));
+                        <div class="sensor-card @(isLive ? "sensor-card-live" : "") @(isThreat ? "sensor-card-threat" : "")"
+                             role="button" tabindex="0" @onclick="() => PinLive(entry.ShipId)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">@(isThreat ? "🐺 " : "")@(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " · aware ⚠" : "")</span>
+                                <span>@(isLive ? "● LIVE" : "")</span>
+                            </div>
+                            <div>@FormatWallDistance(distance) · rel @((relSpeed / 1000).ToString("F2")) km/s ·
+                                 @(closing >= 0 ? $"closing {closing / 1000:F2}" : $"opening {-closing / 1000:F2}") km/s</div>
+                            <div class="text-secondary">brg @((int)bearingDeg)° · @daysAgo.ToString("F1")d since fix@(candidate?.CargoDetail is { } cd ? $" · {cd}" : "")</div>
+                            <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
+                            <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
+                            <div class="d-flex justify-content-end gap-1 mt-1">
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                        @onclick="() => ConfirmNow(entry.ShipId)" @onclick:stopPropagation="true">Confirm</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                        @onclick="() => Drop(entry.ShipId)" @onclick:stopPropagation="true">Drop</button>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
         }
         else
@@ -157,32 +237,45 @@
     /// Map.razor's own NPC state so this component never needs to know its private type.
     /// <see cref="IsPod"/>/<see cref="CargoDetail"/> (PR-12) let the scope wall draw the right
     /// silhouette and detail line for a tracked target, same as Map.razor's own scope inset.</summary>
-    public readonly record struct TrackingCandidate(string Id, string Callsign, ShipState State, bool IsPod = false, string? CargoDetail = null);
+    public readonly record struct TrackingCandidate(string Id, string Callsign, ShipState State, bool IsPod = false, string? CargoDetail = null, bool IsThreat = false);
 
     [Parameter, EditorRequired] public double SimTime { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipVelocity { get; set; }
+    [Parameter] public double ShipCharge { get; set; }
     [Parameter] public ICelestialEphemeris? Ephemeris { get; set; }
     [Parameter] public IReadOnlyList<TrackingCandidate> Candidates { get; set; } = [];
     [Parameter] public int MaxTracks { get; set; } = 1;
     [Parameter] public bool Visible { get; set; }
     [Parameter] public bool FullScreen { get; set; }
+    [Parameter] public bool RadarActive { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<bool> OnRadarToggle { get; set; }
+    [Parameter] public EventCallback<double> OnZoomMap { get; set; }
+    [Parameter] public EventCallback OnCenterShip { get; set; }
 
     private const double RosetteCenterPx = 100;
     private const double RosetteMaxRadiusPx = 82;
     private const int RosetteSteps = 48;
 
-    // Scope wall (PR-12): up to 4 live tiles, one per ledger slot. Matches Map.razor's own scope
-    // inset (200 px canvas, ScopeView drawn straight off the shared render loop) rather than
-    // introducing any new cadence of its own.
-    private const int WallTileSizePx = 240;
+    // M27: ONE live telescope tile cycling the ledger (was PR-12's wall of four) — drawn off
+    // the same shared render loop as Map.razor's scope inset.
+    private const int WallTileSizePx = 280;
+    private const double LiveCycleMs = 6000;
     private static readonly RgbaColor WallTargetColor = new(200, 120, 255); // mirrors Map.razor's NpcColor
     private static readonly ScopeView.Target EmptyWallTarget =
         new(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
 
-    private ScopeView?[] _wallScopes = [];
+    private ScopeView? _liveScope;
     private bool _wallFrameTickSubscribed;
+    private int _liveIndex;
+    private double _lastCycleMs;
+    private string? _pinnedLiveId;
+
+    // M27: the passive watch — the eyes are open by default. Whenever no sweep is running (and
+    // the player hasn't switched the watch off), a full-circle survey starts by itself.
+    private bool _passiveWatch = true;
+    private bool _passiveJobRunning;
 
     private readonly TelescopeModel _telescope = new();
     private readonly TrackedTargetLedger _ledger = new();
@@ -207,13 +300,23 @@
     /// else nothing set.</summary>
     public string ObjectiveSummary(double simTime)
     {
-        if (_activeJob is not null)
+        if (RadarActive)
         {
-            return $"Sweeping {_lastProgramName ?? "custom region"}";
+            return "RADAR ACTIVE — loud";
         }
 
         string? callsign = BestTrackCallsign(simTime);
-        return callsign is not null ? $"Tracking {callsign}" : "No watch set";
+        if (callsign is not null)
+        {
+            return $"Tracking {callsign}";
+        }
+
+        if (_activeJob is not null)
+        {
+            return _passiveJobRunning ? "Passive watch — scanning" : $"Sweeping {_lastProgramName ?? "custom region"}";
+        }
+
+        return "No watch set";
     }
 
     private string? BestTrackCallsign(double simTime)
@@ -282,48 +385,91 @@
             }
         }
 
+        // M27: the passive watch — restart the full-circle survey whenever the post is idle.
+        if (_passiveWatch && _activeJob is null)
+        {
+            _activeJob = new ScanJob(0, Math.Tau);
+            _sweepStartSimTime = SimTime;
+            _passiveJobRunning = true;
+        }
+
         _ledger.AdvanceTime(SimTime);
     }
 
-    // ---- Scope wall (PR-12) ----
+    // ---- The live telescope (M27, replaces PR-12's wall of tiles) ----
 
-    /// <summary>How many tiles the wall shows — one per telescope's simultaneous-track cap,
-    /// capped at 4 (docs/features/tracking-post.md: max simultaneous tracks at max upgrade).
-    /// Zero outside FullScreen — the small floating-panel mode keeps the old ledger table.</summary>
-    private int TileCount => FullScreen ? Math.Clamp(MaxTracks, 1, 4) : 0;
+    private const string LiveCanvasId = "scope-live";
 
-    private static string WallCanvasId(int index) => $"scope-wall-{index}";
-
-    /// <summary>Ledger entries sorted best-quality-first — the same order the old ledger table
-    /// used, now also what pins a track to a stable-ish wall slot.</summary>
+    /// <summary>Ledger entries sorted best-quality-first — stable card order.</summary>
     private List<TrackedTarget> OrderedTracks() =>
         _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)).ToList();
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    /// <summary>Which track the live telescope is on: the pinned one if set and still on the
+    /// ledger, else the cycling index.</summary>
+    private string? CurrentLiveId(List<TrackedTarget> ordered)
     {
-        if (!FullScreen)
+        if (ordered.Count == 0)
         {
-            return;
+            return null;
         }
 
-        int n = TileCount;
-        if (_wallScopes.Length == n)
+        if (_pinnedLiveId is not null && ordered.Any(e => e.ShipId == _pinnedLiveId))
+        {
+            return _pinnedLiveId;
+        }
+
+        return ordered[_liveIndex % ordered.Count].ShipId;
+    }
+
+    private void PinLive(string shipId) =>
+        _pinnedLiveId = _pinnedLiveId == shipId ? null : shipId;
+
+    private void TogglePassiveWatch()
+    {
+        _passiveWatch = !_passiveWatch;
+        if (!_passiveWatch && _passiveJobRunning)
+        {
+            _activeJob = null;
+            _passiveJobRunning = false;
+        }
+    }
+
+    private List<TrackingCandidate> RadarReturns()
+    {
+        var list = new List<TrackingCandidate>();
+        foreach (TrackingCandidate c in Candidates)
+        {
+            if (RadarRule.InRange(ShipPosition, c.State.Position))
+            {
+                list.Add(c);
+            }
+        }
+
+        list.Sort((a, b) => (a.State.Position - ShipPosition).LengthSquared
+            .CompareTo((b.State.Position - ShipPosition).LengthSquared));
+        return list;
+    }
+
+    private static string SightLine(SightAdvantage s) =>
+        s.WeSeeThem && s.TheySeeUs ? "👁 mutual — both inside detection"
+        : s.TheySeeUs ? "⚠ THEY see us — we're the loud one"
+        : s.WeSeeThem ? "👁 we see them — they're blind to us"
+        : s.Edge >= 0 ? $"eyes race: we'd spot them first (+{FormatWallDistance(s.Edge)})"
+        : $"eyes race: they'd spot us first ({FormatWallDistance(-s.Edge)} edge)";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!FullScreen || _liveScope is not null)
         {
             return;
         }
 
         await RendererInterop.EnsureModuleLoadedAsync();
-        var scopes = new ScopeView?[n];
-        for (int i = 0; i < n; i++)
-        {
-            string id = WallCanvasId(i);
-            // observeResize:false — CRITICAL (same note as Map.razor's own scope inset): a
-            // resize-observing tile canvas would report its own small size back as the map
-            // viewport and shrink it.
-            RendererInterop.InitCanvas(id, observeResize: false);
-            scopes[i] = new ScopeView(new CanvasRenderer(id));
-        }
-        _wallScopes = scopes;
+        // observeResize:false — CRITICAL (same note as Map.razor's own scope inset): a
+        // resize-observing tile canvas would report its own small size back as the map
+        // viewport and shrink it.
+        RendererInterop.InitCanvas(LiveCanvasId, observeResize: false);
+        _liveScope = new ScopeView(new CanvasRenderer(LiveCanvasId));
 
         if (!_wallFrameTickSubscribed)
         {
@@ -332,29 +478,38 @@
         }
     }
 
-    /// <summary>Redraws every wall tile once per animation frame — riding the exact same global
-    /// <see cref="RendererInterop.FrameTick"/> event Map.razor's own scope inset uses, so tiles
-    /// stay live at full frame rate independent of Blazor's ~200 ms HUD render throttle. No new
-    /// timer: the loop is already running (Map.razor's <c>RendererInterop.StartLoop</c>).</summary>
+    /// <summary>Redraws the live tile once per animation frame and advances the cycle — riding
+    /// the same global <see cref="RendererInterop.FrameTick"/> event Map.razor's scope inset
+    /// uses, so it stays live at full frame rate independent of Blazor's HUD render throttle.</summary>
     private void OnWallFrameTick(double highResTimestampMs)
     {
-        if (!FullScreen || !Visible || _wallScopes.Length == 0)
+        if (!FullScreen || !Visible || _liveScope is null)
         {
             return;
         }
 
         List<TrackedTarget> ordered = OrderedTracks();
-        for (int i = 0; i < _wallScopes.Length; i++)
+        if (_pinnedLiveId is null && highResTimestampMs - _lastCycleMs > LiveCycleMs)
         {
-            ScopeView? scope = _wallScopes[i];
-            if (scope is null)
-            {
-                continue;
-            }
-
-            ScopeView.Target target = i < ordered.Count ? BuildWallTarget(ordered[i]) : EmptyWallTarget;
-            scope.Draw(WallTileSizePx, SimTime, ShipPosition, ShipVelocity, target);
+            _lastCycleMs = highResTimestampMs;
+            _liveIndex++;
         }
+
+        string? liveId = CurrentLiveId(ordered);
+        ScopeView.Target target = EmptyWallTarget;
+        if (liveId is not null)
+        {
+            foreach (TrackedTarget entry in ordered)
+            {
+                if (entry.ShipId == liveId)
+                {
+                    target = BuildWallTarget(entry);
+                    break;
+                }
+            }
+        }
+
+        _liveScope.Draw(WallTileSizePx, SimTime, ShipPosition, ShipVelocity, target);
     }
 
     private ScopeView.Target BuildWallTarget(TrackedTarget entry)
@@ -442,18 +597,32 @@
         double arcRad = Math.Clamp(_arcWidthDeg, 1, 360) * Math.PI / 180.0;
         _activeJob = new ScanJob(bearingRad, arcRad);
         _sweepStartSimTime = SimTime;
+        _passiveJobRunning = false; // a manual sweep takes the instrument
         _lastSweepMessage = "Sweeping…";
     }
 
     private void StopSweep()
     {
+        if (_passiveJobRunning)
+        {
+            // Stopping the watch itself — otherwise it would just restart next tick.
+            _passiveWatch = false;
+            _passiveJobRunning = false;
+            _lastSweepMessage = "Passive watch stood down";
+        }
+        else
+        {
+            _lastSweepMessage = "Sweep aborted";
+        }
+
         _activeJob = null;
-        _lastSweepMessage = "Sweep aborted";
     }
 
     private void CompleteSweep(ScanJob job)
     {
+        bool wasPassive = _passiveJobRunning;
         _activeJob = null;
+        _passiveJobRunning = false;
         IEnumerable<(string Id, ShipState State)> candidates = Candidates.Select(c => (c.Id, c.State));
         IReadOnlyList<Observation> found = TrackingStation.Sweep(_telescope, job, ShipPosition, candidates, SimTime);
 
@@ -470,11 +639,12 @@
             }
         }
 
+        // The passive watch stays quiet unless it actually found something new.
         _lastSweepMessage = found.Count == 0
-            ? "Sweep complete — nothing found"
+            ? wasPassive ? _lastSweepMessage : "Sweep complete — nothing found"
             : refused > 0
-                ? $"Sweep complete — {added} tracked, {refused} slipped (telescopes full)"
-                : $"Sweep complete — {added} contact(s) found";
+                ? $"{(wasPassive ? "Passive watch" : "Sweep complete")} — {added} tracked, {refused} slipped (telescopes full)"
+                : $"{(wasPassive ? "Passive watch" : "Sweep complete")} — {added} contact(s) found";
     }
 
     private TrackingCandidate? FindCandidate(string id)
@@ -584,7 +754,7 @@
         return sb.ToString();
     }
 
-    private IEnumerable<(double X, double Y, string Color)> TrackedTargetDots()
+    private IEnumerable<(double X, double Y, string Color, bool Threat)> TrackedTargetDots()
     {
         foreach (TrackedTarget entry in _ledger.Entries)
         {
@@ -602,9 +772,45 @@
             double fraction = range > 0 ? Math.Clamp(toTarget.Length / range, 0, 1) : 1;
             (double x, double y) = RosettePoint(localAngle, fraction);
 
+            bool threat = candidate?.IsThreat ?? false;
             double quality = entry.EffectiveQuality(SimTime);
-            string color = quality > 0.5 ? "#7dffb0" : quality > 0.2 ? "#ffd27d" : "#ff8d7d";
-            yield return (x, y, color);
+            string color = threat ? "#ff5a5a" : quality > 0.5 ? "#7dffb0" : quality > 0.2 ? "#ffd27d" : "#ff8d7d";
+            yield return (x, y, color, threat);
         }
+    }
+
+    // M27: the prograde arrow — where the ship's nose actually points on the rosette.
+    private (double X, double Y)? ProgradePoint()
+    {
+        if (ShipVelocity.LengthSquared == 0)
+        {
+            return null;
+        }
+
+        double localAngle = ToLocalAngle(TrackingStation.Bearing(ShipVelocity));
+        return RosettePoint(localAngle, 0.55);
+    }
+
+    // M27: are we looking ahead or astern? The scope aim vs the velocity vector, in words.
+    private string HeadingLine()
+    {
+        if (ShipVelocity.LengthSquared == 0)
+        {
+            return $"scope {(int)_centerBearingDeg}° · ship adrift";
+        }
+
+        double progradeDeg = TrackingStation.Bearing(ShipVelocity) * 180.0 / Math.PI;
+        if (progradeDeg < 0)
+        {
+            progradeDeg += 360;
+        }
+
+        double off = Math.Abs(_centerBearingDeg - progradeDeg) % 360;
+        if (off > 180)
+        {
+            off = 360 - off;
+        }
+
+        return $"scope {(int)_centerBearingDeg}° · prograde {(int)progradeDeg}° — looking {(int)off}° off the bow ({(off <= 90 ? "ahead" : "astern")})";
     }
 }

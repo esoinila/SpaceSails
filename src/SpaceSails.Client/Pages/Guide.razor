@@ -213,27 +213,40 @@
             the Trade desk (§10). He3 pays best; ice pays the rent.</li>
     </ul>
 
-    <h2 id="sensors">9. The Sensors desk 📡</h2>
+    <h2 id="sensors">9. The Sensors desk 📡 — the eyes of the ship</h2>
     <ul>
         <li>Press <kbd>2</kbd> or click <strong>2 Sensors</strong>. The live map dims in behind
-            it — the desk's own instrument is the <strong>scope wall</strong>: one live scope
-            canvas per tracked target, all running at once, not one small inset.</li>
+            it (zoomable from the desk header: 🔍−/🔍+/⌖ ship). The desk never sleeps: a
+            <strong>passive watch</strong> keeps a full-circle survey running by default, so the
+            ledger fills itself over time — the eyes are open even while you fly. Stand it down
+            (or aim a manual sweep) whenever you want the instrument yourself.</li>
         <li>A <strong>rosette</strong> shows your detection envelope live as an egg-shape relative
             to the sun: pointed straight at the sun you're nearly blind (8% of the telescope's
             6×10<sup>11</sup> m base range); pointed anti-sunward you see the full range — the
-            pirate's best hunting angle.</li>
+            pirate's best hunting angle. <strong>Bearing vectors</strong> run from the ship to
+            every tracked target (threats dashed red), a gold <strong>prograde arrow</strong>
+            shows where the nose actually points, and a readout says whether the scope is looking
+            ahead or astern.</li>
         <li>Aim by dragging the <strong>bearing</strong> and <strong>arc width</strong> sliders, or
             pick a ready-made <strong>scanning program</strong> that covers a known trade corridor,
             then <strong>Start sweep</strong>. A full 360° survey spends 6 sim-hours; a narrow
             wedge is faster. Sweeping finds ships the Comms desk's departures board can't —
-            secretive haulers that never publish a timetable.</li>
-        <li>Found contacts join the <strong>tracked-targets ledger</strong>, one tile per hit on
-            the wall. <strong>Confirm</strong> is a cheap re-look at a target's predicted position
+            secretive haulers that never publish a timetable. Hired muscle is sweepable too.</li>
+        <li>Tracked targets get a <strong>card each</strong> — range, relative and closing speed,
+            bearing, cargo, fix age — plus <strong>one live telescope</strong> that cycles the
+            ledger every few seconds (click a card to pin it). Every card also runs the
+            <strong>eyes race</strong>: do we see them, do THEY see us — computed both ways, sun
+            glare from each side's own sky and our hull-charge glow counted against us. The
+            telescope's double duty: watch the targets, mind our own signature.</li>
+        <li><strong>Active radar</strong> — for tight spots where stealth is already spent: exact
+            returns on everything within 5×10<sup>9</sup> m, glare and dark hulls be damned. The
+            price is written on the button: the ping is LOUD, and every ship in earshot
+            (5×10<sup>10</sup> m) immediately knows where we are.</li>
+        <li><strong>Confirm</strong> is a cheap re-look at a target's predicted position
             that bumps quality back up; skip it too long, or the target burns hard enough to slip
-            the cone, and the lock decays until it's lost. <strong>Drop</strong> frees the slot.</li>
-        <li><strong>Telescope count</strong> — an upgrade on the Trade desk's dock market — caps
-            how many ships you can hold on the ledger (and wall tiles you get) at once: 1 at base,
-            up to 4 at max.</li>
+            the cone, and the lock decays until it's lost. <strong>Drop</strong> frees the slot.
+            <strong>Telescope count</strong> — an upgrade on the Trade desk's dock market — caps
+            the ledger: 1 at base, up to 4 at max.</li>
     </ul>
 
     <h2 id="trade">10. The Trade desk 🛰</h2>
@@ -285,7 +298,17 @@
         <li>Press <kbd>3</kbd> or click <strong>3 War room</strong> for the full-screen tactical
             circle: your ship at the center, a weapon-range ring (2×10<sup>8</sup> m), and a
             catch-radius ring around any hunter on your tail, with the heat gauge blown up large
-            in the corner.</li>
+            in the corner. Crewed contacts wear an <strong>estimated weapon-range ring</strong> of
+            their own — assume everyone shoots back.</li>
+        <li>The <strong>Sensors desk screens the data; the war room consumes it</strong> (M27):
+            every tracking-post ledger entry appears as a bearing vector on the circle (threats
+            dashed red) and in the 📡 Sensor tracks side list with range and bearing.</li>
+        <li><strong>🎯 Target of interest &amp; the intercept clock</strong> — mark a contact or
+            track and the war room runs your plotted course against the target's predicted coast:
+            minimum distance and when, and the moment the range first drops inside the boarding
+            envelope (5×10<sup>8</sup> m) — the initiative roll of a piracy run. The countdown
+            rides the ⚔ War room chip on every desk, flipping to <em>ENCOUNTER WINDOW</em> when
+            the moment comes. The estimate assumes the prey coasts; if it burns, replot.</li>
         <li><strong>Warn</strong> a target in weapon range — compliant ships heave to and board at
             half the usual time; stubborn ones call their own muscle instead, and which is which
             never changes for a given ship. <strong>Hail</strong> for an in-character reply,
@@ -305,8 +328,8 @@
             auto-locks the nearest interesting contact, draws it (freighters, pods, players,
             planets, the sun, plasma wisps), and reads out distance and relative speed.</li>
         <li><strong>◀ / ▶</strong> cycle targets manually; the middle button returns to
-            <strong>AUTO</strong>. For every tracked target at once, full-screen, see the Sensors
-            desk's scope wall (§9) instead.</li>
+            <strong>AUTO</strong> (a set destination owns the scope as 🎯 DEST). For the tracked
+            ledger with full target cards, see the Sensors desk (§9) instead.</li>
     </ul>
 
     <h2 id="galley">14. The Galley 🍹</h2>
