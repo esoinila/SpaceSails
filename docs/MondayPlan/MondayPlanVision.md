@@ -45,17 +45,10 @@ standing order quoted back as an alibi.
    whether the target would SEE the burn (in their detection range at burn time) — the
    "does this course change give us away?" readout. The two-step play, made explicit.
 5. **The parrot knows**: "they're watching the wake, captain…" when suspicion is detected.
-6. **The decoy drone** (owner: "maybe one future option 😀"): the deluxe upgrade over the
-   fake beacon — a physical drone that CONTINUES our declared course transmitting our
-   transponder signal while the real hull goes hunting. Unlike the signal-side ghost
-   (M29's FAKE mode, busted by any observer whose optics see the real us), the decoy IS a
-   real flying object: an optical check *confirms* the lie unless the observer gets close
-   enough to resolve that the hull is a drone. Costs: buy the drone (dock upgrade tier),
-   one-shot expenditure, and losing it adrift is evidence with our name on it. Owner's
-   *Serenity* (the Joss Whedon movie) variant: decoys as CHAFF — minimal-capability fakes that "look like a ship when
-   no one really looks", scattered as false targets to saturate a hunting ship's picture;
-   the hunter must spend telescope time (or a close pass) per contact to tell hulls from
-   ghosts — our own track-quality mechanics, turned against the wolf.
+6. **Decoy drones** — the physical layer of the lying game: a course decoy that continues
+   our declared route transmitting our beacon (survives the optical cross-check that busts
+   M29's signal-only ghost), and the *Serenity* chaff variant that saturates a hunter's
+   track slots with cardboard contacts. Own document: [DecoyDrones.md](DecoyDrones.md).
 
 ## The target taxonomy (owner, late addition)
 
