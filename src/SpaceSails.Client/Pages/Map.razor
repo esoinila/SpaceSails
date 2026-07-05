@@ -25,8 +25,9 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
-    @* M24: planet click menu — set the body as THE destination so orbit assist tracks it. *@
-    @if (_activeDesk == ShipDesk.Nav && _bodyMenuBody is { } menuBody)
+    @* M24: planet click menu — set the body as THE destination so orbit assist tracks it.
+       M29: also live on the Sensors desk, where the map is clickable through the desk layer. *@
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)
     {
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
              style="left: @(_bodyMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_bodyMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
@@ -60,7 +61,7 @@
 
     @* M29: the contact menu — clicking a ship selects it for the scope AND offers the real
        actions: telescope tracking and the war-room interest (intercept clock, firing solutions). *@
-    @if (_activeDesk == ShipDesk.Nav && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
     {
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
              style="left: @(_shipMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_shipMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
@@ -229,44 +230,6 @@
                 </div>
             }
         </div>
-
-        @* M29: the target dossier — a box of its own for the tactical target, independent of
-           the NAV destination: you can be bound for Mercury and still keep the book open on a
-           hauler. Owner: "gather intel about this idea." *@
-        @if (TacticalTargetId is { } dossierId && DossierFor(dossierId) is { } dossier)
-        {
-            <div class="map-dossier bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="fw-bold">📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></span>
-                    <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close dossier"
-                            @onclick="CloseDossier"></button>
-                </div>
-                <div>@dossier.StatusLine</div>
-                <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
-                     @(dossier.Closing >= 0 ? $"closing {dossier.Closing / 1000:F1}" : $"opening {-dossier.Closing / 1000:F1}") km/s</div>
-                @if (dossier.TrackQuality is { } quality)
-                {
-                    <div>📡 telescope fix @((int)(quality * 100))% <span class="text-secondary">— sharpen it at the Sensors desk</span></div>
-                }
-                else
-                {
-                    <div class="text-secondary">📡 not on the telescope ledger — track her to sharpen the intel</div>
-                }
-                <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
-                @if (_interestTargetId == dossierId && InterceptChipLine() is { } clock)
-                {
-                    <div class="text-warning">@clock</div>
-                }
-                <div class="d-flex gap-1 mt-1">
-                    <button type="button" class="btn btn-sm py-0 @(_interestTargetId == dossierId ? "btn-info" : "btn-outline-info")"
-                            @onclick="() => SetInterestTarget(dossierId)">🎯 interest</button>
-                    <button type="button" class="btn btn-sm btn-outline-info py-0"
-                            @onclick="() => TrackShipFromMenu(dossierId)">📡 sharpen fix</button>
-                    <button type="button" class="btn btn-sm btn-outline-light py-0"
-                            @onclick="() => SwitchDesk(ShipDesk.WarRoom)">⚔ war room</button>
-                </div>
-            </div>
-        }
 
         @if (PlotMode)
         {
@@ -481,7 +444,48 @@
        destroyed: the ledger, the passive watch, and its live-scope canvas all live in it. A
        conditionally-rendered component forgot every track on desk switch and left renderer.js
        holding a stale canvas context (the same disease the Nav scope had). *@
-    <div class="desk-layer desk-layer-dimmed @(_activeDesk == ShipDesk.Sensors ? "" : "d-none")">
+    @* M29: the target dossier — a box of its own for the tactical target, independent of the
+       NAV destination: bound for Mercury with the book open on a hauler. Floats bottom-center
+       ABOVE the desk layers so the sensors chief reads the same book the navigator does. *@
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && TacticalTargetId is { } dossierId && DossierFor(dossierId) is { } dossier)
+    {
+        <div class="map-dossier bg-dark bg-opacity-75 rounded p-2 text-light small">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold">📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></span>
+                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close dossier"
+                        @onclick="CloseDossier"></button>
+            </div>
+            <div>@dossier.StatusLine</div>
+            <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
+                 @(dossier.Closing >= 0 ? $"closing {dossier.Closing / 1000:F1}" : $"opening {-dossier.Closing / 1000:F1}") km/s</div>
+            @if (dossier.TrackQuality is { } quality)
+            {
+                <div>📡 telescope fix @((int)(quality * 100))% <span class="text-secondary">— sharpen it at the Sensors desk</span></div>
+            }
+            else
+            {
+                <div class="text-secondary">📡 not on the telescope ledger — track her to sharpen the intel</div>
+            }
+            <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
+            @if (_interestTargetId == dossierId && InterceptChipLine() is { } clock)
+            {
+                <div class="text-warning">@clock</div>
+            }
+            <div class="d-flex gap-1 mt-1">
+                <button type="button" class="btn btn-sm py-0 @(_interestTargetId == dossierId ? "btn-info" : "btn-outline-info")"
+                        @onclick="() => SetInterestTarget(dossierId)">🎯 interest</button>
+                <button type="button" class="btn btn-sm btn-outline-info py-0"
+                        @onclick="() => TrackShipFromMenu(dossierId)">📡 sharpen fix</button>
+                <button type="button" class="btn btn-sm btn-outline-light py-0"
+                        @onclick="() => SwitchDesk(ShipDesk.WarRoom)">⚔ war room</button>
+            </div>
+        </div>
+    }
+
+    @* M29: desk-layer-passthrough — the sensors chief works the SKY, not a form: pointer
+       events fall through the desk's empty space to the live map below (pan, wheel zoom,
+       ship click → contact menu), while every actual instrument re-enables its own events. *@
+    <div class="desk-layer desk-layer-dimmed desk-layer-passthrough @(_activeDesk == ShipDesk.Sensors ? "" : "d-none")">
         <div class="desk-content">
             <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_activeDesk == ShipDesk.Sensors" FullScreen="true"
                 SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" ShipCharge="_ship.Charge"

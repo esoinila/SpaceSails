@@ -350,9 +350,44 @@
     max-width: 16rem;
 }
 
-/* M29: the target dossier — the tactical target''s own box, below the nav readouts. */
-.map-hud .map-dossier {
+/* M29: the target dossier — the tactical target's own box, floating bottom-center ABOVE the
+   desk layers (z 20 > desk 15) so Nav and Sensors read the same book. */
+.map-dossier {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0.75rem;
+    z-index: 20;
     pointer-events: auto;
     border: 1px solid rgba(150, 255, 210, 0.45);
-    max-width: 30rem;
+    width: 30rem;
+    max-width: calc(100% - 1.5rem);
+}
+
+/* M29: the sensors chief works the SKY — the desk layer's empty space passes pointer events
+   through to the live map (pan, wheel zoom, ship/planet click), while every real instrument
+   re-enables its own. The dim backdrop still paints; only hit-testing changes. */
+.desk-layer-passthrough,
+.desk-layer-passthrough .desk-content {
+    pointer-events: none; /* inherited by the whole desk tree unless re-enabled below */
+}
+
+/* The tracking post card sets its own explicit auto (it's a floating panel on Nav) — undo
+   that inside the passthrough desk so the card body is sky, not shield. */
+.desk-layer-passthrough ::deep .tracking-post-card,
+.desk-layer-passthrough ::deep .tracking-post-desk-body {
+    pointer-events: none;
+}
+
+/* ::deep — these live inside the TrackingPost child component, outside Map's own scope. Note
+   .sensors-cards/.sensors-main are NOT re-enabled: the flex containers stretch over empty sky;
+   only the actual cards and the live scope take their events back. */
+.desk-layer-passthrough ::deep .card-header,
+.desk-layer-passthrough ::deep .tracking-post-desk-top,
+.desk-layer-passthrough ::deep .sensors-opportunity-box,
+.desk-layer-passthrough ::deep .sensors-radar-box,
+.desk-layer-passthrough ::deep .sensors-live,
+.desk-layer-passthrough ::deep .sensor-card,
+.desk-layer-passthrough ::deep .tracking-progress {
+    pointer-events: auto;
 }
