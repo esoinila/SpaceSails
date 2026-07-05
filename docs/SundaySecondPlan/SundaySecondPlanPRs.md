@@ -6,6 +6,7 @@ there. Same working shape as the morning's fire-control chain: a stacked chain o
 PRs, owner approves top-down, implementer rebases and merges each as approved.*
 
 **Evidence from the owner's screenshots** ([pics/](pics/)):
+
 - [Barnacle_Click_does_nothing_here.png](pics/Barnacle_Click_does_nothing_here.png) — a
   labeled contact on the Sensors map that gives no response to a click. Everything visible
   in the sky must answer a click with scan options.
@@ -16,7 +17,7 @@ PRs, owner approves top-down, implementer rebases and merges each as approved.*
 ## The vision, distilled into features
 
 | # | Feature | Lane |
-|---|---------|------|
+| --- | --- | --- |
 | F1 | **The telescope is one instrument** (Core) — a deterministic scheduler owns the single onboard Hubble: track-update passes, area scans, corridor sweeps, lost-lock searches, all from one prioritized queue | PR-A |
 | F2 | **Lost locks leave a search area** (Core) — a dark ship that burned while we looked elsewhere doesn't vanish; its track becomes a growing search region (PathPredictor cone, weaponized the other way) with a rediscovery scan job | PR-A |
 | F3 | **An area scan always finds *something*** (Core) — point a Hubble anywhere and there is debris, a cold pod, a rock; deterministic seeding, never "nothing" | PR-A |
@@ -53,11 +54,14 @@ Every PR reviews clean against its base; the owner approves top-down.
 ## The PRs
 
 ### PR-0 — this plan (tiny, vs main, first) — branch `sunday2/pr-0-plan`
+
 This document plus the three screenshots promoted out of `tmp_pics` into `pics/`. Everything
 else assumes the merge order below.
 
 ### PR-A · 🔭 One telescope, one queue *(F1 + F2 + F3 + F4 geometry)* — branch `sunday2/pr-a`
+
 Core + tests only; zero client changes. Determinism is law.
+
 - `Core/SensorTasks.cs`: `SensorTask` (kinds: **TrackUpdate**, **AreaScan**, **CorridorSweep**,
   **LostSearch**) + `TelescopeSchedule` — a deterministic scheduler that owns the single
   telescope. One look direction and one focus at a time; each task takes sim-time proportional
@@ -81,6 +85,7 @@ Core + tests only; zero client changes. Determinism is law.
   search-region growth/shrink, deterministic discoveries, corridor nearest-point.
 
 ### PR-B · 🗺 The sky shows its state *(F5 + F4 drawing + F9)* — branch `sunday2/pr-b` (on A)
+
 - New renderer opcode `OP_POLYGON` (filled, low-alpha) in `renderer.js` + `CanvasRenderer` —
   the one JS change; everything else stays Razor-side. (Working agreement: JS only in
   renderer.js.)
@@ -100,6 +105,7 @@ Core + tests only; zero client changes. Determinism is law.
   screenshots for the visual diff.
 
 ### PR-C · 👉 Point at the sky and ask *(F6 + F7)* — branch `sunday2/pr-c` (on B)
+
 - `OnPointerDown` on the Sensors desk gains the missing answers — nothing visible is mute:
   - **ship contact** → existing menu grows scan verbs: SCAN THIS SHIP (enqueue TrackUpdate /
     add to slots), SCAN AROUND HERE (AreaScan on its vicinity);
@@ -117,6 +123,7 @@ Core + tests only; zero client changes. Determinism is law.
 - Every menu action lands in PR-A's queue — the map is the input device for the scheduler.
 
 ### PR-D · 📋 The Sensor tasks desk *(F8 + docs)* — branch `sunday2/pr-d` (on C)
+
 - The new **Sensor tasks** panel on the tracking post: the telescope's queue as a visible,
   prioritized list — each entry shows kind, target/area, time-to-complete, and ▲▼ priority
   controls. What the telescope does next is never a mystery.
