@@ -16,8 +16,8 @@
     overflow-y: auto;
 }
 
-/* Full-screen desk mode (PR-11): the Comms desk splits the market/sell tables from the
-   tight-beam/laser-ranging consoles into two columns instead of one long scrolling card. */
+/* Full-screen desk mode: the market is the dark-web node's detail pane in the Comms tree now
+   (comms-tree rebuild) — one scrolling column, no console split. */
 .dark-web-desk {
     position: static;
     width: 100%;
@@ -28,13 +28,5 @@
 .dark-web-desk-body {
     max-height: none;
     height: calc(100% - 2.25rem);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 1.5rem;
-    align-content: start;
-}
-
-.dark-web-desk-body .dark-web-desk-col {
     overflow-y: auto;
-    height: 100%;
 }

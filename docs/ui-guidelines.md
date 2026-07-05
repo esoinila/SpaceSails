@@ -81,6 +81,39 @@ From file-manager UX (validated in a design consult with Gemini 3.5 Pro):
   true already; the contact list could adopt the lean-row rule).
 - **Cargo manifest**: class → items, once cargo grows attributes worth a detail pane.
 
+## The AI-playtest protocol (2026-07-05)
+
+Owner direction: use a second model (Gemini 3.5 Pro via its CLI) as a **fresh-eyes playtester**
+for desks the owner hasn't exercised yet. Two rounds per screen:
+
+1. **Blind** — a screenshot and nothing else: *what is this app, what could YOU do here, what
+   confuses you?* Whatever it can't figure out, a tired human at 23:00 can't either.
+2. **Informed** — reveal the actual mechanics, then ask it to reorganize the layout under this
+   document's rules.
+
+Mechanics: capture desks headless with `tools/playthrough`'s Playwright; feed images with
+`gemini -p "@desk-comms.png <questions>"` (the CLI's `@file` syntax is multimodal).
+
+First run's findings:
+
+- **Comms** — blind: understood the desk's purpose, but read the raw negative departure times
+  as *a data bug*, found the "N ships operating off the books" footer inert, couldn't tell
+  rows were clickable, and couldn't tell the backdrop map from decoration. Informed: proposed
+  exactly this doc's shape — contacts tree + per-ship detail carrying the per-contact actions
+  (hail / laser ranging / fencing), the dark web as a node with a guiding offline state.
+  → **Implemented** (the comms-tree rebuild): phrased departures ("departed 2366d ago
+  (mid-flight — outer transfers take years)"), Off-the-books as a first-class node whose
+  detail teaches the telescope + dark-web paths, tree selection replacing invisible row
+  clicks. The rebuild also surfaced a real state bug: the DarkWeb component owned the
+  bought-intel ledger while being conditionally rendered — every purchase died on desk
+  switch. The ledger lives in Map.razor now.
+- **War room** — blind: understood it; flagged ambiguous heat pips, unlabeled range rings,
+  overlapping map labels. Informed: argued **against** master–detail here — a gun deck wants
+  one dominant target and cycle-hotkeys, not a list. → Pattern boundary confirmed (see below);
+  its quick wins are queued: heat pips that fill with color, labels on the range rings, and a
+  "quiet skies" empty state that teaches the kill chain (Sensors track → interest → solution
+  → fire → board).
+
 ## Where it does NOT fit
 
 - **Order-sensitive queues** — the Sensor tasks list is a *carousel*, its vertical order IS

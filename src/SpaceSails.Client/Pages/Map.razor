@@ -720,11 +720,13 @@
                 }
                 else if (_activeDesk == ShipDesk.Comms)
                 {
-                    @* The comms room (PR-14, StationDesks.md #14): a ticker band up top, then the
-                       three consoles side by side — (a) the departures board, roomier now that it
-                       owns its own column, then DarkWeb.razor's own two columns for (b) the dark
-                       web market and (c) tight-beam/laser ranging. All existing logic preserved;
-                       only the layout and the news feed are new. *@
+                    @* Comms room, master–detail edition (ui-guidelines.md; validated by the Gemini
+                       playtest consult): ticker on top, then the CONTACTS TREE on the left — lean
+                       rows, one status badge each, grouped Scheduled / En route / fixtures, plus
+                       "Off the books" and the dark web market as first-class nodes — and ONLY the
+                       selected node's detail on the right. The three loose consoles are gone:
+                       tight-beam and laser ranging were always per-contact actions, so they live
+                       in the contact's detail now; the market is the dark-web node's detail. *@
                     <div class="desk-comms-room">
                         <div class="comms-ticker">
                             <span class="comms-ticker-label fw-bold small">News wire 📡</span>
@@ -743,57 +745,122 @@
                         </div>
                         <div class="desk-comms-grid">
                             <div class="desk-side-panel comms-traffic-panel card bg-dark bg-opacity-50 text-light">
-                                <div class="card-header py-1"><span class="fw-bold small">Departures board</span></div>
-                                <div class="card-body p-0 desk-traffic-scroll">
-                                    <table class="table table-dark table-hover align-middle mb-0 small comms-traffic-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Callsign</th>
-                                                <th>Cargo</th>
-                                                <th>Route</th>
-                                                <th>Departs</th>
-                                                <th>Last seen</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (NpcState npc in _npcStates.Where(n => n.Ship.PublishesTimetable || (_darkWeb?.KnowsRoute(n.Ship.Id) ?? false)))
-                                            {
-                                                <tr class="map-traffic-row @(npc.Ship.Id == _selectedTargetId ? "table-primary" : "")"
-                                                    @onclick="() => SelectTarget(npc.Ship.Id)">
-                                                    <td>
-                                                        @npc.Ship.Callsign
-                                                        @if (!npc.Ship.PublishesTimetable && _darkWeb is not null)
-                                                        {
-                                                            <span class="badge bg-dark border border-secondary ms-1" title="Bought intel — off the books">🕸 stale in @(_darkWeb.StaleInDays(npc.Ship.Id).ToString("F0"))d</span>
-                                                        }
-                                                    </td>
-                                                    <td>@npc.Ship.CargoClass</td>
-                                                    <td>@RouteLabel(npc.Ship)</td>
-                                                    <td>@FormatDeparture(npc.Ship.DepartureTime)</td>
-                                                    <td>@(npc.LastObservation is { } o ? FormatSimTime(o.SimTime) : "—")</td>
-                                                    <td>@StatusLabel(npc)</td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
+                                <div class="card-header py-1"><span class="fw-bold small">Contacts &amp; intel</span></div>
+                                <div class="card-body p-2 small desk-traffic-scroll">
+                                    @foreach ((string groupLabel, List<NpcState> members) in CommsGroups())
+                                    {
+                                        <div class="comms-tree-group text-secondary fw-bold">@groupLabel</div>
+                                        @foreach (NpcState npc in members)
+                                        {
+                                            NpcState row = npc;
+                                            <div class="comms-node @(row.Ship.Id == _commsSelectedId ? "comms-node-selected" : "")"
+                                                 role="button" tabindex="0" @onclick="() => SelectCommsShip(row.Ship.Id)">
+                                                <span class="flex-grow-1">@row.Ship.Callsign</span>
+                                                @if (!row.Ship.PublishesTimetable)
+                                                {
+                                                    <span class="badge bg-dark border border-secondary" title="Bought intel — off the books">🕸</span>
+                                                }
+                                                @{ (string rowBadge, string rowBadgeCss) = CommsStatusBadge(row); }
+                                                <span class="badge @rowBadgeCss">@rowBadge</span>
+                                            </div>
+                                        }
+                                    }
+                                    <div class="comms-tree-group text-secondary fw-bold">Intel</div>
+                                    <div class="comms-node @(_commsSelectedId == "offbooks" ? "comms-node-selected" : "")"
+                                         role="button" tabindex="0" @onclick='() => _commsSelectedId = "offbooks"'>
+                                        <span class="flex-grow-1">🕵 Off the books</span>
+                                        <span class="badge bg-secondary">@OffBooksCount unknown</span>
+                                    </div>
+                                    <div class="comms-node @(_commsSelectedId == "darkweb" ? "comms-node-selected" : "")"
+                                         role="button" tabindex="0" @onclick='() => _commsSelectedId = "darkweb"'>
+                                        <span class="flex-grow-1">🕸 Dark web market</span>
+                                        <span class="badge @(DarkWebCanTrade() ? "bg-success" : "bg-secondary")">@(DarkWebCanTrade() ? "open" : "offline")</span>
+                                    </div>
                                 </div>
-                                @if (OffBooksCount > 0)
-                                {
-                                    <div class="card-footer py-1 text-secondary small fst-italic">
-                                        @OffBooksCount ship@(OffBooksCount == 1 ? "" : "s") operating off the books
-                                    </div>
-                                }
-                                @if (SelectedTrackedTarget() is { } sel)
-                                {
-                                    <div class="card-footer py-1">
-                                        <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light")" @onclick="TogglePin">
-                                            Pin: brakes at @BodyName(sel.Ship.DestinationId)
-                                        </button>
-                                    </div>
-                                }
                             </div>
-                            <SpaceSails.Client.Pages.Stations.DarkWeb @ref="_darkWeb" Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnLaserRange="LaserRangeTarget" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                            @if (_commsSelectedId == "darkweb")
+                            {
+                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                            }
+                            else
+                            {
+                                <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
+                                    @if (_commsSelectedId == "offbooks")
+                                    {
+                                        <div class="card-header py-1"><span class="fw-bold small">🕵 Off the books</span></div>
+                                        <div class="card-body p-2 small">
+                                            <div class="comms-breadcrumbs text-secondary mb-1">Intel › Off the books</div>
+                                            <div><span class="fw-bold">@OffBooksCount ship@(OffBooksCount == 1 ? "" : "s")</span> are flying with no published timetable — the board can't list what nobody filed.</div>
+                                            <div class="text-secondary mt-2">Two ways to find them:</div>
+                                            <div class="text-secondary">🔭 sweep the sky with the telescope at the <span class="text-light">Sensors desk</span> — lane watches and area scans catch dark hulls;</div>
+                                            <div class="text-secondary">🕸 buy their route intel at the <span class="text-light">dark web market</span> (open at a haven, or a station past Mars) — bought ships join the contacts tree with a 🕸 badge until the tip goes stale.</div>
+                                        </div>
+                                    }
+                                    else if (_commsSelectedId is { } commsSelId && FindNpc(commsSelId) is { } commsShip)
+                                    {
+                                        bool commsTracked = _trackingPost is not null && _trackingPost.TryGetTrack(commsShip.Ship.Id, out _);
+                                        <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold small">@commsShip.Ship.Callsign</span>
+                                            @{ (string detailBadge, string detailBadgeCss) = CommsStatusBadge(commsShip); }
+                                            <span class="badge @detailBadgeCss">@detailBadge</span>
+                                        </div>
+                                        <div class="card-body p-2 small">
+                                            <div class="comms-breadcrumbs text-secondary mb-1">Departures board › @commsShip.Ship.Callsign</div>
+                                            <div>@commsShip.Ship.CargoClass (@commsShip.Ship.CargoUnits u) · @RouteLabel(commsShip.Ship)</div>
+                                            <div>@DepartureLabel(commsShip.Ship)</div>
+                                            <div class="text-secondary">last seen: @(commsShip.LastObservation is { } lastObs ? FormatSimTime(lastObs.SimTime) : "never — not yet inside sensor reach")</div>
+                                            @if (!commsShip.Ship.PublishesTimetable)
+                                            {
+                                                <div class="text-secondary">🕸 bought intel — goes stale in @IntelStaleInDays(commsShip.Ship.Id).ToString("F0") d</div>
+                                            }
+                                            <div class="d-grid gap-1 mt-2 comms-actions">
+                                                @if (commsTracked)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 text-start"
+                                                            @onclick="() => CommsHail(commsShip)">
+                                                        📻 Hail via tight-beam — ask her intentions
+                                                    </button>
+                                                    @if (_commsHailAnswer is not null)
+                                                    {
+                                                        <div class="text-info">@_commsHailAnswer</div>
+                                                    }
+                                                    <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1 text-start"
+                                                            @onclick="() => CommsLaserRange(commsShip)">
+                                                        ⚡ Laser range — exact fix, but she learns where we are
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-1 text-start"
+                                                            disabled="@(!CommsCanFence(commsShip))"
+                                                            title="@(DarkWebCanTrade() ? "" : DarkWebDisabledReason())"
+                                                            @onclick="() => CommsSellTrack(commsShip)">
+                                                        🕸 Fence this track@(CommsFencePrice(commsShip) is { } fencePrice ? $" — +{fencePrice:N0} cr" : " — needs ≥50% quality at a haven")
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-secondary">Not on your telescope ledger — track her at the <span class="text-light">Sensors desk</span> to hail, laser-range, or fence the track.</div>
+                                                }
+                                                @if (SelectedTrackedTarget() is { } pinTarget && pinTarget.Ship.Id == commsShip.Ship.Id)
+                                                {
+                                                    <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light") py-0 px-1 text-start" @onclick="TogglePin">
+                                                        📌 Pin: brakes at @BodyName(pinTarget.Ship.DestinationId)
+                                                    </button>
+                                                }
+                                            </div>
+                                            @if (_commsActionMessage is not null)
+                                            {
+                                                <div class="text-warning mt-1">@_commsActionMessage</div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="card-body p-2 small text-secondary">
+                                            Select a contact in the tree — its dossier and comms actions (hail, laser ranging, fencing the track) show here.
+                                            Ships missing from the board are found at the <span class="text-light">Sensors desk</span> or bought at the <span class="text-light">dark web market</span>.
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </div>
                     </div>
                 }
@@ -1056,8 +1123,178 @@
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData CommsChip()
     {
-        string? freshest = _darkWeb?.FreshestIntelSummary(SimTime);
+        string? freshest = FreshestIntelCallsign();
         return new(ShipDesk.Comms, "🕸", "Comms", freshest is not null ? $"intel: {freshest}" : "no whispers");
+    }
+
+    /// <summary>The most recently bought, still-fresh route tip's callsign — now answerable on
+    /// any desk, because the ledger lives here rather than inside the Comms-only component.</summary>
+    private string? FreshestIntelCallsign()
+    {
+        RouteIntel? freshest = null;
+        foreach (RouteIntel entry in _intelLedger.Entries)
+        {
+            if (entry.IsFresh(SimTime)
+                && (freshest is null || entry.PurchasedAtSimTime > freshest.Value.PurchasedAtSimTime))
+            {
+                freshest = entry;
+            }
+        }
+
+        return freshest is { } intel ? FindNpc(intel.ShipId)?.Ship.Callsign ?? intel.ShipId : null;
+    }
+
+    // ---- The comms tree (master–detail; Gemini playtest consult 2026-07-05) ----
+
+    private double IntelStaleInDays(string shipId) =>
+        _intelLedger.TryGet(shipId, out RouteIntel intel) ? Math.Max(0, intel.SecondsUntilStale(SimTime) / 86400) : 0;
+
+    /// <summary>The contacts tree's groups: scheduled departures, ships en route, and the
+    /// permanent orbital fixtures — lean rows, detail on selection.</summary>
+    private List<(string Label, List<NpcState> Members)> CommsGroups()
+    {
+        var scheduled = new List<NpcState>();
+        var enRoute = new List<NpcState>();
+        var fixtures = new List<NpcState>();
+        foreach (NpcState npc in _npcStates)
+        {
+            if (!npc.Ship.PublishesTimetable && !_intelLedger.Knows(npc.Ship.Id, SimTime))
+            {
+                continue; // truly off the books — counted by the Off-the-books node instead
+            }
+
+            if (npc.Ship.DepotBodyId is not null)
+            {
+                fixtures.Add(npc);
+            }
+            else if (!npc.Active && !npc.Arrived && npc.Ship.DepartureTime > SimTime)
+            {
+                scheduled.Add(npc);
+            }
+            else
+            {
+                // Includes mid-flight ships still catching up to their activation tick: they
+                // DEPARTED years ago, so "Scheduled" would be the same misread the blind
+                // playtest flagged on the raw negative departure times.
+                enRoute.Add(npc);
+            }
+        }
+
+        scheduled.Sort((a, b) => a.Ship.DepartureTime.CompareTo(b.Ship.DepartureTime));
+        enRoute.Sort((a, b) => a.Ship.DepartureTime.CompareTo(b.Ship.DepartureTime));
+        fixtures.Sort((a, b) => string.CompareOrdinal(a.Ship.Callsign, b.Ship.Callsign));
+
+        var groups = new List<(string, List<NpcState>)>();
+        if (scheduled.Count > 0)
+        {
+            groups.Add(($"Scheduled ({scheduled.Count})", scheduled));
+        }
+
+        if (enRoute.Count > 0)
+        {
+            groups.Add(($"En route ({enRoute.Count})", enRoute));
+        }
+
+        if (fixtures.Count > 0)
+        {
+            groups.Add(($"Depots & fixtures ({fixtures.Count})", fixtures));
+        }
+
+        return groups;
+    }
+
+    private void SelectCommsShip(string id)
+    {
+        _commsSelectedId = id;
+        _commsHailAnswer = null;
+        _commsActionMessage = null;
+        if (_selectedTargetId != id)
+        {
+            SelectTarget(id); // same map/scope selection the old board row click made
+        }
+    }
+
+    /// <summary>The one badge a lean tree row gets. Careful with the word "tracked": the old
+    /// board used it for "seen recently", while the comms actions need a TELESCOPE track — the
+    /// live playtest caught the collision, so the badge now says which one it means.</summary>
+    private (string Label, string Css) CommsStatusBadge(NpcState npc)
+    {
+        if (_trackingPost is not null && _trackingPost.TryGetTrack(npc.Ship.Id, out _))
+        {
+            return ("📡 on ledger", "bg-success");
+        }
+
+        if (!npc.Active && npc.Ship.DepartureTime <= SimTime && !npc.Arrived)
+        {
+            return ("en route", "bg-secondary"); // mid-flight, still catching up to activation
+        }
+
+        return StatusLabel(npc) switch
+        {
+            "Tracked" => ("in sight", "bg-info text-dark"),
+            "En route" => ("en route", "bg-secondary"),
+            "Lost" => ("lost", "bg-warning text-dark"),
+            var other => (other.ToLowerInvariant(), "bg-secondary"),
+        };
+    }
+
+    /// <summary>"departs in 4d 14h" / "departed 2366d ago" — the blind playtest read the raw
+    /// negative departure values as a data bug; phrased time can't be misread.</summary>
+    private string DepartureLabel(NpcShip ship)
+    {
+        if (ship.DepotBodyId is not null)
+        {
+            return "orbital fixture — always on station";
+        }
+
+        double delta = ship.DepartureTime - SimTime;
+        var span = TimeSpan.FromSeconds(Math.Abs(delta));
+        string amount = span.TotalDays >= 1 ? $"{(int)span.TotalDays}d {span.Hours}h" : $"{span.Hours}h {span.Minutes:D2}m";
+        return delta >= 0 ? $"departs in {amount}" : $"departed {amount} ago (mid-flight — outer transfers take years)";
+    }
+
+    private void CommsHail(NpcState npc)
+    {
+        _commsHailAnswer = !ActiveSensors.CanTightBeam(_ship.Position, npc.State.Position)
+            ? $"{npc.Ship.Callsign} — out of tight-beam range."
+            : npc.Ship.PublishesTimetable
+                ? $"{npc.Ship.Callsign} — \"Bound for {BodyName(npc.Ship.DestinationId)}, over.\""
+                : $"{npc.Ship.Callsign} — \"No flight plan filed.\"";
+    }
+
+    private void CommsLaserRange(NpcState npc)
+    {
+        LaserRangeTarget(npc.Ship.Id);
+        _commsActionMessage = $"Laser ranged {npc.Ship.Callsign} — exact fix, but you're lit up ⚠";
+    }
+
+    private int? CommsFencePrice(NpcState npc)
+    {
+        if (_trackingPost is null || !_trackingPost.TryGetTrack(npc.Ship.Id, out TrackedTarget track))
+        {
+            return null;
+        }
+
+        double quality = track.EffectiveQuality(SimTime);
+        return IntelMarket.CanSellTrack(quality)
+            ? IntelMarket.SellPrice(quality, npc.Ship.CargoUnits * CargoMarket.UnitValue(npc.Ship.CargoClass))
+            : null;
+    }
+
+    private bool CommsCanFence(NpcState npc) => DarkWebCanTrade() && CommsFencePrice(npc) is > 0;
+
+    private void CommsSellTrack(NpcState npc)
+    {
+        if (!CommsCanFence(npc) || CommsFencePrice(npc) is not { } price)
+        {
+            _commsActionMessage = DarkWebCanTrade()
+                ? "Track too shaky to fence — reconfirm it at the Sensors desk (needs ≥50% quality)"
+                : DarkWebDisabledReason();
+            return;
+        }
+
+        _credits += price;
+        _commsActionMessage = $"Fenced the {npc.Ship.Callsign} track for {price:N0} cr";
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData GalleyChip()
@@ -1073,7 +1310,15 @@
     // gives an order (docs/SaturdayPlan/StationDesks.md addendum).
     private ShipMission _mission = ShipMission.Default;
     private MissionOptions _missionOptions = new([], [], [], [], []);
-    private SpaceSails.Client.Pages.Stations.DarkWeb? _darkWeb;
+    // The player's bought route intel — owned HERE, not by the DarkWeb component: that
+    // component is conditionally rendered with the Comms desk, and when it owned the ledger
+    // every purchased tip silently died on desk switch (the tracking post's M27 disease).
+    private readonly IntelLedger _intelLedger = new();
+
+    // Comms-tree selection (master–detail; ui-guidelines.md): a ship id, "offbooks", "darkweb".
+    private string? _commsSelectedId;
+    private string? _commsHailAnswer;
+    private string? _commsActionMessage;
     private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost;
 
@@ -5117,9 +5362,6 @@
     }
 
     // Departures board: mid-flight ships carry a virtual past departure — show it as history ("-42d").
-    private static string FormatDeparture(double simTime) =>
-        simTime < 0 ? $"-{(int)TimeSpan.FromSeconds(-simTime).TotalDays}d" : FormatSimTime(simTime);
-
     private static RgbaColor BodyColor(string id) => id switch
     {
         "sun" => new RgbaColor(255, 214, 10),
