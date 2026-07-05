@@ -32,6 +32,7 @@ dotnet run --project labs/09-what-the-rails-hide -c Release
 dotnet run --project labs/10-fast-enough-for-ten-thousand-x -c Release
 dotnet run --project labs/11-the-electric-sandbox -c Release
 dotnet run --project labs/12-oops-at-the-moon -c Release
+dotnet run --project labs/13-shooting-literally -c Release
 ```
 
 Each lesson folder holds:
@@ -80,6 +81,12 @@ Each lesson folder holds:
     un-rails a body. A velocity kick to Luna's orbit (the game's own ±% pulse mechanic, by
     accident), integrated as a genuine free body — departs, degrades, or spirals in, computed
     honestly, plus a playable `scenarios/oops.json` aftermath.
+13. [**Shooting, literally**](13-shooting-literally/README.md) 🎖 — the encore: the firing
+    solution as a boundary value problem, solved by the shooting method — Newton over launch
+    bearing and charge, every residual flown through the real integrator (the war room's
+    CALCULATING FIRING SOLUTION trace, reproduced). Straight-line gunnery misses by 5,996 km;
+    one Newton step lands 85 km out. Then the honest part: dispersion is the target *track's*
+    cone, not the solver's residual — fire-control quality IS track quality.
 
 ## Framing rule
 

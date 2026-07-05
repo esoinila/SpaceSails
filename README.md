@@ -6,7 +6,7 @@ A solar-system-scale sailing and piracy game. Ships move at planet-like speeds, 
 
 ## 🧮 The Gravity Lab — learn orbital mechanics by running it
 
-This repo is secretly edutainment. Twelve type-it-in lessons under [`labs/`](labs/README.md)
+This repo is secretly edutainment. Thirteen type-it-in lessons under [`labs/`](labs/README.md)
 teach numerical orbital mechanics on the game's own deterministic engine — fork a probe, run
 it, break it on purpose, learn the physics and the programming at once, the way magazine
 listings taught a generation to code:
