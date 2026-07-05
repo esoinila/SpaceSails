@@ -349,3 +349,10 @@
     font-weight: 600;
     max-width: 16rem;
 }
+
+/* M29: the target dossier — the tactical target''s own box, below the nav readouts. */
+.map-hud .map-dossier {
+    pointer-events: auto;
+    border: 1px solid rgba(150, 255, 210, 0.45);
+    max-width: 30rem;
+}

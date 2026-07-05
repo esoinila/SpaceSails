@@ -58,6 +58,35 @@
         </div>
     }
 
+    @* M29: the contact menu — clicking a ship selects it for the scope AND offers the real
+       actions: telescope tracking and the war-room interest (intercept clock, firing solutions). *@
+    @if (_activeDesk == ShipDesk.Nav && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
+    {
+        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+             style="left: @(_shipMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_shipMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold me-2">@menuNpc.Ship.Callsign</span>
+                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close"
+                        @onclick="CloseShipMenu"></button>
+            </div>
+            <div class="text-secondary mb-1">
+                @FormatDistance((menuNpc.State.Position - _ship.Position).Length) ·
+                rel @(((menuNpc.State.Velocity - _ship.Velocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
+                scope tracking her now
+            </div>
+            <div class="d-grid gap-1">
+                <button type="button" class="btn btn-sm btn-info"
+                        @onclick="() => InterestFromMenu(menuShipId)">
+                    🎯 Target of interest — intercept clock &amp; firing solutions
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-info"
+                        @onclick="() => TrackShipFromMenu(menuShipId)">
+                    📡 Track with telescope — sharpen the intel
+                </button>
+            </div>
+        </div>
+    }
+
     @* Station tab bar (StationDesks.md rule 3): always visible, top center, works on every desk —
        the keyboard-shortcut equivalent for players who'd rather click. Captain (PR-15) leads the
        bar with its `0` key, ahead of Nav's `1` — the captain's word comes before the helm's. *@
@@ -200,6 +229,44 @@
                 </div>
             }
         </div>
+
+        @* M29: the target dossier — a box of its own for the tactical target, independent of
+           the NAV destination: you can be bound for Mercury and still keep the book open on a
+           hauler. Owner: "gather intel about this idea." *@
+        @if (TacticalTargetId is { } dossierId && DossierFor(dossierId) is { } dossier)
+        {
+            <div class="map-dossier bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></span>
+                    <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close dossier"
+                            @onclick="CloseDossier"></button>
+                </div>
+                <div>@dossier.StatusLine</div>
+                <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
+                     @(dossier.Closing >= 0 ? $"closing {dossier.Closing / 1000:F1}" : $"opening {-dossier.Closing / 1000:F1}") km/s</div>
+                @if (dossier.TrackQuality is { } quality)
+                {
+                    <div>📡 telescope fix @((int)(quality * 100))% <span class="text-secondary">— sharpen it at the Sensors desk</span></div>
+                }
+                else
+                {
+                    <div class="text-secondary">📡 not on the telescope ledger — track her to sharpen the intel</div>
+                }
+                <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
+                @if (_interestTargetId == dossierId && InterceptChipLine() is { } clock)
+                {
+                    <div class="text-warning">@clock</div>
+                }
+                <div class="d-flex gap-1 mt-1">
+                    <button type="button" class="btn btn-sm py-0 @(_interestTargetId == dossierId ? "btn-info" : "btn-outline-info")"
+                            @onclick="() => SetInterestTarget(dossierId)">🎯 interest</button>
+                    <button type="button" class="btn btn-sm btn-outline-info py-0"
+                            @onclick="() => TrackShipFromMenu(dossierId)">📡 sharpen fix</button>
+                    <button type="button" class="btn btn-sm btn-outline-light py-0"
+                            @onclick="() => SwitchDesk(ShipDesk.WarRoom)">⚔ war room</button>
+                </div>
+            </div>
+        }
 
         @if (PlotMode)
         {
@@ -420,6 +487,7 @@
                 SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" ShipCharge="_ship.Charge"
                 Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1"
                 RadarActive="_activeRadar" OnRadarToggle="SetActiveRadar"
+                Opportunities="_courseOpportunities" OnSetInterest="SetInterestTarget"
                 OnZoomMap="ZoomSensorsBackdrop" OnCenterShip="CenterShipOnMap"
                 OnClose="() => SwitchDesk(ShipDesk.Nav)" />
         </div>
@@ -2031,8 +2099,17 @@
             _scopeManualId = null; // target gone (arrived / out of sensor range): fall back to auto
         }
 
-        // M25: the destination owns the scope (owner: "the destination should also be pictured
-        // in the video box"). Manual prev/next cycling above still overrides it.
+        // M29: a deliberately SELECTED contact outranks the destination while the selection
+        // lives (owner: "target selection should work even when the ship is on course to
+        // orbit") — deselect and the DEST lock returns.
+        if (_selectedTargetId is not null && ResolveScopeTarget(_selectedTargetId) is { } picked)
+        {
+            if (_scopeView is not null) _scopeView.LockLabel = "◆ TRACK";
+            return picked;
+        }
+
+        // M25: otherwise the destination owns the scope (owner: "the destination should also be
+        // pictured in the video box"). Manual prev/next cycling above still overrides it.
         if (_destinationBodyId is not null && ResolveScopeTarget(_destinationBodyId) is { } dest)
         {
             if (_scopeView is not null) _scopeView.LockLabel = "🎯 DEST";
@@ -2723,6 +2800,7 @@
             }
 
             UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute
+            UpdateCourseOpportunities(); // M29: what does this course conveniently brush by?
         }
 
         if (_horizonDirty && highResTimestampMs - _lastHorizonReprojectMs > 250)
@@ -3596,8 +3674,205 @@
             return false;
         }
 
-        SelectTarget(bestId);
+        // M29: clicking a contact SELECTS it (scope tracks, prediction pins — unchanged) AND
+        // opens its menu: track with the telescope, mark as war-room interest, read the vitals.
+        if (_selectedTargetId != bestId)
+        {
+            SelectTarget(bestId);
+        }
+
+        _shipMenuId = bestId;
+        _shipMenuX = clientX + 14;
+        _shipMenuY = clientY;
+        StateHasChanged();
         return true;
+    }
+
+    // ---- M29: the contact menu + target dossier ----
+    private string? _shipMenuId;
+    private double _shipMenuX, _shipMenuY;
+
+    private void CloseShipMenu()
+    {
+        _shipMenuId = null;
+        StateHasChanged();
+    }
+
+    /// <summary>The one target the tactical UI is about: the war-room interest first, else the
+    /// scope selection. Lives independently of the NAV destination — you can be bound for
+    /// Mercury and still keep a dossier open on a hauler.</summary>
+    private string? TacticalTargetId => _interestTargetId ?? _selectedTargetId;
+
+    private void TrackShipFromMenu(string id)
+    {
+        NpcState? npc = FindNpc(id);
+        if (npc is null || _trackingPost is null)
+        {
+            return;
+        }
+
+        if (!npc.CurrentlyObserved)
+        {
+            ShowPulseMessage("No live contact — the telescope needs a sweep fix or laser ranging first");
+        }
+        else if (_trackingPost.ApplyObservation(new Observation(id, SimTime, npc.State.Position, npc.State.Velocity)))
+        {
+            ShowPulseMessage($"{npc.Ship.Callsign} on the telescope ledger — fix sharpened 📡");
+        }
+        else
+        {
+            ShowPulseMessage("Telescopes full — drop a track on the Sensors desk first");
+        }
+
+        CloseShipMenu();
+    }
+
+    private void InterestFromMenu(string id)
+    {
+        if (_interestTargetId != id)
+        {
+            SetInterestTarget(id);
+        }
+
+        ShowPulseMessage("Target of interest — the war room runs the intercept clock and firing solutions ⚔");
+        CloseShipMenu();
+        StateHasChanged();
+    }
+
+    // M29 (the cover-story seed): every KNOWN contact whose predicted coast the current plotted
+    // course happens to pass near — the Sensors desk reads these as targets of opportunity.
+    // Fly an innocent course; see who drifts conveniently close along it.
+    private readonly List<SpaceSails.Client.Pages.Stations.TrackingPost.CourseOpportunity> _courseOpportunities = [];
+
+    private void UpdateCourseOpportunities()
+    {
+        _courseOpportunities.Clear();
+        if (_simulator is null || _samples.Count < 2)
+        {
+            return;
+        }
+
+        foreach (NpcState npc in _npcStates)
+        {
+            if (!npc.Active || npc.Arrived || npc.Disabled)
+            {
+                continue;
+            }
+
+            // Honest intel only: the course scan sees what the sensors see.
+            bool tracked = _trackingPost is not null && _trackingPost.TryGetTrack(npc.Ship.Id, out _);
+            if (!npc.CurrentlyObserved && !tracked)
+            {
+                continue;
+            }
+
+            double horizon = _samples[^1].SimTime - npc.State.SimTime;
+            if (horizon <= 0)
+            {
+                continue;
+            }
+
+            IReadOnlyList<TrajectorySample> theirs = _simulator.ProjectAdaptive(npc.State, null, horizon, maxSamples: 400);
+            if (InterceptEstimate.Against(_samples, theirs, CaptureRule.CaptureRadiusMeters) is { } pass)
+            {
+                _courseOpportunities.Add(new SpaceSails.Client.Pages.Stations.TrackingPost.CourseOpportunity(
+                    npc.Ship.Id, npc.Ship.Callsign, pass.MinDistance, pass.MinSimTime, tracked));
+            }
+        }
+
+        _courseOpportunities.Sort((a, b) => a.MinDistance.CompareTo(b.MinDistance));
+        if (_courseOpportunities.Count > 8)
+        {
+            _courseOpportunities.RemoveRange(8, _courseOpportunities.Count - 8);
+        }
+    }
+
+    private void CloseDossier()
+    {
+        // Closing the book stands down both selection layers it can be showing.
+        if (_interestTargetId is not null)
+        {
+            SetInterestTarget(_interestTargetId); // toggle off
+        }
+
+        if (_selectedTargetId is not null)
+        {
+            SelectTarget(_selectedTargetId); // toggle off
+        }
+
+        StateHasChanged();
+    }
+
+    private readonly record struct DossierInfo(
+        string Name, string Detail, string StatusLine,
+        double Distance, double RelSpeed, double Closing,
+        double? TrackQuality, bool InDriverReach, string FireLine);
+
+    private DossierInfo? DossierFor(string id)
+    {
+        Vector2d position, velocity;
+        string name, detail;
+        string statusLine;
+        if (FindNpc(id) is { Active: true, Arrived: false } npc)
+        {
+            name = npc.Ship.Callsign;
+            detail = npc.Ship.IsPod ? "· cargo pod" : $"· {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)";
+            if (npc.CurrentlyObserved)
+            {
+                position = npc.State.Position;
+                velocity = npc.State.Velocity;
+                statusLine = npc.Disabled ? "⚠ adrift — sail holed, easy prey" : "👁 live sensor contact";
+            }
+            else if (npc.LastObservation is { } lastObs)
+            {
+                position = lastObs.Position;
+                velocity = lastObs.Velocity;
+                statusLine = $"👻 last seen {FormatDuration(Math.Max(0, SimTime - lastObs.SimTime))} ago — dead-reckoned";
+            }
+            else
+            {
+                return null; // never observed: no honest dossier to show
+            }
+        }
+        else
+        {
+            HunterState? found = null;
+            foreach (HunterState hunter in _hunters)
+            {
+                if (hunter.Id == id) { found = hunter; break; }
+            }
+
+            if (found is not { } h)
+            {
+                return null;
+            }
+
+            (name, detail) = (h.Callsign, "· hired muscle 🐺");
+            position = h.State.Position;
+            velocity = h.State.Velocity;
+            statusLine = h.BrokenOff ? "broke off the hunt" : "⚠ hunting US";
+        }
+
+        double distance = (position - _ship.Position).Length;
+        double relSpeed = (velocity - _ship.Velocity).Length;
+        double closing = distance > 0
+            ? (_ship.Velocity - velocity).Dot((position - _ship.Position) / distance)
+            : 0;
+
+        double? quality = null;
+        if (_trackingPost is not null && _trackingPost.TryGetTrack(id, out TrackedTarget track))
+        {
+            quality = track.EffectiveQuality(SimTime);
+        }
+
+        // The driver's practical reach: max charge times the longest aim lead the gun deck offers.
+        double reach = MaxMuzzleSpeed * 86400;
+        bool inReach = distance <= reach;
+        string fireLine = inReach
+            ? "🎖 inside the driver's reach — a firing solution is on the table (war room)"
+            : $"driver reach ≈ {FormatDistance(reach)} — close {FormatDistance(distance - reach)} more for a firing solution";
+
+        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine);
     }
 
     // M24: planets are clickable too — a small menu offers "set destination", so the orbit
@@ -4392,6 +4667,11 @@
         if (_bodyMenuBody is not null)
         {
             CloseBodyMenu(); // any click on the map dismisses an open planet menu
+        }
+
+        if (_shipMenuId is not null)
+        {
+            CloseShipMenu(); // same rule for the contact menu
         }
 
         if (TrySelectNodeAt(e.OffsetX, e.OffsetY))
