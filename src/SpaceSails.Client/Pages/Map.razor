@@ -37,24 +37,40 @@
                         @onclick="CloseBodyMenu"></button>
             </div>
             <div class="d-grid gap-1">
-                @if (_destinationBodyId == menuBody.Id)
+                @* PR-C desk separation (F7): navigation verbs live on the Nav desk; the same
+                   click on Sensors talks scanning. Navigation is done at the Navigation desk. *@
+                @if (_activeDesk == ShipDesk.Nav)
                 {
-                    <button type="button" class="btn btn-sm btn-outline-warning"
-                            @onclick="() => SetDestination(null)">
-                        ✕ Clear destination
+                    @if (_destinationBodyId == menuBody.Id)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                @onclick="() => SetDestination(null)">
+                            ✕ Clear destination
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-sm btn-info"
+                                @onclick="() => SetDestination(menuBody.Id)">
+                            🎯 Set destination — navigate to orbit
+                        </button>
+                    }
+                    <button type="button" class="btn btn-sm @(_armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
+                            @onclick="() => ToggleArmedInsertionFromMenu(menuBody.Id)">
+                        🛰 @(_armedOrbitBodyId == menuBody.Id ? "Auto-insert ARMED — disarm" : "Arm auto-insert at window")
                     </button>
                 }
                 else
                 {
+                    double vicinity = Math.Max(1.2e10, 8 * menuBody.BodyRadius);
+                    Vector2d bodyPosition = _ephemeris!.Position(menuBody.Id, SimTime);
+                    string bodyScanLabel = $"scan around {menuBody.Name}";
+                    <div class="text-secondary">@ScanCostText(bodyPosition, vicinity)</div>
                     <button type="button" class="btn btn-sm btn-info"
-                            @onclick="() => SetDestination(menuBody.Id)">
-                        🎯 Set destination — navigate to orbit
+                            @onclick="() => ScanAreaFromMenu(bodyPosition, vicinity, bodyScanLabel)">
+                        🔭 Scan around @menuBody.Name — approaches &amp; local space
                     </button>
                 }
-                <button type="button" class="btn btn-sm @(_armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
-                        @onclick="() => ToggleArmedInsertionFromMenu(menuBody.Id)">
-                    🛰 @(_armedOrbitBodyId == menuBody.Id ? "Auto-insert ARMED — disarm" : "Arm auto-insert at window")
-                </button>
             </div>
         </div>
     }
@@ -70,20 +86,105 @@
                 <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close"
                         @onclick="CloseShipMenu"></button>
             </div>
+            @if (menuNpc.CurrentlyObserved)
+            {
+                <div class="text-secondary mb-1">
+                    @FormatDistance((menuNpc.State.Position - _ship.Position).Length) ·
+                    rel @(((menuNpc.State.Velocity - _ship.Velocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
+                    scope tracking her now
+                </div>
+            }
+            else
+            {
+                @* PR-C, the Barnacle case: a labeled contact with no live fix is never mute. *@
+                <div class="text-warning mb-1">
+                    no live fix — last seen @(((SimTime - menuNpc.LastObservation!.Value.SimTime) / 86400.0).ToString("F1", CultureInfo.InvariantCulture))d ago
+                </div>
+            }
+            <div class="d-grid gap-1">
+                @if (menuNpc.CurrentlyObserved)
+                {
+                    <button type="button" class="btn btn-sm btn-info"
+                            @onclick="() => InterestFromMenu(menuShipId)">
+                        🎯 Target of interest — intercept clock &amp; firing solutions
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info"
+                            @onclick="() => TrackShipFromMenu(menuShipId)">
+                        📡 Track with telescope — sharpen the intel
+                    </button>
+                }
+                @if (_activeDesk == ShipDesk.Sensors)
+                {
+                    Vector2d scanCenter = menuNpc.CurrentlyObserved
+                        ? menuNpc.State.Position
+                        : menuNpc.LastObservation!.Value.Position;
+                    string shipScanLabel = $"scan near {menuNpc.Ship.Callsign}";
+                    <button type="button" class="btn btn-sm btn-outline-info"
+                            @onclick="() => ScanAreaFromMenu(scanCenter, 8e9, shipScanLabel)">
+                        🔭 Scan around here@(menuNpc.CurrentlyObserved ? "" : " — find out where she went")
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    @* PR-C: the trade-lane menu — the corridor the owner drew by hand, now a clickable region.
+       Replaces the tracking post's "— manual aim —" dropdown: the lane IS the control. *@
+    @if (_activeDesk == ShipDesk.Sensors && _corridorMenuLane is { } menuLane)
+    {
+        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+             style="left: @(_corridorMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_corridorMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold me-2">📦 @menuLane.Name</span>
+                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close"
+                        @onclick="CloseCorridorMenu"></button>
+            </div>
             <div class="text-secondary mb-1">
-                @FormatDistance((menuNpc.State.Position - _ship.Position).Length) ·
-                rel @(((menuNpc.State.Velocity - _ship.Velocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
-                scope tracking her now
+                @{ ScanJob laneJob = TradeCorridors.SweepJobFor(menuLane, _ship.Position); }
+                sweep arc @((int)(laneJob.ArcWidthRad * 180 / Math.PI))° from here ·
+                @SweepCostText(laneJob)
             </div>
             <div class="d-grid gap-1">
                 <button type="button" class="btn btn-sm btn-info"
-                        @onclick="() => InterestFromMenu(menuShipId)">
-                    🎯 Target of interest — intercept clock &amp; firing solutions
+                        @onclick="() => SweepCorridorFromMenu(menuLane, standing: false)">
+                    📡 Sweep this lane now
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-info"
-                        @onclick="() => TrackShipFromMenu(menuShipId)">
-                    📡 Track with telescope — sharpen the intel
+                        @onclick="() => SweepCorridorFromMenu(menuLane, standing: true)">
+                    🔁 Standing lane watch — re-sweep every carousel round
                 </button>
+            </div>
+        </div>
+    }
+
+    @* PR-C: the open-sky menu — even empty space answers. What a scan here would take, and the
+       guideline hint when the spot sits near a known lane. *@
+    @if (_activeDesk == ShipDesk.Sensors && _skyMenuWorld is { } skyPoint)
+    {
+        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+             style="left: @(_skyMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_skyMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold me-2">✨ Open sky</span>
+                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close"
+                        @onclick="CloseSkyMenu"></button>
+            </div>
+            <div class="text-secondary mb-1">
+                @FormatDistance((skyPoint - _ship.Position).Length) out ·
+                patch radius @FormatDistance(_skyMenuRadius) · @ScanCostText(skyPoint, _skyMenuRadius)
+            </div>
+            <div class="d-grid gap-1">
+                <button type="button" class="btn btn-sm btn-info"
+                        @onclick="() => ScanAreaFromMenu(skyPoint, _skyMenuRadius, SkyScanLabel(skyPoint))">
+                    🔭 Scan this area — the telescope always resolves <em>something</em>
+                </button>
+                @if (NearLaneFor(skyPoint) is { } nearLane)
+                {
+                    <div class="text-info">near the @nearLane.Name</div>
+                    <button type="button" class="btn btn-sm btn-outline-info"
+                            @onclick="() => SweepCorridorFromMenu(nearLane, standing: false)">
+                        📡 Sweep the @nearLane.PairName lane instead
+                    </button>
+                }
             </div>
         </div>
     }
@@ -3348,6 +3449,7 @@
     // flash on a tracked ship the moment its scheduled custody pass runs.
 
     private static readonly RgbaColor CorridorFillColor = new(80, 200, 220, 14);
+    private static readonly RgbaColor CorridorSelectedFillColor = new(80, 200, 220, 42);
     private static readonly RgbaColor CorridorEdgeColor = new(80, 200, 220, 60);
     private static readonly RgbaColor CorridorLabelColor = new(140, 210, 220, 150);
     private static readonly RgbaColor ScanWedgeFillColor = new(120, 220, 255, 12);
@@ -3359,6 +3461,9 @@
     private double _frameNowMs;
     private IReadOnlyList<CorridorRegion> _mapCorridors = [];
     private double _mapCorridorsBuiltAt = double.NegativeInfinity;
+    private string? _selectedCorridorKey; // the lane whose menu is open, drawn brighter
+
+    internal static string CorridorKey(CorridorRegion lane) => $"{lane.AId}:{lane.BId}";
 
     private void DrawTradeCorridors()
     {
@@ -3389,7 +3494,9 @@
             (quad[4], quad[5]) = _camera.WorldToScreen(lane.B - perp * lane.Radius);
             (quad[6], quad[7]) = _camera.WorldToScreen(lane.A - perp * lane.Radius);
 
-            _renderer!.DrawPolygon(quad, CorridorFillColor, CorridorEdgeColor, 1f);
+            bool selected = _selectedCorridorKey == CorridorKey(lane);
+            _renderer!.DrawPolygon(quad, selected ? CorridorSelectedFillColor : CorridorFillColor,
+                CorridorEdgeColor, selected ? 1.6f : 1f);
 
             (float mx, float my) = _camera.WorldToScreen(lane.Midpoint);
             _renderer.DrawText(mx, my - 6, lane.Name, CorridorLabelColor, "11px sans-serif", TextAlign.Center);
@@ -3922,8 +4029,24 @@
         string? bestId = null;
         foreach (NpcState npc in _npcStates)
         {
-            if (!npc.Active || npc.Arrived || !npc.CurrentlyObserved) continue;
-            (float sx, float sy) = _camera.WorldToScreen(npc.State.Position);
+            if (!npc.Active || npc.Arrived) continue;
+            // PR-C (the Barnacle case): the dim last-seen marker answers clicks too — its menu
+            // just offers a scan instead of live vitals. Nothing visible on the sky is mute.
+            Vector2d position;
+            if (npc.CurrentlyObserved)
+            {
+                position = npc.State.Position;
+            }
+            else if (npc.LastObservation is { } lastSeen)
+            {
+                position = lastSeen.Position;
+            }
+            else
+            {
+                continue;
+            }
+
+            (float sx, float sy) = _camera.WorldToScreen(position);
             double dx = clientX - sx, dy = clientY - sy;
             if (dx * dx + dy * dy < bestSq) { bestSq = dx * dx + dy * dy; bestId = npc.Ship.Id; }
         }
@@ -4024,6 +4147,128 @@
         ShowPulseMessage("Target of interest — the war room runs the intercept clock and firing solutions ⚔");
         CloseShipMenu();
         StateHasChanged();
+    }
+
+    // ---- SundaySecondPlan PR-C: point at the sky and ask ----
+    // On the Sensors desk every click answers with scan options: ships (fixed or not), planets,
+    // trade lanes, and empty sky all open scan-contextual menus that enqueue telescope work.
+
+    private CorridorRegion? _corridorMenuLane;
+    private double _corridorMenuX, _corridorMenuY;
+    private Vector2d? _skyMenuWorld;
+    private double _skyMenuX, _skyMenuY, _skyMenuRadius;
+    private bool _dragMoved;
+    private bool _suppressClickMenu;
+    private double _downClientX, _downClientY;
+
+    private void CloseCorridorMenu()
+    {
+        _corridorMenuLane = null;
+        _selectedCorridorKey = null;
+        StateHasChanged();
+    }
+
+    private void CloseSkyMenu()
+    {
+        _skyMenuWorld = null;
+        StateHasChanged();
+    }
+
+    private bool TrySelectCorridorAt(double clientX, double clientY)
+    {
+        Vector2d world = _camera.ScreenToWorld(clientX, clientY);
+        CorridorRegion? best = null;
+        double bestDistance = double.MaxValue;
+        foreach (CorridorRegion lane in _mapCorridors)
+        {
+            double d = lane.DistanceTo(world);
+            if (d <= lane.Radius && d < bestDistance)
+            {
+                (bestDistance, best) = (d, lane);
+            }
+        }
+
+        if (best is not { } hit)
+        {
+            return false;
+        }
+
+        _corridorMenuLane = hit;
+        _selectedCorridorKey = CorridorKey(hit);
+        _corridorMenuX = clientX + 14;
+        _corridorMenuY = clientY;
+        StateHasChanged();
+        return true;
+    }
+
+    private void OpenSkyMenu(double clientX, double clientY)
+    {
+        _skyMenuWorld = _camera.ScreenToWorld(clientX, clientY);
+        // Scan size follows the zoom: what looks like "about here" on screen is what gets
+        // scanned — zoom in for a tight expensive-per-area look, out for a broad survey.
+        _skyMenuRadius = Math.Clamp(120 * _camera.MetersPerPixel, 2e9, 5e10);
+        _skyMenuX = clientX + 14;
+        _skyMenuY = clientY;
+        StateHasChanged();
+    }
+
+    /// <summary>The lane nearest a sky point, when it counts as "near" — the guideline hint
+    /// ("this empty spot sits by the Earth–Mars lane; scan the lane instead?").</summary>
+    private CorridorRegion? NearLaneFor(Vector2d point)
+    {
+        if (_mapCorridors.Count > 0
+            && TradeCorridors.TryNearest(_mapCorridors, point, out CorridorRegion lane, out double distance)
+            && distance <= lane.Radius * TradeCorridors.NearLaneFactor)
+        {
+            return lane;
+        }
+
+        return null;
+    }
+
+    /// <summary>What a scan would cost in telescope time — shown before the player commits.</summary>
+    private string ScanCostText(Vector2d center, double radius) => CostText(SensorTaskGeometry.Duration(
+        SensorTask.AreaScan(center, radius, "probe"),
+        SensorTaskGeometry.WedgeToward(_ship.Position, center, radius), 1 + 0.5 * _telescopeLevel));
+
+    private string SweepCostText(ScanJob job) => CostText(
+        Math.Max(SensorTaskGeometry.MinPassSeconds, job.DurationSeconds) / (1 + 0.5 * _telescopeLevel));
+
+    private static string CostText(double seconds) =>
+        seconds < 3600 ? $"≈ {seconds / 60:F0} min telescope time" : $"≈ {seconds / 3600:F1} h telescope time";
+
+    private string SkyScanLabel(Vector2d point) =>
+        $"sky scan · {FormatDistance((point - _ship.Position).Length)} out";
+
+    private void ScanAreaFromMenu(Vector2d center, double radius, string label)
+    {
+        if (_trackingPost is null)
+        {
+            return;
+        }
+
+        ShowPulseMessage(_trackingPost.EnqueueTask(SensorTask.AreaScan(center, radius, label))
+            ? $"🔭 Queued: {label}"
+            : "That patch is already on the sensor tasks queue");
+        CloseShipMenu();
+        CloseBodyMenu();
+        CloseSkyMenu();
+    }
+
+    private void SweepCorridorFromMenu(CorridorRegion lane, bool standing)
+    {
+        if (_trackingPost is null)
+        {
+            return;
+        }
+
+        SensorTask task = SensorTask.CorridorSweep(lane.AId, lane.BId,
+            standing ? $"{lane.PairName} lane watch" : $"{lane.PairName} lane sweep", recurring: standing);
+        ShowPulseMessage(_trackingPost.EnqueueTask(task)
+            ? (standing ? $"🔁 Standing watch on the {lane.Name}" : $"📡 Sweeping the {lane.Name}")
+            : $"The {lane.Name} is already on the queue");
+        CloseCorridorMenu();
+        CloseSkyMenu();
     }
 
     // M29 (the cover-story seed): every KNOWN contact whose predicted coast the current plotted
@@ -4951,6 +5196,10 @@
 
     private void OnPointerDown(PointerEventArgs e)
     {
+        // A click that only dismisses an open menu must not immediately open the next one.
+        _suppressClickMenu = _bodyMenuBody is not null || _shipMenuId is not null
+            || _corridorMenuLane is not null || _skyMenuWorld is not null;
+
         if (_bodyMenuBody is not null)
         {
             CloseBodyMenu(); // any click on the map dismisses an open planet menu
@@ -4959,6 +5208,16 @@
         if (_shipMenuId is not null)
         {
             CloseShipMenu(); // same rule for the contact menu
+        }
+
+        if (_corridorMenuLane is not null)
+        {
+            CloseCorridorMenu();
+        }
+
+        if (_skyMenuWorld is not null)
+        {
+            CloseSkyMenu();
         }
 
         if (TrySelectNodeAt(e.OffsetX, e.OffsetY))
@@ -4977,8 +5236,11 @@
         }
 
         _dragging = true;
+        _dragMoved = false;
         _lastPointerX = e.ClientX;
         _lastPointerY = e.ClientY;
+        _downClientX = e.ClientX;
+        _downClientY = e.ClientY;
     }
 
     private void OnPointerMove(PointerEventArgs e)
@@ -4992,6 +5254,10 @@
         double dy = e.ClientY - _lastPointerY;
         _lastPointerX = e.ClientX;
         _lastPointerY = e.ClientY;
+        if (Math.Abs(e.ClientX - _downClientX) + Math.Abs(e.ClientY - _downClientY) > 5)
+        {
+            _dragMoved = true; // a real pan, not a click with hand tremor
+        }
 
         // In the top-down deck view the drag moves the DECK plan (its bow hides under the HUD
         // panel otherwise); in first person and on the map it pans the camera as before.
@@ -5006,7 +5272,24 @@
         FollowShip = false; // manual pan disengages follow-ship, same as most space-game maps.
     }
 
-    private void OnPointerUp(PointerEventArgs e) => _dragging = false;
+    private void OnPointerUp(PointerEventArgs e)
+    {
+        // SundaySecondPlan PR-C: on the Sensors desk, EMPTY sky answers a click too — but only
+        // a genuine click (no pan movement, and not the click that dismissed another menu).
+        bool click = _dragging && !_dragMoved && !_suppressClickMenu;
+        _dragging = false;
+        if (!click || _activeDesk != ShipDesk.Sensors || _deckMode)
+        {
+            return;
+        }
+
+        if (TrySelectCorridorAt(e.OffsetX, e.OffsetY))
+        {
+            return; // clicked inside a trade lane: the lane's scan menu
+        }
+
+        OpenSkyMenu(e.OffsetX, e.OffsetY);
+    }
 
     // Blazor re-renders the whole page after EVERY event by default; a held movement key
     // repeats ~30 events/s and collapsed the frame rate to ~1.5 fps (all M12/M13 scripted

@@ -69,13 +69,8 @@
                 <label class="form-label mb-0 d-block">Arc width @((int)_arcWidthDeg)°</label>
                 <input type="range" class="form-range" min="5" max="360" step="1" value="@_arcWidthDeg"
                        @oninput="OnArcInput" @onkeydown:stopPropagation="true" />
-                <select class="form-select form-select-sm mb-1" @onchange="OnProgramSelected">
-                    <option value="">— manual aim —</option>
-                    @for (int i = 0; i < _programs.Count; i++)
-                    {
-                        <option value="@i">@_programs[i].Name</option>
-                    }
-                </select>
+                @* PR-C: the corridor-watch dropdown is gone — trade lanes are clickable regions
+                   on the map itself now. The sliders remain for a truly manual aim. *@
                 @if (_activeJob is null)
                 {
                     <button type="button" class="btn btn-sm btn-info w-100" @onclick="StartSweep">Start sweep</button>
@@ -353,9 +348,7 @@
     private double _lastSimTime;
     private bool _hasLastSimTime;
     private string? _lastSweepMessage;
-    private IReadOnlyList<ScanProgram> _programs = [];
-    private double _programsBuiltAtSimTime = double.NegativeInfinity;
-    private string? _lastProgramName;
+    private double _corridorsBuiltAtSimTime = double.NegativeInfinity;
 
     /// <summary>The Sensors chip's objective line (addendum, 2026-07-04 evening): what we're
     /// looking for right now, not raw stats — a sweep in progress, else the best-quality track,
@@ -375,7 +368,12 @@
 
         if (_activeJob is not null)
         {
-            return _passiveJobRunning ? "Passive watch — scanning" : $"Sweeping {_lastProgramName ?? "custom region"}";
+            return _passiveJobRunning ? "Passive watch — scanning" : "Manual sweep running";
+        }
+
+        if (_schedule.Active is { } task)
+        {
+            return $"Telescope: {task.Label}";
         }
 
         return "No watch set";
@@ -432,11 +430,12 @@
 
         // Corridor programs are a pure function of (bodies, ship position, time) — cheap to
         // recompute, but there's no reason to redo it every render tick either.
-        if (Ephemeris is not null && SimTime - _programsBuiltAtSimTime > 3600)
+        // Corridor geometry is a pure function of (bodies, time) — cheap to recompute, but no
+        // reason to redo it every render tick either.
+        if (Ephemeris is not null && SimTime - _corridorsBuiltAtSimTime > 3600)
         {
-            _programs = ScanPrograms.BuildPrograms(Ephemeris, ShipPosition, SimTime);
             _corridorRegions = TradeCorridors.Regions(Ephemeris, SimTime);
-            _programsBuiltAtSimTime = SimTime;
+            _corridorsBuiltAtSimTime = SimTime;
         }
 
         if (timeAdvanced && _activeJob is { } job)
@@ -929,23 +928,6 @@
         if (double.TryParse(e.Value?.ToString(), out double v))
         {
             _arcWidthDeg = v;
-        }
-    }
-
-    private void OnProgramSelected(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int index) && index >= 0 && index < _programs.Count)
-        {
-            ScanJob job = _programs[index].Job;
-            double deg = job.CenterBearingRad * 180.0 / Math.PI;
-            if (deg < 0)
-            {
-                deg += 360;
-            }
-
-            _centerBearingDeg = deg;
-            _arcWidthDeg = Math.Clamp(job.ArcWidthRad * 180.0 / Math.PI, 5, 360);
-            _lastProgramName = _programs[index].Name;
         }
     }
 
