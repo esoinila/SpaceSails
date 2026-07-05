@@ -120,6 +120,66 @@
                 }
                 else
                 {
+                    @* M28: the Norden moment — pick the point on the prey's predicted track,
+                       watch the shooting method converge, the solution locks T-60 s, the ship
+                       slews, fires, and hands control back. *@
+                    @if (InterestId is not null)
+                    {
+                        <div class="war-room-firecontrol mb-2">
+                            <div class="fw-bold">🎖 Fire control — @(InterceptTargetName ?? InterestId)</div>
+                            @if (FireCountdownSeconds is { } countdown)
+                            {
+                                @if (FireSolution is { } locked && RevealedIterations < locked.Trace.Count)
+                                {
+                                    <div class="war-room-calc text-info">CALCULATING FIRING SOLUTION…</div>
+                                    @foreach (FireControl.IterationStep step in locked.Trace.Take(RevealedIterations))
+                                    {
+                                        <div class="war-room-calc-row">iter @step.Iteration · bearing @((step.BearingRad * 180 / Math.PI).ToString("F2"))° · miss @FormatRange(step.MissMeters)</div>
+                                    }
+                                }
+                                else if (FireSolution is { } fs)
+                                {
+                                    <div class="text-warning fw-bold">SOLUTION LOCKED — FIRING IN @Math.Max(0, (int)countdown) s</div>
+                                    <div class="text-secondary">
+                                        bearing @((fs.BearingRad * 180 / Math.PI).ToString("F1"))° ·
+                                        charge @((fs.MuzzleSpeed / 1000).ToString("F2")) km/s ·
+                                        flight @FormatDuration(fs.TimeOfFlightSeconds) ·
+                                        solver miss @FormatRange(fs.ExpectedMissMeters) ·
+                                        dispersion ±@FormatRange(FireDispersionMeters)
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-warning mt-1" @onclick="() => OnCancelFire.InvokeAsync()">Scrub the shot</button>
+                                }
+                            }
+                            else
+                            {
+                                <label class="form-label mb-0 mt-1">Aim at their predicted track <strong>+@FormatDuration(FireAimOffsetSeconds)</strong> from now</label>
+                                <input type="range" class="form-range" min="600" max="86400" step="600" value="@FireAimOffsetSeconds"
+                                       @oninput="OnAimInput" @onkeydown:stopPropagation="true" />
+                                <div class="d-flex gap-1 align-items-center mb-1">
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Round type">
+                                        <button type="button" class="btn @(FireKind == OrdnanceKind.Slug ? "btn-info" : "btn-outline-info") py-0"
+                                                @onclick="() => OnFireKindChanged.InvokeAsync(OrdnanceKind.Slug)">slug</button>
+                                        <button type="button" class="btn @(FireKind == OrdnanceKind.Missile ? "btn-info" : "btn-outline-info") py-0"
+                                                @onclick="() => OnFireKindChanged.InvokeAsync(OrdnanceKind.Missile)">missile</button>
+                                    </div>
+                                    <span class="text-secondary">@FirePulseCost pulses / shot</span>
+                                </div>
+                                @if (FireSolution is { Converged: false })
+                                {
+                                    <div class="text-danger">NO SOLUTION — beyond the driver's reach at that moment; aim nearer in time.</div>
+                                }
+                                <button type="button" class="btn btn-sm btn-danger w-100" disabled="@(PulsesAvailable < FirePulseCost)"
+                                        @onclick="() => OnComputeSolution.InvokeAsync()">
+                                    🎖 COMPUTE &amp; LOCK FIRING SOLUTION
+                                </button>
+                            }
+                            @if (FireTip is not null)
+                            {
+                                <div class="war-room-tip fst-italic text-secondary mt-1">@FireTip</div>
+                            }
+                        </div>
+                    }
+
                     @* M27: the intercept clock — the plotted course vs the target of interest,
                        and the countdown to the boarding envelope: the initiative roll. *@
                     @if (InterestId is not null)
@@ -320,6 +380,24 @@
     [Parameter] public EventCallback<string> OnWarningShot { get; set; }
     [Parameter] public EventCallback<string> OnBribe { get; set; }
     [Parameter] public EventCallback<string> OnSetInterest { get; set; }
+
+    // M28: gun-deck fire control — Map.razor owns the state, this desk renders the drama.
+    [Parameter] public double FireAimOffsetSeconds { get; set; } = 3600;
+    [Parameter] public OrdnanceKind FireKind { get; set; }
+    [Parameter] public FireControl.Solution? FireSolution { get; set; }
+    [Parameter] public double FireDispersionMeters { get; set; }
+    [Parameter] public int RevealedIterations { get; set; }
+    [Parameter] public double? FireCountdownSeconds { get; set; }
+    [Parameter] public string? FireTip { get; set; }
+    [Parameter] public int FirePulseCost { get; set; }
+    [Parameter] public int PulsesAvailable { get; set; }
+    [Parameter] public EventCallback<double> OnAimOffsetChanged { get; set; }
+    [Parameter] public EventCallback<OrdnanceKind> OnFireKindChanged { get; set; }
+    [Parameter] public EventCallback OnComputeSolution { get; set; }
+    [Parameter] public EventCallback OnCancelFire { get; set; }
+
+    private Task OnAimInput(ChangeEventArgs e) =>
+        double.TryParse(e.Value?.ToString(), out double v) ? OnAimOffsetChanged.InvokeAsync(v) : Task.CompletedTask;
 
     // The desk's range-scale selector (StationDesks.md PR-13): how far out the tactical circle
     // reaches. Purely a display choice — weapon/catch rings are always drawn at their true

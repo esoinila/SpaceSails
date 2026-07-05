@@ -240,3 +240,32 @@
     gap: 0.4rem;
     padding: 0.15rem 0;
 }
+
+/* ---- M28: the Norden fire-control panel ---- */
+
+.war-room-firecontrol {
+    border: 1px solid rgba(255, 120, 120, 0.5);
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.65rem;
+}
+
+.war-room-calc {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    animation: warroom-calc-blink 1s steps(2) infinite;
+}
+
+@keyframes warroom-calc-blink {
+    50% { opacity: 0.35; }
+}
+
+.war-room-calc-row {
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: rgba(150, 255, 210, 0.85);
+}
+
+.war-room-tip {
+    border-left: 2px solid rgba(255, 210, 80, 0.6);
+    padding-left: 0.5rem;
+}
