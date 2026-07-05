@@ -255,3 +255,10 @@
     max-height: 9rem;
     overflow-y: auto;
 }
+
+/* M29: the transponder hint under the LIT/DARK/FAKE switch. */
+.tracking-transponder-hint {
+    font-size: 0.72rem;
+    line-height: 1.15;
+    margin-top: 0.15rem;
+}
