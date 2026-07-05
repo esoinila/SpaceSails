@@ -55,6 +55,13 @@
                     <svg viewBox="0 0 200 200" class="war-room-scope-svg" aria-label="Local tactical view">
                         <circle cx="100" cy="100" r="@Fmt(MaxRadiusPx)" class="war-room-view-ring" />
                         <circle cx="100" cy="100" r="@Fmt(WeaponRingPx)" class="war-room-weapon-ring" />
+                        @* Labeled rings (Gemini blind playtest: "unlabeled ring — is it weapon
+                           range?"). Raw markup because Razor reserves the bare <text> tag. *@
+                        @RingLabelMarkup(MaxRadiusPx, $"view {FormatRange(_viewRangeMeters)}")
+                        @if (WeaponRingPx > 18)
+                        {
+                            @RingLabelMarkup(WeaponRingPx, $"weapon {FormatRange(EncounterRule.WeaponRangeMeters)}")
+                        }
                         @foreach (RenderHunter h in renderHunters)
                         {
                             <circle cx="@Fmt(h.X)" cy="@Fmt(h.Y)" r="@Fmt(MetersToPx(EncounterRule.CatchRadiusMeters))" class="war-room-hunter-ring" />
@@ -95,7 +102,7 @@
                     @if (FullScreen)
                     {
                         <div class="war-room-heat-corner">
-                            <div class="war-room-heat-gauge war-room-heat-gauge-big" title="Heat level @HeatLevel/@EncounterRule.MaxHeatLevel">@HeatGaugeText()</div>
+                            <div class="war-room-heat-gauge war-room-heat-gauge-big @(HeatLevel > 0 ? "war-room-heat-hot" : "")" title="Heat level @HeatLevel/@EncounterRule.MaxHeatLevel — rises with crimes, hunters come at high heat, cools at havens">@HeatGaugeText()</div>
                             <div class="war-room-heat-level-label">Heat @HeatLevel/@EncounterRule.MaxHeatLevel</div>
                             <div class="text-secondary war-room-heat-cooling">@CoolingLabel()</div>
                             @if (CoolingAtHaven)
@@ -123,6 +130,31 @@
                     @* M28: the Norden moment — pick the point on the prey's predicted track,
                        watch the shooting method converge, the solution locks T-60 s, the ship
                        slews, fires, and hands control back. *@
+                    @if (InterestId is null)
+                    {
+                        @* The empty state IS most of a new gunner's experience (Gemini playtest +
+                           owner: "there was never any target shown or selected"). Teach the kill
+                           chain and point at where each step happens. *@
+                        <div class="war-room-firecontrol mb-2">
+                            <div class="fw-bold">🎖 Fire control — no target of interest yet</div>
+                            <div class="text-secondary mb-1">The gun deck shoots what the sensors feed it. The kill chain:</div>
+                            <div class="war-room-chain">
+                                <div>1️⃣ <span class="text-light">Track</span> a ship — Sensors desk (<kbd>2</kbd>): the passive watch or a scan finds her.</div>
+                                <div>2️⃣ <span class="text-light">Mark interest</span> — 🎯 on a sensor track below, on a Sensors card, or click her on the map.</div>
+                                <div>3️⃣ <span class="text-light">Aim</span> — pick the moment on her predicted track, choose slug or missile.</div>
+                                <div>4️⃣ <span class="text-light">COMPUTE &amp; LOCK</span> — the shooting method converges, locks at T−60 s, fires itself; the map behind this desk draws the whole transfer.</div>
+                                <div>5️⃣ <span class="text-light">Board the drift</span> — a hit holes her sail; close in and take the cargo.</div>
+                            </div>
+                            @if (SensorTracks.Count == 0)
+                            {
+                                <div class="text-secondary mt-1">No sensor tracks yet — start at the <span class="text-light">Sensors desk (2)</span>.</div>
+                            }
+                            else
+                            {
+                                <div class="text-info mt-1">⬇ pick a target from the sensor tracks below</div>
+                            }
+                        </div>
+                    }
                     @if (InterestId is not null)
                     {
                         <div class="war-room-firecontrol mb-2">
@@ -153,7 +185,9 @@
                             else
                             {
                                 <label class="form-label mb-0 mt-1">Aim at their predicted track <strong>+@FormatDuration(FireAimOffsetSeconds)</strong> from now</label>
-                                <input type="range" class="form-range" min="600" max="86400" step="600" value="@FireAimOffsetSeconds"
+                                @* Log-scale (long-shots PR): ten minutes and forty-five days on one slider —
+                                   a linear track made week-long orbital shots one-pixel affairs. *@
+                                <input type="range" class="form-range" min="0" max="1000" step="2" value="@AimToSlider(FireAimOffsetSeconds)"
                                        @oninput="OnAimInput" @onkeydown:stopPropagation="true" />
                                 <div class="d-flex gap-1 align-items-center mb-1">
                                     <div class="btn-group btn-group-sm" role="group" aria-label="Round type">
@@ -164,6 +198,10 @@
                                     </div>
                                     <span class="text-secondary">@FirePulseCost pulses / shot</span>
                                 </div>
+                                <div class="text-secondary war-room-round-hint">
+                                    this round flies at most <strong>@FormatDuration(MaxAimOffsetSeconds)</strong> before it evaporates
+                                    @(FireKind == OrdnanceKind.Slug ? "— switch to a missile for the cross-system shot (tiny guidance budget, weeks of patience)" : "— the cross-system round; guidance is tiny, patience is not")
+                                </div>
                                 @if (FireSolution is { Converged: false })
                                 {
                                     <div class="text-danger">NO SOLUTION — beyond the driver's reach at that moment; aim nearer in time.</div>
@@ -171,6 +209,11 @@
                                 <button type="button" class="btn btn-sm btn-danger w-100" disabled="@(PulsesAvailable < FirePulseCost)"
                                         @onclick="() => OnComputeSolution.InvokeAsync()">
                                     🎖 COMPUTE &amp; LOCK FIRING SOLUTION
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info w-100 mt-1"
+                                        title="Orbital mechanics decides when the geometry aligns — sweep candidate aim times and solve at the best one"
+                                        @onclick="() => OnScanWindows.InvokeAsync()">
+                                    🔭 SCAN FOR A WINDOW
                                 </button>
                             }
                             @if (FireTip is not null)
@@ -383,6 +426,7 @@
 
     // M28: gun-deck fire control — Map.razor owns the state, this desk renders the drama.
     [Parameter] public double FireAimOffsetSeconds { get; set; } = 3600;
+    [Parameter] public double MaxAimOffsetSeconds { get; set; } = 86400;
     [Parameter] public OrdnanceKind FireKind { get; set; }
     [Parameter] public FireControl.Solution? FireSolution { get; set; }
     [Parameter] public double FireDispersionMeters { get; set; }
@@ -395,9 +439,24 @@
     [Parameter] public EventCallback<OrdnanceKind> OnFireKindChanged { get; set; }
     [Parameter] public EventCallback OnComputeSolution { get; set; }
     [Parameter] public EventCallback OnCancelFire { get; set; }
+    [Parameter] public EventCallback OnScanWindows { get; set; }
+
+    // The aim slider is logarithmic: position 0..1000 maps exponentially over
+    // [MinAimSeconds, MaxAimOffsetSeconds] so ten-minute knife-fights and forty-five-day
+    // orbital shots share one usable control (same trick as the warp and horizon sliders).
+    private const double MinAimSeconds = 600;
+
+    private double AimToSlider(double seconds) =>
+        1000 * Math.Log(Math.Clamp(seconds, MinAimSeconds, MaxAimOffsetSeconds) / MinAimSeconds)
+            / Math.Log(Math.Max(MaxAimOffsetSeconds / MinAimSeconds, 1.0001));
+
+    private double SliderToAim(double position) =>
+        MinAimSeconds * Math.Exp(position / 1000 * Math.Log(Math.Max(MaxAimOffsetSeconds / MinAimSeconds, 1.0001)));
 
     private Task OnAimInput(ChangeEventArgs e) =>
-        double.TryParse(e.Value?.ToString(), out double v) ? OnAimOffsetChanged.InvokeAsync(v) : Task.CompletedTask;
+        double.TryParse(e.Value?.ToString(), out double v)
+            ? OnAimOffsetChanged.InvokeAsync(SliderToAim(v))
+            : Task.CompletedTask;
 
     // The desk's range-scale selector (StationDesks.md PR-13): how far out the tactical circle
     // reaches. Purely a display choice — weapon/catch rings are always drawn at their true
@@ -500,7 +559,10 @@
     }
 
     private static string FormatDuration(double seconds) =>
-        seconds < 86400 ? $"{seconds / 3600:F0} h" : seconds / 86400 >= 365 ? $"{seconds / 86400 / 365:F1} yr" : $"{seconds / 86400:F0} d";
+        seconds < 3600 ? $"{seconds / 60:F0} min"
+        : seconds < 86400 ? $"{seconds / 3600:F1} h"
+        : seconds / 86400 >= 365 ? $"{seconds / 86400 / 365:F1} yr"
+        : $"{seconds / 86400:F1} d";
 
     private static string FormatClosingSpeed(double metersPerSecond)
     {
@@ -617,6 +679,12 @@
     // built as raw markup instead of written as a normal element.
     private static Microsoft.AspNetCore.Components.MarkupString HunterLabelMarkup(RenderHunter h) =>
         new($"<text x=\"{Fmt(h.X + 7)}\" y=\"{Fmt(h.Y - 6)}\" class=\"war-room-hunter-label\">🐺</text>");
+
+    /// <summary>A ring's name, sitting just inside its top edge (same raw-markup workaround).
+    /// Styles are INLINE: Blazor's scoped CSS can't tag MarkupString-injected elements, so a
+    /// stylesheet class would silently not match and the label renders at giant default size.</summary>
+    private static Microsoft.AspNetCore.Components.MarkupString RingLabelMarkup(double radiusPx, string label) =>
+        new($"<text x=\"100\" y=\"{Fmt(100 - radiusPx + 7)}\" text-anchor=\"middle\" style=\"font-size:6px;fill:rgba(180,200,220,0.55)\">{System.Net.WebUtility.HtmlEncode(label)}</text>");
 
     private static string Fmt(double v) => v.ToString("F1", CultureInfo.InvariantCulture);
 

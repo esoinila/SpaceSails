@@ -269,3 +269,22 @@
     border-left: 2px solid rgba(255, 210, 80, 0.6);
     padding-left: 0.5rem;
 }
+
+/* Long-shots PR: labeled rings + the teaching empty state + heat glow. */
+.war-room-ring-label {
+    fill: rgba(180, 200, 220, 0.55);
+    font-size: 7px;
+}
+
+.war-room-chain div {
+    margin-bottom: 0.15rem;
+}
+
+.war-room-round-hint {
+    font-size: 0.74rem;
+    line-height: 1.2;
+}
+
+.war-room-heat-hot {
+    filter: drop-shadow(0 0 4px rgba(255, 90, 40, 0.8));
+}

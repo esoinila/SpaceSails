@@ -112,7 +112,11 @@ First run's findings:
   one dominant target and cycle-hotkeys, not a list. → Pattern boundary confirmed (see below);
   its quick wins are queued: heat pips that fill with color, labels on the range rings, and a
   "quiet skies" empty state that teaches the kill chain (Sensors track → interest → solution
-  → fire → board).
+  → fire → board). → **Implemented** in the long-shots PR, together with the piece Gemini and
+  the owner independently named: the **orrery view** — the war-room desk dims and the live map
+  behind it draws the whole cross-system firing geometry (the target's predicted track, the
+  round's transfer arc, the aim cross with honest dispersion), because a 100 M km shot cannot
+  live inside a 5 M km tactical circle.
 
 ## Where it does NOT fit
 

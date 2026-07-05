@@ -37,6 +37,33 @@ public class FireControlTests
     }
 
     [Fact]
+    public void Solve_CrossSystemShot_MonthsOfGravity_Converges()
+    {
+        // The owner's ruling: shooting across the star system is a legitimate action. A months-
+        // long transfer's launch bearing has nothing to do with the target's current sky
+        // position, so this is the multi-start seed's acceptance test. The aim point is
+        // manufactured to be reachable BY CONSTRUCTION: fly a known launch for 90 days, then
+        // demand the solver rediscover a shot that hits where it ended up.
+        var simulator = new Simulator(SunOnly(), timeStepSeconds: 60);
+        double circularSpeed = Math.Sqrt(SunMu / EarthOrbitRadius);
+        var shooter = new ShipState(new Vector2d(EarthOrbitRadius, 0), new Vector2d(0, circularSpeed), 0);
+
+        // A retrograde-ish 5 km/s launch falls sunward for 90 days — a genuinely curved,
+        // cross-system arc (it ends nowhere near any straight line from the shooter).
+        var knownLaunchDir = new Vector2d(-0.4, -0.9).Normalized();
+        var round = new ShipState(shooter.Position, shooter.Velocity + knownLaunchDir * 5000, 0);
+        double tHit = 90 * 86400.0;
+        Vector2d aimPoint = simulator.RunAdaptive(round, tHit).Position;
+
+        FireControl.Solution solution = FireControl.Solve(
+            simulator, shooter, maxMuzzleSpeed: 8000, aimPoint, tHit);
+
+        Assert.True(solution.Converged,
+            $"90-day cross-system shot must converge (best miss {solution.ExpectedMissMeters:E2} m)");
+        Assert.True(solution.ExpectedMissMeters < FireControl.ConvergedMissMeters);
+    }
+
+    [Fact]
     public void Solve_NoGravity_MovingShooter_LeadsTheShot()
     {
         var simulator = new Simulator(new EmptySpace(), timeStepSeconds: 60);

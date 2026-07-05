@@ -65,62 +65,79 @@ public static class FireControl
         double timeOfFlight = tHit - shooter.SimTime;
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(timeOfFlight);
 
-        // Initial guess: the straight-line requirement — gravity bends it from there.
-        Vector2d requiredRel = (targetPosition - shooter.Position) / timeOfFlight - shooter.Velocity;
-        double bearing = Math.Atan2(requiredRel.Y, requiredRel.X);
-        double speed = Math.Clamp(requiredRel.Length, MinMuzzleFraction * maxMuzzleSpeed, maxMuzzleSpeed);
+        // Seeds: the straight-line requirement plus a ring of bearings at a few charges (one
+        // real simulator flight each). On a MONTHS-long cross-system transfer (owner,
+        // 2026-07-05: shooting across the star system is a legitimate action) the true launch
+        // bearing can sit half an orbit from the straight line — and even the best single seed
+        // can miss the Newton basin, so the polish RESTARTS from the next-best seeds until one
+        // converges. Deterministic, brute, honest.
+        List<(double Bearing, double Speed, double Miss)> seeds =
+            RankedSeeds(simulator, shooter, maxMuzzleSpeed, targetPosition, timeOfFlight);
+
+        // Long flights are exquisitely sensitive: a half-radian step that's fine in a
+        // knife-fight overshoots a months-long transfer's convergence basin entirely.
+        bool longFlight = timeOfFlight > 7 * 86400;
+        double bearingTrust = longFlight ? 0.12 : 0.5;
+        double speedTrust = (longFlight ? 0.08 : 0.25) * maxMuzzleSpeed;
 
         var trace = new List<IterationStep>(maxIterations);
-        double bestBearing = bearing, bestSpeed = speed;
+        double bestBearing = seeds[0].Bearing, bestSpeed = seeds[0].Speed;
         double bestMiss = double.MaxValue;
 
-        for (int iteration = 0; iteration < maxIterations; iteration++)
+        const int maxRestarts = 3;
+        for (int start = 0; start < Math.Min(maxRestarts, seeds.Count) && bestMiss > ConvergedMissMeters; start++)
         {
-            Vector2d residual = MissVector(simulator, shooter, speed, bearing, targetPosition, timeOfFlight);
-            double miss = residual.Length;
-            trace.Add(new IterationStep(iteration, bearing, speed, miss));
-            if (miss < bestMiss)
-            {
-                (bestMiss, bestBearing, bestSpeed) = (miss, bearing, speed);
-            }
+            double bearing = seeds[start].Bearing;
+            double speed = seeds[start].Speed;
 
-            if (miss <= ConvergedMissMeters)
+            for (int iteration = 0; iteration < maxIterations; iteration++)
             {
-                break;
-            }
+                Vector2d residual = MissVector(simulator, shooter, speed, bearing, targetPosition, timeOfFlight);
+                double miss = residual.Length;
+                trace.Add(new IterationStep(trace.Count, bearing, speed, miss));
+                if (miss < bestMiss)
+                {
+                    (bestMiss, bestBearing, bestSpeed) = (miss, bearing, speed);
+                }
 
-            // 2×2 Jacobian by forward differences: three simulator flights per iteration.
-            const double hBearing = 1e-5;
-            double hSpeed = Math.Max(1e-3, speed * 1e-5);
-            Vector2d dB = (MissVector(simulator, shooter, speed, bearing + hBearing, targetPosition, timeOfFlight) - residual) / hBearing;
-            Vector2d dV = (MissVector(simulator, shooter, speed + hSpeed, bearing, targetPosition, timeOfFlight) - residual) / hSpeed;
-
-            double det = dB.X * dV.Y - dB.Y * dV.X;
-            double stepBearing, stepSpeed;
-            if (Math.Abs(det) > 1e-12)
-            {
-                // Newton: J · (dθ, dv) = −r.
-                stepBearing = (-residual.X * dV.Y + residual.Y * dV.X) / det;
-                stepSpeed = (-dB.X * residual.Y + dB.Y * residual.X) / det;
-            }
-            else
-            {
-                // Degenerate Jacobian (e.g. speed pinned at a bound): fall back to
-                // Gauss-Newton on the bearing alone.
-                double jtj = dB.LengthSquared;
-                if (jtj <= 0)
+                if (miss <= ConvergedMissMeters)
                 {
                     break;
                 }
 
-                stepBearing = -residual.Dot(dB) / jtj;
-                stepSpeed = 0;
-            }
+                // 2×2 Jacobian by forward differences: three simulator flights per iteration.
+                const double hBearing = 1e-5;
+                double hSpeed = Math.Max(1e-3, speed * 1e-5);
+                Vector2d dB = (MissVector(simulator, shooter, speed, bearing + hBearing, targetPosition, timeOfFlight) - residual) / hBearing;
+                Vector2d dV = (MissVector(simulator, shooter, speed + hSpeed, bearing, targetPosition, timeOfFlight) - residual) / hSpeed;
 
-            // Trust region: past these the linearization is junk.
-            bearing += Math.Clamp(stepBearing, -0.5, 0.5);
-            speed = Math.Clamp(speed + Math.Clamp(stepSpeed, -0.25 * maxMuzzleSpeed, 0.25 * maxMuzzleSpeed),
-                MinMuzzleFraction * maxMuzzleSpeed, maxMuzzleSpeed);
+                double det = dB.X * dV.Y - dB.Y * dV.X;
+                double stepBearing, stepSpeed;
+                if (Math.Abs(det) > 1e-12)
+                {
+                    // Newton: J · (dθ, dv) = −r.
+                    stepBearing = (-residual.X * dV.Y + residual.Y * dV.X) / det;
+                    stepSpeed = (-dB.X * residual.Y + dB.Y * residual.X) / det;
+                }
+                else
+                {
+                    // Degenerate Jacobian (e.g. speed pinned at a bound): fall back to
+                    // Gauss-Newton on the bearing alone.
+                    double jtj = dB.LengthSquared;
+                    if (jtj <= 0)
+                    {
+                        break;
+                    }
+
+                    stepBearing = -residual.Dot(dB) / jtj;
+                    stepSpeed = 0;
+                }
+
+                // Trust region: past these the linearization is junk.
+                bearing += Math.Clamp(stepBearing, -bearingTrust, bearingTrust);
+                speed = Math.Clamp(speed + Math.Clamp(stepSpeed, -speedTrust, speedTrust),
+                    MinMuzzleFraction * maxMuzzleSpeed, maxMuzzleSpeed);
+            }
         }
 
         bool converged = bestMiss <= ConvergedMissMeters;
@@ -131,6 +148,60 @@ public static class FireControl
         return new Solution(
             new Vector2d(Math.Cos(bestBearing), Math.Sin(bestBearing)),
             bestBearing, bestSpeed, timeOfFlight, bestMiss, validity, converged, trace);
+    }
+
+    /// <summary>Bearings probed around the full circle for the multi-start seed.</summary>
+    private const int SeedBearings = 12;
+
+    /// <summary>Charges probed per seed bearing, as fractions of the maximum.</summary>
+    private static readonly double[] SeedSpeedFractions = [0.35, 1.0];
+
+    /// <summary>
+    /// Every seed candidate — the straight-line guess plus the
+    /// <see cref="SeedBearings"/> × <see cref="SeedSpeedFractions"/> ring — flown once through
+    /// the real simulator and ranked by miss. ~25 flights; the polish restarts down this list.
+    /// </summary>
+    private static List<(double Bearing, double Speed, double Miss)> RankedSeeds(
+        Simulator simulator, ShipState shooter, double maxMuzzleSpeed,
+        Vector2d targetPosition, double timeOfFlight)
+    {
+        Vector2d requiredRel = (targetPosition - shooter.Position) / timeOfFlight - shooter.Velocity;
+        double straightBearing = Math.Atan2(requiredRel.Y, requiredRel.X);
+        double straightSpeed = Math.Clamp(requiredRel.Length, MinMuzzleFraction * maxMuzzleSpeed, maxMuzzleSpeed);
+
+        var seeds = new List<(double Bearing, double Speed, double Miss)>
+        {
+            (straightBearing, straightSpeed,
+                MissVector(simulator, shooter, straightSpeed, straightBearing, targetPosition, timeOfFlight).Length),
+        };
+
+        for (int k = 0; k < SeedBearings; k++)
+        {
+            double bearing = k * Math.Tau / SeedBearings;
+            foreach (double fraction in SeedSpeedFractions)
+            {
+                double speed = Math.Clamp(fraction * maxMuzzleSpeed, MinMuzzleFraction * maxMuzzleSpeed, maxMuzzleSpeed);
+                double miss = MissVector(simulator, shooter, speed, bearing, targetPosition, timeOfFlight).Length;
+                seeds.Add((bearing, speed, miss));
+            }
+        }
+
+        seeds.Sort((a, b) => a.Miss.CompareTo(b.Miss));
+        return seeds;
+    }
+
+    /// <summary>
+    /// The porkchop probe (owner: shooting across the system): the best seed AND its miss for
+    /// a given time of flight, cheap enough to sweep over candidate aim times. A fixed t_hit
+    /// is only feasible in certain launch windows — this is how the gun deck finds them.
+    /// </summary>
+    public static (double Bearing, double Speed, double MissMeters) ProbeSeed(
+        Simulator simulator, ShipState shooter, double maxMuzzleSpeed,
+        Vector2d targetPosition, double timeOfFlight, double? straightBearing = null, double? straightSpeed = null)
+    {
+        List<(double Bearing, double Speed, double Miss)> seeds =
+            RankedSeeds(simulator, shooter, maxMuzzleSpeed, targetPosition, timeOfFlight);
+        return (seeds[0].Bearing, seeds[0].Speed, seeds[0].Miss);
     }
 
     /// <summary>Where a slug launched NOW on this bearing/charge ends up at t_hit, minus the aim point.</summary>

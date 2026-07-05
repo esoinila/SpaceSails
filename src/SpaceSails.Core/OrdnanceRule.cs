@@ -24,11 +24,17 @@ public sealed record OrdnanceRound(
 
 public static class OrdnanceRule
 {
-    /// <summary>A slug evaporates this long after launch — the self-cleaning sky.</summary>
-    public const double SlugLifetimeSeconds = 6 * 3600;
+    /// <summary>A slug evaporates this long after launch — the self-cleaning sky. Two days,
+    /// not six hours: there is no drag, and the owner's ruling (2026-07-05) is that a long
+    /// ballistic shot is a legitimate action, so the slug's leash is gameplay cleanup only.</summary>
+    public const double SlugLifetimeSeconds = 48 * 3600;
 
-    /// <summary>A missile carries station-keeping consumables a little longer.</summary>
-    public const double MissileLifetimeSeconds = 12 * 3600;
+    /// <summary>The missile is the CROSS-SYSTEM round: consumables sized for SEASONS, because
+    /// an 8 km/s muzzle doesn't beat orbital mechanics — an inner-system transfer takes months
+    /// (Earth→Venus Hohmann ≈ 146 d), and the missile's whole point is minimal guidance for
+    /// small course tunings at the far end of such a shot. Its ΔV budget stays tiny — this
+    /// extends patience, not agility.</summary>
+    public const double MissileLifetimeSeconds = 180 * 86400;
 
     /// <summary>Passing this close counts as a hit through the sail.</summary>
     public const double HitRadiusMeters = 5e5;
