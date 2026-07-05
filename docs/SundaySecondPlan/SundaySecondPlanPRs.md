@@ -5,6 +5,16 @@ Sensors map becomes THE place to know and find things — you point at the sky a
 there. Same working shape as the morning's fire-control chain: a stacked chain of reviewable
 PRs, owner approves top-down, implementer rebases and merges each as approved.*
 
+**Status: ALL MERGED (owner approval, 2026-07-05 evening).** PR-0 #69 · PR-A #70 · PR-B #71 ·
+PR-C #73 · PR-D #74, merged to main in that order with the retarget-child-first squash
+procedure — no casualties this time. Also merged alongside: **#72 "the world does not wait"**
+(independent, off main) — the owner asked mid-build why the starting sky was empty, and it
+was two real bootstrap bugs: inner-system depots despawned at birth (their own host body sat
+inside the despawn tolerance) and short-route "mid-flight" ships could spawn with departure
+times in the future (the 20–70-day lead was never clamped against the transfer). 219/219
+tests on assembled main; verified live — at sim 0d0h0m the sensors desk already lists the
+Earth and Highport depots as en-route passes, lanes drawn, passive watch sweeping.
+
 **Evidence from the owner's screenshots** ([pics/](pics/)):
 
 - [Barnacle_Click_does_nothing_here.png](pics/Barnacle_Click_does_nothing_here.png) — a
