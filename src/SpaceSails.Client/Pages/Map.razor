@@ -490,6 +490,7 @@
             <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_activeDesk == ShipDesk.Sensors" FullScreen="true"
                 SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" ShipCharge="_ship.Charge"
                 Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1"
+                TelescopeSpeedFactor="1 + 0.5 * _telescopeLevel"
                 RadarActive="_activeRadar" OnRadarToggle="SetActiveRadar"
                 Transponder="_transponderMode" OnTransponderChange="SetTransponder"
                 Opportunities="_courseOpportunities" OnSetInterest="SetInterestTarget"
@@ -2720,6 +2721,7 @@
             ? 0
             : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
         _lastTimestampMs = highResTimestampMs;
+        _frameNowMs = highResTimestampMs;
 
         UpdateNearestBody();
         UpdateEffectiveWarp();
@@ -2925,6 +2927,12 @@
         _renderer.BeginFrame(_viewportWidth, _viewportHeight, Background);
 
         DrawStreams();
+        if (_activeDesk == ShipDesk.Sensors)
+        {
+            // SundaySecondPlan PR-B: the sky shows its state — but only to the sensors chief;
+            // Nav keeps its clean plotting sky.
+            DrawTradeCorridors();
+        }
         DrawShipTrajectory();
         DrawPredictionCone();
         if (PlotMode)
@@ -2945,6 +2953,12 @@
         DrawPyramids();
         DrawShuttleRange();
         DrawBeaconGhost();
+        if (_activeDesk == ShipDesk.Sensors)
+        {
+            DrawScanWedge();
+            DrawLostSearchRegions();
+            DrawPassFlash();
+        }
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -3326,6 +3340,211 @@
 
         _renderer!.DrawCircle(gx, gy, 6, null, GhostShipColor, 1.5f);
         _renderer.DrawText(gx + 9, gy + 3, "🎭 beacon ghost", GhostShipColor, "10px monospace", TextAlign.Left);
+    }
+
+    // ---- SundaySecondPlan PR-B: the sky shows its state (Sensors-desk overlays) ----
+    // Trade lanes as selectable areas, the wedge the telescope is on RIGHT NOW with its sweep
+    // progress, the expanding search circle where a lost dark ship must still be, and a bracket
+    // flash on a tracked ship the moment its scheduled custody pass runs.
+
+    private static readonly RgbaColor CorridorFillColor = new(80, 200, 220, 14);
+    private static readonly RgbaColor CorridorEdgeColor = new(80, 200, 220, 60);
+    private static readonly RgbaColor CorridorLabelColor = new(140, 210, 220, 150);
+    private static readonly RgbaColor ScanWedgeFillColor = new(120, 220, 255, 12);
+    private static readonly RgbaColor ScanWedgeDoneFillColor = new(120, 220, 255, 32);
+    private static readonly RgbaColor ScanWedgeEdgeColor = new(120, 220, 255, 80);
+    private static readonly RgbaColor SearchRegionColor = new(255, 150, 100);
+    private static readonly RgbaColor PassFlashColor = new(150, 255, 210);
+
+    private double _frameNowMs;
+    private IReadOnlyList<CorridorRegion> _mapCorridors = [];
+    private double _mapCorridorsBuiltAt = double.NegativeInfinity;
+
+    private void DrawTradeCorridors()
+    {
+        if (_ephemeris is null)
+        {
+            return;
+        }
+
+        if (SimTime - _mapCorridorsBuiltAt > 3600)
+        {
+            _mapCorridors = TradeCorridors.Regions(_ephemeris, SimTime);
+            _mapCorridorsBuiltAt = SimTime;
+        }
+
+        Span<float> quad = stackalloc float[8];
+        foreach (CorridorRegion lane in _mapCorridors)
+        {
+            Vector2d axis = lane.B - lane.A;
+            if (axis.LengthSquared == 0)
+            {
+                continue;
+            }
+
+            Vector2d dir = axis.Normalized();
+            Vector2d perp = new(-dir.Y, dir.X);
+            (quad[0], quad[1]) = _camera.WorldToScreen(lane.A + perp * lane.Radius);
+            (quad[2], quad[3]) = _camera.WorldToScreen(lane.B + perp * lane.Radius);
+            (quad[4], quad[5]) = _camera.WorldToScreen(lane.B - perp * lane.Radius);
+            (quad[6], quad[7]) = _camera.WorldToScreen(lane.A - perp * lane.Radius);
+
+            _renderer!.DrawPolygon(quad, CorridorFillColor, CorridorEdgeColor, 1f);
+
+            (float mx, float my) = _camera.WorldToScreen(lane.Midpoint);
+            _renderer.DrawText(mx, my - 6, lane.Name, CorridorLabelColor, "11px sans-serif", TextAlign.Center);
+        }
+    }
+
+    private void DrawScanWedge()
+    {
+        if (_trackingPost?.CurrentScan is not { } scan)
+        {
+            return;
+        }
+
+        ScanJob job = scan.Job;
+        (float shipX, float shipY) = _camera.WorldToScreen(_ship.Position);
+        bool fullCircle = job.ArcWidthRad >= Math.Tau - 1e-9;
+
+        // The whole aimed wedge faint, then the swept-so-far portion brighter — the sensors
+        // chief literally watches the exposure fill in on the sky.
+        DrawWedgePolygon(job.CenterBearingRad - job.ArcWidthRad / 2, job.ArcWidthRad,
+            ScanWedgeFillColor, fullCircle, shipX, shipY);
+        double sweptArc = job.ArcWidthRad * Math.Clamp(scan.Progress, 0, 1);
+        if (sweptArc > 1e-6)
+        {
+            DrawWedgePolygon(job.CenterBearingRad - job.ArcWidthRad / 2, sweptArc,
+                ScanWedgeDoneFillColor, fullCircle && scan.Progress >= 1, shipX, shipY);
+        }
+
+        _renderer!.DrawText(shipX, shipY + 26, $"📡 {scan.Label} · {(int)(scan.Progress * 100)}%",
+            ScanWedgeEdgeColor with { A = 200 }, "11px sans-serif", TextAlign.Center);
+    }
+
+    private void DrawWedgePolygon(double startBearing, double arc, RgbaColor fill, bool fullCircle,
+        float shipX, float shipY)
+    {
+        const int arcSteps = 28;
+        Span<float> points = stackalloc float[(arcSteps + 2) * 2];
+        int w = 0;
+        if (!fullCircle)
+        {
+            points[w++] = shipX;
+            points[w++] = shipY;
+        }
+
+        for (int i = 0; i <= arcSteps; i++)
+        {
+            double bearing = startBearing + arc * i / arcSteps;
+            Vector2d look = new(Math.Cos(bearing), Math.Sin(bearing));
+            double range = _trackingPost!.TelescopeRangeAlong(look);
+            (float x, float y) = _camera.WorldToScreen(_ship.Position + look * range);
+            points[w++] = x;
+            points[w++] = y;
+        }
+
+        _renderer!.DrawPolygon(points[..w], fill, ScanWedgeEdgeColor, 1f);
+    }
+
+    private void DrawLostSearchRegions()
+    {
+        if (_trackingPost is null)
+        {
+            return;
+        }
+
+        foreach (LostTrack lost in _trackingPost.LostTrackEntries)
+        {
+            Vector2d center = _trackingPost.LostCenter(lost);
+            (float cx, float cy) = _camera.WorldToScreen(center);
+            float radiusPx = (float)Math.Max(8, lost.SearchRadius(SimTime) / _camera.MetersPerPixel);
+            byte pulse = (byte)(120 + 60 * Math.Sin(_frameNowMs / 250.0));
+            RgbaColor stroke = SearchRegionColor with { A = pulse };
+            _renderer!.DrawCircle(cx, cy, radiusPx, SearchRegionColor with { A = 10 }, stroke, 1.5f);
+            _renderer.DrawText(cx, cy - radiusPx - 6, $"🔍 lost — {ContactCallsign(lost.ShipId)}",
+                stroke, "11px sans-serif", TextAlign.Center);
+        }
+    }
+
+    private void DrawPassFlash()
+    {
+        if (_trackingPost?.LastPassFlash is not { } flash)
+        {
+            return;
+        }
+
+        double ageMs = (DateTime.UtcNow - flash.WallTime).TotalMilliseconds;
+        if (ageMs is < 0 or > 1200 || ContactPosition(flash.ShipId) is not { } position)
+        {
+            return;
+        }
+
+        (float sx, float sy) = _camera.WorldToScreen(position);
+        byte alpha = (byte)(220 * (1 - ageMs / 1200));
+        DrawCornerBrackets(sx, sy, 13f, PassFlashColor with { A = alpha });
+        _renderer!.DrawText(sx + 16, sy - 10, "updating fix", PassFlashColor with { A = alpha },
+            "10px monospace", TextAlign.Left);
+    }
+
+    private void DrawCornerBrackets(float sx, float sy, float r, RgbaColor color)
+    {
+        Span<float> corner = stackalloc float[6];
+        for (int xSign = -1; xSign <= 1; xSign += 2)
+        {
+            for (int ySign = -1; ySign <= 1; ySign += 2)
+            {
+                corner[0] = sx + xSign * r;
+                corner[1] = sy + ySign * (r - 5);
+                corner[2] = sx + xSign * r;
+                corner[3] = sy + ySign * r;
+                corner[4] = sx + xSign * (r - 5);
+                corner[5] = sy + ySign * r;
+                _renderer!.DrawPolyline(corner, color, 1.5f);
+            }
+        }
+    }
+
+    private string ContactCallsign(string shipId)
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == shipId)
+            {
+                return npc.Ship.Callsign;
+            }
+        }
+
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == shipId)
+            {
+                return hunter.Callsign;
+            }
+        }
+
+        return shipId;
+    }
+
+    private Vector2d? ContactPosition(string shipId)
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == shipId)
+            {
+                return npc.State.Position;
+            }
+        }
+
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == shipId)
+            {
+                return hunter.State.Position;
+            }
+        }
+
+        return null;
     }
 
     // M29: situational awareness for trading — the shuttle-range ring around the ship,

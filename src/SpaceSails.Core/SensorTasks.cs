@@ -146,6 +146,18 @@ public sealed class TelescopeSchedule
     }
 
     /// <summary>
+    /// The instrument was physically taken over (a manual sweep): the active pass is abandoned
+    /// (nothing emitted — the exposure never finished) and the queue's clock consumes the time,
+    /// so the carousel resumes from "now" when the instrument comes back, never back-filling.
+    /// </summary>
+    public void Interrupt(double simTime)
+    {
+        _active = null;
+        _activeWasForced = false;
+        _clock = Math.Max(_clock, simTime);
+    }
+
+    /// <summary>
     /// Run the telescope forward to <paramref name="toSimTime"/>. <paramref name="durationOf"/>
     /// prices a pass in sim seconds and is sampled once at the pass's start (use
     /// <see cref="SensorTaskGeometry"/>). Returns every pass completed in the window, in order.

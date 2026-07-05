@@ -140,6 +140,21 @@ public class SensorTasksTests
         Assert.All(passes, p => Assert.Equal("track:b", p.Task.Id));
     }
 
+    [Fact]
+    public void Interrupt_AbandonsTheActivePass_AndConsumesTheTime()
+    {
+        var schedule = new TelescopeSchedule();
+        schedule.Enqueue(Track("a"));
+        schedule.Advance(50, FixedDuration); // mid-pass
+        schedule.Interrupt(400);             // a manual sweep held the instrument until t=400
+
+        IReadOnlyList<CompletedPass> passes = schedule.Advance(520, FixedDuration);
+
+        Assert.Single(passes);
+        Assert.Equal(400, passes[0].StartTime); // the interrupted exposure is never back-filled
+        Assert.Equal(500, passes[0].CompleteTime);
+    }
+
     // ---- Custody math: one instrument means real gaps ----
 
     [Fact]

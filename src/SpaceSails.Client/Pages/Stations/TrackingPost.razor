@@ -292,6 +292,7 @@
     [Parameter] public ICelestialEphemeris? Ephemeris { get; set; }
     [Parameter] public IReadOnlyList<TrackingCandidate> Candidates { get; set; } = [];
     [Parameter] public int MaxTracks { get; set; } = 1;
+    [Parameter] public double TelescopeSpeedFactor { get; set; } = 1;
     [Parameter] public bool Visible { get; set; }
     [Parameter] public bool FullScreen { get; set; }
     [Parameter] public bool RadarActive { get; set; }
@@ -329,6 +330,17 @@
 
     private readonly TelescopeModel _telescope = new();
     private readonly TrackedTargetLedger _ledger = new();
+
+    // SundaySecondPlan PR-B: the one instrument, scheduled. The task queue owns the telescope
+    // whenever no manual sweep does; the passive watch fills only truly idle time. Custody
+    // passes for every held track are standing tasks, so tracking many things means real gaps.
+    private const ulong SkySeed = 20260705; // the populated sky's page (per-scenario knob later)
+    private readonly TelescopeSchedule _schedule = new();
+    private readonly LostTrackLedger _lostTracks = new();
+    private readonly Dictionary<string, (double BuiltAt, Vector2d Center)> _lostCenters = new();
+    private IReadOnlyList<CorridorRegion> _corridorRegions = [];
+    private IReadOnlyList<Discovery> _recentFinds = [];
+    private (string ShipId, DateTime WallTime)? _lastPassFlash;
 
     // PR-6 (dark space web): ships the player has laser-ranged. Purely a UI-side warning flag —
     // Core's ledger doesn't need to know about it (PR-7 will consume "aware" for real).
@@ -423,6 +435,7 @@
         if (Ephemeris is not null && SimTime - _programsBuiltAtSimTime > 3600)
         {
             _programs = ScanPrograms.BuildPrograms(Ephemeris, ShipPosition, SimTime);
+            _corridorRegions = TradeCorridors.Regions(Ephemeris, SimTime);
             _programsBuiltAtSimTime = SimTime;
         }
 
@@ -435,16 +448,290 @@
             }
         }
 
-        // M27: the passive watch — restart the full-circle survey whenever the post is idle.
-        if (_passiveWatch && _activeJob is null)
+        RunScheduledInstrument(timeAdvanced);
+
+        // M27: the passive watch — restart the full-circle survey when the post AND the task
+        // queue are idle (real tasks own the instrument otherwise).
+        if (_passiveWatch && _activeJob is null && _schedule.Queue.Count == 0)
         {
             _activeJob = new ScanJob(0, Math.Tau);
             _sweepStartSimTime = SimTime;
             _passiveJobRunning = true;
         }
 
-        _ledger.AdvanceTime(SimTime);
+        HandleLostAndColdTracks();
     }
+
+    // ---- SundaySecondPlan PR-B: the scheduled instrument ----
+
+    private void RunScheduledInstrument(bool timeAdvanced)
+    {
+        if (_activeJob is not null && !_passiveJobRunning)
+        {
+            _schedule.Interrupt(SimTime); // a manual sweep owns the instrument; the queue waits
+            return;
+        }
+
+        if (_schedule.Queue.Count > 0 && _passiveJobRunning)
+        {
+            _activeJob = null; // real tasks outrank the idle watch
+            _passiveJobRunning = false;
+        }
+
+        if (!timeAdvanced)
+        {
+            return;
+        }
+
+        foreach (CompletedPass pass in _schedule.Advance(SimTime, DurationOf))
+        {
+            HandlePass(pass);
+        }
+    }
+
+    private double DurationOf(SensorTask task) =>
+        SensorTaskGeometry.Duration(task, JobFor(task), Math.Max(0.1, TelescopeSpeedFactor));
+
+    /// <summary>Where the telescope points for a task, as a sweep wedge from the ship — also
+    /// what the map draws as the live scan area.</summary>
+    public ScanJob JobFor(SensorTask task)
+    {
+        switch (task.Kind)
+        {
+            case SensorTaskKind.TrackUpdate:
+            {
+                Vector2d position = FindCandidate(task.TargetShipId!)?.State.Position
+                    ?? (_ledger.TryGet(task.TargetShipId!, out TrackedTarget entry)
+                        ? entry.LastObservation.Position
+                        : ShipPosition);
+                return SensorTaskGeometry.WedgeToward(ShipPosition, position, 0);
+            }
+
+            case SensorTaskKind.CorridorSweep:
+            {
+                foreach (CorridorRegion region in _corridorRegions)
+                {
+                    if (region.AId == task.CorridorAId && region.BId == task.CorridorBId)
+                    {
+                        return TradeCorridors.SweepJobFor(region, ShipPosition);
+                    }
+                }
+
+                return new ScanJob(0, Math.Tau); // lane's anchors missing: survey the sky
+            }
+
+            case SensorTaskKind.LostSearch:
+            {
+                if (_lostTracks.TryGet(task.TargetShipId!, out LostTrack lost))
+                {
+                    return SensorTaskGeometry.WedgeToward(
+                        ShipPosition, LostCenter(lost), lost.SearchRadius(SimTime));
+                }
+
+                return new ScanJob(0, SensorTaskGeometry.MinArcRad);
+            }
+
+            default: // AreaScan
+                return SensorTaskGeometry.WedgeToward(ShipPosition, task.AreaCenter, task.AreaRadius);
+        }
+    }
+
+    private void HandlePass(CompletedPass pass)
+    {
+        switch (pass.Task.Kind)
+        {
+            case SensorTaskKind.TrackUpdate:
+            {
+                string shipId = pass.Task.TargetShipId!;
+                TrackingCandidate? candidate = FindCandidate(shipId);
+                if (candidate is not null && Ephemeris is not null)
+                {
+                    _ledger.TryConfirm(
+                        shipId, Ephemeris, _telescope, ShipPosition, candidate.Value.State, pass.CompleteTime);
+                }
+
+                _lastPassFlash = (shipId, DateTime.UtcNow);
+                break;
+            }
+
+            case SensorTaskKind.LostSearch:
+            {
+                string shipId = pass.Task.TargetShipId!;
+                if (!_lostTracks.TryGet(shipId, out LostTrack lost))
+                {
+                    break;
+                }
+
+                TrackingCandidate? candidate = FindCandidate(shipId);
+                if (candidate is not null && Ephemeris is not null
+                    && LostSearchRule.TryReacquire(Ephemeris, _telescope, lost, ShipPosition,
+                        candidate.Value.State, pass.CompleteTime, out Observation found)
+                    && _ledger.Add(found))
+                {
+                    _lostTracks.Drop(shipId);
+                    _lostCenters.Remove(shipId);
+                    _schedule.Remove(pass.Task.Id);
+                    _lastPassFlash = (shipId, DateTime.UtcNow);
+                    _lastSweepMessage = $"REACQUIRED {candidate.Value.Callsign} — lock restored";
+                }
+                else
+                {
+                    _lostTracks.RecordSearchPass(shipId, pass.CompleteTime); // ruled out sky
+                }
+
+                break;
+            }
+
+            case SensorTaskKind.CorridorSweep:
+                RunDetectionSweep(JobFor(pass.Task), pass.CompleteTime, pass.Task.Label);
+                break;
+
+            default: // AreaScan: real ships in the wedge, plus whatever the populated sky holds
+                RunDetectionSweep(
+                    SensorTaskGeometry.WedgeToward(ShipPosition, pass.Task.AreaCenter, pass.Task.AreaRadius),
+                    pass.CompleteTime, pass.Task.Label);
+                _recentFinds = ScanDiscoveries.FindAt(
+                    SkySeed, pass.Task.AreaCenter, pass.Task.AreaRadius, pass.CompleteTime);
+                _lastSweepMessage =
+                    $"{pass.Task.Label}: resolved {_recentFinds.Count} object(s) — {_recentFinds[0].Description}";
+                break;
+        }
+    }
+
+    private void RunDetectionSweep(ScanJob job, double completeTime, string label)
+    {
+        IReadOnlyList<Observation> found = TrackingStation.Sweep(
+            _telescope, job, ShipPosition, Candidates.Select(c => (c.Id, c.State)), completeTime);
+        int added = 0, refused = 0;
+        foreach (Observation obs in found)
+        {
+            if (_ledger.Add(obs))
+            {
+                added++;
+            }
+            else
+            {
+                refused++;
+            }
+        }
+
+        if (found.Count > 0)
+        {
+            _lastSweepMessage = refused > 0
+                ? $"{label} — {added} tracked, {refused} slipped (telescopes full)"
+                : $"{label} — {added} contact(s) confirmed";
+        }
+    }
+
+    private void HandleLostAndColdTracks()
+    {
+        foreach (TrackedTarget droppedTrack in _ledger.AdvanceTime(SimTime))
+        {
+            _lostTracks.AddFrom(droppedTrack, SimTime);
+            _schedule.Remove($"track:{droppedTrack.ShipId}");
+            string callsign = FindCandidate(droppedTrack.ShipId)?.Callsign ?? droppedTrack.ShipId;
+            _schedule.Enqueue(SensorTask.LostSearch(droppedTrack.ShipId, $"search — {callsign}"));
+            _lastSweepMessage = $"LOST LOCK on {callsign} — search area opened on the map";
+        }
+
+        foreach (LostTrack cold in _lostTracks.DropColdCases(SimTime))
+        {
+            _schedule.Remove($"search:{cold.ShipId}");
+            _lostCenters.Remove(cold.ShipId);
+            _lastSweepMessage =
+                $"Trail gone cold on {FindCandidate(cold.ShipId)?.Callsign ?? cold.ShipId} — case closed";
+        }
+
+        // Keep the custody carousel in step with the ledger: every held track gets a standing
+        // update pass; tasks whose subject left the ledger or case board leave the queue.
+        foreach (TrackedTarget entry in _ledger.Entries)
+        {
+            _schedule.Enqueue(SensorTask.TrackUpdate(
+                entry.ShipId, FindCandidate(entry.ShipId)?.Callsign ?? entry.ShipId));
+        }
+
+        for (int i = _schedule.Queue.Count - 1; i >= 0; i--)
+        {
+            SensorTask task = _schedule.Queue[i];
+            bool stale = task.Kind switch
+            {
+                SensorTaskKind.TrackUpdate => !_ledger.IsTracked(task.TargetShipId!),
+                SensorTaskKind.LostSearch => !_lostTracks.IsLost(task.TargetShipId!),
+                _ => false,
+            };
+            if (stale)
+            {
+                _schedule.Remove(task.Id);
+            }
+        }
+    }
+
+    /// <summary>Search-region center for a lost track — a PathPredictor dead-reckon, cached on
+    /// a coarse cadence so the map can ask for it every frame.</summary>
+    public Vector2d LostCenter(LostTrack lost)
+    {
+        if (_lostCenters.TryGetValue(lost.ShipId, out (double BuiltAt, Vector2d Center) cached)
+            && SimTime - cached.BuiltAt < 1800)
+        {
+            return cached.Center;
+        }
+
+        Vector2d center = Ephemeris is null
+            ? lost.LastObservation.Position
+            : LostSearchRule.PredictedCenter(Ephemeris, lost, SimTime);
+        _lostCenters[lost.ShipId] = (SimTime, center);
+        return center;
+    }
+
+    /// <summary>What the instrument is doing right now, for the map overlay: the wedge, 0..1
+    /// progress, and a label. Manual/passive sweeps and scheduled tasks all report here —
+    /// there is only one telescope, so there is only ever one answer.</summary>
+    public (ScanJob Job, double Progress, string Label)? CurrentScan
+    {
+        get
+        {
+            if (_activeJob is { } job)
+            {
+                return (job,
+                    Math.Clamp((SimTime - _sweepStartSimTime) / Math.Max(1, job.DurationSeconds), 0, 1),
+                    _passiveJobRunning ? "passive watch" : "manual sweep");
+            }
+
+            if (_schedule.Active is { } task)
+            {
+                return (JobFor(task), _schedule.ActiveProgress(SimTime), task.Label);
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>The lost-track case board, for the map's search-region circles.</summary>
+    public IReadOnlyCollection<LostTrack> LostTrackEntries => _lostTracks.Entries;
+
+    /// <summary>The telescope's task queue, in carousel order (PR-D renders this as a list).</summary>
+    public IReadOnlyList<SensorTask> TaskQueue => _schedule.Queue;
+
+    /// <summary>What an area scan last resolved from the populated sky.</summary>
+    public IReadOnlyList<Discovery> RecentFinds => _recentFinds;
+
+    /// <summary>The last completed custody/search pass, for the map's bracket flash.</summary>
+    public (string ShipId, DateTime WallTime)? LastPassFlash => _lastPassFlash;
+
+    /// <summary>Telescope reach along a world direction from the ship — the same envelope the
+    /// sweep uses, exposed so the map can draw the scan wedge honestly range-limited.</summary>
+    public double TelescopeRangeAlong(Vector2d lookDirection) => _telescope.Range(ShipPosition, lookDirection);
+
+    /// <summary>PR-C's entry point: the map's scan menus enqueue telescope work here.</summary>
+    public bool EnqueueTask(SensorTask task)
+    {
+        bool added = _schedule.Enqueue(task);
+        _lastSweepMessage = added ? $"Queued: {task.Label}" : $"{task.Label} is already queued";
+        return added;
+    }
+
+    /// <summary>PRIORITIZE REDISCOVERY: the search pass runs as soon as the current look ends.</summary>
+    public void PrioritizeSearch(string shipId) => _schedule.PrioritizeNext($"search:{shipId}");
 
     // ---- The live telescope (M27, replaces PR-12's wall of tiles) ----
 
