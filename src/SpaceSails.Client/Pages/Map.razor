@@ -654,8 +654,8 @@
                 @if (_activeDesk == ShipDesk.WarRoom)
                 {
                     <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget"
-                        FireAimOffsetSeconds="_fireAimOffsetSeconds" MaxAimOffsetSeconds="MaxFireAimOffsetSeconds" MaxMuzzleSpeedMps="MaxMuzzleSpeed" InterestDistanceMeters="InterestDistanceNow()" FireKind="_fireKind" FireSolution="_fireSolution" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
-                        OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution" OnScanWindows="ScanFiringWindows"
+                        FireAimOffsetSeconds="_fireAimOffsetSeconds" MaxAimOffsetSeconds="MaxFireAimOffsetSeconds" MaxMuzzleSpeedMps="MaxMuzzleSpeed" InterestDistanceMeters="InterestDistanceNow()" FireKind="_fireKind" FireSolution="_fireSolution" FireBlockedBy="@_fireBlockedBy" RoundsInFlight="LiveRounds()" PlannedImpactInSeconds="PlannedImpactEta()" StraightWindowText="@StraightWindowText()" WeaponsAuthorized="WeaponsAuthorized" FireAtWill="_fireAtWill" SlugAmmo="_slugAmmo" MissileAmmo="_missileAmmo" Docked="_docked" CanWarnInterest="CanWarnInterest()" OnBuyAmmo="BuyAmmo" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
+                        OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution" OnScanWindows="ScanFiringWindows" OnAutoAim="AutoAim" OnArmFire="ArmFire"
                         OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
                 }
                 else if (_activeDesk == ShipDesk.Trade)
@@ -919,7 +919,9 @@
                 else if (_activeDesk == ShipDesk.Captain)
                 {
                     <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
-                                                              StatusChips="AllStationChips()" OnGoToDesk="SwitchDesk" />
+                                                              StatusChips="AllStationChips()" OnGoToDesk="SwitchDesk"
+                                                              ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
+                                                              OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill" />
                 }
             </div>
         </div>
@@ -1730,7 +1732,7 @@
             State = new ShipState(_ship.Position, _ship.Velocity + launchDirection * muzzleSpeed, SimTime),
             RemainingBudget = kind == OrdnanceKind.Missile ? OrdnanceRule.MissileDeltaVBudget : 0,
         });
-        RendererInterop.PlayCue("pulse");
+        RendererInterop.PlayCue("fire"); // the driver's boom — a shot must SOUND like one (owner)
     }
 
     /// <summary>Steps every live round to the ship's sim time, guiding missiles and checking
@@ -1759,6 +1761,9 @@
                     if (round.Round.TargetId is not null && !round.Round.AcrossTheBow)
                     {
                         PushNewsEvent(NewsWire.NewsEventKind.SlugMissed, NpcName(round.Round.TargetId));
+                        // A miss must be as loud as a hit (owner: "know if we hit or missed").
+                        ShowPulseMessage($"MISS — the {(round.Round.Kind == OrdnanceKind.Missile ? "missile" : "slug")} expired without contact ({NpcName(round.Round.TargetId)})");
+                        RendererInterop.PlayCue("miss");
                     }
 
                     break;
@@ -1796,8 +1801,8 @@
                     round.Spent = true;
                     PushNewsEvent(NewsWire.NewsEventKind.SlugHit, npc.Ship.Callsign,
                         _nearestBody?.Name);
-                    ShowPulseMessage($"Direct hit — {npc.Ship.Callsign}'s sail is gone; she's adrift 🎯");
-                    RendererInterop.PlayCue("board");
+                    ShowPulseMessage($"🎯 DIRECT HIT — {npc.Ship.Callsign}'s sail is gone; she's ADRIFT and boardable");
+                    RendererInterop.PlayCue("hit");
                     break;
                 }
 
@@ -1826,8 +1831,8 @@
                     _hunters[h] = hunter with { BrokenOff = true };
                     round.Spent = true;
                     PushNewsEvent(NewsWire.NewsEventKind.SlugHit, hunter.Callsign, _nearestBody?.Name);
-                    ShowPulseMessage($"Direct hit — {hunter.Callsign} breaks off, sail holed 🎯");
-                    RendererInterop.PlayCue("board");
+                    ShowPulseMessage($"🎯 DIRECT HIT — {hunter.Callsign} breaks off, sail holed");
+                    RendererInterop.PlayCue("hit");
                     break;
                 }
             }
@@ -2038,6 +2043,53 @@
     private IReadOnlyList<TrajectorySample> _fireTargetPath = [];   // the prey's predicted track to t_hit
     private double _fireDispersionMeters;
     private Vector2d _fireAimPoint;
+    // The captain's word (owner: "captain's panel must authorize pulling the trigger",
+    // plus a standing "fire at will"). Warning shots need no authorization — they ARE the
+    // way a captain talks without committing.
+    private bool _fireAtWill;
+    private bool _shotAuthorized;
+    private bool WeaponsAuthorized => _fireAtWill || _shotAuthorized;
+
+    private void AuthorizeShot()
+    {
+        _shotAuthorized = !_shotAuthorized;
+        ShowPulseMessage(_shotAuthorized ? "CAPTAIN: next shot authorized" : "CAPTAIN: authorization withdrawn");
+        StateHasChanged();
+    }
+
+    private void ToggleFireAtWill()
+    {
+        _fireAtWill = !_fireAtWill;
+        ShowPulseMessage(_fireAtWill ? "CAPTAIN: weapons free — fire at will" : "CAPTAIN: weapons hold");
+        StateHasChanged();
+    }
+
+    // The magazine (owner: rounds are BOUGHT once spent). Warning shots burn a slug too.
+    private int _slugAmmo = 12;
+    private int _missileAmmo = 4;
+
+    private void BuyAmmo(OrdnanceKind kind)
+    {
+        (int price, int count) = kind == OrdnanceKind.Missile ? (500, 2) : (300, 6);
+        if (!_docked || _credits < price)
+        {
+            return;
+        }
+
+        _credits -= price;
+        if (kind == OrdnanceKind.Missile)
+        {
+            _missileAmmo += count;
+        }
+        else
+        {
+            _slugAmmo += count;
+        }
+
+        ShowPulseMessage($"Dockside resupply: +{count} {(kind == OrdnanceKind.Missile ? "missiles" : "slugs")} ({price} cr)");
+        StateHasChanged();
+    }
+
     private double _fireAtSimTime = double.NaN;      // NaN = nothing locked
     private string? _fireTargetId;
     private string? _fireTip;                        // F6: the solver as flight instructor
@@ -2052,6 +2104,125 @@
     /// "can this round even get there" hint.</summary>
     private double? InterestDistanceNow() =>
         InterestTargetState() is { } state ? (state.Position - _ship.Position).Length : null;
+
+    /// <summary>
+    /// The kinematic firing window, closed-form: flight times t where a straight muzzle-speed
+    /// shot can cancel the relative drift, |Δr/t + Δv| ≤ v_muzzle. This is the number the
+    /// panel must SIGNAL (owner): an 8 km/s gun against 30 km/s orbits means most aims are
+    /// infeasible, and the live test showed the naive distance/muzzle hint off by 25×.
+    /// </summary>
+    private (double MinToF, double MaxToF)? StraightShotWindow()
+    {
+        if (InterestTargetState() is not { } target)
+        {
+            return null;
+        }
+
+        Vector2d dr = target.Position - _ship.Position;
+        Vector2d dv = target.Velocity - _ship.Velocity;
+        double a = dr.LengthSquared;
+        double b = 2 * dr.Dot(dv);
+        double c = dv.LengthSquared - MaxMuzzleSpeed * MaxMuzzleSpeed;
+        double disc = b * b - 4 * a * c;
+        if (disc < 0 || a <= 0)
+        {
+            return null; // the drift outruns the muzzle in every direction — no straight shot
+        }
+
+        double sq = Math.Sqrt(disc);
+        double uHigh = (-b + sq) / (2 * a); // u = 1/t: higher u = shorter flight
+        double uLow = (-b - sq) / (2 * a);
+        if (uHigh <= 0)
+        {
+            return null;
+        }
+
+        double minToF = 1 / uHigh;
+        double maxToF = c < 0 || uLow <= 0 ? double.PositiveInfinity : 1 / uLow;
+        return (minToF, maxToF);
+    }
+
+    private string? StraightWindowText() => StraightShotWindow() is { } w
+        ? $"+{FormatFlightTime(w.MinToF)}{(double.IsPositiveInfinity(w.MaxToF) ? " or later" : $" … +{FormatFlightTime(w.MaxToF)}")}"
+        : null;
+
+    /// <summary>Owner: "(unless there is something blocking the shot in between)" — walk the
+    /// solved transfer's segments against every body's disc (Sun included: no shooting through
+    /// the star). Segment-vs-point with the body at the segment's mid-time; coarse for long
+    /// segments, honest enough to name the blocker.</summary>
+    private string? _fireBlockedBy;
+
+    private string? FirePlanBlockedBy()
+    {
+        if (_ephemeris is null || _fireSolutionPath.Count < 2)
+        {
+            return null;
+        }
+
+        for (int i = 1; i < _fireSolutionPath.Count; i++)
+        {
+            Vector2d a = _fireSolutionPath[i - 1].Position;
+            Vector2d b = _fireSolutionPath[i].Position;
+            double tMid = (_fireSolutionPath[i - 1].SimTime + _fireSolutionPath[i].SimTime) / 2;
+            Vector2d ab = b - a;
+            double abLenSq = ab.LengthSquared;
+            foreach (CelestialBody body in _ephemeris.Bodies)
+            {
+                if (body.BodyRadius <= 0)
+                {
+                    continue;
+                }
+
+                Vector2d center = _ephemeris.Position(body.Id, tMid);
+                double t = abLenSq > 0 ? Math.Clamp((center - a).Dot(ab) / abLenSq, 0, 1) : 0;
+                if ((a + ab * t - center).LengthSquared <= body.BodyRadius * body.BodyRadius)
+                {
+                    return body.Name;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Live rounds for the war-room tracker (owner: "shots / missiles away is also
+    /// good to track").</summary>
+    private IReadOnlyList<Stations.WarRoom.LiveRound> LiveRounds()
+    {
+        if (_ordnance.Count == 0)
+        {
+            return [];
+        }
+
+        var list = new List<Stations.WarRoom.LiveRound>();
+        foreach (OrdnanceState round in _ordnance)
+        {
+            if (round.Spent)
+            {
+                continue;
+            }
+
+            double remaining = OrdnanceRule.LifetimeSeconds(round.Round.Kind)
+                - (round.State.SimTime - round.Round.LaunchedAtSimTime);
+            list.Add(new Stations.WarRoom.LiveRound(
+                round.Round.Kind == OrdnanceKind.Missile ? "missile" : "slug",
+                round.Round.TargetId is { } targetId ? NpcName(targetId) : "warning shot",
+                Math.Max(0, remaining)));
+        }
+
+        return list;
+    }
+
+    private bool CanWarnInterest() =>
+        _interestTargetId is not null
+        && FindNpc(_interestTargetId) is { Active: true, Arrived: false, Disabled: false } npc
+        && !npc.Ship.IsPod
+        && EncounterRule.InWeaponRange(_ship, npc.State);
+
+    private double? PlannedImpactEta() =>
+        _fireSolutionPath.Count > 1 && _fireSolutionPath[^1].SimTime > SimTime
+            ? _fireSolutionPath[^1].SimTime - SimTime
+            : null;
 
     /// <summary>The interest target's REAL maneuvering ability, for the dispersion cone — a
     /// depot on rails or a mass-driver pod cannot burn at all, so a 70-day shot at one carries
@@ -2138,7 +2309,9 @@
 
         if (solution.Converged)
         {
-            _fireAtSimTime = SimTime + FireLockLeadSeconds;
+            // Computing is SAFE — nothing flies until the gunner presses FIRE (owner: locking
+            // a solution is often the THREAT in a piracy stop; auto-firing it is the "oops").
+            _fireAtSimTime = double.NaN;
             _fireTip = FireTip(solution);
             // The orrery view (owner + Gemini consult): fly the solved round once more and keep
             // the samples — the war-room backdrop draws the whole transfer, aim point and
@@ -2151,6 +2324,7 @@
             _fireSolutionPath = _simulator.ProjectAdaptive(round, null, solution.TimeOfFlightSeconds,
                 maxSamples: Math.Max(64, (int)(solution.TimeOfFlightSeconds / 3600) + 16));
             _fireTargetPath = predicted.Samples;
+            _fireBlockedBy = FirePlanBlockedBy();
             ShowPulseMessage("CALCULATING FIRING SOLUTION…");
             SquawkNow(Parrot.Squawk.FiringSolution, _lastTimestampMs ?? 0, force: true);
         }
@@ -2160,10 +2334,111 @@
             _fireTip = null;
             _fireSolutionPath = [];
             _fireTargetPath = [];
+            _fireBlockedBy = null;
             ShowPulseMessage("No firing solution — beyond the driver's reach at that moment");
         }
 
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// The one-button gunner (owner: "why does it not just point nose at this and fire with
+    /// advance?"). Jump the aim to the shortest flight the round can physically make to the
+    /// target's current range — switching to the missile when the slug can't live that long —
+    /// solve there, and if the geometry refuses, sweep the windows. Computes only; FIRE stays
+    /// a separate deliberate press.
+    /// </summary>
+    private void AutoAim()
+    {
+        if (FireLocked || InterestDistanceNow() is not { } distance)
+        {
+            return;
+        }
+
+        // The kinematic window bounds everything: outside it no straight shot exists at ANY
+        // aim, and solving there just freezes the deck for nothing (the live test burned two
+        // minutes escalating through six hopeless solves).
+        if (StraightShotWindow() is not { } window)
+        {
+            ShowPulseMessage("No straight shot at any flight time — the drift outruns the muzzle; 🔭 sweeping for a gravity window");
+            ScanFiringWindows();
+            return;
+        }
+
+        double floorToF = window.MinToF * 1.03 + FireLockLeadSeconds;
+        if (_fireKind == OrdnanceKind.Slug && floorToF > OrdnanceRule.SlugLifetimeSeconds - FireLockLeadSeconds)
+        {
+            _fireKind = OrdnanceKind.Missile;
+            ShowPulseMessage("That window needs the missile — switched");
+        }
+
+        // A cross-system window means MINUTES of synchronous WASM solving per attempt (the
+        // live test froze the deck ~10 min escalating blind). Auto-aim's job is the SIGNAL:
+        // put the aim inside the window instantly and let SOLVE be the deliberate press.
+        if (floorToF > 20 * 86400)
+        {
+            _fireAimOffsetSeconds = Math.Clamp(floorToF, 600, MaxFireAimOffsetSeconds);
+            _fireSolution = null;
+            ShowPulseMessage($"Aim set inside the window (+{FormatFlightTime(_fireAimOffsetSeconds)}) — press SOLVE (cross-system solves take a while)");
+            StateHasChanged();
+            return;
+        }
+
+        double ceiling = Math.Min(
+            double.IsPositiveInfinity(window.MaxToF) ? MaxFireAimOffsetSeconds : window.MaxToF * 0.97,
+            MaxFireAimOffsetSeconds);
+        foreach (double factor in (double[])[1.0, 1.15, 1.5, 2.4])
+        {
+            double offset = Math.Clamp(floorToF * factor, 600, Math.Max(ceiling, 600));
+            _fireAimOffsetSeconds = offset;
+            ComputeFiringSolution();
+            if (_fireSolution is { Converged: true } && _fireBlockedBy is null)
+            {
+                return;
+            }
+
+            if (offset >= ceiling)
+            {
+                break;
+            }
+        }
+
+        // The straight window refused (gravity bends it away) — sweep as a last resort.
+        ScanFiringWindows();
+    }
+
+    /// <summary>The deliberate FIRE press: re-solve at the current clock (no stale locks) and
+    /// only then arm the T−60 s auto-release. Until this, everything upstream is just aiming.</summary>
+    private void ArmFire()
+    {
+        if (FireLocked)
+        {
+            return;
+        }
+
+        if (!WeaponsAuthorized)
+        {
+            ShowPulseMessage("HOLD — the captain has not authorized the shot (desk 0)");
+            return;
+        }
+
+        if (_fireKind == OrdnanceKind.Missile ? _missileAmmo <= 0 : _slugAmmo <= 0)
+        {
+            ShowPulseMessage($"Magazine empty — buy {(_fireKind == OrdnanceKind.Missile ? "missiles" : "slugs")} dockside");
+            return;
+        }
+
+        ComputeFiringSolution();
+        if (_fireSolution is { Converged: true } && _fireBlockedBy is null)
+        {
+            _fireAtSimTime = SimTime + FireLockLeadSeconds;
+            _shotAuthorized = false; // one shot per captain's word (fire-at-will stands)
+            ShowPulseMessage("BARREL LOCKED — round away in 60 s (scrub to abort)");
+        }
+        else if (_fireBlockedBy is not null)
+        {
+            ShowPulseMessage($"HOLD — {_fireBlockedBy} blocks the transfer; find another window");
+        }
     }
 
     /// <summary>
@@ -2187,7 +2462,10 @@
         double bestOffset = _fireAimOffsetSeconds;
         double bestMiss = double.MaxValue;
         const int probes = 7;
-        double minOffset = Math.Max(2 * 3600, MaxFireAimOffsetSeconds / 200);
+        // Grid floor = the shortest PHYSICAL flight to the target's current range — probing
+        // aim times the round can't reach is wasted flights (and made knife-fight scans blind).
+        double minOffset = Math.Clamp(
+            (target.Position - _ship.Position).Length / MaxMuzzleSpeed * 0.8, 900, MaxFireAimOffsetSeconds / 4);
         double logSpan = Math.Log(MaxFireAimOffsetSeconds * 0.95 / minOffset);
         for (int i = 0; i < probes; i++)
         {
@@ -2235,6 +2513,7 @@
         _fireSolution = null;
         _fireSolutionPath = [];
         _fireTargetPath = [];
+        _fireBlockedBy = null;
         ShowPulseMessage("Firing solution scrubbed");
         StateHasChanged();
     }
@@ -2255,7 +2534,23 @@
             return;
         }
 
+        if (_fireKind == OrdnanceKind.Missile ? _missileAmmo <= 0 : _slugAmmo <= 0)
+        {
+            ShowPulseMessage("Magazine empty — the shot is scrubbed");
+            CancelFiringSolution();
+            return;
+        }
+
         _reactionMassPulses -= cost;
+        if (_fireKind == OrdnanceKind.Missile)
+        {
+            _missileAmmo--;
+        }
+        else
+        {
+            _slugAmmo--;
+        }
+
         FireOrdnance(_fireKind, solution.LaunchDirection, solution.MuzzleSpeed, _fireTargetId);
         _slewBearingRad = solution.BearingRad;
         _slewUntilSimTime = SimTime + 120; // the barrel swings back — control returns
@@ -4050,6 +4345,35 @@
             DrawCornerBrackets(ix, iy, 12f, FirePlanColor with { A = 160 });
             _renderer!.DrawText(ix + 15, iy - 8, $"🎯 {InterestTargetName() ?? _interestTargetId}",
                 FirePlanColor with { A = 190 }, "11px sans-serif", TextAlign.Left);
+
+            // The owner's ask, verbatim: "a graphical line from my ship to the target… showing
+            // distance and direct shot options" — the raw geometry, before any solution.
+            (float px, float py) = _camera.WorldToScreen(_ship.Position);
+            Span<float> ray = stackalloc float[4];
+            ray[0] = px; ray[1] = py; ray[2] = ix; ray[3] = iy;
+            _renderer.DrawPolyline(ray, FirePlanColor with { A = 70 }, 1f);
+            double distance = (interest.Position - _ship.Position).Length;
+            double shortestFlight = distance / MaxMuzzleSpeed;
+            string reachNote = shortestFlight > OrdnanceRule.SlugLifetimeSeconds ? "missile territory" : "slug or missile";
+            _renderer.DrawText((px + ix) / 2, (py + iy) / 2 - 6,
+                $"{FormatDistance(distance)} · shortest flight ≈ {FormatFlightTime(shortestFlight)} · {reachNote}",
+                FirePlanColor with { A = 150 }, "11px sans-serif", TextAlign.Center);
+        }
+
+        // The fired round rides the drawn plan — mark the LIVE bullet loudly on this desk
+        // (owner: "schedule shot… then its position should be tracked on this view").
+        foreach (OrdnanceState round in _ordnance)
+        {
+            if (round.Spent)
+            {
+                continue;
+            }
+
+            (float ox, float oy) = _camera.WorldToScreen(round.State.Position);
+            _renderer!.DrawCircle(ox, oy, 6f, null, OrdnanceColor, 1.5f);
+            _renderer.DrawText(ox + 9, oy + 4,
+                round.Round.Kind == OrdnanceKind.Missile ? "missile" : "slug",
+                OrdnanceColor with { A = 190 }, "11px sans-serif", TextAlign.Left);
         }
 
         if (_fireSolutionPath.Count < 2)
@@ -6238,6 +6562,13 @@
             return;
         }
 
+        if (_slugAmmo <= 0)
+        {
+            ShowPulseMessage("No slugs left for a warning shot — buy dockside");
+            return;
+        }
+
+        _slugAmmo--;
         npc.WarningShotFired = true;
 
         // M28: the warning shot is a REAL slug now — flung wide on purpose (AcrossTheBow

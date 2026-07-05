@@ -75,6 +75,15 @@
                         }
                         @* M27: the sensor room's tracks, drawn as bearing vectors — the war room
                            consumes what the tracking post screens (owner). *@
+                        @* The gunner's ray: scope center (us) to the target of interest, so the
+                           basic geometry is never invisible on the tactical circle either. *@
+                        @foreach (RenderTrack aimRay in RenderTracks())
+                        {
+                            @if (aimRay.Track.Id == InterestId)
+                            {
+                                <line x1="100" y1="100" x2="@Fmt(aimRay.X)" y2="@Fmt(aimRay.Y)" class="war-room-aim-ray" />
+                            }
+                        }
                         @foreach (RenderTrack rt in RenderTracks())
                         {
                             <line x1="100" y1="100" x2="@Fmt(rt.X)" y2="@Fmt(rt.Y)"
@@ -141,8 +150,8 @@
                             <div class="war-room-chain">
                                 <div>1️⃣ <span class="text-light">Track</span> a ship — Sensors desk (<kbd>2</kbd>): the passive watch or a scan finds her.</div>
                                 <div>2️⃣ <span class="text-light">Mark interest</span> — 🎯 on a sensor track below, on a Sensors card, or click her on the map.</div>
-                                <div>3️⃣ <span class="text-light">Aim</span> — pick the moment on her predicted track, choose slug or missile.</div>
-                                <div>4️⃣ <span class="text-light">COMPUTE &amp; LOCK</span> — the shooting method converges, locks at T−60 s, fires itself; the map behind this desk draws the whole transfer.</div>
+                                <div>3️⃣ <span class="text-light">Aim &amp; solve</span> — 🎯 AUTO-AIM does both; the map behind this desk draws the whole transfer. Computing is safe.</div>
+                                <div>4️⃣ <span class="text-light">🔥 FIRE</span> — the only button that shoots: locks the barrel, round away 60 s later (or hold the lock as a threat).</div>
                                 <div>5️⃣ <span class="text-light">Board the drift</span> — a hit holes her sail; close in and take the cargo.</div>
                             </div>
                             @if (SensorTracks.Count == 0)
@@ -161,17 +170,9 @@
                             <div class="fw-bold">🎖 Fire control — @(InterceptTargetName ?? InterestId)</div>
                             @if (FireCountdownSeconds is { } countdown)
                             {
-                                @if (FireSolution is { } locked && RevealedIterations < locked.Trace.Count)
+                                @if (FireSolution is { } fs)
                                 {
-                                    <div class="war-room-calc text-info">CALCULATING FIRING SOLUTION…</div>
-                                    @foreach (FireControl.IterationStep step in locked.Trace.Take(RevealedIterations))
-                                    {
-                                        <div class="war-room-calc-row">iter @step.Iteration · bearing @((step.BearingRad * 180 / Math.PI).ToString("F2"))° · miss @FormatRange(step.MissMeters)</div>
-                                    }
-                                }
-                                else if (FireSolution is { } fs)
-                                {
-                                    <div class="text-warning fw-bold">SOLUTION LOCKED — FIRING IN @Math.Max(0, (int)countdown) s</div>
+                                    <div class="war-room-verdict war-room-verdict-armed">🔥 ROUND AWAY IN @Math.Max(0, (int)countdown) s — fires itself, hands off</div>
                                     <div class="text-secondary">
                                         bearing @((fs.BearingRad * 180 / Math.PI).ToString("F1"))° ·
                                         charge @((fs.MuzzleSpeed / 1000).ToString("F2")) km/s ·
@@ -179,13 +180,21 @@
                                         solver miss @FormatRange(fs.ExpectedMissMeters) ·
                                         dispersion ±@FormatRange(FireDispersionMeters)
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-warning mt-1" @onclick="() => OnCancelFire.InvokeAsync()">Scrub the shot</button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning mt-1" @onclick="() => OnCancelFire.InvokeAsync()">SCRUB — abort the shot</button>
                                 }
                             }
                             else
                             {
-                                <label class="form-label mb-0 mt-1">Aim at their predicted track <strong>+@FormatDuration(FireAimOffsetSeconds)</strong> from now</label>
-                                @* Log-scale (long-shots PR): ten minutes and forty-five days on one slider —
+                                @* Owner: "the aim and the fire solution should definitely be
+                                   separated" — three stages, and only the LAST one shoots. *@
+                                <div class="war-room-stage-label">① AIM — when the round meets their track</div>
+                                <button type="button" class="btn btn-sm btn-info w-100 fw-bold"
+                                        title="Jump to the shortest physical flight, solve there; sweep launch windows if the geometry refuses. Computes only — never fires."
+                                        @onclick="() => OnAutoAim.InvokeAsync()">
+                                    🎯 AUTO-AIM — point the gun for me
+                                </button>
+                                <label class="form-label mb-0 mt-1 war-room-round-hint">or by hand: meet their predicted track <strong>+@FormatDuration(FireAimOffsetSeconds)</strong> from now</label>
+                                @* Log-scale (long-shots PR): ten minutes and half a year on one slider —
                                    a linear track made week-long orbital shots one-pixel affairs. *@
                                 <input type="range" class="form-range" min="0" max="1000" step="2" value="@AimToSlider(FireAimOffsetSeconds)"
                                        @oninput="OnAimInput" @onkeydown:stopPropagation="true" />
@@ -196,39 +205,135 @@
                                         <button type="button" class="btn @(FireKind == OrdnanceKind.Missile ? "btn-info" : "btn-outline-info") py-0"
                                                 @onclick="() => OnFireKindChanged.InvokeAsync(OrdnanceKind.Missile)">missile</button>
                                     </div>
-                                    <span class="text-secondary">@FirePulseCost pulses / shot</span>
+                                    <span class="text-secondary">@FirePulseCost pulses / shot · lives @FormatDuration(MaxAimOffsetSeconds) · magazine: slug ×@SlugAmmo / missile ×@MissileAmmo</span>
                                 </div>
-                                <div class="text-secondary war-room-round-hint">
-                                    this round flies at most <strong>@FormatDuration(MaxAimOffsetSeconds)</strong> before it evaporates
-                                    @(FireKind == OrdnanceKind.Slug ? "— switch to a missile for the cross-system shot (tiny guidance budget, weeks of patience)" : "— the cross-system round; guidance is tiny, patience is not")
-                                </div>
-                                @* Honest legs vs distance (owner hit NO SOLUTION at 5 M km with a
-                                   16 h aim — the round simply couldn't get there in time; say so
-                                   BEFORE the compute button, in numbers). *@
                                 @if (InterestDistanceMeters is { } targetDistance)
                                 {
                                     double roundLegs = MaxMuzzleSpeedMps * Math.Max(0, FireAimOffsetSeconds - 60);
-                                    <div class="@(roundLegs < targetDistance ? "text-danger" : "text-secondary") war-room-round-hint">
-                                        round legs ≈ @FormatRange(roundLegs) at this aim · target now @FormatRange(targetDistance)@(roundLegs < targetDistance ? " — aim LONGER in time (the round needs flight time), or 🔭 scan for a window" : "")
+                                    <div class="@(roundLegs < targetDistance ? "text-warning" : "text-secondary") war-room-round-hint">
+                                        round legs ≈ @FormatRange(roundLegs) at this aim · target now @FormatRange(targetDistance)
                                     </div>
                                 }
-                                @if (FireSolution is { Converged: false })
+                                @if (StraightWindowText is not null)
                                 {
-                                    <div class="text-danger">NO SOLUTION — beyond the driver's reach at that moment; aim nearer in time.</div>
+                                    <div class="text-info war-room-round-hint">straight-shot window: <strong>@StraightWindowText</strong> — auto-aim solves inside it</div>
                                 }
-                                <button type="button" class="btn btn-sm btn-danger w-100" disabled="@(PulsesAvailable < FirePulseCost)"
+                                else
+                                {
+                                    <div class="text-secondary war-room-round-hint">no straight window — their drift outruns the muzzle; 🔭 scan hunts gravity-assisted windows</div>
+                                }
+
+                                <div class="war-room-stage-label mt-2">② SOLUTION — the shooting method's verdict</div>
+                                @if (FireSolution is { } solution && RevealedIterations < solution.Trace.Count)
+                                {
+                                    <div class="war-room-calc text-info">CALCULATING FIRING SOLUTION…</div>
+                                    @foreach (FireControl.IterationStep step in solution.Trace.Take(RevealedIterations))
+                                    {
+                                        <div class="war-room-calc-row">iter @step.Iteration · bearing @((step.BearingRad * 180 / Math.PI).ToString("F2"))° · miss @FormatRange(step.MissMeters)</div>
+                                    }
+                                }
+                                else if (FireSolution is { Converged: true } good)
+                                {
+                                    @if (FireBlockedBy is not null)
+                                    {
+                                        <div class="war-room-verdict war-room-verdict-bad">⛔ BLOCKED — the transfer passes through @FireBlockedBy</div>
+                                        <div class="text-secondary war-room-round-hint">🔭 scan for a window that clears it, or aim a different time</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="war-room-verdict war-room-verdict-good">✅ SOLUTION — impact in @FormatDuration(good.TimeOfFlightSeconds) · ±@FormatRange(FireDispersionMeters)</div>
+                                        <div class="text-secondary war-room-round-hint">the map behind this desk draws the whole transfer — nothing flies until you FIRE</div>
+                                    }
+                                }
+                                else if (FireSolution is { Converged: false })
+                                {
+                                    <div class="war-room-verdict war-room-verdict-bad">❌ NO SHOT at +@FormatDuration(FireAimOffsetSeconds)@NeedsAimHint()</div>
+                                }
+                                else
+                                {
+                                    <div class="text-secondary">no solution computed yet — auto-aim, or solve at this aim:</div>
+                                }
+                                <button type="button" class="btn btn-sm btn-outline-light w-100"
+                                        title="Runs the solver at the chosen aim time. Safe — computing never fires."
                                         @onclick="() => OnComputeSolution.InvokeAsync()">
-                                    🎖 COMPUTE &amp; LOCK FIRING SOLUTION
+                                    🧮 SOLVE AT THIS AIM
                                 </button>
+                                <div class="text-secondary war-room-round-hint">cross-system solves grind the whole deck for a minute or more — the shooting method flies real trajectories</div>
                                 <button type="button" class="btn btn-sm btn-outline-info w-100 mt-1"
                                         title="Orbital mechanics decides when the geometry aligns — sweep candidate aim times and solve at the best one"
                                         @onclick="() => OnScanWindows.InvokeAsync()">
                                     🔭 SCAN FOR A WINDOW
                                 </button>
+
+                                <div class="war-room-stage-label mt-2">③ FIRE — the captain's word, then the trigger</div>
+                                int roundsLeft = FireKind == OrdnanceKind.Missile ? MissileAmmo : SlugAmmo;
+                                <button type="button" class="btn btn-danger w-100 fw-bold"
+                                        disabled="@(FireSolution is not { Converged: true } || FireBlockedBy is not null || PulsesAvailable < FirePulseCost || !WeaponsAuthorized || roundsLeft <= 0)"
+                                        title="Commits the computed solution: the barrel locks and the round leaves at the calculated moment (60 s). Scrub during the countdown to abort."
+                                        @onclick="() => OnArmFire.InvokeAsync()">
+                                    🔥 FIRE — round away in 60 s
+                                </button>
+                                @if (!WeaponsAuthorized)
+                                {
+                                    <div class="text-warning war-room-round-hint">⚓ needs the captain's word — desk 0 authorizes a shot, or orders fire at will</div>
+                                }
+                                else if (FireAtWill)
+                                {
+                                    <div class="text-secondary war-room-round-hint">⚓ fire at will stands — the trigger is yours</div>
+                                }
+                                @if (roundsLeft <= 0)
+                                {
+                                    <div class="text-warning war-room-round-hint">magazine empty — resupply dockside below</div>
+                                }
+                                else if (FireSolution is not { Converged: true })
+                                {
+                                    <div class="text-secondary war-room-round-hint">needs a converged solution — a lock you never fire is also a THREAT they can hear about</div>
+                                }
+                                else if (PulsesAvailable < FirePulseCost)
+                                {
+                                    <div class="text-warning war-room-round-hint">not enough reaction mass (@PulsesAvailable/@FirePulseCost pulses) — sail to recharge</div>
+                                }
+                                <button type="button" class="btn btn-sm btn-outline-warning w-100 mt-1"
+                                        disabled="@(!CanWarnInterest || SlugAmmo <= 0)"
+                                        title="A real slug flung wide on purpose — the captain's voice, no authorization needed. Compliant crews heave to."
+                                        @onclick="() => OnWarningShot.InvokeAsync(InterestId)">
+                                    ⚠ WARNING SHOT — across her bow (no authorization needed)
+                                </button>
+                                @if (!CanWarnInterest)
+                                {
+                                    <div class="text-secondary war-room-round-hint">warning shots need weapon range (@FormatRange(EncounterRule.WeaponRangeMeters)) and a crewed hull</div>
+                                }
+                                <div class="d-flex gap-1 mt-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" disabled="@(!Docked)"
+                                            @onclick="() => OnBuyAmmo.InvokeAsync(OrdnanceKind.Slug)">＋6 slugs · 300 cr</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" disabled="@(!Docked)"
+                                            @onclick="() => OnBuyAmmo.InvokeAsync(OrdnanceKind.Missile)">＋2 missiles · 500 cr</button>
+                                </div>
+                                @if (!Docked)
+                                {
+                                    <div class="text-secondary war-room-round-hint">resupply needs a dock — rounds are bought, not conjured</div>
+                                }
                             }
                             @if (FireTip is not null)
                             {
                                 <div class="war-room-tip fst-italic text-secondary mt-1">@FireTip</div>
+                            }
+                        </div>
+                    }
+
+                    @* Rounds in flight (owner: "shots / missiles away is also good to track") —
+                       every live round, its prey, and its clock; the map draws the ride. *@
+                    @if (RoundsInFlight.Count > 0)
+                    {
+                        <div class="war-room-firecontrol mb-2">
+                            <div class="fw-bold">🚀 Rounds in flight (@RoundsInFlight.Count)</div>
+                            @if (PlannedImpactInSeconds is { } eta)
+                            {
+                                <div class="text-info">planned impact in <strong>@FormatDuration(eta)</strong> — hit or miss, you'll hear it</div>
+                            }
+                            @foreach (LiveRound liveRound in RoundsInFlight)
+                            {
+                                <div class="war-room-round-hint">@(liveRound.Kind == "missile" ? "🚀" : "▪") @liveRound.Kind → @liveRound.Target · expires in @FormatDuration(liveRound.ExpiresIn)</div>
                             }
                         </div>
                     }
@@ -452,6 +557,30 @@
     [Parameter] public EventCallback OnComputeSolution { get; set; }
     [Parameter] public EventCallback OnCancelFire { get; set; }
     [Parameter] public EventCallback OnScanWindows { get; set; }
+    [Parameter] public EventCallback OnAutoAim { get; set; }
+    [Parameter] public EventCallback OnArmFire { get; set; }
+    [Parameter] public string? FireBlockedBy { get; set; }
+    [Parameter] public string? StraightWindowText { get; set; }
+    [Parameter] public bool WeaponsAuthorized { get; set; }
+    [Parameter] public bool FireAtWill { get; set; }
+    [Parameter] public int SlugAmmo { get; set; }
+    [Parameter] public int MissileAmmo { get; set; }
+    [Parameter] public bool Docked { get; set; }
+    [Parameter] public bool CanWarnInterest { get; set; }
+    [Parameter] public EventCallback<OrdnanceKind> OnBuyAmmo { get; set; }
+    [Parameter] public IReadOnlyList<LiveRound> RoundsInFlight { get; set; } = [];
+    [Parameter] public double? PlannedImpactInSeconds { get; set; }
+
+    /// <summary>One live round for the in-flight tracker.</summary>
+    public readonly record struct LiveRound(string Kind, string Target, double ExpiresIn);
+
+    /// <summary>What the NO SHOT banner appends: the honest kinematic window, so the verdict
+    /// teaches the fix instead of just refusing (the naive distance/muzzle hint was 25× off
+    /// against a receding target).</summary>
+    private string NeedsAimHint() =>
+        StraightWindowText is not null
+            ? $" — the straight window is {StraightWindowText}"
+            : " — no straight window at any flight time; 🔭 scan for a gravity assist";
 
     // The aim slider is logarithmic: position 0..1000 maps exponentially over
     // [MinAimSeconds, MaxAimOffsetSeconds] so ten-minute knife-fights and forty-five-day
