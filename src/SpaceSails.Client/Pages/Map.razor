@@ -423,7 +423,10 @@
             <div class="desk-content">
                 @if (_activeDesk == ShipDesk.WarRoom)
                 {
-                    <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget" OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
+                    <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget"
+                        FireAimOffsetSeconds="_fireAimOffsetSeconds" FireKind="_fireKind" FireSolution="_fireSolution" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
+                        OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution"
+                        OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
                 }
                 else if (_activeDesk == ShipDesk.Trade)
                 {
@@ -805,8 +808,13 @@
             ? "quiet skies"
             : $"heat {HeatFlames(_heat.Level)} · hunter {(nearest is { } d ? FormatDistance(d) : "—")}";
         // M27: the intercept clock rides the chip — the countdown to the initiative roll.
-        return new(ShipDesk.WarRoom, "⚔", "War room", line, InterceptChipLine());
+        // M28: and the gun deck's lock countdown outranks it.
+        return new(ShipDesk.WarRoom, "⚔", "War room", line, FireChipLine() ?? InterceptChipLine());
     }
+
+    private string? FireChipLine() => FireLocked
+        ? $"🎖 FIRING in {Math.Max(0, (int)(_fireAtSimTime - SimTime))}s"
+        : null;
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData TradeChip()
     {
@@ -1293,6 +1301,36 @@
                     RendererInterop.PlayCue("board");
                     break;
                 }
+
+                // Hunters are fair game too — a holed hunter breaks off the chase for good.
+                if (round.Spent || round.Round.AcrossTheBow)
+                {
+                    continue;
+                }
+
+                for (int h = 0; h < _hunters.Count; h++)
+                {
+                    HunterState hunter = _hunters[h];
+                    if (hunter.BrokenOff || hunter.CaughtPlayer)
+                    {
+                        continue;
+                    }
+
+                    double dtH = round.State.SimTime - tBefore;
+                    Vector2d hBefore = hunter.State.Position - hunter.State.Velocity * Math.Max(0, hunter.State.SimTime - tBefore);
+                    Vector2d hAfter = hBefore + hunter.State.Velocity * dtH;
+                    if (!OrdnanceRule.StepHits(before, round.State.Position, hBefore, hAfter))
+                    {
+                        continue;
+                    }
+
+                    _hunters[h] = hunter with { BrokenOff = true };
+                    round.Spent = true;
+                    PushNewsEvent(NewsWire.NewsEventKind.SlugHit, hunter.Callsign, _nearestBody?.Name);
+                    ShowPulseMessage($"Direct hit — {hunter.Callsign} breaks off, sail holed 🎯");
+                    RendererInterop.PlayCue("board");
+                    break;
+                }
             }
         }
 
@@ -1300,6 +1338,176 @@
     }
 
     private string NpcName(string id) => FindNpc(id)?.Ship.Callsign ?? id;
+
+    // ---- M28 (Sunday PR-C): the Norden moment — gun-deck fire control ----
+    private const double MaxMuzzleSpeed = 8000;      // the mass driver's top charge, m/s
+    private const int SlugPulseCost = 2;             // reaction mass per shot
+    private const int MissilePulseCost = 5;
+    private const double FireLockLeadSeconds = 60;   // solution locks T-60 s — the Norden beat
+
+    private double _fireAimOffsetSeconds = 3600;     // where on the prey's track we aim, from now
+    private OrdnanceKind _fireKind = OrdnanceKind.Slug;
+    private FireControl.Solution? _fireSolution;
+    private double _fireDispersionMeters;
+    private Vector2d _fireAimPoint;
+    private double _fireAtSimTime = double.NaN;      // NaN = nothing locked
+    private string? _fireTargetId;
+    private string? _fireTip;                        // F6: the solver as flight instructor
+    private int _revealedIterations;                 // the CALCULATING… reveal cursor
+    private double _lastRevealMs;
+    private double _slewBearingRad;                  // cosmetic auto-slew after the shot
+    private double _slewUntilSimTime = double.NaN;
+
+    private bool FireLocked => !double.IsNaN(_fireAtSimTime);
+
+    private (Vector2d Position, Vector2d Velocity)? InterestTargetState()
+    {
+        if (_interestTargetId is null)
+        {
+            return null;
+        }
+
+        if (FindNpc(_interestTargetId) is { Active: true, Arrived: false } npc)
+        {
+            return (npc.State.Position, npc.State.Velocity);
+        }
+
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == _interestTargetId)
+            {
+                return (hunter.State.Position, hunter.State.Velocity);
+            }
+        }
+
+        return null;
+    }
+
+    private void SetFireAimOffset(double seconds)
+    {
+        _fireAimOffsetSeconds = Math.Clamp(seconds, 600, 48 * 3600);
+        if (!FireLocked)
+        {
+            _fireSolution = null; // a moved aim point voids an unlocked solution
+        }
+    }
+
+    private void SetFireKind(OrdnanceKind kind) => _fireKind = kind;
+
+    /// <summary>The Norden beat: predict the mark, coast the shooter to T+60 s, run the
+    /// shooting method, and — if it converges — lock, count down, auto-fire.</summary>
+    private void ComputeFiringSolution()
+    {
+        if (_ephemeris is null || _simulator is null || FireLocked || InterestTargetState() is not { } target)
+        {
+            return;
+        }
+
+        var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
+        PredictedPath predicted = PathPredictor.Predict(_ephemeris, observation, null, _fireAimOffsetSeconds);
+        _fireAimPoint = predicted.Samples[^1].Position;
+        double tHit = SimTime + _fireAimOffsetSeconds;
+        _fireDispersionMeters = predicted.HalfWidthAt(tHit);
+
+        ShipState shooterAtFire = _simulator.RunAdaptive(_ship, FireLockLeadSeconds);
+        FireControl.Solution solution = FireControl.Solve(_simulator, shooterAtFire, MaxMuzzleSpeed, _fireAimPoint, tHit);
+        _fireSolution = solution;
+        _fireTargetId = _interestTargetId;
+        _revealedIterations = 0;
+        _lastRevealMs = 0;
+
+        if (solution.Converged)
+        {
+            _fireAtSimTime = SimTime + FireLockLeadSeconds;
+            _fireTip = FireTip(solution);
+            ShowPulseMessage("CALCULATING FIRING SOLUTION…");
+        }
+        else
+        {
+            _fireAtSimTime = double.NaN;
+            _fireTip = null;
+            ShowPulseMessage("No firing solution — beyond the driver's reach at that moment");
+        }
+
+        StateHasChanged();
+    }
+
+    private void CancelFiringSolution()
+    {
+        _fireAtSimTime = double.NaN;
+        _fireSolution = null;
+        ShowPulseMessage("Firing solution scrubbed");
+        StateHasChanged();
+    }
+
+    /// <summary>Auto-fires the locked solution the moment the countdown expires.</summary>
+    private void CheckLockedFire()
+    {
+        if (!FireLocked || _fireSolution is not { } solution || SimTime < _fireAtSimTime)
+        {
+            return;
+        }
+
+        int cost = _fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost;
+        if (cost > _reactionMassPulses)
+        {
+            ShowPulseMessage($"No mass for the shot ({cost} pulses) — solution scrubbed");
+            CancelFiringSolution();
+            return;
+        }
+
+        _reactionMassPulses -= cost;
+        FireOrdnance(_fireKind, solution.LaunchDirection, solution.MuzzleSpeed, _fireTargetId);
+        _slewBearingRad = solution.BearingRad;
+        _slewUntilSimTime = SimTime + 120; // the barrel swings back — control returns
+        ShowPulseMessage($"ROUND AWAY — flight time {FormatDuration(solution.TimeOfFlightSeconds)} 🎯");
+        _fireAtSimTime = double.NaN;
+        _fireSolution = null;
+        StateHasChanged();
+    }
+
+    /// <summary>F6 — the solver as flight instructor: every locked solution teaches the lead.</summary>
+    private string FireTip(FireControl.Solution solution)
+    {
+        Vector2d toAim = _fireAimPoint - _ship.Position;
+        double direct = Math.Atan2(toAim.Y, toAim.X);
+        double lead = (solution.BearingRad - direct) * 180.0 / Math.PI;
+        while (lead > 180) { lead -= 360; }
+        while (lead < -180) { lead += 360; }
+        return $"Gunner's lesson: the round leads the mark by {Math.Abs(lead):F1}° and flies " +
+            $"{FormatDuration(solution.TimeOfFlightSeconds)} — aim where they WILL be, never where " +
+            "they are. Flying your own intercepts works exactly the same way.";
+    }
+
+    /// <summary>Cosmetic auto-slew: the hull swings to the firing bearing through the lock
+    /// countdown, and swings back to prograde after the round leaves.</summary>
+    private double ShipHeadingRad()
+    {
+        double prograde = _ship.Velocity.LengthSquared > 0
+            ? Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X)
+            : 0;
+        double target;
+        double phase;
+        if (FireLocked && _fireSolution is { } solution)
+        {
+            target = solution.BearingRad;
+            phase = Math.Clamp((SimTime - (_fireAtSimTime - FireLockLeadSeconds)) / 30.0, 0, 1);
+        }
+        else if (!double.IsNaN(_slewUntilSimTime) && SimTime < _slewUntilSimTime)
+        {
+            target = _slewBearingRad;
+            phase = Math.Clamp((_slewUntilSimTime - SimTime) / 120.0, 0, 1);
+        }
+        else
+        {
+            return prograde;
+        }
+
+        double diff = (target - prograde) % Math.Tau;
+        if (diff > Math.PI) { diff -= Math.Tau; }
+        if (diff < -Math.PI) { diff += Math.Tau; }
+        return prograde + diff * phase;
+    }
 
     private void DrawOrdnance()
     {
@@ -2249,6 +2457,7 @@
         {
             AccountForFiredNodes();
             CheckArmedInsertion();
+            CheckLockedFire();
         }
 
         StepNpcs();
@@ -2427,7 +2636,15 @@
         {
             _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
         }
-        
+
+        // M28: the CALCULATING FIRING SOLUTION reveal — one Newton iteration per beat.
+        if (_fireSolution is { } fireSolution && _revealedIterations < fireSolution.Trace.Count
+            && highResTimestampMs - _lastRevealMs > 250)
+        {
+            _lastRevealMs = highResTimestampMs;
+            _revealedIterations++;
+        }
+
         if (highResTimestampMs - _lastHudUpdateMs > 200)
         {
             _lastHudUpdateMs = highResTimestampMs;
@@ -2781,6 +2998,17 @@
         {
             _renderer!.DrawCircle(sx, sy, 9f, null, ArcHaloColor);
         }
+
+        // M28: the hull has a facing now — cosmetic on the map, but it SLEWS: toward the
+        // firing bearing through a lock countdown, back to prograde after the round leaves.
+        double heading = ShipHeadingRad();
+        Vector2d barrelTip = shipPosition
+            + new Vector2d(Math.Cos(heading), Math.Sin(heading)) * (12 * _camera.MetersPerPixel);
+        (float bx, float by) = _camera.WorldToScreen(barrelTip);
+        Span<float> barrel = stackalloc float[4];
+        barrel[0] = sx; barrel[1] = sy; barrel[2] = bx; barrel[3] = by;
+        _renderer!.DrawPolyline(barrel, ShipColor with { A = 200 }, 2f);
+
         _renderer!.DrawCircle(sx, sy, 4f, ShipColor, ShipColor);
         _renderer!.DrawText(sx + 8, sy - 6, "Ship", ShipColor);
     }
@@ -4249,6 +4477,14 @@
         }
 
         npc.WarningShotFired = true;
+
+        // M28: the warning shot is a REAL slug now — flung wide on purpose (AcrossTheBow
+        // rounds never hit-check) but genuinely in flight on the map. Same reaction rules.
+        Vector2d toTarget = (npc.State.Position - _ship.Position).Normalized();
+        var wide = new Vector2d(-toTarget.Y, toTarget.X) * 0.03;
+        FireOrdnance(OrdnanceKind.Slug, (toTarget + wide).Normalized(), MaxMuzzleSpeed,
+            npc.Ship.Id, acrossTheBow: true);
+
         ComplianceState compliance = EncounterRule.ComplianceOf(npc.Ship, _heat.Level);
         ShowPulseMessage(compliance == ComplianceState.Stubborn
             ? $"WARNING SHOT ACROSS THE BOW — {npc.Ship.Callsign} answers with a tight-beam call for help, not her colours"
