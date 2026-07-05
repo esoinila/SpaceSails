@@ -5,9 +5,13 @@ feature set as a reviewable chain of PRs, all opened overnight so the owner can 
 in order over morning coffee. The implementer stays on call to rebase and merge each one as
 it's approved.*
 
-**Status: all five PRs open, awaiting approval.** Merge order: **PR-0 → PR-A → PR-B → PR-C
-→ PR-D**, with **PR-E** independent (approve any time). PR-A/B/C/D are a stacked chain —
-each is opened against its predecessor's branch so every review shows only its own diff.
+**Status: all six PRs open, awaiting approval.** PR-0 #54 · PR-A #55 · PR-B #56 · PR-C #57
+· PR-D #58 · PR-E #59. Merge order: **#54 → #55 → #56 → #57 → #58 → #59** — one stacked
+chain; each PR is opened against its predecessor's branch so every review shows only its
+own diff. (Change from the first draft: PR-E moved from "independent, off main" onto the
+chain tip so the parrot's star squawk — "FIRING SOLUTION, CAPTAIN!" — could wire to PR-C's
+lock event directly.) The implementer is on call to retarget/rebase and merge each PR as
+it's approved.
 
 ## The vision, distilled into features
 
