@@ -25,6 +25,50 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
+    @* The chooser (owner: "if many objects under click we let the user choose what they
+       meant"): candidates ranked contacts → depots → bodies, lane and sky scan last. *@
+    @if (_pickMenu is { Count: > 0 } pickList)
+    {
+        <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
+             style="left: @((_pickMenuX + 14).ToString("F0", CultureInfo.InvariantCulture))px; top: @(_pickMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-secondary me-2">Which one?</span>
+                <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close"
+                        @onclick="ClosePickMenu"></button>
+            </div>
+            <div class="d-grid gap-1">
+                @foreach (PickCandidate pick in pickList)
+                {
+                    PickCandidate local = pick;
+                    <button type="button" class="btn btn-sm btn-outline-info text-start py-0"
+                            @onclick="() => OpenPickCandidate(local)">@local.Icon @local.Label</button>
+                }
+            </div>
+        </div>
+    }
+
+    @* 🗺 Layers (owner: "filter what is being shown on the map screens"): per-desk checkbox
+       panel, Gemini-consulted placement — small toggle, never a modal over the sky. *@
+    <div class="map-layers">
+        <button type="button" class="btn btn-sm @(_layersOpen ? "btn-info" : "btn-outline-info")"
+                title="Choose what the map draws on this desk"
+                @onclick="() => _layersOpen = !_layersOpen">🗺 Layers</button>
+        @if (_layersOpen)
+        {
+            <div class="map-layers-panel bg-dark bg-opacity-75 rounded p-2 small shadow text-light">
+                @foreach ((string key, string label, string icon) in MapLayerDefs)
+                {
+                    string layerKey = key;
+                    <label class="d-block map-layers-row">
+                        <input type="checkbox" checked="@LayerVisible(layerKey)"
+                               @onchange="() => ToggleLayer(layerKey)" /> @icon @label
+                    </label>
+                }
+                <div class="text-secondary mt-1">remembered per desk</div>
+            </div>
+        }
+    </div>
+
     @* M24: planet click menu — set the body as THE destination so orbit assist tracks it.
        M29: also live on the Sensors desk, where the map is clickable through the desk layer. *@
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)
@@ -3398,10 +3442,10 @@
         _renderer.BeginFrame(_viewportWidth, _viewportHeight, Background);
 
         DrawStreams();
-        if (_activeDesk == ShipDesk.Sensors)
+        if (LayerVisible("lanes"))
         {
-            // SundaySecondPlan PR-B: the sky shows its state — but only to the sensors chief;
-            // Nav keeps its clean plotting sky.
+            // SundaySecondPlan PR-B, now layer-gated: lanes default ON for the sensors chief
+            // and OFF everywhere else, and every desk can change its mind in 🗺 Layers.
             DrawTradeCorridors();
         }
         DrawShipTrajectory();
@@ -3424,7 +3468,7 @@
         DrawPyramids();
         DrawShuttleRange();
         DrawBeaconGhost();
-        if (_activeDesk == ShipDesk.Sensors)
+        if (_activeDesk == ShipDesk.Sensors && LayerVisible("scans"))
         {
             DrawScanWedge();
             DrawLostSearchRegions();
@@ -4460,14 +4504,36 @@
     private PlanNode? _selectedPlanNode;
 
     // M20: ships and pods are clickable on the map — same effect as picking their traffic row.
-    private bool TrySelectShipAt(double clientX, double clientY)
+    // ---- The unified picker (owner: "hard to click things that are close by"; Gemini
+    // consult: forgiving radius, chooser when several objects stack, lanes always last) ----
+
+    private readonly record struct PickCandidate(char Kind, string Id, string Label, string Icon);
+
+    private List<PickCandidate>? _pickMenu;
+    private double _pickMenuX, _pickMenuY;
+
+    private const double PickRadiusPx = 15;     // the forgiving direct-hit radius
+    private const double PickNearRadiusPx = 28; // near-miss radius for the lane-vs-planet tiebreak
+
+    private void ClosePickMenu()
     {
-        const double hitRadiusPx = 12;
-        double bestSq = hitRadiusPx * hitRadiusPx;
-        string? bestId = null;
+        _pickMenu = null;
+        StateHasChanged();
+    }
+
+    /// <summary>Everything a click at (x, y) could plausibly mean, ranked by likely intent:
+    /// live contacts first, then depots, then bodies (each group nearest-first). Corridors and
+    /// the empty-sky scan are appended by the pointer-up path — never here — so they always
+    /// rank last, per the owner's rule that a lane is the LEAST likely meaning near a planet.</summary>
+    private List<PickCandidate> CollectPointCandidates(double x, double y, double radiusPx)
+    {
+        var found = new List<(PickCandidate Pick, double DistSq, int Rank)>();
+        double r2 = radiusPx * radiusPx;
         foreach (NpcState npc in _npcStates)
         {
             if (!npc.Active || npc.Arrived) continue;
+            bool isDepot = npc.Ship.DepotBodyId is not null;
+            if (isDepot ? !LayerVisible("depots") : !LayerVisible("traffic")) continue;
             // PR-C (the Barnacle case): the dim last-seen marker answers clicks too — its menu
             // just offers a scan instead of live vitals. Nothing visible on the sky is mute.
             Vector2d position;
@@ -4485,27 +4551,153 @@
             }
 
             (float sx, float sy) = _camera.WorldToScreen(position);
-            double dx = clientX - sx, dy = clientY - sy;
-            if (dx * dx + dy * dy < bestSq) { bestSq = dx * dx + dy * dy; bestId = npc.Ship.Id; }
+            double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
+            if (d2 <= r2)
+            {
+                string flavor = isDepot ? "depot" : npc.CurrentlyObserved ? "contact" : "last seen";
+                found.Add((new PickCandidate('S', npc.Ship.Id, $"{npc.Ship.Callsign} · {flavor}", isDepot ? "📦" : "🛰"),
+                    d2, isDepot ? 1 : 0));
+            }
         }
 
-        if (bestId is null)
+        if (_ephemeris is not null)
         {
-            return false;
+            foreach (CelestialBody body in _ephemeris.Bodies)
+            {
+                if (body.ParentId is null) continue;          // the sun is not a destination you orbit
+                if (body.Kind == BodyKind.Station) continue;  // a barge has no Hill sphere — dock, don't orbit
+                (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
+                // Hit within the drawn disc, floored for pinprick planets and capped so a
+                // zoomed-in world doesn't swallow every camera drag on the screen.
+                double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
+                double hit = Math.Max(Math.Clamp(drawnPx, 14, 80), radiusPx);
+                double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
+                if (d2 <= hit * hit)
+                {
+                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · body", "🪐"), d2, 2));
+                }
+            }
         }
 
-        // M29: clicking a contact SELECTS it (scope tracks, prediction pins — unchanged) AND
-        // opens its menu: track with the telescope, mark as war-room interest, read the vitals.
-        if (_selectedTargetId != bestId)
+        return [.. found.OrderBy(f => f.Rank).ThenBy(f => f.DistSq).Select(f => f.Pick)];
+    }
+
+    private void OpenPickMenu(List<PickCandidate> picks, double x, double y)
+    {
+        _pickMenu = picks;
+        _pickMenuX = x;
+        _pickMenuY = y;
+        StateHasChanged();
+    }
+
+    private void OpenPickCandidate(PickCandidate pick)
+    {
+        double x = _pickMenuX, y = _pickMenuY;
+        _pickMenu = null;
+        OpenPickCandidateAt(pick, x, y);
+    }
+
+    private void OpenPickCandidateAt(PickCandidate pick, double x, double y)
+    {
+        switch (pick.Kind)
         {
-            SelectTarget(bestId);
+            case 'S': OpenShipMenuFor(pick.Id, x, y); break;
+            case 'B': OpenBodyMenuFor(pick.Id, x, y); break;
+            case 'C': OpenCorridorMenuFor(pick.Id, x, y); break;
+            default: OpenSkyMenu(x, y); break;
+        }
+    }
+
+    /// <summary>M29: clicking a contact SELECTS it (scope tracks, prediction pins — unchanged)
+    /// AND opens its menu: track with the telescope, mark interest, read the vitals.</summary>
+    private void OpenShipMenuFor(string shipId, double clientX, double clientY)
+    {
+        if (_selectedTargetId != shipId)
+        {
+            SelectTarget(shipId);
         }
 
-        _shipMenuId = bestId;
+        _shipMenuId = shipId;
         _shipMenuX = clientX + 14;
         _shipMenuY = clientY;
         StateHasChanged();
-        return true;
+    }
+
+    private void OpenBodyMenuFor(string bodyId, double clientX, double clientY)
+    {
+        CelestialBody? body = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == bodyId);
+        if (body is null)
+        {
+            return;
+        }
+
+        _bodyMenuBody = body;
+        _bodyMenuX = clientX + 14;
+        _bodyMenuY = clientY;
+        StateHasChanged(); // pointer events don't auto-render (IHandleEvent) — show the menu now
+    }
+
+    private void OpenCorridorMenuFor(string corridorKey, double clientX, double clientY)
+    {
+        // CorridorRegion is a struct: search explicitly rather than FirstOrDefault, whose
+        // "not found" is a degenerate default lane, not null.
+        foreach (CorridorRegion lane in _mapCorridors)
+        {
+            if (CorridorKey(lane) != corridorKey)
+            {
+                continue;
+            }
+
+            _corridorMenuLane = lane;
+            _selectedCorridorKey = corridorKey;
+            _corridorMenuX = clientX + 14;
+            _corridorMenuY = clientY;
+            StateHasChanged();
+            return;
+        }
+    }
+
+    // ---- Map layers (owner: "filter what is being shown… they clutter the view a lot";
+    // Gemini consult: corner checkbox panel, settings remembered per desk) ----
+
+    private static readonly (string Key, string Label, string Icon)[] MapLayerDefs =
+    [
+        ("lanes", "Trade lanes", "🛣"),
+        ("traffic", "Ships & beacons", "🛰"),
+        ("depots", "Depots & stations", "📦"),
+        ("scans", "Sensor overlays", "🔭"),
+    ];
+
+    private readonly Dictionary<ShipDesk, HashSet<string>> _hiddenLayersByDesk = [];
+    private bool _layersOpen;
+
+    private HashSet<string> HiddenLayers
+    {
+        get
+        {
+            if (!_hiddenLayersByDesk.TryGetValue(_activeDesk, out HashSet<string>? hidden))
+            {
+                // Per-desk defaults: the sensors chief starts with the full working sky; every
+                // other desk starts with the lanes off (the clutter the owner flagged). After
+                // that each desk remembers its own picks.
+                hidden = _activeDesk == ShipDesk.Sensors ? [] : ["lanes"];
+                _hiddenLayersByDesk[_activeDesk] = hidden;
+            }
+
+            return hidden;
+        }
+    }
+
+    private bool LayerVisible(string key) => !HiddenLayers.Contains(key);
+
+    private void ToggleLayer(string key)
+    {
+        if (!HiddenLayers.Remove(key))
+        {
+            HiddenLayers.Add(key);
+        }
+
+        StateHasChanged();
     }
 
     // ---- M29: the transponder (the AIS of the solar lanes) ----
@@ -4612,7 +4804,7 @@
         StateHasChanged();
     }
 
-    private bool TrySelectCorridorAt(double clientX, double clientY)
+    private CorridorRegion? CorridorAt(double clientX, double clientY)
     {
         Vector2d world = _camera.ScreenToWorld(clientX, clientY);
         CorridorRegion? best = null;
@@ -4626,17 +4818,7 @@
             }
         }
 
-        if (best is not { } hit)
-        {
-            return false;
-        }
-
-        _corridorMenuLane = hit;
-        _selectedCorridorKey = CorridorKey(hit);
-        _corridorMenuX = clientX + 14;
-        _corridorMenuY = clientY;
-        StateHasChanged();
-        return true;
+        return best;
     }
 
     private void OpenSkyMenu(double clientX, double clientY)
@@ -4847,41 +5029,6 @@
 
     // M24: planets are clickable too — a small menu offers "set destination", so the orbit
     // assist coaches the approach to the body the captain MEANS, not whichever is nearest.
-    private bool TrySelectBodyAt(double clientX, double clientY)
-    {
-        if (_ephemeris is null)
-        {
-            return false;
-        }
-
-        CelestialBody? best = null;
-        double bestSq = double.MaxValue;
-        foreach (CelestialBody body in _ephemeris.Bodies)
-        {
-            if (body.ParentId is null) continue;               // the sun is not a destination you orbit
-            if (body.Kind == BodyKind.Station) continue;       // a barge has no Hill sphere — dock, don't orbit
-            (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
-            // Hit within the drawn disc, floored for pinprick planets and capped so a
-            // zoomed-in world doesn't swallow every camera drag on the screen.
-            double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
-            double hit = Math.Clamp(drawnPx, 14, 80);
-            double dx = clientX - sx, dy = clientY - sy;
-            double d = dx * dx + dy * dy;
-            if (d < hit * hit && d < bestSq) { bestSq = d; best = body; }
-        }
-
-        if (best is null)
-        {
-            return false;
-        }
-
-        _bodyMenuBody = best;
-        _bodyMenuX = clientX + 14;
-        _bodyMenuY = clientY;
-        StateHasChanged(); // pointer events don't auto-render (IHandleEvent) — show the menu now
-        return true;
-    }
-
     // Click a thrust node on the ribbon to select it: highlights its row and jumps the scrub
     // to its time (owner request, M16). Returns true when a node was hit.
     private bool TrySelectNodeAt(double clientX, double clientY)
@@ -5150,6 +5297,12 @@
         foreach (NpcState npc in _npcStates)
         {
             if (npc.Arrived)
+            {
+                continue;
+            }
+
+            // 🗺 Layers: hidden classes neither draw nor answer clicks (the picker checks too).
+            if (npc.Ship.DepotBodyId is not null ? !LayerVisible("depots") : !LayerVisible("traffic"))
             {
                 continue;
             }
@@ -5690,7 +5843,7 @@
     {
         // A click that only dismisses an open menu must not immediately open the next one.
         _suppressClickMenu = _bodyMenuBody is not null || _shipMenuId is not null
-            || _corridorMenuLane is not null || _skyMenuWorld is not null;
+            || _corridorMenuLane is not null || _skyMenuWorld is not null || _pickMenu is not null;
 
         if (_bodyMenuBody is not null)
         {
@@ -5712,19 +5865,29 @@
             CloseSkyMenu();
         }
 
+        if (_pickMenu is not null)
+        {
+            ClosePickMenu();
+        }
+
         if (TrySelectNodeAt(e.OffsetX, e.OffsetY))
         {
             return; // clicked a thrust node: select it, don't start a drag
         }
 
-        if (TrySelectShipAt(e.OffsetX, e.OffsetY))
+        // The unified picker: one candidate under the click acts directly (old behavior); a
+        // stack of neighbors opens the chooser instead of silently taking the topmost.
+        List<PickCandidate> picks = CollectPointCandidates(e.OffsetX, e.OffsetY, PickRadiusPx);
+        if (picks.Count == 1)
         {
-            return; // clicked a contact: select it (scope tracks it, prediction pins to it)
+            OpenPickCandidateAt(picks[0], e.OffsetX, e.OffsetY);
+            return;
         }
 
-        if (TrySelectBodyAt(e.OffsetX, e.OffsetY))
+        if (picks.Count > 1)
         {
-            return; // clicked a planet: open the destination menu
+            OpenPickMenu(picks, e.OffsetX, e.OffsetY);
+            return;
         }
 
         _dragging = true;
@@ -5775,12 +5938,30 @@
             return;
         }
 
-        if (TrySelectCorridorAt(e.OffsetX, e.OffsetY))
+        // Near-miss forgiveness + the owner's rule that a lane is the LEAST likely meaning
+        // near anything else: gather what sits within the loose radius; the lane and the
+        // empty-sky scan join the chooser at the bottom.
+        List<PickCandidate> near = CollectPointCandidates(e.OffsetX, e.OffsetY, PickNearRadiusPx);
+        CorridorRegion? lane = LayerVisible("lanes") ? CorridorAt(e.OffsetX, e.OffsetY) : null;
+        if (near.Count == 0)
         {
-            return; // clicked inside a trade lane: the lane's scan menu
+            if (lane is { } directLane)
+            {
+                OpenCorridorMenuFor(CorridorKey(directLane), e.OffsetX, e.OffsetY);
+                return;
+            }
+
+            OpenSkyMenu(e.OffsetX, e.OffsetY);
+            return;
         }
 
-        OpenSkyMenu(e.OffsetX, e.OffsetY);
+        if (lane is { } nearLane)
+        {
+            near.Add(new PickCandidate('C', CorridorKey(nearLane), nearLane.Name, "🛣"));
+        }
+
+        near.Add(new PickCandidate('K', "", "scan this patch of sky", "🔭"));
+        OpenPickMenu(near, e.OffsetX, e.OffsetY);
     }
 
     // Blazor re-renders the whole page after EVERY event by default; a held movement key
