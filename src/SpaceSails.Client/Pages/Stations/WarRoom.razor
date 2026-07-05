@@ -202,6 +202,16 @@
                                     this round flies at most <strong>@FormatDuration(MaxAimOffsetSeconds)</strong> before it evaporates
                                     @(FireKind == OrdnanceKind.Slug ? "— switch to a missile for the cross-system shot (tiny guidance budget, weeks of patience)" : "— the cross-system round; guidance is tiny, patience is not")
                                 </div>
+                                @* Honest legs vs distance (owner hit NO SOLUTION at 5 M km with a
+                                   16 h aim — the round simply couldn't get there in time; say so
+                                   BEFORE the compute button, in numbers). *@
+                                @if (InterestDistanceMeters is { } targetDistance)
+                                {
+                                    double roundLegs = MaxMuzzleSpeedMps * Math.Max(0, FireAimOffsetSeconds - 60);
+                                    <div class="@(roundLegs < targetDistance ? "text-danger" : "text-secondary") war-room-round-hint">
+                                        round legs ≈ @FormatRange(roundLegs) at this aim · target now @FormatRange(targetDistance)@(roundLegs < targetDistance ? " — aim LONGER in time (the round needs flight time), or 🔭 scan for a window" : "")
+                                    </div>
+                                }
                                 @if (FireSolution is { Converged: false })
                                 {
                                     <div class="text-danger">NO SOLUTION — beyond the driver's reach at that moment; aim nearer in time.</div>
@@ -427,6 +437,8 @@
     // M28: gun-deck fire control — Map.razor owns the state, this desk renders the drama.
     [Parameter] public double FireAimOffsetSeconds { get; set; } = 3600;
     [Parameter] public double MaxAimOffsetSeconds { get; set; } = 86400;
+    [Parameter] public double MaxMuzzleSpeedMps { get; set; } = 8000;
+    [Parameter] public double? InterestDistanceMeters { get; set; }
     [Parameter] public OrdnanceKind FireKind { get; set; }
     [Parameter] public FireControl.Solution? FireSolution { get; set; }
     [Parameter] public double FireDispersionMeters { get; set; }

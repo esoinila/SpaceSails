@@ -77,7 +77,7 @@
 
     @* M29: the contact menu — clicking a ship selects it for the scope AND offers the real
        actions: telescope tracking and the war-room interest (intercept clock, firing solutions). *@
-    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
     {
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
              style="left: @(_shipMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_shipMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
@@ -602,13 +602,15 @@
     @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley or ShipDesk.Captain)
     {
         @* The war room dims instead of blanking (long-shots PR): the live map behind it IS the
-           orrery view for cross-system firing solutions — DrawFirePlan draws the transfer. *@
-        <div class="desk-layer @(_activeDesk == ShipDesk.WarRoom ? "desk-layer-dimmed" : "")">
+           orrery view for cross-system firing solutions — DrawFirePlan draws the transfer.
+           And it's PASSTHROUGH (owner: "the war room map seems dead to mouse clicks") — the
+           gunner pans, zooms and clicks contacts on the sky, same as the sensors chief. *@
+        <div class="desk-layer @(_activeDesk == ShipDesk.WarRoom ? "desk-layer-dimmed desk-layer-passthrough" : "")">
             <div class="desk-content">
                 @if (_activeDesk == ShipDesk.WarRoom)
                 {
                     <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget"
-                        FireAimOffsetSeconds="_fireAimOffsetSeconds" MaxAimOffsetSeconds="MaxFireAimOffsetSeconds" FireKind="_fireKind" FireSolution="_fireSolution" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
+                        FireAimOffsetSeconds="_fireAimOffsetSeconds" MaxAimOffsetSeconds="MaxFireAimOffsetSeconds" MaxMuzzleSpeedMps="MaxMuzzleSpeed" InterestDistanceMeters="InterestDistanceNow()" FireKind="_fireKind" FireSolution="_fireSolution" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
                         OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution" OnScanWindows="ScanFiringWindows"
                         OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
                 }
@@ -2002,6 +2004,11 @@
 
     private bool FireLocked => !double.IsNaN(_fireAtSimTime);
 
+    /// <summary>Current straight-line distance to the interest target — the fire panel's honest
+    /// "can this round even get there" hint.</summary>
+    private double? InterestDistanceNow() =>
+        InterestTargetState() is { } state ? (state.Position - _ship.Position).Length : null;
+
     /// <summary>The interest target's REAL maneuvering ability, for the dispersion cone — a
     /// depot on rails or a mass-driver pod cannot burn at all, so a 70-day shot at one carries
     /// meters-per-second sigma, not the ±dozens-of-AU the default crewed budget implied (the
@@ -2158,6 +2165,11 @@
         _fireAimOffsetSeconds = Math.Clamp(bestOffset, 600, MaxFireAimOffsetSeconds);
         ShowPulseMessage($"Window scan: best geometry at +{FormatFlightTime(bestOffset)} — solving there");
         ComputeFiringSolution();
+
+        if (_fireSolution is { Converged: false } && _fireKind == OrdnanceKind.Slug)
+        {
+            ShowPulseMessage("No slug window inside its 2-day legs — switch to the MISSILE and scan again");
+        }
     }
 
     private static Vector2d SamplePositionAtTime(IReadOnlyList<TrajectorySample> samples, double simTime)
@@ -4345,12 +4357,9 @@
 
     private void AddBurnAtScrub()
     {
-        double t = Math.Floor(ScrubTime);
-        if (t <= _ship.SimTime)
-        {
-            ShowPulseMessage("Can't plan a burn in the past");
-            return;
-        }
+        // Never refuse over the scrub sitting in the past (owner: the control must never be
+        // in a position that blocks the action) — clamp to one minute out and proceed.
+        double t = Math.Max(Math.Floor(ScrubTime), Math.Floor(_ship.SimTime) + 60);
         if (PlannedPulseTotal() + 1 > _reactionMassPulses)
         {
             ShowPulseMessage("Not enough reaction mass");
@@ -4414,12 +4423,8 @@
     // Re-time to the scrub time. Un-stales the node (plan §4: re-timing repairs it).
     private void RetimeToScrub(PlanNode node)
     {
-        double t = Math.Floor(ScrubTime);
-        if (t <= _ship.SimTime)
-        {
-            ShowPulseMessage("Can't plan a burn in the past");
-            return;
-        }
+        // Same clamp as AddBurnAtScrub: a past scrub re-times to one minute out, never errors.
+        double t = Math.Max(Math.Floor(ScrubTime), Math.Floor(_ship.SimTime) + 60);
 
         // If it was stale/executed it re-enters the budget; check it fits.
         int othersTotal = PlannedPulseTotal();
@@ -5036,6 +5041,17 @@
                 seen = true;
             }
 
+            // The living sky (owner): honest traffic runs LIT, and a transponder is a radio
+            // broadcast — heard across AU, no optics needed. This is why the map is never
+            // "empty space": every civilian beacon paints its ship. Off-the-books haulers
+            // stay exactly as dark as their hulls.
+            if (!seen && npc.Ship.PublishesTimetable
+                && (npc.State.Position - _ship.Position).Length <= TransponderRule.CivilianBeaconRangeMeters)
+            {
+                obs = new Observation(npc.Ship.Id, _ship.SimTime, npc.State.Position, npc.State.Velocity);
+                seen = true;
+            }
+
             if (seen)
             {
                 npc.LastObservation = obs;
@@ -5048,6 +5064,49 @@
                 }
             }
         }
+
+        RefillTraffic();
+    }
+
+    // ---- The world keeps living (owner: the sky must never empty) ----
+
+    private const int MinLiveTraffic = 6;
+    private int _trafficWave;
+    private double _lastRefillCheckSimTime;
+
+    /// <summary>When enough ships have arrived/despawned that the sky is thinning, plan a
+    /// fresh deterministic wave relative to NOW — new mid-flight haulers and scheduled
+    /// departures, plus a couple of pods so the milk run never dries up.</summary>
+    private void RefillTraffic()
+    {
+        if (_ephemeris is null || SimTime - _lastRefillCheckSimTime < 3600)
+        {
+            return;
+        }
+
+        _lastRefillCheckSimTime = SimTime;
+        int live = 0;
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.DepotBodyId is null && !npc.Arrived)
+            {
+                live++;
+            }
+        }
+
+        if (live >= MinLiveTraffic)
+        {
+            return;
+        }
+
+        _trafficWave++;
+        IReadOnlyList<NpcShip> ships = TrafficSchedule.GenerateWave(
+            _ephemeris, seed: 42UL + (ulong)_trafficWave * 1000, count: 6, SimTime, _trafficWave);
+        IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePodsWave(
+            _ephemeris, seed: 43UL + (ulong)_trafficWave * 1000, count: 2, SimTime, _trafficWave);
+        _npcStates = _npcStates
+            .Concat(ships.Concat(pods).Select(s => new NpcState { Ship = s }))
+            .ToArray();
     }
 
     // Re-solve the prediction cone for the selected target on a fresh observation, a pin change, or
