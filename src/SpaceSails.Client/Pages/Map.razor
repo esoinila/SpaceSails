@@ -849,7 +849,18 @@
             return new(ShipDesk.Trade, "🛰", "Trade", $"drones → {name} {(int)(_localTradeProgress * 100)}%");
         }
 
-        return new(ShipDesk.Trade, "🛰", "Trade", $"{_credits:N0} cr", $"{_cargoUnits}/{CargoCapacity} cargo");
+        // M29: advertise the opportunity — partners the shuttles could reach RIGHT NOW.
+        int tradable = 0;
+        foreach (CommerceRule.LocalContact c in LocalContacts())
+        {
+            if ((c.Actions & CommerceRule.ActionKind.Trade) != 0 && TradeModeFor(c) != CommerceRule.TradeMode.None)
+            {
+                tradable++;
+            }
+        }
+
+        return new(ShipDesk.Trade, "🛰", "Trade", $"{_credits:N0} cr", $"{_cargoUnits}/{CargoCapacity} cargo",
+            tradable > 0 ? $"🚀 {tradable} partner{(tradable == 1 ? "" : "s")} in shuttle reach" : null);
     }
 
     /// <summary>One line of the Trade desk's cargo manifest panel (PR-13): what's actually in the
@@ -2834,6 +2845,7 @@
         DrawHunters();
         DrawOrdnance();
         DrawPyramids();
+        DrawShuttleRange();
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -3195,6 +3207,25 @@
                 RgbaColor labelColor = body.IsHaven ? HavenLabelColor : LabelColor;
                 _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, labelColor);
             }
+        }
+    }
+
+    // M29: situational awareness for trading — the shuttle-range ring around the ship,
+    // visible whenever the zoom makes it readable. A partner inside the ring is a deal.
+    private void DrawShuttleRange()
+    {
+        float radiusPx = (float)(CommerceRule.ShuttleRangeMeters / _camera.MetersPerPixel);
+        if (radiusPx < 16 || radiusPx > 4000)
+        {
+            return;
+        }
+
+        (float sx, float sy) = _camera.WorldToScreen(_ship.Position);
+        _renderer!.DrawCircle(sx, sy, radiusPx, null, LocalContactRingColor with { A = 60 }, 1f);
+        if (radiusPx > 60)
+        {
+            _renderer.DrawText(sx, sy - radiusPx - 6, "shuttle range", LocalContactRingColor with { A = 150 },
+                "10px monospace", TextAlign.Center);
         }
     }
 
@@ -5087,12 +5118,43 @@
 
     private IReadOnlyList<CommerceRule.LocalContact> LocalContacts()
     {
-        if (_ephemeris is null || LocalSpaceBodyId is not { } bodyId)
+        if (_ephemeris is null)
         {
             return [];
         }
 
-        return CommerceRule.ContactsAt(_ephemeris, LocalShips(), SimTime, bodyId);
+        // M29: what's "here" (keyed to the context body) UNION everything the shuttles could
+        // reach — a slow pass millions of km from a station is a real trading opportunity now.
+        var contacts = new List<CommerceRule.LocalContact>();
+        var seen = new HashSet<string>();
+        if (LocalSpaceBodyId is { } bodyId)
+        {
+            foreach (CommerceRule.LocalContact c in CommerceRule.ContactsAt(_ephemeris, LocalShips(), SimTime, bodyId))
+            {
+                if (seen.Add(c.Id))
+                {
+                    contacts.Add(c);
+                }
+            }
+        }
+
+        foreach (CommerceRule.LocalContact c in CommerceRule.ContactsWithinShuttleRange(_ephemeris, LocalShips(), SimTime, _ship))
+        {
+            if (seen.Add(c.Id))
+            {
+                contacts.Add(c);
+            }
+        }
+
+        return contacts;
+    }
+
+    // M29: the tier the deal would move by, for a given contact — chip, badge, button and
+    // break-off all agree because they all ask this.
+    private CommerceRule.TradeMode TradeModeFor(CommerceRule.LocalContact contact)
+    {
+        string? partnerOrbitBodyId = contact.Kind == CommerceRule.LocalContactKind.Ship ? null : LocalSpaceBodyId;
+        return CommerceRule.Classify(_ship, contact.Position, contact.Velocity, _orbitedBodyId, partnerOrbitBodyId);
     }
 
     private void StartLocalTrade(string contactId)
@@ -5104,7 +5166,15 @@
 
         _localTradeTargetId = contactId;
         _localTradeProgress = 0;
-        _localTradeMessage = "Drones away — cargo transfer in progress";
+        CommerceRule.TradeMode mode = CommerceRule.TradeMode.DroneMatch;
+        foreach (CommerceRule.LocalContact c in LocalContacts())
+        {
+            if (c.Id == contactId) { mode = TradeModeFor(c); break; }
+        }
+
+        _localTradeMessage = mode == CommerceRule.TradeMode.Shuttle
+            ? "Shuttles away — long corridor, cargo transfer in progress 🚀"
+            : "Drones away — cargo transfer in progress";
     }
 
     private void CancelLocalTrade(string message)
@@ -5142,16 +5212,17 @@
             return;
         }
 
-        string? partnerOrbitBodyId = contact.Kind == CommerceRule.LocalContactKind.Ship ? null : LocalSpaceBodyId;
-        if (!CommerceRule.CanTrade(_ship, contact.Position, contact.Velocity, _orbitedBodyId, partnerOrbitBodyId))
+        CommerceRule.TradeMode mode = TradeModeFor(contact);
+        if (mode == CommerceRule.TradeMode.None)
         {
-            CancelLocalTrade("Course match lost — drones recalled, transfer aborted");
+            CancelLocalTrade("Envelope lost — shuttles and drones recalled, transfer aborted");
             return;
         }
 
+        bool shuttle = mode == CommerceRule.TradeMode.Shuttle;
         double relSpeed = (_ship.Velocity - contact.Velocity).Length;
         double distance = (_ship.Position - contact.Position).Length;
-        double seconds = CommerceRule.DroneTransferSeconds(relSpeed, distance, _cargoUnits);
+        double seconds = CommerceRule.TransferSeconds(mode, relSpeed, distance, _cargoUnits);
         _localTradeProgress += Math.Clamp(dtRealSeconds, 0, 0.1) / seconds;
 
         if (_localTradeProgress >= 1)
@@ -5164,13 +5235,13 @@
             _cargoByClass.Clear();
             _localTradeTargetId = null;
             _localTradeProgress = 0;
-            _localTradeMessage = $"Drones delivered {units} units for {value:N0} credits";
+            _localTradeMessage = $"{(shuttle ? "Shuttles" : "Drones")} delivered {units} units for {value:N0} credits";
             RendererInterop.PlayCue("board");
             AdvanceTutorial(4); // step 5: first sale (same milestone the dock's SellCargo hits)
         }
         else
         {
-            _localTradeMessage = $"Drones ferrying — {(int)(_localTradeProgress * 100)}%";
+            _localTradeMessage = $"{(shuttle ? "Shuttles flying the corridor" : "Drones ferrying")} — {(int)(_localTradeProgress * 100)}%";
         }
     }
 }

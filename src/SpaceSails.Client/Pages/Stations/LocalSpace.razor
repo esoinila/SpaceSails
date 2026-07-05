@@ -15,31 +15,49 @@
         }
     </div>
     <div class="card-body p-2 small @(FullScreen ? "local-space-desk-body" : "")">
-        @if (BodyName is null)
+        @if (Contacts.Count == 0)
         {
-            <div class="text-secondary">Not near a body — get into orbit or close range to see what's here.</div>
-        }
-        else if (Contacts.Count == 0)
-        {
-            <div class="text-secondary">Nothing else orbits here.</div>
+            <div class="text-secondary">Nothing here and nothing in shuttle reach (@FormatDistance(CommerceRule.ShuttleRangeMeters)) — close on a station, depot or haven.</div>
         }
         else
         {
+            <div class="text-secondary mb-2">
+                Shuttle reach @FormatDistance(CommerceRule.ShuttleRangeMeters) at ≤@((CommerceRule.ShuttleMaxRelativeSpeed / 1000).ToString("F0")) km/s rel ·
+                drones want ≤@FormatDistance(CommerceRule.CourseMatchDistanceMeters) and ≤@((CommerceRule.CourseMatchMaxRelativeSpeed / 1000).ToString("F0")) km/s
+            </div>
             <ul class="list-unstyled mb-0 local-space-list @(FullScreen ? "local-space-list-grid" : "")">
-                @foreach (CommerceRule.LocalContact contact in Contacts.OrderBy(c => c.DistanceMeters))
+                @foreach (CommerceRule.LocalContact contact in Contacts.OrderBy(c => ShipDistance(c)))
                 {
                     bool isActiveTrade = ActiveTradeTargetId == contact.Id;
-                    bool canTrade = CanTradeWith(contact);
+                    CommerceRule.TradeMode mode = TradeModeFor(contact);
+                    bool canTrade = mode != CommerceRule.TradeMode.None;
+                    double shipDistance = ShipDistance(contact);
+                    double relSpeed = (ShipVelocity - contact.Velocity).Length;
                     <li class="local-space-row mb-2 pb-2">
                         <div class="d-flex align-items-center gap-1">
                             <span class="local-space-icon">@Icon(contact.Kind)</span>
                             <span class="flex-grow-1">@contact.Name</span>
-                            <span class="text-secondary">@FormatDistance(contact.DistanceMeters)</span>
+                            <span class="text-secondary">@FormatDistance(shipDistance) · rel @((relSpeed / 1000).ToString("F1")) km/s</span>
                         </div>
                         <div class="d-flex align-items-center gap-1 mt-1">
                             @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0)
                             {
-                                <span class="badge bg-success">Trade</span>
+                                @* M29: the tier badge IS the situational awareness — how would this deal move? *@
+                                @switch (mode)
+                                {
+                                    case CommerceRule.TradeMode.SameOrbit:
+                                        <span class="badge bg-success">⚓ same orbit</span>
+                                        break;
+                                    case CommerceRule.TradeMode.DroneMatch:
+                                        <span class="badge bg-success">🛸 drone match</span>
+                                        break;
+                                    case CommerceRule.TradeMode.Shuttle:
+                                        <span class="badge bg-info text-dark">🚀 shuttle reach@(CargoUnits > 0 ? $" · ~{EstimateMinutes(mode, relSpeed, shipDistance)} min" : "")</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-secondary">out of reach</span>
+                                        break;
+                                }
                             }
                             @if ((contact.Actions & CommerceRule.ActionKind.Fence) != 0)
                             {
@@ -51,18 +69,18 @@
                             }
                             @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0 && !isActiveTrade)
                             {
-                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 ms-auto"
+                                <button type="button" class="btn btn-sm @(mode == CommerceRule.TradeMode.Shuttle ? "btn-info" : "btn-outline-info") py-0 px-1 ms-auto"
                                         disabled="@(CargoValue <= 0 || !canTrade || ActiveTradeTargetId is not null)"
-                                        title="@(canTrade ? "" : "Out of range — get in orbit here or match course")"
+                                        title="@(canTrade ? "" : $"Out of reach — close within {FormatDistance(CommerceRule.ShuttleRangeMeters)} under {CommerceRule.ShuttleMaxRelativeSpeed / 1000:F0} km/s rel")"
                                         @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
-                                    Trade
+                                    @(mode == CommerceRule.TradeMode.Shuttle ? "Send shuttles" : "Send drones")
                                 </button>
                             }
                         </div>
                         @if (isActiveTrade)
                         {
                             <div class="mt-1">
-                                <div class="text-info">@(TradeMessage ?? "Drones ferrying…")</div>
+                                <div class="text-info">@(TradeMessage ?? "Transfer in progress…")</div>
                                 <div class="progress local-space-progress">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
                                          style="width:@(((int)(TradeProgress * 100)))%"></div>
@@ -94,15 +112,22 @@
     [Parameter] public EventCallback<string> OnStartTrade { get; set; }
 
     // Depots/stations/havens are on rails at ContextBodyId — definitionally "in orbit" there, so
-    // they satisfy CommerceRule.CanTrade's same-body case whenever the player is bound to that
-    // body too. A passing Ship contact isn't assumed to share an orbit — it only trades when it's
-    // genuinely course-matched (or the player later boards it, elsewhere).
-    private bool CanTradeWith(CommerceRule.LocalContact contact)
+    // they satisfy CommerceRule's same-body case whenever the player is bound to that body too.
+    // A passing Ship contact isn't assumed to share an orbit — it only trades when genuinely
+    // course-matched or (M29) inside shuttle reach.
+    private CommerceRule.TradeMode TradeModeFor(CommerceRule.LocalContact contact)
     {
         string? partnerOrbitBodyId = contact.Kind == CommerceRule.LocalContactKind.Ship ? null : ContextBodyId;
         var player = new ShipState(ShipPosition, ShipVelocity, 0);
-        return CommerceRule.CanTrade(player, contact.Position, contact.Velocity, OrbitBodyId, partnerOrbitBodyId);
+        return CommerceRule.Classify(player, contact.Position, contact.Velocity, OrbitBodyId, partnerOrbitBodyId);
     }
+
+    private double ShipDistance(CommerceRule.LocalContact contact) =>
+        (contact.Position - ShipPosition).Length;
+
+    private int EstimateMinutes(CommerceRule.TradeMode mode, double relSpeed, double distance) =>
+        Math.Max(1, (int)Math.Ceiling(
+            CommerceRule.TransferSeconds(mode, relSpeed, distance, Math.Max(1, CargoUnits)) / 60));
 
     private static string Icon(CommerceRule.LocalContactKind kind) => kind switch
     {
