@@ -97,6 +97,25 @@
             </div>
         </div>
 
+        @if (FullScreen && Opportunities.Count > 0)
+        {
+            @* M29: the cover-story instrument — what the CURRENT plotted course conveniently
+               brushes by. Fly somewhere innocent; the sensors quietly note who drifts close. *@
+            <div class="sensors-opportunity-box mt-2">
+                <div class="fw-bold">🧭 En-route passes — this course brushes by:</div>
+                @foreach (CourseOpportunity opp in Opportunities)
+                {
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>@(opp.Tracked ? "📡 " : "")@opp.Callsign</span>
+                        <span class="text-secondary">min @FormatWallDistance(opp.MinDistance) @FormatOppDuration(opp.MinSimTime - SimTime)</span>
+                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                title="War-room target of interest — intercept clock & firing solutions"
+                                @onclick="() => OnSetInterest.InvokeAsync(opp.Id)">🎯</button>
+                    </div>
+                }
+            </div>
+        }
+
         @if (FullScreen && RadarActive)
         {
             <div class="sensors-radar-box mt-2">
@@ -186,6 +205,9 @@
                             <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
                             <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
                             <div class="d-flex justify-content-end gap-1 mt-1">
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                        title="War-room target of interest — a DIFFERENT slot than the nav destination"
+                                        @onclick="() => OnSetInterest.InvokeAsync(entry.ShipId)" @onclick:stopPropagation="true">🎯</button>
                                 <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
                                         @onclick="() => ConfirmNow(entry.ShipId)" @onclick:stopPropagation="true">Confirm</button>
                                 <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
@@ -239,6 +261,12 @@
     /// silhouette and detail line for a tracked target, same as Map.razor's own scope inset.</summary>
     public readonly record struct TrackingCandidate(string Id, string Callsign, ShipState State, bool IsPod = false, string? CargoDetail = null, bool IsThreat = false);
 
+    /// <summary>M29: a known contact whose predicted coast the plotted course passes near —
+    /// the target-of-opportunity row (the cover-story seed: fly an innocent course, watch who
+    /// drifts conveniently close along it).</summary>
+    public readonly record struct CourseOpportunity(
+        string Id, string Callsign, double MinDistance, double MinSimTime, bool Tracked);
+
     [Parameter, EditorRequired] public double SimTime { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipVelocity { get; set; }
@@ -249,6 +277,8 @@
     [Parameter] public bool Visible { get; set; }
     [Parameter] public bool FullScreen { get; set; }
     [Parameter] public bool RadarActive { get; set; }
+    [Parameter] public IReadOnlyList<CourseOpportunity> Opportunities { get; set; } = [];
+    [Parameter] public EventCallback<string> OnSetInterest { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<bool> OnRadarToggle { get; set; }
     [Parameter] public EventCallback<double> OnZoomMap { get; set; }
@@ -524,6 +554,9 @@
             isPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
             name, candidate?.CargoDetail, position, velocity, 0, WallTargetColor, false);
     }
+
+    private static string FormatOppDuration(double seconds) =>
+        seconds < 3600 ? "now" : seconds < 86400 ? $"in {seconds / 3600:F0} h" : $"in {seconds / 86400:F0} d";
 
     private static string FormatWallDistance(double meters)
     {

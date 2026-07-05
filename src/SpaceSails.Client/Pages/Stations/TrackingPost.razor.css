@@ -245,3 +245,13 @@
     background: #7dffb0;
     border-radius: 2px;
 }
+
+/* M29: the en-route opportunities card — the cover-story instrument. */
+.sensors-opportunity-box {
+    border: 1px solid rgba(255, 210, 80, 0.45);
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.82rem;
+    max-height: 9rem;
+    overflow-y: auto;
+}
