@@ -4552,17 +4552,20 @@
             if (npc.Ship.DepotBodyId is not null)
             {
                 // Depots ride rails: pure function of sim time, no integration, no drift.
+                // And they never "arrive" — a depot's destination is its own host body, and
+                // every inner-system depot orbits well inside NpcDespawnRadius, so letting the
+                // despawn check below see one killed it on the first tick (the bug behind the
+                // empty starting sky: Earth's depot died at birth while Jupiter's survived).
                 npc.State = TrafficSchedule.DepotState(
                     npc.Ship.Id, npc.Ship.DepotBodyId, npc.Ship.DepotOrbitRadius, npc.Ship.DepotPhase,
                     _ephemeris!, _ship.SimTime);
+                continue;
             }
-            else
+
+            while (npc.State.SimTime < _ship.SimTime)
             {
-                while (npc.State.SimTime < _ship.SimTime)
-                {
-                    // M28: a slug through the sail ends all burns — the hulk drifts ballistic.
-                    npc.State = _npcSimulator!.Step(npc.State, npc.Disabled ? null : npc.Ship.Plan);
-                }
+                // M28: a slug through the sail ends all burns — the hulk drifts ballistic.
+                npc.State = _npcSimulator!.Step(npc.State, npc.Disabled ? null : npc.Ship.Plan);
             }
 
             // Despawn: past its last planned node and parked within tolerance of the destination body.

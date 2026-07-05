@@ -57,6 +57,32 @@ public class TrafficAndPredictionTests
     }
 
     [Fact]
+    public void TrafficSchedule_ShortRouteScenario_StillSpawnsShipsEnRouteAtTimeZero()
+    {
+        // The world does not wait for the player: even a scenario whose every route is a short
+        // inner-system hop (transfer ≪ the 20–70 day mid-flight lead) must have ships already
+        // flying at t=0. The unclamped lead used to put "mid-flight" departures in the FUTURE.
+        var ephemeris = Sol();
+        var traffic = new SpaceSails.Contracts.TrafficDefinition
+        {
+            Routes =
+            [
+                new SpaceSails.Contracts.RouteDefinition { From = "earth", To = "mars", Cargo = "Ice" },
+                new SpaceSails.Contracts.RouteDefinition { From = "mars", To = "earth", Cargo = "Machinery" },
+            ],
+        };
+
+        IReadOnlyList<NpcShip> ships = TrafficSchedule.Generate(ephemeris, seed: 42, count: 8, traffic);
+
+        var midFlight = ships.Where(s => s.DepartureTime < 0).ToList();
+        Assert.True(midFlight.Count >= 4, $"Expected the mid-flight 60% to be genuinely en route, got {midFlight.Count}.");
+        foreach (NpcShip ship in midFlight)
+        {
+            Assert.InRange(ship.ActivationTime, 0, 7300); // catch-up (dt=2h) lands just past t=0
+        }
+    }
+
+    [Fact]
     public void RoutePlanner_InnerSystemRoute_ReachesDestination()
     {
         var ephemeris = Sol();
