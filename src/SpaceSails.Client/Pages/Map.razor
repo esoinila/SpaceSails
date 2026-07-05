@@ -618,7 +618,7 @@
                        (what's nearby, what you can do at the dock, what's in the hold) is visible
                        at once instead of stacked behind pop-ups. *@
                     <div class="desk-trade-grid">
-                        <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="true" FullScreen="true" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" OnStartTrade="StartLocalTrade" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                        <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="true" FullScreen="true" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" Credits="_credits" HoldSpaceUnits="CargoCapacity - _cargoUnits" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" OnStartTrade="StartLocalTrade" OnStartBuy="StartLocalBuy" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
                         <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
                             <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
                                 <span class="fw-bold small">Dock market</span>
@@ -1409,6 +1409,7 @@
         public bool CurrentlyObserved;   // seen in the most recent sweep
         public Observation? LastObservation;
         public int ObservationCount;
+        public int CargoSoldToPlayer;    // units the player has BOUGHT (honest trade) — depletes the manifest
         public bool WarningShotFired;    // PR-7: heaves to (if compliant) — faster boarding
         public bool Bribed;              // PR-7: compliant AND no heat generated when robbed
         public bool Disabled;            // M28: slug through the sail — no more burns, drifts ballistic
@@ -5963,11 +5964,17 @@
                 continue;
             }
 
-            ships.Add(new CommerceRule.LocalShip(npc.Ship.Id, npc.Ship.Callsign, npc.State, npc.Ship.DepotBodyId));
+            ships.Add(new CommerceRule.LocalShip(npc.Ship.Id, npc.Ship.Callsign, npc.State, npc.Ship.DepotBodyId,
+                npc.Ship.CargoClass, RemainingStock(npc)));
         }
 
         return ships;
     }
+
+    /// <summary>What a post still has for sale: its manifest minus what the player has bought,
+    /// zero once boarded (plundered empty is empty).</summary>
+    private static int RemainingStock(NpcState npc) =>
+        npc.Boarded ? 0 : Math.Max(0, npc.Ship.CargoUnits - npc.CargoSoldToPlayer);
 
     private IReadOnlyList<CommerceRule.LocalContact> LocalContacts()
     {
@@ -6012,12 +6019,20 @@
 
     private void StartLocalTrade(string contactId)
     {
-        if (_cargoValue <= 0 || _localTradeTargetId is not null)
+        if (_localTradeTargetId is not null)
         {
             return;
         }
 
+        if (_cargoValue <= 0)
+        {
+            // The button used to silently no-op here — never a mute click again.
+            ShowPulseMessage("Hold empty — nothing to sell. Buy from a post or board a prize first.");
+            return;
+        }
+
         _localTradeTargetId = contactId;
+        _localTradeIsBuy = false;
         _localTradeProgress = 0;
         CommerceRule.TradeMode mode = CommerceRule.TradeMode.DroneMatch;
         foreach (CommerceRule.LocalContact c in LocalContacts())
@@ -6028,6 +6043,61 @@
         _localTradeMessage = mode == CommerceRule.TradeMode.Shuttle
             ? "Shuttles away — long corridor, cargo transfer in progress 🚀"
             : "Drones away — cargo transfer in progress";
+    }
+
+    // ---- Buying (owner: "How do I buy anything from Earth Depot?"): the honest other half.
+    // Same transfer clock, envelope rules and break-off as selling; the units and the price
+    // are locked when the shuttles leave, credits change hands when they're back. ----
+    private bool _localTradeIsBuy;
+    private int _localBuyUnits;
+    private int _localBuyCostCr;
+    private string _localBuyClass = "";
+
+    private void StartLocalBuy(string contactId)
+    {
+        if (_localTradeTargetId is not null)
+        {
+            return;
+        }
+
+        CommerceRule.LocalContact? contact = null;
+        foreach (CommerceRule.LocalContact c in LocalContacts())
+        {
+            if (c.Id == contactId) { contact = c; break; }
+        }
+
+        if (contact is not { CargoClass: { } cargoClass, CargoUnits: > 0 } post)
+        {
+            ShowPulseMessage("Nothing left on that post's manifest");
+            return;
+        }
+
+        CommerceRule.TradeMode mode = TradeModeFor(post);
+        if (mode == CommerceRule.TradeMode.None)
+        {
+            ShowPulseMessage($"Out of reach — close within {FormatDistance(CommerceRule.ShuttleRangeMeters)} under {CommerceRule.ShuttleMaxRelativeSpeed / 1000:F0} km/s rel");
+            return;
+        }
+
+        int units = CommerceRule.MaxBuyableUnits(
+            mode, post.CargoUnits, CargoCapacity - _cargoUnits, _credits, CargoMarket.UnitValue(cargoClass));
+        if (units <= 0)
+        {
+            ShowPulseMessage(CargoCapacity - _cargoUnits <= 0
+                ? "Hold full — sell or fence something first"
+                : "Not enough credits for even one unit plus the ferry fee");
+            return;
+        }
+
+        _localTradeTargetId = contactId;
+        _localTradeIsBuy = true;
+        _localTradeProgress = 0;
+        _localBuyUnits = units;
+        _localBuyClass = cargoClass;
+        _localBuyCostCr = CommerceRule.BuyCostCr(mode, units, CargoMarket.UnitValue(cargoClass));
+        _localTradeMessage = mode == CommerceRule.TradeMode.Shuttle
+            ? $"Shuttles away — buying {units}u {cargoClass} for {_localBuyCostCr:N0} cr 🚀"
+            : $"{(mode == CommerceRule.TradeMode.SameOrbit ? "Dockside crew" : "Drones")} loading {units}u {cargoClass} — {_localBuyCostCr:N0} cr";
     }
 
     private void CancelLocalTrade(string message)
@@ -6047,7 +6117,7 @@
             return;
         }
 
-        if (_ephemeris is null || _cargoValue <= 0)
+        if (_ephemeris is null || (!_localTradeIsBuy && _cargoValue <= 0))
         {
             CancelLocalTrade("Drone transfer aborted");
             return;
@@ -6075,26 +6145,76 @@
         bool shuttle = mode == CommerceRule.TradeMode.Shuttle;
         double relSpeed = (_ship.Velocity - contact.Velocity).Length;
         double distance = (_ship.Position - contact.Position).Length;
-        double seconds = CommerceRule.TransferSeconds(mode, relSpeed, distance, _cargoUnits);
+        int transferUnits = _localTradeIsBuy ? _localBuyUnits : _cargoUnits;
+        double seconds = CommerceRule.TransferSeconds(mode, relSpeed, distance, transferUnits);
         _localTradeProgress += Math.Clamp(dtRealSeconds, 0, 0.1) / seconds;
 
         if (_localTradeProgress >= 1)
         {
-            int units = _cargoUnits;
-            int value = _cargoValue;
-            _credits += value;
-            _cargoUnits = 0;
-            _cargoValue = 0;
-            _cargoByClass.Clear();
+            if (_localTradeIsBuy)
+            {
+                CompleteLocalBuy(contact, mode);
+            }
+            else
+            {
+                CompleteLocalSell(mode, shuttle);
+            }
+
             _localTradeTargetId = null;
             _localTradeProgress = 0;
-            _localTradeMessage = $"{(shuttle ? "Shuttles" : "Drones")} delivered {units} units for {value:N0} credits";
             RendererInterop.PlayCue("board");
-            AdvanceTutorial(4); // step 5: first sale (same milestone the dock's SellCargo hits)
         }
         else
         {
-            _localTradeMessage = $"{(shuttle ? "Shuttles flying the corridor" : "Drones ferrying")} — {(int)(_localTradeProgress * 100)}%";
+            _localTradeMessage = _localTradeIsBuy
+                ? $"{(shuttle ? "Shuttles hauling" : "Loading")} {_localBuyUnits}u {_localBuyClass} — {(int)(_localTradeProgress * 100)}%"
+                : $"{(shuttle ? "Shuttles flying the corridor" : "Drones ferrying")} — {(int)(_localTradeProgress * 100)}%";
         }
+    }
+
+    private void CompleteLocalSell(CommerceRule.TradeMode mode, bool shuttle)
+    {
+        int units = _cargoUnits;
+        int payout = CommerceRule.SellPayoutCr(mode, units, _cargoValue);
+        int fee = CommerceRule.TransferFeeCr(mode, units);
+        _credits += payout;
+        _cargoUnits = 0;
+        _cargoValue = 0;
+        _cargoByClass.Clear();
+        _localTradeMessage = fee > 0
+            ? $"{(shuttle ? "Shuttles" : "Drones")} delivered {units} units — {payout:N0} cr after the {fee:N0} cr ferry fee"
+            : $"Delivered {units} units for {payout:N0} credits";
+        AdvanceTutorial(4); // step 5: first sale (same milestone the dock's SellCargo hits)
+    }
+
+    private void CompleteLocalBuy(CommerceRule.LocalContact contact, CommerceRule.TradeMode mode)
+    {
+        // Re-check at handover: credits may have been spent and the manifest may have been
+        // plundered while the shuttles were flying. Take what is still takeable, pay for that.
+        NpcState? seller = FindNpc(contact.Id);
+        int stock = seller is null ? contact.CargoUnits : RemainingStock(seller);
+        int units = CommerceRule.MaxBuyableUnits(
+            mode, Math.Min(stock, _localBuyUnits), CargoCapacity - _cargoUnits, _credits,
+            CargoMarket.UnitValue(_localBuyClass));
+        if (units <= 0)
+        {
+            _localTradeMessage = "Shuttles returned empty — the deal fell through at handover";
+            return;
+        }
+
+        int cost = CommerceRule.BuyCostCr(mode, units, CargoMarket.UnitValue(_localBuyClass));
+        _credits -= cost;
+        _cargoUnits += units;
+        _cargoValue += units * CargoMarket.UnitValue(_localBuyClass);
+        _cargoByClass[_localBuyClass] = _cargoByClass.GetValueOrDefault(_localBuyClass) + units;
+        if (seller is not null)
+        {
+            seller.CargoSoldToPlayer += units;
+        }
+
+        int fee = CommerceRule.TransferFeeCr(mode, units);
+        _localTradeMessage = fee > 0
+            ? $"Bought {units}u {_localBuyClass} for {cost:N0} cr ({fee:N0} cr of it ferry fee)"
+            : $"Bought {units}u {_localBuyClass} dockside for {cost:N0} cr — no ferry fee";
     }
 }

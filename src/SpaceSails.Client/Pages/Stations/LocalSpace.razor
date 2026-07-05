@@ -36,28 +36,32 @@
                     <li class="local-space-row mb-2 pb-2">
                         <div class="d-flex align-items-center gap-1">
                             <span class="local-space-icon">@Icon(contact.Kind)</span>
-                            <span class="flex-grow-1">@contact.Name</span>
+                            <span class="flex-grow-1 fw-bold">@contact.Name</span>
                             <span class="text-secondary">@FormatDistance(shipDistance) · rel @((relSpeed / 1000).ToString("F1")) km/s</span>
                         </div>
                         <div class="d-flex align-items-center gap-1 mt-1">
+                            @* M29: the tier badge IS the situational awareness — how would a deal move? *@
                             @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0)
                             {
-                                @* M29: the tier badge IS the situational awareness — how would this deal move? *@
                                 @switch (mode)
                                 {
                                     case CommerceRule.TradeMode.SameOrbit:
-                                        <span class="badge bg-success">⚓ same orbit</span>
+                                        <span class="badge bg-success">⚓ same orbit — dockside, no ferry fee</span>
                                         break;
                                     case CommerceRule.TradeMode.DroneMatch:
                                         <span class="badge bg-success">🛸 drone match</span>
                                         break;
                                     case CommerceRule.TradeMode.Shuttle:
-                                        <span class="badge bg-info text-dark">🚀 shuttle reach@(CargoUnits > 0 ? $" · ~{EstimateMinutes(mode, relSpeed, shipDistance)} min" : "")</span>
+                                        <span class="badge bg-info text-dark">🚀 shuttle reach</span>
                                         break;
                                     default:
                                         <span class="badge bg-secondary">out of reach</span>
                                         break;
                                 }
+                            }
+                            @if (contact.CargoUnits > 0 && contact.CargoClass is { } stockClass)
+                            {
+                                <span class="text-secondary">carries @contact.CargoUnits u @stockClass</span>
                             }
                             @if ((contact.Actions & CommerceRule.ActionKind.Fence) != 0)
                             {
@@ -67,16 +71,49 @@
                             {
                                 <span class="badge bg-secondary">Board</span>
                             }
-                            @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0 && !isActiveTrade)
-                            {
-                                <button type="button" class="btn btn-sm @(mode == CommerceRule.TradeMode.Shuttle ? "btn-info" : "btn-outline-info") py-0 px-1 ms-auto"
-                                        disabled="@(CargoValue <= 0 || !canTrade || ActiveTradeTargetId is not null)"
-                                        title="@(canTrade ? "" : $"Out of reach — close within {FormatDistance(CommerceRule.ShuttleRangeMeters)} under {CommerceRule.ShuttleMaxRelativeSpeed / 1000:F0} km/s rel")"
-                                        @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
-                                    @(mode == CommerceRule.TradeMode.Shuttle ? "Send shuttles" : "Send drones")
-                                </button>
-                            }
                         </div>
+                        @* PR (owner): every post lists ITS OWN actions, plainly — what you can do
+                           right now, what it costs, and what closing in / docking would save. *@
+                        @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0 && !isActiveTrade)
+                        {
+                            <div class="d-grid gap-1 mt-1 local-space-actions">
+                                @if (contact.CargoUnits > 0 && contact.CargoClass is { } buyClass)
+                                {
+                                    int unitValue = CargoMarket.UnitValue(buyClass);
+                                    int buyUnits = CommerceRule.MaxBuyableUnits(mode, contact.CargoUnits, HoldSpaceUnits, Credits, unitValue);
+                                    bool canBuy = canTrade && buyUnits > 0 && ActiveTradeTargetId is null;
+                                    string buyLabel = mode switch
+                                    {
+                                        _ when !canTrade => "🛒 Buy — out of reach",
+                                        CommerceRule.TradeMode.SameOrbit =>
+                                            $"🛒 Buy {buyUnits}u {buyClass} dockside — {CommerceRule.BuyCostCr(mode, buyUnits, unitValue):N0} cr · no fee",
+                                        CommerceRule.TradeMode.DroneMatch =>
+                                            $"🛒 Buy {buyUnits}u {buyClass} via drones — {CommerceRule.BuyCostCr(mode, buyUnits, unitValue):N0} cr · ~{EstimateMinutes(mode, relSpeed, shipDistance, buyUnits)} min",
+                                        _ =>
+                                            $"🛒 Buy {buyUnits}u {buyClass} via shuttles — {CommerceRule.BuyCostCr(mode, buyUnits, unitValue):N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, shipDistance, buyUnits)} min",
+                                    };
+                                    <button type="button" class="btn btn-sm btn-info py-0 px-1 text-start" disabled="@(!canBuy)"
+                                            title="@BuyDisabledReason(canTrade, buyUnits)"
+                                            @onclick="() => OnStartBuy.InvokeAsync(contact.Id)">
+                                        @(buyUnits > 0 || !canTrade ? buyLabel : $"🛒 Buy — {BuyDisabledReason(canTrade, buyUnits)}")
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 text-start"
+                                        disabled="@(CargoValue <= 0 || !canTrade || ActiveTradeTargetId is not null)"
+                                        title="@(canTrade ? (CargoValue <= 0 ? "Hold empty — nothing to sell" : "") : OutOfReachHint)"
+                                        @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
+                                    @SellLabel(mode, canTrade, relSpeed, shipDistance)
+                                </button>
+                                @if (canTrade && mode == CommerceRule.TradeMode.Shuttle)
+                                {
+                                    <div class="text-secondary local-space-hint">⚓ heavy load? close in and match orbit to trade dockside — no ferry fee</div>
+                                }
+                                @if (!canTrade)
+                                {
+                                    <div class="text-secondary local-space-hint">@OutOfReachHint</div>
+                                }
+                            </div>
+                        }
                         @if (isActiveTrade)
                         {
                             <div class="mt-1">
@@ -104,12 +141,15 @@
     [Parameter, EditorRequired] public Vector2d ShipVelocity { get; set; }
     [Parameter] public int CargoUnits { get; set; }
     [Parameter] public int CargoValue { get; set; }
+    [Parameter] public int Credits { get; set; }
+    [Parameter] public int HoldSpaceUnits { get; set; }
     [Parameter] public string? ActiveTradeTargetId { get; set; }
     [Parameter] public double TradeProgress { get; set; }
     [Parameter] public string? TradeMessage { get; set; }
     [Parameter] public bool FullScreen { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<string> OnStartTrade { get; set; }
+    [Parameter] public EventCallback<string> OnStartBuy { get; set; }
 
     // Depots/stations/havens are on rails at ContextBodyId — definitionally "in orbit" there, so
     // they satisfy CommerceRule's same-body case whenever the player is bound to that body too.
@@ -125,9 +165,39 @@
     private double ShipDistance(CommerceRule.LocalContact contact) =>
         (contact.Position - ShipPosition).Length;
 
-    private int EstimateMinutes(CommerceRule.TradeMode mode, double relSpeed, double distance) =>
+    private static int EstimateMinutes(CommerceRule.TradeMode mode, double relSpeed, double distance, int units) =>
         Math.Max(1, (int)Math.Ceiling(
-            CommerceRule.TransferSeconds(mode, relSpeed, distance, Math.Max(1, CargoUnits)) / 60));
+            CommerceRule.TransferSeconds(mode, relSpeed, distance, Math.Max(1, units)) / 60));
+
+    private string OutOfReachHint =>
+        $"out of reach — close within {FormatDistance(CommerceRule.ShuttleRangeMeters)} under {CommerceRule.ShuttleMaxRelativeSpeed / 1000:F0} km/s rel to send shuttles, or match orbit to trade dockside";
+
+    private string BuyDisabledReason(bool canTrade, int buyUnits) =>
+        !canTrade ? OutOfReachHint
+        : buyUnits > 0 ? ""
+        : HoldSpaceUnits <= 0 ? "hold full"
+        : "not enough credits (price + ferry fee)";
+
+    private string SellLabel(CommerceRule.TradeMode mode, bool canTrade, double relSpeed, double distance)
+    {
+        if (!canTrade)
+        {
+            return "📤 Sell — out of reach";
+        }
+
+        if (CargoValue <= 0)
+        {
+            return "📤 Sell — hold empty";
+        }
+
+        int payout = CommerceRule.SellPayoutCr(mode, CargoUnits, CargoValue);
+        return mode switch
+        {
+            CommerceRule.TradeMode.SameOrbit => $"📤 Sell hold dockside — +{payout:N0} cr · no fee",
+            CommerceRule.TradeMode.DroneMatch => $"📤 Sell hold via drones — +{payout:N0} cr · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
+            _ => $"📤 Sell hold via shuttles — +{payout:N0} cr (after {CommerceRule.TransferFeeCr(mode, CargoUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
+        };
+    }
 
     private static string Icon(CommerceRule.LocalContactKind kind) => kind switch
     {

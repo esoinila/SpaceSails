@@ -57,3 +57,14 @@
 .local-space-desk-body .local-space-row {
     padding-bottom: 0.9rem;
 }
+
+/* The per-post action list (owner: "clear actions and UI that signals what we can do with
+   that particular post") — buy/sell lines grouped under the contact they belong to. */
+.local-space-actions {
+    max-width: 30rem;
+}
+
+.local-space-hint {
+    font-size: 0.74rem;
+    line-height: 1.2;
+}

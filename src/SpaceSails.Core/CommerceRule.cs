@@ -138,11 +138,55 @@ public static class CommerceRule
             * (1 + distance / DroneDistancePenalty);
     }
 
+    // ---- Buying (owner, 2026-07-05 evening: "How do I buy anything from Earth Depot?"):
+    // trade is two-way now. A depot's manifest is purchasable at face value plus a per-unit
+    // ferry fee that scales with the tier — shuttles flying a long corridor cost real money,
+    // drones less, and a dockside deal (same orbit) is fee-free. That's the economic reason
+    // to close and dock for heavy loads, and it keeps buy-then-resell from being free money:
+    // a round trip through the shuttles always loses the two fees. ----
+
+    /// <summary>Per-unit ferry fee on the shuttle tier — the long corridor is the pricey one.</summary>
+    public const int ShuttleFeePerUnitCr = 25;
+
+    /// <summary>Per-unit ferry fee on the drone tier — short cooperative hops are cheap.</summary>
+    public const int DroneFeePerUnitCr = 5;
+
+    /// <summary>The ferry fee for moving <paramref name="units"/> on the given tier — zero for
+    /// a dockside (same-orbit) deal: no corridor, no fee.</summary>
+    public static int TransferFeeCr(TradeMode mode, int units) => mode switch
+    {
+        TradeMode.Shuttle => ShuttleFeePerUnitCr * Math.Max(0, units),
+        TradeMode.DroneMatch => DroneFeePerUnitCr * Math.Max(0, units),
+        _ => 0,
+    };
+
+    /// <summary>What buying <paramref name="units"/> costs: face value plus the ferry fee.</summary>
+    public static int BuyCostCr(TradeMode mode, int units, int unitValueCr) =>
+        Math.Max(0, units) * unitValueCr + TransferFeeCr(mode, units);
+
+    /// <summary>What a remote sale actually pays: the cargo's value minus the ferry fee
+    /// (floored at zero — the shuttles never send the seller a bill).</summary>
+    public static int SellPayoutCr(TradeMode mode, int units, int cargoValueCr) =>
+        Math.Max(0, cargoValueCr - TransferFeeCr(mode, units));
+
+    /// <summary>How many units a buyer can actually take: bounded by the seller's stock, the
+    /// buyer's hold space, and what the buyer's credits cover including the ferry fee (both
+    /// price and fee are linear per unit, so the affordability bound is a simple division).</summary>
+    public static int MaxBuyableUnits(TradeMode mode, int stockUnits, int holdSpaceUnits, int creditsCr, int unitValueCr)
+    {
+        int perUnit = unitValueCr + TransferFeeCr(mode, 1);
+        int affordable = perUnit <= 0 ? int.MaxValue : creditsCr / perUnit;
+        return Math.Max(0, Math.Min(Math.Min(stockUnits, holdSpaceUnits), affordable));
+    }
+
     /// <summary>Thin, read-only projection of a live NPC ship (depot or hauler) — the Core helper
     /// never needs the caller's private NPC wrapper type, only id/callsign/current physical state
     /// plus the depot flag (mirrors the tracking post's TrackingCandidate's role for its own
-    /// station).</summary>
-    public readonly record struct LocalShip(string Id, string Callsign, ShipState State, string? DepotBodyId);
+    /// station). <see cref="CargoClass"/>/<see cref="CargoUnits"/> carry the purchasable
+    /// manifest — what's left of it, as the caller accounts it.</summary>
+    public readonly record struct LocalShip(
+        string Id, string Callsign, ShipState State, string? DepotBodyId,
+        string? CargoClass = null, int CargoUnits = 0);
 
     /// <summary>What kind of thing a <see cref="LocalContact"/> is, for icon/label purposes.</summary>
     public enum LocalContactKind
@@ -166,7 +210,8 @@ public static class CommerceRule
     }
 
     /// <summary>One thing "at" a body: a depot, a station/moon/haven orbiting it, or an NPC ship
-    /// caught inside its Hill sphere.</summary>
+    /// caught inside its Hill sphere. <see cref="CargoClass"/>/<see cref="CargoUnits"/> list what
+    /// the post has for sale (depots today; zero for bodies and boarding-only ships).</summary>
     public readonly record struct LocalContact(
         string Id,
         string Name,
@@ -174,7 +219,9 @@ public static class CommerceRule
         Vector2d Position,
         Vector2d Velocity,
         double DistanceMeters,
-        ActionKind Actions);
+        ActionKind Actions,
+        string? CargoClass = null,
+        int CargoUnits = 0);
 
     /// <summary>Stations and pirate havens carry no real gravity in scenario data (mu = 0 — see
     /// TrafficSchedule.GenerateDepots) so the Hill-sphere formula degenerates to zero for them.
@@ -225,7 +272,8 @@ public static class CommerceRule
             contacts.Add(new LocalContact(
                 ship.Id, ship.Callsign, LocalContactKind.Depot,
                 ship.State.Position, ship.State.Velocity,
-                (ship.State.Position - bodyPosition).Length, actions));
+                (ship.State.Position - bodyPosition).Length, actions,
+                ship.CargoClass, ship.CargoUnits));
         }
 
         foreach (CelestialBody child in ephemeris.Bodies)
@@ -301,7 +349,8 @@ public static class CommerceRule
             contacts.Add(new LocalContact(
                 ship.Id, ship.Callsign, LocalContactKind.Depot,
                 ship.State.Position, ship.State.Velocity, distance,
-                ActionKind.Trade | (haven ? ActionKind.Fence : ActionKind.None)));
+                ActionKind.Trade | (haven ? ActionKind.Fence : ActionKind.None),
+                ship.CargoClass, ship.CargoUnits));
         }
 
         foreach (CelestialBody child in ephemeris.Bodies)
