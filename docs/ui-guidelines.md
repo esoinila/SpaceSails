@@ -61,6 +61,19 @@ From file-manager UX (validated in a design consult with Gemini 3.5 Pro):
   selection falls back to the most useful surviving node (the dockyard when docked, else the
   nearest post) instead of a blank pane.
 
+From map UX (owner + second Gemini consult, 2026-07-05 — the "MassiveZoomNeededToSelect" fix):
+
+- **Ambiguous clicks ask, never guess.** One candidate under the pointer acts directly; a
+  stack of neighbors opens a "Which one?" chooser ranked by likely intent — live contacts,
+  then depots, then bodies — with the trade lane and the empty-sky scan always LAST. A lane is
+  the least likely meaning of a click near a planet.
+- **Forgiving hit radii, two tiers.** 15 px direct-hit on pointer-down; 28 px near-miss on
+  pointer-up feeds the chooser, so nothing needs a 10,000× zoom just to be clickable.
+- **🗺 Layers, remembered per desk.** A small corner toggle with checkboxes (never a modal over
+  the sky): trade lanes, ships & beacons, depots, sensor overlays. Per-desk defaults encode
+  each desk's job — the sensors chief starts with the full working sky, everyone else starts
+  with the lanes off. Hidden layers neither draw nor answer clicks.
+
 ## Roadmap (apply when the data grows into them)
 
 - **Flatten levels that stop earning their row.** With one good per depot, the item leaf is
