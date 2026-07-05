@@ -1193,6 +1193,133 @@
         public int ObservationCount;
         public bool WarningShotFired;    // PR-7: heaves to (if compliant) — faster boarding
         public bool Bribed;              // PR-7: compliant AND no heat generated when robbed
+        public bool Disabled;            // M28: slug through the sail — no more burns, drifts ballistic
+    }
+
+    // ---- M28 (Sunday PR-B): ordnance in flight — slugs and missiles ----
+    private sealed class OrdnanceState
+    {
+        public required OrdnanceRound Round;
+        public ShipState State;
+        public double RemainingBudget;   // missiles only — Δv left for corrections
+        public bool Spent;
+    }
+
+    private readonly List<OrdnanceState> _ordnance = [];
+    private int _ordnanceSeq;
+    private static readonly RgbaColor OrdnanceColor = new(255, 230, 150);
+    private static readonly RgbaColor DisabledNpcColor = new(150, 150, 160);
+
+    /// <summary>Launches a round from the player's ship. Direction and speed usually come
+    /// from a <see cref="FireControl.Solution"/>; nothing here re-checks them — the gun deck
+    /// (PR-C) owns aiming policy, this owns flight and consequences.</summary>
+    private void FireOrdnance(OrdnanceKind kind, Vector2d launchDirection, double muzzleSpeed,
+        string? targetId, bool acrossTheBow = false)
+    {
+        var round = new OrdnanceRound($"ord-{_ordnanceSeq++}", kind, targetId, SimTime, acrossTheBow);
+        _ordnance.Add(new OrdnanceState
+        {
+            Round = round,
+            State = new ShipState(_ship.Position, _ship.Velocity + launchDirection * muzzleSpeed, SimTime),
+            RemainingBudget = kind == OrdnanceKind.Missile ? OrdnanceRule.MissileDeltaVBudget : 0,
+        });
+        RendererInterop.PlayCue("pulse");
+    }
+
+    /// <summary>Steps every live round to the ship's sim time, guiding missiles and checking
+    /// hits per integrator step with the closed-form segment minimum (Lab 06's no-tunneling
+    /// rule) — the fast graze cannot slip between steps.</summary>
+    private void StepOrdnance()
+    {
+        if (_ordnance.Count == 0)
+        {
+            return;
+        }
+
+        foreach (OrdnanceState round in _ordnance)
+        {
+            if (round.Spent)
+            {
+                continue;
+            }
+
+            NpcState? target = round.Round.TargetId is { } tid ? FindNpc(tid) : null;
+            while (!round.Spent && round.State.SimTime < _ship.SimTime)
+            {
+                if (OrdnanceRule.Expired(round.Round, round.State.SimTime))
+                {
+                    round.Spent = true;
+                    if (round.Round.TargetId is not null && !round.Round.AcrossTheBow)
+                    {
+                        PushNewsEvent(NewsWire.NewsEventKind.SlugMissed, NpcName(round.Round.TargetId));
+                    }
+
+                    break;
+                }
+
+                if (round.Round.Kind == OrdnanceKind.Missile && target is { Active: true, Arrived: false })
+                {
+                    (round.State, double spent) = OrdnanceRule.Guide(
+                        round.State, target.State, TrafficSchedule.NpcTimeStep, round.RemainingBudget);
+                    round.RemainingBudget -= spent;
+                }
+
+                Vector2d before = round.State.Position;
+                double tBefore = round.State.SimTime;
+                round.State = _npcSimulator!.Step(round.State, null);
+
+                // Hit anything in the way — not just the intended target (honest ballistics).
+                foreach (NpcState npc in _npcStates)
+                {
+                    if (!npc.Active || npc.Arrived || npc.Disabled)
+                    {
+                        continue;
+                    }
+
+                    // The NPC's matching motion over this span, linearly reconstructed.
+                    double dt = round.State.SimTime - tBefore;
+                    Vector2d npcBefore = npc.State.Position - npc.State.Velocity * Math.Max(0, npc.State.SimTime - tBefore);
+                    Vector2d npcAfter = npcBefore + npc.State.Velocity * dt;
+                    if (round.Round.AcrossTheBow || !OrdnanceRule.StepHits(before, round.State.Position, npcBefore, npcAfter))
+                    {
+                        continue;
+                    }
+
+                    npc.Disabled = true;
+                    round.Spent = true;
+                    PushNewsEvent(NewsWire.NewsEventKind.SlugHit, npc.Ship.Callsign,
+                        _nearestBody?.Name);
+                    ShowPulseMessage($"Direct hit — {npc.Ship.Callsign}'s sail is gone; she's adrift 🎯");
+                    RendererInterop.PlayCue("board");
+                    break;
+                }
+            }
+        }
+
+        _ordnance.RemoveAll(o => o.Spent);
+    }
+
+    private string NpcName(string id) => FindNpc(id)?.Ship.Callsign ?? id;
+
+    private void DrawOrdnance()
+    {
+        foreach (OrdnanceState round in _ordnance)
+        {
+            if (round.Spent)
+            {
+                continue;
+            }
+
+            (float sx, float sy) = _camera.WorldToScreen(round.State.Position);
+            _renderer!.DrawCircle(sx, sy, round.Round.Kind == OrdnanceKind.Missile ? 2.5f : 1.8f,
+                OrdnanceColor, OrdnanceColor);
+            // A short streak along the velocity so a round reads as MOVING at map zoom.
+            Vector2d tail = round.State.Position - round.State.Velocity.Normalized() * (_camera.MetersPerPixel * 6);
+            (float tx, float ty) = _camera.WorldToScreen(tail);
+            Span<float> streak = stackalloc float[4];
+            streak[0] = sx; streak[1] = sy; streak[2] = tx; streak[3] = ty;
+            _renderer.DrawPolyline(streak, OrdnanceColor with { A = 120 }, 1f);
+        }
     }
 
     // Editable client-side node. ManeuverNode is an immutable value type with no notion of
@@ -2125,6 +2252,7 @@
         }
 
         StepNpcs();
+        StepOrdnance();
 
         if (_ship.SimTime >= _nextSweepSimTime)
         {
@@ -2290,6 +2418,7 @@
         }
         DrawNpcs();
         DrawHunters();
+        DrawOrdnance();
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -3157,7 +3286,8 @@
             {
                 while (npc.State.SimTime < _ship.SimTime)
                 {
-                    npc.State = _npcSimulator!.Step(npc.State, npc.Ship.Plan);
+                    // M28: a slug through the sail ends all burns — the hulk drifts ballistic.
+                    npc.State = _npcSimulator!.Step(npc.State, npc.Disabled ? null : npc.Ship.Plan);
                 }
             }
 
@@ -3272,8 +3402,14 @@
             if (npc.Active && npc.CurrentlyObserved)
             {
                 (float sx, float sy) = _camera.WorldToScreen(npc.State.Position);
-                RgbaColor color = tracked ? TrackedNpcColor : NpcColor;
+                RgbaColor color = npc.Disabled ? DisabledNpcColor : tracked ? TrackedNpcColor : NpcColor;
                 _renderer!.DrawCircle(sx, sy, 4f, color, color);
+                if (npc.Disabled)
+                {
+                    // M28: a holed sail reads as a hulk — gray dot, small broken ring.
+                    _renderer!.DrawCircle(sx, sy, 7f, null, DisabledNpcColor with { A = 140 }, 1f);
+                    _renderer!.DrawText(sx + 6, sy + 8, "adrift", DisabledNpcColor);
+                }
                 if (tracked)
                 {
                     double dt = Math.Max(0, SimTime - track.LastObservation.SimTime);
