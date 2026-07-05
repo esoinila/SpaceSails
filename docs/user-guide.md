@@ -235,15 +235,20 @@ a level-up costing 2,000 credits and doubling every level thereafter. See the Tr
 
 ![The Trade desk — local space contacts, the dock market, and the cargo manifest side by side.](tmp_pics/saturday/local-space.png)
 
-- Press `4` or click **4 Trade** for the whole trade loop in one place: **local space**
-  contacts on one side, the **dock market** alongside it, and your **cargo manifest** (by
-  class, with fence value) on the third.
-- **Local space** lists everything else parked at your current body: depots 🛰, stations 🏭,
-  moons 🌙, havens 🏴, and any ship 🚀 caught nearby. Each post carries **its own action
-  list** — what it has for sale ("carries 4 u Machinery"), a **🛒 Buy** line with the full
-  price up front, a **📤 Sell** line with the net payout, and, when something isn't
-  possible, the reason in plain words (hold empty, not enough credits, out of reach — and
-  what to do about it).
+- Press `4` or click **4 Trade**. The desk is a **master–detail tree, like File Explorer**:
+  the left pane lists **places of business** — each host body, the trading posts at it, and
+  under every post its **Buy** (down to the item) and **Sell** branches. Tree rows stay lean
+  (name + one reachability badge: same orbit / drones / shuttles / out of reach); select any
+  node and the right pane shows *that node's* full detail — clickable **breadcrumbs**
+  (`Earth › Earth Depot › Buy › Machinery`) keep you oriented. The **cargo manifest** keeps
+  its own column.
+- The **dockyard** appears as a node under the body you're docked at — selling at fence
+  prices, refilling mass, and the four upgrade tracks are *its* detail now, not a loose
+  floating market.
+- An item leaf shows stock, face value, and one actionable **🛒 Buy** button priced for how
+  the deal would move right now (fee and minutes included), with the cheaper dockside option
+  noted; **Sell your hold here** shows the net payout. Anything impossible says why in plain
+  words (hold empty, not enough credits, out of reach — and what to do about it).
 - **Buying is real**: depots sell their manifest at face value **plus a ferry fee** per
   unit — 25 cr on the shuttle corridor, 5 cr for a drone match, and **free dockside** (same
   orbit). Hauling something heavy? Close in and match orbit to skip the fee — that's the

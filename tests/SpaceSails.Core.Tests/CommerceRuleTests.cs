@@ -339,12 +339,14 @@ public class CommerceRuleTests
             .Single(c => c.Id == "depot-earth");
         Assert.Equal("Machinery", atBody.CargoClass);
         Assert.Equal(4, atBody.CargoUnits);
+        Assert.Equal("earth", atBody.HostBodyId); // the tree hangs every post under its host
 
         var player = new ShipState(depot.State.Position + new Vector2d(5e9, 0), Vector2d.Zero, 0);
         CommerceRule.LocalContact inReach = CommerceRule.ContactsWithinShuttleRange(ephemeris, [depot], 0, player)
             .Single(c => c.Id == "depot-earth");
         Assert.Equal("Machinery", inReach.CargoClass);
         Assert.Equal(4, inReach.CargoUnits);
+        Assert.Equal("earth", inReach.HostBodyId);
     }
 
     [Fact]

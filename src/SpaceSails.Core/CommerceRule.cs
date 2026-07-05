@@ -211,7 +211,9 @@ public static class CommerceRule
 
     /// <summary>One thing "at" a body: a depot, a station/moon/haven orbiting it, or an NPC ship
     /// caught inside its Hill sphere. <see cref="CargoClass"/>/<see cref="CargoUnits"/> list what
-    /// the post has for sale (depots today; zero for bodies and boarding-only ships).</summary>
+    /// the post has for sale (depots today; zero for bodies and boarding-only ships).
+    /// <see cref="HostBodyId"/> is the body this post belongs to — the trade desk's tree groups
+    /// every place of business under its host (owner: master–detail, like File Explorer).</summary>
     public readonly record struct LocalContact(
         string Id,
         string Name,
@@ -221,7 +223,8 @@ public static class CommerceRule
         double DistanceMeters,
         ActionKind Actions,
         string? CargoClass = null,
-        int CargoUnits = 0);
+        int CargoUnits = 0,
+        string? HostBodyId = null);
 
     /// <summary>Stations and pirate havens carry no real gravity in scenario data (mu = 0 — see
     /// TrafficSchedule.GenerateDepots) so the Hill-sphere formula degenerates to zero for them.
@@ -273,7 +276,7 @@ public static class CommerceRule
                 ship.Id, ship.Callsign, LocalContactKind.Depot,
                 ship.State.Position, ship.State.Velocity,
                 (ship.State.Position - bodyPosition).Length, actions,
-                ship.CargoClass, ship.CargoUnits));
+                ship.CargoClass, ship.CargoUnits, HostBodyId: bodyId));
         }
 
         foreach (CelestialBody child in ephemeris.Bodies)
@@ -291,7 +294,7 @@ public static class CommerceRule
             (LocalContactKind kind, ActionKind actions) = ClassifyChild(child);
             contacts.Add(new LocalContact(
                 child.Id, child.Name, kind, childPosition, childVelocity,
-                (childPosition - bodyPosition).Length, actions));
+                (childPosition - bodyPosition).Length, actions, HostBodyId: bodyId));
         }
 
         foreach (LocalShip ship in ships)
@@ -306,7 +309,8 @@ public static class CommerceRule
             {
                 contacts.Add(new LocalContact(
                     ship.Id, ship.Callsign, LocalContactKind.Ship,
-                    ship.State.Position, ship.State.Velocity, distance, ActionKind.Board));
+                    ship.State.Position, ship.State.Velocity, distance, ActionKind.Board,
+                    HostBodyId: bodyId));
             }
         }
 
@@ -350,7 +354,7 @@ public static class CommerceRule
                 ship.Id, ship.Callsign, LocalContactKind.Depot,
                 ship.State.Position, ship.State.Velocity, distance,
                 ActionKind.Trade | (haven ? ActionKind.Fence : ActionKind.None),
-                ship.CargoClass, ship.CargoUnits));
+                ship.CargoClass, ship.CargoUnits, HostBodyId: ship.DepotBodyId));
         }
 
         foreach (CelestialBody child in ephemeris.Bodies)
@@ -374,7 +378,8 @@ public static class CommerceRule
             }
 
             Vector2d velocity = (ephemeris.Position(child.Id, simTime + 1) - ephemeris.Position(child.Id, simTime - 1)) / 2;
-            contacts.Add(new LocalContact(child.Id, child.Name, kind, position, velocity, distance, actions));
+            contacts.Add(new LocalContact(child.Id, child.Name, kind, position, velocity, distance, actions,
+                HostBodyId: child.ParentId));
         }
 
         contacts.Sort((a, b) => a.DistanceMeters.CompareTo(b.DistanceMeters));

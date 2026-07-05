@@ -612,76 +612,61 @@
                 }
                 else if (_activeDesk == ShipDesk.Trade)
                 {
-                    @* Trading floor (PR-13, StationDesks.md's 70% rule): three columns — local
-                       space contacts, the dock market (selling/upgrades, unchanged logic), and the
-                       cargo manifest read-model over _cargoByClass — so the whole trade loop
-                       (what's nearby, what you can do at the dock, what's in the hold) is visible
-                       at once instead of stacked behind pop-ups. *@
+                    @* Trading floor, master–detail edition (owner: "like File Explorer"): the
+                       places-of-business TREE + detail pane owns two thirds of the desk, the
+                       cargo manifest keeps its column. The dock market is no longer a loose
+                       floating panel — it renders as the dockyard node's detail inside the tree
+                       (passed down as a fragment so all its bindings stay right here). *@
                     <div class="desk-trade-grid">
-                        <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="true" FullScreen="true" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" Credits="_credits" HoldSpaceUnits="CargoCapacity - _cargoUnits" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" OnStartTrade="StartLocalTrade" OnStartBuy="StartLocalBuy" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
-                        <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
-                            <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
-                                <span class="fw-bold small">Dock market</span>
-                                @if (_docked)
-                                {
-                                    <span class="badge bg-success">Docked at @BodyName(_dockBodyId ?? "")</span>
-                                }
-                            </div>
-                            @if (_docked)
-                            {
-                                <div class="card-body p-2 small">
-                                    <div class="d-flex gap-2 mb-2">
-                                        <button type="button" class="btn btn-sm btn-success flex-grow-1" disabled="@(_cargoValue <= 0)" @onclick="SellCargo">
-                                            Sell cargo (@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr)
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-light flex-grow-1" disabled="@(_reactionMassPulses >= ReactionMassCapacity)" @onclick="RefillReactionMass">
-                                            Refill mass (free)
-                                        </button>
-                                    </div>
-                                    <div class="fw-bold mb-1">Upgrades</div>
-                                    <table class="table table-sm table-dark mb-0">
-                                        <tbody>
-                                            <tr>
-                                                <td>Reaction mass<br /><span class="text-secondary">Lv @_massLevel → cap @(ReactionMassCapacity + 150)</span></td>
-                                                <td class="text-end align-middle">
-                                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_massLevel))" @onclick='() => BuyUpgrade("mass")'>
-                                                        @UpgradePrice(_massLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>Sensor range<br /><span class="text-secondary">Lv @_sensorLevel → @FormatDistance(SensorModel.Default.RangeMeters * Math.Pow(1.4, _sensorLevel + 1))</span></td>
-                                                <td class="text-end align-middle">
-                                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_sensorLevel))" @onclick='() => BuyUpgrade("sensor")'>
-                                                        @UpgradePrice(_sensorLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>Cargo hold<br /><span class="text-secondary">Lv @_holdLevel → @(CargoCapacity + 10) units</span></td>
-                                                <td class="text-end align-middle">
-                                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_holdLevel))" @onclick='() => BuyUpgrade("hold")'>
-                                                        @UpgradePrice(_holdLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>Telescope<br /><span class="text-secondary">Lv @_telescopeLevel → @(_telescopeLevel + 2) simultaneous tracks</span></td>
-                                                <td class="text-end align-middle">
-                                                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_telescopeLevel >= 3 || _credits < UpgradePrice(_telescopeLevel))" @onclick='() => BuyUpgrade("telescope")'>
-                                                        @(_telescopeLevel >= 3 ? "MAX" : $"{UpgradePrice(_telescopeLevel):N0} cr")
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                        <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="true" FullScreen="true" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" Credits="_credits" HoldSpaceUnits="CargoCapacity - _cargoUnits" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" DockedBodyId="@(_docked ? _dockBodyId : null)" DockedBodyName="@(_docked && _dockBodyId is { } dbn ? BodyName(dbn) : null)" BodyNameLookup="BodyName" OnStartTrade="StartLocalTrade" OnStartBuy="StartLocalBuy" OnClose="() => SwitchDesk(ShipDesk.Nav)">
+                            <DockMarket>
+                                <div class="d-flex gap-2 mb-2">
+                                    <button type="button" class="btn btn-sm btn-success flex-grow-1" disabled="@(_cargoValue <= 0)" @onclick="SellCargo">
+                                        Sell cargo (@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-light flex-grow-1" disabled="@(_reactionMassPulses >= ReactionMassCapacity)" @onclick="RefillReactionMass">
+                                        Refill mass (free)
+                                    </button>
                                 </div>
-                            }
-                            else
-                            {
-                                <div class="card-body p-2 small text-secondary">Dock at a body to sell cargo and buy upgrades.</div>
-                            }
-                        </div>
+                                <div class="fw-bold mb-1">Upgrades</div>
+                                <table class="table table-sm table-dark mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <td>Reaction mass<br /><span class="text-secondary">Lv @_massLevel → cap @(ReactionMassCapacity + 150)</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_massLevel))" @onclick='() => BuyUpgrade("mass")'>
+                                                    @UpgradePrice(_massLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Sensor range<br /><span class="text-secondary">Lv @_sensorLevel → @FormatDistance(SensorModel.Default.RangeMeters * Math.Pow(1.4, _sensorLevel + 1))</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_sensorLevel))" @onclick='() => BuyUpgrade("sensor")'>
+                                                    @UpgradePrice(_sensorLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Cargo hold<br /><span class="text-secondary">Lv @_holdLevel → @(CargoCapacity + 10) units</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_holdLevel))" @onclick='() => BuyUpgrade("hold")'>
+                                                    @UpgradePrice(_holdLevel).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Telescope<br /><span class="text-secondary">Lv @_telescopeLevel → @(_telescopeLevel + 2) simultaneous tracks</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_telescopeLevel >= 3 || _credits < UpgradePrice(_telescopeLevel))" @onclick='() => BuyUpgrade("telescope")'>
+                                                    @(_telescopeLevel >= 3 ? "MAX" : $"{UpgradePrice(_telescopeLevel):N0} cr")
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </DockMarket>
+                        </SpaceSails.Client.Pages.Stations.LocalSpace>
                         <div class="desk-side-panel trade-manifest-panel card bg-dark bg-opacity-50 text-light">
                             <div class="card-header py-1"><span class="fw-bold small">Cargo manifest</span></div>
                             <div class="card-body p-2 small">

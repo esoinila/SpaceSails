@@ -1,122 +1,221 @@
 @using SpaceSails.Core
 
-@* Proximity affordances (vision par. 10, PR-5): "orbiting a planet, you should see what else
-   orbits there." Map.razor builds the contact list with Core.CommerceRule.ContactsAt and hands it
-   here read-only; this component only renders it and asks Map.razor to start a trade — the actual
-   drone-transfer progress (real-time accrual, envelope break-off, crediting) lives in Map.razor
-   next to the boarding-shuttle progress it mirrors, so both share one clock. *@
+@* The trading tree (owner, 2026-07-05 evening: "TradingPost → Buy → ItemName ... then display
+   options to that in detail view. Like File Explorer. Master-Detail it is called.")
+
+   The LEFT pane is the tree of places of business — host body, its trading posts, each post's
+   Buy/Sell branches down to individual items. The RIGHT pane details exactly the selected
+   node. Nothing trades loose anymore: the dock market renders as the dockyard node's detail,
+   visually tied to the body you're docked at (Map.razor passes its markup in as a
+   RenderFragment so every dock binding stays where it always lived). Map.razor still owns the
+   actual transfer engine — this component only renders and raises OnStartTrade/OnStartBuy. *@
 
 <div class="local-space-card @(FullScreen ? "local-space-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
-        <span class="fw-bold small">Local space @(BodyName is null ? "" : $"— {BodyName}")</span>
+        <span class="fw-bold small">Places of business @(BodyName is null ? "" : $"— near {BodyName}")</span>
         @if (!FullScreen)
         {
             <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
         }
     </div>
     <div class="card-body p-2 small @(FullScreen ? "local-space-desk-body" : "")">
-        @if (Contacts.Count == 0)
+        @if (Contacts.Count == 0 && DockedBodyId is null)
         {
             <div class="text-secondary">Nothing here and nothing in shuttle reach (@FormatDistance(CommerceRule.ShuttleRangeMeters)) — close on a station, depot or haven.</div>
         }
         else
         {
-            <div class="text-secondary mb-2">
-                Shuttle reach @FormatDistance(CommerceRule.ShuttleRangeMeters) at ≤@((CommerceRule.ShuttleMaxRelativeSpeed / 1000).ToString("F0")) km/s rel ·
-                drones want ≤@FormatDistance(CommerceRule.CourseMatchDistanceMeters) and ≤@((CommerceRule.CourseMatchMaxRelativeSpeed / 1000).ToString("F0")) km/s
-            </div>
-            <ul class="list-unstyled mb-0 local-space-list @(FullScreen ? "local-space-list-grid" : "")">
-                @foreach (CommerceRule.LocalContact contact in Contacts.OrderBy(c => ShipDistance(c)))
-                {
-                    bool isActiveTrade = ActiveTradeTargetId == contact.Id;
-                    CommerceRule.TradeMode mode = TradeModeFor(contact);
-                    bool canTrade = mode != CommerceRule.TradeMode.None;
-                    double shipDistance = ShipDistance(contact);
-                    double relSpeed = (ShipVelocity - contact.Velocity).Length;
-                    <li class="local-space-row mb-2 pb-2">
-                        <div class="d-flex align-items-center gap-1">
-                            <span class="local-space-icon">@Icon(contact.Kind)</span>
-                            <span class="flex-grow-1 fw-bold">@contact.Name</span>
-                            <span class="text-secondary">@FormatDistance(shipDistance) · rel @((relSpeed / 1000).ToString("F1")) km/s</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-1 mt-1">
-                            @* M29: the tier badge IS the situational awareness — how would a deal move? *@
-                            @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0)
+            List<TreeNode> tree = BuildTree();
+            string selectedId = EffectiveSelection(tree);
+            <div class="local-space-master-detail">
+                <div class="local-space-tree">
+                    @foreach (TreeNode node in tree)
+                    {
+                        TreeNode row = node;
+                        <div class="local-space-node @(row.Id == selectedId ? "local-space-node-selected" : "")"
+                             style="padding-left:@((0.3 + row.Depth * 1.05).ToString("F2", System.Globalization.CultureInfo.InvariantCulture))rem"
+                             role="button" tabindex="0" @onclick="() => _selectedId = row.Id">
+                            <span class="local-space-icon">@row.Icon</span>
+                            <span class="flex-grow-1 @(row.Depth == 0 ? "fw-bold" : "")">@row.Label</span>
+                            @if (ActiveTradeTargetId is { } activeId && row.ContactId == activeId && row.Depth == 1)
                             {
-                                @switch (mode)
+                                <span class="text-info">▶</span>
+                            }
+                            @if (row.Badge is { } badge)
+                            {
+                                <span class="badge @row.BadgeClass">@badge</span>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="local-space-detail">
+                    @* Breadcrumbs (file-manager convention, Gemini design consult): where you
+                       are, clickable back up — Earth › Earth Depot › Buy › Machinery. *@
+                    @{
+                        List<(string Id, string Label)> crumbs = Breadcrumbs(selectedId);
+                    }
+                    @if (crumbs.Count > 1)
+                    {
+                        <div class="local-space-breadcrumbs text-secondary mb-1">
+                            @for (int i = 0; i < crumbs.Count; i++)
+                            {
+                                (string crumbId, string crumbLabel) = crumbs[i];
+                                @if (i > 0)
                                 {
-                                    case CommerceRule.TradeMode.SameOrbit:
-                                        <span class="badge bg-success">⚓ same orbit — dockside, no ferry fee</span>
-                                        break;
-                                    case CommerceRule.TradeMode.DroneMatch:
-                                        <span class="badge bg-success">🛸 drone match</span>
-                                        break;
-                                    case CommerceRule.TradeMode.Shuttle:
-                                        <span class="badge bg-info text-dark">🚀 shuttle reach</span>
-                                        break;
-                                    default:
-                                        <span class="badge bg-secondary">out of reach</span>
-                                        break;
+                                    <span> › </span>
+                                }
+                                @if (i < crumbs.Count - 1)
+                                {
+                                    <a href="" class="link-info" @onclick="() => _selectedId = crumbId" @onclick:preventDefault="true">@crumbLabel</a>
+                                }
+                                else
+                                {
+                                    <span class="text-light">@crumbLabel</span>
                                 }
                             }
+                        </div>
+                    }
+                    @if (selectedId == "dock")
+                    {
+                        <div class="fw-bold mb-1">⚓ @(DockedBodyName ?? "The") dockyard — docked, no ferry fees</div>
+                        @DockMarket
+                    }
+                    else if (selectedId.StartsWith("body:"))
+                    {
+                        string hostId = selectedId["body:".Length..];
+                        <div class="fw-bold mb-1">🪐 @HostName(hostId) — local space</div>
+                        <div class="text-secondary">Pick a place of business in the tree: every post shows what it sells and buys under it; the dockyard (when docked) trades fee-free.</div>
+                    }
+                    else if (FindContact(selectedId) is { } contact)
+                    {
+                        CommerceRule.TradeMode mode = TradeModeFor(contact);
+                        bool canTrade = mode != CommerceRule.TradeMode.None;
+                        double distance = ShipDistance(contact);
+                        double relSpeed = (ShipVelocity - contact.Velocity).Length;
+                        string section = SectionOf(selectedId);
+
+                        <div class="d-flex align-items-center gap-1 mb-1">
+                            <span class="local-space-icon">@Icon(contact.Kind)</span>
+                            <span class="fw-bold flex-grow-1">@contact.Name</span>
+                            <span class="text-secondary">@FormatDistance(distance) · rel @((relSpeed / 1000).ToString("F1")) km/s</span>
+                        </div>
+
+                        @if ((contact.Actions & CommerceRule.ActionKind.Trade) == 0)
+                        {
+                            <div class="text-secondary">No cooperative trade here — this one you board (see the boarding shuttle).</div>
+                        }
+                        else if (section == "item")
+                        {
                             @if (contact.CargoUnits > 0 && contact.CargoClass is { } stockClass)
                             {
-                                <span class="text-secondary">carries @contact.CargoUnits u @stockClass</span>
+                                int unitValue = CargoMarket.UnitValue(stockClass);
+                                int buyUnits = CommerceRule.MaxBuyableUnits(mode, contact.CargoUnits, HoldSpaceUnits, Credits, unitValue);
+                                <div class="fw-bold mb-1">📦 @stockClass — @contact.CargoUnits u in stock · @unitValue.ToString("N0") cr/u face value</div>
+                                @if (!canTrade)
+                                {
+                                    <div class="text-secondary local-space-hint">@OutOfReachText</div>
+                                }
+                                else
+                                {
+                                    <div class="d-grid gap-1 local-space-actions">
+                                        <button type="button" class="btn btn-sm btn-info py-0 px-1 text-start"
+                                                disabled="@(buyUnits <= 0 || ActiveTradeTargetId is not null)"
+                                                @onclick="() => OnStartBuy.InvokeAsync(contact.Id)">
+                                            @BuyButtonLabel(mode, contact, buyUnits, unitValue, relSpeed, distance)
+                                        </button>
+                                        @if (buyUnits > 0 && buyUnits < contact.CargoUnits)
+                                        {
+                                            <div class="text-secondary local-space-hint">
+                                                taking @buyUnits of @contact.CargoUnits — limited by @(HoldSpaceUnits < contact.CargoUnits ? "hold space" : "credits")
+                                            </div>
+                                        }
+                                        @if (mode != CommerceRule.TradeMode.SameOrbit)
+                                        {
+                                            <div class="text-secondary local-space-hint">
+                                                ⚓ other option: close in and match orbit to buy dockside — @contact.CargoUnits u would cost
+                                                @CommerceRule.BuyCostCr(CommerceRule.TradeMode.SameOrbit, contact.CargoUnits, unitValue).ToString("N0") cr flat, no ferry fee
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-secondary">Sold out — the manifest is empty.</div>
+                            }
+                        }
+                        else if (section == "buy")
+                        {
+                            <div class="fw-bold mb-1">🛒 For sale at @contact.Name</div>
+                            @if (contact.CargoUnits > 0 && contact.CargoClass is { } stockClass)
+                            {
+                                string itemId = $"item:{contact.Id}";
+                                <div class="local-space-node" role="button" tabindex="0" @onclick="() => _selectedId = itemId">
+                                    <span>📦</span>
+                                    <span class="flex-grow-1">@stockClass × @contact.CargoUnits</span>
+                                    <span class="text-secondary">@CargoMarket.UnitValue(stockClass).ToString("N0") cr/u</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-secondary">Sold out — the manifest is empty.</div>
+                            }
+                        }
+                        else if (section == "sell")
+                        {
+                            <div class="fw-bold mb-1">📤 Sell your hold to @contact.Name</div>
+                            @if (CargoValue <= 0)
+                            {
+                                <div class="text-secondary">Hold empty — nothing to sell. Buy from a post or board a prize first.</div>
+                            }
+                            else if (!canTrade)
+                            {
+                                <div class="text-secondary local-space-hint">@OutOfReachText</div>
+                            }
+                            else
+                            {
+                                <div>hold: @CargoUnits u worth @CargoValue.ToString("N0") cr</div>
+                                <div class="d-grid gap-1 local-space-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 text-start"
+                                            disabled="@(ActiveTradeTargetId is not null)"
+                                            @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
+                                        @SellButtonLabel(mode, relSpeed, distance)
+                                    </button>
+                                    @if (mode != CommerceRule.TradeMode.SameOrbit)
+                                    {
+                                        <div class="text-secondary local-space-hint">⚓ other option: dock to sell fee-free (+@CargoValue.ToString("N0") cr)</div>
+                                    }
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            @* The post itself: its whole business at a glance. *@
+                            @if (contact.CargoUnits > 0 && contact.CargoClass is { } stockClass)
+                            {
+                                <div>carries <span class="fw-bold">@contact.CargoUnits u @stockClass</span> · @CargoMarket.UnitValue(stockClass).ToString("N0") cr/u — open <span class="text-info">Buy</span> under this post for options</div>
+                            }
+                            else
+                            {
+                                <div class="text-secondary">nothing for sale right now</div>
                             }
                             @if ((contact.Actions & CommerceRule.ActionKind.Fence) != 0)
                             {
-                                <span class="badge bg-danger">Fence</span>
+                                <div><span class="badge bg-danger">Fence</span> no questions asked about cargo provenance</div>
                             }
-                            @if ((contact.Actions & CommerceRule.ActionKind.Board) != 0)
+                            @if (!canTrade)
                             {
-                                <span class="badge bg-secondary">Board</span>
+                                <div class="text-secondary local-space-hint">@OutOfReachText</div>
                             }
-                        </div>
-                        @* PR (owner): every post lists ITS OWN actions, plainly — what you can do
-                           right now, what it costs, and what closing in / docking would save. *@
-                        @if ((contact.Actions & CommerceRule.ActionKind.Trade) != 0 && !isActiveTrade)
-                        {
-                            <div class="d-grid gap-1 mt-1 local-space-actions">
-                                @if (contact.CargoUnits > 0 && contact.CargoClass is { } buyClass)
-                                {
-                                    int unitValue = CargoMarket.UnitValue(buyClass);
-                                    int buyUnits = CommerceRule.MaxBuyableUnits(mode, contact.CargoUnits, HoldSpaceUnits, Credits, unitValue);
-                                    bool canBuy = canTrade && buyUnits > 0 && ActiveTradeTargetId is null;
-                                    string buyLabel = mode switch
-                                    {
-                                        _ when !canTrade => "🛒 Buy — out of reach",
-                                        CommerceRule.TradeMode.SameOrbit =>
-                                            $"🛒 Buy {buyUnits}u {buyClass} dockside — {CommerceRule.BuyCostCr(mode, buyUnits, unitValue):N0} cr · no fee",
-                                        CommerceRule.TradeMode.DroneMatch =>
-                                            $"🛒 Buy {buyUnits}u {buyClass} via drones — {CommerceRule.BuyCostCr(mode, buyUnits, unitValue):N0} cr · ~{EstimateMinutes(mode, relSpeed, shipDistance, buyUnits)} min",
-                                        _ =>
-                                            $"🛒 Buy {buyUnits}u {buyClass} via shuttles — {CommerceRule.BuyCostCr(mode, buyUnits, unitValue):N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, shipDistance, buyUnits)} min",
-                                    };
-                                    <button type="button" class="btn btn-sm btn-info py-0 px-1 text-start" disabled="@(!canBuy)"
-                                            title="@BuyDisabledReason(canTrade, buyUnits)"
-                                            @onclick="() => OnStartBuy.InvokeAsync(contact.Id)">
-                                        @(buyUnits > 0 || !canTrade ? buyLabel : $"🛒 Buy — {BuyDisabledReason(canTrade, buyUnits)}")
-                                    </button>
-                                }
-                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 text-start"
-                                        disabled="@(CargoValue <= 0 || !canTrade || ActiveTradeTargetId is not null)"
-                                        title="@(canTrade ? (CargoValue <= 0 ? "Hold empty — nothing to sell" : "") : OutOfReachHint)"
-                                        @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
-                                    @SellLabel(mode, canTrade, relSpeed, shipDistance)
-                                </button>
-                                @if (canTrade && mode == CommerceRule.TradeMode.Shuttle)
-                                {
-                                    <div class="text-secondary local-space-hint">⚓ heavy load? close in and match orbit to trade dockside — no ferry fee</div>
-                                }
-                                @if (!canTrade)
-                                {
-                                    <div class="text-secondary local-space-hint">@OutOfReachHint</div>
-                                }
-                            </div>
+                            else if (mode == CommerceRule.TradeMode.Shuttle)
+                            {
+                                <div class="text-secondary local-space-hint">⚓ heavy load? close in and match orbit to trade dockside — no ferry fee</div>
+                            }
                         }
-                        @if (isActiveTrade)
+
+                        @if (ActiveTradeTargetId == contact.Id)
                         {
-                            <div class="mt-1">
+                            <div class="mt-2">
                                 <div class="text-info">@(TradeMessage ?? "Transfer in progress…")</div>
                                 <div class="progress local-space-progress">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
@@ -124,9 +223,13 @@
                                 </div>
                             </div>
                         }
-                    </li>
-                }
-            </ul>
+                    }
+                    else
+                    {
+                        <div class="text-secondary">Select a place of business in the tree.</div>
+                    }
+                </div>
+            </div>
         }
     </div>
 </div>
@@ -147,9 +250,209 @@
     [Parameter] public double TradeProgress { get; set; }
     [Parameter] public string? TradeMessage { get; set; }
     [Parameter] public bool FullScreen { get; set; }
+    [Parameter] public string? DockedBodyId { get; set; }
+    [Parameter] public string? DockedBodyName { get; set; }
+    [Parameter] public Func<string, string>? BodyNameLookup { get; set; }
+    [Parameter] public RenderFragment? DockMarket { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<string> OnStartTrade { get; set; }
     [Parameter] public EventCallback<string> OnStartBuy { get; set; }
+
+    // ---- The tree (master) ----
+
+    /// <summary>One row of the explorer tree. <see cref="ContactId"/> ties action/item nodes
+    /// back to their post so the ▶ transfer marker and selection resolution stay simple.</summary>
+    private sealed record TreeNode(
+        string Id, int Depth, string Icon, string Label,
+        string? ContactId = null, string? Badge = null, string BadgeClass = "bg-secondary");
+
+    private string? _selectedId;
+
+    private List<TreeNode> BuildTree()
+    {
+        var tree = new List<TreeNode>();
+
+        // Hosts nearest-first; the docked body always leads — it's where business is happening.
+        List<string> hostIds = Contacts
+            .GroupBy(c => c.HostBodyId ?? "?")
+            .OrderBy(g => g.Min(ShipDistance))
+            .Select(g => g.Key)
+            .ToList();
+        if (DockedBodyId is { } dockedId)
+        {
+            hostIds.Remove(dockedId);
+            hostIds.Insert(0, dockedId);
+        }
+
+        foreach (string hostId in hostIds)
+        {
+            tree.Add(new TreeNode($"body:{hostId}", 0, "🪐", HostName(hostId)));
+
+            if (hostId == DockedBodyId)
+            {
+                tree.Add(new TreeNode("dock", 1, "⚓", $"{HostName(hostId)} dockyard",
+                    Badge: "docked", BadgeClass: "bg-success"));
+            }
+
+            foreach (CommerceRule.LocalContact contact in Contacts
+                .Where(c => (c.HostBodyId ?? "?") == hostId)
+                .OrderBy(ShipDistance))
+            {
+                CommerceRule.TradeMode mode = TradeModeFor(contact);
+                (string badge, string badgeClass) = (contact.Actions & CommerceRule.ActionKind.Trade) == 0
+                    ? ("board", "bg-secondary")
+                    : mode switch
+                    {
+                        CommerceRule.TradeMode.SameOrbit => ("same orbit", "bg-success"),
+                        CommerceRule.TradeMode.DroneMatch => ("drones", "bg-success"),
+                        CommerceRule.TradeMode.Shuttle => ("shuttles", "bg-info text-dark"),
+                        _ => ("out of reach", "bg-secondary"),
+                    };
+                tree.Add(new TreeNode(contact.Id, 1, Icon(contact.Kind), contact.Name, contact.Id, badge, badgeClass));
+
+                if ((contact.Actions & CommerceRule.ActionKind.Trade) == 0)
+                {
+                    continue;
+                }
+
+                if (contact.CargoUnits > 0 && contact.CargoClass is { } stockClass)
+                {
+                    tree.Add(new TreeNode($"buy:{contact.Id}", 2, "🛒", "Buy", contact.Id));
+                    tree.Add(new TreeNode($"item:{contact.Id}", 3, "📦",
+                        $"{stockClass} × {contact.CargoUnits}", contact.Id));
+                }
+
+                tree.Add(new TreeNode($"sell:{contact.Id}", 2, "📤", "Sell your hold here", contact.Id));
+            }
+        }
+
+        return tree;
+    }
+
+    /// <summary>The selection, healed: falls back to the dockyard (when docked) or the first
+    /// post when the remembered node no longer exists (stock sold out, contact left reach).</summary>
+    private string EffectiveSelection(List<TreeNode> tree)
+    {
+        if (_selectedId is { } id && tree.Any(n => n.Id == id))
+        {
+            return id;
+        }
+
+        return tree.FirstOrDefault(n => n.Id == "dock")?.Id
+            ?? tree.FirstOrDefault(n => n.ContactId is not null)?.Id
+            ?? tree.FirstOrDefault()?.Id
+            ?? "";
+    }
+
+    private string HostName(string hostId) =>
+        hostId == "?" ? "Deep space" : BodyNameLookup?.Invoke(hostId) ?? hostId;
+
+    /// <summary>The clickable path to the selection — every segment is a real tree node id.</summary>
+    private List<(string Id, string Label)> Breadcrumbs(string selectedId)
+    {
+        var crumbs = new List<(string, string)>();
+        if (selectedId == "dock")
+        {
+            if (DockedBodyId is { } dockedId)
+            {
+                crumbs.Add(($"body:{dockedId}", HostName(dockedId)));
+            }
+
+            crumbs.Add(("dock", "Dockyard"));
+            return crumbs;
+        }
+
+        if (selectedId.StartsWith("body:"))
+        {
+            crumbs.Add((selectedId, HostName(selectedId["body:".Length..])));
+            return crumbs;
+        }
+
+        if (FindContact(selectedId) is not { } contact)
+        {
+            return crumbs;
+        }
+
+        crumbs.Add(($"body:{contact.HostBodyId ?? "?"}", HostName(contact.HostBodyId ?? "?")));
+        crumbs.Add((contact.Id, contact.Name));
+        switch (SectionOf(selectedId))
+        {
+            case "buy":
+                crumbs.Add(($"buy:{contact.Id}", "Buy"));
+                break;
+            case "item":
+                crumbs.Add(($"buy:{contact.Id}", "Buy"));
+                crumbs.Add(($"item:{contact.Id}", contact.CargoClass ?? "item"));
+                break;
+            case "sell":
+                crumbs.Add(($"sell:{contact.Id}", "Sell"));
+                break;
+        }
+
+        return crumbs;
+    }
+
+    private static string SectionOf(string selectedId) =>
+        selectedId.StartsWith("buy:") ? "buy"
+        : selectedId.StartsWith("item:") ? "item"
+        : selectedId.StartsWith("sell:") ? "sell"
+        : "post";
+
+    private CommerceRule.LocalContact? FindContact(string selectedId)
+    {
+        string contactId = SectionOf(selectedId) == "post"
+            ? selectedId
+            : selectedId[(selectedId.IndexOf(':') + 1)..];
+        foreach (CommerceRule.LocalContact c in Contacts)
+        {
+            if (c.Id == contactId)
+            {
+                return c;
+            }
+        }
+
+        return null;
+    }
+
+    // ---- Detail-pane copy (strings in code, markup stays thin) ----
+
+    private string OutOfReachText =>
+        $"out of reach — close within {FormatDistance(CommerceRule.ShuttleRangeMeters)} under {CommerceRule.ShuttleMaxRelativeSpeed / 1000:F0} km/s rel to send shuttles, or match orbit to trade dockside";
+
+    private string BuyButtonLabel(
+        CommerceRule.TradeMode mode, CommerceRule.LocalContact contact,
+        int buyUnits, int unitValue, double relSpeed, double distance)
+    {
+        if (buyUnits <= 0)
+        {
+            return $"🛒 Buy — {(HoldSpaceUnits <= 0 ? "hold full" : "not enough credits (price + ferry fee)")}";
+        }
+
+        int cost = CommerceRule.BuyCostCr(mode, buyUnits, unitValue);
+        return mode switch
+        {
+            CommerceRule.TradeMode.SameOrbit => $"🛒 Buy {buyUnits}u dockside now — {cost:N0} cr · no fee",
+            CommerceRule.TradeMode.DroneMatch =>
+                $"🛒 Buy {buyUnits}u via drones now — {cost:N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min",
+            _ =>
+                $"🛒 Buy {buyUnits}u via shuttles now — {cost:N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min",
+        };
+    }
+
+    private string SellButtonLabel(CommerceRule.TradeMode mode, double relSpeed, double distance)
+    {
+        int payout = CommerceRule.SellPayoutCr(mode, CargoUnits, CargoValue);
+        return mode switch
+        {
+            CommerceRule.TradeMode.SameOrbit => $"📤 Sell hold dockside now — +{payout:N0} cr · no fee",
+            CommerceRule.TradeMode.DroneMatch =>
+                $"📤 Sell hold via drones now — +{payout:N0} cr · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
+            _ =>
+                $"📤 Sell hold via shuttles now — +{payout:N0} cr (after {CommerceRule.TransferFeeCr(mode, CargoUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
+        };
+    }
+
+    // ---- Shared helpers (unchanged mechanics) ----
 
     // Depots/stations/havens are on rails at ContextBodyId — definitionally "in orbit" there, so
     // they satisfy CommerceRule's same-body case whenever the player is bound to that body too.
@@ -168,36 +471,6 @@
     private static int EstimateMinutes(CommerceRule.TradeMode mode, double relSpeed, double distance, int units) =>
         Math.Max(1, (int)Math.Ceiling(
             CommerceRule.TransferSeconds(mode, relSpeed, distance, Math.Max(1, units)) / 60));
-
-    private string OutOfReachHint =>
-        $"out of reach — close within {FormatDistance(CommerceRule.ShuttleRangeMeters)} under {CommerceRule.ShuttleMaxRelativeSpeed / 1000:F0} km/s rel to send shuttles, or match orbit to trade dockside";
-
-    private string BuyDisabledReason(bool canTrade, int buyUnits) =>
-        !canTrade ? OutOfReachHint
-        : buyUnits > 0 ? ""
-        : HoldSpaceUnits <= 0 ? "hold full"
-        : "not enough credits (price + ferry fee)";
-
-    private string SellLabel(CommerceRule.TradeMode mode, bool canTrade, double relSpeed, double distance)
-    {
-        if (!canTrade)
-        {
-            return "📤 Sell — out of reach";
-        }
-
-        if (CargoValue <= 0)
-        {
-            return "📤 Sell — hold empty";
-        }
-
-        int payout = CommerceRule.SellPayoutCr(mode, CargoUnits, CargoValue);
-        return mode switch
-        {
-            CommerceRule.TradeMode.SameOrbit => $"📤 Sell hold dockside — +{payout:N0} cr · no fee",
-            CommerceRule.TradeMode.DroneMatch => $"📤 Sell hold via drones — +{payout:N0} cr · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
-            _ => $"📤 Sell hold via shuttles — +{payout:N0} cr (after {CommerceRule.TransferFeeCr(mode, CargoUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
-        };
-    }
 
     private static string Icon(CommerceRule.LocalContactKind kind) => kind switch
     {
