@@ -285,6 +285,68 @@ public class CommerceRuleTests
         Assert.Empty(contacts);
     }
 
+    // ---- Buying (owner: "How do I buy anything from Earth Depot?") ----
+
+    [Fact]
+    public void TransferFee_ScalesByTierAndUnits_AndDocksideIsFree()
+    {
+        Assert.Equal(4 * CommerceRule.ShuttleFeePerUnitCr, CommerceRule.TransferFeeCr(CommerceRule.TradeMode.Shuttle, 4));
+        Assert.Equal(4 * CommerceRule.DroneFeePerUnitCr, CommerceRule.TransferFeeCr(CommerceRule.TradeMode.DroneMatch, 4));
+        Assert.Equal(0, CommerceRule.TransferFeeCr(CommerceRule.TradeMode.SameOrbit, 4));
+        Assert.True(CommerceRule.ShuttleFeePerUnitCr > CommerceRule.DroneFeePerUnitCr,
+            "the long corridor must cost more than the short hop — that's the reason to dock for heavy loads");
+    }
+
+    [Fact]
+    public void BuyThenSellRemotely_AlwaysLosesTheTwoFees()
+    {
+        // No free money: a buy + immediate remote resale of the same units must round-trip at
+        // a loss of exactly the two ferry fees.
+        const int units = 4, unitValue = 250; // Earth depot machinery
+        int bought = CommerceRule.BuyCostCr(CommerceRule.TradeMode.Shuttle, units, unitValue);
+        int soldBack = CommerceRule.SellPayoutCr(CommerceRule.TradeMode.Shuttle, units, units * unitValue);
+
+        Assert.Equal(2 * CommerceRule.TransferFeeCr(CommerceRule.TradeMode.Shuttle, units), bought - soldBack);
+    }
+
+    [Fact]
+    public void SellPayout_NeverGoesNegative()
+    {
+        Assert.Equal(0, CommerceRule.SellPayoutCr(CommerceRule.TradeMode.Shuttle, 10, 5));
+    }
+
+    [Theory]
+    [InlineData(4, 10, 100_000, 4)]   // stock-limited
+    [InlineData(9, 2, 100_000, 2)]    // hold-limited
+    [InlineData(9, 10, 550, 2)]       // credit-limited: 550 / (250 + 25 fee) = 2
+    [InlineData(9, 10, 100, 0)]       // can't afford even one unit plus fee
+    public void MaxBuyableUnits_IsBoundByStockHoldAndCredits(int stock, int holdSpace, int credits, int expected)
+    {
+        Assert.Equal(expected, CommerceRule.MaxBuyableUnits(
+            CommerceRule.TradeMode.Shuttle, stock, holdSpace, credits, unitValueCr: 250));
+    }
+
+    [Fact]
+    public void Contacts_CarryTheDepotManifest()
+    {
+        var ephemeris = Sol();
+        var depot = new CommerceRule.LocalShip(
+            "depot-earth", "Earth Depot",
+            new ShipState(ephemeris.Position("earth", 0) + new Vector2d(4e8, 0), Vector2d.Zero, 0),
+            "earth", "Machinery", 4);
+
+        CommerceRule.LocalContact atBody = CommerceRule.ContactsAt(ephemeris, [depot], 0, "earth")
+            .Single(c => c.Id == "depot-earth");
+        Assert.Equal("Machinery", atBody.CargoClass);
+        Assert.Equal(4, atBody.CargoUnits);
+
+        var player = new ShipState(depot.State.Position + new Vector2d(5e9, 0), Vector2d.Zero, 0);
+        CommerceRule.LocalContact inReach = CommerceRule.ContactsWithinShuttleRange(ephemeris, [depot], 0, player)
+            .Single(c => c.Id == "depot-earth");
+        Assert.Equal("Machinery", inReach.CargoClass);
+        Assert.Equal(4, inReach.CargoUnits);
+    }
+
     [Fact]
     public void ContactsAt_IsDeterministic()
     {

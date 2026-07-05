@@ -239,16 +239,21 @@ a level-up costing 2,000 credits and doubling every level thereafter. See the Tr
   contacts on one side, the **dock market** alongside it, and your **cargo manifest** (by
   class, with fence value) on the third.
 - **Local space** lists everything else parked at your current body: depots 🛰, stations 🏭,
-  moons 🌙, havens 🏴, and any ship 🚀 caught nearby, each tagged with what it offers — Trade,
-  Fence, or Board.
-- Trading works two ways: **same-orbit** (you and the counterpart are bound to the same
-  body — the classic bus stop) or **course-matched** (within 500,000 km and under 2 km/s
-  relative speed of a moving partner) — a friendlier envelope than boarding, since
-  cooperative cargo drones aren't chasing anyone. Hit **Trade** and drones ferry your whole
-  hold over in real time (a striped progress bar, ~20 seconds per cargo unit at a clean
-  match, slower the sloppier the geometry) — the same sale prices as docking, just a second
-  place to make it. Drift out of range mid-transfer and the progress is lost, no partial
-  credit.
+  moons 🌙, havens 🏴, and any ship 🚀 caught nearby. Each post carries **its own action
+  list** — what it has for sale ("carries 4 u Machinery"), a **🛒 Buy** line with the full
+  price up front, a **📤 Sell** line with the net payout, and, when something isn't
+  possible, the reason in plain words (hold empty, not enough credits, out of reach — and
+  what to do about it).
+- **Buying is real**: depots sell their manifest at face value **plus a ferry fee** per
+  unit — 25 cr on the shuttle corridor, 5 cr for a drone match, and **free dockside** (same
+  orbit). Hauling something heavy? Close in and match orbit to skip the fee — that's the
+  economic reason to dock. The fee also means buy-and-flip through the shuttles is always a
+  losing round trip; profit comes from hauling goods somewhere better.
+- Trading tiers: **same-orbit** (the classic bus stop, fee-free), **course-matched** (within
+  500,000 km and under 2 km/s — cooperative cargo drones), or **shuttle reach** (a slow pass
+  within 12 M km at ≤5 km/s — shuttles fly the long corridor). Transfers run in real time (a
+  striped progress bar, slower the sloppier the geometry); drift out of the envelope
+  mid-transfer and the progress is lost, no partial credit.
 - Unlike the old floating panel, this desk doesn't yank you here the moment you bind into
   orbit — the Trade chip on other desks updates live instead, so you notice a new contact
   without losing your view of Nav; switching over to deal with it stays a deliberate action
