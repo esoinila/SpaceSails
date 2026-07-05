@@ -479,3 +479,6 @@
     cursor: pointer;
     white-space: nowrap;
 }
+
+/* The "Peek" fade lives in the GLOBAL app.css, not here: scoped `> *` can't reach the root
+   elements of child components (the desk-chip strip, etc.), so peeking must be an unscoped rule. */

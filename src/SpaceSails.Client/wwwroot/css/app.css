@@ -2,6 +2,18 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* Owner request: "Peek" — temporarily clear every panel to read the map, then bring them back
+   (👁 Peek button in the desk tab bar, or the ` hotkey). Fades every overlay that's a direct
+   child of the map page EXCEPT the live canvas, the desk tab bar (which carries the button and
+   the key to restore) and the loading splash. Global rather than scoped to Map.razor.css so it
+   also reaches child-component roots (the desk-chip strip). Pointer events fall through so map
+   contacts stay clickable while peeking. */
+.map-peek > *:not(.map-canvas):not(.desk-tab-bar):not(.map-loading) {
+    opacity: 0;
+    pointer-events: none !important;
+    transition: opacity 0.12s ease;
+}
+
 h1:focus {
     outline: none;
 }

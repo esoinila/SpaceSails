@@ -488,3 +488,6 @@ $RECYCLE.BIN/
 # Claude Code local settings
 .claude/settings.local.json
 .bridge/
+
+# Scratch screenshots / working images dropped in while iterating — not product docs
+docs/tmp_pics/

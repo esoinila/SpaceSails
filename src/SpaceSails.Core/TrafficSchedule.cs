@@ -75,6 +75,21 @@ public static class TrafficSchedule
     private static readonly string[] Callsigns =
         ["Meridian", "Kestrel", "Long Haul", "Aurora", "Tycho's Due", "Windlass", "Half Hitch", "Barnacle", "Sable", "Pelican"];
 
+    // Pods are dumb ballistic compute-core canisters — the pirate's milk run and the tutorial's
+    // first prey — so they get a prey's nicknames rather than "Pod-1", "Pod-2". Kept distinct from
+    // the hauler Callsigns above so a name alone tells you which board a contact came off.
+    private static readonly string[] PodCallsigns =
+        ["Milk Run", "Windfall", "Ripe Plum", "Fat Goose", "Easy Keeping", "Tin Kettle", "Slow Coach", "Ferryman's Due", "Sitting Duck", "Loose Change"];
+
+    // OG vs. reinforcements (owner: "I want to know which were the OGs and which are the new"):
+    // the founding traffic present at world-load carries no tag; every later refill wave stamps
+    // its ships and pods with "·N" (N = wave number), visible right in the callsign on the board,
+    // the scope and the map label. The id is namespaced too ("npc-w2-…"/"pod-w2-…").
+    private static string WaveTag(int wave) => wave == 0 ? "" : $" ·{wave}";
+
+    private static string NpcId(string kind, int wave, int index) =>
+        wave == 0 ? $"{kind}-{index}" : $"{kind}-w{wave}-{index}";
+
     private static readonly (string Origin, string Destination, string Cargo)[] LongRoutes =
         [("saturn", "mars", "He3"), ("saturn", "earth", "He3"), ("jupiter", "mars", "He3")];
 
@@ -107,8 +122,8 @@ public static class TrafficSchedule
 
         TrafficDefinition? effective = traffic ?? ephemeris.Traffic;
         return effective is { Routes.Count: > 0 }
-            ? GenerateFromScenario(ephemeris, seed, count, effective, nowSimTime, $"npc-w{waveNumber}")
-            : GenerateFromFixedTables(ephemeris, seed, count, nowSimTime, $"npc-w{waveNumber}");
+            ? GenerateFromScenario(ephemeris, seed, count, effective, nowSimTime, waveNumber)
+            : GenerateFromFixedTables(ephemeris, seed, count, nowSimTime, waveNumber);
     }
 
     /// <summary>A fresh pod wave, launching over the days after <paramref name="nowSimTime"/> —
@@ -120,12 +135,12 @@ public static class TrafficSchedule
 
         TrafficDefinition? effective = traffic ?? ephemeris.Traffic;
         return effective is { PodLaunchers.Count: > 0 }
-            ? GeneratePodsFromScenario(ephemeris, seed, count, effective, nowSimTime, $"pod-w{waveNumber}", $"Pod-{waveNumber}.")
-            : GeneratePodsFromFixedLauncher(ephemeris, seed, count, nowSimTime, $"pod-w{waveNumber}", $"Pod-{waveNumber}.");
+            ? GeneratePodsFromScenario(ephemeris, seed, count, effective, nowSimTime, waveNumber)
+            : GeneratePodsFromFixedLauncher(ephemeris, seed, count, nowSimTime, waveNumber);
     }
 
     private static IReadOnlyList<NpcShip> GenerateFromFixedTables(
-        ICelestialEphemeris ephemeris, ulong seed, int count, double baseSimTime = 0, string idPrefix = "npc")
+        ICelestialEphemeris ephemeris, ulong seed, int count, double baseSimTime = 0, int wave = 0)
     {
         var rng = new DeterministicRandom(seed);
         var catchUpSim = new Simulator(ephemeris, CatchUpTimeStep);
@@ -139,7 +154,8 @@ public static class TrafficSchedule
                 ? LongRoutes[rng.NextInt(0, LongRoutes.Length)]
                 : ShortRoutes[rng.NextInt(0, ShortRoutes.Length)];
             var personality = (RoutePersonality)rng.NextInt(0, 3);
-            string callsign = Callsigns[i % Callsigns.Length];
+            string id = NpcId("npc", wave, i);
+            string callsign = Callsigns[i % Callsigns.Length] + WaveTag(wave);
 
             int cargoUnits = rng.NextInt(5, 21);
             if (isMidFlight)
@@ -159,7 +175,7 @@ public static class TrafficSchedule
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, virtualDeparture, personality, rng);
                 ShipState now = catchUpSim.Run(route.DepartureState, baseSimTime - virtualDeparture, route.Plan);
                 ships.Add(new NpcShip(
-                    $"{idPrefix}-{i}", callsign, cargo, origin, destination, personality,
+                    id, callsign, cargo, origin, destination, personality,
                     virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
                     cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false));
             }
@@ -168,7 +184,7 @@ public static class TrafficSchedule
                 double departure = baseSimTime + Math.Floor(rng.NextDouble(3 * Day, 30 * Day));
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, departure, personality, rng);
                 ships.Add(new NpcShip(
-                    $"{idPrefix}-{i}", callsign, cargo, origin, destination, personality,
+                    id, callsign, cargo, origin, destination, personality,
                     departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime,
                     cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false));
             }
@@ -179,7 +195,7 @@ public static class TrafficSchedule
 
     private static IReadOnlyList<NpcShip> GenerateFromScenario(
         ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition traffic,
-        double baseSimTime = 0, string idPrefix = "npc")
+        double baseSimTime = 0, int wave = 0)
     {
         var rng = new DeterministicRandom(seed);
         var catchUpSim = new Simulator(ephemeris, CatchUpTimeStep);
@@ -188,11 +204,21 @@ public static class TrafficSchedule
         (List<RouteDefinition> longHaul, List<RouteDefinition> shortHaul) = SplitRoutesByDistance(ephemeris, traffic.Routes);
         IReadOnlyList<RouteDefinition> all = traffic.Routes;
 
+        // The outer-system mid-flight cohort — unchanged from before (its draws feed the
+        // secretive-hauler worldbuilding), so the long-haul route mix stays byte-identical.
         int midFlight = Math.Max(1, count * 6 / 10);
+        // Owner (2026-07-06, the empty-sky screenshot): if EVERY mid-flight ship is long-haul it
+        // spawns 3–9 AU out — past the 3 AU civilian-beacon range — so an inner-system start opens
+        // on empty space. Seed one extra ship already en route on a SHORT inner route: it falls
+        // through the inner system at t=0, inside beacon range and lit. It takes the first
+        // otherwise-scheduled slot, so the long-haul draws above are untouched.
+        int innerMidFlight = longHaul.Count > 0 && shortHaul.Count > 0 ? 1 : 0;
         for (int i = 0; i < count; i++)
         {
-            bool isMidFlight = i < midFlight;
-            IReadOnlyList<RouteDefinition> pool = isMidFlight
+            bool isLongMidFlight = i < midFlight;
+            bool isInnerMidFlight = i >= midFlight && i < midFlight + innerMidFlight;
+            bool isMidFlight = isLongMidFlight || isInnerMidFlight;
+            IReadOnlyList<RouteDefinition> pool = isLongMidFlight
                 ? (longHaul.Count > 0 ? longHaul : all)
                 : (shortHaul.Count > 0 ? shortHaul : all);
             RouteDefinition chosen = PickWeighted(pool, rng);
@@ -205,7 +231,8 @@ public static class TrafficSchedule
             string planTo = PlanningBodyId(ephemeris, chosen.To);
 
             var personality = (RoutePersonality)rng.NextInt(0, 3);
-            string callsign = Callsigns[i % Callsigns.Length];
+            string id = NpcId("npc", wave, i);
+            string callsign = Callsigns[i % Callsigns.Length] + WaveTag(wave);
             int cargoUnits = rng.NextInt(5, 21);
 
             if (isMidFlight)
@@ -221,7 +248,7 @@ public static class TrafficSchedule
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, virtualDeparture, personality, rng);
                 ShipState now = catchUpSim.Run(route.DepartureState, baseSimTime - virtualDeparture, route.Plan);
                 ships.Add(new NpcShip(
-                    $"{idPrefix}-{i}", callsign, chosen.Cargo, chosen.From, chosen.To, personality,
+                    id, callsign, chosen.Cargo, chosen.From, chosen.To, personality,
                     virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
                     cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false,
                     PublishesTimetable: chosen.PublishesTimetable));
@@ -231,7 +258,7 @@ public static class TrafficSchedule
                 double departure = baseSimTime + Math.Floor(rng.NextDouble(3 * Day, 30 * Day));
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, departure, personality, rng);
                 ships.Add(new NpcShip(
-                    $"{idPrefix}-{i}", callsign, chosen.Cargo, chosen.From, chosen.To, personality,
+                    id, callsign, chosen.Cargo, chosen.From, chosen.To, personality,
                     departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime,
                     cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false,
                     PublishesTimetable: chosen.PublishesTimetable));
@@ -404,64 +431,109 @@ public static class TrafficSchedule
     }
 
     private static IReadOnlyList<NpcShip> GeneratePodsFromFixedLauncher(
-        ICelestialEphemeris ephemeris, ulong seed, int count,
-        double baseSimTime = 0, string idPrefix = "pod", string callsignPrefix = "Pod-")
+        ICelestialEphemeris ephemeris, ulong seed, int count, double baseSimTime = 0, int wave = 0)
     {
         var rng = new DeterministicRandom(seed);
         var launchSim = new Simulator(ephemeris, CatchUpTimeStep);
         var pods = new List<NpcShip>(count);
+        int midFlight = count / 2;
 
         for (int i = 0; i < count; i++)
         {
             string destination = rng.NextInt(0, 2) == 0 ? "mars" : "venus";
-            double departure = baseSimTime + Math.Floor(rng.NextDouble(0.5 * Day, 10 * Day));
-
-            // Plan the route like a ship (one burst + coast; the arrival brake is dropped —
-            // the customer catches the pod), then run just past the burst and declare that
-            // state the launch: everything the driver gave it, nothing it can change.
-            NpcRoute route = RoutePlanner.PlanRoute(ephemeris, "earth", destination, departure, RoutePersonality.Economical, rng);
-            ManeuverNode burn = route.Plan.Nodes[0];
-            var launchPlan = new ManeuverPlan([burn]);
-            ShipState launched = launchSim.Run(route.DepartureState, (burn.SimTime - departure) + CatchUpTimeStep, launchPlan);
-
-            pods.Add(new NpcShip(
-                $"{idPrefix}-{i}", $"{callsignPrefix}{i + 1}", "Compute cores", "luna", destination,
-                RoutePersonality.Economical, departure, launched.SimTime, launched,
-                // 5 units × 400 cr = exactly the first upgrade (2000 cr): one clean milk run
-                // finishes the tutorial. 4 units would dead-end it 400 credits short.
-                ManeuverPlan.Empty, route.EstimatedArrivalTime,
-                CargoUnits: 5, ManeuverBudget: 0, IsPod: true));
+            string id = NpcId("pod", wave, i);
+            string callsign = PodCallsigns[i % PodCallsigns.Length] + WaveTag(wave);
+            pods.Add(i < midFlight
+                ? MidFlightPod(ephemeris, launchSim, rng, "earth", destination, "luna", "Compute cores", baseSimTime, id, callsign)
+                : ScheduledPod(ephemeris, launchSim, rng, "earth", destination, "luna", "Compute cores", baseSimTime, id, callsign));
         }
 
         return pods;
     }
 
+    /// <summary>A pod scheduled to fire in the days after <paramref name="baseSimTime"/>: its
+    /// <c>InitialState</c> is declared just past the mass driver's single launch burn (everything
+    /// the driver gave it, nothing it can change — plan stays empty).</summary>
+    private static NpcShip ScheduledPod(
+        ICelestialEphemeris ephemeris, Simulator launchSim, DeterministicRandom rng,
+        string planningOrigin, string destination, string originId, string cargo,
+        double baseSimTime, string id, string callsign)
+    {
+        double departure = baseSimTime + Math.Floor(rng.NextDouble(0.5 * Day, 10 * Day));
+
+        // Plan the route like a ship (one burst + coast; the arrival brake is dropped — the
+        // customer catches the pod), then run just past the burst and declare that state the launch.
+        NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planningOrigin, destination, departure, RoutePersonality.Economical, rng);
+        ManeuverNode burn = route.Plan.Nodes[0];
+        var launchPlan = new ManeuverPlan([burn]);
+        ShipState launched = launchSim.Run(route.DepartureState, (burn.SimTime - departure) + CatchUpTimeStep, launchPlan);
+
+        return new NpcShip(
+            id, callsign, cargo, originId, destination,
+            RoutePersonality.Economical, departure, launched.SimTime, launched,
+            // 5 units × 400 cr = exactly the first upgrade (2000 cr): one clean milk run finishes
+            // the tutorial. 4 units would dead-end it 400 credits short.
+            ManeuverPlan.Empty, route.EstimatedArrivalTime,
+            CargoUnits: 5, ManeuverBudget: 0, IsPod: true);
+    }
+
+    /// <summary>
+    /// A pod that already fired 0.5–6 days before <paramref name="baseSimTime"/> and is still
+    /// coasting out through the inner system as of NOW (owner, 2026-07-06 empty-sky fix): a lit,
+    /// catchable contact the instant the board opens, instead of a sky that waits days for the
+    /// next mass-driver firing. Ballistic after the single launch burn, exactly like a scheduled
+    /// pod — only its clock is wound back.
+    /// </summary>
+    private static NpcShip MidFlightPod(
+        ICelestialEphemeris ephemeris, Simulator launchSim, DeterministicRandom rng,
+        string planningOrigin, string destination, string originId, string cargo,
+        double baseSimTime, string id, string callsign)
+    {
+        double timeSinceLaunch = rng.NextDouble(0.5 * Day, 6 * Day);
+        double virtualDeparture = baseSimTime - timeSinceLaunch;
+
+        NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planningOrigin, destination, virtualDeparture, RoutePersonality.Economical, rng);
+        ManeuverNode burn = route.Plan.Nodes[0];
+        var launchPlan = new ManeuverPlan([burn]);
+        ShipState now = launchSim.Run(route.DepartureState, baseSimTime - virtualDeparture, launchPlan);
+
+        return new NpcShip(
+            id, callsign, cargo, originId, destination,
+            RoutePersonality.Economical, virtualDeparture, now.SimTime, now,
+            ManeuverPlan.Empty, route.EstimatedArrivalTime,
+            CargoUnits: 5, ManeuverBudget: 0, IsPod: true);
+    }
+
     private static IReadOnlyList<NpcShip> GeneratePodsFromScenario(
         ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition traffic,
-        double baseSimTime = 0, string idPrefix = "pod", string callsignPrefix = "Pod-")
+        double baseSimTime = 0, int wave = 0)
     {
         var rng = new DeterministicRandom(seed);
         var launchSim = new Simulator(ephemeris, CatchUpTimeStep);
         var pods = new List<NpcShip>(count);
         IReadOnlyList<PodLauncherDefinition> launchers = traffic.PodLaunchers;
 
+        // At least one pod is already coasting as of baseSimTime (owner, 2026-07-06 empty-sky fix):
+        // the tutorial's named "Luna pod" prey must exist the instant the board opens, not fire
+        // days later. The rest are scheduled firings so the milk run keeps replenishing.
+        int midFlight = count / 2;
+        PodLauncherDefinition? lunaLauncher = launchers.FirstOrDefault(l => l.Body == "luna");
+
         for (int i = 0; i < count; i++)
         {
-            PodLauncherDefinition launcher = launchers[rng.NextInt(0, launchers.Count)];
+            bool isMidFlight = i < midFlight;
+            // Draw the launcher every iteration so the rng stream (and determinism) is identical
+            // whether or not the Luna override below fires.
+            PodLauncherDefinition picked = launchers[rng.NextInt(0, launchers.Count)];
+            PodLauncherDefinition launcher = isMidFlight && lunaLauncher is not null ? lunaLauncher : picked;
             string planningOrigin = PlanningBodyId(ephemeris, launcher.Body);
             string destination = PickPodDestination(ephemeris, planningOrigin, rng);
-            double departure = baseSimTime + Math.Floor(rng.NextDouble(0.5 * Day, 10 * Day));
+            string id = NpcId("pod", wave, i);
+            string callsign = PodCallsigns[i % PodCallsigns.Length] + WaveTag(wave);
 
-            NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planningOrigin, destination, departure, RoutePersonality.Economical, rng);
-            ManeuverNode burn = route.Plan.Nodes[0];
-            var launchPlan = new ManeuverPlan([burn]);
-            ShipState launched = launchSim.Run(route.DepartureState, (burn.SimTime - departure) + CatchUpTimeStep, launchPlan);
-
-            pods.Add(new NpcShip(
-                $"{idPrefix}-{i}", $"{callsignPrefix}{i + 1}", launcher.Cargo, launcher.Body, destination,
-                RoutePersonality.Economical, departure, launched.SimTime, launched,
-                ManeuverPlan.Empty, route.EstimatedArrivalTime,
-                CargoUnits: 5, ManeuverBudget: 0, IsPod: true));
+            pods.Add(isMidFlight
+                ? MidFlightPod(ephemeris, launchSim, rng, planningOrigin, destination, launcher.Body, launcher.Cargo, baseSimTime, id, callsign)
+                : ScheduledPod(ephemeris, launchSim, rng, planningOrigin, destination, launcher.Body, launcher.Cargo, baseSimTime, id, callsign));
         }
 
         return pods;
