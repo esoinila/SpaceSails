@@ -321,3 +321,31 @@
 .comms-traffic-table th {
     padding: 0.55rem 0.6rem;
 }
+
+/* ---- M28: the ship's parrot — a perch above the scope, visible on every desk. ---- */
+
+.parrot-perch {
+    position: absolute;
+    right: 0.9rem;
+    bottom: 23.5rem;
+    z-index: 26;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.parrot-bird {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
+}
+
+.parrot-bubble {
+    background: rgba(245, 245, 240, 0.95);
+    color: #1c2230;
+    border-radius: 0.6rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    max-width: 16rem;
+}
