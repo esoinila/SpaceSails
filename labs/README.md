@@ -32,6 +32,7 @@ dotnet run --project labs/09-what-the-rails-hide -c Release
 dotnet run --project labs/10-fast-enough-for-ten-thousand-x -c Release
 dotnet run --project labs/11-the-electric-sandbox -c Release
 dotnet run --project labs/12-oops-at-the-moon -c Release
+dotnet run --project labs/13-shooting-literally -c Release
 ```
 
 Each lesson folder holds:
