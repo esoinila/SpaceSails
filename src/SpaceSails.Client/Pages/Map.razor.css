@@ -141,6 +141,16 @@
     flex: 0 0 auto;
 }
 
+.map-plot-mode {
+    width: 2rem;
+    flex: 0 0 auto;
+}
+
+.map-plot-heading {
+    width: 5rem;
+    flex: 0 0 auto;
+}
+
 .map-plot-node-selected {
     outline: 1px solid rgba(150, 220, 255, 0.7);
     border-radius: 0.25rem;
