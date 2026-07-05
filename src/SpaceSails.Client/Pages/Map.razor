@@ -246,6 +246,13 @@
                     </button>
                     <span>Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
                 </div>
+                @if (_destinationBodyId is not null && _ancientCharges > 0)
+                {
+                    @* M28: the Ancients' pilot — scarce alien auto-plot, found at the pyramids. *@
+                    <button type="button" class="btn btn-sm btn-warning w-100 mb-2" @onclick="UseAncientsPilot">
+                        ◬ The Ancients' pilot — lay course to @BodyName(_destinationBodyId) (@_ancientCharges left)
+                    </button>
+                }
 
                 @if (_planNodes.Count == 0)
                 {
@@ -1338,6 +1345,81 @@
     }
 
     private string NpcName(string id) => FindNpc(id)?.Ship.Callsign ?? id;
+
+    // ---- M28 (Sunday PR-D): the Ancients' pilot — pyramid satellites & auto-plot charges ----
+    private int _ancientCharges;
+    private readonly double[] _ancientLastGrant =
+        [double.NegativeInfinity, double.NegativeInfinity];
+    private static readonly RgbaColor PyramidColor = new(255, 215, 120);
+
+    /// <summary>Runs on the sensor cadence: a pyramid close enough to touch grants charges.</summary>
+    private void CheckPyramids()
+    {
+        for (int i = 0; i < AncientsRule.PyramidCount; i++)
+        {
+            if (SimTime - _ancientLastGrant[i] < AncientsRule.GrantCooldownSeconds
+                || !AncientsRule.InGrantRange(i, _ship.Position, SimTime))
+            {
+                continue;
+            }
+
+            _ancientLastGrant[i] = SimTime;
+            _ancientCharges += AncientsRule.ChargesPerVisit;
+            ShowPulseMessage($"◬ The pyramid regards you. {AncientsRule.ChargesPerVisit} plottings are granted.");
+            RendererInterop.PlayCue("board");
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Spends a charge: the ancient pilot replaces the maneuver plan with a course
+    /// to the current destination — the same Simulator-evaluated search that plans NPC
+    /// routes, offered as scarce alien assistance. Manual flight stays the taught skill.</summary>
+    private void UseAncientsPilot()
+    {
+        if (_ancientCharges <= 0 || _destinationBodyId is null || _ephemeris is null)
+        {
+            return;
+        }
+
+        ShowPulseMessage("◬ The ancient pilot considers the sky…");
+        if (AncientsRule.AutoPlot(_ephemeris, _ship, _destinationBodyId) is not { } result)
+        {
+            return;
+        }
+
+        _ancientCharges--;
+        _planNodes.Clear();
+        foreach (ManeuverNode node in result.Plan.Nodes)
+        {
+            _planNodes.Add(new PlanNode { SimTime = node.SimTime, Action = node.Action, Pulses = node.Pulses });
+        }
+
+        RebuildPlan();
+        ReprojectTrajectory();
+        ShowPulseMessage($"◬ Course laid — closest approach {FormatDistance(result.MissDistance)} at {FormatSimTime(result.ClosestApproachSimTime)}. Mind HOW it flies.");
+        StateHasChanged();
+    }
+
+    private void DrawPyramids()
+    {
+        for (int i = 0; i < AncientsRule.PyramidCount; i++)
+        {
+            if (!AncientsRule.Revealed(i, _ship.Position, SimTime))
+            {
+                continue;
+            }
+
+            Vector2d position = AncientsRule.PyramidPosition(i, SimTime);
+            (float sx, float sy) = _camera.WorldToScreen(position);
+            Span<float> triangle = stackalloc float[8];
+            triangle[0] = sx; triangle[1] = sy - 6;
+            triangle[2] = sx - 5; triangle[3] = sy + 4;
+            triangle[4] = sx + 5; triangle[5] = sy + 4;
+            triangle[6] = sx; triangle[7] = sy - 6;
+            _renderer!.DrawPolyline(triangle, PyramidColor, 1.6f);
+            _renderer.DrawText(sx + 8, sy - 6, "◬ ???", PyramidColor);
+        }
+    }
 
     // ---- M28 (Sunday PR-C): the Norden moment — gun-deck fire control ----
     private const double MaxMuzzleSpeed = 8000;      // the mass driver's top charge, m/s
@@ -2462,6 +2544,7 @@
 
         StepNpcs();
         StepOrdnance();
+        CheckPyramids();
 
         if (_ship.SimTime >= _nextSweepSimTime)
         {
@@ -2628,6 +2711,7 @@
         DrawNpcs();
         DrawHunters();
         DrawOrdnance();
+        DrawPyramids();
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();

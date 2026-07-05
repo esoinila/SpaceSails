@@ -41,6 +41,7 @@ public static class NewsWire
     private static readonly string[] FlatLines =
     [
         "The Titan haulers' union is 'reviewing' its timetable policy. Read: going quiet.",
+        "Deep-range scan folk swear a pyramid crossed their bow out past 2 AU — impossibly fast, dead silent, gone by second look.",
         "A quiet corner of the dark web is offering route intel at half price. Feels like bait.",
         "Enceladus haven regulars swap the same three rumors, louder every night.",
         "Ringside Exchange floor traders are jumpy — nobody will say why, which is answer enough.",
