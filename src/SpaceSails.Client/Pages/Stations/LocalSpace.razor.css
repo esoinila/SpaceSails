@@ -11,18 +11,53 @@
     pointer-events: auto;
 }
 
-.local-space-list {
-    max-height: 50vh;
-    overflow-y: auto;
-}
-
-.local-space-row:not(:last-child) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 .local-space-icon {
     width: 1.25rem;
     text-align: center;
+}
+
+/* Master–detail (owner: "like File Explorer"): the tree of places of business on the left is
+   deliberately LEAN — name plus one reachability badge per row, nothing else — and the detail
+   pane on the right can afford to be generous about exactly the one selected node. */
+.local-space-master-detail {
+    display: grid;
+    grid-template-columns: minmax(13rem, 1fr) 1.6fr;
+    gap: 0 1rem;
+    height: 100%;
+    min-height: 0;
+}
+
+.local-space-tree {
+    overflow-y: auto;
+    min-height: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    padding-right: 0.5rem;
+}
+
+.local-space-detail {
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.local-space-node {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.18rem 0.35rem;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-space-node:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.local-space-node-selected {
+    background: rgba(120, 220, 255, 0.12);
+    outline: 1px solid rgba(120, 220, 255, 0.35);
 }
 
 .local-space-progress {
@@ -42,20 +77,14 @@
 
 .local-space-desk-body {
     height: calc(100% - 2.25rem);
-    overflow-y: auto;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
     font-size: 0.95rem;
 }
 
-.local-space-list-grid {
-    max-height: none;
-    overflow-y: visible;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-    gap: 0 1.25rem;
-}
-
-.local-space-desk-body .local-space-row {
-    padding-bottom: 0.9rem;
+.local-space-desk-body .local-space-master-detail {
+    flex: 1 1 auto;
 }
 
 /* The per-post action list (owner: "clear actions and UI that signals what we can do with
@@ -67,4 +96,17 @@
 .local-space-hint {
     font-size: 0.74rem;
     line-height: 1.2;
+}
+
+/* Breadcrumbs at the top of the detail pane — the file-manager convention that pays off most
+   (design consult): always know where you are, click any segment to climb back up. */
+.local-space-breadcrumbs {
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-space-breadcrumbs a {
+    text-decoration: none;
 }

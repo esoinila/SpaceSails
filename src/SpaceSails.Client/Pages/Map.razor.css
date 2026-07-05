@@ -222,11 +222,12 @@
     overflow-y: auto;
 }
 
-/* Trade desk — the trading floor (PR-13): local space contacts, the dock market, and the cargo
-   manifest side by side in three columns instead of one panel hiding behind another. */
+/* Trade desk — master–detail edition (owner: "like File Explorer"): the places-of-business
+   tree + detail pane spans two thirds; the dock market lives INSIDE it now (as the dockyard
+   node's detail), so only the cargo manifest keeps its own column. */
 .desk-trade-grid {
     display: grid;
-    grid-template-columns: 1.1fr 0.9fr 1fr;
+    grid-template-columns: 2.1fr 1fr;
     gap: 0 1.25rem;
     height: 100%;
 }
