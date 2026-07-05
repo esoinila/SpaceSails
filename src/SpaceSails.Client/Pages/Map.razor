@@ -1347,6 +1347,16 @@
     private const int CaptureWarpCap = 10;            // the 60 s window must be holdable
     private static readonly string[] MarketBodies = ["earth", "mars", "venus"];
 
+    // The captain's starting book (owner: "It is an operating ship with some history" — the
+    // same world-does-not-wait principle as the populated sky at t=0). The purse is the last
+    // run's takings; the hold carries that gig's leftovers, mixed classes like a real
+    // manifest, not a bare hull. 1,500 cr covers Earth Depot's whole stock via shuttles
+    // (4×250 + 100 cr fee) with change, and stays deliberately below the 2,000 cr upgrade
+    // price so the first pod run remains the tutorial's real payday.
+    private const int StartingCredits = 1500;
+    private static readonly (string Class, int Units)[] StartingManifest =
+        [("Alloys", 2), ("Ice", 3)];
+
     private int _credits;
     private int _cargoUnits;
     private int _cargoValue;
@@ -2751,6 +2761,17 @@
 
         _ship = InitializeShipState();
         ReprojectTrajectory();
+
+        // Owner (2026-07-05, after the empty-purse screenshot): an operating ship arrives with
+        // history — the last run's takings in the purse and its leftovers in the hold, so
+        // buying AND selling are exercisable from minute one.
+        _credits = StartingCredits;
+        foreach ((string cargoClass, int units) in StartingManifest)
+        {
+            _cargoUnits += units;
+            _cargoValue += units * CargoMarket.UnitValue(cargoClass);
+            _cargoByClass[cargoClass] = _cargoByClass.GetValueOrDefault(cargoClass) + units;
+        }
 
         // Generate traffic once from the same deterministic Core planner the server uses. This does a
         // few seconds of planning work; yield first so the initial (empty) map paints and stays
