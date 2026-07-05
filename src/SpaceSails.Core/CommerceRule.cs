@@ -38,13 +38,43 @@ public static class CommerceRule
     /// friendly corridor, not a raid through defended space, so distance costs less time.</summary>
     public const double DroneDistancePenalty = 5e8;
 
+    // ---- M29: the shuttle tier (owner, from a live pass: "we are approaching it, so the
+    // trade drones could go there and back during this slow pass"). A slow flyby at millions
+    // of kilometres is a real trading opportunity — the shuttles fly the long corridor while
+    // the geometry holds. Looser than the drone match in range, same 5 km/s ceiling as the
+    // boarding shuttle, and the transfer time grows honestly with the distance flown. ----
+
+    /// <summary>How far the trade shuttles will fly — covers a ~10 M km slow pass with margin.</summary>
+    public const double ShuttleRangeMeters = 1.2e10;
+
+    /// <summary>Same ceiling as the boarding shuttle: past this the pass is a drive-by.</summary>
+    public const double ShuttleMaxRelativeSpeed = CaptureRule.MaxRelativeSpeed;
+
+    /// <summary>Shuttle transfer time per cargo unit at point-blank — slower per unit than
+    /// drones never are, because a crewed shuttle hauls bigger loads per trip.</summary>
+    public const double ShuttleBaseSecondsPerUnit = 15;
+
+    /// <summary>Relative speed that doubles shuttle transfer time.</summary>
+    public const double ShuttleRelativeSpeedPenalty = 2500;
+
+    /// <summary>Stand-off distance that doubles shuttle transfer time — the round trip is real.</summary>
+    public const double ShuttleDistancePenalty = 5e9;
+
+    /// <summary>How a deal would move, best tier first.</summary>
+    public enum TradeMode
+    {
+        None,
+        SameOrbit,
+        DroneMatch,
+        Shuttle,
+    }
+
     /// <summary>
-    /// Trading is allowed when either party's orbit body ids match (both parked at the same body —
-    /// the classic bus-stop deal) or, absent that, when the two ships are close and slow enough
-    /// relative to each other for cooperative cargo drones to fly the gap (course-matched trading
-    /// with a moving partner, e.g. a hauler mid-transfer).
+    /// Classifies the trading geometry: parked at the same body (the classic bus-stop deal),
+    /// course-matched for cargo drones, inside shuttle range for the long corridor — or out
+    /// of reach entirely.
     /// </summary>
-    public static bool CanTrade(
+    public static TradeMode Classify(
         ShipState player,
         Vector2d partnerPosition,
         Vector2d partnerVelocity,
@@ -53,13 +83,45 @@ public static class CommerceRule
     {
         if (playerOrbitBodyId is not null && playerOrbitBodyId == partnerOrbitBodyId)
         {
-            return true;
+            return TradeMode.SameOrbit;
         }
 
         double distance = (player.Position - partnerPosition).Length;
         double relativeSpeed = (player.Velocity - partnerVelocity).Length;
-        return distance <= CourseMatchDistanceMeters && relativeSpeed <= CourseMatchMaxRelativeSpeed;
+        if (distance <= CourseMatchDistanceMeters && relativeSpeed <= CourseMatchMaxRelativeSpeed)
+        {
+            return TradeMode.DroneMatch;
+        }
+
+        if (distance <= ShuttleRangeMeters && relativeSpeed <= ShuttleMaxRelativeSpeed)
+        {
+            return TradeMode.Shuttle;
+        }
+
+        return TradeMode.None;
     }
+
+    /// <summary>
+    /// Trading is allowed when either party's orbit body ids match (both parked at the same body —
+    /// the classic bus-stop deal), when the two ships are course-matched for cooperative cargo
+    /// drones, or (M29) when the partner sits inside shuttle range on a slow enough pass.
+    /// </summary>
+    public static bool CanTrade(
+        ShipState player,
+        Vector2d partnerPosition,
+        Vector2d partnerVelocity,
+        string? playerOrbitBodyId,
+        string? partnerOrbitBodyId) =>
+        Classify(player, partnerPosition, partnerVelocity, playerOrbitBodyId, partnerOrbitBodyId) != TradeMode.None;
+
+    /// <summary>Transfer time for the given tier and geometry: drones for the close tiers,
+    /// the shuttle formula (real round trips over the long corridor) for the shuttle tier.</summary>
+    public static double TransferSeconds(TradeMode mode, double relativeSpeed, double distance, int units) =>
+        mode == TradeMode.Shuttle
+            ? ShuttleBaseSecondsPerUnit * Math.Max(1, units)
+                * (1 + relativeSpeed / ShuttleRelativeSpeedPenalty)
+                * (1 + distance / ShuttleDistancePenalty)
+            : DroneTransferSeconds(relativeSpeed, distance, units);
 
     /// <summary>
     /// Sim seconds a cooperative drone transfer needs at this instant's geometry, for the given
@@ -174,9 +236,13 @@ public static class CommerceRule
             }
 
             Vector2d childPosition = ephemeris.Position(child.Id, simTime);
+            // M29: children ride rails but they MOVE — a zero velocity made course-matching a
+            // station mathematically impossible (rel speed read as the ship's full heliocentric
+            // speed). Same finite difference the nav HUD uses everywhere.
+            Vector2d childVelocity = (ephemeris.Position(child.Id, simTime + 1) - ephemeris.Position(child.Id, simTime - 1)) / 2;
             (LocalContactKind kind, ActionKind actions) = ClassifyChild(child);
             contacts.Add(new LocalContact(
-                child.Id, child.Name, kind, childPosition, Vector2d.Zero,
+                child.Id, child.Name, kind, childPosition, childVelocity,
                 (childPosition - bodyPosition).Length, actions));
         }
 
@@ -196,6 +262,73 @@ public static class CommerceRule
             }
         }
 
+        return contacts;
+    }
+
+    /// <summary>
+    /// M29: every tradable partner within shuttle range of the PLAYER, wherever it happens to
+    /// be keyed — the "send the shuttles" opportunity list. Depots (with their host's fence
+    /// flag) and rails-riding stations/havens; distance here is measured from the player, not
+    /// a host body, because the shuttle corridor is what the desk is deciding about.
+    /// </summary>
+    public static IReadOnlyList<LocalContact> ContactsWithinShuttleRange(
+        ICelestialEphemeris ephemeris,
+        IReadOnlyList<LocalShip> ships,
+        double simTime,
+        ShipState player)
+    {
+        var contacts = new List<LocalContact>();
+
+        foreach (LocalShip ship in ships)
+        {
+            if (ship.DepotBodyId is null)
+            {
+                continue; // free-flying ships trade by boarding, not by cooperative shuttle
+            }
+
+            double distance = (ship.State.Position - player.Position).Length;
+            if (distance > ShuttleRangeMeters)
+            {
+                continue;
+            }
+
+            bool haven = false;
+            foreach (CelestialBody body in ephemeris.Bodies)
+            {
+                if (body.Id == ship.DepotBodyId) { haven = body.IsHaven; break; }
+            }
+
+            contacts.Add(new LocalContact(
+                ship.Id, ship.Callsign, LocalContactKind.Depot,
+                ship.State.Position, ship.State.Velocity, distance,
+                ActionKind.Trade | (haven ? ActionKind.Fence : ActionKind.None)));
+        }
+
+        foreach (CelestialBody child in ephemeris.Bodies)
+        {
+            if (child.ParentId is null)
+            {
+                continue;
+            }
+
+            (LocalContactKind kind, ActionKind actions) = ClassifyChild(child);
+            if ((actions & ActionKind.Trade) == 0)
+            {
+                continue;
+            }
+
+            Vector2d position = ephemeris.Position(child.Id, simTime);
+            double distance = (position - player.Position).Length;
+            if (distance > ShuttleRangeMeters)
+            {
+                continue;
+            }
+
+            Vector2d velocity = (ephemeris.Position(child.Id, simTime + 1) - ephemeris.Position(child.Id, simTime - 1)) / 2;
+            contacts.Add(new LocalContact(child.Id, child.Name, kind, position, velocity, distance, actions));
+        }
+
+        contacts.Sort((a, b) => a.DistanceMeters.CompareTo(b.DistanceMeters));
         return contacts;
     }
 

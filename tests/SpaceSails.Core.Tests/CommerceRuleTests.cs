@@ -29,10 +29,90 @@ public class CommerceRuleTests
     public void CanTrade_DifferentOrbitBodies_FallsBackToEnvelope_AndFailsWhenOutsideIt()
     {
         var player = At(new Vector2d(1e11, 0), new Vector2d(0, 30000));
-        var partnerPos = new Vector2d(1e11, 5e9); // way outside course-match distance
-        var partnerVel = new Vector2d(0, 30000);
+        // M29 changed this case: 5e9 apart at zero rel is SHUTTLE REACH now, so the honest
+        // "no deal" needs to sit beyond even the shuttles — or be too fast for them.
+        var farPos = new Vector2d(1e11, 5e10);
+        Assert.False(CommerceRule.CanTrade(player, farPos, new Vector2d(0, 30000), "earth", "mars"));
 
-        Assert.False(CommerceRule.CanTrade(player, partnerPos, partnerVel, "earth", "mars"));
+        var fastPos = new Vector2d(1e11, 5e9);
+        var fastVel = new Vector2d(0, 30000 + 6000); // 6 km/s rel — a drive-by, not a pass
+        Assert.False(CommerceRule.CanTrade(player, fastPos, fastVel, "earth", "mars"));
+    }
+
+    // ---- M29: the shuttle tier ----
+
+    [Fact]
+    public void Classify_TiersInOrder_OrbitThenDronesThenShuttles()
+    {
+        var player = At(new Vector2d(1e11, 0), new Vector2d(0, 30000));
+
+        Assert.Equal(CommerceRule.TradeMode.SameOrbit,
+            CommerceRule.Classify(player, new Vector2d(1e11, 5e9), new Vector2d(9000, 0), "earth", "earth"));
+
+        // Tight and slow: drones.
+        Assert.Equal(CommerceRule.TradeMode.DroneMatch,
+            CommerceRule.Classify(player, new Vector2d(1e11, 3e8), new Vector2d(0, 31500), null, null));
+
+        // The owner's live pass: ~10 M km out, 4.4 km/s relative — shuttles fly it.
+        Assert.Equal(CommerceRule.TradeMode.Shuttle,
+            CommerceRule.Classify(player, new Vector2d(1e11, 9.99e9), new Vector2d(0, 30000 - 4400), null, null));
+
+        // Past shuttle reach, or too fast for the pass: no deal.
+        Assert.Equal(CommerceRule.TradeMode.None,
+            CommerceRule.Classify(player, new Vector2d(1e11, 1.3e10), new Vector2d(0, 30000), null, null));
+        Assert.Equal(CommerceRule.TradeMode.None,
+            CommerceRule.Classify(player, new Vector2d(1e11, 9.99e9), new Vector2d(0, 30000 - 5500), null, null));
+    }
+
+    [Fact]
+    public void TransferSeconds_ShuttlesPayForTheCorridor_DronesStayCheapClose()
+    {
+        // The owner's pass: 5 units, 9.99e9 m, 4.4 km/s rel — a real but playable wait.
+        double shuttle = CommerceRule.TransferSeconds(CommerceRule.TradeMode.Shuttle, 4400, 9.99e9, 5);
+        Assert.InRange(shuttle, 120, 900);
+
+        // Distance is paid for honestly: half the corridor is meaningfully cheaper.
+        double nearer = CommerceRule.TransferSeconds(CommerceRule.TradeMode.Shuttle, 4400, 5e9, 5);
+        Assert.True(nearer < shuttle * 0.75);
+
+        // The close tiers keep the old drone math untouched.
+        Assert.Equal(
+            CommerceRule.DroneTransferSeconds(500, 2e8, 5),
+            CommerceRule.TransferSeconds(CommerceRule.TradeMode.DroneMatch, 500, 2e8, 5), precision: 9);
+    }
+
+    [Fact]
+    public void ContactsAt_ChildrenRideRailsWithRealVelocity()
+    {
+        var ephemeris = Sol();
+        IReadOnlyList<CommerceRule.LocalContact> contacts =
+            CommerceRule.ContactsAt(ephemeris, [], simTime: 0, "earth");
+
+        // Luna (and any station child) must report a nonzero on-rails velocity — a zero made
+        // course-matching a station mathematically impossible (M29 fix).
+        Assert.Contains(contacts, c => c.Kind != CommerceRule.LocalContactKind.Depot
+            && c.Velocity.Length > 1000);
+    }
+
+    [Fact]
+    public void ContactsWithinShuttleRange_FindsTheOpportunity_AndOnlyThen()
+    {
+        var ephemeris = Sol();
+        Vector2d earth = ephemeris.Position("earth", 0);
+        Vector2d earthVel = (ephemeris.Position("earth", 1.0) - ephemeris.Position("earth", -1.0)) / 2.0;
+
+        // Drifting 8e9 m off Earth: Luna-adjacent stations/havens keyed to Earth space are
+        // inside shuttle reach and must be offered.
+        var near = At(earth + new Vector2d(8e9, 0), earthVel);
+        IReadOnlyList<CommerceRule.LocalContact> offers =
+            CommerceRule.ContactsWithinShuttleRange(ephemeris, [], 0, near);
+        Assert.NotEmpty(offers);
+        Assert.All(offers, c => Assert.True(c.DistanceMeters <= CommerceRule.ShuttleRangeMeters));
+        Assert.All(offers, c => Assert.True((c.Actions & CommerceRule.ActionKind.Trade) != 0));
+
+        // Deep space: nothing to offer.
+        var deep = At(earth + new Vector2d(9e10, 9e10), earthVel);
+        Assert.Empty(CommerceRule.ContactsWithinShuttleRange(ephemeris, [], 0, deep));
     }
 
     [Fact]
@@ -52,8 +132,11 @@ public class CommerceRuleTests
         Vector2d justInside = new(CommerceRule.CourseMatchDistanceMeters * 0.999, 0);
         Vector2d justOutside = new(CommerceRule.CourseMatchDistanceMeters * 1.001, 0);
 
-        Assert.True(CommerceRule.CanTrade(player, justInside, Vector2d.Zero, null, null));
-        Assert.False(CommerceRule.CanTrade(player, justOutside, Vector2d.Zero, null, null));
+        // M29: crossing the drone envelope hands the deal to the SHUTTLE tier, not to "no".
+        Assert.Equal(CommerceRule.TradeMode.DroneMatch,
+            CommerceRule.Classify(player, justInside, Vector2d.Zero, null, null));
+        Assert.Equal(CommerceRule.TradeMode.Shuttle,
+            CommerceRule.Classify(player, justOutside, Vector2d.Zero, null, null));
     }
 
     [Fact]
@@ -64,8 +147,13 @@ public class CommerceRuleTests
         Vector2d slowEnough = new(0, CommerceRule.CourseMatchMaxRelativeSpeed * 0.999);
         Vector2d tooFast = new(0, CommerceRule.CourseMatchMaxRelativeSpeed * 1.001);
 
-        Assert.True(CommerceRule.CanTrade(player, partnerPos, slowEnough, null, null));
-        Assert.False(CommerceRule.CanTrade(player, partnerPos, tooFast, null, null));
+        // M29: too fast for drones is still fine for the shuttles up to their own 5 km/s.
+        Assert.Equal(CommerceRule.TradeMode.DroneMatch,
+            CommerceRule.Classify(player, partnerPos, slowEnough, null, null));
+        Assert.Equal(CommerceRule.TradeMode.Shuttle,
+            CommerceRule.Classify(player, partnerPos, tooFast, null, null));
+        Assert.Equal(CommerceRule.TradeMode.None,
+            CommerceRule.Classify(player, partnerPos, new Vector2d(0, CommerceRule.ShuttleMaxRelativeSpeed * 1.001), null, null));
     }
 
     // ---- DroneTransferSeconds monotonicity ----
