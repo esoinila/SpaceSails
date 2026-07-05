@@ -8,7 +8,8 @@ namespace SpaceSails.Core;
 public sealed record PredictedPath(
     Observation Source,
     IReadOnlyList<TrajectorySample> Samples,
-    double ManeuverBudget = NpcShip.DefaultManeuverBudget)
+    double ManeuverBudget = NpcShip.DefaultManeuverBudget,
+    double ImpulseBudget = 0)
 {
     /// <summary>Instrument position/velocity noise at the moment of observation.</summary>
     public const double BaseHalfWidthMeters = 1e7;
@@ -17,16 +18,30 @@ public sealed record PredictedPath(
     public const double VelocitySigma = 100;
 
     /// <summary>
+    /// M28 (Lab 08's post-burn dishonesty fix): a crewed ship doesn't only drift-maneuver at
+    /// <see cref="ManeuverBudget"/> — it can fire a BURST of ±10% pulses the moment after we
+    /// look away, a step change in velocity whose position error grows LINEARLY with dt at
+    /// the burst's Δv. Lab 08 measured the cone flatly excluding the truth for hours after a
+    /// real departure burn (conservatism 0.5× at 2 h and 6 h). The plausible burst is ~2
+    /// pulses at ±10% of the observed speed.
+    /// </summary>
+    public const double ImpulsePulseFraction = 0.10;
+    public const int PlausibleBurstPulses = 2;
+
+    /// <summary>
     /// Uncertainty half-width at a sim time at or after the source observation.
-    /// <see cref="ManeuverBudget"/> is the target's plausible unobserved maneuvering as an
-    /// equivalent acceleration (a pilot pulsing ±10% several times a day averages ~0.3 m/s²;
-    /// the cone then passes the 1e9 m capture threshold after ~a day dark). A mass-driver pod
-    /// has budget 0 — its cone never opens past measurement noise.
+    /// <see cref="ManeuverBudget"/> is the target's plausible unobserved CONTINUOUS
+    /// maneuvering as an equivalent acceleration (a pilot pulsing ±10% several times a day
+    /// averages ~0.3 m/s²); <see cref="ImpulseBudget"/> is the plausible IMPULSIVE burst in
+    /// m/s, growing the cone linearly — the term that keeps it honest in the first hours
+    /// after a real burn (Lab 08). A mass-driver pod has both budgets 0 — its cone never
+    /// opens past measurement noise.
     /// </summary>
     public double HalfWidthAt(double simTime)
     {
         double dt = Math.Max(0, simTime - Source.SimTime);
-        return BaseHalfWidthMeters + VelocitySigma * dt + 0.5 * ManeuverBudget * dt * dt;
+        return BaseHalfWidthMeters + VelocitySigma * dt + ImpulseBudget * dt
+            + 0.5 * ManeuverBudget * dt * dt;
     }
 }
 
@@ -43,13 +58,25 @@ public static class PathPredictor
         Observation observation,
         ManeuverPlan? hypothesis,
         double horizonSeconds,
-        double maneuverBudget = NpcShip.DefaultManeuverBudget)
+        double maneuverBudget = NpcShip.DefaultManeuverBudget,
+        double impulseBudget = double.NaN)
     {
         var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
         var state = new ShipState(observation.Position, observation.Velocity, observation.SimTime);
         IReadOnlyList<TrajectorySample> samples = simulator.ProjectAdaptive(
             state, hypothesis, horizonSeconds, maxSamples: SampleBudget(horizonSeconds));
-        return new PredictedPath(observation, samples, maneuverBudget);
+
+        // NaN = derive the plausible burst from the observation itself (Lab 08 fix): a crewed
+        // ship (nonzero continuous budget) can burst ~2 pulses of ±10% of its observed speed;
+        // a budget-0 pod cannot burn at all and keeps its needle-thin cone.
+        if (double.IsNaN(impulseBudget))
+        {
+            impulseBudget = maneuverBudget > 0
+                ? PredictedPath.PlausibleBurstPulses * PredictedPath.ImpulsePulseFraction * observation.Velocity.Length
+                : 0;
+        }
+
+        return new PredictedPath(observation, samples, maneuverBudget, impulseBudget);
     }
 
     // ProjectAdaptive silently stops at maxSamples; a long-horizon prediction must budget for
