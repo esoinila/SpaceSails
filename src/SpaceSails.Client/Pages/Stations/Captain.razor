@@ -32,6 +32,24 @@
         <div class="captain-articles-mission">@CurrentMission.Describe()</div>
     </div>
 
+    @* Weapons authority (owner, The Expanse consult): the gun deck cannot pull the trigger
+       without the captain's word — one shot per authorization, or the standing order. *@
+    <div class="captain-articles captain-weapons-authority">
+        <div class="captain-articles-label">Weapons authority</div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button type="button" class="btn btn-sm @(ShotAuthorized ? "btn-success" : "btn-outline-success")"
+                    title="Authorizes exactly one shot from the war room; withdrawn automatically when it fires"
+                    @onclick="() => OnAuthorizeShot.InvokeAsync()">
+                @(ShotAuthorized ? "✅ NEXT SHOT AUTHORIZED — click to withdraw" : "✍ AUTHORIZE NEXT SHOT")
+            </button>
+            <label class="text-light captain-fire-at-will">
+                <input type="checkbox" checked="@FireAtWill" @onchange="() => OnToggleFireAtWill.InvokeAsync()" />
+                ⚓ fire at will (standing order)
+            </label>
+        </div>
+        <div class="text-secondary small">Warning shots need no word — they ARE the captain talking.</div>
+    </div>
+
     @if (_statusView)
     {
         <div class="captain-status-grid">
@@ -164,6 +182,10 @@
     [Parameter] public EventCallback<ShipMission> OnSelectMission { get; set; }
     [Parameter] public IReadOnlyList<DeskChips.ChipData> StatusChips { get; set; } = [];
     [Parameter] public EventCallback<ShipDesk> OnGoToDesk { get; set; }
+    [Parameter] public bool ShotAuthorized { get; set; }
+    [Parameter] public bool FireAtWill { get; set; }
+    [Parameter] public EventCallback OnAuthorizeShot { get; set; }
+    [Parameter] public EventCallback OnToggleFireAtWill { get; set; }
 
     private bool _statusView;
 

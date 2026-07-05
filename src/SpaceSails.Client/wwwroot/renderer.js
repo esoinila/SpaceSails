@@ -237,6 +237,9 @@ const CUES = {
     vent:  { freq: 900, to: 300, duration: 0.25, gain: 0.05, type: 'sawtooth' }, // discharge hiss-fall
     board: { freq: 523, to: 784, duration: 0.35, gain: 0.08, type: 'sine' },     // prize jingle rise
     arc:   { freq: 80,  to: 60,  duration: 0.5,  gain: 0.10, type: 'sawtooth' }, // thunder growl
+    fire:  { freq: 130, to: 45,  duration: 0.4,  gain: 0.12, type: 'square' },   // the driver's boom
+    hit:   { freq: 660, to: 990, duration: 0.3,  gain: 0.10, type: 'triangle' }, // splash — bright ping up
+    miss:  { freq: 440, to: 160, duration: 0.5,  gain: 0.07, type: 'sine' },     // round gone — sad fall
 };
 
 export function playCue(kind) {

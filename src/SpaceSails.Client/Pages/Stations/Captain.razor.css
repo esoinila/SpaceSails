@@ -143,3 +143,13 @@
     color: rgba(224, 228, 236, 0.65);
     font-size: 0.9rem;
 }
+
+/* Point-and-shoot PR: the captain's weapons authority. */
+.captain-weapons-authority {
+    margin-top: 0.5rem;
+}
+
+.captain-fire-at-will {
+    cursor: pointer;
+    user-select: none;
+}
