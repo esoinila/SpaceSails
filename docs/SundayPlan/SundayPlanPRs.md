@@ -5,13 +5,17 @@ feature set as a reviewable chain of PRs, all opened overnight so the owner can 
 in order over morning coffee. The implementer stays on call to rebase and merge each one as
 it's approved.*
 
-**Status: all six PRs open, awaiting approval.** PR-0 #54 · PR-A #55 · PR-B #56 · PR-C #57
-· PR-D #58 · PR-E #59. Merge order: **#54 → #55 → #56 → #57 → #58 → #59** — one stacked
-chain; each PR is opened against its predecessor's branch so every review shows only its
-own diff. (Change from the first draft: PR-E moved from "independent, off main" onto the
-chain tip so the parrot's star squawk — "FIRING SOLUTION, CAPTAIN!" — could wire to PR-C's
-lock event directly.) The implementer is on call to retarget/rebase and merge each PR as
-it's approved.
+**Status: ALL MERGED (owner approval, 2026-07-05 morning).** PR-0 #54 · PR-A #55 ·
+PR-B #56→#60 · PR-C #57 · PR-D #58 · PR-E #59, merged to main in that order. (PR-E had
+moved from "independent, off main" onto the chain tip so the parrot's star squawk —
+"FIRING SOLUTION, CAPTAIN!" — could wire to PR-C's lock event directly.)
+
+**Merge-train lesson for next time:** with squash merges, deleting a merged PR's head
+branch auto-CLOSES any open PR based on it, and a closed PR can be neither reopened after
+a force-push nor retargeted — #56 died this way and was resurrected as #60. The procedure
+that works: retarget the child PR's base to `main` FIRST, then merge the parent (deleting
+its branch), then `git rebase --onto main <original-parent-commit> <child-branch>` (the
+ORIGINAL commit, not the rebased ref) and force-push.
 
 ## The vision, distilled into features
 

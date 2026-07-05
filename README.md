@@ -32,6 +32,7 @@ number in every lesson comes from actually running that lesson's probe.
 - [Captain's Guide](docs/user-guide.md) — every feature, how to fly, how to steal (mirrored in-game at `/guide`)
 - [Testing guide](docs/testing-guide.md) — the owner's scripted regression checklist, one playtest per major feature
 - [The Gravity Lab](labs/README.md) — a type-it-in numerical orbital mechanics tutorial series built on `SpaceSails.Core` itself, fork-run-break style
+- [The paper draft](docs/paper/spacesails-paper-draft.md) — *SpaceSails: Secretly a Classroom* — the SIGGRAPH-style system story (deterministic real-time orbital sim in the browser) with the human-PO / AI-head-coder experience report as a first-class section
 
 ### Feature guides
 
