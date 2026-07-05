@@ -194,26 +194,39 @@ a level-up costing 2,000 credits and doubling every level thereafter. See the Tr
 
 ![The Sensors desk — the rosette, sweep controls, and a scope-wall tile per tracked target.](tmp_pics/saturday/tracking-post.png)
 
-- Press `2` or click **2 Sensors**. The live map dims in behind it — the desk's own
-  instrument is the **scope wall**: one live scope canvas per tracked target, all running
-  at once, not one small inset.
+- Press `2` or click **2 Sensors**. The live map IS the desk — the sky dims in behind the
+  instruments but stays fully clickable: pan it, zoom it, and **point at anything to ask
+  what's there**. Ships, planets, trade lanes, and even empty space all answer a click with
+  scan options. (Navigation stays on the Nav desk — a planet here offers a scan, not a
+  course.)
+- The ship carries **one steerable telescope**, and everything you ask of it lands on the
+  **Sensor tasks** list: custody passes on tracked ships, area scans, lane sweeps,
+  lost-target searches. The instrument works that list top to bottom and wraps around.
+  Reorder with ▲▼, jump a task to the very next pass with ⏫, cancel one-shots with ✕. The
+  wedge it is scanning *right now* is drawn on the sky, filling in brighter as the exposure
+  completes.
+- **Trade lanes** draw as faint labeled corridors on the map (Venus–Earth, Earth–Mars,
+  onward to Jupiter and Saturn). Click inside one to **sweep it now** or post a **standing
+  lane watch** — that's how you find the secretive haulers the Comms departures board can't
+  tell you about. Click empty sky and the **Open Sky** menu prices a scan of that patch (the
+  patch follows your zoom) — and a scan always resolves *something*: debris, rocks, cold
+  pods, sometimes a derelict. Near a lane, the menu says so and offers the lane instead.
 - A **rosette** shows your detection envelope live as an egg-shape relative to the sun:
   pointed straight at the sun you're nearly blind (8% of the telescope's 6×10¹¹ m base
-  range); pointed straight away from it (anti-sunward) you see the full range — the
-  pirate's best hunting angle, dark sky at your back.
-- Aim by dragging the **bearing** and **arc width** sliders, or pick a ready-made
-  **scanning program** that covers a known trade corridor (Venus–Earth, Earth–Mars, and
-  onward to Jupiter and Saturn), then **Start sweep**. A full 360° survey spends 6
-  sim-hours, scaling down for a narrower wedge — but it finds ships the Comms desk's
-  departures board can't: secretive haulers that don't publish a timetable.
-- Found contacts join the **tracked-targets ledger**, one tile per hit on the wall.
-  **Confirm** does a short re-look at a target's predicted position rather than a fresh
-  sweep, and bumps quality back up — skip it too long (5+ days) or let the target burn hard
-  enough to slip the cone, and quality decays until the lock is lost for good. **Drop**
-  frees the slot.
-- **Telescope count** (an upgrade on the Trade desk's dock market, alongside reaction mass,
-  sensor range, and cargo hold) is how many ships you can hold on the ledger — and wall
-  tiles you get — at once: 1 at the base level, up to 4 at max.
+  range); anti-sunward you see the full range — the pirate's best hunting angle. The
+  **passive watch** (a free full-circle survey) fills idle telescope time, and the
+  bearing/arc sliders still give a manual sweep that preempts everything.
+- Found contacts join the **tracked-targets ledger** — one card per slot, each with its own
+  **live scope box**; ● ON SCOPE marks the one the telescope is updating right now.
+  **Confirm** does a short re-look; **Drop** frees the slot. Custody is a real resource:
+  tracking one ship is near-continuous, tracking four plus a lane watch leaves gaps a
+  transponder-dark ship can burn inside.
+- **Lose a lock** and the ship doesn't just vanish: a pulsing **search area** opens on the
+  map where she must still be, growing with time, and a 🔍 search task joins the queue.
+  Fruitless passes shrink the area; **⏫ PRIORITIZE REDISCOVERY** makes the search the very
+  next pass at the price of everything else waiting; wait too long and the trail goes cold.
+- **Telescope level** (an upgrade on the Trade desk's dock market) sets both your ledger
+  slots — 1 at base, up to 4 — and how fast every telescope pass runs.
 - A well-tracked ship draws with a tighter ring on the map itself — a good, fresh lock
   visibly sharpens the intercept, down to 30% of the ordinary prediction-cone width at a
   perfect reconfirm.

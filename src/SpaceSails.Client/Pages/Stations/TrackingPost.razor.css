@@ -170,7 +170,8 @@
     max-width: 320px;
 }
 
-/* One live telescope + a card per track — the card carries the whole nav-grade picture. */
+/* PR-D: a live scope box inside every track card — the card carries the whole nav-grade
+   picture beside its own image (owner: "boxes with images. Each has its own"). */
 .sensors-main {
     flex: 1 1 auto;
     min-height: 0;
@@ -179,21 +180,54 @@
     overflow: hidden;
 }
 
-.sensors-live {
-    width: 19rem;
-    max-width: 40%;
+.sensor-card-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
 }
 
-.sensors-live canvas {
+.sensor-card-scope {
+    width: 9.25rem;
+    aspect-ratio: 1 / 1;
+    flex: 0 0 auto;
     border: 1px solid rgba(90, 200, 190, 0.35);
     border-radius: 0.4rem;
     background: #05070b;
 }
 
-.sensors-live-caption {
-    font-size: 0.75rem;
-    text-align: center;
-    margin-top: 0.25rem;
+/* PR-D: the Sensor tasks list — the one telescope's visible queue. */
+.sensor-tasks-box {
+    border: 1px solid rgba(120, 220, 255, 0.45);
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.82rem;
+    max-height: 11rem;
+    overflow-y: auto;
+}
+
+.sensor-task-active {
+    background: rgba(120, 220, 255, 0.10);
+    border-radius: 0.25rem;
+}
+
+/* PR-D: the cold-case board — lost locks with live search areas. */
+.sensor-lost-box {
+    border: 1px solid rgba(255, 150, 100, 0.5);
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.82rem;
+    max-height: 9rem;
+    overflow-y: auto;
+}
+
+/* PR-D: what the last area scan resolved out of the populated sky. */
+.sensors-finds-box {
+    border: 1px solid rgba(200, 210, 225, 0.3);
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.82rem;
+    max-height: 8rem;
+    overflow-y: auto;
 }
 
 .sensors-cards {

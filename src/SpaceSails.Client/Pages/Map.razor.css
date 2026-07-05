@@ -386,7 +386,9 @@
 .desk-layer-passthrough ::deep .tracking-post-desk-top,
 .desk-layer-passthrough ::deep .sensors-opportunity-box,
 .desk-layer-passthrough ::deep .sensors-radar-box,
-.desk-layer-passthrough ::deep .sensors-live,
+.desk-layer-passthrough ::deep .sensor-tasks-box,
+.desk-layer-passthrough ::deep .sensor-lost-box,
+.desk-layer-passthrough ::deep .sensors-finds-box,
 .desk-layer-passthrough ::deep .sensor-card,
 .desk-layer-passthrough ::deep .tracking-progress {
     pointer-events: auto;
