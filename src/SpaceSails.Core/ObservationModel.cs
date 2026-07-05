@@ -108,3 +108,72 @@ public static class RadarRule
     public static bool HearsPing(Vector2d us, Vector2d them) =>
         (them - us).LengthSquared <= LoudRangeMeters * LoudRangeMeters;
 }
+
+/// <summary>
+/// M29: the ship's transponder — the AIS of the solar lanes (owner: "like ships on ocean, we
+/// can turn off our transponder just before we commit to the pirate run"). ON broadcasts our
+/// true state on the beacon band: honest traffic runs lit, and anyone in beacon range has us
+/// without winning any eyes race. DARK broadcasts nothing — detection falls back to the
+/// optical race. FAKE broadcasts a GHOST: the ship we'd be if we'd stayed on the declared
+/// course — the state snapshotted at the moment of the lie, flown ballistically ever since —
+/// while the real hull runs the intercept.
+/// </summary>
+public enum TransponderMode
+{
+    On,
+    Dark,
+    Fake,
+}
+
+/// <summary>What one particular observer's picture of us is, beacon and optics combined.</summary>
+public enum BeaconPicture
+{
+    /// <summary>They have nothing — no beacon signal, no optical contact.</summary>
+    Nothing,
+
+    /// <summary>They have our TRUE position (lit beacon in range, or their own eyes).</summary>
+    TrueContact,
+
+    /// <summary>They read the fake beacon and believe the ghost — we look on course.</summary>
+    Ghost,
+
+    /// <summary>Their own optics see the real us WHILE the beacon claims the ghost — the lie
+    /// is blown to this observer: a hull provably off its declared course.</summary>
+    LieBlown,
+}
+
+public static class TransponderRule
+{
+    /// <summary>Beacon band reach — the same "earshot" as a loud radar ping.</summary>
+    public const double BeaconRangeMeters = RadarRule.LoudRangeMeters;
+
+    /// <summary>Whatever the optics say, a lit (or lying) beacon inside range is heard.
+    /// Dark ships are exactly as visible as their hull and no more.</summary>
+    public static bool BeaconHeard(TransponderMode mode, double distance) =>
+        mode != TransponderMode.Dark && distance <= BeaconRangeMeters;
+
+    /// <summary>The eyes-race verdict corrected for our beacon: they have us if their optics
+    /// win OR our beacon is talking to them (a fake beacon still hands them A contact — just
+    /// not the true one; see <see cref="PictureFor"/> for what they believe).</summary>
+    public static SightAdvantage WithBeacon(SightAdvantage optical, TransponderMode mode) =>
+        BeaconHeard(mode, optical.Distance) && !optical.TheySeeUs
+            ? optical with { TheySeeUs = true }
+            : optical;
+
+    /// <summary>
+    /// One observer's picture of us: nothing, the truth, the ghost — or the blown lie, when
+    /// their own eyes see the real hull while the beacon claims we're somewhere else. Pure
+    /// function of the optical verdict and the mode; per observer, so a lie can hold across
+    /// the system while being blown to the one hull close enough to look.
+    /// </summary>
+    public static BeaconPicture PictureFor(TransponderMode mode, SightAdvantage optical) => mode switch
+    {
+        TransponderMode.Dark => optical.TheySeeUs ? BeaconPicture.TrueContact : BeaconPicture.Nothing,
+        TransponderMode.On => optical.TheySeeUs || optical.Distance <= BeaconRangeMeters
+            ? BeaconPicture.TrueContact
+            : BeaconPicture.Nothing,
+        _ => optical.TheySeeUs ? BeaconPicture.LieBlown
+            : optical.Distance <= BeaconRangeMeters ? BeaconPicture.Ghost
+            : BeaconPicture.Nothing,
+    };
+}

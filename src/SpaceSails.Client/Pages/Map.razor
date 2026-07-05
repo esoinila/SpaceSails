@@ -487,6 +487,7 @@
                 SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" ShipCharge="_ship.Charge"
                 Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1"
                 RadarActive="_activeRadar" OnRadarToggle="SetActiveRadar"
+                Transponder="_transponderMode" OnTransponderChange="SetTransponder"
                 Opportunities="_courseOpportunities" OnSetInterest="SetInterestTarget"
                 OnZoomMap="ZoomSensorsBackdrop" OnCenterShip="CenterShipOnMap"
                 OnClose="() => SwitchDesk(ShipDesk.Nav)" />
@@ -882,7 +883,15 @@
     {
         string objective = _trackingPost?.ObjectiveSummary(SimTime) ?? "no watch set";
         string tracks = $"{_trackingPost?.Entries.Count ?? 0}/{_telescopeLevel + 1} tracks";
-        return new(ShipDesk.Sensors, "📡", "Sensors", objective, tracks);
+        // M29: the beacon state rides the chip — the captain should never wonder aloud what
+        // story the transponder is telling.
+        string? beacon = _transponderMode switch
+        {
+            TransponderMode.Dark => "🕶 running dark",
+            TransponderMode.Fake => "🎭 FALSE COLORS — ghost on course",
+            _ => null,
+        };
+        return new(ShipDesk.Sensors, "📡", "Sensors", objective, tracks, beacon);
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData WarRoomChip()
@@ -2745,6 +2754,13 @@
         }
         SimTime = _ship.SimTime;
 
+        // M29: the fake beacon's ghost flies the abandoned course ballistically, kept in
+        // step with the real clock — one extra body, integrated only while the lie is out.
+        if (_beaconGhost is { } ghost && SimTime > ghost.SimTime)
+        {
+            _beaconGhost = _simulator.RunAdaptive(ghost, SimTime - ghost.SimTime);
+        }
+
         if (stepsThisFrame > 0)
         {
             AccountForFiredNodes();
@@ -2924,6 +2940,7 @@
         DrawOrdnance();
         DrawPyramids();
         DrawShuttleRange();
+        DrawBeaconGhost();
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -3286,6 +3303,25 @@
                 _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, labelColor);
             }
         }
+    }
+
+    // M29: the fake beacon's ghost, shown to US so the captain always knows what story the
+    // beacon is telling — a hollow marker flying the abandoned course.
+    private void DrawBeaconGhost()
+    {
+        if (_transponderMode != TransponderMode.Fake || _beaconGhost is not { } ghost)
+        {
+            return;
+        }
+
+        (float gx, float gy) = _camera.WorldToScreen(ghost.Position);
+        if (gx < -40 || gy < -40 || gx > _viewportWidth + 40 || gy > _viewportHeight + 40)
+        {
+            return;
+        }
+
+        _renderer!.DrawCircle(gx, gy, 6, null, GhostShipColor, 1.5f);
+        _renderer.DrawText(gx + 9, gy + 3, "🎭 beacon ghost", GhostShipColor, "10px monospace", TextAlign.Left);
     }
 
     // M29: situational awareness for trading — the shuttle-range ring around the ship,
@@ -3686,6 +3722,34 @@
         _shipMenuY = clientY;
         StateHasChanged();
         return true;
+    }
+
+    // ---- M29: the transponder (the AIS of the solar lanes) ----
+    private TransponderMode _transponderMode = TransponderMode.On; // honest traffic runs lit
+    private ShipState? _beaconGhost;
+
+    private void SetTransponder(TransponderMode mode)
+    {
+        if (mode == _transponderMode)
+        {
+            return;
+        }
+
+        // Entering FAKE snapshots the innocent course at the moment of the lie; the ghost
+        // coasts it from here. Leaving FAKE burns the ghost.
+        _beaconGhost = mode == TransponderMode.Fake ? _ship : null;
+        _transponderMode = mode;
+        switch (mode)
+        {
+            case TransponderMode.Dark:
+                SquawkNow(Parrot.Squawk.RunningDark, _lastTimestampMs ?? 0, force: true);
+                break;
+            case TransponderMode.Fake:
+                SquawkNow(Parrot.Squawk.FalseColors, _lastTimestampMs ?? 0, force: true);
+                break;
+        }
+
+        StateHasChanged();
     }
 
     // ---- M29: the contact menu + target dossier ----

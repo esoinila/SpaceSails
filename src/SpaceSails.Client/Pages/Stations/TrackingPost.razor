@@ -94,6 +94,20 @@
                         @onclick="() => OnRadarToggle.InvokeAsync(!RadarActive)">
                     📡 @(RadarActive ? "ACTIVE RADAR ON — LOUD" : "Active radar (close range — loud)")
                 </button>
+                @* M29: the transponder — like ships on the ocean. Lit = honest traffic; dark =
+                   the click before the run; false colors = the ghost flies the declared course. *@
+                <div class="btn-group btn-group-sm w-100 mt-1" role="group" aria-label="Transponder">
+                    <button type="button" class="btn @(Transponder == TransponderMode.On ? "btn-success" : "btn-outline-secondary")"
+                            title="Broadcast our true position — honest traffic runs lit"
+                            @onclick="() => OnTransponderChange.InvokeAsync(TransponderMode.On)">📻 LIT</button>
+                    <button type="button" class="btn @(Transponder == TransponderMode.Dark ? "btn-dark border-light" : "btn-outline-secondary")"
+                            title="Broadcast nothing — they get only what their optics earn"
+                            @onclick="() => OnTransponderChange.InvokeAsync(TransponderMode.Dark)">🕶 DARK</button>
+                    <button type="button" class="btn @(Transponder == TransponderMode.Fake ? "btn-warning text-dark" : "btn-outline-secondary")"
+                            title="Broadcast the ghost of the course we abandoned — blown per observer whose own optics see the real us"
+                            @onclick="() => OnTransponderChange.InvokeAsync(TransponderMode.Fake)">🎭 FAKE</button>
+                </div>
+                <div class="text-secondary tracking-transponder-hint">@TransponderHint()</div>
             </div>
         </div>
 
@@ -203,6 +217,10 @@
                                  @(closing >= 0 ? $"closing {closing / 1000:F2}" : $"opening {-closing / 1000:F2}") km/s</div>
                             <div class="text-secondary">brg @((int)bearingDeg)° · @daysAgo.ToString("F1")d since fix@(candidate?.CargoDetail is { } cd ? $" · {cd}" : "")</div>
                             <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
+                            @if (BeaconLine(sight) is { } beaconLine)
+                            {
+                                <div class="@(beaconLine.StartsWith("🚨") ? "text-danger fw-bold" : "text-secondary")">@beaconLine</div>
+                            }
                             <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
                             <div class="d-flex justify-content-end gap-1 mt-1">
                                 <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
@@ -277,6 +295,8 @@
     [Parameter] public bool Visible { get; set; }
     [Parameter] public bool FullScreen { get; set; }
     [Parameter] public bool RadarActive { get; set; }
+    [Parameter] public TransponderMode Transponder { get; set; } = TransponderMode.On;
+    [Parameter] public EventCallback<TransponderMode> OnTransponderChange { get; set; }
     [Parameter] public IReadOnlyList<CourseOpportunity> Opportunities { get; set; } = [];
     [Parameter] public EventCallback<string> OnSetInterest { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
@@ -486,6 +506,24 @@
         : s.WeSeeThem ? "👁 we see them — they're blind to us"
         : s.Edge >= 0 ? $"eyes race: we'd spot them first (+{FormatWallDistance(s.Edge)})"
         : $"eyes race: they'd spot us first ({FormatWallDistance(-s.Edge)} edge)";
+
+    // M29: what THIS contact's picture of us is, beacon and optics combined — the per-observer
+    // verdict on the lie. Null when the beacon adds nothing to the optical story.
+    private string? BeaconLine(SightAdvantage optical) => TransponderRule.PictureFor(Transponder, optical) switch
+    {
+        BeaconPicture.Ghost => "🎭 they read the ghost — believed on course",
+        BeaconPicture.LieBlown => "🚨 LIE BLOWN here — their own eyes beat the beacon",
+        BeaconPicture.TrueContact when Transponder == TransponderMode.On && !optical.TheySeeUs
+            => "📻 they hold our beacon — lit and honest",
+        _ => null,
+    };
+
+    private string TransponderHint() => Transponder switch
+    {
+        TransponderMode.Dark => "Silent — they get only what their optics earn. Going dark near a held beacon contact is itself a tell.",
+        TransponderMode.Fake => "The ghost flies the course we abandoned. Any observer whose own eyes see the real hull has us provably lying.",
+        _ => $"Broadcasting our true state to everything within {FormatWallDistance(TransponderRule.BeaconRangeMeters)}.",
+    };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

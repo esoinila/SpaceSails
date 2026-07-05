@@ -18,6 +18,8 @@ public static class Parrot
         OffTheBooks,
         FiringSolution,
         PyramidSighted,
+        RunningDark,
+        FalseColors,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -44,6 +46,10 @@ public static class Parrot
         ["FIRING SOLUTION, CAPTAIN!", "GUNS SAY YES! SQUAWK!", "The numbers have her, captain!"],
         // PyramidSighted
         ["Old stone in the sky…", "SQUAWK… the bird does not like the triangle.", "It was here before the worms, captain."],
+        // RunningDark
+        ["Dark ship, quiet bird…", "Lights out, captain! SQUAWK… quietly.", "Nobody saw nothing!"],
+        // FalseColors
+        ["False colors on the beacon!", "The ghost flies the honest course, captain!", "Lie big, fly straight! SQUAWK!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line
