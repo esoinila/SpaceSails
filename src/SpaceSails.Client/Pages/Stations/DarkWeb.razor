@@ -1,26 +1,29 @@
 @using System.Globalization
 @using SpaceSails.Core
 
-@* The dark space web (vision ¶14/¶16): buy route intel about secretive ships at a haven or a
-   far trading post, sell your own tracking-post finds, and the two active instruments that give
-   you away on purpose — tight-beam hails and laser ranging. Entirely self-contained: Map.razor
-   only ever passes it read-only ship/candidate state and two-way binds credits; the intel ledger
-   itself lives here, same pattern as TrackingPost owning its own tracked-target ledger. *@
+@* The dark space web (vision ¶14/¶16), MARKET ONLY since the comms-tree rebuild: buy route
+   intel about secretive ships at a haven or a far trading post, and fence your own
+   tracking-post finds. The tight-beam and laser-ranging consoles moved into the selected
+   contact's detail pane on the Comms desk — they were always per-contact actions, not a
+   market. The intel ledger itself is Map.razor's now (passed in as a parameter): this
+   component used to OWN it, which quietly destroyed every bought tip the moment the player
+   switched desks — a conditionally-rendered component forgets everything (the same disease
+   the tracking post was cured of in M27). *@
 
 <div class="dark-web-card @(FullScreen ? "dark-web-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
-        <span class="fw-bold small">Comms &amp; intel 🕸</span>
+        <span class="fw-bold small">Dark web market 🕸</span>
         @if (!FullScreen)
         {
             <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
         }
     </div>
     <div class="card-body p-2 small dark-web-scroll @(FullScreen ? "dark-web-desk-body" : "")">
-        <div class="dark-web-desk-col">
-        <div class="fw-bold mb-1">Dark web</div>
         @if (!CanTrade)
         {
+            <div class="text-secondary mb-1 fw-bold">Intel market offline.</div>
             <div class="text-secondary mb-2">@(DisabledReason ?? "Not orbiting or docked at a haven or a far trading post.")</div>
+            <div class="text-secondary">Here you can <span class="text-light">buy route intel</span> on ships that don't publish a timetable, and <span class="text-light">fence your own telescope tracks</span> (quality ≥ 50%) for credits.</div>
         }
         else
         {
@@ -36,7 +39,7 @@
                         @foreach (MarketShip ship in MarketShips)
                         {
                             int price = BuyPriceFor(ship);
-                            bool known = KnowsRoute(ship.Id);
+                            bool known = Ledger.Knows(ship.Id, SimTime);
                             <tr>
                                 <td>
                                     @ship.Callsign
@@ -57,7 +60,7 @@
             <div class="text-secondary mb-1">Your sellable tracks (quality ≥ 50%):</div>
             @if (!SellableTracks.Any())
             {
-                <div class="text-secondary mb-2">Nothing solid enough to fence yet.</div>
+                <div class="text-secondary mb-2">Nothing solid enough to fence yet — sharpen a track at the Sensors desk.</div>
             }
             else
             {
@@ -82,58 +85,6 @@
                 </table>
             }
         }
-        </div>
-
-        <div class="dark-web-desk-col">
-        <hr class="my-2 dark-web-desk-col-rule" />
-        <div class="fw-bold mb-1">Tight-beam</div>
-        @if (TrackedShips.Count == 0)
-        {
-            <div class="text-secondary mb-2">No tracked contacts to hail.</div>
-        }
-        else
-        {
-            <select class="form-select form-select-sm mb-1" @onchange="OnHailTargetSelected">
-                <option value="">— pick a tracked contact —</option>
-                @foreach (TrackedShipInfo t in TrackedShips)
-                {
-                    <option value="@t.Id">@t.Callsign</option>
-                }
-            </select>
-            <button type="button" class="btn btn-sm btn-outline-info w-100 mb-1" disabled="@(_hailTargetId is null)" @onclick="Hail">Hail</button>
-            @if (_hailAnswer is not null)
-            {
-                <div class="text-info mb-2">@_hailAnswer</div>
-            }
-        }
-
-        <hr class="my-2" />
-        <div class="fw-bold mb-1">Laser ranging</div>
-        @if (TrackedShips.Count == 0)
-        {
-            <div class="text-secondary">No tracked contacts to range.</div>
-        }
-        else
-        {
-            <table class="table table-sm table-dark mb-0">
-                <tbody>
-                    @foreach (TrackedShipInfo t in TrackedShips)
-                    {
-                        <tr>
-                            <td>@t.Callsign</td>
-                            <td class="text-end align-middle">
-                                <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1" @onclick="() => LaserRange(t.Id)">Laser range</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        @if (_lastRangeMessage is not null)
-        {
-            <div class="text-warning mt-1">@_lastRangeMessage</div>
-        }
-        </div>
     </div>
 </div>
 
@@ -142,8 +93,8 @@
     /// projection of Map.razor's own NPC state (mirrors TrackingPost.TrackingCandidate).</summary>
     public readonly record struct MarketShip(string Id, string Callsign, string CargoClass, int CargoUnits, string RouteLabel);
 
-    /// <summary>One of the player's own tracked contacts, thin enough for both the sell table and
-    /// the tight-beam/laser-ranging sections to share a single list.</summary>
+    /// <summary>One of the player's own tracked contacts, thin enough for the sell table (and
+    /// Map.razor's per-contact comms actions) to share a single list.</summary>
     public readonly record struct TrackedShipInfo(
         string Id, string Callsign, string CargoClass, int CargoUnits, double Quality,
         Vector2d Position, Vector2d Velocity, bool PublishesTimetable, string DestinationName);
@@ -157,6 +108,10 @@
     [Parameter] public int Credits { get; set; }
     [Parameter] public EventCallback<int> CreditsChanged { get; set; }
 
+    /// <summary>The player's bought intel — OWNED BY MAP.RAZOR so it survives desk switches;
+    /// this component only reads and adds to it.</summary>
+    [Parameter, EditorRequired] public IntelLedger Ledger { get; set; } = new();
+
     /// <summary>True when the player is currently at a body where <c>IntelMarket.CanTradeIntelAt</c>
     /// holds — computed by Map.razor from its own orbit/dock state so this component never needs
     /// to know how "docked" or "bound" works.</summary>
@@ -169,76 +124,14 @@
     [Parameter] public IReadOnlyList<MarketShip> MarketShips { get; set; } = [];
     [Parameter] public IReadOnlyList<TrackedShipInfo> TrackedShips { get; set; } = [];
 
-    /// <summary>Raised when the player fires the laser rangefinder at a tracked target; Map.razor
-    /// applies the resulting Observation to the tracking-post ledger and marks it aware — this
-    /// component only decides *when* to ask for that, never touches the ledger itself.</summary>
-    [Parameter] public EventCallback<string> OnLaserRange { get; set; }
-
     /// <summary>Raised after a successful intel buy (the callsign bought) — Map.razor drops a
     /// line on the news wire (PR-14); this component never needs to know the wire exists.</summary>
     [Parameter] public EventCallback<string> OnIntelPurchased { get; set; }
 
-    private readonly IntelLedger _ledger = new();
-    private string? _hailTargetId;
-    private string? _hailAnswer;
-    private string? _lastRangeMessage;
-
     private IEnumerable<TrackedShipInfo> SellableTracks =>
         TrackedShips.Where(t => IntelMarket.CanSellTrack(t.Quality));
 
-    /// <summary>Exposed so Map.razor's traffic-board filter can show bought-intel ships without
-    /// this component needing to know anything about how the board is rendered.</summary>
-    public bool KnowsRoute(string shipId) => _ledger.Knows(shipId, SimTime);
-
-    /// <summary>The Comms chip's objective line (addendum, 2026-07-04 evening): the freshest
-    /// intel we've bought, by callsign if we can name it — "no whispers" when the ledger is
-    /// empty. Map.razor never reaches into <see cref="_ledger"/> directly, mirroring how the
-    /// tracking post exposes its own ledger only through summary methods.</summary>
-    public string? FreshestIntelSummary(double simTime)
-    {
-        RouteIntel? freshest = null;
-        foreach (RouteIntel entry in _ledger.Entries)
-        {
-            if (!entry.IsFresh(simTime))
-            {
-                continue;
-            }
-
-            if (freshest is null || entry.PurchasedAtSimTime > freshest.Value.PurchasedAtSimTime)
-            {
-                freshest = entry;
-            }
-        }
-
-        if (freshest is not { } intel)
-        {
-            return null;
-        }
-
-        foreach (TrackedShipInfo t in TrackedShips)
-        {
-            if (t.Id == intel.ShipId)
-            {
-                return t.Callsign;
-            }
-        }
-
-        foreach (MarketShip m in MarketShips)
-        {
-            if (m.Id == intel.ShipId)
-            {
-                return m.Callsign;
-            }
-        }
-
-        return intel.ShipId;
-    }
-
-    /// <summary>Days until a bought tip goes stale (0 if none on file) — the board's hint text.</summary>
-    public double StaleInDays(string shipId) =>
-        _ledger.TryGet(shipId, out RouteIntel intel) ? Math.Max(0, intel.SecondsUntilStale(SimTime) / 86400) : 0;
-
-    protected override void OnParametersSet() => _ledger.PruneStale(SimTime);
+    protected override void OnParametersSet() => Ledger.PruneStale(SimTime);
 
     private int BuyPriceFor(MarketShip ship) =>
         IntelMarket.BuyPrice(ship.CargoUnits * CargoMarket.UnitValue(ship.CargoClass), TradeLocationDistanceFromEarthMeters);
@@ -248,13 +141,13 @@
 
     private async Task BuyIntel(MarketShip ship, int price)
     {
-        if (KnowsRoute(ship.Id) || Credits < price)
+        if (Ledger.Knows(ship.Id, SimTime) || Credits < price)
         {
             return;
         }
 
         await SpendCredits(-price);
-        _ledger.Add(new RouteIntel(ship.Id, SimTime, RouteIntel.DefaultValiditySeconds, price));
+        Ledger.Add(new RouteIntel(ship.Id, SimTime, RouteIntel.DefaultValiditySeconds, price));
         await OnIntelPurchased.InvokeAsync(ship.Callsign);
     }
 
@@ -272,57 +165,5 @@
     {
         Credits += delta;
         await CreditsChanged.InvokeAsync(Credits);
-    }
-
-    private void OnHailTargetSelected(ChangeEventArgs e)
-    {
-        string? value = e.Value?.ToString();
-        _hailTargetId = string.IsNullOrEmpty(value) ? null : value;
-        _hailAnswer = null;
-    }
-
-    private TrackedShipInfo? FindTracked(string id)
-    {
-        foreach (TrackedShipInfo t in TrackedShips)
-        {
-            if (t.Id == id)
-            {
-                return t;
-            }
-        }
-
-        return null;
-    }
-
-    private void Hail()
-    {
-        if (_hailTargetId is null)
-        {
-            return;
-        }
-
-        if (FindTracked(_hailTargetId) is not { } t)
-        {
-            _hailAnswer = "No answer — contact lost.";
-            return;
-        }
-
-        if (!ActiveSensors.CanTightBeam(ShipPosition, t.Position))
-        {
-            _hailAnswer = $"{t.Callsign} — out of tight-beam range.";
-            return;
-        }
-
-        _hailAnswer = t.PublishesTimetable
-            ? $"{t.Callsign} — \"Bound for {t.DestinationName}, over.\""
-            : $"{t.Callsign} — \"No flight plan filed.\"";
-    }
-
-    private async Task LaserRange(string shipId)
-    {
-        await OnLaserRange.InvokeAsync(shipId);
-        _lastRangeMessage = FindTracked(shipId) is { } t
-            ? $"Laser ranged {t.Callsign} — exact fix, but you're lit up ⚠"
-            : "Laser ranged — exact fix, but you're lit up ⚠";
     }
 }

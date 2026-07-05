@@ -309,10 +309,12 @@
 }
 
 .desk-comms-grid {
+    /* Master-detail: the lean contacts tree takes the narrow column, the selected node's
+       generous detail takes the wide one. */
     flex: 1 1 auto;
     min-height: 0;
     display: grid;
-    grid-template-columns: 1.4fr 1fr;
+    grid-template-columns: 1fr 1.5fr;
     gap: 0 1.5rem;
 }
 
@@ -393,4 +395,41 @@
 .desk-layer-passthrough ::deep .sensor-card,
 .desk-layer-passthrough ::deep .tracking-progress {
     pointer-events: auto;
+}
+
+/* Comms tree (master-detail edition, ui-guidelines.md): lean contact rows + group headers. */
+.comms-tree-group {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0.4rem 0 0.15rem;
+}
+
+.comms-node {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.18rem 0.4rem;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.comms-node:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.comms-node-selected {
+    background: rgba(120, 220, 255, 0.12);
+    outline: 1px solid rgba(120, 220, 255, 0.35);
+}
+
+.comms-breadcrumbs {
+    font-size: 0.78rem;
+}
+
+.comms-actions {
+    max-width: 30rem;
 }
