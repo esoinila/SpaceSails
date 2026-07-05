@@ -651,6 +651,15 @@
     }
 
     <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDesk" />
+
+    @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
+    <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
+        @if (_parrotSquawk is not null)
+        {
+            <div class="parrot-bubble">@_parrotSquawk</div>
+        }
+        <span class="parrot-bird">🦜</span>
+    </div>
 </div>
 
 @code {
@@ -1346,6 +1355,118 @@
 
     private string NpcName(string id) => FindNpc(id)?.Ship.Callsign ?? id;
 
+    // ---- M28 (Sunday PR-E): the ship's parrot 🦜 — the alarm system with personality ----
+    private string? _parrotSquawk;
+    private double _parrotBubbleUntilMs;
+    private double _parrotCooldownUntilMs;
+    private int _parrotCounter;
+    private string? _parrotLastImpactBody;
+    private bool _parrotSawWobble, _parrotSawArc, _parrotSawHunter, _parrotSawPrey, _parrotSawPyramid;
+    private readonly HashSet<string> _parrotOffBooks = [];
+
+    private void SquawkNow(Parrot.Squawk kind, double nowMs, string? subject = null, bool force = false)
+    {
+        if (!force && nowMs < _parrotCooldownUntilMs)
+        {
+            return; // one squawk at a time; the bird sulks between
+        }
+
+        _parrotSquawk = Parrot.Line(kind, _parrotCounter++, subject);
+        _parrotBubbleUntilMs = nowMs + Parrot.BubbleSeconds * 1000;
+        _parrotCooldownUntilMs = nowMs + Parrot.CooldownSeconds * 1000;
+        RendererInterop.PlayCue("pulse");
+    }
+
+    /// <summary>Rising-edge detectors over live ship state, priority ordered — the parrot
+    /// yells once when a thing BECOMES true, never per frame.</summary>
+    private void UpdateParrot(double nowMs)
+    {
+        if (_parrotSquawk is not null && nowMs > _parrotBubbleUntilMs)
+        {
+            _parrotSquawk = null;
+        }
+
+        bool impact = _closestPass is { Impact: true };
+        string? impactBody = impact ? _closestPass!.Value.BodyName : null;
+        if (impact && impactBody != _parrotLastImpactBody)
+        {
+            _parrotLastImpactBody = impactBody;
+            SquawkNow(Parrot.Squawk.Impact, nowMs, impactBody, force: true);
+        }
+        else if (!impact)
+        {
+            _parrotLastImpactBody = null;
+        }
+
+        bool prey = SelectedCaptureTarget() is { } target && CaptureRule.IsInWindow(_ship, target.State);
+        if (prey && !_parrotSawPrey)
+        {
+            SquawkNow(Parrot.Squawk.PreyInGlass, nowMs);
+        }
+
+        _parrotSawPrey = prey;
+
+        bool hunterNear = NearestHunterDistance() is { } hunterDistance && hunterDistance < 5e9;
+        if (hunterNear && !_parrotSawHunter)
+        {
+            SquawkNow(Parrot.Squawk.HunterNear, nowMs);
+        }
+
+        _parrotSawHunter = hunterNear;
+
+        bool arcing = _plasma is not null && _ship.Charge >= ArcChargeThreshold;
+        if (arcing && !_parrotSawArc)
+        {
+            SquawkNow(Parrot.Squawk.Arcing, nowMs);
+        }
+
+        _parrotSawArc = arcing;
+
+        bool wobble = RumWobbleActive;
+        if (wobble && !_parrotSawWobble)
+        {
+            SquawkNow(Parrot.Squawk.DrunkDriver, nowMs);
+        }
+
+        _parrotSawWobble = wobble;
+
+        // Off the books: the sweep found a ship that publishes no timetable — once per ship.
+        if (_trackingPost is not null)
+        {
+            foreach (TrackedTarget entry in _trackingPost.Entries)
+            {
+                if (_parrotOffBooks.Contains(entry.ShipId))
+                {
+                    continue;
+                }
+
+                if (FindNpc(entry.ShipId) is { } secretive && !secretive.Ship.PublishesTimetable)
+                {
+                    _parrotOffBooks.Add(entry.ShipId);
+                    SquawkNow(Parrot.Squawk.OffTheBooks, nowMs);
+                    break;
+                }
+            }
+        }
+
+        bool pyramidInSky = false;
+        for (int i = 0; i < AncientsRule.PyramidCount; i++)
+        {
+            if (AncientsRule.Revealed(i, _ship.Position, SimTime))
+            {
+                pyramidInSky = true;
+                break;
+            }
+        }
+
+        if (pyramidInSky && !_parrotSawPyramid)
+        {
+            SquawkNow(Parrot.Squawk.PyramidSighted, nowMs);
+        }
+
+        _parrotSawPyramid = pyramidInSky;
+    }
+
     // ---- M28 (Sunday PR-D): the Ancients' pilot — pyramid satellites & auto-plot charges ----
     private int _ancientCharges;
     private readonly double[] _ancientLastGrant =
@@ -1503,6 +1624,7 @@
             _fireAtSimTime = SimTime + FireLockLeadSeconds;
             _fireTip = FireTip(solution);
             ShowPulseMessage("CALCULATING FIRING SOLUTION…");
+            SquawkNow(Parrot.Squawk.FiringSolution, _lastTimestampMs ?? 0, force: true);
         }
         else
         {
@@ -2720,6 +2842,8 @@
         {
             _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
         }
+
+        UpdateParrot(highResTimestampMs);
 
         // M28: the CALCULATING FIRING SOLUTION reveal — one Newton iteration per beat.
         if (_fireSolution is { } fireSolution && _revealedIterations < fireSolution.Trace.Count
