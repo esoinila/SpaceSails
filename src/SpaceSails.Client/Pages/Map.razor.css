@@ -397,6 +397,30 @@
     pointer-events: auto;
 }
 
+/* Same treatment for the war room's instruments (owner: "the war room map seems dead to
+   mouse clicks"): its panels take events back, its stretchy grid stays sky. The floating
+   war-room-card sets its own auto — undo it inside the passthrough desk, then re-enable
+   only the real instruments. */
+.desk-layer-passthrough ::deep .war-room-card,
+.desk-layer-passthrough ::deep .war-room-desk-body,
+.desk-layer-passthrough ::deep .war-room-desk-grid,
+.desk-layer-passthrough ::deep .war-room-tactical-col,
+.desk-layer-passthrough ::deep .war-room-side-col {
+    pointer-events: none;
+}
+
+.desk-layer-passthrough ::deep .war-room-range-group,
+.desk-layer-passthrough ::deep .war-room-scope,
+.desk-layer-passthrough ::deep .war-room-heat-corner,
+.desk-layer-passthrough ::deep .war-room-firecontrol,
+.desk-layer-passthrough ::deep .war-room-intercept,
+.desk-layer-passthrough ::deep .war-room-track-list,
+.desk-layer-passthrough ::deep .war-room-hunter-list,
+.desk-layer-passthrough ::deep .war-room-hunter-warning,
+.desk-layer-passthrough ::deep .war-room-contact-list {
+    pointer-events: auto;
+}
+
 /* Comms tree (master-detail edition, ui-guidelines.md): lean contact rows + group headers. */
 .comms-tree-group {
     font-size: 0.72rem;

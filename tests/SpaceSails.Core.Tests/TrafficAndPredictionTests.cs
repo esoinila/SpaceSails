@@ -83,6 +83,32 @@ public class TrafficAndPredictionTests
     }
 
     [Fact]
+    public void TrafficSchedule_GenerateWave_IsLiveRelativeToNow()
+    {
+        // The world keeps living: a refill wave planned at day 200 must be mid-flight or
+        // scheduled relative to day 200, with wave-namespaced ids that can't collide.
+        var ephemeris = Sol();
+        double now = 200 * Day;
+
+        IReadOnlyList<NpcShip> wave = TrafficSchedule.GenerateWave(ephemeris, seed: 7, count: 8, now, waveNumber: 3);
+
+        Assert.All(wave, s => Assert.StartsWith("npc-w3-", s.Id));
+        var midFlight = wave.Where(s => s.DepartureTime < now).ToList();
+        Assert.True(midFlight.Count >= 3, $"expected mid-flight ships in the wave, got {midFlight.Count}");
+        foreach (NpcShip ship in midFlight)
+        {
+            Assert.InRange(ship.ActivationTime, now, now + 7300); // catch-up lands just past NOW
+        }
+
+        var scheduled = wave.Where(s => s.DepartureTime >= now).ToList();
+        Assert.All(scheduled, s => Assert.InRange(s.DepartureTime, now + 3 * Day, now + 30 * Day));
+
+        IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePodsWave(ephemeris, seed: 8, count: 2, now, waveNumber: 3);
+        Assert.All(pods, p => Assert.StartsWith("pod-w3-", p.Id));
+        Assert.All(pods, p => Assert.InRange(p.DepartureTime, now, now + 10 * Day));
+    }
+
+    [Fact]
     public void RoutePlanner_InnerSystemRoute_ReachesDestination()
     {
         var ephemeris = Sol();

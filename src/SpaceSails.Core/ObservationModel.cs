@@ -147,6 +147,15 @@ public static class TransponderRule
     /// <summary>Beacon band reach — the same "earshot" as a loud radar ping.</summary>
     public const double BeaconRangeMeters = RadarRule.LoudRangeMeters;
 
+    /// <summary>
+    /// How far a CIVILIAN transponder carries (owner, 2026-07-05: "there should always be
+    /// ships with beacons on here"). A lit freighter is a radio station shouting its position
+    /// on schedule — hearing it across 3 AU is physics, not magic optics — so honest traffic
+    /// paints the map long before any telescope resolves a hull. Dark ships get nothing from
+    /// this: their visibility stays whatever their hull earns.
+    /// </summary>
+    public const double CivilianBeaconRangeMeters = 4.5e11;
+
     /// <summary>Whatever the optics say, a lit (or lying) beacon inside range is heard.
     /// Dark ships are exactly as visible as their hull and no more.</summary>
     public static bool BeaconHeard(TransponderMode mode, double distance) =>
