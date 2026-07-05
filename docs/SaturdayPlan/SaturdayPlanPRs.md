@@ -1,4 +1,4 @@
-# Saturday Plan — PR breakdown
+ ...# Saturday Plan — PR breakdown
 
 *Derived from [SaturdayPlanVision.md](SaturdayPlanVision.md), 2026-07-04. Goal: big PRs that
 don't block each other, so several can be coded in parallel while the owner is away.*

@@ -164,22 +164,90 @@
 
         @if (FullScreen)
         {
-            @* M27: one LIVE telescope that cycles through the ledger (owner: "not all of them
-               would be live viewed but it would cycle between them"), beside a card per track
-               carrying the full nav-grade picture: range, closing, bearing, and the eyes race —
-               who sees whom first, our own signature included. Click a card to pin the scope. *@
+            @* PR-D: the Sensor tasks list — the telescope's queue, visible and reorderable.
+               What the one instrument does next is never a mystery: it works this list top to
+               bottom and wraps around; one-shots leave after their pass. *@
+            @if (_schedule.Queue.Count > 0)
+            {
+                <div class="sensor-tasks-box mb-2">
+                    <div class="fw-bold">🔭 Sensor tasks — one telescope, worked top to bottom</div>
+                    @foreach (SensorTask task in _schedule.Queue)
+                    {
+                        bool activeTask = _schedule.Active?.Id == task.Id;
+                        <div class="d-flex align-items-center gap-1 @(activeTask ? "sensor-task-active" : "")" @key="task.Id">
+                            <span>@KindIcon(task.Kind)</span>
+                            <span class="flex-grow-1">@task.Label@(task.Recurring ? "" : " · once")</span>
+                            @if (activeTask)
+                            {
+                                <span class="text-info">◉ @((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
+                            }
+                            else
+                            {
+                                <span class="text-secondary">@TaskCostText(task)</span>
+                            }
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" title="Earlier in the round"
+                                    @onclick="() => _schedule.MoveUp(task.Id)">▲</button>
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" title="Later in the round"
+                                    @onclick="() => _schedule.MoveDown(task.Id)">▼</button>
+                            <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" title="Run as the very next pass"
+                                    @onclick="() => _schedule.PrioritizeNext(task.Id)">⏫</button>
+                            @if (task.Kind is SensorTaskKind.AreaScan or SensorTaskKind.CorridorSweep)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Cancel this task"
+                                        @onclick="() => _schedule.Remove(task.Id)">✕</button>
+                            }
+                            else if (task.Kind == SensorTaskKind.LostSearch)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Abandon the case — let her go"
+                                        @onclick="() => AbandonSearch(task.TargetShipId!)">✕</button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @* PR-D: the cold-case board — every lost lock, its live search area, and the
+               PRIORITIZE REDISCOVERY button. Priority is a real trade: every other task waits. *@
+            @if (_lostTracks.Entries.Count > 0)
+            {
+                <div class="sensor-lost-box mb-2">
+                    <div class="fw-bold text-warning">🔍 Lost locks — search areas open on the map</div>
+                    @foreach (LostTrack lost in _lostTracks.Entries)
+                    {
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <span>@(FindCandidate(lost.ShipId)?.Callsign ?? lost.ShipId)</span>
+                            <span class="text-secondary">area @FormatWallDistance(lost.SearchRadius(SimTime)) and growing</span>
+                            <button type="button" class="btn btn-sm btn-warning py-0 px-1"
+                                    title="The search runs as the very next pass — tracked targets and scans wait"
+                                    @onclick="() => PrioritizeSearch(lost.ShipId)">⏫ PRIORITIZE REDISCOVERY</button>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_recentFinds.Count > 0)
+            {
+                <div class="sensors-finds-box mb-2">
+                    <div class="fw-bold">✨ Last area scan resolved:</div>
+                    @foreach (Discovery find in _recentFinds.Take(5))
+                    {
+                        <div class="text-secondary">@FindIcon(find.Kind) @find.Description</div>
+                    }
+                    @if (_recentFinds.Count > 5)
+                    {
+                        <div class="text-secondary">… and @(_recentFinds.Count - 5) more</div>
+                    }
+                </div>
+            }
+
+            @* PR-D: the tracked-target boxes, one live scope image per slot (owner: "boxes with
+               images. Each has its own") — the M27 single cycling tile grew into a per-card
+               instrument; the card still carries the full nav-grade picture beside it. *@
             <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
             <div class="sensors-main">
-                <div class="sensors-live flex-shrink-0">
-                    <canvas id="@LiveCanvasId" class="scope-wall-canvas"></canvas>
-                    <div class="text-secondary sensors-live-caption">
-                        @(_pinnedLiveId is not null ? "pinned — click the card again to resume cycling" : "cycling the ledger every 6 s")
-                    </div>
-                </div>
                 <div class="sensors-cards flex-grow-1">
                     @{
                         List<TrackedTarget> orderedCards = OrderedTracks();
-                        string? liveId = CurrentLiveId(orderedCards);
                     }
                     @if (orderedCards.Count == 0)
                     {
@@ -198,33 +266,36 @@
                         double bearingDeg = TrackingStation.Bearing(position - ShipPosition) * 180.0 / Math.PI;
                         if (bearingDeg < 0) { bearingDeg += 360; }
                         bool isThreat = candidate?.IsThreat ?? false;
-                        bool isLive = entry.ShipId == liveId;
+                        bool onScope = _schedule.Active?.TargetShipId == entry.ShipId;
                         SightAdvantage sight = SensorModel.Default.Advantage(
                             new ShipState(ShipPosition, ShipVelocity, SimTime, ShipCharge),
                             new ShipState(position, velocity, SimTime));
-                        <div class="sensor-card @(isLive ? "sensor-card-live" : "") @(isThreat ? "sensor-card-threat" : "")"
-                             role="button" tabindex="0" @onclick="() => PinLive(entry.ShipId)">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold">@(isThreat ? "🐺 " : "")@(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " · aware ⚠" : "")</span>
-                                <span>@(isLive ? "● LIVE" : "")</span>
-                            </div>
-                            <div>@FormatWallDistance(distance) · rel @((relSpeed / 1000).ToString("F2")) km/s ·
-                                 @(closing >= 0 ? $"closing {closing / 1000:F2}" : $"opening {-closing / 1000:F2}") km/s</div>
-                            <div class="text-secondary">brg @((int)bearingDeg)° · @daysAgo.ToString("F1")d since fix@(candidate?.CargoDetail is { } cd ? $" · {cd}" : "")</div>
-                            <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
-                            @if (BeaconLine(sight) is { } beaconLine)
-                            {
-                                <div class="@(beaconLine.StartsWith("🚨") ? "text-danger fw-bold" : "text-secondary")">@beaconLine</div>
-                            }
-                            <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
-                            <div class="d-flex justify-content-end gap-1 mt-1">
-                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
-                                        title="War-room target of interest — a DIFFERENT slot than the nav destination"
-                                        @onclick="() => OnSetInterest.InvokeAsync(entry.ShipId)" @onclick:stopPropagation="true">🎯</button>
-                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
-                                        @onclick="() => ConfirmNow(entry.ShipId)" @onclick:stopPropagation="true">Confirm</button>
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
-                                        @onclick="() => Drop(entry.ShipId)" @onclick:stopPropagation="true">Drop</button>
+                        <div class="sensor-card sensor-card-row @(onScope ? "sensor-card-live" : "") @(isThreat ? "sensor-card-threat" : "")"
+                             @key="entry.ShipId">
+                            <canvas id="@CardCanvasId(entry.ShipId)" class="sensor-card-scope"></canvas>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">@(isThreat ? "🐺 " : "")@(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " · aware ⚠" : "")</span>
+                                    <span>@(onScope ? "● ON SCOPE" : "")</span>
+                                </div>
+                                <div>@FormatWallDistance(distance) · rel @((relSpeed / 1000).ToString("F2")) km/s ·
+                                     @(closing >= 0 ? $"closing {closing / 1000:F2}" : $"opening {-closing / 1000:F2}") km/s</div>
+                                <div class="text-secondary">brg @((int)bearingDeg)° · @daysAgo.ToString("F1")d since fix@(candidate?.CargoDetail is { } cd ? $" · {cd}" : "")</div>
+                                <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
+                                @if (BeaconLine(sight) is { } beaconLine)
+                                {
+                                    <div class="@(beaconLine.StartsWith("🚨") ? "text-danger fw-bold" : "text-secondary")">@beaconLine</div>
+                                }
+                                <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
+                                <div class="d-flex justify-content-end gap-1 mt-1">
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                            title="War-room target of interest — a DIFFERENT slot than the nav destination"
+                                            @onclick="() => OnSetInterest.InvokeAsync(entry.ShipId)">🎯</button>
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                            @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                            @onclick="() => Drop(entry.ShipId)">Drop</button>
+                                </div>
                             </div>
                         </div>
                     }
@@ -306,17 +377,12 @@
 
     // M27: ONE live telescope tile cycling the ledger (was PR-12's wall of four) — drawn off
     // the same shared render loop as Map.razor's scope inset.
-    private const int WallTileSizePx = 280;
-    private const double LiveCycleMs = 6000;
+    private const int CardScopeSizePx = 148;
     private static readonly RgbaColor WallTargetColor = new(200, 120, 255); // mirrors Map.razor's NpcColor
-    private static readonly ScopeView.Target EmptyWallTarget =
-        new(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
 
-    private ScopeView? _liveScope;
+    // PR-D: one live ScopeView per tracked-target card (PR-12's scope wall reborn, per-card).
+    private readonly Dictionary<string, ScopeView> _cardScopes = new();
     private bool _wallFrameTickSubscribed;
-    private int _liveIndex;
-    private double _lastCycleMs;
-    private string? _pinnedLiveId;
 
     // M27: the passive watch — the eyes are open by default. Whenever no sweep is running (and
     // the player hasn't switched the watch off), a full-circle survey starts by itself.
@@ -732,33 +798,45 @@
     /// <summary>PRIORITIZE REDISCOVERY: the search pass runs as soon as the current look ends.</summary>
     public void PrioritizeSearch(string shipId) => _schedule.PrioritizeNext($"search:{shipId}");
 
-    // ---- The live telescope (M27, replaces PR-12's wall of tiles) ----
+    // ---- The live scope boxes (PR-D: one per tracked slot, on the shared render loop) ----
 
-    private const string LiveCanvasId = "scope-live";
+    private static string CardCanvasId(string shipId) => $"scope-card-{shipId}";
 
     /// <summary>Ledger entries sorted best-quality-first — stable card order.</summary>
     private List<TrackedTarget> OrderedTracks() =>
         _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)).ToList();
 
-    /// <summary>Which track the live telescope is on: the pinned one if set and still on the
-    /// ledger, else the cycling index.</summary>
-    private string? CurrentLiveId(List<TrackedTarget> ordered)
+    private static string KindIcon(SensorTaskKind kind) => kind switch
     {
-        if (ordered.Count == 0)
-        {
-            return null;
-        }
+        SensorTaskKind.TrackUpdate => "🎯",
+        SensorTaskKind.AreaScan => "🔭",
+        SensorTaskKind.CorridorSweep => "📦",
+        _ => "🔍",
+    };
 
-        if (_pinnedLiveId is not null && ordered.Any(e => e.ShipId == _pinnedLiveId))
-        {
-            return _pinnedLiveId;
-        }
+    private static string FindIcon(DiscoveryKind kind) => kind switch
+    {
+        DiscoveryKind.Debris => "🗑",
+        DiscoveryKind.Rock => "🪨",
+        DiscoveryKind.ColdPod => "📦",
+        _ => "🛰",
+    };
 
-        return ordered[_liveIndex % ordered.Count].ShipId;
+    /// <summary>One pass of this task at the current vantage, in human time.</summary>
+    private string TaskCostText(SensorTask task)
+    {
+        double seconds = DurationOf(task);
+        return seconds < 3600 ? $"{seconds / 60:F0} min" : $"{seconds / 3600:F1} h";
     }
 
-    private void PinLive(string shipId) =>
-        _pinnedLiveId = _pinnedLiveId == shipId ? null : shipId;
+    /// <summary>Let a lost track go: the search task leaves the queue and the case closes.</summary>
+    private void AbandonSearch(string shipId)
+    {
+        _schedule.Remove($"search:{shipId}");
+        _lostTracks.Drop(shipId);
+        _lostCenters.Remove(shipId);
+        _lastSweepMessage = $"Case closed on {FindCandidate(shipId)?.Callsign ?? shipId} — let her go";
+    }
 
     private void TogglePassiveWatch()
     {
@@ -813,57 +891,70 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!FullScreen || _liveScope is not null)
+        if (!FullScreen)
         {
             return;
         }
 
         await RendererInterop.EnsureModuleLoadedAsync();
-        // observeResize:false — CRITICAL (same note as Map.razor's own scope inset): a
-        // resize-observing tile canvas would report its own small size back as the map
-        // viewport and shrink it.
-        RendererInterop.InitCanvas(LiveCanvasId, observeResize: false);
-        _liveScope = new ScopeView(new CanvasRenderer(LiveCanvasId));
-
         if (!_wallFrameTickSubscribed)
         {
             _wallFrameTickSubscribed = true;
             RendererInterop.FrameTick += OnWallFrameTick;
         }
+
+        // PR-D: wire a ScopeView to every card canvas rendered this pass. Re-running InitCanvas
+        // on an id renderer.js already knows just refreshes its element/context — that heals a
+        // canvas Blazor re-created. observeResize:false — CRITICAL (same note as Map.razor's
+        // scope inset): a resize-observing tile canvas would report its own small size back as
+        // the map viewport and shrink the whole world.
+        foreach (TrackedTarget entry in _ledger.Entries)
+        {
+            if (!_cardScopes.ContainsKey(entry.ShipId))
+            {
+                RendererInterop.InitCanvas(CardCanvasId(entry.ShipId), observeResize: false);
+                _cardScopes[entry.ShipId] = new ScopeView(new CanvasRenderer(CardCanvasId(entry.ShipId)));
+            }
+        }
+
+        if (_cardScopes.Count > _ledger.Entries.Count)
+        {
+            List<string>? gone = null;
+            foreach (string shipId in _cardScopes.Keys)
+            {
+                if (!_ledger.IsTracked(shipId))
+                {
+                    (gone ??= []).Add(shipId);
+                }
+            }
+
+            if (gone is not null)
+            {
+                foreach (string shipId in gone)
+                {
+                    _cardScopes.Remove(shipId);
+                }
+            }
+        }
     }
 
-    /// <summary>Redraws the live tile once per animation frame and advances the cycle — riding
-    /// the same global <see cref="RendererInterop.FrameTick"/> event Map.razor's scope inset
-    /// uses, so it stays live at full frame rate independent of Blazor's HUD render throttle.</summary>
+    /// <summary>Redraws every card's live scope box once per animation frame — riding the same
+    /// global <see cref="RendererInterop.FrameTick"/> event Map.razor's scope inset uses, so the
+    /// boxes stay live at full frame rate independent of Blazor's HUD render throttle.</summary>
     private void OnWallFrameTick(double highResTimestampMs)
     {
-        if (!FullScreen || !Visible || _liveScope is null)
+        if (!FullScreen || !Visible)
         {
             return;
         }
 
-        List<TrackedTarget> ordered = OrderedTracks();
-        if (_pinnedLiveId is null && highResTimestampMs - _lastCycleMs > LiveCycleMs)
+        foreach (TrackedTarget entry in _ledger.Entries)
         {
-            _lastCycleMs = highResTimestampMs;
-            _liveIndex++;
-        }
-
-        string? liveId = CurrentLiveId(ordered);
-        ScopeView.Target target = EmptyWallTarget;
-        if (liveId is not null)
-        {
-            foreach (TrackedTarget entry in ordered)
+            if (_cardScopes.TryGetValue(entry.ShipId, out ScopeView? scope))
             {
-                if (entry.ShipId == liveId)
-                {
-                    target = BuildWallTarget(entry);
-                    break;
-                }
+                scope.Draw(CardScopeSizePx, SimTime, ShipPosition, ShipVelocity, BuildWallTarget(entry));
             }
         }
-
-        _liveScope.Draw(WallTileSizePx, SimTime, ShipPosition, ShipVelocity, target);
     }
 
     private ScopeView.Target BuildWallTarget(TrackedTarget entry)

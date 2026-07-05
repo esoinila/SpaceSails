@@ -28,16 +28,21 @@ red = fading).
 
 ## Sweeping
 
-Set a **bearing** (0–359°) and an **arc width** (5–360°) with the two sliders, or pick one of the
-ready-made **scanning programs** from the dropdown — a corridor watch for every pair of trade-anchor
-bodies present in the scenario (Venus, Earth, Mars, Jupiter, Saturn), padded 8° on each side so a
-normal maneuver doesn't slip a target out of the wedge mid-sweep.
+Set a **bearing** (0–359°) and an **arc width** (5–360°) with the two sliders. (The old
+corridor-watch dropdown retired in the Sunday-second chain: trade lanes are now clickable
+regions on the map itself — see [sensors-map.md](sensors-map.md).)
 
 Click **Start sweep**. Sweeping isn't instant: a full 360° survey takes **6 sim-hours**, so a
 narrow wedge finishes faster than a wide one (time scales linearly with arc width). A progress bar
 tracks it; **Stop sweep** aborts early. When it completes, every candidate whose bearing falls
 inside the wedge and whose distance is within the telescope's sun-relative range at that bearing
 gets detected and added to the ledger.
+
+> **Superseded note (Sunday-second chain):** the wall below was collapsed to a single cycling
+> tile in M27, then reborn in PR-D as **one live scope box inside every track card**, with the
+> one-telescope **Sensor tasks** queue running custody passes automatically. Current behavior
+> is specified in [sensors-map.md](sensors-map.md); the section below is kept for the design
+> history.
 
 ## The scope wall (PR-12)
 
