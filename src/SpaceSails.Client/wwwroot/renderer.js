@@ -12,6 +12,7 @@
 
 const OP_POLYLINE = 1;
 const OP_CIRCLE = 2;
+const OP_POLYGON = 3;
 
 /** @type {Map<string, { canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rafId: number|null, running: boolean }>} */
 const canvases = new Map();
@@ -101,6 +102,34 @@ export function drawFrame(canvasId, buffer, length) {
             ctx.strokeStyle = rgba(r, g, b, a);
             ctx.lineWidth = lineWidth;
             ctx.stroke();
+        } else if (op === OP_POLYGON) {
+            // Closed, optionally-filled polygon (SundaySecondPlan PR-B): trade-lane areas and
+            // scan wedges. Same fill/stroke header shape as OP_CIRCLE, then a point list.
+            const hasFill = view[i++];
+            const fr = view[i++], fg = view[i++], fb = view[i++], fa = view[i++];
+            const sr = view[i++], sg = view[i++], sb = view[i++], sa = view[i++];
+            const strokeWidth = view[i++];
+            const n = view[i++] | 0;
+
+            ctx.beginPath();
+            for (let p = 0; p < n; p++) {
+                const x = view[i++], y = view[i++];
+                if (p === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.closePath();
+            if (hasFill) {
+                ctx.fillStyle = rgba(fr, fg, fb, fa);
+                ctx.fill();
+            }
+            if (strokeWidth > 0) {
+                ctx.strokeStyle = rgba(sr, sg, sb, sa);
+                ctx.lineWidth = strokeWidth;
+                ctx.stroke();
+            }
         } else if (op === OP_CIRCLE) {
             const hasFill = view[i++];
             const fr = view[i++], fg = view[i++], fb = view[i++], fa = view[i++];

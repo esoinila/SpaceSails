@@ -18,6 +18,7 @@ public sealed class CanvasRenderer : IRenderer
 {
     private const float OpPolyline = 1f;
     private const float OpCircle = 2f;
+    private const float OpPolygon = 3f;
 
     private readonly string _canvasId;
     private float[] _buffer = new float[8192];
@@ -80,6 +81,34 @@ public sealed class CanvasRenderer : IRenderer
         _buffer[_length++] = stroke.B;
         _buffer[_length++] = stroke.A;
         _buffer[_length++] = widthPx;
+        _buffer[_length++] = n;
+
+        pointsXY.CopyTo(_buffer.AsSpan(_length));
+        _length += pointsXY.Length;
+    }
+
+    public void DrawPolygon(ReadOnlySpan<float> pointsXY, RgbaColor? fill, RgbaColor stroke, float strokeWidthPx = 1f)
+    {
+        if (pointsXY.Length < 6 || pointsXY.Length % 2 != 0)
+        {
+            return; // fewer than 3 points isn't a polygon
+        }
+
+        RgbaColor f = fill ?? default;
+        int n = pointsXY.Length / 2;
+
+        EnsureCapacity(12 + pointsXY.Length);
+        _buffer[_length++] = OpPolygon;
+        _buffer[_length++] = fill.HasValue ? 1f : 0f;
+        _buffer[_length++] = f.R;
+        _buffer[_length++] = f.G;
+        _buffer[_length++] = f.B;
+        _buffer[_length++] = f.A;
+        _buffer[_length++] = stroke.R;
+        _buffer[_length++] = stroke.G;
+        _buffer[_length++] = stroke.B;
+        _buffer[_length++] = stroke.A;
+        _buffer[_length++] = strokeWidthPx;
         _buffer[_length++] = n;
 
         pointsXY.CopyTo(_buffer.AsSpan(_length));

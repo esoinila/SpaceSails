@@ -29,6 +29,13 @@ public interface IRenderer
     /// </summary>
     void DrawPolyline(ReadOnlySpan<float> pointsXY, RgbaColor stroke, float widthPx = 1f);
 
+    /// <summary>
+    /// Closed polygon through <paramref name="pointsXY"/> (interleaved x,y pixel pairs; closed
+    /// automatically). A null fill or a zero-width stroke skips that part. Used for area overlays
+    /// (trade lanes, scan wedges) — a handful per frame, not a hot path.
+    /// </summary>
+    void DrawPolygon(ReadOnlySpan<float> pointsXY, RgbaColor? fill, RgbaColor stroke, float strokeWidthPx = 1f);
+
     /// <summary>Text anchored at a screen point. Font is a CSS font string, e.g. "12px sans-serif".</summary>
     void DrawText(float xPx, float yPx, string text, RgbaColor color, string font = "12px sans-serif", TextAlign align = TextAlign.Left);
 
