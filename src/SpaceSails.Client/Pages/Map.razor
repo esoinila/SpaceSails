@@ -601,13 +601,15 @@
     </div>
     @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley or ShipDesk.Captain)
     {
-        <div class="desk-layer">
+        @* The war room dims instead of blanking (long-shots PR): the live map behind it IS the
+           orrery view for cross-system firing solutions — DrawFirePlan draws the transfer. *@
+        <div class="desk-layer @(_activeDesk == ShipDesk.WarRoom ? "desk-layer-dimmed" : "")">
             <div class="desk-content">
                 @if (_activeDesk == ShipDesk.WarRoom)
                 {
                     <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget"
-                        FireAimOffsetSeconds="_fireAimOffsetSeconds" FireKind="_fireKind" FireSolution="_fireSolution" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
-                        OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution"
+                        FireAimOffsetSeconds="_fireAimOffsetSeconds" MaxAimOffsetSeconds="MaxFireAimOffsetSeconds" FireKind="_fireKind" FireSolution="_fireSolution" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
+                        OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution" OnScanWindows="ScanFiringWindows"
                         OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
                 }
                 else if (_activeDesk == ShipDesk.Trade)
@@ -1986,6 +1988,8 @@
     private double _fireAimOffsetSeconds = 3600;     // where on the prey's track we aim, from now
     private OrdnanceKind _fireKind = OrdnanceKind.Slug;
     private FireControl.Solution? _fireSolution;
+    private IReadOnlyList<TrajectorySample> _fireSolutionPath = []; // the planned round's transfer, for the map
+    private IReadOnlyList<TrajectorySample> _fireTargetPath = [];   // the prey's predicted track to t_hit
     private double _fireDispersionMeters;
     private Vector2d _fireAimPoint;
     private double _fireAtSimTime = double.NaN;      // NaN = nothing locked
@@ -1997,6 +2001,15 @@
     private double _slewUntilSimTime = double.NaN;
 
     private bool FireLocked => !double.IsNaN(_fireAtSimTime);
+
+    /// <summary>The interest target's REAL maneuvering ability, for the dispersion cone — a
+    /// depot on rails or a mass-driver pod cannot burn at all, so a 70-day shot at one carries
+    /// meters-per-second sigma, not the ±dozens-of-AU the default crewed budget implied (the
+    /// long-shot acceptance run caught "±38 AU" on a rails depot).</summary>
+    private double InterestManeuverBudget() =>
+        _interestTargetId is not null && FindNpc(_interestTargetId) is { } npc
+            ? npc.Ship.ManeuverBudget
+            : NpcShip.DefaultManeuverBudget;
 
     private (Vector2d Position, Vector2d Velocity)? InterestTargetState()
     {
@@ -2021,16 +2034,31 @@
         return null;
     }
 
+    /// <summary>The longest shot the selected round can FLY: its lifetime, minus the lock
+    /// lead. Beyond this the ordnance evaporates mid-flight — the silent guaranteed miss the
+    /// old fixed 48 h slider quietly allowed (slug lived 6 h!).</summary>
+    private double MaxFireAimOffsetSeconds => OrdnanceRule.LifetimeSeconds(_fireKind) - FireLockLeadSeconds;
+
     private void SetFireAimOffset(double seconds)
     {
-        _fireAimOffsetSeconds = Math.Clamp(seconds, 600, 48 * 3600);
+        _fireAimOffsetSeconds = Math.Clamp(seconds, 600, MaxFireAimOffsetSeconds);
         if (!FireLocked)
         {
             _fireSolution = null; // a moved aim point voids an unlocked solution
         }
     }
 
-    private void SetFireKind(OrdnanceKind kind) => _fireKind = kind;
+    private void SetFireKind(OrdnanceKind kind)
+    {
+        _fireKind = kind;
+        // Switching missile → slug with a weeks-long aim must pull the aim back inside what
+        // the slug can actually fly.
+        _fireAimOffsetSeconds = Math.Clamp(_fireAimOffsetSeconds, 600, MaxFireAimOffsetSeconds);
+        if (!FireLocked)
+        {
+            _fireSolution = null;
+        }
+    }
 
     /// <summary>The Norden beat: predict the mark, coast the shooter to T+60 s, run the
     /// shooting method, and — if it converges — lock, count down, auto-fire.</summary>
@@ -2041,8 +2069,11 @@
             return;
         }
 
+        _fireAimOffsetSeconds = Math.Clamp(_fireAimOffsetSeconds, 600, MaxFireAimOffsetSeconds);
+
         var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
-        PredictedPath predicted = PathPredictor.Predict(_ephemeris, observation, null, _fireAimOffsetSeconds);
+        PredictedPath predicted = PathPredictor.Predict(_ephemeris, observation, null, _fireAimOffsetSeconds,
+            maneuverBudget: InterestManeuverBudget());
         _fireAimPoint = predicted.Samples[^1].Position;
         double tHit = SimTime + _fireAimOffsetSeconds;
         _fireDispersionMeters = predicted.HalfWidthAt(tHit);
@@ -2058,6 +2089,17 @@
         {
             _fireAtSimTime = SimTime + FireLockLeadSeconds;
             _fireTip = FireTip(solution);
+            // The orrery view (owner + Gemini consult): fly the solved round once more and keep
+            // the samples — the war-room backdrop draws the whole transfer, aim point and
+            // dispersion on the live map, because a 100 M km shot cannot live inside a 5 M km
+            // tactical circle.
+            var round = new ShipState(
+                shooterAtFire.Position,
+                shooterAtFire.Velocity + solution.LaunchDirection * solution.MuzzleSpeed,
+                shooterAtFire.SimTime);
+            _fireSolutionPath = _simulator.ProjectAdaptive(round, null, solution.TimeOfFlightSeconds,
+                maxSamples: Math.Max(64, (int)(solution.TimeOfFlightSeconds / 3600) + 16));
+            _fireTargetPath = predicted.Samples;
             ShowPulseMessage("CALCULATING FIRING SOLUTION…");
             SquawkNow(Parrot.Squawk.FiringSolution, _lastTimestampMs ?? 0, force: true);
         }
@@ -2065,16 +2107,78 @@
         {
             _fireAtSimTime = double.NaN;
             _fireTip = null;
+            _fireSolutionPath = [];
+            _fireTargetPath = [];
             ShowPulseMessage("No firing solution — beyond the driver's reach at that moment");
         }
 
         StateHasChanged();
     }
 
+    /// <summary>
+    /// The porkchop assist (long-shots PR): a FIXED aim time is only feasible in certain launch
+    /// windows — orbital mechanics, not the driver, decides when the geometry aligns. Sweep
+    /// candidate aim times with the cheap seed probe, jump the slider to the best window and
+    /// immediately run the full solve there.
+    /// </summary>
+    private void ScanFiringWindows()
+    {
+        if (_ephemeris is null || _simulator is null || FireLocked || InterestTargetState() is not { } target)
+        {
+            return;
+        }
+
+        var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
+        PredictedPath predicted = PathPredictor.Predict(_ephemeris, observation, null, MaxFireAimOffsetSeconds,
+            maneuverBudget: InterestManeuverBudget());
+        ShipState shooterAtFire = _simulator.RunAdaptive(_ship, FireLockLeadSeconds);
+
+        double bestOffset = _fireAimOffsetSeconds;
+        double bestMiss = double.MaxValue;
+        const int probes = 7;
+        double minOffset = Math.Max(2 * 3600, MaxFireAimOffsetSeconds / 200);
+        double logSpan = Math.Log(MaxFireAimOffsetSeconds * 0.95 / minOffset);
+        for (int i = 0; i < probes; i++)
+        {
+            double offset = minOffset * Math.Exp(logSpan * i / (probes - 1));
+            double timeOfFlight = offset - FireLockLeadSeconds;
+            if (timeOfFlight <= 0)
+            {
+                continue;
+            }
+
+            Vector2d aim = SamplePositionAtTime(predicted.Samples, SimTime + offset);
+            (_, _, double miss) = FireControl.ProbeSeed(_simulator, shooterAtFire, MaxMuzzleSpeed, aim, timeOfFlight);
+            if (miss < bestMiss)
+            {
+                (bestMiss, bestOffset) = (miss, offset);
+            }
+        }
+
+        _fireAimOffsetSeconds = Math.Clamp(bestOffset, 600, MaxFireAimOffsetSeconds);
+        ShowPulseMessage($"Window scan: best geometry at +{FormatFlightTime(bestOffset)} — solving there");
+        ComputeFiringSolution();
+    }
+
+    private static Vector2d SamplePositionAtTime(IReadOnlyList<TrajectorySample> samples, double simTime)
+    {
+        foreach (TrajectorySample sample in samples)
+        {
+            if (sample.SimTime >= simTime)
+            {
+                return sample.Position;
+            }
+        }
+
+        return samples[^1].Position;
+    }
+
     private void CancelFiringSolution()
     {
         _fireAtSimTime = double.NaN;
         _fireSolution = null;
+        _fireSolutionPath = [];
+        _fireTargetPath = [];
         ShowPulseMessage("Firing solution scrubbed");
         StateHasChanged();
     }
@@ -2102,6 +2206,8 @@
         ShowPulseMessage($"ROUND AWAY — flight time {FormatDuration(solution.TimeOfFlightSeconds)} 🎯");
         _fireAtSimTime = double.NaN;
         _fireSolution = null;
+        // Keep the planned transfer + aim point drawn while the round flies it — the whole
+        // point of a weeks-long shot is watching the real slug ride the calculated line.
         StateHasChanged();
     }
 
@@ -3312,6 +3418,11 @@
             DrawLostSearchRegions();
             DrawPassFlash();
         }
+        if (_activeDesk == ShipDesk.WarRoom)
+        {
+            // The orrery view: a cross-system shot's geometry on the live map behind the desk.
+            DrawFirePlan();
+        }
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -3862,6 +3973,76 @@
                 _renderer!.DrawPolyline(corner, color, 1.5f);
             }
         }
+    }
+
+    // ---- The orrery view (owner + Gemini consult, 2026-07-05): the long shot on the map ----
+    // A 100 M km shot cannot live inside a 5 M km tactical circle: when the war room is up, the
+    // live map behind it carries the whole geometry — the prey's predicted track to t_hit, the
+    // planned round's transfer, the aim point and the honest dispersion circle.
+
+    private static readonly RgbaColor FirePlanColor = new(255, 120, 120, 200);
+    private static readonly RgbaColor FirePlanTargetColor = new(200, 120, 255, 120);
+    private static readonly RgbaColor FirePlanDispersionColor = new(255, 120, 120, 60);
+
+    private void DrawFirePlan()
+    {
+        // The interest target gets brackets even before a solution exists — the war room's
+        // subject is never invisible on its own backdrop again.
+        if (_interestTargetId is not null && InterestTargetState() is { } interest)
+        {
+            (float ix, float iy) = _camera.WorldToScreen(interest.Position);
+            DrawCornerBrackets(ix, iy, 12f, FirePlanColor with { A = 160 });
+            _renderer!.DrawText(ix + 15, iy - 8, $"🎯 {InterestTargetName() ?? _interestTargetId}",
+                FirePlanColor with { A = 190 }, "11px sans-serif", TextAlign.Left);
+        }
+
+        if (_fireSolutionPath.Count < 2)
+        {
+            return;
+        }
+
+        DrawWorldPolyline(_fireTargetPath, FirePlanTargetColor, 1f);
+        DrawWorldPolyline(_fireSolutionPath, FirePlanColor, 1.6f);
+
+        (float ax, float ay) = _camera.WorldToScreen(_fireAimPoint);
+        float dispersionPx = (float)Math.Max(4, _fireDispersionMeters / _camera.MetersPerPixel);
+        _renderer!.DrawCircle(ax, ay, dispersionPx, FirePlanDispersionColor with { A = 18 }, FirePlanDispersionColor, 1f);
+        Span<float> cross = stackalloc float[4];
+        cross[0] = ax - 6; cross[1] = ay - 6; cross[2] = ax + 6; cross[3] = ay + 6;
+        _renderer.DrawPolyline(cross, FirePlanColor, 1.5f);
+        cross[0] = ax - 6; cross[1] = ay + 6; cross[2] = ax + 6; cross[3] = ay - 6;
+        _renderer.DrawPolyline(cross, FirePlanColor, 1.5f);
+        double impactIn = _fireSolutionPath[^1].SimTime - SimTime;
+        _renderer.DrawText(ax + 10, ay + 14,
+            $"impact {(impactIn > 0 ? $"in {FormatFlightTime(impactIn)}" : "point")} · ±{FormatDistance(_fireDispersionMeters)}",
+            FirePlanColor with { A = 190 }, "11px sans-serif", TextAlign.Left);
+    }
+
+    private static string FormatFlightTime(double seconds) =>
+        seconds < 3600 ? $"{seconds / 60:F0} min"
+        : seconds < 86400 ? $"{seconds / 3600:F1} h"
+        : $"{seconds / 86400:F1} d";
+
+    private void DrawWorldPolyline(IReadOnlyList<TrajectorySample> samples, RgbaColor color, float widthPx)
+    {
+        if (samples.Count < 2)
+        {
+            return;
+        }
+
+        int stride = Math.Max(1, samples.Count / 160);
+        int points = (samples.Count + stride - 1) / stride + 1;
+        float[] xy = new float[points * 2];
+        int w = 0;
+        for (int i = 0; i < samples.Count; i += stride)
+        {
+            (xy[w], xy[w + 1]) = _camera.WorldToScreen(samples[i].Position);
+            w += 2;
+        }
+
+        (xy[w], xy[w + 1]) = _camera.WorldToScreen(samples[^1].Position);
+        w += 2;
+        _renderer!.DrawPolyline(xy.AsSpan(0, w), color, widthPx);
     }
 
     private string ContactCallsign(string shipId)
