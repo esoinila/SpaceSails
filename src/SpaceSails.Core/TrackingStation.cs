@@ -210,25 +210,29 @@ public sealed class TrackedTargetLedger(int maxTracks = 1)
     }
 
     /// <summary>Drop any entry whose effective quality has decayed below <see cref="LostThreshold"/>
-    /// by <paramref name="simTime"/> — burned hard or ignored too long, the ledger forgets it.</summary>
-    public void AdvanceTime(double simTime)
+    /// by <paramref name="simTime"/> — burned hard or ignored too long, the ledger forgets it.
+    /// Returns the dropped entries so the caller can file them as lost tracks with a search
+    /// region (<see cref="LostTrackLedger.AddFrom"/>) instead of letting them simply vanish.</summary>
+    public IReadOnlyList<TrackedTarget> AdvanceTime(double simTime)
     {
-        List<string>? lost = null;
+        List<TrackedTarget>? lost = null;
         foreach (KeyValuePair<string, TrackedTarget> kv in _entries)
         {
             if (kv.Value.EffectiveQuality(simTime) <= LostThreshold)
             {
-                (lost ??= []).Add(kv.Key);
+                (lost ??= []).Add(kv.Value);
             }
         }
 
         if (lost is not null)
         {
-            foreach (string id in lost)
+            foreach (TrackedTarget entry in lost)
             {
-                _entries.Remove(id);
+                _entries.Remove(entry.ShipId);
             }
         }
+
+        return lost ?? (IReadOnlyList<TrackedTarget>)[];
     }
 
     public bool Drop(string shipId) => _entries.Remove(shipId);
@@ -314,8 +318,6 @@ public readonly record struct ScanProgram(string Name, ScanJob Job);
 /// </summary>
 public static class ScanPrograms
 {
-    private static readonly string[] TradeAnchors = ["venus", "earth", "mars", "jupiter", "saturn"];
-
     /// <summary>Extra arc padding on each side of the corridor's angular spread, so a normal
     /// maneuver doesn't slip the target outside the wedge mid-sweep.</summary>
     public const double ArcMarginRad = 8.0 * Math.PI / 180.0;
@@ -323,48 +325,19 @@ public static class ScanPrograms
     public static IReadOnlyList<ScanProgram> BuildPrograms(
         ICelestialEphemeris ephemeris, Vector2d shipPosition, double simTime)
     {
-        var present = new List<CelestialBody>();
-        foreach (string id in TradeAnchors)
-        {
-            CelestialBody? body = ephemeris.Bodies.FirstOrDefault(b => b.Id == id);
-            if (body is not null)
-            {
-                present.Add(body);
-            }
-        }
-
         var programs = new List<ScanProgram>();
-        for (int i = 0; i < present.Count; i++)
+        foreach (CorridorRegion corridor in TradeCorridors.Regions(ephemeris, simTime))
         {
-            for (int j = i + 1; j < present.Count; j++)
+            if ((corridor.Midpoint - shipPosition).LengthSquared == 0)
             {
-                CelestialBody a = present[i], b = present[j];
-                Vector2d pa = ephemeris.Position(a.Id, simTime);
-                Vector2d pb = ephemeris.Position(b.Id, simTime);
-                Vector2d toMid = (pa + pb) / 2 - shipPosition;
-                if (toMid.LengthSquared == 0)
-                {
-                    continue;
-                }
-
-                double centerBearing = TrackingStation.Bearing(toMid);
-                double bearingA = TrackingStation.Bearing(pa - shipPosition);
-                double bearingB = TrackingStation.Bearing(pb - shipPosition);
-                double halfSpread = Math.Max(AngleDelta(centerBearing, bearingA), AngleDelta(centerBearing, bearingB));
-                double arcWidth = Math.Clamp(2 * halfSpread + 2 * ArcMarginRad, ArcMarginRad, Math.Tau);
-
-                programs.Add(new ScanProgram($"{a.Name}–{b.Name} corridor watch", new ScanJob(centerBearing, arcWidth)));
+                continue;
             }
+
+            programs.Add(new ScanProgram(
+                $"{corridor.PairName} corridor watch",
+                TradeCorridors.SweepJobFor(corridor, shipPosition)));
         }
 
         return programs;
-    }
-
-    private static double AngleDelta(double a, double b)
-    {
-        double d = (b - a) % Math.Tau;
-        if (d > Math.PI) d -= Math.Tau;
-        if (d < -Math.PI) d += Math.Tau;
-        return Math.Abs(d);
     }
 }
