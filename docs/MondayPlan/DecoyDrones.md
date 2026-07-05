@@ -37,7 +37,7 @@ The decoy closes exactly that hole: put a real object where the lie claims one.
   scheduled brake burn will MISS its declared arrival window, and a patient observer can
   catch the story going stale at the timetable level). One decoy aloft at a time.
 
-## Variant B — chaff (the *Serenity* variant)
+## Variant B — chaff (the *Serenity* variant) — ⭐ THE OWNER'S PICK, build this first
 
 > "In Serenity (the Joss Whedon movie) they used these fake transponders to give fake
 > targets to the ships hunting them... decoys with minimal capabilities except to look like
@@ -64,13 +64,16 @@ The decoy closes exactly that hole: put a real object where the lie claims one.
   disappear.
 - **The parrot** learns the launch: "Cardboard crew, away!" / "Let them chase the kite!"
 
-## Build order (when Monday comes)
+## Build order (when Monday comes) — chaff leads, per the owner
 
-1. Core `DecoyRule`: decoy state record (ballistic, beacon id, kind Course|Chaff),
-   `PictureFor` extension (GhostConfirmed / DecoyBlown), TTL/linger policy. Tests: the
-   confirm-at-distance / blow-at-close-range matrix, and the timetable-staleness case.
-2. Client: launch buttons on the Sensors desk (course decoy gated on FALSE COLORS armed),
-   drone drawn as ship-like until resolve range (we always see our own as 🪁), chip line.
+1. Core `DecoyRule`, chaff-first: decoy state record (ballistic, beacon id, kind
+   Chaff|Course), neutral-id chaff spread, TTL/linger policy, classification cost (a chaff
+   contact enters candidate lists like any hull and holds a track slot until resolved).
+   Tests: the resolve-at-close-range matrix and the never-maneuvers-so-burns-are-real rule.
+2. Client, chaff-first: the launch button on the Sensors desk (a spread of 3), chaff drawn
+   ship-like until resolve range (we always see our own as 🪁), chip line. The course decoy
+   (Variant A: takes over the FALSE COLORS ghost, GhostConfirmed/DecoyBlown picture levels,
+   timetable-staleness case) follows as the deluxe second step.
 3. NPC consumption lands with intention inference ([MondayPlanVision](MondayPlanVision.md)
    §1): hunters allocate their track slots over contacts and get fooled by exactly the
    rules above — no scripted gullibility.
