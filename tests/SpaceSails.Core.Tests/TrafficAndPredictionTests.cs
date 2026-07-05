@@ -43,12 +43,13 @@ public class TrafficAndPredictionTests
         {
             Assert.InRange(ship.ActivationTime, 0, 7300); // catch-up (dt=2h) lands just past t=0
             Assert.Equal(ship.ActivationTime, ship.InitialState.SimTime);
-            // In transit: already fallen inside its origin's orbit. Absolute distance from the
-            // system root (not the body's local orbit radius) so this also holds for a moon
-            // origin, whose OrbitRadius is relative to its planet, not the sun.
-            double originRadius = ephemeris.Position(ship.OriginId, 0).Length;
-            Assert.True(ship.InitialState.Position.Length < originRadius,
-                $"{ship.Callsign} should have left {ship.OriginId}'s orbit by t=0.");
+            // En route at t=0: genuinely out in open space, not parked on its origin body. (Since
+            // the empty-sky fix also seeds the inner system, a mid-flight ship may now be inbound
+            // OR outbound, so we no longer assume it has "fallen inside" its origin's orbit — only
+            // that it has actually left the launch point.)
+            double clearOfOrigin = (ship.InitialState.Position - ephemeris.Position(ship.OriginId, 0)).Length;
+            Assert.True(clearOfOrigin > 1e9,
+                $"{ship.Callsign} should have cleared {ship.OriginId} by t=0 (only {clearOfOrigin:E2} m away).");
         }
 
         var scheduled = ships.Where(s => s.DepartureTime >= 0).ToList();
@@ -83,6 +84,38 @@ public class TrafficAndPredictionTests
     }
 
     [Fact]
+    public void SolEu_AtGenesis_ShowsLitPreyWithinBeaconRange_OfThePlayerStart()
+    {
+        // The empty-sky regression (owner, 2026-07-06 screenshot "ZERO ships"): opening sol-eu near
+        // Earth must reveal mobile prey immediately, not depots-only for days. At least one lit,
+        // timetable-publishing pod AND at least one lit ship-or-pod must be active within the first
+        // catch-up step and inside the 3 AU civilian-beacon range of the player's start. Before the
+        // fix, every pod launched 0.5–10 days out and every mid-flight hauler spawned past 3 AU.
+        var scenario = ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "sol-eu.json"));
+        var ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
+
+        Vector2d earth = ephemeris.Position("earth", 0);
+        Vector2d playerStart = earth + earth.Normalized() * 5e9; // mirrors Map.InitializeShipState
+
+        // The genesis call the client makes (Map.razor): pods first, then haulers.
+        IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(ephemeris, seed: 43, count: 3);
+        IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(ephemeris, seed: 42, count: 8);
+
+        bool LitInRangeAtGenesis(NpcShip s) =>
+            s.PublishesTimetable
+            && s.ActivationTime <= 7300 // active within the first NPC catch-up step, i.e. essentially now
+            && (s.InitialState.Position - playerStart).Length <= TransponderRule.CivilianBeaconRangeMeters;
+
+        Assert.Contains(pods, LitInRangeAtGenesis);                    // the Luna milk-run pod is right there
+        Assert.Contains(pods.Concat(traffic), LitInRangeAtGenesis);   // and a lit contact on the board
+
+        // And that first pod is the named "Luna pod" the tutorial sends the player after.
+        NpcShip lunaPrey = pods.First(LitInRangeAtGenesis);
+        Assert.Equal("luna", lunaPrey.OriginId);
+        Assert.True(lunaPrey.IsPod);
+    }
+
+    [Fact]
     public void TrafficSchedule_GenerateWave_IsLiveRelativeToNow()
     {
         // The world keeps living: a refill wave planned at day 200 must be mid-flight or
@@ -105,7 +138,13 @@ public class TrafficAndPredictionTests
 
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePodsWave(ephemeris, seed: 8, count: 2, now, waveNumber: 3);
         Assert.All(pods, p => Assert.StartsWith("pod-w3-", p.Id));
-        Assert.All(pods, p => Assert.InRange(p.DepartureTime, now, now + 10 * Day));
+        // The milk run lives too: at least one pod is already coasting as of NOW, the rest are
+        // freshly scheduled firings.
+        var midPods = pods.Where(p => p.DepartureTime < now).ToList();
+        Assert.NotEmpty(midPods);
+        Assert.All(midPods, p => Assert.InRange(p.ActivationTime, now, now + 7300));
+        var scheduledPods = pods.Where(p => p.DepartureTime >= now).ToList();
+        Assert.All(scheduledPods, p => Assert.InRange(p.DepartureTime, now, now + 10 * Day));
     }
 
     [Fact]
