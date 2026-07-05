@@ -118,6 +118,10 @@ public static class TrafficSchedule
                 double lead = rng.NextDouble(20 * Day, 70 * Day);
                 NpcRoute probe = RoutePlanner.PlanRoute(ephemeris, origin, destination, 0, personality, Clone(rng));
                 double transfer = probe.EstimatedArrivalTime;
+                // The world does not wait for the player: the remaining lead can never exceed
+                // the transfer itself, or a short hop would "spawn mid-flight" at a departure
+                // time in the FUTURE and the starting sky would be empty.
+                lead = Math.Min(lead, transfer * rng.NextDouble(0.3, 0.8));
                 double virtualDeparture = -(transfer - lead);
 
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, virtualDeparture, personality, rng);
@@ -175,6 +179,9 @@ public static class TrafficSchedule
                 double lead = rng.NextDouble(20 * Day, 70 * Day);
                 NpcRoute probe = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, 0, personality, Clone(rng));
                 double transfer = probe.EstimatedArrivalTime;
+                // Same clamp as the fixed tables: mid-flight means genuinely EN ROUTE at t=0,
+                // even when the scenario's "long" routes are short inner-system hops.
+                lead = Math.Min(lead, transfer * rng.NextDouble(0.3, 0.8));
                 double virtualDeparture = -(transfer - lead);
 
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, virtualDeparture, personality, rng);
