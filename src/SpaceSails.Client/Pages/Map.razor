@@ -56,26 +56,45 @@
     }
 
     @* 🗺 Layers (owner: "filter what is being shown on the map screens"): per-desk checkbox
-       panel, Gemini-consulted placement — small toggle, never a modal over the sky. *@
-    <div class="map-layers">
-        <button type="button" class="btn btn-sm @(_layersOpen ? "btn-info" : "btn-outline-info")"
-                title="Choose what the map draws on this desk"
-                @onclick="() => _layersOpen = !_layersOpen">🗺 Layers</button>
-        @if (_layersOpen)
-        {
-            <div class="map-layers-panel bg-dark bg-opacity-75 rounded p-2 small shadow text-light">
-                @foreach ((string key, string label, string icon) in MapLayerDefs)
-                {
-                    string layerKey = key;
-                    <label class="d-block map-layers-row">
-                        <input type="checkbox" checked="@LayerVisible(layerKey)"
-                               @onchange="() => ToggleLayer(layerKey)" /> @icon @label
-                    </label>
-                }
-                <div class="text-secondary mt-1">remembered per desk</div>
-            </div>
-        }
-    </div>
+       panel, Gemini-consulted placement — small toggle, never a modal over the sky. Only shown on
+       the desks that actually render the solar map (Nav, Sensors, the War-room orrery); the other
+       desks cover the map with a full-screen panel, so the filter would be dead UI there — and on
+       the Captain desk it overlapped the (now three-wide) view-toggle. *@
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom)
+    {
+        <div class="map-layers">
+            <button type="button" class="btn btn-sm @(_layersOpen ? "btn-info" : "btn-outline-info")"
+                    title="Choose what the map draws on this desk"
+                    @onclick="() => _layersOpen = !_layersOpen">🗺 Layers</button>
+            @if (_layersOpen)
+            {
+                <div class="map-layers-panel bg-dark bg-opacity-75 rounded p-2 small shadow text-light">
+                    @foreach ((string key, string label, string icon) in MapLayerDefs)
+                    {
+                        string layerKey = key;
+                        <label class="d-block map-layers-row">
+                            <input type="checkbox" checked="@LayerVisible(layerKey)"
+                                   @onchange="() => ToggleLayer(layerKey)" /> @icon @label
+                        </label>
+                    }
+                    <div class="text-secondary mt-1">remembered per desk</div>
+                </div>
+            }
+        </div>
+    }
+
+    @* Advertise the tutorials to new players — the picker lives in the Captain's Tutorials tab now,
+       one desk over, so a fresh player needs a nudge to find it. A dismissible pointer on the Nav
+       map (where you first land); "Show me" jumps straight to the tab, × retires it for the run. *@
+    @if (_activeDesk == ShipDesk.Nav && !_tutorialAdDismissed)
+    {
+        <div class="tutorial-ad">
+            <span class="tutorial-ad-text">🎓 New here? Learn the ropes at the Captain's desk (0).</span>
+            <button type="button" class="btn btn-sm btn-info" @onclick="OpenTutorials">Show me</button>
+            <button type="button" class="btn-close btn-close-white" aria-label="Dismiss the tutorials hint"
+                    @onclick="() => _tutorialAdDismissed = true"></button>
+        </div>
+    }
 
     @* First-person ⇄ deck-plan toggle. The F key does this, but it isn't discoverable, so give it a
        visible button while you're aboard (top-down or first person). Mirrors HandleDeckKey's 'f'. *@
@@ -1016,7 +1035,8 @@
                                                               StatusChips="AllStationChips()" OnGoToDesk="SwitchDesk"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
-                                                              Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial" />
+                                                              Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
+                                                              OpenToTutorials="_openCaptainToTutorials" />
                 }
             </div>
         </div>
@@ -1083,7 +1103,25 @@
         {
             ToggleDeck();
         }
+        // The tutorials banner's "Show me" asks the Captain desk to open on its Tutorials tab; that
+        // one-shot request is spent the moment you leave the captain's chair for any other desk.
+        if (desk != ShipDesk.Captain)
+        {
+            _openCaptainToTutorials = false;
+        }
         _activeDesk = desk;
+    }
+
+    // Tutorials advertising (owner: "advertise the tutorials somewhere in the UI"). A dismissible
+    // pointer on the Nav map — the lessons live in the Captain's Tutorials tab now, one desk over.
+    private bool _tutorialAdDismissed;
+    private bool _openCaptainToTutorials;
+
+    private void OpenTutorials()
+    {
+        _tutorialAdDismissed = true;      // acting on the hint retires it for the run
+        _openCaptainToTutorials = true;   // land the Captain desk on its Tutorials tab
+        SwitchDesk(ShipDesk.Captain);
     }
 
     /// <summary>The Galley's "Pour a tot" button funnels through the exact same PourRum the deck

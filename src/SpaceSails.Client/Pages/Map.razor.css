@@ -507,6 +507,30 @@
     z-index: 40;
 }
 
+/* Tutorials advertisement — a dismissible pointer on the Nav map, sitting below the Layers row so
+   the two never collide. Points new players to the Captain's Tutorials tab, one desk over. */
+.tutorial-ad {
+    position: absolute;
+    top: 6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 45;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    max-width: min(42rem, 92vw);
+    padding: 0.4rem 0.55rem 0.4rem 0.9rem;
+    background: rgba(6, 9, 15, 0.9);
+    border: 1px solid rgba(120, 200, 255, 0.5);
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.tutorial-ad-text {
+    color: #e8eef6;
+    font-size: 0.9rem;
+}
+
 .map-layers-panel {
     position: absolute;
     top: 2.1rem;

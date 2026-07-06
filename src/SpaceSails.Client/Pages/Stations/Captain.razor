@@ -228,12 +228,25 @@
     [Parameter] public IReadOnlyList<TutorialItem> Tutorials { get; set; } = [];
     [Parameter] public int ActiveTutorial { get; set; } = -1; // index of the in-progress lesson, -1 = none
     [Parameter] public EventCallback<int> OnStartTutorial { get; set; }
+    // Set by the Nav "New here? Learn the ropes" banner so the desk opens straight on the lessons.
+    [Parameter] public bool OpenToTutorials { get; set; }
 
     /// <summary>One lesson on the Tutorials tab — title + one-line blurb. Map owns the actual steps.</summary>
     public sealed record TutorialItem(string Title, string Blurb);
 
     private enum CaptainView { Orders, Status, Tutorials }
     private CaptainView _view;
+
+    // The component is re-created each time you switch to the Captain desk, so reading the banner's
+    // request here opens the Tutorials tab exactly for that one arrival; a later manual visit (flag
+    // cleared on the way out) lands on Orders as usual.
+    protected override void OnInitialized()
+    {
+        if (OpenToTutorials)
+        {
+            _view = CaptainView.Tutorials;
+        }
+    }
 
     private async Task OnStatusKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e, ShipDesk desk)
     {
