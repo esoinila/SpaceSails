@@ -320,7 +320,12 @@
             else if (DockableHavenHere() is not null)
             {
                 <button type="button" class="btn btn-sm btn-outline-info me-2" @onclick="ToggleDock"
-                        title="Clamp onto the dock and lie low — the heat bleeds off while you're berthed">🅿 Dock</button>
+                        title="Clamp onto the dock and lie low — the heat bleeds off while you're berthed">⚓ Dock</button>
+            }
+            else if (DockSpeedNudge() is { } dockNudge)
+            {
+                @* Alongside a ⚓ dock but coasting too hot to clamp — show the gate, greyed, so it teaches. *@
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2" disabled title="@dockNudge">⚓ Dock</button>
             }
             <button type="button" class="btn btn-sm @(_showScope ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleScope">
                 Scope
@@ -354,50 +359,80 @@
             @if (OrbitInfo() is { } oi)
             {
                 <div class="mt-1 small">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span>
-                            @(oi.IsDestination ? "🎯" : "🛰") Orbit @oi.Body.Name — @OrbitStatusLine(oi)
-                        </span>
-                        @if (oi.WindowOpen)
-                        {
-                            <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
-                                    disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
-                                Enter orbit (@oi.Cost p / O)
-                            </button>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn btn-sm py-0 @(oi.Armed ? "btn-success" : oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
-                                    disabled="@(!oi.InCaptureRange && !oi.Armed)" @onclick="EnterOrbit">
-                                @(oi.Armed ? "Autopilot ON — disarm" : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
-                            </button>
-                        }
-                    </div>
-                    <div class="progress map-orbit-bar" title="distance vs capture range">
-                        <div class="progress-bar @(oi.InCaptureRange ? "bg-success" : "bg-info")"
-                             style="width: @(Math.Clamp(100 * oi.CaptureRange / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
-                    </div>
-                    <div class="progress map-orbit-bar" title="relative speed vs 5 km/s limit">
-                        <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
-                             style="width: @(Math.Clamp(100 * OrbitRule.MaxRelativeSpeed / Math.Max(oi.RelSpeed, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
-                    </div>
-                    @if (oi.IsDestination)
+                    @if (IsDockableHaven(oi.Body))
                     {
-                        <div class="text-secondary">
-                            @FormatDistance(oi.Distance) out · capture ≤ @FormatDistance(oi.CaptureRange) ·
-                            rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
-                            (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
-                            @if (DestinationEta() is { } eta)
-                            {
-                                <text> · @eta</text>
-                            }
-                            <a role="button" class="text-info text-decoration-none ms-1"
-                               @onclick="() => SetDestination(null)">clear</a>
+                        @* A mass-less haven has no Hill sphere — you clamp its ⚓ dock, you don't orbit.
+                           Same panel slot, dock language, so the capture-range math never lies here. *@
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>⚓ Dock at @oi.Body.Name — @DockStatusLine(oi)</span>
                         </div>
+                        @if (oi.IsDestination)
+                        {
+                            <div class="text-secondary">
+                                @FormatDistance(oi.Distance) out · clamp within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km ·
+                                rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                                (match ≤ @((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)))
+                                @if (DestinationEta() is { } eta)
+                                {
+                                    <text> · @eta</text>
+                                }
+                                <a role="button" class="text-info text-decoration-none ms-1"
+                                   @onclick="() => SetDestination(null)">clear</a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>
+                                @(oi.IsDestination ? "🎯" : "🛰") Orbit @oi.Body.Name — @OrbitStatusLine(oi)
+                            </span>
+                            @if (oi.WindowOpen)
+                            {
+                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
+                                        disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
+                                    Enter orbit (@oi.Cost p / O)
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm py-0 @(oi.Armed ? "btn-success" : oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
+                                        disabled="@(!oi.InCaptureRange && !oi.Armed)" @onclick="EnterOrbit">
+                                    @(oi.Armed ? "Autopilot ON — disarm" : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
+                                </button>
+                            }
+                        </div>
+                        <div class="progress map-orbit-bar" title="distance vs capture range">
+                            <div class="progress-bar @(oi.InCaptureRange ? "bg-success" : "bg-info")"
+                                 style="width: @(Math.Clamp(100 * oi.CaptureRange / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        <div class="progress map-orbit-bar" title="relative speed vs 5 km/s limit">
+                            <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
+                                 style="width: @(Math.Clamp(100 * OrbitRule.MaxRelativeSpeed / Math.Max(oi.RelSpeed, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        @if (oi.IsDestination)
+                        {
+                            <div class="text-secondary">
+                                @FormatDistance(oi.Distance) out · capture ≤ @FormatDistance(oi.CaptureRange) ·
+                                rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                                (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
+                                @if (DestinationEta() is { } eta)
+                                {
+                                    <text> · @eta</text>
+                                }
+                                <a role="button" class="text-info text-decoration-none ms-1"
+                                   @onclick="() => SetDestination(null)">clear</a>
+                            </div>
+                        }
                     }
                 </div>
             }
-            <div>Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)</div>
+            <div>
+                Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)@if (_nearestBody is { } nb && IsDockableHaven(nb) && _dockedHavenId is null)
+                {
+                    <span class="text-info"> · ⚓ dockable haven — coast within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km, ≤@((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)) km/s to clamp on</span>
+                }
+            </div>
             @if (_activeRadar)
             {
                 <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
@@ -1852,7 +1887,7 @@
         "Run the loot home and sell it",
         // Third — use a haven (cool the heat your piracy earned)
         "Captain's desk (0): order Lay low at a haven",
-        "Plot a course and slip into orbit at the haven",
+        "Reach the haven — orbit a moon, or coast in slow and clamp its ⚓ dock",
         "Lie low — let the heat cool until the hunter breaks off",
     ];
 
@@ -2056,6 +2091,7 @@
                     round.Spent = true;
                     PushNewsEvent(NewsWire.NewsEventKind.SlugHit, hunter.Callsign, _nearestBody?.Name);
                     ShowPulseMessage($"🎯 DIRECT HIT — {hunter.Callsign} breaks off, sail holed");
+                    SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
                     RendererInterop.PlayCue("hit");
                     break;
                 }
@@ -3267,7 +3303,8 @@
             return new ScopeView.Target(
                 ScopeView.TargetKind.Body, body.Name, null,
                 _nearestBodyPosition, _nearestBodyVelocity,
-                body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition));
+                body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition),
+                IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
         }
 
         return new ScopeView.Target(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
@@ -3296,7 +3333,8 @@
                 Vector2d velocity = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
                 return new ScopeView.Target(
                     ScopeView.TargetKind.Body, body.Name, null,
-                    position, velocity, body.BodyRadius, BodyColor(body.Id), InPlasmaAt(position));
+                    position, velocity, body.BodyRadius, BodyColor(body.Id), InPlasmaAt(position),
+                    IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
             }
         }
 
@@ -3620,6 +3658,17 @@
         return oi.TooFast
             ? $"{closing} (autopilot sheds the {inv((oi.RelSpeed - OrbitRule.MaxRelativeSpeed) / 1000)} km/s there)"
             : closing;
+    }
+
+    // Approach coaching for a mass-less haven dock — no orbit, you clamp on (the dock mirror of
+    // OrbitStatusLine). Keyed off the same DockReachMeters/DockMatchSpeedMps gates as the ⚓ button.
+    private string DockStatusLine(OrbitAssistInfo oi)
+    {
+        string km(double m) => (m / 1000).ToString("N0", CultureInfo.InvariantCulture);
+        if (_dockedHavenId == oi.Body.Id) return "clamped on — lying low";
+        if (oi.Distance > DockReachMeters) return $"coast within {km(DockReachMeters)} km to clamp on";
+        if (oi.RelSpeed > DockMatchSpeedMps) return $"alongside — slow to ≤{km(DockMatchSpeedMps)} km/s, then hit ⚓ Dock";
+        return "alongside and matched — hit ⚓ Dock to clamp on";
     }
 
     private void EnterOrbit()
@@ -4565,7 +4614,10 @@
             if (isDestination || _camera.MetersPerPixel < body.BodyRadius * 500 || (isStation && _camera.MetersPerPixel < LabelZoomThresholdForStations))
             {
                 RgbaColor labelColor = body.IsHaven ? HavenLabelColor : LabelColor;
-                _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, labelColor);
+                // A ⚓ flags the mass-less grey-market docks — the havens you can clamp onto to lie
+                // low (moon havens you orbit instead, so they carry the pink wash but no anchor).
+                string label = IsDockableHaven(body) ? $"⚓ {body.Name}" : body.Name;
+                _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, label, labelColor);
             }
         }
     }
@@ -5449,7 +5501,24 @@
                 double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
                 if (d2 <= hit * hit)
                 {
-                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · body", "🪐"), d2, 2));
+                    (string flavor, string icon) = body.IsHaven ? ("haven", "🏴") : ("body", "🪐");
+                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · {flavor}", icon), d2, 2));
+                }
+            }
+
+            // Haven docks are stations (skipped above — you clamp, not orbit), but they must still be
+            // pickable: stacked over their planet, the ⚓ in the name calls out the one you can dock at
+            // right there in the "which one?" list — no zooming in to tell them apart (owner's ask).
+            foreach (CelestialBody body in _ephemeris.Bodies)
+            {
+                if (!IsDockableHaven(body)) continue;
+                (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
+                double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
+                double hit = Math.Max(Math.Clamp(drawnPx, 14, 80), radiusPx);
+                double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
+                if (d2 <= hit * hit)
+                {
+                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · dock haven", "⚓"), d2, 2));
                 }
             }
         }
@@ -7376,6 +7445,7 @@
                 ? $"⚠ {hunter.Callsign} watches the slug drift past, shrugs, and turns for the nearest cantina — la dolce vita 🍸"
                 : $"⚠ {hunter.Callsign} has had enough — she sheers off and voids the contract");
             PushNewsEvent(NewsWire.NewsEventKind.HunterBrokeOff, hunter.Callsign, _nearestBody?.Name);
+            SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
         }
         else
         {
@@ -7388,6 +7458,7 @@
                 _ => "is losing her nerve",
             };
             ShowPulseMessage($"⚠ WARNING SHOT — {hunter.Callsign} {nerve} and sheers off (peels away ~{peelDays:0.#} d)");
+            SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
         }
     }
 
@@ -7462,6 +7533,30 @@
     private const double DockReachMeters = 5e8;    // how close you must coast to throw the clamp on
     private const double DockMatchSpeedMps = 8000;  // and how nearly matched to its drift (tunable)
 
+    // A station haven you clamp onto (⚓): mass-less, so it can't be orbited — the dock is the only
+    // way to lie low there. Moon havens (mu > 0) you hide at by orbiting instead. This is the split
+    // the ⚓ marker, the scope's "HAVEN ⚓ DOCK" tag and the Nav hint all key off.
+    private static bool IsDockableHaven(CelestialBody body) => body is { IsHaven: true, Mu: <= 0 };
+
+    // Near a dock but coasting too hot to clamp — the one gate players hit most. Returns the nudge
+    // to show on a greyed-out Dock button, or null when there's nothing to nudge about.
+    private string? DockSpeedNudge()
+    {
+        if (_dockedHavenId is not null || _nearestBody is not { } near || !IsDockableHaven(near))
+        {
+            return null;
+        }
+
+        double distance = (_ship.Position - _nearestBodyPosition).Length;
+        if (distance <= near.BodyRadius || distance > DockReachMeters)
+        {
+            return null; // not in reach yet — the Nav "Nearest" line teaches the "get closer" half
+        }
+
+        double relSpeed = (_ship.Velocity - _nearestBodyVelocity).Length;
+        return relSpeed > DockMatchSpeedMps ? $"Too fast to clamp — slow to ≤{DockMatchSpeedMps / 1000:N0} km/s" : null;
+    }
+
     // The station haven we're close enough (and slow enough) to clamp onto right now, if any.
     private CelestialBody? DockableHavenHere()
     {
@@ -7494,7 +7589,7 @@
         _dockOffset = _ship.Position - _nearestBodyPosition; // freeze the arm's reach at berth
         HoldAtDock();                                        // match the drift now so nothing lurches
         StaleFutureNodes();                                  // a berth cancels any pending burns
-        ShowPulseMessage($"Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off. 🅿");
+        ShowPulseMessage($"⚓ Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off.");
         RendererInterop.PlayCue("board");
     }
 
@@ -7606,6 +7701,12 @@
         {
             PushNewsEvent(NewsWire.NewsEventKind.OrbitEnteredHaven, arrivedHaven.Name);
             AdvanceTutorial(StepInsertHaven);
+
+            // Easter egg: settle in at The Space Bar and the bird cracks wise about needing a break.
+            if (arrivedHaven.Name.Contains("Space Bar", StringComparison.OrdinalIgnoreCase))
+            {
+                SquawkNow(Parrot.Squawk.SpaceBarBreak, _lastTimestampMs ?? 0, force: true);
+            }
         }
 
         _hiddenAtHavenSinceSimTime = hidden
@@ -7636,6 +7737,7 @@
             else if (hunter.BrokenOff)
             {
                 ShowPulseMessage($"{hunter.Callsign} loses your scent — safe at anchor.");
+                SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
                 _hunters.RemoveAt(i);
             }
             else
