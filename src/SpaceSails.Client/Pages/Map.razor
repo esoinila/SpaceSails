@@ -5201,6 +5201,20 @@
             }
         }
 
+        // A hunter isn't in _npcStates, so it was never in this list — clicking the Debt Collector
+        // hit empty sky. It's the most click-worthy thing on the screen: picking it locks the
+        // war-room interest target (bracket + firing solution). Ranked ahead of haulers on a tie.
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.BrokenOff || hunter.CaughtPlayer) continue;
+            (float sx, float sy) = _camera.WorldToScreen(hunter.State.Position);
+            double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
+            if (d2 <= r2)
+            {
+                found.Add((new PickCandidate('H', hunter.Id, $"{hunter.Callsign} · hunter", "🐺"), d2, -1));
+            }
+        }
+
         if (_ephemeris is not null)
         {
             foreach (CelestialBody body in _ephemeris.Bodies)
@@ -5243,6 +5257,7 @@
         switch (pick.Kind)
         {
             case 'S': OpenShipMenuFor(pick.Id, x, y); break;
+            case 'H': MarkHunterOfInterest(pick.Id); break;
             case 'B': OpenBodyMenuFor(pick.Id, x, y); break;
             case 'C': OpenCorridorMenuFor(pick.Id, x, y); break;
             default: OpenSkyMenu(x, y); break;
@@ -5262,6 +5277,19 @@
         _shipMenuX = clientX + 14;
         _shipMenuY = clientY;
         StateHasChanged();
+    }
+
+    /// <summary>Clicking a hunter on the map locks it as the war room's interest target — the same
+    /// lock as the War Room 🎯 button (corner brackets, a firing solution, a warning shot that
+    /// breaks its nerve). Clicking the locked hunter again clears the lock.</summary>
+    private void MarkHunterOfInterest(string hunterId)
+    {
+        bool wasLocked = _interestTargetId == hunterId;
+        SetInterestTarget(hunterId); // toggles; also nulls the stale intercept and re-scans the pass
+        string name = _hunters.FirstOrDefault(h => h.Id == hunterId).Callsign ?? "the hunter";
+        ShowPulseMessage(wasLocked
+            ? $"Lock released — {name} is no longer the war room's mark"
+            : $"🎯 {name} marked — the war room has the fire-control lock; a warning shot will test its nerve");
     }
 
     private void OpenBodyMenuFor(string bodyId, double clientX, double clientY)
