@@ -3381,9 +3381,14 @@
             _mission = ShipMission.Default;
         }
 
+        bool destDocks = bodyId is not null
+            && _ephemeris?.Bodies.FirstOrDefault(b => b.Id == bodyId) is { } destBody
+            && IsDockableHaven(destBody);
         ShowPulseMessage(bodyId is null
             ? "Destination cleared"
-            : $"Destination set — {BodyName(bodyId)} 🎯 orbit assist tracks it now");
+            : destDocks
+                ? $"Destination set — {BodyName(bodyId)} ⚓ dock assist tracks it now"
+                : $"Destination set — {BodyName(bodyId)} 🎯 orbit assist tracks it now");
         StateHasChanged();
     }
 
