@@ -23,6 +23,7 @@ public static class NewsWire
         OrbitEnteredHaven,
         SlugHit,
         SlugMissed,
+        HunterBrokeOff,
     }
 
     /// <summary>One player-triggered event, dated and named. <paramref name="Subject"/> is the
@@ -196,6 +197,8 @@ public static class NewsWire
             $"Someone put a slug through {evt.Subject}'s sail — she's dead in the water and drifting{(evt.Detail is null ? "" : $" near {evt.Detail}")}.",
         NewsEventKind.SlugMissed =>
             $"A mass-driver round evaporated somewhere past {evt.Subject}'s wake. Warning, or bad gunnery — opinions differ.",
+        NewsEventKind.HunterBrokeOff =>
+            $"{evt.Subject} has broken off the chase — the contract, it seems, wasn't worth the hull. Someone's underwriters are furious.",
         _ => "Static on the wire.",
     };
 }
