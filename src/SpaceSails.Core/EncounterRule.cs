@@ -33,7 +33,9 @@ public readonly record struct HunterState(
     double ActivationSimTime,
     ShipState State,
     bool CaughtPlayer,
-    bool BrokenOff);
+    bool BrokenOff,
+    int WarningShotsTaken = 0,
+    double PeeledUntilSimTime = double.NegativeInfinity);
 
 /// <summary>
 /// The gun deck (vision ¶18): warning shots, compliance, threats, bribery and the HEAT a robbery
@@ -98,6 +100,28 @@ public static class EncounterRule
 
     /// <summary>Stay hidden at a haven this long and a hunter loses the scent.</summary>
     public const double BreakOffHiddenDays = 2;
+
+    /// <summary>Some collectors prize the good life over the fee: one warning shot near them and
+    /// they sheer off for good. This baseline fraction thins as heat (the bounty) climbs — a fat
+    /// contract draws hungry, gritty muscle, not sybarites.</summary>
+    public const double LaDolceVitaFraction = 0.20;
+
+    public const double LaDolceVitaFractionPerHeatLevel = 0.05;
+
+    public const double MinLaDolceVitaFraction = 0.05;
+
+    /// <summary>Warning shots a professional collector will weather before it voids the contract;
+    /// grittier (needs one more per heat level) the more notorious the captain.</summary>
+    public const int BaseHunterNerve = 3;
+
+    /// <summary>Each warning shot buys a coast-off this many days long, multiplied by the number
+    /// of shots so far — a rattled collector peels away longer each time before re-acquiring.</summary>
+    public const double HunterPeelStepDays = 1.5;
+
+    /// <summary>Attack out of the sun: the star sits at the world origin, so a collector astern of
+    /// the player with the sun beyond is staring into glare. Inside this half-angle cone (and with
+    /// the player on the sunward side) the hunter loses its fix and coasts, unable to close.</summary>
+    public const double SunGlareConeDegrees = 12;
 
     /// <summary>Central/policed space vs. the outer reaches — the same split TrafficSchedule uses
     /// for long-haul traffic. A planet past this threshold is pirate country, not a source of
@@ -246,10 +270,15 @@ public static class EncounterRule
             return hunter;
         }
 
-        if (simTime < hunter.ActivationSimTime)
+        // Coasting cases — the hunter drifts on its current velocity, unable to refine the chase:
+        // still fitting out, peeled off after a warning shot, or blinded by the sun behind the
+        // player. In every case it stops closing until the condition clears.
+        if (simTime < hunter.ActivationSimTime
+            || simTime < hunter.PeeledUntilSimTime
+            || SunBlinded(hunter.State.Position, player.Position))
         {
-            Vector2d parked = hunter.State.Position + hunter.State.Velocity * dt;
-            return hunter with { State = new ShipState(parked, hunter.State.Velocity, simTime) };
+            Vector2d coasted = hunter.State.Position + hunter.State.Velocity * dt;
+            return hunter with { State = new ShipState(coasted, hunter.State.Velocity, simTime) };
         }
 
         Vector2d toPlayer = player.Position - hunter.State.Position;
@@ -273,6 +302,70 @@ public static class EncounterRule
         !hunter.CaughtPlayer && !hunter.BrokenOff && hiddenDurationSeconds >= BreakOffHiddenDays * DaySeconds
             ? hunter with { BrokenOff = true }
             : hunter;
+
+    /// <summary>Deterministic per-collector disposition: does this one prize the good life over
+    /// the fee? Such a collector voids the contract at the very first warning shot. Rarer as heat
+    /// (the bounty) rises. Salted apart from <see cref="ComplianceOf"/> so a ship and a hunter that
+    /// happen to share an id never correlate.</summary>
+    public static bool PrefersTheGoodLife(string hunterId, int playerHeat)
+    {
+        double fraction = Math.Max(MinLaDolceVitaFraction,
+            LaDolceVitaFraction - LaDolceVitaFractionPerHeatLevel * Math.Max(0, playerHeat));
+        double roll = new DeterministicRandom(HashSeed(hunterId) ^ 0x4C61446F6C6365UL).NextDouble();
+        return roll < fraction;
+    }
+
+    /// <summary>How many warning shots this collector weathers before giving up for good: the
+    /// good-life sort quit at the first, everyone else needs <see cref="BaseHunterNerve"/>, plus
+    /// one per heat level (a notorious captain draws grittier muscle).</summary>
+    public static int NerveThreshold(string hunterId, int playerHeat) =>
+        PrefersTheGoodLife(hunterId, playerHeat) ? 1 : BaseHunterNerve + Math.Max(0, playerHeat);
+
+    /// <summary>A warning shot lands near the collector: its nerve erodes. Each shot buys a longer
+    /// coast-off (it stops closing — see <see cref="AdvanceHunter"/>), and once the shots reach its
+    /// <see cref="NerveThreshold"/> it voids the contract for good. A caught or already-broken
+    /// hunter is unmoved. Pure: the peel window is derived from the shot count and sim time, no
+    /// live RNG.</summary>
+    public static HunterState WarnOff(HunterState hunter, int playerHeat, double simTime)
+    {
+        if (hunter.CaughtPlayer || hunter.BrokenOff)
+        {
+            return hunter;
+        }
+
+        int shots = hunter.WarningShotsTaken + 1;
+        if (shots >= NerveThreshold(hunter.Id, playerHeat))
+        {
+            return hunter with { WarningShotsTaken = shots, BrokenOff = true };
+        }
+
+        double peelUntil = simTime + shots * HunterPeelStepDays * DaySeconds;
+        return hunter with { WarningShotsTaken = shots, PeeledUntilSimTime = peelUntil };
+    }
+
+    /// <summary>Attack out of the sun: true when the player sits inside the glare cone as seen from
+    /// the hunter (the sun is at the world origin) AND is on the sunward side — the hunter would be
+    /// squinting into the star to find them. Pure geometry, no state.</summary>
+    public static bool SunBlinded(Vector2d hunterPosition, Vector2d playerPosition)
+    {
+        double hunterDist = hunterPosition.Length;
+        // Player must be nearer the sun than the hunter — i.e. genuinely between star and pursuer.
+        if (playerPosition.Length >= hunterDist || hunterDist <= 0)
+        {
+            return false;
+        }
+
+        Vector2d toPlayer = playerPosition - hunterPosition;
+        Vector2d toSun = -hunterPosition; // origin - hunter
+        double toPlayerLen = toPlayer.Length;
+        if (toPlayerLen <= 0)
+        {
+            return false;
+        }
+
+        double cosAngle = toPlayer.Dot(toSun) / (toPlayerLen * hunterDist);
+        return cosAngle >= Math.Cos(SunGlareConeDegrees * Math.PI / 180.0);
+    }
 
     // FNV-1a 64-bit: stable across processes and platforms (unlike string.GetHashCode, which is
     // randomized per run) — determinism is law, and ship ids seed every deterministic roll here.

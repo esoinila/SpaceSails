@@ -23,6 +23,7 @@ public static class NewsWire
         OrbitEnteredHaven,
         SlugHit,
         SlugMissed,
+        HunterBrokeOff,
     }
 
     /// <summary>One player-triggered event, dated and named. <paramref name="Subject"/> is the
@@ -49,6 +50,9 @@ public static class NewsWire
         "Someone laser-ranged a haven last week. The haven laser-ranged back.",
         "A masked freighter cleared customs without a manifest. Nobody asked twice.",
         "The underwriters are quietly raising piracy premiums again. Somebody's business is booming.",
+        "The Space Bar off Mars threw out two bounty hunters before last call — house rule: check your guns, drink your credits.",
+        "Cinder Roost's scrap-welders swear the whole berth drifts a little every time Venus' storms kick up. Nobody's left over it yet.",
+        "Nobody at The Tilt can agree which way is up; the bar's been listing sideways off Uranus since before anyone's tab opened.",
     ];
 
     private static readonly string[] BodyTemplates =
@@ -196,6 +200,8 @@ public static class NewsWire
             $"Someone put a slug through {evt.Subject}'s sail — she's dead in the water and drifting{(evt.Detail is null ? "" : $" near {evt.Detail}")}.",
         NewsEventKind.SlugMissed =>
             $"A mass-driver round evaporated somewhere past {evt.Subject}'s wake. Warning, or bad gunnery — opinions differ.",
+        NewsEventKind.HunterBrokeOff =>
+            $"{evt.Subject} has broken off the chase — the contract, it seems, wasn't worth the hull. Someone's underwriters are furious.",
         _ => "Static on the wire.",
     };
 }
