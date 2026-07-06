@@ -294,6 +294,100 @@ public static class EncounterRule
         return hunter with { State = newState, CaughtPlayer = caught };
     }
 
+    /// <summary>
+    /// Fire control's hunter special case (the aim-solution fork): a hunter flies the PURSUIT
+    /// LAW, not gravity — dead-reckoning it through the Simulator (the standard freighter
+    /// estimate) is wrong twice over: it adds a solar pull the hunter never feels AND drops the
+    /// <see cref="HunterAccelMps2"/> it relentlessly adds toward the player. That error is
+    /// ½·a·τ² ≈ 13,000 km on a 2 h slug flight, against OrdnanceRule's 5e5 m hit radius — a
+    /// guaranteed structural miss on anything past a knife-fight. So REPLAY
+    /// <see cref="AdvanceHunter"/> itself, in its own <see cref="HunterStepSeconds"/> quanta,
+    /// against the player's PLOTTED course: to our own gun deck the pursuit law is public
+    /// knowledge the way gravity is to PathPredictor — the only honest unknown is whether the
+    /// player keeps to the plot (burn off it and you bend your own firing solution: the
+    /// collector chases the real you, not the plan). Cost: horizon/60 s of plain additions and
+    /// one recorded knot per <paramref name="maxKnots"/> stride — the hunter stays exactly as
+    /// light as it flies. The hunter's true track is itself piecewise-linear at these quanta
+    /// (Euler positions), so undecimated knots are EXACT, not sampled. A predicted catch or
+    /// break-off freezes the track (a spent contact holds still). The final knot always lands
+    /// exactly on the horizon, so <c>Samples[^1].Position</c> is the aim point at t_hit.
+    /// </summary>
+    public static IReadOnlyList<TrajectorySample> PredictHunterPath(
+        HunterState hunter,
+        IReadOnlyList<TrajectorySample> playerPath,
+        double horizonSeconds,
+        int maxKnots = 4000)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxKnots);
+        double end = hunter.State.SimTime + Math.Max(0, horizonSeconds);
+        int totalSteps = (int)Math.Ceiling(Math.Max(0, horizonSeconds) / HunterStepSeconds);
+        // Decimation for months-long horizons: integrate every quantum, record every stride-th.
+        // Between recorded knots a linear read sags by at most ⅛·a·(stride·60)² — under the
+        // 5e5 m hit radius up to ~40 min strides, i.e. horizons beyond a month.
+        int stride = totalSteps / maxKnots + 1;
+
+        var samples = new List<TrajectorySample>(Math.Min(totalSteps, maxKnots) + 2)
+        {
+            new(hunter.State.SimTime, hunter.State.Position),
+        };
+
+        HunterState h = hunter;
+        int step = 0;
+        int cursor = 0; // step times only grow — resume each path search where the last ended
+        while (h.State.SimTime < end && !h.CaughtPlayer && !h.BrokenOff)
+        {
+            double stepTime = Math.Min(end, h.State.SimTime + HunterStepSeconds);
+            h = AdvanceHunter(h, PlayerStateAt(playerPath, stepTime, ref cursor), stepTime);
+            step++;
+            if (step % stride == 0 || h.State.SimTime >= end)
+            {
+                samples.Add(new TrajectorySample(h.State.SimTime, h.State.Position));
+            }
+        }
+
+        if (samples[^1].SimTime < end)
+        {
+            samples.Add(new TrajectorySample(end, samples[^1].Position));
+        }
+
+        return samples;
+    }
+
+    /// <summary>The player's plotted state at a sim time: position interpolated linearly along
+    /// the path, velocity the local segment's slope (all <see cref="AdvanceHunter"/>'s steering
+    /// and catch check need). Beyond either end the nearest leg extrapolates — a shot aimed past
+    /// the plot's horizon is reaching past what the plot honestly knows anyway.
+    /// <paramref name="cursor"/> is a monotonic resume hint: query times only ever grow, so the
+    /// whole replay walks the path once instead of rescanning it every quantum.</summary>
+    private static ShipState PlayerStateAt(IReadOnlyList<TrajectorySample> path, double simTime, ref int cursor)
+    {
+        if (path.Count == 0)
+        {
+            throw new ArgumentException("player path must hold at least one sample", nameof(path));
+        }
+
+        if (path.Count == 1)
+        {
+            return new ShipState(path[0].Position, Vector2d.Zero, simTime);
+        }
+
+        while (cursor < path.Count - 2 && path[cursor + 1].SimTime < simTime)
+        {
+            cursor++;
+        }
+
+        TrajectorySample a = path[cursor], b = path[cursor + 1];
+        double span = b.SimTime - a.SimTime;
+        if (span <= 0)
+        {
+            return new ShipState(b.Position, Vector2d.Zero, simTime);
+        }
+
+        Vector2d velocity = (b.Position - a.Position) / span;
+        double f = (simTime - a.SimTime) / span;
+        return new ShipState(a.Position + (b.Position - a.Position) * f, velocity, simTime);
+    }
+
     /// <summary>The player has stayed hidden at a haven this long — the hunter loses the scent.
     /// <paramref name="hiddenDurationSeconds"/> is however long the caller has tracked continuous
     /// haven orbit; Map.razor owns that clock since it depends on the player's live flight path,

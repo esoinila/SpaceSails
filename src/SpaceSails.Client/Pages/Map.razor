@@ -2532,6 +2532,59 @@
         }
     }
 
+    /// <summary>
+    /// The aim-solution fork (core-gravity review, 2026-07-06): a freighter's future is gravity
+    /// (PathPredictor dead-reckons it through the Simulator — gravity is public knowledge), but a
+    /// hunter's future is the PURSUIT LAW: no gravity, +0.5 m/s² toward us every quantum. The old
+    /// gravity dead-reckon put a hunter aim point ~½·a·τ² off — 13,000 km on a 2 h flight against
+    /// the 5e5 m hit radius, a structural miss beyond point-blank. The fork replays the pursuit law
+    /// itself (EncounterRule.PredictHunterPath) against our own plotted course; both arms honor the
+    /// same PredictedPath contract, so SOLVE, the window scan, the orrery backdrop and the
+    /// dispersion cone all stay target-agnostic. The hunter cone keeps budgets 0 — the pursuit law
+    /// is known exactly, pod-thin; what really bends a hunter shot is leaving your own plot
+    /// mid-flight (the collector chases the real you, not the plan).
+    /// </summary>
+    private PredictedPath PredictInterestPath((Vector2d Position, Vector2d Velocity) target, double horizonSeconds)
+    {
+        var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == _interestTargetId)
+            {
+                return new PredictedPath(observation,
+                    EncounterRule.PredictHunterPath(hunter, PlayerPathForPrediction(), horizonSeconds),
+                    ManeuverBudget: 0, ImpulseBudget: 0);
+            }
+        }
+
+        return PathPredictor.Predict(_ephemeris!, observation, null, horizonSeconds,
+            maneuverBudget: InterestManeuverBudget());
+    }
+
+    /// <summary>What a pursuer will actually chase: the plotted course — except BERTHED, where the
+    /// plot shows a gravity coast the clamps will never allow; ride the dock's rails instead. The
+    /// no-plot fallback (a beat before the first projection lands) is a straight coast.</summary>
+    private IReadOnlyList<TrajectorySample> PlayerPathForPrediction()
+    {
+        if (_dockedHavenId is { } dockId && _ephemeris is not null)
+        {
+            double horizon = Math.Max(CurrentPlotHorizonSeconds, 2 * 86400);
+            const int knots = 128;
+            var docked = new List<TrajectorySample>(knots + 1);
+            for (int k = 0; k <= knots; k++)
+            {
+                double t = SimTime + horizon * k / knots;
+                docked.Add(new TrajectorySample(t, _ephemeris.Position(dockId, t) + _dockOffset));
+            }
+
+            return docked;
+        }
+
+        return _samples.Count >= 2
+            ? _samples
+            : [new TrajectorySample(SimTime, _ship.Position), new TrajectorySample(SimTime + 3600, _ship.Position + _ship.Velocity * 3600)];
+    }
+
     /// <summary>The Norden beat: predict the mark, coast the shooter to T+60 s, run the
     /// shooting method, and — if it converges — lock, count down, auto-fire.</summary>
     private void ComputeFiringSolution()
@@ -2543,9 +2596,7 @@
 
         _fireAimOffsetSeconds = Math.Clamp(_fireAimOffsetSeconds, 600, MaxFireAimOffsetSeconds);
 
-        var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
-        PredictedPath predicted = PathPredictor.Predict(_ephemeris, observation, null, _fireAimOffsetSeconds,
-            maneuverBudget: InterestManeuverBudget());
+        PredictedPath predicted = PredictInterestPath(target, _fireAimOffsetSeconds);
         _fireAimPoint = predicted.Samples[^1].Position;
         double tHit = SimTime + _fireAimOffsetSeconds;
         _fireDispersionMeters = predicted.HalfWidthAt(tHit);
@@ -2704,9 +2755,7 @@
             return;
         }
 
-        var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
-        PredictedPath predicted = PathPredictor.Predict(_ephemeris, observation, null, MaxFireAimOffsetSeconds,
-            maneuverBudget: InterestManeuverBudget());
+        PredictedPath predicted = PredictInterestPath(target, MaxFireAimOffsetSeconds);
         ShipState shooterAtFire = _simulator.RunAdaptive(_ship, FireLockLeadSeconds);
 
         double bestOffset = _fireAimOffsetSeconds;
@@ -7055,11 +7104,27 @@
             if (npc.Ship.Id == _interestTargetId && npc.Active && !npc.Arrived) { target = npc.State; break; }
         }
 
+        // The pursuit-law fork (see PredictInterestPath): a hunter neither coasts on gravity nor
+        // waits to be boarded — the honest clock is HIS catch envelope closing on US, flown under
+        // his actual thrust law, not a freighter coast against our boarding radius.
         if (target is null)
         {
             foreach (HunterState hunter in _hunters)
             {
-                if (hunter.Id == _interestTargetId) { target = hunter.State; break; }
+                if (hunter.Id != _interestTargetId)
+                {
+                    continue;
+                }
+
+                double hunterHorizon = _samples[^1].SimTime - hunter.State.SimTime;
+                if (hunterHorizon > 0)
+                {
+                    IReadOnlyList<TrajectorySample> pursuit =
+                        EncounterRule.PredictHunterPath(hunter, PlayerPathForPrediction(), hunterHorizon);
+                    _intercept = InterceptEstimate.Against(_samples, pursuit, EncounterRule.CatchRadiusMeters);
+                }
+
+                return;
             }
         }
 
