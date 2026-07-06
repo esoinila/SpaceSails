@@ -430,6 +430,40 @@ public static class TrafficSchedule
             : GeneratePodsFromFixedLauncher(ephemeris, seed, count);
     }
 
+    /// <summary>Abeam offset of the starter pod from the player — a short intercept the player can
+    /// close with one plotted burn; well inside sensor reach, outside the instant boarding window.</summary>
+    public const double StarterPodStandoffMeters = 1.5e9;
+
+    /// <summary>Cross-drift of the starter pod relative to the player — comfortably under
+    /// <see cref="CaptureRule.MaxRelativeSpeed"/>, so closing the distance is the only task.</summary>
+    public const double StarterPodDriftMetersPerSecond = 2000;
+
+    /// <summary>
+    /// A guaranteed-catchable tutorial pod, placed relative to the player's own start so the "first
+    /// hunt" is always deliverable regardless of seed luck (docs/MondayPonder/UIUsabilityNotes.md:
+    /// interplanetary traffic runs 80–160 km/s relative, far past the 5 km/s boarding limit — the
+    /// only catch from a standing start is a ship still co-moving with a body you share). This is
+    /// that ship: a compute-core canister just flung from Luna's driver, still drifting abeam in
+    /// Earth's neighbourhood at a couple of km/s — a fresh departure caught before it built transfer
+    /// speed. Pure function of the player state, so client and (future) server agree.
+    /// </summary>
+    public static NpcShip StarterPod(ShipState player)
+    {
+        // Offset perpendicular to the player's velocity: the pod sits abeam a short hop away and
+        // drifts slowly further off, so the player must plot a real (but small) intercept to close.
+        Vector2d along = player.Velocity.Normalized();
+        var abeam = new Vector2d(-along.Y, along.X);
+        Vector2d position = player.Position + abeam * StarterPodStandoffMeters;
+        Vector2d velocity = player.Velocity + abeam * StarterPodDriftMetersPerSecond;
+        var state = new ShipState(position, velocity, player.SimTime);
+
+        return new NpcShip(
+            "pod-starter", "Sitting Duck", "Compute cores", "luna", "venus",
+            RoutePersonality.Economical, player.SimTime, player.SimTime, state,
+            ManeuverPlan.Empty, player.SimTime + 60 * Day,
+            CargoUnits: 5, ManeuverBudget: 0, IsPod: true);
+    }
+
     private static IReadOnlyList<NpcShip> GeneratePodsFromFixedLauncher(
         ICelestialEphemeris ephemeris, ulong seed, int count, double baseSimTime = 0, int wave = 0)
     {
