@@ -374,10 +374,18 @@
             @if (_captureEngaged)
             {
                 <hr />
-                <div class="mb-1">Shuttles away — boarding @_captureTargetCallsign (@((int)(_captureProgress * 100))%)</div>
-                <div class="progress" role="progressbar" aria-label="Boarding progress">
+                <div class="fw-bold text-success">🚀 SHUTTLES AWAY — boarding @_captureTargetCallsign</div>
+                <div class="progress my-1" role="progressbar" aria-label="Boarding progress" style="height: 1.1rem;">
                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                         style="width: @(((int)(_captureProgress * 100)))%"></div>
+                         style="width: @(((int)(_captureProgress * 100)))%">@((int)(_captureProgress * 100))%</div>
+                </div>
+                @* Owner ("let's make it more clear"): the autosteal crawls because boarding runs on
+                   WALL-CLOCK, not sim time — cranking warp does nothing. Say the ETA, say warp won't
+                   help, and say how to hurry it (a tighter, slower match cuts RequiredSecondsFor). *@
+                <div class="small">
+                    ≈ @(Math.Max(0, (1 - _captureProgress) * _captureRequiredSeconds).ToString("F0", CultureInfo.InvariantCulture)) s left ·
+                    <span class="text-warning">real-time — warp won't hurry it</span>
+                    <span class="text-secondary">· hold the match; closer &amp; slower boards faster</span>
                 </div>
             }
         </div>
@@ -665,6 +673,32 @@
                 <div class="text-secondary">📡 not on the telescope ledger — track her to sharpen the intel</div>
             }
             <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
+            @if (dossier.IsPrey)
+            {
+                @* The autosteal criterion box (owner): both must be green before shuttles launch. *@
+                bool rangeOk = dossier.Distance <= CaptureRule.CaptureRadiusMeters;
+                bool speedOk = dossier.RelSpeed <= CaptureRule.MaxRelativeSpeed;
+                <div class="border border-secondary rounded px-2 py-1 mt-1">
+                    <div class="fw-bold">🎯 Autosteal needs BOTH:</div>
+                    <div class="@(rangeOk ? "text-success" : "text-warning")">
+                        @(rangeOk ? "✅" : "❌") close enough —
+                        @FormatDistance(dossier.Distance) @(rangeOk ? "≤" : ">") @FormatDistance(CaptureRule.CaptureRadiusMeters)
+                    </div>
+                    <div class="@(speedOk ? "text-success" : "text-warning")">
+                        @(speedOk ? "✅" : "❌") speed match —
+                        @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                        @(speedOk ? "≤" : ">") @((CaptureRule.MaxRelativeSpeed / 1000).ToString("F0", CultureInfo.InvariantCulture)) km/s
+                    </div>
+                    <div class="@(dossier.BoardReady == 2 ? "text-success fw-bold" : "text-secondary")">
+                        @(dossier.BoardReady switch
+                        {
+                            2 => "→ BOARDABLE NOW — hold the match, shuttles launch on their own",
+                            1 => "→ too fast — match her velocity, or hole her sail so she drifts",
+                            _ => "→ close the distance, then match her speed",
+                        })
+                    </div>
+                </div>
+            }
             @if (_interestTargetId == dossierId && InterceptChipLine() is { } clock)
             {
                 <div class="text-warning">@clock</div>
@@ -1708,6 +1742,7 @@
     private double _captureProgress;                   // boarding progress fraction [0,1)
     private bool _captureEngaged;
     private string? _captureTargetCallsign;
+    private double _captureRequiredSeconds;            // wall-clock secs for the CURRENT pass geometry
 
     private bool _docked;
     private string? _dockBodyId;
@@ -5502,15 +5537,18 @@
     private readonly record struct DossierInfo(
         string Name, string Detail, string StatusLine,
         double Distance, double RelSpeed, double Closing,
-        double? TrackQuality, bool InDriverReach, string FireLine);
+        double? TrackQuality, bool InDriverReach, string FireLine,
+        bool IsPrey, int BoardReady);
 
     private DossierInfo? DossierFor(string id)
     {
         Vector2d position, velocity;
         string name, detail;
         string statusLine;
+        bool isPrey = false;
         if (FindNpc(id) is { Active: true, Arrived: false } npc)
         {
+            isPrey = true;
             name = npc.Ship.Callsign;
             detail = npc.Ship.IsPod ? "· cargo pod" : $"· {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)";
             if (npc.CurrentlyObserved)
@@ -5568,7 +5606,20 @@
             ? "🎖 inside the driver's reach — a firing solution is on the table (war room)"
             : $"driver reach ≈ {FormatDistance(reach)} — close {FormatDistance(distance - reach)} more for a firing solution";
 
-        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine);
+        // The HONEST autosteal criteria (owner: "the box should say the requirements — close enough
+        // but too much speed difference"). The encounter-window clock above is DISTANCE-only and
+        // coast-assumed; the real CaptureRule.IsInWindow needs BOTH within 5e8 m AND under 5 km/s
+        // relative. BoardReady: 2 = both met (boardable), 1 = in range but too fast, 0 = out of range.
+        // The popup renders the two checks explicitly from Distance/RelSpeed so nothing is implied.
+        int boardReady = 0;
+        if (isPrey)
+        {
+            bool within = distance <= CaptureRule.CaptureRadiusMeters;
+            bool slow = relSpeed <= CaptureRule.MaxRelativeSpeed;
+            boardReady = within && slow ? 2 : within ? 1 : 0;
+        }
+
+        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady);
     }
 
     // M24: planets are clickable too — a small menu offers "set destination", so the orbit
@@ -6099,6 +6150,7 @@
             _captureProgress += Math.Clamp(dtRealSeconds, 0, 0.1) / requiredSeconds;
             _captureEngaged = true;
             _captureTargetCallsign = npc.Ship.Callsign;
+            _captureRequiredSeconds = requiredSeconds; // for the HUD's live ETA
 
             if (_captureProgress >= 1)
             {

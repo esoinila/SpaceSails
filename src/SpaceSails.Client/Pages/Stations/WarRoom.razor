@@ -26,6 +26,20 @@
         @{ IReadOnlyList<RenderContact> contacts = VisibleContacts(); }
         @{ IReadOnlyList<RenderHunter> renderHunters = RenderHunters(); }
 
+        @* Always-visible magazine (owner: "no info in the war room about how many missiles / shots I
+           have left"). The AIM section's count only shows with a live target; this one is the standing
+           loadout — reads even on quiet skies, turns amber when a rack runs dry. *@
+        <div class="war-room-magazine d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="fw-bold">🔫 Magazine</span>
+            <span class="@(SlugAmmo > 0 ? "text-info" : "text-warning")">slugs ×@SlugAmmo</span>
+            <span class="@(MissileAmmo > 0 ? "text-info" : "text-warning")">missiles ×@MissileAmmo</span>
+            <span class="text-secondary">· @PulsesAvailable pulses</span>
+            @if (SlugAmmo <= 0 && MissileAmmo <= 0)
+            {
+                <span class="text-warning">— empty, resupply dockside</span>
+            }
+        </div>
+
         @if (!FullScreen)
         {
             <div class="text-secondary mb-1">@CoolingLabel()</div>
