@@ -58,6 +58,80 @@ ship. Each is a candidate for a UI improvement, roughly in the order hit.
   UI never says so; a first-timer will crank warp during a board and wonder why
   the bar crawls. A one-line hint when a window opens would help.
 
+## Fire control (gun deck) — from a live firing run
+- **The world clock is Nav-only.** Warp/pause live solely on the Nav desk, but you
+  fire from the War room — so after arming a shot you must hop back to Nav to let
+  the round fly. The desk you're acting on can't advance its own consequences.
+  Consider a minimal warp/pause control (or at least a "resume" affordance) on
+  every desk, or surface the clock globally.
+- **"ROUND AWAY IN 60 s" reads as a static label, not a countdown.** It's a
+  sim-time countdown, so it's frozen while paused and blinks past in one frame at
+  209×/6000× — you never see it tick 60→0 at normal speeds. Owner's instinct: it
+  should visibly count down. Options: tick it in real time regardless of warp, or
+  show it as a progress ring, or express it as an arrival clock ("round away —
+  impact 14 h") that always moves.
+- **No explicit hit/miss report.** The war room promises "hit or miss, you'll hear
+  it," but the only feedback is the target's Nav panel quietly flipping to "adrift
+  — sail holed." There's no toast at impact and no last-shot result line on the gun
+  deck. Add a clear impact event: a toast + a persistent "last round: HIT (sail
+  holed) / MISS (74 km)" line where "Rounds in flight" was.
+- **Richer damage reports (owner's idea).** Beyond hit/miss, vary the report by
+  outcome: "secondary explosions — she's venting" vs "clean hole, no real damage"
+  vs "sail holed — adrift." Gives the gun texture and tells the pirate whether the
+  shot achieved the goal.
+- **Name the intent, not just the effect.** A hit "holes the sail" and the target
+  goes "adrift — easy prey" — which *is* the owner's "shoot the engine so she's
+  easier to catch." Good mechanic, but the UI never frames firing that way up
+  front. Label the shot's purpose ("cripple her drive — she can't run") so the
+  tactic is legible before you pull the trigger.
+- **Defensive fire is unsupported (owner's idea).** Today the gun is purely
+  offensive (cripple prey). A pirate also wants to fire at a *pursuer* — a hunter
+  chasing you — to force it to break course rather than shooting at you. Worth a
+  design pass: let the interest/aim pipeline target hunters, with a "warn off /
+  force a course change" outcome distinct from "cripple for boarding."
+- **Captain's authorization is invisible until you hit FIRE.** FIRE needs "the
+  captain's word — desk 0 authorizes a shot, or orders fire at will," but you only
+  learn that by pressing FIRE and having nothing happen. Surface the authorization
+  state on the FIRE button itself (e.g. disabled + "awaiting captain's word (desk
+  0)") so it's clear before the click.
+
+## Per-target interaction log in the scope (owner's idea) — the durable fix for feedback
+Rather than transient pulses you can warp past, give **each target a persistent
+rap sheet** shown in its scope/dossier: a running log of what you've done to her —
+"hailed · warned (she called muscle) · fired (miss, 74 km) · fired (HIT — sail
+holed) · boarded: took 12× He3." Because it's attached to the contact, you never
+lose the record: it survives warp, desk-hops, and re-selection. This single feature
+subsumes several notes above — the missing hit/miss report, the "you warped past
+the DIRECT HIT toast," and the richer-damage-report idea all become log lines.
+It also gives the pirate a memory ("did I already rob this one?") and sets up
+reputation/known-associate hooks later. Implementation: append an event to the
+NpcState (warned/fired/hit/miss/boarded, sim time, detail) at each interaction
+site (FireWarningShot, the slug hit-check, Board), and render it in the scope
+panel. Cheap, additive, and it's the right home for all gun feedback.
+
+## Tutorial progression — a second hunt for the gun (owner's idea)
+The "first hunt" only ever teaches the *soft* catch: select a pod, plot an
+intercept, hold the window, board. It never teaches the gun — yet gunfire is the
+**only** way to take a ship that refuses to stop. That's a missing lesson, and the
+compliance mechanic is already built to carry it:
+- pods = nothing to comply (board freely — the first hunt),
+- compliant freighter = heaves to under a warning shot (fast, bloodless board),
+- **stubborn freighter = ignores the warning, calls its own muscle** → you can't
+  board a hull that's running and shooting back; you must **cripple her drive**
+  (hole the sail → adrift → board the drift).
+
+Proposed "Second hunt — the gun" tutorial track (unlocks after the first sale):
+1. Track a stubborn freighter (Sensors) — richer cargo than a pod.
+2. Fire a **warning shot** — watch her refuse and call muscle (teaches why the
+   soft path fails here).
+3. **AIM → SOLVE → FIRE** a slug for effect — lead the mark, mind the flight time.
+4. Hit holes her sail — she goes adrift ("easy prey").
+5. Close, board the drift, take the richer hold.
+6. Run the loot home before the muscle arrives (ties in the heat/hunter system).
+
+This also motivates the defensive-fire idea above: step 6's hunters are the
+natural place to teach firing at a *pursuer* to force it off course.
+
 ## Selection / picker
 - **The map "Which one?" chooser lists bodies and depots but not the nearby
   ship you were aiming at.** Clicking the ship cluster near Earth offered
