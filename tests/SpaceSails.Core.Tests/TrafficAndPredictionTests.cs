@@ -90,6 +90,89 @@ public class TrafficAndPredictionTests
         Assert.True(CaptureRule.IsInWindow(closed, pod.InitialState));
     }
 
+    // The player's canonical start (Map.InitializeShipState): 5e9 m radially out from Earth,
+    // co-moving with Earth's heliocentric orbit.
+    private static ShipState StarterPlayer(CircularOrbitEphemeris ephemeris)
+    {
+        Vector2d earth = ephemeris.Position("earth", 0);
+        Vector2d earthVel = (ephemeris.Position("earth", 1) - ephemeris.Position("earth", -1)) / 2;
+        return new ShipState(earth + earth.Normalized() * 5e9, earthVel, 0);
+    }
+
+    [Fact]
+    public void StarterFreighter_IsStubbornHe3PreyThatOnlyTheGunCanTake()
+    {
+        var ephemeris = Sol();
+        ShipState player = StarterPlayer(ephemeris);
+
+        NpcShip lark = TrafficSchedule.StarterFreighter(player);
+
+        // A richer haul than the pod, and a crewed freighter (so warning shots / compliance apply).
+        Assert.False(lark.IsPod);
+        Assert.Equal("He3", lark.CargoClass);
+        Assert.Equal(TrafficSchedule.StarterFreighterCargoUnits, lark.CargoUnits);
+        Assert.Equal(0, lark.InitialState.SimTime);
+
+        // She will NOT heave to — a warning shot only makes her call muscle, so the gun is the
+        // only way to take her. If this ever regresses, the loop names an id that does roll stubborn.
+        if (EncounterRule.ComplianceOf(lark, playerHeat: 0) != ComplianceState.Stubborn)
+        {
+            for (int i = 0; i < 2000; i++)
+            {
+                NpcShip probe = lark with { Id = $"freighter-lark-{i}" };
+                if (EncounterRule.ComplianceOf(probe, 0) == ComplianceState.Stubborn)
+                {
+                    Assert.Fail($"'{TrafficSchedule.StarterFreighterId}' is not stubborn — use 'freighter-lark-{i}'.");
+                }
+            }
+        }
+        Assert.Equal(ComplianceState.Stubborn, EncounterRule.ComplianceOf(lark, 0));
+
+        // Co-moving at t=0: matchable like the pod — closing distance is the only initial task.
+        double rel0 = (player.Velocity - lark.InitialState.Velocity).Length;
+        Assert.True(rel0 < CaptureRule.MaxRelativeSpeed,
+            $"t=0 rel speed {rel0:F0} m/s must be under the {CaptureRule.MaxRelativeSpeed} m/s board limit.");
+
+        // A real but short intercept away, well inside sensor reach — not a 160 km/s fly-through.
+        double distance = (player.Position - lark.InitialState.Position).Length;
+        Assert.InRange(distance, CaptureRule.CaptureRadiusMeters, 5e9);
+    }
+
+    [Fact]
+    public void StarterFreighter_EscapeJink_BreaksTheWindow_ButHolingKeepsHerBoardable()
+    {
+        var ephemeris = Sol();
+        ShipState player = StarterPlayer(ephemeris);
+        NpcShip lark = TrafficSchedule.StarterFreighter(player);
+
+        var sim = new Simulator(ephemeris, TrafficSchedule.NpcTimeStep);
+        double past = lark.InitialState.SimTime
+            + (TrafficSchedule.StarterFreighterEvadeDelayDays + 0.5) * Day;
+
+        // Fly three ballistic-or-planned tracks from the shared start: the freighter with her escape
+        // plan, the freighter with a HOLED sail (plan never steps — Map.razor steps a Disabled npc
+        // with a null plan), and a player who matched her t=0 velocity and coasts.
+        ShipState flown = lark.InitialState;
+        ShipState holed = lark.InitialState;
+        var matchedPlayer = new ShipState(player.Position, player.Velocity, player.SimTime);
+        for (double t = lark.InitialState.SimTime; t < past; t += TrafficSchedule.NpcTimeStep)
+        {
+            flown = sim.Step(flown, lark.Plan);
+            holed = sim.Step(holed, null);
+            matchedPlayer = sim.Step(matchedPlayer, null);
+        }
+
+        // With her drive live she jinks off the matched course — the boarding window slams shut.
+        double relFlown = (matchedPlayer.Velocity - flown.Velocity).Length;
+        Assert.True(relFlown > CaptureRule.MaxRelativeSpeed,
+            $"A live Lark should jink past the {CaptureRule.MaxRelativeSpeed} m/s window (rel {relFlown:F0} m/s).");
+
+        // Hole her sail before the burn and she just drifts — still matchable, always recoverable.
+        double relHoled = (matchedPlayer.Velocity - holed.Velocity).Length;
+        Assert.True(relHoled < CaptureRule.MaxRelativeSpeed,
+            $"A holed Lark must stay boardable (rel {relHoled:F0} m/s under the {CaptureRule.MaxRelativeSpeed} m/s limit).");
+    }
+
     [Fact]
     public void TrafficSchedule_ShortRouteScenario_StillSpawnsShipsEnRouteAtTimeZero()
     {

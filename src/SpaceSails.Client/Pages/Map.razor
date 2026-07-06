@@ -572,11 +572,27 @@
         <div class="map-tutorial">
             <div class="card bg-dark bg-opacity-75 text-light">
                 <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                    <span class="fw-bold small">First hunt</span>
+                    <span class="fw-bold small">@(_tutorialStep < FirstHuntSteps ? "First hunt — the soft catch" : "Second hunt — the gun")</span>
                     <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleTutorial"></button>
                 </div>
                 <div class="card-body p-2 small">
-                    @for (int i = 0; i < TutorialSteps.Length; i++)
+                    @* Hunts are independent lessons — start either one directly (owner: "playable in
+                       any order... start from the second if you've done the first before"). Jumping
+                       (re)seeds that hunt's prey where you are now. *@
+                    <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Pick a hunt">
+                        <button type="button"
+                                class="btn @(_tutorialStep < FirstHuntSteps ? "btn-info" : "btn-outline-info")"
+                                @onclick="() => StartHunt(0)">① Soft catch</button>
+                        <button type="button"
+                                class="btn @(_tutorialStep >= FirstHuntSteps ? "btn-info" : "btn-outline-info")"
+                                @onclick="() => StartHunt(FirstHuntSteps)">② The gun</button>
+                    </div>
+                    @* Show only the active hunt's steps so the checklist stays compact as it grows. *@
+                    @{
+                        int phaseStart = _tutorialStep < FirstHuntSteps ? 0 : FirstHuntSteps;
+                        int phaseEnd = _tutorialStep < FirstHuntSteps ? FirstHuntSteps : TutorialSteps.Length;
+                    }
+                    @for (int i = phaseStart; i < phaseEnd; i++)
                     {
                         bool done = _tutorialStep > i;
                         bool current = _tutorialStep == i;
@@ -584,10 +600,14 @@
                             @(done ? "✓" : "•") @TutorialSteps[i]
                         </div>
                     }
+                    @if (_tutorialStep >= FirstHuntSteps && _tutorialStep < TutorialSteps.Length)
+                    {
+                        <div class="text-secondary fst-italic mt-1">Soft catch for milk runs; the gun for the ones who run.</div>
+                    }
                     @if (_tutorialStep >= TutorialSteps.Length)
                     {
                         <hr />
-                        <div class="text-warning">You're a pirate now. The He3 haulers from Saturn are worth 15× more.</div>
+                        <div class="text-warning">You're a pirate now — soft catch or the gun, the whole system's yours to work.</div>
                     }
                 </div>
             </div>
@@ -1693,16 +1713,37 @@
     private string? _dockBodyId;
 
     private bool _showTutorial = true;
-    private int _tutorialStep;                         // 0..5 = current task, 6 = complete
+    private int _tutorialStep;                         // 0..N-1 = current task, N = complete
+
+    // Two hunts: the first teaches the soft catch (a compliant pod you just board); the second
+    // teaches the gun (a stubborn He3 freighter that won't stop — the only way to take her is to
+    // hole her sail). docs/MondayPonder/UIUsabilityNotes.md — "the gun tutorial" (owner's idea).
+    private const int FirstHuntSteps = 6;              // indices 0..5 belong to the first hunt
+
+    // Second-hunt (the gun) step indices — kept named so the AdvanceTutorial wiring stays legible.
+    private const int StepSelectFreighter = 6;
+    private const int StepWarnFreighter = 7;
+    private const int StepAuthorizeShot = 8;
+    private const int StepHoleFreighter = 9;
+    private const int StepBoardFreighter = 10;
+    private const int StepSellHe3 = 11;
 
     private static readonly string[] TutorialSteps =
     [
+        // First hunt — the soft catch (a compliant Luna pod)
         "Open the traffic board and select the Luna pod",
         "Plot an intercept — enter Plot, add a burn, watch the ribbon cross its cone",
         "Close to boarding range and match velocity",
         "Hold the window — board it",
         "Dock at Earth and sell",
         "Spend it — buy an upgrade",
+        // Second hunt — the gun (the stubborn He3 freighter Nervous Lark)
+        "Find the stubborn He3 freighter (Nervous Lark) and select her",
+        "Close to weapon range, fire a warning shot — she won't heave to",
+        "Captain's desk (0): authorize the shot — a gun needs the captain's word",
+        "War room (3): AIM, SOLVE, then FIRE a slug to hole her sail",
+        "Board the drifting hulk — take the He3",
+        "Run the loot home and sell it",
     ];
 
     private int ReactionMassCapacity => 250 + 150 * _massLevel;
@@ -1837,6 +1878,13 @@
                         _nearestBody?.Name);
                     ShowPulseMessage($"🎯 DIRECT HIT — {npc.Ship.Callsign}'s sail is gone; she's ADRIFT and boardable");
                     RendererInterop.PlayCue("hit");
+
+                    // Second hunt, step 4: holing the stubborn freighter's sail — the burn she'd have
+                    // used to bolt never fires, so she drifts, catchable at last.
+                    if (npc.Ship.Id == TrafficSchedule.StarterFreighterId)
+                    {
+                        AdvanceTutorial(StepHoleFreighter);
+                    }
                     break;
                 }
 
@@ -2088,6 +2136,10 @@
     {
         _shotAuthorized = !_shotAuthorized;
         ShowPulseMessage(_shotAuthorized ? "CAPTAIN: next shot authorized" : "CAPTAIN: authorization withdrawn");
+        if (_shotAuthorized)
+        {
+            AdvanceTutorial(StepAuthorizeShot); // second hunt, step 3: the captain's word
+        }
         StateHasChanged();
     }
 
@@ -2095,6 +2147,10 @@
     {
         _fireAtWill = !_fireAtWill;
         ShowPulseMessage(_fireAtWill ? "CAPTAIN: weapons free — fire at will" : "CAPTAIN: weapons hold");
+        if (_fireAtWill)
+        {
+            AdvanceTutorial(StepAuthorizeShot); // a standing order satisfies the captain's-word step too
+        }
         StateHasChanged();
     }
 
@@ -3512,6 +3568,10 @@
         IEnumerable<NpcShip> initial = pods.Concat(traffic).Concat(depots);
         if (_scenarioName.Contains("Sol", StringComparison.OrdinalIgnoreCase))
         {
+            // The pod is the first hunt's soft catch, placed relative to the player so the hunt is
+            // always deliverable (see StarterPod). The second hunt's stubborn Lark is NOT seeded here
+            // — she's spawned when the first hunt ends (SeedSecondHuntTarget), co-moving with the
+            // player's state then, so her escape jink is never stale from a slow first hunt.
             initial = new[] { TrafficSchedule.StarterPod(_ship) }.Concat(initial);
         }
         _npcStates = initial.Select(s => new NpcState { Ship = s }).ToArray();
@@ -5952,6 +6012,12 @@
         {
             AdvanceTutorial(0);
         }
+
+        // Second hunt, step 1: singling out the stubborn He3 freighter.
+        if (_selectedTargetId == TrafficSchedule.StarterFreighterId)
+        {
+            AdvanceTutorial(StepSelectFreighter);
+        }
     }
 
     private void TogglePin()
@@ -6033,6 +6099,10 @@
         ShowPulseMessage($"Captured {take} units of {npc.Ship.CargoClass} {PlunderLines[(int)((SimTime / 60) % PlunderLines.Length)]}");
         RendererInterop.PlayCue("board");
         AdvanceTutorial(3); // step 4: first successful boarding
+        if (npc.Ship.Id == TrafficSchedule.StarterFreighterId)
+        {
+            AdvanceTutorial(StepBoardFreighter); // second hunt, step 5: boarding the holed hulk
+        }
         RaiseHeatFromRobbery(npc);
     }
 
@@ -6072,6 +6142,7 @@
         _cargoValue = 0;
         _cargoByClass.Clear();
         AdvanceTutorial(4); // step 5: first sale
+        AdvanceTutorial(StepSellHe3); // second hunt, step 6: fencing the He3 closes the tutorial
     }
 
     private void RefillReactionMass()
@@ -6121,7 +6192,62 @@
         }
 
         ShowPulseMessage("Upgrade installed");
+        int stepBeforeUpgrade = _tutorialStep;
         AdvanceTutorial(5); // step 6: first upgrade
+        if (stepBeforeUpgrade != _tutorialStep && _tutorialStep == StepSelectFreighter)
+        {
+            SeedSecondHuntTarget(); // the upgrade that ENDS the first hunt spawns the gun lesson's prey
+        }
+    }
+
+    // The tutorial hunts are independent lessons (owner: "playable in any order — start from the
+    // second if you've done the first before"). Jumping to a hunt sets its first step and (re)seeds
+    // its prey relative to where the player is NOW, so the lesson is always deliverable on the spot.
+    private void StartHunt(int startStep)
+    {
+        _tutorialStep = startStep;
+        _showTutorial = true;
+        if (startStep < FirstHuntSteps)
+        {
+            SeedFirstHuntTarget();
+        }
+        else
+        {
+            SeedSecondHuntTarget();
+        }
+        StateHasChanged();
+    }
+
+    // (Re)seed the second hunt's prey co-moving with the player's CURRENT state — not at t=0 — so her
+    // escape jink is always ~2 days out from when the hunt begins, never stale from a slow first hunt.
+    // Drops any prior Lark first, so restarting the hunt always yields a fresh, catchable target.
+    private void SeedSecondHuntTarget()
+    {
+        if (!_scenarioName.Contains("Sol", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _npcStates = _npcStates
+            .Where(n => n.Ship.Id != TrafficSchedule.StarterFreighterId)
+            .Append(new NpcState { Ship = TrafficSchedule.StarterFreighter(_ship) })
+            .ToArray();
+        ShowPulseMessage("Sensors ping a fat He3 hauler close by — the Nervous Lark. She won't stop for anyone.");
+    }
+
+    // (Re)seed the first hunt's pod for the hunt picker — "play the soft catch again" always gets a
+    // fresh Sitting Duck abeam the player's current position.
+    private void SeedFirstHuntTarget()
+    {
+        if (!_scenarioName.Contains("Sol", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _npcStates = _npcStates
+            .Where(n => n.Ship.Id != TrafficSchedule.StarterPodId)
+            .Append(new NpcState { Ship = TrafficSchedule.StarterPod(_ship) })
+            .ToArray();
     }
 
     private void RequestRescue()
@@ -6743,6 +6869,13 @@
             ? $"WARNING SHOT ACROSS THE BOW — {npc.Ship.Callsign} answers with a tight-beam call for help, not her colours"
             : "WARNING SHOT ACROSS THE BOW — she heaves to");
         RendererInterop.PlayCue("pulse");
+
+        // Second hunt, step 2: the warning shot teaches that a stubborn hull won't heave to — she
+        // calls muscle instead, so the soft path is a dead end and the gun is the only way in.
+        if (npcId == TrafficSchedule.StarterFreighterId)
+        {
+            AdvanceTutorial(StepWarnFreighter);
+        }
     }
 
     private void BribeShip(string npcId)
@@ -7345,6 +7478,7 @@
             ? $"{(shuttle ? "Shuttles" : "Drones")} delivered {units} units — {payout:N0} cr after the {fee:N0} cr ferry fee"
             : $"Delivered {units} units for {payout:N0} credits";
         AdvanceTutorial(4); // step 5: first sale (same milestone the dock's SellCargo hits)
+        AdvanceTutorial(StepSellHe3); // second hunt, step 6: fencing the He3 closes the tutorial
     }
 
     private void CompleteLocalBuy(CommerceRule.LocalContact contact, CommerceRule.TradeMode mode)
