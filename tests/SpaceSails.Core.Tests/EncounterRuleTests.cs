@@ -219,13 +219,17 @@ public class EncounterRuleTests
         Assert.Equal(EarthPosition + EarthVelocity * day, afterOneDay.State.Position);
     }
 
+    // A stationary player out at Earth's orbit with the hunter offset perpendicular (so the sun is
+    // NOT behind the player from the hunter's view — glare would otherwise stop it closing).
+    private static readonly Vector2d PlayerAtEarthOrbit = new(1.496e11, 0);
+
     [Fact]
     public void AdvanceHunter_AfterActivation_ClosesDistance_OnAStationaryPlayer()
     {
         const double day = 86400;
-        var stationaryPlayer = new ShipState(Vector2d.Zero, Vector2d.Zero, 0);
+        var stationaryPlayer = new ShipState(PlayerAtEarthOrbit, Vector2d.Zero, 0);
         HunterState hunter = EncounterRule.SpawnHunter(
-            "hunter-3", "The Adjuster", "earth", new Vector2d(1e10, 0), Vector2d.Zero, simTime: 0);
+            "hunter-3", "The Adjuster", "earth", PlayerAtEarthOrbit + new Vector2d(0, 1e10), Vector2d.Zero, simTime: 0);
 
         double initialDistance = (hunter.State.Position - stationaryPlayer.Position).Length;
 
@@ -244,13 +248,14 @@ public class EncounterRuleTests
     [Fact]
     public void AdvanceHunter_CatchesPlayer_WhenCloseAndSlow()
     {
-        var stationaryPlayer = new ShipState(Vector2d.Zero, Vector2d.Zero, 0);
+        var stationaryPlayer = new ShipState(PlayerAtEarthOrbit, Vector2d.Zero, 0);
 
-        // Already inside catch range, at rest relative to the player, past activation.
+        // Already inside catch range, at rest relative to the player, past activation. Offset
+        // perpendicular so the sun isn't behind the player (no glare).
         HunterState hunter = new(
             "hunter-4", "Fair Warning", "earth",
             SpawnedAtSimTime: -10 * 86400, ActivationSimTime: -5 * 86400,
-            State: new ShipState(new Vector2d(1e8, 0), Vector2d.Zero, 0),
+            State: new ShipState(PlayerAtEarthOrbit + new Vector2d(0, 1e8), Vector2d.Zero, 0),
             CaughtPlayer: false, BrokenOff: false);
 
         HunterState result = EncounterRule.AdvanceHunter(hunter, stationaryPlayer with { SimTime = 60 }, simTime: 60);
@@ -261,12 +266,12 @@ public class EncounterRuleTests
     [Fact]
     public void AdvanceHunter_DoesNotCatch_WhenFarOrFast()
     {
-        var stationaryPlayer = new ShipState(Vector2d.Zero, Vector2d.Zero, 0);
+        var stationaryPlayer = new ShipState(PlayerAtEarthOrbit, Vector2d.Zero, 0);
 
         HunterState far = new(
             "hunter-5a", "Lien Enforcer", "earth",
             SpawnedAtSimTime: -10 * 86400, ActivationSimTime: -5 * 86400,
-            State: new ShipState(new Vector2d(5e8, 0), Vector2d.Zero, 0),
+            State: new ShipState(PlayerAtEarthOrbit + new Vector2d(0, 5e8), Vector2d.Zero, 0),
             CaughtPlayer: false, BrokenOff: false);
         HunterState farResult = EncounterRule.AdvanceHunter(far, stationaryPlayer with { SimTime = 60 }, simTime: 60);
         Assert.False(farResult.CaughtPlayer);
@@ -274,7 +279,7 @@ public class EncounterRuleTests
         HunterState fast = new(
             "hunter-5b", "Lien Enforcer II", "earth",
             SpawnedAtSimTime: -10 * 86400, ActivationSimTime: -5 * 86400,
-            State: new ShipState(new Vector2d(1e8, 0), new Vector2d(0, 5000), 0),
+            State: new ShipState(PlayerAtEarthOrbit + new Vector2d(0, 1e8), new Vector2d(0, 5000), 0),
             CaughtPlayer: false, BrokenOff: false);
         HunterState fastResult = EncounterRule.AdvanceHunter(fast, stationaryPlayer with { SimTime = 60 }, simTime: 60);
         Assert.False(fastResult.CaughtPlayer);
@@ -297,6 +302,190 @@ public class EncounterRuleTests
         HunterState advanced = EncounterRule.AdvanceHunter(
             brokeOff, new ShipState(Vector2d.Zero, Vector2d.Zero, 10 * day), simTime: 10 * day);
         Assert.Equal(brokeOff.State, advanced.State);
+    }
+
+    // ---- warning shots: disposition, nerve, peel-off (owner: a collector that behaves like a person) ----
+
+    private static HunterState ActiveHunter(string id, Vector2d position, Vector2d velocity) => new(
+        id, "Debt Collector", "earth",
+        SpawnedAtSimTime: -10 * 86400, ActivationSimTime: -5 * 86400,
+        State: new ShipState(position, velocity, 0),
+        CaughtPlayer: false, BrokenOff: false);
+
+    [Fact]
+    public void PrefersTheGoodLife_IsDeterministic_PerId()
+    {
+        for (int i = 0; i < 20; i++)
+        {
+            string id = $"hunter-glf-{i}";
+            Assert.Equal(
+                EncounterRule.PrefersTheGoodLife(id, playerHeat: 0),
+                EncounterRule.PrefersTheGoodLife(id, playerHeat: 0));
+        }
+    }
+
+    [Fact]
+    public void PrefersTheGoodLife_RarerAtHigherHeat()
+    {
+        int atZeroHeat = 0, atMaxHeat = 0;
+        for (int i = 0; i < 400; i++)
+        {
+            string id = $"collector-{i}";
+            if (EncounterRule.PrefersTheGoodLife(id, playerHeat: 0)) { atZeroHeat++; }
+            if (EncounterRule.PrefersTheGoodLife(id, playerHeat: EncounterRule.MaxHeatLevel)) { atMaxHeat++; }
+        }
+
+        // A fat bounty (heat) draws hungrier, grittier muscle — fewer good-life types.
+        Assert.True(atMaxHeat < atZeroHeat, $"good-life count should fall with heat: {atZeroHeat} -> {atMaxHeat}");
+    }
+
+    [Fact]
+    public void NerveThreshold_GoodLifeQuitsInOne_ProfessionalNeedsMore()
+    {
+        // Find one of each disposition deterministically.
+        string goodLife = Enumerable.Range(0, 500).Select(i => $"n-{i}")
+            .First(id => EncounterRule.PrefersTheGoodLife(id, 0));
+        string professional = Enumerable.Range(0, 500).Select(i => $"n-{i}")
+            .First(id => !EncounterRule.PrefersTheGoodLife(id, 0));
+
+        Assert.Equal(1, EncounterRule.NerveThreshold(goodLife, playerHeat: 0));
+        Assert.Equal(EncounterRule.BaseHunterNerve, EncounterRule.NerveThreshold(professional, playerHeat: 0));
+        // Grittier by one per heat level.
+        Assert.Equal(EncounterRule.BaseHunterNerve + 2, EncounterRule.NerveThreshold(professional, playerHeat: 2));
+    }
+
+    [Fact]
+    public void WarnOff_FirstShotOnAProfessional_PeelsOff_ButDoesNotBreak()
+    {
+        string professional = Enumerable.Range(0, 500).Select(i => $"p-{i}")
+            .First(id => !EncounterRule.PrefersTheGoodLife(id, 0));
+        HunterState hunter = ActiveHunter(professional, new Vector2d(1e10, 0), Vector2d.Zero);
+
+        HunterState after = EncounterRule.WarnOff(hunter, playerHeat: 0, simTime: 1000);
+
+        Assert.False(after.BrokenOff);
+        Assert.Equal(1, after.WarningShotsTaken);
+        Assert.Equal(1000 + EncounterRule.HunterPeelStepDays * 86400, after.PeeledUntilSimTime);
+    }
+
+    [Fact]
+    public void WarnOff_PeelWindowGrowsWithEachShot()
+    {
+        string professional = Enumerable.Range(0, 500).Select(i => $"grow-{i}")
+            .First(id => !EncounterRule.PrefersTheGoodLife(id, 0));
+        HunterState hunter = ActiveHunter(professional, new Vector2d(1e10, 0), Vector2d.Zero);
+
+        HunterState afterOne = EncounterRule.WarnOff(hunter, playerHeat: 0, simTime: 0);
+        HunterState afterTwo = EncounterRule.WarnOff(afterOne, playerHeat: 0, simTime: 0);
+
+        double peelOne = afterOne.PeeledUntilSimTime;
+        double peelTwo = afterTwo.PeeledUntilSimTime;
+        Assert.True(peelTwo > peelOne, $"second peel should be longer: {peelOne} -> {peelTwo}");
+        Assert.Equal(2 * EncounterRule.HunterPeelStepDays * 86400, peelTwo);
+    }
+
+    [Fact]
+    public void WarnOff_ReachingNerveThreshold_VoidsTheContract()
+    {
+        string professional = Enumerable.Range(0, 500).Select(i => $"thr-{i}")
+            .First(id => !EncounterRule.PrefersTheGoodLife(id, 0));
+        HunterState hunter = ActiveHunter(professional, new Vector2d(1e10, 0), Vector2d.Zero);
+
+        int threshold = EncounterRule.NerveThreshold(professional, playerHeat: 0);
+        for (int shot = 1; shot < threshold; shot++)
+        {
+            hunter = EncounterRule.WarnOff(hunter, playerHeat: 0, simTime: 0);
+            Assert.False(hunter.BrokenOff);
+        }
+
+        hunter = EncounterRule.WarnOff(hunter, playerHeat: 0, simTime: 0);
+        Assert.True(hunter.BrokenOff);
+    }
+
+    [Fact]
+    public void WarnOff_GoodLifeCollector_QuitsAtTheFirstShot()
+    {
+        string goodLife = Enumerable.Range(0, 500).Select(i => $"dolce-{i}")
+            .First(id => EncounterRule.PrefersTheGoodLife(id, 0));
+        HunterState hunter = ActiveHunter(goodLife, new Vector2d(1e10, 0), Vector2d.Zero);
+
+        HunterState after = EncounterRule.WarnOff(hunter, playerHeat: 0, simTime: 0);
+        Assert.True(after.BrokenOff);
+    }
+
+    [Fact]
+    public void WarnOff_CaughtOrBrokenHunter_IsUnmoved()
+    {
+        HunterState caught = ActiveHunter("caught", Vector2d.Zero, Vector2d.Zero) with { CaughtPlayer = true };
+        Assert.Equal(caught, EncounterRule.WarnOff(caught, 0, 0));
+
+        HunterState broken = ActiveHunter("broken", Vector2d.Zero, Vector2d.Zero) with { BrokenOff = true };
+        Assert.Equal(broken, EncounterRule.WarnOff(broken, 0, 0));
+    }
+
+    [Fact]
+    public void AdvanceHunter_WhilePeeled_Coasts_ThenResumesClosing()
+    {
+        const double day = 86400;
+        var player = new ShipState(PlayerAtEarthOrbit, Vector2d.Zero, 0);
+        // Perpendicular offset (no glare), moving so we can see it coast on its velocity.
+        HunterState hunter = ActiveHunter(
+            "peel-coast", PlayerAtEarthOrbit + new Vector2d(0, 5e9), new Vector2d(100, 0))
+            with { PeeledUntilSimTime = 3 * day };
+
+        // Mid-peel: it must coast on its current velocity, not accelerate toward the player.
+        HunterState mid = EncounterRule.AdvanceHunter(hunter, player with { SimTime = day }, simTime: day);
+        Assert.Equal(new Vector2d(100, 0), mid.State.Velocity);
+
+        // After the window lapses it re-acquires and closes again.
+        double before = (mid.State.Position - player.Position).Length;
+        double t = 3 * day;
+        HunterState resumed = mid;
+        for (int i = 0; i < 50; i++)
+        {
+            t += EncounterRule.HunterStepSeconds;
+            resumed = EncounterRule.AdvanceHunter(resumed, player with { SimTime = t }, simTime: t);
+        }
+
+        double after = (resumed.State.Position - player.Position).Length;
+        Assert.True(after < before, $"should resume closing after the peel: {before:E2} -> {after:E2}");
+    }
+
+    [Fact]
+    public void AdvanceHunter_SunBehindPlayer_BlindsThePursuit()
+    {
+        // Player between the sun (origin) and the hunter, both far out on the +x axis: the hunter
+        // stares into glare and cannot refine the chase — it coasts instead of closing.
+        var player = new ShipState(new Vector2d(1e11, 0), Vector2d.Zero, 0);
+        HunterState hunter = ActiveHunter("glare", new Vector2d(2e11, 0), new Vector2d(-100, 0));
+
+        double before = (hunter.State.Position - player.Position).Length;
+        double t = 0;
+        for (int i = 0; i < 50; i++)
+        {
+            t += EncounterRule.HunterStepSeconds;
+            hunter = EncounterRule.AdvanceHunter(hunter, player with { SimTime = t }, simTime: t);
+        }
+
+        // Velocity unchanged (pure coast) and it has not closed appreciably by accelerating.
+        Assert.Equal(new Vector2d(-100, 0), hunter.State.Velocity);
+        double after = (hunter.State.Position - player.Position).Length;
+        Assert.True(after >= before - 1e7, "sun-blinded hunter should not be closing under thrust");
+    }
+
+    [Fact]
+    public void SunBlinded_OnlyWhenPlayerIsSunwardAndInTheGlareCone()
+    {
+        var hunter = new Vector2d(2e11, 0);
+
+        // Player directly sunward of the hunter → blinded.
+        Assert.True(EncounterRule.SunBlinded(hunter, new Vector2d(1e11, 0)));
+
+        // Player off to the side (perpendicular) → not blinded.
+        Assert.False(EncounterRule.SunBlinded(hunter, new Vector2d(2e11, 1e11)));
+
+        // Player FARTHER from the sun than the hunter (hunter between sun and player) → not blinded.
+        Assert.False(EncounterRule.SunBlinded(hunter, new Vector2d(3e11, 0)));
     }
 
     [Fact]

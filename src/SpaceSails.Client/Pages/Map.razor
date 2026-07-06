@@ -2357,11 +2357,29 @@
         return list;
     }
 
-    private bool CanWarnInterest() =>
-        _interestTargetId is not null
-        && FindNpc(_interestTargetId) is { Active: true, Arrived: false, Disabled: false } npc
-        && !npc.Ship.IsPod
-        && EncounterRule.InWeaponRange(_ship, npc.State);
+    private bool CanWarnInterest()
+    {
+        if (_interestTargetId is null)
+        {
+            return false;
+        }
+
+        if (FindNpc(_interestTargetId) is { Active: true, Arrived: false, Disabled: false } npc)
+        {
+            return !npc.Ship.IsPod && EncounterRule.InWeaponRange(_ship, npc.State);
+        }
+
+        // A hunter is a legitimate warning-shot target too — fire near it and its nerve erodes.
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == _interestTargetId && !hunter.CaughtPlayer && !hunter.BrokenOff)
+            {
+                return EncounterRule.InWeaponRange(_ship, hunter.State);
+            }
+        }
+
+        return false;
+    }
 
     private double? PlannedImpactEta() =>
         _fireSolutionPath.Count > 1 && _fireSolutionPath[^1].SimTime > SimTime
@@ -6979,7 +6997,14 @@
     private void FireWarningShot(string npcId)
     {
         NpcState? npc = FindNpc(npcId);
-        if (npc is null || npc.Ship.IsPod || !EncounterRule.InWeaponRange(_ship, npc.State))
+        if (npc is null)
+        {
+            // Not a freighter — it's the hunter itself. A warning shot erodes a collector's nerve.
+            WarnHunter(npcId);
+            return;
+        }
+
+        if (npc.Ship.IsPod || !EncounterRule.InWeaponRange(_ship, npc.State))
         {
             return;
         }
@@ -7011,6 +7036,71 @@
         if (npcId == TrafficSchedule.StarterFreighterId)
         {
             AdvanceTutorial(StepWarnFreighter);
+        }
+    }
+
+    // A warning shot flung across a Debt Collector's bow: each one erodes its nerve. Most peel off
+    // (coast, stop closing) for a stretch that grows with every shot; enough of them and the
+    // collector voids the contract for good. A rare "La Dolce Vita" sort quits at the very first.
+    private void WarnHunter(string hunterId)
+    {
+        int index = _hunters.FindIndex(h => h.Id == hunterId);
+        if (index < 0)
+        {
+            return;
+        }
+
+        HunterState hunter = _hunters[index];
+        if (hunter.CaughtPlayer || hunter.BrokenOff || !EncounterRule.InWeaponRange(_ship, hunter.State))
+        {
+            return;
+        }
+
+        if (_slugAmmo <= 0)
+        {
+            ShowPulseMessage("No slugs left for a warning shot — buy dockside");
+            return;
+        }
+
+        _slugAmmo--;
+
+        // A real slug flung wide (AcrossTheBow rounds never hit-check, so its sail is never holed).
+        Vector2d toTarget = (hunter.State.Position - _ship.Position).Normalized();
+        var wide = new Vector2d(-toTarget.Y, toTarget.X) * 0.03;
+        FireOrdnance(OrdnanceKind.Slug, (toTarget + wide).Normalized(), MaxMuzzleSpeed,
+            hunter.Id, acrossTheBow: true);
+        RendererInterop.PlayCue("pulse");
+
+        bool goodLifeFirstShot = hunter.WarningShotsTaken == 0
+            && EncounterRule.PrefersTheGoodLife(hunter.Id, _heat.Level);
+        HunterState after = EncounterRule.WarnOff(hunter, _heat.Level, SimTime);
+
+        if (after.BrokenOff)
+        {
+            // Gave up. Remove it here so the generic "loses your scent" path in StepEncounters
+            // doesn't also fire with the wrong flavor.
+            _hunters.RemoveAt(index);
+            if (_interestTargetId == hunterId)
+            {
+                _interestTargetId = null;
+            }
+
+            ShowPulseMessage(goodLifeFirstShot
+                ? $"⚠ {hunter.Callsign} watches the slug drift past, shrugs, and turns for the nearest cantina — la dolce vita 🍸"
+                : $"⚠ {hunter.Callsign} has had enough — she sheers off and voids the contract");
+            PushNewsEvent(NewsWire.NewsEventKind.HunterBrokeOff, hunter.Callsign, _nearestBody?.Name);
+        }
+        else
+        {
+            _hunters[index] = after;
+            double peelDays = (after.PeeledUntilSimTime - SimTime) / 86400.0;
+            string nerve = after.WarningShotsTaken switch
+            {
+                1 => "wavers",
+                2 => "is rattled",
+                _ => "is losing her nerve",
+            };
+            ShowPulseMessage($"⚠ WARNING SHOT — {hunter.Callsign} {nerve} and sheers off (peels away ~{peelDays:0.#} d)");
         }
     }
 
