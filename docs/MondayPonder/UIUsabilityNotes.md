@@ -109,6 +109,20 @@ NpcState (warned/fired/hit/miss/boarded, sim time, detail) at each interaction
 site (FireWarningShot, the slug hit-check, Board), and render it in the scope
 panel. Cheap, additive, and it's the right home for all gun feedback.
 
+## Losing the tutorial target (found live driving the second hunt)
+- **A running clock + a plotted burn silently carries you away from the hunt
+  target, and it drifts off-screen with no cue.** While flying the gun hunt I
+  left the world clock running with a burn plotted; ~6 days elapsed, the burn
+  fired, the ship flew off on a new heading, and the Nervous Lark — opening at
+  2.5 km/s — slid out of the (zoomed-in) view. The map just showed empty black
+  space. Nothing said "your target drifted off-screen" and there was no one-click
+  "re-centre on the Lark" / "follow target". The Sensors desk still read
+  "Tracking Nervous Lark" the whole time, so the data was there — the *view* just
+  abandoned her. Ideas: while a tutorial hunt is active, keep the target on-screen
+  (edge arrow pointing to her + distance, or auto-frame ship+target), and/or a
+  "the Lark drifted off — jump to her" affordance. The hunt picker's re-seed is a
+  workable escape hatch (spawn a fresh one alongside), but you shouldn't *need* it.
+
 ## Tutorial progression — a second hunt for the gun (owner's idea)
 The "first hunt" only ever teaches the *soft* catch: select a pod, plot an
 intercept, hold the window, board. It never teaches the gun — yet gunfire is the
