@@ -305,6 +305,115 @@ public class SimulatorTests
         Assert.Equal(1000 * 1.01 * 1.01 * 1.01, state.Velocity.X, precision: 9);
     }
 
+    [Fact]
+    public void VectorBurn_StraightAhead_MatchesFactorAccelerate()
+    {
+        // An X-Pilot burn aimed exactly down the velocity vector must be indistinguishable from a
+        // classic Factor Accelerate — the two modes agree on the prograde axis.
+        var simulator = new Simulator(new EmptySpace(), timeStepSeconds: 60);
+        var state = new ShipState(Vector2d.Zero, new Vector2d(1000, 0), 0);
+
+        var factor = simulator.Step(state, new ManeuverPlan(
+            [new ManeuverNode(SimTime: 0, ManeuverAction.Accelerate, Pulses: 2)]));
+        var vector = simulator.Step(state, new ManeuverPlan(
+            [new ManeuverNode(SimTime: 0, ManeuverAction.Accelerate, Pulses: 2, Mode: BurnMode.Vector, HeadingDegrees: 0)]));
+
+        Assert.Equal(factor.Velocity.X, vector.Velocity.X, precision: 6);
+        Assert.Equal(factor.Velocity.Y, vector.Velocity.Y, precision: 6);
+    }
+
+    [Fact]
+    public void VectorBurn_AtNinetyDegrees_TurnsTheCourse()
+    {
+        // Ship coasting along +X; a single 10% X-Pilot pulse aimed at +Y adds cross-track Δv without
+        // (to first order) touching the along-track speed. This is the pod-chasing "climb" burn.
+        var simulator = new Simulator(new EmptySpace(), timeStepSeconds: 60);
+        var state = new ShipState(Vector2d.Zero, new Vector2d(1000, 0), 0);
+
+        state = simulator.Step(state, new ManeuverPlan(
+            [new ManeuverNode(SimTime: 0, ManeuverAction.Accelerate, Pulses: 1, Mode: BurnMode.Vector, HeadingDegrees: 90)]));
+
+        Assert.Equal(1000, state.Velocity.X, precision: 6);   // along-track untouched
+        Assert.Equal(100, state.Velocity.Y, precision: 6);    // 10% of 1000, straight up
+    }
+
+    [Fact]
+    public void VectorAndFactorNodes_CoexistInOnePlan()
+    {
+        // Both burn kinds live in the same list and fire in time order (MondayPonder requirement).
+        var simulator = new Simulator(new EmptySpace(), timeStepSeconds: 1);
+        var state = new ShipState(Vector2d.Zero, new Vector2d(1000, 0), 0);
+        var plan = new ManeuverPlan(
+        [
+            new ManeuverNode(SimTime: 0, ManeuverAction.Accelerate, Pulses: 1),                                  // Factor: 1000 -> 1100 on X
+            new ManeuverNode(SimTime: 1, ManeuverAction.Accelerate, Pulses: 1, Mode: BurnMode.Vector, HeadingDegrees: 90), // Vector: +10% up = +110 on Y
+        ]);
+
+        state = simulator.Step(state, plan);   // fires the Factor node at t=0
+        state = simulator.Step(state, plan);   // fires the Vector node at t=1
+
+        Assert.Equal(1100, state.Velocity.X, precision: 6);
+        Assert.Equal(110, state.Velocity.Y, precision: 6);    // 10% of the post-Factor speed 1100
+    }
+
+    [Fact]
+    public void VectorBurn_IsDeterministic()
+    {
+        var simulator = new Simulator(new EmptySpace(), timeStepSeconds: 60);
+        var state = new ShipState(Vector2d.Zero, new Vector2d(1000, 500), 0);
+        var plan = new ManeuverPlan(
+            [new ManeuverNode(SimTime: 120, ManeuverAction.Accelerate, Pulses: 3, Percent: 7.5, Mode: BurnMode.Vector, HeadingDegrees: 217.3)]);
+
+        var a = simulator.Run(state, 600, plan);
+        var b = simulator.Run(state, 600, plan);
+
+        Assert.Equal(a, b);
+    }
+
+    [Fact]
+    public void FactorBurn_CannotTurn_ButXPilotCan()
+    {
+        // The MondayPonder problem stated in physics: a Factor burn only scales the velocity
+        // magnitude, so a ship coasting along +X can NEVER change heading with it — it cannot follow
+        // a pod that climbs off that line. An X-Pilot (Vector) burn adds cross-track Δv and turns.
+        var sim = new Simulator(new EmptySpace(), timeStepSeconds: 60);
+        var start = new ShipState(Vector2d.Zero, new Vector2d(1000, 0), 0);
+
+        var afterFactor = sim.Step(start, new ManeuverPlan(
+            [new ManeuverNode(0, ManeuverAction.Accelerate, Pulses: 3)]));
+        Assert.Equal(0, afterFactor.Velocity.Y, precision: 6);                  // still dead along +X
+
+        var afterXPilot = sim.Step(start, new ManeuverPlan(
+            [new ManeuverNode(0, ManeuverAction.Accelerate, Pulses: 3, Mode: BurnMode.Vector, HeadingDegrees: 90)]));
+        Assert.True(afterXPilot.Velocity.Y > 0);                                // heading has turned upward
+    }
+
+    [Fact]
+    public void XPilotBurn_LetsUsFollowAClimbingPod()
+    {
+        // Concrete chase: a pod runs alongside us in +X but also climbs in +Y (it "flew upward without
+        // a gravity sling"). Coasting straight we stay pinned to the Y=0 line and it climbs away; a few
+        // X-Pilot pulses onto its climb heading match its vertical rate and we hold station beside it.
+        // Gravity-free so the test isolates heading control.
+        var sim = new Simulator(new EmptySpace(), timeStepSeconds: 60);
+        var podStart = new ShipState(Vector2d.Zero, new Vector2d(1000, 800), 0);
+        var usStart = new ShipState(Vector2d.Zero, new Vector2d(1000, 0), 0);
+
+        double horizon = 3600;
+        Vector2d podLater = sim.Run(podStart, horizon).Position;
+
+        // Us, coasting straight — no climb, so the whole 800 m/s vertical gap opens up.
+        double missCoasting = (sim.Run(usStart, horizon).Position - podLater).Length;
+
+        // Us, adding vertical Δv with an X-Pilot burn aimed at the pod's climb heading (90°).
+        var chasePlan = new ManeuverPlan(
+            [new ManeuverNode(0, ManeuverAction.Accelerate, Pulses: 8, Mode: BurnMode.Vector, HeadingDegrees: 90)]);
+        double missChasing = (sim.Run(usStart, horizon, chasePlan).Position - podLater).Length;
+
+        Assert.True(missChasing < missCoasting * 0.5,
+            $"X-Pilot chase should more than halve the miss: coasting {missCoasting:F0} m, chasing {missChasing:F0} m");
+    }
+
     internal static ScenarioDefinition LoadSol() =>
         ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json"));
 }

@@ -39,7 +39,10 @@
 }
 
 .map-plot {
-    width: 22rem;
+    /* Wide enough that the X-Pilot node row — mode toggle, ↺ heading input ↻, pulses, percent,
+       retime, delete — lays out in full without the node list scrolling horizontally, with room
+       left for the longest time label (e.g. "365d 23h 59m"). */
+    width: 32rem;
     max-width: 100%;
 }
 
@@ -138,6 +141,16 @@
 
 .map-plot-percent {
     width: 5.5rem;
+    flex: 0 0 auto;
+}
+
+.map-plot-mode {
+    width: 2rem;
+    flex: 0 0 auto;
+}
+
+.map-plot-heading {
+    width: 5rem;
     flex: 0 0 auto;
 }
 

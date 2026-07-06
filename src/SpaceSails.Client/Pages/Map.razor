@@ -446,14 +446,38 @@
                         {
                             <div class="d-flex align-items-center gap-1 mb-1 @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
                                 <span class="flex-grow-1">@FormatSimTime(node.SimTime)</span>
-                                <div class="btn-group btn-group-sm" role="group" aria-label="Burn direction">
-                                    <button type="button"
-                                            class="btn @(node.Action == ManeuverAction.Accelerate ? "btn-success" : "btn-outline-secondary")"
-                                            @onclick="() => SetAction(node, ManeuverAction.Accelerate)">+</button>
-                                    <button type="button"
-                                            class="btn @(node.Action == ManeuverAction.Decelerate ? "btn-warning" : "btn-outline-secondary")"
-                                            @onclick="() => SetAction(node, ManeuverAction.Decelerate)">&minus;</button>
-                                </div>
+                                @* Mode toggle: ± is the classic prograde/retrograde factor burn; ✚ is the
+                                   X-Pilot point-and-burn that aims a heading to chase a climbing pod. *@
+                                <button type="button"
+                                        class="btn btn-sm @(node.Mode == BurnMode.Vector ? "btn-info" : "btn-outline-info") map-plot-mode"
+                                        title="@(node.Mode == BurnMode.Vector ? "X-Pilot burn (aim a heading) — click for ± factor burn" : "± factor burn (prograde/retrograde) — click for X-Pilot heading burn")"
+                                        @onclick="() => ToggleBurnMode(node)">@(node.Mode == BurnMode.Vector ? "✚" : "±")</button>
+                                @if (node.Mode == BurnMode.Vector)
+                                {
+                                    @* X-Pilot: a world-space heading in degrees, plus quick ±15° nudges. *@
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate −15°"
+                                            @onclick="() => NudgeHeading(node, -15)">↺</button>
+                                    <div class="input-group input-group-sm map-plot-heading">
+                                        <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                                               value="@(node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture))"
+                                               title="Nose heading in degrees (0° = +X, counter-clockwise)"
+                                               @onchange="e => SetHeading(node, e)" @onkeydown:stopPropagation="true" />
+                                        <span class="input-group-text">°</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate +15°"
+                                            @onclick="() => NudgeHeading(node, 15)">↻</button>
+                                }
+                                else
+                                {
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Burn direction">
+                                        <button type="button"
+                                                class="btn @(node.Action == ManeuverAction.Accelerate ? "btn-success" : "btn-outline-secondary")"
+                                                @onclick="() => SetAction(node, ManeuverAction.Accelerate)">+</button>
+                                        <button type="button"
+                                                class="btn @(node.Action == ManeuverAction.Decelerate ? "btn-warning" : "btn-outline-secondary")"
+                                                @onclick="() => SetAction(node, ManeuverAction.Decelerate)">&minus;</button>
+                                    </div>
+                                }
                                 @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
                                 <input type="number" class="form-control form-control-sm map-plot-pulses"
                                        min="1" max="@MaxNodePulses" value="@node.Pulses"
@@ -1458,6 +1482,7 @@
     private static readonly RgbaColor AccelNodeColor = new(80, 220, 120);
     private static readonly RgbaColor DecelNodeColor = new(240, 120, 80);
     private static readonly RgbaColor StaleNodeColor = new(140, 140, 140, 128);
+    private static readonly RgbaColor XPilotVectorColor = new(120, 210, 255);
     private const byte GhostBodyAlpha = 90; // ~35% of 255
 
     // PR-3 outer-reaches rendering: stations read as built things (a synthetic teal, not a
@@ -2646,6 +2671,8 @@
         public double Percent = 10;      // per-pulse strength, any positive double
         public bool Stale;
         public bool Executed;
+        public BurnMode Mode = BurnMode.Factor;  // Factor = ± prograde; Vector = X-Pilot point-and-burn
+        public double HeadingDegrees;            // world-space heading for a Vector burn (0° = +X, CCW)
     }
 
     // M7 additions — Electric Universe layer (only live when _plasma is not null)
@@ -4062,6 +4089,14 @@
                 ? StaleNodeColor
                 : node.Action == ManeuverAction.Accelerate ? AccelNodeColor : DecelNodeColor;
             bool selected = ReferenceEquals(node, _selectedPlanNode);
+
+            // X-Pilot burn: draw the nose vector — the heading the burn thrusts along — anchored at
+            // the node's position on the ribbon (the "scrub line position" the owner asked for).
+            if (node.Mode == BurnMode.Vector && !node.Stale)
+            {
+                DrawNoseVector(sx, sy, node.HeadingDegrees, selected);
+            }
+
             _renderer!.DrawCircle(sx, sy, selected ? 6.5f : 5f, color, color);
             if (selected)
             {
@@ -4072,6 +4107,36 @@
                 _renderer!.DrawText(sx, sy - 12, $"{node.Percent:0.##}%", new RgbaColor(150, 220, 255, 200), "9px monospace", TextAlign.Center);
             }
         }
+    }
+
+    // The X-Pilot nose vector: a fixed-length arrow from the node marker along the burn heading —
+    // "the direction of nose when the burn is planned, on the scrub-line position" (owner). The
+    // camera is an axis-aligned scale with Y flipped (WorldToScreen maps +X→right, +Y→up), so a
+    // world heading (cosθ, sinθ) becomes the screen direction (cosθ, −sinθ) directly — projecting a
+    // unit world offset instead would round to the same pixel at solar-system zoom and vanish.
+    private void DrawNoseVector(float sx, float sy, double headingDegrees, bool selected)
+    {
+        double rad = headingDegrees * Math.PI / 180.0;
+        float dx = (float)Math.Cos(rad);
+        float dy = -(float)Math.Sin(rad);
+
+        const float shaft = 34f;   // fixed screen length so the heading reads at any zoom
+        float tipX = sx + dx * shaft, tipY = sy + dy * shaft;
+        RgbaColor c = selected ? new RgbaColor(190, 235, 255) : XPilotVectorColor;
+        float width = selected ? 2.5f : 1.8f;
+
+        Span<float> shaftPts = [sx, sy, tipX, tipY];
+        _renderer!.DrawPolyline(shaftPts, c, width);
+
+        // Arrowhead: two barbs swept back from the tip.
+        const float barb = 8f;
+        Span<float> headPts =
+        [
+            tipX + (-dx * barb - dy * barb * 0.6f), tipY + (-dy * barb + dx * barb * 0.6f),
+            tipX, tipY,
+            tipX + (-dx * barb + dy * barb * 0.6f), tipY + (-dy * barb - dx * barb * 0.6f),
+        ];
+        _renderer!.DrawPolyline(headPts, c, width);
     }
 
     // Position on the projected path at a given sim time, linearly interpolated between the two
@@ -4729,7 +4794,8 @@
     {
         _plan = new ManeuverPlan(
             _planNodes.Where(n => !n.Stale)
-                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses, Fine: false, Percent: n.Percent)));
+                      .Select(n => new ManeuverNode(n.SimTime, n.Action, n.Pulses, Fine: false, Percent: n.Percent,
+                                                    Mode: n.Mode, HeadingDegrees: n.HeadingDegrees)));
     }
 
     // Reaction-mass claimed by still-pending (non-stale, future) nodes.
@@ -4780,6 +4846,63 @@
         node.Action = action;
         RebuildPlan();
         ReprojectTrajectory();
+    }
+
+    // Flip a node between the classic ± factor burn and the X-Pilot heading burn. Switching *into*
+    // Vector mode seeds the heading with the ship's velocity direction at that point, so the burn
+    // starts neutral (straight ahead — identical to a Factor Accelerate) and the pilot then rotates
+    // it toward the pod they mean to chase.
+    private void ToggleBurnMode(PlanNode node)
+    {
+        if (node.Mode == BurnMode.Factor)
+        {
+            node.Mode = BurnMode.Vector;
+            node.HeadingDegrees = HeadingAlongCourseAt(node.SimTime);
+        }
+        else
+        {
+            node.Mode = BurnMode.Factor;
+        }
+
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    // World-space heading (degrees, 0° = +X, CCW) of the projected velocity at a plotted time.
+    private double HeadingAlongCourseAt(double simTime)
+    {
+        Vector2d v = SampledVelocityAt(simTime);
+        if (v.LengthSquared == 0)
+        {
+            return 0;
+        }
+
+        double deg = Math.Atan2(v.Y, v.X) * 180.0 / Math.PI;
+        return deg < 0 ? deg + 360 : deg;
+    }
+
+    private void SetHeading(PlanNode node, ChangeEventArgs e)
+    {
+        string raw = (e.Value?.ToString() ?? string.Empty).Replace(',', '.');
+        if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double deg))
+        {
+            node.HeadingDegrees = WrapDegrees(deg);
+            RebuildPlan();
+            ReprojectTrajectory();
+        }
+    }
+
+    private void NudgeHeading(PlanNode node, double delta)
+    {
+        node.HeadingDegrees = WrapDegrees(node.HeadingDegrees + delta);
+        RebuildPlan();
+        ReprojectTrajectory();
+    }
+
+    private static double WrapDegrees(double deg)
+    {
+        deg %= 360;
+        return deg < 0 ? deg + 360 : deg;
     }
 
     private void SetPulses(PlanNode node, ChangeEventArgs e)

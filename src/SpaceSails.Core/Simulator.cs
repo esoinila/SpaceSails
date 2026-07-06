@@ -33,11 +33,9 @@ public sealed class Simulator
 
         if (plan is not null)
         {
-            double scale = plan.ScaleFactorInWindow(state.SimTime, state.SimTime + dt);
-            if (scale != 1.0)
-            {
-                velocity *= scale;
-            }
+            // ApplyBurnsInWindow handles both burn modes; for a pure Factor plan it is exactly the
+            // old velocity *= scale, so existing trajectories are bit-identical.
+            velocity = plan.ApplyBurnsInWindow(velocity, state.SimTime, state.SimTime + dt);
         }
 
         Vector2d acceleration = GravitationalAcceleration(state.Position, state.SimTime);
