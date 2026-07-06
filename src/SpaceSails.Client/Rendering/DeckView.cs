@@ -50,18 +50,20 @@ public sealed class DeckView
         (float barX, float barY) = P(4, 10); // top-left corner of the cantina zone on screen
         _renderer.DrawImage(barArt, barX, barY, 14f * scale, 7f * scale, 0.9f);
 
-        // Starboard berths (3D-reno Phase 3): the three cabins wear a cramped bunk; the HEAD wears a
-        // grimy space-toilet. Zones partition x∈[4,18], y∈[-10,-3]; top edge is y=-3 (P is y-up).
-        int bunkArt = _renderer.RegisterImage("art/cabin-bunk.jpg");
-        int headArt = _renderer.RegisterImage("art/space-head.jpg");
+        // Starboard berths (3D-reno Phase 3): each cabin wears its OWN backdrop so the crew reads as
+        // individuals — bow-to-stern that's a tidy, squared-away bunk (CABIN 1), a laundry-strewn
+        // mess (CABIN 2), and a tinkerer's parts-everywhere den (CABIN 3); the HEAD wears a grimy
+        // space-toilet. Zones partition x∈[4,18], y∈[-10,-3]; top edge is y=-3 (P is y-up).
         float berthH = 7f * scale;
-        foreach ((double x0, double x1) in stackalloc (double, double)[] { (4, 7.5), (7.5, 11), (11, 14.5) })
+        void DrawBackdrop(string url, double x0, double x1) // top-left at (x0, -3), full berth depth
         {
             (float bx, float by) = P(x0, -3);
-            _renderer.DrawImage(bunkArt, bx, by, (float)(x1 - x0) * scale, berthH, 0.9f);
+            _renderer.DrawImage(_renderer.RegisterImage(url), bx, by, (float)(x1 - x0) * scale, berthH, 0.9f);
         }
-        (float headX, float headY) = P(14.5, -3);
-        _renderer.DrawImage(headArt, headX, headY, 3.5f * scale, berthH, 0.9f);
+        DrawBackdrop("art/cabin-tidy.jpg", 11, 14.5);    // CABIN 1
+        DrawBackdrop("art/cabin-messy-a.jpg", 7.5, 11);  // CABIN 2
+        DrawBackdrop("art/cabin-messy-b.jpg", 4, 7.5);   // CABIN 3
+        DrawBackdrop("art/space-head.jpg", 14.5, 18);    // HEAD 🚽
 
         for (int gx = -22; gx <= 28; gx += 4)
         {

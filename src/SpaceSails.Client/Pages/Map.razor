@@ -77,6 +77,17 @@
         }
     </div>
 
+    @* First-person ⇄ deck-plan toggle. The F key does this, but it isn't discoverable, so give it a
+       visible button while you're aboard (top-down or first person). Mirrors HandleDeckKey's 'f'. *@
+    @if (_deckMode)
+    {
+        <button type="button" class="deck-view-toggle btn btn-sm btn-outline-info"
+                title="@(_fpMode ? "Back to the top-down deck plan" : "Step into first person and walk the ship")"
+                @onclick="ToggleFirstPerson">
+            @(_fpMode ? "🗺 Deck plan (F)" : "🧍 First person (F)")
+        </button>
+    }
+
     @* M24: planet click menu — set the body as THE destination so orbit assist tracks it.
        M29: also live on the Sensors desk, where the map is clickable through the desk layer. *@
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)
@@ -2841,8 +2852,7 @@
                 _deckKeys.Add(Canonical(key));
                 return true;
             case "f" or "F":
-                _fpMode = !_fpMode;
-                _deckKeys.Clear();
+                ToggleFirstPerson();
                 return true;
             case "q" or "Q":
                 SwitchDesk(ShipDesk.Nav);
@@ -3546,6 +3556,15 @@
     ];
 
     private string HeadQuip() => HeadLines[(int)((SimTime / 60) % HeadLines.Length)];
+
+    /// <summary>Flip between the top-down deck plan and first-person walk (the F key and the on-screen
+    /// deck-view-toggle button both land here). Clears held movement keys so a key isn't "stuck down"
+    /// across the mode switch.</summary>
+    private void ToggleFirstPerson()
+    {
+        _fpMode = !_fpMode;
+        _deckKeys.Clear();
+    }
 
     private void StaleFutureNodes()
     {

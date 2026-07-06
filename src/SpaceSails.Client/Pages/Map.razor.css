@@ -25,7 +25,7 @@
    messages is hidden then). Centred near the top, clear of the desk tab bar. */
 .deck-pulse-toast {
     position: absolute;
-    top: 4rem;
+    top: 6rem;
     left: 50%;
     transform: translateX(-50%);
     max-width: min(40rem, 90vw);
@@ -491,6 +491,14 @@
 }
 
 /* Map-picking PR: the 🗺 Layers control — below the desk switcher, out of every panel's way. */
+/* First-person ⇄ deck-plan toggle button — top-left, clear of the centred desk tabs and Layers. */
+.deck-view-toggle {
+    position: absolute;
+    top: 3.2rem;
+    left: 0.75rem;
+    z-index: 40;
+}
+
 .map-layers {
     position: absolute;
     top: 3.2rem;

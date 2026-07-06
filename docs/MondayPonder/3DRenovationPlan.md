@@ -95,8 +95,14 @@ is deck units x∈[4,18], y∈[3,10]; `P(dx,dy) = (ox + dx*scale, oy - dy*scale)
   backdrop alone wants reinforcing — but the backdrop already carries it.
 
 ### Phase 3 — cabins + space toilet ✅ **Done** (as-built)
-- **Art:** `art/cabin-bunk.jpg` (reused across all three cabins) + `art/space-head.jpg`, both
-  generated portrait (Grok `aspect_ratio 9:16`) since the berths are ~1:2 tall zones.
+- **Art:** three *distinct* cabin backdrops so the crew reads as individuals — `art/cabin-tidy.jpg`
+  (CABIN 1, squared-away), `art/cabin-messy-a.jpg` (CABIN 2, laundry mess), `art/cabin-messy-b.jpg`
+  (CABIN 3, a tinkerer's parts den) — plus `art/space-head.jpg`. All portrait (Grok
+  `aspect_ratio 9:16`) since the berths are ~1:2 tall zones. (`DeckView` has a `DrawBackdrop` local
+  helper; add a berth → one line.)
+- **F-key discoverability:** a `.deck-view-toggle` button (top-left, shown while `_deckMode`) flips
+  first-person ⇄ deck-plan, mirroring the `F` key via a shared `ToggleFirstPerson()`; label swaps
+  between `🧍 First person (F)` and `🗺 Deck plan (F)`.
 - **Geometry (`DeckPlan.cs`):** the old three-cabin block was re-carved into **4 berths of 3.5 du**
   across x∈[4,18], y∈[-10,-3] — stern-to-bow **CABIN 3 [4,7.5] · CABIN 2 [7.5,11] · CABIN 1
   [11,14.5] · HEAD [14.5,18]** — each with a **2.5 du corridor door** (matches the original CABIN 3
