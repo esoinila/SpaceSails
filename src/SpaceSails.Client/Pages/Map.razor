@@ -310,6 +310,18 @@
             <button type="button" class="btn btn-sm @(PlotMode ? "btn-success" : "btn-outline-light") me-2" @onclick="TogglePlotMode">
                 @(PlotMode ? "Play" : "Plot")
             </button>
+            @* Berth at a grey-market dock (a station haven) — clamps on, no steering, the heat bleeds
+               off. Only appears when you've coasted up close and slow; mirrors the Orbit affordance. *@
+            @if (_dockedHavenId is not null)
+            {
+                <button type="button" class="btn btn-sm btn-warning me-2" @onclick="Undock"
+                        title="Release the dock clamps and fly off">🚀 Undock</button>
+            }
+            else if (DockableHavenHere() is not null)
+            {
+                <button type="button" class="btn btn-sm btn-outline-info me-2" @onclick="ToggleDock"
+                        title="Clamp onto the dock and lie low — the heat bleeds off while you're berthed">🅿 Dock</button>
+            }
             <button type="button" class="btn btn-sm @(_showScope ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleScope">
                 Scope
             </button>
@@ -3835,19 +3847,36 @@
             // adaptive clock — one leapfrog step instead of sixty in deep space, auto-refining
             // to 1 s steps near bodies (where warp auto-drop puts us back on the fixed path
             // anyway). Fixed quanta keep the trajectory independent of frame timing.
-            if (_effectiveWarp >= AdaptiveWarpThreshold && _simAccumulator >= AdaptiveWarpQuantum)
+            bool useAdaptive = _effectiveWarp >= AdaptiveWarpThreshold && _simAccumulator >= AdaptiveWarpQuantum;
+            double quantum = useAdaptive ? AdaptiveWarpQuantum : _simulator.TimeStep;
+            if (_dockedHavenId is not null)
+            {
+                // Clamped in a dock: don't run the gravity integrator at all — it would fling the
+                // ship off the mass-less station each step, leaving HoldAtDock forever yanking it
+                // back and the berth visibly wandering at warp. Advance the clock only; HoldAtDock
+                // pins the position after the loop so the ship rides the dock, dead-steady.
+                _ship = _ship with { SimTime = _ship.SimTime + quantum };
+            }
+            else if (useAdaptive)
             {
                 _ship = _simulator.RunAdaptive(_ship, AdaptiveWarpQuantum, _plan);
-                _simAccumulator -= AdaptiveWarpQuantum;
             }
             else
             {
                 _ship = _simulator.Step(_ship, _plan);
-                _simAccumulator -= _simulator.TimeStep;
             }
+            _simAccumulator -= quantum;
             stepsThisFrame++;
         }
         SimTime = _ship.SimTime;
+
+        // Clamped in a dock: the gravity integrator just coasted the ship off on its own arc, but a
+        // berthed ship rides the station instead. Pin it back onto the dock at the new SimTime — this
+        // is what lets you warp the heat away without steering (owner: "no guiding while docked").
+        if (_dockedHavenId is not null)
+        {
+            HoldAtDock();
+        }
 
         // M29: the fake beacon's ghost flies the abandoned course ballistically, kept in
         // step with the real clock — one extra body, integrated only while the lie is out.
@@ -3859,7 +3888,10 @@
         if (stepsThisFrame > 0)
         {
             AccountForFiredNodes();
-            CheckArmedInsertion();
+            if (_dockedHavenId is null)
+            {
+                CheckArmedInsertion(); // a clamped ship isn't flying an approach
+            }
             CheckLockedFire();
         }
 
@@ -4053,6 +4085,10 @@
             // The orrery view: a cross-system shot's geometry on the live map behind the desk.
             DrawFirePlan();
         }
+        if (_dockedHavenId is not null)
+        {
+            DrawDockArm();
+        }
         DrawShip(_ship.Position);
 
         _renderer.EndFrame();
@@ -4105,6 +4141,16 @@
 
     private void UpdateEffectiveWarp()
     {
+        // Clamped in a dock: the ship is held fast (HoldAtDock overrides the integrator), so there's
+        // nothing to overshoot or collide with — warp freely. This is what makes lying low to bleed
+        // off heat a quick fast-forward (heat cools ~5 sim-days/level at a haven) instead of an
+        // hours-long crawl under the near-body warp cap.
+        if (_dockedHavenId is not null)
+        {
+            _effectiveWarp = Warp;
+            return;
+        }
+
         // Bound to a planet (M20)? No encounter to overshoot — let the orbit spin at up to
         // 1000x instead of crawling on the near-body tiers.
         if (OrbitInfo() is { } orbitInfo
@@ -4825,7 +4871,29 @@
         _renderer!.DrawCircle(sx, sy, 4f, ShipColor, ShipColor);
         _renderer!.DrawText(sx + 8, sy - 6, "Ship", ShipColor);
     }
-    
+
+    // The berth: a steel arm/clamp from the dock to the ship while it's held fast (owner's
+    // "tube / arm / clamps keeps the ship connected to the dock"). Drawn under the ship marker.
+    private void DrawDockArm()
+    {
+        if (_dockedHavenId is null || _ephemeris is null)
+        {
+            return;
+        }
+
+        Vector2d dockPos = _ephemeris.Position(_dockedHavenId, SimTime);
+        (float dx, float dy) = _camera.WorldToScreen(dockPos);
+        (float sx, float sy) = _camera.WorldToScreen(_ship.Position);
+
+        RgbaColor clamp = new(210, 220, 235, 230); // steel
+        Span<float> arm = stackalloc float[4];
+        arm[0] = dx; arm[1] = dy; arm[2] = sx; arm[3] = sy;
+        _renderer!.DrawPolyline(arm, clamp, 2f);
+        _renderer.DrawCircle(dx, dy, 5f, null, clamp, 1.5f);          // the clamp collar at the dock
+        _renderer.DrawText((dx + sx) / 2, (dy + sy) / 2 - 6, "🔗 berthed",
+            clamp with { A = 210 }, "10px sans-serif", TextAlign.Center);
+    }
+
     private void OnKeyDown(KeyboardEventArgs e)
     {
         if (_shuttleRun is not null)
@@ -4891,6 +4959,7 @@
             return;
         }
 
+
         // Shift = fine trim (±1%) for orbital finesse near planets; plain = the full ±10%.
         bool fine = e.ShiftKey;
         switch(e.Key)
@@ -4919,6 +4988,12 @@
 
         if (pulse)
         {
+            // Firing the drive breaks the clamps — you can't burn while bolted to a dock.
+            if (_dockedHavenId is not null)
+            {
+                Undock();
+            }
+
             if (_reactionMassPulses <= 0)
             {
                 ShowPulseMessage("Out of reaction mass");
@@ -7251,11 +7326,24 @@
         ShowPulseMessage($"{npc.Ship.Callsign}'s crew take the coin — an inside job, quiet as the void.");
     }
 
-    // Hidden at a haven (vision par. 18): bound in orbit around a body flagged IsHaven — cools
-    // heat 4x faster and, after long enough continuously hidden, breaks a hunter's pursuit.
+    // Hidden at a haven (vision par. 18): either bound in orbit around a haven MOON, or CLAMPED in
+    // the dock of a haven STATION (the mass-less grey-market docks have no Hill sphere to orbit —
+    // you berth at them instead). Both cool heat 4x and, held long enough, break a hunter's pursuit.
     private bool IsHiddenAtHaven()
     {
-        if (_ephemeris is null || _nearestBody is not { IsHaven: true } haven || haven.ParentId is null)
+        if (_nearestBody is not { IsHaven: true } haven)
+        {
+            return false;
+        }
+
+        // Clamped in this haven's dock — held fast, lying low (no orbit to bind, so short-circuit).
+        if (_dockedHavenId == haven.Id)
+        {
+            return true;
+        }
+
+        // A haven moon: bound in its Hill sphere the ordinary way.
+        if (_ephemeris is null || haven.ParentId is null)
         {
             return false;
         }
@@ -7279,6 +7367,102 @@
         return OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, haven, hill);
     }
 
+    // ---- Berthing at a grey-market dock (owner: "like a dry-dock — some kind of tube/arm/clamps
+    // keeps the ship connected; the ship should not need guiding while docked; there the heat
+    // lowers"). A station haven (mu = 0) can't be orbited, so you clamp onto it: an arm reaches out,
+    // the ship rides the dock's drift, and the heat bleeds off. ----
+    private string? _dockedHavenId;   // the station haven we're clamped to, or null
+    private Vector2d _dockOffset;     // frozen ship-minus-dock offset while clamped (the arm's reach)
+
+    private const double DockReachMeters = 5e8;    // how close you must coast to throw the clamp on
+    private const double DockMatchSpeedMps = 8000;  // and how nearly matched to its drift (tunable)
+
+    // The station haven we're close enough (and slow enough) to clamp onto right now, if any.
+    private CelestialBody? DockableHavenHere()
+    {
+        if (_dockedHavenId is not null || _nearestBody is not { IsHaven: true, Mu: <= 0 } dock)
+        {
+            return null;
+        }
+
+        double distance = (_ship.Position - _nearestBodyPosition).Length;
+        double relSpeed = (_ship.Velocity - _nearestBodyVelocity).Length;
+        return distance > dock.BodyRadius && distance <= DockReachMeters && relSpeed <= DockMatchSpeedMps
+            ? dock
+            : null;
+    }
+
+    private void ToggleDock()
+    {
+        if (_dockedHavenId is not null)
+        {
+            Undock();
+            return;
+        }
+
+        if (DockableHavenHere() is not { } dock)
+        {
+            return;
+        }
+
+        _dockedHavenId = dock.Id;
+        _dockOffset = _ship.Position - _nearestBodyPosition; // freeze the arm's reach at berth
+        HoldAtDock();                                        // match the drift now so nothing lurches
+        StaleFutureNodes();                                  // a berth cancels any pending burns
+        ShowPulseMessage($"Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off. 🅿");
+        RendererInterop.PlayCue("board");
+    }
+
+    private const double UndockPushMps = 300; // gentle shove off the clamp so the ship drifts clear
+
+    private void Undock()
+    {
+        if (_dockedHavenId is null)
+        {
+            return;
+        }
+
+        // A gentle shove clear of the clamp — the ship drifts away with some motion of its own
+        // rather than hanging dead-still on the dock (owner: "push the ship off so it has motion
+        // away from the station"). Pushed radially out along the berthing arm.
+        if (_ephemeris is not null)
+        {
+            Vector2d dockPos = _ephemeris.Position(_dockedHavenId, SimTime);
+            Vector2d outward = (_ship.Position - dockPos).Normalized();
+            _ship = _ship with { Velocity = _ship.Velocity + outward * UndockPushMps };
+        }
+
+        string name = _nearestBody?.Name ?? "the dock";
+        _dockedHavenId = null;
+        ShowPulseMessage($"Clamps released — pushing off from {name}. 🚀");
+    }
+
+    // While clamped, the ship rides the dock: recompute the station's state at the live SimTime and
+    // pin the ship a frozen offset off it, drift matched. This OVERRIDES the gravity integrator (a
+    // mass-less dock exerts no pull of its own), so no guiding is needed to stay berthed.
+    private void HoldAtDock()
+    {
+        if (_dockedHavenId is null || _ephemeris is null)
+        {
+            return;
+        }
+
+        Vector2d dockPos = _ephemeris.Position(_dockedHavenId, SimTime);
+        const double h = 1.0;
+        Vector2d dockVel = (_ephemeris.Position(_dockedHavenId, SimTime + h) - _ephemeris.Position(_dockedHavenId, SimTime - h)) / (2 * h);
+        _ship = _ship with { Position = dockPos + _dockOffset, Velocity = dockVel };
+
+        // Refresh the nearest-body cache to the dock's fresh state. Otherwise the HUD's "Nearest"
+        // line compares the just-pinned ship against a frame-stale body position and, at high warp
+        // (the station sweeps hundreds of thousands of km per frame), reads a wildly wrong distance
+        // even though the ship is berthed dead-steady alongside.
+        if (_nearestBody?.Id == _dockedHavenId)
+        {
+            _nearestBodyPosition = dockPos;
+            _nearestBodyVelocity = dockVel;
+        }
+    }
+
     // Heat decay, hunter pursuit and break-off — all in sim time (like NPC stepping), so it
     // scales naturally with warp instead of crawling at wall-clock rate.
     private void UpdateEncounters()
@@ -7288,9 +7472,20 @@
             return;
         }
 
+        bool wasHidden = !double.IsNaN(_hiddenAtHavenSinceSimTime);
         bool hidden = IsHiddenAtHaven();
+
+        // Rising edge of "hidden at a haven" — whether you orbited a haven moon or clamped onto a
+        // dock. Drop the quiet news line the regulars notice, and advance the haven lesson. (Moved
+        // here from the orbit-bind loop so a mass-less dock, which never binds, still triggers it.)
+        if (hidden && !wasHidden && _nearestBody is { IsHaven: true } arrivedHaven)
+        {
+            PushNewsEvent(NewsWire.NewsEventKind.OrbitEnteredHaven, arrivedHaven.Name);
+            AdvanceTutorial(StepInsertHaven);
+        }
+
         _hiddenAtHavenSinceSimTime = hidden
-            ? (double.IsNaN(_hiddenAtHavenSinceSimTime) ? SimTime : _hiddenAtHavenSinceSimTime)
+            ? (wasHidden ? _hiddenAtHavenSinceSimTime : SimTime)
             : double.NaN;
         double hiddenDuration = hidden ? SimTime - _hiddenAtHavenSinceSimTime : 0;
 
@@ -7552,9 +7747,7 @@
     // different body than the one the ship is actually bound to.
     private void UpdateOrbitedBody()
     {
-        string? previous = _orbitedBodyId;
         _orbitedBodyId = null;
-        CelestialBody? boundBody = null;
         if (_ephemeris is not null)
         {
             foreach (CelestialBody body in _ephemeris.Bodies)
@@ -7583,7 +7776,6 @@
                     _orbitedBodyId = body.Id;
                     _orbitedBodyPosition = bodyPos;
                     _orbitedBodyHillRadius = hill;
-                    boundBody = body;
                     break;
                 }
             }
@@ -7593,14 +7785,9 @@
         // rising edge of a bind (vision par. 10). Now that Trade is a full-screen desk, yanking
         // the player's whole view there mid-flight would be jarring rather than helpful — the
         // Trade chip (TradeChip()) already updates live so the player notices the new contact,
-        // and switching desks stays a deliberate action (number key / tab / chip click). The one
-        // thing the rising edge DOES still do (PR-14) is drop a quiet line on the news wire when
-        // that new bind is a haven — the regulars notice a new hull overhead.
-        if (boundBody is { IsHaven: true } haven && _orbitedBodyId != previous)
-        {
-            PushNewsEvent(NewsWire.NewsEventKind.OrbitEnteredHaven, haven.Name);
-            AdvanceTutorial(StepInsertHaven); // haven tutorial: slipping into a haven's orbit
-        }
+        // and switching desks stays a deliberate action (number key / tab / chip click).
+        // (The haven news + lesson advance moved to the "hidden at a haven" rising edge in
+        // UpdateEncounters, so a mass-less dock — which never orbit-binds — triggers them too.)
     }
 
     // Thin, read-only projection of the live NPC/depot list for CommerceRule — mirrors
