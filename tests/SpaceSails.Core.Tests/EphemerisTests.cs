@@ -10,8 +10,9 @@ public class EphemerisTests
         Assert.Equal("Sol", scenario.Name);
         // Sun + 8 planets + Luna (M6) + outer moons, stations and havens (PR-3, vision par. 8):
         // Mercury Compute Farms, Highport Satellite Works, Europa/Ganymede/Callisto, Titan,
-        // Enceladus, Ringside Exchange.
-        Assert.Equal(18, scenario.Bodies.Count);
+        // Enceladus, Ringside Exchange, plus the inner grey-market docks Cinder Roost (Venus),
+        // The Space Bar (Mars) and The Tilt (Uranus).
+        Assert.Equal(21, scenario.Bodies.Count);
         Assert.Contains(scenario.Bodies, b => b.Id == "saturn");
         Assert.Contains(scenario.Bodies, b => b.Id == "luna" && b.ParentId == "earth");
         Assert.Contains(scenario.Bodies, b => b.Id == "titan" && b.ParentId == "saturn" && b.Kind == "moon");
