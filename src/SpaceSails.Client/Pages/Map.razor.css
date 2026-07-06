@@ -21,6 +21,25 @@
     cursor: grabbing;
 }
 
+/* Console quip toast while walking the deck / in first person (the Nav HUD that hosts pulse
+   messages is hidden then). Centred near the top, clear of the desk tab bar. */
+.deck-pulse-toast {
+    position: absolute;
+    top: 4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(40rem, 90vw);
+    padding: 0.5rem 1rem;
+    text-align: center;
+    color: #ffd479;
+    font-weight: 600;
+    background: rgba(6, 9, 15, 0.82);
+    border: 1px solid rgba(255, 200, 120, 0.28);
+    border-radius: 0.5rem;
+    pointer-events: none;
+    z-index: 1200;
+}
+
 .map-hud {
     position: absolute;
     /* Clears the desk tab bar's row (top: 0.5rem, centered) regardless of viewport width — the

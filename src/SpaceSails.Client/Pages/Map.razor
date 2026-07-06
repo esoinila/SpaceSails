@@ -25,6 +25,14 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
+    @* Deck / first-person pulse toast: the Nav HUD that normally hosts _pulseMessage is hidden while
+       you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
+       standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
+    @if (_deckMode && _pulseMessage is not null)
+    {
+        <div class="deck-pulse-toast">@_pulseMessage</div>
+    }
+
     @* The chooser (owner: "if many objects under click we let the user choose what they
        meant"): candidates ranked contacts → depots → bodies, lane and sky scan last. *@
     @if (_pickMenu is { Count: > 0 } pickList)
@@ -2942,7 +2950,7 @@
     {
         if (_avatarX > 18) return "BRIDGE";
         if (_avatarX < -14) return "ENGINE ROOM";
-        if (_avatarX > 4) return _avatarY > 3 ? "CANTINA" : _avatarY < -3 ? "CABINS" : "CORRIDOR";
+        if (_avatarX > 4) return _avatarY > 3 ? "CANTINA" : _avatarY < -3 ? (_avatarX > 14.5 ? "HEAD" : "CABINS") : "CORRIDOR";
         if (_avatarX > -12) return _avatarY > 3 ? "SHUTTLE BAY" : _avatarY < -3 ? "CARGO HOLD" : "CORRIDOR";
         return "CORRIDOR";
     }
@@ -2970,6 +2978,9 @@
             case DeckPlan.ConsoleKind.Cantina:
                 SwitchDesk(ShipDesk.Galley);
                 ShowPulseMessage("Cantina: galley's this way");
+                break;
+            case DeckPlan.ConsoleKind.Head:
+                ShowPulseMessage(HeadQuip());
                 break;
             case DeckPlan.ConsoleKind.Vent:
                 VentCharge();
@@ -3521,6 +3532,20 @@
         _lastRumLine = line;
         return line;
     }
+
+    // ---- The HEAD 🚽 (3D-reno Phase 3): a gag fixture in the starboard berths. Pure flavor —
+    //      pressing E by the space-toilet returns a deterministic one-liner, no state, no Core. ----
+    private static readonly string[] HeadLines =
+    [
+        "The space-toilet gurgles, thinks better of it, and settles down. 🚽",
+        "Zero-g plumbing: brace, aim, and commit. No do-overs.",
+        "The vacuum flush could de-orbit a small moon. You use it sparingly.",
+        "V-1K has zip-tied an 'OUT OF ORDER' sign over it. You do not trust V-1K.",
+        "'Recycled water,' the placard insists. You elect not to ask from what.",
+        "Somewhere a pipe knocks three times, like it wants to talk. 🚽",
+    ];
+
+    private string HeadQuip() => HeadLines[(int)((SimTime / 60) % HeadLines.Length)];
 
     private void StaleFutureNodes()
     {

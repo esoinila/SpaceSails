@@ -11,7 +11,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public static class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -42,15 +42,20 @@ public static class DeckPlan
         new(9, 3, 4, 3, false, false),
         new(4, 10, 4, 3, false, false),
 
-        // --- Cabins (starboard, x 4..18, y -10..-3): corridor wall with three doors ---
-        new(18, -3, 16.5f, -3, false, false),
-        new(13, -3, 11.5f, -3, false, false),
-        new(8, -3, 6.5f, -3, false, false),
-        new(4, -3, 3, -3, false, false),
-        new(4, -10, 4, -3, false, false),
-        // Cabin dividers
-        new(13, -3, 13, -10, false, false),
-        new(8, -3, 8, -10, false, false),
+        // --- Cabins + HEAD (starboard, x 4..18, y -10..-3): corridor wall with four doors.
+        //     3D-reno Phase 3 split the old three-cabin block into three cabins + a space HEAD 🚽.
+        //     Stern-to-bow: CABIN 3 [4,7.5], CABIN 2 [7.5,11], CABIN 1 [11,14.5], HEAD [14.5,18];
+        //     each berth is 3.5 du with a 2.5 du door (jamb stubs are the ~0.5 du wall bits). ---
+        new(18, -3, 17.5f, -3, false, false), new(15, -3, 14.5f, -3, false, false),   // HEAD door
+        new(14.5f, -3, 14, -3, false, false), new(11.5f, -3, 11, -3, false, false),   // CABIN 1 door
+        new(11, -3, 10.5f, -3, false, false), new(8, -3, 7.5f, -3, false, false),     // CABIN 2 door
+        new(7.5f, -3, 7, -3, false, false), new(4.5f, -3, 4, -3, false, false),       // CABIN 3 door
+        new(4, -3, 3, -3, false, false),          // stern corner stub
+        new(4, -10, 4, -3, false, false),         // cabin-block stern wall
+        // Berth dividers (full depth, corridor to hull)
+        new(14.5f, -3, 14.5f, -10, false, false), // CABIN 1 / HEAD
+        new(11, -3, 11, -10, false, false),       // CABIN 2 / CABIN 1
+        new(7.5f, -3, 7.5f, -10, false, false),   // CABIN 3 / CABIN 2
 
         // --- Shuttle bay (port, x -12..2, y 3..10): corridor wall, wide bay door ---
         new(2, 3, -3, 3, false, false),
@@ -78,6 +83,7 @@ public static class DeckPlan
         new(ConsoleKind.Cargo, -5, -6.5f, "CARGO"),
         new(ConsoleKind.Shuttle, -8, 6.5f, "SHUTTLE BAY"),
         new(ConsoleKind.Vent, -20, -4.5f, "VENT PANEL"),
+        new(ConsoleKind.Head, 16.25f, -6.5f, "HEAD 🚽"), // the space toilet (3D-reno Phase 3)
 
         // --- Bridge seats (PR-14, StationDesks.md #14): pressing E opens the matching desk
         // without leaving the ship's own deck plan — three free spots on the bridge (x > 18),
@@ -93,7 +99,7 @@ public static class DeckPlan
     [
         (22, -7, "BRIDGE"),
         (11, 5, "CANTINA"),
-        (15.5f, -6.5f, "CABIN 1"), (10.5f, -6.5f, "CABIN 2"), (6, -6.5f, "CABIN 3"),
+        (12.75f, -9f, "CABIN 1"), (9.25f, -9f, "CABIN 2"), (5.75f, -9f, "CABIN 3"),
         (-5, 8.5f, "SHUTTLE BAY"),
         (-5, -8.5f, "CARGO HOLD"),
         (-19, 5, "ENGINE ROOM"),
