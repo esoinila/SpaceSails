@@ -58,6 +58,39 @@ public class TrafficAndPredictionTests
     }
 
     [Fact]
+    public void StarterPod_IsCatchableFromTheStandingStart()
+    {
+        var ephemeris = Sol();
+
+        // The player's canonical start (Map.InitializeShipState): 5e9 m radially out from Earth,
+        // co-moving with Earth's heliocentric orbit.
+        Vector2d earth = ephemeris.Position("earth", 0);
+        Vector2d earthVel = (ephemeris.Position("earth", 1) - ephemeris.Position("earth", -1)) / 2;
+        var player = new ShipState(earth + earth.Normalized() * 5e9, earthVel, 0);
+
+        NpcShip pod = TrafficSchedule.StarterPod(player);
+
+        // A pod, worth exactly the first upgrade, activated and truthful at t=0.
+        Assert.True(pod.IsPod);
+        Assert.Equal(5, pod.CargoUnits);
+        Assert.Equal(0, pod.InitialState.SimTime);
+
+        // Relative speed is already inside the boarding limit — the only task is to close distance.
+        double relSpeed = (player.Velocity - pod.InitialState.Velocity).Length;
+        Assert.True(relSpeed < CaptureRule.MaxRelativeSpeed,
+            $"Starter pod rel speed {relSpeed:F0} m/s must be under the {CaptureRule.MaxRelativeSpeed} m/s board limit.");
+
+        // A real but short intercept: outside the instant window (so the player must plot a burn),
+        // yet a small fraction of the 80–160 km/s fly-throughs' unreachable stand-off.
+        double distance = (player.Position - pod.InitialState.Position).Length;
+        Assert.InRange(distance, CaptureRule.CaptureRadiusMeters, 5e9);
+
+        // And once the player has closed to point-blank at that same low rel speed, the window is open.
+        var closed = new ShipState(pod.InitialState.Position, player.Velocity, 0);
+        Assert.True(CaptureRule.IsInWindow(closed, pod.InitialState));
+    }
+
+    [Fact]
     public void TrafficSchedule_ShortRouteScenario_StillSpawnsShipsEnRouteAtTimeZero()
     {
         // The world does not wait for the player: even a scenario whose every route is a short

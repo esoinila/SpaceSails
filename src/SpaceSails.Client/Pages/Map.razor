@@ -3504,7 +3504,17 @@
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
         IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
         IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44);
-        _npcStates = pods.Concat(traffic).Concat(depots).Select(s => new NpcState { Ship = s }).ToArray();
+
+        // The tutorial's "first hunt" needs prey the player can actually catch from a standing start.
+        // Interplanetary traffic screams past at 80–160 km/s relative — past the 5 km/s boarding
+        // limit — so in the Sol family we seed one guaranteed-catchable pod abeam the ship: a fresh
+        // Luna launch still co-moving with Earth, a short plotted burn away. (See StarterPod.)
+        IEnumerable<NpcShip> initial = pods.Concat(traffic).Concat(depots);
+        if (_scenarioName.Contains("Sol", StringComparison.OrdinalIgnoreCase))
+        {
+            initial = new[] { TrafficSchedule.StarterPod(_ship) }.Concat(initial);
+        }
+        _npcStates = initial.Select(s => new NpcState { Ship = s }).ToArray();
 
         _scratch = new float[_samples.Count * 2 + 4];
 
