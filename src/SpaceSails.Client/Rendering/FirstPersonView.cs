@@ -20,11 +20,16 @@ public sealed class FirstPersonView
     private const float WallHeightK = 1.35f;
     private const float WindowBandTop = 0.30f, WindowBandBottom = 0.72f; // fraction of wall strip
 
+    // Wall texturing (3D-reno Phase 4): the raycaster samples a thin vertical strip of a tiling
+    // bulkhead texture per column. The texture repeats every WallTextureSpanDu deck-units along the
+    // wall; WallSliverFrac is the source-column width as a fraction of the texture (JS clamps it to
+    // >= 1 texel) — it's stretched to the column width, so exact value barely matters.
+    private const float WallTextureSpanDu = 3.5f;
+    private const float WallSliverFrac = 0.002f;
+
     private static readonly RgbaColor CeilingColor = new(26, 32, 44);
     private static readonly RgbaColor FloorColor = new(18, 22, 32);
     private static readonly RgbaColor SpaceBlack = new(2, 4, 9);
-    private static readonly RgbaColor WallBase = new(96, 110, 132);
-    private static readonly RgbaColor HullBase = new(120, 130, 150);
     private static readonly RgbaColor FrameColor = new(70, 200, 190);
     private static readonly RgbaColor StarColor = new(225, 230, 245);
     private static readonly RgbaColor DroidBody = new(150, 160, 180);
@@ -65,6 +70,7 @@ public sealed class FirstPersonView
         }
 
         // Wall columns.
+        int wallTex = _renderer.RegisterImage("art/wall-bulkhead.jpg"); // idempotent; loads once
         for (int c = 0; c < Columns; c++)
         {
             double screenX = (c + 0.5) / Columns - 0.5;            // -0.5 … 0.5
@@ -72,7 +78,7 @@ public sealed class FirstPersonView
             double rayAngle = heading + rayOffset;
             double dirX = Math.Cos(rayAngle), dirY = Math.Sin(rayAngle);
 
-            if (!DeckPlan.CastRay(avatarX, avatarY, dirX, dirY, out double dist, out bool isWindow, out bool isHull, out double along))
+            if (!DeckPlan.CastRay(avatarX, avatarY, dirX, dirY, out double dist, out bool isWindow, out _, out double along))
             {
                 _depth[c] = double.MaxValue;
                 continue;
@@ -85,25 +91,41 @@ public sealed class FirstPersonView
             float x = c * colW + colW / 2;
 
             double shade = 1.0 / (1.0 + perp * 0.055);
-            // Panel banding: alternate tone every 2 du along the wall.
-            double band = ((int)(along / 2) & 1) == 0 ? 1.0 : 0.86;
-            RgbaColor baseColor = isHull ? HullBase : WallBase;
-            var wall = new RgbaColor(
-                (byte)(baseColor.R * shade * band),
-                (byte)(baseColor.G * shade * band),
-                (byte)(baseColor.B * shade * band));
+            float dstX = c * colW;
+            double u = along / WallTextureSpanDu;
+            u -= Math.Floor(u); // fractional part → texture repeats every WallTextureSpanDu du
+            byte darkA = (byte)(255 * Math.Clamp(1 - shade, 0, 1)); // distance dimming, over the texture
+
+            // Textured wall column: sample a thin vertical strip of the bulkhead at the along-wall
+            // coordinate u, stretched to this column's floor-to-ceiling height, then darkened by
+            // distance. A window cuts the glass band out by texturing only the strips above/below it,
+            // sampling the matching vertical slice of the texture so the panel lines stay continuous.
+            void Tex(float dstTop, float dstBot, float srcYFrac, float srcHFrac)
+            {
+                if (dstBot <= dstTop)
+                {
+                    return;
+                }
+
+                _renderer.DrawImageSlice(wallTex, (float)u, srcYFrac, WallSliverFrac, srcHFrac,
+                    dstX, dstTop, colW + 1, dstBot - dstTop);
+                if (darkA > 0)
+                {
+                    DrawVStrip(x, dstTop, dstBot, colW + 1, new RgbaColor(0, 0, 0, darkA));
+                }
+            }
 
             if (!isWindow)
             {
-                DrawVStrip(x, top, bottom, colW + 1, wall);
+                Tex(top, bottom, 0f, 1f);
                 continue;
             }
 
-            // Window column: wall above and below the glass, space in between.
+            // Window column: textured wall above and below the glass, real space in between.
             float winTop = top + h * WindowBandTop;
             float winBottom = top + h * WindowBandBottom;
-            DrawVStrip(x, top, winTop, colW + 1, wall);
-            DrawVStrip(x, winBottom, bottom, colW + 1, wall);
+            Tex(top, winTop, 0f, WindowBandTop);
+            Tex(winBottom, bottom, WindowBandBottom, 1f - WindowBandBottom);
 
             // --- Space through the glass ---
             double worldAngle = deckWorldAngle + rayAngle;

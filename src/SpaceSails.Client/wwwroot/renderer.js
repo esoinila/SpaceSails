@@ -13,9 +13,29 @@
 const OP_POLYLINE = 1;
 const OP_CIRCLE = 2;
 const OP_POLYGON = 3;
+const OP_IMAGE = 4;
+const OP_IMAGE_SLICE = 5;
 
 /** @type {Map<string, { canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rafId: number|null, running: boolean }>} */
 const canvases = new Map();
+
+// Raster image cache, keyed by the integer id C# assigns in CanvasRenderer.RegisterImage. The
+// float command buffer can only carry an id + dest rect, so the decoded bitmap must live here.
+/** @type {Map<number, HTMLImageElement>} */
+const images = new Map();
+
+// Preload an image by id (C# → JS via RendererInterop.LoadImage). Decodes asynchronously; an
+// OP_IMAGE draw before it finishes simply skips (img.complete is false) and starts painting once
+// the browser has it. Idempotent per id.
+export function loadImage(id, url) {
+    if (images.has(id)) {
+        return;
+    }
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
+    images.set(id, img);
+}
 
 let exportsPromise = null;
 
@@ -147,6 +167,36 @@ export function drawFrame(canvasId, buffer, length) {
                 ctx.strokeStyle = rgba(sr, sg, sb, sa);
                 ctx.lineWidth = strokeWidth;
                 ctx.stroke();
+            }
+        } else if (op === OP_IMAGE) {
+            // Raster backdrop / texture: id + dest rect + alpha. drawImage confines the bitmap to
+            // the rect (it cannot bleed past it), so room backdrops stay inside their room.
+            const id = view[i++] | 0;
+            const x = view[i++], y = view[i++], w = view[i++], h = view[i++], alpha = view[i++];
+            const img = images.get(id);
+            if (img && img.complete && img.naturalWidth > 0) {
+                const prevAlpha = ctx.globalAlpha;
+                ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+                ctx.drawImage(img, x, y, w, h);
+                ctx.globalAlpha = prevAlpha;
+            }
+        } else if (op === OP_IMAGE_SLICE) {
+            // Textured raycaster column: id + NORMALIZED source rect (0..1) + dest rect + alpha. The
+            // source fractions are multiplied by the decoded bitmap's natural size here, so C# never
+            // needs the texture's pixel dimensions. sw is clamped to >= 1px so a thin vertical strip
+            // still samples a real texel column.
+            const id = view[i++] | 0;
+            const sxf = view[i++], syf = view[i++], swf = view[i++], shf = view[i++];
+            const dx = view[i++], dy = view[i++], dw = view[i++], dh = view[i++], alpha = view[i++];
+            const img = images.get(id);
+            if (img && img.complete && img.naturalWidth > 0 && dh > 0) {
+                const nw = img.naturalWidth, nh = img.naturalHeight;
+                const sx = sxf * nw, sy = syf * nh;
+                const sw = Math.max(1, swf * nw), sh = Math.max(1, shf * nh);
+                const prevAlpha = ctx.globalAlpha;
+                ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+                ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+                ctx.globalAlpha = prevAlpha;
             }
         } else {
             // Unknown opcode: stop rather than looping forever on a corrupted buffer.
