@@ -9,8 +9,8 @@
 |---|---|
 | 0 — art-sourcing spike | ✅ **Done** — Grok `image_gen` is the image engine (recipe below) |
 | 1 — renderer raster keystone + The Space Bar cantina backdrop | ✅ **Done** — shipped on branch `feature/3d-deck-renovation`, **PR #90**, verified in-browser |
-| 2 — Galley *desk* HTML bar (+ optional deck bar furniture) | ⬜ Next |
-| 3 — cabin bunks + a space-toilet HEAD 🚽 | ⬜ |
+| 2 — Galley *desk* HTML bar | ✅ **Done** — `the-space-bar-desk.jpg` backdrop behind the Galley panel, verified in-browser |
+| 3 — cabin bunks + a space-toilet HEAD 🚽 | ⬜ Next |
 | 4 — first-person wall texturing | ⬜ (biggest lift) |
 | Deferred — walk the *raided* ship's interior | ⬜ separate new feature |
 
