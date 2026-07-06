@@ -20,37 +20,45 @@
        writ large, the whole ship at a glance from the captain's chair. *@
     <div class="captain-view-toggle">
         <div class="btn-group btn-group-sm" role="group" aria-label="Captain view">
-            <button type="button" class="btn @(_statusView ? "btn-outline-light" : "btn-info")"
-                    @onclick="() => _statusView = false">⚓ Orders</button>
-            <button type="button" class="btn @(_statusView ? "btn-info" : "btn-outline-light")"
-                    @onclick="() => _statusView = true">🧭 Ship status</button>
+            <button type="button" class="btn @(_view == CaptainView.Orders ? "btn-info" : "btn-outline-light")"
+                    @onclick="() => _view = CaptainView.Orders">⚓ Orders</button>
+            <button type="button" class="btn @(_view == CaptainView.Status ? "btn-info" : "btn-outline-light")"
+                    @onclick="() => _view = CaptainView.Status">🧭 Ship status</button>
+            <button type="button" class="btn @(_view == CaptainView.Tutorials ? "btn-info" : "btn-outline-light")"
+                    @onclick="() => _view = CaptainView.Tutorials">🎓 Tutorials</button>
         </div>
     </div>
 
-    <div class="captain-articles">
-        <div class="captain-articles-label">@(_statusView ? "The ship at a glance" : "The ship's articles")</div>
-        <div class="captain-articles-mission">@CurrentMission.Describe()</div>
-    </div>
+    @if (_view != CaptainView.Tutorials)
+    {
+        <div class="captain-articles">
+            <div class="captain-articles-label">@(_view == CaptainView.Status ? "The ship at a glance" : "The ship's articles")</div>
+            <div class="captain-articles-mission">@CurrentMission.Describe()</div>
+        </div>
+    }
 
     @* Weapons authority (owner, The Expanse consult): the gun deck cannot pull the trigger
        without the captain's word — one shot per authorization, or the standing order. *@
-    <div class="captain-articles captain-weapons-authority">
-        <div class="captain-articles-label">Weapons authority</div>
-        <div class="d-flex gap-2 align-items-center flex-wrap">
-            <button type="button" class="btn btn-sm @(ShotAuthorized ? "btn-success" : "btn-outline-success")"
-                    title="Authorizes exactly one shot from the war room; withdrawn automatically when it fires"
-                    @onclick="() => OnAuthorizeShot.InvokeAsync()">
-                @(ShotAuthorized ? "✅ NEXT SHOT AUTHORIZED — click to withdraw" : "✍ AUTHORIZE NEXT SHOT")
-            </button>
-            <label class="text-light captain-fire-at-will">
-                <input type="checkbox" checked="@FireAtWill" @onchange="() => OnToggleFireAtWill.InvokeAsync()" />
-                ⚓ fire at will (standing order)
-            </label>
+    @if (_view != CaptainView.Tutorials)
+    {
+        <div class="captain-articles captain-weapons-authority">
+            <div class="captain-articles-label">Weapons authority</div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <button type="button" class="btn btn-sm @(ShotAuthorized ? "btn-success" : "btn-outline-success")"
+                        title="Authorizes exactly one shot from the war room; withdrawn automatically when it fires"
+                        @onclick="() => OnAuthorizeShot.InvokeAsync()">
+                    @(ShotAuthorized ? "✅ NEXT SHOT AUTHORIZED — click to withdraw" : "✍ AUTHORIZE NEXT SHOT")
+                </button>
+                <label class="text-light captain-fire-at-will">
+                    <input type="checkbox" checked="@FireAtWill" @onchange="() => OnToggleFireAtWill.InvokeAsync()" />
+                    ⚓ fire at will (standing order)
+                </label>
+            </div>
+            <div class="text-secondary small">Warning shots need no word — they ARE the captain talking.</div>
         </div>
-        <div class="text-secondary small">Warning shots need no word — they ARE the captain talking.</div>
-    </div>
+    }
 
-    @if (_statusView)
+    @if (_view == CaptainView.Status)
     {
         <div class="captain-status-grid">
             @foreach (DeskChips.ChipData chip in StatusChips)
@@ -70,6 +78,35 @@
                     }
                 </div>
             }
+        </div>
+    }
+    else if (_view == CaptainView.Tutorials)
+    {
+        <div class="captain-groups">
+            <div class="captain-group">
+                <div class="captain-group-header"><span class="captain-group-icon">🎓</span> Learn the ropes</div>
+                <div class="captain-group-flavor">The captain puts the crew to school. Pick a lesson — it plays out at the helm, with a checklist to follow. Start any one; you can replay them in any order.</div>
+                <div class="captain-group-cards">
+                    @if (Tutorials.Count == 0)
+                    {
+                        <div class="captain-empty">No lessons on the slate.</div>
+                    }
+                    else
+                    {
+                        @for (int i = 0; i < Tutorials.Count; i++)
+                        {
+                            int idx = i;
+                            bool active = ActiveTutorial == idx;
+                            bool done = ActiveTutorial < 0 || idx < ActiveTutorial;
+                            <div class="captain-card @(active ? "captain-card-selected" : "")" role="button" tabindex="0"
+                                 @onclick="() => OnStartTutorial.InvokeAsync(idx)" @onkeydown="e => OnTutorialKeyDown(e, idx)">
+                                <div class="fw-bold">@(active ? "▶ " : done ? "✓ " : "")@Tutorials[idx].Title</div>
+                                <div class="captain-card-blurb text-secondary small">@Tutorials[idx].Blurb</div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
         </div>
     }
     else
@@ -187,13 +224,43 @@
     [Parameter] public EventCallback OnAuthorizeShot { get; set; }
     [Parameter] public EventCallback OnToggleFireAtWill { get; set; }
 
-    private bool _statusView;
+    // Tutorials tab (the picker used to float on the Nav map; starting a lesson is a captain's order).
+    [Parameter] public IReadOnlyList<TutorialItem> Tutorials { get; set; } = [];
+    [Parameter] public int ActiveTutorial { get; set; } = -1; // index of the in-progress lesson, -1 = none
+    [Parameter] public EventCallback<int> OnStartTutorial { get; set; }
+    // Set by the Nav "New here? Learn the ropes" banner so the desk opens straight on the lessons.
+    [Parameter] public bool OpenToTutorials { get; set; }
+
+    /// <summary>One lesson on the Tutorials tab — title + one-line blurb. Map owns the actual steps.</summary>
+    public sealed record TutorialItem(string Title, string Blurb);
+
+    private enum CaptainView { Orders, Status, Tutorials }
+    private CaptainView _view;
+
+    // The component is re-created each time you switch to the Captain desk, so reading the banner's
+    // request here opens the Tutorials tab exactly for that one arrival; a later manual visit (flag
+    // cleared on the way out) lands on Orders as usual.
+    protected override void OnInitialized()
+    {
+        if (OpenToTutorials)
+        {
+            _view = CaptainView.Tutorials;
+        }
+    }
 
     private async Task OnStatusKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e, ShipDesk desk)
     {
         if (e.Key is "Enter" or " ")
         {
             await OnGoToDesk.InvokeAsync(desk);
+        }
+    }
+
+    private async Task OnTutorialKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e, int index)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await OnStartTutorial.InvokeAsync(index);
         }
     }
 

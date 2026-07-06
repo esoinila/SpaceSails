@@ -56,26 +56,45 @@
     }
 
     @* 🗺 Layers (owner: "filter what is being shown on the map screens"): per-desk checkbox
-       panel, Gemini-consulted placement — small toggle, never a modal over the sky. *@
-    <div class="map-layers">
-        <button type="button" class="btn btn-sm @(_layersOpen ? "btn-info" : "btn-outline-info")"
-                title="Choose what the map draws on this desk"
-                @onclick="() => _layersOpen = !_layersOpen">🗺 Layers</button>
-        @if (_layersOpen)
-        {
-            <div class="map-layers-panel bg-dark bg-opacity-75 rounded p-2 small shadow text-light">
-                @foreach ((string key, string label, string icon) in MapLayerDefs)
-                {
-                    string layerKey = key;
-                    <label class="d-block map-layers-row">
-                        <input type="checkbox" checked="@LayerVisible(layerKey)"
-                               @onchange="() => ToggleLayer(layerKey)" /> @icon @label
-                    </label>
-                }
-                <div class="text-secondary mt-1">remembered per desk</div>
-            </div>
-        }
-    </div>
+       panel, Gemini-consulted placement — small toggle, never a modal over the sky. Only shown on
+       the desks that actually render the solar map (Nav, Sensors, the War-room orrery); the other
+       desks cover the map with a full-screen panel, so the filter would be dead UI there — and on
+       the Captain desk it overlapped the (now three-wide) view-toggle. *@
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom)
+    {
+        <div class="map-layers">
+            <button type="button" class="btn btn-sm @(_layersOpen ? "btn-info" : "btn-outline-info")"
+                    title="Choose what the map draws on this desk"
+                    @onclick="() => _layersOpen = !_layersOpen">🗺 Layers</button>
+            @if (_layersOpen)
+            {
+                <div class="map-layers-panel bg-dark bg-opacity-75 rounded p-2 small shadow text-light">
+                    @foreach ((string key, string label, string icon) in MapLayerDefs)
+                    {
+                        string layerKey = key;
+                        <label class="d-block map-layers-row">
+                            <input type="checkbox" checked="@LayerVisible(layerKey)"
+                                   @onchange="() => ToggleLayer(layerKey)" /> @icon @label
+                        </label>
+                    }
+                    <div class="text-secondary mt-1">remembered per desk</div>
+                </div>
+            }
+        </div>
+    }
+
+    @* Advertise the tutorials to new players — the picker lives in the Captain's Tutorials tab now,
+       one desk over, so a fresh player needs a nudge to find it. A dismissible pointer on the Nav
+       map (where you first land); "Show me" jumps straight to the tab, × retires it for the run. *@
+    @if (_activeDesk == ShipDesk.Nav && !_tutorialAdDismissed)
+    {
+        <div class="tutorial-ad">
+            <span class="tutorial-ad-text">🎓 New here? Learn the ropes at the Captain's desk (0).</span>
+            <button type="button" class="btn btn-sm btn-info" @onclick="OpenTutorials">Show me</button>
+            <button type="button" class="btn-close btn-close-white" aria-label="Dismiss the tutorials hint"
+                    @onclick="() => _tutorialAdDismissed = true"></button>
+        </div>
+    }
 
     @* First-person ⇄ deck-plan toggle. The F key does this, but it isn't discoverable, so give it a
        visible button while you're aboard (top-down or first person). Mirrors HandleDeckKey's 'f'. *@
@@ -295,8 +314,8 @@
                 Scope
             </button>
             <a class="btn btn-sm btn-outline-secondary" href="/guide" target="_blank" title="Captain's Guide">?</a>
-            <a class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" role="button" @onclick="ToggleTutorial">
-                🏴 first hunt
+            <a class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" role="button" @onclick="ToggleTutorial" title="Show/hide the current lesson's checklist">
+                🏴 checklist
             </a>
             @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
         </div>
@@ -596,45 +615,33 @@
 
     @if (_showTutorial)
     {
+        int activeTrack = ActiveTutorialIndex();
         <div class="map-tutorial">
             <div class="card bg-dark bg-opacity-75 text-light">
                 <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                    <span class="fw-bold small">@(_tutorialStep < FirstHuntSteps ? "First hunt — the soft catch" : "Second hunt — the gun")</span>
+                    @* The checklist for the active lesson — the picker itself lives in the Captain's
+                       Tutorials tab now (starting a lesson IS a captain's order), so this card is a
+                       pure progress tracker that rides the map where the hunt actually plays out. *@
+                    <span class="fw-bold small">@(activeTrack >= 0 ? TutorialTracks[activeTrack].Title : "Ship's articles")</span>
                     <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleTutorial"></button>
                 </div>
                 <div class="card-body p-2 small">
-                    @* Hunts are independent lessons — start either one directly (owner: "playable in
-                       any order... start from the second if you've done the first before"). Jumping
-                       (re)seeds that hunt's prey where you are now. *@
-                    <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Pick a hunt">
-                        <button type="button"
-                                class="btn @(_tutorialStep < FirstHuntSteps ? "btn-info" : "btn-outline-info")"
-                                @onclick="() => StartHunt(0)">① Soft catch</button>
-                        <button type="button"
-                                class="btn @(_tutorialStep >= FirstHuntSteps ? "btn-info" : "btn-outline-info")"
-                                @onclick="() => StartHunt(FirstHuntSteps)">② The gun</button>
-                    </div>
-                    @* Show only the active hunt's steps so the checklist stays compact as it grows. *@
-                    @{
-                        int phaseStart = _tutorialStep < FirstHuntSteps ? 0 : FirstHuntSteps;
-                        int phaseEnd = _tutorialStep < FirstHuntSteps ? FirstHuntSteps : TutorialSteps.Length;
-                    }
-                    @for (int i = phaseStart; i < phaseEnd; i++)
+                    @if (activeTrack >= 0)
                     {
-                        bool done = _tutorialStep > i;
-                        bool current = _tutorialStep == i;
-                        <div class="@(done ? "text-secondary" : current ? "fw-bold text-info" : "")">
-                            @(done ? "✓" : "•") @TutorialSteps[i]
-                        </div>
+                        for (int i = TutorialTracks[activeTrack].Start; i < TutorialTracks[activeTrack].Start + TutorialTracks[activeTrack].Length; i++)
+                        {
+                            bool done = _tutorialStep > i;
+                            bool current = _tutorialStep == i;
+                            <div class="@(done ? "text-secondary" : current ? "fw-bold text-info" : "")">
+                                @(done ? "✓" : "•") @TutorialSteps[i]
+                            </div>
+                        }
+                        <div class="text-secondary fst-italic mt-1">Pick another lesson at the Captain's desk (0) → Tutorials.</div>
                     }
-                    @if (_tutorialStep >= FirstHuntSteps && _tutorialStep < TutorialSteps.Length)
+                    else
                     {
-                        <div class="text-secondary fst-italic mt-1">Soft catch for milk runs; the gun for the ones who run.</div>
-                    }
-                    @if (_tutorialStep >= TutorialSteps.Length)
-                    {
-                        <hr />
-                        <div class="text-warning">You're a pirate now — soft catch or the gun, the whole system's yours to work.</div>
+                        <div class="text-warning">You're a pirate now — the whole system's yours to work.</div>
+                        <div class="text-secondary fst-italic mt-1">Replay any lesson at the Captain's desk (0) → Tutorials.</div>
                     }
                 </div>
             </div>
@@ -1027,7 +1034,9 @@
                     <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
                                                               StatusChips="AllStationChips()" OnGoToDesk="SwitchDesk"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
-                                                              OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill" />
+                                                              OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
+                                                              Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
+                                                              OpenToTutorials="_openCaptainToTutorials" />
                 }
             </div>
         </div>
@@ -1094,7 +1103,25 @@
         {
             ToggleDeck();
         }
+        // The tutorials banner's "Show me" asks the Captain desk to open on its Tutorials tab; that
+        // one-shot request is spent the moment you leave the captain's chair for any other desk.
+        if (desk != ShipDesk.Captain)
+        {
+            _openCaptainToTutorials = false;
+        }
         _activeDesk = desk;
+    }
+
+    // Tutorials advertising (owner: "advertise the tutorials somewhere in the UI"). A dismissible
+    // pointer on the Nav map — the lessons live in the Captain's Tutorials tab now, one desk over.
+    private bool _tutorialAdDismissed;
+    private bool _openCaptainToTutorials;
+
+    private void OpenTutorials()
+    {
+        _tutorialAdDismissed = true;      // acting on the hint retires it for the run
+        _openCaptainToTutorials = true;   // land the Captain desk on its Tutorials tab
+        SwitchDesk(ShipDesk.Captain);
     }
 
     /// <summary>The Galley's "Pour a tot" button funnels through the exact same PourRum the deck
@@ -1162,6 +1189,14 @@
         {
             _destinationBodyId = mission.DestinationBodyId;
             _passDirty = true;
+        }
+        else if (mission.Kind == MissionKind.LayLow && mission.HavenBodyId is not null)
+        {
+            // "Lay low" is "make for this haven" — steer nav there like Fly to, so ordering it from
+            // the captain's chair actually points the ship at the haven (and the haven tutorial flows).
+            _destinationBodyId = mission.HavenBodyId;
+            _passDirty = true;
+            AdvanceTutorial(StepOrderLayLow);
         }
         else if (mission.Kind == MissionKind.FreeSailing && previous.Kind == MissionKind.FlyTo)
         {
@@ -1782,6 +1817,11 @@
     private const int StepBoardFreighter = 10;
     private const int StepSellHe3 = 11;
 
+    // Third tutorial (use a haven) step indices — the heat/hunter/lie-low loop.
+    private const int StepOrderLayLow = 12;
+    private const int StepInsertHaven = 13;
+    private const int StepCoolHeat = 14;
+
     private static readonly string[] TutorialSteps =
     [
         // First hunt — the soft catch (a compliant Luna pod)
@@ -1798,7 +1838,43 @@
         "War room (3): AIM, SOLVE, then FIRE a slug to hole her sail",
         "Board the drifting hulk — take the He3",
         "Run the loot home and sell it",
+        // Third — use a haven (cool the heat your piracy earned)
+        "Captain's desk (0): order Lay low at a haven",
+        "Plot a course and slip into orbit at the haven",
+        "Lie low — let the heat cool until the hunter breaks off",
     ];
+
+    // The tutorials are independent tracks over ranges of TutorialSteps — the Captain's Tutorials tab
+    // lists them, one card each, and starting one (re)seeds its scenario. Order here IS play order:
+    // finishing a track flows _tutorialStep into the next (rob in "the gun" → arrive in "use a haven"
+    // already carrying heat), while the picker can jump to any.
+    private sealed record TutorialTrack(int Start, int Length, string Title, string Blurb);
+
+    private static readonly TutorialTrack[] TutorialTracks =
+    [
+        new(0, FirstHuntSteps, "The soft catch", "A compliant Luna pod — learn the intercept and the board."),
+        new(StepSelectFreighter, 6, "The gun", "A runner who won't heave to — hole her sail, take her cargo."),
+        new(StepOrderLayLow, 3, "Use a haven", "You've made enemies. Cool the heat and shake the hunter at a haven."),
+    ];
+
+    // The track _tutorialStep currently sits in, or -1 once every step is behind you.
+    private int ActiveTutorialIndex()
+    {
+        for (int i = 0; i < TutorialTracks.Length; i++)
+        {
+            TutorialTrack t = TutorialTracks[i];
+            if (_tutorialStep >= t.Start && _tutorialStep < t.Start + t.Length)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    // The tutorial tracks projected for the Captain's Tutorials tab (title + blurb, in play order).
+    private IReadOnlyList<Stations.Captain.TutorialItem> TutorialCards() =>
+        TutorialTracks.Select(t => new Stations.Captain.TutorialItem(t.Title, t.Blurb)).ToArray();
 
     private int ReactionMassCapacity => 250 + 150 * _massLevel;
     private int CargoCapacity => 10 + 10 * _holdLevel;
@@ -6375,19 +6451,42 @@
     // The tutorial hunts are independent lessons (owner: "playable in any order — start from the
     // second if you've done the first before"). Jumping to a hunt sets its first step and (re)seeds
     // its prey relative to where the player is NOW, so the lesson is always deliverable on the spot.
-    private void StartHunt(int startStep)
+    // Start (or replay) a tutorial track from the Captain's Tutorials tab. Jumps _tutorialStep to the
+    // track's first step, (re)seeds whatever that lesson needs, and drops the player at the Nav map —
+    // the helm — where the checklist rides along. `trackIndex` is the card's position in TutorialTracks.
+    private void StartTutorial(int trackIndex)
     {
-        _tutorialStep = startStep;
+        if (trackIndex < 0 || trackIndex >= TutorialTracks.Length)
+        {
+            return;
+        }
+
+        _tutorialStep = TutorialTracks[trackIndex].Start;
         _showTutorial = true;
-        if (startStep < FirstHuntSteps)
+        switch (trackIndex)
         {
-            SeedFirstHuntTarget();
+            case 0: SeedFirstHuntTarget(); break;
+            case 1: SeedSecondHuntTarget(); break;
+            case 2: SeedHavenLesson(); break;
         }
-        else
-        {
-            SeedSecondHuntTarget();
-        }
+
+        SwitchDesk(ShipDesk.Nav); // the hunt/haven all play out on the map; go to the helm
         StateHasChanged();
+    }
+
+    // The haven lesson only bites if you've earned some heat. If you jump straight to it with a clean
+    // record, seed a spot of trouble — a couple points of heat and a hunter fitting out — so there's
+    // something real to run from. Coming off "the gun" you already carry heat, so leave it be.
+    private void SeedHavenLesson()
+    {
+        if (_heat.Level > 0)
+        {
+            return;
+        }
+
+        _heat = EncounterRule.RaiseHeat(_heat, 2, SimTime);
+        SpawnHunterForHeatEvent();
+        ShowPulseMessage("Word's out on your work — heat's up and a hunter's fitting out. Time to find a haven.");
     }
 
     // (Re)seed the second hunt's prey co-moving with the player's CURRENT state — not at t=0 — so her
@@ -7225,6 +7324,14 @@
                 _hunters[i] = hunter;
             }
         }
+
+        // Haven tutorial completes when the heat your piracy earned has fully cooled (the haven's
+        // 4x decay is what gets you there in reasonable time — the lesson is "lying low works").
+        if (_tutorialStep == StepCoolHeat && _heat.Level == 0)
+        {
+            AdvanceTutorial(StepCoolHeat);
+            ShowPulseMessage("The trail's gone cold — you've learned to lie low. The haven kept you.");
+        }
     }
 
     private void ApplyHunterCatch(HunterState hunter)
@@ -7492,6 +7599,7 @@
         if (boundBody is { IsHaven: true } haven && _orbitedBodyId != previous)
         {
             PushNewsEvent(NewsWire.NewsEventKind.OrbitEnteredHaven, haven.Name);
+            AdvanceTutorial(StepInsertHaven); // haven tutorial: slipping into a haven's orbit
         }
     }
 
