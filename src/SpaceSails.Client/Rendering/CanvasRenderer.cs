@@ -19,11 +19,14 @@ public sealed class CanvasRenderer : IRenderer
     private const float OpPolyline = 1f;
     private const float OpCircle = 2f;
     private const float OpPolygon = 3f;
+    private const float OpImage = 4f;
 
     private readonly string _canvasId;
     private float[] _buffer = new float[8192];
     private int _length;
     private readonly List<TextCommand> _texts = [];
+    private readonly Dictionary<string, int> _imageIds = [];
+    private int _nextImageId;
 
     public CanvasRenderer(string canvasId)
     {
@@ -125,6 +128,31 @@ public sealed class CanvasRenderer : IRenderer
         };
 
         _texts.Add(new TextCommand(xPx, yPx, text, color.R, color.G, color.B, color.A, font, alignJs));
+    }
+
+    public int RegisterImage(string url)
+    {
+        if (_imageIds.TryGetValue(url, out int id))
+        {
+            return id;
+        }
+
+        id = _nextImageId++;
+        _imageIds[url] = id;
+        RendererInterop.LoadImage(id, url); // fire-and-forget; JS decodes and caches by id
+        return id;
+    }
+
+    public void DrawImage(int imageId, float xPx, float yPx, float widthPx, float heightPx, float alpha = 1f)
+    {
+        EnsureCapacity(7);
+        _buffer[_length++] = OpImage;
+        _buffer[_length++] = imageId;
+        _buffer[_length++] = xPx;
+        _buffer[_length++] = yPx;
+        _buffer[_length++] = widthPx;
+        _buffer[_length++] = heightPx;
+        _buffer[_length++] = alpha;
     }
 
     public void EndFrame()

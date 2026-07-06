@@ -39,6 +39,18 @@ public interface IRenderer
     /// <summary>Text anchored at a screen point. Font is a CSS font string, e.g. "12px sans-serif".</summary>
     void DrawText(float xPx, float yPx, string text, RgbaColor color, string font = "12px sans-serif", TextAlign align = TextAlign.Left);
 
+    /// <summary>Registers a raster image URL for drawing, returning a stable integer id. Idempotent
+    /// per URL — call it every frame if you like; the load happens once. The image decodes
+    /// asynchronously in JS, so <see cref="DrawImage"/> calls before it finishes simply draw nothing
+    /// that frame, then it fades in once decoded.</summary>
+    int RegisterImage(string url);
+
+    /// <summary>Blits a registered image (see <see cref="RegisterImage"/>) into a screen-space rect,
+    /// scaled to fill it, at <paramref name="alpha"/> (0..1). An unknown or not-yet-loaded id draws
+    /// nothing. Used for interior room backdrops and, later, first-person wall textures — drawn
+    /// BEFORE the vector overlays so consoles, avatar, and HUD stay legible on top.</summary>
+    void DrawImage(int imageId, float xPx, float yPx, float widthPx, float heightPx, float alpha = 1f);
+
     /// <summary>Finish the frame and flush all batched primitives to the canvas in one interop call.</summary>
     void EndFrame();
 }

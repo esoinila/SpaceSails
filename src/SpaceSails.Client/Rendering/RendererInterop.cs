@@ -68,6 +68,13 @@ internal static partial class RendererInterop
     [JSImport("drawTexts", ModuleName)]
     internal static partial void DrawTexts(string canvasId, string json);
 
+    /// <summary>Preload a raster image by id so later <c>OP_IMAGE</c> draws can blit it. Fire-and-forget:
+    /// JS creates an <c>Image</c>, decodes it asynchronously, and caches it under <paramref name="id"/>.
+    /// The float command buffer can only carry the id + dest rect, never pixels — so the bitmap must
+    /// live JS-side. Safe to call repeatedly for the same id (JS ignores a re-load).</summary>
+    [JSImport("loadImage", ModuleName)]
+    internal static partial void LoadImage(int id, string url);
+
     /// <summary>Raised once per animation frame by <c>renderer.js</c>'s render loop.</summary>
     public static event Action<double>? FrameTick;
 

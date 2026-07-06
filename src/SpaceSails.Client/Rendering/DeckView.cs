@@ -43,6 +43,13 @@ public sealed class DeckView
         float ox = widthPx / 2f + (float)panX, oy = heightPx / 2f + (float)panY;
         (float X, float Y) P(double dx, double dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
 
+        // Room backdrops sit UNDER every vector overlay (walls, consoles, avatar, labels stay on top
+        // for legibility — the hybrid look). The cantina wears The Space Bar; the zone is x∈[4,18],
+        // y∈[3,10] in deck units. Registration is idempotent, so calling it per frame is cheap.
+        int barArt = _renderer.RegisterImage("art/the-space-bar.jpg");
+        (float barX, float barY) = P(4, 10); // top-left corner of the cantina zone on screen
+        _renderer.DrawImage(barArt, barX, barY, 14f * scale, 7f * scale, 0.9f);
+
         for (int gx = -22; gx <= 28; gx += 4)
         {
             DrawSeg(P(gx, -9.6), P(gx, 9.6), new RgbaColor(255, 255, 255, 10), 1f);
