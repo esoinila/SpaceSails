@@ -2532,6 +2532,59 @@
         }
     }
 
+    /// <summary>
+    /// The aim-solution fork (core-gravity review, 2026-07-06): a freighter's future is gravity
+    /// (PathPredictor dead-reckons it through the Simulator — gravity is public knowledge), but a
+    /// hunter's future is the PURSUIT LAW: no gravity, +0.5 m/s² toward us every quantum. The old
+    /// gravity dead-reckon put a hunter aim point ~½·a·τ² off — 13,000 km on a 2 h flight against
+    /// the 5e5 m hit radius, a structural miss beyond point-blank. The fork replays the pursuit law
+    /// itself (EncounterRule.PredictHunterPath) against our own plotted course; both arms honor the
+    /// same PredictedPath contract, so SOLVE, the window scan, the orrery backdrop and the
+    /// dispersion cone all stay target-agnostic. The hunter cone keeps budgets 0 — the pursuit law
+    /// is known exactly, pod-thin; what really bends a hunter shot is leaving your own plot
+    /// mid-flight (the collector chases the real you, not the plan).
+    /// </summary>
+    private PredictedPath PredictInterestPath((Vector2d Position, Vector2d Velocity) target, double horizonSeconds)
+    {
+        var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
+        foreach (HunterState hunter in _hunters)
+        {
+            if (hunter.Id == _interestTargetId)
+            {
+                return new PredictedPath(observation,
+                    EncounterRule.PredictHunterPath(hunter, PlayerPathForPrediction(), horizonSeconds),
+                    ManeuverBudget: 0, ImpulseBudget: 0);
+            }
+        }
+
+        return PathPredictor.Predict(_ephemeris!, observation, null, horizonSeconds,
+            maneuverBudget: InterestManeuverBudget());
+    }
+
+    /// <summary>What a pursuer will actually chase: the plotted course — except BERTHED, where the
+    /// plot shows a gravity coast the clamps will never allow; ride the dock's rails instead. The
+    /// no-plot fallback (a beat before the first projection lands) is a straight coast.</summary>
+    private IReadOnlyList<TrajectorySample> PlayerPathForPrediction()
+    {
+        if (_dockedHavenId is { } dockId && _ephemeris is not null)
+        {
+            double horizon = Math.Max(CurrentPlotHorizonSeconds, 2 * 86400);
+            const int knots = 128;
+            var docked = new List<TrajectorySample>(knots + 1);
+            for (int k = 0; k <= knots; k++)
+            {
+                double t = SimTime + horizon * k / knots;
+                docked.Add(new TrajectorySample(t, _ephemeris.Position(dockId, t) + _dockOffset));
+            }
+
+            return docked;
+        }
+
+        return _samples.Count >= 2
+            ? _samples
+            : [new TrajectorySample(SimTime, _ship.Position), new TrajectorySample(SimTime + 3600, _ship.Position + _ship.Velocity * 3600)];
+    }
+
     /// <summary>The Norden beat: predict the mark, coast the shooter to T+60 s, run the
     /// shooting method, and — if it converges — lock, count down, auto-fire.</summary>
     private void ComputeFiringSolution()
@@ -2543,9 +2596,7 @@
 
         _fireAimOffsetSeconds = Math.Clamp(_fireAimOffsetSeconds, 600, MaxFireAimOffsetSeconds);
 
-        var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
-        PredictedPath predicted = PathPredictor.Predict(_ephemeris, observation, null, _fireAimOffsetSeconds,
-            maneuverBudget: InterestManeuverBudget());
+        PredictedPath predicted = PredictInterestPath(target, _fireAimOffsetSeconds);
         _fireAimPoint = predicted.Samples[^1].Position;
         double tHit = SimTime + _fireAimOffsetSeconds;
         _fireDispersionMeters = predicted.HalfWidthAt(tHit);
@@ -2704,9 +2755,7 @@
             return;
         }
 
-        var observation = new Observation(_interestTargetId!, SimTime, target.Position, target.Velocity);
-        PredictedPath predicted = PathPredictor.Predict(_ephemeris, observation, null, MaxFireAimOffsetSeconds,
-            maneuverBudget: InterestManeuverBudget());
+        PredictedPath predicted = PredictInterestPath(target, MaxFireAimOffsetSeconds);
         ShipState shooterAtFire = _simulator.RunAdaptive(_ship, FireLockLeadSeconds);
 
         double bestOffset = _fireAimOffsetSeconds;
@@ -3834,6 +3883,18 @@
         }
 
         double simTimeBefore = _ship.SimTime;
+        // The pursuit quantum trail (see SteerHuntersByQuantumTrail — the abort switch): remember
+        // where the ship actually IS through this frame's integration, at the hunter-quantum
+        // cadence, so pursuit steering can look up sim-time positions instead of the frame-end
+        // one. Only paid while hunters fly; a berthed ship skips it (HoldAtDock pins the truth
+        // AFTER this loop, so the trail would be staler than _ship).
+        bool recordTrail = SteerHuntersByQuantumTrail && _hunters.Count > 0 && _dockedHavenId is null;
+        _pursuitTrail.Clear();
+        if (recordTrail)
+        {
+            _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
+        }
+
         int stepsThisFrame = 0;
         while (_simAccumulator >= _simulator.TimeStep)
         {
@@ -3867,8 +3928,16 @@
             }
             _simAccumulator -= quantum;
             stepsThisFrame++;
+            if (recordTrail && _ship.SimTime - _pursuitTrail[^1].SimTime >= EncounterRule.HunterStepSeconds - 0.5)
+            {
+                _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
+            }
         }
         SimTime = _ship.SimTime;
+        if (recordTrail && _pursuitTrail[^1].SimTime < _ship.SimTime)
+        {
+            _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
+        }
 
         // Clamped in a dock: the gravity integrator just coasted the ship off on its own arc, but a
         // berthed ship rides the station instead. Pin it back onto the dock at the new SimTime — this
@@ -7055,11 +7124,27 @@
             if (npc.Ship.Id == _interestTargetId && npc.Active && !npc.Arrived) { target = npc.State; break; }
         }
 
+        // The pursuit-law fork (see PredictInterestPath): a hunter neither coasts on gravity nor
+        // waits to be boarded — the honest clock is HIS catch envelope closing on US, flown under
+        // his actual thrust law, not a freighter coast against our boarding radius.
         if (target is null)
         {
             foreach (HunterState hunter in _hunters)
             {
-                if (hunter.Id == _interestTargetId) { target = hunter.State; break; }
+                if (hunter.Id != _interestTargetId)
+                {
+                    continue;
+                }
+
+                double hunterHorizon = _samples[^1].SimTime - hunter.State.SimTime;
+                if (hunterHorizon > 0)
+                {
+                    IReadOnlyList<TrajectorySample> pursuit =
+                        EncounterRule.PredictHunterPath(hunter, PlayerPathForPrediction(), hunterHorizon);
+                    _intercept = InterceptEstimate.Against(_samples, pursuit, EncounterRule.CatchRadiusMeters);
+                }
+
+                return;
             }
         }
 
@@ -7463,6 +7548,45 @@
         }
     }
 
+    // ---- Pursuit steering by the quantum trail (aim-solution follow-up, 2026-07-06) ----
+    // At warp a frame spans hundreds of sim-seconds, and the old catch-up steered EVERY hunter
+    // quantum toward the single frame-end player position — so hunter paths depended on frame
+    // cadence (not sim-deterministic; against the working agreement) and a long fire-control
+    // prediction chased a target no model could reproduce. The trail records the ship's actual
+    // integrated positions through the frame at the pursuit cadence; steering looks up the
+    // position AT each quantum's time. Residual frame dependence is only interpolation sag
+    // between 60 s knots (~km) — was tens of thousands of km at 10000x.
+    //
+    // ABORT SWITCH: set false to restore the old frame-end steering exactly (one flag, no other
+    // code path touched) if playtesting turns up trouble.
+    private const bool SteerHuntersByQuantumTrail = true;
+    private readonly List<TrajectorySample> _pursuitTrail = [];
+
+    /// <summary>The player state a pursuit quantum steers at: position interpolated on this
+    /// frame's trail, falling back to the live ship outside it (or with the switch off). The
+    /// velocity stays the frame-end ship's — AdvanceHunter only reads it for the catch check's
+    /// relative speed, where a frame of gravity barely moves the needle.</summary>
+    private ShipState PlayerStateForPursuit(double stepTime)
+    {
+        if (!SteerHuntersByQuantumTrail || _pursuitTrail.Count < 2 || stepTime >= _pursuitTrail[^1].SimTime)
+        {
+            return _ship;
+        }
+
+        for (int i = _pursuitTrail.Count - 2; i >= 0; i--)
+        {
+            if (_pursuitTrail[i].SimTime <= stepTime)
+            {
+                TrajectorySample a = _pursuitTrail[i], b = _pursuitTrail[i + 1];
+                double span = b.SimTime - a.SimTime;
+                double f = span > 0 ? (stepTime - a.SimTime) / span : 1;
+                return new ShipState(a.Position + (b.Position - a.Position) * f, _ship.Velocity, stepTime);
+            }
+        }
+
+        return _ship;
+    }
+
     // Heat decay, hunter pursuit and break-off — all in sim time (like NPC stepping), so it
     // scales naturally with warp instead of crawling at wall-clock rate.
     private void UpdateEncounters()
@@ -7497,7 +7621,7 @@
             while (hunter.State.SimTime < SimTime && !hunter.CaughtPlayer && !hunter.BrokenOff)
             {
                 double stepTime = Math.Min(SimTime, hunter.State.SimTime + EncounterRule.HunterStepSeconds);
-                hunter = EncounterRule.AdvanceHunter(hunter, _ship, stepTime);
+                hunter = EncounterRule.AdvanceHunter(hunter, PlayerStateForPursuit(stepTime), stepTime);
                 if (hidden)
                 {
                     hunter = EncounterRule.ApplyBreakOff(hunter, hiddenDuration);

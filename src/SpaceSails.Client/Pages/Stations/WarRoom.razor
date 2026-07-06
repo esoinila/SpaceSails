@@ -365,18 +365,20 @@
                                 {
                                     @if (t0 <= SimTime)
                                     {
-                                        <div class="text-danger fw-bold">⚔ ENCOUNTER WINDOW — inside the boarding envelope now</div>
+                                        <div class="text-danger fw-bold">⚔ ENCOUNTER WINDOW — @(InterestIsHunter ? "inside the collector's catch envelope now" : "inside the boarding envelope now")</div>
                                     }
                                     else
                                     {
-                                        <div class="text-warning">⏱ Encounter begins in <strong>@FormatDuration(t0 - SimTime)</strong> (range ≤ @FormatRange(CaptureRule.CaptureRadiusMeters))</div>
+                                        <div class="text-warning">⏱ Encounter begins in <strong>@FormatDuration(t0 - SimTime)</strong> (range ≤ @FormatRange(InterestIsHunter ? EncounterRule.CatchRadiusMeters : CaptureRule.CaptureRadiusMeters))</div>
                                     }
                                 }
                                 else
                                 {
-                                    <div class="text-secondary">Course never enters the boarding envelope — tighten the plot at Nav.</div>
+                                    <div class="text-secondary">@(InterestIsHunter ? "Pursuit never enters his catch envelope — he misses this pass." : "Course never enters the boarding envelope — tighten the plot at Nav.")</div>
                                 }
-                                <div class="text-secondary">estimate assumes the target coasts (no burns)</div>
+                                @* Wolf-aim: a hunter is predicted by REPLAYING its pursuit law against our plot,
+                                   not by the freighter coast — say so, and say what actually bends it. *@
+                                <div class="text-secondary">@(InterestIsHunter ? "estimate follows the collector's pursuit law — your own burns are what bend it" : "estimate assumes the target coasts (no burns)")</div>
                             }
                             else
                             {
@@ -656,6 +658,24 @@
 
         list.Sort((a, b) => a.Distance.CompareTo(b.Distance));
         return list;
+    }
+
+    /// <summary>Wolf-aim: is the interest target hired muscle? The intercept clock then talks
+    /// in HIS catch envelope (he runs us down) and admits the pursuit-law estimate.</summary>
+    private bool InterestIsHunter
+    {
+        get
+        {
+            foreach (HunterContact h in Hunters)
+            {
+                if (h.Id == InterestId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary>Every hunter, closing-speed and bearing computed once — regardless of view
