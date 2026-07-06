@@ -51,6 +51,15 @@ public interface IRenderer
     /// BEFORE the vector overlays so consoles, avatar, and HUD stay legible on top.</summary>
     void DrawImage(int imageId, float xPx, float yPx, float widthPx, float heightPx, float alpha = 1f);
 
+    /// <summary>Blits a sub-rectangle of a registered image into a screen-space rect. Source coords are
+    /// <em>normalized</em> fractions of the image (0..1) so the caller never needs the texture's pixel
+    /// size — the renderer multiplies by the decoded bitmap's natural size. This is the raycaster's
+    /// textured-column primitive: sample a thin vertical strip of a wall texture (sx = along-the-wall
+    /// fraction, full height) into one screen column. An unknown/not-yet-loaded id draws nothing.</summary>
+    void DrawImageSlice(int imageId,
+        float srcXFrac, float srcYFrac, float srcWFrac, float srcHFrac,
+        float dstXPx, float dstYPx, float dstWPx, float dstHPx, float alpha = 1f);
+
     /// <summary>Finish the frame and flush all batched primitives to the canvas in one interop call.</summary>
     void EndFrame();
 }

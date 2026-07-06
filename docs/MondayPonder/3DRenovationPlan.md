@@ -11,7 +11,7 @@
 | 1 — renderer raster keystone + The Space Bar cantina backdrop | ✅ **Done** — shipped on branch `feature/3d-deck-renovation`, **PR #90**, verified in-browser |
 | 2 — Galley *desk* HTML bar | ✅ **Done** — `the-space-bar-desk.jpg` backdrop behind the Galley panel, verified in-browser |
 | 3 — cabin bunks + a space-toilet HEAD 🚽 | ✅ **Done** — `cabin-bunk.jpg` ×3 + `space-head.jpg`; starboard block re-carved into 3 cabins + a HEAD; gag `[E]` quip via a new deck-mode pulse toast; verified in-browser (walked in, fired the gag, first-person clean) |
-| 4 — first-person wall texturing | ⬜ **Next** (biggest lift; needs a source-rect `DrawImage` on the shared renderer interop) |
+| 4 — first-person wall texturing | ✅ **Done** — `DrawImageSlice` source-rect primitive + `wall-bulkhead.jpg`; raycaster walls are textured; verified in-browser (walls, windows keep sky, solar map unaffected) |
 | Deferred — walk the *raided* ship's interior | ⬜ separate new feature |
 
 Unrelated in-flight work: **PR #89** (Debt Collector targetable/deterrable/sun-dodgeable +
@@ -121,18 +121,21 @@ is deck units x∈[4,18], y∈[3,10]; `P(dx,dy) = (ox + dx*scale, oy - dy*scale)
   `E` fired the gag (toast confirmed via DOM), first-person renders the HEAD as a clean 4-wall room
   with `HEAD` location hint. (Toast is timing-flaky to *screenshot* under 100× Debug WASM, not buggy.)
 
-### Phase 4 — first-person texturing
-- **Renderer prerequisite:** the current `DrawImage` only blits a whole image into a dest rect. A
-  raycaster needs a **source-rect variant** — add `DrawImageSlice(imageId, sxFrac,syFrac,swFrac,shFrac,
-  dx,dy,dw,dh, alpha)` with *normalized* source coords (JS multiplies by `naturalWidth/Height`, so C#
-  never needs the texture's pixel size). New opcode (`OP_IMAGE_SRC = 5`) across `IRenderer` /
-  `CanvasRenderer` / `renderer.js`. **This touches the shared interop every view uses — verify the
-  solar map still renders after.**
-- Extend `Wall` (`DeckPlan.cs`) with a `material`/texture id; `CastRay` already yields the along-wall
-  coordinate for sampling.
-- `FirstPersonView.cs`: replace flat `DrawVStrip` wall strips with textured columns via the new slice
-  call (sample source x by `frac(along / textureSpanDu)`, full height). Window walls keep the
-  real-sky path; optionally add planet/sun disc bitmaps to the sky.
+### Phase 4 — first-person texturing ✅ **Done** (as-built)
+- **New renderer primitive:** `DrawImageSlice(imageId, srcX/Y/W/HFrac, dstX/Y/W/H, alpha)` — a
+  source-rect blit with *normalized* source coords, so C# never needs the texture's pixel size (JS
+  multiplies by `naturalWidth/Height` and clamps `sw` to ≥ 1 texel). Opcode `OP_IMAGE_SLICE = 5`
+  across `IRenderer` / `CanvasRenderer` / `renderer.js`. Touches the shared interop every view uses —
+  **verified the solar map and top-down deck still render** after.
+- **Texture:** `art/wall-bulkhead.jpg` (Grok, 1:1, "seamless tileable riveted bulkhead").
+- **`FirstPersonView.cs`:** each column samples a thin vertical strip (`WallSliverFrac`) of the
+  bulkhead at `u = frac(along / WallTextureSpanDu)` (repeat every **3.5 du**), stretched to the
+  column's floor-to-ceiling height, then dimmed by distance with a black overlay strip (replaces the
+  old flat-shade + panel-banding). Windows keep the real-sky path — only the wall strips **above and
+  below** the glass are textured, sampling the matching vertical slice so panel lines stay continuous.
+- **Not done (future):** per-wall `material` id on `DeckPlan.Wall` (all solid walls share one texture
+  for now — the `Wall` record was left untouched to avoid editing ~30 initializers); distinct hull
+  texture; planet/sun disc bitmaps in the sky. `DrawImageSlice` is the reusable hook for all of these.
 
 ### Deferred — raid-interior walk
 - Walking the raided ship's interior during a boarding run (target-ship deck plans + a boarding

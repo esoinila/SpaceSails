@@ -14,6 +14,7 @@ const OP_POLYLINE = 1;
 const OP_CIRCLE = 2;
 const OP_POLYGON = 3;
 const OP_IMAGE = 4;
+const OP_IMAGE_SLICE = 5;
 
 /** @type {Map<string, { canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rafId: number|null, running: boolean }>} */
 const canvases = new Map();
@@ -177,6 +178,24 @@ export function drawFrame(canvasId, buffer, length) {
                 const prevAlpha = ctx.globalAlpha;
                 ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
                 ctx.drawImage(img, x, y, w, h);
+                ctx.globalAlpha = prevAlpha;
+            }
+        } else if (op === OP_IMAGE_SLICE) {
+            // Textured raycaster column: id + NORMALIZED source rect (0..1) + dest rect + alpha. The
+            // source fractions are multiplied by the decoded bitmap's natural size here, so C# never
+            // needs the texture's pixel dimensions. sw is clamped to >= 1px so a thin vertical strip
+            // still samples a real texel column.
+            const id = view[i++] | 0;
+            const sxf = view[i++], syf = view[i++], swf = view[i++], shf = view[i++];
+            const dx = view[i++], dy = view[i++], dw = view[i++], dh = view[i++], alpha = view[i++];
+            const img = images.get(id);
+            if (img && img.complete && img.naturalWidth > 0 && dh > 0) {
+                const nw = img.naturalWidth, nh = img.naturalHeight;
+                const sx = sxf * nw, sy = syf * nh;
+                const sw = Math.max(1, swf * nw), sh = Math.max(1, shf * nh);
+                const prevAlpha = ctx.globalAlpha;
+                ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+                ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
                 ctx.globalAlpha = prevAlpha;
             }
         } else {
