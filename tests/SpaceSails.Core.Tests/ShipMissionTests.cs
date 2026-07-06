@@ -81,10 +81,14 @@ public class ShipMissionTests
         Assert.Contains(catalog.TradeRuns, m => m.OriginBodyId == "earth" && m.DestinationBodyId == "mercury-compute");
         Assert.Contains(catalog.TradeRuns, m => m.OriginBodyId == "mercury-compute" && m.DestinationBodyId == "earth");
 
-        // Havens in sol.json: Enceladus (moon) and Ringside Exchange (station).
+        // Havens in sol.json: Enceladus (moon) and Ringside Exchange (station) out at Saturn, plus
+        // the inner grey-market docks Cinder Roost (Venus), The Space Bar (Mars) and The Tilt (Uranus).
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "enceladus");
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "ringside-exchange");
-        Assert.Equal(2, catalog.LayLow.Count);
+        Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "cinder-roost");
+        Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "the-space-bar");
+        Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "the-tilt");
+        Assert.Equal(5, catalog.LayLow.Count);
 
         // Survey corridors collapse direction: saturn/mars from one route, earth/mercury-compute
         // from two routes (opposite directions) must still yield a single corridor.

@@ -50,6 +50,9 @@ public static class NewsWire
         "Someone laser-ranged a haven last week. The haven laser-ranged back.",
         "A masked freighter cleared customs without a manifest. Nobody asked twice.",
         "The underwriters are quietly raising piracy premiums again. Somebody's business is booming.",
+        "The Space Bar off Mars threw out two bounty hunters before last call — house rule: check your guns, drink your credits.",
+        "Cinder Roost's scrap-welders swear the whole berth drifts a little every time Venus' storms kick up. Nobody's left over it yet.",
+        "Nobody at The Tilt can agree which way is up; the bar's been listing sideways off Uranus since before anyone's tab opened.",
     ];
 
     private static readonly string[] BodyTemplates =

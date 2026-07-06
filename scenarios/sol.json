@@ -1,15 +1,17 @@
 {
   "name": "Sol",
-  "description": "The real solar system: circular coplanar orbits at true radii and periods. SI units (m, s, m^3/s^2). Phases are arbitrary epoch positions. Moons, orbital stations and pirate havens per the outer-reaches worldbuilding (vision par. 8): central space is policed and rich, the outer moons are sparse, secretive, pirate-friendly.",
+  "description": "The real solar system: circular coplanar orbits at true radii and periods. SI units (m, s, m^3/s^2). Phases are arbitrary epoch positions. Moons, orbital stations and pirate havens per the outer-reaches worldbuilding (vision par. 8): central space is policed and rich, the outer moons are sparse, secretive, pirate-friendly. A handful of discreet grey-market docks (Cinder Roost in Venus' clouds, The Space Bar off Mars, The Tilt out at Uranus) give the inner system its own boltholes to cool off in.",
   "bodies": [
     { "id": "sun",     "name": "Sun",     "parentId": null,  "mu": 1.32712440018e20, "bodyRadiusM": 6.9634e9,  "orbitRadiusM": 0,          "orbitPeriodS": 0,           "initialPhaseRad": 0 },
     { "id": "mercury", "name": "Mercury", "parentId": "sun", "mu": 2.2032e13,        "bodyRadiusM": 2.4397e6,  "orbitRadiusM": 5.791e10,   "orbitPeriodS": 7.60052e6,   "initialPhaseRad": 0.0 },
     { "id": "mercury-compute", "name": "Mercury Compute Farms", "parentId": "mercury", "mu": 0, "bodyRadiusM": 500,  "orbitRadiusM": 2.84e6,   "orbitPeriodS": 6405,        "initialPhaseRad": 0.2, "kind": "station" },
     { "id": "venus",   "name": "Venus",   "parentId": "sun", "mu": 3.24859e14,       "bodyRadiusM": 6.0518e6,  "orbitRadiusM": 1.0821e11,  "orbitPeriodS": 1.94142e7,   "initialPhaseRad": 0.9 },
+    { "id": "cinder-roost", "name": "Cinder Roost", "parentId": "venus", "mu": 0, "bodyRadiusM": 700, "orbitRadiusM": 1.5e7, "orbitPeriodS": 8000, "initialPhaseRad": 1.3, "kind": "station", "haven": true },
     { "id": "earth",   "name": "Earth",   "parentId": "sun", "mu": 3.986004418e14,   "bodyRadiusM": 6.371e6,   "orbitRadiusM": 1.496e11,   "orbitPeriodS": 3.1558149e7, "initialPhaseRad": 1.8 },
     { "id": "luna",    "name": "Luna",    "parentId": "earth", "mu": 4.9048695e12,   "bodyRadiusM": 1.7374e6,  "orbitRadiusM": 3.844e8,    "orbitPeriodS": 2.3606e6,    "initialPhaseRad": 0.0, "kind": "moon" },
     { "id": "satellite-factory", "name": "Highport Satellite Works", "parentId": "earth", "mu": 0, "bodyRadiusM": 300, "orbitRadiusM": 6.771e6, "orbitPeriodS": 5546, "initialPhaseRad": 2.4, "kind": "station" },
     { "id": "mars",    "name": "Mars",    "parentId": "sun", "mu": 4.282837e13,      "bodyRadiusM": 3.3895e6,  "orbitRadiusM": 2.2794e11,  "orbitPeriodS": 5.93551e7,   "initialPhaseRad": 2.7 },
+    { "id": "the-space-bar", "name": "The Space Bar", "parentId": "mars", "mu": 0, "bodyRadiusM": 900, "orbitRadiusM": 1.2e7, "orbitPeriodS": 7200, "initialPhaseRad": 3.1, "kind": "station", "haven": true },
     { "id": "jupiter", "name": "Jupiter", "parentId": "sun", "mu": 1.26686534e17,    "bodyRadiusM": 6.9911e7,  "orbitRadiusM": 7.7857e11,  "orbitPeriodS": 3.74336e8,   "initialPhaseRad": 3.6 },
     { "id": "europa",   "name": "Europa",   "parentId": "jupiter", "mu": 3.2038e12, "bodyRadiusM": 1.5608e6, "orbitRadiusM": 6.709e8,  "orbitPeriodS": 3.068226e5, "initialPhaseRad": 0.5, "kind": "moon" },
     { "id": "ganymede", "name": "Ganymede", "parentId": "jupiter", "mu": 9.8907e12, "bodyRadiusM": 2.6341e6, "orbitRadiusM": 1.0704e9, "orbitPeriodS": 6.181531e5, "initialPhaseRad": 1.5, "kind": "moon" },
@@ -19,6 +21,7 @@
     { "id": "enceladus", "name": "Enceladus", "parentId": "saturn", "mu": 7.211e9,   "bodyRadiusM": 2.5226e5, "orbitRadiusM": 2.38037e8, "orbitPeriodS": 1.183868e5, "initialPhaseRad": 2.0, "kind": "moon", "haven": true },
     { "id": "ringside-exchange", "name": "Ringside Exchange", "parentId": "saturn", "mu": 0, "bodyRadiusM": 1000, "orbitRadiusM": 1.35e9, "orbitPeriodS": 1.6006e6, "initialPhaseRad": 5.0, "kind": "station", "haven": true },
     { "id": "uranus",  "name": "Uranus",  "parentId": "sun", "mu": 5.793939e15,      "bodyRadiusM": 2.5362e7,  "orbitRadiusM": 2.87246e12, "orbitPeriodS": 2.65104e9,   "initialPhaseRad": 5.4 },
+    { "id": "the-tilt", "name": "The Tilt", "parentId": "uranus", "mu": 0, "bodyRadiusM": 1000, "orbitRadiusM": 8.0e7, "orbitPeriodS": 14000, "initialPhaseRad": 4.7, "kind": "station", "haven": true },
     { "id": "neptune", "name": "Neptune", "parentId": "sun", "mu": 6.836529e15,      "bodyRadiusM": 2.4622e7,  "orbitRadiusM": 4.49506e12, "orbitPeriodS": 5.2004e9,    "initialPhaseRad": 0.4 }
   ],
   "traffic": {
