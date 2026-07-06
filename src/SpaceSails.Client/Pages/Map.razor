@@ -5717,6 +5717,7 @@
     {
         foreach (NpcState npc in _npcStates)
         {
+            bool wasObserved = npc.CurrentlyObserved;
             npc.CurrentlyObserved = false;
             if (!npc.Active || npc.Arrived)
             {
@@ -5753,6 +5754,16 @@
                     // A fresh contact resets Δt — the cone snaps tight ("tightens as you shadow").
                     _predictionDirty = true;
                 }
+            }
+            else if (wasObserved && (npc.Ship.Id == _interestTargetId || npc.Ship.Id == _selectedTargetId))
+            {
+                // LOST CONTACT is big news (owner): the target we were shadowing just fell off our
+                // live fix. Sound off, and the ship does all it can to re-acquire — force the
+                // telescope onto a LostSearch for her right now, on top of standing passive watch.
+                // Meanwhile she stays on the map dead-reckoned (DrawNpcs), never a silent vanish.
+                ShowPulseMessage($"⚠ LOST CONTACT — {npc.Ship.Callsign} off our fix; scopes re-acquiring, dead-reckoning her track");
+                RendererInterop.PlayCue("miss");
+                _trackingPost?.ForceReacquire(npc.Ship.Id);
             }
         }
 
@@ -5894,8 +5905,27 @@
             }
             else if (npc.LastObservation is { } obs)
             {
-                (float sx, float sy) = _camera.WorldToScreen(obs.Position);
-                _renderer!.DrawCircle(sx, sy, 4f, null, tracked ? TrackedNpcLastSeenColor : NpcLastSeenColor);
+                // Anything we've EVER detected stays ON the map, dead-reckoned from its last fix to
+                // NOW and LABELLED — a contact you've seen must never silently blink out between
+                // sweeps (owner: "I always want to see all ships... never hide one unless there's
+                // true interference to visibility, and surely not at this close"). Only a ship we've
+                // genuinely never detected stays dark (that IS the interference). It's a coast
+                // estimate, not a live fix — dim colour + a "no live fix" tag, plus a growing
+                // uncertainty ring for ledger-tracked contacts (whose drift we actually model) — and
+                // the sensors keep working to re-acquire it (passive watch / LostSearch).
+                double dt = Math.Max(0, SimTime - obs.SimTime);
+                Vector2d reckoned = obs.Position + obs.Velocity * dt;
+                (float sx, float sy) = _camera.WorldToScreen(reckoned);
+                RgbaColor c = tracked ? TrackedNpcLastSeenColor : NpcLastSeenColor;
+                _renderer!.DrawCircle(sx, sy, 4f, null, c);
+                if (tracked)
+                {
+                    double uncertainty = (PredictedPath.BaseHalfWidthMeters + PredictedPath.VelocitySigma * dt)
+                        * track.UncertaintyScale(SimTime);
+                    float ringPx = (float)Math.Clamp(uncertainty / _camera.MetersPerPixel, 6, 40);
+                    _renderer!.DrawCircle(sx, sy, ringPx, null, c with { A = 120 }, 1f);
+                }
+                _renderer!.DrawText(sx + 8, sy - 6, $"{npc.Ship.Callsign} · no live fix", c);
             }
         }
     }
@@ -6230,10 +6260,20 @@
 
         _npcStates = _npcStates
             .Where(n => n.Ship.Id != TrafficSchedule.StarterFreighterId)
-            .Append(new NpcState { Ship = TrafficSchedule.StarterFreighter(_ship) })
+            .Append(KnownContact(TrafficSchedule.StarterFreighter(_ship)))
             .ToArray();
         ShowPulseMessage("Sensors ping a fat He3 hauler close by — the Nervous Lark. She won't stop for anyone.");
     }
+
+    // A seeded contact the player is meant to find right away spawns already KNOWN — a fix at its
+    // spawn state — so it draws (labelled) on the map the instant the hunt starts, even while paused
+    // (owner: "I always want to see all ships... surely not hidden at this close").
+    private static NpcState KnownContact(NpcShip ship) => new()
+    {
+        Ship = ship,
+        LastObservation = new Observation(ship.Id, ship.InitialState.SimTime, ship.InitialState.Position, ship.InitialState.Velocity),
+        CurrentlyObserved = true,
+    };
 
     // (Re)seed the first hunt's pod for the hunt picker — "play the soft catch again" always gets a
     // fresh Sitting Duck abeam the player's current position.
@@ -6246,7 +6286,7 @@
 
         _npcStates = _npcStates
             .Where(n => n.Ship.Id != TrafficSchedule.StarterPodId)
-            .Append(new NpcState { Ship = TrafficSchedule.StarterPod(_ship) })
+            .Append(KnownContact(TrafficSchedule.StarterPod(_ship)))
             .ToArray();
     }
 

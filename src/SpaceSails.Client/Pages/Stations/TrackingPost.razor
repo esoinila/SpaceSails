@@ -798,6 +798,19 @@
     /// <summary>PRIORITIZE REDISCOVERY: the search pass runs as soon as the current look ends.</summary>
     public void PrioritizeSearch(string shipId) => _schedule.PrioritizeNext($"search:{shipId}");
 
+    /// <summary>Owner: "LOST CONTACT is big news — the ship should do all it can to re-acquire."
+    /// The moment a shadowed target falls off our live fix, jump any open search for her (or her
+    /// standing track pass) to the FRONT of the telescope queue so re-acquisition is the very next
+    /// thing the scope does, ahead of routine passive watch. Safe no-op when there's nothing to
+    /// jump to (e.g. a beacon-lit contact that was never truly lost).</summary>
+    public void ForceReacquire(string shipId)
+    {
+        if (!_schedule.PrioritizeNext($"search:{shipId}"))
+        {
+            _schedule.PrioritizeNext($"track:{shipId}");
+        }
+    }
+
     // ---- The live scope boxes (PR-D: one per tracked slot, on the shared render loop) ----
 
     private static string CardCanvasId(string shipId) => $"scope-card-{shipId}";
