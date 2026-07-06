@@ -458,11 +458,14 @@ public static class TrafficSchedule
         var state = new ShipState(position, velocity, player.SimTime);
 
         return new NpcShip(
-            "pod-starter", "Sitting Duck", "Compute cores", "luna", "venus",
+            StarterPodId, "Sitting Duck", "Compute cores", "luna", "venus",
             RoutePersonality.Economical, player.SimTime, player.SimTime, state,
             ManeuverPlan.Empty, player.SimTime + 60 * Day,
             CargoUnits: 5, ManeuverBudget: 0, IsPod: true);
     }
+
+    /// <summary>Ship id of the first-hunt pod — a stable handle so the hunt picker can (re)seed her.</summary>
+    public const string StarterPodId = "pod-starter";
 
     /// <summary>Ship id of the second-hunt freighter. Chosen so <see cref="EncounterRule.ComplianceOf"/>
     /// rolls <see cref="ComplianceState.Stubborn"/> at heat 0 — she never heaves to, so the gun is the

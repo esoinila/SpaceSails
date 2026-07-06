@@ -576,6 +576,17 @@
                     <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="ToggleTutorial"></button>
                 </div>
                 <div class="card-body p-2 small">
+                    @* Hunts are independent lessons — start either one directly (owner: "playable in
+                       any order... start from the second if you've done the first before"). Jumping
+                       (re)seeds that hunt's prey where you are now. *@
+                    <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Pick a hunt">
+                        <button type="button"
+                                class="btn @(_tutorialStep < FirstHuntSteps ? "btn-info" : "btn-outline-info")"
+                                @onclick="() => StartHunt(0)">① Soft catch</button>
+                        <button type="button"
+                                class="btn @(_tutorialStep >= FirstHuntSteps ? "btn-info" : "btn-outline-info")"
+                                @onclick="() => StartHunt(FirstHuntSteps)">② The gun</button>
+                    </div>
                     @* Show only the active hunt's steps so the checklist stays compact as it grows. *@
                     @{
                         int phaseStart = _tutorialStep < FirstHuntSteps ? 0 : FirstHuntSteps;
@@ -6181,26 +6192,62 @@
         }
 
         ShowPulseMessage("Upgrade installed");
+        int stepBeforeUpgrade = _tutorialStep;
         AdvanceTutorial(5); // step 6: first upgrade
-        SeedSecondHuntTarget(); // first hunt done — the gun lesson's prey arrives
+        if (stepBeforeUpgrade != _tutorialStep && _tutorialStep == StepSelectFreighter)
+        {
+            SeedSecondHuntTarget(); // the upgrade that ENDS the first hunt spawns the gun lesson's prey
+        }
     }
 
-    // The second hunt's prey is seeded the moment the first hunt ends (the upgrade), co-moving with
-    // the player's CURRENT state — not at t=0 — so her escape jink is always ~2 days out from when the
-    // hunt actually begins, never stale from a slow first hunt. Mirrors the traffic-refill append.
+    // The tutorial hunts are independent lessons (owner: "playable in any order — start from the
+    // second if you've done the first before"). Jumping to a hunt sets its first step and (re)seeds
+    // its prey relative to where the player is NOW, so the lesson is always deliverable on the spot.
+    private void StartHunt(int startStep)
+    {
+        _tutorialStep = startStep;
+        _showTutorial = true;
+        if (startStep < FirstHuntSteps)
+        {
+            SeedFirstHuntTarget();
+        }
+        else
+        {
+            SeedSecondHuntTarget();
+        }
+        StateHasChanged();
+    }
+
+    // (Re)seed the second hunt's prey co-moving with the player's CURRENT state — not at t=0 — so her
+    // escape jink is always ~2 days out from when the hunt begins, never stale from a slow first hunt.
+    // Drops any prior Lark first, so restarting the hunt always yields a fresh, catchable target.
     private void SeedSecondHuntTarget()
     {
-        if (_tutorialStep != StepSelectFreighter
-            || !_scenarioName.Contains("Sol", StringComparison.OrdinalIgnoreCase)
-            || _npcStates.Any(n => n.Ship.Id == TrafficSchedule.StarterFreighterId))
+        if (!_scenarioName.Contains("Sol", StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         _npcStates = _npcStates
+            .Where(n => n.Ship.Id != TrafficSchedule.StarterFreighterId)
             .Append(new NpcState { Ship = TrafficSchedule.StarterFreighter(_ship) })
             .ToArray();
         ShowPulseMessage("Sensors ping a fat He3 hauler close by — the Nervous Lark. She won't stop for anyone.");
+    }
+
+    // (Re)seed the first hunt's pod for the hunt picker — "play the soft catch again" always gets a
+    // fresh Sitting Duck abeam the player's current position.
+    private void SeedFirstHuntTarget()
+    {
+        if (!_scenarioName.Contains("Sol", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _npcStates = _npcStates
+            .Where(n => n.Ship.Id != TrafficSchedule.StarterPodId)
+            .Append(new NpcState { Ship = TrafficSchedule.StarterPod(_ship) })
+            .ToArray();
     }
 
     private void RequestRescue()
