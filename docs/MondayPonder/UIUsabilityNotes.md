@@ -122,6 +122,17 @@ panel. Cheap, additive, and it's the right home for all gun feedback.
   (edge arrow pointing to her + distance, or auto-frame ship+target), and/or a
   "the Lark drifted off — jump to her" affordance. The hunt picker's re-seed is a
   workable escape hatch (spawn a fresh one alongside), but you shouldn't *need* it.
+- **The prediction cone lingers after the target marker scrolls off — it reads as
+  a graphics glitch (owner).** With the Lark off-screen, her "possible directions"
+  cone/curves were still drawn across an otherwise black map, with no target dot
+  and no numbers — the owner's first read was "is this a render bug?" When the
+  locked target leaves the viewport, DON'T leave orphaned cone geometry floating;
+  instead show a persistent target-status readout that stays visible regardless of
+  view: distance + whether it's **increasing/decreasing**, opening/closing rel
+  speed, in/out of **weapon and boarding range**, and an edge arrow toward it.
+  "Nervous Lark — 4.1 M km ↗ opening 2.5 km/s — out of range" tells the story the
+  empty screen didn't. (The selected-target popup shows some of this only while
+  she's on-screen; it needs to survive her leaving the frame.)
 
 ## Tutorial progression — a second hunt for the gun (owner's idea)
 The "first hunt" only ever teaches the *soft* catch: select a pod, plot an
