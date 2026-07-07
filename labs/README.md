@@ -35,6 +35,8 @@ dotnet run --project labs/12-oops-at-the-moon -c Release
 dotnet run --project labs/13-shooting-literally -c Release
 dotnet run --project labs/14-two-points-and-a-clock -c Release
 dotnet run --project labs/15-the-long-passage -c Release
+dotnet run --project labs/16-going-ashore -c Release
+dotnet run --project labs/17-the-pocket-solar-system -c Release
 ```
 
 Each lesson folder holds:
@@ -100,6 +102,17 @@ Each lesson folder holds:
     passage through Jupiter country (Lambert's two-body lie now costs 150 m/s, not 14), 1 m/s of
     departure error compounding ~4× into 718,250 km, and the navigator's oldest law computed —
     the same sin absolved at day 30 costs 1.26 m/s, on the deathbed 348 m/s.
+16. [**Going ashore**](16-going-ashore/README.md) — moons: bus stops nested inside bus stops.
+    The Enceladus insertion window is a 444 km shell (the haven that barely exists); Luna
+    parking orbits stress-tested prograde AND retrograde at two time steps — the game's cruise
+    ceiling doesn't blur the classical stability map (prograde ~0.5 Hill, retrograde ~0.9), it
+    nearly INVERTS it; and the series' first landing: de-orbit dv, fall time, and touchdown
+    speed per moon, the Luna row flown to verify (759 min analytic, 760 flown).
+17. [**The pocket solar system**](17-the-pocket-solar-system/README.md) — Saturn's moons are
+    the whole course at 1/1000 scale: Enceladus→Titan has Earth→Jupiter's radius ratio with a
+    3.7-DAY Hohmann and a window every 36 hours; lessons 14-15's toolchain transfers verbatim;
+    and the sun's share of the correction, isolated by construction, is 0.04 m/s — pocket
+    systems aren't just fast, they're CLEAN.
 
 ## Framing rule
 
