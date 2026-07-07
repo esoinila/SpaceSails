@@ -33,6 +33,8 @@ dotnet run --project labs/10-fast-enough-for-ten-thousand-x -c Release
 dotnet run --project labs/11-the-electric-sandbox -c Release
 dotnet run --project labs/12-oops-at-the-moon -c Release
 dotnet run --project labs/13-shooting-literally -c Release
+dotnet run --project labs/14-two-points-and-a-clock -c Release
+dotnet run --project labs/15-the-long-passage -c Release
 ```
 
 Each lesson folder holds:
@@ -87,6 +89,17 @@ Each lesson folder holds:
     CALCULATING FIRING SOLUTION trace, reproduced). Straight-line gunnery misses by 5,996 km;
     one Newton step lands 85 km out. Then the honest part: dispersion is the target *track's*
     cone, not the solver's residual — fire-control quality IS track quality.
+14. [**Two points and a clock**](14-two-points-and-a-clock/README.md) — Lambert's problem
+    (Curtis ch. 5, universal variables, implemented in the probe) meets the shooting method:
+    Lambert is exactly right about a universe with one attractor, misses by 443,569 km in the
+    one with nine, and Newton through the real integrator fixes it in ONE step for 14 m/s.
+    Plus a verified porkchop plate — and the plot twist of a floor *below* Hohmann, explained
+    honestly (the spawn point's 5,000,000 km head start, not a broken theorem).
+15. [**The long passage**](15-the-long-passage/README.md) — six years to Saturn, where small
+    numbers stop being small: Hohmann's tyranny table (Neptune: ~30.6 YEARS), a shooting-solved
+    passage through Jupiter country (Lambert's two-body lie now costs 150 m/s, not 14), 1 m/s of
+    departure error compounding ~4× into 718,250 km, and the navigator's oldest law computed —
+    the same sin absolved at day 30 costs 1.26 m/s, on the deathbed 348 m/s.
 
 ## Framing rule
 

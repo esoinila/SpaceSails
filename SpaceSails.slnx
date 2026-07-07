@@ -20,5 +20,8 @@
     <Project Path="labs/10-fast-enough-for-ten-thousand-x/Lab10.csproj" />
     <Project Path="labs/11-the-electric-sandbox/Lab11.csproj" />
     <Project Path="labs/12-oops-at-the-moon/Lab12.csproj" />
+    <Project Path="labs/13-shooting-literally/Lab13.csproj" />
+    <Project Path="labs/14-two-points-and-a-clock/Lab14.csproj" />
+    <Project Path="labs/15-the-long-passage/Lab15.csproj" />
   </Folder>
 </Solution>
