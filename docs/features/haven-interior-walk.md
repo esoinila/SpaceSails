@@ -370,7 +370,14 @@ rides them (named departments via A; souvenir shops via B).
   MAGNET** view-object, per-station Gen-AI art + gag ("I went to Uranus for the proctologist — fully
   booked", etc.). Art in `wwwroot/art/souvenir-<station>-{tshirt,magnet}.jpg`.
 
-*Still open on Mechanism A:* PIN-entry UI + a mission that actually unlocks a specific hatch by ID.
+**Done (2026-07-08, follow-up).** Mechanism A's last layer: PIN entry + a mission that unlocks a
+specific hatch by id. The Fixer's second line of work (`QuestKind.Crack`, offered once the roadster
+fetch is spoken for) sends you to a named locked hatch *at this station* — "crack V-06, code's 5784"
+— quoting its real, deterministic code. Knocking that specific hatch brings up a **keypad** (not the
+idle "nobody answers"); the right code flips the job to PickedUp ("the hatch sighs open…"), a wrong
+code buzzes red. Hand the package back to The Fixer, same station, for the payout — the same
+face-to-face, no-electronic-trace shape as the fetch. Test cheat: `?start=<station>&crack=active|picked`.
+Verified end-to-end in-browser at The Tilt (crack U-06 → keypad → deliver, +2,600 cr).
 
 ## Later (beyond the follow-up)
 

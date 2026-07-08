@@ -748,3 +748,109 @@
 .view-object-close:hover {
     background: rgba(255, 180, 90, 0.26);
 }
+
+/* Hatch keypad: crack a locked door with the code a Fixer quoted. */
+.pin-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 1320;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(4, 6, 11, 0.85);
+    backdrop-filter: blur(2px);
+}
+
+.pin-pad {
+    width: min(19rem, 92vw);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+    padding: 1.1rem;
+    background: #0c1017;
+    border: 1px solid rgba(120, 220, 160, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+}
+
+.pin-pad-hatch {
+    color: #cfe8d6;
+    font: 600 0.9rem/1.2 monospace;
+    text-align: center;
+    letter-spacing: 0.02em;
+}
+
+.pin-pad-sub {
+    color: rgba(207, 232, 214, 0.5);
+    font: 400 0.7rem/1 monospace;
+    text-align: center;
+    letter-spacing: 0.22em;
+}
+
+.pin-pad-display {
+    margin: 0.15rem auto 0.35rem;
+    padding: 0.4rem 1rem;
+    min-width: 8rem;
+    text-align: center;
+    color: #8affc0;
+    font: 700 1.9rem/1 monospace;
+    letter-spacing: 0.5rem;
+    background: #05070c;
+    border: 1px solid rgba(120, 220, 160, 0.3);
+    border-radius: 0.35rem;
+    text-shadow: 0 0 0.5rem rgba(120, 255, 180, 0.5);
+}
+
+.pin-pad-keys {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+}
+
+.pin-pad-key {
+    padding: 0.7rem 0;
+    background: rgba(120, 220, 160, 0.1);
+    border: 1px solid rgba(120, 220, 160, 0.28);
+    border-radius: 0.35rem;
+    color: #dbefe2;
+    font: 600 1.15rem/1 monospace;
+    cursor: pointer;
+}
+
+.pin-pad-key:hover {
+    background: rgba(120, 220, 160, 0.22);
+}
+
+.pin-pad-key-fn {
+    color: #ffb0a0;
+    border-color: rgba(255, 150, 120, 0.35);
+    background: rgba(255, 120, 90, 0.1);
+}
+
+.pin-pad-key-go {
+    color: #0c1017;
+    background: #8affc0;
+    border-color: #8affc0;
+}
+
+.pin-pad-key-go:hover {
+    background: #a6ffd0;
+}
+
+.pin-pad-cancel {
+    align-self: center;
+    margin-top: 0.2rem;
+    padding: 0.3rem 1.4rem;
+    background: transparent;
+    border: 1px solid rgba(224, 228, 236, 0.28);
+    border-radius: 0.35rem;
+    color: rgba(224, 228, 236, 0.75);
+    font: 600 0.85rem/1 monospace;
+    cursor: pointer;
+}
+
+.pin-pad-cancel:hover {
+    background: rgba(224, 228, 236, 0.1);
+}
