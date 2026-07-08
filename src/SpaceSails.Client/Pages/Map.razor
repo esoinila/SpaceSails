@@ -25,12 +25,57 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
+    @* Start picker (2026-07-08): "why always Earth?" — a boot chooser of named start points, over
+       the freshly-built world. Skips the long transit for playtesting and lets a run begin at a gas
+       giant or already ashore. Suppressed when /map?start=<id> already picked one. Same registry. *@
+    @if (_showStartPicker)
+    {
+        <div class="start-picker-backdrop">
+            <div class="start-picker">
+                <div class="start-picker-title">Choose your start</div>
+                <div class="start-picker-sub">Where does this run begin? Earth is the usual berth — the rest skip the haul out (handy for playtesting).</div>
+                <div class="start-picker-list">
+                    @foreach (StartPoint sp in StartPoints)
+                    {
+                        StartPoint option = sp;
+                        <button type="button" class="start-picker-option" @onclick="() => ChooseStart(option.Id)">
+                            <span class="start-picker-icon">@option.Icon</span>
+                            <span class="start-picker-text">
+                                <span class="start-picker-label">@option.Label</span>
+                                <span class="start-picker-blurb">@option.Blurb</span>
+                            </span>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
     @* Deck / first-person pulse toast: the Nav HUD that normally hosts _pulseMessage is hidden while
        you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
        standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
     @if (_deckMode && _pulseMessage is not null)
     {
         <div class="deck-pulse-toast">@_pulseMessage</div>
+    }
+
+    @* A bar stranger's contract, slid across the table (go-ashore quests, M-Q1): shown over the deck
+       canvas while ashore, with Take / Pass. Same overlay family as the deck-pulse-toast. *@
+    @if (_deckMode && _pendingOffer is { } offer)
+    {
+        <div class="deck-offer-card">
+            <div class="deck-offer-giver">◈ @offer.Giver</div>
+            <div class="deck-offer-blurb">@offer.Blurb</div>
+            <div class="deck-offer-reward">
+                @(offer.Reward > 0
+                    ? $"Reward: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr"
+                    : "On the house — the tip's the payoff 🕸")
+            </div>
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-warning" @onclick="AcceptOffer">@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")</button>
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="DeclineOffer">Pass</button>
+            </div>
+        </div>
     }
 
     @* The chooser (owner: "if many objects under click we let the user choose what they
@@ -1083,7 +1128,8 @@
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
-                                                              OpenToTutorials="_openCaptainToTutorials" />
+                                                              OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
+                                                              OnReopenStartPicker="ReopenStartPicker" />
                 }
             </div>
         </div>
@@ -2055,6 +2101,7 @@
                         _nearestBody?.Name);
                     ShowPulseMessage($"🎯 DIRECT HIT — {npc.Ship.Callsign}'s sail is gone; she's ADRIFT and boardable");
                     RendererInterop.PlayCue("hit");
+                    CompleteHuntQuests(npc.Ship.Id); // holing her settles a bar hunt contract too (M-Q1)
 
                     // Second hunt, step 4: holing the stubborn freighter's sail — the burn she'd have
                     // used to bolt never fires, so she drifts, catchable at last.
@@ -2995,7 +3042,34 @@
     private NpcState? _shuttleTarget;
     private DeckView? _deckView;
     private FirstPersonView? _fpView;
-    private double _avatarX = DeckPlan.SpawnX, _avatarY = DeckPlan.SpawnY, _avatarHeading; // 0 = facing the bow glass
+    private double _avatarX = DeckPlan.Ship.SpawnX, _avatarY = DeckPlan.Ship.SpawnY, _avatarHeading; // 0 = facing the bow glass
+
+    // The active interior (go-ashore, 2026-07-07). The ship by default; swapped to a haven's
+    // interior when you walk through the airlock while docked (see GoAshore/GoAboard). The
+    // renderers and the avatar loop all read _deckPlan, so nothing else needs to know we're ashore.
+    private DeckPlan _deckPlan = DeckPlan.Ship;
+    private bool _ashore;                          // true while _deckPlan is a haven interior
+    private double _shipAvatarX, _shipAvatarY, _shipAvatarHeading; // where we left off aboard
+    private string _havenName = "";               // the docked haven we stepped into
+
+    // --- Ashore quests (M-Q1) — contracts a bar stranger slides across the table. Reuses the
+    // tutorial-lesson *mechanic* (an objective tracked to completion) but is kept separate from
+    // _tutorialStep, which linear-chains its steps. A hunt is met when its target ship is brought
+    // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
+    // records — player-driven, never read by the physics sim. ---
+    private enum QuestKind { Hunt, CargoRun, Intel }
+    private enum QuestState { Active, Complete, TurnedIn }
+    // A hunt stores the prey's ship id in TargetShipId; a cargo run stores the delivery haven's body
+    // id in DestBodyId (TargetCallsign holds the human name in both cases).
+    private sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
+        string TargetCallsign, string Title, string Blurb, int Reward, string? DestBodyId = null)
+    {
+        public QuestState State { get; set; } = QuestState.Active;
+    }
+    private readonly List<Quest> _quests = [];
+    private Quest? _pendingOffer;   // the stranger's current table offer, awaiting Accept/Pass
+    private int _questSeq;          // monotonic id source for accepted quests
+
     private readonly List<FirstPersonView.SkyBody> _skyBodies = [];
     private readonly HashSet<string> _deckKeys = [];
     private const double AvatarSpeed = 9.0; // deck units per real second
@@ -3046,7 +3120,14 @@
                 ToggleFirstPerson();
                 return true;
             case "q" or "Q":
-                SwitchDesk(ShipDesk.Nav);
+                if (_ashore)
+                {
+                    GoAboard();       // ashore, Q walks you back up the gangway first
+                }
+                else
+                {
+                    SwitchDesk(ShipDesk.Nav);
+                }
                 return true;
             case "e" or "E":
                 InteractAtConsole();
@@ -3096,7 +3177,7 @@
             if (walk != 0)
             {
                 double step = AvatarSpeed * dt * walk;
-                (_avatarX, _avatarY) = DeckPlan.Move(_avatarX, _avatarY,
+                (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY,
                     Math.Cos(_avatarHeading) * step, Math.Sin(_avatarHeading) * step);
             }
             return;
@@ -3120,7 +3201,7 @@
                 double a = Math.Sin((_lastTimestampMs ?? 0) * 0.004) * 0.45;
                 (dx, dy) = (dx * Math.Cos(a) - dy * Math.Sin(a), dx * Math.Sin(a) + dy * Math.Cos(a));
             }
-        (_avatarX, _avatarY) = DeckPlan.Move(_avatarX, _avatarY, dx / norm * step2, dy / norm * step2);
+        (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY, dx / norm * step2, dy / norm * step2);
         _avatarHeading = Math.Atan2(dy, dx);
     }
 
@@ -3147,19 +3228,25 @@
         }
     }
 
-    private string LocationHint()
-    {
-        if (_avatarX > 18) return "BRIDGE";
-        if (_avatarX < -14) return "ENGINE ROOM";
-        if (_avatarX > 4) return _avatarY > 3 ? "CANTINA" : _avatarY < -3 ? (_avatarX > 14.5 ? "HEAD" : "CABINS") : "CORRIDOR";
-        if (_avatarX > -12) return _avatarY > 3 ? "SHUTTLE BAY" : _avatarY < -3 ? "CARGO HOLD" : "CORRIDOR";
-        return "CORRIDOR";
-    }
+    private string LocationHint() => _deckPlan.Location(_avatarX, _avatarY);
 
     private void InteractAtConsole()
     {
-        switch (DeckPlan.NearestConsole(_avatarX, _avatarY))
+        switch (_deckPlan.NearestConsole(_avatarX, _avatarY))
         {
+            case DeckPlan.ConsoleKind.Airlock:
+                if (_ashore)
+                {
+                    GoAboard();
+                }
+                else
+                {
+                    GoAshore();
+                }
+                break;
+            case DeckPlan.ConsoleKind.BarPatron:
+                TalkToStranger();
+                break;
             case DeckPlan.ConsoleKind.Helm:
                 SwitchDesk(ShipDesk.Nav);
                 ShowPulseMessage("Back at the helm");
@@ -3799,8 +3886,11 @@
         _started = true;
 
         // /map?scenario=sol-eu loads scenarios/sol-eu.json; default sol. Name is sanitized to a
-        // simple slug — it becomes a URL path segment.
+        // simple slug — it becomes a URL path segment. /map?start=space-bar jumps the freshly-built
+        // world straight to a named start point (see StartPoints) — the playtest "skip the set-up"
+        // shortcut, and the same registry the boot picker offers. Unknown start id → the picker shows.
         string scenarioName = "sol";
+        string? startId = null;
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
         {
@@ -3810,6 +3900,14 @@
                 if (candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
                 {
                     scenarioName = candidate;
+                }
+            }
+            else if (pair.StartsWith("start=", StringComparison.OrdinalIgnoreCase))
+            {
+                string candidate = Uri.UnescapeDataString(pair["start=".Length..]);
+                if (StartPoints.Any(s => s.Id == candidate))
+                {
+                    startId = candidate;
                 }
             }
         }
@@ -3883,6 +3981,19 @@
         RendererInterop.StartLoop(CanvasId);
 
         _worldReady = true;
+
+        // Start point: an explicit /map?start=<id> jumps straight there (the renderer is live now, so
+        // a docked-&-ashore start's board cue is safe); with no param, offer the boot picker so a
+        // playtester (or a player who'd rather not always cast off from Earth) can choose a locale.
+        if (startId is not null)
+        {
+            ApplyStart(startId);
+        }
+        else
+        {
+            _showStartPicker = true;
+        }
+
         StateHasChanged();
         await _focusableDiv.FocusAsync();
     }
@@ -3901,6 +4012,102 @@
         Vector2d earthPosition = _ephemeris.Position("earth", 0);
         Vector2d initialPosition = earthPosition + earthPosition.Normalized() * 5e9;
         return new ShipState(initialPosition, initialVelocity, 0);
+    }
+
+    // --- Start points (2026-07-08) ---
+    // "Why should it always start from Earth?" Named starts that jump the just-built world to a
+    // locale — either as a playtest shortcut (skip the long haul to test the interesting bit) or as a
+    // genuine choice of where a run begins. One registry feeds both the /map?start=<id> URL and the
+    // boot picker overlay. The heavy lifting mirrors the tutorial Seed* pattern: place the ship (and,
+    // for a docked berth, clamp and step ashore), then frame the camera. Body ids are scenario data.
+    private sealed record StartPoint(string Id, string Icon, string Label, string Blurb);
+
+    private static readonly StartPoint[] StartPoints =
+    [
+        new("earth", "🌍", "Earth — the usual berth",
+            "The standard opening: fresh out of Earth orbit, last run's takings in the purse and hold."),
+        new("space-bar", "🍸", "The Space Bar — docked & ashore",
+            "Skip the haul to Mars — begin already clamped on and ashore in The Space Bar, strangers waiting at the tables."),
+        new("jupiter", "🪐", "Jupiter — the Galilean moons",
+            "Out at Jupiter, co-moving beside Europa — fly Ganymede and Callisto without the long cruise from the inner system."),
+        new("saturn", "💍", "Saturn — the ring havens",
+            "Among Saturn's moons by the Ringside Exchange — Enceladus and Titan a short burn away."),
+    ];
+
+    private bool _showStartPicker;
+
+    // Arrange the just-built (or, on a picker reopen, already-running) world for a chosen start.
+    // Re-entrant: steps aboard and unclamps any current berth first, so it's safe to call any time.
+    private void ApplyStart(string id)
+    {
+        if (_ashore)
+        {
+            GoAboard();          // never re-place the ship while still standing in another interior
+        }
+        _dockedHavenId = null;   // drop any prior clamp before the jump
+
+        _ship = PlaceShipForStart(id);
+        ReprojectTrajectory();
+        _camera.CenterOn(_ship.Position);
+
+        // The one docked-&-ashore locale: clamp onto the berth (the tick's HoldAtDock then pins the
+        // ship to the station's drift) and walk straight into its interior, exactly as an organic dock
+        // → gangway would land you.
+        if (id == "space-bar")
+        {
+            Vector2d dockPos = _ephemeris!.Position("the-space-bar", 0);
+            _dockedHavenId = "the-space-bar";
+            _dockOffset = _ship.Position - dockPos;
+            _deckMode = true;
+            _activeDesk = ShipDesk.Deck;
+            GoAshore();
+        }
+    }
+
+    // The ship's state for a start point. Reuses InitializeShipState's finite-difference "co-moving
+    // with a body" idiom, just keyed off a different body — a small radial offset keeps the ship clear
+    // of the body's surface. "earth" (and any unknown id) falls back to the standard Earth spawn.
+    private ShipState PlaceShipForStart(string id) => id switch
+    {
+        "space-bar" => CoMovingBy("the-space-bar", 3_000),   // just off the 900 m station, well within dock reach
+        "jupiter" => CoMovingBy("europa", 2e7),              // clear of Europa's surface, amid the Galilean system
+        "saturn" => CoMovingBy("ringside-exchange", 2e7),    // by the ring station, Enceladus/Titan a burn away
+        _ => InitializeShipState(),
+    };
+
+    // A ship state co-moving with a body, a given distance radially outward from it (from the Sun's
+    // frame). offsetMeters 0 sits right on the body; a few thousand metres clears a station, ~1e7+ a moon.
+    private ShipState CoMovingBy(string bodyId, double offsetMeters)
+    {
+        const double h = 1.0;
+        Vector2d pos = _ephemeris!.Position(bodyId, 0);
+        Vector2d vel = (_ephemeris.Position(bodyId, h) - _ephemeris.Position(bodyId, -h)) / (2 * h);
+        Vector2d outward = pos == Vector2d.Zero ? new Vector2d(1, 0) : pos.Normalized();
+        return new ShipState(pos + outward * offsetMeters, vel, 0);
+    }
+
+    // The Captain's "🧭 Set course to a start point…" button: bring the chooser back up mid-run so a
+    // locale can be (re)picked from the chart-room, not just at boot. ApplyStart is re-entrant, so the
+    // jump is safe from anywhere.
+    private void ReopenStartPicker() => _showStartPicker = true;
+
+    // Boot-picker (or Captain-desk reopen) choice: dismiss the overlay, jump to the locale (Earth needs
+    // no jump — the world already spawned there), then show it. A docked start lands you ashore on the
+    // deck; any other locale drops you on the Nav map so the jump is actually visible (matters when the
+    // picker was reopened from a station desk). Focus returns to the map so keys drive the ship / walk.
+    private async Task ChooseStart(string id)
+    {
+        _showStartPicker = false;
+        if (id != "earth")
+        {
+            ApplyStart(id);
+        }
+        if (!_ashore && _activeDesk != ShipDesk.Nav)
+        {
+            SwitchDesk(ShipDesk.Nav);
+        }
+        StateHasChanged();
+        await _focusableDiv.FocusAsync();
     }
 
     private void OnCanvasResized(double widthPx, double heightPx)
@@ -4143,12 +4350,12 @@
             {
                 BuildSkyBodies();
                 double deckWorldAngle = Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X);
-                _fpView!.Draw(_viewportWidth, _viewportHeight, SimTime,
+                _fpView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime,
                     _avatarX, _avatarY, _avatarHeading, deckWorldAngle, _skyBodies, LocationHint());
             }
             else
             {
-                _deckView!.Draw(_viewportWidth, _viewportHeight, SimTime, new DeckView.State(
+                _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
                     _avatarX, _avatarY, _avatarHeading,
                     _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null),
                     _deckPanX, _deckPanY);
@@ -6564,6 +6771,7 @@
         npc.Boarded = true; // keeps flying but empty; a second boarding yields nothing
         ShowPulseMessage($"Captured {take} units of {npc.Ship.CargoClass} {PlunderLines[(int)((SimTime / 60) % PlunderLines.Length)]}");
         RendererInterop.PlayCue("board");
+        CompleteHuntQuests(npc.Ship.Id); // a bar contract on this ship is now met (M-Q1)
         AdvanceTutorial(3); // step 4: first successful boarding
         if (npc.Ship.Id == TrafficSchedule.StarterFreighterId)
         {
@@ -7577,6 +7785,268 @@
             : null;
     }
 
+    // Go-ashore (2026-07-07): step off the ship through the gangway into a docked haven's own
+    // interior — a place that only exists while you're clamped to that specific berth. The airlock
+    // console is always aboard, so pressing E off a dock just explains why nothing opens. The ship's
+    // own deck is untouched; a haven interior is a separate DeckPlan swapped in behind _deckPlan.
+    private void GoAshore()
+    {
+        if (_dockedHavenId is not { } id)
+        {
+            ShowPulseMessage("No gangway rigged — clamp onto a haven first (⚓ Dock).");
+            return;
+        }
+
+        if (HavenInterior.ForBody(id) is not { } interior)
+        {
+            ShowPulseMessage("Nothing to step into here — no deck ashore at this berth (yet).");
+            return;
+        }
+
+        _shipAvatarX = _avatarX;              // remember where we stood aboard
+        _shipAvatarY = _avatarY;
+        _shipAvatarHeading = _avatarHeading;
+        _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";
+        _deckPlan = interior;
+        _ashore = true;
+        (_avatarX, _avatarY) = (interior.SpawnX, interior.SpawnY);
+        _avatarHeading = Math.PI / 2;         // step in facing the room's window
+        ShowPulseMessage($"Ashore at {_havenName}. Q or the gangway (⚓) walks you back aboard.");
+        RendererInterop.PlayCue("board");
+    }
+
+    // Back up the gangway onto your own ship. Forced on undock so you never drift off still ashore.
+    private void GoAboard()
+    {
+        if (!_ashore)
+        {
+            return;
+        }
+
+        _deckPlan = DeckPlan.Ship;
+        _ashore = false;
+        (_avatarX, _avatarY, _avatarHeading) = (_shipAvatarX, _shipAvatarY, _shipAvatarHeading);
+        ShowPulseMessage("Back aboard — the gangway seals behind you.");
+    }
+
+    // --- Ashore quests (M-Q1): the hooded stranger at the bar table ---
+
+    // Walk up to a booth and press E. Which patron you're next to (from their console label) sets who
+    // you're dealing with and their trade — One-Eye Silas fences bounties (hunts), Madam Coil runs
+    // parcels (cargo runs). If you already owe this giver a job, they just nod at it.
+    private void TalkToStranger()
+    {
+        if (_pendingOffer is not null)
+        {
+            return; // the card's already on the table
+        }
+
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.BarPatron } spot)
+        {
+            return;
+        }
+        string giver = spot.Label.Replace("◈", "").Trim();
+
+        Quest? open = _quests.FirstOrDefault(q => q.Giver == giver && q.State != QuestState.TurnedIn);
+        if (open is { State: QuestState.Active })
+        {
+            ShowPulseMessage($"“Still waiting on {open.TargetCallsign}. Finish the job, then we'll talk.”");
+            return;
+        }
+        if (open is { State: QuestState.Complete })
+        {
+            ShowPulseMessage($"“{open.TargetCallsign} — done. Collect at any berth; the coin's waiting.”");
+            return;
+        }
+
+        Quest? offer = giver switch
+        {
+            _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
+            _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
+            _ => MakeHuntOffer(giver),
+        };
+        if (offer is null)
+        {
+            ShowPulseMessage("The stranger swirls their drink. “Nothing worth your time right now. Check back.”");
+            return;
+        }
+        _pendingOffer = offer;
+    }
+
+    // Pick a live target for a hunt contract — prefer off-books ships (the kind you couldn't just read
+    // off the public traffic board, so the stranger's tip is actually worth something). Chosen from
+    // sim time + the current berth so the booth's offer is stable frame to frame, and skips ships
+    // already under contract.
+    private Quest? MakeHuntOffer(string giver)
+    {
+        List<NpcState> candidates = _npcStates
+            .Where(n => n.Active && !n.Arrived && !n.Boarded && !n.Ship.IsPod
+                        && _quests.All(q => q.TargetShipId != n.Ship.Id))
+            .OrderByDescending(n => !n.Ship.PublishesTimetable)          // off-books first
+            .ThenBy(n => n.Ship.Id, StringComparer.Ordinal)
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        NpcState prey = candidates[OfferIndex(candidates.Count)];
+        int reward = 250 + prey.Ship.CargoUnits * 60;
+        string route = RouteLabel(prey.Ship);
+        string blurb = prey.Ship.PublishesTimetable
+            ? $"“See {prey.Ship.Callsign}, running {route}? She's carrying, and I want her stopped. Bring her down — {reward:N0} cr in it for you.”"
+            : $"“There's a ghost called {prey.Ship.Callsign} running dark, {route}. Won't show on any board. Hole her, board her — {reward:N0} cr, quiet-like.”";
+        return new Quest($"hunt-{++_questSeq}", QuestKind.Hunt, giver,
+            prey.Ship.Id, prey.Ship.Callsign, $"Bring down {prey.Ship.Callsign}", blurb, reward);
+    }
+
+    // A parcel to carry to another haven — completes when you berth there. Destination is any haven
+    // other than the one you're standing in, chosen by sim time + berth so it's stable per booth.
+    private Quest? MakeCargoRunOffer(string giver)
+    {
+        List<CelestialBody> havens = (_ephemeris?.Bodies ?? [])
+            .Where(b => b.IsHaven && b.Id != _dockedHavenId
+                        && _quests.All(q => q.DestBodyId != b.Id))
+            .OrderBy(b => b.Id, StringComparer.Ordinal)
+            .ToList();
+        if (havens.Count == 0)
+        {
+            return null;
+        }
+
+        CelestialBody dest = havens[OfferIndex(havens.Count)];
+        int reward = 300 + (int)(dest.OrbitRadius / 1e10); // farther berths pay a little more
+        string blurb = $"“Quiet parcel, no questions. Gets to {dest.Name} in one piece, you walk with {reward:N0} cr. Berth there and it's done.”";
+        return new Quest($"run-{++_questSeq}", QuestKind.CargoRun, giver,
+            "", dest.Name, $"Run a parcel to {dest.Name}", blurb, reward, DestBodyId: dest.Id);
+    }
+
+    // A whisper on an off-books ghost — the payoff IS the tip. Accepting drops a fresh route-intel
+    // entry into the ledger (exactly like a dark-web buy, but on the house), so a ship that never
+    // shows on the public board joins your contacts, 🕸-tagged, for 30 days. Instant: no task to do.
+    private Quest? MakeIntelOffer(string giver)
+    {
+        List<NpcState> ghosts = _npcStates
+            .Where(n => n.Active && !n.Arrived && !n.Ship.PublishesTimetable
+                        && !_intelLedger.Knows(n.Ship.Id, SimTime)
+                        && _quests.All(q => q.TargetShipId != n.Ship.Id))
+            .OrderBy(n => n.Ship.Id, StringComparer.Ordinal)
+            .ToList();
+        if (ghosts.Count == 0)
+        {
+            return null;
+        }
+
+        NpcState ghost = ghosts[OfferIndex(ghosts.Count)];
+        string blurb = $"“I know where {ghost.Ship.Callsign} really runs — {RouteLabel(ghost.Ship)}. A ghost; she'll never show on any board. This one's on the house. Want it?”";
+        return new Quest($"intel-{++_questSeq}", QuestKind.Intel, giver,
+            ghost.Ship.Id, ghost.Ship.Callsign, $"Whisper on {ghost.Ship.Callsign}", blurb, 0);
+    }
+
+    // Deterministic pick index for a booth's offer: sim time (slow rotation) mixed with the berth id
+    // (a stable char-sum, not the randomized string hash), so different docks surface different work
+    // and it doesn't flicker frame to frame.
+    private int OfferIndex(int count) =>
+        count <= 0 ? 0 : (int)(((long)(SimTime / 1000) + (_dockedHavenId ?? "").Sum(ch => ch)) % count);
+
+    private void AcceptOffer()
+    {
+        if (_pendingOffer is not { } offer)
+        {
+            return;
+        }
+        _pendingOffer = null;
+
+        if (offer.Kind == QuestKind.Intel)
+        {
+            // A gift of information — delivered on the spot: drop the route tip into the ledger (like a
+            // dark-web buy, but free) and log it as a settled entry. No hunt, no dock payout.
+            _intelLedger.Add(new RouteIntel(offer.TargetShipId, SimTime, RouteIntel.DefaultValiditySeconds, Price: 0));
+            offer.State = QuestState.TurnedIn;
+            _quests.Add(offer);
+            ShowPulseMessage($"Tip logged — {offer.TargetCallsign} is on your contacts now (🕸 stale in 30 d).");
+            return;
+        }
+
+        _quests.Add(offer);
+        ShowPulseMessage($"Job taken: {offer.Title}. Finish it, then collect at any berth.");
+    }
+
+    private void DeclineOffer()
+    {
+        if (_pendingOffer is null)
+        {
+            return;
+        }
+        _pendingOffer = null;
+        ShowPulseMessage("“Suit yourself.” The stranger turns back to their drink.");
+    }
+
+    // A brought-down target settles any matching hunt contract. Called where a ship is holed or
+    // boarded (its two "brought down" moments), keyed on the ship id the quest stored.
+    private void CompleteHuntQuests(string shipId)
+    {
+        foreach (Quest q in _quests)
+        {
+            if (q is { Kind: QuestKind.Hunt, State: QuestState.Active } && q.TargetShipId == shipId)
+            {
+                q.State = QuestState.Complete;
+                ShowPulseMessage($"Contract met — {q.TargetCallsign} is down. {q.Reward:N0} cr waiting at any haven. 🎯");
+            }
+        }
+    }
+
+    // Berthing at a haven settles any cargo-run contract bound for it. Called from ToggleDock.
+    private void CompleteCargoRunQuests(string dockId)
+    {
+        foreach (Quest q in _quests)
+        {
+            if (q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && q.DestBodyId == dockId)
+            {
+                q.State = QuestState.Complete;
+                ShowPulseMessage($"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
+            }
+        }
+    }
+
+    // Turn in any finished contracts on berthing — the reward lands in the ledger.
+    private void PayCompletedQuests()
+    {
+        foreach (Quest q in _quests)
+        {
+            if (q.State == QuestState.Complete)
+            {
+                _credits += q.Reward;
+                q.State = QuestState.TurnedIn;
+                ShowPulseMessage($"Contract paid: {q.Title} — +{q.Reward:N0} cr. 💰");
+            }
+        }
+    }
+
+    // Project the quest ledger for the Captain's-desk Quests tab (M-Q2) — newest work on top.
+    private Stations.Captain.QuestItem[] QuestCards() =>
+        _quests.AsEnumerable().Reverse().Select(q =>
+        {
+            (string label, string kind) = (q.Kind, q.State) switch
+            {
+                (QuestKind.Intel, _) => ("🕸 Tip taken", "paid"),
+                (_, QuestState.Active) => ("▶ On the hook", "active"),
+                (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
+                _ => ("💰 Paid", "paid"),
+            };
+            string detail = q.Kind switch
+            {
+                QuestKind.Hunt => $"Hunt {q.TargetCallsign} — hole her sail or board her.",
+                QuestKind.CargoRun => $"Carry the parcel to {q.TargetCallsign} — berth there to deliver.",
+                QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
+                _ => "",
+            };
+            string rewardText = q.Kind == QuestKind.Intel
+                ? "🕸 route tip"
+                : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
+            return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind);
+        }).ToArray();
+
     private void ToggleDock()
     {
         if (_dockedHavenId is not null)
@@ -7596,6 +8066,8 @@
         StaleFutureNodes();                                  // a berth cancels any pending burns
         ShowPulseMessage($"⚓ Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off.");
         RendererInterop.PlayCue("board");
+        CompleteCargoRunQuests(dock.Id); // arriving at the delivery berth finishes a cargo run (M-Q3)
+        PayCompletedQuests();            // then any finished bar contracts pay out (M-Q1)
     }
 
     private const double UndockPushMps = 300; // gentle shove off the clamp so the ship drifts clear
@@ -7606,6 +8078,8 @@
         {
             return;
         }
+
+        GoAboard(); // can't cast off while you're still ashore — walk the gangway home first
 
         // A gentle shove clear of the clamp — the ship drifts away with some motion of its own
         // rather than hanging dead-still on the dock (owner: "push the ship off so it has motion

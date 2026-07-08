@@ -37,7 +37,7 @@ public sealed class FirstPersonView
     private static readonly RgbaColor HudText = new(150, 240, 210, 190);
 
     private readonly IRenderer _renderer;
-    private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.DroidCount];
+    private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];
     private readonly float[] _scratch = new float[32];
     private readonly double[] _depth = new double[Columns];
 
@@ -47,6 +47,7 @@ public sealed class FirstPersonView
     }
 
     public void Draw(
+        DeckPlan plan,
         int widthPx, int heightPx, double simTime,
         double avatarX, double avatarY, double heading,
         double deckWorldAngle,              // world angle the bow (+X deck) points at
@@ -78,7 +79,7 @@ public sealed class FirstPersonView
             double rayAngle = heading + rayOffset;
             double dirX = Math.Cos(rayAngle), dirY = Math.Sin(rayAngle);
 
-            if (!DeckPlan.CastRay(avatarX, avatarY, dirX, dirY, out double dist, out bool isWindow, out _, out double along))
+            if (!plan.CastRay(avatarX, avatarY, dirX, dirY, out double dist, out bool isWindow, out _, out double along))
             {
                 _depth[c] = double.MaxValue;
                 continue;
@@ -176,7 +177,7 @@ public sealed class FirstPersonView
             _renderer.DrawCircle(x, winBottom, 0.8f, FrameColor, FrameColor);
         }
 
-        DrawDroids(widthPx, heightPx, simTime, avatarX, avatarY, heading, colW, cy);
+        DrawDroids(plan, widthPx, heightPx, simTime, avatarX, avatarY, heading, colW, cy);
 
         _renderer.DrawText(widthPx / 2f, heightPx - 12,
             $"{locationHint}  ∙  W/S walk ∙ A/D turn ∙ E interact ∙ F deck plan ∙ Q helm",
@@ -185,13 +186,14 @@ public sealed class FirstPersonView
         _renderer.EndFrame();
     }
 
-    private void DrawDroids(int widthPx, int heightPx, double simTime,
+    private void DrawDroids(DeckPlan plan, int widthPx, int heightPx, double simTime,
         double avatarX, double avatarY, double heading, float colW, float cy)
     {
-        DeckPlan.GetDroids(simTime, _droids);
+        plan.FillDroids(simTime, _droids);
 
-        foreach (DeckPlan.Droid droid in _droids)
+        for (int di = 0; di < plan.DroidCount; di++)
         {
+            DeckPlan.Droid droid = _droids[di];
             double dx = droid.X - avatarX, dy = droid.Y - avatarY;
             double dist = Math.Sqrt(dx * dx + dy * dy);
             if (dist < 0.6)

@@ -40,6 +40,50 @@
     z-index: 1200;
 }
 
+/* A bar stranger's contract offer, over the deck canvas (go-ashore quests). Same overlay family as
+   the pulse toast, but interactive (Take / Pass), so it captures pointer events. */
+.deck-offer-card {
+    position: absolute;
+    top: 9rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(34rem, 90vw);
+    padding: 1rem 1.25rem;
+    text-align: center;
+    color: #e8ecf4;
+    background: rgba(6, 9, 15, 0.92);
+    border: 1px solid rgba(255, 200, 120, 0.4);
+    border-radius: 0.6rem;
+    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+    pointer-events: auto;
+    z-index: 1250;
+}
+
+.deck-offer-giver {
+    color: #ffd479;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.4rem;
+}
+
+.deck-offer-blurb {
+    font-style: italic;
+    line-height: 1.4;
+    margin-bottom: 0.6rem;
+}
+
+.deck-offer-reward {
+    color: #9fe6b0;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+}
+
+.deck-offer-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
 .map-hud {
     position: absolute;
     /* Clears the desk tab bar's row (top: 0.5rem, centered) regardless of viewport width — the
@@ -546,3 +590,94 @@
 
 /* The "Peek" fade lives in the GLOBAL app.css, not here: scoped `> *` can't reach the root
    elements of child components (the desk-chip strip, etc.), so peeking must be an unscoped rule. */
+
+/* Start picker (2026-07-08): the boot chooser of named start points. A full-canvas scrim with a
+   centred card; each option is a big click target with an icon, a title and a one-line blurb —
+   styled like the deck offer card family, but full-screen since it gates the run's opening. */
+.start-picker-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 1300; /* a full-screen gate — above every desk layer and deck overlay (max 1250) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(4, 6, 11, 0.82);
+    backdrop-filter: blur(2px);
+}
+
+.start-picker {
+    width: min(34rem, 94vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: rgba(10, 14, 22, 0.97);
+    border: 1px solid rgba(120, 200, 255, 0.35);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+.start-picker-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #e8eef6;
+    text-align: center;
+}
+
+.start-picker-sub {
+    margin: 0.4rem 0 1.1rem;
+    color: rgba(224, 228, 236, 0.65);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.start-picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.start-picker-option {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.5rem;
+    color: #e8eef6;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.start-picker-option:hover,
+.start-picker-option:focus-visible {
+    border-color: rgba(120, 200, 255, 0.75);
+    background: rgba(120, 200, 255, 0.12);
+    outline: none;
+}
+
+.start-picker-icon {
+    font-size: 1.7rem;
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.start-picker-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.start-picker-label {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.start-picker-blurb {
+    color: rgba(224, 228, 236, 0.62);
+    font-size: 0.85rem;
+}

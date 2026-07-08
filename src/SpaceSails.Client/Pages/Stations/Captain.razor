@@ -26,10 +26,25 @@
                     @onclick="() => _view = CaptainView.Status">🧭 Ship status</button>
             <button type="button" class="btn @(_view == CaptainView.Tutorials ? "btn-info" : "btn-outline-light")"
                     @onclick="() => _view = CaptainView.Tutorials">🎓 Tutorials</button>
+            <button type="button" class="btn @(_view == CaptainView.Quests ? "btn-info" : "btn-outline-light")"
+                    @onclick="() => _view = CaptainView.Quests">📜 Quests</button>
         </div>
     </div>
 
-    @if (_view != CaptainView.Tutorials)
+    @* Set course from the chart-room: reopens the start-point picker so the captain can begin (or
+       resume) a run at another locale — the same chooser the game offers at boot. *@
+    @if (OnReopenStartPicker.HasDelegate)
+    {
+        <div class="captain-start-jump">
+            <button type="button" class="btn btn-sm btn-outline-info"
+                    title="Choose a start point — Earth, a gas giant, or already ashore at a haven"
+                    @onclick="() => OnReopenStartPicker.InvokeAsync()">🧭 Set course to a start point…</button>
+        </div>
+    }
+
+    @* The mission statement and weapons authority belong to the working desk (Orders / Status);
+       the reference tabs (Tutorials, Quests) stand on their own. *@
+    @if (_view is CaptainView.Orders or CaptainView.Status)
     {
         <div class="captain-articles">
             <div class="captain-articles-label">@(_view == CaptainView.Status ? "The ship at a glance" : "The ship's articles")</div>
@@ -39,7 +54,7 @@
 
     @* Weapons authority (owner, The Expanse consult): the gun deck cannot pull the trigger
        without the captain's word — one shot per authorization, or the standing order. *@
-    @if (_view != CaptainView.Tutorials)
+    @if (_view is CaptainView.Orders or CaptainView.Status)
     {
         <div class="captain-articles captain-weapons-authority">
             <div class="captain-articles-label">Weapons authority</div>
@@ -102,6 +117,35 @@
                                  @onclick="() => OnStartTutorial.InvokeAsync(idx)" @onkeydown="e => OnTutorialKeyDown(e, idx)">
                                 <div class="fw-bold">@(active ? "▶ " : done ? "✓ " : "")@Tutorials[idx].Title</div>
                                 <div class="captain-card-blurb text-secondary small">@Tutorials[idx].Blurb</div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else if (_view == CaptainView.Quests)
+    {
+        <div class="captain-groups">
+            <div class="captain-group">
+                <div class="captain-group-header"><span class="captain-group-icon">📜</span> Contracts</div>
+                <div class="captain-group-flavor">Work picked up ashore — a stranger's word, a target, and coin when it's done. Bring the mark down, then put in at any berth to collect.</div>
+                <div class="captain-group-cards">
+                    @if (Quests.Count == 0)
+                    {
+                        <div class="captain-empty">No contracts in hand. Dock at a haven and go ashore — someone at the bar always has work.</div>
+                    }
+                    else
+                    {
+                        @foreach (QuestItem q in Quests)
+                        {
+                            <div class="captain-card captain-quest-@q.StatusKind">
+                                <div class="fw-bold">@q.Title</div>
+                                <div class="captain-card-blurb text-secondary small">@q.Detail</div>
+                                <div class="captain-quest-foot">
+                                    <span class="captain-quest-status captain-quest-status-@q.StatusKind">@q.StatusLabel</span>
+                                    <span class="captain-quest-reward">@q.RewardText</span>
+                                </div>
                             </div>
                         }
                     }
@@ -223,6 +267,9 @@
     [Parameter] public bool FireAtWill { get; set; }
     [Parameter] public EventCallback OnAuthorizeShot { get; set; }
     [Parameter] public EventCallback OnToggleFireAtWill { get; set; }
+    // Reopens Map's start-point picker (playtest / "begin elsewhere" jump). Optional — the button
+    // only shows when Map wires it.
+    [Parameter] public EventCallback OnReopenStartPicker { get; set; }
 
     // Tutorials tab (the picker used to float on the Nav map; starting a lesson is a captain's order).
     [Parameter] public IReadOnlyList<TutorialItem> Tutorials { get; set; } = [];
@@ -234,7 +281,15 @@
     /// <summary>One lesson on the Tutorials tab — title + one-line blurb. Map owns the actual steps.</summary>
     public sealed record TutorialItem(string Title, string Blurb);
 
-    private enum CaptainView { Orders, Status, Tutorials }
+    // Quests tab (go-ashore contracts, M-Q2): a read-only ledger of work picked up at haven bars.
+    // Accepted at the table, tracked in Map, paid on docking — this desk is the crew's copy.
+    [Parameter] public IReadOnlyList<QuestItem> Quests { get; set; } = [];
+
+    /// <summary>One contract on the Quests tab. <paramref name="StatusKind"/> is a css slug
+    /// (active / complete / paid); Map owns the live quest state.</summary>
+    public sealed record QuestItem(string Title, string Detail, string RewardText, string StatusLabel, string StatusKind);
+
+    private enum CaptainView { Orders, Status, Tutorials, Quests }
     private CaptainView _view;
 
     // The component is re-created each time you switch to the Captain desk, so reading the banner's
