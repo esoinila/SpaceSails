@@ -37,6 +37,7 @@ dotnet run --project labs/14-two-points-and-a-clock -c Release
 dotnet run --project labs/15-the-long-passage -c Release
 dotnet run --project labs/16-going-ashore -c Release
 dotnet run --project labs/17-the-pocket-solar-system -c Release
+dotnet run --project labs/18-the-free-return -c Release
 ```
 
 Each lesson folder holds:
@@ -113,6 +114,13 @@ Each lesson folder holds:
     3.7-DAY Hohmann and a window every 36 hours; lessons 14-15's toolchain transfers verbatim;
     and the sun's share of the correction, isolated by construction, is 0.04 m/s — pocket
     systems aren't just fast, they're CLEAN.
+18. [**The free return**](18-the-free-return/README.md) — the trajectory from *The Martian*:
+    leave Earth, swing past Mars ballistically, come home, never burning since departure. No
+    formula produces it — a grid search finds it (depart day 30, 4250 m/s → Mars at 4.27M km,
+    Earth again at 4.79M km). The cycler's fare is lesson 4's unavoidable quantization sin, and
+    the honest surprise is that pinning *less* costs less: this figure's Mars pass is sun-steered
+    timetabling, not gravity theft, so the appointment tolerates a floating pass. Round-trip
+    corrections run 358–521 m/s vs ~11,200 m/s for two Hohmann tickets — Rich Purnell, computed.
 
 ## Framing rule
 
