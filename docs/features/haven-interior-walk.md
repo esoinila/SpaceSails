@@ -151,6 +151,81 @@ table/stranger offer that activates it, and a reward payout on completion.
 - **M-Q5 · texture (next).** Stranger **portraits** (Grok art); reputation/standing per haven;
   risk/reward tiers; a double-crossing stranger; offers gated by what you've done. After a playtest.
 
+## The walk-through docking tube (2026-07-08)
+
+Owner playtested the press-E "go ashore" and it wasn't the mental model: he expected **The Expanse** —
+a **narrow umbilical tube with two automatic airlock doors** you **walk** your avatar down into the
+station, continuously, no teleport. Reworked to that:
+
+- **One welded deck while docked.** `HavenInterior.DockedDeck(id)` composes the **ship + tube +
+  station** into a single `DeckPlan` (one coordinate space). The ship's cantina window wall gets a
+  3-du mouth cut for the tube; the station room is offset (`StationDX/DY`) so its entrance gap lands
+  on the tube's far end. Docking at a haven-with-interior swaps `_deckPlan` to this complex
+  (`SetDeckForDock`); undocking reverts and pulls you aboard.
+- **Two automatic airlock doors** (`DeckPlan.Door`, drawn in `DeckView`): shut across the passage,
+  slide to jamb-stubs as you near them. Purely visual — always walkable, nobody gets stuck.
+- **Follow-cam.** The complex is ~47 du tall — far too long for the fixed tactical frame — so
+  `DeckPlan.FollowCam` makes the top-down view scroll to keep the avatar centred. The bare ship keeps
+  whole-frame. First-person already follows you, so the tube works there for free.
+- **No more teleport.** `GoAshore`/`GoAboard` and the gangway-console swap are gone; `_ashore` is now
+  just "past the tube, in the station room," derived from avatar Y as you walk (`RefreshAshore`).
+- **Tunables** (all in `HavenInterior.cs`): `TubeLeft/Right` (walkway width), `ShipTop`/`TubeTop`
+  (length), `StationDX/DY` (room placement). Geometry built blind (no in-session browser) — expect to
+  nudge these after the first visual playtest.
+- **Next**: template the tube onto Ringside/Cinder Roost/The Tilt; FP-view doors; a board/hiss cue.
+
+### Airlock vestibule + lobby/bar + rename (2026-07-08, owner playtest feedback)
+
+- **Airlock off the galley.** Relocated to a **wide airlock corridor** (7-du slot between shuttle bay
+  and cantina) ending in a **bumped-out vestibule** with a hatch and **two blast walls flanking it for
+  cover** — an Expanse-style kill-box for repelling boarders. The bare ship seals the hatch; the
+  complex opens it. Shuttle bay/cantina walls pulled back to x=-1 / x=6; cantina backdrop + window
+  reanchored. `Tables` is now a plan property (cantina tables moved off the DeckView hardcode).
+- **Two-room station.** Tube → **arrivals LOBBY** (Gen-AI backdrop, Mars/Phobos viewport) → **wide
+  2-lane door** (x -1..6) → **BAR** (big room, 5 tables, 3 seated regulars). Constants in
+  `HavenInterior.cs`: `ShipHatchY 14 · TubeTopY 22 · LobbyTopY 34 · BarTopY 50`.
+- **Every bar is different.** Renamed the Mars station **The Space Bar → The Rusty Roadstead** (scenario
+  body name + refs; id `the-space-bar` kept). Lobby image `art/the-rusty-roadstead-lobby.jpg` generated
+  via `grok -p … --always-approve` (grok-composer image tool, style-matched to `the-space-bar.jpg`).
+- **Still to do:** a stranger who *drifts over to your* table (the two open tables are for this);
+  per-bar bar-room art; tune all the geometry once eyes are on it.
+
+### Airport-sized station: the round immigration hall (2026-07-08)
+
+Owner: "the station should be much bigger than our ship — 10+ ships docked, like an airport. A round
+entrance hall with many doors (most locked), a Total Recall Mars-immigration desk, a 'most guests stay
+two weeks' sign."
+
+- **Round hall.** The rectangular lobby became a regular **12-gon ring** (`HallR 17`, ~34 du across —
+  far bigger than the 20-wide ship), generated in a loop in `HavenInterior.Build`. Edge 8 (south) is
+  our tube; edge 2 (north) is the wide door to the bar; the **other 10 edges are sealed berths** — a
+  real wall with a cold "locked" hatch (`DeckPlan.Door.Locked`, steel-blue, drawn shut) and a
+  `⚓02`…`⚓11` berth sign inside. Reads as a station with a dozen ships docked, ours in berth 1.
+- **Immigration desk** (Total Recall): a counter facing the arriving player with a "Customs" officer
+  droid behind it; walk around either end into the concourse. Signage: `MARS IMMIGRATION`, `most guests
+  stay two weeks`, `⚓ THE RUSTY ROADSTEAD`.
+- **Bar** hangs off the hall's north door (unchanged tables/regulars).
+- `Door` gained a `Locked` flag; DeckView draws locked doors cold and shut. Hall geometry constants:
+  `HallCenterX/Y · HallR · HallApothem · HallBottomY · HallTopY`.
+- **Watch in playtest:** the hall is deliberately big, so ship→bar is a long (~55 du) walk — may want
+  a shorter hall or a faster avatar; desk placement vs. the tube mouth; locked-hatch look.
+
+### In-browser verification + bigger bar + Mars-view art (2026-07-08)
+
+Drove the dev build via Chrome automation (held W through synthetic keydown) and confirmed the whole
+walk boots and renders clean (no console errors): ship airlock vestibule → tube (auto doors) → round
+immigration hall (art, locked `⚓02…11` berths, desk, officer, two-weeks sign) → bar. Fixes from what
+I saw:
+- **Immigration desk → a gate.** Split the solid counter into two counters with a central **gate
+  aligned to the tube** (x 1..4), so you walk straight off the umbilical through the checkpoint instead
+  of detouring around a wall (the old solid counter shoved the avatar around).
+- **Bigger bar.** `BarLeft/Right -14..19`, `BarTopY = HallTopY+22` (was -8..13, +16) — a cavernous
+  room; 7 tables spread out, 3 seated regulars.
+- **Bar gets its own Mars view.** New grok backdrop `art/the-roadstead-bar.jpg` (spacious counter,
+  neon bottles, a huge viewport onto Mars) replaces the reused `the-space-bar.jpg`.
+- **Note:** deck walk is slow *in the Debug dev build / under automation* (~1 fps); nominal
+  `AvatarSpeed` is 9 du/s, fine in the published Release build. Left unchanged.
+
 ## Start points — playtest jumps (2026-07-08)
 
 "Jump to C so testing D is fast." A registry of named **start points** that arrange the just-built

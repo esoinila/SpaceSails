@@ -1,6 +1,6 @@
 {
   "name": "Sol",
-  "description": "The real solar system: circular coplanar orbits at true radii and periods. SI units (m, s, m^3/s^2). Phases are arbitrary epoch positions. Moons, orbital stations and pirate havens per the outer-reaches worldbuilding (vision par. 8): central space is policed and rich, the outer moons are sparse, secretive, pirate-friendly. A handful of discreet grey-market docks (Cinder Roost in Venus' clouds, The Space Bar off Mars, The Tilt out at Uranus) give the inner system its own boltholes to cool off in.",
+  "description": "The real solar system: circular coplanar orbits at true radii and periods. SI units (m, s, m^3/s^2). Phases are arbitrary epoch positions. Moons, orbital stations and pirate havens per the outer-reaches worldbuilding (vision par. 8): central space is policed and rich, the outer moons are sparse, secretive, pirate-friendly. A handful of discreet grey-market docks (Cinder Roost in Venus' clouds, The Rusty Roadstead off Mars, The Tilt out at Uranus) give the inner system its own boltholes to cool off in.",
   "bodies": [
     { "id": "sun",     "name": "Sun",     "parentId": null,  "mu": 1.32712440018e20, "bodyRadiusM": 6.9634e9,  "orbitRadiusM": 0,          "orbitPeriodS": 0,           "initialPhaseRad": 0 },
     { "id": "mercury", "name": "Mercury", "parentId": "sun", "mu": 2.2032e13,        "bodyRadiusM": 2.4397e6,  "orbitRadiusM": 5.791e10,   "orbitPeriodS": 7.60052e6,   "initialPhaseRad": 0.0 },
@@ -11,7 +11,7 @@
     { "id": "luna",    "name": "Luna",    "parentId": "earth", "mu": 4.9048695e12,   "bodyRadiusM": 1.7374e6,  "orbitRadiusM": 3.844e8,    "orbitPeriodS": 2.3606e6,    "initialPhaseRad": 0.0, "kind": "moon" },
     { "id": "satellite-factory", "name": "Highport Satellite Works", "parentId": "earth", "mu": 0, "bodyRadiusM": 300, "orbitRadiusM": 6.771e6, "orbitPeriodS": 5546, "initialPhaseRad": 2.4, "kind": "station" },
     { "id": "mars",    "name": "Mars",    "parentId": "sun", "mu": 4.282837e13,      "bodyRadiusM": 3.3895e6,  "orbitRadiusM": 2.2794e11,  "orbitPeriodS": 5.93551e7,   "initialPhaseRad": 2.7 },
-    { "id": "the-space-bar", "name": "The Space Bar", "parentId": "mars", "mu": 0, "bodyRadiusM": 900, "orbitRadiusM": 1.2e7, "orbitPeriodS": 7200, "initialPhaseRad": 3.1, "kind": "station", "haven": true },
+    { "id": "the-space-bar", "name": "The Rusty Roadstead", "parentId": "mars", "mu": 0, "bodyRadiusM": 900, "orbitRadiusM": 1.2e7, "orbitPeriodS": 7200, "initialPhaseRad": 3.1, "kind": "station", "haven": true },
     { "id": "jupiter", "name": "Jupiter", "parentId": "sun", "mu": 1.26686534e17,    "bodyRadiusM": 6.9911e7,  "orbitRadiusM": 7.7857e11,  "orbitPeriodS": 3.74336e8,   "initialPhaseRad": 3.6 },
     { "id": "europa",   "name": "Europa",   "parentId": "jupiter", "mu": 3.2038e12, "bodyRadiusM": 1.5608e6, "orbitRadiusM": 6.709e8,  "orbitPeriodS": 3.068226e5, "initialPhaseRad": 0.5, "kind": "moon" },
     { "id": "ganymede", "name": "Ganymede", "parentId": "jupiter", "mu": 9.8907e12, "bodyRadiusM": 2.6341e6, "orbitRadiusM": 1.0704e9, "orbitPeriodS": 6.181531e5, "initialPhaseRad": 1.5, "kind": "moon" },

@@ -25,6 +25,10 @@ public sealed class DeckView
     private static readonly RgbaColor ShuttleColor = new(150, 210, 255, 220);
     private static readonly RgbaColor DroidColor = new(150, 160, 180);
     private static readonly RgbaColor TextDim = new(140, 160, 180, 170);
+    private static readonly RgbaColor DoorShut = new(255, 180, 90, 220);   // amber airlock door, closed
+    private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
+    private static readonly RgbaColor DoorLocked = new(120, 140, 170, 210);// another berth's sealed hatch
+    private const double DoorOpenRadius = 4.0;
 
     private readonly IRenderer _renderer;
     private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];
@@ -40,13 +44,19 @@ public sealed class DeckView
         _renderer.BeginFrame(widthPx, heightPx, Floor);
 
         float scale = Math.Min(widthPx / 64f, heightPx / 28f);
-        float ox = widthPx / 2f + (float)panX, oy = heightPx / 2f + (float)panY;
+
+        // A whole-plan tactical frame (bare ship / lone room) centres on the plan origin; a docked
+        // complex is far too long for the fixed frame, so it scrolls to keep the avatar centred
+        // (FollowCam). Manual pan still nudges either.
+        float ox = plan.FollowCam ? widthPx / 2f - (float)state.AvatarX * scale + (float)panX : widthPx / 2f + (float)panX;
+        float oy = plan.FollowCam ? heightPx / 2f + (float)state.AvatarY * scale + (float)panY : heightPx / 2f + (float)panY;
         (float X, float Y) P(double dx, double dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
 
         // Ship-only dressing (cargo crates, shuttle cradle, reactor, cantina tables) is hardcoded to
-        // the ship's geometry — a haven interior has none of it. Everything else (backdrops, walls,
-        // labels, consoles, droids, the avatar) is plan-driven and general.
-        bool isShip = ReferenceEquals(plan, DeckPlan.Ship);
+        // the ship's geometry — a bare haven room has none of it, but a docked complex still contains
+        // the ship. Everything else (backdrops, walls, doors, labels, consoles, droids, the avatar) is
+        // plan-driven and general.
+        bool isShip = plan.ShipFixtures;
 
         // Room backdrops sit UNDER every vector overlay (walls, consoles, avatar, labels stay on top
         // for legibility — the hybrid look). Each is top-left at (X, Y) deck-units, W×H deck-units.
@@ -66,6 +76,31 @@ public sealed class DeckView
         {
             RgbaColor color = w.IsWindow ? WindowLine : w.IsHull ? HullLine : InnerLine;
             DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull ? 2.5f : 1.5f);
+        }
+
+        // Automatic airlock doors (the docking tube): shut across the passage until you near them,
+        // then they retract to a stub at each jamb. Purely visual — the passage is always walkable.
+        foreach (DeckPlan.Door d in plan.Doors)
+        {
+            if (d.Locked)
+            {
+                // Another berth's sealed hatch — always shut, drawn cold (steel-blue), a real wall behind.
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorLocked, 3.5f);
+                continue;
+            }
+            double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
+            bool open = Math.Sqrt((state.AvatarX - mx) * (state.AvatarX - mx)
+                                + (state.AvatarY - my) * (state.AvatarY - my)) <= DoorOpenRadius;
+            if (open)
+            {
+                // Retracted: a short leaf at each jamb (25% in from each end).
+                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), DoorOpen, 3f);
+                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), DoorOpen, 3f);
+            }
+            else
+            {
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorShut, 3.5f);
+            }
         }
 
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
@@ -109,12 +144,13 @@ public sealed class DeckView
                 DrawSeg(P(-19, 1), P(-20, -4), conduit, 3f);
             }
 
-            // Cantina dressing: tables with a view.
-            foreach ((double tx, double ty) in stackalloc (double, double)[] { (8, 7.5), (11, 6), (14, 7.5) })
-            {
-                (float cx2, float cy2) = P(tx, ty);
-                _renderer.DrawCircle(cx2, cy2, 0.9f * scale, null, InnerLine, 1.5f);
-            }
+        }
+
+        // Round tables (plan-driven: the ship's cantina, a haven bar) — a ring on the floor.
+        foreach ((float tx, float ty) in plan.Tables)
+        {
+            (float cx2, float cy2) = P(tx, ty);
+            _renderer.DrawCircle(cx2, cy2, 0.9f * scale, null, InnerLine, 1.5f);
         }
 
         // Droid pirate infantry (the ship's; a haven has none — DroidCount 0).

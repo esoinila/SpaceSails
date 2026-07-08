@@ -3044,13 +3044,13 @@
     private FirstPersonView? _fpView;
     private double _avatarX = DeckPlan.Ship.SpawnX, _avatarY = DeckPlan.Ship.SpawnY, _avatarHeading; // 0 = facing the bow glass
 
-    // The active interior (go-ashore, 2026-07-07). The ship by default; swapped to a haven's
-    // interior when you walk through the airlock while docked (see GoAshore/GoAboard). The
-    // renderers and the avatar loop all read _deckPlan, so nothing else needs to know we're ashore.
+    // The active deck (go-ashore, 2026-07-07; walk-through tube, 2026-07-08). The bare ship by
+    // default; while docked at a haven with an interior it becomes the combined ship+tube+station
+    // complex, which you walk across continuously (see SetDeckForDock). The renderers and the avatar
+    // loop all read _deckPlan, so nothing else needs to know which deck is active.
     private DeckPlan _deckPlan = DeckPlan.Ship;
-    private bool _ashore;                          // true while _deckPlan is a haven interior
-    private double _shipAvatarX, _shipAvatarY, _shipAvatarHeading; // where we left off aboard
-    private string _havenName = "";               // the docked haven we stepped into
+    private bool _ashore;                          // true once you're past the tube, in the station room
+    private string _havenName = "";               // the docked haven welded on, or ""
 
     // --- Ashore quests (M-Q1) — contracts a bar stranger slides across the table. Reuses the
     // tutorial-lesson *mechanic* (an objective tracked to completion) but is kept separate from
@@ -3120,14 +3120,7 @@
                 ToggleFirstPerson();
                 return true;
             case "q" or "Q":
-                if (_ashore)
-                {
-                    GoAboard();       // ashore, Q walks you back up the gangway first
-                }
-                else
-                {
-                    SwitchDesk(ShipDesk.Nav);
-                }
+                SwitchDesk(ShipDesk.Nav); // the deck is continuous now — Q always steps up to the helm
                 return true;
             case "e" or "E":
                 InteractAtConsole();
@@ -3179,6 +3172,7 @@
                 double step = AvatarSpeed * dt * walk;
                 (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY,
                     Math.Cos(_avatarHeading) * step, Math.Sin(_avatarHeading) * step);
+                RefreshAshore();
             }
             return;
         }
@@ -3203,6 +3197,7 @@
             }
         (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY, dx / norm * step2, dy / norm * step2);
         _avatarHeading = Math.Atan2(dy, dx);
+        RefreshAshore();
     }
 
     // Sky lights for the first-person windows, from the REAL ephemeris: world angle from the
@@ -3235,14 +3230,11 @@
         switch (_deckPlan.NearestConsole(_avatarX, _avatarY))
         {
             case DeckPlan.ConsoleKind.Airlock:
-                if (_ashore)
-                {
-                    GoAboard();
-                }
-                else
-                {
-                    GoAshore();
-                }
+                // Only the bare-ship gangway raises this (the docked complex drops the console — you
+                // walk the tube). So it's always the "can't go ashore here" nudge.
+                ShowPulseMessage(_dockedHavenId is null
+                    ? "No gangway rigged — clamp onto a haven first (⚓ Dock)."
+                    : "Nothing to step into here — no deck ashore at this berth (yet).");
                 break;
             case DeckPlan.ConsoleKind.BarPatron:
                 TalkToStranger();
@@ -4026,8 +4018,8 @@
     [
         new("earth", "🌍", "Earth — the usual berth",
             "The standard opening: fresh out of Earth orbit, last run's takings in the purse and hold."),
-        new("space-bar", "🍸", "The Space Bar — docked & ashore",
-            "Skip the haul to Mars — begin already clamped on and ashore in The Space Bar, strangers waiting at the tables."),
+        new("space-bar", "🍸", "The Rusty Roadstead — docked",
+            "Skip the haul to Mars — begin already clamped on at The Rusty Roadstead, a short walk up the tube to the bar's tables."),
         new("jupiter", "🪐", "Jupiter — the Galilean moons",
             "Out at Jupiter, co-moving beside Europa — fly Ganymede and Callisto without the long cruise from the inner system."),
         new("saturn", "💍", "Saturn — the ring havens",
@@ -4040,27 +4032,25 @@
     // Re-entrant: steps aboard and unclamps any current berth first, so it's safe to call any time.
     private void ApplyStart(string id)
     {
-        if (_ashore)
-        {
-            GoAboard();          // never re-place the ship while still standing in another interior
-        }
         _dockedHavenId = null;   // drop any prior clamp before the jump
+        SetDeckForDock(null);    // back to the bare ship deck (pulls you aboard if you'd wandered ashore)
 
         _ship = PlaceShipForStart(id);
         ReprojectTrajectory();
         _camera.CenterOn(_ship.Position);
 
-        // The one docked-&-ashore locale: clamp onto the berth (the tick's HoldAtDock then pins the
-        // ship to the station's drift) and walk straight into its interior, exactly as an organic dock
-        // → gangway would land you.
+        // The docked locale: clamp onto the berth (the tick's HoldAtDock then pins the ship to the
+        // station's drift), weld on the walk-through complex, and drop the avatar aboard by the gangway
+        // facing the tube — a couple of steps from walking straight across into the bar.
         if (id == "space-bar")
         {
             Vector2d dockPos = _ephemeris!.Position("the-space-bar", 0);
             _dockedHavenId = "the-space-bar";
             _dockOffset = _ship.Position - dockPos;
+            SetDeckForDock("the-space-bar");
+            (_avatarX, _avatarY, _avatarHeading) = (2.5, 6, Math.PI / 2); // in the airlock corridor, facing up the tube
             _deckMode = true;
             _activeDesk = ShipDesk.Deck;
-            GoAshore();
         }
     }
 
@@ -4102,7 +4092,7 @@
         {
             ApplyStart(id);
         }
-        if (!_ashore && _activeDesk != ShipDesk.Nav)
+        if (!_deckMode && _activeDesk != ShipDesk.Nav)
         {
             SwitchDesk(ShipDesk.Nav);
         }
@@ -7785,49 +7775,45 @@
             : null;
     }
 
-    // Go-ashore (2026-07-07): step off the ship through the gangway into a docked haven's own
-    // interior — a place that only exists while you're clamped to that specific berth. The airlock
-    // console is always aboard, so pressing E off a dock just explains why nothing opens. The ship's
-    // own deck is untouched; a haven interior is a separate DeckPlan swapped in behind _deckPlan.
-    private void GoAshore()
+    // Go-ashore (2026-07-07; the walk-through tube, 2026-07-08). Docking now welds the ship to the
+    // station by a narrow umbilical with two automatic airlock doors, and you simply WALK your avatar
+    // down it into the station — no gangway console, no teleport. While clamped to a haven with an
+    // interior, _deckPlan becomes the combined ship+tube+station complex (HavenInterior.DockedDeck);
+    // a haven without one keeps the plain ship deck, whose ⚓ gangway just says "nothing ashore yet".
+    private const double ShipDeckTopY = 14;   // the ship's airlock hatch; above it lies the tube
+    private const double StationFloorY = 22;  // past the tube you're in the station (lobby, then bar)
+
+    private void SetDeckForDock(string? havenId)
     {
-        if (_dockedHavenId is not { } id)
+        if (havenId is { } id && HavenInterior.DockedDeck(id) is { } complex)
         {
-            ShowPulseMessage("No gangway rigged — clamp onto a haven first (⚓ Dock).");
-            return;
+            _deckPlan = complex;
+            _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";
         }
-
-        if (HavenInterior.ForBody(id) is not { } interior)
+        else
         {
-            ShowPulseMessage("Nothing to step into here — no deck ashore at this berth (yet).");
-            return;
+            _deckPlan = DeckPlan.Ship;
+            _havenName = "";
+            PullAvatarAboard();
         }
-
-        _shipAvatarX = _avatarX;              // remember where we stood aboard
-        _shipAvatarY = _avatarY;
-        _shipAvatarHeading = _avatarHeading;
-        _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";
-        _deckPlan = interior;
-        _ashore = true;
-        (_avatarX, _avatarY) = (interior.SpawnX, interior.SpawnY);
-        _avatarHeading = Math.PI / 2;         // step in facing the room's window
-        ShowPulseMessage($"Ashore at {_havenName}. Q or the gangway (⚓) walks you back aboard.");
-        RendererInterop.PlayCue("board");
+        _deckPanX = _deckPanY = 0; // fresh deck: drop any drag-pan so the follow-cam isn't offset
+        RefreshAshore();
     }
 
-    // Back up the gangway onto your own ship. Forced on undock so you never drift off still ashore.
-    private void GoAboard()
+    // Casting off: if you'd wandered up the tube or into the station, step you back aboard so you
+    // never undock standing in a berth that's no longer welded on.
+    private void PullAvatarAboard()
     {
-        if (!_ashore)
+        if (_avatarY > ShipDeckTopY)
         {
-            return;
+            (_avatarX, _avatarY, _avatarHeading) = (2.5, 8, -Math.PI / 2); // back in the airlock corridor, facing in
         }
-
-        _deckPlan = DeckPlan.Ship;
         _ashore = false;
-        (_avatarX, _avatarY, _avatarHeading) = (_shipAvatarX, _shipAvatarY, _shipAvatarHeading);
-        ShowPulseMessage("Back aboard — the gangway seals behind you.");
     }
+
+    // "Ashore" is a place on the continuous deck now, not a mode: true once you're past the tube in
+    // the station room. Kept fresh as you walk so quest/status flavor can read it.
+    private void RefreshAshore() => _ashore = _deckPlan.FollowCam && _avatarY > StationFloorY;
 
     // --- Ashore quests (M-Q1): the hooded stranger at the bar table ---
 
@@ -8064,7 +8050,10 @@
         _dockOffset = _ship.Position - _nearestBodyPosition; // freeze the arm's reach at berth
         HoldAtDock();                                        // match the drift now so nothing lurches
         StaleFutureNodes();                                  // a berth cancels any pending burns
-        ShowPulseMessage($"⚓ Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off.");
+        SetDeckForDock(dock.Id);                             // weld on the walk-through tube if this haven has an interior
+        ShowPulseMessage(HavenInterior.HasInterior(dock.Id)
+            ? $"⚓ Clamped on at {dock.Name} — gangway's mated. Head to the Deck and walk the tube ashore."
+            : $"⚓ Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off.");
         RendererInterop.PlayCue("board");
         CompleteCargoRunQuests(dock.Id); // arriving at the delivery berth finishes a cargo run (M-Q3)
         PayCompletedQuests();            // then any finished bar contracts pay out (M-Q1)
@@ -8079,7 +8068,7 @@
             return;
         }
 
-        GoAboard(); // can't cast off while you're still ashore — walk the gangway home first
+        SetDeckForDock(null); // back to the bare ship deck; pulls you aboard if you'd wandered up the tube
 
         // A gentle shove clear of the clamp — the ship drifts away with some motion of its own
         // rather than hanging dead-still on the dock (owner: "push the ship off so it has motion
@@ -8181,8 +8170,8 @@
             PushNewsEvent(NewsWire.NewsEventKind.OrbitEnteredHaven, arrivedHaven.Name);
             AdvanceTutorial(StepInsertHaven);
 
-            // Easter egg: settle in at The Space Bar and the bird cracks wise about needing a break.
-            if (arrivedHaven.Name.Contains("Space Bar", StringComparison.OrdinalIgnoreCase))
+            // Easter egg: settle in at The Rusty Roadstead and the bird cracks wise about a break.
+            if (arrivedHaven.Id == "the-space-bar")
             {
                 SquawkNow(Parrot.Squawk.SpaceBarBreak, _lastTimestampMs ?? 0, force: true);
             }
