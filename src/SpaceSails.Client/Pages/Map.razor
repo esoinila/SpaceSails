@@ -68,6 +68,30 @@
         </div>
     }
 
+    @* Hatch keypad: brought up by knocking on the specific locked hatch a crack job sent you to. Key in
+       the code the Fixer quoted; right code pops the hatch (job → PickedUp), wrong code buzzes red. *@
+    @if (_pinJob is { } pinJob)
+    {
+        <div class="pin-backdrop" @onclick="CancelPin">
+            <div class="pin-pad" @onclick:stopPropagation="true">
+                <div class="pin-pad-hatch">@(_pinHatch?.Label ?? "LOCKED HATCH")</div>
+                <div class="pin-pad-sub">ENTER ACCESS CODE</div>
+                <div class="pin-pad-display">@PinDisplay</div>
+                <div class="pin-pad-keys">
+                    @foreach (string d in new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9" })
+                    {
+                        string digit = d;
+                        <button type="button" class="pin-pad-key" @onclick="() => PinPush(digit)">@digit</button>
+                    }
+                    <button type="button" class="pin-pad-key pin-pad-key-fn" @onclick="PinClear">C</button>
+                    <button type="button" class="pin-pad-key" @onclick='() => PinPush("0")'>0</button>
+                    <button type="button" class="pin-pad-key pin-pad-key-go" @onclick="SubmitPin">↵</button>
+                </div>
+                <button type="button" class="pin-pad-cancel" @onclick="CancelPin">Cancel</button>
+            </div>
+        </div>
+    }
+
     @* Deck / first-person pulse toast: the Nav HUD that normally hosts _pulseMessage is hidden while
        you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
        standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
@@ -3074,16 +3098,19 @@
     // _tutorialStep, which linear-chains its steps. A hunt is met when its target ship is brought
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
-    private enum QuestKind { Hunt, CargoRun, Intel, Fetch }
+    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack }
     // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
     // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
+    // Crack is the same face-to-face shape but the pickup is a locked hatch *here*: walk to the named
+    // hatch, key in the Pin the Fixer gave you, then hand the package back to the Fixer at this station.
     private enum QuestState { Active, PickedUp, Complete, TurnedIn }
     // A hunt stores the prey's ship id in TargetShipId; a cargo run / fetch stores the delivery haven's
     // body id in DestBodyId (TargetCallsign holds the human name in all cases). A fetch also stores the
-    // pickup derelict's body id in SourceBodyId.
+    // pickup derelict's body id in SourceBodyId. A crack stores the target hatch's id (e.g. "V-06") in
+    // TargetShipId and its access code in Pin.
     private sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
         string TargetCallsign, string Title, string Blurb, int Reward, string? DestBodyId = null,
-        string? SourceBodyId = null)
+        string? SourceBodyId = null, string? Pin = null)
     {
         public QuestState State { get; set; } = QuestState.Active;
     }
@@ -3911,6 +3938,7 @@
         string scenarioName = "sol";
         string? startId = null;
         string? fetchCheat = null;
+        string? crackCheat = null;
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
         {
@@ -3938,6 +3966,16 @@
                 if (candidate is "active" or "picked")
                 {
                     fetchCheat = candidate;
+                }
+            }
+            else if (pair.StartsWith("crack=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Dev cheat: /map?start=<station>&crack=active|picked injects the hatch-crack job at that
+                // stage so a playtester can exercise the keypad / hand-off without taking the fetch first.
+                string candidate = Uri.UnescapeDataString(pair["crack=".Length..]).ToLowerInvariant();
+                if (candidate is "active" or "picked")
+                {
+                    crackCheat = candidate;
                 }
             }
         }
@@ -4033,6 +4071,11 @@
             InjectFetchCheat(fetchCheat); // after the start, so the dest can be the station we docked at
         }
 
+        if (crackCheat is not null)
+        {
+            InjectCrackCheat(crackCheat); // needs the docked station's deck built (a locked hatch to target)
+        }
+
         StateHasChanged();
         await _focusableDiv.FocusAsync();
     }
@@ -4064,6 +4107,37 @@
             State = stage == "picked" ? QuestState.PickedUp : QuestState.Active,
         });
         ShowPulseMessage($"🧪 Test: fetch job injected ({stage}) — hand off to The Fixer at {destName}.");
+    }
+
+    // Dev cheat (/map?start=<station>&crack=active|picked): drop a hatch-crack job into the ledger at a
+    // stage. Targets the first locked department hatch on the docked station's deck, quoting its real
+    // code, so a playtester can key the pad (active) or just hand off (picked) without taking a fetch first.
+    private void InjectCrackCheat(string stage)
+    {
+        if (_ephemeris is null || _dockedHavenId is not { } here || _quests.Any(q => q.Kind == QuestKind.Crack))
+        {
+            return;
+        }
+        DeckPlan.ConsoleSpot? target = _deckPlan.Consoles
+            .Where(c => c.Kind == DeckPlan.ConsoleKind.Hatch && c.Label.Contains("🔒", StringComparison.Ordinal))
+            .OrderBy(c => c.Label, StringComparer.Ordinal)
+            .Cast<DeckPlan.ConsoleSpot?>()
+            .FirstOrDefault();
+        if (target is not { } hatch)
+        {
+            return;
+        }
+        string id = HatchId(hatch.Label);
+        string dept = HatchDept(hatch.Label);
+        string pin = MakePin(id);
+        _quests.Add(new Quest($"crack-{++_questSeq}", QuestKind.Crack, "THE FIXER", id,
+            $"the {dept.ToLowerInvariant()} package", $"Crack hatch {id}",
+            "[test] a hatch-crack job, dropped straight into the ledger.", 2600,
+            DestBodyId: here, SourceBodyId: here, Pin: pin)
+        {
+            State = stage == "picked" ? QuestState.PickedUp : QuestState.Active,
+        });
+        ShowPulseMessage($"🧪 Test: crack job injected ({stage}) — hatch {id}, code {pin}.");
     }
 
     private ShipState InitializeShipState()
@@ -7958,7 +8032,90 @@
         {
             return;
         }
+        string id = HatchId(hatch.Label);
+
+        // Is this the specific hatch a crack job sent us to (at this station)? If so, the knock isn't
+        // an idle rap — it brings up the keypad.
+        Quest? job = _quests.FirstOrDefault(q =>
+            q.Kind == QuestKind.Crack && q.TargetShipId == id && q.SourceBodyId == _dockedHavenId);
+        if (job is { State: QuestState.Active })
+        {
+            _pinJob = job;
+            _pinHatch = hatch;
+            _pinEntry = "";
+            return;
+        }
+        if (job is not null && job.State != QuestState.Active)
+        {
+            ShowPulseMessage($"{hatch.Label} — already cracked. You pull it shut behind you.");
+            return;
+        }
+
         ShowPulseMessage($"{hatch.Label} — sealed. You knock; only the station's hum answers. 🔒");
+    }
+
+    // Parse a hatch label ("🔒 BONDED STORES · V-06") without leaning on the exact separator glyph. The
+    // id is the last whitespace token ("V-06"); the department is the run of all-letter tokens
+    // ("BONDED STORES") — which skips the emoji tag, the separator, and the id itself.
+    private static string HatchId(string label)
+    {
+        string[] parts = label.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 0 ? parts[^1] : label.Trim();
+    }
+
+    private static string HatchDept(string label) =>
+        string.Join(' ', label.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(t => t.All(char.IsLetter)));
+
+    // A stable 4-digit access code for a hatch — the same code every time so the Fixer can quote it and
+    // it still works when you walk over. Deterministic (no RNG in player-facing quest gen).
+    private static string MakePin(string hatchId) =>
+        (hatchId.Sum(ch => ch) * 137 % 9000 + 1000).ToString(CultureInfo.InvariantCulture);
+
+    // --- Keypad state for cracking a locked hatch -----------------------------------------------------
+    private Quest? _pinJob;                 // the crack job whose hatch we're keying into, or null
+    private DeckPlan.ConsoleSpot? _pinHatch; // the hatch being cracked (for the keypad's header)
+    private string _pinEntry = "";           // digits keyed so far (max 4)
+
+    // Four slots, filled left to right: keyed digits, then "·" placeholders.
+    private string PinDisplay => string.Concat(Enumerable.Range(0, 4)
+        .Select(i => i < _pinEntry.Length ? _pinEntry[i] : '·'));
+
+    private void PinPush(string digit)
+    {
+        if (_pinEntry.Length < 4)
+        {
+            _pinEntry += digit;
+        }
+    }
+
+    private void PinClear() => _pinEntry = "";
+
+    private void CancelPin()
+    {
+        _pinJob = null;
+        _pinHatch = null;
+        _pinEntry = "";
+    }
+
+    private void SubmitPin()
+    {
+        if (_pinJob is not { } job)
+        {
+            return;
+        }
+        if (_pinEntry == job.Pin)
+        {
+            job.State = QuestState.PickedUp;
+            RendererInterop.PlayCue("board");
+            ShowPulseMessage("The lock blinks green — the hatch sighs open. You pocket the package and pull it shut behind you. 📦");
+            CancelPin();
+        }
+        else
+        {
+            _pinEntry = "";
+            ShowPulseMessage("The panel buzzes red — wrong code. 🔴");
+        }
     }
 
     private void TalkToStranger()
@@ -7984,6 +8141,14 @@
             return;
         }
 
+        // The cracked-hatch package, handed back to the Fixer at this same station.
+        if (giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) && _dockedHavenId is { } berth
+            && _quests.FirstOrDefault(q => q is { Kind: QuestKind.Crack, State: QuestState.PickedUp } && q.DestBodyId == berth) is { } cracked)
+        {
+            DeliverCrack(cracked);
+            return;
+        }
+
         Quest? open = _quests.FirstOrDefault(q => q.Giver == giver && q.State != QuestState.TurnedIn);
         if (open is { State: QuestState.Active })
         {
@@ -8005,7 +8170,7 @@
         {
             _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
             _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
-            _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver),
+            _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver) ?? MakeCrackOffer(giver),
             _ => MakeHuntOffer(giver),
         };
         if (offer is null)
@@ -8117,6 +8282,38 @@
             DestBodyId: dest.Id, SourceBodyId: "derelict-roadster");
     }
 
+    // The Fixer's other line of work, when the roadster job is spoken for: crack a locked hatch here at
+    // this station. Picks one of the deck's locked departments deterministically, quotes its real access
+    // code, and pays on hand-over — a quick, self-contained job with no flying (contrast the fetch).
+    private Quest? MakeCrackOffer(string giver)
+    {
+        if (_ephemeris is null || _dockedHavenId is not { } here)
+        {
+            return null;
+        }
+        if (_quests.Any(q => q.Kind == QuestKind.Crack && q.State != QuestState.TurnedIn))
+        {
+            return null; // one break-in at a time
+        }
+        List<DeckPlan.ConsoleSpot> locked = _deckPlan.Consoles
+            .Where(c => c.Kind == DeckPlan.ConsoleKind.Hatch && c.Label.Contains("🔒", StringComparison.Ordinal))
+            .OrderBy(c => c.Label, StringComparer.Ordinal)
+            .ToList();
+        if (locked.Count == 0)
+        {
+            return null;
+        }
+
+        DeckPlan.ConsoleSpot target = locked[OfferIndex(locked.Count)];
+        string id = HatchId(target.Label);
+        string dept = HatchDept(target.Label);
+        string pin = MakePin(id);
+        const int reward = 2600;
+        string blurb = $"“That hatch — {id}, the {dept.ToLowerInvariant()} lockup. There's a package behind it that isn't on any manifest. Code's {pin} — I never told you that. Crack it, bring it straight back here, and it stays between us. {reward:N0} cr.”";
+        return new Quest($"crack-{++_questSeq}", QuestKind.Crack, giver, id, $"the {dept.ToLowerInvariant()} package",
+            $"Crack hatch {id}", blurb, reward, DestBodyId: here, SourceBodyId: here, Pin: pin);
+    }
+
     // Deterministic pick index for a booth's offer: sim time (slow rotation) mixed with the berth id
     // (a stable char-sum, not the randomized string hash), so different docks surface different work
     // and it doesn't flicker frame to frame.
@@ -8207,6 +8404,14 @@
         ShowPulseMessage($"The wallet changes hands under the table — +{q.Reward:N0} cr, and we never met. 🕶");
     }
 
+    // Hand the cracked-hatch package back to the Fixer, same station, same under-the-table terms.
+    private void DeliverCrack(Quest q)
+    {
+        _credits += q.Reward;
+        q.State = QuestState.TurnedIn;
+        ShowPulseMessage($"The package slides across the table — +{q.Reward:N0} cr, no receipt. 🕶");
+    }
+
     // Berthing at a haven settles any cargo-run contract bound for it. Called from ToggleDock.
     private void CompleteCargoRunQuests(string dockId)
     {
@@ -8243,6 +8448,8 @@
                 (QuestKind.Intel, _) => ("🕸 Tip taken", "paid"),
                 (QuestKind.Fetch, QuestState.Active) => ("▶ Find the derelict roadster", "active"),
                 (QuestKind.Fetch, QuestState.PickedUp) => ($"📦 Carrying — hand off at {q.TargetCallsign}", "active"),
+                (QuestKind.Crack, QuestState.Active) => ($"▶ Crack hatch {q.TargetShipId} — code {q.Pin}", "active"),
+                (QuestKind.Crack, QuestState.PickedUp) => ("📦 Package lifted — take it to The Fixer", "active"),
                 (_, QuestState.Active) => ("▶ On the hook", "active"),
                 (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
                 _ => ("💰 Paid", "paid"),
@@ -8253,6 +8460,7 @@
                 QuestKind.CargoRun => $"Carry the parcel to {q.TargetCallsign} — berth there to deliver.",
                 QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
                 QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
+                QuestKind.Crack => $"Key {q.Pin} into hatch {q.TargetShipId} here, lift the package, then hand it back to The Fixer.",
                 _ => "",
             };
             string rewardText = q.Kind == QuestKind.Intel
