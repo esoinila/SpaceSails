@@ -429,9 +429,13 @@ public class TrafficAndPredictionTests
         var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
         IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(ephemeris, seed: 44);
 
-        int planets = ephemeris.Bodies.Count(b => b.ParentId == "sun");
-        int notable = ephemeris.Bodies.Count(b => b.Kind == BodyKind.Station || b.IsHaven);
-        Assert.Equal(planets + notable, depots.Count);
+        // One depot per qualifying body, computed the same way GenerateDepots decides: planets, named
+        // stations and havens — but NOT mass-less sun-orbiting fixtures like the derelict roadster (which
+        // is both sun-orbiting and kind==station, so it must not be counted twice, nor at all).
+        int expected = ephemeris.Bodies.Count(b =>
+            !(b.ParentId == "sun" && b.Mu == 0)
+            && (b.ParentId == "sun" || b.Kind == BodyKind.Station || b.IsHaven));
+        Assert.Equal(expected, depots.Count);
 
         foreach (NpcShip depot in depots)
         {

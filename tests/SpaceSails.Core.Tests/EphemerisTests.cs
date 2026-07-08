@@ -11,8 +11,8 @@ public class EphemerisTests
         // Sun + 8 planets + Luna (M6) + outer moons, stations and havens (PR-3, vision par. 8):
         // Mercury Compute Farms, Highport Satellite Works, Europa/Ganymede/Callisto, Titan,
         // Enceladus, Ringside Exchange, plus the inner grey-market docks Cinder Roost (Venus),
-        // The Space Bar (Mars) and The Tilt (Uranus).
-        Assert.Equal(21, scenario.Bodies.Count);
+        // The Space Bar (Mars) and The Tilt (Uranus) — and the derelict roadster (go-ashore fetch job).
+        Assert.Equal(22, scenario.Bodies.Count);
         Assert.Contains(scenario.Bodies, b => b.Id == "saturn");
         Assert.Contains(scenario.Bodies, b => b.Id == "luna" && b.ParentId == "earth");
         Assert.Contains(scenario.Bodies, b => b.Id == "titan" && b.ParentId == "saturn" && b.Kind == "moon");
