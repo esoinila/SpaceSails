@@ -4077,6 +4077,13 @@
             _deckMode = true;
             _activeDesk = ShipDesk.Deck;
         }
+        else
+        {
+            // A free-flying locale (Earth, Jupiter, Saturn): leave any ashore/deck view we jumped FROM
+            // so the ship map actually shows (mattered when the picker was reopened while docked — the
+            // ship moved but the deck stayed on screen). ChooseStart then brings up the Nav desk.
+            _deckMode = false;
+        }
     }
 
     // The ship's state for a start point. Reuses InitializeShipState's finite-difference "co-moving
@@ -4112,17 +4119,15 @@
     // jump is safe from anywhere.
     private void ReopenStartPicker() => _showStartPicker = true;
 
-    // Boot-picker (or Captain-desk reopen) choice: dismiss the overlay, jump to the locale (Earth needs
-    // no jump — the world already spawned there), then show it. A docked start lands you ashore on the
-    // deck; any other locale drops you on the Nav map so the jump is actually visible (matters when the
-    // picker was reopened from a station desk). Focus returns to the map so keys drive the ship / walk.
+    // Boot-picker (or Captain-desk reopen) choice: dismiss the overlay and jump to the locale. Always
+    // ApplyStart — even "Earth": at boot the world is already there so it's a no-op re-place, but when
+    // the picker is reopened mid-run (e.g. while docked at a Venus bar) Earth is a genuine jump that
+    // has to unclamp and move the ship. A docked start lands you ashore on the deck; any other locale
+    // drops you on the Nav map so the jump is actually visible. Focus returns so keys drive ship/walk.
     private async Task ChooseStart(string id)
     {
         _showStartPicker = false;
-        if (id != "earth")
-        {
-            ApplyStart(id);
-        }
+        ApplyStart(id);
         if (!_deckMode && _activeDesk != ShipDesk.Nav)
         {
             SwitchDesk(ShipDesk.Nav);
