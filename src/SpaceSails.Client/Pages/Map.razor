@@ -4018,13 +4018,30 @@
     [
         new("earth", "🌍", "Earth — the usual berth",
             "The standard opening: fresh out of Earth orbit, last run's takings in the purse and hold."),
+        new("cinder-roost", "🌋", "Cinder Roost — docked",
+            "In Venus' sulphur clouds — begin already clamped on at Cinder Roost, a short walk up the tube to The Cinder Lounge."),
         new("space-bar", "🍸", "The Rusty Roadstead — docked",
             "Skip the haul to Mars — begin already clamped on at The Rusty Roadstead, a short walk up the tube to the bar's tables."),
         new("jupiter", "🪐", "Jupiter — the Galilean moons",
             "Out at Jupiter, co-moving beside Europa — fly Ganymede and Callisto without the long cruise from the inner system."),
-        new("saturn", "💍", "Saturn — the ring havens",
+        new("saturn", "🌙", "Saturn — the moons",
             "Among Saturn's moons by the Ringside Exchange — Enceladus and Titan a short burn away."),
+        new("ringside", "💍", "Ringside Exchange — docked",
+            "In Saturn's rings — begin already clamped on at Ringside Exchange, a short walk up the tube to The Ringside Bar."),
+        new("the-tilt", "❄️", "The Tilt — docked",
+            "Way out at Uranus — begin already clamped on at The Tilt, a short walk up the tube to its cold, lonely bar."),
     ];
+
+    // Start ids that begin already docked at a walkable station, mapped to the station body. These
+    // reuse the one docked-arrival path in ApplyStart / PlaceShipForStart (weld the complex, step
+    // aboard by the gangway) — so a new interior station is a scenario body + a spec + one line here.
+    private static readonly Dictionary<string, string> DockedStarts = new()
+    {
+        ["cinder-roost"] = "cinder-roost",
+        ["space-bar"] = "the-space-bar",
+        ["ringside"] = "ringside-exchange",
+        ["the-tilt"] = "the-tilt",
+    };
 
     private bool _showStartPicker;
 
@@ -4039,15 +4056,15 @@
         ReprojectTrajectory();
         _camera.CenterOn(_ship.Position);
 
-        // The docked locale: clamp onto the berth (the tick's HoldAtDock then pins the ship to the
+        // A docked locale: clamp onto the berth (the tick's HoldAtDock then pins the ship to the
         // station's drift), weld on the walk-through complex, and drop the avatar aboard by the gangway
         // facing the tube — a couple of steps from walking straight across into the bar.
-        if (id == "space-bar")
+        if (DockedStarts.TryGetValue(id, out string? dockBody))
         {
-            Vector2d dockPos = _ephemeris!.Position("the-space-bar", 0);
-            _dockedHavenId = "the-space-bar";
+            Vector2d dockPos = _ephemeris!.Position(dockBody, 0);
+            _dockedHavenId = dockBody;
             _dockOffset = _ship.Position - dockPos;
-            SetDeckForDock("the-space-bar");
+            SetDeckForDock(dockBody);
             (_avatarX, _avatarY, _avatarHeading) = (2.5, 6, Math.PI / 2); // in the airlock corridor, facing up the tube
             _deckMode = true;
             _activeDesk = ShipDesk.Deck;
@@ -4057,13 +4074,19 @@
     // The ship's state for a start point. Reuses InitializeShipState's finite-difference "co-moving
     // with a body" idiom, just keyed off a different body — a small radial offset keeps the ship clear
     // of the body's surface. "earth" (and any unknown id) falls back to the standard Earth spawn.
-    private ShipState PlaceShipForStart(string id) => id switch
+    private ShipState PlaceShipForStart(string id)
     {
-        "space-bar" => CoMovingBy("the-space-bar", 3_000),   // just off the 900 m station, well within dock reach
-        "jupiter" => CoMovingBy("europa", 2e7),              // clear of Europa's surface, amid the Galilean system
-        "saturn" => CoMovingBy("ringside-exchange", 2e7),    // by the ring station, Enceladus/Titan a burn away
-        _ => InitializeShipState(),
-    };
+        if (DockedStarts.TryGetValue(id, out string? dockBody))
+        {
+            return CoMovingBy(dockBody, 3_000); // just off the ~1 km station, well within dock reach
+        }
+        return id switch
+        {
+            "jupiter" => CoMovingBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
+            "saturn" => CoMovingBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
+            _ => InitializeShipState(),
+        };
+    }
 
     // A ship state co-moving with a body, a given distance radially outward from it (from the Sun's
     // frame). offsetMeters 0 sits right on the body; a few thousand metres clears a station, ~1e7+ a moon.

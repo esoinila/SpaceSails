@@ -266,11 +266,43 @@ demo-only: it's also a genuine "where does this run begin?" choice ("why always 
 - **Schema now or later?** The `bodyId → plan` map (`HavenInterior`) avoids touching `Scenario.cs`.
   Add a real per-body interior/flavor field only when several havens each want a rich room.
 
+### Every station gets its own bar (2026-07-08)
+
+The Rusty Roadstead's kit (airlock vestibule → tube → round immigration hall → bar) is now
+**spec-driven**: `HavenInterior.BuildComplex(StationSpec)` builds the one geometry, and a
+`StationSpec` supplies the name, the immigration authority, a deadpan quip, the bar's name, and the
+two Gen-AI backdrops (hall + bar). `Specs[]` lists the four walkable havens; `DockedDeck` builds and
+caches one complex per station on first dock. **Adding an interior station is now: a scenario body +
+a one-line spec + two images.**
+
+| Station | World | Immigration | Bar | Quip |
+|---|---|---|---|---|
+| The Rusty Roadstead | Mars | MARS | The Roadstead Bar | "most guests stay two weeks" |
+| Cinder Roost | Venus' clouds | VENUS | The Cinder Lounge | "mind the sulphur, spacer" |
+| Ringside Exchange | Saturn's rings | SATURN | The Ringside Bar | "trade fast — the rings don't wait" |
+| The Tilt | Uranus | URANUS | The Tilt Bar | "everything's sideways out here" |
+
+Each hall/bar backdrop shows that world out the glass (Venus' sulphur banks, Saturn's rings, Uranus'
+sideways rings). **Start points** now cover all four docked (`?start=cinder-roost|space-bar|ringside|the-tilt`)
+via a `DockedStarts` id→body map that reuses the one docked-arrival path in `ApplyStart`.
+
+Still shared across every station (deliberately, for now): the three regulars (Silas / Coil /
+Gilt-Eye) and the immigration officer — same faces, different view. Per-station strangers can come
+with the multi-location missions.
+
+### Multi-location, off-the-books missions (next)
+
+The owner's frame: the **confidential** jobs are handed over **face to face at a bar table — no
+electronic trace** — which is exactly why they can't ride the public web board. So a mission is
+picked up at one station's table and **delivered at another** (e.g. a lost crypto-wallet stashed in a
+derelict roadster you go find, then hand off at a different bar). This wants: a fetch/derelict
+objective, a deliver-elsewhere objective, and per-giver strangers. Builds on Coil's existing
+cross-haven cargo-run (already "dock at the destination to complete").
+
 ## Later (beyond the follow-up)
 
-Distinct interiors for Cinder Roost / Ringside / The Tilt; a real bounty/contract accept-flow if the
-"front for existing systems" wiring proves too thin; heat visibly cooling while ashore; a "third tot"
-style bar event; fencing cargo at the bar.
+A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat
+visibly cooling while ashore; a "third tot" style bar event; fencing cargo at the bar.
 
 See also: [deck-view.md](deck-view.md), [dock-and-economy.md](dock-and-economy.md),
 [wolf-aim.md](wolf-aim.md), [dark-web.md](dark-web.md), `docs/MondayPonder/3DRenovationPlan.md`.
