@@ -313,6 +313,20 @@ Verified in-browser: walked to The Fixer, took the job (dest → The Tilt), conf
 ledger and the wreck on the nav map (no depot); build clean, no console errors. The long fetch flight
 + in-person hand-off is left to hands-on playtest. Builds on Coil's cross-haven cargo-run pattern.
 
+**Test cheats (URL args).** So a stage can be exercised without the flight to it (same `?`-arg
+mechanism as `?start=`):
+
+- **`?start=wreck`** — spawn co-moving 2 km off the Derelict Roadster (a `Test:true` start, hidden
+  from the boot picker but reachable by URL). With an active fetch aboard, the proximity pickup fires
+  at once.
+- **`?fetch=active`** — inject the fetch job at `Active` (need pickup).
+- **`?fetch=picked`** — inject it at `PickedUp` (need delivery). Destination is the interior station
+  you're docked at (so it can be handed off on the spot), else the first interior station.
+
+Compose them: `?start=wreck&fetch=active` tests the pickup (auto-grabs alongside the wreck);
+`?start=the-tilt&fetch=picked` tests the in-person hand-off (walk to The Fixer at The Tilt → +4,200
+cr). All three verified in-browser.
+
 Next: per-station Fixer flavor / more fetch targets; a stranger who drifts to *your* table with the
 job instead of you seeking them out.
 

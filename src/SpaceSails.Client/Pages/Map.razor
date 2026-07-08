@@ -35,7 +35,7 @@
                 <div class="start-picker-title">Choose your start</div>
                 <div class="start-picker-sub">Where does this run begin? Earth is the usual berth — the rest skip the haul out (handy for playtesting).</div>
                 <div class="start-picker-list">
-                    @foreach (StartPoint sp in StartPoints)
+                    @foreach (StartPoint sp in StartPoints.Where(s => !s.Test))
                     {
                         StartPoint option = sp;
                         <button type="button" class="start-picker-option" @onclick="() => ChooseStart(option.Id)">
@@ -3887,6 +3887,7 @@
         // shortcut, and the same registry the boot picker offers. Unknown start id → the picker shows.
         string scenarioName = "sol";
         string? startId = null;
+        string? fetchCheat = null;
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
         {
@@ -3904,6 +3905,16 @@
                 if (StartPoints.Any(s => s.Id == candidate))
                 {
                     startId = candidate;
+                }
+            }
+            else if (pair.StartsWith("fetch=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Dev cheat: /map?fetch=active|picked injects the fetch mission at that stage so a
+                // playtester can exercise pickup / in-person delivery without the flights between.
+                string candidate = Uri.UnescapeDataString(pair["fetch=".Length..]).ToLowerInvariant();
+                if (candidate is "active" or "picked")
+                {
+                    fetchCheat = candidate;
                 }
             }
         }
@@ -3994,8 +4005,42 @@
             _showStartPicker = true;
         }
 
+        if (fetchCheat is not null)
+        {
+            InjectFetchCheat(fetchCheat); // after the start, so the dest can be the station we docked at
+        }
+
         StateHasChanged();
         await _focusableDiv.FocusAsync();
+    }
+
+    // Dev cheat (/map?fetch=active|picked): drop a fetch job straight into the ledger at a stage, so a
+    // playtester can test the pickup or the in-person hand-off without flying the legs between. The
+    // drop-off is the interior station you're standing in (so "picked" can be delivered on the spot),
+    // else the first interior station. Pair with ?start=wreck to test the real proximity pickup.
+    private void InjectFetchCheat(string stage)
+    {
+        if (_ephemeris is null || _quests.Any(q => q.Kind == QuestKind.Fetch)
+            || _ephemeris.Bodies.All(b => b.Id != "derelict-roadster"))
+        {
+            return;
+        }
+        string? dest = _dockedHavenId is { } here && HavenInterior.HasInterior(here)
+            ? here
+            : _ephemeris.Bodies.FirstOrDefault(b => b.IsHaven && HavenInterior.HasInterior(b.Id))?.Id;
+        if (dest is null)
+        {
+            return;
+        }
+        string destName = _ephemeris.Bodies.First(b => b.Id == dest).Name;
+        _quests.Add(new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, "THE FIXER",
+            "", destName, "Fetch the roadster's lost wallet",
+            "[test] a fetch job, dropped straight into the ledger.", 4200,
+            DestBodyId: dest, SourceBodyId: "derelict-roadster")
+        {
+            State = stage == "picked" ? QuestState.PickedUp : QuestState.Active,
+        });
+        ShowPulseMessage($"🧪 Test: fetch job injected ({stage}) — hand off to The Fixer at {destName}.");
     }
 
     private ShipState InitializeShipState()
@@ -4020,7 +4065,9 @@
     // genuine choice of where a run begins. One registry feeds both the /map?start=<id> URL and the
     // boot picker overlay. The heavy lifting mirrors the tutorial Seed* pattern: place the ship (and,
     // for a docked berth, clamp and step ashore), then frame the camera. Body ids are scenario data.
-    private sealed record StartPoint(string Id, string Icon, string Label, string Blurb);
+    // Test:true starts are reachable by /map?start=<id> but hidden from the boot picker — dev-only
+    // jumps for exercising a mission stage without the flight to it.
+    private sealed record StartPoint(string Id, string Icon, string Label, string Blurb, bool Test = false);
 
     private static readonly StartPoint[] StartPoints =
     [
@@ -4038,6 +4085,8 @@
             "In Saturn's rings — begin already clamped on at Ringside Exchange, a short walk up the tube to The Ringside Bar."),
         new("the-tilt", "❄️", "The Tilt — docked",
             "Way out at Uranus — begin already clamped on at The Tilt, a short walk up the tube to its cold, lonely bar."),
+        new("wreck", "🚗", "The Derelict Roadster — alongside (test)",
+            "Co-moving beside the lost roadster, sunward of Mars — for testing the fetch pickup.", Test: true),
     ];
 
     // Start ids that begin already docked at a walkable station, mapped to the station body. These
@@ -4099,6 +4148,7 @@
         {
             "jupiter" => CoMovingBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
             "saturn" => CoMovingBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
+            "wreck" => CoMovingBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
             _ => InitializeShipState(),
         };
     }
