@@ -3243,6 +3243,9 @@
             case DeckPlan.ConsoleKind.BarPatron:
                 TalkToStranger();
                 break;
+            case DeckPlan.ConsoleKind.Hatch:
+                KnockOnHatch();
+                break;
             case DeckPlan.ConsoleKind.Helm:
                 SwitchDesk(ShipDesk.Nav);
                 ShowPulseMessage("Back at the helm");
@@ -7907,6 +7910,18 @@
     // Walk up to a booth and press E. Which patron you're next to (from their console label) sets who
     // you're dealing with and their trade — One-Eye Silas fences bounties (hunts), Madam Coil runs
     // parcels (cargo runs). If you already owe this giver a job, they just nod at it.
+    // Knock on a locked station hatch (a ring department or a bar back-room). Nobody answers — for now.
+    // Each hatch carries an id in its label (e.g. "🔒 MEDBAY · M-05") so a mission can name one to
+    // open. PIN entry / mission unlock is the next layer; today every knock goes unanswered.
+    private void KnockOnHatch()
+    {
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.Hatch } hatch)
+        {
+            return;
+        }
+        ShowPulseMessage($"{hatch.Label} — sealed. You knock; only the station's hum answers. 🔒");
+    }
+
     private void TalkToStranger()
     {
         if (_pendingOffer is not null)

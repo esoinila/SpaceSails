@@ -106,7 +106,16 @@ public static class HavenInterior
             v[k] = (HallCenterX + HallR * (float)System.Math.Cos(a), HallCenterY + HallR * (float)System.Math.Sin(a));
         }
 
-        int berth = 2; // our own berth is #1
+        // The ring's sealed edges: a few other captains' berths and the station's own departments,
+        // nearly all locked to us — so the concourse reads as one hub of a much bigger complex. Each
+        // is a numbered Hatch console: walk up and it names itself + shows locked; press E to knock.
+        string[] ringTags =
+        [
+            "⚓ BERTH", "🔒 CUSTOMS", "🔒 HABITAT RING", "⚓ BERTH", "🔒 MEDBAY",
+            "🔒 BONDED STORES", "⚓ BERTH", "🔒 DOCKMASTER", "🔒 TRANSIT", "🔒 SECURITY",
+        ];
+        var hatches = new List<DeckPlan.ConsoleSpot>();
+        int sealedIdx = 0;
         for (int k = 0; k < HallSides; k++)
         {
             (float X, float Y) a = v[k], b = v[(k + 1) % HallSides];
@@ -121,14 +130,18 @@ public static class HavenInterior
                 walls.Add(new(-1, b.Y, b.X, b.Y, false, true));
                 doors.Add(new(-1, a.Y, 6, a.Y)); // wide auto door
             }
-            else // a sealed berth
+            else // a sealed berth / department
             {
                 walls.Add(new(a.X, a.Y, b.X, b.Y, false, true));
                 doors.Add(new(Lerp(a.X, b.X, 0.25f), Lerp(a.Y, b.Y, 0.25f),
                               Lerp(a.X, b.X, 0.75f), Lerp(a.Y, b.Y, 0.75f), Locked: true));
                 float mx = (a.X + b.X) / 2, my = (a.Y + b.Y) / 2;
-                labels.Add((HallCenterX + (mx - HallCenterX) * 0.8f, HallCenterY + (my - HallCenterY) * 0.8f, $"⚓{berth:00}"));
-                berth++;
+                string tag = ringTags[sealedIdx % ringTags.Length];
+                string id = $"{spec.Authority[0]}-{k:D2}"; // e.g. M-05: findable, distinct per station
+                // The hatch panel sits just inside the wall so it's reachable from the hall floor.
+                hatches.Add(new(DeckPlan.ConsoleKind.Hatch,
+                    HallCenterX + (mx - HallCenterX) * 0.9f, HallCenterY + (my - HallCenterY) * 0.9f, $"{tag} · {id}"));
+                sealedIdx++;
             }
         }
 
@@ -139,7 +152,9 @@ public static class HavenInterior
         walls.Add(new(4, deskY, 9, deskY, false, false));  // counter, starboard of the gate (gate gap x 1..4)
         labels.Add((HallCenterX, HallBottomY + 7.5f, $"{spec.Authority} IMMIGRATION"));
         labels.Add((HallCenterX, HallBottomY + 2.5f, spec.Quip));
-        labels.Add((HallCenterX, HallCenterY + 3, $"⚓ {spec.Name}"));
+        // A big lobby welcome poster so you know at a glance which port you're standing in.
+        labels.Add((HallCenterX, HallCenterY + 8, $"★  WELCOME TO {spec.Name}  ★"));
+        labels.Add((HallCenterX, HallCenterY + 3, $"⚓ {spec.Authority} ORBIT"));
 
         // The bar, off the hall's north door.
         walls.Add(new(BarLeft, HallTopY, -1, HallTopY, false, true));   // bar floor wall, port of the door
@@ -149,6 +164,13 @@ public static class HavenInterior
         walls.Add(new(BarLeft, BarTopY, BarRight, BarTopY, true, true)); // spinward window onto space
         labels.Add((HallCenterX, BarTopY - 3, spec.BarName));
 
+        // Two locked back-room hatches off the bar — more of the place you can't get into (yet).
+        char lvl = spec.Authority[0];
+        doors.Add(new(BarLeft, HallTopY + 9, BarLeft, HallTopY + 13, Locked: true));
+        hatches.Add(new(DeckPlan.ConsoleKind.Hatch, BarLeft + 2, HallTopY + 11, $"🔒 CELLAR · {lvl}-B1"));
+        doors.Add(new(BarRight, HallTopY + 9, BarRight, HallTopY + 13, Locked: true));
+        hatches.Add(new(DeckPlan.ConsoleKind.Hatch, BarRight - 2, HallTopY + 11, $"🔒 STOREROOM · {lvl}-B2"));
+
         // The bar's regulars, each at a table — walk up and press E. Drop the ship's ⚓ gangway.
         var consoles = new List<DeckPlan.ConsoleSpot>(ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock))
         {
@@ -157,6 +179,7 @@ public static class HavenInterior
             new(DeckPlan.ConsoleKind.BarPatron, 2.5f, HallTopY + 11, "◈ GILT-EYE"),
             new(DeckPlan.ConsoleKind.BarPatron, -9, HallTopY + 16, "◈ THE FIXER"), // back-corner table: confidential, off-the-books work
         };
+        consoles.AddRange(hatches); // the ring departments + bar back-rooms, as knockable locked hatches
 
         // Seven tables spread across the big room — three taken by the regulars, four open (for a
         // stranger to drift over, later) — plus the ship's own cantina tables.

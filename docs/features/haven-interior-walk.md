@@ -330,6 +330,32 @@ cr). All three verified in-browser.
 Next: per-station Fixer flavor / more fetch targets; a stranger who drifts to *your* table with the
 job instead of you seeking them out.
 
+## "It's a whole place, not one room" — station-richness backlog (owner, 2026-07-08)
+
+The owner's note: a docked station currently reads as *concourse + one bar*, which makes a whole
+planet's port feel tiny. Make it feel like a small-airport-sized place with many rooms/spaces —
+lobbies with **hints of other spaces, most of them locked to us**. Ideas, and the two *mechanisms*
+they need:
+
+- **Named rooms/departments around the hall.** Turn the ring's sealed edges from generic ⚓ berths
+  into a mix of berths + named station departments (Customs Hold, Habitat Ring, Medbay, Bonded
+  Stores, Dockmaster, Transit Hub, Security…) — nearly all locked. Plus a couple of locked back-room
+  doors off the bar. Cheap "bigger place" win.
+- **Mechanism A — interactive locked hatches ("locked autodoor").** Walk up to a locked door and it
+  *tells you it's locked*; press E to **knock / ring** → nobody answers (until a mission wires one
+  up). Every door carries an **ID number** so a mission can point you at one *specific* hatch. Some
+  open with the **correct PIN**. (Shape the door data for IDs + PINs now; PIN-entry UI + mission
+  unlock can follow.)
+- **Mechanism B — "view object".** A way to **inspect a Gen-AI image of an item/scene** in a popup
+  (walk up, press E, see the picture + a caption). Needed for the souvenirs below and reusable for
+  any lore prop.
+- **Souvenir shops (uses B).** Every place has a **T-shirt shop** and a **fridge-magnet** stand, each
+  a Gen-AI image, with the location's gag: *"I visited Venus and all I got was this T-shirt"*, *"I
+  went to Uranus for the proctologist — fully booked"*, etc. Per-station jokes.
+
+Build order (proposed): the two mechanisms first (A then B, both reusable), then the content that
+rides them (named departments via A; souvenir shops via B).
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat

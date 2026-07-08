@@ -17,7 +17,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
