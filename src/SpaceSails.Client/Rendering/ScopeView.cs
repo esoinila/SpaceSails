@@ -20,7 +20,9 @@ public sealed class ScopeView
         Vector2d Velocity,
         double BodyRadius,       // bodies only
         RgbaColor Color,
-        bool InPlasma);
+        bool InPlasma,
+        bool IsHaven = false,    // bodies only — a pirate bolthole
+        bool Dockable = false);  // …and a mass-less one you clamp onto (⚓), not orbit
 
     private static readonly RgbaColor ScopeBackground = new(3, 6, 10);
     private static readonly RgbaColor ScopeRim = new(90, 200, 190, 140);
@@ -109,6 +111,7 @@ public sealed class ScopeView
 
     private static string KindLabel(in Target t) => t.Kind switch
     {
+        TargetKind.Body when t.IsHaven => t.Dockable ? "HAVEN ⚓ DOCK" : "HAVEN",
         TargetKind.Body => t.BodyRadius > 1e8 ? "STAR" : "PLANET",
         TargetKind.Freighter => "FREIGHTER",
         TargetKind.Pod => "CARGO POD",

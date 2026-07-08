@@ -25,9 +25,13 @@ public sealed class DeckView
     private static readonly RgbaColor ShuttleColor = new(150, 210, 255, 220);
     private static readonly RgbaColor DroidColor = new(150, 160, 180);
     private static readonly RgbaColor TextDim = new(140, 160, 180, 170);
+    private static readonly RgbaColor DoorShut = new(255, 180, 90, 220);   // amber airlock door, closed
+    private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
+    private static readonly RgbaColor DoorLocked = new(120, 140, 170, 210);// another berth's sealed hatch
+    private const double DoorOpenRadius = 4.0;
 
     private readonly IRenderer _renderer;
-    private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.DroidCount];
+    private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];
     private readonly float[] _scratch = new float[32];
 
     public DeckView(IRenderer renderer)
@@ -35,97 +39,125 @@ public sealed class DeckView
         _renderer = renderer;
     }
 
-    public void Draw(int widthPx, int heightPx, double simTime, in State state, double panX = 0, double panY = 0)
+    public void Draw(DeckPlan plan, int widthPx, int heightPx, double simTime, in State state, double panX = 0, double panY = 0)
     {
         _renderer.BeginFrame(widthPx, heightPx, Floor);
 
         float scale = Math.Min(widthPx / 64f, heightPx / 28f);
-        float ox = widthPx / 2f + (float)panX, oy = heightPx / 2f + (float)panY;
+
+        // A whole-plan tactical frame (bare ship / lone room) centres on the plan origin; a docked
+        // complex is far too long for the fixed frame, so it scrolls to keep the avatar centred
+        // (FollowCam). Manual pan still nudges either.
+        float ox = plan.FollowCam ? widthPx / 2f - (float)state.AvatarX * scale + (float)panX : widthPx / 2f + (float)panX;
+        float oy = plan.FollowCam ? heightPx / 2f + (float)state.AvatarY * scale + (float)panY : heightPx / 2f + (float)panY;
         (float X, float Y) P(double dx, double dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
 
-        // Room backdrops sit UNDER every vector overlay (walls, consoles, avatar, labels stay on top
-        // for legibility — the hybrid look). The cantina wears The Space Bar; the zone is x∈[4,18],
-        // y∈[3,10] in deck units. Registration is idempotent, so calling it per frame is cheap.
-        int barArt = _renderer.RegisterImage("art/the-space-bar.jpg");
-        (float barX, float barY) = P(4, 10); // top-left corner of the cantina zone on screen
-        _renderer.DrawImage(barArt, barX, barY, 14f * scale, 7f * scale, 0.9f);
+        // Ship-only dressing (cargo crates, shuttle cradle, reactor, cantina tables) is hardcoded to
+        // the ship's geometry — a bare haven room has none of it, but a docked complex still contains
+        // the ship. Everything else (backdrops, walls, doors, labels, consoles, droids, the avatar) is
+        // plan-driven and general.
+        bool isShip = plan.ShipFixtures;
 
-        // Starboard berths (3D-reno Phase 3): each cabin wears its OWN backdrop so the crew reads as
-        // individuals — bow-to-stern that's a tidy, squared-away bunk (CABIN 1), a laundry-strewn
-        // mess (CABIN 2), and a tinkerer's parts-everywhere den (CABIN 3); the HEAD wears a grimy
-        // space-toilet. Zones partition x∈[4,18], y∈[-10,-3]; top edge is y=-3 (P is y-up).
-        float berthH = 7f * scale;
-        void DrawBackdrop(string url, double x0, double x1) // top-left at (x0, -3), full berth depth
+        // Room backdrops sit UNDER every vector overlay (walls, consoles, avatar, labels stay on top
+        // for legibility — the hybrid look). Each is top-left at (X, Y) deck-units, W×H deck-units.
+        // Registration is idempotent, so calling it per frame is cheap.
+        foreach (DeckPlan.Backdrop bd in plan.Backdrops)
         {
-            (float bx, float by) = P(x0, -3);
-            _renderer.DrawImage(_renderer.RegisterImage(url), bx, by, (float)(x1 - x0) * scale, berthH, 0.9f);
+            (float bx, float by) = P(bd.X, bd.Y);
+            _renderer.DrawImage(_renderer.RegisterImage(bd.Url), bx, by, bd.W * scale, bd.H * scale, bd.Alpha);
         }
-        DrawBackdrop("art/cabin-tidy.jpg", 11, 14.5);    // CABIN 1
-        DrawBackdrop("art/cabin-messy-a.jpg", 7.5, 11);  // CABIN 2
-        DrawBackdrop("art/cabin-messy-b.jpg", 4, 7.5);   // CABIN 3
-        DrawBackdrop("art/space-head.jpg", 14.5, 18);    // HEAD 🚽
 
         for (int gx = -22; gx <= 28; gx += 4)
         {
             DrawSeg(P(gx, -9.6), P(gx, 9.6), new RgbaColor(255, 255, 255, 10), 1f);
         }
 
-        foreach (DeckPlan.Wall w in DeckPlan.Walls)
+        foreach (DeckPlan.Wall w in plan.Walls)
         {
             RgbaColor color = w.IsWindow ? WindowLine : w.IsHull ? HullLine : InnerLine;
             DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull ? 2.5f : 1.5f);
         }
 
-        foreach ((float lx, float ly, string text) in DeckPlan.RoomLabels)
+        // Automatic airlock doors (the docking tube): shut across the passage until you near them,
+        // then they retract to a stub at each jamb. Purely visual — the passage is always walkable.
+        foreach (DeckPlan.Door d in plan.Doors)
+        {
+            if (d.Locked)
+            {
+                // Another berth's sealed hatch — always shut, drawn cold (steel-blue), a real wall behind.
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorLocked, 3.5f);
+                continue;
+            }
+            double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
+            bool open = Math.Sqrt((state.AvatarX - mx) * (state.AvatarX - mx)
+                                + (state.AvatarY - my) * (state.AvatarY - my)) <= DoorOpenRadius;
+            if (open)
+            {
+                // Retracted: a short leaf at each jamb (25% in from each end).
+                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), DoorOpen, 3f);
+                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), DoorOpen, 3f);
+            }
+            else
+            {
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorShut, 3.5f);
+            }
+        }
+
+        foreach ((float lx, float ly, string text) in plan.RoomLabels)
         {
             _renderer.DrawText(P(lx, ly).X, P(lx, ly).Y, text, TextDim, "10px monospace", TextAlign.Center);
         }
 
-        // Cargo crates: one per unit aboard.
-        for (int i = 0; i < Math.Min(state.CargoUnits, 12); i++)
+        if (isShip)
         {
-            (float cx, float cy) = P(-10 + (i % 4) * 1.9, -5 - (i / 4) * 1.6);
-            DrawBox(cx, cy, 0.65f * scale, CrateColor);
-        }
-
-        // Shuttle in its cradle — or away doing piracy.
-        if (!state.ShuttleAway)
-        {
-            DrawShuttle(P(-6.5, 6.5), scale, simTime);
-        }
-        else
-        {
-            (float bx, float by) = P(-6.5, 6.5);
-            _renderer.DrawText(bx, by, "— AWAY —", new RgbaColor(255, 170, 80, 200), "bold 11px monospace", TextAlign.Center);
-            if (Math.Sin(simTime * 0.005) > 0)
+            // Cargo crates: one per unit aboard.
+            for (int i = 0; i < Math.Min(state.CargoUnits, 12); i++)
             {
-                DrawSeg(P(-11, 9.9), P(-2, 9.9), new RgbaColor(255, 120, 80, 220), 3f);
+                (float cx, float cy) = P(-10 + (i % 4) * 1.9, -5 - (i / 4) * 1.6);
+                DrawBox(cx, cy, 0.65f * scale, CrateColor);
             }
+
+            // Shuttle in its cradle — or away doing piracy.
+            if (!state.ShuttleAway)
+            {
+                DrawShuttle(P(-6.5, 6.5), scale, simTime);
+            }
+            else
+            {
+                (float bx, float by) = P(-6.5, 6.5);
+                _renderer.DrawText(bx, by, "— AWAY —", new RgbaColor(255, 170, 80, 200), "bold 11px monospace", TextAlign.Center);
+                if (Math.Sin(simTime * 0.005) > 0)
+                {
+                    DrawSeg(P(-11, 9.9), P(-2, 9.9), new RgbaColor(255, 120, 80, 220), 3f);
+                }
+            }
+
+            // Reactor + charge conduit (engine room).
+            (float rx, float ry) = P(-19, 2.5);
+            _renderer.DrawCircle(rx, ry, 1.6f * scale, null, InnerLine, 2f);
+            double throb = 0.5 + 0.5 * Math.Sin(simTime * 0.002);
+            var reactor = new RgbaColor(120, 200, 255, (byte)(90 + 70 * throb));
+            _renderer.DrawCircle(rx, ry, 0.9f * scale, reactor, reactor);
+            if (state.ElectricUniverse)
+            {
+                var conduit = new RgbaColor(255, 240, 120, (byte)(40 + 180 * state.Charge));
+                DrawSeg(P(-19, 1), P(-20, -4), conduit, 3f);
+            }
+
         }
 
-        // Reactor + charge conduit (engine room).
-        (float rx, float ry) = P(-19, 2.5);
-        _renderer.DrawCircle(rx, ry, 1.6f * scale, null, InnerLine, 2f);
-        double throb = 0.5 + 0.5 * Math.Sin(simTime * 0.002);
-        var reactor = new RgbaColor(120, 200, 255, (byte)(90 + 70 * throb));
-        _renderer.DrawCircle(rx, ry, 0.9f * scale, reactor, reactor);
-        if (state.ElectricUniverse)
-        {
-            var conduit = new RgbaColor(255, 240, 120, (byte)(40 + 180 * state.Charge));
-            DrawSeg(P(-19, 1), P(-20, -4), conduit, 3f);
-        }
-
-        // Cantina dressing: tables with a view.
-        foreach ((double tx, double ty) in stackalloc (double, double)[] { (8, 7.5), (11, 6), (14, 7.5) })
+        // Round tables (plan-driven: the ship's cantina, a haven bar) — a ring on the floor.
+        foreach ((float tx, float ty) in plan.Tables)
         {
             (float cx2, float cy2) = P(tx, ty);
             _renderer.DrawCircle(cx2, cy2, 0.9f * scale, null, InnerLine, 1.5f);
         }
 
-        // Droid pirate infantry.
-        DeckPlan.GetDroids(simTime, _droids);
-        foreach (DeckPlan.Droid droid in _droids)
+        // Droid pirate infantry (the ship's; a haven has none — DroidCount 0).
+        plan.FillDroids(simTime, _droids);
+        for (int di = 0; di < plan.DroidCount; di++)
         {
+            DeckPlan.Droid droid = _droids[di];
             (float dx, float dy) = P(droid.X, droid.Y);
             _renderer.DrawCircle(dx, dy, 0.5f * scale, DroidColor, DroidColor);
             float fx = dx + (float)Math.Cos(droid.FacingRad) * scale * 0.8f;
@@ -135,7 +167,7 @@ public sealed class DeckView
         }
 
         // Consoles.
-        foreach (DeckPlan.ConsoleSpot console in DeckPlan.Consoles)
+        foreach (DeckPlan.ConsoleSpot console in plan.Consoles)
         {
             (float sx, float sy) = P(console.X, console.Y);
             bool near = Math.Sqrt((state.AvatarX - console.X) * (state.AvatarX - console.X)

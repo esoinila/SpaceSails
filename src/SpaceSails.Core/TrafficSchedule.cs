@@ -344,6 +344,12 @@ public static class TrafficSchedule
 
         foreach (CelestialBody body in ephemeris.Bodies)
         {
+            if (body.ParentId == "sun" && body.Mu == 0)
+            {
+                continue; // a mass-less thing on a heliocentric orbit is a drifting fixture/wreck (e.g. the
+                          // derelict roadster), not a real planet or a commerce port — no depot rides it
+            }
+
             bool isPlanet = body.ParentId == "sun";
             bool isNotable = body.Kind == BodyKind.Station || body.IsHaven;
             if (!isPlanet && !isNotable)

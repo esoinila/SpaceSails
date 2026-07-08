@@ -29,4 +29,26 @@ public class ParrotTests
             Assert.False(string.IsNullOrWhiteSpace(Parrot.Line(kind, 0)));
         }
     }
+
+    [Fact]
+    public void HunterBacksOff_CracksAWoodenLegJoke()
+    {
+        // A warned or holed wolf turning tail gets a peg-leg jab across the whole rotation.
+        for (int i = 0; i < 3; i++)
+        {
+            string line = Parrot.Line(Parrot.Squawk.HunterBacksOff, i);
+            Assert.True(
+                line.Contains("oak", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("timber", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("wood", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("peg", StringComparison.OrdinalIgnoreCase),
+                $"expected a wooden-leg jab, got: {line}");
+        }
+    }
+
+    [Fact]
+    public void SpaceBarBreak_PunsOnTheName()
+    {
+        Assert.Contains("Space Bar", Parrot.Line(Parrot.Squawk.SpaceBarBreak, 0));
+    }
 }

@@ -20,6 +20,8 @@ public static class Parrot
         PyramidSighted,
         RunningDark,
         FalseColors,
+        HunterBacksOff,
+        SpaceBarBreak,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -50,6 +52,10 @@ public static class Parrot
         ["Dark ship, quiet bird…", "Lights out, captain! SQUAWK… quietly.", "Nobody saw nothing!"],
         // FalseColors
         ["False colors on the beacon!", "The ghost flies the honest course, captain!", "Lie big, fly straight! SQUAWK!"],
+        // HunterBacksOff — a warned or holed wolf turns tail; the bird gloats, with a wooden-leg jab
+        ["SQUAWK! The wolf's got cold feet — and one of 'em's solid oak!", "He's peggin' it, captain! Hop along, timber-toes!", "One leg wood, the other WOULD if it could — he's RUNNING! SQUAWK!"],
+        // SpaceBarBreak — puns for lying low at The Space Bar (sometimes you just need a break)
+        ["Sometimes you just need a Space Bar break! SQUAWK!", "Pull up a stool, captain — no wolves drink here!", "Tab's open, sails are down — hit the Space Bar! SQUAWK!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line

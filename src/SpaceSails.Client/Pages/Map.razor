@@ -25,12 +25,74 @@
             @onpointerup="OnPointerUp" @onpointerleave="OnPointerUp">
     </canvas>
 
+    @* Start picker (2026-07-08): "why always Earth?" — a boot chooser of named start points, over
+       the freshly-built world. Skips the long transit for playtesting and lets a run begin at a gas
+       giant or already ashore. Suppressed when /map?start=<id> already picked one. Same registry. *@
+    @if (_showStartPicker)
+    {
+        <div class="start-picker-backdrop">
+            <div class="start-picker">
+                <div class="start-picker-title">Choose your start</div>
+                <div class="start-picker-sub">Where does this run begin? Earth is the usual berth — the rest skip the haul out (handy for playtesting).</div>
+                <div class="start-picker-list">
+                    @foreach (StartPoint sp in StartPoints.Where(s => !s.Test))
+                    {
+                        StartPoint option = sp;
+                        <button type="button" class="start-picker-option" @onclick="() => ChooseStart(option.Id)">
+                            <span class="start-picker-icon">@option.Icon</span>
+                            <span class="start-picker-text">
+                                <span class="start-picker-label">@option.Label</span>
+                                <span class="start-picker-blurb">@option.Blurb</span>
+                            </span>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
+       player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
+    @if (_viewObject is { } vo)
+    {
+        <div class="view-object-backdrop" @onclick="CloseViewObject">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@vo.Label</div>
+                <img class="view-object-img" src="@vo.ImageUrl" alt="@vo.Label" />
+                @if (vo.Caption is { Length: > 0 } cap)
+                {
+                    <div class="view-object-caption">@cap</div>
+                }
+                <button type="button" class="view-object-close" @onclick="CloseViewObject">Close</button>
+            </div>
+        </div>
+    }
+
     @* Deck / first-person pulse toast: the Nav HUD that normally hosts _pulseMessage is hidden while
        you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
        standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
     @if (_deckMode && _pulseMessage is not null)
     {
         <div class="deck-pulse-toast">@_pulseMessage</div>
+    }
+
+    @* A bar stranger's contract, slid across the table (go-ashore quests, M-Q1): shown over the deck
+       canvas while ashore, with Take / Pass. Same overlay family as the deck-pulse-toast. *@
+    @if (_deckMode && _pendingOffer is { } offer)
+    {
+        <div class="deck-offer-card">
+            <div class="deck-offer-giver">◈ @offer.Giver</div>
+            <div class="deck-offer-blurb">@offer.Blurb</div>
+            <div class="deck-offer-reward">
+                @(offer.Reward > 0
+                    ? $"Reward: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr"
+                    : "On the house — the tip's the payoff 🕸")
+            </div>
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-warning" @onclick="AcceptOffer">@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")</button>
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="DeclineOffer">Pass</button>
+            </div>
+        </div>
     }
 
     @* The chooser (owner: "if many objects under click we let the user choose what they
@@ -320,7 +382,12 @@
             else if (DockableHavenHere() is not null)
             {
                 <button type="button" class="btn btn-sm btn-outline-info me-2" @onclick="ToggleDock"
-                        title="Clamp onto the dock and lie low — the heat bleeds off while you're berthed">🅿 Dock</button>
+                        title="Clamp onto the dock and lie low — the heat bleeds off while you're berthed">⚓ Dock</button>
+            }
+            else if (DockSpeedNudge() is { } dockNudge)
+            {
+                @* Alongside a ⚓ dock but coasting too hot to clamp — show the gate, greyed, so it teaches. *@
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2" disabled title="@dockNudge">⚓ Dock</button>
             }
             <button type="button" class="btn btn-sm @(_showScope ? "btn-info" : "btn-outline-light") ms-2" @onclick="ToggleScope">
                 Scope
@@ -354,50 +421,80 @@
             @if (OrbitInfo() is { } oi)
             {
                 <div class="mt-1 small">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span>
-                            @(oi.IsDestination ? "🎯" : "🛰") Orbit @oi.Body.Name — @OrbitStatusLine(oi)
-                        </span>
-                        @if (oi.WindowOpen)
-                        {
-                            <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
-                                    disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
-                                Enter orbit (@oi.Cost p / O)
-                            </button>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn btn-sm py-0 @(oi.Armed ? "btn-success" : oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
-                                    disabled="@(!oi.InCaptureRange && !oi.Armed)" @onclick="EnterOrbit">
-                                @(oi.Armed ? "Autopilot ON — disarm" : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
-                            </button>
-                        }
-                    </div>
-                    <div class="progress map-orbit-bar" title="distance vs capture range">
-                        <div class="progress-bar @(oi.InCaptureRange ? "bg-success" : "bg-info")"
-                             style="width: @(Math.Clamp(100 * oi.CaptureRange / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
-                    </div>
-                    <div class="progress map-orbit-bar" title="relative speed vs 5 km/s limit">
-                        <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
-                             style="width: @(Math.Clamp(100 * OrbitRule.MaxRelativeSpeed / Math.Max(oi.RelSpeed, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
-                    </div>
-                    @if (oi.IsDestination)
+                    @if (IsDockableHaven(oi.Body))
                     {
-                        <div class="text-secondary">
-                            @FormatDistance(oi.Distance) out · capture ≤ @FormatDistance(oi.CaptureRange) ·
-                            rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
-                            (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
-                            @if (DestinationEta() is { } eta)
-                            {
-                                <text> · @eta</text>
-                            }
-                            <a role="button" class="text-info text-decoration-none ms-1"
-                               @onclick="() => SetDestination(null)">clear</a>
+                        @* A mass-less haven has no Hill sphere — you clamp its ⚓ dock, you don't orbit.
+                           Same panel slot, dock language, so the capture-range math never lies here. *@
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>⚓ Dock at @oi.Body.Name — @DockStatusLine(oi)</span>
                         </div>
+                        @if (oi.IsDestination)
+                        {
+                            <div class="text-secondary">
+                                @FormatDistance(oi.Distance) out · clamp within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km ·
+                                rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                                (match ≤ @((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)))
+                                @if (DestinationEta() is { } eta)
+                                {
+                                    <text> · @eta</text>
+                                }
+                                <a role="button" class="text-info text-decoration-none ms-1"
+                                   @onclick="() => SetDestination(null)">clear</a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>
+                                @(oi.IsDestination ? "🎯" : "🛰") Orbit @oi.Body.Name — @OrbitStatusLine(oi)
+                            </span>
+                            @if (oi.WindowOpen)
+                            {
+                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
+                                        disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
+                                    Enter orbit (@oi.Cost p / O)
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm py-0 @(oi.Armed ? "btn-success" : oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
+                                        disabled="@(!oi.InCaptureRange && !oi.Armed)" @onclick="EnterOrbit">
+                                    @(oi.Armed ? "Autopilot ON — disarm" : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
+                                </button>
+                            }
+                        </div>
+                        <div class="progress map-orbit-bar" title="distance vs capture range">
+                            <div class="progress-bar @(oi.InCaptureRange ? "bg-success" : "bg-info")"
+                                 style="width: @(Math.Clamp(100 * oi.CaptureRange / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        <div class="progress map-orbit-bar" title="relative speed vs 5 km/s limit">
+                            <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
+                                 style="width: @(Math.Clamp(100 * OrbitRule.MaxRelativeSpeed / Math.Max(oi.RelSpeed, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        @if (oi.IsDestination)
+                        {
+                            <div class="text-secondary">
+                                @FormatDistance(oi.Distance) out · capture ≤ @FormatDistance(oi.CaptureRange) ·
+                                rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                                (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
+                                @if (DestinationEta() is { } eta)
+                                {
+                                    <text> · @eta</text>
+                                }
+                                <a role="button" class="text-info text-decoration-none ms-1"
+                                   @onclick="() => SetDestination(null)">clear</a>
+                            </div>
+                        }
                     }
                 </div>
             }
-            <div>Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)</div>
+            <div>
+                Nearest: @_nearestBody?.Name (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)@if (_nearestBody is { } nb && IsDockableHaven(nb) && _dockedHavenId is null)
+                {
+                    <span class="text-info"> · ⚓ dockable haven — coast within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km, ≤@((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)) km/s to clamp on</span>
+                }
+            </div>
             @if (_activeRadar)
             {
                 <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
@@ -1048,7 +1145,8 @@
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
-                                                              OpenToTutorials="_openCaptainToTutorials" />
+                                                              OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
+                                                              OnReopenStartPicker="ReopenStartPicker" />
                 }
             </div>
         </div>
@@ -1852,7 +1950,7 @@
         "Run the loot home and sell it",
         // Third — use a haven (cool the heat your piracy earned)
         "Captain's desk (0): order Lay low at a haven",
-        "Plot a course and slip into orbit at the haven",
+        "Reach the haven — orbit a moon, or coast in slow and clamp its ⚓ dock",
         "Lie low — let the heat cool until the hunter breaks off",
     ];
 
@@ -2020,6 +2118,7 @@
                         _nearestBody?.Name);
                     ShowPulseMessage($"🎯 DIRECT HIT — {npc.Ship.Callsign}'s sail is gone; she's ADRIFT and boardable");
                     RendererInterop.PlayCue("hit");
+                    CompleteHuntQuests(npc.Ship.Id); // holing her settles a bar hunt contract too (M-Q1)
 
                     // Second hunt, step 4: holing the stubborn freighter's sail — the burn she'd have
                     // used to bolt never fires, so she drifts, catchable at last.
@@ -2056,6 +2155,7 @@
                     round.Spent = true;
                     PushNewsEvent(NewsWire.NewsEventKind.SlugHit, hunter.Callsign, _nearestBody?.Name);
                     ShowPulseMessage($"🎯 DIRECT HIT — {hunter.Callsign} breaks off, sail holed");
+                    SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
                     RendererInterop.PlayCue("hit");
                     break;
                 }
@@ -2959,7 +3059,38 @@
     private NpcState? _shuttleTarget;
     private DeckView? _deckView;
     private FirstPersonView? _fpView;
-    private double _avatarX = DeckPlan.SpawnX, _avatarY = DeckPlan.SpawnY, _avatarHeading; // 0 = facing the bow glass
+    private double _avatarX = DeckPlan.Ship.SpawnX, _avatarY = DeckPlan.Ship.SpawnY, _avatarHeading; // 0 = facing the bow glass
+
+    // The active deck (go-ashore, 2026-07-07; walk-through tube, 2026-07-08). The bare ship by
+    // default; while docked at a haven with an interior it becomes the combined ship+tube+station
+    // complex, which you walk across continuously (see SetDeckForDock). The renderers and the avatar
+    // loop all read _deckPlan, so nothing else needs to know which deck is active.
+    private DeckPlan _deckPlan = DeckPlan.Ship;
+    private bool _ashore;                          // true once you're past the tube, in the station room
+    private string _havenName = "";               // the docked haven welded on, or ""
+
+    // --- Ashore quests (M-Q1) — contracts a bar stranger slides across the table. Reuses the
+    // tutorial-lesson *mechanic* (an objective tracked to completion) but is kept separate from
+    // _tutorialStep, which linear-chains its steps. A hunt is met when its target ship is brought
+    // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
+    // records — player-driven, never read by the physics sim. ---
+    private enum QuestKind { Hunt, CargoRun, Intel, Fetch }
+    // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
+    // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
+    private enum QuestState { Active, PickedUp, Complete, TurnedIn }
+    // A hunt stores the prey's ship id in TargetShipId; a cargo run / fetch stores the delivery haven's
+    // body id in DestBodyId (TargetCallsign holds the human name in all cases). A fetch also stores the
+    // pickup derelict's body id in SourceBodyId.
+    private sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
+        string TargetCallsign, string Title, string Blurb, int Reward, string? DestBodyId = null,
+        string? SourceBodyId = null)
+    {
+        public QuestState State { get; set; } = QuestState.Active;
+    }
+    private readonly List<Quest> _quests = [];
+    private Quest? _pendingOffer;   // the stranger's current table offer, awaiting Accept/Pass
+    private int _questSeq;          // monotonic id source for accepted quests
+
     private readonly List<FirstPersonView.SkyBody> _skyBodies = [];
     private readonly HashSet<string> _deckKeys = [];
     private const double AvatarSpeed = 9.0; // deck units per real second
@@ -3010,7 +3141,7 @@
                 ToggleFirstPerson();
                 return true;
             case "q" or "Q":
-                SwitchDesk(ShipDesk.Nav);
+                SwitchDesk(ShipDesk.Nav); // the deck is continuous now — Q always steps up to the helm
                 return true;
             case "e" or "E":
                 InteractAtConsole();
@@ -3060,8 +3191,9 @@
             if (walk != 0)
             {
                 double step = AvatarSpeed * dt * walk;
-                (_avatarX, _avatarY) = DeckPlan.Move(_avatarX, _avatarY,
+                (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY,
                     Math.Cos(_avatarHeading) * step, Math.Sin(_avatarHeading) * step);
+                RefreshAshore();
             }
             return;
         }
@@ -3084,8 +3216,9 @@
                 double a = Math.Sin((_lastTimestampMs ?? 0) * 0.004) * 0.45;
                 (dx, dy) = (dx * Math.Cos(a) - dy * Math.Sin(a), dx * Math.Sin(a) + dy * Math.Cos(a));
             }
-        (_avatarX, _avatarY) = DeckPlan.Move(_avatarX, _avatarY, dx / norm * step2, dy / norm * step2);
+        (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY, dx / norm * step2, dy / norm * step2);
         _avatarHeading = Math.Atan2(dy, dx);
+        RefreshAshore();
     }
 
     // Sky lights for the first-person windows, from the REAL ephemeris: world angle from the
@@ -3111,19 +3244,28 @@
         }
     }
 
-    private string LocationHint()
-    {
-        if (_avatarX > 18) return "BRIDGE";
-        if (_avatarX < -14) return "ENGINE ROOM";
-        if (_avatarX > 4) return _avatarY > 3 ? "CANTINA" : _avatarY < -3 ? (_avatarX > 14.5 ? "HEAD" : "CABINS") : "CORRIDOR";
-        if (_avatarX > -12) return _avatarY > 3 ? "SHUTTLE BAY" : _avatarY < -3 ? "CARGO HOLD" : "CORRIDOR";
-        return "CORRIDOR";
-    }
+    private string LocationHint() => _deckPlan.Location(_avatarX, _avatarY);
 
     private void InteractAtConsole()
     {
-        switch (DeckPlan.NearestConsole(_avatarX, _avatarY))
+        switch (_deckPlan.NearestConsole(_avatarX, _avatarY))
         {
+            case DeckPlan.ConsoleKind.Airlock:
+                // Only the bare-ship gangway raises this (the docked complex drops the console — you
+                // walk the tube). So it's always the "can't go ashore here" nudge.
+                ShowPulseMessage(_dockedHavenId is null
+                    ? "No gangway rigged — clamp onto a haven first (⚓ Dock)."
+                    : "Nothing to step into here — no deck ashore at this berth (yet).");
+                break;
+            case DeckPlan.ConsoleKind.BarPatron:
+                TalkToStranger();
+                break;
+            case DeckPlan.ConsoleKind.Hatch:
+                KnockOnHatch();
+                break;
+            case DeckPlan.ConsoleKind.ViewObject:
+                ViewNearbyObject();
+                break;
             case DeckPlan.ConsoleKind.Helm:
                 SwitchDesk(ShipDesk.Nav);
                 ShowPulseMessage("Back at the helm");
@@ -3267,7 +3409,8 @@
             return new ScopeView.Target(
                 ScopeView.TargetKind.Body, body.Name, null,
                 _nearestBodyPosition, _nearestBodyVelocity,
-                body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition));
+                body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition),
+                IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
         }
 
         return new ScopeView.Target(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
@@ -3296,7 +3439,8 @@
                 Vector2d velocity = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
                 return new ScopeView.Target(
                     ScopeView.TargetKind.Body, body.Name, null,
-                    position, velocity, body.BodyRadius, BodyColor(body.Id), InPlasmaAt(position));
+                    position, velocity, body.BodyRadius, BodyColor(body.Id), InPlasmaAt(position),
+                    IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
             }
         }
 
@@ -3343,9 +3487,14 @@
             _mission = ShipMission.Default;
         }
 
+        bool destDocks = bodyId is not null
+            && _ephemeris?.Bodies.FirstOrDefault(b => b.Id == bodyId) is { } destBody
+            && IsDockableHaven(destBody);
         ShowPulseMessage(bodyId is null
             ? "Destination cleared"
-            : $"Destination set — {BodyName(bodyId)} 🎯 orbit assist tracks it now");
+            : destDocks
+                ? $"Destination set — {BodyName(bodyId)} ⚓ dock assist tracks it now"
+                : $"Destination set — {BodyName(bodyId)} 🎯 orbit assist tracks it now");
         StateHasChanged();
     }
 
@@ -3622,6 +3771,17 @@
             : closing;
     }
 
+    // Approach coaching for a mass-less haven dock — no orbit, you clamp on (the dock mirror of
+    // OrbitStatusLine). Keyed off the same DockReachMeters/DockMatchSpeedMps gates as the ⚓ button.
+    private string DockStatusLine(OrbitAssistInfo oi)
+    {
+        string km(double m) => (m / 1000).ToString("N0", CultureInfo.InvariantCulture);
+        if (_dockedHavenId == oi.Body.Id) return "clamped on — lying low";
+        if (oi.Distance > DockReachMeters) return $"coast within {km(DockReachMeters)} km to clamp on";
+        if (oi.RelSpeed > DockMatchSpeedMps) return $"alongside — slow to ≤{km(DockMatchSpeedMps)} km/s, then hit ⚓ Dock";
+        return "alongside and matched — hit ⚓ Dock to clamp on";
+    }
+
     private void EnterOrbit()
     {
         if (OrbitInfo() is not { } candidate || _ephemeris is null)
@@ -3745,8 +3905,12 @@
         _started = true;
 
         // /map?scenario=sol-eu loads scenarios/sol-eu.json; default sol. Name is sanitized to a
-        // simple slug — it becomes a URL path segment.
+        // simple slug — it becomes a URL path segment. /map?start=space-bar jumps the freshly-built
+        // world straight to a named start point (see StartPoints) — the playtest "skip the set-up"
+        // shortcut, and the same registry the boot picker offers. Unknown start id → the picker shows.
         string scenarioName = "sol";
+        string? startId = null;
+        string? fetchCheat = null;
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
         {
@@ -3756,6 +3920,24 @@
                 if (candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
                 {
                     scenarioName = candidate;
+                }
+            }
+            else if (pair.StartsWith("start=", StringComparison.OrdinalIgnoreCase))
+            {
+                string candidate = Uri.UnescapeDataString(pair["start=".Length..]);
+                if (StartPoints.Any(s => s.Id == candidate))
+                {
+                    startId = candidate;
+                }
+            }
+            else if (pair.StartsWith("fetch=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Dev cheat: /map?fetch=active|picked injects the fetch mission at that stage so a
+                // playtester can exercise pickup / in-person delivery without the flights between.
+                string candidate = Uri.UnescapeDataString(pair["fetch=".Length..]).ToLowerInvariant();
+                if (candidate is "active" or "picked")
+                {
+                    fetchCheat = candidate;
                 }
             }
         }
@@ -3793,7 +3975,11 @@
         // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
         IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
-        IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44);
+        // The derelict roadster is a dead wreck, not a trading post — it's a station body only so its
+        // map label reads at a sane zoom (the fetch-mission target). Drop the depot GenerateDepots
+        // would otherwise hang on it (any sun-orbiting body gets one).
+        IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44)
+            .Where(d => d.DepotBodyId != "derelict-roadster").ToList();
 
         // The tutorial's "first hunt" needs prey the player can actually catch from a standing start.
         // Interplanetary traffic screams past at 80–160 km/s relative — past the 5 km/s boarding
@@ -3829,8 +4015,55 @@
         RendererInterop.StartLoop(CanvasId);
 
         _worldReady = true;
+
+        // Start point: an explicit /map?start=<id> jumps straight there (the renderer is live now, so
+        // a docked-&-ashore start's board cue is safe); with no param, offer the boot picker so a
+        // playtester (or a player who'd rather not always cast off from Earth) can choose a locale.
+        if (startId is not null)
+        {
+            ApplyStart(startId);
+        }
+        else
+        {
+            _showStartPicker = true;
+        }
+
+        if (fetchCheat is not null)
+        {
+            InjectFetchCheat(fetchCheat); // after the start, so the dest can be the station we docked at
+        }
+
         StateHasChanged();
         await _focusableDiv.FocusAsync();
+    }
+
+    // Dev cheat (/map?fetch=active|picked): drop a fetch job straight into the ledger at a stage, so a
+    // playtester can test the pickup or the in-person hand-off without flying the legs between. The
+    // drop-off is the interior station you're standing in (so "picked" can be delivered on the spot),
+    // else the first interior station. Pair with ?start=wreck to test the real proximity pickup.
+    private void InjectFetchCheat(string stage)
+    {
+        if (_ephemeris is null || _quests.Any(q => q.Kind == QuestKind.Fetch)
+            || _ephemeris.Bodies.All(b => b.Id != "derelict-roadster"))
+        {
+            return;
+        }
+        string? dest = _dockedHavenId is { } here && HavenInterior.HasInterior(here)
+            ? here
+            : _ephemeris.Bodies.FirstOrDefault(b => b.IsHaven && HavenInterior.HasInterior(b.Id))?.Id;
+        if (dest is null)
+        {
+            return;
+        }
+        string destName = _ephemeris.Bodies.First(b => b.Id == dest).Name;
+        _quests.Add(new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, "THE FIXER",
+            "", destName, "Fetch the roadster's lost wallet",
+            "[test] a fetch job, dropped straight into the ledger.", 4200,
+            DestBodyId: dest, SourceBodyId: "derelict-roadster")
+        {
+            State = stage == "picked" ? QuestState.PickedUp : QuestState.Active,
+        });
+        ShowPulseMessage($"🧪 Test: fetch job injected ({stage}) — hand off to The Fixer at {destName}.");
     }
 
     private ShipState InitializeShipState()
@@ -3847,6 +4080,133 @@
         Vector2d earthPosition = _ephemeris.Position("earth", 0);
         Vector2d initialPosition = earthPosition + earthPosition.Normalized() * 5e9;
         return new ShipState(initialPosition, initialVelocity, 0);
+    }
+
+    // --- Start points (2026-07-08) ---
+    // "Why should it always start from Earth?" Named starts that jump the just-built world to a
+    // locale — either as a playtest shortcut (skip the long haul to test the interesting bit) or as a
+    // genuine choice of where a run begins. One registry feeds both the /map?start=<id> URL and the
+    // boot picker overlay. The heavy lifting mirrors the tutorial Seed* pattern: place the ship (and,
+    // for a docked berth, clamp and step ashore), then frame the camera. Body ids are scenario data.
+    // Test:true starts are reachable by /map?start=<id> but hidden from the boot picker — dev-only
+    // jumps for exercising a mission stage without the flight to it.
+    private sealed record StartPoint(string Id, string Icon, string Label, string Blurb, bool Test = false);
+
+    private static readonly StartPoint[] StartPoints =
+    [
+        new("earth", "🌍", "Earth — the usual berth",
+            "The standard opening: fresh out of Earth orbit, last run's takings in the purse and hold."),
+        new("cinder-roost", "🌋", "Cinder Roost — docked",
+            "In Venus' sulphur clouds — begin already clamped on at Cinder Roost, a short walk up the tube to The Cinder Lounge."),
+        new("space-bar", "🍸", "The Rusty Roadstead — docked",
+            "Skip the haul to Mars — begin already clamped on at The Rusty Roadstead, a short walk up the tube to the bar's tables."),
+        new("jupiter", "🪐", "Jupiter — the Galilean moons",
+            "Out at Jupiter, co-moving beside Europa — fly Ganymede and Callisto without the long cruise from the inner system."),
+        new("saturn", "🌙", "Saturn — the moons",
+            "Among Saturn's moons by the Ringside Exchange — Enceladus and Titan a short burn away."),
+        new("ringside", "💍", "Ringside Exchange — docked",
+            "In Saturn's rings — begin already clamped on at Ringside Exchange, a short walk up the tube to The Ringside Bar."),
+        new("the-tilt", "❄️", "The Tilt — docked",
+            "Way out at Uranus — begin already clamped on at The Tilt, a short walk up the tube to its cold, lonely bar."),
+        new("wreck", "🚗", "The Derelict Roadster — alongside (test)",
+            "Co-moving beside the lost roadster, sunward of Mars — for testing the fetch pickup.", Test: true),
+    ];
+
+    // Start ids that begin already docked at a walkable station, mapped to the station body. These
+    // reuse the one docked-arrival path in ApplyStart / PlaceShipForStart (weld the complex, step
+    // aboard by the gangway) — so a new interior station is a scenario body + a spec + one line here.
+    private static readonly Dictionary<string, string> DockedStarts = new()
+    {
+        ["cinder-roost"] = "cinder-roost",
+        ["space-bar"] = "the-space-bar",
+        ["ringside"] = "ringside-exchange",
+        ["the-tilt"] = "the-tilt",
+    };
+
+    private bool _showStartPicker;
+
+    // Arrange the just-built (or, on a picker reopen, already-running) world for a chosen start.
+    // Re-entrant: steps aboard and unclamps any current berth first, so it's safe to call any time.
+    private void ApplyStart(string id)
+    {
+        _dockedHavenId = null;   // drop any prior clamp before the jump
+        SetDeckForDock(null);    // back to the bare ship deck (pulls you aboard if you'd wandered ashore)
+
+        _ship = PlaceShipForStart(id);
+        ReprojectTrajectory();
+        _camera.CenterOn(_ship.Position);
+
+        // A docked locale: clamp onto the berth (the tick's HoldAtDock then pins the ship to the
+        // station's drift), weld on the walk-through complex, and drop the avatar aboard by the gangway
+        // facing the tube — a couple of steps from walking straight across into the bar.
+        if (DockedStarts.TryGetValue(id, out string? dockBody))
+        {
+            Vector2d dockPos = _ephemeris!.Position(dockBody, 0);
+            _dockedHavenId = dockBody;
+            _dockOffset = _ship.Position - dockPos;
+            SetDeckForDock(dockBody);
+            (_avatarX, _avatarY, _avatarHeading) = (2.5, 6, Math.PI / 2); // in the airlock corridor, facing up the tube
+            _deckMode = true;
+            _activeDesk = ShipDesk.Deck;
+        }
+        else
+        {
+            // A free-flying locale (Earth, Jupiter, Saturn): leave any ashore/deck view we jumped FROM
+            // so the ship map actually shows (mattered when the picker was reopened while docked — the
+            // ship moved but the deck stayed on screen). ChooseStart then brings up the Nav desk.
+            _deckMode = false;
+        }
+    }
+
+    // The ship's state for a start point. Reuses InitializeShipState's finite-difference "co-moving
+    // with a body" idiom, just keyed off a different body — a small radial offset keeps the ship clear
+    // of the body's surface. "earth" (and any unknown id) falls back to the standard Earth spawn.
+    private ShipState PlaceShipForStart(string id)
+    {
+        if (DockedStarts.TryGetValue(id, out string? dockBody))
+        {
+            return CoMovingBy(dockBody, 3_000); // just off the ~1 km station, well within dock reach
+        }
+        return id switch
+        {
+            "jupiter" => CoMovingBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
+            "saturn" => CoMovingBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
+            "wreck" => CoMovingBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
+            _ => InitializeShipState(),
+        };
+    }
+
+    // A ship state co-moving with a body, a given distance radially outward from it (from the Sun's
+    // frame). offsetMeters 0 sits right on the body; a few thousand metres clears a station, ~1e7+ a moon.
+    private ShipState CoMovingBy(string bodyId, double offsetMeters)
+    {
+        const double h = 1.0;
+        Vector2d pos = _ephemeris!.Position(bodyId, 0);
+        Vector2d vel = (_ephemeris.Position(bodyId, h) - _ephemeris.Position(bodyId, -h)) / (2 * h);
+        Vector2d outward = pos == Vector2d.Zero ? new Vector2d(1, 0) : pos.Normalized();
+        return new ShipState(pos + outward * offsetMeters, vel, 0);
+    }
+
+    // The Captain's "🧭 Set course to a start point…" button: bring the chooser back up mid-run so a
+    // locale can be (re)picked from the chart-room, not just at boot. ApplyStart is re-entrant, so the
+    // jump is safe from anywhere.
+    private void ReopenStartPicker() => _showStartPicker = true;
+
+    // Boot-picker (or Captain-desk reopen) choice: dismiss the overlay and jump to the locale. Always
+    // ApplyStart — even "Earth": at boot the world is already there so it's a no-op re-place, but when
+    // the picker is reopened mid-run (e.g. while docked at a Venus bar) Earth is a genuine jump that
+    // has to unclamp and move the ship. A docked start lands you ashore on the deck; any other locale
+    // drops you on the Nav map so the jump is actually visible. Focus returns so keys drive ship/walk.
+    private async Task ChooseStart(string id)
+    {
+        _showStartPicker = false;
+        ApplyStart(id);
+        if (!_deckMode && _activeDesk != ShipDesk.Nav)
+        {
+            SwitchDesk(ShipDesk.Nav);
+        }
+        StateHasChanged();
+        await _focusableDiv.FocusAsync();
     }
 
     private void OnCanvasResized(double widthPx, double heightPx)
@@ -3874,6 +4234,7 @@
         _frameNowMs = highResTimestampMs;
 
         UpdateNearestBody();
+        CheckFetchPickup();     // coasting past the wreck grabs a fetch job's goods
         UpdateEffectiveWarp();
 
         if (!Paused)
@@ -4089,12 +4450,12 @@
             {
                 BuildSkyBodies();
                 double deckWorldAngle = Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X);
-                _fpView!.Draw(_viewportWidth, _viewportHeight, SimTime,
+                _fpView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime,
                     _avatarX, _avatarY, _avatarHeading, deckWorldAngle, _skyBodies, LocationHint());
             }
             else
             {
-                _deckView!.Draw(_viewportWidth, _viewportHeight, SimTime, new DeckView.State(
+                _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
                     _avatarX, _avatarY, _avatarHeading,
                     _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null),
                     _deckPanX, _deckPanY);
@@ -4565,7 +4926,10 @@
             if (isDestination || _camera.MetersPerPixel < body.BodyRadius * 500 || (isStation && _camera.MetersPerPixel < LabelZoomThresholdForStations))
             {
                 RgbaColor labelColor = body.IsHaven ? HavenLabelColor : LabelColor;
-                _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, body.Name, labelColor);
+                // A ⚓ flags the mass-less grey-market docks — the havens you can clamp onto to lie
+                // low (moon havens you orbit instead, so they carry the pink wash but no anchor).
+                string label = IsDockableHaven(body) ? $"⚓ {body.Name}" : body.Name;
+                _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, label, labelColor);
             }
         }
     }
@@ -5449,7 +5813,24 @@
                 double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
                 if (d2 <= hit * hit)
                 {
-                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · body", "🪐"), d2, 2));
+                    (string flavor, string icon) = body.IsHaven ? ("haven", "🏴") : ("body", "🪐");
+                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · {flavor}", icon), d2, 2));
+                }
+            }
+
+            // Haven docks are stations (skipped above — you clamp, not orbit), but they must still be
+            // pickable: stacked over their planet, the ⚓ in the name calls out the one you can dock at
+            // right there in the "which one?" list — no zooming in to tell them apart (owner's ask).
+            foreach (CelestialBody body in _ephemeris.Bodies)
+            {
+                if (!IsDockableHaven(body)) continue;
+                (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
+                double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
+                double hit = Math.Max(Math.Clamp(drawnPx, 14, 80), radiusPx);
+                double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
+                if (d2 <= hit * hit)
+                {
+                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · dock haven", "⚓"), d2, 2));
                 }
             }
         }
@@ -6490,6 +6871,7 @@
         npc.Boarded = true; // keeps flying but empty; a second boarding yields nothing
         ShowPulseMessage($"Captured {take} units of {npc.Ship.CargoClass} {PlunderLines[(int)((SimTime / 60) % PlunderLines.Length)]}");
         RendererInterop.PlayCue("board");
+        CompleteHuntQuests(npc.Ship.Id); // a bar contract on this ship is now met (M-Q1)
         AdvanceTutorial(3); // step 4: first successful boarding
         if (npc.Ship.Id == TrafficSchedule.StarterFreighterId)
         {
@@ -7376,6 +7758,7 @@
                 ? $"⚠ {hunter.Callsign} watches the slug drift past, shrugs, and turns for the nearest cantina — la dolce vita 🍸"
                 : $"⚠ {hunter.Callsign} has had enough — she sheers off and voids the contract");
             PushNewsEvent(NewsWire.NewsEventKind.HunterBrokeOff, hunter.Callsign, _nearestBody?.Name);
+            SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
         }
         else
         {
@@ -7388,6 +7771,7 @@
                 _ => "is losing her nerve",
             };
             ShowPulseMessage($"⚠ WARNING SHOT — {hunter.Callsign} {nerve} and sheers off (peels away ~{peelDays:0.#} d)");
+            SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
         }
     }
 
@@ -7462,6 +7846,30 @@
     private const double DockReachMeters = 5e8;    // how close you must coast to throw the clamp on
     private const double DockMatchSpeedMps = 8000;  // and how nearly matched to its drift (tunable)
 
+    // A station haven you clamp onto (⚓): mass-less, so it can't be orbited — the dock is the only
+    // way to lie low there. Moon havens (mu > 0) you hide at by orbiting instead. This is the split
+    // the ⚓ marker, the scope's "HAVEN ⚓ DOCK" tag and the Nav hint all key off.
+    private static bool IsDockableHaven(CelestialBody body) => body is { IsHaven: true, Mu: <= 0 };
+
+    // Near a dock but coasting too hot to clamp — the one gate players hit most. Returns the nudge
+    // to show on a greyed-out Dock button, or null when there's nothing to nudge about.
+    private string? DockSpeedNudge()
+    {
+        if (_dockedHavenId is not null || _nearestBody is not { } near || !IsDockableHaven(near))
+        {
+            return null;
+        }
+
+        double distance = (_ship.Position - _nearestBodyPosition).Length;
+        if (distance <= near.BodyRadius || distance > DockReachMeters)
+        {
+            return null; // not in reach yet — the Nav "Nearest" line teaches the "get closer" half
+        }
+
+        double relSpeed = (_ship.Velocity - _nearestBodyVelocity).Length;
+        return relSpeed > DockMatchSpeedMps ? $"Too fast to clamp — slow to ≤{DockMatchSpeedMps / 1000:N0} km/s" : null;
+    }
+
     // The station haven we're close enough (and slow enough) to clamp onto right now, if any.
     private CelestialBody? DockableHavenHere()
     {
@@ -7476,6 +7884,382 @@
             ? dock
             : null;
     }
+
+    // Go-ashore (2026-07-07; the walk-through tube, 2026-07-08). Docking now welds the ship to the
+    // station by a narrow umbilical with two automatic airlock doors, and you simply WALK your avatar
+    // down it into the station — no gangway console, no teleport. While clamped to a haven with an
+    // interior, _deckPlan becomes the combined ship+tube+station complex (HavenInterior.DockedDeck);
+    // a haven without one keeps the plain ship deck, whose ⚓ gangway just says "nothing ashore yet".
+    private const double ShipDeckTopY = 14;   // the ship's airlock hatch; above it lies the tube
+    private const double StationFloorY = 22;  // past the tube you're in the station (lobby, then bar)
+
+    private void SetDeckForDock(string? havenId)
+    {
+        if (havenId is { } id && HavenInterior.DockedDeck(id) is { } complex)
+        {
+            _deckPlan = complex;
+            _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";
+        }
+        else
+        {
+            _deckPlan = DeckPlan.Ship;
+            _havenName = "";
+            PullAvatarAboard();
+        }
+        _deckPanX = _deckPanY = 0; // fresh deck: drop any drag-pan so the follow-cam isn't offset
+        RefreshAshore();
+    }
+
+    // Casting off: if you'd wandered up the tube or into the station, step you back aboard so you
+    // never undock standing in a berth that's no longer welded on.
+    private void PullAvatarAboard()
+    {
+        if (_avatarY > ShipDeckTopY)
+        {
+            (_avatarX, _avatarY, _avatarHeading) = (2.5, 8, -Math.PI / 2); // back in the airlock corridor, facing in
+        }
+        _ashore = false;
+    }
+
+    // "Ashore" is a place on the continuous deck now, not a mode: true once you're past the tube in
+    // the station room. Kept fresh as you walk so quest/status flavor can read it.
+    private void RefreshAshore() => _ashore = _deckPlan.FollowCam && _avatarY > StationFloorY;
+
+    // --- Ashore quests (M-Q1): the hooded stranger at the bar table ---
+
+    // Walk up to a booth and press E. Which patron you're next to (from their console label) sets who
+    // you're dealing with and their trade — One-Eye Silas fences bounties (hunts), Madam Coil runs
+    // parcels (cargo runs). If you already owe this giver a job, they just nod at it.
+    // A Gen-AI image the player is currently viewing (a souvenir, a lore prop), or null. Pressing E on
+    // a ViewObject console pops it up; E again (or the close button / clicking away) dismisses it.
+    private DeckPlan.ConsoleSpot? _viewObject;
+
+    private void ViewNearbyObject()
+    {
+        if (_viewObject is not null)
+        {
+            _viewObject = null; // E again closes
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.ViewObject } spot)
+        {
+            _viewObject = spot;
+        }
+    }
+
+    private void CloseViewObject() => _viewObject = null;
+
+    // Knock on a locked station hatch (a ring department or a bar back-room). Nobody answers — for now.
+    // Each hatch carries an id in its label (e.g. "🔒 MEDBAY · M-05") so a mission can name one to
+    // open. PIN entry / mission unlock is the next layer; today every knock goes unanswered.
+    private void KnockOnHatch()
+    {
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.Hatch } hatch)
+        {
+            return;
+        }
+        ShowPulseMessage($"{hatch.Label} — sealed. You knock; only the station's hum answers. 🔒");
+    }
+
+    private void TalkToStranger()
+    {
+        if (_pendingOffer is not null)
+        {
+            return; // the card's already on the table
+        }
+
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.BarPatron } spot)
+        {
+            return;
+        }
+        string giver = spot.Label.Replace("◈", "").Trim();
+
+        // Face-to-face hand-off (no electronic trace): a picked-up fetch job, delivered in person to
+        // The Fixer at its destination station. Paid on the spot, under the table — done before any
+        // "still-waiting" guard, since the fetch's giver is a Fixer at every station.
+        if (giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) && _dockedHavenId is { } here
+            && _quests.FirstOrDefault(q => q is { Kind: QuestKind.Fetch, State: QuestState.PickedUp } && q.DestBodyId == here) is { } drop)
+        {
+            DeliverFetch(drop);
+            return;
+        }
+
+        Quest? open = _quests.FirstOrDefault(q => q.Giver == giver && q.State != QuestState.TurnedIn);
+        if (open is { State: QuestState.Active })
+        {
+            ShowPulseMessage($"“Still waiting on {open.TargetCallsign}. Finish the job, then we'll talk.”");
+            return;
+        }
+        if (open is { Kind: QuestKind.Fetch, State: QuestState.PickedUp })
+        {
+            ShowPulseMessage($"“You've got the goods — don't flash them here. Get them to my associate at {open.TargetCallsign}.”");
+            return;
+        }
+        if (open is { State: QuestState.Complete })
+        {
+            ShowPulseMessage($"“{open.TargetCallsign} — done. Collect at any berth; the coin's waiting.”");
+            return;
+        }
+
+        Quest? offer = giver switch
+        {
+            _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
+            _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
+            _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver),
+            _ => MakeHuntOffer(giver),
+        };
+        if (offer is null)
+        {
+            ShowPulseMessage("The stranger swirls their drink. “Nothing worth your time right now. Check back.”");
+            return;
+        }
+        _pendingOffer = offer;
+    }
+
+    // Pick a live target for a hunt contract — prefer off-books ships (the kind you couldn't just read
+    // off the public traffic board, so the stranger's tip is actually worth something). Chosen from
+    // sim time + the current berth so the booth's offer is stable frame to frame, and skips ships
+    // already under contract.
+    private Quest? MakeHuntOffer(string giver)
+    {
+        List<NpcState> candidates = _npcStates
+            .Where(n => n.Active && !n.Arrived && !n.Boarded && !n.Ship.IsPod
+                        && _quests.All(q => q.TargetShipId != n.Ship.Id))
+            .OrderByDescending(n => !n.Ship.PublishesTimetable)          // off-books first
+            .ThenBy(n => n.Ship.Id, StringComparer.Ordinal)
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        NpcState prey = candidates[OfferIndex(candidates.Count)];
+        int reward = 250 + prey.Ship.CargoUnits * 60;
+        string route = RouteLabel(prey.Ship);
+        string blurb = prey.Ship.PublishesTimetable
+            ? $"“See {prey.Ship.Callsign}, running {route}? She's carrying, and I want her stopped. Bring her down — {reward:N0} cr in it for you.”"
+            : $"“There's a ghost called {prey.Ship.Callsign} running dark, {route}. Won't show on any board. Hole her, board her — {reward:N0} cr, quiet-like.”";
+        return new Quest($"hunt-{++_questSeq}", QuestKind.Hunt, giver,
+            prey.Ship.Id, prey.Ship.Callsign, $"Bring down {prey.Ship.Callsign}", blurb, reward);
+    }
+
+    // A parcel to carry to another haven — completes when you berth there. Destination is any haven
+    // other than the one you're standing in, chosen by sim time + berth so it's stable per booth.
+    private Quest? MakeCargoRunOffer(string giver)
+    {
+        List<CelestialBody> havens = (_ephemeris?.Bodies ?? [])
+            .Where(b => b.IsHaven && b.Id != _dockedHavenId
+                        && _quests.All(q => q.DestBodyId != b.Id))
+            .OrderBy(b => b.Id, StringComparer.Ordinal)
+            .ToList();
+        if (havens.Count == 0)
+        {
+            return null;
+        }
+
+        CelestialBody dest = havens[OfferIndex(havens.Count)];
+        int reward = 300 + (int)(dest.OrbitRadius / 1e10); // farther berths pay a little more
+        string blurb = $"“Quiet parcel, no questions. Gets to {dest.Name} in one piece, you walk with {reward:N0} cr. Berth there and it's done.”";
+        return new Quest($"run-{++_questSeq}", QuestKind.CargoRun, giver,
+            "", dest.Name, $"Run a parcel to {dest.Name}", blurb, reward, DestBodyId: dest.Id);
+    }
+
+    // A whisper on an off-books ghost — the payoff IS the tip. Accepting drops a fresh route-intel
+    // entry into the ledger (exactly like a dark-web buy, but on the house), so a ship that never
+    // shows on the public board joins your contacts, 🕸-tagged, for 30 days. Instant: no task to do.
+    private Quest? MakeIntelOffer(string giver)
+    {
+        List<NpcState> ghosts = _npcStates
+            .Where(n => n.Active && !n.Arrived && !n.Ship.PublishesTimetable
+                        && !_intelLedger.Knows(n.Ship.Id, SimTime)
+                        && _quests.All(q => q.TargetShipId != n.Ship.Id))
+            .OrderBy(n => n.Ship.Id, StringComparer.Ordinal)
+            .ToList();
+        if (ghosts.Count == 0)
+        {
+            return null;
+        }
+
+        NpcState ghost = ghosts[OfferIndex(ghosts.Count)];
+        string blurb = $"“I know where {ghost.Ship.Callsign} really runs — {RouteLabel(ghost.Ship)}. A ghost; she'll never show on any board. This one's on the house. Want it?”";
+        return new Quest($"intel-{++_questSeq}", QuestKind.Intel, giver,
+            ghost.Ship.Id, ghost.Ship.Callsign, $"Whisper on {ghost.Ship.Callsign}", blurb, 0);
+    }
+
+    // The Fixer's one confidential job: fly out to the derelict roadster, prise the untraceable wallet
+    // from between the seats, then hand it over in person at another station's bar. A one-off signature
+    // hunt — offered only if it isn't already in the ledger (in any state), so the wallet is unique.
+    // Destination is an interior station other than this one, picked by sim time + berth so it's stable.
+    private Quest? MakeFetchOffer(string giver)
+    {
+        if (_ephemeris is null || _quests.Any(q => q.Kind == QuestKind.Fetch))
+        {
+            return null; // no world yet, or there is only one lost roadster
+        }
+        if (_ephemeris.Bodies.All(b => b.Id != "derelict-roadster"))
+        {
+            return null; // scenario without the wreck
+        }
+        List<CelestialBody> dests = _ephemeris.Bodies
+            .Where(b => b.IsHaven && b.Id != _dockedHavenId && HavenInterior.HasInterior(b.Id))
+            .OrderBy(b => b.Id, StringComparer.Ordinal)
+            .ToList();
+        if (dests.Count == 0)
+        {
+            return null;
+        }
+
+        CelestialBody dest = dests[OfferIndex(dests.Count)];
+        const int reward = 4200; // a dead man's fortune, in a currency nobody can trace
+        string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting sunward of Mars — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {dest.Name}. {reward:N0} cr, and we never spoke.”";
+        return new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, giver,
+            "", dest.Name, "Fetch the roadster's lost wallet", blurb, reward,
+            DestBodyId: dest.Id, SourceBodyId: "derelict-roadster");
+    }
+
+    // Deterministic pick index for a booth's offer: sim time (slow rotation) mixed with the berth id
+    // (a stable char-sum, not the randomized string hash), so different docks surface different work
+    // and it doesn't flicker frame to frame.
+    private int OfferIndex(int count) =>
+        count <= 0 ? 0 : (int)(((long)(SimTime / 1000) + (_dockedHavenId ?? "").Sum(ch => ch)) % count);
+
+    private void AcceptOffer()
+    {
+        if (_pendingOffer is not { } offer)
+        {
+            return;
+        }
+        _pendingOffer = null;
+
+        if (offer.Kind == QuestKind.Intel)
+        {
+            // A gift of information — delivered on the spot: drop the route tip into the ledger (like a
+            // dark-web buy, but free) and log it as a settled entry. No hunt, no dock payout.
+            _intelLedger.Add(new RouteIntel(offer.TargetShipId, SimTime, RouteIntel.DefaultValiditySeconds, Price: 0));
+            offer.State = QuestState.TurnedIn;
+            _quests.Add(offer);
+            ShowPulseMessage($"Tip logged — {offer.TargetCallsign} is on your contacts now (🕸 stale in 30 d).");
+            return;
+        }
+
+        _quests.Add(offer);
+        ShowPulseMessage($"Job taken: {offer.Title}. Finish it, then collect at any berth.");
+    }
+
+    private void DeclineOffer()
+    {
+        if (_pendingOffer is null)
+        {
+            return;
+        }
+        _pendingOffer = null;
+        ShowPulseMessage("“Suit yourself.” The stranger turns back to their drink.");
+    }
+
+    // A brought-down target settles any matching hunt contract. Called where a ship is holed or
+    // boarded (its two "brought down" moments), keyed on the ship id the quest stored.
+    private void CompleteHuntQuests(string shipId)
+    {
+        foreach (Quest q in _quests)
+        {
+            if (q is { Kind: QuestKind.Hunt, State: QuestState.Active } && q.TargetShipId == shipId)
+            {
+                q.State = QuestState.Complete;
+                ShowPulseMessage($"Contract met — {q.TargetCallsign} is down. {q.Reward:N0} cr waiting at any haven. 🎯");
+            }
+        }
+    }
+
+    private const double FetchPickupRangeM = 1e8; // coast within ~100,000 km of the wreck to grab the goods
+
+    // Coasting close to a fetch job's derelict prises the goods loose — flips Active → PickedUp. Called
+    // each tick while flying; player-driven state, never read by the physics sim, and idempotent (only
+    // an Active fetch matches, so it fires once).
+    private void CheckFetchPickup()
+    {
+        if (_ephemeris is null || _dockedHavenId is not null)
+        {
+            return;
+        }
+        foreach (Quest q in _quests)
+        {
+            if (q is not { Kind: QuestKind.Fetch, State: QuestState.Active } || q.SourceBodyId is null)
+            {
+                continue;
+            }
+            Vector2d wreck = _ephemeris.Position(q.SourceBodyId, SimTime);
+            if ((_ship.Position - wreck).Length <= FetchPickupRangeM)
+            {
+                q.State = QuestState.PickedUp;
+                ShowPulseMessage($"Got it — the wallet was wedged between the seats. Now get it to {q.TargetCallsign}, quiet-like. 💾");
+                RendererInterop.PlayCue("board");
+            }
+        }
+    }
+
+    // Hand the fetched goods to The Fixer at the destination station — face to face, paid under the
+    // table, no electronic trace. Unlike a cargo run (settled on berthing), this only completes when
+    // you walk to the bar and talk to the contact.
+    private void DeliverFetch(Quest q)
+    {
+        _credits += q.Reward;
+        q.State = QuestState.TurnedIn;
+        ShowPulseMessage($"The wallet changes hands under the table — +{q.Reward:N0} cr, and we never met. 🕶");
+    }
+
+    // Berthing at a haven settles any cargo-run contract bound for it. Called from ToggleDock.
+    private void CompleteCargoRunQuests(string dockId)
+    {
+        foreach (Quest q in _quests)
+        {
+            if (q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && q.DestBodyId == dockId)
+            {
+                q.State = QuestState.Complete;
+                ShowPulseMessage($"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
+            }
+        }
+    }
+
+    // Turn in any finished contracts on berthing — the reward lands in the ledger.
+    private void PayCompletedQuests()
+    {
+        foreach (Quest q in _quests)
+        {
+            if (q.State == QuestState.Complete)
+            {
+                _credits += q.Reward;
+                q.State = QuestState.TurnedIn;
+                ShowPulseMessage($"Contract paid: {q.Title} — +{q.Reward:N0} cr. 💰");
+            }
+        }
+    }
+
+    // Project the quest ledger for the Captain's-desk Quests tab (M-Q2) — newest work on top.
+    private Stations.Captain.QuestItem[] QuestCards() =>
+        _quests.AsEnumerable().Reverse().Select(q =>
+        {
+            (string label, string kind) = (q.Kind, q.State) switch
+            {
+                (QuestKind.Intel, _) => ("🕸 Tip taken", "paid"),
+                (QuestKind.Fetch, QuestState.Active) => ("▶ Find the derelict roadster", "active"),
+                (QuestKind.Fetch, QuestState.PickedUp) => ($"📦 Carrying — hand off at {q.TargetCallsign}", "active"),
+                (_, QuestState.Active) => ("▶ On the hook", "active"),
+                (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
+                _ => ("💰 Paid", "paid"),
+            };
+            string detail = q.Kind switch
+            {
+                QuestKind.Hunt => $"Hunt {q.TargetCallsign} — hole her sail or board her.",
+                QuestKind.CargoRun => $"Carry the parcel to {q.TargetCallsign} — berth there to deliver.",
+                QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
+                QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
+                _ => "",
+            };
+            string rewardText = q.Kind == QuestKind.Intel
+                ? "🕸 route tip"
+                : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
+            return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind);
+        }).ToArray();
 
     private void ToggleDock()
     {
@@ -7494,8 +8278,13 @@
         _dockOffset = _ship.Position - _nearestBodyPosition; // freeze the arm's reach at berth
         HoldAtDock();                                        // match the drift now so nothing lurches
         StaleFutureNodes();                                  // a berth cancels any pending burns
-        ShowPulseMessage($"Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off. 🅿");
+        SetDeckForDock(dock.Id);                             // weld on the walk-through tube if this haven has an interior
+        ShowPulseMessage(HavenInterior.HasInterior(dock.Id)
+            ? $"⚓ Clamped on at {dock.Name} — gangway's mated. Head to the Deck and walk the tube ashore."
+            : $"⚓ Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off.");
         RendererInterop.PlayCue("board");
+        CompleteCargoRunQuests(dock.Id); // arriving at the delivery berth finishes a cargo run (M-Q3)
+        PayCompletedQuests();            // then any finished bar contracts pay out (M-Q1)
     }
 
     private const double UndockPushMps = 300; // gentle shove off the clamp so the ship drifts clear
@@ -7506,6 +8295,8 @@
         {
             return;
         }
+
+        SetDeckForDock(null); // back to the bare ship deck; pulls you aboard if you'd wandered up the tube
 
         // A gentle shove clear of the clamp — the ship drifts away with some motion of its own
         // rather than hanging dead-still on the dock (owner: "push the ship off so it has motion
@@ -7606,6 +8397,12 @@
         {
             PushNewsEvent(NewsWire.NewsEventKind.OrbitEnteredHaven, arrivedHaven.Name);
             AdvanceTutorial(StepInsertHaven);
+
+            // Easter egg: settle in at The Rusty Roadstead and the bird cracks wise about a break.
+            if (arrivedHaven.Id == "the-space-bar")
+            {
+                SquawkNow(Parrot.Squawk.SpaceBarBreak, _lastTimestampMs ?? 0, force: true);
+            }
         }
 
         _hiddenAtHavenSinceSimTime = hidden
@@ -7636,6 +8433,7 @@
             else if (hunter.BrokenOff)
             {
                 ShowPulseMessage($"{hunter.Callsign} loses your scent — safe at anchor.");
+                SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
                 _hunters.RemoveAt(i);
             }
             else

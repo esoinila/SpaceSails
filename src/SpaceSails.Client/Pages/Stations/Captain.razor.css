@@ -103,6 +103,51 @@
     font-style: italic;
 }
 
+/* Quests tab (go-ashore contracts): read-only ledger cards, colour-accented by state. */
+.captain-quest-active,
+.captain-quest-complete,
+.captain-quest-paid {
+    cursor: default;
+    border-left-width: 3px;
+}
+
+.captain-quest-active { border-left-color: rgba(255, 200, 120, 0.9); }
+.captain-quest-complete { border-left-color: rgba(120, 230, 150, 0.95); }
+.captain-quest-paid { border-left-color: rgba(150, 160, 180, 0.6); opacity: 0.72; }
+
+.captain-quest-active:hover,
+.captain-quest-active:focus-visible,
+.captain-quest-complete:hover,
+.captain-quest-complete:focus-visible,
+.captain-quest-paid:hover,
+.captain-quest-paid:focus-visible {
+    border-color: rgba(255, 255, 255, 0.14); /* no interactive highlight — these aren't buttons */
+    border-left-width: 3px;
+}
+
+.captain-quest-active:hover { border-left-color: rgba(255, 200, 120, 0.9); }
+.captain-quest-complete:hover { border-left-color: rgba(120, 230, 150, 0.95); }
+.captain-quest-paid:hover { border-left-color: rgba(150, 160, 180, 0.6); }
+
+.captain-quest-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-top: 0.45rem;
+}
+
+.captain-quest-status { font-size: 0.8rem; font-weight: 600; }
+.captain-quest-status-active { color: #ffd479; }
+.captain-quest-status-complete { color: #9fe6b0; }
+.captain-quest-status-paid { color: rgba(224, 228, 236, 0.55); }
+
+.captain-quest-reward {
+    font-weight: 700;
+    color: #9fe6b0;
+    white-space: nowrap;
+}
+
 /* M26: the status board — every station's chip writ large; click jumps to the desk. */
 .captain-view-toggle {
     flex: 0 0 auto;
@@ -152,4 +197,13 @@
 .captain-fire-at-will {
     cursor: pointer;
     user-select: none;
+}
+
+/* "Set course to a start point…" — a quiet chart-room control under the view tabs; reopens Map's
+   start-point picker. Centred, understated (it's a travel/testing affordance, not a primary order). */
+.captain-start-jump {
+    display: flex;
+    justify-content: center;
+    flex: 0 0 auto;
+    margin-top: -0.5rem;
 }
