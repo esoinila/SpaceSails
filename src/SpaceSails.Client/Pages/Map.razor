@@ -3057,12 +3057,16 @@
     // _tutorialStep, which linear-chains its steps. A hunt is met when its target ship is brought
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
-    private enum QuestKind { Hunt, CargoRun, Intel }
-    private enum QuestState { Active, Complete, TurnedIn }
-    // A hunt stores the prey's ship id in TargetShipId; a cargo run stores the delivery haven's body
-    // id in DestBodyId (TargetCallsign holds the human name in both cases).
+    private enum QuestKind { Hunt, CargoRun, Intel, Fetch }
+    // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
+    // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
+    private enum QuestState { Active, PickedUp, Complete, TurnedIn }
+    // A hunt stores the prey's ship id in TargetShipId; a cargo run / fetch stores the delivery haven's
+    // body id in DestBodyId (TargetCallsign holds the human name in all cases). A fetch also stores the
+    // pickup derelict's body id in SourceBodyId.
     private sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
-        string TargetCallsign, string Title, string Blurb, int Reward, string? DestBodyId = null)
+        string TargetCallsign, string Title, string Blurb, int Reward, string? DestBodyId = null,
+        string? SourceBodyId = null)
     {
         public QuestState State { get; set; } = QuestState.Active;
     }
@@ -3937,7 +3941,11 @@
         // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
         IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
-        IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44);
+        // The derelict roadster is a dead wreck, not a trading post — it's a station body only so its
+        // map label reads at a sane zoom (the fetch-mission target). Drop the depot GenerateDepots
+        // would otherwise hang on it (any sun-orbiting body gets one).
+        IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44)
+            .Where(d => d.DepotBodyId != "derelict-roadster").ToList();
 
         // The tutorial's "first hunt" needs prey the player can actually catch from a standing start.
         // Interplanetary traffic screams past at 80–160 km/s relative — past the 5 km/s boarding
@@ -4148,6 +4156,7 @@
         _frameNowMs = highResTimestampMs;
 
         UpdateNearestBody();
+        CheckFetchPickup();     // coasting past the wreck grabs a fetch job's goods
         UpdateEffectiveWarp();
 
         if (!Paused)
@@ -7856,10 +7865,25 @@
         }
         string giver = spot.Label.Replace("◈", "").Trim();
 
+        // Face-to-face hand-off (no electronic trace): a picked-up fetch job, delivered in person to
+        // The Fixer at its destination station. Paid on the spot, under the table — done before any
+        // "still-waiting" guard, since the fetch's giver is a Fixer at every station.
+        if (giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) && _dockedHavenId is { } here
+            && _quests.FirstOrDefault(q => q is { Kind: QuestKind.Fetch, State: QuestState.PickedUp } && q.DestBodyId == here) is { } drop)
+        {
+            DeliverFetch(drop);
+            return;
+        }
+
         Quest? open = _quests.FirstOrDefault(q => q.Giver == giver && q.State != QuestState.TurnedIn);
         if (open is { State: QuestState.Active })
         {
             ShowPulseMessage($"“Still waiting on {open.TargetCallsign}. Finish the job, then we'll talk.”");
+            return;
+        }
+        if (open is { Kind: QuestKind.Fetch, State: QuestState.PickedUp })
+        {
+            ShowPulseMessage($"“You've got the goods — don't flash them here. Get them to my associate at {open.TargetCallsign}.”");
             return;
         }
         if (open is { State: QuestState.Complete })
@@ -7872,6 +7896,7 @@
         {
             _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
             _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
+            _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver),
             _ => MakeHuntOffer(giver),
         };
         if (offer is null)
@@ -7952,6 +7977,37 @@
             ghost.Ship.Id, ghost.Ship.Callsign, $"Whisper on {ghost.Ship.Callsign}", blurb, 0);
     }
 
+    // The Fixer's one confidential job: fly out to the derelict roadster, prise the untraceable wallet
+    // from between the seats, then hand it over in person at another station's bar. A one-off signature
+    // hunt — offered only if it isn't already in the ledger (in any state), so the wallet is unique.
+    // Destination is an interior station other than this one, picked by sim time + berth so it's stable.
+    private Quest? MakeFetchOffer(string giver)
+    {
+        if (_ephemeris is null || _quests.Any(q => q.Kind == QuestKind.Fetch))
+        {
+            return null; // no world yet, or there is only one lost roadster
+        }
+        if (_ephemeris.Bodies.All(b => b.Id != "derelict-roadster"))
+        {
+            return null; // scenario without the wreck
+        }
+        List<CelestialBody> dests = _ephemeris.Bodies
+            .Where(b => b.IsHaven && b.Id != _dockedHavenId && HavenInterior.HasInterior(b.Id))
+            .OrderBy(b => b.Id, StringComparer.Ordinal)
+            .ToList();
+        if (dests.Count == 0)
+        {
+            return null;
+        }
+
+        CelestialBody dest = dests[OfferIndex(dests.Count)];
+        const int reward = 4200; // a dead man's fortune, in a currency nobody can trace
+        string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting sunward of Mars — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {dest.Name}. {reward:N0} cr, and we never spoke.”";
+        return new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, giver,
+            "", dest.Name, "Fetch the roadster's lost wallet", blurb, reward,
+            DestBodyId: dest.Id, SourceBodyId: "derelict-roadster");
+    }
+
     // Deterministic pick index for a booth's offer: sim time (slow rotation) mixed with the berth id
     // (a stable char-sum, not the randomized string hash), so different docks surface different work
     // and it doesn't flicker frame to frame.
@@ -8005,6 +8061,43 @@
         }
     }
 
+    private const double FetchPickupRangeM = 1e8; // coast within ~100,000 km of the wreck to grab the goods
+
+    // Coasting close to a fetch job's derelict prises the goods loose — flips Active → PickedUp. Called
+    // each tick while flying; player-driven state, never read by the physics sim, and idempotent (only
+    // an Active fetch matches, so it fires once).
+    private void CheckFetchPickup()
+    {
+        if (_ephemeris is null || _dockedHavenId is not null)
+        {
+            return;
+        }
+        foreach (Quest q in _quests)
+        {
+            if (q is not { Kind: QuestKind.Fetch, State: QuestState.Active } || q.SourceBodyId is null)
+            {
+                continue;
+            }
+            Vector2d wreck = _ephemeris.Position(q.SourceBodyId, SimTime);
+            if ((_ship.Position - wreck).Length <= FetchPickupRangeM)
+            {
+                q.State = QuestState.PickedUp;
+                ShowPulseMessage($"Got it — the wallet was wedged between the seats. Now get it to {q.TargetCallsign}, quiet-like. 💾");
+                RendererInterop.PlayCue("board");
+            }
+        }
+    }
+
+    // Hand the fetched goods to The Fixer at the destination station — face to face, paid under the
+    // table, no electronic trace. Unlike a cargo run (settled on berthing), this only completes when
+    // you walk to the bar and talk to the contact.
+    private void DeliverFetch(Quest q)
+    {
+        _credits += q.Reward;
+        q.State = QuestState.TurnedIn;
+        ShowPulseMessage($"The wallet changes hands under the table — +{q.Reward:N0} cr, and we never met. 🕶");
+    }
+
     // Berthing at a haven settles any cargo-run contract bound for it. Called from ToggleDock.
     private void CompleteCargoRunQuests(string dockId)
     {
@@ -8039,6 +8132,8 @@
             (string label, string kind) = (q.Kind, q.State) switch
             {
                 (QuestKind.Intel, _) => ("🕸 Tip taken", "paid"),
+                (QuestKind.Fetch, QuestState.Active) => ("▶ Find the derelict roadster", "active"),
+                (QuestKind.Fetch, QuestState.PickedUp) => ($"📦 Carrying — hand off at {q.TargetCallsign}", "active"),
                 (_, QuestState.Active) => ("▶ On the hook", "active"),
                 (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
                 _ => ("💰 Paid", "paid"),
@@ -8048,6 +8143,7 @@
                 QuestKind.Hunt => $"Hunt {q.TargetCallsign} — hole her sail or board her.",
                 QuestKind.CargoRun => $"Carry the parcel to {q.TargetCallsign} — berth there to deliver.",
                 QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
+                QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
                 _ => "",
             };
             string rewardText = q.Kind == QuestKind.Intel

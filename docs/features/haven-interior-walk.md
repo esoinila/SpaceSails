@@ -290,14 +290,31 @@ Still shared across every station (deliberately, for now): the three regulars (S
 Gilt-Eye) and the immigration officer — same faces, different view. Per-station strangers can come
 with the multi-location missions.
 
-### Multi-location, off-the-books missions (next)
+### Multi-location, off-the-books missions — The Fixer's fetch job (2026-07-08)
 
 The owner's frame: the **confidential** jobs are handed over **face to face at a bar table — no
-electronic trace** — which is exactly why they can't ride the public web board. So a mission is
-picked up at one station's table and **delivered at another** (e.g. a lost crypto-wallet stashed in a
-derelict roadster you go find, then hand off at a different bar). This wants: a fetch/derelict
-objective, a deliver-elsewhere objective, and per-giver strangers. Builds on Coil's existing
-cross-haven cargo-run (already "dock at the destination to complete").
+electronic trace** — which is why they can't ride the public web board. So a job is picked up at one
+station's table and **delivered in person at another**. First one, live:
+
+- **The Fixer** — a fourth bar patron (back-corner table, seated at every station) who deals only
+  confidential work. `giver.Contains("FIXER") → MakeFetchOffer`.
+- **The job** (`QuestKind.Fetch`): a dead tycoon's cherry-red **Derelict Roadster** drifts sunward of
+  Mars (a real `station`-kind scenario body, its GenerateDepots depot filtered out client-side so a
+  wreck isn't a trading post) with an untraceable hardware wallet wedged in the seats. A one-off
+  signature quest — offered only if it isn't already in the ledger.
+- **Two legs, two places.** Fly to the wreck: coasting within ~100,000 km flips the quest
+  `Active → PickedUp` (`CheckFetchPickup` in the tick, proximity only). Then fly to the destination
+  station (an interior haven other than where you took it, `OfferIndex`-picked — e.g. The Tilt), walk
+  to its bar, and press E on **The Fixer there**: `DeliverFetch` pays 4,200 cr on the spot, under the
+  table — unlike a cargo run (settled on berthing), delivery only completes face to face.
+- `QuestState` gains **`PickedUp`** between Active and Complete; `Quest` gains `SourceBodyId`.
+
+Verified in-browser: walked to The Fixer, took the job (dest → The Tilt), confirmed it in the Quests
+ledger and the wreck on the nav map (no depot); build clean, no console errors. The long fetch flight
++ in-person hand-off is left to hands-on playtest. Builds on Coil's cross-haven cargo-run pattern.
+
+Next: per-station Fixer flavor / more fetch targets; a stranger who drifts to *your* table with the
+job instead of you seeking them out.
 
 ## Later (beyond the follow-up)
 

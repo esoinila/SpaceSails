@@ -155,6 +155,7 @@ public static class HavenInterior
             new(DeckPlan.ConsoleKind.BarPatron, -9, HallTopY + 6, "◈ ONE-EYE SILAS"),
             new(DeckPlan.ConsoleKind.BarPatron, 14, HallTopY + 6, "◈ MADAM COIL"),
             new(DeckPlan.ConsoleKind.BarPatron, 2.5f, HallTopY + 11, "◈ GILT-EYE"),
+            new(DeckPlan.ConsoleKind.BarPatron, -9, HallTopY + 16, "◈ THE FIXER"), // back-corner table: confidential, off-the-books work
         };
 
         // Seven tables spread across the big room — three taken by the regulars, four open (for a
@@ -176,7 +177,7 @@ public static class HavenInterior
 
         return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops,
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
-            droidCount: 7, fillDroids: FillComplexDroids,
+            droidCount: 8, fillDroids: FillComplexDroids,
             location: (x, y) => y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
                               : y > ShipHatchY ? "GANGWAY"
@@ -184,8 +185,8 @@ public static class HavenInterior
             doors: doors.ToArray(), shipFixtures: true, followCam: true, tables: tables.ToArray());
     }
 
-    // Ship's three droids, the immigration officer, and the three seated bar regulars. Shared across
-    // every station (one geometry); deterministic in sim time, stateless.
+    // Ship's three droids, the immigration officer, and the four seated bar patrons (three regulars +
+    // The Fixer). Shared across every station (one geometry); deterministic in sim time, stateless.
     private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // fills [0..3)
@@ -194,5 +195,6 @@ public static class HavenInterior
         buffer[4] = new DeckPlan.Droid(-9, HallTopY + 7 + sway, -System.Math.PI / 2, "Silas");
         buffer[5] = new DeckPlan.Droid(14, HallTopY + 7 - sway, -System.Math.PI / 2, "Coil");
         buffer[6] = new DeckPlan.Droid(2.5, HallTopY + 12 + sway, -System.Math.PI / 2, "Gilt-Eye");
+        buffer[7] = new DeckPlan.Droid(-9, HallTopY + 17 - sway, -System.Math.PI / 2, "The Fixer"); // back corner
     }
 }
