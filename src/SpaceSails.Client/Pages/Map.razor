@@ -51,6 +51,23 @@
         </div>
     }
 
+    @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
+       player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
+    @if (_viewObject is { } vo)
+    {
+        <div class="view-object-backdrop" @onclick="CloseViewObject">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@vo.Label</div>
+                <img class="view-object-img" src="@vo.ImageUrl" alt="@vo.Label" />
+                @if (vo.Caption is { Length: > 0 } cap)
+                {
+                    <div class="view-object-caption">@cap</div>
+                }
+                <button type="button" class="view-object-close" @onclick="CloseViewObject">Close</button>
+            </div>
+        </div>
+    }
+
     @* Deck / first-person pulse toast: the Nav HUD that normally hosts _pulseMessage is hidden while
        you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
        standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
@@ -3245,6 +3262,9 @@
                 break;
             case DeckPlan.ConsoleKind.Hatch:
                 KnockOnHatch();
+                break;
+            case DeckPlan.ConsoleKind.ViewObject:
+                ViewNearbyObject();
                 break;
             case DeckPlan.ConsoleKind.Helm:
                 SwitchDesk(ShipDesk.Nav);
@@ -7910,6 +7930,25 @@
     // Walk up to a booth and press E. Which patron you're next to (from their console label) sets who
     // you're dealing with and their trade — One-Eye Silas fences bounties (hunts), Madam Coil runs
     // parcels (cargo runs). If you already owe this giver a job, they just nod at it.
+    // A Gen-AI image the player is currently viewing (a souvenir, a lore prop), or null. Pressing E on
+    // a ViewObject console pops it up; E again (or the close button / clicking away) dismisses it.
+    private DeckPlan.ConsoleSpot? _viewObject;
+
+    private void ViewNearbyObject()
+    {
+        if (_viewObject is not null)
+        {
+            _viewObject = null; // E again closes
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.ViewObject } spot)
+        {
+            _viewObject = spot;
+        }
+    }
+
+    private void CloseViewObject() => _viewObject = null;
+
     // Knock on a locked station hatch (a ring department or a bar back-room). Nobody answers — for now.
     // Each hatch carries an id in its label (e.g. "🔒 MEDBAY · M-05") so a mission can name one to
     // open. PIN entry / mission unlock is the next layer; today every knock goes unanswered.

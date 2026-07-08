@@ -17,7 +17,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -27,7 +27,11 @@ public sealed class DeckPlan
     /// backed by a real wall so you can't pass.</summary>
     public readonly record struct Door(float X1, float Y1, float X2, float Y2, bool Locked = false);
 
-    public readonly record struct ConsoleSpot(ConsoleKind Kind, float X, float Y, string Label);
+    /// <summary>An interaction point on the deck. A <see cref="ConsoleKind.ViewObject"/> spot also
+    /// carries an <paramref name="ImageUrl"/> and <paramref name="Caption"/> — press E and the game
+    /// pops up that Gen-AI image (a souvenir, a lore prop) with its caption.</summary>
+    public readonly record struct ConsoleSpot(ConsoleKind Kind, float X, float Y, string Label,
+        string? ImageUrl = null, string? Caption = null);
 
     /// <summary>A room backdrop image: top-left at (X, Y) in deck units, W×H deck units, drawn
     /// under the vector overlay. The top-down renderer walks these; first-person textures walls.</summary>

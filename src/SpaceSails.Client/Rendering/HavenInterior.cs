@@ -22,19 +22,28 @@ public static class HavenInterior
     /// <summary>One walkable station: which body, what it's called, and its themed dressing.</summary>
     private sealed record StationSpec(
         string BodyId, string Name, string Authority, string Quip, string BarName,
-        string HallArt, string BarArt);
+        string HallArt, string BarArt, string TshirtArt, string MagnetArt, string Gag);
 
-    // The grey-market docks with walkable interiors, each themed to its world (vision par. 8).
+    // The grey-market docks with walkable interiors, each themed to its world (vision par. 8). Gag =
+    // the T-shirt one-liner (owner's "every place has a gift shop" joke).
     private static readonly StationSpec[] Specs =
     [
         new("the-space-bar", "THE RUSTY ROADSTEAD", "MARS", "most guests stay two weeks", "THE ROADSTEAD BAR",
-            "art/the-rusty-roadstead-lobby.jpg", "art/the-roadstead-bar.jpg"),
+            "art/the-rusty-roadstead-lobby.jpg", "art/the-roadstead-bar.jpg",
+            "art/souvenir-roadstead-tshirt.jpg", "art/souvenir-roadstead-magnet.jpg",
+            "“I visited Mars and all I got was this rusty T-shirt.”"),
         new("cinder-roost", "CINDER ROOST", "VENUS", "mind the sulphur, spacer", "THE CINDER LOUNGE",
-            "art/cinder-roost-hall.jpg", "art/cinder-roost-bar.jpg"),
+            "art/cinder-roost-hall.jpg", "art/cinder-roost-bar.jpg",
+            "art/souvenir-cinder-tshirt.jpg", "art/souvenir-cinder-magnet.jpg",
+            "“I visited Venus and all I got was this lousy T-shirt.”"),
         new("ringside-exchange", "RINGSIDE EXCHANGE", "SATURN", "trade fast — the rings don't wait", "THE RINGSIDE BAR",
-            "art/ringside-hall.jpg", "art/ringside-bar.jpg"),
+            "art/ringside-hall.jpg", "art/ringside-bar.jpg",
+            "art/souvenir-ringside-tshirt.jpg", "art/souvenir-ringside-magnet.jpg",
+            "“I went all the way to Saturn and all I got was this T-shirt.”"),
         new("the-tilt", "THE TILT", "URANUS", "everything's sideways out here", "THE TILT BAR",
-            "art/the-tilt-hall.jpg", "art/the-tilt-bar.jpg"),
+            "art/the-tilt-hall.jpg", "art/the-tilt-bar.jpg",
+            "art/souvenir-tilt-tshirt.jpg", "art/souvenir-tilt-magnet.jpg",
+            "“I went to Uranus for the proctologist — they were fully booked.”"),
     ];
 
     private static readonly Dictionary<string, DeckPlan> Cache = new();
@@ -163,6 +172,7 @@ public static class HavenInterior
         walls.Add(new(BarRight, HallTopY, BarRight, BarTopY, false, true));
         walls.Add(new(BarLeft, BarTopY, BarRight, BarTopY, true, true)); // spinward window onto space
         labels.Add((HallCenterX, BarTopY - 3, spec.BarName));
+        labels.Add((8f, HallTopY + 1.5f, "🎁 GIFT SHOP")); // every place has one (owner)
 
         // Two locked back-room hatches off the bar — more of the place you can't get into (yet).
         char lvl = spec.Authority[0];
@@ -178,6 +188,11 @@ public static class HavenInterior
             new(DeckPlan.ConsoleKind.BarPatron, 14, HallTopY + 6, "◈ MADAM COIL"),
             new(DeckPlan.ConsoleKind.BarPatron, 2.5f, HallTopY + 11, "◈ GILT-EYE"),
             new(DeckPlan.ConsoleKind.BarPatron, -9, HallTopY + 16, "◈ THE FIXER"), // back-corner table: confidential, off-the-books work
+            // The gift shop: walk up, press E, view the Gen-AI souvenir + its location gag. Kept clear
+            // of the bar patrons (Coil at x14) so E doesn't grab the wrong console.
+            new(DeckPlan.ConsoleKind.ViewObject, 6, HallTopY + 3, "👕 SOUVENIR TEE", spec.TshirtArt, spec.Gag),
+            new(DeckPlan.ConsoleKind.ViewObject, 9.5f, HallTopY + 3, "🧲 FRIDGE MAGNET", spec.MagnetArt,
+                $"A little {spec.Name} to stick on the fridge back home."),
         };
         consoles.AddRange(hatches); // the ring departments + bar back-rooms, as knockable locked hatches
 

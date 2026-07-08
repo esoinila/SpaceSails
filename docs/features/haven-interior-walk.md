@@ -356,6 +356,22 @@ they need:
 Build order (proposed): the two mechanisms first (A then B, both reusable), then the content that
 rides them (named departments via A; souvenir shops via B).
 
+**Done (2026-07-08).** All of the above shipped, in order:
+- *Named departments + Mechanism A* — the hall ring is now a mix of ⚓ berths and locked departments
+  (Customs, Habitat Ring, Medbay, Bonded Stores, Dockmaster, Transit, Security) + two locked bar
+  back-rooms (Cellar, Storeroom), each a `ConsoleKind.Hatch` you can walk up to and **knock** (E →
+  "…sealed. You knock; only the station's hum answers."). Every hatch carries a per-station **ID**
+  (V-11 at Venus, U-03 at Uranus, M-05 at Mars…) ready for a mission to name one specific door.
+  Plus a "★ WELCOME TO <station> ★" lobby poster.
+- *Mechanism B — view-object popup* — `ConsoleKind.ViewObject` consoles carry an `ImageUrl` +
+  `Caption`; press E to pop the Gen-AI image up full-size with its caption (close via E again, the
+  Close button, or clicking away). Reusable for any lore prop.
+- *Souvenir shops* — a 🎁 gift-shop stand in every bar with a **👕 SOUVENIR TEE** and a **🧲 FRIDGE
+  MAGNET** view-object, per-station Gen-AI art + gag ("I went to Uranus for the proctologist — fully
+  booked", etc.). Art in `wwwroot/art/souvenir-<station>-{tshirt,magnet}.jpg`.
+
+*Still open on Mechanism A:* PIN-entry UI + a mission that actually unlocks a specific hatch by ID.
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat
