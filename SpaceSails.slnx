@@ -26,5 +26,6 @@
     <Project Path="labs/16-going-ashore/Lab16.csproj" />
     <Project Path="labs/17-the-pocket-solar-system/Lab17.csproj" />
     <Project Path="labs/18-the-free-return/Lab18.csproj" />
+    <Project Path="labs/19-the-grand-tour/Lab19.csproj" />
   </Folder>
 </Solution>
