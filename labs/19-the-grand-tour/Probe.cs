@@ -424,7 +424,7 @@ double saturnHill = OrbitRule.HillRadius(
     double directArrRel = Math.Abs(vArrHelioDirect - vSat);  // head-on component; the simulated via-Jupiter case uses actual relative speed
 
     Console.WriteLine($"{"route",-24}{"launch (m/s)",14}{"TCMs",8}{"braking bill",14}{"time to Saturn",16}");
-    Console.WriteLine($"{"direct Hohmann (L15)",-24}{directSaturn.dv1,14:F0}{"-",8}{directArrRel,14:F0}{directSaturn.tof / Year,13:F2} yr");
+    Console.WriteLine($"{"direct Hohmann (L15)",-24}{directSaturn.dv1,14:F0}{"-",8}{$"{directArrRel:F0} m/s",14}{directSaturn.tof / Year,13:F2} yr");
     Console.WriteLine($"{"via Jupiter (this)",-24}{launchDv,14:F0}{tcmTotal,8:F0}{$"{relSpeed:F0} m/s",14}{totalTof,13:F2} yr");
     Console.WriteLine();
     Console.WriteLine($"The verdict is honest, not heroic. The crank is pure profit on launch day ({directSaturn.dv1 - toJupiter.dv1:F0} m/s");
