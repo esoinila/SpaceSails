@@ -491,3 +491,6 @@ $RECYCLE.BIN/
 
 # Scratch screenshots / working images dropped in while iterating — not product docs
 docs/tmp_pics/
+
+# Grok CLI MCP tool-schema cache, regenerated whenever grok runs in this directory
+mcps/
