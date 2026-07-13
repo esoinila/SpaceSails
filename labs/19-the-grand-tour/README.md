@@ -48,12 +48,16 @@ must land between |v_J - v_inf| = 5.42 and |v_J + v_inf| = 20.71 km/s. Watch it 
      -3000 Mm       2,774,737   39.7                  7.71         2.11              5.74
      -1000 Mm         799,010   11.4                 12.92         7.32             10.31
       -500 Mm         352,594    5.0                 15.18         9.58             21.72
-      -200 Mm         123,105    1.8  impact-grade pass — discarded (inside 2 R_J ...)
-       ...
+      -200 Mm         123,105    1.8  impact-grade pass — discarded (inside 2 R_J the
+                                    point-mass model and the step size are both lying)
+       200 Mm         133,540    1.9  impact-grade pass — discarded (inside 2 R_J the
+                                    point-mass model and the step size are both lying)
+       500 Mm         168,758    2.4                 15.51         9.91             20.59
       1000 Mm         276,021    3.9                 15.51         9.91             25.05
+      3000 Mm         513,295    7.3                 14.25         8.65             15.53
 ```
 
-Every row respects the bound. No braking rows appear because a Hohmann-class arrival is slow relative to Jupiter — you are already near the crank's minimum. The turning angle of v_inf at a representative pass is ~11° in the boosted escape demo (patched-conic predicts from b, μ, v_inf; the integrator sees small perturbations from the rest of the system during the longer coasts).
+Every row respects the bound. No braking rows appear because a Hohmann-class arrival is slow relative to Jupiter — you are already near the crank's minimum. The turning angle of v_inf at a representative pass is taken from the actual probe output in §D (patched-conic predicts from b, μ, v_inf; the integrator sees small perturbations from the rest of the system during the longer coasts).
 
 ### C — chaining Jupiter → Saturn
 
@@ -80,18 +84,18 @@ The honest verdict: cheaper launch, but stopping at Saturn "refunds" part of the
 
 ### D — escape, verified not asserted
 
-Specific orbital energy before and after a zero-burn flyby (using a boosted arrival in the demo to illustrate the lever; the actual sign flip depends on arrival v_inf + crank strength):
+Solar specific orbital energy before and after a genuinely close, zero-burn flyby. The single burn is up front and *before* the measurement window: from the real approach state 90 d before CA, boost along v_inf (capped so the ship is still bound — `e_pre < 0`), then re-aim that boosted arc to a ~3.6 R_J pass. Everything after is one ballistic arc, so the sign flip is bought by the crank, not by propellant.
 
 ```
-pre-Jupiter specific energy (Sun frame): -152990542 J/kg  (negative = bound)
-D demo flyby closest approach to Jupiter: 5.0 R_J (reaches Jupiter)
-post-Jupiter specific energy (Sun frame, ~200d later, zero burn in flyby): <positive> J/kg  (positive = escaping)
+pre-Jupiter specific energy (Sun frame): -164947155 J/kg  (negative = bound)
+D demo flyby closest approach to Jupiter: 3.59 R_J (a real pass, outside the 2 R_J point-mass floor)
+post-Jupiter specific energy (Sun frame, 60 d past CA, zero burn in flyby): 43948837 J/kg  (positive = ESCAPING (sign flip))
 turning in Jupiter frame conserves |v_inf|; heliocentric |v| jumps because frame is moving.
-v_inf turning angle at this pass: XX.X deg (patched-conic from b, mu_p, v_inf; integrator adds perturbations from other planets).
-patched-conic predicted deflection for b=500 Mm, v_inf=... km/s: XX.X deg (measured ... deg; difference is lesson)
+|v_inf| in 17.58 km/s, out 16.98 km/s (conserved to 3 %); turning angle 86.6 deg
+patched-conic deflection from measured r_p=3.59 R_J, v_inf=17.58 km/s: 76.7 deg (measured 86.6 deg; the residual is the n-body lesson)
 ```
 
-The mechanism and symmetry are demonstrated; a sufficiently energetic arrival + strong crank produces the escape sign flip (see the QA gates and break-it exercises). The gain exists only in the Sun frame. Explicit patched-conic deflection is now printed for the demo case.
+Energy flips from bound (−164.9 MJ/kg) to escaping (+43.9 MJ/kg) with zero propellant in the flyby, at a real 3.59 R_J pass. |v_inf| is conserved across the encounter to 3% (the gain lives only in the Sun frame). The patched-conic deflection, computed from the *measured* periapsis and v_inf, predicts 76.7° against the integrated 86.6° — the residual is the n-body lesson. The same construction, reduced to asserts, is QA gate G2.
 
 ### E — the window
 
@@ -126,13 +130,13 @@ Our sol.json / circular-rail ephemeris is not 1977's ephemeris. Numbers are illu
 | Event                  | Real Voyager 2                  | Our probe (game rails) | Tolerance / note |
 |------------------------|---------------------------------|------------------------|------------------|
 | Launch                 | 20 Aug 1977                    | N/A (arbitrary phase) | — |
-| Jupiter flyby          | 9 Jul 1979 (~1.9 y)            | ~2.7–3.4 y legs        | ±25% on leg time |
-| Saturn flyby           | 25 Aug 1981 (~4.0 y)           | ~8 y via assist        | longer due to no 1977 alignment |
-| Asymptotic speed       | V2 ≈ 15.3 km/s today           | 10–20 km/s band after J+ S | matches |
+| Jupiter flyby          | 9 Jul 1979 (~1.9 y), 570 Mm    | ~2.7–3.4 y legs        | ±25% on leg time (JPL/NASA) |
+| Saturn flyby           | 26 Aug 1981 (~4.0 y), 101 Mm   | ~8 y via assist        | longer due to no 1977 alignment (JPL) |
+| Asymptotic speed       | V2 ≈ 15.3 km/s today           | 10–20 km/s band after J+S | matches (NASA) |
 | Jupiter Δv gain        | ~10–16 km/s order (NASA plots) | 7–10 km/s in tables    | defensible band |
 | 4-planet alignment     | ~175 y cycle                   | Sparse in grid scan    | game phasing differs |
 
-[VERIFY] All real dates/speeds taken from NASA/JPL sources (Wikipedia Voyager 2, NASA Science pages). Our probe numbers come from actual runs of this code against the game's ephemeris.
+Sources: NASA Science Voyager pages, JPL Voyager mission status, Wikipedia "Voyager 2" (cross-checked 2026). R4 speed-vs-distance reproduction left as exercise (gains and reaches in §B table are the data).
 
 ## Who paid?
 

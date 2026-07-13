@@ -123,7 +123,11 @@ Each lesson folder holds:
     timetabling, not gravity theft, so the appointment tolerates a floating pass. Round-trip
     corrections run 358–521 m/s vs ~11,200 m/s for two Hohmann tickets — Rich Purnell, computed.
 
-19. [**The Grand Tour (Voyager)**](19-the-grand-tour/README.md) — gravity theft for real: Earth→Jupiter→Saturn (stretch Uranus/Neptune) using the crank. Launch cheaper than direct Saturn; measure one flyby (speeds, turning angle, patched-conic comparison); chain legs with explicit TCMs; verify energy sign flip and symmetry; grid-scan the window. Every number from the integrator; rails create the energy. Break the assists on purpose.
+19. [**The Grand Tour (Voyager)**](19-the-grand-tour/README.md) — gravity theft for real: Earth→Jupiter→Saturn
+    (stretch Uranus/Neptune) using the crank. Launch cheaper than direct Saturn; measure one flyby
+    (speeds, turning angle, patched-conic comparison); chain legs with explicit TCMs; verify energy
+    sign flip and symmetry; grid-scan the window. Every number from the integrator; rails create
+    the energy. Break the assists on purpose.
 
 ## Framing rule
 

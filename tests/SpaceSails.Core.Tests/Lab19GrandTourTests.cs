@@ -59,7 +59,7 @@ public class Lab19GrandTourTests
             if (Err(m) > 0) hi = m; else lo = m;
         }
         double z = 0.5 * (lo + hi);
-        if (double.IsNaN(Err(z)) || Math.Abs(Err(z) + Math.Sqrt(mu) * tof) / Math.Sqrt(mu) > 1.0)
+        if (double.IsNaN(Err(z)) || Math.Abs(Err(z)) / Math.Sqrt(mu) > 1.0)
             return (Vector2d.Zero, Vector2d.Zero, -1);
         double y = Y(z);
         double f = 1 - y / r1, g = A * Math.Sqrt(y / mu), gDot = 1 - y / r2;
@@ -85,6 +85,46 @@ public class Lab19GrandTourTests
         return (v, false);
     }
 
+    // Closest approach of a projected trajectory to a body (searched from a start time).
+    private static (double Distance, double Time) ClosestTo(ICelestialEphemeris eph, string bodyId, IReadOnlyList<TrajectorySample> samples, double fromTime)
+    {
+        double best = double.MaxValue, bestT = fromTime;
+        foreach (TrajectorySample s in samples)
+        {
+            if (s.SimTime < fromTime) continue;
+            double d = (eph.Position(bodyId, s.SimTime) - s.Position).Length;
+            if (d < best) (best, bestT) = (d, s.SimTime);
+        }
+        return (best, bestT);
+    }
+
+    // The honest flyby the probe §D flies, reduced to a gate primitive: from the approach state
+    // (90 d before nominal CA) boost along v_inf (capped so e_pre stays &lt; 0), then re-aim THAT
+    // boosted arc to a close b-plane offset at its true encounter time. All burns are up front,
+    // before the measurement window, so the arc from start onward is zero-burn ballistic.
+    private static (ShipState Start, double CaDistance, double CaTime, double VInf) BoostedFlyby(
+        ICelestialEphemeris eph, Simulator sim, ShipState approach, double boost, double offset)
+    {
+        Vector2d vInfApp = approach.Velocity - BodyVelocity(eph, "jupiter", approach.SimTime);
+        Vector2d boostedV = approach.Velocity + vInfApp.Normalized() * boost;
+        var boostedStart = new ShipState(approach.Position, boostedV, approach.SimTime);
+
+        // True encounter time of the boosted ballistic, so ShootTo targets a reachable point.
+        var scout = sim.ProjectAdaptive(boostedStart, null, 130 * Day, maxTimeStep: 1800, maxSamples: 40_000);
+        double tEnc = ClosestTo(eph, "jupiter", scout, approach.SimTime + 1 * Day).Time;
+        Vector2d vInfEnc = boostedV - BodyVelocity(eph, "jupiter", tEnc);
+        var side = new Vector2d(-vInfEnc.Normalized().Y, vInfEnc.Normalized().X);
+        var aim = eph.Position("jupiter", tEnc) + side * offset;
+        var tuned = ShootTo(sim, approach.Position, approach.SimTime, boostedV, aim, tEnc, 5e6, 100);
+        var start = new ShipState(approach.Position, tuned.V, approach.SimTime);
+
+        var traj = sim.ProjectAdaptive(start, null, 130 * Day, maxTimeStep: 1800, maxSamples: 40_000);
+        var pass = ClosestTo(eph, "jupiter", traj, approach.SimTime + 1 * Day);
+        var jIn = sim.RunAdaptive(start, (pass.Time - 2 * Day) - start.SimTime);
+        double vInf = (jIn.Velocity - BodyVelocity(eph, "jupiter", jIn.SimTime)).Length;
+        return (start, pass.Distance, pass.Time, vInf);
+    }
+
     [Fact]
     public void G1_Determinism_TwoIdenticalRunsAreByteIdentical()
     {
@@ -108,8 +148,10 @@ public class Lab19GrandTourTests
     public void G2_EnergySignFlip_ZeroPropellantDuringFlyby()
     {
         var (eph, sim) = MakeJupiterSystem();
-        // Real gate: perform a boosted flyby (like probe D) with zero additional propellant and assert sign flip.
-        // Use numbers similar to the probe's approach to Jupiter.
+        // Real gate: the honest probe-§D flyby. From the approach state 90 d before CA, one burn
+        // up front (boost along v_inf, capped so e_pre < 0; re-aim to a close pass), then a single
+        // zero-burn ballistic arc. Assert solar specific energy flips sign across the encounter and
+        // the pass was genuinely close — the escape is bought by the crank, not by propellant.
         double dep = 100 * Day;
         double tof = 2.73 * Year;
         var pad = RoutePlanner.DepartureState(eph, "earth", "jupiter", dep);
@@ -117,21 +159,17 @@ public class Lab19GrandTourTests
         var lam = Lambert(pad.Position, jAt, tof, SunMu);
         var approach = sim.RunAdaptive(new ShipState(pad.Position, lam.V1, dep), tof - 90 * Day);
 
-        // Boost to force escape (as in probe demo)
-        Vector2d boostedV = approach.Velocity + approach.Velocity.Normalized() * 12000;
-        Vector2d jPos = eph.Position("jupiter", dep + tof);
-        var side = new Vector2d(-1, 0); // simple perpendicular for test
-        var tuned = ShootTo(sim, approach.Position, approach.SimTime, boostedV, jPos + side * -5e8, dep + tof, 2e6, 100);
+        var flyby = BoostedFlyby(eph, sim, approach, boost: 8000, offset: 3e8);
 
-        double ePre = boostedV.LengthSquared / 2.0 - SunMu / approach.Position.Length;  // approx at approach
-        var post = sim.RunAdaptive(new ShipState(approach.Position, tuned.V, approach.SimTime), 200 * Day);
+        // e_pre: after the last burn, before CA, far from Jupiter (Sun-frame energy clean).
+        double ePre = flyby.Start.Velocity.LengthSquared / 2.0 - SunMu / flyby.Start.Position.Length;
+        // e_post: 60 d past CA on the same ballistic arc, clear of Jupiter's well.
+        var post = sim.RunAdaptive(flyby.Start, (flyby.CaTime + 60 * Day) - flyby.Start.SimTime);
         double ePost = post.Velocity.LengthSquared / 2.0 - SunMu / post.Position.Length;
 
-        Assert.True(ePre < 0, "pre-flyby must be bound");
-        Assert.True(ePost > 0, "post-flyby must be escaping (sign flip with zero propellant)");
-        // Confirm it actually reached Jupiter (CA happened)
-        var ca = (eph.Position("jupiter", post.SimTime) - post.Position).Length; // rough; real CA would be smaller
-        Assert.True(ca < 1e10, "trajectory must have passed near Jupiter");
+        Assert.True(ePre < 0, $"pre-flyby must be bound (e_pre = {ePre:F0} J/kg)");
+        Assert.True(ePost > 0, $"post-flyby must be escaping — sign flip with zero propellant (e_post = {ePost:F0} J/kg)");
+        Assert.True(flyby.CaDistance < 15 * 6.9911e7, $"flyby must genuinely pass close to Jupiter (CA = {flyby.CaDistance / 6.9911e7:F1} R_J)");
     }
 
     [Fact]
@@ -152,39 +190,40 @@ public class Lab19GrandTourTests
         // Simple patched-conic upper bound on outgoing helio speed: |vj + v_inf|
         double patchedUpper = vj.Length + vInf;
 
-        var side = new Vector2d(-1, 0);
+        // Re-aim to a strong-gain b-plane offset; the aiming burn is up front, before the flyby.
+        var side = new Vector2d(-vj.Normalized().Y, vj.Normalized().X);
         var tuned = ShootTo(sim, pre.Position, pre.SimTime, pre.Velocity, jAt + side * -5e8, pre.SimTime + 20 * Day, 2e6, 100);
+        double postBurnSpeed = tuned.V.Length; // measure gain from AFTER the burn, so the burn is not counted as gain
         var after = sim.RunAdaptive(new ShipState(pre.Position, tuned.V, pre.SimTime), 100 * Day);
 
         double measured = after.Velocity.Length;
-        double gain = measured - pre.Velocity.Length;
+        double gain = measured - postBurnSpeed;
 
         // The measured must be <= upper bound (within small tolerance for n-body effects) and gain positive.
         Assert.True(measured <= patchedUpper * 1.05, $"measured {measured / 1000:F1} km/s exceeds patched upper {patchedUpper / 1000:F1} km/s by more than 5%");
-        Assert.True(gain > 1000, "heliocentric gain must be substantial");
+        Assert.True(gain > 1000, $"heliocentric gain must be substantial (gain = {gain / 1000:F1} km/s)");
     }
 
     [Fact]
     public void G4_Symmetry_SpeedRelativeToJupiterEqualBeforeAfter()
     {
         var (eph, sim) = MakeJupiterSystem();
-        // Real gate: |v_inf| relative to Jupiter must be (approximately) equal before and after the flyby.
+        // Real gate: |v_inf| relative to Jupiter must be (approximately) equal before and after the
+        // flyby. Sampled on the SAME post-burn ballistic arc (the aiming/boost burn is up front),
+        // symmetrically ±2 d about the true closest approach — the gain lives only in the Sun frame.
         double dep = 100 * Day;
         double tof = 2.73 * Year;
         var pad = RoutePlanner.DepartureState(eph, "earth", "jupiter", dep);
         var jAt = eph.Position("jupiter", dep + tof);
         var lam = Lambert(pad.Position, jAt, tof, SunMu);
-        var pre = sim.RunAdaptive(new ShipState(pad.Position, lam.V1, dep), tof - 20 * Day);
+        var approach = sim.RunAdaptive(new ShipState(pad.Position, lam.V1, dep), tof - 90 * Day);
 
-        Vector2d vjPre = BodyVelocity(eph, "jupiter", pre.SimTime);
-        double vinfPre = (pre.Velocity - vjPre).Length;
+        var flyby = BoostedFlyby(eph, sim, approach, boost: 8000, offset: 3e8);
 
-        var side = new Vector2d(-1, 0);
-        var tuned = ShootTo(sim, pre.Position, pre.SimTime, pre.Velocity, jAt + side * -5e8, pre.SimTime + 20 * Day, 2e6, 100);
-        var post = sim.RunAdaptive(new ShipState(pre.Position, tuned.V, pre.SimTime), 30 * Day);
-
-        Vector2d vjPost = BodyVelocity(eph, "jupiter", post.SimTime);
-        double vinfPost = (post.Velocity - vjPost).Length;
+        var jIn = sim.RunAdaptive(flyby.Start, (flyby.CaTime - 2 * Day) - flyby.Start.SimTime);
+        var jOut = sim.RunAdaptive(flyby.Start, (flyby.CaTime + 2 * Day) - flyby.Start.SimTime);
+        double vinfPre = (jIn.Velocity - BodyVelocity(eph, "jupiter", jIn.SimTime)).Length;
+        double vinfPost = (jOut.Velocity - BodyVelocity(eph, "jupiter", jOut.SimTime)).Length;
 
         double relDiff = Math.Abs(vinfPre - vinfPost) / Math.Max(1, vinfPre);
         Assert.True(relDiff < 0.05, $"|v_inf| changed by {relDiff:P1} across flyby; must be conserved in planet frame (G4)");

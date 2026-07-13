@@ -81,8 +81,8 @@ Vector2d BodyVelocity(string id, double t) =>
     }
 
     double zSol = 0.5 * (zLo + zHi);
-    double achievedTof = (TofError(zSol) + Math.Sqrt(mu) * tof) / Math.Sqrt(mu);
-    if (double.IsNaN(achievedTof) || Math.Abs(achievedTof - tof) > 1.0)
+    double residual = TofError(zSol);
+    if (double.IsNaN(residual) || Math.Abs(residual) / Math.Sqrt(mu) > 1.0)
     {
         return (Vector2d.Zero, Vector2d.Zero, -1);
     }
@@ -223,6 +223,9 @@ foreach (double offset in new[] { -3e9, -1e9, -5e8, -2e8, 2e8, 5e8, 1e9, 3e9 })
         continue;
     }
 
+    // Outgoing heliocentric speed once clear of Jupiter's well (measuring AT closest approach
+    // would report the periapsis speed-up, which beats the asymptotic bound — a lie). The long
+    // coast also gives the reach.
     ShipState after = sim.RunAdaptive(new ShipState(beforeFlyby.Position, tuned.V, beforeFlyby.SimTime), 290 * Day);
     double gain = (after.Velocity.Length - beforeFlyby.Velocity.Length) / 1000;
     string reach = double.IsPositiveInfinity(ApoapsisAU(after)) ? "escapes the sun" : $"{ApoapsisAU(after):F2}";
@@ -241,44 +244,71 @@ Console.WriteLine();
 
 // --- D: Escape verified: specific orbital energy sign flip (no propellant during flyby) ---
 Console.WriteLine("=== D (energy sign flip, zero-burn flyby) ===");
-// For a clean escape demo we use a slightly faster arrival than pure Hohmann-to-Jupiter
-// (real missions tune launch energy); the crank can flip sign when post v_helio exceeds local escape.
-double rBefore = beforeFlyby.Position.Length;
-double vBefore = beforeFlyby.Velocity.Length;
-double energyBefore = vBefore * vBefore / 2.0 - SunMu / rBefore;
-Console.WriteLine($"pre-Jupiter specific energy (Sun frame): {energyBefore:F0} J/kg  (negative = bound)");
-// Boost incoming for escape demo (illustrates the lever principle; zero burn at flyby)
-// Use sufficient boost so the crank produces a clear sign flip and the trajectory escapes.
-Vector2d boostedV = beforeFlyby.Velocity + beforeFlyby.Velocity.Normalized() * 12000; // larger boost to guarantee escape in this ephemeris
-ShipState boosted = new ShipState(beforeFlyby.Position, boostedV, beforeFlyby.SimTime);
-Vector2d vInfBoost = boosted.Velocity - BodyVelocity("jupiter", boosted.SimTime);
-Vector2d strongAim = ephemeris.Position("jupiter", tCA) + side * -5e8;
-var strongTuned = ShootTo(boosted.Position, boosted.SimTime, boosted.Velocity, strongAim, tCA, 1e6, 100);
+// Honest demo. Start from the real approach state 90 d before CA (beforeFlyby, from §B).
+// One burn, up front and BEFORE the measurement window:
+//   1) boost along v_inf by a fixed amount — capped so the ship is still provably BOUND
+//      (e_pre < 0) as it leaves the burn;
+//   2) re-aim THAT boosted trajectory (ShootTo) to a close b-plane offset at its true
+//      encounter time (a boosted ship arrives early, so we target the encounter, not tCA).
+// Everything after the burn is a single zero-burn ballistic arc, so the sign flip must come
+// from the crank, not from a burn hidden inside the window. The boost raises v_inf so that a
+// safe pass (a few R_J, outside the 2 R_J point-mass floor) turns enough to flip the sign — a
+// pure Hohmann arrival would have to graze Jupiter to do the same.
+Vector2d vInfApproach = beforeFlyby.Velocity - BodyVelocity("jupiter", beforeFlyby.SimTime);
+Vector2d boostedD = beforeFlyby.Velocity + vInfApproach.Normalized() * 8000;           // bound after burn: e_pre < 0
+var boostedStartD = new ShipState(beforeFlyby.Position, boostedD, beforeFlyby.SimTime);
 
-// Show it actually reaches Jupiter (close approach during the flyby)
+// True encounter time of the boosted ballistic (before re-aiming), so ShootTo targets a
+// reachable point at the moment Jupiter is actually there.
+IReadOnlyList<TrajectorySample> dScout = sim.ProjectAdaptive(
+    boostedStartD, null, 130 * Day, maxTimeStep: 1800, maxSamples: 40_000);
+double tEncD = ClosestTo("jupiter", dScout, beforeFlyby.SimTime + 1 * Day).Time;
+Vector2d vInfEncD = boostedD - BodyVelocity("jupiter", tEncD);
+Vector2d sideD = new Vector2d(-vInfEncD.Normalized().Y, vInfEncD.Normalized().X);
+Vector2d aimD = ephemeris.Position("jupiter", tEncD) + sideD * 3e8;                     // controlled b-plane offset
+var tunedD = ShootTo(beforeFlyby.Position, beforeFlyby.SimTime, boostedD, aimD, tEncD, 5e6, 100);
+var startD = new ShipState(beforeFlyby.Position, tunedD.V, beforeFlyby.SimTime);
+
+// e_pre: sampled at the boosted, re-aimed start — after the last burn, far from Jupiter (Sun-frame energy clean)
+double eJPre = startD.Velocity.Length * startD.Velocity.Length / 2.0 - SunMu / startD.Position.Length;
+
+// Fly the real integrator through the encounter and find the TRUE closest approach.
 IReadOnlyList<TrajectorySample> dTraj = sim.ProjectAdaptive(
-    new ShipState(boosted.Position, strongTuned.V, boosted.SimTime), null, 20 * Day, maxTimeStep: 3600, maxSamples: 2000);
-var dPass = ClosestTo("jupiter", dTraj, boosted.SimTime);
-Console.WriteLine($"D demo flyby closest approach to Jupiter: {dPass.Distance / RJ:F1} R_J (reaches Jupiter)");
+    startD, null, 130 * Day, maxTimeStep: 1800, maxSamples: 40_000);
+var dPass = ClosestTo("jupiter", dTraj, beforeFlyby.SimTime + 1 * Day);
+double caRJ = dPass.Distance / RJ;
 
-ShipState post = sim.RunAdaptive(new ShipState(boosted.Position, strongTuned.V, boosted.SimTime), 200 * Day);
-double rPost = post.Position.Length;
-double vPost = post.Velocity.Length;
-double energyPost = vPost * vPost / 2.0 - SunMu / rPost;
-Console.WriteLine($"post-Jupiter specific energy (Sun frame, ~200d later, zero burn in flyby): {energyPost:F0} J/kg  ({(energyPost > 0 ? "positive = escaping" : "still bound")})");
-Console.WriteLine($"turning in Jupiter frame conserves |v_inf|; heliocentric |v| jumps because frame is moving.");
-// For turning angle: v_inf in/out
-Vector2d vInfIn = boosted.Velocity - BodyVelocity("jupiter", boosted.SimTime);
-Vector2d vInfOut = post.Velocity - BodyVelocity("jupiter", post.SimTime);
-double turnDeg = Math.Acos(Math.Clamp(vInfIn.Normalized().Dot(vInfOut.Normalized()), -1,1)) * 180 / Math.PI;
-Console.WriteLine($"v_inf turning angle at this pass: {turnDeg:F1} deg (patched-conic from b, mu_p, v_inf; integrator adds perturbations from other planets).");
+Console.WriteLine($"pre-Jupiter specific energy (Sun frame): {eJPre:F0} J/kg  (negative = bound)");
+if (caRJ > 12.0)
+{
+    // The lever is sharp: if the aim slipped to the far branch the demo is invalid — say so.
+    Console.WriteLine($"D demo flyby closest approach to Jupiter: {caRJ:F1} R_J — NO close pass, demo invalid (re-tune aim/boost)");
+}
+else
+{
+    Console.WriteLine($"D demo flyby closest approach to Jupiter: {caRJ:F2} R_J (a real pass, outside the 2 R_J point-mass floor)");
+}
 
-// Explicit patched-conic prediction for this case (addresses review feedback)
-double b = 5e8; // the |offset| used
-double vInfMag = vInfBoost.Length;
-double e = 1 + (b * vInfMag * vInfMag / JupiterMu);
-double predictedDeflectionDeg = 2 * Math.Asin(1.0 / e) * 180.0 / Math.PI;
-Console.WriteLine($"patched-conic predicted deflection for b={b/1e6:F0} Mm, v_inf={vInfMag/1000:F2} km/s: {predictedDeflectionDeg:F1} deg (measured {turnDeg:F1} deg; difference is lesson)");
+// e_post: sampled 60 d after CA on the SAME ballistic arc (zero burns since the start), well
+// clear of Jupiter's well so the Sun-frame energy is clean again.
+ShipState jPost = sim.RunAdaptive(startD, (dPass.Time + 60 * Day) - startD.SimTime);
+double eJPost = jPost.Velocity.Length * jPost.Velocity.Length / 2.0 - SunMu / jPost.Position.Length;
+Console.WriteLine($"post-Jupiter specific energy (Sun frame, 60 d past CA, zero burn in flyby): {eJPost:F0} J/kg  ({(eJPost > 0 ? "positive = ESCAPING (sign flip)" : "still bound")})");
+
+// v_inf in/out (turning angle) sampled symmetrically ±2 d about CA on the ballistic arc.
+Console.WriteLine("turning in Jupiter frame conserves |v_inf|; heliocentric |v| jumps because frame is moving.");
+ShipState jIn = sim.RunAdaptive(startD, (dPass.Time - 2 * Day) - startD.SimTime);
+ShipState jOut = sim.RunAdaptive(startD, (dPass.Time + 2 * Day) - startD.SimTime);
+Vector2d vInfIn = jIn.Velocity - BodyVelocity("jupiter", jIn.SimTime);
+Vector2d vInfOut = jOut.Velocity - BodyVelocity("jupiter", jOut.SimTime);
+double turnDeg = Math.Acos(Math.Clamp(vInfIn.Normalized().Dot(vInfOut.Normalized()), -1, 1)) * 180 / Math.PI;
+Console.WriteLine($"|v_inf| in {vInfIn.Length / 1000:F2} km/s, out {vInfOut.Length / 1000:F2} km/s (conserved to {Math.Abs(vInfIn.Length - vInfOut.Length) / vInfIn.Length:P0}); turning angle {turnDeg:F1} deg");
+
+// Patched-conic prediction from MEASURED quantities: r_p = actual CA, v_inf = measured incoming.
+double rpD = dPass.Distance;
+double vInfDmag = vInfIn.Length;
+double predD = 2 * Math.Asin(1.0 / (1 + rpD * vInfDmag * vInfDmag / JupiterMu)) * 180 / Math.PI;
+Console.WriteLine($"patched-conic deflection from measured r_p={rpD / RJ:F2} R_J, v_inf={vInfDmag / 1000:F2} km/s: {predD:F1} deg (measured {turnDeg:F1} deg; the residual is the n-body lesson)");
 Console.WriteLine();
 
 // ===================================================================================
@@ -302,7 +332,7 @@ for (double depDay = 0; depDay <= 7300; depDay += 53)
         var s = Lambert(pad.Position, jArr, tofC, SunMu);
         if (s.Iterations < 0 || (s.V1 - pad.Velocity).Length > 10_500)
         {
-            continue; // no honest arc, or a launch no sail would buy (Hohmann is 8,794 m/s)
+            continue; // no honest arc, or a launch no sail would buy (Earth->Jupiter Hohmann from A)
         }
 
         ShipState nearJ = sim.RunAdaptive(pad with { Velocity = s.V1 }, tofC - 90 * Day, maxTimeStep: 7200);
@@ -386,11 +416,18 @@ double saturnHill = OrbitRule.HillRadius(
         $"day {chosen.T / Day:F0},");
     Console.WriteLine($"         {totalTof:F2} yr from launch, closing at {relSpeed / 1000:F2} km/s relative to Saturn");
     Console.WriteLine();
+    // Compute the direct-Hohmann arrival relative speed live (no hard-coded "5439 m/s").
+    double rSat = 1.43353e12;
+    double aDirect = (AU + rSat) / 2;
+    double vArrHelioDirect = Math.Sqrt(SunMu * (2 / rSat - 1 / aDirect));
+    double vSat = Math.Sqrt(SunMu / rSat);
+    double directArrRel = Math.Abs(vArrHelioDirect - vSat);  // head-on component; the simulated via-Jupiter case uses actual relative speed
+
     Console.WriteLine($"{"route",-24}{"launch (m/s)",14}{"TCMs",8}{"braking bill",14}{"time to Saturn",16}");
-    Console.WriteLine($"{"direct Hohmann (L15)",-24}{directSaturn.dv1,14:F0}{"-",8}{"5439 m/s",14}{directSaturn.tof / Year,13:F2} yr");
+    Console.WriteLine($"{"direct Hohmann (L15)",-24}{directSaturn.dv1,14:F0}{"-",8}{directArrRel,14:F0}{directSaturn.tof / Year,13:F2} yr");
     Console.WriteLine($"{"via Jupiter (this)",-24}{launchDv,14:F0}{tcmTotal,8:F0}{$"{relSpeed:F0} m/s",14}{totalTof,13:F2} yr");
     Console.WriteLine();
-    Console.WriteLine("The verdict is honest, not heroic. The crank is pure profit on launch day (1.7 km/s");
+    Console.WriteLine($"The verdict is honest, not heroic. The crank is pure profit on launch day ({directSaturn.dv1 - toJupiter.dv1:F0} m/s");
     Console.WriteLine("cheaper) — and the game sky's first twenty years offer no 1977, so the detour loses two");
     Console.WriteLine("years on the clock, and STOPPING at Saturn refunds part of the gift: the slung arc");
     Console.WriteLine("arrives hot, and the braking bill grows by what Jupiter donated. Voyager never paid that");
