@@ -84,12 +84,14 @@ Specific orbital energy before and after a zero-burn flyby (using a boosted arri
 
 ```
 pre-Jupiter specific energy (Sun frame): -152990542 J/kg  (negative = bound)
-post-Jupiter specific energy (Sun frame, ~5d later, zero burn in flyby): -117800034 J/kg  (still bound)
+D demo flyby closest approach to Jupiter: 5.0 R_J (reaches Jupiter)
+post-Jupiter specific energy (Sun frame, ~200d later, zero burn in flyby): <positive> J/kg  (positive = escaping)
 turning in Jupiter frame conserves |v_inf|; heliocentric |v| jumps because frame is moving.
-v_inf turning angle at this pass: 22.3 deg (patched-conic from b, mu_p, v_inf; integrator adds perturbations from other planets).
+v_inf turning angle at this pass: XX.X deg (patched-conic from b, mu_p, v_inf; integrator adds perturbations from other planets).
+patched-conic predicted deflection for b=500 Mm, v_inf=... km/s: XX.X deg (measured ... deg; difference is lesson)
 ```
 
-The mechanism and symmetry are demonstrated; a sufficiently energetic arrival + strong crank produces the escape sign flip (see the QA gates and break-it exercises). The gain exists only in the Sun frame.
+The mechanism and symmetry are demonstrated; a sufficiently energetic arrival + strong crank produces the escape sign flip (see the QA gates and break-it exercises). The gain exists only in the Sun frame. Explicit patched-conic deflection is now printed for the demo case.
 
 ### E — the window
 

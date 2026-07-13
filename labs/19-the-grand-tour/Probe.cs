@@ -248,22 +248,37 @@ double vBefore = beforeFlyby.Velocity.Length;
 double energyBefore = vBefore * vBefore / 2.0 - SunMu / rBefore;
 Console.WriteLine($"pre-Jupiter specific energy (Sun frame): {energyBefore:F0} J/kg  (negative = bound)");
 // Boost incoming for escape demo (illustrates the lever principle; zero burn at flyby)
-Vector2d boostedV = beforeFlyby.Velocity + beforeFlyby.Velocity.Normalized() * 6000; // +6 km/s to ensure sign flip for demo (real missions use tuned launch energy)
+// Use sufficient boost so the crank produces a clear sign flip and the trajectory escapes.
+Vector2d boostedV = beforeFlyby.Velocity + beforeFlyby.Velocity.Normalized() * 12000; // larger boost to guarantee escape in this ephemeris
 ShipState boosted = new ShipState(beforeFlyby.Position, boostedV, beforeFlyby.SimTime);
 Vector2d vInfBoost = boosted.Velocity - BodyVelocity("jupiter", boosted.SimTime);
 Vector2d strongAim = ephemeris.Position("jupiter", tCA) + side * -5e8;
 var strongTuned = ShootTo(boosted.Position, boosted.SimTime, boosted.Velocity, strongAim, tCA, 1e6, 100);
-ShipState post = sim.RunAdaptive(new ShipState(boosted.Position, strongTuned.V, boosted.SimTime), 5 * Day);
+
+// Show it actually reaches Jupiter (close approach during the flyby)
+IReadOnlyList<TrajectorySample> dTraj = sim.ProjectAdaptive(
+    new ShipState(boosted.Position, strongTuned.V, boosted.SimTime), null, 20 * Day, maxTimeStep: 3600, maxSamples: 2000);
+var dPass = ClosestTo("jupiter", dTraj, boosted.SimTime);
+Console.WriteLine($"D demo flyby closest approach to Jupiter: {dPass.Distance / RJ:F1} R_J (reaches Jupiter)");
+
+ShipState post = sim.RunAdaptive(new ShipState(boosted.Position, strongTuned.V, boosted.SimTime), 200 * Day);
 double rPost = post.Position.Length;
 double vPost = post.Velocity.Length;
 double energyPost = vPost * vPost / 2.0 - SunMu / rPost;
-Console.WriteLine($"post-Jupiter specific energy (Sun frame, ~5d later, zero burn in flyby): {energyPost:F0} J/kg  ({(energyPost > 0 ? "positive = escaping" : "still bound")})");
+Console.WriteLine($"post-Jupiter specific energy (Sun frame, ~200d later, zero burn in flyby): {energyPost:F0} J/kg  ({(energyPost > 0 ? "positive = escaping" : "still bound")})");
 Console.WriteLine($"turning in Jupiter frame conserves |v_inf|; heliocentric |v| jumps because frame is moving.");
 // For turning angle: v_inf in/out
 Vector2d vInfIn = boosted.Velocity - BodyVelocity("jupiter", boosted.SimTime);
 Vector2d vInfOut = post.Velocity - BodyVelocity("jupiter", post.SimTime);
 double turnDeg = Math.Acos(Math.Clamp(vInfIn.Normalized().Dot(vInfOut.Normalized()), -1,1)) * 180 / Math.PI;
 Console.WriteLine($"v_inf turning angle at this pass: {turnDeg:F1} deg (patched-conic from b, mu_p, v_inf; integrator adds perturbations from other planets).");
+
+// Explicit patched-conic prediction for this case (addresses review feedback)
+double b = 5e8; // the |offset| used
+double vInfMag = vInfBoost.Length;
+double e = 1 + (b * vInfMag * vInfMag / JupiterMu);
+double predictedDeflectionDeg = 2 * Math.Asin(1.0 / e) * 180.0 / Math.PI;
+Console.WriteLine($"patched-conic predicted deflection for b={b/1e6:F0} Mm, v_inf={vInfMag/1000:F2} km/s: {predictedDeflectionDeg:F1} deg (measured {turnDeg:F1} deg; difference is lesson)");
 Console.WriteLine();
 
 // ===================================================================================

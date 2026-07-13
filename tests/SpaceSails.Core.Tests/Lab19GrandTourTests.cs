@@ -108,51 +108,123 @@ public class Lab19GrandTourTests
     public void G2_EnergySignFlip_ZeroPropellantDuringFlyby()
     {
         var (eph, sim) = MakeJupiterSystem();
-        // Smoke: energy of a coasting ship is constant with no thrust (zero propellant case).
-        var s0 = new ShipState(new Vector2d(1.6e11, 0), new Vector2d(10000, 20000), 1000 * Day);
-        double e0 = s0.Velocity.LengthSquared / 2.0 - SunMu / s0.Position.Length;
-        var s1 = sim.Run(s0, 1000);
-        double e1 = s1.Velocity.LengthSquared / 2.0 - SunMu / s1.Position.Length;
-        Assert.True(Math.Abs(e1 - e0) < 1e5, "Energy conserved with zero propellant");
-        Assert.True(e0 < 0); // bound in this setup
+        // Real gate: perform a boosted flyby (like probe D) with zero additional propellant and assert sign flip.
+        // Use numbers similar to the probe's approach to Jupiter.
+        double dep = 100 * Day;
+        double tof = 2.73 * Year;
+        var pad = RoutePlanner.DepartureState(eph, "earth", "jupiter", dep);
+        var jAt = eph.Position("jupiter", dep + tof);
+        var lam = Lambert(pad.Position, jAt, tof, SunMu);
+        var approach = sim.RunAdaptive(new ShipState(pad.Position, lam.V1, dep), tof - 90 * Day);
+
+        // Boost to force escape (as in probe demo)
+        Vector2d boostedV = approach.Velocity + approach.Velocity.Normalized() * 12000;
+        Vector2d jPos = eph.Position("jupiter", dep + tof);
+        var side = new Vector2d(-1, 0); // simple perpendicular for test
+        var tuned = ShootTo(sim, approach.Position, approach.SimTime, boostedV, jPos + side * -5e8, dep + tof, 2e6, 100);
+
+        double ePre = boostedV.LengthSquared / 2.0 - SunMu / approach.Position.Length;  // approx at approach
+        var post = sim.RunAdaptive(new ShipState(approach.Position, tuned.V, approach.SimTime), 200 * Day);
+        double ePost = post.Velocity.LengthSquared / 2.0 - SunMu / post.Position.Length;
+
+        Assert.True(ePre < 0, "pre-flyby must be bound");
+        Assert.True(ePost > 0, "post-flyby must be escaping (sign flip with zero propellant)");
+        // Confirm it actually reached Jupiter (CA happened)
+        var ca = (eph.Position("jupiter", post.SimTime) - post.Position).Length; // rough; real CA would be smaller
+        Assert.True(ca < 1e10, "trajectory must have passed near Jupiter");
     }
 
     [Fact]
     public void G3_GainWithinToleranceOfPatchedConic()
     {
-        // Smoke for G3: the simulator and ephemeris are wired; a velocity change occurs when we "apply" a flyby-like delta.
         var (eph, sim) = MakeJupiterSystem();
-        var s = new ShipState(new Vector2d(7e11, 0), new Vector2d(5000, 20000), 0);
-        double vBefore = s.Velocity.Length;
-        var after = sim.Run(s, 1000); // coast
-        // Just verify it runs and we can compare a before/after (real gain measured in probe).
-        Assert.True(after.Velocity.Length > 0);
+        // Real gate: measure heliocentric gain at a flyby and compare to patched-conic upper bound.
+        double dep = 100 * Day;
+        double tof = 2.73 * Year;
+        var pad = RoutePlanner.DepartureState(eph, "earth", "jupiter", dep);
+        var jAt = eph.Position("jupiter", dep + tof);
+        var lam = Lambert(pad.Position, jAt, tof, SunMu);
+        var pre = sim.RunAdaptive(new ShipState(pad.Position, lam.V1, dep), tof - 20 * Day);
+
+        Vector2d vj = BodyVelocity(eph, "jupiter", pre.SimTime);
+        double vInf = (pre.Velocity - vj).Length;
+
+        // Simple patched-conic upper bound on outgoing helio speed: |vj + v_inf|
+        double patchedUpper = vj.Length + vInf;
+
+        var side = new Vector2d(-1, 0);
+        var tuned = ShootTo(sim, pre.Position, pre.SimTime, pre.Velocity, jAt + side * -5e8, pre.SimTime + 20 * Day, 2e6, 100);
+        var after = sim.RunAdaptive(new ShipState(pre.Position, tuned.V, pre.SimTime), 100 * Day);
+
+        double measured = after.Velocity.Length;
+        double gain = measured - pre.Velocity.Length;
+
+        // The measured must be <= upper bound (within small tolerance for n-body effects) and gain positive.
+        Assert.True(measured <= patchedUpper * 1.05, $"measured {measured / 1000:F1} km/s exceeds patched upper {patchedUpper / 1000:F1} km/s by more than 5%");
+        Assert.True(gain > 1000, "heliocentric gain must be substantial");
     }
 
     [Fact]
     public void G4_Symmetry_SpeedRelativeToJupiterEqualBeforeAfter()
     {
         var (eph, sim) = MakeJupiterSystem();
-        // Smoke: velocity relative to a body is computable before/after a coast (real symmetry asserted in probe run).
-        double t = 100 * Day;
-        Vector2d vj = BodyVelocity(eph, "jupiter", t);
-        var s = new ShipState(eph.Position("jupiter", t) + new Vector2d(1e9, 0), new Vector2d(1000, 1000) + vj, t);
-        double vinf0 = (s.Velocity - vj).Length;
-        var s2 = sim.Run(s, 1000);
-        double vinf1 = (s2.Velocity - BodyVelocity(eph, "jupiter", s2.SimTime)).Length;
-        Assert.True(Math.Abs(vinf0 - vinf1) < 100); // coast conserves relative roughly in short time
+        // Real gate: |v_inf| relative to Jupiter must be (approximately) equal before and after the flyby.
+        double dep = 100 * Day;
+        double tof = 2.73 * Year;
+        var pad = RoutePlanner.DepartureState(eph, "earth", "jupiter", dep);
+        var jAt = eph.Position("jupiter", dep + tof);
+        var lam = Lambert(pad.Position, jAt, tof, SunMu);
+        var pre = sim.RunAdaptive(new ShipState(pad.Position, lam.V1, dep), tof - 20 * Day);
+
+        Vector2d vjPre = BodyVelocity(eph, "jupiter", pre.SimTime);
+        double vinfPre = (pre.Velocity - vjPre).Length;
+
+        var side = new Vector2d(-1, 0);
+        var tuned = ShootTo(sim, pre.Position, pre.SimTime, pre.Velocity, jAt + side * -5e8, pre.SimTime + 20 * Day, 2e6, 100);
+        var post = sim.RunAdaptive(new ShipState(pre.Position, tuned.V, pre.SimTime), 30 * Day);
+
+        Vector2d vjPost = BodyVelocity(eph, "jupiter", post.SimTime);
+        double vinfPost = (post.Velocity - vjPost).Length;
+
+        double relDiff = Math.Abs(vinfPre - vinfPost) / Math.Max(1, vinfPre);
+        Assert.True(relDiff < 0.05, $"|v_inf| changed by {relDiff:P1} across flyby; must be conserved in planet frame (G4)");
     }
 
     [Fact]
     public void G5_TimeStepHonesty_CaAndExitStableUnderDtChange()
     {
         var (eph, _) = MakeJupiterSystem();
-        // Smoke: different dt constructors work and produce a runnable state (real honesty verified in probe + lesson 3).
-        var sA = new Simulator(eph, timeStepSeconds: 60);
-        var sB = new Simulator(eph, timeStepSeconds: 120);
-        var start = new ShipState(new Vector2d(1e11, 0), new Vector2d(10000, 10000), 0);
-        var p60 = sA.Run(start, 3600);
-        var p120 = sB.Run(start, 3600);
-        Assert.True(p60.Position.Length > 0 && p120.Position.Length > 0);
+        // Real gate: flyby CA distance and exit velocity are reasonably stable when changing the integrator dt.
+        double dep = 100 * Day;
+        double tof = 2.73 * Year;
+        var pad = RoutePlanner.DepartureState(eph, "earth", "jupiter", dep);
+        var jAt = eph.Position("jupiter", dep + tof);
+        var lam = Lambert(pad.Position, jAt, tof, SunMu);
+        var pre = new Simulator(eph, timeStepSeconds: 60).RunAdaptive(new ShipState(pad.Position, lam.V1, dep), tof - 30 * Day);
+
+        Vector2d side = new Vector2d(-0.1, 1.0);
+        var aim = jAt + side * 8e8;
+        var vGood = ShootTo(new Simulator(eph, timeStepSeconds: 60), pre.Position, pre.SimTime, pre.Velocity, aim, pre.SimTime + 30 * Day, 2e6, 100).V;
+
+        var s1 = new Simulator(eph, timeStepSeconds: 60);
+        var s2 = new Simulator(eph, timeStepSeconds: 120);
+        var s05 = new Simulator(eph, timeStepSeconds: 30);
+
+        var post1 = s1.RunAdaptive(new ShipState(pre.Position, vGood, pre.SimTime), 50 * Day);
+        var post2 = s2.RunAdaptive(new ShipState(pre.Position, vGood, pre.SimTime), 50 * Day);
+        var post05 = s05.RunAdaptive(new ShipState(pre.Position, vGood, pre.SimTime), 50 * Day);
+
+        double ca1 = (eph.Position("jupiter", post1.SimTime) - post1.Position).Length;
+        double ca2 = (eph.Position("jupiter", post2.SimTime) - post2.Position).Length;
+        double ca05 = (eph.Position("jupiter", post05.SimTime) - post05.Position).Length;
+
+        double v1 = post1.Velocity.Length;
+        double v2 = post2.Velocity.Length;
+        double v05 = post05.Velocity.Length;
+
+        Assert.True(Math.Abs(ca1 - ca2) / Math.Max(1, ca1) < 0.2, "CA moved >20% at 2× dt");
+        Assert.True(Math.Abs(v1 - v2) / Math.Max(1, v1) < 0.1, "exit speed moved >10% at 2× dt");
+        Assert.True(Math.Abs(ca1 - ca05) / Math.Max(1, ca1) < 0.2, "CA moved >20% at 0.5× dt");
+        Assert.True(Math.Abs(v1 - v05) / Math.Max(1, v1) < 0.1, "exit speed moved >10% at 0.5× dt");
     }
 }
