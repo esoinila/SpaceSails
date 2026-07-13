@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SpaceSails.Core\SpaceSails.Core.csproj" />
+    <ProjectReference Include="..\..\labs\SpaceSails.LabViz\SpaceSails.LabViz.csproj" />
   </ItemGroup>
 
   <ItemGroup>

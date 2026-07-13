@@ -8,6 +8,22 @@ dotnet run --project labs/19-the-grand-tour -c Release
 
 (The window scan and b-plane sweep fly real trajectories through the integrator — give the probe a minute or two.)
 
+## Seeing it
+
+Add `--viz` to get the same numbers *plus* a picture of the trajectories the probe just flew:
+
+```bash
+dotnet run --project labs/19-the-grand-tour -c Release -- --viz
+```
+
+This writes a single self-contained `labviz/lab19-the-grand-tour.html` (no external requests) and opens it in your browser — drawn in the game's own visual language: the sun, the eight planet rails, drag to pan, wheel to zoom, and a scrubber that walks time forward. What you see:
+
+- The **crank fan** from Section B — one faded blue-gray arc per surviving aim offset, spraying past Jupiter. Toggle the `sweep` group in the legend to hide them.
+- The **flown itinerary** from Section C in orange — launch, swing behind Jupiter, coast to Saturn — with a ghost ship the scrubber animates along the arc.
+- Markers for every burn (launch, TCM-1, TCM-2, with Δv), the Jupiter flyby (pass distance in R_J), and the Saturn closest pass.
+
+Add `--viz-no-open` to write the file without launching a browser. The stdout tables are untouched by `--viz` — the printed numbers stay sacred.
+
 ## Why this lesson exists
 
 Every prior lesson either used formulas that break near planets or flew single legs. Gravity assist is the trick that makes the outer solar system reachable on 1970s hardware: you arrive with v_inf relative to Jupiter, gravity rotates that vector inside Jupiter's moving frame (13 km/s heliocentric), and you leave with a different heliocentric speed — for free, as far as the ship is concerned. Curtis ch. 8 covers patched-conic gravity assists; this lesson flies them through the real deterministic integrator the game uses, prices the TCMs honestly, and shows the ledger hole the rails create.

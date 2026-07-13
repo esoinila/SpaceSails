@@ -49,6 +49,47 @@ Each lesson folder holds:
 - `Probe.cs` + a small `LabNN.csproj` referencing `src/SpaceSails.Core` directly — determinism
   means a probe's numbers transfer 1:1 into the live game.
 
+## Seeing a lesson: `--viz`
+
+Some lessons can draw what they compute. Append `-- --viz` to any supporting lesson:
+
+```bash
+dotnet run --project labs/19-the-grand-tour -c Release -- --viz
+```
+
+It prints exactly the same tables as always, then writes a single self-contained
+`labviz/<slug>.html` (no external requests, no CDN, no fonts) and opens it in your default
+browser. The pop-up is a small SpaceSails instrument: pan (drag) and zoom (wheel) a dark canvas
+of bodies on their orbit rings, scrub or play a timeline that walks a ghost ship dot along the
+trajectory, toggle legend groups, and read markers (burns, flybys, closest passes). The drawing
+comes straight from the numbers the probe just computed — without `--viz`, stdout is
+byte-identical to before. Add `--viz-no-open` to write the file without launching a browser, or
+`--viz-out=<path>` to choose the destination.
+
+**Supported so far:** lesson [01](01-falling-is-orbiting/README.md) (the minimal example) and
+lesson [19](19-the-grand-tour/README.md) (the showcase — the flown Grand Tour with its aim-offset
+sweep as a toggleable group).
+
+**Wiring a new lesson** takes about six lines around the sample lists the probe already has —
+everything behind `LabViz.Wants(args)` so the no-flag output never changes:
+
+```csharp
+using SpaceSails.LabViz;
+// ... after the probe's existing computation ...
+if (LabViz.Wants(args))
+{
+    var viz = new VizScene("labNN-slug", "Lab NN — Title", "one-line subtitle");
+    viz.AddBodies(ephemeris.Bodies);
+    viz.AddPath("trajectory", samples, VizColors.Trajectory, ghost: true); // samples: IReadOnlyList<TrajectorySample>
+    viz.AddMarker(t, position, "label", MarkerKinds.Burn);
+    LabViz.Show(viz, args);
+}
+```
+
+Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in the lesson's
+`.csproj`. See [docs/features/lab-viz.md](../docs/features/lab-viz.md) for the viewer tour and
+`docs/lab-viz-spec.md` for the internals.
+
 ## The ladder
 
 1. [**Falling is orbiting**](01-falling-is-orbiting/README.md) — two-body freefall computed

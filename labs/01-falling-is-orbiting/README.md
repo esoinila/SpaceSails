@@ -44,6 +44,20 @@ by running the code.
 dotnet run --project labs/01-falling-is-orbiting -c Release
 ```
 
+### Seeing it
+
+Add `-- --viz` to get a picture as well as the numbers:
+
+```bash
+dotnet run --project labs/01-falling-is-orbiting -c Release -- --viz
+```
+
+This writes a self-contained `labviz/lab01-falling-is-orbiting.html` and opens it in your
+browser: the Sun, and Section B's circular orbit drawn as an orange ghost path you can scrub a
+ship dot around — the fall that keeps missing the Sun, plotted straight from the integrator's own
+steps. Add `--viz-no-open` to write the file without launching a browser. Without `--viz`, stdout
+is exactly the tables above. See [Seeing a lesson: `--viz`](../README.md#seeing-a-lesson---viz).
+
 ## Section A — radial free-fall, checked against vis-viva
 
 A ship dropped at rest at `r0 = 1 AU` has zero angular momentum, so its trajectory is the
