@@ -26,7 +26,8 @@ Three facts make these assists natural rather than bolted-on:
 
 Where: the plotting desk, on any **closest-pass marker** the projected track already computes.
 
-UI: click the marker → **"⤴ Sling past <planet>"** panel:
+UI: click the marker → **"⤴ Sling past ⟨planet⟩"** panel:
+
 - a **pass-distance slider** (in planet radii, with the honest floor at 2 R — the same
   point-mass-lie line the labs draw) and a **side toggle** (lead/trail — brake or boost);
 - OR "aim the exit": pick a target body / drag an exit arrow, and the solver finds the pass
@@ -48,7 +49,8 @@ Needs the one new Core ingredient: an **atmosphere model** on bodies that plausi
 only inside a shell, integrated by the same simulator (deterministic, fixed-step near planets
 as today). Two or three scalars per body in the scenario JSON — nothing exotic.
 
-UI: on a closest-pass marker at an atmosphere-bearing body → **"🔥 Skim <planet>"**:
+UI: on a closest-pass marker at an atmosphere-bearing body → **"🔥 Skim ⟨planet⟩"**:
+
 - a **depth slider** (periapsis altitude inside the shell) with a live three-zone corridor
   gauge — *too shallow* (nothing happens), *the corridor* (Δv shed per pass, shown in pulses
   saved), *too deep* (hull damage: the sail-holed/disabled mechanic we already have — same
