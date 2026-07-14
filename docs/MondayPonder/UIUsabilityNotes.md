@@ -3,6 +3,31 @@
 Running list of friction points found while actually *using* the game to hunt a
 ship. Each is a candidate for a UI improvement, roughly in the order hit.
 
+## Blind-UI audit round 1 (2026-07-14 evening — owner's protocol)
+
+Eight screenshots of the live build (4ccb067+) given cold to fresh-context AI testers
+(`tools/playthrough/ui-audit-shots.mjs` captures; Gemini CLI was auth-blocked — rerun
+`run-gemini.sh` after `gemini` re-auths — so fresh Claude subagents stood in). Metric per the
+owner: the less context the tester needs, the more intuitive the UI.
+
+**Scorecard.** PASS cold: Trade (best — "Sell cargo (900 cr)" found instantly), Plot/Sling
+(pass-distance slider + Lead/Trail + commit flow inferred unaided), Ledger (right button chosen),
+Sensors (controls understood). NEEDED CONTEXT: Nav (worst — couldn't set course for Mars: planet
+labels subtle vs. loud station labels, click-a-planet invisible affordance), War room (kill-chain
+teaching panel excellent, but it references FIRE/AUTO-AIM controls that don't render until a
+target exists), Deck (airlock guessed by genre convention only; nothing said "docked" or "walk
+up"), Comms (buy-intel path inferred from a hint sentence, not a control).
+
+**Fixed same evening (string-level):** deck hint bar now says "docked ⚓ walk up through the
+airlock to go ashore"; the New-here banner adds "— or click any planet to set course"; the sling
+slider reads "planet radii"; the Sensors empty state says "Track ledger" (disambiguating from the
+Captain's ledger) and mentions cold cases.
+
+**Queued (medium):** ghost/disabled kill-chain buttons pre-target on the gun deck; a hunt-by-name
+entry on Sensors; make the dark-web market node visibly a market; dedupe the ledger's twin 🔭
+buttons; planet-label visual hierarchy above stations; scope panel title vs. ship-name confusion;
+partial sells (existing roadmap).
+
 ## The Captain's ledger (owner, 2026-07-14 playtest of the intel/sling build)
 
 - **Tips have no inventory.** Owner took Gilt-Eye's route tip and it effectively

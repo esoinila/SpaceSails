@@ -175,7 +175,7 @@
     @if (_activeDesk == ShipDesk.Nav && !_tutorialAdDismissed)
     {
         <div class="tutorial-ad">
-            <span class="tutorial-ad-text">🎓 New here? Learn the ropes at the Captain's desk (0).</span>
+            <span class="tutorial-ad-text">🎓 New here? Learn the ropes at the Captain's desk (0) — or click any planet to set course.</span>
             <button type="button" class="btn btn-sm btn-info" @onclick="OpenTutorials">Show me</button>
             <button type="button" class="btn-close btn-close-white" aria-label="Dismiss the tutorials hint"
                     @onclick="() => _tutorialAdDismissed = true"></button>
@@ -617,7 +617,7 @@
                                             @onclick="() => SetSlingSide(SlingPlanner.PassSide.Trail)">Trail — brake</button>
                                 </div>
                                 <div class="mb-1">Pass distance:
-                                    <strong>@_slingPassRadii.ToString("0.#", CultureInfo.InvariantCulture) R</strong>
+                                    <strong>@_slingPassRadii.ToString("0.#", CultureInfo.InvariantCulture) planet radii</strong>
                                     <span class="text-secondary">(point-mass floor @SlingMinRadii.ToString("0", CultureInfo.InvariantCulture) R)</span>
                                 </div>
                                 @* stopPropagation: arrow keys adjust the slider, not fire live ship pulses. *@
@@ -5673,7 +5673,8 @@
             {
                 _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
                     _avatarX, _avatarY, _avatarHeading,
-                    _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null),
+                    _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
+                    Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId)),
                     _deckPanX, _deckPanY);
             }
 
