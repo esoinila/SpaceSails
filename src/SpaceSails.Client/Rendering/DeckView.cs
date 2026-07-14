@@ -12,7 +12,8 @@ public sealed class DeckView
 {
     public readonly record struct State(
         double AvatarX, double AvatarY, double HeadingRad,
-        int CargoUnits, double Charge, bool ShuttleAway, bool ElectricUniverse);
+        int CargoUnits, double Charge, bool ShuttleAway, bool ElectricUniverse,
+        bool Docked = false);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -189,8 +190,12 @@ public sealed class DeckView
         float hy = ay - (float)Math.Sin(state.HeadingRad) * scale * 1.1f;
         DrawSeg((ax, ay), (hx, hy), AvatarColor, 2f);
 
+        // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or
+        // how to go ashore — the tester could only guess "airlock" by genre convention.
         _renderer.DrawText(ox, heightPx - 10,
-            "WASD / arrows — move ∙ E — interact ∙ F — first person ∙ Q — back to the helm",
+            state.Docked
+                ? "docked ⚓ walk up through the airlock to go ashore ∙ WASD — move ∙ E — interact ∙ F — first person ∙ Q — helm"
+                : "WASD / arrows — move ∙ E — interact ∙ F — first person ∙ Q — back to the helm",
             TextDim, "11px monospace", TextAlign.Center);
 
         _renderer.EndFrame();
