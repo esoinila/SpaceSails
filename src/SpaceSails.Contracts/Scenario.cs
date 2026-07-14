@@ -117,4 +117,12 @@ public sealed record BodyDefinition
     /// questions asked.
     /// </summary>
     public bool Haven { get; init; }
+
+    /// <summary>
+    /// A body that is on its rail but NOT on the charts (Tuesday plan pillar 1, "Expanse rules"):
+    /// it does not draw on the map, answer the picker, appear in the scope carousel, "Nearest", or
+    /// any body menu until the client reveals it — a targeted, intel-fed scan finds it. Off by
+    /// default, so every existing scenario body stays plainly visible.
+    /// </summary>
+    public bool Hidden { get; init; }
 }

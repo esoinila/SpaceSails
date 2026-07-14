@@ -12,7 +12,7 @@
     { "id": "satellite-factory", "name": "Highport Satellite Works", "parentId": "earth", "mu": 0, "bodyRadiusM": 300, "orbitRadiusM": 6.771e6, "orbitPeriodS": 5546, "initialPhaseRad": 2.4, "kind": "station" },
     { "id": "mars",    "name": "Mars",    "parentId": "sun", "mu": 4.282837e13,      "bodyRadiusM": 3.3895e6,  "orbitRadiusM": 2.2794e11,  "orbitPeriodS": 5.93551e7,   "initialPhaseRad": 2.7 },
     { "id": "the-space-bar", "name": "The Rusty Roadstead", "parentId": "mars", "mu": 0, "bodyRadiusM": 900, "orbitRadiusM": 1.2e7, "orbitPeriodS": 7200, "initialPhaseRad": 3.1, "kind": "station", "haven": true },
-    { "id": "derelict-roadster", "name": "Derelict Roadster", "parentId": "sun", "mu": 0, "bodyRadiusM": 3, "orbitRadiusM": 1.7e11, "orbitPeriodS": 3.82e7, "initialPhaseRad": 2.5, "kind": "station" },
+    { "id": "derelict-roadster", "name": "Derelict Roadster", "parentId": "sun", "mu": 0, "bodyRadiusM": 3, "orbitRadiusM": 1.7e11, "orbitPeriodS": 3.82e7, "initialPhaseRad": 2.5, "kind": "station", "hidden": true },
     { "id": "jupiter", "name": "Jupiter", "parentId": "sun", "mu": 1.26686534e17,    "bodyRadiusM": 6.9911e7,  "orbitRadiusM": 7.7857e11,  "orbitPeriodS": 3.74336e8,   "initialPhaseRad": 3.6 },
     { "id": "europa",   "name": "Europa",   "parentId": "jupiter", "mu": 3.2038e12, "bodyRadiusM": 1.5608e6, "orbitRadiusM": 6.709e8,  "orbitPeriodS": 3.068226e5, "initialPhaseRad": 0.5, "kind": "moon" },
     { "id": "ganymede", "name": "Ganymede", "parentId": "jupiter", "mu": 9.8907e12, "bodyRadiusM": 2.6341e6, "orbitRadiusM": 1.0704e9, "orbitPeriodS": 6.181531e5, "initialPhaseRad": 1.5, "kind": "moon" },

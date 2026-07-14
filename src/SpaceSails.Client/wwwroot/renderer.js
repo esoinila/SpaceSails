@@ -290,6 +290,7 @@ const CUES = {
     fire:  { freq: 130, to: 45,  duration: 0.4,  gain: 0.12, type: 'square' },   // the driver's boom
     hit:   { freq: 660, to: 990, duration: 0.3,  gain: 0.10, type: 'triangle' }, // splash — bright ping up
     miss:  { freq: 440, to: 160, duration: 0.5,  gain: 0.07, type: 'sine' },     // round gone — sad fall
+    reveal:{ freq: 587, to: 1175, duration: 0.45, gain: 0.08, type: 'sine' },    // a scan resolves it — bright discovery rise
 };
 
 export function playCue(kind) {

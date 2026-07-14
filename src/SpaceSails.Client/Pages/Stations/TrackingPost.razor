@@ -371,6 +371,15 @@
     [Parameter] public EventCallback<double> OnZoomMap { get; set; }
     [Parameter] public EventCallback OnCenterShip { get; set; }
 
+    /// <summary>Tuesday plan PR-A: fires when an area scan finishes, reporting the disc it covered
+    /// (center, radius) and the sim time it completed. Map.razor checks whether a hidden body's true
+    /// position at that instant falls inside — an actual completed scan is what reveals the wreck.</summary>
+    [Parameter] public EventCallback<CompletedAreaScan> OnAreaScanCompleted { get; set; }
+
+    /// <summary>The covered disc of one finished area scan: everything Map.razor needs to test
+    /// "did this scan sweep over a hidden body?" without the tracking post knowing what a body is.</summary>
+    public readonly record struct CompletedAreaScan(Vector2d Center, double Radius, double CompleteTime);
+
     private const double RosetteCenterPx = 100;
     private const double RosetteMaxRadiusPx = 82;
     private const int RosetteSteps = 48;
@@ -659,6 +668,10 @@
                     SkySeed, pass.Task.AreaCenter, pass.Task.AreaRadius, pass.CompleteTime);
                 _lastSweepMessage =
                     $"{pass.Task.Label}: resolved {_recentFinds.Count} object(s) — {_recentFinds[0].Description}";
+                // A real completed scan may have swept over a hidden body — hand the covered disc up
+                // so Map.razor can reveal the wreck (intel → scan → reveal, Tuesday plan PR-A).
+                OnAreaScanCompleted.InvokeAsync(
+                    new CompletedAreaScan(pass.Task.AreaCenter, pass.Task.AreaRadius, pass.CompleteTime));
                 break;
         }
     }
@@ -793,6 +806,21 @@
         bool added = _schedule.Enqueue(task);
         _lastSweepMessage = added ? $"Queued: {task.Label}" : $"{task.Label} is already queued";
         return added;
+    }
+
+    /// <summary>Tuesday plan PR-A: an intel-fed scan wants the scope pointed HERE, next — enqueue
+    /// the area scan (or find it already queued) and jump it to the front of the carousel so the
+    /// intel-driven hunt resolves as soon as the current look ends. Returns the task's id.</summary>
+    public string EnqueueAndPrioritize(SensorTask task)
+    {
+        if (!_schedule.Contains(task.Id))
+        {
+            _schedule.Enqueue(task);
+        }
+
+        _schedule.PrioritizeNext(task.Id);
+        _lastSweepMessage = $"Prioritized: {task.Label}";
+        return task.Id;
     }
 
     /// <summary>PRIORITIZE REDISCOVERY: the search pass runs as soon as the current look ends.</summary>

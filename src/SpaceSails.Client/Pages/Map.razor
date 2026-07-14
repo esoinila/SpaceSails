@@ -886,6 +886,7 @@
                 Transponder="_transponderMode" OnTransponderChange="SetTransponder"
                 Opportunities="_courseOpportunities" OnSetInterest="SetInterestTarget"
                 OnZoomMap="ZoomSensorsBackdrop" OnCenterShip="CenterShipOnMap"
+                OnAreaScanCompleted="OnAreaScanCovered"
                 OnClose="() => SwitchDesk(ShipDesk.Nav)" />
         </div>
     </div>
@@ -1060,6 +1061,16 @@
                                         }
                                     }
                                     <div class="comms-tree-group text-secondary fw-bold">Intel</div>
+                                    @foreach (ScopeIntel intel in _scopeIntel)
+                                    {
+                                        ScopeIntel si = intel;
+                                        string siNodeId = $"scopeintel:{si.Id}";
+                                        <div class="comms-node @(_commsSelectedId == siNodeId ? "comms-node-selected" : "")"
+                                             role="button" tabindex="0" @onclick="() => _commsSelectedId = siNodeId">
+                                            <span class="flex-grow-1">@si.Headline</span>
+                                            <span class="badge bg-info text-dark">tip</span>
+                                        </div>
+                                    }
                                     <div class="comms-node @(_commsSelectedId == "offbooks" ? "comms-node-selected" : "")"
                                          role="button" tabindex="0" @onclick='() => _commsSelectedId = "offbooks"'>
                                         <span class="flex-grow-1">🕵 Off the books</span>
@@ -1079,7 +1090,25 @@
                             else
                             {
                                 <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
-                                    @if (_commsSelectedId == "offbooks")
+                                    @if (_commsSelectedId is { } scSel && scSel.StartsWith("scopeintel:", StringComparison.Ordinal) && ScopeIntelById(scSel) is { } tip)
+                                    {
+                                        <div class="card-header py-1"><span class="fw-bold small">@tip.Headline</span></div>
+                                        <div class="card-body p-2 small">
+                                            <div class="comms-breadcrumbs text-secondary mb-1">Intel › orbit fix</div>
+                                            @foreach (string line in tip.Lines)
+                                            {
+                                                <div class="mb-1">@line</div>
+                                            }
+                                            <div class="d-grid gap-1 mt-2">
+                                                <button type="button" class="btn btn-sm btn-info py-0 px-1 text-start"
+                                                        @onclick="() => PointScopeWhereIntelSays(tip)">
+                                                    🔭 Point the scope where this says
+                                                </button>
+                                            </div>
+                                            <div class="text-secondary mt-2">The scope slews to the predicted spot and runs a prioritized area scan. Warp time at the <span class="text-light">Sensors desk</span> until the pass lands — when it sweeps over her, she's charted.</div>
+                                        </div>
+                                    }
+                                    else if (_commsSelectedId == "offbooks")
                                     {
                                         <div class="card-header py-1"><span class="fw-bold small">🕵 Off the books</span></div>
                                         <div class="card-body p-2 small">
@@ -1170,6 +1199,7 @@
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
+                                                              OnPointScope="PointScopeForActiveFetch"
                                                               OnReopenStartPicker="ReopenStartPicker" />
                 }
             </div>
@@ -3118,6 +3148,43 @@
     private Quest? _pendingOffer;   // the stranger's current table offer, awaiting Accept/Pass
     private int _questSeq;          // monotonic id source for accepted quests
 
+    // Tuesday plan PR-A (the hunt is the quest): a hidden body is on its rail but off the charts —
+    // it doesn't draw, answer the picker, ride the scope carousel, count as "Nearest", or open a
+    // body menu until a targeted, intel-fed scan reveals it. `_hiddenBodyIds` is the scenario's
+    // "hidden":true set (loaded once); `_revealedBodyIds` is the session's found set (reveal is
+    // session-scoped, matching the save model). A body is CHARTED when it isn't hidden, or has been
+    // revealed.
+    private readonly HashSet<string> _hiddenBodyIds = [];
+    private readonly HashSet<string> _revealedBodyIds = [];
+
+    // A hidden body still on the charts' blind side — everything player-facing must skip it.
+    private bool IsBodyHidden(string id) => _hiddenBodyIds.Contains(id) && !_revealedBodyIds.Contains(id);
+
+    // Bring a hidden body onto the charts for the rest of the session: fires a payoff line + cue,
+    // repaints. Idempotent — a second reveal (or revealing a plainly-visible body) is a no-op.
+    private void RevealBody(string id, string reason, bool announce = true)
+    {
+        if (!_hiddenBodyIds.Contains(id) || !_revealedBodyIds.Add(id))
+        {
+            return;
+        }
+        if (announce)
+        {
+            ShowPulseMessage(reason);
+            RendererInterop.PlayCue("reveal");
+        }
+        _passDirty = true;
+        StateHasChanged();
+    }
+
+    // A wreck-orbit tip the Fixer hands over instead of a map pin (Tuesday plan PR-A): an estimate
+    // in the game's voice, plus the true body id so the "point the scope" hook can aim an area scan.
+    private sealed record ScopeIntel(string Id, string BodyId, string Headline, IReadOnlyList<string> Lines);
+    private readonly List<ScopeIntel> _scopeIntel = [];
+
+    private const double IntelScanLeadSeconds = 12 * 3600;   // aim a touch ahead of "now" — a prediction, not a snapshot
+    private const double WreckScanRadiusM = 4e10;            // generous box: covers the wreck's drift before the pass lands
+
     private readonly List<FirstPersonView.SkyBody> _skyBodies = [];
     private readonly HashSet<string> _deckKeys = [];
     private const double AvatarSpeed = 9.0; // deck units per real second
@@ -3256,6 +3323,7 @@
         _skyBodies.Clear();
         foreach (CelestialBody body in _ephemeris!.Bodies)
         {
+            if (IsBodyHidden(body.Id)) continue; // no sky-dot for an uncharted body in the windows (PR-A)
             Vector2d offset = _ephemeris.Position(body.Id, SimTime) - _ship.Position;
             double distance = offset.Length;
             if (distance <= body.BodyRadius)
@@ -3359,7 +3427,11 @@
         {
             if (npc.Active && !npc.Arrived && npc.CurrentlyObserved) ids.Add(npc.Ship.Id);
         }
-        foreach (CelestialBody b in _ephemeris!.Bodies) ids.Add(b.Id);
+        foreach (CelestialBody b in _ephemeris!.Bodies)
+        {
+            if (IsBodyHidden(b.Id)) continue; // hidden bodies never ride the scope carousel (PR-A)
+            ids.Add(b.Id);
+        }
         return ids;
     }
 
@@ -3459,7 +3531,7 @@
 
         foreach (CelestialBody body in _ephemeris!.Bodies)
         {
-            if (body.Id == id)
+            if (body.Id == id && !IsBodyHidden(body.Id)) // don't resolve a scope target onto a hidden body (PR-A)
             {
                 Vector2d position = _ephemeris.Position(body.Id, SimTime);
                 const double h = 1.0;
@@ -3939,6 +4011,7 @@
         string? startId = null;
         string? fetchCheat = null;
         string? crackCheat = null;
+        var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
         {
@@ -3960,12 +4033,23 @@
             }
             else if (pair.StartsWith("fetch=", StringComparison.OrdinalIgnoreCase))
             {
-                // Dev cheat: /map?fetch=active|picked injects the fetch mission at that stage so a
-                // playtester can exercise pickup / in-person delivery without the flights between.
+                // Dev cheat: /map?fetch=intel|active|picked injects the fetch mission at that stage so a
+                // playtester can exercise each leg without the flights between. intel = the new first
+                // stage (accepted, wreck hidden, tip in the ledger); active = post-scan (wreck charted,
+                // backward-compatible); picked = charted + already lifted.
                 string candidate = Uri.UnescapeDataString(pair["fetch=".Length..]).ToLowerInvariant();
-                if (candidate is "active" or "picked")
+                if (candidate is "intel" or "active" or "picked")
                 {
                     fetchCheat = candidate;
+                }
+            }
+            else if (pair.StartsWith("reveal=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Dev cheat: /map?reveal=<bodyId> charts a hidden body straight away (repeatable).
+                string candidate = Uri.UnescapeDataString(pair["reveal=".Length..]);
+                if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+                {
+                    revealCheats.Add(candidate);
                 }
             }
             else if (pair.StartsWith("crack=", StringComparison.OrdinalIgnoreCase))
@@ -3984,6 +4068,17 @@
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
+        // Tuesday plan PR-A: the scenario's off-the-charts bodies (e.g. the derelict roadster). They
+        // stay dark until an intel-fed scan (or a dev reveal cheat) charts them.
+        _hiddenBodyIds.Clear();
+        _revealedBodyIds.Clear();
+        foreach (BodyDefinition body in scenario.Bodies)
+        {
+            if (body.Hidden)
+            {
+                _hiddenBodyIds.Add(body.Id);
+            }
+        }
         // PR-15, the captain's position: the mission catalog is scenario data (cargo classes,
         // route pairs, havens), so it's built once per scenario load alongside everything else
         // that reads _ephemeris — never recomputed per frame or per desk switch.
@@ -4016,8 +4111,11 @@
         // The derelict roadster is a dead wreck, not a trading post — it's a station body only so its
         // map label reads at a sane zoom (the fetch-mission target). Drop the depot GenerateDepots
         // would otherwise hang on it (any sun-orbiting body gets one).
+        // A depot on a hidden body would leak it (the depot marker/menu would give the wreck away).
+        // Filter generically on hidden+unrevealed, not the wreck's id — every future secret body is
+        // covered for free (Tuesday plan PR-A).
         IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44)
-            .Where(d => d.DepotBodyId != "derelict-roadster").ToList();
+            .Where(d => d.DepotBodyId is null || !IsBodyHidden(d.DepotBodyId)).ToList();
 
         // The tutorial's "first hunt" needs prey the player can actually catch from a standing start.
         // Interplanetary traffic screams past at 80–160 km/s relative — past the 5 km/s boarding
@@ -4076,18 +4174,36 @@
             InjectCrackCheat(crackCheat); // needs the docked station's deck built (a locked hatch to target)
         }
 
+        // Tuesday plan PR-A: ?start=wreck drops you 2 km off the roadster — you're on top of her, so
+        // chart her quietly (no "found it!" fanfare when you were parked alongside all along). This
+        // also keeps ?start=wreck&fetch=active green.
+        if (startId == "wreck")
+        {
+            RevealBody("derelict-roadster", "", announce: false);
+        }
+
+        // ?reveal=<bodyId> (repeatable): chart any hidden body at boot for testing every downstream leg.
+        foreach (string id in revealCheats)
+        {
+            RevealBody(id, $"🧪 Test: {BodyName(id)} charted.");
+        }
+
         StateHasChanged();
         await _focusableDiv.FocusAsync();
     }
 
-    // Dev cheat (/map?fetch=active|picked): drop a fetch job straight into the ledger at a stage, so a
-    // playtester can test the pickup or the in-person hand-off without flying the legs between. The
-    // drop-off is the interior station you're standing in (so "picked" can be delivered on the spot),
-    // else the first interior station. Pair with ?start=wreck to test the real proximity pickup.
+    // Dev cheat (/map?fetch=intel|active|picked): drop a fetch job straight into the ledger at a
+    // stage, so a playtester can test each leg without flying the ones between.
+    //   intel  = the new first stage: accepted, wreck HIDDEN, transponder fix in the Comms ledger.
+    //   active = post-scan (backward-compatible): accepted AND wreck already charted.
+    //   picked = charted AND already lifted (fly nowhere — hand off on the spot).
+    // The drop-off is the interior station you're standing in (so "picked" can be delivered on the
+    // spot), else the first interior station. Pair intel with ?start=wreck to test the proximity pickup.
     private void InjectFetchCheat(string stage)
     {
+        const string wreckId = "derelict-roadster";
         if (_ephemeris is null || _quests.Any(q => q.Kind == QuestKind.Fetch)
-            || _ephemeris.Bodies.All(b => b.Id != "derelict-roadster"))
+            || _ephemeris.Bodies.All(b => b.Id != wreckId))
         {
             return;
         }
@@ -4102,10 +4218,24 @@
         _quests.Add(new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, "THE FIXER",
             "", destName, "Fetch the roadster's lost wallet",
             "[test] a fetch job, dropped straight into the ledger.", 4200,
-            DestBodyId: dest, SourceBodyId: "derelict-roadster")
+            DestBodyId: dest, SourceBodyId: wreckId)
         {
             State = stage == "picked" ? QuestState.PickedUp : QuestState.Active,
         });
+
+        if (stage == "intel")
+        {
+            // Pre-scan: leave the wreck hidden and seed the transponder fix (the hunt's first stage).
+            if (IsBodyHidden(wreckId) && !_scopeIntel.Any(si => si.BodyId == wreckId))
+            {
+                _scopeIntel.Add(BuildWreckIntel(wreckId));
+            }
+        }
+        else
+        {
+            // active / picked are post-scan states: the wreck is already charted.
+            RevealBody(wreckId, "", announce: false);
+        }
         ShowPulseMessage($"🧪 Test: fetch job injected ({stage}) — hand off to The Fixer at {destName}.");
     }
 
@@ -4624,6 +4754,7 @@
         double minDistanceSq = double.MaxValue;
         foreach (var body in _ephemeris!.Bodies)
         {
+            if (IsBodyHidden(body.Id)) continue; // a hidden wreck is never "Nearest" until charted (PR-A)
             var bodyPos = _ephemeris.Position(body.Id, SimTime);
             double distSq = (_ship.Position - bodyPos).LengthSquared;
             if (distSq < minDistanceSq)
@@ -4962,6 +5093,7 @@
 
         foreach (CelestialBody body in ephemeris.Bodies)
         {
+            if (IsBodyHidden(body.Id)) continue; // off the charts until an intel-fed scan finds it (PR-A)
             if (body.OrbitPeriod != 0 && body.OrbitRadius > 0)
             {
                 Vector2d parentPosition = body.ParentId is null ? Vector2d.Zero : ephemeris.Position(body.ParentId, SimTime);
@@ -5877,6 +6009,7 @@
         {
             foreach (CelestialBody body in _ephemeris.Bodies)
             {
+                if (IsBodyHidden(body.Id)) continue;          // a hidden body doesn't answer the picker (PR-A)
                 if (body.ParentId is null) continue;          // the sun is not a destination you orbit
                 if (body.Kind == BodyKind.Station) continue;  // a barge has no Hill sphere — dock, don't orbit
                 (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
@@ -5897,6 +6030,7 @@
             // right there in the "which one?" list — no zooming in to tell them apart (owner's ask).
             foreach (CelestialBody body in _ephemeris.Bodies)
             {
+                if (IsBodyHidden(body.Id)) continue; // (PR-A) — a hidden haven dock stays off the picker too
                 if (!IsDockableHaven(body)) continue;
                 (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
                 double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
@@ -6218,6 +6352,62 @@
         CloseBodyMenu();
         CloseSkyMenu();
     }
+
+    // Tuesday plan PR-A (the reveal): a scan finished and swept some disc of sky. If a hidden body's
+    // TRUE position at the scan's completion instant fell inside that disc, the scope resolved it —
+    // chart it. It must be a completed pass, not merely a scheduled one (this fires from the tracking
+    // post's HandlePass, which only runs when a pass actually lands).
+    private void OnAreaScanCovered(SpaceSails.Client.Pages.Stations.TrackingPost.CompletedAreaScan scan)
+    {
+        if (_ephemeris is null)
+        {
+            return;
+        }
+        foreach (string id in _hiddenBodyIds)
+        {
+            if (_revealedBodyIds.Contains(id))
+            {
+                continue;
+            }
+            Vector2d truePos = _ephemeris.Position(id, scan.CompleteTime);
+            if ((truePos - scan.Center).Length <= scan.Radius)
+            {
+                RevealBody(id, WreckRevealMessage(id));
+                _scopeIntel.RemoveAll(si => si.BodyId == id);
+            }
+        }
+    }
+
+    private string WreckRevealMessage(string bodyId) => bodyId == "derelict-roadster"
+        ? "🔭 There she is — a cherry-red glint on the return, right where the tip said. Contact: the Derelict Roadster."
+        : $"🔭 Scan resolved a new contact — {BodyName(bodyId)} is on the charts now.";
+
+    // The 🔭 hook the intel card (and the quest card) carries: aim a prioritized area scan at where
+    // the wreck should be a touch from now, then drop the captain at the Sensors desk to watch it
+    // land. The box is deliberately generous — good enough to catch the wreck's drift before the
+    // pass completes (the reveal check does the exact geometry).
+    private void PointScopeWhereIntelSays(ScopeIntel intel)
+    {
+        if (_ephemeris is null || _trackingPost is null)
+        {
+            return;
+        }
+        if (!IsBodyHidden(intel.BodyId))
+        {
+            // Already charted — the tip has served its purpose; drop the stale card.
+            _scopeIntel.RemoveAll(si => si.Id == intel.Id);
+            return;
+        }
+        double aimTime = SimTime + IntelScanLeadSeconds;
+        Vector2d center = _ephemeris.Position(intel.BodyId, aimTime);
+        string label = $"intel fix · {intel.Headline}";
+        _trackingPost.EnqueueAndPrioritize(SensorTask.AreaScan(center, WreckScanRadiusM, label));
+        SwitchDesk(ShipDesk.Sensors);
+        ShowPulseMessage("🔭 Scope slewing to the intel fix — watch the Sensors desk. Warp time to let the pass land.");
+    }
+
+    private ScopeIntel? ScopeIntelById(string nodeId) =>
+        _scopeIntel.FirstOrDefault(si => $"scopeintel:{si.Id}" == nodeId);
 
     private void SweepCorridorFromMenu(CorridorRegion lane, bool standing)
     {
@@ -8340,7 +8530,52 @@
         }
 
         _quests.Add(offer);
+
+        // Tuesday plan PR-A: a fetch job no longer leaves the wreck labelled on the map. The Fixer
+        // hands you a transponder fix instead — an intel card at the Comms desk with a 🔭 hook that
+        // aims the scope. The wreck stays hidden until an actual scan resolves it.
+        if (offer.Kind == QuestKind.Fetch && offer.SourceBodyId is { } wreckId && IsBodyHidden(wreckId))
+        {
+            if (!_scopeIntel.Any(si => si.BodyId == wreckId))
+            {
+                _scopeIntel.Add(BuildWreckIntel(wreckId));
+            }
+            ShowPulseMessage($"Job taken: {offer.Title}. The Fixer slid you a transponder fix — work it at the Comms desk (🔭).");
+            return;
+        }
+
         ShowPulseMessage($"Job taken: {offer.Title}. Finish it, then collect at any berth.");
+    }
+
+    // The orbit estimate the Fixer hands over: numbers grounded in the wreck's real rail, worded
+    // with a little imprecision (the scan box does the precise work). Voice + phase window, so the
+    // player knows WHERE and roughly WHEN to look (Expanse rules).
+    private ScopeIntel BuildWreckIntel(string bodyId)
+    {
+        double aimTime = SimTime + IntelScanLeadSeconds;
+        double auHere = 0, periodDays = 0, phaseDeg = 0;
+        if (_ephemeris is not null)
+        {
+            foreach (CelestialBody cand in _ephemeris.Bodies)
+            {
+                if (cand.Id != bodyId)
+                {
+                    continue;
+                }
+                auHere = cand.OrbitRadius / 1.495978707e11;
+                periodDays = Math.Abs(cand.OrbitPeriod) / 86400.0;
+                Vector2d p = _ephemeris.Position(bodyId, SimTime);
+                phaseDeg = (Math.Atan2(p.Y, p.X) * 180 / Math.PI + 360) % 360;
+                break;
+            }
+        }
+        var lines = new List<string>
+        {
+            $"Last transponder fix: sunward of Mars, r ≈ {auHere.ToString("F2", CultureInfo.InvariantCulture)} AU, period ≈ {periodDays.ToString("F0", CultureInfo.InvariantCulture)} d.",
+            $"She bore ~{phaseDeg.ToString("F0", CultureInfo.InvariantCulture)}° off the sun then, creeping prograde — near-circular, so she hasn't gone far.",
+            $"She should cross the predicted phase around {FormatSimTime(aimTime)}. Point the scope there and she'll glint.",
+        };
+        return new ScopeIntel($"wreck-intel-{bodyId}", bodyId, "🔭 Roadster orbit fix", lines);
     }
 
     private void DeclineOffer()
@@ -8446,7 +8681,9 @@
             (string label, string kind) = (q.Kind, q.State) switch
             {
                 (QuestKind.Intel, _) => ("🕸 Tip taken", "paid"),
-                (QuestKind.Fetch, QuestState.Active) => ("▶ Find the derelict roadster", "active"),
+                (QuestKind.Fetch, QuestState.Active) when q.SourceBodyId is { } src && IsBodyHidden(src)
+                    => ("🔭 Work the tip — scan to find her", "active"),
+                (QuestKind.Fetch, QuestState.Active) => ("▶ Fly to the roadster, prise the wallet", "active"),
                 (QuestKind.Fetch, QuestState.PickedUp) => ($"📦 Carrying — hand off at {q.TargetCallsign}", "active"),
                 (QuestKind.Crack, QuestState.Active) => ($"▶ Crack hatch {q.TargetShipId} — code {q.Pin}", "active"),
                 (QuestKind.Crack, QuestState.PickedUp) => ("📦 Package lifted — take it to The Fixer", "active"),
@@ -8466,8 +8703,57 @@
             string rewardText = q.Kind == QuestKind.Intel
                 ? "🕸 route tip"
                 : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
-            return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind);
+            (IReadOnlyList<Stations.Captain.QuestStep> steps, bool showScope) = FetchStagePlan(q);
+            return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind, steps, showScope);
         }).ToArray();
+
+    // The fetch hunt's staged plan for the quest card (Tuesday plan PR-A): intel → scan → fly →
+    // pick up → deliver, ✅ for done, ▶ for the current stage, ▪ for ahead — the tutorial-checklist
+    // shape. Also returns whether to surface the 🔭 hook (only while she's still uncharted). Any
+    // non-fetch quest gets no checklist.
+    private (IReadOnlyList<Stations.Captain.QuestStep> Steps, bool ShowScope) FetchStagePlan(Quest q)
+    {
+        if (q.Kind != QuestKind.Fetch)
+        {
+            return ([], false);
+        }
+        bool charted = q.SourceBodyId is not { } src || !IsBodyHidden(src); // a completed scan charted her
+        bool pickedUp = q.State is QuestState.PickedUp or QuestState.Complete or QuestState.TurnedIn;
+        bool delivered = q.State is QuestState.TurnedIn;
+        (string Text, bool Done)[] flags =
+        [
+            ("Intel — read the Fixer's transponder fix", true),
+            ("Scan — point the scope, resolve her", charted),
+            ("Fly — close on the wreck", pickedUp),
+            ("Pick up — prise the wallet loose", pickedUp),
+            ("Deliver — hand it to The Fixer in person", delivered),
+        ];
+        int current = Array.FindIndex(flags, f => !f.Done);
+        var steps = flags
+            .Select((f, i) => new Stations.Captain.QuestStep(f.Done ? "✅" : i == current ? "▶" : "▪", f.Text))
+            .ToList();
+        return (steps, ShowScope: !charted);
+    }
+
+    // The quest card's 🔭 button (mirrors the Comms intel card): find the live wreck tip (rebuilding
+    // it if it was cleared) and aim the scope from wherever the player is standing.
+    private void PointScopeForActiveFetch()
+    {
+        ScopeIntel? tip = _scopeIntel.FirstOrDefault();
+        if (tip is null)
+        {
+            Quest? fetch = _quests.FirstOrDefault(
+                q => q is { Kind: QuestKind.Fetch } && q.SourceBodyId is { } s && IsBodyHidden(s));
+            if (fetch?.SourceBodyId is { } wid)
+            {
+                tip = BuildWreckIntel(wid);
+            }
+        }
+        if (tip is not null)
+        {
+            PointScopeWhereIntelSays(tip);
+        }
+    }
 
     private void ToggleDock()
     {
