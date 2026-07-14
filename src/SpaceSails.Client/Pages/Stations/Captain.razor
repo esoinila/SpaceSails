@@ -26,8 +26,8 @@
                     @onclick="() => _view = CaptainView.Status">🧭 Ship status</button>
             <button type="button" class="btn @(_view == CaptainView.Tutorials ? "btn-info" : "btn-outline-light")"
                     @onclick="() => _view = CaptainView.Tutorials">🎓 Tutorials</button>
-            <button type="button" class="btn @(_view == CaptainView.Quests ? "btn-info" : "btn-outline-light")"
-                    @onclick="() => _view = CaptainView.Quests">📜 Quests</button>
+            <button type="button" class="btn @(_view == CaptainView.Ledger ? "btn-info" : "btn-outline-light")"
+                    @onclick="() => _view = CaptainView.Ledger">📜 Ledger</button>
         </div>
     </div>
 
@@ -124,12 +124,17 @@
             </div>
         </div>
     }
-    else if (_view == CaptainView.Quests)
+    else if (_view == CaptainView.Ledger)
     {
+        @* The Captain's ledger (PR-J, UIUsabilityNotes "The Captain's ledger"): jobs and every whisper
+           worth keeping in one brief. The ledger never does the task — each line jumps you to the desk
+           that acts on it (the intel card's 🔭 pattern, generalized). *@
         <div class="captain-groups">
             <div class="captain-group">
-                <div class="captain-group-header"><span class="captain-group-icon">📜</span> Contracts</div>
-                <div class="captain-group-flavor">Work picked up ashore — a stranger's word, a target, and coin when it's done. Bring the mark down, then put in at any berth to collect.</div>
+                <div class="captain-group-header"><span class="captain-group-icon">📜</span> THE CAPTAIN'S LEDGER</div>
+                <div class="captain-group-flavor">Every job in hand and every whisper worth keeping — in one place. The ledger never does the work; each line points you to the desk that does.</div>
+
+                <div class="captain-ledger-section-label text-info fw-bold small mt-2">⚓ Jobs</div>
                 <div class="captain-group-cards">
                     @if (Quests.Count == 0)
                     {
@@ -162,6 +167,59 @@
                                     <span class="captain-quest-status captain-quest-status-@q.StatusKind">@q.StatusLabel</span>
                                     <span class="captain-quest-reward">@q.RewardText</span>
                                 </div>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div class="captain-ledger-section-label text-info fw-bold small mt-3">🔭 Tips &amp; intel</div>
+                <div class="captain-group-cards">
+                    @if (Tips.Count == 0)
+                    {
+                        <div class="captain-empty">No tips yet — buy someone a round ashore.</div>
+                    }
+                    else
+                    {
+                        @foreach (LedgerTip tip in Tips)
+                        {
+                            LedgerTip t = tip;
+                            bool actionable = t.ScopeTipId is not null || t.ShowDarkWeb || t.DossierShipId is not null;
+                            <div class="captain-card captain-ledger-tip">
+                                <div class="fw-bold">@t.Title</div>
+                                @foreach (string line in t.Lines)
+                                {
+                                    <div class="captain-card-blurb text-secondary small">@line</div>
+                                }
+                                @if (t.Provenance is not null)
+                                {
+                                    <div class="captain-ledger-prov text-secondary small fst-italic">@t.Provenance</div>
+                                }
+                                @if (t.ScopeTipId is { } scopeId)
+                                {
+                                    <button type="button" class="btn btn-sm btn-info py-0 px-1 mt-1 text-start"
+                                            @onclick="() => OnScopeTip.InvokeAsync(scopeId)">
+                                        🔭 Point the scope where this says
+                                    </button>
+                                }
+                                @if (t.ShowDarkWeb || t.DossierShipId is not null)
+                                {
+                                    <div class="captain-ledger-links mt-1 d-flex gap-2 flex-wrap">
+                                        @if (t.ShowDarkWeb)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                                    @onclick="() => OnRouteToDarkWeb.InvokeAsync()">→ dark web</button>
+                                        }
+                                        @if (t.DossierShipId is { } dossierId)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                                    @onclick="() => OnRouteToDossier.InvokeAsync(dossierId)">→ dossier</button>
+                                        }
+                                    </div>
+                                }
+                                @if (!actionable)
+                                {
+                                    <div class="captain-quest-status text-secondary small mt-1">background — may matter later</div>
+                                }
                             </div>
                         }
                     }
@@ -321,7 +379,32 @@
     /// <summary>One line of a staged quest plan — an icon (✅ done / ▶ current / ▪ ahead) and its text.</summary>
     public sealed record QuestStep(string Icon, string Text);
 
-    private enum CaptainView { Orders, Status, Tutorials, Quests }
+    // The ledger's "Tips & intel" section (PR-J): every scope/route tip, projected by Map so this
+    // desk only renders. A scope tip carries <paramref name="ScopeTipId"/> (its 🔭 action jumps to
+    // Sensors with the scan queued); a route tip carries <paramref name="ShowDarkWeb"/> and, when the
+    // ship is a known contact, <paramref name="DossierShipId"/> (the two "→" links onto Comms). A tip
+    // with none of the three is background — "may matter later".
+    [Parameter] public IReadOnlyList<LedgerTip> Tips { get; set; } = [];
+
+    /// <summary>A scope tip's 🔭 button (by tip id): Map aims the prioritized scan and jumps to Sensors,
+    /// exactly like the Comms intel card.</summary>
+    [Parameter] public EventCallback<string> OnScopeTip { get; set; }
+
+    /// <summary>A route tip's "→ dark web" link: Map switches to Comms and selects the dark-web node.</summary>
+    [Parameter] public EventCallback OnRouteToDarkWeb { get; set; }
+
+    /// <summary>A route tip's "→ dossier" link (by ship id): Map switches to Comms and selects the contact.</summary>
+    [Parameter] public EventCallback<string> OnRouteToDossier { get; set; }
+
+    /// <summary>One line in the ledger's Tips &amp; intel section. <paramref name="Lines"/> is the
+    /// grounded numbers (scope) or the route in plain words (route); <paramref name="Provenance"/> is
+    /// "&lt;giver&gt; · &lt;station&gt; · day N" or null when unknown. Exactly the actions that apply
+    /// are non-null/true; a tip with no action renders as background.</summary>
+    public sealed record LedgerTip(
+        string Title, IReadOnlyList<string> Lines, string? Provenance,
+        string? ScopeTipId, bool ShowDarkWeb, string? DossierShipId);
+
+    private enum CaptainView { Orders, Status, Tutorials, Ledger }
     private CaptainView _view;
 
     // The component is re-created each time you switch to the Captain desk, so reading the banner's

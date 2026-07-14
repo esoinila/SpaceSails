@@ -64,6 +64,30 @@ scenario's ephemeris and traffic definition in one deterministic pass — first-
 the scenario's route/body lists, never sorted or shuffled, so two builds off the same scenario
 always produce identical, identically-ordered option lists.
 
+## The ledger
+
+The captain's **📜 Ledger** tab (was "Quests") is the ship's one brief — jobs and intel in the same
+place, because the owner's playtest found bought tips effectively vanished (a route tip only surfaced
+as a "Known" tag deep on the dark-web market view). Two sections:
+
+- **⚓ Jobs** — the contract cards, unchanged: work picked up ashore, its staged checklist, and the
+  🔭 "point the scope" hook while a fetch hunt is pre-scan.
+- **🔭 Tips & intel** — every whisper worth keeping. Each **scope-intel** fix (the Fixer's transponder
+  estimate) lists its grounded numbers and keeps its 🔭 button — the same handler as the Comms card,
+  which jumps to Sensors with the prioritized scan already queued. Each **route tip** (a Gilt-Eye
+  gift, a dark-web buy) states the ship's real route in plain words and offers `→ dark web` (Comms,
+  dark-web node selected) and, when the ship is a known contact, `→ dossier` (Comms, that contact
+  selected). Where we recorded it, a provenance line reads **"&lt;giver&gt; · &lt;station&gt; · day N"**;
+  older or bought-blind entries render unattributed rather than being withheld. A tip with no action
+  is still listed, labeled *background — may matter later*. Empty, it says so honestly: "No tips yet —
+  buy someone a round ashore."
+
+The pattern the owner asked to generalize: **the ledger never does the task — it jumps you to the
+desk that acts on it, context pre-loaded.** Receipt messages when a tip lands now say where it went —
+"…filed in the Captain's ledger (0)" — so the desk (key `0`) is named at the moment of filing. Test
+cheat: `?tip=route` seeds a route tip so the Tips & intel rendering is reachable without a bar
+(see [haven-interior-walk.md](haven-interior-walk.md)).
+
 ## Persistence
 
 Session-only, same as everything else in this build — the mission lives in a field on

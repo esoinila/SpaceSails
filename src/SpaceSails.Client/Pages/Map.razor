@@ -1245,6 +1245,8 @@
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"
+                                                              Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
+                                                              OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               OnReopenStartPicker="ReopenStartPicker" />
                 }
             </div>
@@ -3245,8 +3247,27 @@
 
     // A wreck-orbit tip the Fixer hands over instead of a map pin (Tuesday plan PR-A): an estimate
     // in the game's voice, plus the true body id so the "point the scope" hook can aim an area scan.
-    private sealed record ScopeIntel(string Id, string BodyId, string Headline, IReadOnlyList<string> Lines);
+    // Provenance (Giver/Station/AcquiredSimTime, PR-J) is optional and client-side — who slid it to
+    // you, where, and when — so the Captain's ledger can attribute it; older tips render without it.
+    private sealed record ScopeIntel(string Id, string BodyId, string Headline, IReadOnlyList<string> Lines,
+        string? Giver = null, string? Station = null, double AcquiredSimTime = 0);
     private readonly List<ScopeIntel> _scopeIntel = [];
+
+    // Route-tip provenance (PR-J), keyed by the ledger's key (ship id): who gave the tip, at which
+    // station, and when. Client-side only — Core's RouteIntel stays a pure value. Entries the player
+    // bought off the dark web have no provenance here and render unattributed in the ledger.
+    private sealed record IntelProvenance(string Giver, string Station, double AcquiredSimTime);
+    private readonly Dictionary<string, IntelProvenance> _routeIntelProvenance = new();
+
+    // The berth we're tied up at, for a tip's provenance line; "ashore" when not docked to a named body.
+    private string DockedStationName() =>
+        _dockedHavenId is { } id && _ephemeris is not null
+            ? _ephemeris.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? id
+            : "ashore";
+
+    // "<giver> · <station> · day N" for the ledger's provenance line (day = sim day, 0-based like the clock).
+    private static string ProvenanceLine(string giver, string station, double simTime) =>
+        $"{giver} · {station} · day {(int)(simTime / 86400)}";
 
     private const double IntelScanLeadSeconds = 12 * 3600;   // aim a touch ahead of "now" — a prediction, not a snapshot
     private const double WreckScanRadiusM = 4e10;            // generous box: covers the wreck's drift before the pass lands
@@ -4358,6 +4379,7 @@
         string? startId = null;
         string? fetchCheat = null;
         string? crackCheat = null;
+        string? tipCheat = null;
         string? slingCheat = null;
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
@@ -4408,6 +4430,16 @@
                 if (candidate is "active" or "picked")
                 {
                     crackCheat = candidate;
+                }
+            }
+            else if (pair.StartsWith("tip=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Dev cheat: /map?tip=route seeds a representative route tip (with provenance) into the
+                // ledger so the Captain's-ledger Tips & intel rendering is reachable without walking a bar.
+                string candidate = Uri.UnescapeDataString(pair["tip=".Length..]).ToLowerInvariant();
+                if (candidate is "route")
+                {
+                    tipCheat = candidate;
                 }
             }
             else if (pair.StartsWith("sling=", StringComparison.OrdinalIgnoreCase))
@@ -4533,6 +4565,11 @@
             InjectCrackCheat(crackCheat); // needs the docked station's deck built (a locked hatch to target)
         }
 
+        if (tipCheat is not null)
+        {
+            InjectTipCheat(); // seed a representative route tip so the ledger's Tips & intel is reachable
+        }
+
         // Tuesday plan PR-A: ?start=wreck drops you 2 km off the roadster — you're on top of her, so
         // chart her quietly (no "found it!" fanfare when you were parked alongside all along). This
         // also keeps ?start=wreck&fetch=active green.
@@ -4595,7 +4632,7 @@
             // Pre-scan: leave the wreck hidden and seed the transponder fix (the hunt's first stage).
             if (IsBodyHidden(wreckId) && !_scopeIntel.Any(si => si.BodyId == wreckId))
             {
-                _scopeIntel.Add(BuildWreckIntel(wreckId));
+                _scopeIntel.Add(BuildWreckIntel(wreckId, "THE FIXER", DockedStationName()));
             }
         }
         else
@@ -4603,7 +4640,7 @@
             // active / picked are post-scan states: the wreck is already charted.
             RevealBody(wreckId, "", announce: false);
         }
-        ShowPulseMessage($"🧪 Test: fetch job injected ({stage}) — hand off to The Fixer at {destName}.");
+        ShowPulseMessage($"🧪 Test: fetch job injected ({stage}) — hand off to The Fixer at {destName} — filed in the Captain's ledger (0).");
     }
 
     // Dev cheat (/map?start=<station>&crack=active|picked): drop a hatch-crack job into the ledger at a
@@ -4635,6 +4672,27 @@
             State = stage == "picked" ? QuestState.PickedUp : QuestState.Active,
         });
         ShowPulseMessage($"🧪 Test: crack job injected ({stage}) — hatch {id}, code {pin}.");
+    }
+
+    // Dev cheat (/map?tip=route): drop a representative route tip — with provenance — into the ledger,
+    // so the Captain's-ledger Tips & intel rendering (route line, "→ dark web"/"→ dossier", the day-N
+    // attribution) is reachable in seconds without walking a bar. Prefers an off-books ghost so the tip
+    // has real teeth (a ship you couldn't otherwise see), else any live ship.
+    private void InjectTipCheat()
+    {
+        NpcState? subject = _npcStates
+            .Where(n => n.Active && !n.Ship.PublishesTimetable && !_intelLedger.Knows(n.Ship.Id, SimTime))
+            .OrderBy(n => n.Ship.Id, StringComparer.Ordinal)
+            .FirstOrDefault()
+            ?? _npcStates.FirstOrDefault(n => n.Active)
+            ?? _npcStates.FirstOrDefault();
+        if (subject is null)
+        {
+            return;
+        }
+        _intelLedger.Add(new RouteIntel(subject.Ship.Id, SimTime, RouteIntel.DefaultValiditySeconds, Price: 0));
+        _routeIntelProvenance[subject.Ship.Id] = new IntelProvenance("GILT-EYE", DockedStationName(), SimTime);
+        ShowPulseMessage($"🧪 Test: route tip on {subject.Ship.Callsign} — filed in the Captain's ledger (0).");
     }
 
     private ShipState InitializeShipState()
@@ -8931,9 +8989,10 @@
             // A gift of information — delivered on the spot: drop the route tip into the ledger (like a
             // dark-web buy, but free) and log it as a settled entry. No hunt, no dock payout.
             _intelLedger.Add(new RouteIntel(offer.TargetShipId, SimTime, RouteIntel.DefaultValiditySeconds, Price: 0));
+            _routeIntelProvenance[offer.TargetShipId] = new IntelProvenance(offer.Giver, DockedStationName(), SimTime);
             offer.State = QuestState.TurnedIn;
             _quests.Add(offer);
-            ShowPulseMessage($"Tip logged — {offer.TargetCallsign} is on your contacts now (🕸 stale in 30 d).");
+            ShowPulseMessage($"Tip logged — {offer.TargetCallsign} is on your contacts now (🕸 stale in 30 d) — filed in the Captain's ledger (0).");
             return;
         }
 
@@ -8946,9 +9005,9 @@
         {
             if (!_scopeIntel.Any(si => si.BodyId == wreckId))
             {
-                _scopeIntel.Add(BuildWreckIntel(wreckId));
+                _scopeIntel.Add(BuildWreckIntel(wreckId, offer.Giver, DockedStationName()));
             }
-            ShowPulseMessage($"Job taken: {offer.Title}. The Fixer slid you a transponder fix — work it at the Comms desk (🔭).");
+            ShowPulseMessage($"Job taken: {offer.Title}. The Fixer slid you a transponder fix — work it at the Comms desk (🔭) — filed in the Captain's ledger (0).");
             return;
         }
 
@@ -8958,7 +9017,7 @@
     // The orbit estimate the Fixer hands over: numbers grounded in the wreck's real rail, worded
     // with a little imprecision (the scan box does the precise work). Voice + phase window, so the
     // player knows WHERE and roughly WHEN to look (Expanse rules).
-    private ScopeIntel BuildWreckIntel(string bodyId)
+    private ScopeIntel BuildWreckIntel(string bodyId, string? giver = null, string? station = null)
     {
         double aimTime = SimTime + IntelScanLeadSeconds;
         double auHere = 0, periodDays = 0, phaseDeg = 0;
@@ -8983,7 +9042,8 @@
             $"She bore ~{phaseDeg.ToString("F0", CultureInfo.InvariantCulture)}° off the sun then, creeping prograde — near-circular, so she hasn't gone far.",
             $"She should cross the predicted phase around {FormatSimTime(aimTime)}. Point the scope there and she'll glint.",
         };
-        return new ScopeIntel($"wreck-intel-{bodyId}", bodyId, "🔭 Roadster orbit fix", lines);
+        return new ScopeIntel($"wreck-intel-{bodyId}", bodyId, "🔭 Roadster orbit fix", lines,
+            giver, station, SimTime);
     }
 
     private void DeclineOffer()
@@ -9161,6 +9221,69 @@
         {
             PointScopeWhereIntelSays(tip);
         }
+    }
+
+    // The ledger's "Tips & intel" section (PR-J): every scope-intel fix and every fresh route tip,
+    // projected for the Captain desk. Scope tips keep their 🔭 action (jump to Sensors, scan queued);
+    // route tips carry "→ dark web" always and "→ dossier" when the ship is a known contact. Provenance
+    // is attached where we recorded it (Fixer fetches, Gilt-Eye tips, the cheats); older/bought entries
+    // render unattributed rather than being withheld.
+    private Stations.Captain.LedgerTip[] LedgerTips()
+    {
+        var tips = new List<Stations.Captain.LedgerTip>();
+
+        foreach (ScopeIntel si in _scopeIntel)
+        {
+            string? prov = si.Giver is { } giver ? ProvenanceLine(giver, si.Station ?? "ashore", si.AcquiredSimTime) : null;
+            tips.Add(new Stations.Captain.LedgerTip(
+                si.Headline, si.Lines, prov,
+                ScopeTipId: si.Id, ShowDarkWeb: false, DossierShipId: null));
+        }
+
+        foreach (RouteIntel entry in _intelLedger.Entries)
+        {
+            if (!entry.IsFresh(SimTime))
+            {
+                continue;
+            }
+            NpcState? npc = FindNpc(entry.ShipId);
+            string ship = npc?.Ship.Callsign ?? entry.ShipId;
+            string route = npc is not null ? RouteLabel(npc.Ship) : "route off the books";
+            double staleDays = Math.Max(0, entry.SecondsUntilStale(SimTime) / 86400);
+            string line = $"{ship} really runs {route} — a ghost, on your contacts (🕸), stale in {staleDays.ToString("F0", CultureInfo.InvariantCulture)} d.";
+            string? prov = _routeIntelProvenance.TryGetValue(entry.ShipId, out IntelProvenance? p)
+                ? ProvenanceLine(p.Giver, p.Station, p.AcquiredSimTime)
+                : null;
+            tips.Add(new Stations.Captain.LedgerTip(
+                $"🕸 {ship}", [line], prov,
+                ScopeTipId: null, ShowDarkWeb: true, DossierShipId: npc is not null ? entry.ShipId : null));
+        }
+
+        return tips.ToArray();
+    }
+
+    // The ledger's scope-tip 🔭 (by tip id): same handler as the Comms intel card — aim the scan, jump
+    // to Sensors.
+    private void PointScopeFromLedger(string tipId)
+    {
+        if (_scopeIntel.FirstOrDefault(si => si.Id == tipId) is { } tip)
+        {
+            PointScopeWhereIntelSays(tip);
+        }
+    }
+
+    // The ledger's "→ dark web" link: switch to Comms and select the dark-web node (the market view).
+    private void OpenDarkWebFromLedger()
+    {
+        SwitchDesk(ShipDesk.Comms);
+        _commsSelectedId = "darkweb";
+    }
+
+    // The ledger's "→ dossier" link (by ship id): switch to Comms and select that contact's detail.
+    private void OpenDossierFromLedger(string shipId)
+    {
+        SwitchDesk(ShipDesk.Comms);
+        SelectCommsShip(shipId);
     }
 
     private void ToggleDock()
