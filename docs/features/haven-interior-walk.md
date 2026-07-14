@@ -328,6 +328,10 @@ mechanism as `?start=`):
   interior station you're docked at (so it can be handed off on the spot), else the first interior.
 - **`?reveal=<bodyId>`** — chart any hidden body straight away (repeatable), e.g.
   `?reveal=derelict-roadster`.
+- **`?tip=route`** — seed a representative **route tip** (with provenance) into the ledger, so the
+  Captain's-ledger **Tips & intel** rendering is reachable in seconds without walking a bar: the ship's
+  route in plain words, a "GILT-EYE · <station> · day N" line, and the `→ dark web` / `→ dossier` links.
+  Prefers an off-books ghost as the subject (a ship you couldn't otherwise see), else any live ship.
 - **`?sling=<bodyId>`** — boot onto an inbound arc that already has a close pass by that body ~12
   days out (e.g. `?sling=jupiter`), so the plot desk's **⤴ Sling** panel is reachable in seconds. It
   places the ship at a slow, Hohmann-like approach off the target and sets it as the nav target; open
