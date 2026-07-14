@@ -3,6 +3,25 @@
 Running list of friction points found while actually *using* the game to hunt a
 ship. Each is a candidate for a UI improvement, roughly in the order hit.
 
+## The Captain's ledger (owner, 2026-07-14 playtest of the intel/sling build)
+
+- **Tips have no inventory.** Owner took Gilt-Eye's route tip and it effectively
+  vanished: route intel only surfaces as a "Known" tag on the dark-web market
+  view. "Is there like an inventory for these kind of things?" — there should
+  be one centralized brief.
+- **Proposal:** promote Captain's 📜 *Quests* tab into 📜 **the ledger** — three
+  sections: **Jobs** (current quest cards, unchanged), **Tips & intel** (every
+  intel item with provenance — who/where/when — and an action link when one
+  exists: scope intel keeps its 🔭 point-the-scope button, route tips get
+  "→ watch on Sensors" / "→ view on dark web"; non-actionable tips still listed,
+  labeled "background — may matter later"), **Standing arrangements** (later:
+  masked contracts, armed insertions).
+- **The pattern to generalize:** the ledger never does the task — it jumps you
+  to the desk that does, context pre-loaded, exactly like the intel card's 🔭
+  button (switches to Sensors and schedules the prioritized scan). "Links to
+  the desks to do related tasks" — owner's words.
+- Candidate lane: PR-J after the skim gauge (PR-I).
+
 ## Finding a target
 - **"Traffic board" wording vs. the actual desk.** The First-hunt tutorial says
   "Open the traffic board and select the Luna pod," but there is no control
