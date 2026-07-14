@@ -19,6 +19,17 @@ namespace SpaceSails.Core;
 public sealed record Atmosphere(double RefDensity, double ScaleHeight, double TopAltitude)
 {
     /// <summary>
+    /// The hull-damage line for a skim, in standard gravities of peak drag deceleration. A pass whose
+    /// <see cref="Simulator.DragReport.PeakDecelG"/> reaches this holes the sail — the same disable
+    /// mechanic the gun inflicts, now self-inflicted (the plan's default damage currency). One number,
+    /// shared: lab 22's Jupiter corridor prices "too deep" off this, and the game's corridor gauge and
+    /// live consequence read the very same constant, so the picture the lab draws is the line the game
+    /// enforces. Set at 3 g — deep enough that the whole braking corridor stays safely under it, with
+    /// the red zone only near the cloud tops.
+    /// </summary>
+    public const double SailHoleDecelG = 3.0;
+
+    /// <summary>
     /// Local mass density (kg/m^3) at an <paramref name="altitude"/> (meters) above the body's
     /// surface: <c>RefDensity · exp(−altitude / ScaleHeight)</c> inside the shell, exactly zero at
     /// or below the surface and at or above <see cref="TopAltitude"/>.

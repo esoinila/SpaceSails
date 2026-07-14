@@ -197,7 +197,7 @@ Console.WriteLine();
 // ===================================================================================
 Console.WriteLine("=== Section B: the corridor at Jupiter (fixed hyperbolic arrival, swept depth) ===");
 const double BvInf = 5500.0;          // a workaday Jupiter arrival excess speed, m/s
-const double DamageLineG = 3.0;       // the hull-damage line: peak deceleration above this holes the sail
+const double DamageLineG = Atmosphere.SailHoleDecelG; // the hull-damage line (Core constant): peak deceleration above this holes the sail — the same number the game's gauge and live consequence read
 double bStart = JupiterR + jupiterAtm.TopAltitude + 3.0e5; // enter 300 km above the shell top
 Console.WriteLine($"arrival v_inf = {BvInf / 1000:F1} km/s; damage line = {DamageLineG:F0} g peak deceleration.");
 Console.WriteLine($"{"peri alt km",13}{"min alt km",12}{"dv shed m/s",14}{"peak g",10}{"outcome",30}");
