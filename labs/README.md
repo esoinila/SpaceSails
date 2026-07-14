@@ -39,6 +39,7 @@ dotnet run --project labs/16-going-ashore -c Release
 dotnet run --project labs/17-the-pocket-solar-system -c Release
 dotnet run --project labs/18-the-free-return -c Release
 dotnet run --project labs/19-the-grand-tour -c Release
+dotnet run --project labs/20-the-long-goodbye -c Release
 ```
 
 Each lesson folder holds:
@@ -71,9 +72,10 @@ byte-identical to before. Add `--viz-no-open` to write the file without launchin
 orange with its burn/flyby markers, the aim-offset sweep group at lower right, and the live
 readout (5.204 AU, 28.98 km/s) interpolated from the integrator's own samples.*
 
-**Supported so far:** lesson [01](01-falling-is-orbiting/README.md) (the minimal example) and
+**Supported so far:** lesson [01](01-falling-is-orbiting/README.md) (the minimal example),
 lesson [19](19-the-grand-tour/README.md) (the showcase — the flown Grand Tour with its aim-offset
-sweep as a toggleable group).
+sweep as a toggleable group), and lesson [20](20-the-long-goodbye/README.md) (the same tour coasted
+to a fixed 2026 present, with calendar dates from 1977 to now and a "she is here now" finale marker).
 
 **Wiring a new lesson** takes about six lines around the sample lists the probe already has —
 everything behind `LabViz.Wants(args)` so the no-flag output never changes:
@@ -174,6 +176,14 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     (speeds, turning angle, patched-conic comparison); chain legs with explicit TCMs; verify energy
     sign flip and symmetry; grid-scan the window. Every number from the integrator; rails create
     the energy. Break the assists on purpose.
+
+20. [**The Long Goodbye**](20-the-long-goodbye/README.md) — the sequel lesson 19 left unwritten: the
+    real Voyager 2 rode the crank on to Uranus and Neptune; ours stopped at Saturn. Reproduce lesson
+    19's hand-off, fly ballistically THROUGH the Saturn pass (it *brakes* — the arc stays bound at 10.4
+    AU, measured not assumed), then sweep affordable pre-Saturn TCM-3s for a second crank to Uranus and
+    find none — our rails carry no 1977 alignment. Coast the winner to a fixed 2026-07-14 present and
+    read her position (6.6 AU, falling back) beside the real Voyager 2's ~139 AU. Alignment was the
+    mission; the crank was only the vehicle.
 
 ## Framing rule
 
