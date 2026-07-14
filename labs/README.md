@@ -40,6 +40,7 @@ dotnet run --project labs/17-the-pocket-solar-system -c Release
 dotnet run --project labs/18-the-free-return -c Release
 dotnet run --project labs/19-the-grand-tour -c Release
 dotnet run --project labs/20-the-long-goodbye -c Release
+dotnet run --project labs/22-the-air-brake -c Release
 ```
 
 Each lesson folder holds:
@@ -184,6 +185,17 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     find none — our rails carry no 1977 alignment. Coast the winner to a fixed 2026-07-14 present and
     read her position (6.6 AU, falling back) beside the real Voyager 2's ~139 AU. Alignment was the
     mission; the crank was only the vehicle.
+
+21. **The Commuter** — *reserved* (see [docs/TuesdayPlan/TuesdayPlanVision.md](../docs/TuesdayPlan/TuesdayPlanVision.md)):
+    an Earth↔Mars cycler computed honestly in our rails, landing next to lesson 18's free return.
+
+22. [**The air brake**](22-the-air-brake/README.md) — the one new Core ingredient the flight assists
+    needed: an exponential atmosphere with a single ballistic-coefficient knob. Compute the aerobrake
+    corridor at Jupiter (Δv shed vs. depth, the 3 g damage line), the Apollo skip at Earth-return
+    speed (the capture-without-burn-up corridor is ~20 km of periapsis altitude wide), and a fuel-out
+    capture flown pass by pass — a hyperbolic arrival turned bound (114 → 7 R_J) on drag alone, zero
+    burns after the aim. The same drag powers the game's skim/skip node; `--viz` draws the corridor
+    fan and the capture spiral.
 
 ## Framing rule
 

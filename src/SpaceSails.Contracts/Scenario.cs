@@ -125,4 +125,29 @@ public sealed record BodyDefinition
     /// default, so every existing scenario body stays plainly visible.
     /// </summary>
     public bool Hidden { get; init; }
+
+    /// <summary>
+    /// Optional exponential atmosphere shell for aerobraking (the skim/skip flight assists, PR-H).
+    /// Null (the default) means the body has no atmosphere and imposes zero drag — every existing
+    /// scenario body keeps its exact vacuum trajectory. See <see cref="AtmosphereDefinition"/>.
+    /// </summary>
+    public AtmosphereDefinition? Atmosphere { get; init; }
+}
+
+/// <summary>
+/// An exponential atmosphere on a body: reference density at the surface, an isothermal scale
+/// height, and a hard shell-top altitude above which density is exactly zero. Game-tuned, not a
+/// full atmosphere model — the drag it produces is the one aerobrake knob (see the ballistic
+/// coefficient in <c>Simulator</c>). All units SI.
+/// </summary>
+public sealed record AtmosphereDefinition
+{
+    /// <summary>Mass density at the body's surface (altitude 0), in kg/m^3.</summary>
+    public required double RefDensity { get; init; }
+
+    /// <summary>e-folding altitude of the exponential density falloff, in meters.</summary>
+    public required double ScaleHeightM { get; init; }
+
+    /// <summary>Altitude in meters above which density is clamped to exactly zero (the shell top).</summary>
+    public required double TopAltitudeM { get; init; }
 }
