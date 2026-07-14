@@ -49,8 +49,10 @@
   #readout .lbl { color: var(--muted); }
   #readout b { font-weight: 600; color: var(--ship); }
 
-  #controls { left: 50%; bottom: 40px; transform: translateX(-50%); width: min(720px, 92vw);
-              display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; }
+  #controls { left: 50%; bottom: 40px; transform: translateX(-50%); width: min(760px, 92vw);
+              display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 12px; align-items: center; }
+  #controls .fadewrap { display: flex; align-items: center; gap: 5px; color: var(--muted);
+                        font-size: 12px; cursor: pointer; user-select: none; white-space: nowrap; }
   #controls button {
     background: rgba(40,54,78,0.9); color: var(--label); border: 1px solid var(--panel-edge);
     border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; min-width: 68px;
@@ -89,6 +91,7 @@
     <input id="speed" type="range" min="0" max="1000" value="500" />
     <span id="speedlbl">—</span>
   </div>
+  <label class="fadewrap" title="Fade the path with time: past dims as it ages, far future stays a faint plan"><input id="fadeToggle" type="checkbox" checked /> fade</label>
   <span id="clock" class="lbl" style="min-width:96px;text-align:right"></span>
 </div>
 
@@ -348,15 +351,66 @@ function drawBodies() {
   }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Time fade — the temporal depth cue, applied to GHOST paths only. A ghost path is a ship flying
+// through time, so segments near the scrub cursor draw at full strength, the past decays toward
+// a low floor as it ages, and the far future dims to a higher floor (still legible as "the
+// plan"). This untangles a decades-long path that loops over itself (lesson 20's long coast).
+// Non-ghost paths (lesson 19's aim-offset sweep family — alternate universes, not a timeline)
+// keep their flat opacity. Toggleable from the controls strip.
+// ---------------------------------------------------------------------------------------------
+let timeFade = true;
+// Full fade is reached over a fixed fraction of the scene's whole span, so short labs breathe
+// too; the floors keep every segment findable against the dark sky.
+const FADE_WINDOW = Math.max(1, (t1 - t0) / 6);
+const FADE_PAST_FLOOR = 0.12;
+const FADE_FUTURE_FLOOR = 0.35;
+const FADE_BUCKETS = 12; // quantized alpha levels so a 2500-point path strokes in a few runs
+
+function timeAlpha(t) {
+  const dt = t - simTime;
+  return dt >= 0
+    ? Math.max(FADE_FUTURE_FLOOR, 1 - (dt / FADE_WINDOW) * (1 - FADE_FUTURE_FLOOR))
+    : Math.max(FADE_PAST_FLOOR, 1 - (-dt / FADE_WINDOW) * (1 - FADE_PAST_FLOOR));
+}
+
+// Stroke one path's samples in runs of equal (quantized) time-alpha: consecutive segments that
+// share a bucket become a single beginPath/stroke, so the whole path costs a handful of strokes.
+function strokeFadedPath(s, baseAlpha) {
+  let runBucket = -1;
+  let runStarted = false;
+  for (let i = 1; i < s.length; i++) {
+    const mid = (s[i - 1][0] + s[i][0]) * 0.5;
+    const bucket = Math.round(timeAlpha(mid) * FADE_BUCKETS);
+    if (bucket !== runBucket) {
+      if (runStarted) ctx.stroke();
+      ctx.globalAlpha = baseAlpha * (bucket / FADE_BUCKETS);
+      ctx.beginPath();
+      const [px, py] = camera.worldToScreen(s[i - 1][1], s[i - 1][2]);
+      ctx.moveTo(px, py);
+      runBucket = bucket;
+      runStarted = true;
+    }
+    const [sx, sy] = camera.worldToScreen(s[i][1], s[i][2]);
+    ctx.lineTo(sx, sy);
+  }
+  if (runStarted) ctx.stroke();
+}
+
 function drawPaths() {
   for (const p of paths) {
     if (!groupVisible[p.group]) continue;
     const s = p.samples;
     if (s.length < 2) continue;
-    ctx.globalAlpha = (p.opacity == null ? 1 : p.opacity);
+    const baseAlpha = (p.opacity == null ? 1 : p.opacity);
     ctx.strokeStyle = p.color;
     ctx.lineWidth = p.width || 1.5;
-    strokeWorldPolyline(s.map(pt => [pt[1], pt[2]]));
+    if (timeFade && p.ghost) {
+      strokeFadedPath(s, baseAlpha);
+    } else {
+      ctx.globalAlpha = baseAlpha;
+      strokeWorldPolyline(s.map(pt => [pt[1], pt[2]]));
+    }
   }
   ctx.globalAlpha = 1;
 }
@@ -462,6 +516,10 @@ scrubber.addEventListener("input", () => {
   invalidate();
 });
 speedSlider.addEventListener("input", () => { updateSpeedLabel(); invalidate(); });
+document.getElementById("fadeToggle").addEventListener("change", (e) => {
+  timeFade = e.target.checked;
+  invalidate();
+});
 function updateSpeedLabel() {
   speedLbl.textContent = formatRate(warpRate());
 }

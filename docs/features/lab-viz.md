@@ -34,6 +34,11 @@ parked at the flyby, live readout above.*
   sweep at once.
 - **Markers** — burns, flybys, and closest passes get distinct glyphs and labels that stay legible
   at any zoom, so the story's turning points are called out on the picture.
+- **Time fade** — a ghost path fades with time distance from the scrub cursor: the past dims as
+  it ages, the far future stays a faint plan, and the segment being flown right now is at full
+  strength. This is what visually untangles a decades-long trajectory that loops over itself
+  (lesson 20's long coast). Non-ghost path families (lesson 19's sweep fan — alternate flights,
+  not a timeline) stay flat. A `fade` checkbox in the controls turns it off entirely.
 
 ![Lesson 19's crank fan: six aim offsets hairpinning around Jupiter](pics/lab-viz-flyby-fan.png)
 *Zoomed on lesson 19's sweep group: the aim-offset test flights hairpin around Jupiter in the
