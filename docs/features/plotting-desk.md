@@ -48,6 +48,40 @@ estimated pulses, and disarms. If you don't have enough mass pulses left when th
 the attempt is cancelled with a warning instead of stranding you mid-burn. Click the armed button
 again to disarm by hand.
 
+## Sling past a planet
+
+When the closest pass is a planet, a **"⤴ Sling past *body*"** button appears next to it. This is
+the gravity assist without the burn-tuning: instead of nudging pulses by hand until the ribbon bends
+the way you want, you tell the desk the pass you want and it solves the aiming burn for you.
+
+- **Side toggle — Lead (boost) / Trail (brake).** Which side of the planet you thread decides whether
+  the flyby *donates* heliocentric speed or *sheds* it. Lead rides the planet's orbital motion for a
+  boost; Trail leans against it to brake. (On a slow, near-tangent arrival, only one side is reachable
+  for the fuel you're carrying — the toggle then serves whichever side the pass actually lands on, and
+  the verdict's speed number tells you which you got.)
+- **Pass-distance slider**, in **planet radii**, with a floor at **2 R**. That floor is not shyness:
+  below a couple of radii the point-mass gravity model *and* the projector's step size are both lying
+  to you (a real ship would be skimming atmosphere or hitting rock), so the desk refuses to pretend.
+- **Burn node.** By default the aiming burn is a new node at your scrub time (if the scrub sits
+  before the pass), otherwise ten minutes from now. The panel names which it used; the solver is free
+  to place its own.
+
+**SOLVE** runs the real integrator — the same physics the labs measured Voyager against, no patched
+conics — and prints the verdict: the pass it achieved (in R), the aiming burn (Δv and pulse cost as a
+Vector burn), the crank (speed gained/shed and where your new apoapsis reaches — or *escapes the
+sun*), and the **lever warning**.
+
+> **The lever.** A flyby is an amplifier. The panel reads *"±1 pulse of aim ⇒ ±X Gm at the far end —
+> re-trim after the pass."* That is the honest catch: an aim error a hair wide at the burn becomes
+> tens of millions of kilometres of miss by the time you're past the planet. Fly the sling, then plan
+> to trim once you're through it — do not treat the far end as pinned.
+
+If no pass that cheap can bend you where you asked, SOLVE says so plainly (with the range the flyby
+*can* reach for your budget) rather than handing you a burn that misses. Happy with the verdict?
+**Add the burn** drops the Vector node into your plan and the ribbon bends through the pass. The
+numbers shown are re-flown at the *quantized* burn (whole pulses), so what you read is what you'll
+fly.
+
 ## Worked examples
 
 - **Mercury**: one node, decelerate ×3 (10%) at ~day 3 → perihelion kisses Mercury's orbit around

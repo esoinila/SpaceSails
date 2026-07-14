@@ -328,6 +328,12 @@ mechanism as `?start=`):
   interior station you're docked at (so it can be handed off on the spot), else the first interior.
 - **`?reveal=<bodyId>`** — chart any hidden body straight away (repeatable), e.g.
   `?reveal=derelict-roadster`.
+- **`?sling=<bodyId>`** — boot onto an inbound arc that already has a close pass by that body ~12
+  days out (e.g. `?sling=jupiter`), so the plot desk's **⤴ Sling** panel is reachable in seconds. It
+  places the ship at a slow, Hohmann-like approach off the target and sets it as the nav target; open
+  **Plot** and the *"⤴ Sling past *body*"* button is right there on the pass. (Suppresses the boot
+  picker — picking a berth would overwrite the seeded approach.) See
+  [plotting-desk.md](plotting-desk.md#sling-past-a-planet).
 
 Compose them: `?fetch=intel` tests the whole intel → scan → reveal cycle; `?start=wreck&fetch=active`
 tests the pickup (auto-grabs alongside the wreck); `?start=the-tilt&fetch=picked` tests the in-person

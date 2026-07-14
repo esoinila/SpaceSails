@@ -222,6 +222,15 @@
     border-radius: 0.25rem;
 }
 
+/* PR-G · the sling — the plot-desk crank panel. The verdict block echoes the war-room verdict:
+   a lightly boxed readout the captain scans before committing the aiming burn. */
+.map-sling-verdict {
+    border-left: 2px solid rgba(120, 220, 255, 0.6);
+    padding-left: 0.5rem;
+    margin-top: 0.35rem;
+    line-height: 1.35;
+}
+
 /* M25: navigation-target panel — the plotted course's pass vs orbit success, in plain words.
    Bottom center, deliberately roomy: it is the whole point of navigating there. */
 .map-dest-panel {
