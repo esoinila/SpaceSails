@@ -30,8 +30,11 @@ public sealed class CircularOrbitEphemeris : ICelestialEphemeris
     public static CircularOrbitEphemeris FromScenario(ScenarioDefinition scenario) =>
         new(scenario.Bodies.Select(b => new CelestialBody(
             b.Id, b.Name, b.ParentId, b.Mu, b.BodyRadiusM, b.OrbitRadiusM, b.OrbitPeriodS, b.InitialPhaseRad,
-            ParseKind(b.Kind), b.Haven)),
+            ParseKind(b.Kind), b.Haven, ParseAtmosphere(b.Atmosphere))),
             scenario.Traffic);
+
+    private static Atmosphere? ParseAtmosphere(AtmosphereDefinition? atm) =>
+        atm is null ? null : new Atmosphere(atm.RefDensity, atm.ScaleHeightM, atm.TopAltitudeM);
 
     private static BodyKind ParseKind(string kind) => kind switch
     {

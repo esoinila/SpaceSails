@@ -41,4 +41,5 @@ public sealed record CelestialBody(
     double OrbitPeriod,
     double InitialPhase,
     BodyKind Kind = BodyKind.Planet,
-    bool IsHaven = false);
+    bool IsHaven = false,
+    Atmosphere? Atmosphere = null);

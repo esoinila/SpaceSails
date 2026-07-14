@@ -29,5 +29,6 @@
     <Project Path="labs/18-the-free-return/Lab18.csproj" />
     <Project Path="labs/19-the-grand-tour/Lab19.csproj" />
     <Project Path="labs/20-the-long-goodbye/Lab20.csproj" />
+    <Project Path="labs/22-the-air-brake/Lab22.csproj" />
   </Folder>
 </Solution>
