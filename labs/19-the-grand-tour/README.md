@@ -24,6 +24,12 @@ This writes a single self-contained `labviz/lab19-the-grand-tour.html` (no exter
 
 Add `--viz-no-open` to write the file without launching a browser. The stdout tables are untouched by `--viz` — the printed numbers stay sacred.
 
+The readout and clock show **calendar dates**, anchored so the flown departure lands on Voyager
+2's real launch day, 1977-08-20 (a display choice, plainly labeled in the probe — the rails'
+phases are fictional, so this is an anchor for the story, not a claim about 1977's sky). Scrub
+forward and watch our cheaper, slower tour reach Saturn in calendar terms the real Voyager 2 had
+already left behind.
+
 ![The flown Grand Tour, scrubbed to the Jupiter flyby](../../docs/features/pics/lab-viz-grand-tour.png)
 *The whole tour at a glance: launch off Earth's orbit, the flyby kink at Jupiter, the long coast
 down to the Saturn closest pass — with the ghost ship parked at the flyby and the readout showing

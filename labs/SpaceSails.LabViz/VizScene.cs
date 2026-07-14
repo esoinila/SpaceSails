@@ -70,6 +70,7 @@ public sealed class VizScene
     private readonly List<BodyDoc> _bodies = [];
     private readonly List<PathDoc> _paths = [];
     private readonly List<MarkerDoc> _markers = [];
+    private DateTimeOffset? _epoch;
 
     /// <summary>Create a scene. <paramref name="slug"/> becomes the output filename (labviz/&lt;slug&gt;.html).</summary>
     public VizScene(string slug, string title, string? subtitle = null)
@@ -162,11 +163,20 @@ public sealed class VizScene
         _markers.Add(new MarkerDoc(simTime, position.X, position.Y, label, kind));
     }
 
+    /// <summary>
+    /// Optional display epoch: the viewer maps SimTime = 0 onto this UTC instant and shows
+    /// calendar dates next to sim days (readout and clock). Purely presentational — the physics
+    /// stays epoch-free seconds, and a scene without an epoch shows sim days only.
+    /// </summary>
+    public void SetEpoch(DateTimeOffset epochUtc) => _epoch = epochUtc;
+
     /// <summary>Serialize the scene to the JSON document embedded in the viewer (schema v1).</summary>
     public string ToJson()
     {
         (double t0, double t1) = TimeSpan();
-        SceneDoc doc = new(Schema, Title, Subtitle, new TimeDoc(t0, t1), _bodies, _paths, _markers);
+        // "o" (round-trip) format is culture-insensitive by definition; the viewer Date.parse()s it.
+        string? epoch = _epoch?.ToUniversalTime().ToString("o");
+        SceneDoc doc = new(Schema, Title, Subtitle, epoch, new TimeDoc(t0, t1), _bodies, _paths, _markers);
         return JsonSerializer.Serialize(doc, JsonOptions);
     }
 
@@ -296,6 +306,7 @@ public sealed class VizScene
         int Schema,
         string Title,
         string? Subtitle,
+        string? Epoch,
         TimeDoc Time,
         IReadOnlyList<BodyDoc> Bodies,
         IReadOnlyList<PathDoc> Paths,

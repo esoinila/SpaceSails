@@ -401,11 +401,19 @@ function drawGhosts() {
 // ---------------------------------------------------------------------------------------------
 // Readout strip + clock.
 // ---------------------------------------------------------------------------------------------
+// Optional display epoch: when the scene carries one, sim seconds map onto calendar dates
+// (UTC). Purely presentational — the physics underneath stays epoch-free seconds.
+const EPOCH_MS = SCENE.epoch ? Date.parse(SCENE.epoch) : null;
+function calendarDate(t) {
+  return new Date(EPOCH_MS + t * 1000).toISOString().slice(0, 10);
+}
+
 function updateReadout() {
   const days = simTime / SECONDS_PER_DAY;
   const years = simTime / SECONDS_PER_YEAR;
-  document.getElementById("ro-time").textContent = `d ${days.toFixed(1)} (y ${years.toFixed(2)})`;
-  document.getElementById("clock").textContent = `d ${days.toFixed(1)}`;
+  const date = EPOCH_MS !== null ? ` · ${calendarDate(simTime)}` : "";
+  document.getElementById("ro-time").textContent = `d ${days.toFixed(1)} (y ${years.toFixed(2)})${date}`;
+  document.getElementById("clock").textContent = EPOCH_MS !== null ? calendarDate(simTime) : `d ${days.toFixed(1)}`;
 
   // First ghost path drives the distance/speed readouts.
   const ghost = paths.find(p => p.ghost && groupVisible[p.group]);

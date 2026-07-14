@@ -99,6 +99,9 @@ Embedded in the HTML as `const SCENE = {...};`.
   "schema": 1,
   "title": "Lab 19 — The Grand Tour",
   "subtitle": "Earth → Jupiter → Saturn, flown with TCMs",
+  "epoch": "1977-08-20T14:29:00.0000000Z",      // optional display epoch (ISO 8601 UTC): the
+                                                // viewer maps simTime=0 here and shows calendar
+                                                // dates; null → sim days only. Presentation only.
   "time": { "t0": 0.0, "t1": 1.26e8 },          // seconds; inferred from paths if not set
   "bodies": [
     { "id": "jupiter", "name": "Jupiter", "parentId": "sun", "bodyRadius": 6.9911e7,
