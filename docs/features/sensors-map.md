@@ -71,6 +71,21 @@ derelict. Discoveries are a pure function of (scenario seed, 2×10¹⁰ m sky ce
 deterministic, never empty (a guaranteed faint return synthesizes if the cells are quiet),
 and the sky turns a page each sim day. Results land under **✨ Last area scan resolved**.
 
+## Intel-fed scans reveal hidden bodies (Tuesday plan PR-A)
+
+Some bodies ride their rail **off the charts** (`"hidden": true` in the scenario) — the Derelict
+Roadster is the first. A hidden body doesn't draw, answer the picker, ride the scope carousel, or
+count as "Nearest" until a scan finds it. This is the reusable primitive behind the plan's Expanse
+rule: *you can find a thing far away if you know where and when to look.*
+
+The cycle: a quest (the Fixer's fetch job) hands over **intel, not a pin** — a transponder orbit
+estimate that lands as a card in the Comms desk (Intel group). Its **🔭 "Point the scope where this
+says"** button aims a prioritized `AreaScan` at the body's predicted position and jumps you to this
+desk. Warp time; when a **completed** pass's covered disc contains the body's true position at the
+pass's completion instant, it's revealed (a bright cue + a payoff line, and now it's a real contact
+you fly to). Scheduling alone never reveals — only a scan whose box actually sweeps over her. Good
+intel gives a tight box on the right spot; a blind survey would need real luck to stumble on her.
+
 ## Lost locks leave a search area (`LostTracks`)
 
 When a track's quality decays to loss, the ledger hands it to the cold-case board instead of

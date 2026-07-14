@@ -142,6 +142,22 @@
                             <div class="captain-card captain-quest-@q.StatusKind">
                                 <div class="fw-bold">@q.Title</div>
                                 <div class="captain-card-blurb text-secondary small">@q.Detail</div>
+                                @if (q.Steps.Count > 0)
+                                {
+                                    <div class="captain-quest-steps small mt-1">
+                                        @foreach (QuestStep step in q.Steps)
+                                        {
+                                            <div class="text-secondary">@step.Icon @step.Text</div>
+                                        }
+                                    </div>
+                                }
+                                @if (q.ShowScopeButton)
+                                {
+                                    <button type="button" class="btn btn-sm btn-info py-0 px-1 mt-1 text-start"
+                                            @onclick="() => OnPointScope.InvokeAsync()">
+                                        🔭 Point the scope where the tip says
+                                    </button>
+                                }
                                 <div class="captain-quest-foot">
                                     <span class="captain-quest-status captain-quest-status-@q.StatusKind">@q.StatusLabel</span>
                                     <span class="captain-quest-reward">@q.RewardText</span>
@@ -285,9 +301,25 @@
     // Accepted at the table, tracked in Map, paid on docking — this desk is the crew's copy.
     [Parameter] public IReadOnlyList<QuestItem> Quests { get; set; } = [];
 
+    /// <summary>Raised by a quest card's 🔭 button (Tuesday plan PR-A): the intel-fed fetch hunt is
+    /// reachable from the quest card too, not just the Comms desk. Map aims the scope and jumps to
+    /// Sensors.</summary>
+    [Parameter] public EventCallback OnPointScope { get; set; }
+
     /// <summary>One contract on the Quests tab. <paramref name="StatusKind"/> is a css slug
-    /// (active / complete / paid); Map owns the live quest state.</summary>
-    public sealed record QuestItem(string Title, string Detail, string RewardText, string StatusLabel, string StatusKind);
+    /// (active / complete / paid); Map owns the live quest state. <paramref name="Steps"/> is the
+    /// staged plan (empty for quests without one); <paramref name="ShowScopeButton"/> surfaces the
+    /// 🔭 "point the scope" hook while the fetch hunt is at its pre-scan stage.</summary>
+    public sealed record QuestItem(
+        string Title, string Detail, string RewardText, string StatusLabel, string StatusKind,
+        IReadOnlyList<QuestStep> Steps, bool ShowScopeButton)
+    {
+        public QuestItem(string title, string detail, string rewardText, string statusLabel, string statusKind)
+            : this(title, detail, rewardText, statusLabel, statusKind, [], false) { }
+    }
+
+    /// <summary>One line of a staged quest plan — an icon (✅ done / ▶ current / ▪ ahead) and its text.</summary>
+    public sealed record QuestStep(string Icon, string Text);
 
     private enum CaptainView { Orders, Status, Tutorials, Quests }
     private CaptainView _view;

@@ -317,18 +317,53 @@ ledger and the wreck on the nav map (no depot); build clean, no console errors. 
 mechanism as `?start=`):
 
 - **`?start=wreck`** — spawn co-moving 2 km off the Derelict Roadster (a `Test:true` start, hidden
-  from the boot picker but reachable by URL). With an active fetch aboard, the proximity pickup fires
-  at once.
-- **`?fetch=active`** — inject the fetch job at `Active` (need pickup).
-- **`?fetch=picked`** — inject it at `PickedUp` (need delivery). Destination is the interior station
-  you're docked at (so it can be handed off on the spot), else the first interior station.
+  from the boot picker but reachable by URL). Auto-reveals the roadster (you're parked alongside it).
+  With an active fetch aboard, the proximity pickup fires at once.
+- **`?fetch=intel`** — inject the fetch job at its **first (pre-scan) stage**: accepted, wreck still
+  hidden, the transponder-fix card in the Comms ledger. Work the 🔭 button, then warp until the scan
+  lands to reveal her.
+- **`?fetch=active`** — inject the fetch job at `Active` **and reveal the wreck** (post-scan state —
+  backward compatible with the old behaviour where the wreck was on the map from the start).
+- **`?fetch=picked`** — inject it at `PickedUp`, wreck revealed (need delivery). Destination is the
+  interior station you're docked at (so it can be handed off on the spot), else the first interior.
+- **`?reveal=<bodyId>`** — chart any hidden body straight away (repeatable), e.g.
+  `?reveal=derelict-roadster`.
 
-Compose them: `?start=wreck&fetch=active` tests the pickup (auto-grabs alongside the wreck);
-`?start=the-tilt&fetch=picked` tests the in-person hand-off (walk to The Fixer at The Tilt → +4,200
-cr). All three verified in-browser.
+Compose them: `?fetch=intel` tests the whole intel → scan → reveal cycle; `?start=wreck&fetch=active`
+tests the pickup (auto-grabs alongside the wreck); `?start=the-tilt&fetch=picked` tests the in-person
+hand-off (walk to The Fixer at The Tilt → +4,200 cr). All verified in-browser.
 
 Next: per-station Fixer flavor / more fetch targets; a stranger who drifts to *your* table with the
 job instead of you seeking them out.
+
+### The hunt stage — intel → scan → reveal (Tuesday plan PR-A, 2026-07-14)
+
+Owner: *"make the flight to the car part of the quest"* (Expanse rules — you can find a thing far
+away if you know where and when to look). The wreck no longer sits labelled on the map from minute
+one. The **Derelict Roadster** is now a **hidden body** (`"hidden": true` in `scenarios/sol.json` →
+`BodyDefinition.Hidden`): it doesn't draw, answer the picker, ride the scope carousel, count as
+"Nearest", or open a menu until a scan resolves it. The client keeps a session `_revealedBodyIds`
+set; `RevealBody(id, reason)` charts it (payoff line + a bright `reveal` audio cue). The depot filter
+is now generic on hidden+unrevealed, so every future secret body is covered for free.
+
+Taking the fetch job hands you **intel, not a map pin**. On accept, an **orbit-fix card** lands in
+the Comms desk's Contacts & intel tree (Intel group, "🔭 Roadster orbit fix"): a transponder
+estimate in the game's voice ("sunward of Mars, r ≈ 1.14 AU, period ≈ 442 d … she should cross the
+predicted phase around …", numbers grounded in the real rail). The card — and the quest card on the
+Captain desk — carry a **🔭 "Point the scope where this says"** button: it aims a prioritized
+`AreaScan` at the wreck's true position a touch ahead of now (via `TelescopeSchedule.PrioritizeNext`)
+and drops you at the Sensors desk. When a **completed** area-scan pass sweeps a disc that contains
+the wreck's true position at scan-completion time, `RevealBody` fires — the reveal requires a real
+scan whose box covers her, not merely scheduling one. After that, `CheckFetchPickup` is unchanged:
+fly within ~100,000 km → PickedUp → deliver to The Fixer in person.
+
+The quest card shows the staged plan as a tutorial-style checklist — ✅ intel → ▶ scan → fly → pick
+up → deliver, current stage highlighted.
+
+Verified in-browser (localhost, all legs): fresh boot → roadster off the map/scope; `?fetch=intel` →
+intel card + 🔭 button → prioritized scan on Sensors → warp → reveal fires (roadster drawn);
+`?fetch=active` → charted from boot; `?start=wreck&fetch=active` → pickup fires; `?reveal=…` charts
+it; zero console errors. Full suite 277 green.
 
 ## "It's a whole place, not one room" — station-richness backlog (owner, 2026-07-08)
 
