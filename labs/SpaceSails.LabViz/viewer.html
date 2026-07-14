@@ -1,0 +1,588 @@
+<!doctype html>
+<!--
+  SpaceSails Gravity Lab — trajectory viewer template.
+
+  Self-contained: no external scripts, fonts, styles, or network requests of any kind. A lab
+  splices its scene document in place of the SCENE placeholder (a JS comment token followed by
+  a literal null, spelled out only at the declaration site below so the splice hits exactly
+  once), writes the file, and opens it. The camera math is a hand-port of src/SpaceSails.Client/Rendering/Camera.cs and the
+  drawing conventions follow Map.razor; the colors are lifted from the game's constants so a lab
+  pop-up reads as a SpaceSails instrument rather than a generic plot.
+-->
+<meta charset="utf-8" />
+<style>
+  :root {
+    /* Colors lifted from Map.razor's constant region (~line 1716). */
+    --bg: #060912;          /* Background = new RgbaColor(6, 9, 18) */
+    --orbit: rgba(80,100,130,0.51); /* OrbitColor = new RgbaColor(80,100,130,130) */
+    --label: #e0e4ec;       /* LabelColor = new RgbaColor(224,228,236) */
+    --trajectory: #ffa500;  /* TrajectoryColor = new RgbaColor(255,165,0) */
+    --ship: #ffd250;        /* ShipColor = new RgbaColor(255,210,80) */
+    --panel: rgba(10,16,28,0.82);
+    --panel-edge: rgba(120,150,190,0.28);
+    --muted: #8ea0bc;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body { font: 13px/1.4 "Consolas", "SFMono-Regular", "Menlo", monospace; color: var(--label); }
+  /* A <canvas> is a replaced element: position:fixed + inset:0 alone keeps its intrinsic 300x150
+     size, so give it explicit viewport dimensions to actually fill the window. */
+  #sky { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; cursor: grab; }
+  #sky.dragging { cursor: grabbing; }
+
+  .panel {
+    position: fixed; background: var(--panel); border: 1px solid var(--panel-edge);
+    border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(2px);
+  }
+  #titlecard { top: 14px; left: 14px; max-width: 46%; }
+  #titlecard h1 { margin: 0 0 2px; font-size: 16px; font-weight: 600; letter-spacing: 0.2px; }
+  #titlecard p  { margin: 0; color: var(--muted); font-size: 12px; }
+
+  #legend { top: 14px; right: 14px; max-width: 34%; }
+  #legend h2 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .legrow { display: flex; align-items: center; gap: 8px; padding: 2px 0; cursor: pointer; user-select: none; }
+  .legrow .swatch { width: 22px; height: 3px; border-radius: 2px; flex: none; }
+  .legrow.off { opacity: 0.4; }
+  .legrow .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  #readout { top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 18px;
+             padding: 8px 16px; white-space: nowrap; }
+  #readout .lbl { color: var(--muted); }
+  #readout b { font-weight: 600; color: var(--ship); }
+
+  #controls { left: 50%; bottom: 40px; transform: translateX(-50%); width: min(720px, 92vw);
+              display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; }
+  #controls button {
+    background: rgba(40,54,78,0.9); color: var(--label); border: 1px solid var(--panel-edge);
+    border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; min-width: 68px;
+  }
+  #controls button:hover { background: rgba(58,76,108,0.95); }
+  #controls input[type=range] { width: 100%; }
+  #controls .speedwrap { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+  #controls .speedwrap input { width: 120px; }
+
+  #footer { left: 14px; bottom: 12px; color: var(--muted); font-size: 11px; opacity: 0.75; }
+</style>
+
+<canvas id="sky"></canvas>
+
+<div id="titlecard" class="panel">
+  <h1 id="title"></h1>
+  <p id="subtitle"></p>
+</div>
+
+<div id="legend" class="panel">
+  <h2>Paths</h2>
+  <div id="legrows"></div>
+</div>
+
+<div id="readout" class="panel">
+  <span><span class="lbl">t</span> <b id="ro-time">—</b></span>
+  <span><span class="lbl">dist</span> <b id="ro-dist">—</b></span>
+  <span><span class="lbl">speed</span> <b id="ro-speed">—</b></span>
+</div>
+
+<div id="controls" class="panel">
+  <button id="playbtn">Play</button>
+  <input id="scrubber" type="range" min="0" max="1000" value="0" />
+  <div class="speedwrap">
+    <span>warp</span>
+    <input id="speed" type="range" min="0" max="1000" value="500" />
+    <span id="speedlbl">—</span>
+  </div>
+  <span id="clock" class="lbl" style="min-width:96px;text-align:right"></span>
+</div>
+
+<div id="footer" class="panel"></div>
+
+<script>
+"use strict";
+
+// The lab splices its scene document here. Un-spliced, this is a valid `null` so the template still
+// parses; the token string never occurs inside serialized JSON, so the splice is collision-proof.
+const SCENE = /*__SCENE_JSON__*/null;
+
+// ---------------------------------------------------------------------------------------------
+// Constants (mirrors of the game).
+// ---------------------------------------------------------------------------------------------
+const ORBIT_SEGMENTS = 128;           // Map.razor OrbitSegments
+const MIN_MPP = 1e-2;                 // Camera.DefaultMinMetersPerPixel
+const MAX_MPP = 1e11;                 // Camera.DefaultMaxMetersPerPixel
+const MIN_DISC_PX = 2.0;              // Map.razor body-disc minimum pixel radius
+const AU = 1.495978707e11;            // meters per astronomical unit
+const SECONDS_PER_DAY = 86400;
+const SECONDS_PER_YEAR = 365.25 * SECONDS_PER_DAY;
+
+// ---------------------------------------------------------------------------------------------
+// Camera — a direct port of src/SpaceSails.Client/Rendering/Camera.cs (floating origin, Y-up world
+// flipped to Y-down canvas, MetersPerPixel zoom with the same clamps, zoom-toward-cursor, pixel pan).
+// ---------------------------------------------------------------------------------------------
+const camera = {
+  centerX: 0, centerY: 0,     // world point (meters) shown at the viewport center
+  mpp: 1e9,                    // meters per pixel
+  widthPx: 0, heightPx: 0,
+
+  clampMpp(v) { return Math.min(MAX_MPP, Math.max(MIN_MPP, v)); },
+
+  // World meters -> canvas pixels (origin top-left, Y down). Difference is taken against the center
+  // BEFORE dividing down, so absolute solar-system magnitudes never hit the pixel math directly.
+  worldToScreen(wx, wy) {
+    return [
+      this.widthPx * 0.5 + (wx - this.centerX) / this.mpp,
+      this.heightPx * 0.5 - (wy - this.centerY) / this.mpp,
+    ];
+  },
+
+  // Canvas pixels -> world meters. Inverse of worldToScreen.
+  screenToWorld(px, py) {
+    return [
+      this.centerX + (px - this.widthPx * 0.5) * this.mpp,
+      this.centerY - (py - this.heightPx * 0.5) * this.mpp,
+    ];
+  },
+
+  // Zoom by `factor` (>1 out, <1 in) keeping the world point under (ax, ay) pixels fixed.
+  zoomBy(factor, ax, ay) {
+    const before = this.screenToWorld(ax, ay);
+    this.mpp = this.clampMpp(this.mpp * factor);
+    const after = this.screenToWorld(ax, ay);
+    this.centerX += before[0] - after[0];
+    this.centerY += before[1] - after[1];
+  },
+
+  // Pan by a screen-pixel drag delta; dragging content right moves the camera center left.
+  panByPixels(dx, dy) {
+    this.centerX -= dx * this.mpp;
+    this.centerY += dy * this.mpp;
+  },
+};
+
+// ---------------------------------------------------------------------------------------------
+// Ephemeris — a direct port of CircularOrbitEphemeris.Position. Positions MUST match the C# exactly,
+// parent chaining included. The angle grows with time (prograde), measured from +X; a zero-period
+// body inherits its parent's position:
+//
+//   parent = parentId is null ? (0,0) : bodyPosition(parentId, t)
+//   angle  = initialPhase + 2*PI * t / orbitPeriod
+//   pos    = parent + (orbitRadius*cos(angle), orbitRadius*sin(angle))
+// ---------------------------------------------------------------------------------------------
+const bodyById = {};
+for (const b of (SCENE.bodies || [])) bodyById[b.id] = b;
+
+function bodyPosition(body, t) {
+  // Belt-and-braces: an unknown parentId (should be impossible — VizScene.AddBody validates it)
+  // resolves to the origin rather than dereferencing undefined and killing the frame.
+  const parentBody = body.parentId ? bodyById[body.parentId] : null;
+  const parent = parentBody ? bodyPosition(parentBody, t) : [0, 0];
+  if (body.orbitPeriod === 0) return parent;
+  const angle = body.initialPhase + (2 * Math.PI * t) / body.orbitPeriod;
+  return [
+    parent[0] + body.orbitRadius * Math.cos(angle),
+    parent[1] + body.orbitRadius * Math.sin(angle),
+  ];
+}
+
+// ---------------------------------------------------------------------------------------------
+// Scene state.
+// ---------------------------------------------------------------------------------------------
+const paths = SCENE.paths || [];
+const markers = SCENE.markers || [];
+const t0 = SCENE.time ? SCENE.time.t0 : 0;
+const t1 = SCENE.time ? SCENE.time.t1 : 1;
+let simTime = t0;
+let playing = false;
+let dirty = true;                 // redraw gate: the loop draws only when playing or something changed
+function invalidate() { dirty = true; }
+const groupVisible = {};          // legend group -> shown?
+for (const p of paths) if (!(p.group in groupVisible)) groupVisible[p.group] = true;
+
+const canvas = document.getElementById("sky");
+const ctx = canvas.getContext("2d");
+let needsFraming = true;   // fit-to-paths is done on the first frame, once the canvas is sized
+
+// ---------------------------------------------------------------------------------------------
+// Initial framing: fit the bounding box of ALL path samples with a ~10% margin, centered. (Orbit
+// rings are intentionally NOT included — we frame the computed trajectories, not the whole system.)
+// ---------------------------------------------------------------------------------------------
+function frameToPaths() {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of paths) {
+    for (const s of p.samples) {
+      if (s[1] < minX) minX = s[1];
+      if (s[1] > maxX) maxX = s[1];
+      if (s[2] < minY) minY = s[2];
+      if (s[2] > maxY) maxY = s[2];
+    }
+  }
+  if (!isFinite(minX)) { camera.centerX = 0; camera.centerY = 0; camera.mpp = 1e9; return; }
+
+  camera.centerX = (minX + maxX) / 2;
+  camera.centerY = (minY + maxY) / 2;
+  const spanX = Math.max(maxX - minX, 1);
+  const spanY = Math.max(maxY - minY, 1);
+  const w = camera.widthPx || 1000, h = camera.heightPx || 700;
+  // 1.1 = 10% margin around the tightest fit.
+  camera.mpp = camera.clampMpp(1.1 * Math.max(spanX / w, spanY / h));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Ghost interpolation: linear position between the two samples bracketing `t`. Returns null when t
+// is outside the path's time span (the ghost is simply hidden there).
+// ---------------------------------------------------------------------------------------------
+// Find the sample pair bracketing t and the interpolation fraction f in [0,1]. Returns null when
+// there are fewer than two samples or t falls outside the path's time span. This single scan backs
+// both samplePath and sampleSpeed — the n<2 guard is what stops a one-sample ghost path from
+// indexing samples[-1] and killing the rAF loop with a TypeError.
+function bracket(samples, t) {
+  const n = samples.length;
+  if (n < 2 || t < samples[0][0] || t > samples[n - 1][0]) return null;
+  // Linear scan is fine at <=2500 decimated points; find the bracketing pair.
+  let i = 1;
+  while (i < n && samples[i][0] < t) i++;
+  if (i >= n) i = n - 1;
+  const a = samples[i - 1], b = samples[i];
+  const dt = b[0] - a[0];
+  return { a, b, f: dt > 0 ? (t - a[0]) / dt : 0 };
+}
+
+// Linear position between the two samples bracketing t (null outside the span). A single-sample path
+// has no pair to interpolate, so it renders its lone point only when t sits exactly on that sample.
+function samplePath(samples, t) {
+  if (samples.length === 1) {
+    return t === samples[0][0] ? [samples[0][1], samples[0][2]] : null;
+  }
+  const br = bracket(samples, t);
+  if (!br) return null;
+  const { a, b, f } = br;
+  return [a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+}
+
+// Heliocentric speed (km/s) via finite difference of the samples bracketing t. A single-sample path
+// has no span to differentiate, so bracket() returns null and the readout shows no speed.
+function sampleSpeed(samples, t) {
+  const br = bracket(samples, t);
+  if (!br) return null;
+  const dt = br.b[0] - br.a[0];
+  if (dt <= 0) return null;
+  const dx = br.b[1] - br.a[1], dy = br.b[2] - br.a[2];
+  return Math.sqrt(dx * dx + dy * dy) / dt / 1000; // m/s -> km/s
+}
+
+// ---------------------------------------------------------------------------------------------
+// Drawing.
+// ---------------------------------------------------------------------------------------------
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
+  if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+  }
+  camera.widthPx = cssW;
+  camera.heightPx = cssH;
+
+  // Fit-to-paths must run against the real measured canvas size, so do it on the first frame here
+  // rather than during bootstrap (where clientWidth may not be laid out yet).
+  if (needsFraming && cssW > 0 && cssH > 0) {
+    frameToPaths();
+    needsFraming = false;
+  }
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = COL.bg;
+  ctx.fillRect(0, 0, cssW, cssH);
+
+  drawOrbitRings();
+  drawPaths();
+  drawBodies();
+  drawMarkers();
+  drawGhosts();
+}
+
+// Stroke a polyline of world-space [x, y] points, projecting each through the camera. Shared by the
+// orbit rings and the trajectory paths — one beginPath/moveTo/lineTo/stroke loop, one place to tune.
+function strokeWorldPolyline(points) {
+  ctx.beginPath();
+  for (let i = 0; i < points.length; i++) {
+    const [sx, sy] = camera.worldToScreen(points[i][0], points[i][1]);
+    if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+  }
+  ctx.stroke();
+}
+
+// Orbit rings: 128-segment polylines around each body's parent position at the current time.
+function drawOrbitRings() {
+  ctx.strokeStyle = COL.orbit;
+  ctx.lineWidth = 1;
+  for (const b of (SCENE.bodies || [])) {
+    if (b.orbitPeriod === 0 || b.orbitRadius <= 0) continue;
+    // Unknown parent (should be impossible) resolves to the origin, matching bodyPosition.
+    const parentBody = b.parentId ? bodyById[b.parentId] : null;
+    const parent = parentBody ? bodyPosition(parentBody, simTime) : [0, 0];
+    const ring = [];
+    for (let i = 0; i <= ORBIT_SEGMENTS; i++) {
+      const a = (2 * Math.PI * i) / ORBIT_SEGMENTS;
+      ring.push([parent[0] + b.orbitRadius * Math.cos(a), parent[1] + b.orbitRadius * Math.sin(a)]);
+    }
+    strokeWorldPolyline(ring);
+  }
+}
+
+function drawBodies() {
+  ctx.textBaseline = "alphabetic";
+  ctx.font = "12px monospace";
+  for (const b of (SCENE.bodies || [])) {
+    const [wx, wy] = bodyPosition(b, simTime);
+    const [sx, sy] = camera.worldToScreen(wx, wy);
+    const r = Math.max(MIN_DISC_PX, b.bodyRadius / camera.mpp);
+    ctx.fillStyle = b.color || "#c8d0e0";
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, 2 * Math.PI);
+    ctx.fill();
+    // Label gated on zoom (like the game): show once zoomed to within the body's own orbit; a
+    // parentless body (the sun) always carries its label.
+    const showLabel = (b.orbitRadius <= 0) || (camera.mpp < b.orbitRadius);
+    if (showLabel) {
+      ctx.fillStyle = COL.label;
+      ctx.fillText(b.name, sx + r + 4, sy - r);
+    }
+  }
+}
+
+function drawPaths() {
+  for (const p of paths) {
+    if (!groupVisible[p.group]) continue;
+    const s = p.samples;
+    if (s.length < 2) continue;
+    ctx.globalAlpha = (p.opacity == null ? 1 : p.opacity);
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = p.width || 1.5;
+    strokeWorldPolyline(s.map(pt => [pt[1], pt[2]]));
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Marker glyphs by kind; a marker's label always renders regardless of zoom.
+const MARKER_GLYPH = { burn: "▲", flyby: "◆", closest: "○", event: "✦" };
+const MARKER_COLOR = { burn: "#ff8a3d", flyby: "#7fd6ff", closest: "#ffd250", event: "#c7a8ff" };
+
+function drawMarkers() {
+  ctx.font = "13px monospace";
+  ctx.textBaseline = "middle";
+  for (const m of markers) {
+    const [sx, sy] = camera.worldToScreen(m.x, m.y);
+    ctx.fillStyle = MARKER_COLOR[m.kind] || MARKER_COLOR.event;
+    ctx.textAlign = "center";
+    ctx.fillText(MARKER_GLYPH[m.kind] || MARKER_GLYPH.event, sx, sy);
+    ctx.textAlign = "left";
+    ctx.fillStyle = COL.label;
+    ctx.fillText(m.label, sx + 9, sy);
+  }
+  ctx.textAlign = "left";
+}
+
+function drawGhosts() {
+  for (const p of paths) {
+    if (!p.ghost || !groupVisible[p.group]) continue;
+    const pos = samplePath(p.samples, simTime);
+    if (!pos) continue;
+    const [sx, sy] = camera.worldToScreen(pos[0], pos[1]);
+    ctx.fillStyle = COL.ship;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = COL.ship;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 7, 0, 2 * Math.PI);
+    ctx.stroke();
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Readout strip + clock.
+// ---------------------------------------------------------------------------------------------
+function updateReadout() {
+  const days = simTime / SECONDS_PER_DAY;
+  const years = simTime / SECONDS_PER_YEAR;
+  document.getElementById("ro-time").textContent = `d ${days.toFixed(1)} (y ${years.toFixed(2)})`;
+  document.getElementById("clock").textContent = `d ${days.toFixed(1)}`;
+
+  // First ghost path drives the distance/speed readouts.
+  const ghost = paths.find(p => p.ghost && groupVisible[p.group]);
+  let dist = "—", speed = "—";
+  if (ghost) {
+    const pos = samplePath(ghost.samples, simTime);
+    if (pos) {
+      const au = Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) / AU;
+      dist = `${au.toFixed(3)} AU`;
+      const v = sampleSpeed(ghost.samples, simTime);
+      if (v != null) speed = `${v.toFixed(2)} km/s`;
+    }
+  }
+  document.getElementById("ro-dist").textContent = dist;
+  document.getElementById("ro-speed").textContent = speed;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Time control: scrubber over [t0,t1], play/pause, log-scale warp slider.
+// ---------------------------------------------------------------------------------------------
+const scrubber = document.getElementById("scrubber");
+const speedSlider = document.getElementById("speed");
+const speedLbl = document.getElementById("speedlbl");
+const playBtn = document.getElementById("playbtn");
+
+// Warp slider is log-scale: 0 -> 1x (seconds of sim per real second, roughly), 1000 -> a rate that
+// crosses the whole span in a few seconds. We express it as sim-seconds advanced per real second.
+function warpRate() {
+  const span = Math.max(t1 - t0, 1);
+  const minRate = span / 600;   // slowest: ~10 minutes to cross the span
+  const maxRate = span / 4;     // fastest: ~4 seconds to cross the span
+  const f = speedSlider.value / 1000;
+  const rate = minRate * Math.pow(maxRate / minRate, f);
+  return rate;
+}
+
+function setSimTime(t) {
+  simTime = Math.min(t1, Math.max(t0, t));
+  scrubber.value = String(Math.round(((simTime - t0) / (t1 - t0 || 1)) * 1000));
+  invalidate();
+}
+
+scrubber.addEventListener("input", () => {
+  const f = scrubber.value / 1000;
+  simTime = t0 + f * (t1 - t0);
+  invalidate();
+});
+speedSlider.addEventListener("input", () => { updateSpeedLabel(); invalidate(); });
+function updateSpeedLabel() {
+  speedLbl.textContent = formatRate(warpRate());
+}
+function formatRate(r) {
+  // r = sim seconds per real second. Show in the most legible unit.
+  if (r >= SECONDS_PER_YEAR) return `${(r / SECONDS_PER_YEAR).toFixed(1)} y/s`;
+  if (r >= SECONDS_PER_DAY) return `${(r / SECONDS_PER_DAY).toFixed(1)} d/s`;
+  return `${r.toFixed(0)} s/s`;
+}
+
+playBtn.addEventListener("click", () => setPlaying(!playing));
+function setPlaying(p) {
+  playing = p;
+  playBtn.textContent = playing ? "Pause" : "Play";
+  invalidate(); // ensure a final frame renders when pausing
+}
+
+// ---------------------------------------------------------------------------------------------
+// Legend: one row per group, click to toggle the whole group.
+// ---------------------------------------------------------------------------------------------
+function buildLegend() {
+  const host = document.getElementById("legrows");
+  host.innerHTML = "";
+  const seen = new Set();
+  for (const p of paths) {
+    if (seen.has(p.group)) continue;
+    seen.add(p.group);
+    const row = document.createElement("div");
+    row.className = "legrow";
+    const sw = document.createElement("span");
+    sw.className = "swatch";
+    sw.style.background = p.color;
+    const name = document.createElement("span");
+    name.className = "name";
+    // Count the paths in this group so a sweep-family reads as "sweep (7)".
+    const count = paths.filter(q => q.group === p.group).length;
+    name.textContent = count > 1 ? `${p.group} (${count})` : (p.label || p.group);
+    row.appendChild(sw);
+    row.appendChild(name);
+    row.addEventListener("click", () => {
+      groupVisible[p.group] = !groupVisible[p.group];
+      row.classList.toggle("off", !groupVisible[p.group]);
+      invalidate();
+    });
+    host.appendChild(row);
+  }
+  if (paths.length === 0) host.textContent = "(no paths)";
+}
+
+// ---------------------------------------------------------------------------------------------
+// Pointer interaction: drag to pan, wheel to zoom toward the cursor.
+// ---------------------------------------------------------------------------------------------
+let dragging = false, lastX = 0, lastY = 0;
+canvas.addEventListener("pointerdown", (e) => {
+  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  canvas.classList.add("dragging");
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  camera.panByPixels(e.clientX - lastX, e.clientY - lastY);
+  lastX = e.clientX; lastY = e.clientY;
+  invalidate();
+});
+canvas.addEventListener("pointerup", (e) => {
+  dragging = false;
+  canvas.classList.remove("dragging");
+});
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  // Wheel up (negative deltaY) zooms in (factor < 1).
+  const factor = Math.pow(1.0015, e.deltaY);
+  camera.zoomBy(factor, e.clientX - rect.left, e.clientY - rect.top);
+  invalidate();
+}, { passive: false });
+
+// Nice-to-have keyboard shortcuts: space = play/pause, arrows = scrub one step.
+window.addEventListener("keydown", (e) => {
+  if (e.code === "Space") { e.preventDefault(); setPlaying(!playing); }
+  else if (e.code === "ArrowRight") setSimTime(simTime + (t1 - t0) / 200);
+  else if (e.code === "ArrowLeft") setSimTime(simTime - (t1 - t0) / 200);
+});
+
+// ---------------------------------------------------------------------------------------------
+// Bootstrap + animation loop.
+// ---------------------------------------------------------------------------------------------
+function getVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+// Resolve the palette once (getComputedStyle is not free, and the draw path reads these 15-20×/frame).
+const COL = {
+  bg: getVar("--bg"),
+  orbit: getVar("--orbit"),
+  label: getVar("--label"),
+  ship: getVar("--ship"),
+};
+
+document.getElementById("title").textContent = SCENE.title || "Gravity Lab";
+document.getElementById("subtitle").textContent = SCENE.subtitle || "";
+document.getElementById("footer").textContent = "SpaceSails Gravity Lab — generated by " + (SCENE.title || "a lab");
+
+buildLegend();
+updateSpeedLabel();
+
+let lastFrame = performance.now();
+let idleFrames = 0;
+function loop(now) {
+  const dtReal = Math.min(0.1, (now - lastFrame) / 1000);
+  lastFrame = now;
+  if (playing) {
+    let next = simTime + warpRate() * dtReal;
+    if (next >= t1) next = t0; // loop
+    setSimTime(next);
+  }
+  // Draw only when the picture can change: while playing, or when an interaction marked it dirty.
+  // A paused, untouched viewer stops spending a full scene redraw every frame. The ~2 Hz idle
+  // heartbeat still commits an occasional frame: a fully frame-starved surface makes screenshot
+  // tooling (CDP capture waits for a frame commit) hang on an otherwise healthy page.
+  if (playing || dirty || ++idleFrames >= 30) {
+    draw();
+    updateReadout();
+    dirty = false;
+    idleFrames = 0;
+  }
+  requestAnimationFrame(loop);
+}
+
+// The loop's first draw() sizes the canvas and performs the initial fit-to-paths framing (dirty=true).
+requestAnimationFrame(loop);
+// Re-frame on resize so the trajectory stays fit to the window.
+window.addEventListener("resize", () => { needsFraming = true; invalidate(); });
+</script>

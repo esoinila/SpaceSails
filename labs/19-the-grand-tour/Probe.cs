@@ -17,6 +17,7 @@
 // never hand-edit a table.
 
 using SpaceSails.Core;
+using SpaceSails.LabViz;
 
 const double Day = 86400.0;
 const double Year = 365.25 * Day;
@@ -39,6 +40,18 @@ const double JupiterMu = 1.26686534e17;
 var ephemeris = new CircularOrbitEphemeris(
     [.. specs.Select(s => new CelestialBody(s.Id, s.Id, s.Id == "sun" ? null : "sun", s.Mu, s.BodyRadius, s.OrbitRadius, s.OrbitPeriod, s.Phase))]);
 var sim = new Simulator(ephemeris, timeStepSeconds: 60);
+
+// --viz (optional): record the trajectories this probe computes into a browser pop-up. Every
+// viz line is gated behind LabViz.Wants, so without --viz stdout stays byte-identical. Recording
+// only ever OBSERVES lists already computed (or re-projects a winner after the fact — the engine
+// is deterministic, so the same numbers come back); it never perturbs a printed value.
+var viz = LabViz.Wants(args)
+    ? new VizScene("lab19-the-grand-tour", "Lab 19 — The Grand Tour", "Earth → Jupiter → Saturn, flown with TCMs")
+    : null;
+// The 9-body table (sun + 8 planets) on their circular rails — the viewer animates them.
+// Colors come from VizColors (mirrors the game's Map.razor palette): Sweep = cool blue-gray for the
+// aim-offset fan, Trajectory = the game's orange for the flown itinerary.
+viz?.AddBodies(ephemeris.Bodies);
 
 Vector2d BodyVelocity(string id, double t) =>
     (ephemeris.Position(id, t + 1.0) - ephemeris.Position(id, t - 1.0)) / 2.0;
@@ -222,6 +235,11 @@ foreach (double offset in new[] { -3e9, -1e9, -5e8, -2e8, 2e8, 5e8, 1e9, 3e9 })
         Console.WriteLine($"{"",36}point-mass model and the step size are both lying)");
         continue;
     }
+
+    // viz: one faded blue-gray arc per surviving aim offset — the crank fan around Jupiter.
+    // (Impact-grade passes are skipped above: their point-mass arcs are the lies §B discards,
+    // and drawing them would fling the auto-framing out to nonsense.)
+    viz?.AddPath($"aim {offset:0.0e0} m", through, VizColors.Sweep, "sweep", 1.0, 0.45);
 
     // Outgoing heliocentric speed once clear of Jupiter's well (measuring AT closest approach
     // would report the periapsis speed-up, which beats the asymptotic bound — a lie). The long
@@ -407,6 +425,41 @@ double saturnHill = OrbitRule.HillRadius(
     double totalTof = (chosen.T - t0C) / Year;
     double tcmTotal = tcm1Dv + tcm2Dv;
 
+    // viz: the flown itinerary as one continuous orange ghost path. Re-project the three legs the
+    // navigators actually flew — launch -> TCM-1 (Jupiter-90d) -> TCM-2 (Jupiter+150d) -> Saturn —
+    // and concatenate them (times stay monotonic; positions are continuous across each burn, so the
+    // polyline kinks exactly where the ship burned). RunAdaptive above kept only endpoints; these
+    // ProjectAdaptive calls re-fly the same deterministic states purely to harvest samples.
+    if (viz is not null)
+    {
+        var flown = new List<TrajectorySample>();
+        // Append one leg, re-flown from `state` for `duration`. The three legs stitch to nearJ,
+        // pastJ, and atSaturn — states RunAdaptive flew at the DEFAULT 3600 s max step — so the
+        // re-projection must use the same maxTimeStep: 3600, or the differing step schedules make the
+        // legs end at slightly different points and the polyline jumps ~1e8–1e9 m at each seam.
+        // maxSamples is lifted well past the longest leg's step count (~2000+ days / 3600 s ≈ 50k) so
+        // no leg hits the cap and truncates. Legs after the first drop their duplicate first sample.
+        void AddLeg(ShipState state, double duration)
+        {
+            IReadOnlyList<TrajectorySample> leg = sim.ProjectAdaptive(
+                state, null, duration, maxTimeStep: 3600, maxSamples: 120_000);
+            flown.AddRange(flown.Count == 0 ? leg : leg.Skip(1));
+        }
+
+        AddLeg(new ShipState(padC.Position, liftoff.V, t0C), nearJ.SimTime - t0C);
+        AddLeg(new ShipState(nearJ.Position, chosen.V, nearJ.SimTime), pastJ.SimTime - nearJ.SimTime);
+        AddLeg(new ShipState(pastJ.Position, tcm2.V, pastJ.SimTime), chosen.T - pastJ.SimTime);
+        viz.AddPath("itinerary (Earth->Jupiter->Saturn)", flown, VizColors.Trajectory, "main", 1.8, 1.0, ghost: true);
+
+        // Markers: the three burns, the Jupiter flyby, and the Saturn closest pass.
+        var jupPass = ClosestTo("jupiter", flown, t0C);
+        viz.AddMarker(t0C, padC.Position, $"launch ({launchDv:F0} m/s)", MarkerKinds.Burn);
+        viz.AddMarker(nearJ.SimTime, nearJ.Position, $"TCM-1 ({tcm1Dv:F1} m/s)", MarkerKinds.Burn);
+        viz.AddMarker(pastJ.SimTime, pastJ.Position, $"TCM-2 ({tcm2Dv:F1} m/s)", MarkerKinds.Burn);
+        viz.AddMarker(jupPass.Time, ephemeris.Position("jupiter", jupPass.Time), $"Jupiter flyby ({jupPass.Distance / RJ:F1} R_J)", MarkerKinds.Flyby);
+        viz.AddMarker(chosen.T, satPos, $"Saturn closest pass ({arriveDist / 1e9:F2} Gm)", MarkerKinds.Closest);
+    }
+
     Console.WriteLine();
     Console.WriteLine($"{"burn",-32}{"dv (m/s)",10}");
     Console.WriteLine($"{"launch (targets the crank)",-32}{launchDv,10:F0}");
@@ -449,3 +502,9 @@ Console.WriteLine("that cannot recoil, and the ship's energy gain in Section B i
 Console.WriteLine("rails don't notice the theft. Every game and most mission planners accept this ledger");
 Console.WriteLine("hole on purpose — the alternative (lesson 9's true n-body) charges you chaos for the");
 Console.WriteLine("privilege of balanced books. Know which universe your solver lives in.");
+
+// --viz only: write labviz/lab19-the-grand-tour.html and open it. Gated, so no-flag stdout is untouched.
+if (viz is not null)
+{
+    LabViz.Show(viz, args);
+}

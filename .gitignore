@@ -494,3 +494,6 @@ docs/tmp_pics/
 
 # Grok CLI MCP tool-schema cache, regenerated whenever grok runs in this directory
 mcps/
+
+# Generated lab visualization output (dotnet run --project labs/NN -- --viz)
+labviz/

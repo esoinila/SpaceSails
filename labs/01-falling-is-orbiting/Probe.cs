@@ -20,6 +20,7 @@
 // re-paste, don't hand-edit them.
 
 using SpaceSails.Core;
+using SpaceSails.LabViz;
 
 // Sol's own numbers (scenarios/sol.json): the Sun's mu and Earth's orbit radius define "1 AU"
 // and "circular speed" for this whole probe, so results transfer straight into the game.
@@ -72,6 +73,31 @@ Console.WriteLine();
 RunPulseBreakIt(+0.10, "speed x1.10 (accelerate pulse)");
 Console.WriteLine();
 RunPulseBreakIt(-0.10, "speed x0.90 (decelerate pulse)");
+
+// ---- Seeing it: `-- --viz` draws the computed orbit in the game's visual language --------
+// Every line below is gated behind LabViz.Wants(args), so without the flag stdout stays
+// byte-identical. We re-run the Section B circular orbit through the same integrator purely to
+// observe it — one full revolution of the fall that keeps missing the Sun — and hand the
+// samples to the viewer as a ghost path. This ~6-line block is the pattern other labs copy.
+if (LabViz.Wants(args))
+{
+    var viz = new VizScene("lab01-falling-is-orbiting", "Lab 01 — Falling is orbiting",
+        "Circular speed at 1 AU: a fall that perpetually misses the Sun");
+    viz.AddBodies(ephemeris.Bodies);
+
+    // Circular speed straight from Core's OrbitRule (sqrt(mu/r)), so the picture uses the same helper
+    // the game's orbit-insertion code does rather than re-spelling the formula.
+    var release = new ShipState(new Vector2d(AU, 0), new Vector2d(0, OrbitRule.CircularSpeed(sun, AU)), 0);
+    double period = 2 * Math.PI * Math.Sqrt(AU * AU * AU / SunMu);
+    // One full revolution at the adaptive step's 3600 s clamp is ~8767 samples — past the default
+    // 8192 cap, which would truncate the drawn circle ~24° short of closing. Lift the cap so the last
+    // sample reaches the period and the ring closes.
+    var orbit = new Simulator(ephemeris, GameDt).ProjectAdaptive(release, null, period, maxSamples: 16_384);
+    viz.AddPath("circular orbit @ 1 AU", orbit, VizColors.Trajectory, ghost: true);
+    viz.AddMarker(0, release.Position, "release @ 1 AU (v = v_circ)", MarkerKinds.Event);
+
+    LabViz.Show(viz, args);
+}
 
 // ---- Section A implementation --------------------------------------------------------
 
