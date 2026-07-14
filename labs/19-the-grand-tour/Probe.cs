@@ -451,6 +451,12 @@ double saturnHill = OrbitRule.HillRadius(
         AddLeg(new ShipState(pastJ.Position, tcm2.V, pastJ.SimTime), chosen.T - pastJ.SimTime);
         viz.AddPath("itinerary (Earth->Jupiter->Saturn)", flown, VizColors.Trajectory, "main", 1.8, 1.0, ghost: true);
 
+        // Display epoch, chosen so the flown departure lands on Voyager 2's real launch date
+        // (1977-08-20 14:29 UTC). Presentation only: the rails' phases are fictional, so the
+        // calendar is an anchor for the story, not a claim about 1977's actual sky.
+        viz.SetEpoch(new DateTimeOffset(1977, 8, 20, 14, 29, 0, System.TimeSpan.Zero)
+            - System.TimeSpan.FromSeconds(t0C));
+
         // Markers: the three burns, the Jupiter flyby, and the Saturn closest pass.
         var jupPass = ClosestTo("jupiter", flown, t0C);
         viz.AddMarker(t0C, padC.Position, $"launch ({launchDv:F0} m/s)", MarkerKinds.Burn);

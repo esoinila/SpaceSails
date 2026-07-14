@@ -62,6 +62,26 @@ public class LabVizTests
         Assert.Equal("TCM-1 (12.4 m/s)", marker.GetProperty("label").GetString());
     }
 
+    // Epoch: SetEpoch serializes an invariant round-trip UTC instant; without it, epoch is null.
+    [Fact]
+    public void Epoch_SerializesInvariantUtc_AndDefaultsToNull()
+    {
+        var scene = new VizScene("epoch", "Epoch");
+        scene.AddPath("p", Spiral(10), "#ffa500");
+        using (JsonDocument bare = JsonDocument.Parse(scene.ToJson()))
+        {
+            Assert.Equal(JsonValueKind.Null, bare.RootElement.GetProperty("epoch").ValueKind);
+        }
+
+        // Voyager 2's launch instant, offset -2h to prove normalization to UTC.
+        scene.SetEpoch(new DateTimeOffset(1977, 8, 20, 16, 29, 0, TimeSpan.FromHours(2)));
+        using JsonDocument doc = JsonDocument.Parse(scene.ToJson());
+        string epoch = doc.RootElement.GetProperty("epoch").GetString()!;
+        Assert.StartsWith("1977-08-20T14:29:00", epoch);
+        var parsed = DateTimeOffset.Parse(epoch, System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Equal(TimeSpan.Zero, parsed.Offset);
+    }
+
     // Test 2: an over-length path decimates to <= maxSamples, preserving first/last, times monotonic.
     [Fact]
     public void Decimation_CapsSamples_PreservesEndpoints_Monotonic()
