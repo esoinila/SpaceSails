@@ -82,6 +82,48 @@ If no pass that cheap can bend you where you asked, SOLVE says so plainly (with 
 numbers shown are re-flown at the *quantized* burn (whole pulses), so what you read is what you'll
 fly.
 
+## Skim the cloud tops
+
+When your closest pass is a world with an **atmosphere** — a gas giant, Venus, Titan, Earth — a
+second button appears beside the sling: **"🔥 Skim *body*"**. This is braking *without* burning a
+drop of fuel: dip into the top of the air, let it shed your speed, and climb back out with a tighter
+orbit. It's the *Stargate Universe* gas-giant dive — and, come in fast and shallow, the atmosphere
+throws you back out like an Apollo capsule skipping off the top of the sky.
+
+- **Depth slider**, in **kilometres of periapsis altitude** inside the shell. Shallow barely touches
+  the air; deep bites hard.
+- **SOLVE** aims the pass to that depth and then *flies it* through the real drag integrator — the
+  same Core physics [lab 22](../../labs/22-the-air-brake/README.md) puts every number to. What the
+  gauge shows is what actually flies.
+
+**The corridor gauge** is the whole point — three zones, and SOLVE tells you which one you're in:
+
+> **▲ skip / too shallow** — above the corridor the air barely bites; a *fast* (hyperbolic) arrival
+> just **bounces back out**, and the gauge names the speed she leaves at. This is the Apollo skip: shed
+> a little, keep going.
+>
+> **● the corridor** — the useful band: real braking (Δv shed, shown in m/s and as *≈pulses saved*)
+> with the g-load safely under the damage line. Free speed off the tank.
+>
+> **▼ too deep — would hole the sail** — dip past the damage line and the drag load holes the sail,
+> the same wound the gun inflicts, now self-inflicted. Shown in **red**. You *can* still fly it (a
+> captain may choose the red) — the gauge warned you honestly.
+
+The gauge also reads the **min altitude** she actually reached and whether the pass **captured** her
+into orbit or let her **exit**. The corridor is narrow on purpose — one scale height deeper multiplies
+the drag, so aiming it is the skill (that razor edge is exactly what made the real return corridors
+so hard to hit). **Add the burn** drops the aiming node — a fine trim, close to the pass — and the
+ribbon dips through the shell.
+
+> **Fine print.** The gauge shows a **single pass** at fine-step accuracy. A fuel-out capture is flown
+> *pass by pass*, and each dip creeps a little deeper than the last (no fuel to raise the periapsis
+> back up) — so free braking is a race you eventually lose to the damage line. Plan the next dip after
+> you've flown this one; multi-pass planning isn't on the desk (yet).
+
+And the live half of it: if you fly a dip that's **too deep**, the sail really does hole — the drive
+goes dead while the crew sews the rigging (a couple of sim-days), then answers again. The gauge is
+there so you dive on purpose, not by accident.
+
 ## Worked examples
 
 - **Mercury**: one node, decelerate ×3 (10%) at ~day 3 → perihelion kisses Mercury's orbit around

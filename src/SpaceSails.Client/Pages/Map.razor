@@ -645,6 +645,57 @@
                         }
                     </div>
                 }
+                @* PR-I · the skim & skip: on a close pass by a body with an atmosphere, dip the cloud
+                   tops to brake for free — with a three-zone corridor gauge that shows what actually flies. *@
+                @if (_skimmablePass is { } kp)
+                {
+                    <div class="map-skim mb-2">
+                        <button type="button" class="btn btn-sm w-100 mb-1 @(_skimPanelOpen ? "btn-danger" : "btn-outline-danger")"
+                                @onclick="ToggleSkimPanel">🔥 Skim @kp.BodyName</button>
+                        @if (_skimPanelOpen)
+                        {
+                            <div class="map-skim-body bg-dark bg-opacity-50 rounded p-2">
+                                <div class="mb-1">Periapsis depth:
+                                    <strong>@_skimAltKm.ToString("0", CultureInfo.InvariantCulture) km</strong>
+                                    <span class="text-secondary">(shell top @SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture) km)</span>
+                                </div>
+                                @* stopPropagation: arrow keys move the slider, not fire live ship pulses. *@
+                                <input type="range" class="form-range" min="1" max="@SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture)" step="1"
+                                       value="@_skimAltKm.ToString("0", CultureInfo.InvariantCulture)"
+                                       @oninput="OnSkimAltInput" @onkeydown:stopPropagation="true" />
+                                <button type="button" class="btn btn-sm btn-outline-danger w-100 mb-2" disabled="@_skimSolving"
+                                        @onclick="RunSkimSolveAsync">@(_skimSolving ? "flying the pass…" : "SOLVE the skim")</button>
+                                @if (_skimFailure is { } fail)
+                                {
+                                    <div class="text-warning">⚠ @fail</div>
+                                }
+                                else if (_skimResult is { } g)
+                                {
+                                    @* The corridor gauge: three labeled zones read off the flown DragReport. *@
+                                    <div class="map-skim-gauge">
+                                        <div class="map-skim-zone @(g.TooShallow ? "fw-bold" : "text-secondary")">
+                                            @(g.ArrivalHyperbolic ? "▲ skip — she bounces" : "▲ too shallow") @(g.TooShallow ? "◀" : "")
+                                        </div>
+                                        <div class="map-skim-zone @(g.InCorridor ? "text-success fw-bold" : "text-secondary")">
+                                            ● the corridor @(g.InCorridor ? "◀" : "")
+                                        </div>
+                                        <div class="map-skim-zone @(g.TooDeep ? "text-danger fw-bold" : "text-secondary")">
+                                            ▼ too deep — would hole the sail @(g.TooDeep ? "◀" : "")
+                                        </div>
+                                    </div>
+                                    <div class="map-skim-verdict mt-1">
+                                        <div>@SkimDepthLine(g)</div>
+                                        <div class="@(g.TooDeep ? "text-danger" : g.InCorridor ? "text-success" : "text-secondary")">@SkimShedLine(g)</div>
+                                        <div>@SkimOutcomeLine(g)</div>
+                                        <div class="text-secondary map-skim-fineprint">@SkimFinePrint()</div>
+                                        <button type="button" class="btn btn-sm @(g.TooDeep ? "btn-danger" : "btn-success") w-100 mt-1"
+                                                @onclick="AddSkimBurn">@(g.TooDeep ? "Add the burn anyway — fly into the red" : "Add the burn")</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
                 <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
                         Add burn at scrub
@@ -1920,6 +1971,49 @@
     // of quietly spending half the reaction mass; bigger course changes are a plain burn's job.
     private const double SlingMaxAimDeltaV = 1200.0;
 
+    // PR-I · the skim & skip — the sling's sibling on the plot desk. On a close pass by an
+    // atmosphere-bearing body, aim a periapsis INSIDE the shell and read a three-zone corridor gauge
+    // (too shallow / the corridor / too deep = holes the sail). The aim reuses the sling's perp-⟂-v_rel
+    // frame, but the SOLVE is a cheap VACUUM-periapsis bisection (SlingPlanner's coarse heliocentric
+    // b-plane strategy can't resolve — or correctly sign — a target hundreds of km deep, well under its
+    // 0.1 R measurement floor); the shown numbers then come from ONE RunAdaptiveWithDrag flight of the
+    // quantized plan, so the gauge is what actually flies (the same honesty rule the sling keeps).
+    private ClosestApproach.Pass? _skimmablePass;     // tightest pass by a body that has an Atmosphere
+    private bool _skimPanelOpen;
+    private double _skimAltKm;                         // requested periapsis altitude (km) inside the shell
+    private bool _skimSolving;
+    private SkimGauge? _skimResult;                    // the QUANTIZED, flown gauge — what "Add the burn" flies
+    private string? _skimFailure;
+    private int _skimPulses;                           // fine Vector-burn pulses the aim rounds to
+    private double _skimHeadingDeg;                    // world heading of the quantized aim Δv
+    private double _skimBurnTime;                      // the aiming-burn node time (placed close to the pass)
+    private const double SkimBurnPercent = 0.006;      // per-pulse aim strength (% of entry speed) — a VERY fine trim; the grazing corridor is ~1 m/s wide
+    private const double SkimBurnLeadSeconds = 12 * 3600; // aim node placed 12 h before periapsis: a modest lever, quantization-friendly
+    private const double SkimMaxAimDeltaV = 200.0;     // aim budget cap (also bounded by the tank)
+    private const double SkimCorridorFloorMps = 30.0;  // Δv shed below this = "too shallow, nothing worth doing"
+
+    // PR-I · the live consequence (the plan's default damage currency — the same sail-holed disable the
+    // gun inflicts, now self-inflicted). In live flight, if drag deceleration crosses the Core damage
+    // line, the sail holes: thrust and pending burns are disabled for a fixed repair window. Deterministic
+    // (a pure function of the flown state — no RNG). OWNER OPEN QUESTION 1: this is the plan's default;
+    // alternatives (burn pulses as ablation, a new hull meter) are unanswered — flagged for the owner.
+    private bool _sailHoled;
+    private double _sailRepairedAtSimTime;             // sim-time the rigging is sewn shut again
+    private const double SailRepairSeconds = 2 * 86400.0; // ~2 sim-days in the loft — a constant, documented window
+    private double _frameMaxDragDecel;                  // peak drag deceleration seen across this frame's steps
+
+    // The flown skim gauge (one RunAdaptiveWithDrag pass of the quantized aim). Every number is measured
+    // off the real drag flight, never the requested slider value — the slider is a target, the gauge is truth.
+    private readonly record struct SkimGauge(
+        int Pulses, double HeadingDeg, double BurnTime,
+        double MinAltMeters, double ShedMps, double PeakG, double PulsesSaved,
+        bool Captured, double ExitVinfMps, bool ArrivalHyperbolic,
+        double RequestedAltKm, double AchievedAltKm)
+    {
+        public bool TooDeep => PeakG >= Atmosphere.SailHoleDecelG;                 // holes the sail
+        public bool InCorridor => !TooDeep && ShedMps >= SkimCorridorFloorMps;     // useful braking under the damage line
+        public bool TooShallow => !TooDeep && ShedMps < SkimCorridorFloorMps;      // nothing worth doing (or a skip, if hyperbolic)
+    }
 
     private void OnHorizonSliderInput(ChangeEventArgs e)
     {
@@ -4080,6 +4174,430 @@
         ShowPulseMessage($"🧪 sling cheat: inbound to {body.Name} — a close pass ~12 days out. Open Plot ▸ ⤴ Sling.");
     }
 
+    // ---- PR-I · the skim & skip (the corridor gauge behind a plot-desk panel) ----
+
+    // A close pass we can dip the cloud tops on: a planet/moon with an ATMOSPHERE, the pass ahead of us,
+    // above the surface, and inside the Hill sphere where the aim can bend the periapsis into the shell.
+    private bool PassIsSkimmable(ClosestApproach.Pass cp)
+    {
+        if (_ephemeris is null || cp.SimTime <= SimTime + 60)
+        {
+            return false;
+        }
+
+        CelestialBody? body = SlingBody(cp.BodyId, out CelestialBody? parent);
+        if (body is null || parent is null || body.Kind == BodyKind.Station || body.Atmosphere is null)
+        {
+            return false;
+        }
+
+        double hill = OrbitRule.HillRadius(body, parent.Mu);
+        return cp.Distance > body.BodyRadius && cp.Distance < hill;
+    }
+
+    private Atmosphere? SkimAtmosphere() =>
+        _skimmablePass is { } cp && SlingBody(cp.BodyId, out _) is { } b ? b.Atmosphere : null;
+
+    private double SkimShellTopKm() => (SkimAtmosphere()?.TopAltitude ?? 4.0e5) / 1000.0;
+
+    // Open/close the panel. Opening seeds a mid-corridor default depth (a fraction of the shell top that
+    // lands in the useful-braking band for the tuned gas giants — the gauge shows the truth per body).
+    private void ToggleSkimPanel()
+    {
+        _skimPanelOpen = !_skimPanelOpen;
+        _skimResult = null;
+        _skimFailure = null;
+        if (_skimPanelOpen && SkimAtmosphere() is { } atm)
+        {
+            _skimAltKm = Math.Round(0.4 * atm.TopAltitude / 1000.0); // mid-corridor default
+        }
+    }
+
+    private void OnSkimAltInput(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double km))
+        {
+            _skimAltKm = Math.Clamp(km, 1, SkimShellTopKm());
+            _skimResult = null;
+            _skimFailure = null;
+        }
+    }
+
+    // SOLVE: aim the periapsis to the requested altitude by a VACUUM-periapsis bisection on a signed
+    // perp-⟂-v_rel trim (the sling's aim frame, but the oracle is a cheap gravity-only pass because a
+    // sub-shell periapsis is far under SlingPlanner's 0.1 R measurement floor), quantize to whole fine
+    // pulses, then fly the quantized plan ONCE through the pass with RunAdaptiveWithDrag — the gauge
+    // numbers ARE that flight. Runs on a reduced ephemeris (sun + the target's well + its moons), the
+    // same WASM-affordability trick the sling uses; the in-shell pass is entirely the target's to shape.
+    private async Task RunSkimSolveAsync()
+    {
+        if (_ephemeris is null || _simulator is null || _skimmablePass is not { } cp
+            || SlingBody(cp.BodyId, out _) is not { Atmosphere: { } atm } body)
+        {
+            return;
+        }
+
+        _skimSolving = true;
+        _skimResult = null;
+        _skimFailure = null;
+        StateHasChanged();
+        await Task.Yield(); // let "flying the pass…" paint before the synchronous solve
+
+        double R = body.BodyRadius, mu = body.Mu;
+        double shellTop = atm.TopAltitude;
+
+        // The aiming-burn node: a modest lever close to the pass (12 h before), else 10 min from now.
+        double tBurn = cp.SimTime - SkimBurnLeadSeconds;
+        if (tBurn <= _ship.SimTime + 300)
+        {
+            tBurn = Math.Floor(_ship.SimTime) + 600;
+        }
+        _skimBurnTime = tBurn;
+
+        ShipState burnState = _simulator.RunAdaptive(_ship, Math.Max(1.0, tBurn - _ship.SimTime), _plan);
+        double burnSpeed = burnState.Velocity.Length;
+        double perPulseDv = Math.Max(0.3, burnSpeed * SkimBurnPercent / 100.0);
+        int availablePulses = Math.Max(1, _reactionMassPulses - PlannedPulseTotal());
+        double cap = Math.Min(SkimMaxAimDeltaV, Math.Max(perPulseDv, perPulseDv * availablePulses));
+
+        // Reduced ephemerides: one gravity-only (the bisection oracle), one carrying the target's air (the gauge).
+        (Simulator vacSim, Simulator airSim, ICelestialEphemeris redEph) = BuildSkimContext(cp.BodyId);
+
+        Vector2d BodyVel(ICelestialEphemeris eph, string id, double t) =>
+            (eph.Position(id, t + 1.0) - eph.Position(id, t - 1.0)) / 2.0;
+
+        Vector2d vRel = burnState.Velocity - BodyVel(redEph, body.Id, tBurn);
+        Vector2d vHat = vRel.Normalized();
+        var perp = new Vector2d(-vHat.Y, vHat.X);
+
+        // Vacuum periapsis (m) of the aim burnState + perp*alpha, measured against the reduced grav field.
+        double horizon = (cp.SimTime - tBurn) + 4 * 86400.0;
+        double VacPeri(double alpha)
+        {
+            var start = new ShipState(burnState.Position, burnState.Velocity + perp * alpha, tBurn);
+            IReadOnlyList<TrajectorySample> path = vacSim.ProjectAdaptive(
+                start, null, horizon, minTimeStep: 5, maxTimeStep: 3 * 3600, dynamicalTimeFraction: 1.0 / 96, maxSamples: 30_000);
+            double best = double.MaxValue;
+            foreach (TrajectorySample s in path)
+            {
+                if (s.SimTime < tBurn)
+                {
+                    continue;
+                }
+                double d = (redEph.Position(body.Id, s.SimTime) - s.Position).Length;
+                if (d < best)
+                {
+                    best = d;
+                }
+            }
+            return best;
+        }
+
+        double target = R + _skimAltKm * 1000.0;
+        double fLo = VacPeri(-cap) - target;
+        double fHi = VacPeri(+cap) - target;
+        if (double.IsNaN(fLo) || double.IsNaN(fHi) || fLo * fHi > 0)
+        {
+            _skimFailure = "no aim this cheap threads that depth — widen the budget or ease the dip";
+            _skimSolving = false;
+            StateHasChanged();
+            return;
+        }
+
+        // Bisect the signed perp trim to the requested periapsis (monotonic in alpha; ~24 cheap flights).
+        double aLo = -cap, aHi = +cap;
+        for (int i = 0; i < 24; i++)
+        {
+            double aMid = 0.5 * (aLo + aHi);
+            double fMid = VacPeri(aMid) - target;
+            if (fMid * fLo <= 0)
+            {
+                aHi = aMid;
+            }
+            else
+            {
+                aLo = aMid;
+                fLo = fMid;
+            }
+        }
+
+        double alphaStar = 0.5 * (aLo + aHi);
+        int pulses = Math.Max(0, (int)Math.Round(Math.Abs(alphaStar) / perPulseDv));
+        double signedMag = Math.Sign(alphaStar) * pulses * perPulseDv;
+        Vector2d quantizedDv = perp * signedMag;
+        _skimPulses = pulses;
+        _skimHeadingDeg = pulses > 0
+            ? Math.Atan2(quantizedDv.Y, quantizedDv.X) * 180.0 / Math.PI
+            : 0.0;
+
+        // Fly the QUANTIZED aim through the pass with drag — the gauge is this flight, not the request.
+        _skimResult = FlySkimGauge(airSim, redEph, body, burnState, quantizedDv, mu, R, shellTop, burnSpeed);
+        _skimSolving = false;
+        StateHasChanged();
+    }
+
+    // One RunAdaptiveWithDrag pass of the quantized aim: peak g, Δv shed, min altitude, exit verdict —
+    // every gauge number measured off the real drag flight. SINGLE-PASS numbers (fine-step accurate);
+    // multi-pass planning is out of scope (see the panel's fine print).
+    private SkimGauge FlySkimGauge(
+        Simulator airSim, ICelestialEphemeris eph, CelestialBody body, ShipState burnState, Vector2d aimDv,
+        double mu, double R, double shellTop, double burnSpeed)
+    {
+        Vector2d BodyPos(double t) => eph.Position(body.Id, t);
+        Vector2d BodyVel(double t) => (eph.Position(body.Id, t + 1.0) - eph.Position(body.Id, t - 1.0)) / 2.0;
+
+        var start = new ShipState(burnState.Position, burnState.Velocity + aimDv, burnState.SimTime);
+
+        // Arrival hyperbolic about the body? (sets whether "too shallow" reads as a skip).
+        Vector2d vRel0 = start.Velocity - BodyVel(start.SimTime);
+        double r0 = (start.Position - BodyPos(start.SimTime)).Length;
+        bool arrivalHyperbolic = vRel0.LengthSquared / 2.0 - mu / r0 > 0;
+
+        // Find the pass epoch under the aim, then fly the shell crossing at fine resolution.
+        double horizon = 8 * 86400.0;
+        IReadOnlyList<TrajectorySample> path = airSim.ProjectAdaptive(
+            start, null, horizon, minTimeStep: 5, maxTimeStep: 3 * 3600, dynamicalTimeFraction: 1.0 / 96, maxSamples: 40_000);
+        double bestD = double.MaxValue, tPass = start.SimTime;
+        foreach (TrajectorySample s in path)
+        {
+            if (s.SimTime < start.SimTime)
+            {
+                continue;
+            }
+            double d = (BodyPos(s.SimTime) - s.Position).Length;
+            if (d < bestD)
+            {
+                (bestD, tPass) = (d, s.SimTime);
+            }
+        }
+
+        double shellR = R + shellTop;
+        ShipState s2 = airSim.RunAdaptive(start, Math.Max(1.0, (tPass - 2 * 3600) - start.SimTime));
+        double peak = 0, shed = 0, minAlt = double.PositiveInfinity, t0 = s2.SimTime;
+        bool entered = false;
+        while (s2.SimTime - t0 < 12 * 3600)
+        {
+            (ShipState next, Simulator.DragReport rep) =
+                airSim.RunAdaptiveWithDrag(s2, 20.0, null, minTimeStep: 0.1, maxTimeStep: 1.0);
+            peak = Math.Max(peak, rep.PeakDecelMetersPerSecondSquared);
+            shed += rep.DeltaVShedMetersPerSecond;
+            if (!double.IsNaN(rep.MinAltitudeMeters))
+            {
+                minAlt = Math.Min(minAlt, rep.MinAltitudeMeters);
+            }
+            s2 = next;
+            double r = (BodyPos(s2.SimTime) - s2.Position).Length;
+            if (r < shellR)
+            {
+                entered = true;
+            }
+            else if (entered)
+            {
+                break;
+            }
+        }
+
+        // Clean post-pass energy about the body (propagate clear of the shell), for capture / exit v∞.
+        ShipState post = airSim.RunAdaptive(s2, 12 * 3600);
+        double rr = (BodyPos(post.SimTime) - post.Position).Length;
+        double relv = (post.Velocity - BodyVel(post.SimTime)).Length;
+        double e = relv * relv / 2.0 - mu / rr;
+        bool captured = e < 0;
+        double exitVinf = captured ? 0 : Math.Sqrt(2 * e);
+
+        double achievedAlt = double.IsPositiveInfinity(minAlt) ? shellTop : minAlt;
+        double pulsesSaved = shed / Math.Max(1.0, 0.10 * burnSpeed); // vs a −10% drive pulse at the pass entry speed
+
+        return new SkimGauge(
+            _skimPulses, _skimHeadingDeg, _skimBurnTime,
+            achievedAlt, shed, peak / 9.80665, pulsesSaved,
+            captured, exitVinf, arrivalHyperbolic,
+            _skimAltKm, achievedAlt / 1000.0);
+    }
+
+    // A reduced ephemeris for the skim: the primary (sun), the target, its parent chain, and the
+    // target's moons — the only bodies that shape an in-shell pass. Returns a gravity-only sim (the
+    // bisection oracle), an atmosphere-carrying sim (the gauge flight), and the shared ephemeris. Same
+    // reduction rationale as BuildSlingSolveContext: drop the negligible bodies that dominate WASM cost.
+    private (Simulator VacSim, Simulator AirSim, ICelestialEphemeris Eph) BuildSkimContext(string targetId)
+    {
+        var ids = new HashSet<string>();
+        string? cur = targetId;
+        while (cur is not null && ids.Add(cur))
+        {
+            cur = _ephemeris!.Bodies.FirstOrDefault(b => b.Id == cur)?.ParentId;
+        }
+        foreach (CelestialBody b in _ephemeris!.Bodies)
+        {
+            if (b.ParentId == targetId)
+            {
+                ids.Add(b.Id);
+            }
+        }
+        CelestialBody? root = _ephemeris.Bodies.Where(b => b.ParentId is null).OrderByDescending(b => b.Mu).FirstOrDefault();
+        if (root is not null)
+        {
+            ids.Add(root.Id);
+        }
+
+        var airBodies = _ephemeris.Bodies.Where(b => ids.Contains(b.Id)).ToList();
+        var vacBodies = airBodies.Select(b => b with { Atmosphere = null }).ToList();
+        var airEph = new CircularOrbitEphemeris(airBodies);
+        var vacEph = new CircularOrbitEphemeris(vacBodies);
+        return (new Simulator(vacEph, 1.0), new Simulator(airEph, 1.0), airEph);
+    }
+
+    // Add the solved skim as a fine Vector-burn node (like the sling). Allowed even for a too-deep plan —
+    // a captain may fly into the red; the gauge warned honestly.
+    private void AddSkimBurn()
+    {
+        if (_skimResult is not { } g)
+        {
+            return;
+        }
+        if (g.Pulses < 1)
+        {
+            ShowPulseMessage("No aim burn needed — this depth is the natural pass; add a burn only to change it");
+            return;
+        }
+        if (PlannedPulseTotal() + g.Pulses > _reactionMassPulses)
+        {
+            ShowPulseMessage("Not enough reaction mass for the aiming burn");
+            return;
+        }
+
+        _planNodes.Add(new PlanNode
+        {
+            SimTime = _skimBurnTime,
+            Action = ManeuverAction.Accelerate,
+            Pulses = g.Pulses,
+            Percent = SkimBurnPercent,
+            Mode = BurnMode.Vector,
+            HeadingDegrees = g.HeadingDeg,
+        });
+        SortNodes();
+        RebuildPlan();
+        ReprojectTrajectory();
+        ShowPulseMessage(g.TooDeep
+            ? $"Skim burn laid in — into the RED at {g.HeadingDeg:F0}° 🔥 mind the sail"
+            : $"Skim burn laid in — {g.Pulses} pulse{(g.Pulses == 1 ? "" : "s")} at {g.HeadingDeg:F0}° 🔥");
+        _skimPanelOpen = false;
+        _skimResult = null;
+    }
+
+    private string SkimDepthLine(SkimGauge g)
+    {
+        bool onTarget = Math.Abs(g.RequestedAltKm - g.AchievedAltKm) <= 1.0;
+        string aim = onTarget ? "on target" : $"asked {g.RequestedAltKm:F0}";
+        string pulses = g.Pulses == 1 ? "" : "s";
+        return $"Periapsis: {g.AchievedAltKm:F0} km ({aim}) · aim {g.Pulses} pulse{pulses}";
+    }
+
+    private string SkimShedLine(SkimGauge g) =>
+        g.TooDeep
+            ? $"Δv shed {g.ShedMps:F0} m/s · peak {g.PeakG:F1} g — WOULD HOLE THE SAIL"
+            : $"Δv shed {g.ShedMps:F0} m/s (≈{g.PulsesSaved:F1} pulses saved) · peak {g.PeakG:F2} g";
+
+    private string SkimOutcomeLine(SkimGauge g)
+    {
+        if (g.TooShallow && g.ArrivalHyperbolic)
+        {
+            return $"Skip — she bounces back out at v∞ {g.ExitVinfMps / 1000:F1} km/s";
+        }
+        if (g.TooShallow)
+        {
+            return "Too shallow — barely touches the air";
+        }
+        return g.Captured ? "Captured — the air bound her into orbit" : $"Exits at v∞ {g.ExitVinfMps / 1000:F1} km/s";
+    }
+
+    private string SkimFinePrint() =>
+        "single-pass numbers (fine-step); each dip creeps deeper — plan pass by pass";
+
+    // PR-I dev cheat (/map?skim=<bodyId>): boot the ship on a fast HYPERBOLIC inbound whose natural pass
+    // grazes the body's cloud tops ~3 days out, so the 🔥 Skim panel's corridor gauge is reachable at
+    // once (the natural pass already sits mid-corridor). Reuses the sling cheat's proven construction —
+    // a retrograde hyperbolic excess about the body, backed off along the heliocentric velocity — and
+    // BISECTS the impact parameter so the flown natural periapsis lands mid-corridor against the real
+    // integrator (the encounter geometry is not analytic, so we solve it numerically).
+    private void SeedSkimCheat(string bodyId)
+    {
+        if (_ephemeris is null)
+        {
+            return;
+        }
+
+        CelestialBody? body = SlingBody(bodyId, out _);
+        if (body is null || body.Atmosphere is null)
+        {
+            ShowPulseMessage($"🧪 skim cheat: '{bodyId}' has no atmosphere to skim");
+            return;
+        }
+
+        double now = _ship.SimTime;
+        double R = body.BodyRadius;
+        const double passLead = 3.0 * 86400.0;         // ~3 days out — inside the plot horizon, geometry still clean
+        double tCA = now + passLead;
+        Vector2d jCA = _ephemeris.Position(bodyId, tCA);
+        Vector2d jVel = (_ephemeris.Position(bodyId, tCA + 1.0) - _ephemeris.Position(bodyId, tCA - 1.0)) / 2.0;
+
+        const double vInfMag = 14000.0;                 // solidly hyperbolic at the body (the heliocentric approach bleeds some off): shallow → skip out, deep → holes the sail
+        Vector2d vinf = -jVel.Normalized() * vInfMag;   // retrograde arrival
+        Vector2d vShipCA = jVel + vinf;
+        Vector2d vInfHat = vinf.Normalized();
+        var perp = new Vector2d(-vInfHat.Y, vInfHat.X); // the impact-parameter direction
+
+        // Flown natural periapsis for an impact parameter b: start off-axis, backed off along the
+        // heliocentric velocity so a coast reaches the offset point at the encounter; the body's gravity
+        // then focuses it into a genuine close pass.
+        ShipState BuildAt(double b) => new(jCA + perp * b - vShipCA * passLead, vShipCA, now, _ship.Charge);
+        double NaturalPeri(double b)
+        {
+            IReadOnlyList<TrajectorySample> path = _simulator!.ProjectAdaptive(
+                BuildAt(b), null, passLead + 3 * 86400.0, minTimeStep: 20, maxTimeStep: 3 * 3600, dynamicalTimeFraction: 1.0 / 96, maxSamples: 30_000);
+            double best = double.MaxValue;
+            foreach (TrajectorySample s in path)
+            {
+                if (s.SimTime < now)
+                {
+                    continue;
+                }
+                double d = (_ephemeris.Position(bodyId, s.SimTime) - s.Position).Length;
+                if (d < best)
+                {
+                    best = d;
+                }
+            }
+            return best;
+        }
+
+        // Bisect the impact parameter so the flown natural periapsis lands mid-corridor (gravity focuses
+        // a ~12 R offset down to a graze, so the periapsis rises monotonically with b past the impact b).
+        double targetPeri = R + 0.4 * body.Atmosphere.TopAltitude; // mid-corridor, matching the panel's default depth
+        double lo = 3 * R, hi = 30 * R;
+        for (int i = 0; i < 34; i++)
+        {
+            double mid = 0.5 * (lo + hi);
+            if (NaturalPeri(mid) > targetPeri)
+            {
+                hi = mid;
+            }
+            else
+            {
+                lo = mid;
+            }
+        }
+
+        _ship = BuildAt(0.5 * (lo + hi));
+        _destinationBodyId = bodyId;
+        _armedOrbitBodyId = null;
+        _planNodes.Clear();
+        RebuildPlan();
+        ReprojectTrajectory();
+        _camera.CenterOn(_ship.Position);
+        ShowPulseMessage($"🧪 skim cheat: hyperbolic inbound to {body.Name}, cloud tops ~2 days out. Open Plot ▸ 🔥 Skim.");
+    }
+
     private void ToggleArmedInsertion(string bodyId)
     {
         _armedOrbitBodyId = _armedOrbitBodyId == bodyId ? null : bodyId;
@@ -4360,6 +4878,26 @@
         RebuildPlan();
         ReprojectTrajectory();
     }
+
+    // PR-I · the live consequence. A cloud-top dip whose peak drag deceleration crosses the Core damage
+    // line (Atmosphere.SailHoleDecelG) holes the sail: thrust and every pending burn are disabled for a
+    // fixed repair window while the crew sews. Deterministic — driven only by the flown drag, no RNG.
+    private void CheckSailHole()
+    {
+        if (!_sailHoled && _frameMaxDragDecel / 9.80665 >= Atmosphere.SailHoleDecelG)
+        {
+            _sailHoled = true;
+            _sailRepairedAtSimTime = _ship.SimTime + SailRepairSeconds;
+            StaleFutureNodes(); // the burns she can no longer make
+            ShowPulseMessage("🔥 The rigging screams — sail holed in the cloud tops; the crew is sewing");
+            RendererInterop.PlayCue("board");
+        }
+        else if (_sailHoled && _ship.SimTime >= _sailRepairedAtSimTime)
+        {
+            _sailHoled = false;
+            ShowPulseMessage("🪡 Sail sewn shut — the drive answers again");
+        }
+    }
     private ElementReference _focusableDiv;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -4381,6 +4919,7 @@
         string? crackCheat = null;
         string? tipCheat = null;
         string? slingCheat = null;
+        string? skimCheat = null;
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -4451,6 +4990,17 @@
                 if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
                 {
                     slingCheat = candidate;
+                }
+            }
+            else if (pair.StartsWith("skim=", StringComparison.OrdinalIgnoreCase))
+            {
+                // PR-I dev cheat: /map?skim=<bodyId> boots a fast hyperbolic inbound whose natural pass
+                // grazes that body's cloud tops ~2 days out, so the plot-desk 🔥 Skim gauge is reachable
+                // in seconds. Body must have an atmosphere (jupiter, earth, venus, saturn, titan).
+                string candidate = Uri.UnescapeDataString(pair["skim=".Length..]).ToLowerInvariant();
+                if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+                {
+                    skimCheat = candidate;
                 }
             }
         }
@@ -4590,6 +5140,13 @@
         {
             _showStartPicker = false;
             SeedSlingCheat(slingCheat);
+        }
+
+        // ?skim=<bodyId>: boot onto a hyperbolic inbound grazing that body's atmosphere (PR-I test hook).
+        if (skimCheat is not null)
+        {
+            _showStartPicker = false;
+            SeedSkimCheat(skimCheat);
         }
 
         StateHasChanged();
@@ -4886,6 +5443,10 @@
         }
 
         int stepsThisFrame = 0;
+        // PR-I: watch the drag load through this frame's steps so a cloud-top dip can hole the sail. Only
+        // paid near an atmosphere-bearing body (where warp auto-drops to 1 s steps, so the peak is caught).
+        _frameMaxDragDecel = 0;
+        bool watchDrag = _dockedHavenId is null && _nearestBody?.Atmosphere is not null;
         while (_simAccumulator >= _simulator.TimeStep)
         {
             if (stepsThisFrame >= MaxStepsPerFrame)
@@ -4918,6 +5479,14 @@
             }
             _simAccumulator -= quantum;
             stepsThisFrame++;
+            if (watchDrag)
+            {
+                double decel = _simulator.DragAcceleration(_ship.Position, _ship.Velocity, _ship.SimTime).Length;
+                if (decel > _frameMaxDragDecel)
+                {
+                    _frameMaxDragDecel = decel;
+                }
+            }
             if (recordTrail && _ship.SimTime - _pursuitTrail[^1].SimTime >= EncounterRule.HunterStepSeconds - 0.5)
             {
                 _pursuitTrail.Add(new TrajectorySample(_ship.SimTime, _ship.Position));
@@ -4946,6 +5515,7 @@
 
         if (stepsThisFrame > 0)
         {
+            CheckSailHole(); // PR-I: a too-deep cloud-top dip holes the sail (before burns can fire)
             AccountForFiredNodes();
             if (_dockedHavenId is null)
             {
@@ -4979,10 +5549,12 @@
             _armablePass = null;
             _destinationPass = null;
             _slingablePass = null;
+            _skimmablePass = null;
             if (_ephemeris is not null)
             {
                 double bestArmable = double.MaxValue;
                 double bestSling = double.MaxValue;
+                double bestSkim = double.MaxValue;
                 foreach (ClosestApproach.Pass pass in ClosestApproach.Passes(_samples, _ephemeris))
                 {
                     if (_closestPass is null || pass.Severity < _closestPass.Value.Severity)
@@ -5001,6 +5573,12 @@
                     if (PassIsSlingable(pass) && pass.Severity < bestSling)
                     {
                         (bestSling, _slingablePass) = (pass.Severity, pass);
+                    }
+
+                    // Skimmable = tightest pass by an atmosphere-bearing body — PR-I's corridor gauge handle.
+                    if (PassIsSkimmable(pass) && pass.Severity < bestSkim)
+                    {
+                        (bestSkim, _skimmablePass) = (pass.Severity, pass);
                     }
 
                     if (pass.BodyId == _destinationBodyId)
@@ -6093,6 +6671,14 @@
 
         if (pulse)
         {
+            // PR-I: a holed sail can't thrust — the crew is still sewing (fires until the repair window closes).
+            if (_sailHoled)
+            {
+                double daysLeft = Math.Max(0, (_sailRepairedAtSimTime - _ship.SimTime) / 86400.0);
+                ShowPulseMessage($"Sail holed — no drive while the crew sews (~{daysLeft:F1} d)");
+                return;
+            }
+
             // Firing the drive breaks the clamps — you can't burn while bolted to a dock.
             if (_dockedHavenId is not null)
             {

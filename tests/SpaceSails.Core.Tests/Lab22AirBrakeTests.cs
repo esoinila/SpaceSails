@@ -167,6 +167,24 @@ public class Lab22AirBrakeTests
     }
 
     [Fact]
+    public void SailHoleDamageLine_IsThePromotedCoreConstant_ThreeGravities()
+    {
+        // The 3 g damage line used to live in the lab probe; it is now a single Core constant on
+        // Atmosphere that the lab, the game's corridor gauge, and the live consequence all share. Pin
+        // its value AND that it brackets the corridor the DragReport measures: a deep 5 km Jupiter graze
+        // crosses it (holes the sail), a shallow 130 km dip stays well under it (safe braking).
+        Assert.Equal(3.0, Atmosphere.SailHoleDecelG);
+
+        var sim = MakeSim(JupiterMu, JupiterR, JupiterAtm);
+        double bStart = JupiterR + JupiterAtm.TopAltitude + 3.0e5;
+        (_, Simulator.DragReport shallow) = FlyPass(sim, Arrival(JupiterMu, bStart, JupiterR + 130e3, 5500), JupiterR, JupiterAtm.TopAltitude);
+        (_, Simulator.DragReport deep) = FlyPass(sim, Arrival(JupiterMu, bStart, JupiterR + 5e3, 5500), JupiterR, JupiterAtm.TopAltitude);
+
+        Assert.True(shallow.PeakDecelG < Atmosphere.SailHoleDecelG, "a gentle corridor dip does not hole the sail");
+        Assert.True(deep.PeakDecelG >= Atmosphere.SailHoleDecelG, "a deep graze holes the sail");
+    }
+
+    [Fact]
     public void FuelOutCapture_TurnsHyperbolicArrivalBound_WithNoBurns()
     {
         // The SGU move: a hyperbolic arrival (E > 0) becomes bound (E < 0) after one deep-enough

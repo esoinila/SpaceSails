@@ -338,6 +338,13 @@ mechanism as `?start=`):
   **Plot** and the *"⤴ Sling past *body*"* button is right there on the pass. (Suppresses the boot
   picker — picking a berth would overwrite the seeded approach.) See
   [plotting-desk.md](plotting-desk.md#sling-past-a-planet).
+- **`?skim=<bodyId>`** — boot onto a **fast hyperbolic inbound** whose natural pass grazes that body's
+  cloud tops ~2 days out (e.g. `?skim=jupiter`), so the plot desk's **🔥 Skim** corridor gauge is
+  reachable in seconds. The body must have an atmosphere (jupiter, earth, venus, saturn, titan). It
+  sets the body as the nav target; open **Plot** and the *"🔥 Skim *body*"* button is right there.
+  (Suppresses the boot picker.) Drag the depth slider and SOLVE to see the too-shallow / corridor /
+  too-deep zones; dive too deep in live flight and the sail holes. See
+  [plotting-desk.md](plotting-desk.md#skim-the-cloud-tops).
 
 Compose them: `?fetch=intel` tests the whole intel → scan → reveal cycle; `?start=wreck&fetch=active`
 tests the pickup (auto-grabs alongside the wreck); `?start=the-tilt&fetch=picked` tests the in-person
