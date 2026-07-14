@@ -80,4 +80,19 @@ await page.evaluate(() => {
 });
 await shot("lab-viz-lab01-circle.png");
 
+// 4. The Long Goodbye (lab 20): scrub to the finale "she is here now" event marker and frame the
+//    whole outer system, so the launch→Jupiter→Saturn→2026 coast and the ghost's present position
+//    are both in view against the Uranus/Neptune rails.
+await open("lab20-the-long-goodbye.html");
+await page.evaluate(() => {
+  const here = SCENE.markers.find((m) => m.kind === "event");
+  setSimTime(here.t);
+  // Center on the sun and zoom to enclose Neptune's orbit (~30 AU) with margin — the outer system.
+  camera.centerX = 0;
+  camera.centerY = 0;
+  camera.mpp = 7.2e9; // ~1.15e13 m across the 1600 px frame: past Neptune's ring
+  invalidate();
+});
+await shot("lab-viz-long-goodbye.png");
+
 await browser.close();
