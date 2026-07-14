@@ -58,6 +58,10 @@ ship dot around — the fall that keeps missing the Sun, plotted straight from t
 steps. Add `--viz-no-open` to write the file without launching a browser. Without `--viz`, stdout
 is exactly the tables above. See [Seeing a lesson: `--viz`](../README.md#seeing-a-lesson---viz).
 
+![Lab 01's pop-up: the closed circular orbit at 1 AU, ghost a quarter-orbit in](../../docs/features/pics/lab-viz-lab01-circle.png)
+*One full revolution, closed: the ghost ship a quarter-orbit past release, holding 1.000 AU and
+29.80 km/s — vis-viva made visible.*
+
 ## Section A — radial free-fall, checked against vis-viva
 
 A ship dropped at rest at `r0 = 1 AU` has zero angular momentum, so its trajectory is the

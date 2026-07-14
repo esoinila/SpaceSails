@@ -66,6 +66,11 @@ comes straight from the numbers the probe just computed — without `--viz`, std
 byte-identical to before. Add `--viz-no-open` to write the file without launching a browser, or
 `--viz-out=<path>` to choose the destination.
 
+![Lesson 19's pop-up: the flown Grand Tour, ghost ship at the Jupiter flyby](../docs/features/pics/lab-viz-grand-tour.png)
+*Lesson 19's pop-up, scrubbed to the Jupiter flyby: the flown Earth→Jupiter→Saturn itinerary in
+orange with its burn/flyby markers, the aim-offset sweep group at lower right, and the live
+readout (5.204 AU, 28.98 km/s) interpolated from the integrator's own samples.*
+
 **Supported so far:** lesson [01](01-falling-is-orbiting/README.md) (the minimal example) and
 lesson [19](19-the-grand-tour/README.md) (the showcase — the flown Grand Tour with its aim-offset
 sweep as a toggleable group).

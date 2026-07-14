@@ -16,6 +16,10 @@ The file is completely offline — no CDN scripts, no web fonts, no network requ
 so it opens the same on a plane as on your desk, and you can hand it to someone as a single
 attachment. Lessons 01 and 19 support it today; more will follow.
 
+![Lesson 19's Grand Tour pop-up, scrubbed to the Jupiter flyby](pics/lab-viz-grand-tour.png)
+*Lesson 19: the flown Earth→Jupiter→Saturn itinerary with its burn and flyby markers, ghost ship
+parked at the flyby, live readout above.*
+
 ## What the viewer can do
 
 - **Pan and zoom** — drag to slide the camera, wheel to zoom toward the cursor, with the same
@@ -30,6 +34,10 @@ attachment. Lessons 01 and 19 support it today; more will follow.
   sweep at once.
 - **Markers** — burns, flybys, and closest passes get distinct glyphs and labels that stay legible
   at any zoom, so the story's turning points are called out on the picture.
+
+![Lesson 19's crank fan: six aim offsets hairpinning around Jupiter](pics/lab-viz-flyby-fan.png)
+*Zoomed on lesson 19's sweep group: the aim-offset test flights hairpin around Jupiter in the
+heliocentric frame — the gravity-assist "crank" made visible.*
 
 ## The honesty rule
 

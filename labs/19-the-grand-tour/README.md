@@ -24,6 +24,16 @@ This writes a single self-contained `labviz/lab19-the-grand-tour.html` (no exter
 
 Add `--viz-no-open` to write the file without launching a browser. The stdout tables are untouched by `--viz` — the printed numbers stay sacred.
 
+![The flown Grand Tour, scrubbed to the Jupiter flyby](../../docs/features/pics/lab-viz-grand-tour.png)
+*The whole tour at a glance: launch off Earth's orbit, the flyby kink at Jupiter, the long coast
+down to the Saturn closest pass — with the ghost ship parked at the flyby and the readout showing
+its real state there.*
+
+![The crank fan close up: six aim offsets hairpinning around Jupiter](../../docs/features/pics/lab-viz-flyby-fan.png)
+*Section B's crank, zoomed in: the six surviving aim offsets hairpin around Jupiter in the
+heliocentric frame — the tighter the pass, the harder the turn. This loop-the-loop is what
+"rotating v_inf inside a moving frame" actually looks like from the Sun's point of view.*
+
 ## Why this lesson exists
 
 Every prior lesson either used formulas that break near planets or flew single legs. Gravity assist is the trick that makes the outer solar system reachable on 1970s hardware: you arrive with v_inf relative to Jupiter, gravity rotates that vector inside Jupiter's moving frame (13 km/s heliocentric), and you leave with a different heliocentric speed — for free, as far as the ship is concerned. Curtis ch. 8 covers patched-conic gravity assists; this lesson flies them through the real deterministic integrator the game uses, prices the TCMs honestly, and shows the ledger hole the rails create.
