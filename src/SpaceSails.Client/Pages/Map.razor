@@ -5066,6 +5066,7 @@
         }
         DrawShipTrajectory();
         DrawPredictionCone();
+        DrawPassEpochGhost();
         if (PlotMode)
         {
             DrawGhostBodies();
@@ -5334,6 +5335,37 @@
 
         // The far end of the miss line is just a dot — only the scrub-time ghost wears a lock.
         _renderer.DrawCircle(bx, by, 3f, DestinationColor with { A = 170 }, DestinationColor with { A = 170 });
+    }
+
+    // The sling made this visible: the ribbon bends where the pass body WILL BE, which at twelve
+    // plotted days is hundreds of pixels from where the body is drawn now — without scrubbing,
+    // the kink hangs in empty sky (owner: "the curvature happens at a spot Jupiter is not at").
+    // So the pass body's ghost at the pass epoch is ALWAYS on, dimmer than the scrub ghosts,
+    // tethered to the live body, on every desk that shows the map.
+    private void DrawPassEpochGhost()
+    {
+        if (_closestPass is not { } cp || cp.Severity > 25 || _ephemeris is null)
+        {
+            return; // same embarrassment threshold as the pass marker
+        }
+
+        (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(cp.BodyId, cp.SimTime));
+        (float nx, float ny) = _camera.WorldToScreen(_ephemeris.Position(cp.BodyId, SimTime));
+        if (Math.Abs(sx - nx) < 6 && Math.Abs(sy - ny) < 6)
+        {
+            return; // the ghost would sit on the live disc anyway (imminent pass or far zoom-out)
+        }
+
+        Span<float> tether = stackalloc float[4];
+        tether[0] = nx; tether[1] = ny; tether[2] = sx; tether[3] = sy;
+        _renderer!.DrawPolyline(tether, new RgbaColor(180, 200, 220, 30), 1f);
+
+        float radiusPx = (float)Math.Max(3.5, cp.BodyRadius / _camera.MetersPerPixel);
+        RgbaColor ghost = BodyColor(cp.BodyId) with { A = 110 };
+        _renderer!.DrawCircle(sx, sy, radiusPx, ghost, ghost);
+        _renderer!.DrawCircle(sx, sy, radiusPx + 2.5f, null, new RgbaColor(220, 230, 245, 90), 1.2f);
+        _renderer.DrawText(sx, sy + radiusPx + 12, $"{cp.BodyName} at pass",
+            new RgbaColor(220, 230, 245, 140), "10px monospace", TextAlign.Center);
     }
 
     // Ghosts of every body at the scrub time. Deliberately loud: a filled dot with an outline
