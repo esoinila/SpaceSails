@@ -7,6 +7,7 @@
 @using SpaceSails.Client.Rendering
 @using SpaceSails.Contracts
 @using SpaceSails.Core
+@using SpaceSails.Core.Interior
 
 <PageTitle>SpaceSails — Map</PageTitle>
 
@@ -3373,6 +3374,42 @@
     private readonly HashSet<string> _hiddenBodyIds = [];
     private readonly HashSet<string> _revealedBodyIds = [];
 
+    // Doors that grow the world (Wednesday plan §3 PR-F): the set of station hatches cracked open this
+    // session, as composite "<bodyId>:<hatchId>" keys. A hatch that grows a wing (HavenInterior.
+    // HatchGrowsWing) welds its back room onto the deck plan when unlocked. Per-session only — the
+    // owner accepted that for v1 (Wednesday plan §1); it lives beside the other session-scoped state.
+    private readonly HashSet<string> _unlockedHatches = [];
+
+    // The bare hatch ids cracked open at a given station — the subset HavenInterior.DockedDeck needs.
+    private IReadOnlySet<string> UnlockedHatchesFor(string bodyId) =>
+        _unlockedHatches
+            .Where(k => k.StartsWith(bodyId + ":", StringComparison.Ordinal))
+            .Select(k => k[(bodyId.Length + 1)..])
+            .ToHashSet();
+
+    private bool IsHatchUnlocked(string bodyId, string hatchId) =>
+        _unlockedHatches.Contains($"{bodyId}:{hatchId}");
+
+    // Crack a hatch open for the session and, if it grows a wing, weld the room on by rebuilding the
+    // docked deck plan (the world literally grew a room behind you).
+    private void UnlockHatch(string bodyId, string hatchId)
+    {
+        if (_unlockedHatches.Add($"{bodyId}:{hatchId}"))
+        {
+            RebuildDockedDeck();
+        }
+    }
+
+    // Re-weld the deck plan for the station we're tied up at, honoring the current unlock set. Keeps
+    // the avatar where they stand — an opened wing appears without teleporting anyone.
+    private void RebuildDockedDeck()
+    {
+        if (_dockedHavenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id)) is { } complex)
+        {
+            _deckPlan = complex;
+        }
+    }
+
     // A hidden body still on the charts' blind side — everything player-facing must skip it.
     private bool IsBodyHidden(string id) => _hiddenBodyIds.Contains(id) && !_revealedBodyIds.Contains(id);
 
@@ -3592,6 +3629,9 @@
                 break;
             case DeckPlan.ConsoleKind.Hatch:
                 KnockOnHatch();
+                break;
+            case DeckPlan.ConsoleKind.Stash:
+                LiftStash();
                 break;
             case DeckPlan.ConsoleKind.ViewObject:
                 ViewNearbyObject();
@@ -5011,6 +5051,8 @@
         string? tipCheat = null;
         string? slingCheat = null;
         string? skimCheat = null;
+        string? backroomCheat = null;
+        double? simHoursCheat = null;
         bool ellipseCheat = false; // /map?ellipse=1 injects a visibly eccentric demo body (Kepler rails, PR-B)
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
@@ -5093,6 +5135,29 @@
                 if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
                 {
                     skimCheat = candidate;
+                }
+            }
+            else if (pair.StartsWith("backroom=", StringComparison.OrdinalIgnoreCase))
+            {
+                // PR-F dev cheat: /map?start=cinder-roost&backroom=open welds the V-06 back room open on
+                // the spot; &backroom=quest stages the crack job (with its real code) so you can key the
+                // pad yourself and watch the room grow. Testing is a feature (owner's rule).
+                string candidate = Uri.UnescapeDataString(pair["backroom=".Length..]).ToLowerInvariant();
+                if (candidate is "open" or "quest")
+                {
+                    backroomCheat = candidate;
+                }
+            }
+            else if (pair.StartsWith("simhours=", StringComparison.OrdinalIgnoreCase))
+            {
+                // PR-F dev cheat: /map?simhours=N jumps the sim clock to N hours at boot, so the roaming
+                // Magpie's rota (bar → gone → back room, 4 sim-hours a stop) can be sampled without
+                // waiting or warping. e.g. simhours=0 bar, 5 gone, 9 back room.
+                string candidate = Uri.UnescapeDataString(pair["simhours=".Length..]);
+                if (double.TryParse(candidate, NumberStyles.Float, CultureInfo.InvariantCulture, out double h)
+                    && h >= 0 && h < 1e6)
+                {
+                    simHoursCheat = h;
                 }
             }
             else if (pair.StartsWith("ellipse=", StringComparison.OrdinalIgnoreCase))
@@ -5219,6 +5284,11 @@
             InjectCrackCheat(crackCheat); // needs the docked station's deck built (a locked hatch to target)
         }
 
+        if (backroomCheat is not null)
+        {
+            InjectBackroomCheat(backroomCheat); // PR-F: weld the wing open, or stage the crack that opens it
+        }
+
         if (tipCheat is not null)
         {
             InjectTipCheat(); // seed a representative route tip so the ledger's Tips & intel is reachable
@@ -5251,6 +5321,14 @@
         {
             _showStartPicker = false;
             SeedSkimCheat(skimCheat);
+        }
+
+        // ?simhours=N: jump the sim clock at boot so the roaming Magpie's rota can be sampled (PR-F).
+        // While docked, HoldAtDock re-pins the ship to the berth at the new time on the next tick.
+        if (simHoursCheat is { } jumpHours)
+        {
+            _ship = _ship with { SimTime = jumpHours * 3600 };
+            SimTime = _ship.SimTime;
         }
 
         StateHasChanged();
@@ -5333,6 +5411,45 @@
             State = stage == "picked" ? QuestState.PickedUp : QuestState.Active,
         });
         ShowPulseMessage($"🧪 Test: crack job injected ({stage}) — hatch {id}, code {pin}.");
+    }
+
+    // Dev cheat (/map?start=cinder-roost&backroom=open|quest): the "doors that grow the world" test hook
+    // (PR-F). `open` welds the station's authored wing (Cinder Roost's Bonded Stores back room) on right
+    // away, so the grown room is walkable in seconds. `quest` stages the crack job that opens it — with
+    // the hatch's real code — so a playtester can key the pad and watch the room appear.
+    private void InjectBackroomCheat(string stage)
+    {
+        if (_dockedHavenId is not { } here)
+        {
+            ShowPulseMessage("🧪 backroom cheat needs a docked station — try ?start=cinder-roost&backroom=open.");
+            return;
+        }
+        string? hatchId = HavenInterior.WingCatalog(here).FirstOrDefault()?.UnlockHatchId;
+        if (hatchId is null)
+        {
+            ShowPulseMessage($"🧪 No runtime wing is authored at {DockedStationName()} — try Cinder Roost.");
+            return;
+        }
+        if (stage == "open")
+        {
+            UnlockHatch(here, hatchId);
+            ShowPulseMessage($"🧪 Test: {hatchId}'s back room welded open — head west off the concourse (📂) and walk in.");
+            return;
+        }
+        // stage == "quest": drop the crack job in Active (no fetch prerequisite), quoting the real code.
+        if (_quests.Any(q => q.Kind == QuestKind.Crack))
+        {
+            return; // one break-in at a time
+        }
+        string pin = MakePin(hatchId);
+        _quests.Add(new Quest($"crack-{++_questSeq}", QuestKind.Crack, "THE FIXER", hatchId,
+            "the bonded stores package", $"Crack hatch {hatchId}",
+            "[test] the world-growing crack job — key the pad, then step into the room it opens.", 2600,
+            DestBodyId: here, SourceBodyId: here, Pin: pin)
+        {
+            State = QuestState.Active,
+        });
+        ShowPulseMessage($"🧪 Test: crack job staged — hatch {hatchId}, code {pin}. Knock to key it, then walk into the back room it opens.");
     }
 
     // Dev cheat (/map?tip=route): drop a representative route tip — with provenance — into the ledger,
@@ -9346,7 +9463,7 @@
 
     private void SetDeckForDock(string? havenId)
     {
-        if (havenId is { } id && HavenInterior.DockedDeck(id) is { } complex)
+        if (havenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id)) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";
@@ -9403,6 +9520,35 @@
     // Knock on a locked station hatch (a ring department or a bar back-room). Nobody answers — for now.
     // Each hatch carries an id in its label (e.g. "🔒 MEDBAY · M-05") so a mission can name one to
     // open. PIN entry / mission unlock is the next layer; today every knock goes unanswered.
+    // Lift the fence's package off the back-room shelf (PR-F, the indoor quest that uses the grown
+    // room). The stash console only exists once the wing is welded on, so reaching it proves the room
+    // exists — the quest gates on the room, as the room gated on the crack. Advances the crack job
+    // from Active to PickedUp (the pickup that a plain lockup did at the keypad); hand-off is unchanged.
+    private void LiftStash()
+    {
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.Stash })
+        {
+            return;
+        }
+        Quest? job = _quests.FirstOrDefault(q =>
+            q.Kind == QuestKind.Crack && q.SourceBodyId == _dockedHavenId
+            && _dockedHavenId is { } st && HavenInterior.HatchGrowsWing(st, q.TargetShipId));
+        if (job is { State: QuestState.Active })
+        {
+            job.State = QuestState.PickedUp;
+            RendererInterop.PlayCue("board");
+            ShowPulseMessage("You peel the package from behind the shelf and pocket it. Now get it back to the Fixer. 📦");
+        }
+        else if (job is not null)
+        {
+            ShowPulseMessage("The shelf's bare now — you already lifted what was here.");
+        }
+        else
+        {
+            ShowPulseMessage("Dusty shelving and a cold draught. Nothing here worth pocketing — unless someone sent you for it.");
+        }
+    }
+
     private void KnockOnHatch()
     {
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.Hatch } hatch)
@@ -9410,6 +9556,14 @@
             return;
         }
         string id = HatchId(hatch.Label);
+
+        // An opened expansion joint (PR-F): the hatch is already cracked and the back room is welded
+        // on — there's nothing to knock on, just a doorway to step through.
+        if (_dockedHavenId is { } open && HavenInterior.HatchGrowsWing(open, id) && IsHatchUnlocked(open, id))
+        {
+            ShowPulseMessage($"{hatch.Label} stands open — the back room's yours. Step inside. 📂");
+            return;
+        }
 
         // Is this the specific hatch a crack job sent us to (at this station)? If so, the knock isn't
         // an idle rap — it brings up the keypad.
@@ -9483,9 +9637,20 @@
         }
         if (_pinEntry == job.Pin)
         {
-            job.State = QuestState.PickedUp;
             RendererInterop.PlayCue("board");
-            ShowPulseMessage("The lock blinks green — the hatch sighs open. You pocket the package and pull it shut behind you. 📦");
+            if (_dockedHavenId is { } station && HavenInterior.HatchGrowsWing(station, job.TargetShipId))
+            {
+                // Doors that grow the world (PR-F): this hatch opens a real back room. Weld it on and
+                // leave the job Active — you still have to walk in and lift the package off the shelf.
+                UnlockHatch(station, job.TargetShipId);
+                ShowPulseMessage("The lock blinks green — the hatch grinds aside onto a dark back room. Something's on the shelf inside. Step in and take it. 📦");
+            }
+            else
+            {
+                // A plain lockup: the package is simply behind the panel, pocketed on the spot.
+                job.State = QuestState.PickedUp;
+                ShowPulseMessage("The lock blinks green — the hatch sighs open. You pocket the package and pull it shut behind you. 📦");
+            }
             CancelPin();
         }
         else
@@ -9507,6 +9672,15 @@
             return;
         }
         string giver = spot.Label.Replace("◈", "").Trim();
+
+        // The roaming Magpie (PR-F, "people cannot be static furniture"): interaction is gated on their
+        // sim-time rota, so walking up to a chair they've left tells you they've moved on, not gives an
+        // offer. Handled before the generic give-work paths, which assume a patron who stays put.
+        if (giver.Contains("MAGPIE", StringComparison.OrdinalIgnoreCase))
+        {
+            TalkToMagpie(spot);
+            return;
+        }
 
         // Face-to-face hand-off (no electronic trace): a picked-up fetch job, delivered in person to
         // The Fixer at its destination station. Paid on the spot, under the table — done before any
@@ -9556,6 +9730,43 @@
             return;
         }
         _pendingOffer = offer;
+    }
+
+    // The Magpie, a fence's runner who won't sit still (PR-F). Their position is a pure function of
+    // sim time (HavenInterior.MagpieRota); talking is gated on them actually being at the booth you
+    // walked up to. So a captain who chatted them at the bar can return a watch later to an empty
+    // chair — "they change place and go behind locked doors or move" (owner's ruling, verbatim). Once
+    // the Bonded Stores back room is open, that's one of their stops — find them inside.
+    private void TalkToMagpie(DeckPlan.ConsoleSpot spot)
+    {
+        bool backOpen = _dockedHavenId is { } st
+            && UnlockedHatchesFor(st).Any(h => HavenInterior.HatchGrowsWing(st, h));
+        NpcPost m = HavenInterior.ResolveMagpie(SimTime, backOpen);
+        double d = m.Present
+            ? Math.Sqrt((spot.X - m.X) * (spot.X - m.X) + (spot.Y - m.Y) * (spot.Y - m.Y))
+            : double.MaxValue;
+        if (d > DeckPlan.InteractRadius)
+        {
+            ShowPulseMessage("The Magpie's chair is empty — they've drifted off. Nobody sits still here; try another watch, or look where a door's just opened. 🐦");
+            return;
+        }
+
+        Quest? job = _quests.FirstOrDefault(q =>
+            q.Kind == QuestKind.Crack && q.SourceBodyId == _dockedHavenId
+            && _dockedHavenId is { } s && HavenInterior.HatchGrowsWing(s, q.TargetShipId));
+        string line = job switch
+        {
+            { State: QuestState.PickedUp } or { State: QuestState.Complete } or { State: QuestState.TurnedIn }
+                => "“Good hands. Get that parcel to the Fixer and we never spoke.”",
+            _ when backOpen && m.Location == "BACK ROOM"
+                => "“You made it in. The parcel's right there on the shelf — lift it before the dockmaster's rounds.”",
+            _ when backOpen
+                => "“You're through the hatch. Package is on the back shelf — go on, it won't bite.”",
+            { State: QuestState.Active }
+                => "“The lockup's the easy part — crack V-06 and there's a parcel with nobody's name on it. I'll be around. Somewhere.”",
+            _ => "“Bonded Stores — V-06 — holds a parcel that never made a manifest. The Fixer sets the price; I just know where things are. And I don't linger.”",
+        };
+        ShowPulseMessage(line);
     }
 
     // Pick a live target for a hunt contract — prefer off-books ships (the kind you couldn't just read
@@ -9681,7 +9892,10 @@
             return null;
         }
 
-        DeckPlan.ConsoleSpot target = locked[OfferIndex(locked.Count)];
+        // Prefer a hatch that GROWS A ROOM here (PR-F) — so the natural bar flow at a station with a
+        // wing (Cinder Roost's Bonded Stores) hands out the world-growing job — else the usual rotation.
+        int wingIdx = locked.FindIndex(c => HavenInterior.HatchGrowsWing(here, HatchId(c.Label)));
+        DeckPlan.ConsoleSpot target = wingIdx >= 0 ? locked[wingIdx] : locked[OfferIndex(locked.Count)];
         string id = HatchId(target.Label);
         string dept = HatchDept(target.Label);
         string pin = MakePin(id);

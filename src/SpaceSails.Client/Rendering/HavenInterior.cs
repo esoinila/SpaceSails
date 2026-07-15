@@ -1,3 +1,5 @@
+using SpaceSails.Core.Interior;
+
 namespace SpaceSails.Client.Rendering;
 
 /// <summary>
@@ -16,6 +18,15 @@ namespace SpaceSails.Client.Rendering;
 ///
 /// Every station shares one geometry <see cref="BuildComplex"/>; a <see cref="StationSpec"/> supplies
 /// the name, the immigration authority, the deadpan quip, and the two Gen-AI backdrops (hall + bar).
+///
+/// <b>Doors that grow the world (Wednesday plan §3 PR-F / Tuesday vision §6).</b> A hatch that has
+/// been cracked open is no longer decoration: its hall edge is <i>carved into a walkable doorway</i>
+/// and a real back room is <i>welded on at runtime</i> — geometry as data (a Core
+/// <see cref="DeckWing"/>). The first shipped case is Cinder Roost's Bonded Stores hatch (V-06),
+/// behind which lies the fence's back room. And per the owner's ruling ("people cannot be static
+/// furniture"), a roaming patron — the Magpie — keeps a sim-time <see cref="NpcSchedule"/>: found at
+/// a bar table one watch, gone behind a locked door the next, waiting in the opened back room after
+/// that.
 /// </summary>
 public static class HavenInterior
 {
@@ -46,23 +57,35 @@ public static class HavenInterior
             "“I went to Uranus for the proctologist — they were fully booked.”"),
     ];
 
+    // Keyed by "bodyId|<sorted opened-hatch ids>", so the locked concourse and the wing-grown variant
+    // are cached side by side and a station is still built at most once per unlock state.
     private static readonly Dictionary<string, DeckPlan> Cache = new();
 
     /// <summary>Does this haven have a walkable interior (so docking should weld on a tube)?</summary>
     public static bool HasInterior(string bodyId) => System.Array.Exists(Specs, s => s.BodyId == bodyId);
 
-    /// <summary>The docked complex for a body — ship + tube + hall + bar as one walkable plan — or
-    /// null if that haven has no deck to walk. Built once per station, lazily, and shared.</summary>
-    public static DeckPlan? DockedDeck(string bodyId)
+    /// <summary>
+    /// The docked complex for a body — ship + tube + hall + bar as one walkable plan — or null if that
+    /// haven has no deck to walk. <paramref name="unlockedHatchIds"/> is the session's set of cracked
+    /// hatch ids for this station (bare ids like "V-06"); any that grow a wing weld their back room on.
+    /// Built once per (station, unlock-state), lazily, and shared.
+    /// </summary>
+    public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
             return null;
         }
-        if (!Cache.TryGetValue(bodyId, out DeckPlan? deck))
+        IReadOnlyList<DeckWing> active = unlockedHatchIds is null
+            ? []
+            : DeckExpansions.ActiveWings(WingCatalog(bodyId), bodyId, unlockedHatchIds).ToList();
+        string key = active.Count == 0
+            ? bodyId
+            : bodyId + "|" + string.Join(",", active.Select(w => w.UnlockHatchId).OrderBy(s => s, System.StringComparer.Ordinal));
+        if (!Cache.TryGetValue(key, out DeckPlan? deck))
         {
-            deck = BuildComplex(spec);
-            Cache[bodyId] = deck;
+            deck = BuildComplex(spec, active);
+            Cache[key] = deck;
         }
         return deck;
     }
@@ -86,11 +109,119 @@ public static class HavenInterior
     private const float BarRight = 19f;
     private static readonly float BarTopY = HallTopY + 22f;
 
+    // --- The roaming Magpie (PR-F, the owner's "people cannot be static furniture" ruling) ---
+    // A fence's runner who never sits still: a bar table one watch, out of reach the next, waiting in
+    // the opened Bonded Stores back room after that. Four sim-hours a stop; a full loop is half a day,
+    // so a docked captain who warps the clock (or a ?simhours= cheat) sees the swap without waiting.
+    private const double MagpiePostSeconds = 4 * 3600;
+    private static readonly (double X, double Y, double Facing) MagpieBarPost = (8, HallTopY + 18, -System.Math.PI / 2);
+    private static readonly (double X, double Y, double Facing) MagpieBackPost = (-24.13, 31.28, System.Math.PI / 4);
+
+    /// <summary>The Magpie's sim-time rota (bar → gone → back room), the pure schedule from Core.</summary>
+    public static readonly NpcSchedule MagpieRota = new("The Magpie", MagpiePostSeconds,
+    [
+        new NpcPost("THE CINDER LOUNGE", MagpieBarPost.X, MagpieBarPost.Y, MagpieBarPost.Facing, Present: true),
+        new NpcPost("GONE", 0, 0, 0, Present: false),
+        new NpcPost("BACK ROOM", MagpieBackPost.X, MagpieBackPost.Y, MagpieBackPost.Facing, Present: true),
+    ]);
+
+    /// <summary>Where the Magpie is at <paramref name="simTime"/>. If the rota would place them in the
+    /// back room but it hasn't been cracked open yet, they're simply out of reach (the GONE slot) —
+    /// so the deck never draws them standing inside a wall that isn't there.</summary>
+    public static NpcPost ResolveMagpie(double simTime, bool backRoomOpen)
+    {
+        NpcPost p = MagpieRota.Resolve(simTime);
+        return p.Location == "BACK ROOM" && !backRoomOpen ? MagpieRota.PostAt(1) : p;
+    }
+
+    // --- Runtime wings (Core DeckWing catalog) ------------------------------------------------------
+    // Authored per station against the hall geometry. v1 ships one: Cinder Roost's Bonded Stores back
+    // room (V-06). Rooms gate on quests (you must crack the hatch) and quests gate on rooms (the
+    // fence's package can only be lifted once the room exists) — see Map.razor.
+    private static readonly Dictionary<string, DeckWing[]> WingCatalogs = new()
+    {
+        ["cinder-roost"] = [DeckExpansions.Validate(BondedBackRoom("cinder-roost", "V-06"))],
+    };
+
+    /// <summary>The wings authored for a station (possibly none).</summary>
+    public static IReadOnlyList<DeckWing> WingCatalog(string bodyId) =>
+        WingCatalogs.TryGetValue(bodyId, out DeckWing[]? w) ? w : [];
+
+    /// <summary>Does cracking this hatch open a real room (rather than just blinking a lock green)?</summary>
+    public static bool HatchGrowsWing(string bodyId, string hatchId) =>
+        DeckExpansions.GrowsBehind(WingCatalog(bodyId), bodyId, hatchId);
+
+    private static (float X, float Y) HallVertex(int k)
+    {
+        double a = (15 + 30 * k) * System.Math.PI / 180.0;
+        return (HallCenterX + HallR * (float)System.Math.Cos(a), HallCenterY + HallR * (float)System.Math.Sin(a));
+    }
+
+    // The fence's back room behind a station's BONDED STORES hatch (edge 6 of the ring). The room is a
+    // funnel off the doorway (the doorway itself is carved by BuildComplex, so the wing carries only
+    // the walls beyond it), with the fence's stash on the back shelf and the Magpie's back-room booth.
+    private static DeckWing BondedBackRoom(string bodyId, string hatchId)
+    {
+        (float ax, float ay) = HallVertex(6);
+        (float bx, float by) = HallVertex(7);
+        (WingWall stubA, WingWall stubB, _) = DeckExpansions.CarveDoorway(ax, ay, bx, by, 0.30f, 0.70f);
+        double p30x = stubA.X2, p30y = stubA.Y2;  // doorway mouth, 30% along the edge
+        double p70x = stubB.X1, p70y = stubB.Y1;  // doorway mouth, 70% along the edge
+
+        // Outward-normal / edge-tangent frame, so the room sits squarely outside the hall.
+        double mx = (ax + bx) / 2, my = (ay + by) / 2;
+        double nx = mx - HallCenterX, ny = my - HallCenterY;
+        double nl = System.Math.Sqrt(nx * nx + ny * ny); nx /= nl; ny /= nl;
+        double tx = bx - ax, ty = by - ay;
+        double tl = System.Math.Sqrt(tx * tx + ty * ty); tx /= tl; ty /= tl;
+        const double d1 = 5, widen = 4, d2 = 12;
+        double s30x = p30x + nx * d1 - tx * widen, s30y = p30y + ny * d1 - ty * widen;   // left shoulder
+        double s70x = p70x + nx * d1 + tx * widen, s70y = p70y + ny * d1 + ty * widen;   // right shoulder
+        double bk30x = s30x + nx * d2, bk30y = s30y + ny * d2;                            // back-left corner
+        double bk70x = s70x + nx * d2, bk70y = s70y + ny * d2;                            // back-right corner
+        double rcx = (s30x + s70x + bk30x + bk70x) / 4, rcy = (s30y + s70y + bk30y + bk70y) / 4;
+        double stashx = (bk30x + bk70x) / 2 - nx * 2.5, stashy = (bk30y + bk70y) / 2 - ny * 2.5;
+
+        var walls = new List<WingWall>
+        {
+            new((float)p30x, (float)p30y, (float)s30x, (float)s30y),   // left flare
+            new((float)s30x, (float)s30y, (float)bk30x, (float)bk30y), // left side
+            new((float)bk30x, (float)bk30y, (float)bk70x, (float)bk70y), // back wall
+            new((float)bk70x, (float)bk70y, (float)s70x, (float)s70y), // right side
+            new((float)s70x, (float)s70y, (float)p70x, (float)p70y),   // right flare
+        };
+        var consoles = new List<WingConsole>
+        {
+            new(WingConsoleKind.Stash, (float)stashx, (float)stashy, "📦 FENCE'S STASH"),
+            new(WingConsoleKind.Patron, (float)MagpieBackPost.X, (float)MagpieBackPost.Y, "◈ THE MAGPIE"),
+        };
+        var labels = new List<WingLabel>
+        {
+            new((float)rcx, (float)rcy, "BONDED STORES · BACK ROOM"),
+        };
+        // No wing-owned doors: the doorway (an unlocked auto-door) is carved by BuildComplex.
+        return new DeckWing($"{bodyId}-bonded-backroom", bodyId, hatchId, "BONDED STORES BACK ROOM",
+            walls, [], consoles, labels);
+    }
+
+    private static DeckPlan.ConsoleKind MapConsoleKind(WingConsoleKind kind) => kind switch
+    {
+        WingConsoleKind.Hatch => DeckPlan.ConsoleKind.Hatch,
+        WingConsoleKind.Stash => DeckPlan.ConsoleKind.Stash,
+        WingConsoleKind.Patron => DeckPlan.ConsoleKind.BarPatron,
+        WingConsoleKind.ViewObject => DeckPlan.ConsoleKind.ViewObject,
+        _ => DeckPlan.ConsoleKind.None,
+    };
+
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
-    private static DeckPlan BuildComplex(StationSpec spec)
+    private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings)
     {
         DeckPlan ship = DeckPlan.Ship;
+        bool backRoomOpen = activeWings.Count > 0; // the Magpie's back-room stop is reachable once a wing is welded on
+
+        // Hatch ids whose edge has grown a wing — carve a doorway there instead of a sealed wall.
+        var openHatchIds = new HashSet<string>(activeWings.Select(w => w.UnlockHatchId));
 
         // The bare ship seals its airlock hatch (x 1..4); the complex opens it and mates the tube.
         var hatch = new DeckPlan.Wall(1, ShipHatchY, 4, ShipHatchY, false, true);
@@ -111,13 +242,13 @@ public static class HavenInterior
         var v = new (float X, float Y)[HallSides];
         for (int k = 0; k < HallSides; k++)
         {
-            double a = (15 + 30 * k) * System.Math.PI / 180.0;
-            v[k] = (HallCenterX + HallR * (float)System.Math.Cos(a), HallCenterY + HallR * (float)System.Math.Sin(a));
+            v[k] = HallVertex(k);
         }
 
         // The ring's sealed edges: a few other captains' berths and the station's own departments,
         // nearly all locked to us — so the concourse reads as one hub of a much bigger complex. Each
         // is a numbered Hatch console: walk up and it names itself + shows locked; press E to knock.
+        // A cracked hatch that grows a wing is drawn open (📂) and its edge is a real doorway.
         string[] ringTags =
         [
             "⚓ BERTH", "🔒 CUSTOMS", "🔒 HABITAT RING", "⚓ BERTH", "🔒 MEDBAY",
@@ -139,18 +270,33 @@ public static class HavenInterior
                 walls.Add(new(-1, b.Y, b.X, b.Y, false, true));
                 doors.Add(new(-1, a.Y, 6, a.Y)); // wide auto door
             }
-            else // a sealed berth / department
+            else // a sealed berth / department — or an opened expansion joint
             {
-                walls.Add(new(a.X, a.Y, b.X, b.Y, false, true));
-                doors.Add(new(Lerp(a.X, b.X, 0.25f), Lerp(a.Y, b.Y, 0.25f),
-                              Lerp(a.X, b.X, 0.75f), Lerp(a.Y, b.Y, 0.75f), Locked: true));
-                float mx = (a.X + b.X) / 2, my = (a.Y + b.Y) / 2;
                 string tag = ringTags[sealedIdx % ringTags.Length];
                 string id = $"{spec.Authority[0]}-{k:D2}"; // e.g. M-05: findable, distinct per station
-                // The hatch panel sits just inside the wall so it's reachable from the hall floor.
-                hatches.Add(new(DeckPlan.ConsoleKind.Hatch,
-                    HallCenterX + (mx - HallCenterX) * 0.9f, HallCenterY + (my - HallCenterY) * 0.9f, $"{tag} · {id}"));
                 sealedIdx++;
+                float px = HallCenterX + ((a.X + b.X) / 2 - HallCenterX) * 0.9f;
+                float py = HallCenterY + ((a.Y + b.Y) / 2 - HallCenterY) * 0.9f;
+                if (openHatchIds.Contains(id))
+                {
+                    // Cracked: carve a walkable doorway (two stubs + an unlocked auto-door), and draw
+                    // the panel open (📂). The wing's own walls, added below, close the room beyond.
+                    (WingWall stubA, WingWall stubB, WingDoor door) =
+                        DeckExpansions.CarveDoorway(a.X, a.Y, b.X, b.Y, 0.30f, 0.70f);
+                    walls.Add(new(stubA.X1, stubA.Y1, stubA.X2, stubA.Y2, false, true));
+                    walls.Add(new(stubB.X1, stubB.Y1, stubB.X2, stubB.Y2, false, true));
+                    doors.Add(new(door.X1, door.Y1, door.X2, door.Y2)); // unlocked — you walk through
+                    string dept = string.Join(' ', tag.Split(' ').Where(t => t.All(char.IsLetter)));
+                    hatches.Add(new(DeckPlan.ConsoleKind.Hatch, px, py, $"📂 {dept} · {id}"));
+                }
+                else
+                {
+                    // Sealed: a real wall with a cold locked hatch drawn on it and a knockable panel.
+                    walls.Add(new(a.X, a.Y, b.X, b.Y, false, true));
+                    doors.Add(new(Lerp(a.X, b.X, 0.25f), Lerp(a.Y, b.Y, 0.25f),
+                                  Lerp(a.X, b.X, 0.75f), Lerp(a.Y, b.Y, 0.75f), Locked: true));
+                    hatches.Add(new(DeckPlan.ConsoleKind.Hatch, px, py, $"{tag} · {id}"));
+                }
             }
         }
 
@@ -188,6 +334,9 @@ public static class HavenInterior
             new(DeckPlan.ConsoleKind.BarPatron, 14, HallTopY + 6, "◈ MADAM COIL"),
             new(DeckPlan.ConsoleKind.BarPatron, 2.5f, HallTopY + 11, "◈ GILT-EYE"),
             new(DeckPlan.ConsoleKind.BarPatron, -9, HallTopY + 16, "◈ THE FIXER"), // back-corner table: confidential, off-the-books work
+            // The Magpie's bar stop — a roaming patron (PR-F). They aren't always here; walk up and the
+            // game reads their rota, so an empty chair means they've drifted off (bar → gone → back room).
+            new(DeckPlan.ConsoleKind.BarPatron, (float)MagpieBarPost.X, (float)MagpieBarPost.Y, "◈ THE MAGPIE"),
             // The gift shop: walk up, press E, view the Gen-AI souvenir + its location gag. Kept clear
             // of the bar patrons (Coil at x14) so E doesn't grab the wrong console.
             new(DeckPlan.ConsoleKind.ViewObject, 6, HallTopY + 3, "👕 SOUVENIR TEE", spec.TshirtArt, spec.Gag),
@@ -204,28 +353,53 @@ public static class HavenInterior
             (-9, HallTopY + 16), (14, HallTopY + 16), (-3, HallTopY + 18), (8, HallTopY + 18),
         };
 
-        DeckPlan.Backdrop[] backdrops =
-        [
-            .. ship.Backdrops,
+        var backdrops = new List<DeckPlan.Backdrop>(ship.Backdrops)
+        {
             // Concourse art across the round hall — sized ~16:9 to match the image so the domed ceiling
             // isn't stretched; fills the hall's width, floor showing at the very top/bottom.
             new(spec.HallArt, HallCenterX - 16, HallCenterY + 9, 32, 18, 0.95f),
             new(spec.BarArt, BarLeft, BarTopY, BarRight - BarLeft, BarTopY - HallTopY, 0.95f),
-        ];
+        };
 
-        return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops,
+        // Weld on each active wing's geometry (Wednesday plan §3 PR-F): walls, any doors, consoles
+        // (translated to deck console kinds), and floor labels. The doorway into each was already
+        // carved above; here the room itself grows.
+        foreach (DeckWing wing in activeWings)
+        {
+            foreach (WingWall w in wing.Walls)
+            {
+                walls.Add(new(w.X1, w.Y1, w.X2, w.Y2, w.IsWindow, w.IsHull));
+            }
+            foreach (WingDoor d in wing.Doors)
+            {
+                doors.Add(new(d.X1, d.Y1, d.X2, d.Y2, d.Locked));
+            }
+            foreach (WingConsole c in wing.Consoles)
+            {
+                consoles.Add(new(MapConsoleKind(c.Kind), c.X, c.Y, c.Label, c.ImageUrl, c.Caption));
+            }
+            foreach (WingLabel l in wing.Labels)
+            {
+                labels.Add((l.X, l.Y, l.Text));
+            }
+        }
+
+        return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
-            droidCount: 8, fillDroids: FillComplexDroids,
-            location: (x, y) => y > HallTopY ? spec.BarName
+            droidCount: 9, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen),
+            location: (x, y) => x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
+                              : y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
                               : y > ShipHatchY ? "GANGWAY"
                               : DeckPlan.Ship.Location(x, y),
             doors: doors.ToArray(), shipFixtures: true, followCam: true, tables: tables.ToArray());
     }
 
-    // Ship's three droids, the immigration officer, and the four seated bar patrons (three regulars +
-    // The Fixer). Shared across every station (one geometry); deterministic in sim time, stateless.
-    private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer)
+    // Ship's three droids, the immigration officer, the four seated bar patrons (three regulars + The
+    // Fixer), and — index 8 — the roaming Magpie, placed by their sim-time rota. Shared across every
+    // station (one geometry); deterministic in sim time, stateless. When the Magpie's rota puts them
+    // out of reach (gone, or the back room before it's open), they're parked far off-frame.
+    private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer, bool backRoomOpen)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // fills [0..3)
         double sway = 0.05 * System.Math.Sin(simTime * 0.0009);
@@ -234,5 +408,10 @@ public static class HavenInterior
         buffer[5] = new DeckPlan.Droid(14, HallTopY + 7 - sway, -System.Math.PI / 2, "Coil");
         buffer[6] = new DeckPlan.Droid(2.5, HallTopY + 12 + sway, -System.Math.PI / 2, "Gilt-Eye");
         buffer[7] = new DeckPlan.Droid(-9, HallTopY + 17 - sway, -System.Math.PI / 2, "The Fixer"); // back corner
+
+        NpcPost m = ResolveMagpie(simTime, backRoomOpen);
+        buffer[8] = m.Present
+            ? new DeckPlan.Droid(m.X + sway, m.Y, m.FacingRad, "Magpie")
+            : new DeckPlan.Droid(-9999, -9999, 0, "Magpie"); // out of reach this watch — off-frame
     }
 }
