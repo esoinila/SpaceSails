@@ -103,8 +103,16 @@
 
 .map-hud .btn-toolbar,
 .map-hud .map-readouts,
+.map-hud .map-frame,
 .map-hud .map-plot {
     pointer-events: auto;
+}
+
+/* #143 — the frame chip lives outside the Plot panel now (it governs the Play ribbon too), so it
+   gets its own compact panel in the HUD column, visible in both views. */
+.map-frame {
+    width: 32rem;
+    max-width: 100%;
 }
 
 .map-plot {

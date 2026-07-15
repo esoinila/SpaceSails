@@ -592,27 +592,32 @@
             }
         </div>
 
+        @* #135/#143 — reference-frame selector. Near a gas giant a moon-to-moon course is useless in
+           the solar frame: the primary's ~10 km/s solar orbit drowns the interesting motion. Pick the
+           body every time-parameterized draw is expressed co-moving with. Default Sun (inertial); inside
+           a giant's Hill sphere that giant is suggested (✦) but never auto-selected — the owner asked for
+           a CHOICE. The v-readout is quoted in, and labelled with, the chosen frame. #143: this ONE
+           selection governs BOTH the Play-view ribbon/scrub path and the Plot curves, so the chip lives
+           OUTSIDE the Plot panel and is visible in both views — the ruler is never silent. *@
+        <div class="map-frame bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
+            <div class="map-plot-frame d-flex flex-wrap align-items-center gap-1">
+                <span class="text-secondary">frame:</span>
+                @foreach (FrameOption opt in FrameOptions())
+                {
+                    bool active = opt.Id == _plotFrameBodyId;
+                    <button type="button"
+                            class="btn btn-sm py-0 @(active ? "btn-info" : opt.Suggested ? "btn-outline-warning" : "btn-outline-light")"
+                            title="@opt.Title"
+                            @onclick="() => SetPlotFrame(opt.Id)">@opt.Label@(opt.Suggested && !active ? " ✦" : "")</button>
+                }
+                <span class="text-secondary ms-1" title="Ship speed in the selected frame">@FrameSpeedReadout()</span>
+            </div>
+        </div>
+
         @if (PlotMode)
         {
             <div class="map-plot bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
                 <div class="fw-bold mb-1">Plotting</div>
-                @* #135 — reference-frame selector. Near a gas giant a moon-to-moon plot is useless in
-                   the solar frame: the primary's ~10 km/s solar orbit drowns the interesting motion.
-                   Pick the body the ribbon is drawn co-moving with. Default Sun (inertial); inside a
-                   giant's Hill sphere that giant is suggested (✦) but never auto-selected — the owner
-                   asked for a CHOICE. The v-readout is quoted in, and labelled with, the chosen frame. *@
-                <div class="map-plot-frame d-flex flex-wrap align-items-center gap-1 mb-2">
-                    <span class="text-secondary">frame:</span>
-                    @foreach (FrameOption opt in FrameOptions())
-                    {
-                        bool active = opt.Id == _plotFrameBodyId;
-                        <button type="button"
-                                class="btn btn-sm py-0 @(active ? "btn-info" : opt.Suggested ? "btn-outline-warning" : "btn-outline-light")"
-                                title="@opt.Title"
-                                @onclick="() => SetPlotFrame(opt.Id)">@opt.Label@(opt.Suggested && !active ? " ✦" : "")</button>
-                    }
-                    <span class="text-secondary ms-1" title="Ship speed in the selected frame">@FrameSpeedReadout()</span>
-                </div>
                 <div class="mb-1">Scrub: @FormatSimTime(ScrubTime)</div>
                 @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
                 <input type="range" class="form-range" min="0" max="@CurrentPlotHorizonSeconds" step="3600"
@@ -6473,16 +6478,22 @@
         }
     }
 
-    // #135 — the ONE place a world sample gets re-expressed in the active plot frame before it hits
-    // the camera. Sun/inertial (or outside Plot mode) returns the sample untouched — the pre-#135
-    // path, byte-identical. Otherwise it's ReferenceFrame.CoMoving with the frame body's ephemeris
-    // position at the SAMPLE time and at "now" (_plotFrameAnchor, refreshed once per drawn frame).
-    // Every time-parameterized plot draw funnels through this so nothing diverges. Anything drawn at
-    // "now" (live bodies, the ship, NPCs) is the identity here anyway (bodyF(now) − bodyF(now) = 0),
-    // so those keep their untouched WorldToScreen call and never move under a frame change.
+    // #135 — the ONE place a world sample gets re-expressed in the active frame before it hits the
+    // camera. Sun/inertial (no frame body) returns the sample untouched — the pre-#135 path,
+    // byte-identical. Otherwise it's ReferenceFrame.CoMoving with the frame body's ephemeris position
+    // at the SAMPLE time and at "now" (_plotFrameAnchor, refreshed once per drawn frame). Every
+    // time-parameterized draw funnels through this so nothing diverges. Anything drawn at "now" (live
+    // bodies, the ship, NPCs) is the identity here anyway (bodyF(now) − bodyF(now) = 0), so those keep
+    // their untouched WorldToScreen call and never move under a frame change.
+    //
+    // #143 — the frame governs BOTH views now, not just Plot. The owner hit a heliocentric ribbon/scrub
+    // path while auto-orbiting Titan inside Saturn's system: #138 deliberately gated this on Plot mode,
+    // which left the Play-view ribbon and prediction cone solar. One selection, both views — so there is
+    // no PlotMode gate here anymore. The anchor is refreshed every drawn frame regardless of mode, and
+    // the Sun frame (_plotFrameBodyId is null) is still the byte-identical short-circuit.
     private Vector2d PlotFrame(Vector2d world, double simTime)
     {
-        if (!PlotMode || _plotFrameBodyId is null || _ephemeris is null)
+        if (_plotFrameBodyId is null || _ephemeris is null)
         {
             return world;
         }
@@ -8413,7 +8424,9 @@
                 continue;
             }
 
-            (float nx, float ny) = _camera.WorldToScreen(SamplePositionAt(node.SimTime));
+            // #143 — hit-test against where the marker is actually DRAWN (frame-transformed), else a
+            // non-Sun frame makes every ribbon-node click miss. DrawNodeMarkers uses the same PlotFrame.
+            (float nx, float ny) = _camera.WorldToScreen(PlotFrame(SamplePositionAt(node.SimTime), node.SimTime));
             double dx = clientX - nx, dy = clientY - ny;
             double d = dx * dx + dy * dy;
             if (d < bestSq)
