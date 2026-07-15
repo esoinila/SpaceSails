@@ -513,7 +513,7 @@
                                 <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
                                         disabled="@((!oi.InCaptureRange && !oi.Armed) || NavLockedByDock)"
                                         title="@(NavLockedByDock ? DockNavLockTip : null)" @onclick="EnterOrbit">
-                                    @(oi.Armed ? "Autopilot ON — disarm" : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
+                                    @(oi.Armed ? (oi.InCaptureRange ? "Autopilot ON — flying" : "Autopilot ON — disarm") : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
                                 </button>
                             }
                         </div>
@@ -3832,6 +3832,23 @@
     // ---- M22: planned insertion — "it is part of flight planning" (owner) ----
     private string? _armedOrbitBodyId;
 
+    // #136 convergence watchdog: an armed approach that fires burns without ever beating its
+    // closest-ever distance is going nowhere (bad geometry, or the old empty-window fuel trap).
+    // Track burns and the best distance so the tick executor can stand the autopilot down and
+    // preserve the remaining fuel instead of firing forever with no feedback (the owner's report).
+    private int _approachBurnCount;
+    private int _approachStalledBurns;
+    private double _approachMinDistance = double.MaxValue;
+    private const int AutopilotMaxStalledBurns = 6;
+
+    // Fresh convergence tracking for a new (or ended) armed session.
+    private void ResetApproachTracking()
+    {
+        _approachBurnCount = 0;
+        _approachStalledBurns = 0;
+        _approachMinDistance = double.MaxValue;
+    }
+
     // ---- M24: destination — the body the captain MEANS to reach. Clicking a planet on the
     // map sets it; the orbit-assist panel then coaches the approach to that body instead of
     // whichever happens to be nearest ("Orbit Venus?" while aiming for Mercury). ----
@@ -4718,6 +4735,7 @@
             return;
         }
         _armedOrbitBodyId = _armedOrbitBodyId == bodyId ? null : bodyId;
+        ResetApproachTracking(); // every arm/disarm starts convergence tracking clean
         if (_armedOrbitBodyId is not null)
         {
             _destinationBodyId = _armedOrbitBodyId; // arming says "this is where we're going"
@@ -4767,16 +4785,41 @@
         switch (OrbitRule.AutopilotDecision(_ship, bodyPos, bodyVel, body, hill))
         {
             case OrbitRule.AutopilotAction.Approach:
-                int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel, body, obstacle);
+                double distance = (_ship.Position - bodyPos).Length;
+                // Convergence watchdog: a burn that beats our closest-ever pass is progress; a run of
+                // burns that don't means the approach is stuck. Stand down and keep the fuel rather
+                // than firing forever with no feedback (issue #136, the owner's live complaint).
+                if (distance < _approachMinDistance * (1 - 1e-3))
+                {
+                    _approachMinDistance = distance;
+                    _approachStalledBurns = 0;
+                }
+                else
+                {
+                    _approachStalledBurns++;
+                }
+                if (_approachStalledBurns >= AutopilotMaxStalledBurns)
+                {
+                    ShowPulseMessage($"Approach to {body.Name} not converging — autopilot disarmed after {_approachBurnCount} burns; fuel preserved");
+                    _armedOrbitBodyId = null;
+                    ResetApproachTracking();
+                    return;
+                }
+
+                // Hill-aware approach (issue #136): the aim's safe periapsis and closing speed scale
+                // to the body's well, so a deep moon like Enceladus actually reaches its capture band.
+                int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel, body, obstacle, hill);
                 if (approachCost > _reactionMassPulses)
                 {
                     ShowPulseMessage($"Approach burn for {body.Name} — not enough mass pulses ({approachCost} needed)");
                     _armedOrbitBodyId = null;
+                    ResetApproachTracking();
                     return;
                 }
 
-                _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel, body, obstacle);
+                _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel, body, obstacle, hill);
                 _reactionMassPulses -= approachCost;
+                _approachBurnCount++;
                 StaleFutureNodes();
                 ShowPulseMessage($"Approach burn — falling toward {body.Name} ({approachCost} p) 🛰");
                 return;
@@ -4787,12 +4830,14 @@
                 {
                     ShowPulseMessage($"Insertion window at {body.Name} — not enough mass pulses ({cost} needed)");
                     _armedOrbitBodyId = null;
+                    ResetApproachTracking();
                     return;
                 }
 
                 _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
                 _reactionMassPulses -= cost;
                 _armedOrbitBodyId = null;
+                ResetApproachTracking();
                 ArrivedAt(body.Id);
                 StaleFutureNodes();
                 ShowPulseMessage($"Autopilot insertion — bound to {body.Name} 🛰");
@@ -4874,7 +4919,8 @@
     {
         string inv(double v) => v.ToString("F1", CultureInfo.InvariantCulture);
         if (oi.WindowOpen) return "window OPEN";
-        if (oi.Armed && oi.InCaptureRange) return "autopilot flying the approach";
+        if (oi.Armed && oi.InCaptureRange)
+            return $"autopilot flying the approach — insertion at ≈{FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))}";
         if (oi.InCaptureRange) return "in capture range — auto-orbit can park you";
         string closing = $"close in {FormatDistance(oi.Distance - oi.CaptureRange)} to capture range";
         return oi.TooFast
@@ -4900,8 +4946,10 @@
             return;
         }
 
-        if (OrbitInfo() is not { } candidate || _ephemeris is null)
+        // No silent no-ops (issue #136): if there is nothing to orbit, say so.
+        if (_ephemeris is null || OrbitInfo() is not { } candidate)
         {
+            ShowPulseMessage("No moon or planet in range to orbit — pick a destination (🎯) or coast closer.");
             return;
         }
 
@@ -4909,10 +4957,28 @@
         // anywhere inside capture range and the ship flies the approach itself (M25).
         if (!candidate.CanEngage)
         {
-            if (candidate.Armed || candidate.InCaptureRange)
+            if (candidate.Armed)
             {
-                ToggleArmedInsertion(candidate.Body.Id);
+                if (candidate.InCaptureRange)
+                {
+                    // Arm-once (issue #136): the autopilot is already flying this approach. Report
+                    // its status instead of re-firing a burn or dropping the arm mid-flight — it
+                    // disarms itself on arrival, or the watchdog stands it down if it can't close.
+                    ShowPulseMessage($"🛰 {candidate.Body.Name}: {OrbitStatusLine(candidate)}");
+                }
+                else
+                {
+                    ToggleArmedInsertion(candidate.Body.Id); // armed but not yet closing — a press stands it down
+                }
+                return;
             }
+            if (candidate.InCaptureRange)
+            {
+                ToggleArmedInsertion(candidate.Body.Id); // in range — arm the approach
+                return;
+            }
+            // In view but out of auto-orbit reach: say why the press did nothing, with the gap.
+            ShowPulseMessage($"{candidate.Body.Name} is out of auto-orbit range — coast within {FormatDistance(candidate.CaptureRange)} (still {FormatDistance(candidate.Distance - candidate.CaptureRange)} to go).");
             return;
         }
 
@@ -5517,6 +5583,8 @@
             "Way out at Uranus — begin already clamped on at The Tilt, a short walk up the tube to its cold, lonely bar."),
         new("wreck", "🚗", "The Derelict Roadster — alongside (test)",
             "Co-moving beside the lost roadster, sunward of Mars — for testing the fetch pickup.", Test: true),
+        new("enceladus", "❄️", "Enceladus — alongside (test)",
+            "Co-moving beside Enceladus, a short fall from its capture band — for testing the deep-well auto-orbit (#136).", Test: true),
     ];
 
     // Start ids that begin already docked at a walkable station, mapped to the station body. These
@@ -5578,6 +5646,7 @@
         {
             "jupiter" => CoMovingBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
             "saturn" => CoMovingBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
+            "enceladus" => CoMovingBy("enceladus", 5e6),      // (test) co-moving alongside Enceladus, ~5 Hill radii out (#136)
             "wreck" => CoMovingBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
             _ => InitializeShipState(),
         };
@@ -6067,6 +6136,45 @@
         {
             _effectiveWarp = Math.Min(_effectiveWarp, CaptureWarpCap);
         }
+
+        // #136: a deep-well moon's parking band is only tens of km wide — far thinner than the
+        // grazing-tier step at 10×. When armed for such a moon, cap warp so one tick advances only
+        // a fraction of the distance still to close, easing to 1× right at the band the way the
+        // 60 s unit test threads it. Inert for planets/roomy moons (band far outside the grazing
+        // radius) and when not armed. Keyed off the nearest body, which IS the armed one on final.
+        _effectiveWarp = Math.Min(_effectiveWarp, DeepWellInsertionWarpCap(distance));
+    }
+
+    // The warp ceiling that keeps an armed deep-well insertion holdable (issue #136). Returns
+    // int.MaxValue (no cap) unless the ship is armed for the nearest body and that body is a deep
+    // well whose whole parking band sits inside its grazing radius.
+    private int DeepWellInsertionWarpCap(double distanceToNearest)
+    {
+        if (_armedOrbitBodyId is null || _ephemeris is null || _nearestBody is null
+            || _armedOrbitBodyId != _nearestBody.Id || _nearestBody.ParentId is null)
+        {
+            return int.MaxValue;
+        }
+
+        CelestialBody? parent = null;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == _nearestBody.ParentId) { parent = candidate; break; }
+        }
+        if (parent is null) return int.MaxValue;
+
+        double hill = OrbitRule.HillRadius(_nearestBody, parent.Mu);
+        double park = OrbitRule.ParkingRadius(_nearestBody, hill);
+        if (park >= _nearestBody.BodyRadius * 3 || distanceToNearest > OrbitRule.CaptureRange(hill))
+        {
+            return int.MaxValue; // roomy moon/planet, or not yet closing — the tiers suffice
+        }
+
+        // Advance at most ~⅓ of the room left to the band per 60 s tick; never below 1×. As the
+        // ship reaches the band the room shrinks to a body radius and the cap eases to 1×.
+        double closing = Math.Max(1.0, Math.Abs(OrbitRule.ClosingSpeed(_ship, _nearestBodyPosition, _nearestBodyVelocity)));
+        double room = Math.Max(distanceToNearest - park, _nearestBody.BodyRadius);
+        return Math.Max(1, (int)(room / (3 * 60 * closing)));
     }
 
     // Plasma stream ribbons (M7): one translucent wide segment per stream, between the two

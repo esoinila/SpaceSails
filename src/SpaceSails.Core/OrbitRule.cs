@@ -48,6 +48,37 @@ public static class OrbitRule
     /// cannot strip the orbit (prograde orbits are long-term stable to roughly half Hill).</summary>
     public const double AutopilotInsertHillFraction = 0.5;
 
+    /// <summary>Surface-margin floor for any parked/inserted orbit: never circularize below this
+    /// many body radii. Enceladus is airless and its Hill sphere is only ≈ 3.8 R, so its
+    /// robustly-stable park depth (≈ 0.33 Hill ≈ 1.24 R) sits below the old 1.5 R guideline — the
+    /// tidal-stability constraint wins for a deep well, and 1.1 R still clears the surface with
+    /// margin. Roomy moons and planets park far above this and never feel it.</summary>
+    public const double SurfaceParkRadii = 1.1;
+
+    /// <summary>Where the autopilot circularizes — the insertion gate — as a fraction of the Hill
+    /// sphere. Empirically (the Enceladus 10-day / ≈36-orbit drift sweep) prograde orbits hold
+    /// robustly to ≈ 0.33 Hill; nearer half-Hill they are chaotic and strip over many orbits. The
+    /// old 0.5-Hill "stable to roughly half Hill" was only ever tested over Earth's ⅛-orbit — this
+    /// is the depth that actually holds. Big bodies complete few orbits in 10 days, so this deeper,
+    /// safer park is inert for them beyond a slightly deeper insertion.</summary>
+    public const double ParkStableHillFraction = 0.33;
+
+    /// <summary>The safe-approach periapsis for a deep well is aimed at the MIDDLE of the insert
+    /// band (surface floor … park radius), so the ballistic fall dwells inside the window near
+    /// periapsis and the tick loop reliably catches the insertion instead of blasting through a
+    /// thin shell. Inert for big bodies, whose 2 R aim already sits far below the band.</summary>
+    public const double InsertBandMidpoint = 0.5;
+
+    /// <summary>A deep well is captured no faster than this many times its parking circular speed:
+    /// screaming in at the global 4 km/s would need a monster insertion burn and skip the thin
+    /// stable shell between ticks. For a roomy moon or planet the global approach speed is already
+    /// far slower than this cap, so it is inert (issue #136).</summary>
+    public const double ApproachCircularSpeedFactor = 8.0;
+
+    /// <summary>Parked orbits never sit outside this fraction of the Hill sphere — the sun's tide
+    /// strips the outer Hill. The park target is capped here.</summary>
+    public const double ParkCeilingHillFraction = 0.9;
+
     /// <summary>Hill-sphere radius: where the body's gravity owns a satellite against its parent's tide.
     /// Uses the body's <see cref="CelestialBody.OrbitRadius"/> (semi-major axis) — the stable, mean
     /// value. For an eccentric body whose Hill sphere breathes with distance, prefer the
@@ -64,6 +95,55 @@ public static class OrbitRule
     /// <summary>Circular-orbit speed around the body at the given distance.</summary>
     public static double CircularSpeed(CelestialBody body, double distance) =>
         Math.Sqrt(body.Mu / distance);
+
+    /// <summary>The radius the autopilot parks/circularizes at — the insertion gate (issue #136).
+    /// Robustly tide-stable (≈ 0.33 Hill, <see cref="ParkStableHillFraction"/>), a clear margin above
+    /// the surface (≥ <see cref="SurfaceParkRadii"/>·R), never in the tide-stripped outer Hill
+    /// (≤ 0.9 Hill). For a roomy moon or planet this is the flat 0.33·Hill; for a deep-well moon
+    /// whose 0.33·Hill would collide with the surface it is clamped up off the body.</summary>
+    public static double ParkingRadius(CelestialBody body, double hillRadius)
+    {
+        double floor = SurfaceParkRadii * body.BodyRadius;
+        double ceiling = ParkCeilingHillFraction * hillRadius;
+        double target = Math.Max(ParkStableHillFraction * hillRadius, floor);
+        return ceiling <= floor ? floor : Math.Min(target, ceiling);
+    }
+
+    /// <summary>The periapsis the safe approach aims for — the closest the ballistic fall comes to
+    /// the target's centre. The established big-body aim is 2·R (<see cref="ApproachSafeBodyRadii"/>);
+    /// for a deep well it is bent DOWN to the middle of the insert band (surface floor …
+    /// <see cref="ParkingRadius"/>) so the fall dwells inside the window and the tick loop catches
+    /// the insertion. Never below the surface margin. With no Hill context (hillRadius ≤ 0) it is
+    /// the plain 2·R aim, preserving pre-#136 behaviour for callers that pass no Hill radius (the
+    /// big-body unit tests and Titan e2e).</summary>
+    public static double ApproachPeriapsis(CelestialBody body, double hillRadius)
+    {
+        double byBody = ApproachSafeBodyRadii * body.BodyRadius;
+        if (hillRadius <= 0)
+        {
+            return byBody;
+        }
+        double floor = SurfaceParkRadii * body.BodyRadius;
+        double bandMid = floor + InsertBandMidpoint * (ParkingRadius(body, hillRadius) - floor);
+        return Math.Clamp(byBody, Math.Min(floor, bandMid), bandMid);
+    }
+
+    /// <summary>The closing speed the safe approach flies. Global <see cref="MaxRelativeSpeed"/>·
+    /// <see cref="ApproachSpeedFraction"/> (4 km/s) for a roomy moon or planet, but capped at
+    /// <see cref="ApproachCircularSpeedFactor"/>× the parking circular speed for a deep well — a
+    /// tiny moon can't be captured at 4 km/s, and slowing the terminal fall keeps the ship inside
+    /// the thin stable shell between ticks. With no Hill context (hillRadius ≤ 0) it is the flat
+    /// global speed, preserving pre-#136 behaviour for callers that pass no Hill radius.</summary>
+    public static double ApproachClosingSpeed(CelestialBody body, double hillRadius)
+    {
+        double global = MaxRelativeSpeed * ApproachSpeedFraction;
+        if (hillRadius <= 0)
+        {
+            return global;
+        }
+        double capped = ApproachCircularSpeedFactor * CircularSpeed(body, ParkingRadius(body, hillRadius));
+        return Math.Min(global, capped);
+    }
 
     /// <summary>The Δv the insertion burn must perform from the current state.</summary>
     public static double InsertionDeltaV(ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body)
@@ -130,25 +210,25 @@ public static class OrbitRule
     /// </summary>
     public static Vector2d SafeApproachVelocity(
         ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body,
-        ApproachObstacle? parent = null)
+        ApproachObstacle? parent = null, double hillRadius = 0)
     {
-        Vector2d aim = SafeAimPoint(ship, bodyPosition, bodyVelocity, body, parent);
+        Vector2d aim = SafeAimPoint(ship, bodyPosition, bodyVelocity, body, parent, hillRadius);
         Vector2d toAim = aim - ship.Position;
         double distance = toAim.Length;
         return distance <= 0
             ? bodyVelocity
-            : bodyVelocity + toAim / distance * (MaxRelativeSpeed * ApproachSpeedFraction);
+            : bodyVelocity + toAim / distance * ApproachClosingSpeed(body, hillRadius);
     }
 
     /// <summary>Mass-pulse cost of the safe approach burn from the current state (at least 1).</summary>
     public static int ApproachPulseCost(
-        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, ApproachObstacle? parent) =>
-        PulsesFor((SafeApproachVelocity(ship, bodyPosition, bodyVelocity, body, parent) - ship.Velocity).Length, ship.Velocity.Length);
+        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, ApproachObstacle? parent, double hillRadius = 0) =>
+        PulsesFor((SafeApproachVelocity(ship, bodyPosition, bodyVelocity, body, parent, hillRadius) - ship.Velocity).Length, ship.Velocity.Length);
 
     /// <summary>Perform the safe approach burn — impulsive, like every other pulse in the game.</summary>
     public static ShipState Approach(
-        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, ApproachObstacle? parent) =>
-        ship with { Velocity = SafeApproachVelocity(ship, bodyPosition, bodyVelocity, body, parent) };
+        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, ApproachObstacle? parent, double hillRadius = 0) =>
+        ship with { Velocity = SafeApproachVelocity(ship, bodyPosition, bodyVelocity, body, parent, hillRadius) };
 
     /// <summary>
     /// Where the safe approach aims this instant. Rounds an obstructing parent first (a tangent
@@ -156,7 +236,7 @@ public static class OrbitRule
     /// the target offset off-center by the periapsis-preserving impact parameter.
     /// </summary>
     public static Vector2d SafeAimPoint(
-        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, ApproachObstacle? parent)
+        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, ApproachObstacle? parent, double hillRadius = 0)
     {
         // While a parent lies across the chord, head for the tangent that rounds it — not the
         // target hiding behind it. Once the ship has rounded past, the chord clears and the aim
@@ -177,9 +257,11 @@ public static class OrbitRule
 
         // Aim off-center by the impact parameter whose two-body hyperbola (at the closing speed
         // we're about to set) reaches periapsis exactly at the safe radius. Aiming to merely miss
-        // the center by the safe radius is NOT enough — gravity focuses the fall inward.
-        double safeRadius = body.BodyRadius * ApproachSafeBodyRadii;
-        double offset = ImpactParameterFor(safeRadius, body.Mu, MaxRelativeSpeed * ApproachSpeedFraction);
+        // the center by the safe radius is NOT enough — gravity focuses the fall inward. The safe
+        // periapsis is Hill-aware (issue #136): for a deep-well moon it is bent below the insertion
+        // gate so the fall actually reaches capture instead of grazing forever above it.
+        double safeRadius = ApproachPeriapsis(body, hillRadius);
+        double offset = ImpactParameterFor(safeRadius, body.Mu, ApproachClosingSpeed(body, hillRadius));
 
         // Offset to the side that continues the ship's existing swing about the body (matching
         // Insert's sense choice), defaulting to +perp at dead-zero. Either side clears the surface.
@@ -252,18 +334,22 @@ public static class OrbitRule
     {
         double distance = (ship.Position - bodyPosition).Length;
         if (WindowOpen(ship, bodyPosition, bodyVelocity, body, hillRadius)
-            && distance < hillRadius * AutopilotInsertHillFraction)
+            && distance < ParkingRadius(body, hillRadius))
         {
             return AutopilotAction.Insert;
         }
 
-        if (distance > CaptureRange(hillRadius) || distance < body.BodyRadius * 4)
+        // Out of reach, or already inside where the approach was aiming (its own safe periapsis) —
+        // let the ballistic swing play out rather than re-burning. Scaling this too-close guard off
+        // the safe periapsis (not a fixed 4·R) is what lets a deep-well moon whose Hill sits inside
+        // 4·R hand the approach over to insertion at all (issue #136).
+        if (distance > CaptureRange(hillRadius) || distance < ApproachPeriapsis(body, hillRadius))
         {
-            return AutopilotAction.None; // out of reach, or so low the swing must play out
+            return AutopilotAction.None;
         }
 
         double relSpeed = (ship.Velocity - bodyVelocity).Length;
-        double approachSpeed = MaxRelativeSpeed * ApproachSpeedFraction;
+        double approachSpeed = ApproachClosingSpeed(body, hillRadius);
         bool needsBurn = relSpeed >= MaxRelativeSpeed
             || ClosingSpeed(ship, bodyPosition, bodyVelocity) < approachSpeed * 0.5;
         return needsBurn ? AutopilotAction.Approach : AutopilotAction.None;
@@ -274,7 +360,7 @@ public static class OrbitRule
     {
         double distance = (ship.Position - bodyPosition).Length;
         double relSpeed = (ship.Velocity - bodyVelocity).Length;
-        return distance < hillRadius && distance > body.BodyRadius * 2 && relSpeed < MaxRelativeSpeed;
+        return distance < hillRadius && distance > body.BodyRadius * SurfaceParkRadii && relSpeed < MaxRelativeSpeed;
     }
 
     /// <summary>
