@@ -38,9 +38,18 @@ public static class OrbitRule
     /// cannot strip the orbit (prograde orbits are long-term stable to roughly half Hill).</summary>
     public const double AutopilotInsertHillFraction = 0.5;
 
-    /// <summary>Hill-sphere radius: where the body's gravity owns a satellite against its parent's tide.</summary>
+    /// <summary>Hill-sphere radius: where the body's gravity owns a satellite against its parent's tide.
+    /// Uses the body's <see cref="CelestialBody.OrbitRadius"/> (semi-major axis) — the stable, mean
+    /// value. For an eccentric body whose Hill sphere breathes with distance, prefer the
+    /// instantaneous overload fed by <see cref="ICelestialEphemeris.InstantaneousOrbitRadius"/>.</summary>
     public static double HillRadius(CelestialBody body, double parentMu) =>
-        body.OrbitRadius * Math.Pow(body.Mu / (3 * parentMu), 1.0 / 3.0);
+        HillRadius(body.OrbitRadius, body.Mu, parentMu);
+
+    /// <summary>Hill-sphere radius from an explicit parent distance — pass the instantaneous
+    /// distance (PR-B, Kepler rails) so an elliptical body's capture window tracks its real, changing
+    /// separation instead of a fixed circle. Identical to the mean overload for a circular body.</summary>
+    public static double HillRadius(double orbitRadius, double bodyMu, double parentMu) =>
+        orbitRadius * Math.Pow(bodyMu / (3 * parentMu), 1.0 / 3.0);
 
     /// <summary>Circular-orbit speed around the body at the given distance.</summary>
     public static double CircularSpeed(CelestialBody body, double distance) =>
