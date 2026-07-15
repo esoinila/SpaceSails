@@ -400,7 +400,9 @@
             else
             {
                 <span class="pilot-banner-who">🧭 YOU HAVE THE SHIP</span>
-                <span class="pilot-banner-mode">manual — the helm answers to you</span>
+                @* #147: when the autopilot stood down (declined to arm, or handed back), the banner
+                   carries the persistent reason so "who is flying" also answers "why", at any warp. *@
+                <span class="pilot-banner-mode">@(AutopilotStoodDown ? _autopilotStandDownReason : "manual — the helm answers to you")</span>
             }
         </button>
     }
@@ -887,6 +889,12 @@
                                     <span class="flex-grow-1">
                                         🛰 Insert at @BodyName(_armedId)
                                         <span class="text-secondary">— @(_active ? "flying the approach" : "armed · waiting for the window")</span>
+                                        @* The promise the autopilot quoted at arm time (#146): the whole-journey
+                                           budget it proved affordable before committing. *@
+                                        @if (_armedBudgetPulses > 0)
+                                        {
+                                            <span class="text-info small">· budgeted ≈@(_armedBudgetPulses) p</span>
+                                        }
                                     </span>
                                     @if (ArmedInsertionSimTime is { } _it)
                                     {
@@ -1617,8 +1625,13 @@
     {
         // M26: the ETA rides the objective line, so time-to-destination shows on every desk.
         string eta = DestinationEta() is { } e ? $" · {e}" : "";
-        string objective = _armedOrbitBodyId is not null
-            ? $"→ {BodyName(_armedOrbitBodyId)} orbit{eta}"
+        // #147 coherence: when the autopilot has stood down, no desk chip may claim a mission it no
+        // longer flies. Derive the objective from the SAME source of truth as the pilot banner — the
+        // FlightPlanStatus now line — so the chip says "you have the ship", not "→ Titan orbit".
+        string objective = AutopilotStoodDown
+            ? FlightNowNext().NowLine.Replace("NOW: ", "")
+            : _armedOrbitBodyId is not null
+                ? $"→ {BodyName(_armedOrbitBodyId)} orbit{eta}"
             : _destinationBodyId is not null
                 ? $"→ {BodyName(_destinationBodyId)}{eta}"
                 : _planNodes.Count > 0
@@ -1749,7 +1762,11 @@
             AutopilotFlyingApproach: AutopilotFlyingApproach,
             AutopilotBodyName: _armedOrbitBodyId is null ? null : BodyName(_armedOrbitBodyId),
             NextStepLabel: nextLabel,
-            NextStepEta: nextEta));
+            NextStepEta: nextEta,
+            // #147: the persistent "you have the ship" reason — a decline or a loud handback — so the
+            // now line survives high warp instead of a 1.5-s toast. Only when not armed (else the ship
+            // is flying again and the armed line wins).
+            HandbackReason: _armedOrbitBodyId is null ? _autopilotStandDownReason : null));
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData SensorsChip()
@@ -2128,6 +2145,10 @@
     private static readonly RgbaColor OrbitColor = new(80, 100, 130, 130);
     private static readonly RgbaColor ShipColor = new(255, 210, 80);
     private static readonly RgbaColor TrajectoryColor = new(255, 165, 0);
+    // #148: the autopilot's INTENDED path — the rehearsed flight, not the ballistic loops the ship
+    // will never fly while armed. Teal, matching the autopilot's info theme, so it never reads as the
+    // amber ballistic ribbon.
+    private static readonly RgbaColor AutopilotPlanColor = new(90, 230, 200, 230);
     private static readonly RgbaColor LabelColor = new(224, 228, 236);
     private static readonly RgbaColor GhostShipColor = new(255, 210, 80, 120);
     private static readonly RgbaColor AccelNodeColor = new(80, 220, 120);
@@ -4089,6 +4110,50 @@
         _approachMinDistance = double.MaxValue;
     }
 
+    // ---- The autopilot's promise (issues #146/#147). The whole feasibility question is settled at
+    // arm time by AutopilotRehearsal, which flies the armed journey in Core and prices it. An
+    // affordable trip is armed with its quoted budget REMEMBERED (shown on the insertion step); an
+    // un-affordable one is refused with the numbers and never armed. In flight the autopilot keeps a
+    // reserve floor: it never burns the tank below it, so it is never stranded — and any stand-down
+    // (reserve reached, watchdog, refusal) is LOUD: a persistent reason, a ledger receipt, warp
+    // dropped to 1×. The owner's ruling: "dropping from autopilot should never happen when there was
+    // nothing external to cause it." ----
+    private int _armedBudgetPulses;              // rehearsal-quoted total cost for the current arm
+    private int _armedSpentPulses;               // approach+insert pulses spent since this arm
+    private string? _autopilotStandDownReason;   // persistent "you have the ship" line (decline/handback)
+    private IReadOnlyList<TrajectorySample>? _autopilotPlanPath; // #148: the rehearsed INTENDED path
+
+    // The autopilot has stood down (refused to arm, or handed the ship back) and the captain has not
+    // yet re-engaged — the single predicate every desk chip and the pilot banner read so none can
+    // claim a mission the autopilot no longer flies (#147).
+    private bool AutopilotStoodDown => _armedOrbitBodyId is null && _autopilotStandDownReason is not null;
+
+    private void ResetAutopilotBudget()
+    {
+        _armedBudgetPulses = 0;
+        _armedSpentPulses = 0;
+        _autopilotPlanPath = null;
+    }
+
+    // The autopilot log — a Captain's-ledger receipt for every stand-down (newest first), projected
+    // into the ledger's Tips section alongside the intel receipts (the established idiom).
+    private readonly List<(double SimTime, string Text)> _autopilotEvents = [];
+    private void LogAutopilotEvent(string text) => _autopilotEvents.Insert(0, (SimTime, text));
+
+    // A loud stand-down: clear the arm, remember WHY (persistent, not a 1.5-s toast), file a ledger
+    // receipt, and drop warp to 1× — an event worth interrupting for, the #139 deep-well philosophy.
+    private void AutopilotStandDown(string reason)
+    {
+        _armedOrbitBodyId = null;
+        ResetApproachTracking();
+        ResetAutopilotBudget();
+        _autopilotStandDownReason = reason;
+        LogAutopilotEvent(reason);
+        Warp = 1;               // auto-drop: the drop must not slip past unseen at 10,000× warp
+        _effectiveWarp = 1;
+        ShowPulseMessage($"🛰 {reason}");
+    }
+
     // ---- M24: destination — the body the captain MEANS to reach. Clicking a planet on the
     // map sets it; the orbit-assist panel then coaches the approach to that body instead of
     // whichever happens to be nearest ("Orbit Venus?" while aiming for Mercury). ----
@@ -4160,7 +4225,9 @@
     // design — the projection refreshes every few sim-hours and on every plan edit.
     private string? DestinationEta()
     {
-        if (_destinationBodyId is null || _destinationPass is not { } dp
+        // #147: while the autopilot has stood down, do NOT quote an arrival ETA on any desk chip —
+        // nothing is flying the ship there, so "ETA 6 d" would be the very lie the owner caught.
+        if (AutopilotStoodDown || _destinationBodyId is null || _destinationPass is not { } dp
             || dp.BodyId != _destinationBodyId || dp.SimTime <= SimTime)
         {
             return null;
@@ -4980,15 +5047,50 @@
         {
             return;
         }
-        _armedOrbitBodyId = _armedOrbitBodyId == bodyId ? null : bodyId;
-        ResetApproachTracking(); // every arm/disarm starts convergence tracking clean
-        if (_armedOrbitBodyId is not null)
+
+        // Disarming (toggle off) the currently-armed body: a plain, quiet stand-down by the captain.
+        if (_armedOrbitBodyId == bodyId)
         {
-            _destinationBodyId = _armedOrbitBodyId; // arming says "this is where we're going"
+            _armedOrbitBodyId = null;
+            ResetApproachTracking();
+            ResetAutopilotBudget();
+            _autopilotStandDownReason = null; // the captain chose this — no "handed back" surface
+            ShowPulseMessage("Insertion disarmed");
+            return;
         }
-        ShowPulseMessage(_armedOrbitBodyId is null
-            ? "Insertion disarmed"
-            : $"Insertion armed — the ship will park at {_armedOrbitBodyId} when the window opens 🛰");
+
+        // Arming: the promise (#146/#147). Rehearse the WHOLE journey — every approach burn plus the
+        // insertion — before committing, so the ship is never armed into a trip it cannot finish. If
+        // the rehearsed cost (plus a reserve floor) would outrun the tank, REFUSE with the numbers
+        // rather than strand the captain mid-flight at warp.
+        if (_ephemeris is not null && _simulator is not null)
+        {
+            int reserve = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
+            int budget = Math.Max(0, _reactionMassPulses - reserve);
+            AutopilotRehearsal.RehearsalResult r =
+                AutopilotRehearsal.Rehearse(_ship, _ephemeris, _simulator, bodyId, budget, capturePath: true);
+            string name = BodyName(bodyId);
+            if (!r.Deliverable)
+            {
+                string why = r.BudgetExceeded || r.Pulses > budget
+                    ? $"needs ≈{r.Pulses} p (incl. insertion), tank has {_reactionMassPulses} and keeps {reserve} in reserve"
+                    : "can't verify a capture from here — no clear window within range";
+                _autopilotStandDownReason = $"autopilot declines {name}: {why}. It won't strand you.";
+                ResetAutopilotBudget();
+                ShowPulseMessage($"🛰 {_autopilotStandDownReason}");
+                return; // NOT armed — the whole point of the promise
+            }
+
+            _armedBudgetPulses = r.Pulses;
+            _armedSpentPulses = 0;
+            _autopilotPlanPath = r.Path; // #148: draw the intended path, not the ballistic loops
+            _autopilotStandDownReason = null;
+        }
+
+        _armedOrbitBodyId = bodyId;
+        ResetApproachTracking(); // every arm starts convergence tracking clean
+        _destinationBodyId = bodyId; // arming says "this is where we're going"
+        ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p; the ship will park at {BodyName(bodyId)} when the window opens 🛰");
     }
 
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
@@ -5046,25 +5148,30 @@
                 }
                 if (_approachStalledBurns >= AutopilotMaxStalledBurns)
                 {
-                    ShowPulseMessage($"Approach to {body.Name} not converging — autopilot disarmed after {_approachBurnCount} burns; fuel preserved");
-                    _armedOrbitBodyId = null;
-                    ResetApproachTracking();
+                    // Should be near-impossible now the arm-time rehearsal proves convergence, but if
+                    // geometry drifts it still stands down LOUDLY (#147), not with a 1.5-s toast.
+                    AutopilotStandDown($"autopilot handed back near {body.Name} — approach not converging after {_approachBurnCount} burns; fuel preserved");
                     return;
                 }
 
                 // Hill-aware approach (issue #136): the aim's safe periapsis and closing speed scale
                 // to the body's well, so a deep moon like Enceladus actually reaches its capture band.
                 int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel, body, obstacle, hill);
-                if (approachCost > _reactionMassPulses)
+                // The reserve floor (#146): the autopilot never burns the tank below the reserve it
+                // promised to keep. If an approach burn would breach it, reality has diverged from the
+                // rehearsed plan — only possible via something external (a manual burn, damage, a
+                // dock) or a harder approach than rehearsed — so hand back LOUDLY instead of bleeding
+                // the tank dry. The owner's ruling: never a silent drop.
+                int reserveFloor = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
+                if (_reactionMassPulses - approachCost < reserveFloor)
                 {
-                    ShowPulseMessage($"Approach burn for {body.Name} — not enough mass pulses ({approachCost} needed)");
-                    _armedOrbitBodyId = null;
-                    ResetApproachTracking();
+                    AutopilotStandDown($"autopilot handed back near {body.Name} — fuel plan broken (reserve floor reached; a manual burn, damage, or a harder approach than budgeted)");
                     return;
                 }
 
                 _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel, body, obstacle, hill);
                 _reactionMassPulses -= approachCost;
+                _armedSpentPulses += approachCost;
                 _approachBurnCount++;
                 StaleFutureNodes();
                 ShowPulseMessage($"Approach burn — falling toward {body.Name} ({approachCost} p) 🛰");
@@ -5072,16 +5179,20 @@
 
             case OrbitRule.AutopilotAction.Insert:
                 int cost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
+                // The insertion is the arrival — it may dip into the reserve to complete the park.
+                // Only an outright can't-afford-it (post-rehearsal, only via external divergence)
+                // stands it down.
                 if (cost > _reactionMassPulses)
                 {
-                    ShowPulseMessage($"Insertion window at {body.Name} — not enough mass pulses ({cost} needed)");
-                    _armedOrbitBodyId = null;
-                    ResetApproachTracking();
+                    AutopilotStandDown($"autopilot handed back at {body.Name} — insertion needs {cost} p, only {_reactionMassPulses} left (fuel plan broken externally)");
                     return;
                 }
 
                 _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
                 _reactionMassPulses -= cost;
+                _armedSpentPulses += cost;
+                _autopilotStandDownReason = null; // delivered — no handback surface
+                ResetAutopilotBudget();
                 _armedOrbitBodyId = null;
                 ResetApproachTracking();
                 ArrivedAt(body.Id);
@@ -6252,6 +6363,7 @@
             DrawTradeCorridors();
         }
         DrawShipTrajectory();
+        DrawAutopilotPlanPath();
         DrawPredictionCone();
         DrawPassEpochGhost();
         if (PlotMode)
@@ -6629,6 +6741,10 @@
 
     private void DrawShipTrajectory()
     {
+        // #148: while the autopilot has the ship and a rehearsed plan to draw, the ballistic ribbon
+        // shows loops the ship will never fly (the owner's report) — hand the line over to the
+        // intended-path draw. The ballistic ribbon stays for manual flight.
+        if (_armedOrbitBodyId is not null && _autopilotPlanPath is { Count: >= 2 }) return;
         if (_samples.Count < 2) return;
 
         int requiredSize = _samples.Count * 2;
@@ -6645,6 +6761,56 @@
         }
 
         _renderer!.DrawPolyline(_scratch.AsSpan(0, _samples.Count * 2), TrajectoryColor);
+    }
+
+    private float[] _autopilotPlanScratch = [];
+
+    // #148: draw the autopilot's rehearsed INTENDED path (the arc it will actually fly to capture),
+    // teal and dashed so it never reads as the amber ballistic ribbon. Only the part still ahead of
+    // the ship is drawn; routed through PlotFrame like every time-parameterized track (#144).
+    private void DrawAutopilotPlanPath()
+    {
+        if (_armedOrbitBodyId is null || _autopilotPlanPath is not { Count: >= 2 } plan)
+        {
+            return;
+        }
+
+        int startIdx = 0;
+        while (startIdx < plan.Count - 1 && plan[startIdx].SimTime < _ship.SimTime)
+        {
+            startIdx++;
+        }
+        int remaining = plan.Count - startIdx;
+        if (remaining < 2)
+        {
+            return;
+        }
+
+        int stride = Math.Max(1, remaining / 220);
+        int maxPoints = remaining / stride + 2;
+        if (_autopilotPlanScratch.Length < maxPoints * 2)
+        {
+            _autopilotPlanScratch = new float[maxPoints * 2];
+        }
+
+        int w = 0;
+        for (int i = startIdx; i < plan.Count; i += stride)
+        {
+            (float x, float y) = _camera.WorldToScreen(PlotFrame(plan[i].Position, plan[i].SimTime));
+            _autopilotPlanScratch[w] = x;
+            _autopilotPlanScratch[w + 1] = y;
+            w += 2;
+        }
+        (float lx, float ly) = _camera.WorldToScreen(PlotFrame(plan[^1].Position, plan[^1].SimTime));
+        _autopilotPlanScratch[w] = lx;
+        _autopilotPlanScratch[w + 1] = ly;
+        w += 2;
+
+        // Dashed: draw every other 2-point segment, so the teal plan reads as a distinct dashed arc.
+        for (int i = 0; i + 3 < w; i += 4)
+        {
+            _renderer!.DrawPolyline(_autopilotPlanScratch.AsSpan(i, 4), AutopilotPlanColor, 2f);
+        }
     }
 
     private void DrawClosestPassMarker()
@@ -10707,6 +10873,15 @@
     {
         var tips = new List<Stations.Captain.LedgerTip>();
 
+        // The autopilot's receipts (#147): every stand-down filed as a ledger line, newest first, so a
+        // handback the owner warped past is still on the record afterward — the established tip idiom.
+        foreach ((double simTime, string text) in _autopilotEvents)
+        {
+            tips.Add(new Stations.Captain.LedgerTip(
+                "🛰 Autopilot", [text], $"logged {FormatSimTime(simTime)}",
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+        }
+
         foreach (ScopeIntel si in _scopeIntel)
         {
             string? prov = si.Giver is { } giver ? ProvenanceLine(giver, si.Station ?? "ashore", si.AcquiredSimTime) : null;
@@ -10779,6 +10954,7 @@
         HoldAtDock();                                        // match the drift now so nothing lurches
         StaleFutureNodes();                                  // a berth cancels any pending burns
         _armedOrbitBodyId = null;                            // and disarms any pending auto-insert (issue #126)
+        _autopilotStandDownReason = null; ResetAutopilotBudget(); // a berth is a fresh start — clear any handback surface
         SetDeckForDock(dock.Id);                             // weld on the walk-through tube if this haven has an interior
         ShowPulseMessage(HavenInterior.HasInterior(dock.Id)
             ? $"⚓ Clamped on at {dock.Name} — gangway's mated. Head to the Deck and walk the tube ashore."

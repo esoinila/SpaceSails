@@ -44,6 +44,12 @@ public readonly record struct FlightPlanStatus(string NowLine, string? NextLine)
 /// or "insertion at Titan"; null when nothing is pending.</param>
 /// <param name="NextStepEta">Pre-built ETA for that step, e.g. "in 2d 4h" or "at window";
 /// null/empty when unknown.</param>
+/// <param name="HandbackReason">Set when the autopilot has LOUDLY handed the ship back (fuel
+/// plan broken by an external burn, watchdog stand-down, docked). It is the persistent NOW line
+/// — the fix for #147, where a disarm was only a 1.5-s toast, invisible at warp — and the single
+/// source of truth every desk chip reads, so nothing can claim a mission the autopilot no longer
+/// flies. Cleared once the captain arms again or changes course. Ignored while armed (the ship is
+/// flying again) or docked (the dock line wins).</param>
 public readonly record struct FlightPlanInputs(
     bool Docked,
     string? DockedHavenName,
@@ -51,7 +57,8 @@ public readonly record struct FlightPlanInputs(
     bool AutopilotFlyingApproach,
     string? AutopilotBodyName,
     string? NextStepLabel,
-    string? NextStepEta);
+    string? NextStepEta,
+    string? HandbackReason = null);
 
 /// <summary>Derives step states and the now/next readout — the single source of truth so the
 /// banner, the Nav header, and the list stay coherent.</summary>
@@ -79,6 +86,10 @@ public static class FlightPlanStatusBuilder
                 ? $"NOW: autopilot approach → {NameOr(f.AutopilotBodyName, "target")}"
             : f.AutopilotArmed
                 ? $"NOW: coasting — autopilot armed for {NameOr(f.AutopilotBodyName, "target")}"
+            // The autopilot handed the ship back (#147): a persistent NOW line — not a toast that
+            // vanishes at warp — so every desk reads "you have the ship" and why.
+            : !string.IsNullOrWhiteSpace(f.HandbackReason)
+                ? $"NOW: manual — {f.HandbackReason}"
             : "NOW: coasting";
 
         // The audit's round-2 cold read (docs/MondayPonder/UIUsabilityNotes.md): testers did not read
