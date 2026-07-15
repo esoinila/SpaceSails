@@ -206,3 +206,34 @@ natural place to teach firing at a *pursuer* to force it off course.
   ship you were aiming at.** Clicking the ship cluster near Earth offered
   Earth/Luna/depots; the freighter itself came via a second path. Prey should be
   first-class (and top) in that chooser.
+
+## Planet-centric frames inside the gas-giant systems (SHIPPED — #135)
+Owner playtest, at Saturn: the plotted navigation ribbon was drawn in the
+heliocentric (inertial) frame, so a moon-to-moon plot was **useless** — the
+interesting motion is relative to Saturn, but it's drowned by the primary's
+~10 km/s solar orbit. Owner's ask: *"some kind of reference frame dropdown maybe
+somewhere, where you could choose this?"*
+
+Shipped as a **reference-frame selector on the Plot panel** (a compact chip row
+under "Plotting"):
+- **`frame:  Sun  Saturn ✦  Titan  Enceladus   v rel Saturn: 5.3 km/s`** — Sun
+  (inertial) is the default; then any body whose Hill sphere currently holds the
+  ship (the local giant) plus that giant's moons, plus the nav target, plus the
+  frame in use so you can never get stranded.
+- **Co-moving render:** in frame *F* every plotted sample at time *t* is drawn at
+  `shipPos(t) − F(t) + F(now)` — subtract the frame body's ephemeris position at
+  the *sample* time, re-anchor at its *current* position. A moon-to-moon flight's
+  loops, approaches and escapes become legible instead of a solar streak.
+  RENDERING ONLY — the projection stays heliocentric; no physics re-runs.
+- **Auto-suggest, not auto-yank:** inside a giant's Hill sphere the giant is
+  highlighted with a ✦, but never selected for you — the owner asked for a choice.
+- **No mixed frames:** the ship-speed readout on the panel is quoted in, and
+  labelled with, the selected frame (`v helio …` vs `v rel Saturn …`), so no
+  number silently disagrees with the chip.
+- **One transform helper** (`Map.PlotFrame` → `Core.ReferenceFrame.CoMoving`)
+  feeds the ribbon, prediction cone, scrub ghosts, node markers and pass markers,
+  so nothing diverges. Sun/inertial is the byte-identical pre-#135 path. Anything
+  drawn at "now" (live bodies, their orbit rings, the ship, NPCs) is the identity
+  under the transform and is left untouched.
+- Reachable for testing via the existing **`/map?start=saturn`** (co-moving among
+  Saturn's moons, inside the Hill sphere).
