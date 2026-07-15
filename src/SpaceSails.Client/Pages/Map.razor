@@ -596,6 +596,23 @@
         {
             <div class="map-plot bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
                 <div class="fw-bold mb-1">Plotting</div>
+                @* #135 — reference-frame selector. Near a gas giant a moon-to-moon plot is useless in
+                   the solar frame: the primary's ~10 km/s solar orbit drowns the interesting motion.
+                   Pick the body the ribbon is drawn co-moving with. Default Sun (inertial); inside a
+                   giant's Hill sphere that giant is suggested (✦) but never auto-selected — the owner
+                   asked for a CHOICE. The v-readout is quoted in, and labelled with, the chosen frame. *@
+                <div class="map-plot-frame d-flex flex-wrap align-items-center gap-1 mb-2">
+                    <span class="text-secondary">frame:</span>
+                    @foreach (FrameOption opt in FrameOptions())
+                    {
+                        bool active = opt.Id == _plotFrameBodyId;
+                        <button type="button"
+                                class="btn btn-sm py-0 @(active ? "btn-info" : opt.Suggested ? "btn-outline-warning" : "btn-outline-light")"
+                                title="@opt.Title"
+                                @onclick="() => SetPlotFrame(opt.Id)">@opt.Label@(opt.Suggested && !active ? " ✦" : "")</button>
+                    }
+                    <span class="text-secondary ms-1" title="Ship speed in the selected frame">@FrameSpeedReadout()</span>
+                </div>
                 <div class="mb-1">Scrub: @FormatSimTime(ScrubTime)</div>
                 @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
                 <input type="range" class="form-range" min="0" max="@CurrentPlotHorizonSeconds" step="3600"
@@ -2251,6 +2268,15 @@
     private double _scrubOffsetSeconds;
     private readonly List<PlanNode> _planNodes = [];
     private ManeuverPlan _plan = ManeuverPlan.Empty;
+
+    // #135 — the plot map's reference frame. null = Sun/inertial (the default; the pre-#135 draw path,
+    // byte-identical). Otherwise the id of the body the plotted ribbon/ghosts/markers are re-expressed
+    // co-moving with, so a moon-to-moon flight near a gas giant reads against the giant instead of
+    // drowning in its ~10 km/s solar orbit. RENDERING ONLY — the projection stays heliocentric.
+    // Held in-memory, so the pick persists across desk switches / Plot⇄Play for the session (a full
+    // page reload resets to Sun).
+    private string? _plotFrameBodyId;
+    private Vector2d _plotFrameAnchor;   // frame body's position at "now", refreshed once per drawn frame
 
     private double ScrubTime => _ship.SimTime + _scrubOffsetSeconds;
 
@@ -6116,6 +6142,20 @@
         _camera.SetViewport(_viewportWidth, _viewportHeight);
         _renderer.BeginFrame(_viewportWidth, _viewportHeight, Background);
 
+        // #135: re-anchor the co-moving plot frame to the frame body's CURRENT position, once per
+        // frame. If the chosen body vanished (scenario reload), fall back to Sun/inertial.
+        if (_plotFrameBodyId is not null && _ephemeris is not null)
+        {
+            if (_ephemeris.Bodies.Any(b => b.Id == _plotFrameBodyId))
+            {
+                _plotFrameAnchor = _ephemeris.Position(_plotFrameBodyId, SimTime);
+            }
+            else
+            {
+                _plotFrameBodyId = null;
+            }
+        }
+
         DrawStreams();
         if (LayerVisible("lanes"))
         {
@@ -6350,6 +6390,149 @@
         }
     }
 
+    // #135 — the ONE place a world sample gets re-expressed in the active plot frame before it hits
+    // the camera. Sun/inertial (or outside Plot mode) returns the sample untouched — the pre-#135
+    // path, byte-identical. Otherwise it's ReferenceFrame.CoMoving with the frame body's ephemeris
+    // position at the SAMPLE time and at "now" (_plotFrameAnchor, refreshed once per drawn frame).
+    // Every time-parameterized plot draw funnels through this so nothing diverges. Anything drawn at
+    // "now" (live bodies, the ship, NPCs) is the identity here anyway (bodyF(now) − bodyF(now) = 0),
+    // so those keep their untouched WorldToScreen call and never move under a frame change.
+    private Vector2d PlotFrame(Vector2d world, double simTime)
+    {
+        if (!PlotMode || _plotFrameBodyId is null || _ephemeris is null)
+        {
+            return world;
+        }
+        return ReferenceFrame.CoMoving(world, _ephemeris.Position(_plotFrameBodyId, simTime), _plotFrameAnchor);
+    }
+
+    // #135 — one entry in the plot's frame selector. Id == null is Sun/inertial.
+    private sealed record FrameOption(string? Id, string Label, string Title, bool Suggested);
+
+    // The frames worth offering, in reading order: Sun (inertial), then any body whose Hill sphere
+    // currently holds the ship (the local giant) and that giant's moons, then the nav target / picked
+    // contact, and always the frame in use so you can never get stranded in a frame with no chip.
+    private List<FrameOption> FrameOptions()
+    {
+        string? suggestId = SuggestedFrameBodyId();
+        var opts = new List<FrameOption> { new(null, "Sun", "Heliocentric (inertial) — the default solar frame", false) };
+        if (_ephemeris is null)
+        {
+            return opts;
+        }
+
+        var seen = new HashSet<string>();
+        void Add(string? id)
+        {
+            if (id is null || id == "sun" || !seen.Add(id))
+            {
+                return;
+            }
+            CelestialBody? b = _ephemeris.Bodies.FirstOrDefault(x => x.Id == id);
+            if (b is null)
+            {
+                return;
+            }
+            opts.Add(new FrameOption(b.Id, b.Name, $"Draw the plotted course co-moving with {b.Name}", b.Id == suggestId));
+        }
+
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (!ShipInsideHill(body))
+            {
+                continue;
+            }
+            Add(body.Id);
+            foreach (CelestialBody child in _ephemeris.Bodies)
+            {
+                if (child.ParentId == body.Id && child.Kind != BodyKind.Station)
+                {
+                    Add(child.Id);
+                }
+            }
+        }
+        Add(_destinationBodyId);
+        if (_selectedTargetId is not null && _ephemeris.Bodies.Any(b => b.Id == _selectedTargetId))
+        {
+            Add(_selectedTargetId);
+        }
+        Add(_plotFrameBodyId);   // never orphan the active frame
+        return opts;
+    }
+
+    // The frame to nudge the player toward: the giant (a body that owns a moon system) whose Hill
+    // sphere currently holds the ship. Largest Hill wins, so from inside a moon's Hill sphere it's
+    // still the giant that gets suggested, not the moon. Never auto-applied — just highlighted.
+    private string? SuggestedFrameBodyId()
+    {
+        if (_ephemeris is null)
+        {
+            return null;
+        }
+        string? best = null;
+        double bestHill = 0;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            bool ownsMoons = _ephemeris.Bodies.Any(c => c.ParentId == body.Id && c.Kind != BodyKind.Station);
+            if (!ownsMoons || !ShipInsideHill(body, out double hill))
+            {
+                continue;
+            }
+            if (hill > bestHill)
+            {
+                (bestHill, best) = (hill, body.Id);
+            }
+        }
+        return best;
+    }
+
+    private bool ShipInsideHill(CelestialBody body) => ShipInsideHill(body, out _);
+
+    private bool ShipInsideHill(CelestialBody body, out double hill)
+    {
+        hill = 0;
+        if (_ephemeris is null || body.ParentId is null)
+        {
+            return false;
+        }
+        CelestialBody? parent = _ephemeris.Bodies.FirstOrDefault(b => b.Id == body.ParentId);
+        if (parent is null)
+        {
+            return false;
+        }
+        hill = OrbitRule.HillRadius(body, parent.Mu);
+        double distance = (_ship.Position - _ephemeris.Position(body.Id, SimTime)).Length;
+        return distance < hill;
+    }
+
+    // #135 — the ship's speed IN the selected frame, labelled with it, so the number on the plot
+    // panel never silently disagrees with the frame chip (the documented mixed-frame trap).
+    private string FrameSpeedReadout()
+    {
+        if (_ephemeris is null)
+        {
+            return string.Empty;
+        }
+        Vector2d frameVel = Vector2d.Zero;
+        if (_plotFrameBodyId is not null)
+        {
+            const double h = 1.0;
+            frameVel = (_ephemeris.Position(_plotFrameBodyId, SimTime + h) - _ephemeris.Position(_plotFrameBodyId, SimTime - h)) / (2 * h);
+        }
+        double relKmps = (_ship.Velocity - frameVel).Length / 1000.0;
+        string label = _plotFrameBodyId is null ? "v helio" : $"v rel {BodyName(_plotFrameBodyId)}";
+        return $"{label}: {relKmps.ToString("N1", CultureInfo.InvariantCulture)} km/s";
+    }
+
+    private void SetPlotFrame(string? bodyId)
+    {
+        _plotFrameBodyId = bodyId;
+        if (bodyId is not null && _ephemeris is not null)
+        {
+            _plotFrameAnchor = _ephemeris.Position(bodyId, SimTime);
+        }
+    }
+
     private void DrawShipTrajectory()
     {
         if (_samples.Count < 2) return;
@@ -6362,7 +6545,7 @@
 
         for (int i = 0; i < _samples.Count; i++)
         {
-            (float x, float y) = _camera.WorldToScreen(_samples[i].Position);
+            (float x, float y) = _camera.WorldToScreen(PlotFrame(_samples[i].Position, _samples[i].SimTime));
             _scratch[i * 2] = x;
             _scratch[i * 2 + 1] = y;
         }
@@ -6377,7 +6560,7 @@
             return; // beyond 25 radii nobody is embarrassed
         }
 
-        (float sx, float sy) = _camera.WorldToScreen(cp.ShipPosition);
+        (float sx, float sy) = _camera.WorldToScreen(PlotFrame(cp.ShipPosition, cp.SimTime));
         RgbaColor color = cp.Impact
             ? new RgbaColor(255, 80, 80, 230)
             : cp.Severity < 5 ? new RgbaColor(255, 200, 80, 220) : new RgbaColor(170, 190, 210, 160);
@@ -6420,8 +6603,8 @@
             return;
         }
 
-        (float px, float py) = _camera.WorldToScreen(dp.ShipPosition);
-        (float bx, float by) = _camera.WorldToScreen(_ephemeris.Position(dp.BodyId, dp.SimTime));
+        (float px, float py) = _camera.WorldToScreen(PlotFrame(dp.ShipPosition, dp.SimTime));
+        (float bx, float by) = _camera.WorldToScreen(PlotFrame(_ephemeris.Position(dp.BodyId, dp.SimTime), dp.SimTime));
 
         Span<float> line = stackalloc float[4];
         line[0] = px; line[1] = py; line[2] = bx; line[3] = by;
@@ -6458,8 +6641,8 @@
             return; // same embarrassment threshold as the pass marker
         }
 
-        (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(cp.BodyId, cp.SimTime));
-        (float nx, float ny) = _camera.WorldToScreen(_ephemeris.Position(cp.BodyId, SimTime));
+        (float sx, float sy) = _camera.WorldToScreen(PlotFrame(_ephemeris.Position(cp.BodyId, cp.SimTime), cp.SimTime));
+        (float nx, float ny) = _camera.WorldToScreen(PlotFrame(_ephemeris.Position(cp.BodyId, SimTime), SimTime));
         if (Math.Abs(sx - nx) < 6 && Math.Abs(sy - ny) < 6)
         {
             return; // the ghost would sit on the live disc anyway (imminent pass or far zoom-out)
@@ -6488,8 +6671,8 @@
         foreach (CelestialBody body in ephemeris.Bodies)
         {
             Vector2d position = ephemeris.Position(body.Id, t);
-            (float sx, float sy) = _camera.WorldToScreen(position);
-            (float nx, float ny) = _camera.WorldToScreen(ephemeris.Position(body.Id, SimTime));
+            (float sx, float sy) = _camera.WorldToScreen(PlotFrame(position, t));
+            (float nx, float ny) = _camera.WorldToScreen(PlotFrame(ephemeris.Position(body.Id, SimTime), SimTime));
 
             tether[0] = nx; tether[1] = ny; tether[2] = sx; tether[3] = sy;
             _renderer!.DrawPolyline(tether, new RgbaColor(180, 200, 220, 40), 1f);
@@ -6513,7 +6696,7 @@
     {
         if (_samples.Count == 0) return;
         Vector2d position = SamplePositionAt(ScrubTime);
-        (float sx, float sy) = _camera.WorldToScreen(position);
+        (float sx, float sy) = _camera.WorldToScreen(PlotFrame(position, ScrubTime));
         _renderer!.DrawCircle(sx, sy, 4f, GhostShipColor, GhostShipColor);
     }
 
@@ -6525,7 +6708,7 @@
         {
             if (node.Executed) continue;
             Vector2d position = SamplePositionAt(node.SimTime);
-            (float sx, float sy) = _camera.WorldToScreen(position);
+            (float sx, float sy) = _camera.WorldToScreen(PlotFrame(position, node.SimTime));
             RgbaColor color = node.Stale
                 ? StaleNodeColor
                 : node.Action == ManeuverAction.Accelerate ? AccelNodeColor : DecelNodeColor;
@@ -8529,9 +8712,9 @@
             Vector2d perp = new(-dir.Y, dir.X);
             double halfWidth = path.HalfWidthAt(sample.SimTime);
 
-            (float cx, float cy) = _camera.WorldToScreen(sample.Position);
-            (float ux, float uy) = _camera.WorldToScreen(sample.Position + perp * halfWidth);
-            (float lx, float ly) = _camera.WorldToScreen(sample.Position - perp * halfWidth);
+            (float cx, float cy) = _camera.WorldToScreen(PlotFrame(sample.Position, sample.SimTime));
+            (float ux, float uy) = _camera.WorldToScreen(PlotFrame(sample.Position + perp * halfWidth, sample.SimTime));
+            (float lx, float ly) = _camera.WorldToScreen(PlotFrame(sample.Position - perp * halfWidth, sample.SimTime));
             _coneCenter[w] = cx; _coneUpper[w] = ux; _coneLower[w] = lx;
             _coneCenter[w + 1] = cy; _coneUpper[w + 1] = uy; _coneLower[w + 1] = ly;
             w += 2;
