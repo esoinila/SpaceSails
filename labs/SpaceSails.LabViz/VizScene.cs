@@ -18,12 +18,19 @@ namespace SpaceSails.LabViz;
 /// <code>
 ///   parent = parentId is null ? (0, 0) : position(parentId, t)
 ///   if orbitPeriod == 0:  position = parent            // e.g. the sun sits at its parent/origin
-///   else:                 angle    = initialPhase + 2*PI * t / orbitPeriod
+///   else if eccentricity == 0:                         // circle — the legacy path, unchanged
+///                         angle    = initialPhase + 2*PI * t / orbitPeriod
 ///                         position = parent + (orbitRadius*cos(angle), orbitRadius*sin(angle))
+///   else:                 M  = initialPhase + 2*PI * t / orbitPeriod      // mean anomaly
+///                         E  = solve  M = E - e*sin(E)  (Newton)          // eccentric anomaly
+///                         px = a*(cos(E) - e),  py = a*sqrt(1-e^2)*sin(E)  // a = orbitRadius, perifocal
+///                         position = parent + rotate(px, py, argPeriapsis) // ω from +X
 /// </code>
 /// The phase grows with time (prograde / counter-clockwise), the angle is measured from +X, and a
-/// zero-period body inherits its parent's position. The same formula is documented in the viewer
-/// JS comment and exercised by the ephemeris-parity unit test.</para>
+/// zero-period body inherits its parent's position. For an eccentric body <c>orbitRadius</c> is the
+/// semi-major axis, <c>initialPhase</c> is the mean anomaly at epoch, and periapsis points along
+/// <c>argPeriapsis</c>. The same formula (including the Kepler solve) is documented in the viewer JS
+/// comment and exercised by the ephemeris-parity unit tests (circular and elliptical).</para>
 /// </summary>
 public sealed class VizScene
 {
@@ -110,7 +117,7 @@ public sealed class VizScene
                 : DefaultBodyPalette[_bodies.Count % DefaultBodyPalette.Length]);
         _bodies.Add(new BodyDoc(
             body.Id, body.Name, body.ParentId, body.BodyRadius,
-            body.OrbitRadius, body.OrbitPeriod, body.InitialPhase, color));
+            body.OrbitRadius, body.OrbitPeriod, body.InitialPhase, body.Eccentricity, body.ArgPeriapsis, color));
     }
 
     /// <summary>Record a batch of bodies (e.g. an ephemeris' whole <see cref="ICelestialEphemeris.Bodies"/> list).</summary>
@@ -322,6 +329,8 @@ public sealed class VizScene
         double OrbitRadius,
         double OrbitPeriod,
         double InitialPhase,
+        double Eccentricity,
+        double ArgPeriapsis,
         string Color);
 
     private sealed record PathDoc(

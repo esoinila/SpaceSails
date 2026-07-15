@@ -162,14 +162,35 @@ const camera = {
 // ---------------------------------------------------------------------------------------------
 // Ephemeris — a direct port of CircularOrbitEphemeris.Position. Positions MUST match the C# exactly,
 // parent chaining included. The angle grows with time (prograde), measured from +X; a zero-period
-// body inherits its parent's position:
+// body inherits its parent's position. e === 0 is the legacy circular formula; e > 0 is a Kepler
+// ellipse (semi-major axis = orbitRadius, initialPhase = mean anomaly at epoch, periapsis along
+// argPeriapsis):
 //
 //   parent = parentId is null ? (0,0) : bodyPosition(parentId, t)
-//   angle  = initialPhase + 2*PI * t / orbitPeriod
-//   pos    = parent + (orbitRadius*cos(angle), orbitRadius*sin(angle))
+//   M      = initialPhase + 2*PI * t / orbitPeriod
+//   if e === 0:  pos = parent + (orbitRadius*cos(M), orbitRadius*sin(M))
+//   else:        E   = solveKepler(M, e)          // M = E - e*sin(E), Newton
+//                px  = a*(cos(E) - e), py = a*sqrt(1-e^2)*sin(E)   // a = orbitRadius, perifocal
+//                pos = parent + rotate(px, py, argPeriapsis)
 // ---------------------------------------------------------------------------------------------
 const bodyById = {};
 for (const b of (SCENE.bodies || [])) bodyById[b.id] = b;
+
+// Kepler's equation solved by Newton — a direct port of CircularOrbitEphemeris.SolveEccentricAnomaly:
+// reduce M to [-PI, PI], seed E0 = M + e*sin(M), then a fixed budget of Newton steps with an early
+// convergence break. Same seed, same budget, same tolerance as the C#, so the parity test matches.
+function solveKepler(meanAnomaly, e) {
+  // IEEERemainder(M, 2*PI): the value of M - 2*PI*round(M / 2*PI), landing in [-PI, PI].
+  const twoPi = 2 * Math.PI;
+  let m = meanAnomaly - twoPi * Math.round(meanAnomaly / twoPi);
+  let bigE = m + e * Math.sin(m);
+  for (let i = 0; i < 12; i++) {
+    const delta = (bigE - e * Math.sin(bigE) - m) / (1 - e * Math.cos(bigE));
+    bigE -= delta;
+    if (Math.abs(delta) < 1e-12) break;
+  }
+  return bigE;
+}
 
 function bodyPosition(body, t) {
   // Belt-and-braces: an unknown parentId (should be impossible — VizScene.AddBody validates it)
@@ -177,11 +198,21 @@ function bodyPosition(body, t) {
   const parentBody = body.parentId ? bodyById[body.parentId] : null;
   const parent = parentBody ? bodyPosition(parentBody, t) : [0, 0];
   if (body.orbitPeriod === 0) return parent;
-  const angle = body.initialPhase + (2 * Math.PI * t) / body.orbitPeriod;
-  return [
-    parent[0] + body.orbitRadius * Math.cos(angle),
-    parent[1] + body.orbitRadius * Math.sin(angle),
-  ];
+  const M = body.initialPhase + (2 * Math.PI * t) / body.orbitPeriod;
+  const e = body.eccentricity || 0;
+  if (e === 0) {
+    return [
+      parent[0] + body.orbitRadius * Math.cos(M),
+      parent[1] + body.orbitRadius * Math.sin(M),
+    ];
+  }
+  const bigE = solveKepler(M, e);
+  const a = body.orbitRadius;
+  const px = a * (Math.cos(bigE) - e);
+  const py = a * Math.sqrt(1 - e * e) * Math.sin(bigE);
+  const w = body.argPeriapsis || 0;
+  const cw = Math.cos(w), sw = Math.sin(w);
+  return [parent[0] + cw * px - sw * py, parent[1] + sw * px + cw * py];
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -312,7 +343,10 @@ function strokeWorldPolyline(points) {
   ctx.stroke();
 }
 
-// Orbit rings: 128-segment polylines around each body's parent position at the current time.
+// Orbit rings: 128-segment polylines around each body's parent position at the current time. A
+// circular body traces a circle of radius orbitRadius; an eccentric body traces its true ellipse
+// (sweep the eccentric anomaly E over a full turn — even angular spacing in E gives a smooth ellipse
+// and needs no per-vertex Kepler solve).
 function drawOrbitRings() {
   ctx.strokeStyle = COL.orbit;
   ctx.lineWidth = 1;
@@ -321,10 +355,21 @@ function drawOrbitRings() {
     // Unknown parent (should be impossible) resolves to the origin, matching bodyPosition.
     const parentBody = b.parentId ? bodyById[b.parentId] : null;
     const parent = parentBody ? bodyPosition(parentBody, simTime) : [0, 0];
+    const e = b.eccentricity || 0;
     const ring = [];
-    for (let i = 0; i <= ORBIT_SEGMENTS; i++) {
-      const a = (2 * Math.PI * i) / ORBIT_SEGMENTS;
-      ring.push([parent[0] + b.orbitRadius * Math.cos(a), parent[1] + b.orbitRadius * Math.sin(a)]);
+    if (e === 0) {
+      for (let i = 0; i <= ORBIT_SEGMENTS; i++) {
+        const a = (2 * Math.PI * i) / ORBIT_SEGMENTS;
+        ring.push([parent[0] + b.orbitRadius * Math.cos(a), parent[1] + b.orbitRadius * Math.sin(a)]);
+      }
+    } else {
+      const a = b.orbitRadius, bMinor = a * Math.sqrt(1 - e * e);
+      const w = b.argPeriapsis || 0, cw = Math.cos(w), sw = Math.sin(w);
+      for (let i = 0; i <= ORBIT_SEGMENTS; i++) {
+        const bigE = (2 * Math.PI * i) / ORBIT_SEGMENTS;
+        const px = a * (Math.cos(bigE) - e), py = bMinor * Math.sin(bigE);
+        ring.push([parent[0] + cw * px - sw * py, parent[1] + sw * px + cw * py]);
+      }
     }
     strokeWorldPolyline(ring);
   }

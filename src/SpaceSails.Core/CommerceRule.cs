@@ -262,7 +262,7 @@ public static class CommerceRule
         }
 
         Vector2d bodyPosition = ephemeris.Position(bodyId, simTime);
-        double hillRadius = HillRadiusFor(ephemeris, body);
+        double hillRadius = HillRadiusFor(ephemeris, body, simTime);
 
         foreach (LocalShip ship in ships)
         {
@@ -401,7 +401,7 @@ public static class CommerceRule
         };
     }
 
-    private static double HillRadiusFor(ICelestialEphemeris ephemeris, CelestialBody body)
+    private static double HillRadiusFor(ICelestialEphemeris ephemeris, CelestialBody body, double simTime)
     {
         if (body.ParentId is null)
         {
@@ -423,6 +423,8 @@ public static class CommerceRule
             return StationProximityRadiusMeters;
         }
 
-        return OrbitRule.HillRadius(body, parent.Mu);
+        // Instantaneous separation (Kepler rails, PR-B): identical to OrbitRadius for a circular body,
+        // but an eccentric haven's Hill sphere breathes with its real distance from the parent.
+        return OrbitRule.HillRadius(ephemeris.InstantaneousOrbitRadius(body.Id, simTime), body.Mu, parent.Mu);
     }
 }

@@ -113,7 +113,9 @@ public class LabVizTests
     }
 
     // Test 3 (the parity gate): positions recomputed from emitted body parameters using the
-    // documented viewer formula — including a parent-chained moon — match CircularOrbitEphemeris.
+    // documented viewer formula — including a parent-chained moon AND a strongly eccentric comet
+    // (Kepler rails, PR-B) AND an eccentric moon chained onto a circular planet — match
+    // CircularOrbitEphemeris. The eccentric bodies are what prove the viewer's Kepler solve tracks Core.
     [Fact]
     public void EphemerisParity_ViewerFormula_MatchesCircularOrbitEphemeris()
     {
@@ -122,6 +124,10 @@ public class LabVizTests
             new("sun", "Sun", null, 1.327e20, 6.96e8, 0, 0, 0),
             new("earth", "Earth", "sun", 3.986e14, 6.371e6, 1.496e11, 6.283e7, 1.1),
             new("moon", "Moon", "earth", 4.903e12, 1.737e6, 3.844e8, 2.36e6, 2.7, BodyKind.Moon),
+            // A comet on a highly eccentric sun orbit with a tilted periapsis.
+            new("comet", "Comet", "sun", 1e12, 2e6, 2.7e11, 5.4e8, 0.4, BodyKind.Planet, false, null, 0.72, 1.3),
+            // An eccentric moon riding a circular planet — exercises Kepler solve UNDER parent chaining.
+            new("ecc-moon", "Ecc Moon", "earth", 1e12, 1e6, 5.0e8, 1.1e6, 5.9, BodyKind.Moon, false, null, 0.35, -0.6),
         ];
         var ephemeris = new CircularOrbitEphemeris(bodies);
 
@@ -139,7 +145,7 @@ public class LabVizTests
         double[] times = [0, 1e5, 1.234e6, 5e6, 3.1e7];
         foreach (double t in times)
         {
-            foreach (string id in new[] { "sun", "earth", "moon" })
+            foreach (string id in new[] { "sun", "earth", "moon", "comet", "ecc-moon" })
             {
                 Vector2d expected = ephemeris.Position(id, t);
                 (double x, double y) = ViewerPosition(byId, id, t);
@@ -261,8 +267,10 @@ public class LabVizTests
         scene.AddMarker(3, new Vector2d(1e11, 0), "ok-event", MarkerKinds.Event);
     }
 
-    // The documented viewer formula, in C#: parent chaining, angle = initialPhase + 2*PI*t/period,
-    // and a zero-period body inherits its parent's position.
+    // The documented viewer formula, in C#: parent chaining, mean anomaly M = initialPhase + 2*PI*t/period,
+    // a zero-period body inherits its parent's position, e == 0 is the circular path, and e > 0 is the
+    // Kepler ellipse (semi-major axis = orbitRadius, periapsis along argPeriapsis). This mirrors the
+    // viewer.html JS exactly — it is the honesty gate that proves the viewer plots what Core computes.
     private static (double X, double Y) ViewerPosition(Dictionary<string, JsonElement> byId, string id, double t)
     {
         JsonElement b = byId[id];
@@ -279,8 +287,27 @@ public class LabVizTests
 
         double radius = b.GetProperty("orbitRadius").GetDouble();
         double phase = b.GetProperty("initialPhase").GetDouble();
-        double angle = phase + 2 * Math.PI * t / period;
-        return (px + radius * Math.Cos(angle), py + radius * Math.Sin(angle));
+        double m = phase + 2 * Math.PI * t / period;
+        double e = b.TryGetProperty("eccentricity", out JsonElement ee) ? ee.GetDouble() : 0.0;
+        if (e == 0.0)
+        {
+            return (px + radius * Math.Cos(m), py + radius * Math.Sin(m));
+        }
+
+        // Kepler solve — same seed/budget/tolerance as CircularOrbitEphemeris.SolveEccentricAnomaly.
+        double reduced = Math.IEEERemainder(m, Math.Tau);
+        double bigE = reduced + e * Math.Sin(reduced);
+        for (int i = 0; i < 12; i++)
+        {
+            double delta = (bigE - e * Math.Sin(bigE) - reduced) / (1 - e * Math.Cos(bigE));
+            bigE -= delta;
+            if (Math.Abs(delta) < 1e-12) break;
+        }
+
+        double w = b.TryGetProperty("argPeriapsis", out JsonElement we) ? we.GetDouble() : 0.0;
+        double ox = radius * (Math.Cos(bigE) - e);
+        double oy = radius * Math.Sqrt(1 - e * e) * Math.Sin(bigE);
+        return (px + Math.Cos(w) * ox - Math.Sin(w) * oy, py + Math.Sin(w) * ox + Math.Cos(w) * oy);
     }
 
     // Test 4: the HTML is self-contained — carries the spliced scene and no external-resource refs.

@@ -1878,6 +1878,25 @@
     private const string CanvasId = "map-canvas";
     private const int OrbitSegments = 128;
 
+    // Kepler rails (PR-B) dev cheat body for /map?ellipse=1: a sun-orbiting rock on a strongly
+    // eccentric ellipse (e = 0.6) with periapsis tilted 40° off +X, semi-major axis ~1.4 AU, ~500-day
+    // period. Not shipped in any scenario — appended only when the cheat is set — so it exists purely
+    // to eyeball the elliptical ring and the non-uniform (fast at periapsis) tracking in-browser.
+    private static BodyDefinition KeplerDemoBody() => new()
+    {
+        Id = "kepler-demo",
+        Name = "Kepler Demo",
+        ParentId = "sun",
+        Mu = 0,
+        BodyRadiusM = 4e9,          // oversized so it reads as a clear dot at system zoom
+        OrbitRadiusM = 2.1e11,      // semi-major axis
+        OrbitPeriodS = 4.32e7,      // ~500 days
+        InitialPhaseRad = 0.0,      // mean anomaly at epoch — starts at periapsis
+        Eccentricity = 0.6,
+        ArgPeriapsisRad = 0.7,      // ~40° periapsis tilt so the ellipse is obviously not axis-aligned
+        Kind = "planet",
+    };
+
     private static readonly RgbaColor Background = new(6, 9, 18);
     private static readonly RgbaColor OrbitColor = new(80, 100, 130, 130);
     private static readonly RgbaColor ShipColor = new(255, 210, 80);
@@ -4992,6 +5011,7 @@
         string? tipCheat = null;
         string? slingCheat = null;
         string? skimCheat = null;
+        bool ellipseCheat = false; // /map?ellipse=1 injects a visibly eccentric demo body (Kepler rails, PR-B)
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -5075,10 +5095,22 @@
                     skimCheat = candidate;
                 }
             }
+            else if (pair.StartsWith("ellipse=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Kepler rails (PR-B) dev cheat: /map?ellipse=1 drops one visibly eccentric body onto
+                // a sun orbit so the elliptical ring and its non-uniform tracking are checkable in the
+                // browser. No effect on any shipped body — it's an extra body appended at load.
+                string candidate = Uri.UnescapeDataString(pair["ellipse=".Length..]).ToLowerInvariant();
+                ellipseCheat = candidate is "1" or "true" or "yes";
+            }
         }
 
         string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json");
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
+        if (ellipseCheat)
+        {
+            scenario = scenario with { Bodies = [.. scenario.Bodies, KeplerDemoBody()] };
+        }
         _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
         // Tuesday plan PR-A: the scenario's off-the-charts bodies (e.g. the derelict roadster). They
@@ -6225,10 +6257,29 @@
             if (body.OrbitPeriod != 0 && body.OrbitRadius > 0)
             {
                 Vector2d parentPosition = body.ParentId is null ? Vector2d.Zero : ephemeris.Position(body.ParentId, SimTime);
+                // Kepler rails (PR-B): a circular body's ring is a circle of radius OrbitRadius; an
+                // eccentric body's is its true ellipse, traced by sweeping the eccentric anomaly over a
+                // full turn (even spacing in E, one perifocal point rotated by ω per vertex — no
+                // per-vertex Kepler solve). e == 0 keeps the exact circular sweep.
+                double e = body.Eccentricity;
+                double semiMinor = e == 0.0 ? body.OrbitRadius : body.OrbitRadius * Math.Sqrt(1.0 - e * e);
+                double cosW = Math.Cos(body.ArgPeriapsis);
+                double sinW = Math.Sin(body.ArgPeriapsis);
                 for (int i = 0; i <= OrbitSegments; i++)
                 {
-                    double angle = Math.Tau * i / OrbitSegments;
-                    Vector2d world = parentPosition + new Vector2d(body.OrbitRadius * Math.Cos(angle), body.OrbitRadius * Math.Sin(angle));
+                    double t = Math.Tau * i / OrbitSegments;
+                    Vector2d world;
+                    if (e == 0.0)
+                    {
+                        world = parentPosition + new Vector2d(body.OrbitRadius * Math.Cos(t), body.OrbitRadius * Math.Sin(t));
+                    }
+                    else
+                    {
+                        double px = body.OrbitRadius * (Math.Cos(t) - e);
+                        double py = semiMinor * Math.Sin(t);
+                        world = parentPosition + new Vector2d(cosW * px - sinW * py, sinW * px + cosW * py);
+                    }
+
                     (float x, float y) = _camera.WorldToScreen(world);
                     ring[i * 2] = x;
                     ring[i * 2 + 1] = y;
