@@ -96,6 +96,40 @@ public static class OrbitRule
     public static double CircularSpeed(CelestialBody body, double distance) =>
         Math.Sqrt(body.Mu / distance);
 
+    /// <summary>Local circular-orbit period (s) at radius <paramref name="radius"/> around a body of
+    /// gravitational parameter <paramref name="mu"/>: T = 2π·√(r³/μ). One sqrt — cheap enough to
+    /// recompute every frame as the ship's radius changes.</summary>
+    public static double LocalOrbitPeriod(double radius, double mu) =>
+        2 * Math.PI * Math.Sqrt(radius * radius * radius / mu);
+
+    /// <summary>
+    /// #145 — how many seconds of a time-parameterized trajectory to DISPLAY in a co-moving frame
+    /// around a Hill-sphere body. The full projection is sized for solar legs (days–weeks); drawn
+    /// inside a moon system it renders as a spirograph coil (the owner's 7-day Titan approach = ~8-10
+    /// overlapping laps of Saturn). So the DRAWN length scales to the frame's local timescale:
+    /// ~<paramref name="periods"/> local orbital periods at the ship's current <paramref name="radius"/>,
+    /// while the underlying projection/ETA math stays full length.
+    ///
+    /// Clamped: never shorter than <paramref name="floorSeconds"/> (the caller folds in "a few hours"
+    /// and the time-to-next-plan-node + margin, so the imminent step is never hidden); never longer
+    /// than <paramref name="fullHorizonSeconds"/> (when the full projection is already shorter than a
+    /// local period — e.g. a wide moon far from its planet — we just draw all of it).
+    ///
+    /// Degenerate inputs (non-positive radius/μ, non-finite horizon) fall back to the full horizon —
+    /// no truncation — so a mass-less dock or the Sun frame is a no-op for the caller.
+    /// </summary>
+    public static double FrameScaledWindowSeconds(
+        double radius, double mu, double fullHorizonSeconds, double floorSeconds, double periods = 1.25)
+    {
+        if (!(radius > 0) || !(mu > 0) || !double.IsFinite(fullHorizonSeconds))
+        {
+            return fullHorizonSeconds;
+        }
+        double window = periods * LocalOrbitPeriod(radius, mu);
+        window = Math.Max(window, Math.Max(0, floorSeconds));
+        return Math.Min(window, fullHorizonSeconds);
+    }
+
     /// <summary>The radius the autopilot parks/circularizes at — the insertion gate (issue #136).
     /// Robustly tide-stable (≈ 0.33 Hill, <see cref="ParkStableHillFraction"/>), a clear margin above
     /// the surface (≥ <see cref="SurfaceParkRadii"/>·R), never in the tide-stripped outer Hill

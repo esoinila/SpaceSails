@@ -2204,6 +2204,24 @@
     // cheap in interpreted WASM (~5.8k steps); plan-node times still land exactly.
     private const double PlotHorizonSeconds = 730 * 24 * 3600;
 
+    // #145 — in a co-moving frame around a Hill-sphere body the full solar-scale ribbon draws as a
+    // spirograph coil (the owner's 7-day Titan approach = ~8-10 laps of Saturn). So the DRAWN length
+    // is truncated to ~this many LOCAL orbital periods at the ship's current radius around the frame
+    // body; the projection/ETA math in _samples stays full length. Sun frame is untouched.
+    private const double FrameWindowLocalPeriods = 1.25;
+    // Never truncate below this — the near-term course must always be readable ("a few hours").
+    private const double FrameWindowFloorSeconds = 6 * 3600;
+    // …and never hide an imminent plan node: the window is stretched to the next future node plus
+    // this margin, so the step sits comfortably inside the solid ribbon, not right at the fade edge.
+    private const double FrameWindowNodeMarginSeconds = 12 * 3600;
+    // The truncated ribbon ends SOFTLY, not with a hard chop: the last slice of the window fades to
+    // nothing using the #110 time-fade idiom (per-segment alpha, quantized into buckets so a long
+    // ribbon still strokes in a handful of DrawPolyline runs).
+    private const double FrameRibbonFadeFraction = 0.22;   // fade over the last ~22% of the window
+    private const double FrameRibbonFadeMinSeconds = 2 * 3600;
+    private const double FrameRibbonFadeMaxSeconds = 2 * 86400;
+    private const int FrameRibbonFadeBuckets = 12;
+
     // Owner request: the future path is adjustable. AUTO follows the plan — last burn + 90
     // days (min 30 d) — so ship-to-ship work stays tight and a plotted Saturn sail stretches
     // the ribbon automatically; presets override.
@@ -6627,6 +6645,45 @@
         }
     }
 
+    // #145 — the DISPLAYED trajectory length, scaled to the frame's local timescale. null in the
+    // Sun/inertial frame (draw the full ribbon, byte-identical to pre-#145) or when the frame body
+    // has no local orbit to scale to (the Sun itself, a mass-less dock). Otherwise: how many seconds
+    // of the ribbon to draw — ~1.25 local orbital periods at the ship's CURRENT radius around the
+    // frame body (one sqrt), floored so the imminent step is never hidden and ceilinged at the full
+    // projection. Recomputed per frame, so the arc tightens as the ship falls in.
+    private double? FrameDisplayWindowSeconds()
+    {
+        if (_plotFrameBodyId is null || _ephemeris is null)
+        {
+            return null; // Sun frame: no truncation
+        }
+        CelestialBody? frame = _ephemeris.Bodies.FirstOrDefault(b => b.Id == _plotFrameBodyId);
+        if (frame is null || frame.ParentId is null || frame.Mu <= 0)
+        {
+            return null; // the Sun itself, or a mass-less dock — nothing to orbit, nothing to scale to
+        }
+
+        double radius = (_ship.Position - _ephemeris.Position(frame.Id, SimTime)).Length;
+
+        // Floor: never hide the near-term course. A few hours, or the next FUTURE plan node + margin,
+        // whichever is larger — so the flight plan's NEXT line and the ribbon can't contradict (#145.5).
+        double floor = FrameWindowFloorSeconds;
+        double nextNode = double.PositiveInfinity;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (!node.Stale && node.SimTime > SimTime && node.SimTime < nextNode)
+            {
+                nextNode = node.SimTime;
+            }
+        }
+        if (double.IsFinite(nextNode))
+        {
+            floor = Math.Max(floor, (nextNode - SimTime) + FrameWindowNodeMarginSeconds);
+        }
+
+        return OrbitRule.FrameScaledWindowSeconds(radius, frame.Mu, CurrentPlotHorizonSeconds, floor, FrameWindowLocalPeriods);
+    }
+
     private void DrawShipTrajectory()
     {
         if (_samples.Count < 2) return;
@@ -6644,7 +6701,78 @@
             _scratch[i * 2 + 1] = y;
         }
 
-        _renderer!.DrawPolyline(_scratch.AsSpan(0, _samples.Count * 2), TrajectoryColor);
+        // Sun frame (or a frame with no local orbit): the pre-#145 flat polyline, byte-identical.
+        double? window = FrameDisplayWindowSeconds();
+        if (window is null)
+        {
+            _renderer!.DrawPolyline(_scratch.AsSpan(0, _samples.Count * 2), TrajectoryColor);
+            return;
+        }
+
+        // A Hill-sphere frame: draw only the first `window` seconds of the ribbon, ending SOFTLY with
+        // the #110 fade. The full-length data stays in _samples — scrubbing, ETA, closest-pass and
+        // node markers all keep reading it; only the drawn ribbon is clipped. (Node markers past the
+        // window still draw as dots — just without the connecting ribbon; the floor rule guarantees
+        // the NEXT node is inside the solid part.)
+        double cutoff = _ship.SimTime + window.Value;
+        double fadeSpan = Math.Clamp(window.Value * FrameRibbonFadeFraction, FrameRibbonFadeMinSeconds, FrameRibbonFadeMaxSeconds);
+        double fadeStart = cutoff - fadeSpan;
+
+        // Last vertex to draw: the first sample at/after the cutoff (so the fade reaches zero just past
+        // it), capped to the data.
+        int end = _samples.Count - 1;
+        for (int i = 1; i < _samples.Count; i++)
+        {
+            if (_samples[i].SimTime >= cutoff)
+            {
+                end = i;
+                break;
+            }
+        }
+        if (end < 1)
+        {
+            end = 1;
+        }
+
+        // Coalesce consecutive same-alpha segments into single DrawPolyline runs (the #110 idiom):
+        // alpha is quantized into buckets, so a long ribbon still strokes in a handful of runs. Runs
+        // are contiguous index ranges into _scratch and share a vertex, so the line stays connected.
+        int runStartVertex = 0;
+        int runBucket = FadeBucket(0.5 * (_samples[0].SimTime + _samples[1].SimTime), fadeStart, fadeSpan);
+        for (int seg = 2; seg <= end; seg++)
+        {
+            int bucket = FadeBucket(0.5 * (_samples[seg - 1].SimTime + _samples[seg].SimTime), fadeStart, fadeSpan);
+            if (bucket != runBucket)
+            {
+                EmitRibbonRun(runStartVertex, seg - 1, runBucket);
+                runStartVertex = seg - 1;
+                runBucket = bucket;
+            }
+        }
+        EmitRibbonRun(runStartVertex, end, runBucket);
+    }
+
+    // One run of the faded ribbon: vertices [firstVertex..lastVertex] (a contiguous slice of _scratch)
+    // stroked at TrajectoryColor scaled by the run's alpha bucket. Bucket 0 = invisible, skipped.
+    private void EmitRibbonRun(int firstVertex, int lastVertex, int bucket)
+    {
+        if (lastVertex <= firstVertex || bucket <= 0)
+        {
+            return;
+        }
+        float a = (float)bucket / FrameRibbonFadeBuckets;
+        RgbaColor color = TrajectoryColor with { A = (byte)(TrajectoryColor.A * a) };
+        _renderer!.DrawPolyline(_scratch.AsSpan(firstVertex * 2, (lastVertex - firstVertex + 1) * 2), color);
+    }
+
+    // The #110 time-fade ramp, quantized: full strength up to fadeStart, then linear to zero across
+    // fadeSpan. Segments past the cutoff land in bucket 0 (invisible).
+    private static int FadeBucket(double midTime, double fadeStart, double fadeSpan)
+    {
+        double alpha = midTime <= fadeStart
+            ? 1.0
+            : Math.Max(0.0, 1.0 - (midTime - fadeStart) / fadeSpan);
+        return (int)Math.Round(alpha * FrameRibbonFadeBuckets);
     }
 
     private void DrawClosestPassMarker()
@@ -8837,12 +8965,16 @@
             w += 2;
         }
 
+        // #145 — in a Hill-sphere frame the cone is clipped to the same local-timescale window as the
+        // ship ribbon, so a co-moving NPC track doesn't coil around the giant either. Sun frame: no cap.
+        double coneCutoff = FrameDisplayWindowSeconds() is { } win ? _ship.SimTime + win : double.PositiveInfinity;
+
         int last = start;
         for (int i = start; i < s.Count; i += stride)
         {
             // Beyond ~2 AU of uncertainty the cone means "could be anywhere" — drawing it just
             // fans giant lines across the map. Truncate the whole track there.
-            if (path.HalfWidthAt(s[i].SimTime) > ConeMaxHalfWidthMeters)
+            if (path.HalfWidthAt(s[i].SimTime) > ConeMaxHalfWidthMeters || s[i].SimTime > coneCutoff)
             {
                 break;
             }
@@ -8850,7 +8982,7 @@
             Emit(i);
             last = i;
         }
-        if (last != s.Count - 1 && path.HalfWidthAt(s[^1].SimTime) <= ConeMaxHalfWidthMeters)
+        if (last != s.Count - 1 && s[^1].SimTime <= coneCutoff && path.HalfWidthAt(s[^1].SimTime) <= ConeMaxHalfWidthMeters)
         {
             Emit(s.Count - 1);
         }
