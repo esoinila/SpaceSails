@@ -105,6 +105,55 @@ public class FlightPlanStatusTests
         Assert.Equal("NEXT: burn ▼ 3 p in 5h", s.NextLine);
     }
 
+    // ---- Handback (#147): the persistent "you have the ship" line ----
+
+    [Fact]
+    public void Now_HandbackReason_SurfacesAsPersistentManualLine()
+    {
+        // The autopilot handed the ship back (fuel plan broken by a manual burn). Not armed, not
+        // docked — the NOW line must say so, persistently, so it survives high warp.
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: null, NextStepEta: null,
+            HandbackReason: "autopilot handed back — fuel plan broken by manual burns"));
+        Assert.Equal("NOW: manual — autopilot handed back — fuel plan broken by manual burns", s.NowLine);
+    }
+
+    [Fact]
+    public void Now_ArmedAgain_OutranksAStaleHandbackReason()
+    {
+        // Re-arming means the ship is flying again; the armed line wins over any lingering reason.
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Enceladus",
+            NextStepLabel: "insertion at Enceladus", NextStepEta: "at window",
+            HandbackReason: "something old"));
+        Assert.Equal("NOW: coasting — autopilot armed for Enceladus", s.NowLine);
+    }
+
+    [Fact]
+    public void Now_Docked_OutranksHandbackReason()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: true, DockedHavenName: "Ringside",
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: null, NextStepEta: null,
+            HandbackReason: "handed back"));
+        Assert.Equal("NOW: docked at Ringside", s.NowLine);
+    }
+
+    [Fact]
+    public void Now_NoHandback_StillPlainCoasting()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: null, NextStepEta: null,
+            HandbackReason: "   "));
+        Assert.Equal("NOW: coasting", s.NowLine);
+    }
+
     [Fact]
     public void Build_FallsBackWhenNamesMissing()
     {
