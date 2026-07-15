@@ -39,6 +39,13 @@ way Tuesday's blind audit compared stand-ins to the real thing.*
 | Dock / undock | immediate toggle | a step at the end of a plan, or immediate as now — step form is for planning ahead |
 | Ambush / escort event (future, PR-E) | — | an OPEN-ENDED step |
 
+**The unit of planning is the TRIP (owner, mid-stream, excited):** the flight plan should be
+able to hold the whole journey — *"from docked position to docked position, or orbit on
+another place."* Undock → burns → sling/skim → insertion → dock, one list, readable top to
+bottom. Something can always intercept the plan — that's the game — but a **milk run** should
+be plannable end to end and then just flown. This is the usability north star the list is
+built toward; the step kinds above are exactly the vocabulary a dock-to-dock trip needs.
+
 **Step states:** `planned → armed → active → done`, plus `stale` (exists today) and
 **`waiting-on-open-ended`** (new): a step after an open-ended step keeps its parameters but its
 SimTime is meaningless — render grayed with a marker: *"⏳ waits on: Ambush — timing recomputes
@@ -49,6 +56,10 @@ re-solve times (or mark stale where physics changed).
 
 - Click a step → it expands IN PLACE to its options (burn direction/pulses, sling side/radii,
   insertion body/rehearsal, skim depth). The floating sling/skim panels become these editors.
+  **Owner endorsement (verbatim intent): the sub-panel of a step is WHERE the related buttons
+  live** — SOLVE, arm/disarm, add-the-burn, dock controls all belong inside their step's
+  expanded panel, not loose on the HUD. The step list IS the button organization (#123/#124's
+  cure in one move).
 - Drag-to-reorder (stretch goal): only meaningful between steps whose order is a free choice;
   a physics-ordered step (a sling solved for a specific pass epoch) snaps back with a one-line
   why. V1 can ship without dragging — click-to-edit matters more.
