@@ -300,4 +300,134 @@ public class OrbitAutopilotTests
         Assert.True(minEarth > earth.BodyRadius,
             $"Autopilot dipped below Earth's surface ({minEarth:E2} m < R {earth.BodyRadius:E2} m).");
     }
+
+    // ---- Issue #136: a non-empty approach→insert handover window for EVERY massive body ----
+
+    [Fact]
+    public void EveryMassiveBody_HasANonEmptyHandoverWindow_AndASaneParkedOrbit()
+    {
+        // The test that would have caught Enceladus. For every body with gravity and a parent,
+        // the approach periapsis must fall BELOW the insertion gate (so the ballistic fall crosses
+        // it), the insert window must sit above the surface floor, and a circular orbit parked at
+        // the gate must be bound, clear of the surface, and inside the tide-stable half-Hill.
+        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var bodies = ephemeris.Bodies.ToDictionary(b => b.Id);
+
+        int checked_ = 0;
+        foreach (CelestialBody body in ephemeris.Bodies)
+        {
+            if (body.Mu <= 0 || body.ParentId is null) continue; // stations/sun: not bus stops
+            CelestialBody parent = bodies[body.ParentId];
+            double hill = OrbitRule.HillRadius(body, parent.Mu);
+
+            double park = OrbitRule.ParkingRadius(body, hill);
+            double periapsis = OrbitRule.ApproachPeriapsis(body, hill);
+            double surfaceFloor = OrbitRule.SurfaceParkRadii * body.BodyRadius;
+
+            // (1) Handover window is non-empty: the approach aims below the gate, and the gate sits
+            // strictly above the surface floor — so some distance d has the approach reaching it AND
+            // the insert firing (SurfaceParkRadii·R < d < park).
+            Assert.True(periapsis < park,
+                $"{body.Id}: approach periapsis {periapsis:E3} m ≥ insert gate {park:E3} m — the fall never reaches capture (EMPTY window).");
+            Assert.True(park > surfaceFloor,
+                $"{body.Id}: insert gate {park:E3} m ≤ surface floor {surfaceFloor:E3} m — no room to insert above the surface.");
+
+            // (2) The parked circular orbit is sane: above the surface with margin, inside the
+            // tide-stable half-Hill (≤ 0.5 Hill, the established stable park depth), and bound.
+            Assert.InRange(park, OrbitRule.SurfaceParkRadii * body.BodyRadius, OrbitRule.ParkCeilingHillFraction * hill);
+            Assert.True(park <= hill * OrbitRule.AutopilotInsertHillFraction * 1.0001,
+                $"{body.Id}: parked orbit {park:E3} m sits beyond half-Hill {0.5 * hill:E3} m — the sun's tide can strip it.");
+            Assert.True(periapsis >= surfaceFloor * 0.999,
+                $"{body.Id}: approach periapsis {periapsis:E3} m dips below the surface floor {surfaceFloor:E3} m.");
+
+            // Bound: a circular orbit at the gate has negative two-body energy inside the Hill sphere.
+            var parked = new ShipState(new Vector2d(park, 0), new Vector2d(0, OrbitRule.CircularSpeed(body, park)), 0);
+            Assert.True(OrbitRule.IsBound(parked, Vector2d.Zero, Vector2d.Zero, body, hill),
+                $"{body.Id}: parked circular orbit at the insert gate is not bound.");
+            checked_++;
+        }
+
+        Assert.True(checked_ >= 12, $"Expected to check every massive moon and planet, only saw {checked_}.");
+    }
+
+    [Fact]
+    public void AutoOrbit_Enceladus_Captures_WithBoundedBurns_NeverEntersSaturnOrTheMoon()
+    {
+        // The owner's live failure (#136): Enceladus is a deep-well moon (Hill ≈ 3.8 R) whose old
+        // 0.5-Hill insert gate sat below the 2 R approach aim — a null window, so the autopilot
+        // burned fuel forever without capturing. Mirrors the Titan e2e (#130) but on Enceladus, and
+        // additionally counts approach burns: capture must happen with a BOUNDED number of them
+        // (the fuel-waste guard, made testable).
+        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var simulator = new Simulator(ephemeris, timeStepSeconds: 60);
+        CelestialBody saturn = ephemeris.Bodies.First(b => b.Id == "saturn");
+        CelestialBody enceladus = ephemeris.Bodies.First(b => b.Id == "enceladus");
+        double hill = OrbitRule.HillRadius(enceladus, saturn.Mu);
+
+        Vector2d saturnPos0 = ephemeris.Position("saturn", 0);
+        Vector2d enceladusPos0 = ephemeris.Position("enceladus", 0);
+        Vector2d enceladusVel0 = (ephemeris.Position("enceladus", 1.0) - ephemeris.Position("enceladus", -1.0)) / 2.0;
+        // The auto-orbit's job: park at the moon from alongside it. Start 5e6 m out on the
+        // anti-Saturn side (≈5 Hill radii — inside the capture floor, outside the Hill sphere),
+        // co-moving with Enceladus in Saturn's frame — the realistic "a transfer put me next to the
+        // haven; press auto-orbit" state. Matching the moon's 12.6 km/s orbital velocity is the
+        // flight plan's job, not the insertion autopilot's; the autopilot only has to close the gap.
+        Vector2d outward = (enceladusPos0 - saturnPos0).Normalized();
+        var ship = new ShipState(enceladusPos0 + outward * 5e6, enceladusVel0, 0);
+
+        int approachBurns = 0, pulses = 0;
+        double minSaturn = double.MaxValue, minMoon = double.MaxValue;
+        bool inserted = false;
+        double day = 86400;
+        for (double t = 0; t < 90 * day && !inserted; t += 60)
+        {
+            Vector2d saturnPos = ephemeris.Position("saturn", ship.SimTime);
+            Vector2d bodyPos = ephemeris.Position("enceladus", ship.SimTime);
+            minSaturn = Math.Min(minSaturn, (ship.Position - saturnPos).Length);
+            minMoon = Math.Min(minMoon, (ship.Position - bodyPos).Length);
+
+            double h = 1.0;
+            Vector2d bodyVel = (ephemeris.Position("enceladus", ship.SimTime + h) - ephemeris.Position("enceladus", ship.SimTime - h)) / (2 * h);
+            var obstacle = new OrbitRule.ApproachObstacle(saturnPos, saturn.BodyRadius * OrbitRule.ParentSafeBodyRadii);
+
+            switch (OrbitRule.AutopilotDecision(ship, bodyPos, bodyVel, enceladus, hill))
+            {
+                case OrbitRule.AutopilotAction.Approach:
+                    pulses += OrbitRule.ApproachPulseCost(ship, bodyPos, bodyVel, enceladus, obstacle, hill);
+                    ship = OrbitRule.Approach(ship, bodyPos, bodyVel, enceladus, obstacle, hill);
+                    approachBurns++;
+                    break;
+                case OrbitRule.AutopilotAction.Insert:
+                    pulses += OrbitRule.PulseCost(ship, bodyPos, bodyVel, enceladus);
+                    ship = OrbitRule.Insert(ship, bodyPos, bodyVel, enceladus);
+                    Assert.True(OrbitRule.IsBound(ship, bodyPos, bodyVel, enceladus, hill),
+                        "Insertion left the ship unbound to Enceladus.");
+                    inserted = true;
+                    continue;
+            }
+
+            ship = simulator.Step(ship);
+            minSaturn = Math.Min(minSaturn, (ship.Position - ephemeris.Position("saturn", ship.SimTime)).Length);
+            minMoon = Math.Min(minMoon, (ship.Position - ephemeris.Position("enceladus", ship.SimTime)).Length);
+        }
+
+        Assert.True(inserted, "Autopilot failed to park at Enceladus within 90 days (the #136 null window).");
+        Assert.True(minSaturn > saturn.BodyRadius,
+            $"Autopilot flew inside Saturn ({minSaturn:E2} m < R {saturn.BodyRadius:E2} m).");
+        Assert.True(minMoon > enceladus.BodyRadius,
+            $"Autopilot flew inside Enceladus ({minMoon:E2} m < R {enceladus.BodyRadius:E2} m).");
+        // The fuel-waste guard, made testable: from alongside the moon the deep well captures in a
+        // bounded, single-digit burn count (measured: 1) for a fraction of the 250-pulse tank
+        // (measured: 87) — not the old fire-forever-and-never-insert of the empty window.
+        Assert.InRange(approachBurns, 1, 8);
+        Assert.InRange(pulses, 1, 250);
+
+        // And the parking orbit holds inside the Hill sphere for 10 days — tide does not strip it.
+        for (int i = 0; i < 10; i++)
+        {
+            ship = simulator.Run(ship, day);
+            double d = (ship.Position - ephemeris.Position("enceladus", ship.SimTime)).Length;
+            Assert.True(d < hill, $"Enceladus parking orbit drifted out of the Hill sphere on day {i + 1} ({d:E2} m).");
+        }
+    }
 }
