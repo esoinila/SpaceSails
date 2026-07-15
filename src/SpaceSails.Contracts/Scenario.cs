@@ -104,8 +104,28 @@ public sealed record BodyDefinition
     /// <summary>Orbital period in seconds. Positive = counterclockwise, negative = clockwise.</summary>
     public double OrbitPeriodS { get; init; }
 
-    /// <summary>Angular position on the orbit at simulation time zero, in radians.</summary>
+    /// <summary>
+    /// Angular position on the orbit at simulation time zero, in radians. For a circular orbit
+    /// (<see cref="Eccentricity"/> = 0) this is the polar angle from +X. For an elliptical orbit it
+    /// is the <em>mean anomaly at epoch</em> — the two coincide when e = 0, which is what keeps every
+    /// existing circular scenario byte-identical.
+    /// </summary>
     public double InitialPhaseRad { get; init; }
+
+    /// <summary>
+    /// Orbit eccentricity (Kepler rails, PR-B). Zero (the default) is a circle and takes the exact
+    /// legacy circular formula — byte-identical to before this field existed. In [0, 1): a bound
+    /// ellipse whose semi-major axis is <see cref="OrbitRadiusM"/>. Values &lt; 0 or ≥ 1 are rejected
+    /// by the loader (no hyperbolic/degenerate orbits on rails).
+    /// </summary>
+    public double Eccentricity { get; init; }
+
+    /// <summary>
+    /// Argument of periapsis in radians (Kepler rails, PR-B): the orbit-plane angle, measured from
+    /// +X, of the periapsis direction. Ignored when <see cref="Eccentricity"/> = 0 (a circle has no
+    /// periapsis). Default 0 points periapsis along +X.
+    /// </summary>
+    public double ArgPeriapsisRad { get; init; }
 
     /// <summary>Body classification: "planet" (default), "moon", or "station" (a lightweight
     /// orbital POI — compute farm, factory, trading post). Unknown values fall back to "planet".</summary>

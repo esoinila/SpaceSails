@@ -224,7 +224,8 @@
                             🎯 Set destination — navigate to orbit
                         </button>
                     }
-                    <button type="button" class="btn btn-sm @(_armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
+                    <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
+                            disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : null)"
                             @onclick="() => ToggleArmedInsertionFromMenu(menuBody.Id)">
                         🛰 @(_armedOrbitBodyId == menuBody.Id ? "Auto-insert ARMED — disarm" : "Arm auto-insert at window")
                     </button>
@@ -377,6 +378,31 @@
         </button>
     </div>
 
+    @* #127 (owner ruling: "WHO IS FLYING THE SHIP must be big and unmissable" — he watched the
+       autopilot fly him into Saturn thinking he had the stick). One persistent banner at the top of
+       the flight view, on every desk. Derived from the same source NavChip reads (_armedOrbitBodyId):
+       armed auto-orbit = the autopilot is in command and will fly the approach + insertion itself;
+       anything else = the helm answers to you. Click jumps to Nav, where the disarm control lives. *@
+    @if (_worldReady && !_deckMode)
+    {
+        string? _armed = _armedOrbitBodyId;
+        bool _autopilot = _armed is not null;
+        <button type="button" class="pilot-banner @(_autopilot ? "pilot-banner-auto" : "pilot-banner-manual")"
+                title="@(_autopilot ? "The autopilot is flying the ship — click to go to Nav and take back the stick" : "You are flying the ship by hand")"
+                @onclick="() => SwitchDesk(ShipDesk.Nav)">
+            @if (_autopilot)
+            {
+                <span class="pilot-banner-who">🛰 AUTOPILOT HAS THE SHIP</span>
+                <span class="pilot-banner-mode">auto-orbit → @BodyName(_armed!)</span>
+            }
+            else
+            {
+                <span class="pilot-banner-who">🧭 YOU HAVE THE SHIP</span>
+                <span class="pilot-banner-mode">manual — the helm answers to you</span>
+            }
+        </button>
+    }
+
     @if (_activeDesk == ShipDesk.Nav)
     {
     <div class="map-hud">
@@ -476,15 +502,17 @@
                             </span>
                             @if (oi.WindowOpen)
                             {
-                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
-                                        disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
+                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage && !NavLockedByDock ? "btn-success" : "btn-outline-secondary")"
+                                        disabled="@(!oi.CanEngage || NavLockedByDock)"
+                                        title="@(NavLockedByDock ? DockNavLockTip : null)" @onclick="EnterOrbit">
                                     Enter orbit (@oi.Cost p / O)
                                 </button>
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm py-0 @(oi.Armed ? "btn-success" : oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
-                                        disabled="@(!oi.InCaptureRange && !oi.Armed)" @onclick="EnterOrbit">
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
+                                        disabled="@((!oi.InCaptureRange && !oi.Armed) || NavLockedByDock)"
+                                        title="@(NavLockedByDock ? DockNavLockTip : null)" @onclick="EnterOrbit">
                                     @(oi.Armed ? "Autopilot ON — disarm" : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
                                 </button>
                             }
@@ -819,7 +847,8 @@
                     Speed at the pass: @((info.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
                     relative — the autopilot's burns from there cost ≈ @info.EstPulses pulses.
                 </div>
-                <button type="button" class="btn btn-sm @(_armedOrbitBodyId == dp.BodyId ? "btn-success" : info.InRange ? "btn-info" : "btn-outline-info")"
+                <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == dp.BodyId ? "btn-success" : !NavLockedByDock && info.InRange ? "btn-info" : "btn-outline-info")"
+                        disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : null)"
                         @onclick="() => ToggleArmedInsertion(dp.BodyId)">
                     🛰 @(_armedOrbitBodyId == dp.BodyId
                         ? $"Autopilot ARMED for {dp.BodyName} — click to disarm"
@@ -1299,7 +1328,8 @@
                                                               OnPointScope="PointScopeForActiveFetch"
                                                               Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
-                                                              OnReopenStartPicker="ReopenStartPicker" />
+                                                              OnReopenStartPicker="ReopenStartPicker"
+                                                              InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
                 }
             </div>
         </div>
@@ -1323,6 +1353,11 @@
     // the old per-station toggles (_showTracking et al.) are gone; a desk is either the one
     // you're sitting at (full screen) or it isn't (a summary chip on DeskChips).
     private ShipDesk _activeDesk = ShipDesk.Nav;
+
+    // #125 playtest ("I was expecting to find the tab where I left it"): the Captain desk is
+    // re-created on every switch, so its own tab state resets. Map holds the last tab here and
+    // seeds/receives it via the Captain component's InitialTab / OnTabChanged.
+    private SpaceSails.Client.Pages.Stations.Captain.CaptainView _captainTab;
 
     // PR-15: the tab bar's display order isn't the enum's declaration order — Captain's key is
     // `0`, ahead of Nav's `1`, so it leads the bar too even though its enum value (8, tacked on
@@ -1843,6 +1878,25 @@
     private static readonly RgbaColor LocalContactRingColor = new(120, 200, 255, 150);
     private const string CanvasId = "map-canvas";
     private const int OrbitSegments = 128;
+
+    // Kepler rails (PR-B) dev cheat body for /map?ellipse=1: a sun-orbiting rock on a strongly
+    // eccentric ellipse (e = 0.6) with periapsis tilted 40° off +X, semi-major axis ~1.4 AU, ~500-day
+    // period. Not shipped in any scenario — appended only when the cheat is set — so it exists purely
+    // to eyeball the elliptical ring and the non-uniform (fast at periapsis) tracking in-browser.
+    private static BodyDefinition KeplerDemoBody() => new()
+    {
+        Id = "kepler-demo",
+        Name = "Kepler Demo",
+        ParentId = "sun",
+        Mu = 0,
+        BodyRadiusM = 4e9,          // oversized so it reads as a clear dot at system zoom
+        OrbitRadiusM = 2.1e11,      // semi-major axis
+        OrbitPeriodS = 4.32e7,      // ~500 days
+        InitialPhaseRad = 0.0,      // mean anomaly at epoch — starts at periapsis
+        Eccentricity = 0.6,
+        ArgPeriapsisRad = 0.7,      // ~40° periapsis tilt so the ellipse is obviously not axis-aligned
+        Kind = "planet",
+    };
 
     private static readonly RgbaColor Background = new(6, 9, 18);
     private static readonly RgbaColor OrbitColor = new(80, 100, 130, 130);
@@ -4638,8 +4692,31 @@
         ShowPulseMessage($"🧪 skim cheat: hyperbolic inbound to {body.Name}, cloud tops ~2 days out. Open Plot ▸ 🔥 Skim.");
     }
 
+    // Nav commands that begin flight are refused while clamped to a station: the berthing arm
+    // holds the ship fast (HoldAtDock pins it back onto the dock every tick), so an approach or
+    // insertion burn would just fight the clamp — Undock first (issue #126). NB the OTHER dock
+    // flag, _docked, is mere market proximity (within DockRadiusMeters of a trade body): the ship
+    // still flies freely there, so it is deliberately NOT a nav lock. Only the clamp locks.
+    private bool NavLockedByDock => _dockedHavenId is not null;
+    private const string DockNavLockTip = "Undock first — you're clamped to the station";
+
+    // Returns true (and toasts) when a flight command must be refused because we're clamped on.
+    private bool RejectNavWhileDocked()
+    {
+        if (!NavLockedByDock)
+        {
+            return false;
+        }
+        ShowPulseMessage($"⚓ {DockNavLockTip}.");
+        return true;
+    }
+
     private void ToggleArmedInsertion(string bodyId)
     {
+        if (RejectNavWhileDocked())
+        {
+            return;
+        }
         _armedOrbitBodyId = _armedOrbitBodyId == bodyId ? null : bodyId;
         if (_armedOrbitBodyId is not null)
         {
@@ -4678,10 +4755,19 @@
         double h = 1.0;
         Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
         double hill = OrbitRule.HillRadius(body, parent.Mu);
+
+        // Auto-orbiting a MOON (its parent is itself a planet, not the sun): the parent is a solid
+        // body the approach chord must not thread. Auto-orbiting a PLANET (parent = sun): no chord
+        // obstacle — you never route around the sun — just the target's own b-plane offset applies.
+        OrbitRule.ApproachObstacle? obstacle = parent.ParentId is null
+            ? null
+            : new OrbitRule.ApproachObstacle(
+                _ephemeris.Position(parent.Id, SimTime), parent.BodyRadius * OrbitRule.ParentSafeBodyRadii);
+
         switch (OrbitRule.AutopilotDecision(_ship, bodyPos, bodyVel, body, hill))
         {
             case OrbitRule.AutopilotAction.Approach:
-                int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel);
+                int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel, body, obstacle);
                 if (approachCost > _reactionMassPulses)
                 {
                     ShowPulseMessage($"Approach burn for {body.Name} — not enough mass pulses ({approachCost} needed)");
@@ -4689,7 +4775,7 @@
                     return;
                 }
 
-                _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel);
+                _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel, body, obstacle);
                 _reactionMassPulses -= approachCost;
                 StaleFutureNodes();
                 ShowPulseMessage($"Approach burn — falling toward {body.Name} ({approachCost} p) 🛰");
@@ -4809,6 +4895,11 @@
 
     private void EnterOrbit()
     {
+        if (RejectNavWhileDocked())
+        {
+            return;
+        }
+
         if (OrbitInfo() is not { } candidate || _ephemeris is null)
         {
             return;
@@ -4962,6 +5053,7 @@
         string? skimCheat = null;
         string? backroomCheat = null;
         double? simHoursCheat = null;
+        bool ellipseCheat = false; // /map?ellipse=1 injects a visibly eccentric demo body (Kepler rails, PR-B)
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -5068,10 +5160,22 @@
                     simHoursCheat = h;
                 }
             }
+            else if (pair.StartsWith("ellipse=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Kepler rails (PR-B) dev cheat: /map?ellipse=1 drops one visibly eccentric body onto
+                // a sun orbit so the elliptical ring and its non-uniform tracking are checkable in the
+                // browser. No effect on any shipped body — it's an extra body appended at load.
+                string candidate = Uri.UnescapeDataString(pair["ellipse=".Length..]).ToLowerInvariant();
+                ellipseCheat = candidate is "1" or "true" or "yes";
+            }
         }
 
         string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json");
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
+        if (ellipseCheat)
+        {
+            scenario = scenario with { Bodies = [.. scenario.Bodies, KeplerDemoBody()] };
+        }
         _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
         // Tuesday plan PR-A: the scenario's off-the-charts bodies (e.g. the derelict roadster). They
@@ -6094,11 +6198,22 @@
     // The sling made this visible: the ribbon bends where the pass body WILL BE, which at twelve
     // plotted days is hundreds of pixels from where the body is drawn now — without scrubbing,
     // the kink hangs in empty sky (owner: "the curvature happens at a spot Jupiter is not at").
-    // So the pass body's ghost at the pass epoch is ALWAYS on, dimmer than the scrub ghosts,
-    // tethered to the live body, on every desk that shows the map.
+    // So the pass body's ghost at the pass epoch shows where that curve pins to.
+    //
+    // #124 (owner playtest): PR #117 left this ALWAYS-on, and on any close planetary pass the ghost
+    // planet + tether read as "a slingshot the game plotted for me — that I never selected or set".
+    // With no sling engaged there is no ribbon kink to anchor, so the ghost is pure noise wearing a
+    // sling costume. Gate it on real sling INTENT — the ⤴ Sling panel is open, or a sling has been
+    // SOLVEd — and key it to the body actually being slung (_slingablePass), labelled as a sling
+    // pass so planned-vs-hypothetical is unambiguous. The plain closest-pass marker / scrub ghosts
+    // (DrawClosestPassMarker, DrawGhostBodies — both PlotMode) are untouched and keep doing their job.
     private void DrawPassEpochGhost()
     {
-        if (_closestPass is not { } cp || cp.Severity > 25 || _ephemeris is null)
+        if (!_slingPanelOpen && _slingResult is not { Ok: true })
+        {
+            return; // no sling engaged → no sling ghost (the owner never asked for one)
+        }
+        if (_slingablePass is not { } cp || cp.Severity > 25 || _ephemeris is null)
         {
             return; // same embarrassment threshold as the pass marker
         }
@@ -6118,7 +6233,7 @@
         RgbaColor ghost = BodyColor(cp.BodyId) with { A = 110 };
         _renderer!.DrawCircle(sx, sy, radiusPx, ghost, ghost);
         _renderer!.DrawCircle(sx, sy, radiusPx + 2.5f, null, new RgbaColor(220, 230, 245, 90), 1.2f);
-        _renderer.DrawText(sx, sy + radiusPx + 12, $"{cp.BodyName} at pass",
+        _renderer.DrawText(sx, sy + radiusPx + 12, $"{cp.BodyName} at sling pass",
             new RgbaColor(220, 230, 245, 140), "10px monospace", TextAlign.Center);
     }
 
@@ -6259,10 +6374,29 @@
             if (body.OrbitPeriod != 0 && body.OrbitRadius > 0)
             {
                 Vector2d parentPosition = body.ParentId is null ? Vector2d.Zero : ephemeris.Position(body.ParentId, SimTime);
+                // Kepler rails (PR-B): a circular body's ring is a circle of radius OrbitRadius; an
+                // eccentric body's is its true ellipse, traced by sweeping the eccentric anomaly over a
+                // full turn (even spacing in E, one perifocal point rotated by ω per vertex — no
+                // per-vertex Kepler solve). e == 0 keeps the exact circular sweep.
+                double e = body.Eccentricity;
+                double semiMinor = e == 0.0 ? body.OrbitRadius : body.OrbitRadius * Math.Sqrt(1.0 - e * e);
+                double cosW = Math.Cos(body.ArgPeriapsis);
+                double sinW = Math.Sin(body.ArgPeriapsis);
                 for (int i = 0; i <= OrbitSegments; i++)
                 {
-                    double angle = Math.Tau * i / OrbitSegments;
-                    Vector2d world = parentPosition + new Vector2d(body.OrbitRadius * Math.Cos(angle), body.OrbitRadius * Math.Sin(angle));
+                    double t = Math.Tau * i / OrbitSegments;
+                    Vector2d world;
+                    if (e == 0.0)
+                    {
+                        world = parentPosition + new Vector2d(body.OrbitRadius * Math.Cos(t), body.OrbitRadius * Math.Sin(t));
+                    }
+                    else
+                    {
+                        double px = body.OrbitRadius * (Math.Cos(t) - e);
+                        double py = semiMinor * Math.Sin(t);
+                        world = parentPosition + new Vector2d(cosW * px - sinW * py, sinW * px + cosW * py);
+                    }
+
                     (float x, float y) = _camera.WorldToScreen(world);
                     ring[i * 2] = x;
                     ring[i * 2 + 1] = y;
@@ -10104,6 +10238,7 @@
         _dockOffset = _ship.Position - _nearestBodyPosition; // freeze the arm's reach at berth
         HoldAtDock();                                        // match the drift now so nothing lurches
         StaleFutureNodes();                                  // a berth cancels any pending burns
+        _armedOrbitBodyId = null;                            // and disarms any pending auto-insert (issue #126)
         SetDeckForDock(dock.Id);                             // weld on the walk-through tube if this haven has an interior
         ShowPulseMessage(HavenInterior.HasInterior(dock.Id)
             ? $"⚓ Clamped on at {dock.Name} — gangway's mated. Head to the Deck and walk the tube ashore."

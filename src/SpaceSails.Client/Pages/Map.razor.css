@@ -86,10 +86,10 @@
 
 .map-hud {
     position: absolute;
-    /* Clears the desk tab bar's row (top: 0.5rem, centered) regardless of viewport width — the
-       toolbar is left-anchored and can span past center at typical widths, so the two are kept
-       vertically separated rather than sharing a row. */
-    top: 3.4rem;
+    /* Clears the desk tab bar (top: 0.5rem) AND the pilot-in-command banner (#127, top: 3.0rem,
+       centered) that sit above it — the toolbar is left-anchored and can span past center at typical
+       widths, so it is dropped below both rather than risk sharing a row with the centered banner. */
+    top: 5.9rem;
     left: 0.75rem;
     pointer-events: none;
     max-width: calc(100% - 1.5rem);
@@ -275,6 +275,72 @@
     justify-content: center;
 }
 
+/* #127 · pilot-in-command banner — the single most important line on the flight HUD: who is
+   actually flying the ship. Top-center, just under the desk tabs, on every desk. Big and readable
+   from across the room; the two states are colour-coded so a glance is enough. */
+.pilot-banner {
+    position: absolute;
+    top: 3.0rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 24;
+    pointer-events: auto;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.35rem 1.1rem;
+    border-radius: 0.6rem;
+    border: 2px solid transparent;
+    font-family: inherit;
+    line-height: 1.1;
+    white-space: nowrap;
+    max-width: calc(100% - 1.5rem);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+    transition: filter 0.12s ease;
+}
+
+.pilot-banner:hover {
+    filter: brightness(1.12);
+}
+
+.pilot-banner-who {
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: 0.04em;
+}
+
+.pilot-banner-mode {
+    font-size: 0.95rem;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+/* Manual: calm, neutral — nothing alarming, you have the stick. */
+.pilot-banner-manual {
+    background: rgba(20, 28, 36, 0.85);
+    border-color: rgba(150, 170, 190, 0.55);
+    color: #cfe0ee;
+}
+
+/* Autopilot: a distinct, strong colour so it can never be mistaken for manual — the ship is
+   flying itself (the Saturn incident). Amber, the "machine in command" convention. */
+.pilot-banner-auto {
+    background: rgba(120, 72, 0, 0.9);
+    border-color: #ffb028;
+    color: #ffe4ad;
+    animation: pilot-banner-pulse 1.8s ease-in-out infinite;
+}
+
+.pilot-banner-auto .pilot-banner-who {
+    color: #ffcf6b;
+}
+
+@keyframes pilot-banner-pulse {
+    0%, 100% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55); }
+    50% { box-shadow: 0 0 16px 2px rgba(255, 176, 40, 0.6); }
+}
+
 .desk-tab {
     white-space: nowrap;
 }
@@ -295,6 +361,20 @@
        renders underneath the chips. */
     padding: 2rem 11rem 2rem 2rem;
     box-sizing: border-box;
+}
+
+/* #127: the desk tab bar + pilot-in-command banner own the top-center strip. Anchor the opaque
+   modal desks (Captain / Trade / Comms / Galley) below it — align to the top and reserve the
+   strip's height — so a desk's own first row (e.g. the Captain's Orders/Status/Tutorials/Ledger
+   tabs) is never hidden behind the banner. Passthrough desks (Sensors, War Room) float their own
+   instrument cards clear of the strip and are left untouched. */
+.desk-layer:not(.desk-layer-passthrough) {
+    align-items: flex-start;
+    padding-top: 5.75rem;
+}
+
+.desk-layer:not(.desk-layer-passthrough) .desk-content {
+    height: calc(100vh - 7.75rem);
 }
 
 .desk-layer-dimmed {
