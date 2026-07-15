@@ -79,6 +79,13 @@ re-solve times (or mark stale where physics changed).
 - **Context card** (right side, replaces stacked pop-ups): whatever is SELECTED — a body, a
   step, a contact — gets the one card; selecting something else replaces it.
 
+## Frame awareness (owner, backlog — see UIUsabilityNotes.md "Planet-centric frames")
+
+Inside a gas giant's Hill sphere the plan and its numbers should speak the LOCAL frame:
+step deltas, relative speeds, and vectors quoted Saturn-centric at Saturn (Jupiter-centric
+at Jupiter), with a visible frame chip. Heliocentric numbers made the Saturn moon tour
+unreadable — the primary's ~10 km/s solar orbit drowned the moon-to-moon deltas.
+
 ## Build order proposal
 
 1. **PR-D1 — steps for insertions:** model armed auto-orbit as a flight-plan step (read-only

@@ -28,6 +28,30 @@ entry on Sensors; make the dark-web market node visibly a market; dedupe the led
 buttons; planet-label visual hierarchy above stations; scope panel title vs. ship-name confusion;
 partial sells (existing roadmap).
 
+## Planet-centric frames inside the gas-giant systems (owner, 2026-07-15 — BACKLOG)
+
+- **The symptom (owner's realization after the Saturn session):** navigating inside
+  Jupiter's / Saturn's moon system "was really hard in part because we were using the
+  sun-rotation speeds there... our vectors were humongous size for navigating from moon
+  to moon in the Saturn space." Saturn itself is doing ~9.7 km/s around the Sun (Jupiter
+  ~13 km/s), so every heliocentric velocity readout and map vector inside the moon system
+  is dominated by the primary's solar orbit — the few-hundred-m/s moon-to-moon differences
+  that actually matter there are invisible in the numbers and the arrow lengths.
+- **The adjustment:** when the ship is inside a gas giant's sphere of influence (Hill
+  sphere), the flight UI should switch its reference frame to the local primary —
+  Saturn-centric speeds at Saturn, Jupiter-centric at Jupiter, same for the other giants:
+  velocity readouts, relative-speed lines, plotted velocity vectors, and burn-planning
+  numbers all quoted relative to the primary (or to the target moon when one is selected).
+  A visible frame chip ("frame: Saturn") so the player knows which ruler is in use, and an
+  honest handover at the Hill boundary.
+- **Code notes:** Core already thinks body-relative where it counts (OrbitRule's approach
+  and insertion work against `bodyVelocity`; the ephemeris knows every body's parent), so
+  this is chiefly a **display/UX frame change**, not new physics. The trap to avoid is
+  mixing frames silently — every number on screen should agree with the chip.
+- Pairs naturally with the unified flight plan (UnifiedNavListNotes.md): steps inside a
+  giant's system read in the local frame ("burn 320 m/s Saturn-frame"), which is also what
+  makes a moon-tour milk run legible.
+
 ## The Captain's ledger (owner, 2026-07-14 playtest of the intel/sling build)
 
 - **Tips have no inventory.** Owner took Gilt-Eye's route tip and it effectively
