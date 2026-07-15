@@ -376,6 +376,31 @@
         </button>
     </div>
 
+    @* #127 (owner ruling: "WHO IS FLYING THE SHIP must be big and unmissable" — he watched the
+       autopilot fly him into Saturn thinking he had the stick). One persistent banner at the top of
+       the flight view, on every desk. Derived from the same source NavChip reads (_armedOrbitBodyId):
+       armed auto-orbit = the autopilot is in command and will fly the approach + insertion itself;
+       anything else = the helm answers to you. Click jumps to Nav, where the disarm control lives. *@
+    @if (_worldReady && !_deckMode)
+    {
+        string? _armed = _armedOrbitBodyId;
+        bool _autopilot = _armed is not null;
+        <button type="button" class="pilot-banner @(_autopilot ? "pilot-banner-auto" : "pilot-banner-manual")"
+                title="@(_autopilot ? "The autopilot is flying the ship — click to go to Nav and take back the stick" : "You are flying the ship by hand")"
+                @onclick="() => SwitchDesk(ShipDesk.Nav)">
+            @if (_autopilot)
+            {
+                <span class="pilot-banner-who">🛰 AUTOPILOT HAS THE SHIP</span>
+                <span class="pilot-banner-mode">auto-orbit → @BodyName(_armed!)</span>
+            }
+            else
+            {
+                <span class="pilot-banner-who">🧭 YOU HAVE THE SHIP</span>
+                <span class="pilot-banner-mode">manual — the helm answers to you</span>
+            }
+        </button>
+    }
+
     @if (_activeDesk == ShipDesk.Nav)
     {
     <div class="map-hud">
@@ -1298,7 +1323,8 @@
                                                               OnPointScope="PointScopeForActiveFetch"
                                                               Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
-                                                              OnReopenStartPicker="ReopenStartPicker" />
+                                                              OnReopenStartPicker="ReopenStartPicker"
+                                                              InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
                 }
             </div>
         </div>
@@ -1322,6 +1348,11 @@
     // the old per-station toggles (_showTracking et al.) are gone; a desk is either the one
     // you're sitting at (full screen) or it isn't (a summary chip on DeskChips).
     private ShipDesk _activeDesk = ShipDesk.Nav;
+
+    // #125 playtest ("I was expecting to find the tab where I left it"): the Captain desk is
+    // re-created on every switch, so its own tab state resets. Map holds the last tab here and
+    // seeds/receives it via the Captain component's InitialTab / OnTabChanged.
+    private SpaceSails.Client.Pages.Stations.Captain.CaptainView _captainTab;
 
     // PR-15: the tab bar's display order isn't the enum's declaration order — Captain's key is
     // `0`, ahead of Nav's `1`, so it leads the bar too even though its enum value (8, tacked on
@@ -5977,11 +6008,22 @@
     // The sling made this visible: the ribbon bends where the pass body WILL BE, which at twelve
     // plotted days is hundreds of pixels from where the body is drawn now — without scrubbing,
     // the kink hangs in empty sky (owner: "the curvature happens at a spot Jupiter is not at").
-    // So the pass body's ghost at the pass epoch is ALWAYS on, dimmer than the scrub ghosts,
-    // tethered to the live body, on every desk that shows the map.
+    // So the pass body's ghost at the pass epoch shows where that curve pins to.
+    //
+    // #124 (owner playtest): PR #117 left this ALWAYS-on, and on any close planetary pass the ghost
+    // planet + tether read as "a slingshot the game plotted for me — that I never selected or set".
+    // With no sling engaged there is no ribbon kink to anchor, so the ghost is pure noise wearing a
+    // sling costume. Gate it on real sling INTENT — the ⤴ Sling panel is open, or a sling has been
+    // SOLVEd — and key it to the body actually being slung (_slingablePass), labelled as a sling
+    // pass so planned-vs-hypothetical is unambiguous. The plain closest-pass marker / scrub ghosts
+    // (DrawClosestPassMarker, DrawGhostBodies — both PlotMode) are untouched and keep doing their job.
     private void DrawPassEpochGhost()
     {
-        if (_closestPass is not { } cp || cp.Severity > 25 || _ephemeris is null)
+        if (!_slingPanelOpen && _slingResult is not { Ok: true })
+        {
+            return; // no sling engaged → no sling ghost (the owner never asked for one)
+        }
+        if (_slingablePass is not { } cp || cp.Severity > 25 || _ephemeris is null)
         {
             return; // same embarrassment threshold as the pass marker
         }
@@ -6001,7 +6043,7 @@
         RgbaColor ghost = BodyColor(cp.BodyId) with { A = 110 };
         _renderer!.DrawCircle(sx, sy, radiusPx, ghost, ghost);
         _renderer!.DrawCircle(sx, sy, radiusPx + 2.5f, null, new RgbaColor(220, 230, 245, 90), 1.2f);
-        _renderer.DrawText(sx, sy + radiusPx + 12, $"{cp.BodyName} at pass",
+        _renderer.DrawText(sx, sy + radiusPx + 12, $"{cp.BodyName} at sling pass",
             new RgbaColor(220, 230, 245, 140), "10px monospace", TextAlign.Center);
     }
 
