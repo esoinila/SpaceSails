@@ -1,0 +1,103 @@
+namespace SpaceSails.Core.Tests;
+
+/// <summary>PR-D1 (docs/WednesdayPlan/UnifiedNavListNotes.md): the read-only derivation behind the
+/// "flight plan" presentation and the owner's NOW status ask — one source of truth for step states
+/// and the now/next line so the pilot banner, the Nav header, and the list never contradict.</summary>
+public class FlightPlanStatusTests
+{
+    // ---- Step states ----
+
+    [Fact]
+    public void BurnState_PlannedUntilFlown_ThenDone_StaleWins()
+    {
+        Assert.Equal(FlightStepState.Planned, FlightPlanStatusBuilder.BurnState(stale: false, executed: false));
+        Assert.Equal(FlightStepState.Done, FlightPlanStatusBuilder.BurnState(stale: false, executed: true));
+        // A struck-out node reads Stale even if it happened to fire — the edit invalidated it.
+        Assert.Equal(FlightStepState.Stale, FlightPlanStatusBuilder.BurnState(stale: true, executed: false));
+        Assert.Equal(FlightStepState.Stale, FlightPlanStatusBuilder.BurnState(stale: true, executed: true));
+    }
+
+    [Fact]
+    public void InsertionState_ArmedUntilTheApproachIsBeingFlown()
+    {
+        Assert.Equal(FlightStepState.Armed, FlightPlanStatusBuilder.InsertionState(flyingApproach: false));
+        Assert.Equal(FlightStepState.Active, FlightPlanStatusBuilder.InsertionState(flyingApproach: true));
+    }
+
+    // ---- NOW line ----
+
+    [Fact]
+    public void Now_Coasting_WhenNothingIsFlyingTheShip()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: null, NextStepEta: null));
+        Assert.Equal("NOW: coasting", s.NowLine);
+        Assert.Null(s.NextLine);
+    }
+
+    [Fact]
+    public void Now_ArmedButNotYetFlying_SaysCoastingArmed()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Titan",
+            NextStepLabel: "insertion at Titan", NextStepEta: "at window"));
+        Assert.Equal("NOW: coasting — autopilot armed for Titan", s.NowLine);
+        Assert.Equal("next: insertion at Titan at window", s.NextLine);
+    }
+
+    [Fact]
+    public void Now_FlyingApproach_NamesTheAutopilotAndBody()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: true, AutopilotBodyName: "Titan",
+            NextStepLabel: "insertion at Titan", NextStepEta: "at window"));
+        Assert.Equal("NOW: autopilot approach → Titan", s.NowLine);
+    }
+
+    [Fact]
+    public void Now_Docked_OutranksEverything()
+    {
+        // Even with autopilot flags set, a clamped ship is docked — nav is locked.
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: true, DockedHavenName: "Ringside",
+            AutopilotArmed: true, AutopilotFlyingApproach: true, AutopilotBodyName: "Titan",
+            NextStepLabel: null, NextStepEta: null));
+        Assert.Equal("NOW: docked at Ringside", s.NowLine);
+    }
+
+    // ---- NEXT line ----
+
+    [Fact]
+    public void Next_BurnWithEta_Composed()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: "burn ▲ 14 p", NextStepEta: "in 2d 4h"));
+        Assert.Equal("next: burn ▲ 14 p in 2d 4h", s.NextLine);
+    }
+
+    [Fact]
+    public void Next_LabelWithoutEta_OmitsTheTail()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: "insertion at Titan", NextStepEta: null));
+        Assert.Equal("next: insertion at Titan", s.NextLine);
+    }
+
+    [Fact]
+    public void Build_FallsBackWhenNamesMissing()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: true, DockedHavenName: null,
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: null, NextStepEta: null));
+        Assert.Equal("NOW: docked at haven", s.NowLine);
+    }
+}

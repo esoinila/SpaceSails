@@ -222,6 +222,61 @@
     border-radius: 0.25rem;
 }
 
+/* PR-D1 · the flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md). The burn list, headed as a
+   plan, with the owner's NOW/next status line. Cyan for "you", amber for "the machine has it" —
+   the same colour language as the pilot banner so the two read as one system. */
+.map-flightplan-head {
+    border-left: 2px solid rgba(120, 220, 255, 0.6);
+    padding-left: 0.5rem;
+}
+
+.map-flightplan-now {
+    font-weight: 700;
+    color: #e6f2ff;
+    letter-spacing: 0.02em;
+}
+
+.map-flightplan-next {
+    font-size: 0.85rem;
+}
+
+/* A step's state, shown as a coloured pip on the left edge of its row. */
+.map-plan-step {
+    position: relative;
+    padding-left: 0.55rem;
+}
+
+.map-plan-step-pip {
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    bottom: 0.15rem;
+    width: 3px;
+    border-radius: 2px;
+    background: rgba(150, 170, 190, 0.5);   /* planned — quiet */
+}
+
+.map-plan-step-done .map-plan-step-pip {
+    background: rgba(120, 220, 160, 0.85);  /* flown — green */
+}
+
+.map-plan-step-stale .map-plan-step-pip {
+    background: rgba(150, 150, 150, 0.4);   /* struck out */
+}
+
+.map-plan-step-armed .map-plan-step-pip {
+    background: #ffb028;                     /* machine armed — amber, banner language */
+}
+
+.map-plan-step-active .map-plan-step-pip {
+    background: #7fdfff;                     /* being flown now — bright cyan */
+    box-shadow: 0 0 6px rgba(127, 223, 255, 0.8);
+}
+
+.map-plan-step-active {
+    animation: pilot-banner-pulse 1.8s ease-in-out infinite;
+}
+
 /* PR-G · the sling — the plot-desk crank panel. The verdict block echoes the war-room verdict:
    a lightly boxed readout the captain scans before committing the aiming burn. */
 .map-sling-verdict {

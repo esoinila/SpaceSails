@@ -393,7 +393,9 @@
             @if (_autopilot)
             {
                 <span class="pilot-banner-who">🛰 AUTOPILOT HAS THE SHIP</span>
-                <span class="pilot-banner-mode">auto-orbit → @BodyName(_armed!)</span>
+                @* PR-D1: the mode line names the active step so "who is flying" also answers "at
+                   which step" — same counter the Nav-desk flight plan shows, one source of truth. *@
+                <span class="pilot-banner-mode">@(AutopilotFlyingApproach ? "approach" : "auto-orbit") → @BodyName(_armed!)@(FlightPlanStepCount() > 0 ? $" · step {FlightPlanCurrentStep()}/{FlightPlanStepCount()}" : "")</span>
             }
             else
             {
@@ -725,6 +727,28 @@
                         }
                     </div>
                 }
+                @* PR-D1 · the flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md). The burn list
+                   IS the flight plan; armed auto-orbit shows as a step below. The NOW/next line answers
+                   the owner's 2026-07-15 ask — "what step is it doing now is missing" — and is derived
+                   through the same Core helper the pilot banner reads, so the two never disagree. *@
+                @{
+                    FlightPlanStatus _fp = FlightNowNext();
+                    int _fpCount = FlightPlanStepCount();
+                }
+                <div class="map-flightplan-head mb-2">
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <span class="fw-bold">🗺 Flight plan</span>
+                        @if (_fpCount > 0)
+                        {
+                            <span class="text-secondary">step @FlightPlanCurrentStep() of @_fpCount</span>
+                        }
+                    </div>
+                    <div class="map-flightplan-now">@_fp.NowLine</div>
+                    @if (_fp.NextLine is { } _nextLine)
+                    {
+                        <div class="map-flightplan-next text-secondary">@_nextLine</div>
+                    }
+                </div>
                 <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
                         Add burn at scrub
@@ -739,7 +763,7 @@
                     </button>
                 }
 
-                @if (_planNodes.Count == 0)
+                @if (_planNodes.Count == 0 && _armedOrbitBodyId is null)
                 {
                     <div class="text-secondary">No maneuver nodes. Scrub to a future time and add a burn.</div>
                 }
@@ -748,7 +772,11 @@
                     <div class="map-plot-nodes">
                         @foreach (PlanNode node in _planNodes)
                         {
-                            <div class="d-flex align-items-center gap-1 mb-1 @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
+                            @* PR-D1: the step's state (planned / done / stale) rides a left pip so the
+                               plan reads at a glance without changing any of the burn editors. *@
+                            FlightStepState _bs = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
+                            <div class="d-flex align-items-center gap-1 mb-1 map-plan-step map-plan-step-@_bs.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
+                                <span class="map-plan-step-pip" title="@_bs" aria-hidden="true"></span>
                                 <span class="flex-grow-1">@FormatSimTime(node.SimTime)</span>
                                 @* Mode toggle: ± is the classic prograde/retrograde factor burn; ✚ is the
                                    X-Pilot point-and-burn that aims a heading to chase a climbing pod. *@
@@ -800,6 +828,27 @@
                                         @onclick="() => RetimeToScrub(node)">@@</button>
                                 <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
                                         @onclick="() => DeleteNode(node)">&times;</button>
+                            </div>
+                        }
+                        @* PR-D1: armed auto-orbit gains list presence as the terminal step (it fires after
+                           the burns set up the approach). Read-only for now — the disarm control still
+                           lives on the target panel below; this only gives it a home in the plan and a
+                           state (ARMED → ACTIVE while the autopilot flies the approach). *@
+                        @if (_armedOrbitBodyId is not null)
+                        {
+                            FlightStepState _is = FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach);
+                            bool _active = _is == FlightStepState.Active;
+                            <div class="d-flex align-items-center gap-1 mb-1 map-plan-step map-plan-step-@_is.ToString().ToLowerInvariant()">
+                                <span class="map-plan-step-pip" title="@_is" aria-hidden="true"></span>
+                                <span class="flex-grow-1">
+                                    🛰 Insert at @BodyName(_armedOrbitBodyId)
+                                    <span class="text-secondary">— @(_active ? "autopilot flying the approach" : "armed — waiting for the window")</span>
+                                </span>
+                                @if (ArmedInsertionSimTime is { } _it)
+                                {
+                                    <span class="text-secondary small">@FormatSimTime(_it)</span>
+                                }
+                                <span class="badge @(_active ? "bg-info text-dark" : "bg-secondary")">@(_active ? "ACTIVE" : "ARMED")</span>
                             </div>
                         }
                     </div>
@@ -1524,6 +1573,89 @@
             ? $"pass: {cp.BodyName} {FormatDistance(cp.Distance)}{(cp.Impact ? " IMPACT" : "")}"
             : null;
         return new(ShipDesk.Nav, "🧭", "Nav", objective, speedLine, passLine);
+    }
+
+    // ===== PR-D1: the burn list read AS a flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md) =====
+    // Read-only derivation over existing state — NO flight-logic changes. Armed auto-orbit gains list
+    // presence as a step; the owner's NOW/next status line and the step counter are derived once, here,
+    // so the pilot banner and the Nav-desk header never disagree. FlightPlanStatusBuilder (Core, unit-
+    // tested) owns the state + now/next decisions; this only feeds it facts already on screen elsewhere.
+
+    // The autopilot is FLYING THE APPROACH (vs merely armed and waiting for the window) when it is armed
+    // AND already within capture range — the same gate OrbitStatusLine reports as "flying the approach".
+    private bool AutopilotFlyingApproach =>
+        _armedOrbitBodyId is not null && OrbitInfo() is { Armed: true, InCaptureRange: true };
+
+    // The armed insertion's time when the plotted destination pass pins it; null = "at window" (unknown).
+    private double? ArmedInsertionSimTime =>
+        _armedOrbitBodyId is not null && _destinationPass is { } dp
+            && dp.BodyId == _armedOrbitBodyId && dp.SimTime > SimTime
+            ? dp.SimTime : null;
+
+    // Live flight-plan steps: non-stale burns still on the board plus the armed insertion, if any.
+    private int FlightPlanStepCount()
+    {
+        int n = _armedOrbitBodyId is not null ? 1 : 0;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (!node.Stale) n++;
+        }
+        return n;
+    }
+
+    // 1-based index of the step being worked now: the earliest pending burn, or the insertion when the
+    // approach is being flown / no burns remain. (Executed burns are pruned from _planNodes, so the
+    // count reflects what is still ahead rather than the original plan length.)
+    private int FlightPlanCurrentStep()
+    {
+        int idx = 0;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (node.Stale) continue;
+            idx++;
+            if (!node.Executed && node.SimTime > SimTime) return idx; // first pending burn
+        }
+        return Math.Max(1, idx + (_armedOrbitBodyId is not null ? 1 : 0));
+    }
+
+    private static string BurnStepLabel(PlanNode node)
+    {
+        string dir = node.Mode == BurnMode.Vector ? "✚"
+            : node.Action == ManeuverAction.Accelerate ? "▲" : "▼";
+        return $"burn {dir} {node.Pulses} p";
+    }
+
+    // The NOW / next readout for the Nav desk, built through the shared Core helper so it can never
+    // contradict the pilot banner. Next = the earliest pending burn, else the armed insertion.
+    private FlightPlanStatus FlightNowNext()
+    {
+        PlanNode? nextBurn = null;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (node.Stale || node.Executed || node.SimTime <= SimTime) continue;
+            if (nextBurn is null || node.SimTime < nextBurn.SimTime) nextBurn = node;
+        }
+
+        string? nextLabel = null, nextEta = null;
+        if (nextBurn is not null)
+        {
+            nextLabel = BurnStepLabel(nextBurn);
+            nextEta = $"in {FormatDuration(nextBurn.SimTime - SimTime)}";
+        }
+        else if (_armedOrbitBodyId is not null)
+        {
+            nextLabel = $"insertion at {BodyName(_armedOrbitBodyId)}";
+            nextEta = ArmedInsertionSimTime is { } t ? $"in {FormatDuration(t - SimTime)}" : "at window";
+        }
+
+        return FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: NavLockedByDock,
+            DockedHavenName: _havenName,
+            AutopilotArmed: _armedOrbitBodyId is not null,
+            AutopilotFlyingApproach: AutopilotFlyingApproach,
+            AutopilotBodyName: _armedOrbitBodyId is null ? null : BodyName(_armedOrbitBodyId),
+            NextStepLabel: nextLabel,
+            NextStepEta: nextEta));
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData SensorsChip()
