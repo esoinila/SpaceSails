@@ -223,7 +223,8 @@
                             🎯 Set destination — navigate to orbit
                         </button>
                     }
-                    <button type="button" class="btn btn-sm @(_armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
+                    <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
+                            disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : null)"
                             @onclick="() => ToggleArmedInsertionFromMenu(menuBody.Id)">
                         🛰 @(_armedOrbitBodyId == menuBody.Id ? "Auto-insert ARMED — disarm" : "Arm auto-insert at window")
                     </button>
@@ -475,15 +476,17 @@
                             </span>
                             @if (oi.WindowOpen)
                             {
-                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage ? "btn-success" : "btn-outline-secondary")"
-                                        disabled="@(!oi.CanEngage)" @onclick="EnterOrbit">
+                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage && !NavLockedByDock ? "btn-success" : "btn-outline-secondary")"
+                                        disabled="@(!oi.CanEngage || NavLockedByDock)"
+                                        title="@(NavLockedByDock ? DockNavLockTip : null)" @onclick="EnterOrbit">
                                     Enter orbit (@oi.Cost p / O)
                                 </button>
                             }
                             else
                             {
-                                <button type="button" class="btn btn-sm py-0 @(oi.Armed ? "btn-success" : oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
-                                        disabled="@(!oi.InCaptureRange && !oi.Armed)" @onclick="EnterOrbit">
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-info" : "btn-outline-secondary")"
+                                        disabled="@((!oi.InCaptureRange && !oi.Armed) || NavLockedByDock)"
+                                        title="@(NavLockedByDock ? DockNavLockTip : null)" @onclick="EnterOrbit">
                                     @(oi.Armed ? "Autopilot ON — disarm" : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
                                 </button>
                             }
@@ -818,7 +821,8 @@
                     Speed at the pass: @((info.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
                     relative — the autopilot's burns from there cost ≈ @info.EstPulses pulses.
                 </div>
-                <button type="button" class="btn btn-sm @(_armedOrbitBodyId == dp.BodyId ? "btn-success" : info.InRange ? "btn-info" : "btn-outline-info")"
+                <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == dp.BodyId ? "btn-success" : !NavLockedByDock && info.InRange ? "btn-info" : "btn-outline-info")"
+                        disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : null)"
                         @onclick="() => ToggleArmedInsertion(dp.BodyId)">
                     🛰 @(_armedOrbitBodyId == dp.BodyId
                         ? $"Autopilot ARMED for {dp.BodyName} — click to disarm"
@@ -4598,8 +4602,31 @@
         ShowPulseMessage($"🧪 skim cheat: hyperbolic inbound to {body.Name}, cloud tops ~2 days out. Open Plot ▸ 🔥 Skim.");
     }
 
+    // Nav commands that begin flight are refused while clamped to a station: the berthing arm
+    // holds the ship fast (HoldAtDock pins it back onto the dock every tick), so an approach or
+    // insertion burn would just fight the clamp — Undock first (issue #126). NB the OTHER dock
+    // flag, _docked, is mere market proximity (within DockRadiusMeters of a trade body): the ship
+    // still flies freely there, so it is deliberately NOT a nav lock. Only the clamp locks.
+    private bool NavLockedByDock => _dockedHavenId is not null;
+    private const string DockNavLockTip = "Undock first — you're clamped to the station";
+
+    // Returns true (and toasts) when a flight command must be refused because we're clamped on.
+    private bool RejectNavWhileDocked()
+    {
+        if (!NavLockedByDock)
+        {
+            return false;
+        }
+        ShowPulseMessage($"⚓ {DockNavLockTip}.");
+        return true;
+    }
+
     private void ToggleArmedInsertion(string bodyId)
     {
+        if (RejectNavWhileDocked())
+        {
+            return;
+        }
         _armedOrbitBodyId = _armedOrbitBodyId == bodyId ? null : bodyId;
         if (_armedOrbitBodyId is not null)
         {
@@ -4638,10 +4665,19 @@
         double h = 1.0;
         Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
         double hill = OrbitRule.HillRadius(body, parent.Mu);
+
+        // Auto-orbiting a MOON (its parent is itself a planet, not the sun): the parent is a solid
+        // body the approach chord must not thread. Auto-orbiting a PLANET (parent = sun): no chord
+        // obstacle — you never route around the sun — just the target's own b-plane offset applies.
+        OrbitRule.ApproachObstacle? obstacle = parent.ParentId is null
+            ? null
+            : new OrbitRule.ApproachObstacle(
+                _ephemeris.Position(parent.Id, SimTime), parent.BodyRadius * OrbitRule.ParentSafeBodyRadii);
+
         switch (OrbitRule.AutopilotDecision(_ship, bodyPos, bodyVel, body, hill))
         {
             case OrbitRule.AutopilotAction.Approach:
-                int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel);
+                int approachCost = OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel, body, obstacle);
                 if (approachCost > _reactionMassPulses)
                 {
                     ShowPulseMessage($"Approach burn for {body.Name} — not enough mass pulses ({approachCost} needed)");
@@ -4649,7 +4685,7 @@
                     return;
                 }
 
-                _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel);
+                _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel, body, obstacle);
                 _reactionMassPulses -= approachCost;
                 StaleFutureNodes();
                 ShowPulseMessage($"Approach burn — falling toward {body.Name} ({approachCost} p) 🛰");
@@ -4769,6 +4805,11 @@
 
     private void EnterOrbit()
     {
+        if (RejectNavWhileDocked())
+        {
+            return;
+        }
+
         if (OrbitInfo() is not { } candidate || _ephemeris is null)
         {
             return;
@@ -9890,6 +9931,7 @@
         _dockOffset = _ship.Position - _nearestBodyPosition; // freeze the arm's reach at berth
         HoldAtDock();                                        // match the drift now so nothing lurches
         StaleFutureNodes();                                  // a berth cancels any pending burns
+        _armedOrbitBodyId = null;                            // and disarms any pending auto-insert (issue #126)
         SetDeckForDock(dock.Id);                             // weld on the walk-through tube if this haven has an interior
         ShowPulseMessage(HavenInterior.HasInterior(dock.Id)
             ? $"⚓ Clamped on at {dock.Name} — gangway's mated. Head to the Deck and walk the tube ashore."
