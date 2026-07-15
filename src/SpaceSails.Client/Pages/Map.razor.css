@@ -93,6 +93,12 @@
     left: 0.75rem;
     pointer-events: none;
     max-width: calc(100% - 1.5rem);
+    /* Round-2 blind-UI audit (docs/MondayPonder/UIUsabilityNotes.md, fixes 1 & 2): the interactive HUD
+       column — the Plot/Pause toolbar and the flight plan that now owns the sling/skim editors — must
+       win any overlap with the dismissible tutorial ad and the bottom-left "soft catch" checklist, so
+       neither can occlude or intercept its controls. Sits ABOVE those (ad 12, tutorial default) and
+       BELOW the pilot banner (24) / desk tabs (25) so it never covers who-is-flying. */
+    z-index: 22;
 }
 
 .map-hud .btn-toolbar,
@@ -110,7 +116,9 @@
 }
 
 .map-plot-nodes {
-    max-height: 14rem;
+    /* PR-D2: only one step editor expands at a time now (accordion), but that one editor is taller than
+       an old always-inline row — give the list room so the open editor shows without immediately scrolling. */
+    max-height: 20rem;
     overflow-y: auto;
 }
 
@@ -236,8 +244,12 @@
     letter-spacing: 0.02em;
 }
 
+/* Round-2 audit fix 3: the "what happens next" line was too quiet to read cold. Give the NEXT: line
+   its own weight and a cyan tint so who-is-flying (banner) + what-next (this) read as one unit. */
 .map-flightplan-next {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #bfe0ff;
 }
 
 /* A step's state, shown as a coloured pip on the left edge of its row. */
@@ -275,6 +287,59 @@
 
 .map-plan-step-active {
     animation: pilot-banner-pulse 1.8s ease-in-out infinite;
+}
+
+/* PR-D2 · the flight-plan accordion. Each step is a glanceable clickable line; opening it reveals its
+   editor in place. The open row lifts (background + inset ring) so the one editor in focus reads as a
+   sub-panel, per GeminiUINotes.md (data-state / accordion / lifted editor). */
+.map-plan-step-line {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    padding: 0.15rem 0;
+    border-radius: 0.25rem;
+}
+
+.map-plan-step-line:hover {
+    background: rgba(120, 200, 255, 0.08);
+}
+
+.map-plan-step-caret {
+    flex: 0 0 auto;
+    width: 0.85rem;
+    text-align: center;
+    color: rgba(190, 215, 240, 0.75);
+    font-size: 0.8rem;
+}
+
+.map-plan-step-open {
+    background: rgba(120, 200, 255, 0.06);
+    border-radius: 0.3rem;
+}
+
+/* The expanded editor — the step's own buttons live here (owner: the sub-panel IS where the buttons
+   live). A lifted panel with an inset cyan ring, opening with a short slide so it reads as an accordion. */
+.map-plan-step-edit,
+.map-step-editor {
+    animation: map-step-open 0.14s ease-out;
+}
+
+.map-plan-step-edit {
+    margin: 0.15rem 0 0.1rem 0.9rem;
+    padding: 0.4rem 0.5rem;
+    background: rgba(18, 30, 44, 0.75);
+    border-radius: 0.35rem;
+    box-shadow: inset 0 0 0 1px rgba(120, 200, 255, 0.22);
+}
+
+.map-step-editor {
+    box-shadow: inset 0 0 0 1px rgba(120, 200, 255, 0.22);
+}
+
+@keyframes map-step-open {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: none; }
 }
 
 /* PR-G · the sling — the plot-desk crank panel. The verdict block echoes the war-room verdict:
@@ -687,22 +752,26 @@
     z-index: 40;
 }
 
+/* Round-2 audit fix 4: the Layers control was dead-center at top 3.2rem, stacking on top of the
+   centered pilot-in-command banner (top 3.0rem) — the "top-center cyan control" collision. Tuck it
+   into the top-left corner, clear of the banner and above the HUD toolbar (top 5.9rem). */
 .map-layers {
     position: absolute;
     top: 3.2rem;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0.75rem;
     z-index: 40;
 }
 
 /* Tutorials advertisement — a dismissible pointer on the Nav map, sitting below the Layers row so
-   the two never collide. Points new players to the Captain's Tutorials tab, one desk over. */
+   the two never collide. Points new players to the Captain's Tutorials tab, one desk over.
+   Round-2 audit fix 1: lowered below the HUD column (z 22) so it can no longer intercept the Plot /
+   Pause toolbar buttons it drifts over at wide viewports — the toolbar now wins the overlap. */
 .tutorial-ad {
     position: absolute;
     top: 6rem;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 45;
+    z-index: 12;
     display: flex;
     align-items: center;
     gap: 0.6rem;
@@ -722,8 +791,7 @@
 .map-layers-panel {
     position: absolute;
     top: 2.1rem;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
     min-width: 12.5rem;
 }
 
