@@ -45,7 +45,7 @@ public class FlightPlanStatusTests
             AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Titan",
             NextStepLabel: "insertion at Titan", NextStepEta: "at window"));
         Assert.Equal("NOW: coasting — autopilot armed for Titan", s.NowLine);
-        Assert.Equal("next: insertion at Titan at window", s.NextLine);
+        Assert.Equal("NEXT: insertion at Titan at window", s.NextLine);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class FlightPlanStatusTests
             Docked: false, DockedHavenName: null,
             AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
             NextStepLabel: "burn ▲ 14 p", NextStepEta: "in 2d 4h"));
-        Assert.Equal("next: burn ▲ 14 p in 2d 4h", s.NextLine);
+        Assert.Equal("NEXT: burn ▲ 14 p in 2d 4h", s.NextLine);
     }
 
     [Fact]
@@ -88,7 +88,21 @@ public class FlightPlanStatusTests
             Docked: false, DockedHavenName: null,
             AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
             NextStepLabel: "insertion at Titan", NextStepEta: null));
-        Assert.Equal("next: insertion at Titan", s.NextLine);
+        Assert.Equal("NEXT: insertion at Titan", s.NextLine);
+    }
+
+    [Fact]
+    public void Next_UsesUppercaseLabel_SoItReadsAsWhatHappensNext()
+    {
+        // Round-2 blind-UI audit (docs/MondayPonder/UIUsabilityNotes.md): the old "next: …" line was
+        // not read cold as "what the ship will do next". The label is now an uppercase NEXT: cue that
+        // mirrors the NOW: line, so who-is-flying + what-next read as one unit.
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: "burn ▼ 3 p", NextStepEta: "in 5h"));
+        Assert.StartsWith("NEXT: ", s.NextLine);
+        Assert.Equal("NEXT: burn ▼ 3 p in 5h", s.NextLine);
     }
 
     [Fact]

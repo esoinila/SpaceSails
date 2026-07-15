@@ -81,12 +81,15 @@ public static class FlightPlanStatusBuilder
                 ? $"NOW: coasting — autopilot armed for {NameOr(f.AutopilotBodyName, "target")}"
             : "NOW: coasting";
 
+        // The audit's round-2 cold read (docs/MondayPonder/UIUsabilityNotes.md): testers did not read
+        // this line as "what the ship does next". An uppercase NEXT: label makes it answer that question
+        // at a glance, matching the NOW: line's shape so the two read as one now/next unit.
         string? next = null;
         if (!string.IsNullOrWhiteSpace(f.NextStepLabel))
         {
             next = string.IsNullOrWhiteSpace(f.NextStepEta)
-                ? $"next: {f.NextStepLabel}"
-                : $"next: {f.NextStepLabel} {f.NextStepEta}";
+                ? $"NEXT: {f.NextStepLabel}"
+                : $"NEXT: {f.NextStepLabel} {f.NextStepEta}";
         }
 
         return new FlightPlanStatus(now, next);

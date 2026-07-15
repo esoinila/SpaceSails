@@ -648,106 +648,12 @@
                 {
                     <div class="small mb-1 text-info">🛰 Insertion armed: @_armedOrbitBodyId</div>
                 }
-                @* PR-G · the sling: on any close planetary pass, bend the track off it with one aiming
-                   burn the SlingPlanner solves against the real integrator (labs 19/20's crank). *@
-                @if (_slingablePass is { } sp)
-                {
-                    <div class="map-sling mb-2">
-                        <button type="button" class="btn btn-sm w-100 mb-1 @(_slingPanelOpen ? "btn-info" : "btn-outline-info")"
-                                @onclick="ToggleSlingPanel">⤴ Sling past @sp.BodyName</button>
-                        @if (_slingPanelOpen)
-                        {
-                            <div class="map-sling-body bg-dark bg-opacity-50 rounded p-2">
-                                <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Sling side">
-                                    <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Lead ? "btn-success" : "btn-outline-secondary")"
-                                            @onclick="() => SetSlingSide(SlingPlanner.PassSide.Lead)">Lead — boost</button>
-                                    <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Trail ? "btn-warning" : "btn-outline-secondary")"
-                                            @onclick="() => SetSlingSide(SlingPlanner.PassSide.Trail)">Trail — brake</button>
-                                </div>
-                                <div class="mb-1">Pass distance:
-                                    <strong>@_slingPassRadii.ToString("0.#", CultureInfo.InvariantCulture) planet radii</strong>
-                                    <span class="text-secondary">(point-mass floor @SlingMinRadii.ToString("0", CultureInfo.InvariantCulture) R)</span>
-                                </div>
-                                @* stopPropagation: arrow keys adjust the slider, not fire live ship pulses. *@
-                                <input type="range" class="form-range" min="@SlingMinRadii" max="@SlingMaxRadii" step="0.5"
-                                       value="@_slingPassRadii.ToString(CultureInfo.InvariantCulture)"
-                                       @oninput="OnSlingRadiiInput" @onkeydown:stopPropagation="true" />
-                                <div class="text-secondary mb-2">@SlingNodeNoteNow() — solver may propose its own node</div>
-                                <button type="button" class="btn btn-sm btn-outline-info w-100 mb-2" disabled="@_slingSolving"
-                                        @onclick="RunSlingSolveAsync">@(_slingSolving ? "solving…" : "SOLVE the sling")</button>
-                                @if (_slingFailure is { } fail)
-                                {
-                                    <div class="text-warning">⚠ @fail</div>
-                                }
-                                else if (_slingResult is { Ok: true } r)
-                                {
-                                    <div class="map-sling-verdict">
-                                        <div>@SlingPassLine(r)</div>
-                                        <div>@SlingBurnLine(r)</div>
-                                        <div class="@(r.SpeedGain >= 0 ? "text-success" : "text-warning")">@SlingOutcomeLine(r)</div>
-                                        <div class="text-warning">@SlingLeverLine(r)</div>
-                                        <button type="button" class="btn btn-sm btn-success w-100 mt-1" @onclick="AddSlingBurn">Add the burn</button>
-                                    </div>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-                @* PR-I · the skim & skip: on a close pass by a body with an atmosphere, dip the cloud
-                   tops to brake for free — with a three-zone corridor gauge that shows what actually flies. *@
-                @if (_skimmablePass is { } kp)
-                {
-                    <div class="map-skim mb-2">
-                        <button type="button" class="btn btn-sm w-100 mb-1 @(_skimPanelOpen ? "btn-danger" : "btn-outline-danger")"
-                                @onclick="ToggleSkimPanel">🔥 Skim @kp.BodyName</button>
-                        @if (_skimPanelOpen)
-                        {
-                            <div class="map-skim-body bg-dark bg-opacity-50 rounded p-2">
-                                <div class="mb-1">Periapsis depth:
-                                    <strong>@_skimAltKm.ToString("0", CultureInfo.InvariantCulture) km</strong>
-                                    <span class="text-secondary">(shell top @SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture) km)</span>
-                                </div>
-                                @* stopPropagation: arrow keys move the slider, not fire live ship pulses. *@
-                                <input type="range" class="form-range" min="1" max="@SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture)" step="1"
-                                       value="@_skimAltKm.ToString("0", CultureInfo.InvariantCulture)"
-                                       @oninput="OnSkimAltInput" @onkeydown:stopPropagation="true" />
-                                <button type="button" class="btn btn-sm btn-outline-danger w-100 mb-2" disabled="@_skimSolving"
-                                        @onclick="RunSkimSolveAsync">@(_skimSolving ? "flying the pass…" : "SOLVE the skim")</button>
-                                @if (_skimFailure is { } fail)
-                                {
-                                    <div class="text-warning">⚠ @fail</div>
-                                }
-                                else if (_skimResult is { } g)
-                                {
-                                    @* The corridor gauge: three labeled zones read off the flown DragReport. *@
-                                    <div class="map-skim-gauge">
-                                        <div class="map-skim-zone @(g.TooShallow ? "fw-bold" : "text-secondary")">
-                                            @(g.ArrivalHyperbolic ? "▲ skip — she bounces" : "▲ too shallow") @(g.TooShallow ? "◀" : "")
-                                        </div>
-                                        <div class="map-skim-zone @(g.InCorridor ? "text-success fw-bold" : "text-secondary")">
-                                            ● the corridor @(g.InCorridor ? "◀" : "")
-                                        </div>
-                                        <div class="map-skim-zone @(g.TooDeep ? "text-danger fw-bold" : "text-secondary")">
-                                            ▼ too deep — would hole the sail @(g.TooDeep ? "◀" : "")
-                                        </div>
-                                    </div>
-                                    <div class="map-skim-verdict mt-1">
-                                        <div>@SkimDepthLine(g)</div>
-                                        <div class="@(g.TooDeep ? "text-danger" : g.InCorridor ? "text-success" : "text-secondary")">@SkimShedLine(g)</div>
-                                        <div>@SkimOutcomeLine(g)</div>
-                                        <div class="text-secondary map-skim-fineprint">@SkimFinePrint()</div>
-                                        <button type="button" class="btn btn-sm @(g.TooDeep ? "btn-danger" : "btn-success") w-100 mt-1"
-                                                @onclick="AddSkimBurn">@(g.TooDeep ? "Add the burn anyway — fly into the red" : "Add the burn")</button>
-                                    </div>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-                @* PR-D1 · the flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md). The burn list
-                   IS the flight plan; armed auto-orbit shows as a step below. The NOW/next line answers
-                   the owner's 2026-07-15 ask — "what step is it doing now is missing" — and is derived
-                   through the same Core helper the pilot banner reads, so the two never disagree. *@
+                @* PR-D2 · the flight plan OWNS the step editors (docs/WednesdayPlan/UnifiedNavListNotes.md,
+                   GeminiUINotes.md). The burn list IS the plan; the old floating sling/skim panels are now
+                   scratchpad COMPOSE rows (FMS pattern — solve→preview→commit); every committed step
+                   expands in place (accordion — one open at a time), so each step's buttons live inside
+                   its own row, not loose on the HUD. The NOW/NEXT line is derived through the same Core
+                   helper the pilot banner reads, so the two never disagree. *@
                 @{
                     FlightPlanStatus _fp = FlightNowNext();
                     int _fpCount = FlightPlanStepCount();
@@ -763,15 +669,111 @@
                     <div class="map-flightplan-now">@_fp.NowLine</div>
                     @if (_fp.NextLine is { } _nextLine)
                     {
-                        <div class="map-flightplan-next text-secondary">@_nextLine</div>
+                        <div class="map-flightplan-next">@_nextLine</div>
                     }
                 </div>
-                <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                @* Compose new steps (scratchpad). Add-burn seeds a step at the scrub and opens it; a
+                   slingable / skimmable pass offers its own solver as a compose editor that COMMITS a step. *@
+                <div class="d-flex flex-wrap align-items-center mb-2 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
-                        Add burn at scrub
+                        + Add burn at scrub
                     </button>
-                    <span>Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
+                    @if (_slingablePass is { } sp)
+                    {
+                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Sling ? "btn-info" : "btn-outline-info")"
+                                @onclick="ToggleSlingPanel">⤴ Add sling past @sp.BodyName</button>
+                    }
+                    @if (_skimmablePass is { } kp)
+                    {
+                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Skim ? "btn-danger" : "btn-outline-danger")"
+                                @onclick="ToggleSkimPanel">🔥 Add skim @kp.BodyName</button>
+                    }
+                    <span class="ms-auto text-nowrap">Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
                 </div>
+                @* PR-G · the sling compose editor — SOLVE previews against the real integrator (labs 19/20's
+                   crank); "Add the burn" COMMITS the solved node into the plan below. *@
+                @if (_openEditor == FlightEditorKind.Sling && _slingablePass is { } slp)
+                {
+                    <div class="map-step-editor map-sling-body bg-dark bg-opacity-50 rounded p-2 mb-2">
+                        <div class="fw-bold small mb-1">⤴ Compose sling past @slp.BodyName</div>
+                        <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Sling side">
+                            <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Lead ? "btn-success" : "btn-outline-secondary")"
+                                    @onclick="() => SetSlingSide(SlingPlanner.PassSide.Lead)">Lead — boost</button>
+                            <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Trail ? "btn-warning" : "btn-outline-secondary")"
+                                    @onclick="() => SetSlingSide(SlingPlanner.PassSide.Trail)">Trail — brake</button>
+                        </div>
+                        <div class="mb-1">Pass distance:
+                            <strong>@_slingPassRadii.ToString("0.#", CultureInfo.InvariantCulture) planet radii</strong>
+                            <span class="text-secondary">(point-mass floor @SlingMinRadii.ToString("0", CultureInfo.InvariantCulture) R)</span>
+                        </div>
+                        @* stopPropagation: arrow keys adjust the slider, not fire live ship pulses. *@
+                        <input type="range" class="form-range" min="@SlingMinRadii" max="@SlingMaxRadii" step="0.5"
+                               value="@_slingPassRadii.ToString(CultureInfo.InvariantCulture)"
+                               @oninput="OnSlingRadiiInput" @onkeydown:stopPropagation="true" />
+                        <div class="text-secondary mb-2">@SlingNodeNoteNow() — solver may propose its own node</div>
+                        <button type="button" class="btn btn-sm btn-outline-info w-100 mb-2" disabled="@_slingSolving"
+                                @onclick="RunSlingSolveAsync">@(_slingSolving ? "solving…" : "SOLVE the sling")</button>
+                        @if (_slingFailure is { } fail)
+                        {
+                            <div class="text-warning">⚠ @fail</div>
+                        }
+                        else if (_slingResult is { Ok: true } r)
+                        {
+                            <div class="map-sling-verdict">
+                                <div>@SlingPassLine(r)</div>
+                                <div>@SlingBurnLine(r)</div>
+                                <div class="@(r.SpeedGain >= 0 ? "text-success" : "text-warning")">@SlingOutcomeLine(r)</div>
+                                <div class="text-warning">@SlingLeverLine(r)</div>
+                                <button type="button" class="btn btn-sm btn-success w-100 mt-1" @onclick="AddSlingBurn">Add the burn → commit step</button>
+                            </div>
+                        }
+                    </div>
+                }
+                @* PR-I · the skim compose editor — SOLVE flies the pass through the real drag model; the
+                   three-zone corridor gauge shows what actually flies; "Add the burn" COMMITS the step. *@
+                @if (_openEditor == FlightEditorKind.Skim && _skimmablePass is { } skp)
+                {
+                    <div class="map-step-editor map-skim-body bg-dark bg-opacity-50 rounded p-2 mb-2">
+                        <div class="fw-bold small mb-1">🔥 Compose skim @skp.BodyName</div>
+                        <div class="mb-1">Periapsis depth:
+                            <strong>@_skimAltKm.ToString("0", CultureInfo.InvariantCulture) km</strong>
+                            <span class="text-secondary">(shell top @SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture) km)</span>
+                        </div>
+                        @* stopPropagation: arrow keys move the slider, not fire live ship pulses. *@
+                        <input type="range" class="form-range" min="1" max="@SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture)" step="1"
+                               value="@_skimAltKm.ToString("0", CultureInfo.InvariantCulture)"
+                               @oninput="OnSkimAltInput" @onkeydown:stopPropagation="true" />
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 mb-2" disabled="@_skimSolving"
+                                @onclick="RunSkimSolveAsync">@(_skimSolving ? "flying the pass…" : "SOLVE the skim")</button>
+                        @if (_skimFailure is { } fail)
+                        {
+                            <div class="text-warning">⚠ @fail</div>
+                        }
+                        else if (_skimResult is { } g)
+                        {
+                            @* The corridor gauge: three labeled zones read off the flown DragReport. *@
+                            <div class="map-skim-gauge">
+                                <div class="map-skim-zone @(g.TooShallow ? "fw-bold" : "text-secondary")">
+                                    @(g.ArrivalHyperbolic ? "▲ skip — she bounces" : "▲ too shallow") @(g.TooShallow ? "◀" : "")
+                                </div>
+                                <div class="map-skim-zone @(g.InCorridor ? "text-success fw-bold" : "text-secondary")">
+                                    ● the corridor @(g.InCorridor ? "◀" : "")
+                                </div>
+                                <div class="map-skim-zone @(g.TooDeep ? "text-danger fw-bold" : "text-secondary")">
+                                    ▼ too deep — would hole the sail @(g.TooDeep ? "◀" : "")
+                                </div>
+                            </div>
+                            <div class="map-skim-verdict mt-1">
+                                <div>@SkimDepthLine(g)</div>
+                                <div class="@(g.TooDeep ? "text-danger" : g.InCorridor ? "text-success" : "text-secondary")">@SkimShedLine(g)</div>
+                                <div>@SkimOutcomeLine(g)</div>
+                                <div class="text-secondary map-skim-fineprint">@SkimFinePrint()</div>
+                                <button type="button" class="btn btn-sm @(g.TooDeep ? "btn-danger" : "btn-success") w-100 mt-1"
+                                        @onclick="AddSkimBurn">@(g.TooDeep ? "Add the burn anyway — fly into the red" : "Add the burn → commit step")</button>
+                            </div>
+                        }
+                    </div>
+                }
                 @if (_destinationBodyId is not null && _ancientCharges > 0)
                 {
                     @* M28: the Ancients' pilot — scarce alien auto-plot, found at the pyramids. *@
@@ -789,83 +791,115 @@
                     <div class="map-plot-nodes">
                         @foreach (PlanNode node in _planNodes)
                         {
-                            @* PR-D1: the step's state (planned / done / stale) rides a left pip so the
-                               plan reads at a glance without changing any of the burn editors. *@
+                            @* PR-D2: each burn is a step. Collapsed, it shows a glanceable line (type +
+                               direction + countdown); clicking the line expands its editor in place
+                               (accordion — one open at a time). The state pip (planned / done / stale)
+                               rides the left edge so the plan reads at a glance. *@
                             FlightStepState _bs = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
-                            <div class="d-flex align-items-center gap-1 mb-1 map-plan-step map-plan-step-@_bs.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
-                                <span class="map-plan-step-pip" title="@_bs" aria-hidden="true"></span>
-                                <span class="flex-grow-1">@FormatSimTime(node.SimTime)</span>
-                                @* Mode toggle: ± is the classic prograde/retrograde factor burn; ✚ is the
-                                   X-Pilot point-and-burn that aims a heading to chase a climbing pod. *@
-                                <button type="button"
-                                        class="btn btn-sm @(node.Mode == BurnMode.Vector ? "btn-info" : "btn-outline-info") map-plot-mode"
-                                        title="@(node.Mode == BurnMode.Vector ? "X-Pilot burn (aim a heading) — click for ± factor burn" : "± factor burn (prograde/retrograde) — click for X-Pilot heading burn")"
-                                        @onclick="() => ToggleBurnMode(node)">@(node.Mode == BurnMode.Vector ? "✚" : "±")</button>
-                                @if (node.Mode == BurnMode.Vector)
-                                {
-                                    @* X-Pilot: a world-space heading in degrees, plus quick ±15° nudges. *@
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate −15°"
-                                            @onclick="() => NudgeHeading(node, -15)">↺</button>
-                                    <div class="input-group input-group-sm map-plot-heading">
-                                        <input type="text" inputmode="decimal" class="form-control form-control-sm"
-                                               value="@(node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture))"
-                                               title="Nose heading in degrees (0° = +X, counter-clockwise)"
-                                               @onchange="e => SetHeading(node, e)" @onkeydown:stopPropagation="true" />
-                                        <span class="input-group-text">°</span>
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate +15°"
-                                            @onclick="() => NudgeHeading(node, 15)">↻</button>
-                                }
-                                else
-                                {
-                                    <div class="btn-group btn-group-sm" role="group" aria-label="Burn direction">
-                                        <button type="button"
-                                                class="btn @(node.Action == ManeuverAction.Accelerate ? "btn-success" : "btn-outline-secondary")"
-                                                @onclick="() => SetAction(node, ManeuverAction.Accelerate)">+</button>
-                                        <button type="button"
-                                                class="btn @(node.Action == ManeuverAction.Decelerate ? "btn-warning" : "btn-outline-secondary")"
-                                                @onclick="() => SetAction(node, ManeuverAction.Decelerate)">&minus;</button>
-                                    </div>
-                                }
-                                @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
-                                <input type="number" class="form-control form-control-sm map-plot-pulses"
-                                       min="1" max="@MaxNodePulses" value="@node.Pulses"
-                                       @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
-                                @* Text (not number) input so the 4-decimal padding actually shows —
-                                   browsers strip trailing zeros from type=number. Owner: at least
-                                   ".0000" must be visible for fine thrust trims. *@
-                                <div class="input-group input-group-sm map-plot-percent">
-                                    <input type="text" inputmode="decimal" class="form-control form-control-sm"
-                                           value="@(node.Percent.ToString("0.0000", CultureInfo.InvariantCulture))"
-                                           title="Per-pulse thrust strength in percent — any decimal, shown to four places"
-                                           @onchange="e => SetPercent(node, e)" @onkeydown:stopPropagation="true" />
-                                    <span class="input-group-text">%</span>
+                            bool _open = _openEditor == FlightEditorKind.Burn && ReferenceEquals(node, _selectedPlanNode);
+                            <div class="mb-1 map-plan-step map-plan-step-@_bs.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(_open ? "map-plan-step-open" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
+                                <div class="map-plan-step-line" role="button" tabindex="0"
+                                     title="Click to @(_open ? "collapse" : "edit") this step"
+                                     @onclick="() => ToggleBurnEditor(node)">
+                                    <span class="map-plan-step-pip" title="@_bs" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">@(_open ? "▾" : "▸")</span>
+                                    <span class="flex-grow-1">@BurnGlanceLine(node)</span>
+                                    <span class="text-secondary small text-nowrap">@FormatSimTime(node.SimTime)</span>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
-                                        @onclick="() => RetimeToScrub(node)">@@</button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
-                                        @onclick="() => DeleteNode(node)">&times;</button>
+                                @if (_open)
+                                {
+                                    <div class="map-plan-step-edit d-flex flex-wrap align-items-center gap-1">
+                                        @* Mode toggle: ± is the classic prograde/retrograde factor burn; ✚ is
+                                           the X-Pilot point-and-burn that aims a heading to chase a climbing pod. *@
+                                        <button type="button"
+                                                class="btn btn-sm @(node.Mode == BurnMode.Vector ? "btn-info" : "btn-outline-info") map-plot-mode"
+                                                title="@(node.Mode == BurnMode.Vector ? "X-Pilot burn (aim a heading) — click for ± factor burn" : "± factor burn (prograde/retrograde) — click for X-Pilot heading burn")"
+                                                @onclick="() => ToggleBurnMode(node)">@(node.Mode == BurnMode.Vector ? "✚" : "±")</button>
+                                        @if (node.Mode == BurnMode.Vector)
+                                        {
+                                            @* X-Pilot: a world-space heading in degrees, plus quick ±15° nudges. *@
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate −15°"
+                                                    @onclick="() => NudgeHeading(node, -15)">↺</button>
+                                            <div class="input-group input-group-sm map-plot-heading">
+                                                <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                                                       value="@(node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture))"
+                                                       title="Nose heading in degrees (0° = +X, counter-clockwise)"
+                                                       @onchange="e => SetHeading(node, e)" @onkeydown:stopPropagation="true" />
+                                                <span class="input-group-text">°</span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate +15°"
+                                                    @onclick="() => NudgeHeading(node, 15)">↻</button>
+                                        }
+                                        else
+                                        {
+                                            <div class="btn-group btn-group-sm" role="group" aria-label="Burn direction">
+                                                <button type="button"
+                                                        class="btn @(node.Action == ManeuverAction.Accelerate ? "btn-success" : "btn-outline-secondary")"
+                                                        @onclick="() => SetAction(node, ManeuverAction.Accelerate)">+</button>
+                                                <button type="button"
+                                                        class="btn @(node.Action == ManeuverAction.Decelerate ? "btn-warning" : "btn-outline-secondary")"
+                                                        @onclick="() => SetAction(node, ManeuverAction.Decelerate)">&minus;</button>
+                                            </div>
+                                        }
+                                        @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
+                                        <input type="number" class="form-control form-control-sm map-plot-pulses"
+                                               min="1" max="@MaxNodePulses" value="@node.Pulses"
+                                               @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
+                                        @* Text (not number) input so the 4-decimal padding actually shows —
+                                           browsers strip trailing zeros from type=number. Owner: at least
+                                           ".0000" must be visible for fine thrust trims. *@
+                                        <div class="input-group input-group-sm map-plot-percent">
+                                            <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                                                   value="@(node.Percent.ToString("0.0000", CultureInfo.InvariantCulture))"
+                                                   title="Per-pulse thrust strength in percent — any decimal, shown to four places"
+                                                   @onchange="e => SetPercent(node, e)" @onkeydown:stopPropagation="true" />
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
+                                                @onclick="() => RetimeToScrub(node)">@@</button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
+                                                @onclick="() => DeleteNode(node)">&times;</button>
+                                    </div>
+                                }
                             </div>
                         }
-                        @* PR-D1: armed auto-orbit gains list presence as the terminal step (it fires after
-                           the burns set up the approach). Read-only for now — the disarm control still
-                           lives on the target panel below; this only gives it a home in the plan and a
-                           state (ARMED → ACTIVE while the autopilot flies the approach). *@
+                        @* PR-D2: armed auto-orbit is the terminal step. Collapsed it names the body + state
+                           (ARMED → ACTIVE while the autopilot flies the approach); expanded it gains its own
+                           disarm control, so the insertion's button lives in its step like every other. The
+                           docked-guard (NavLockedByDock) still gates arming/disarming. *@
                         @if (_armedOrbitBodyId is not null)
                         {
+                            string _armedId = _armedOrbitBodyId;
                             FlightStepState _is = FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach);
                             bool _active = _is == FlightStepState.Active;
-                            <div class="d-flex align-items-center gap-1 mb-1 map-plan-step map-plan-step-@_is.ToString().ToLowerInvariant()">
-                                <span class="map-plan-step-pip" title="@_is" aria-hidden="true"></span>
-                                <span class="flex-grow-1">
-                                    🛰 Insert at @BodyName(_armedOrbitBodyId)
-                                    <span class="text-secondary">— @(_active ? "autopilot flying the approach" : "armed — waiting for the window")</span>
-                                </span>
-                                @if (ArmedInsertionSimTime is { } _it)
+                            bool _insOpen = _openEditor == FlightEditorKind.Insertion;
+                            <div class="mb-1 map-plan-step map-plan-step-@_is.ToString().ToLowerInvariant() @(_insOpen ? "map-plan-step-open" : "")">
+                                <div class="map-plan-step-line" role="button" tabindex="0"
+                                     title="Click to @(_insOpen ? "collapse" : "manage")the insertion"
+                                     @onclick="ToggleInsertionEditor">
+                                    <span class="map-plan-step-pip" title="@_is" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">@(_insOpen ? "▾" : "▸")</span>
+                                    <span class="flex-grow-1">
+                                        🛰 Insert at @BodyName(_armedId)
+                                        <span class="text-secondary">— @(_active ? "flying the approach" : "armed · waiting for the window")</span>
+                                    </span>
+                                    @if (ArmedInsertionSimTime is { } _it)
+                                    {
+                                        <span class="text-secondary small text-nowrap">@FormatSimTime(_it)</span>
+                                    }
+                                    <span class="badge @(_active ? "bg-info text-dark" : "bg-secondary")">@(_active ? "ACTIVE" : "ARMED")</span>
+                                </div>
+                                @if (_insOpen)
                                 {
-                                    <span class="text-secondary small">@FormatSimTime(_it)</span>
+                                    <div class="map-plan-step-edit">
+                                        <button type="button" class="btn btn-sm btn-outline-warning w-100"
+                                                disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : null)"
+                                                @onclick="() => ToggleArmedInsertion(_armedId)">
+                                            🛰 Disarm auto-orbit at @BodyName(_armedId)
+                                        </button>
+                                        <div class="text-secondary small mt-1">Target: @BodyName(_armedId) — set from the navigation-target panel below; disarm here, then arm a different body.</div>
+                                    </div>
                                 }
-                                <span class="badge @(_active ? "bg-info text-dark" : "bg-secondary")">@(_active ? "ACTIVE" : "ARMED")</span>
                             </div>
                         }
                     </div>
@@ -1642,6 +1676,44 @@
         return $"burn {dir} {node.Pulses} p";
     }
 
+    // PR-D2: the glanceable collapsed line for a burn step — type + direction + countdown, so the whole
+    // trip reads top to bottom without opening anything (GeminiUINotes.md: "type + target + countdown").
+    private string BurnGlanceLine(PlanNode node)
+    {
+        string arrow = node.Mode == BurnMode.Vector ? "✚"
+            : node.Action == ManeuverAction.Accelerate ? "▲" : "▼";
+        string dir = node.Mode == BurnMode.Vector
+            ? $"{node.HeadingDegrees.ToString("0", CultureInfo.InvariantCulture)}°"
+            : node.Action == ManeuverAction.Accelerate ? "prograde" : "retrograde";
+        string when = node.Executed ? "fired"
+            : node.SimTime <= SimTime ? "now"
+            : $"in {FormatDuration(node.SimTime - SimTime)}";
+        return $"burn {arrow} {node.Pulses} p → {dir} · {when}";
+    }
+
+    // PR-D2: the flight-plan accordion. Clicking a step's line (or its ribbon node) expands its editor;
+    // opening one collapses any other — exactly one editor is open at a time. _selectedPlanNode is the
+    // burn's identity, shared by the list click and the map-node pick so both resolve to one selection.
+    private void ToggleBurnEditor(PlanNode node)
+    {
+        if (_openEditor == FlightEditorKind.Burn && ReferenceEquals(_selectedPlanNode, node))
+        {
+            _openEditor = FlightEditorKind.None;
+            _selectedPlanNode = null;
+        }
+        else
+        {
+            _openEditor = FlightEditorKind.Burn;
+            _selectedPlanNode = node;
+        }
+    }
+
+    private void ToggleInsertionEditor()
+    {
+        _openEditor = _openEditor == FlightEditorKind.Insertion ? FlightEditorKind.None : FlightEditorKind.Insertion;
+        _selectedPlanNode = null;
+    }
+
     // The NOW / next readout for the Nav desk, built through the shared Core helper so it can never
     // contradict the pilot banner. Next = the earliest pending burn, else the armed insertion.
     private FlightPlanStatus FlightNowNext()
@@ -2155,10 +2227,16 @@
     private bool _passDirty;
     private double _lastReprojectMs;
 
+    // PR-D2 · the flight plan is an accordion: exactly ONE step editor is expanded at a time. This
+    // enum is the single source of truth for "which editor is open" (docs/WednesdayPlan/GeminiUINotes.md
+    // "selection single-source-of-truth"); for a burn, the identity of the open node is _selectedPlanNode,
+    // which a ribbon-node click and a list click both resolve to — map and list are two views of one plan.
+    private enum FlightEditorKind { None, Burn, Sling, Skim, Insertion }
+    private FlightEditorKind _openEditor = FlightEditorKind.None;
+
     // PR-G · the sling — the plotting-desk panel that bends the track off a close planetary pass
     // (SlingPlanner in Core does the b-plane aiming). All UI state; the solver runs synchronously on
     // SOLVE (bounded cost; docs/MondayPonder/ThreadedFireControlPlan.md is the future home for slicing).
-    private bool _slingPanelOpen;
     private SlingPlanner.PassSide _slingSide = SlingPlanner.PassSide.Lead;
     private double _slingPassRadii = 8;               // requested pass distance in body radii (floor 2 R)
     private bool _slingSolving;
@@ -2183,7 +2261,6 @@
     // 0.1 R measurement floor); the shown numbers then come from ONE RunAdaptiveWithDrag flight of the
     // quantized plan, so the gauge is what actually flies (the same honesty rule the sling keeps).
     private ClosestApproach.Pass? _skimmablePass;     // tightest pass by a body that has an Atmosphere
-    private bool _skimPanelOpen;
     private double _skimAltKm;                         // requested periapsis altitude (km) inside the shell
     private bool _skimSolving;
     private SkimGauge? _skimResult;                    // the QUANTIZED, flown gauge — what "Add the burn" flies
@@ -4205,14 +4282,17 @@
     private double SlingBodyRadius() =>
         _slingablePass is { } cp && SlingBody(cp.BodyId, out _) is { } b ? b.BodyRadius : 1.0;
 
-    // Open/close the panel. Opening seeds a sane default pass distance from the current natural pass
-    // (rounded to whole radii, clamped to the floor), so SOLVE has something reasonable to aim at.
+    // PR-D2: open/close the sling compose editor through the accordion (closes any other open step).
+    // Opening seeds a sane default pass distance from the current natural pass (rounded to whole radii,
+    // clamped to the floor), so SOLVE has something reasonable to aim at.
     private void ToggleSlingPanel()
     {
-        _slingPanelOpen = !_slingPanelOpen;
+        bool opening = _openEditor != FlightEditorKind.Sling;
+        _openEditor = opening ? FlightEditorKind.Sling : FlightEditorKind.None;
+        _selectedPlanNode = null;
         _slingResult = null;
         _slingFailure = null;
-        if (_slingPanelOpen && _slingablePass is { } cp)
+        if (opening && _slingablePass is { } cp)
         {
             double naturalR = cp.Distance / SlingBodyRadius();
             _slingPassRadii = Math.Clamp(Math.Round(naturalR), SlingMinRadii, SlingMaxRadii);
@@ -4383,7 +4463,7 @@
         RebuildPlan();
         ReprojectTrajectory();
         ShowPulseMessage($"Sling burn laid in — {_slingPulses} pulse{(_slingPulses == 1 ? "" : "s")} at {_slingHeadingDeg:F0}° ⤴");
-        _slingPanelOpen = false;
+        _openEditor = FlightEditorKind.None; // PR-D2: committed — collapse the scratchpad; the step now lives in the list
         _slingResult = null;
     }
 
@@ -4471,12 +4551,15 @@
 
     // Open/close the panel. Opening seeds a mid-corridor default depth (a fraction of the shell top that
     // lands in the useful-braking band for the tuned gas giants — the gauge shows the truth per body).
+    // PR-D2: open/close the skim compose editor through the accordion (closes any other open step).
     private void ToggleSkimPanel()
     {
-        _skimPanelOpen = !_skimPanelOpen;
+        bool opening = _openEditor != FlightEditorKind.Skim;
+        _openEditor = opening ? FlightEditorKind.Skim : FlightEditorKind.None;
+        _selectedPlanNode = null;
         _skimResult = null;
         _skimFailure = null;
-        if (_skimPanelOpen && SkimAtmosphere() is { } atm)
+        if (opening && SkimAtmosphere() is { } atm)
         {
             _skimAltKm = Math.Round(0.4 * atm.TopAltitude / 1000.0); // mid-corridor default
         }
@@ -4750,7 +4833,7 @@
         ShowPulseMessage(g.TooDeep
             ? $"Skim burn laid in — into the RED at {g.HeadingDeg:F0}° 🔥 mind the sail"
             : $"Skim burn laid in — {g.Pulses} pulse{(g.Pulses == 1 ? "" : "s")} at {g.HeadingDeg:F0}° 🔥");
-        _skimPanelOpen = false;
+        _openEditor = FlightEditorKind.None; // PR-D2: committed — collapse the scratchpad; the step now lives in the list
         _skimResult = null;
     }
 
@@ -6632,7 +6715,7 @@
     // (DrawClosestPassMarker, DrawGhostBodies — both PlotMode) are untouched and keep doing their job.
     private void DrawPassEpochGhost()
     {
-        if (!_slingPanelOpen && _slingResult is not { Ok: true })
+        if (_openEditor != FlightEditorKind.Sling && _slingResult is not { Ok: true })
         {
             return; // no sling engaged → no sling ghost (the owner never asked for one)
         }
@@ -7508,10 +7591,15 @@
             return;
         }
 
-        _planNodes.Add(new PlanNode { SimTime = t, Action = ManeuverAction.Accelerate, Pulses = 1 });
+        var newNode = new PlanNode { SimTime = t, Action = ManeuverAction.Accelerate, Pulses = 1 };
+        _planNodes.Add(newNode);
         SortNodes();
         RebuildPlan();
         ReprojectTrajectory();
+
+        // PR-D2: a freshly added burn opens its own editor (accordion) so its controls are right there.
+        _openEditor = FlightEditorKind.Burn;
+        _selectedPlanNode = newNode;
 
         // Tutorial step 2: first plan node added while a pod is selected.
         if (_selectedTargetId is not null && FindNpc(_selectedTargetId) is { Ship.IsPod: true })
@@ -8340,7 +8428,10 @@
             return false;
         }
 
+        // PR-D2: a ribbon-node click selects AND opens that step's editor — the map and the list are two
+        // views of one plan, resolving to the same _selectedPlanNode + accordion state.
         _selectedPlanNode = best;
+        _openEditor = FlightEditorKind.Burn;
         _scrubOffsetSeconds = Math.Max(0, best.SimTime - _ship.SimTime);
         return true;
     }
@@ -8348,6 +8439,15 @@
     private void DeleteNode(PlanNode node)
     {
         _planNodes.Remove(node);
+        // PR-D2: if the deleted step was the open one, collapse the accordion so nothing dangles.
+        if (ReferenceEquals(node, _selectedPlanNode))
+        {
+            _selectedPlanNode = null;
+            if (_openEditor == FlightEditorKind.Burn)
+            {
+                _openEditor = FlightEditorKind.None;
+            }
+        }
         RebuildPlan();
         ReprojectTrajectory();
     }
@@ -8380,6 +8480,10 @@
         if (removed > 0 && _selectedPlanNode is { } sel && !_planNodes.Contains(sel))
         {
             _selectedPlanNode = null;
+            if (_openEditor == FlightEditorKind.Burn)
+            {
+                _openEditor = FlightEditorKind.None; // PR-D2: the open step fired/expired — collapse it
+            }
         }
     }
 
