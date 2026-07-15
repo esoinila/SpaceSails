@@ -211,7 +211,6 @@ public class OrbitAutopilotTests
         var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
         var simulator = new Simulator(ephemeris, timeStepSeconds: 60);
         CelestialBody saturn = ephemeris.Bodies.First(b => b.Id == "saturn");
-        CelestialBody sun = ephemeris.Bodies.First(b => b.Id == "sun");
         CelestialBody titan = ephemeris.Bodies.First(b => b.Id == "titan");
         double hill = OrbitRule.HillRadius(titan, saturn.Mu);
 
