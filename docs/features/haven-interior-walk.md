@@ -431,6 +431,31 @@ code buzzes red. Hand the package back to The Fixer, same station, for the payou
 face-to-face, no-electronic-trace shape as the fetch. Test cheat: `?start=<station>&crack=active|picked`.
 Verified end-to-end in-browser at The Tilt (crack U-06 → keypad → deliver, +2,600 cr).
 
+**Done (2026-07-15, PR-F — doors that grow the world).** A cracked hatch is no longer just a
+"lock blinks green" flourish for the hatches that have a room behind them: opening **Cinder Roost's
+Bonded Stores hatch (V-06)** now *welds a real back room onto the deck plan at runtime* (Tuesday
+vision §6 / Wednesday plan §3). Geometry is data — a Core `DeckWing` (walls, consoles, labels) that
+`HavenInterior.BuildComplex` appends when the hatch is in the session's unlock set, carving the sealed
+hall edge into a walkable doorway (`DeckExpansions.CarveDoorway`). The room holds the **fence's
+stash** (a new `ConsoleKind.Stash`): for a wing-growing hatch the crack quest's *pickup* now happens
+**inside** the room — key the pad → the hatch grinds open onto the back room → walk in → E the shelf
+to lift the package → hand it to the Fixer. So the quest gates on the room existing, and the room
+gates on the quest. Per-session persistence only (owner-accepted for v1).
+
+Per the owner's ruling — *"people cannot be static furniture; they change place and go behind locked
+doors or move"* — the bar also gained a **roaming patron, the Magpie**, on a deterministic sim-time
+rota (Core `NpcSchedule`): a bar table one watch, gone the next, waiting in the opened back room after
+that. Walk up to an empty chair and the game reads their schedule ("…they've drifted off"); find them
+where the clock says they are. Core logic (`NpcSchedule`, `DeckExpansions`, doorway carving) is
+unit-tested (`NpcScheduleTests`, `DeckExpansionTests`).
+
+Test cheats (testing is a feature): `?start=cinder-roost&backroom=open` welds the back room open on
+the spot; `&backroom=quest` stages the crack job (with its real code) so you can key the pad and watch
+the room grow; `?simhours=N` jumps the sim clock so the Magpie's rota can be sampled without waiting.
+Verified in-browser at Cinder Roost: cracked/opened V-06 → walked the tube → concourse → through the
+carved doorway into the back room (location readout "BONDED STORES · BACK ROOM"), stash and Magpie
+booth both reachable, first-person renders the grown room.
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat
