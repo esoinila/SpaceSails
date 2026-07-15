@@ -3,6 +3,63 @@
 Running list of friction points found while actually *using* the game to hunt a
 ship. Each is a candidate for a UI improvement, roughly in the order hit.
 
+## Blind-UI audit round 2 (2026-07-15 — Gemini CLI, real cold reads)
+
+Re-ran the owner's protocol against a **fresh local Release build** (`5c0d136`, the big
+Wednesday merge: pilot banner #127, flight-plan header #137, plot frame chip #138, sling-intent
+gating + moon-window fix #139, Kepler rails). Round 1's Gemini was auth-blocked and Claude
+subagents stood in; **round 2 Gemini is authenticated** and every screen got a genuine cold
+answer (`tools/playthrough/ui-audit/*.gemini.txt`; the "auth page? [Y/n]" line you may spot is the
+*stale round-1* `nav-map.gemini.txt`, not this run). Eight protocol shots re-captured + **two new
+shots** for today's features. Same metric: the less context the tester needs, the more intuitive.
+
+**Scorecard (cold read = PASS if the tester found the task control unaided).**
+
+| Screen | R1 | R2 | Task success R2 | Note |
+|---|---|---|---|---|
+| Nav (set course for Mars) | NEEDED CTX (worst) | **PASS** ✅ | clicked Mars label | quoted "or click any planet to set course" — the R1 string fix landed |
+| Deck (go ashore) | NEEDED CTX | **PASS** ✅ | named ⚓ AIRLOCK + W | the R1 "docked ⚓ walk up" hint landed |
+| Trade (sell cargo) | PASS | PASS | "Sell cargo (900 cr)" | unchanged best-in-class |
+| Sensors (find lost ship) | PASS | PASS | corridor scan / target-lock | unchanged |
+| Ledger (work Roadster tip) | PASS | PASS | "Point the scope…" chosen | twin 🔭 buttons still both listed (R1 dedup still open) |
+| Comms (buy route intel) | NEEDED CTX | NEEDED CTX | dark-web link found | purchase still needs a ship selected first |
+| War room (fire) | NEEDED CTX | NEEDED CTX | FIRE named but hidden | "no controls until a target is tracked" — R1 ghost-button fix still queued |
+| Plot/Sling (pass closer) | PASS | **NEEDED CTX** ⚠️ | Scrub found; Lead/Trail hidden | **REGRESSION**: the "soft catch" tutorial panel occludes the pass-distance controls |
+| **NEW** Flight plan (who flies + next) | — | **PARTIAL** | banner PASS; "next" missed | banner "YOU HAVE THE SHIP — manual" read perfectly; NOW-line not seen as "what next" (tester clicked Plot to hunt a ribbon) |
+| **NEW** Plot frame @ Saturn (vs Sun) | — | **PASS** ✅ | named "Saturn ✦" exactly | the frame chip is self-evident cold, ✦-suggestion cue included |
+
+**Deltas vs round 1.** Two wins from R1's same-evening string fixes: **Nav went from worst
+offender to a clean pass** (banner tells who's flying + the "click any planet" affordance is now
+discoverable) and **Deck went from genre-guess to explicit pass**. One **regression on Plot/Sling**:
+today's tutorial panel sits over the Lead/Trail pass-distance controls, so the tester could no
+longer infer "pass closer" unaided — this is capture-state (tutorial open) but a real cold player
+hits the same occlusion. War room and Comms unchanged (their R1 queued fixes aren't done yet).
+
+**New-feature verdicts.** The **pilot banner (#127) is a hit** — read cold and unambiguous every
+time. The **plot frame chip (#138) is a hit** — the ✦ suggestion + highlighted-Sun default made
+"switch to Saturn frame" obvious. The **flight-plan NOW/next header (#137) only half-lands cold**:
+testers see *who* has the ship but don't read the NOW line ("Orbit Jupiter — in capture range…
+ETA 12 d") as "what it will do next" — it competes with the Sol status block and the Auto-orbit
+CTA, and the tester reached for Plot to find a trajectory ribbon instead.
+
+**New harness/UI findings (round 2).**
+- The Nav **"New here?" tutorial-ad now overlaps and intercepts the Plot desk-switch button** —
+  the committed `ui-audit-shots.mjs` times out clicking Plot; round 2 dismissed the ad (×) first.
+  Either lower the ad's z-order below the desk toolbar or dock it under the toolbar.
+- The **pilot banner overlaps a cyan top-center control** in the 1600×1000 capture (cosmetic —
+  Gemini still read the banner) — a stacking collision worth a quick z-index/position check.
+- The **"soft catch" tutorial panel (bottom-left)** occludes the Plot desk's sling pass-distance
+  controls; auto-collapse or reposition it when Plot opens.
+
+**Cheap-fix candidates (round 2).**
+1. Fix the tutorial-ad z-order so it doesn't intercept the Plot/desk buttons on Nav.
+2. Don't let the "soft catch" panel cover the Plot sling's Lead/Trail pass-distance controls.
+3. Make the flight-plan NOW line read as *the answer to "what next"* — e.g. a "NEXT:" label or fold
+   it under the pilot banner so who + what-next read as one unit.
+4. Pilot-banner top-center stacking collision with the adjacent cyan control.
+5. (Carried from R1, re-confirmed) ghost/disabled kill-chain buttons on the gun deck pre-target;
+   dedupe the ledger's twin 🔭 "point the scope" buttons.
+
 ## Blind-UI audit round 1 (2026-07-14 evening — owner's protocol)
 
 Eight screenshots of the live build (4ccb067+) given cold to fresh-context AI testers
