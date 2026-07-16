@@ -15,7 +15,7 @@
         <span class="fw-bold small">Places of business @(BodyName is null ? "" : $"— near {BodyName}")</span>
         @if (!FullScreen)
         {
-            <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the places-of-business board and step back to the desk" @onclick="() => OnClose.InvokeAsync()"></button>
         }
     </div>
     <div class="card-body p-2 small @(FullScreen ? "local-space-desk-body" : "")">
@@ -34,7 +34,7 @@
                         TreeNode row = node;
                         <div class="local-space-node @(row.Id == selectedId ? "local-space-node-selected" : "")"
                              style="padding-left:@((0.3 + row.Depth * 1.05).ToString("F2", System.Globalization.CultureInfo.InvariantCulture))rem"
-                             role="button" tabindex="0" @onclick="() => _selectedId = row.Id">
+                             role="button" tabindex="0" title="Open @row.Label in the tree — its details fill the pane on the right" @onclick="() => _selectedId = row.Id">
                             <span class="local-space-icon">@row.Icon</span>
                             <span class="flex-grow-1 @(row.Depth == 0 ? "fw-bold" : "")">@row.Label</span>
                             @if (ActiveTradeTargetId is { } activeId && row.ContactId == activeId && row.Depth == 1)
@@ -66,7 +66,7 @@
                                 }
                                 @if (i < crumbs.Count - 1)
                                 {
-                                    <a href="" class="link-info" @onclick="() => _selectedId = crumbId" @onclick:preventDefault="true">@crumbLabel</a>
+                                    <a href="" class="link-info" title="Jump back up to @crumbLabel" @onclick="() => _selectedId = crumbId" @onclick:preventDefault="true">@crumbLabel</a>
                                 }
                                 else
                                 {
@@ -120,7 +120,7 @@
                                     <div class="d-grid gap-1 local-space-actions">
                                         <button type="button" class="btn btn-sm btn-info py-0 px-1 text-start"
                                                 disabled="@(buyUnits <= 0 || ActiveTradeTargetId is not null)"
-                                                @onclick="() => OnStartBuy.InvokeAsync(contact.Id)">
+                                                title="Start buying this cargo — ferries the goods across and debits your credits" @onclick="() => OnStartBuy.InvokeAsync(contact.Id)">
                                             @BuyButtonLabel(mode, contact, buyUnits, unitValue, relSpeed, distance)
                                         </button>
                                         @if (buyUnits > 0 && buyUnits < contact.CargoUnits)
@@ -150,7 +150,7 @@
                             @if (contact.CargoUnits > 0 && contact.CargoClass is { } stockClass)
                             {
                                 string itemId = $"item:{contact.Id}";
-                                <div class="local-space-node" role="button" tabindex="0" @onclick="() => _selectedId = itemId">
+                                <div class="local-space-node" role="button" tabindex="0" title="Open this item's buy options in the detail pane" @onclick="() => _selectedId = itemId">
                                     <span>📦</span>
                                     <span class="flex-grow-1">@stockClass × @contact.CargoUnits</span>
                                     <span class="text-secondary">@CargoMarket.UnitValue(stockClass).ToString("N0") cr/u</span>
@@ -178,7 +178,7 @@
                                 <div class="d-grid gap-1 local-space-actions">
                                     <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 text-start"
                                             disabled="@(ActiveTradeTargetId is not null)"
-                                            @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
+                                            title="Start selling your hold here — ferries the cargo over and credits the payout shown" @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
                                         @SellButtonLabel(mode, relSpeed, distance)
                                     </button>
                                     @if (mode != CommerceRule.TradeMode.SameOrbit)

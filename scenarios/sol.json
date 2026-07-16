@@ -9,6 +9,7 @@
     { "id": "cinder-roost", "name": "Cinder Roost", "parentId": "venus", "mu": 0, "bodyRadiusM": 700, "orbitRadiusM": 1.5e7, "orbitPeriodS": 8000, "initialPhaseRad": 1.3, "kind": "station", "haven": true },
     { "id": "earth",   "name": "Earth",   "parentId": "sun", "mu": 3.986004418e14,   "bodyRadiusM": 6.371e6,   "orbitRadiusM": 1.496e11,   "orbitPeriodS": 3.1558149e7, "initialPhaseRad": 1.8, "atmosphere": { "refDensity": 1.2, "scaleHeightM": 8.0e3, "topAltitudeM": 1.4e5 } },
     { "id": "luna",    "name": "Luna",    "parentId": "earth", "mu": 4.9048695e12,   "bodyRadiusM": 1.7374e6,  "orbitRadiusM": 3.844e8,    "orbitPeriodS": 2.3606e6,    "initialPhaseRad": 0.0, "kind": "moon" },
+    { "id": "selene-gate", "name": "Selene Gate", "parentId": "earth", "mu": 0, "bodyRadiusM": 1000, "orbitRadiusM": 3.844e8, "orbitPeriodS": 2.3606e6, "initialPhaseRad": 0.4, "kind": "station", "haven": true },
     { "id": "satellite-factory", "name": "Highport Satellite Works", "parentId": "earth", "mu": 0, "bodyRadiusM": 300, "orbitRadiusM": 6.771e6, "orbitPeriodS": 5546, "initialPhaseRad": 2.4, "kind": "station" },
     { "id": "mars",    "name": "Mars",    "parentId": "sun", "mu": 4.282837e13,      "bodyRadiusM": 3.3895e6,  "orbitRadiusM": 2.2794e11,  "orbitPeriodS": 5.93551e7,   "initialPhaseRad": 2.7 },
     { "id": "the-space-bar", "name": "The Rusty Roadstead", "parentId": "mars", "mu": 0, "bodyRadiusM": 900, "orbitRadiusM": 1.2e7, "orbitPeriodS": 7200, "initialPhaseRad": 3.1, "kind": "station", "haven": true },

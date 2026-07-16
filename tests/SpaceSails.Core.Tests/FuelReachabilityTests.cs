@@ -210,6 +210,48 @@ public class FuelReachabilityTests
     }
 
     [Fact]
+    public void G11_AlongsidePump_TrueAtHavenAndStation_NullInOpenSpace()
+    {
+        var (eph, _) = MakeSaturnSystem();
+
+        // Orbiting the Enceladus haven moon: alongside a pump (the same AtPump truth Assess uses).
+        Assert.Equal("enceladus", FuelReachability.AlongsidePump(eph, ParkedAt(eph, "enceladus", SaturnMu))?.Id);
+        // Docked in the Ringside station's envelope: alongside.
+        Assert.Equal("ringside-exchange", FuelReachability.AlongsidePump(eph, DockedAt(eph, "ringside-exchange"))?.Id);
+        // Parked at the DRY Titan moon: NOT alongside any pump — the desk must show directions, not a button.
+        Assert.Null(FuelReachability.AlongsidePump(eph, ParkedAt(eph, "titan", SaturnMu)));
+        // A free-flying mid-well cruise: NOT alongside.
+        Assert.Null(FuelReachability.AlongsidePump(eph, Cruise(eph, "saturn", SaturnMu, 6.0e8, 0.5)));
+    }
+
+    [Fact]
+    public void G12_SeleneGate_ClosesTheLunaStrandedGap_InTheRealSolScenario()
+    {
+        // #157 / Lab 28's recommendation, implemented: the sol.json Selene Gate (an Earth-well fuel port
+        // co-orbiting with Luna) turns the "stranded at Luna" verdict into a finite, reachable pump.
+        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var sim = new Simulator(eph, timeStepSeconds: 60);
+        double earthMu = eph.Bodies.First(b => b.Id == "earth").Mu;
+
+        var a = FuelReachability.Assess(sim, eph, ParkedAt(eph, "luna", earthMu), 250, BaseTank, "earth");
+
+        Assert.NotEqual(FuelReachability.Verdict.CannotReachAPump, a.Verdict);
+        Assert.NotEqual(int.MaxValue, a.NearestDepotPulses);
+        Assert.NotEmpty(a.Reachable);
+        Assert.Contains(a.Reachable, r => r.DepotBodyId == "selene-gate");
+    }
+
+    [Fact]
+    public void G13_SeleneGate_IsAPumpHost_InTheRealSolDepotMap()
+    {
+        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var hosts = TrafficSchedule.GenerateDepots(eph, seed: 1).Select(d => d.DepotBodyId).ToHashSet();
+
+        Assert.Contains("selene-gate", hosts); // the Luna-vicinity port now carries a depot/pump
+        Assert.DoesNotContain("luna", hosts);   // Luna itself stays a dry moon — the fix is the new port
+    }
+
+    [Fact]
     public void G10_Determinism_TwoAssessmentsAreIdentical()
     {
         var (eph1, sim1) = MakeSaturnSystem();

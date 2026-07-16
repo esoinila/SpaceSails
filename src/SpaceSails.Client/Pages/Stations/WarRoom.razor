@@ -19,7 +19,7 @@
         @if (!FullScreen)
         {
             <span class="war-room-heat-gauge" title="Heat level @HeatLevel/@EncounterRule.MaxHeatLevel">@HeatGaugeText()</span>
-            <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Stow the gun deck and clear the screen — nothing here is fired or forgotten by closing it" @onclick="() => OnClose.InvokeAsync()"></button>
         }
     </div>
     <div class="card-body p-2 small @(FullScreen ? "war-room-desk-body" : "")">
@@ -56,6 +56,7 @@
                 @foreach (double range in RangePresets)
                 {
                     <button type="button" class="btn @(range == _viewRangeMeters ? "btn-info" : "btn-outline-info")"
+                            title="Zoom the tactical circle out to @FormatRange(range) — weapon and catch rings stay drawn at their true radius"
                             @onclick="() => _viewRangeMeters = range">
                         @FormatRange(range)
                     </button>
@@ -194,7 +195,7 @@
                                         solver miss @FormatRange(fs.ExpectedMissMeters) ·
                                         dispersion ±@FormatRange(FireDispersionMeters)
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-warning mt-1" @onclick="() => OnCancelFire.InvokeAsync()">SCRUB — abort the shot</button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning mt-1" title="Abort the countdown before the round leaves — the barrel unlocks and nothing is fired" @onclick="() => OnCancelFire.InvokeAsync()">SCRUB — abort the shot</button>
                                 }
                             }
                             else
@@ -211,12 +212,15 @@
                                 @* Log-scale (long-shots PR): ten minutes and half a year on one slider —
                                    a linear track made week-long orbital shots one-pixel affairs. *@
                                 <input type="range" class="form-range" min="0" max="1000" step="2" value="@AimToSlider(FireAimOffsetSeconds)"
+                                       title="Drag to choose how far ahead the round meets their track — ten minutes to half a year on one log slider; the solver aims at that moment"
                                        @oninput="OnAimInput" @onkeydown:stopPropagation="true" />
                                 <div class="d-flex gap-1 align-items-center mb-1">
                                     <div class="btn-group btn-group-sm" role="group" aria-label="Round type">
                                         <button type="button" class="btn @(FireKind == OrdnanceKind.Slug ? "btn-info" : "btn-outline-info") py-0"
+                                                title="Load a slug — a dumb kinetic round, cheap on pulses; the solver flies it ballistic"
                                                 @onclick="() => OnFireKindChanged.InvokeAsync(OrdnanceKind.Slug)">slug</button>
                                         <button type="button" class="btn @(FireKind == OrdnanceKind.Missile ? "btn-info" : "btn-outline-info") py-0"
+                                                title="Load a missile — scarcer and costlier per shot than a slug; solve and fire it the same way"
                                                 @onclick="() => OnFireKindChanged.InvokeAsync(OrdnanceKind.Missile)">missile</button>
                                     </div>
                                     <span class="text-secondary">@FirePulseCost pulses / shot · lives @FormatDuration(MaxAimOffsetSeconds) · magazine: slug ×@SlugAmmo / missile ×@MissileAmmo</span>
@@ -319,8 +323,10 @@
                                 }
                                 <div class="d-flex gap-1 mt-1">
                                     <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" disabled="@(!Docked)"
+                                            title="Buy 6 slugs for 300 cr — only while berthed at a dock"
                                             @onclick="() => OnBuyAmmo.InvokeAsync(OrdnanceKind.Slug)">＋6 slugs · 300 cr</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" disabled="@(!Docked)"
+                                            title="Buy 2 missiles for 500 cr — only while berthed at a dock"
                                             @onclick="() => OnBuyAmmo.InvokeAsync(OrdnanceKind.Missile)">＋2 missiles · 500 cr</button>
                                 </div>
                                 @if (!Docked)
@@ -406,6 +412,7 @@
                                     <span>@(track.IsThreat ? "🐺 " : "")@track.Callsign</span>
                                     <span class="text-secondary">@FormatRange(td) · brg @((int)tb)°</span>
                                     <button type="button" class="btn btn-sm py-0 px-1 @(track.Id == InterestId ? "btn-info" : "btn-outline-info")"
+                                            title="Mark this sensor track as the target of interest — fire control and the intercept clock lock onto her"
                                             @onclick="() => OnSetInterest.InvokeAsync(track.Id)">🎯</button>
                                 </div>
                             }
@@ -447,14 +454,16 @@
                                         <button type="button" class="btn btn-sm py-0 px-1 @(rc.Contact.Ship.Id == InterestId ? "btn-info" : "btn-outline-info")"
                                                 title="Target of interest — track the intercept clock"
                                                 @onclick="() => OnSetInterest.InvokeAsync(rc.Contact.Ship.Id)">🎯</button>
-                                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" @onclick="() => Hail(rc)">Hail</button>
+                                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" title="Open a channel and demand she comply — her answer tells you if she'll heave to or stay stubborn" @onclick="() => Hail(rc)">Hail</button>
                                         <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
                                                 disabled="@(!inWeaponRangeDesk || rc.Contact.Ship.IsPod)"
+                                                title="Put a slug across her bow — the loud argument that makes a compliant crew heave to; needs weapon range and a crewed hull"
                                                 @onclick="() => OnWarningShot.InvokeAsync(rc.Contact.Ship.Id)">
                                             Warn
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
                                                 disabled="@(rc.Contact.Bribed || rc.Contact.Ship.IsPod || Credits < bribePriceDesk)"
+                                                title="Pay @bribePriceDesk cr to buy her silence — she looks the other way instead of calling down heat"
                                                 @onclick="() => OnBribe.InvokeAsync(rc.Contact.Ship.Id)">
                                             Bribe (@bribePriceDesk cr)
                                         </button>
@@ -491,14 +500,16 @@
                                     <div class="text-secondary">@FormatRange(rc.Distance) — @StatusBadge(rc)</div>
                                 </td>
                                 <td class="text-end align-middle text-nowrap">
-                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" @onclick="() => Hail(rc)">Hail</button>
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" title="Open a channel and demand she comply — her answer tells you if she'll heave to or stay stubborn" @onclick="() => Hail(rc)">Hail</button>
                                     <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
                                             disabled="@(!inWeaponRange || rc.Contact.Ship.IsPod)"
+                                            title="Put a slug across her bow — the loud argument that makes a compliant crew heave to; needs weapon range and a crewed hull"
                                             @onclick="() => OnWarningShot.InvokeAsync(rc.Contact.Ship.Id)">
                                         Warn
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
                                             disabled="@(rc.Contact.Bribed || rc.Contact.Ship.IsPod || Credits < bribePrice)"
+                                            title="Pay @bribePrice cr to buy her silence — she looks the other way instead of calling down heat"
                                             @onclick="() => OnBribe.InvokeAsync(rc.Contact.Ship.Id)">
                                         Bribe (@bribePrice cr)
                                     </button>
