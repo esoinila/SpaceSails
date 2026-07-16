@@ -251,6 +251,17 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     OnPattern/Hot/Missed + next-gate query — the seam the banner NEXT row (#159) and the #160 tutorial
     narration speak. `--viz` draws the Enceladus corridor: a textbook fall coiling into a park beside a
     botched one punching through.
+30. [**The mass-driver timetable**](30-the-mass-driver-timetable/README.md) — the lesson where the
+    owner's canon (Luna's mass drivers lobbing compute-core pods) becomes measured physics. A pod has
+    zero maneuver budget — the driver gives it everything at launch — so its whole future is a
+    closed-form Kepler conic, a rail (`TransferMath.PropagateKepler`). Above the **2.376 km/s** lunar
+    escape floor, a **retrograde** lob of ~2.6 km/s drops perihelion into Venus's lane, and ~**7.6 km/s**
+    threads perihelion to **0.373 AU** — the showpiece long shot to the Mercury compute yards; prograde
+    lobs climb toward Mars. The repeating cadence (`MassDriverSchedule`) is a bus timetable read off the
+    rail — half the pods always already in flight. The tactical punchline, priced with the game's own
+    `OrbitRule.PulsesFor`: a pod is cheapest at the launch end — **loiter-and-match near Earth for ~3.5
+    km/s (12 pulses)** vs a full Venus chase at **5202 m/s (17 pulses)**; chase it mid-dive and you buy
+    the transfer yourself. `--viz` draws the launch fan off Luna over the inner system.
 
 ## Framing rule
 
