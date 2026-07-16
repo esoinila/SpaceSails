@@ -895,6 +895,12 @@
                                         {
                                             <span class="text-info small">· budgeted ≈@(_armedBudgetPulses) p</span>
                                         }
+                                        @* #146: the in-well transfer plan riding under this arm — the
+                                           planner's one-line quote while the cheap Lambert arc is active. *@
+                                        @if (_armedTransferSummary is not null)
+                                        {
+                                            <span class="text-info small d-block">🛰 @_armedTransferSummary</span>
+                                        }
                                     </span>
                                     @if (ArmedInsertionSimTime is { } _it)
                                     {
@@ -4141,6 +4147,15 @@
     private string? _autopilotStandDownReason;   // persistent "you have the ship" line (decline/handback)
     private IReadOnlyList<TrajectorySample>? _autopilotPlanPath; // #148: the rehearsed INTENDED path
 
+    // ---- #146 the moon run: the cached in-well transfer plan for the current arm. When arming rides a
+    // cheap Lambert arc (TransferPlanner) instead of the legacy approach loop, the schedule's departure
+    // burn(s) are fired EXACTLY at their epochs by the tick-advance split, and AutopilotDecision stays
+    // muzzled until the arc is honestly near the target (CheckArmedInsertion's gate) so the giant's pull
+    // can't restart the velocity-reset bleed straight through the cheap arc. ----
+    private TransferPlanner.Schedule? _armedTransferSchedule; // null when this arm flies the legacy loop
+    private string? _armedTransferSummary;                    // the planner's one-line quote for the status
+    private int _armedTransferBurnsFired;                     // how many scheduled burns have already fired
+
     // The autopilot has stood down (refused to arm, or handed the ship back) and the captain has not
     // yet re-engaged — the single predicate every desk chip and the pilot banner read so none can
     // claim a mission the autopilot no longer flies (#147).
@@ -4151,6 +4166,66 @@
         _armedBudgetPulses = 0;
         _armedSpentPulses = 0;
         _autopilotPlanPath = null;
+        _armedTransferSchedule = null;
+        _armedTransferSummary = null;
+        _armedTransferBurnsFired = 0;
+    }
+
+    // #146: does this arm ride a cheap in-well transfer rather than the legacy approach loop? The target
+    // is a moon of a moon-owning giant, the ship is free-flying INSIDE that giant's Hill sphere, and it
+    // is still OUTSIDE the target's honest (floor-free) Hill-scaled capture range — the exact geometry
+    // where OrbitRule.Approach re-sets the velocity every step and hemorrhages, and where the Lambert
+    // planner rides the well cheaply instead.
+    private bool ShouldPlanTransfer(CelestialBody target, out CelestialBody parent, out double targetHill)
+    {
+        parent = null!;
+        targetHill = 0;
+        if (_ephemeris is null || target.ParentId is null)
+        {
+            return false;
+        }
+        CelestialBody? p = _ephemeris.Bodies.FirstOrDefault(b => b.Id == target.ParentId);
+        if (p is null || !_ephemeris.Bodies.Any(c => c.ParentId == p.Id && c.Kind == BodyKind.Moon))
+        {
+            return false; // parent must be a giant that owns moons
+        }
+        if (!ShipInsideHill(p))
+        {
+            return false; // must be free-flying in the well, not out in interplanetary space
+        }
+        targetHill = OrbitRule.HillRadius(target, p.Mu);
+        double distance = (_ship.Position - _ephemeris.Position(target.Id, SimTime)).Length;
+        if (distance <= OrbitRule.CaptureRangeHillRadii * targetHill)
+        {
+            return false; // already honestly near the moon — the terminal capture handles it directly
+        }
+        parent = p;
+        return true;
+    }
+
+    // #146 split-advance executor: apply one scheduled transfer impulse from the ship's TRUE state at the
+    // burn epoch (the tick loop advances exactly onto it), pricing it with the same OrbitRule.PulsesFor
+    // the approach/insert burns spend and guarding the reserve floor. Can't afford it without breaching
+    // the reserve → the #147 loud handback (reality diverged from the rehearsed plan, externally).
+    private void ApplyTransferBurn(Vector2d deltaV)
+    {
+        if (_armedOrbitBodyId is null || _armedTransferSchedule is null)
+        {
+            return;
+        }
+        int cost = OrbitRule.PulsesFor(deltaV.Length, _ship.Velocity.Length);
+        int reserveFloor = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
+        if (_reactionMassPulses - cost < reserveFloor)
+        {
+            AutopilotStandDown($"autopilot handed back mid-transfer to {BodyName(_armedOrbitBodyId)} — fuel plan broken (reserve floor reached before a departure burn)");
+            return;
+        }
+        _ship = _ship with { Velocity = _ship.Velocity + deltaV };
+        _reactionMassPulses -= cost;
+        _armedSpentPulses += cost;
+        _armedTransferBurnsFired++;
+        StaleFutureNodes();
+        ShowPulseMessage($"Transfer burn — riding the well toward {BodyName(_armedOrbitBodyId)} ({cost} p) 🛰");
     }
 
     // The autopilot log — a Captain's-ledger receipt for every stand-down (newest first), projected
@@ -5085,9 +5160,35 @@
         {
             int reserve = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
             int budget = Math.Max(0, _reactionMassPulses - reserve);
-            AutopilotRehearsal.RehearsalResult r =
-                AutopilotRehearsal.Rehearse(_ship, _ephemeris, _simulator, bodyId, budget, capturePath: true);
             string name = BodyName(bodyId);
+
+            // #146 the moon run: when this is a free-flight-in-the-well hop to a giant's moon, quote the
+            // cheap Lambert arc FIRST and rehearse WITH its schedule so the arm-time promise prices the
+            // transfer, not the legacy hemorrhage. If the planner finds no window, fall back to the
+            // legacy approach-loop rehearsal (never lose the old capability) and surface the planner's
+            // reason as context on the status line — NOT as a refusal (the refuse/accept gate below on
+            // r.Deliverable is unchanged: it still loudly refuses trips the rehearsal can't finish).
+            TransferPlanner.Schedule? schedule = null;
+            string? transferSummary = null;
+            string? plannerNote = null;
+            CelestialBody? target = _ephemeris.Bodies.FirstOrDefault(b => b.Id == bodyId);
+            if (target is not null && ShouldPlanTransfer(target, out CelestialBody parentGiant, out _))
+            {
+                TransferPlanner.Result plan = TransferPlanner.Solve(
+                    _simulator, _ephemeris, new TransferPlanner.Request(_ship, parentGiant.Id, bodyId, MaxWaitSeconds: 0));
+                if (plan.Ok)
+                {
+                    schedule = plan.ToSchedule();
+                    transferSummary = plan.Summary;
+                }
+                else
+                {
+                    plannerNote = plan.Failure;
+                }
+            }
+
+            AutopilotRehearsal.RehearsalResult r =
+                AutopilotRehearsal.Rehearse(_ship, _ephemeris, _simulator, bodyId, budget, capturePath: true, schedule: schedule);
             if (!r.Deliverable)
             {
                 string why = r.BudgetExceeded || r.Pulses > budget
@@ -5102,6 +5203,10 @@
             _armedBudgetPulses = r.Pulses;
             _armedSpentPulses = 0;
             _autopilotPlanPath = r.Path; // #148: draw the intended path, not the ballistic loops
+            _armedTransferSchedule = schedule;
+            _armedTransferBurnsFired = 0;
+            _armedTransferSummary = transferSummary
+                ?? (plannerNote is not null ? $"no cheap transfer ({plannerNote}); flying the direct approach" : null);
             _autopilotStandDownReason = null;
         }
 
@@ -5139,6 +5244,25 @@
         double h = 1.0;
         Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
         double hill = OrbitRule.HillRadius(body, parent.Mu);
+
+        // #146 the moon run: while a transfer schedule is still in flight, keep AutopilotDecision MUZZLED.
+        // Titan's 3e9 m capture floor makes the ship "inside capture range" for the ENTIRE Enceladus→Titan
+        // cruise, so consulting the decision now would return Approach at ~7 km/s rel and restart the
+        // velocity-reset bleed straight through the cheap arc. Stay muzzled until the ship is honestly
+        // near the target — within max(60 s, 1% TOF) of arrival, OR inside the honest (floor-free)
+        // Hill-scaled capture range. The scheduled burns fire in the tick-advance split, not here; once
+        // the gate opens the terminal capture below takes over unchanged.
+        if (_armedTransferSchedule is { } sched)
+        {
+            double tof = sched.Burns.Count > 0 ? sched.ArrivalTime - sched.Burns[0].SimTime : 0;
+            double gateTime = sched.ArrivalTime - Math.Max(60.0, 0.01 * tof);
+            double honestRange = OrbitRule.CaptureRangeHillRadii * hill;
+            double distTarget = (_ship.Position - bodyPos).Length;
+            if (SimTime < gateTime && distTarget >= honestRange)
+            {
+                return; // the arc is still in flight — coast, do not touch AutopilotDecision
+            }
+        }
 
         // Auto-orbiting a MOON (its parent is itself a planet, not the sun): the parent is a solid
         // body the approach chord must not thread. Auto-orbiting a PLANET (parent = sun): no chord
@@ -6126,6 +6250,35 @@
             // anyway). Fixed quanta keep the trajectory independent of frame timing.
             bool useAdaptive = _effectiveWarp >= AdaptiveWarpThreshold && _simAccumulator >= AdaptiveWarpQuantum;
             double quantum = useAdaptive ? AdaptiveWarpQuantum : _simulator.TimeStep;
+
+            // #146 split-advance: if a scheduled transfer burn epoch falls inside this quantum, advance
+            // EXACTLY onto it first (the way Simulator.RunAdaptive lands on a ManeuverPlan node), so the
+            // impulse is applied from the true drifted state — never from a state warped thousands of
+            // sim-seconds past the epoch. A burn already due (epoch reached) fires this iteration with no
+            // advance; otherwise the quantum is shortened to land on the epoch and the impulse follows.
+            bool applyTransferBurnAfterStep = false;
+            Vector2d pendingBurnDeltaV = default;
+            if (_dockedHavenId is null && _armedOrbitBodyId is not null
+                && _armedTransferSchedule is { } advSched && _armedTransferBurnsFired < advSched.Burns.Count)
+            {
+                TransferPlanner.BurnStep nextBurn = advSched.Burns[_armedTransferBurnsFired];
+                double toBurn = nextBurn.SimTime - _ship.SimTime;
+                if (toBurn <= 0)
+                {
+                    // Epoch already reached — apply the impulse now, from the current state, and re-loop
+                    // (no clock advance this pass, so the accumulator is untouched; the next pass advances
+                    // normally now that this burn has fired).
+                    ApplyTransferBurn(nextBurn.DeltaV);
+                    continue;
+                }
+                if (toBurn < quantum)
+                {
+                    quantum = toBurn; // land exactly on the burn epoch this step, then apply the impulse
+                    applyTransferBurnAfterStep = true;
+                    pendingBurnDeltaV = nextBurn.DeltaV;
+                }
+            }
+
             if (_dockedHavenId is not null)
             {
                 // Clamped in a dock: don't run the gravity integrator at all — it would fling the
@@ -6134,9 +6287,11 @@
                 // pins the position after the loop so the ship rides the dock, dead-steady.
                 _ship = _ship with { SimTime = _ship.SimTime + quantum };
             }
-            else if (useAdaptive)
+            else if (useAdaptive || quantum < _simulator.TimeStep)
             {
-                _ship = _simulator.RunAdaptive(_ship, AdaptiveWarpQuantum, _plan);
+                // Adaptive at warp, OR a shortened split step to land on a transfer burn epoch — either
+                // way RunAdaptive lands exactly on the requested duration.
+                _ship = _simulator.RunAdaptive(_ship, quantum, _plan);
             }
             else
             {
@@ -6144,6 +6299,11 @@
             }
             _simAccumulator -= quantum;
             stepsThisFrame++;
+
+            if (applyTransferBurnAfterStep)
+            {
+                ApplyTransferBurn(pendingBurnDeltaV); // impulse at the exact epoch (may loudly hand back)
+            }
             if (watchDrag)
             {
                 double decel = _simulator.DragAcceleration(_ship.Position, _ship.Velocity, _ship.SimTime).Length;

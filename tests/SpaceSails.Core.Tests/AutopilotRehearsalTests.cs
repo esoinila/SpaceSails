@@ -148,4 +148,139 @@ public class AutopilotRehearsalTests
         Assert.False(r.Deliverable);
         Assert.Equal(0, r.Pulses);
     }
+
+    // ---- #146 in-well transfer schedule: the Enceladus→Titan milk run, rehearsed cheap ----
+    //
+    // The Saturn subsystem (Saturn + Titan + Enceladus on their sol.json rails — μ_Saturn =
+    // 3.7931187e16, Titan/Enceladus per sol.json), via the same SaturnSystem() fixture the rest of this
+    // file flies. The ship sits on Enceladus's doorstep (rail position + 3e6 m outward, co-moving with
+    // the rail) and is armed for Titan. WITH the planner's schedule the rehearsal rides one Lambert arc
+    // and captures Titan for a fraction of the tank; WITHOUT it the legacy loop is already "in range" of
+    // Titan's 3e9 m capture floor from ~1e9 m out and hemorrhages (the #146 bleed).
+    //
+    // NB on the fixture (deviation from the brief's "parentless Saturn at origin" trio, and WHY): with
+    // Saturn parentless at the origin its velocity is identically zero, so the ship's HELIOCENTRIC speed
+    // near Titan collapses to ~1.9 km/s. OrbitRule.PulsesFor prices a burn as Δv / (0.01·worldSpeed), so
+    // that zeroed world speed inflates the *identical* captured arc from 52 pulses to 118 — a pure
+    // pricing artifact that never occurs in the live game, where Saturn carries its ~9.6 km/s
+    // heliocentric velocity. Flying the moving-Saturn subsystem keeps the transfer geometry byte-for-byte
+    // (same moon phases/radii/periods) while pricing the pulses the way the live loop actually will.
+
+    // The ship on Enceladus's doorstep: rail position + 3e6 m outward of the moon, co-moving with the rail.
+    private static ShipState DoorstepShip(ICelestialEphemeris eph)
+    {
+        Vector2d saturnPos = eph.Position("saturn", 0);
+        Vector2d encPos = eph.Position("enceladus", 0);
+        Vector2d encVel = BodyVel(eph, "enceladus", 0);
+        Vector2d outward = (encPos - saturnPos).Normalized();
+        return new ShipState(encPos + outward * 3e6, encVel, 0);
+    }
+
+    private static TransferPlanner.Result SolveTitanRun(Simulator sim, ICelestialEphemeris eph, ShipState ship) =>
+        TransferPlanner.Solve(sim, eph, new TransferPlanner.Request(ship, "saturn", "titan", MaxWaitSeconds: 0));
+
+    [Fact]
+    public void MoonRun_WithSchedule_CapturesTitan_Cheap()
+    {
+        // T1: the planner finds the cheap arc, and rehearsing WITH its schedule delivers a bound Titan
+        // park well inside the tank (< 100 pulses of a 250-pulse tank).
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        ShipState ship = DoorstepShip(eph);
+
+        TransferPlanner.Result plan = SolveTitanRun(sim, eph, ship);
+        Assert.True(plan.Ok, $"planner should find a transfer window; failure='{plan.Failure}'");
+
+        AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "titan", budgetPulses: 120, schedule: plan.ToSchedule());
+        _out.WriteLine($"MOON-RUN with schedule: captured={r.Captured} pulses={r.Pulses} burns={r.ApproachBurns} " +
+            $"deliverable={r.Deliverable} durDays={r.SimDurationSeconds / 86400:F2} planQuote={plan.EstimatedPulses} " +
+            $"depDv={plan.Burns[0].DeltaV.Length:F0} arrRel={plan.ArrivalRelativeSpeed:F0} totDv={plan.PlannedDeltaVTotal:F0} " +
+            $"tofDays={plan.TimeOfFlightSeconds / 86400:F2}");
+
+        Assert.True(r.Captured, "The scheduled arc should reach a bound Titan insertion.");
+        Assert.True(r.Deliverable, $"The Titan milk run should be promisable; pulses={r.Pulses}, captured={r.Captured}.");
+        Assert.True(r.Pulses < 100, $"The scheduled run should be cheap; got pulses={r.Pulses}.");
+    }
+
+    [Fact]
+    public void MoonRun_LegacyLoop_Hemorrhages_QuantifiedVersusSchedule()
+    {
+        // T2: the SAME doorstep ship armed for Titan WITHOUT the schedule runs the legacy approach loop,
+        // which is "in range" of Titan's 3e9 m floor from the start and bleeds the tank — either it can
+        // never be promised, or it costs more than twice the scheduled run.
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        ShipState ship = DoorstepShip(eph);
+
+        TransferPlanner.Result plan = SolveTitanRun(sim, eph, ship);
+        Assert.True(plan.Ok, $"planner should find a transfer window; failure='{plan.Failure}'");
+        AutopilotRehearsal.RehearsalResult scheduled = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "titan", budgetPulses: 120, schedule: plan.ToSchedule());
+
+        AutopilotRehearsal.RehearsalResult legacy = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "titan", budgetPulses: 120);
+        _out.WriteLine($"MOON-RUN legacy: deliverable={legacy.Deliverable} pulses={legacy.Pulses} vs scheduled pulses={scheduled.Pulses}");
+
+        Assert.True(
+            !legacy.Deliverable || legacy.Pulses > 2 * scheduled.Pulses,
+            $"Legacy Titan inbound should hemorrhage: deliverable={legacy.Deliverable}, legacyPulses={legacy.Pulses}, " +
+            $"scheduledPulses={scheduled.Pulses}.");
+    }
+
+    [Fact]
+    public void MoonRun_Schedule_LandsExactlyOnBurnEpoch()
+    {
+        // T3: the rehearsal coasts exactly onto the burn time, so the path carries a sample within 60 s
+        // of the departure epoch — the exact-landing guarantee that stops warp from applying the impulse
+        // from a drifted state.
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        ShipState ship = DoorstepShip(eph);
+
+        TransferPlanner.Result plan = SolveTitanRun(sim, eph, ship);
+        Assert.True(plan.Ok, $"planner should find a transfer window; failure='{plan.Failure}'");
+        Assert.NotEmpty(plan.Burns);
+        double burnEpoch = plan.Burns[0].SimTime;
+
+        AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "titan", budgetPulses: 120, capturePath: true, schedule: plan.ToSchedule());
+
+        Assert.Contains(r.Path, s => Math.Abs(s.SimTime - burnEpoch) <= 60.0);
+    }
+
+    [Fact]
+    public void MoonRun_Schedule_IsDeterministic()
+    {
+        // T4: two identical scheduled rehearsals produce identical cost and duration — the whole point
+        // of the deterministic Core (client WASM and server must agree).
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        ShipState ship = DoorstepShip(eph);
+
+        TransferPlanner.Result plan = SolveTitanRun(sim, eph, ship);
+        Assert.True(plan.Ok, $"planner should find a transfer window; failure='{plan.Failure}'");
+        TransferPlanner.Schedule schedule = plan.ToSchedule();
+
+        AutopilotRehearsal.RehearsalResult a = AutopilotRehearsal.Rehearse(ship, eph, sim, "titan", 120, schedule: schedule);
+        AutopilotRehearsal.RehearsalResult b = AutopilotRehearsal.Rehearse(ship, eph, sim, "titan", 120, schedule: schedule);
+
+        Assert.Equal(a.Pulses, b.Pulses);
+        Assert.Equal(a.SimDurationSeconds, b.SimDurationSeconds);
+    }
+
+    [Fact]
+    public void MoonRun_Schedule_TinyBudget_BailsBudgetExceeded()
+    {
+        // T5: a 5-pulse budget can't even afford the departure burn — the rehearsal bails BudgetExceeded
+        // before it ever captures, exactly like the Approach case.
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        ShipState ship = DoorstepShip(eph);
+
+        TransferPlanner.Result plan = SolveTitanRun(sim, eph, ship);
+        Assert.True(plan.Ok, $"planner should find a transfer window; failure='{plan.Failure}'");
+
+        AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "titan", budgetPulses: 5, schedule: plan.ToSchedule());
+        _out.WriteLine($"MOON-RUN tiny budget: captured={r.Captured} budgetExceeded={r.BudgetExceeded} pulses={r.Pulses}");
+
+        Assert.True(r.BudgetExceeded, "A 5-pulse budget must trip BudgetExceeded on the departure burn.");
+        Assert.False(r.Captured, "It must never report a capture it could not afford.");
+    }
 }
