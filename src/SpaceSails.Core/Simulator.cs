@@ -66,18 +66,25 @@ public sealed class Simulator
             acceleration += _environment.Acceleration(state.Position, charge, state.SimTime);
         }
 
+        velocity += acceleration * dt;
+
         // Atmospheric drag: nothing in a vacuum scenario (the array is empty, the block is skipped),
-        // and exactly zero — no touch to `acceleration` — whenever the ship is outside every shell.
+        // and exactly zero — no touch to `velocity` — whenever the ship is outside every shell, so an
+        // atmosphere-bearing world flies bit-identically to a vacuum one above the shells (Lab 22's
+        // sacred regression gate). Applied SEMI-IMPLICITLY (issue #153): quadratic drag is stiff, and
+        // the adaptive projection can step tens of seconds at a time. An explicit `v += a_drag·dt`
+        // overshoots — deep in a dense shell a_drag·dt dwarfs the speed, so the velocity reverses and
+        // amplifies every step, flinging the PLOTTED trajectory into a spurious multi-AU ray (the live
+        // 1 s sim never hit it). The closed form v_rel ← v_rel / (1 + c·|v_rel|·dt) is unconditionally
+        // dissipative (the denominator is ≥ 1, so |v_rel| can never grow or flip), exact for pure
+        // quadratic drag, and agrees with the old explicit step to first order — so shallow fine-step
+        // skims are unchanged while a coarse deep plunge just sheds its relative speed instead of
+        // exploding. Drag can only ever remove energy; this makes the integrator obey that at any dt.
         if (_atmosphereBodies.Length > 0)
         {
-            Vector2d drag = DragAcceleration(state.Position, velocity, state.SimTime);
-            if (drag.X != 0.0 || drag.Y != 0.0)
-            {
-                acceleration += drag;
-            }
+            velocity = ApplyStableDrag(state.Position, velocity, state.SimTime, dt);
         }
 
-        velocity += acceleration * dt;
         Vector2d position = state.Position + velocity * dt;
 
         return new ShipState(position, velocity, state.SimTime + dt, charge);
@@ -321,6 +328,42 @@ public sealed class Simulator
         }
 
         return drag;
+    }
+
+    /// <summary>
+    /// Semi-implicit quadratic-drag update (issue #153): return the ship's velocity after one step of
+    /// atmospheric drag applied stably, summed over every shell the ship is inside. For each body the
+    /// relative velocity relaxes by <c>v_rel ← v_rel / (1 + c·|v_rel|·dt)</c> with <c>c = 0.5·ρ(h)/BC</c>
+    /// — the exact integral of <c>dv/dt = −c·|v_rel|·v_rel</c> holding the speed factor over the step.
+    /// It is unconditionally stable (the factor is in (0, 1], so drag never adds energy or reverses the
+    /// flow at any dt) and matches the old explicit <c>v += a_drag·dt</c> to first order in dt. Returns
+    /// <paramref name="velocity"/> untouched outside every shell, keeping the vacuum path exact.
+    /// </summary>
+    public Vector2d ApplyStableDrag(Vector2d position, Vector2d velocity, double simTime, double dt)
+    {
+        foreach (CelestialBody body in _atmosphereBodies)
+        {
+            Vector2d bodyPosition = _ephemeris.Position(body.Id, simTime);
+            double altitude = (position - bodyPosition).Length - body.BodyRadius;
+            double density = body.Atmosphere!.DensityAt(altitude);
+            if (density <= 0.0)
+            {
+                continue;
+            }
+
+            Vector2d vRel = velocity - BodyVelocity(body.Id, simTime);
+            double speed = vRel.Length;
+            if (speed == 0.0)
+            {
+                continue;
+            }
+
+            double c = 0.5 * density / BallisticCoefficient;
+            Vector2d vRelAfter = vRel / (1.0 + c * speed * dt);
+            velocity += vRelAfter - vRel;
+        }
+
+        return velocity;
     }
 
     // Rail velocity of a body by central finite difference of its analytic position — deterministic

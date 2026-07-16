@@ -5421,7 +5421,12 @@
         if (oi.Armed && oi.InCaptureRange)
             return $"autopilot flying the approach — insertion at ≈{FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))}";
         if (oi.InCaptureRange) return "in capture range — auto-orbit can park you";
-        string closing = $"close in {FormatDistance(oi.Distance - oi.CaptureRange)} to capture range";
+        // #153: once inside the capture range (e.g. already bound/orbiting) the gap goes NEGATIVE —
+        // the old line printed "close in -2,982,642 km to capture range". Read it honestly instead:
+        // report the distance to the body, not a nonsensical negative closing distance.
+        string closing = oi.Distance < oi.CaptureRange
+            ? $"inside capture range — {FormatDistance(oi.Distance)} from {oi.Body.Name}"
+            : $"close in {FormatDistance(oi.Distance - oi.CaptureRange)} to capture range";
         return oi.TooFast
             ? $"{closing} (autopilot sheds the {inv((oi.RelSpeed - OrbitRule.MaxRelativeSpeed) / 1000)} km/s there)"
             : closing;
