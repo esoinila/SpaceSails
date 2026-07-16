@@ -397,7 +397,7 @@
                    which step" — same counter the Nav-desk flight plan shows, one source of truth. *@
                 @* #180: a degrading bound orbit outranks the "who's flying" line — losing an orbit
                    must never be discovered by looking. *@
-                <span class="pilot-banner-mode @(_orbitDegradeWarning is not null ? (_orbitDegradeSeverity >= 2 ? "pilot-banner-alert-red" : "pilot-banner-alert-amber") : null)">@(_orbitDegradeWarning ?? $"{(AutopilotFlyingApproach ? "approach" : "auto-orbit")} → {BodyName(_armed!)}{(FlightPlanStepCount() > 0 ? $" · step {FlightPlanCurrentStep()}/{FlightPlanStepCount()}" : "")}")</span>
+                <span class="pilot-banner-mode @(_orbitDegradeWarning is not null ? (_orbitDegradeSeverity >= 2 ? "pilot-banner-alert-red" : "pilot-banner-alert-amber") : null)">@(_orbitDegradeWarning ?? (_orbitKept ? $"holds the orbit → {BodyName(_armed!)}{(_keepTrimPulsesPerDay > 0 ? $" · trim ≈{_keepTrimPulsesPerDay} p/day" : "")}" : $"{(AutopilotFlyingApproach ? "approach" : "auto-orbit")} → {BodyName(_armed!)}{(FlightPlanStepCount() > 0 ? $" · step {FlightPlanCurrentStep()}/{FlightPlanStepCount()}" : "")}"))</span>
             }
             else
             {
@@ -940,8 +940,8 @@
                                     <span class="map-plan-step-pip" title="@_is" aria-hidden="true"></span>
                                     <span class="map-plan-step-caret" aria-hidden="true">@(_insOpen ? "▾" : "▸")</span>
                                     <span class="flex-grow-1">
-                                        🛰 Insert at @BodyName(_armedId)
-                                        <span class="text-secondary">— @(_active ? "flying the approach" : "armed · waiting for the window")</span>
+                                        🛰 @(_orbitKept ? "Holding orbit at" : "Insert at") @BodyName(_armedId)
+                                        <span class="text-secondary">— @(_orbitKept ? (_keepTrimPulsesPerDay > 0 ? $"keeping · trim ≈{_keepTrimPulsesPerDay} p/day" : "keeping the park") : _active ? "flying the approach" : "armed · waiting for the window")</span>
                                         @* The promise the autopilot quoted at arm time (#146): the whole-journey
                                            budget it proved affordable before committing. *@
                                         @if (_armedBudgetPulses > 0)
@@ -959,7 +959,7 @@
                                     {
                                         <span class="text-secondary small text-nowrap">@FormatSimTime(_it)</span>
                                     }
-                                    <span class="badge @(_active ? "bg-info text-dark" : "bg-secondary")">@(_active ? "ACTIVE" : "ARMED")</span>
+                                    <span class="badge @(_orbitKept ? "bg-success" : _active ? "bg-info text-dark" : "bg-secondary")">@(_orbitKept ? "KEEPING" : _active ? "ACTIVE" : "ARMED")</span>
                                 </div>
                                 @if (_insOpen)
                                 {
@@ -967,9 +967,9 @@
                                         <button type="button" class="btn btn-sm btn-outline-warning w-100"
                                                 disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : null)"
                                                 @onclick="() => ToggleArmedInsertion(_armedId)">
-                                            🛰 Disarm auto-orbit at @BodyName(_armedId)
+                                            🛰 @(_orbitKept ? "Hand back the ship — release the kept orbit at" : "Disarm auto-orbit at") @BodyName(_armedId)
                                         </button>
-                                        <div class="text-secondary small mt-1">Target: @BodyName(_armedId) — set from the navigation-target panel below; disarm here, then arm a different body.</div>
+                                        <div class="text-secondary small mt-1">@(_orbitKept ? "The autopilot is HOLDING this orbit with trims. Release it and you fly by hand — it takes a confirming second click (#179)." : $"Target: {BodyName(_armedId)} — set from the navigation-target panel below; disarm here, then arm a different body.")</div>
                                     </div>
                                 }
                             </div>
@@ -1714,7 +1714,7 @@
     // The autopilot is FLYING THE APPROACH (vs merely armed and waiting for the window) when it is armed
     // AND already within capture range — the same gate OrbitStatusLine reports as "flying the approach".
     private bool AutopilotFlyingApproach =>
-        _armedOrbitBodyId is not null && OrbitInfo() is { Armed: true, InCaptureRange: true };
+        _armedOrbitBodyId is not null && !_orbitKept && OrbitInfo() is { Armed: true, InCaptureRange: true };
 
     // The armed insertion's time when the plotted destination pass pins it; null = "at window" (unknown).
     private double? ArmedInsertionSimTime =>
@@ -1810,10 +1810,21 @@
             nextLabel = BurnStepLabel(nextBurn);
             nextEta = $"in {FormatDuration(nextBurn.SimTime - SimTime)}";
         }
-        else if (_armedOrbitBodyId is not null)
+        else if (_armedOrbitBodyId is not null && !_orbitKept)
         {
             nextLabel = $"insertion at {BodyName(_armedOrbitBodyId)}";
             nextEta = ArmedInsertionSimTime is { } t ? $"in {FormatDuration(t - SimTime)}" : "at window";
+        }
+
+        // Friday §0: the kept-orbit line, expressed THROUGH FlightPlanStatus so the banner (whatever
+        // #159 renders) reads "AUTOPILOT HOLDS THE ORBIT — <body>, <alt>, trim ≈N p/day", never "you
+        // have the ship". Parked altitude is the ship's body-relative radius (same distance the park
+        // message quoted).
+        string? keepAlt = null;
+        if (_orbitKept && _armedOrbitBodyId is not null && _ephemeris is not null)
+        {
+            Vector2d keptPos = _ephemeris.Position(_armedOrbitBodyId, SimTime);
+            keepAlt = FormatDistance((_ship.Position - keptPos).Length);
         }
 
         return FlightPlanStatusBuilder.Build(new FlightPlanInputs(
@@ -1827,7 +1838,11 @@
             // #147: the persistent "you have the ship" reason — a decline or a loud handback — so the
             // now line survives high warp instead of a 1.5-s toast. Only when not armed (else the ship
             // is flying again and the armed line wins).
-            HandbackReason: _armedOrbitBodyId is null ? _autopilotStandDownReason : null));
+            HandbackReason: _armedOrbitBodyId is null ? _autopilotStandDownReason : null,
+            AutopilotKeeping: _orbitKept,
+            KeepingBodyName: _orbitKept && _armedOrbitBodyId is not null ? BodyName(_armedOrbitBodyId) : null,
+            KeepingAltitudeText: keepAlt,
+            KeepingTrimPulsesPerDay: _keepTrimPulsesPerDay));
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData SensorsChip()
@@ -4219,6 +4234,17 @@
     private OrbitRule.ParkStabilityVerdict _lastParkStability = OrbitRule.ParkStabilityVerdict.NotBound;
     private string? _parkStabilityBodyId;                 // body _lastParkStability refers to (fresh watch on change)
 
+    // ---- Friday §0 (owner ruling): "armed auto-orbit ends in a KEPT orbit, not an achieved one."
+    // When the autopilot inserts, it does NOT hand the ship back — it enters STATION-KEEPING for
+    // _armedOrbitBodyId: holding the park with trim burns (OrbitKeeping, budgets from Lab 25) until
+    // the captain deliberately disarms (the #179 double-confirm) or the tank runs dry (a LOUD
+    // handback, after which the #180 degradation alert is the backstop). The status reads "AUTOPILOT
+    // HOLDS THE ORBIT", never "you have the ship", expressed through FlightPlanStatus. ----
+    private bool _orbitKept;                              // parked and now station-keeping _armedOrbitBodyId
+    private int _keepTrimPulsesPerDay;                    // Lab 25 trim budget quoted at arm time / at park
+    private double _keepNextCheckTime;                    // sim-time of the next trim-cadence check
+    private int _keepTrimsFired;                          // trims spent this keeping session (diagnostic/ledger)
+
     // ---- #146 the moon run: the cached in-well transfer plan for the current arm. When arming rides a
     // cheap Lambert arc (TransferPlanner) instead of the legacy approach loop, the schedule's departure
     // burn(s) are fired EXACTLY at their epochs by the tick-advance split, and AutopilotDecision stays
@@ -4241,6 +4267,9 @@
         _armedTransferSchedule = null;
         _armedTransferSummary = null;
         _armedTransferBurnsFired = 0;
+        _orbitKept = false;
+        _keepTrimPulsesPerDay = 0;
+        _keepTrimsFired = 0;
     }
 
     // #146: does this arm ride a cheap in-well transfer rather than the legacy approach loop? The target
@@ -5246,16 +5275,23 @@
             {
                 _disarmConfirmBodyId = bodyId;
                 _disarmConfirmExpiresMs = nowMs + DisarmConfirmWindowMs;
-                ShowPulseMessage($"Disarm autopilot for {BodyName(bodyId)}? It keeps you on orbit — click again to confirm.");
+                // Friday §0 / #179: disarming a KEPT orbit hands the ship back — the very act that
+                // stranded the owner — so confirm it once, and say plainly what it costs.
+                ShowPulseMessage(_orbitKept
+                    ? $"Hand the ship back from the kept orbit at {BodyName(bodyId)}? The autopilot is holding it — click again to confirm."
+                    : $"Disarm autopilot for {BodyName(bodyId)}? It keeps you on orbit — click again to confirm.");
                 return;
             }
 
             _disarmConfirmBodyId = null;
+            bool wasKept = _orbitKept;
             _armedOrbitBodyId = null;
             ResetApproachTracking();
             ResetAutopilotBudget();
             _autopilotStandDownReason = null; // the captain chose this — no "handed back" surface
-            ShowPulseMessage("Insertion disarmed");
+            ShowPulseMessage(wasKept
+                ? $"You have the ship — autopilot released the kept orbit at {BodyName(bodyId)}."
+                : "Insertion disarmed");
             return;
         }
 
@@ -5322,12 +5358,26 @@
             _armedTransferSummary = transferSummary
                 ?? (plannerNote is not null ? $"no cheap transfer ({plannerNote}); flying the direct approach" : null);
             _autopilotStandDownReason = null;
+
+            // Friday §0: the park will be KEPT, so quote the trim budget at arm time (honest pricing —
+            // "trim ≈N p/day" on top of the transfer). Lab 25's per-body table, priced at the target's
+            // world (heliocentric) speed ≈ the parked ship's. Only for a real orbit-able moon (μ>0); a
+            // μ=0 station is never orbit-kept.
+            _keepTrimPulsesPerDay = 0;
+            if (target is { Mu: > 0, ParentId: not null }
+                && _ephemeris.Bodies.FirstOrDefault(b => b.Id == target.ParentId) is { } keepParent)
+            {
+                _keepTrimPulsesPerDay = OrbitKeepingTable.TrimPulsesPerDay(
+                    target, OrbitRule.HillRadius(target, keepParent.Mu), keepParent.Mu, target.OrbitRadius,
+                    TransferMath.BodyVelocity(_ephemeris, target.Id, SimTime).Length);
+            }
         }
 
         _armedOrbitBodyId = bodyId;
         ResetApproachTracking(); // every arm starts convergence tracking clean
         _destinationBodyId = bodyId; // arming says "this is where we're going"
-        ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p; the ship will park at {BodyName(bodyId)} when the window opens 🛰");
+        string trimQuote = _keepTrimPulsesPerDay > 0 ? $"; then holds the orbit, trim ≈{_keepTrimPulsesPerDay} p/day" : "";
+        ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p; the ship will park at {BodyName(bodyId)} when the window opens{trimQuote} 🛰");
     }
 
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
@@ -5358,6 +5408,14 @@
         double h = 1.0;
         Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
         double hill = OrbitRule.HillRadius(body, parent.Mu);
+
+        // Friday §0: once parked, the autopilot HOLDS the orbit — station-keeping owns the tick, not
+        // the approach/insert loop below. It stays here until the captain disarms or the tank runs dry.
+        if (_orbitKept)
+        {
+            StationKeep(body, parent, bodyPos, bodyVel, hill);
+            return;
+        }
 
         // #155 the last mile: a μ=0 station is never orbited — its capture is the dock envelope (DockRule),
         // mirroring the rehearsal. The rendezvous schedule's two burns fly the ship into the berth; burn 2
@@ -5471,27 +5529,89 @@
                 _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
                 _reactionMassPulses -= cost;
                 _armedSpentPulses += cost;
-                // #176: a successful park is a SUCCESS, not a #147 handback — so it never sets
-                // _autopilotStandDownReason (AutopilotStoodDown stays false). It mirrors the station
-                // path (#155 AutopilotStandInEnvelope): a PERSISTENT success line on the pilot banner,
-                // a ledger receipt, warp dropped to 1× — not a 1.5-s toast that flips the banner to a
-                // reasonless "you have the ship" the owner read as "it just turned off and everybody died".
+                // Friday §0 (owner ruling): "armed auto-orbit ends in a KEPT orbit, not an achieved
+                // one." The park is NOT a handback — the autopilot stays in command and now STATION-KEEPS
+                // the orbit (holds it with trims, priced from Lab 25). _armedOrbitBodyId stays set to the
+                // kept body; _orbitKept flips keeping on. The transfer/approach machinery is done, so its
+                // budget/schedule/plan-path clear, but keeping owns the ship until the captain disarms
+                // (double-confirm) or the tank runs dry (a loud handback). Never "you have the ship" while
+                // circling a moon by luck (#176/#184).
                 _autopilotStandDownReason = null;
-                ResetAutopilotBudget();
-                _armedOrbitBodyId = null;
+                _dockReadyStatus = null;
+                _armedBudgetPulses = 0;
+                _armedSpentPulses = 0;
+                _autopilotPlanPath = null;
+                _armedTransferSchedule = null;
+                _armedTransferSummary = null;
+                _armedTransferBurnsFired = 0;
                 ResetApproachTracking();
+                double park = OrbitRule.ParkingRadius(body, hill);
+                _orbitKept = true;
+                _keepTrimPulsesPerDay = OrbitKeepingTable.TrimPulsesPerDay(
+                    body, hill, parent.Mu, body.OrbitRadius, _ship.Velocity.Length);
+                _keepNextCheckTime = SimTime + OrbitKeeping.TrimCadenceFraction * OrbitRule.LocalOrbitPeriod(park, body.Mu);
+                _keepTrimsFired = 0;
                 ArrivedAt(body.Id);
                 StaleFutureNodes();
                 double parkedRadius = (_ship.Position - bodyPos).Length;
-                _dockReadyStatus = $"🛰 parked — bound to {body.Name} at {FormatDistance(parkedRadius)}; autopilot standing down";
-                LogAutopilotEvent($"autopilot parked at {body.Name} — bound at {FormatDistance(parkedRadius)}; standing down, you have the ship");
+                string holds = $"🛰 AUTOPILOT HOLDS THE ORBIT — {body.Name}, {FormatDistance(parkedRadius)}, trim ≈{_keepTrimPulsesPerDay} p/day";
+                LogAutopilotEvent($"autopilot parked at {body.Name} — now HOLDING the orbit at {FormatDistance(parkedRadius)}; trim ≈{_keepTrimPulsesPerDay} p/day until you disarm or the tank runs dry");
                 Warp = 1;               // auto-drop so the arrival moment isn't blown past at warp
                 _effectiveWarp = 1;
                 CompleteBoundCargoRunQuests(); // a parcel bound for this moon haven delivers on the park (#175)
-                ShowPulseMessage(_dockReadyStatus);
+                ShowPulseMessage(holds);
                 RendererInterop.PlayCue("board");
                 return;
         }
+    }
+
+    // Friday §0: STATION-KEEPING — the autopilot holds the park with trim burns (OrbitKeeping, budgets
+    // from Lab 25). Runs every tick while _orbitKept, but only CONSIDERS a trim once every quarter park
+    // period (OrbitKeeping.TrimCadenceFraction) — riding the tide's reversible forced eccentricity
+    // instead of fighting it every tick (the lab's treadmill). Two ways out, both loud: the captain
+    // disarms (ToggleArmedInsertion's #179 double-confirm), or the tank can't afford the next trim —
+    // a LOUD handback, after which the #180 degradation alert becomes the backstop as the orbit decays.
+    private void StationKeep(CelestialBody body, CelestialBody parent, Vector2d bodyPos, Vector2d bodyVel, double hill)
+    {
+        // The orbit gone (an external burn flung it out, or it decayed unbound): keeping is over. Stand
+        // down loudly; the #180 alert covers the decay from here.
+        if (!OrbitRule.IsBound(_ship, bodyPos, bodyVel, body, hill))
+        {
+            _orbitKept = false;
+            AutopilotStandDown($"autopilot lost the orbit at {body.Name} — no longer bound; you have the ship");
+            return;
+        }
+
+        double park = OrbitRule.ParkingRadius(body, hill);
+        if (SimTime < _keepNextCheckTime)
+        {
+            return; // between cadence points — let the reversible oscillation reverse itself
+        }
+        _keepNextCheckTime = SimTime + OrbitKeeping.TrimCadenceFraction * OrbitRule.LocalOrbitPeriod(park, body.Mu);
+
+        if (!OrbitKeeping.NeedsTrim(_ship, bodyPos, bodyVel, body))
+        {
+            return; // still tight inside the tolerance — nothing to spend
+        }
+
+        int cost = OrbitKeeping.TrimPulseCost(_ship, bodyPos, bodyVel, body, park);
+        // (b) the tank running dry — the LOUD handback (Friday §0). Reuse the escalating degradation
+        // surface as the BACKSTOP, not the defense: keeping can no longer hold, so hand back loudly and
+        // let the #180 alert shout amber/red as the orbit strips.
+        if (cost > _reactionMassPulses)
+        {
+            _orbitKept = false;
+            AutopilotStandDown(
+                $"⚠ TANK DRY at {body.Name} — the autopilot can no longer hold the orbit ({cost} p needed, {_reactionMassPulses} left). It will now decay — you have the ship.");
+            return;
+        }
+
+        _ship = OrbitKeeping.Trim(_ship, bodyPos, bodyVel, body, park);
+        _reactionMassPulses -= cost;
+        _armedSpentPulses += cost;
+        _keepTrimsFired++;
+        StaleFutureNodes();
+        ShowPulseMessage($"🛰 orbit trim at {body.Name} ({cost} p) — holding the park");
     }
 
     // ---- M20: the bus stop in space ----
@@ -12030,6 +12150,17 @@
         OrbitRule.ParkStabilityVerdict verdict = body is null
             ? OrbitRule.ParkStabilityVerdict.NotBound
             : OrbitRule.ParkStability(_ship, bodyPos, bodyVel, body, hill);
+
+        // Friday §0: while the autopilot is KEEPING the orbit, the #180 degradation alert is the
+        // BACKSTOP, not the defense — it must stay silent for the forced-eccentricity brush that
+        // keeping trims away every quarter period (at a deep well like Enceladus the apoapsis routinely
+        // touches the band ceiling, TideRisk, between trims). So downgrade TideRisk to Stable while
+        // kept. A true Subsurface (impact imminent) still shouts red even while keeping — the one
+        // failure keeping should never mask.
+        if (_orbitKept && verdict == OrbitRule.ParkStabilityVerdict.TideRisk)
+        {
+            verdict = OrbitRule.ParkStabilityVerdict.Stable;
+        }
 
         bool IsRisk(OrbitRule.ParkStabilityVerdict v) =>
             v is OrbitRule.ParkStabilityVerdict.TideRisk or OrbitRule.ParkStabilityVerdict.Subsurface;

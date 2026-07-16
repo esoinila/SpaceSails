@@ -50,6 +50,16 @@ public readonly record struct FlightPlanStatus(string NowLine, string? NextLine)
 /// source of truth every desk chip reads, so nothing can claim a mission the autopilot no longer
 /// flies. Cleared once the captain arms again or changes course. Ignored while armed (the ship is
 /// flying again) or docked (the dock line wins).</param>
+/// <param name="AutopilotKeeping">Friday §0 (owner ruling): the autopilot has PARKED and is now
+/// station-keeping — "armed auto-orbit ends in a KEPT orbit, not an achieved one." While keeping,
+/// the NOW line is "🛰 AUTOPILOT HOLDS THE ORBIT", never "you have the ship" (#176/#184): the ship is
+/// held by trim burns until the captain deliberately disarms (double-confirm) or the tank runs dry
+/// (a loud handback). Outranks every armed/approach line; only a dock outranks it.</param>
+/// <param name="KeepingBodyName">The moon whose orbit is being held.</param>
+/// <param name="KeepingAltitudeText">Pre-formatted parked altitude, e.g. "313 km" — the caller
+/// formats distance so the Core line stays presentation-pure.</param>
+/// <param name="KeepingTrimPulsesPerDay">The quoted trim budget (Lab 25 / <see cref="OrbitKeepingTable"/>)
+/// in mass pulses per day, shown on the HOLDS line so the captain always sees the running cost.</param>
 public readonly record struct FlightPlanInputs(
     bool Docked,
     string? DockedHavenName,
@@ -58,7 +68,11 @@ public readonly record struct FlightPlanInputs(
     string? AutopilotBodyName,
     string? NextStepLabel,
     string? NextStepEta,
-    string? HandbackReason = null);
+    string? HandbackReason = null,
+    bool AutopilotKeeping = false,
+    string? KeepingBodyName = null,
+    string? KeepingAltitudeText = null,
+    int KeepingTrimPulsesPerDay = 0);
 
 /// <summary>Derives step states and the now/next readout — the single source of truth so the
 /// banner, the Nav header, and the list stay coherent.</summary>
@@ -82,6 +96,12 @@ public static class FlightPlanStatusBuilder
     {
         string now =
             f.Docked ? $"NOW: docked at {NameOr(f.DockedHavenName, "haven")}"
+            // Friday §0: a KEPT orbit. The autopilot holds the park with trims — it never reads "you
+            // have the ship" while circling a moon (#176/#184). Outranks every armed/approach line.
+            : f.AutopilotKeeping
+                ? $"🛰 AUTOPILOT HOLDS THE ORBIT — {NameOr(f.KeepingBodyName, "the moon")}" +
+                    (string.IsNullOrWhiteSpace(f.KeepingAltitudeText) ? "" : $", {f.KeepingAltitudeText}") +
+                    (f.KeepingTrimPulsesPerDay > 0 ? $", trim ≈{f.KeepingTrimPulsesPerDay} p/day" : "")
             : f.AutopilotArmed && f.AutopilotFlyingApproach
                 ? $"NOW: autopilot approach → {NameOr(f.AutopilotBodyName, "target")}"
             : f.AutopilotArmed
