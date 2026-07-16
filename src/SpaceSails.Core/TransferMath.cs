@@ -223,6 +223,117 @@ public static class TransferMath
     public static Vector2d BodyVelocity(ICelestialEphemeris ephemeris, string bodyId, double simTime) =>
         (ephemeris.Position(bodyId, simTime + 1.0) - ephemeris.Position(bodyId, simTime - 1.0)) / 2.0;
 
+    // ---- Co-orbital rendezvous: the phasing maneuver (Curtis ch. 6.5, Lab 24 "The last mile") ----
+    //
+    // Lambert cannot price the last mile: a phasing loop returns to its own starting point after a
+    // whole revolution, which is exactly the 2π geometry the single-rev universal-variable solver
+    // refuses (and should). The closed form doesn't need it: change your PERIOD, not your path —
+    // coast k laps on an ellipse whose period differs from the target's by Δθ/k per lap, and the
+    // gap closes at your own doorstep. Two small burns; the well does the chasing.
+
+    /// <summary>One row of the phasing trade table: coast <see cref="Revolutions"/> laps on an
+    /// ellipse of period <see cref="PhasingPeriod"/> to close the phase gap, paying
+    /// <see cref="EnterDeltaV"/> to leave the circular lane and the same again
+    /// (<see cref="ExitDeltaV"/>) to re-match on return. More laps = cheaper burns, longer
+    /// <see cref="WaitSeconds"/> — catch this bus or the next one. <see cref="Periapsis"/> /
+    /// <see cref="Apoapsis"/> are the ellipse's extremes for the caller's clearance checks
+    /// (never thread the planet; never graze the tide-stripped outer Hill).</summary>
+    public readonly record struct PhasingPlan(
+        int Revolutions,
+        double PhasingPeriod,
+        double SemiMajorAxis,
+        double EnterDeltaV,
+        double ExitDeltaV,
+        double WaitSeconds,
+        double Periapsis,
+        double Apoapsis)
+    {
+        public double TotalDeltaV => EnterDeltaV + ExitDeltaV;
+    }
+
+    /// <summary>Signed phase angle by which <paramref name="target"/> LEADS <paramref name="ship"/>
+    /// around their common parent, in (−π, π], counter-clockwise positive (the rails' direction).
+    /// Positions are parent-relative. Feed the result to <see cref="PhasingOrbit"/>, which
+    /// normalizes the sign into its two catch-up families.</summary>
+    public static double PhaseGap(Vector2d ship, Vector2d target)
+    {
+        double cross = ship.X * target.Y - ship.Y * target.X;
+        double dot = ship.Dot(target);
+        return Math.Atan2(cross, dot);
+    }
+
+    /// <summary>
+    /// The co-orbital phasing orbit (Curtis ch. 6.5): from a circular lane of radius
+    /// <paramref name="radius"/> about a body of parameter <paramref name="mu"/>, close a phase gap
+    /// of <paramref name="phaseGapRadians"/> (the angle the TARGET leads, CCW positive — see
+    /// <see cref="PhaseGap"/>) in exactly <paramref name="revolutions"/> laps.
+    ///
+    /// <para><paramref name="dipInside"/> selects the family. True: shorten the period
+    /// (T·(1 − g/(2πk)), burn retrograde, dip toward the body) so the ship catches a LEADING
+    /// target — the burn point becomes the ellipse's APOAPSIS. False: lengthen the period
+    /// (T·(1 + (2π − g)/(2πk)), burn prograde, swell outward) so the target laps the ship instead
+    /// — the burn point becomes the PERIAPSIS. Both close any gap; they differ in Δv, wait, and
+    /// which clearance (surface vs outer Hill) they stress. The planner asks for both and prices.</para>
+    ///
+    /// <para>Null when the requested family/lap count is geometrically impossible (the shortened
+    /// period would need a non-positive semi-major axis) or the inputs are degenerate. The Δv is
+    /// the exact two-body figure for an ideally circular lane; the honest verdict on a real rail
+    /// stays where it always is — the rehearsal flies the schedule through the N-body integrator.</para>
+    /// </summary>
+    public static PhasingPlan? PhasingOrbit(
+        double radius, double phaseGapRadians, double mu, int revolutions, bool dipInside)
+    {
+        if (!(radius > 0) || !(mu > 0) || revolutions < 1)
+        {
+            return null;
+        }
+
+        // Normalize the signed lead into "how far ahead along the lane", g ∈ [0, 2π).
+        double g = phaseGapRadians % Math.Tau;
+        if (g < 0)
+        {
+            g += Math.Tau;
+        }
+
+        double period = LocalCircularPeriod(radius, mu);
+        double phasingPeriod = dipInside
+            ? period * (1 - g / (Math.Tau * revolutions))
+            : period * (1 + (Math.Tau - g) / (Math.Tau * revolutions));
+        if (!(phasingPeriod > 0))
+        {
+            return null;
+        }
+
+        // Kepler III backwards: the period names the ellipse, the burn point is one of its apsides
+        // (velocity is changed along-track only, so the radius at the burn stays an extremum).
+        double semiMajor = Math.Cbrt(mu * Math.Pow(phasingPeriod / Math.Tau, 2));
+        double otherApsis = 2 * semiMajor - radius;
+        if (otherApsis <= 0)
+        {
+            return null; // the requested catch-up is too violent for a bound ellipse this way round
+        }
+
+        double vCircular = Math.Sqrt(mu / radius);
+        double vPhasing = Math.Sqrt(mu * (2 / radius - 1 / semiMajor));
+        double deltaV = Math.Abs(vPhasing - vCircular);
+
+        return new PhasingPlan(
+            Revolutions: revolutions,
+            PhasingPeriod: phasingPeriod,
+            SemiMajorAxis: semiMajor,
+            EnterDeltaV: deltaV,
+            ExitDeltaV: deltaV,
+            WaitSeconds: revolutions * phasingPeriod,
+            Periapsis: Math.Min(radius, otherApsis),
+            Apoapsis: Math.Max(radius, otherApsis));
+    }
+
+    /// <summary>Circular-orbit period at <paramref name="radius"/> about <paramref name="mu"/> —
+    /// local copy of the Kepler III line so this file stays free of OrbitRule (Core layering:
+    /// TransferMath is pure two-body algebra; OrbitRule is ship policy).</summary>
+    private static double LocalCircularPeriod(double radius, double mu) =>
+        Math.Tau * Math.Sqrt(radius * radius * radius / mu);
+
     private static double StumpffC(double z) => z > 1e-8 ? (1 - Math.Cos(Math.Sqrt(z))) / z
         : z < -1e-8 ? (Math.Cosh(Math.Sqrt(-z)) - 1) / -z
         : 0.5 - z / 24 + z * z / 720;
