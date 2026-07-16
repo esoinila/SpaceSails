@@ -260,6 +260,31 @@
     color: #bfe0ff;
 }
 
+/* #168 — layout-stability reserves for the plotting panel. Transient text above the burn-step
+   editors (a closest pass that comes and goes, the autopilot NOW/NEXT that reflows, the sling/skim
+   compose buttons that appear per-pass) was reflowing the step rows mid-click, so the ±15° nudge
+   button fled under the player's cursor. Each conditional region now reserves its tallest common
+   state instead of toggling height, so the steps below hold still while the sim ticks. */
+
+/* Pass line + "Insert at … pass" button — reserve both rows (≈ small line + btn-sm) so the block
+   holding still whether a pass is present, armed, or gone. A rare 2-line pass label may still grow. */
+.map-plot-passline {
+    min-height: 3.25rem;
+}
+
+/* Autopilot status — the common two-line case (NOW + NEXT). 1↔2-line changes no longer shift the
+   list; a rare 3+-line NOW may still grow (acceptable — the frequent flicker is the bug). */
+.map-flightplan-status {
+    min-height: 2.7rem;
+}
+
+/* Compose row — reserve the tallest state (all of + Add burn / Add sling / Add skim / Planned,
+   which wraps to two button rows at this panel width) so toggling the sling/skim buttons in and out
+   never rewraps the row and pushes the steps below. */
+.map-plot-compose {
+    min-height: 4.25rem;
+}
+
 /* A step's state, shown as a coloured pip on the left edge of its row. */
 .map-plan-step {
     position: relative;

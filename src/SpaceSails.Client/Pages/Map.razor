@@ -635,28 +635,34 @@
                 <input type="range" class="form-range" min="0" max="100" step="1"
                        value="@HorizonSliderValue" title="Length of the navigation line (log scale)"
                        @oninput="OnHorizonSliderInput" @onkeydown:stopPropagation="true" />
-                @if (_closestPass is { } cp)
-                {
-                    <div class="small mb-1 @(cp.Impact ? "text-danger fw-bold" : cp.Severity < 5 ? "text-warning" : "text-secondary")">
-                        Closest pass: @cp.BodyName @FormatDistance(cp.Distance) (@cp.Severity.ToString("0.0", CultureInfo.InvariantCulture) R)
-                        @(cp.Impact ? "— IMPACT, captain! 🦜" : "")
-                    </div>
-                    @if (_armablePass is { } ap && PassIsOrbitable(ap) is { } est)
+                @* #168: this pass/insertion block appears and vanishes at plot cadence (a closest pass
+                   comes and goes as the sim ticks / the scrub moves) and its text reflows. Reserve its
+                   tallest state (pass line + insert button) in an always-rendered fixed-height container
+                   so the burn steps below never jump under a repeated ±15° click. *@
+                <div class="map-plot-passline">
+                    @if (_closestPass is { } cp)
                     {
-                        <div class="small mb-1">
-                            <button type="button" class="btn btn-sm py-0 @(_armedOrbitBodyId == ap.BodyId ? "btn-success" : "btn-outline-info")"
-                                    @onclick="() => ToggleArmedInsertion(ap.BodyId)">
-                                🛰 @(_armedOrbitBodyId == ap.BodyId
-                                    ? $"Insertion ARMED — will orbit {ap.BodyName} (≈{est} p)"
-                                    : $"Insert at {ap.BodyName} pass — {FormatDistance(ap.Distance)} (≈{est} p)")
-                            </button>
+                        <div class="small mb-1 @(cp.Impact ? "text-danger fw-bold" : cp.Severity < 5 ? "text-warning" : "text-secondary")">
+                            Closest pass: @cp.BodyName @FormatDistance(cp.Distance) (@cp.Severity.ToString("0.0", CultureInfo.InvariantCulture) R)
+                            @(cp.Impact ? "— IMPACT, captain! 🦜" : "")
                         </div>
+                        @if (_armablePass is { } ap && PassIsOrbitable(ap) is { } est)
+                        {
+                            <div class="small mb-1">
+                                <button type="button" class="btn btn-sm py-0 @(_armedOrbitBodyId == ap.BodyId ? "btn-success" : "btn-outline-info")"
+                                        @onclick="() => ToggleArmedInsertion(ap.BodyId)">
+                                    🛰 @(_armedOrbitBodyId == ap.BodyId
+                                        ? $"Insertion ARMED — will orbit {ap.BodyName} (≈{est} p)"
+                                        : $"Insert at {ap.BodyName} pass — {FormatDistance(ap.Distance)} (≈{est} p)")
+                                </button>
+                            </div>
+                        }
                     }
-                }
-                else if (_armedOrbitBodyId is not null)
-                {
-                    <div class="small mb-1 text-info">🛰 Insertion armed: @_armedOrbitBodyId</div>
-                }
+                    else if (_armedOrbitBodyId is not null)
+                    {
+                        <div class="small mb-1 text-info">🛰 Insertion armed: @_armedOrbitBodyId</div>
+                    }
+                </div>
                 @* PR-D2 · the flight plan OWNS the step editors (docs/WednesdayPlan/UnifiedNavListNotes.md,
                    GeminiUINotes.md). The burn list IS the plan; the old floating sling/skim panels are now
                    scratchpad COMPOSE rows (FMS pattern — solve→preview→commit); every committed step
@@ -675,15 +681,23 @@
                             <span class="text-secondary">step @FlightPlanCurrentStep() of @_fpCount</span>
                         }
                     </div>
-                    <div class="map-flightplan-now">@_fp.NowLine</div>
-                    @if (_fp.NextLine is { } _nextLine)
-                    {
-                        <div class="map-flightplan-next">@_nextLine</div>
-                    }
+                    @* #168: NowLine wraps 1↔3 lines and NextLine toggles as the autopilot text changes.
+                       Reserve the common 2-line case (now + next) so the frequent 1↔2 flicker can't shove
+                       the burn steps below mid-click; a rare 3+-line NowLine may still grow (acceptable). *@
+                    <div class="map-flightplan-status">
+                        <div class="map-flightplan-now">@_fp.NowLine</div>
+                        @if (_fp.NextLine is { } _nextLine)
+                        {
+                            <div class="map-flightplan-next">@_nextLine</div>
+                        }
+                    </div>
                 </div>
                 @* Compose new steps (scratchpad). Add-burn seeds a step at the scrub and opens it; a
                    slingable / skimmable pass offers its own solver as a compose editor that COMMITS a step. *@
-                <div class="d-flex flex-wrap align-items-center mb-2 gap-2">
+                @* #168: the sling / skim compose buttons appear only when the current plot has a
+                   slingable / skimmable pass — they toggle at plot cadence and can wrap this row 1↔2
+                   lines. Reserve the tallest state so the burn steps below never jump under a click. *@
+                <div class="map-plot-compose d-flex flex-wrap align-items-center mb-2 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="AddBurnAtScrub">
                         + Add burn at scrub
                     </button>
