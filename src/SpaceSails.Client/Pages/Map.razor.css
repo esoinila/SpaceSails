@@ -413,6 +413,14 @@
     background: #1c2230;
 }
 
+/* #175: the cargo-run delivery next-action, in the nav-target box — parcel amber, the same cue as
+   the 📦 map marker and the quest card, so the three read as one thread. */
+.map-cargo-deliver {
+    color: #ebbe78;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
 /* ---- PR-11: duty-station desks (docs/SaturdayPlan/StationDesks.md) ---- */
 
 .desk-tab-bar {

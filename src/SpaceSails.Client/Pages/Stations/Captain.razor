@@ -147,6 +147,12 @@
                             <div class="captain-card captain-quest-@q.StatusKind">
                                 <div class="fw-bold">@q.Title</div>
                                 <div class="captain-card-blurb text-secondary small">@q.Detail</div>
+                                @if (q.NextAction is { } next)
+                                {
+                                    @* #175: the live next action, read off ship state — so the card
+                                       tells the captain what to do RIGHT NOW, not just what the job is. *@
+                                    <div class="captain-quest-next small mt-1">▶ @next</div>
+                                }
                                 @if (q.Steps.Count > 0)
                                 {
                                     <div class="captain-quest-steps small mt-1">
@@ -377,7 +383,7 @@
     /// 🔭 "point the scope" hook while the fetch hunt is at its pre-scan stage.</summary>
     public sealed record QuestItem(
         string Title, string Detail, string RewardText, string StatusLabel, string StatusKind,
-        IReadOnlyList<QuestStep> Steps, bool ShowScopeButton)
+        IReadOnlyList<QuestStep> Steps, bool ShowScopeButton, string? NextAction = null)
     {
         public QuestItem(string title, string detail, string rewardText, string statusLabel, string statusKind)
             : this(title, detail, rewardText, statusLabel, statusKind, [], false) { }

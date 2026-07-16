@@ -137,6 +137,10 @@
     margin-top: 0.45rem;
 }
 
+/* #175: the live next-action line — parcel amber, a touch brighter than the blurb so the eye lands
+   on "what to do now" without shouting. */
+.captain-quest-next { color: #ebbe78; font-weight: 600; }
+
 .captain-quest-status { font-size: 0.8rem; font-weight: 600; }
 .captain-quest-status-active { color: #ffd479; }
 .captain-quest-status-complete { color: #9fe6b0; }
