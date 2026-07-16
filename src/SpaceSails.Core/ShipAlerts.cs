@@ -32,6 +32,13 @@ public enum AlertKind
     /// <summary>A bound orbit drifting out of the tide-stable band (#180/#183) — migrated in as the
     /// third founding alert so the degradation warning speaks with the same voice as the rest.</summary>
     OrbitDegrade,
+
+    /// <summary>#205 — a plunder window is open on a hull the captain has not yet acted on: the first
+    /// ACTIONABLE alert. The captain's word to board (or stand down) is required from ANY desk, so the
+    /// opportunity rides this channel with an <see cref="ShipAlert.ActionTargetId"/> the banner wires
+    /// its approve/stand-down chips to. Shot authorization and boarding authorization are separate
+    /// consents; this alert carries the boarding one.</summary>
+    Boarding,
 }
 
 /// <summary>One live alert. Immutable snapshot; the channel replaces it wholesale on any change.</summary>
@@ -40,8 +47,13 @@ public enum AlertKind
 /// <param name="Message">The human line the banner and ledger show.</param>
 /// <param name="FirstRaisedSeconds">Sim time of the rising edge (reset on an escalating re-crossing).</param>
 /// <param name="Acknowledged">The captain silenced this instance; it lingers dimmed but no longer shouts.</param>
+/// <param name="ActionTargetId">#205 — an optional subject the alert's actions act on (the hull id
+/// for a <see cref="AlertKind.Boarding"/> opportunity). Null for the plain shout-only alerts, whose
+/// only action is silencing; non-null turns the alert ACTIONABLE — the banner renders approve/
+/// stand-down chips wired to this id. Carrying data (not a delegate) keeps the channel Core-pure.</param>
 public readonly record struct ShipAlert(
-    AlertKind Kind, AlertSeverity Severity, string Message, double FirstRaisedSeconds, bool Acknowledged);
+    AlertKind Kind, AlertSeverity Severity, string Message, double FirstRaisedSeconds, bool Acknowledged,
+    string? ActionTargetId = null);
 
 /// <summary>
 /// The ship-wide alert channel (#166). Edge-triggered: <see cref="Raise"/> fires (returns true) only
@@ -60,7 +72,8 @@ public sealed class ShipAlerts
     /// OR it escalated to a higher severity (a new crossing, e.g. fuel amber→red) — the caller's cue to
     /// squawk, log, and drop warp. A same-or-lower-severity re-raise updates the message text in place
     /// and returns false (no re-fire, no re-shout while the condition merely persists).</summary>
-    public bool Raise(AlertKind kind, AlertSeverity severity, string message, double nowSeconds)
+    public bool Raise(AlertKind kind, AlertSeverity severity, string message, double nowSeconds,
+        string? actionTargetId = null)
     {
         if (_active.TryGetValue(kind, out ShipAlert existing))
         {
@@ -69,6 +82,9 @@ public sealed class ShipAlerts
             {
                 Severity = severity > existing.Severity ? severity : existing.Severity,
                 Message = message,
+                // The action payload rides with the text: a refresh may re-point the same live alert at
+                // a new subject (a different hull comes on offer) without being a fresh edge.
+                ActionTargetId = actionTargetId,
                 // An escalating crossing is a fresh edge: it un-silences and re-stamps the raise time.
                 Acknowledged = escalated ? false : existing.Acknowledged,
                 FirstRaisedSeconds = escalated ? nowSeconds : existing.FirstRaisedSeconds,
@@ -76,7 +92,7 @@ public sealed class ShipAlerts
             return escalated;
         }
 
-        _active[kind] = new ShipAlert(kind, severity, message, nowSeconds, Acknowledged: false);
+        _active[kind] = new ShipAlert(kind, severity, message, nowSeconds, Acknowledged: false, ActionTargetId: actionTargetId);
         return true;
     }
 

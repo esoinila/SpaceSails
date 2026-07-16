@@ -97,5 +97,36 @@ public class ContactLedgerTests
         ContactHistory unknown = ledger.For("NOBODY");
         Assert.Equal(0, unknown.MissionsCompleted);
         Assert.False(unknown.HasHistory);
+        Assert.False(unknown.Hostile);
+    }
+
+    // ---- #202: the NEGATIVE seam — a boarded victim is marked hostile ----
+
+    [Fact]
+    public void RecordPlunder_MarksTheVictimHostile_AndStampsWhen()
+    {
+        var ledger = new ContactLedger();
+        Assert.False(ledger.For("larkspur").Hostile); // never wronged yet
+
+        ContactHistory robbed = ledger.RecordPlunder("larkspur", "Larkspur", simTime: 900);
+        Assert.True(robbed.Hostile);
+        Assert.True(robbed.HasHistory);                 // a grudge is a history
+        Assert.Equal(900, robbed.LastCompletedSimTime); // the crime is stamped
+        Assert.Equal(0, robbed.MissionsCompleted);      // it books no honest job
+        Assert.Equal(0, robbed.TotalPaidCredits);       // and no coin — one field, not a system
+        Assert.True(ledger.For("larkspur").Hostile);    // saved on the ledger
+    }
+
+    [Fact]
+    public void RecordPlunder_OnAnExistingContact_KeepsTheirJobsButFlipsHostile()
+    {
+        var ledger = new ContactLedger();
+        ledger.RecordCompletion("gilt", "Gilt-Eye", 500, simTime: 10);
+        ContactHistory betrayed = ledger.RecordPlunder("gilt", "Gilt-Eye", simTime: 50);
+
+        Assert.True(betrayed.Hostile);
+        Assert.Equal(1, betrayed.MissionsCompleted);    // the honest job still stands
+        Assert.Equal(500, betrayed.TotalPaidCredits);
+        Assert.Equal(50, betrayed.LastCompletedSimTime); // re-stamped by the crime
     }
 }

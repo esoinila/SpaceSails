@@ -150,4 +150,49 @@ public class ShipAlertsTests
         Assert.Null(FuelAlertRule.Evaluate(0, 0));
         Assert.Null(FuelAlertRule.Evaluate(10, -5));
     }
+
+    // ---- #205: the actionable alert payload (a boarding window carries the hull to act on) ----
+
+    [Fact]
+    public void Raise_CarriesAnActionTargetId_ForAnActionableAlert()
+    {
+        var alerts = new ShipAlerts();
+        Assert.True(alerts.Raise(AlertKind.Boarding, AlertSeverity.Amber,
+            "🏴 Boarding window open on Larkspur", nowSeconds: 5, actionTargetId: "larkspur"));
+        ShipAlert a = alerts.Get(AlertKind.Boarding)!.Value;
+        Assert.Equal("larkspur", a.ActionTargetId); // the banner's approve/stand-down chips act on this
+    }
+
+    [Fact]
+    public void Raise_PlainAlert_HasNoActionTarget()
+    {
+        var alerts = new ShipAlerts();
+        alerts.Raise(AlertKind.Collision, AlertSeverity.Red, "ROCKS AHEAD!", 5);
+        Assert.Null(alerts.Get(AlertKind.Collision)!.Value.ActionTargetId); // shout-only: silence is its only action
+    }
+
+    [Fact]
+    public void Raise_Refresh_RePointsTheActionTarget_WithoutAFreshEdge()
+    {
+        // A different hull comes on offer during the same live alert: the payload re-points, but a
+        // same-severity refresh is NOT a new edge (no re-shout) — the channel's edge semantics hold.
+        var alerts = new ShipAlerts();
+        Assert.True(alerts.Raise(AlertKind.Boarding, AlertSeverity.Amber, "on Larkspur", 5, actionTargetId: "larkspur"));
+        Assert.False(alerts.Raise(AlertKind.Boarding, AlertSeverity.Amber, "on Magpie", 6, actionTargetId: "magpie"));
+        ShipAlert a = alerts.Get(AlertKind.Boarding)!.Value;
+        Assert.Equal("magpie", a.ActionTargetId);
+        Assert.Equal("on Magpie", a.Message);
+        Assert.Equal(5, a.FirstRaisedSeconds); // the edge did not re-stamp
+    }
+
+    [Fact]
+    public void Raise_ActionableAlert_KeepsEdgeSemantics_Sacred()
+    {
+        // Adding the payload must not change the one-fire-per-crossing contract.
+        var alerts = new ShipAlerts();
+        Assert.True(alerts.Raise(AlertKind.Boarding, AlertSeverity.Amber, "open", 5, actionTargetId: "h"));
+        Assert.False(alerts.Raise(AlertKind.Boarding, AlertSeverity.Amber, "open", 6, actionTargetId: "h"));
+        Assert.True(alerts.Clear(AlertKind.Boarding));
+        Assert.True(alerts.Raise(AlertKind.Boarding, AlertSeverity.Amber, "open", 9, actionTargetId: "h")); // re-armed
+    }
 }

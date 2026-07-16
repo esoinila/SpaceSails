@@ -7,12 +7,16 @@ namespace SpaceSails.Core;
 /// when we last delivered; the future relationship system reads it to know a history exists at
 /// all. Deliberately one record type, not a system.
 /// </summary>
+/// <param name="Hostile">#202 — the NEGATIVE seam: we boarded and robbed this contact. One field, not
+/// a system — a future reputation layer reads it to know the history is a bad one (a fence won't buy,
+/// a fixer won't call), the mirror of the warm welcome an honest job earns.</param>
 public readonly record struct ContactHistory(
     string ContactId,
     string DisplayName,
     int MissionsCompleted,
     int TotalPaidCredits,
-    double LastCompletedSimTime)
+    double LastCompletedSimTime,
+    bool Hostile = false)
 {
     /// <summary>A blank slate for a contact we've not yet done business with.</summary>
     public static ContactHistory New(string contactId, string displayName) =>
@@ -26,8 +30,16 @@ public readonly record struct ContactHistory(
         LastCompletedSimTime = simTime,
     };
 
-    /// <summary>True once we've done at least one job together — "we have a history now."</summary>
-    public bool HasHistory => MissionsCompleted > 0;
+    /// <summary>Mark this contact hostile — we boarded and robbed them (#202) — and stamp when. The
+    /// negative twin of <see cref="WithCompletedMission"/>; it books no coin, only the grudge.</summary>
+    public ContactHistory WithPlunder(double simTime) => this with
+    {
+        Hostile = true,
+        LastCompletedSimTime = simTime,
+    };
+
+    /// <summary>True once there is any history to read — an honest job done, or a hull we robbed.</summary>
+    public bool HasHistory => MissionsCompleted > 0 || Hostile;
 }
 
 /// <summary>
@@ -55,6 +67,19 @@ public sealed class ContactLedger
             ? existing with { DisplayName = displayName }
             : ContactHistory.New(contactId, displayName);
         ContactHistory updated = current.WithCompletedMission(paidCredits, simTime);
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>#202 — book a boarding against a victim: create their record on first crossing and mark
+    /// it hostile. The negative twin of <see cref="RecordCompletion"/>; a future reputation system reads
+    /// <see cref="ContactHistory.Hostile"/> to know we wronged them. Returns the marked history.</summary>
+    public ContactHistory RecordPlunder(string contactId, string displayName, double simTime)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+        ContactHistory updated = current.WithPlunder(simTime);
         _byId[contactId] = updated;
         return updated;
     }
