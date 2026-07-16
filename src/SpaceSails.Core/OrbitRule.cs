@@ -190,7 +190,11 @@ public static class OrbitRule
     public static int PulseCost(ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body) =>
         PulsesFor(InsertionDeltaV(ship, bodyPosition, bodyVelocity, body), ship.Velocity.Length);
 
-    private static int PulsesFor(double deltaV, double currentSpeed)
+    /// <summary>Mass-pulse price of an arbitrary assisted burn: one pulse buys
+    /// <see cref="DeltaVPerPulseFraction"/> of the current heliocentric speed as Δv (floor 1 m/s),
+    /// rounded up, at least 1. Public since #146 so the transfer planner quotes with the SAME
+    /// kernel the live approach/insertion burns spend with — one pricing source, no drift.</summary>
+    public static int PulsesFor(double deltaV, double currentSpeed)
     {
         double unit = Math.Max(1.0, currentSpeed * DeltaVPerPulseFraction);
         return Math.Max(1, (int)Math.Ceiling(deltaV / unit));
