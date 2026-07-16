@@ -478,6 +478,12 @@
             @if (OrbitInfo() is { } oi)
             {
                 <div class="mt-1 small">
+                    @* #175: this body is a cargo run's destination — say the delivery next action right
+                       in the nav-target box so the parcel's last step is never invisible. *@
+                    @if (ActiveCargoRunTo(oi.Body.Id) is not null)
+                    {
+                        <div class="map-cargo-deliver">📦 @CargoNextAction(oi.Body)</div>
+                    }
                     @if (IsDockableHaven(oi.Body))
                     {
                         @* A mass-less haven has no Hill sphere — you clamp its ⚓ dock, you don't orbit.
@@ -512,6 +518,15 @@
                                         disabled="@(!oi.CanEngage || NavLockedByDock)"
                                         title="@(NavLockedByDock ? DockNavLockTip : null)" @onclick="EnterOrbit">
                                     Enter orbit (@oi.Cost p / O)
+                                </button>
+                            }
+                            else if (oi.Bound)
+                            {
+                                @* #176: already in orbit — the button isn't "off", there's just nothing to arm.
+                                   Say so instead of a mute grey "Auto-orbit" that reads like a dead control. *@
+                                <button type="button" class="btn btn-sm py-0 btn-outline-success" disabled
+                                        title="already orbiting — burn prograde to leave, or ⚓ Dock if it's a haven">
+                                    In orbit ✓
                                 </button>
                             }
                             else
@@ -5407,13 +5422,24 @@
                 _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
                 _reactionMassPulses -= cost;
                 _armedSpentPulses += cost;
-                _autopilotStandDownReason = null; // delivered — no handback surface
+                // #176: a successful park is a SUCCESS, not a #147 handback — so it never sets
+                // _autopilotStandDownReason (AutopilotStoodDown stays false). It mirrors the station
+                // path (#155 AutopilotStandInEnvelope): a PERSISTENT success line on the pilot banner,
+                // a ledger receipt, warp dropped to 1× — not a 1.5-s toast that flips the banner to a
+                // reasonless "you have the ship" the owner read as "it just turned off and everybody died".
+                _autopilotStandDownReason = null;
                 ResetAutopilotBudget();
                 _armedOrbitBodyId = null;
                 ResetApproachTracking();
                 ArrivedAt(body.Id);
                 StaleFutureNodes();
-                ShowPulseMessage($"Autopilot insertion — bound to {body.Name} 🛰");
+                double parkedRadius = (_ship.Position - bodyPos).Length;
+                _dockReadyStatus = $"🛰 parked — bound to {body.Name} at {FormatDistance(parkedRadius)}; autopilot standing down";
+                LogAutopilotEvent($"autopilot parked at {body.Name} — bound at {FormatDistance(parkedRadius)}; standing down, you have the ship");
+                Warp = 1;               // auto-drop so the arrival moment isn't blown past at warp
+                _effectiveWarp = 1;
+                CompleteBoundCargoRunQuests(); // a parcel bound for this moon haven delivers on the park (#175)
+                ShowPulseMessage(_dockReadyStatus);
                 RendererInterop.PlayCue("board");
                 return;
         }
@@ -5423,7 +5449,8 @@
     private readonly record struct OrbitAssistInfo(
         CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
         bool WindowOpen, bool TooFast, bool CanEngage, bool IsDestination,
-        double CaptureRange, bool InCaptureRange, bool Armed, int ApproachCost);
+        double CaptureRange, bool InCaptureRange, bool Armed, int ApproachCost,
+        bool Bound);
 
     private OrbitAssistInfo? OrbitInfo()
     {
@@ -5484,13 +5511,17 @@
             open && !bound && cost <= _reactionMassPulses, destination,
             captureRange, distance <= captureRange && !bound,
             _armedOrbitBodyId == body.Id,
-            OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel));
+            OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel),
+            bound);
     }
 
     // One line of approach coaching: what to fix first, with a ballpark number on it.
     private string OrbitStatusLine(OrbitAssistInfo oi)
     {
         string inv(double v) => v.ToString("F1", CultureInfo.InvariantCulture);
+        // #176: once bound the panel used to fall through to the "inside capture range" line and the
+        // button greyed out mute — say plainly that we're already parked so nobody reads it as "off".
+        if (oi.Bound) return $"bound — parked at {FormatDistance(oi.Distance)}";
         if (oi.WindowOpen) return "window OPEN";
         if (oi.Armed && oi.InCaptureRange)
             return $"autopilot flying the approach — insertion at ≈{FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))}";
@@ -5571,6 +5602,7 @@
         _reactionMassPulses -= oi.Cost;
         ArrivedAt(oi.Body.Id);
         StaleFutureNodes();
+        CompleteBoundCargoRunQuests(); // a parcel bound for this moon haven delivers on the park (#175)
         ShowPulseMessage($"Orbital insertion — bound to {oi.Body.Name} 🛰");
         RendererInterop.PlayCue("board");
     }
@@ -6639,6 +6671,7 @@
             DrawDestinationPassMarker();
         }
         DrawCelestialBodies();
+        DrawCargoRunMarkers();
         DrawNodeMarkers();
         if (PlotMode)
         {
@@ -7492,6 +7525,27 @@
                 string label = IsDockableHaven(body) ? $"⚓ {body.Name}" : body.Name;
                 _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, label, labelColor);
             }
+        }
+    }
+
+    private static readonly RgbaColor CargoMarkerColor = new(235, 190, 120); // parcel amber — reads on the star field
+
+    // #175: while a cargo run is in hand, its destination carries a 📦 so the delivery point isn't
+    // invisible on the map. Modest — a small tag under the body's own label, drawn only for the
+    // Active run's destination (it clears the instant the parcel is delivered).
+    private void DrawCargoRunMarkers()
+    {
+        if (_ephemeris is null) return;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (IsBodyHidden(body.Id) || ActiveCargoRunTo(body.Id) is null) continue;
+            Vector2d position = _ephemeris.Position(body.Id, SimTime);
+            (float sx, float sy) = _camera.WorldToScreen(position);
+            bool isStation = body.Kind == BodyKind.Station;
+            float radiusPx = (float)Math.Max(isStation ? 1.5 : 2.0, body.BodyRadius / _camera.MetersPerPixel);
+            if (isStation) radiusPx = Math.Min(radiusPx, 3.5f);
+            _renderer!.DrawText(sx + radiusPx + 4, sy + radiusPx + 8, $"📦 deliver to {body.Name}", CargoMarkerColor,
+                "11px sans-serif", TextAlign.Left);
         }
     }
 
@@ -10906,7 +10960,10 @@
 
         CelestialBody dest = havens[OfferIndex(havens.Count)];
         int reward = 300 + (int)(dest.OrbitRadius / 1e10); // farther berths pay a little more
-        string blurb = $"“Quiet parcel, no questions. Gets to {dest.Name} in one piece, you walk with {reward:N0} cr. Berth there and it's done.”";
+        // #175: a moon haven has no ⚓ dock — you deliver by parking in its orbit — so the pitch names
+        // the right last move instead of promising a "berth" that a moon never has.
+        string drop = IsDockableHaven(dest) ? "Berth there and it's done." : "Park in orbit there and it's done.";
+        string blurb = $"“Quiet parcel, no questions. Gets to {dest.Name} in one piece, you walk with {reward:N0} cr. {drop}”";
         return new Quest($"run-{++_questSeq}", QuestKind.CargoRun, giver,
             "", dest.Name, $"Run a parcel to {dest.Name}", blurb, reward, DestBodyId: dest.Id);
     }
@@ -11157,6 +11214,93 @@
         }
     }
 
+    // The body carrying this id, or null.
+    private CelestialBody? BodyById(string? id)
+    {
+        if (id is null || _ephemeris is null) return null;
+        foreach (CelestialBody b in _ephemeris.Bodies)
+        {
+            if (b.Id == id) return b;
+        }
+        return null;
+    }
+
+    // #175: a MOON haven (mu > 0) has no ⚓ dock to clamp — the same as the lie-low rule, where
+    // IsHiddenAtHaven treats being BOUND in a haven moon's orbit as "at the haven". So a cargo run to
+    // a moon haven delivers the instant the ship is bound in its orbit; only STATION havens (mu = 0)
+    // deliver on the dock, which CompleteCargoRunQuests handles from ToggleDock. This closes the trap
+    // the owner hit: "berth there to deliver" at Enceladus (a moon) pointed at a door that never existed.
+    private bool IsBoundAtMoonHaven(CelestialBody dest)
+    {
+        if (_ephemeris is null || dest.ParentId is null || IsDockableHaven(dest))
+        {
+            return false; // a station haven delivers on ⚓ Dock, not by orbit
+        }
+
+        if (BodyById(dest.ParentId) is not { } parent)
+        {
+            return false;
+        }
+
+        Vector2d pos = _ephemeris.Position(dest.Id, SimTime);
+        const double h = 1.0;
+        Vector2d vel = (_ephemeris.Position(dest.Id, SimTime + h) - _ephemeris.Position(dest.Id, SimTime - h)) / (2 * h);
+        double hill = OrbitRule.HillRadius(dest, parent.Mu);
+        return OrbitRule.IsBound(_ship, pos, vel, dest, hill);
+    }
+
+    // #175: settle any moon-haven cargo run the instant the ship is parked in its orbit. Runs on every
+    // insertion (manual + autopilot) AND once per tick from UpdateEncounters, so a captain who was
+    // ALREADY orbiting when the parcel loaded still gets paid — there is no dock event to hang it on.
+    // Station-haven runs stay on the ToggleDock path (CompleteCargoRunQuests) and are skipped here.
+    private void CompleteBoundCargoRunQuests()
+    {
+        if (_ephemeris is null) return;
+        bool delivered = false;
+        foreach (Quest q in _quests)
+        {
+            if (q is not { Kind: QuestKind.CargoRun, State: QuestState.Active, DestBodyId: { } destId }) continue;
+            if (BodyById(destId) is not { } dest || IsDockableHaven(dest)) continue; // stations: ⚓ Dock path
+            if (IsBoundAtMoonHaven(dest))
+            {
+                q.State = QuestState.Complete;
+                ShowPulseMessage($"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
+                delivered = true;
+            }
+        }
+
+        // No berthing event fires for a moon-haven park, so settle the payout here — the orbit IS the
+        // berth. PayCompletedQuests is idempotent (only Complete → TurnedIn), so this can't double-pay.
+        if (delivered) PayCompletedQuests();
+    }
+
+    // #175: the in-hand cargo run whose destination is this body, or null. Used to paint the 📦 map
+    // marker and the live next-action line only while a run to it is actually Active.
+    private Quest? ActiveCargoRunTo(string bodyId) =>
+        _quests.FirstOrDefault(q => q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && q.DestBodyId == bodyId);
+
+    // #175: the live "what to do to deliver" line for a cargo run, read straight off ship state so the
+    // quest card and the nav-target box never lie about the next action. A STATION haven delivers on
+    // ⚓ Dock inside the dock envelope; a MOON haven delivers by parking in its orbit (the lie-low
+    // precedent). Reuses the DockRule envelope constants — the numbers are never re-literal'd here.
+    private string CargoNextAction(CelestialBody dest)
+    {
+        if (IsDockableHaven(dest))
+        {
+            Vector2d pos = _ephemeris!.Position(dest.Id, SimTime);
+            const double h = 1.0;
+            Vector2d vel = (_ephemeris.Position(dest.Id, SimTime + h) - _ephemeris.Position(dest.Id, SimTime - h)) / (2 * h);
+            return DockRule.InEnvelope(_ship, pos, vel, dest.BodyRadius)
+                ? "in the envelope — hit ⚓ Dock to deliver 📦"
+                : $"get to {dest.Name} — coast within {DockReachMeters / 1000:N0} km, ≤{DockMatchSpeedMps / 1000:N0} km/s to clamp on";
+        }
+
+        // A moon haven: no dock — parking in orbit IS the berth (IsHiddenAtHaven's lie-low rule).
+        return IsBoundAtMoonHaven(dest)
+            ? "in orbit — delivered ✓"
+            : $"enter orbit at {dest.Name} to deliver 📦";
+    }
+
     // Turn in any finished contracts on berthing — the reward lands in the ledger.
     private void PayCompletedQuests()
     {
@@ -11188,20 +11332,32 @@
                 (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
                 _ => ("💰 Paid", "paid"),
             };
+            // #175: the delivery instruction is kind-aware — a MOON haven has no ⚓ dock, you park in
+            // its orbit; only a STATION haven is "berth there". Saying the right one kills the trap the
+            // owner hit hunting for a Dock button that a moon never has.
+            CelestialBody? cargoDest = q.Kind == QuestKind.CargoRun ? BodyById(q.DestBodyId) : null;
+            string cargoDetail = cargoDest is not null && !IsDockableHaven(cargoDest)
+                ? $"Carry the parcel to {q.TargetCallsign} — park in orbit there to deliver."
+                : $"Carry the parcel to {q.TargetCallsign} — berth there (⚓ Dock) to deliver.";
             string detail = q.Kind switch
             {
                 QuestKind.Hunt => $"Hunt {q.TargetCallsign} — hole her sail or board her.",
-                QuestKind.CargoRun => $"Carry the parcel to {q.TargetCallsign} — berth there to deliver.",
+                QuestKind.CargoRun => cargoDetail,
                 QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
                 QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
                 QuestKind.Crack => $"Key {q.Pin} into hatch {q.TargetShipId} here, lift the package, then hand it back to The Fixer.",
                 _ => "",
             };
+            // #175: the live next action for an in-hand cargo run, read off ship state (too far / in the
+            // envelope / enter orbit). Only while Active — a delivered run drops back to the plain card.
+            string? nextAction = q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && cargoDest is not null
+                ? CargoNextAction(cargoDest)
+                : null;
             string rewardText = q.Kind == QuestKind.Intel
                 ? "🕸 route tip"
                 : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
             (IReadOnlyList<Stations.Captain.QuestStep> steps, bool showScope) = FetchStagePlan(q);
-            return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind, steps, showScope);
+            return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind, steps, showScope, nextAction);
         }).ToArray();
 
     // The fetch hunt's staged plan for the quest card (Tuesday plan PR-A): intel → scan → fly →
@@ -11451,6 +11607,10 @@
         {
             return;
         }
+
+        // #175: settle any moon-haven cargo run whose ship is parked in orbit — the owner who was
+        // ALREADY orbiting Enceladus when the parcel loaded gets paid here, since no dock event fires.
+        CompleteBoundCargoRunQuests();
 
         bool wasHidden = !double.IsNaN(_hiddenAtHavenSinceSimTime);
         bool hidden = IsHiddenAtHaven();
