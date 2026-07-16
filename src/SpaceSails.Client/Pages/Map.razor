@@ -488,6 +488,16 @@
                 {
                     <div class="ship-alert @(_alert.Severity == AlertSeverity.Red ? "ship-alert-red" : "ship-alert-amber") @(_alert.Acknowledged ? "ship-alert-ack" : null)">
                         <span class="ship-alert-msg">@_alert.Message</span>
+                        @* #205: an ACTIONABLE alert (a boarding window) carries its subject — the approve/
+                           stand-down chips are reachable HERE, on every desk, even when the alert is dimmed.
+                           These are the second door the owner couldn't find on the war-room/captain desks. *@
+                        @if (_alert.ActionTargetId is not null)
+                        {
+                            <button type="button" class="btn btn-sm btn-danger py-0 ship-alert-action"
+                                    title="Send the shuttles across and board her — this is piracy" @onclick="AuthorizePlunder">🏴 Board her</button>
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 ship-alert-action"
+                                    title="Stand the shuttles down — leave her be" @onclick="DeclinePlunder">Stand down</button>
+                        }
                         @if (!_alert.Acknowledged)
                         {
                             <button type="button" class="ship-alert-silence" title="Silence this alert (it stays until the condition clears)"
@@ -716,6 +726,19 @@
                     <span class="text-warning">real-time — warp won't hurry it</span>
                     <span class="text-secondary">· hold the match; closer &amp; slower boards faster</span>
                 </div>
+                @* #202: show what is being taken AS it transfers — no more forensic accounting. The
+                   take is the hull's cargo capped by our free hold; priced through the same fence market
+                   the loot line and the credited value read. *@
+                @if (SelectedCaptureTarget() is { } prey && prey.Ship.CargoUnits > 0)
+                {
+                    int hold = CargoCapacity - _cargoUnits;
+                    int take = Math.Max(0, Math.Min(prey.Ship.CargoUnits, hold));
+                    <div class="small text-warning">
+                        📦 Prising loose @take units of @prey.Ship.CargoClass — est.
+                        @((take * CargoMarket.UnitValue(prey.Ship.CargoClass)).ToString("N0", CultureInfo.InvariantCulture)) cr
+                        @(take < prey.Ship.CargoUnits ? "(hold's filling — the rest stays with her)" : "")
+                    </div>
+                }
             }
             @* #177/#178 — a boardable hull is in range, but piracy is never automatic. Offer it;
                the shuttles do not move until the captain says so. Standing down is free and silent. *@
@@ -3119,8 +3142,16 @@
     // blown past. The banner strip and desk chips read the channel; nothing here re-shouts per tick.
     private void UpdateShipAlerts(double nowMs)
     {
-        // Collision: the current course has a ballistic impact / sub-surface pass in the horizon.
-        if (_closestPass is { Impact: true } cp)
+        // Collision: the course has a ballistic impact / sub-surface pass in the horizon — UNLESS the
+        // autopilot is armed with a valid rehearsed plan, in which case the alarm trusts the PLAN the
+        // rehearsal flew (#196/#148). The insert burn resolves the ballistic impact, so that impact is
+        // the plan working, not news; the ballistic alarm returns the instant the plan is gone (disarm/
+        // handback → _autopilotPlanClosestPass null). A plan whose OWN path goes subsurface leaves an
+        // Impact pass cached and shouts red immediately — a bad plan shouts LOUDER, not softer.
+        bool armedWithPlan = _armedOrbitBodyId is not null && _autopilotPlanPath is { Count: >= 2 };
+        ClosestApproach.Pass? collision =
+            CollisionAlertRule.Evaluate(armedWithPlan, _closestPass, _autopilotPlanClosestPass);
+        if (collision is { } cp)
         {
             string body = cp.BodyName;
             if (_shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"ROCKS AHEAD! — impact with {body}", SimTime))
@@ -4485,6 +4516,11 @@
     private string? _autopilotStandDownReason;   // persistent "you have the ship" line (decline/handback)
     private string? _dockReadyStatus;            // #155: persistent "in the envelope — hit ⚓ Dock" line, a station SUCCESS (never a #147 handback)
     private IReadOnlyList<TrajectorySample>? _autopilotPlanPath; // #148: the rehearsed INTENDED path
+    // #196: the tightest pass of the rehearsed plan path, cached at arm time (the plan is fixed, so it
+    // costs one MostSevere pass, not one per tick). The collision alarm judges THIS while armed — the
+    // insert burn resolves the ballistic impact, so that impact is the plan working, not news. A plan
+    // whose OWN path goes subsurface leaves this an Impact pass, and the alarm shouts red immediately.
+    private ClosestApproach.Pass? _autopilotPlanClosestPass;
 
     // ---- #166: the ship-wide alert channel. One edge-triggered, acknowledgeable source the banner
     // strip, the ledger, and the 🦜 parrot all read. Three founding conditions raise/clear here:
@@ -4544,6 +4580,7 @@
         _armedBudgetPulses = 0;
         _armedSpentPulses = 0;
         _autopilotPlanPath = null;
+        _autopilotPlanClosestPass = null; // #196: plan gone — the alarm returns to the ballistic course
         _armedTransferSchedule = null;
         _armedTransferSummary = null;
         _armedTransferBurnsFired = 0;
@@ -5633,6 +5670,7 @@
             _armedBudgetPulses = r.Pulses;
             _armedSpentPulses = 0;
             _autopilotPlanPath = r.Path; // #148: draw the intended path, not the ballistic loops
+            _autopilotPlanClosestPass = ClosestApproach.MostSevere(r.Path, _ephemeris); // #196: the alarm trusts this while armed
             _armedTransferSchedule = schedule;
             _armedTransferBurnsFired = 0;
             _armedTransferSummary = transferSummary
@@ -5821,6 +5859,7 @@
                 _armedBudgetPulses = 0;
                 _armedSpentPulses = 0;
                 _autopilotPlanPath = null;
+                _autopilotPlanClosestPass = null; // #196: park reached — the plan is consumed; ballistic alarm resumes
                 _armedTransferSchedule = null;
                 _armedTransferSummary = null;
                 _armedTransferBurnsFired = 0;
@@ -10078,6 +10117,23 @@
                 _captureTargetCallsign = null;
             }
         }
+
+        // #205: the captain's word needs a door the captain can find. The plunder opportunity is not
+        // only the Nav capture panel's prompt — it rides the #166 ship-wide channel as the first
+        // ACTIONABLE alert, visible AND answerable from every desk. It carries the hull id so the
+        // banner's approve/stand-down chips act on the right target. Raised on the same edge the Nav
+        // prompt appears (prompt.Offer); cleared the moment the offer is gone (authorized, boarded,
+        // stood-down, or out of the window) — the channel's edge semantics stay exact.
+        if (prompt.Offer && npc is not null)
+        {
+            _shipAlerts.Raise(AlertKind.Boarding, AlertSeverity.Amber,
+                $"🏴 Boarding window open on {npc.Ship.Callsign} — approve or stand down", SimTime,
+                actionTargetId: npc.Ship.Id);
+        }
+        else
+        {
+            _shipAlerts.Clear(AlertKind.Boarding);
+        }
     }
 
     // ---- #177/#178: the captain approves the space-crimes. A boarding is a felony (heat, someone
@@ -10123,6 +10179,17 @@
             _cargoUnits += take;
             _cargoValue += take * CargoMarket.UnitValue(npc.Ship.CargoClass);
             _cargoByClass[npc.Ship.CargoClass] = _cargoByClass.GetValueOrDefault(npc.Ship.CargoClass) + take;
+
+            // #202: theft gets books and a voice. (a) A loot line in the SAME Captain's ledger the
+            // honest receipts use — what, units, worth, off whom, where, when (LedgerTips projects it).
+            // (b) The 🦜 names the haul, once per boarding (Board fires once per capture — an honest
+            // edge). (c) The victim goes on the contacts as a NEGATIVE history seam (marked hostile).
+            string where = _nearestBody?.Name ?? "open space";
+            LootRecord loot = LootRecord.ForHaul(npc.Ship.CargoClass, take, npc.Ship.Callsign, where, SimTime);
+            _lootLedger.Insert(0, loot);
+            SquawkNow(Parrot.Squawk.Plunder, _lastTimestampMs ?? 0,
+                $"{take} units of {npc.Ship.CargoClass} out of the {npc.Ship.Callsign}", force: true);
+            _contacts.RecordPlunder(npc.Ship.Id, npc.Ship.Callsign, SimTime);
         }
 
         npc.Boarded = true; // keeps flying but empty; a second boarding yields nothing
@@ -12051,6 +12118,10 @@
     // fact ("we now have a history with the lady at the Ringside bar") the future system reads.
     private readonly ContactLedger _contacts = new();
 
+    // #202: the crimes' books — a loot line per completed boarding, newest first, projected into the
+    // Captain's ledger alongside the honest autopilot receipts (the established tip idiom).
+    private readonly List<LootRecord> _lootLedger = [];
+
     // The fanfare (#185): a completion is a CELEBRATION, not a silent credit. One pop-up at a time;
     // extras queue so a double payout still gets its due.
     private MissionCelebration? _celebration;
@@ -12209,6 +12280,15 @@
         {
             tips.Add(new Stations.Captain.LedgerTip(
                 "🛰 Autopilot", [text], $"logged {FormatSimTime(simTime)}",
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+        }
+
+        // #202: the piracy receipts — the shadow ledger of the honest jobs. What, units, worth, off
+        // whom, where; the sim-when rides the provenance line, same as the autopilot receipts above.
+        foreach (LootRecord loot in _lootLedger)
+        {
+            tips.Add(new Stations.Captain.LedgerTip(
+                "🏴 Plunder", [loot.Describe()], $"taken {FormatSimTime(loot.SimTime)}",
                 ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
         }
 
