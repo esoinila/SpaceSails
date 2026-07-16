@@ -198,56 +198,59 @@ public class OrbitKeepingTests
 
     // ---- the status surface: HOLDS THE ORBIT, never "you have the ship" ------------------------
 
+    // The verbatim kept-orbit NOW line the game composes (Map.razor) and feeds through main's #190
+    // HoldingLine seam — one code path in the builder.
+    private const string HoldsLine = "🛰 AUTOPILOT HOLDS THE ORBIT — Enceladus, 313 km, trim ≈27 p/day";
+
     [Fact]
-    public void FlightPlanStatus_WhileKeeping_ReadsHoldsTheOrbit_WithBodyAltitudeAndTrimRate()
+    public void FlightPlanStatus_HoldingLine_RendersVerbatimAsTheNowRow()
     {
         var status = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
             Docked: false, DockedHavenName: null,
             AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Enceladus",
             NextStepLabel: null, NextStepEta: null,
-            AutopilotKeeping: true, KeepingBodyName: "Enceladus", KeepingAltitudeText: "313 km",
-            KeepingTrimPulsesPerDay: 27));
+            HoldingLine: HoldsLine));
 
-        Assert.Contains("AUTOPILOT HOLDS THE ORBIT", status.NowLine);
-        Assert.Contains("Enceladus", status.NowLine);
-        Assert.Contains("313 km", status.NowLine);
+        Assert.Equal(HoldsLine, status.NowLine);           // verbatim, one code path
+        Assert.Equal(HoldsLine, status.Rows[0].Text);      // and it is the pinned NOW row
         Assert.Contains("trim ≈27 p/day", status.NowLine);
         Assert.DoesNotContain("YOU HAVE THE SHIP", status.NowLine, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void FlightPlanStatus_Keeping_OutranksArmed_ButDockOutranksKeeping()
+    public void FlightPlanStatus_Holding_OutranksArmed_ButDockOutranksHolding()
     {
-        // Keeping beats the armed/approach line...
-        var keeping = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+        // The holding line beats every flying phase (even the inserting/approach line)...
+        var holding = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
             Docked: false, DockedHavenName: null,
-            AutopilotArmed: true, AutopilotFlyingApproach: true, AutopilotBodyName: "Titan",
+            AutopilotArmed: true, AutopilotFlyingApproach: true, AutopilotBodyName: "Enceladus",
             NextStepLabel: null, NextStepEta: null,
-            AutopilotKeeping: true, KeepingBodyName: "Titan", KeepingAltitudeText: "17 Mm", KeepingTrimPulsesPerDay: 3));
-        Assert.Contains("HOLDS THE ORBIT", keeping.NowLine);
-        Assert.DoesNotContain("approach", keeping.NowLine);
+            AutopilotInserting: true, HoldingLine: HoldsLine));
+        Assert.Equal(HoldsLine, holding.NowLine);
+        Assert.DoesNotContain("approach", holding.NowLine);
+        Assert.DoesNotContain("inserting", holding.NowLine);
 
         // ...but a dock wins (the ship is clamped on; keeping is over).
         var docked = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
             Docked: true, DockedHavenName: "Ringside",
-            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Titan",
+            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Enceladus",
             NextStepLabel: null, NextStepEta: null,
-            AutopilotKeeping: true, KeepingBodyName: "Titan", KeepingAltitudeText: "17 Mm", KeepingTrimPulsesPerDay: 3));
+            HoldingLine: HoldsLine));
         Assert.Contains("docked at Ringside", docked.NowLine);
         Assert.DoesNotContain("HOLDS THE ORBIT", docked.NowLine);
     }
 
     [Fact]
-    public void FlightPlanStatus_AfterDryTankHandback_ReadsManual_NotKeeping()
+    public void FlightPlanStatus_AfterDryTankHandback_ReadsManual_NotHolding()
     {
-        // The dry-tank handback clears keeping and sets the persistent reason: the NOW line goes manual,
-        // and the #180 degradation alert takes over as the backstop.
+        // The dry-tank handback clears keeping (HoldingLine null) and sets the persistent reason: the
+        // NOW line goes manual, and the #180 degradation alert takes over as the backstop.
         var status = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
             Docked: false, DockedHavenName: null,
             AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
             NextStepLabel: null, NextStepEta: null,
             HandbackReason: "TANK DRY at Enceladus — the orbit will now decay",
-            AutopilotKeeping: false));
+            HoldingLine: null));
 
         Assert.Contains("TANK DRY at Enceladus", status.NowLine);
         Assert.DoesNotContain("HOLDS THE ORBIT", status.NowLine);

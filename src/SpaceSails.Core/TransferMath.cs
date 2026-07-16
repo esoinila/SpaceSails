@@ -334,6 +334,93 @@ public static class TransferMath
     private static double LocalCircularPeriod(double radius, double mu) =>
         Math.Tau * Math.Sqrt(radius * radius * radius / mu);
 
+    /// <summary>The two-body state produced by <see cref="PropagateKepler"/>: where a ballistic
+    /// body is, and how fast, after coasting for the requested time. Both relative to the same
+    /// attractor the input state was.</summary>
+    public readonly record struct KeplerState(Vector2d Position, Vector2d Velocity);
+
+    /// <summary>
+    /// Analytic two-body propagation (Curtis Algorithm 3.4, universal variables): coast a body from
+    /// state (<paramref name="position"/>, <paramref name="velocity"/>) relative to an attractor of
+    /// parameter <paramref name="mu"/> for <paramref name="dtSeconds"/> seconds, on a pure Kepler
+    /// conic — no thrust, no perturbations. This is the RAIL a mass-driver pod (worldbuilding §1,
+    /// zero maneuver budget) rides: its position is a closed-form function of time, so a timetable
+    /// can name where a pod is at any instant without stepping an integrator. Works for every conic
+    /// (ellipse, parabola, hyperbola) via the same Stumpff series the Lambert solver uses.
+    ///
+    /// <para>Deterministic: fixed Newton budget, seeded analytically, no wall clock — the same
+    /// inputs give the same conic point on a platform, exactly as the circular rails do. Negative
+    /// <paramref name="dtSeconds"/> propagates backward (where did this pod come from). Returns null
+    /// only for degenerate input (non-positive μ or radius); a valid state always has a conic.</para>
+    /// </summary>
+    public static KeplerState? PropagateKepler(Vector2d position, Vector2d velocity, double dtSeconds, double mu)
+    {
+        if (!(mu > 0))
+        {
+            return null;
+        }
+
+        double r0 = position.Length;
+        if (!(r0 > 0))
+        {
+            return null;
+        }
+
+        if (dtSeconds == 0)
+        {
+            return new KeplerState(position, velocity);
+        }
+
+        double sqrtMu = Math.Sqrt(mu);
+        double vr0 = position.Dot(velocity) / r0;             // radial speed at epoch
+        double alpha = 2.0 / r0 - velocity.LengthSquared / mu; // 1/a; <0 hyperbolic, 0 parabolic, >0 elliptic
+
+        // Universal anomaly χ. Curtis's analytic seed (χ ≈ √μ·|α|·Δt for an ellipse) converges in a
+        // handful of Newton steps for every conic the game flings a pod onto.
+        double chi = sqrtMu * Math.Abs(alpha) * dtSeconds;
+        for (int i = 0; i < MaxKeplerIterations; i++)
+        {
+            double chi2 = chi * chi;
+            double z = alpha * chi2;
+            double c = StumpffC(z);
+            double s = StumpffS(z);
+            double f = r0 * vr0 / sqrtMu * chi2 * c
+                       + (1 - alpha * r0) * chi2 * chi * s
+                       + r0 * chi
+                       - sqrtMu * dtSeconds;
+            double fPrime = r0 * vr0 / sqrtMu * chi * (1 - alpha * chi2 * s)
+                            + (1 - alpha * r0) * chi2 * c
+                            + r0;
+            double delta = f / fPrime;
+            chi -= delta;
+            if (Math.Abs(delta) < KeplerChiTolerance)
+            {
+                break;
+            }
+        }
+
+        double zFinal = alpha * chi * chi;
+        double cFinal = StumpffC(zFinal);
+        double sFinal = StumpffS(zFinal);
+
+        // Lagrange f and g in universal variables give the new position from the old state directly.
+        double fLagrange = 1 - chi * chi / r0 * cFinal;
+        double gLagrange = dtSeconds - 1 / sqrtMu * chi * chi * chi * sFinal;
+        Vector2d newPosition = position * fLagrange + velocity * gLagrange;
+
+        double r = newPosition.Length;
+        double fDot = sqrtMu / (r * r0) * (alpha * chi * chi * chi * sFinal - chi);
+        double gDot = 1 - chi * chi / r * cFinal;
+        Vector2d newVelocity = position * fDot + velocity * gDot;
+
+        return new KeplerState(newPosition, newVelocity);
+    }
+
+    // The Newton correction on χ has units of √m; converge it to a hair (sub-mm on the conic) well
+    // inside the shared iteration cap. The cap only bounds the pathological near-parabolic seed.
+    private const int MaxKeplerIterations = 24;
+    private const double KeplerChiTolerance = 1e-7;
+
     private static double StumpffC(double z) => z > 1e-8 ? (1 - Math.Cos(Math.Sqrt(z))) / z
         : z < -1e-8 ? (Math.Cosh(Math.Sqrt(-z)) - 1) / -z
         : 0.5 - z / 24 + z * z / 720;

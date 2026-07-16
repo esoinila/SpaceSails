@@ -44,6 +44,7 @@ dotnet run --project labs/22-the-air-brake -c Release
 dotnet run --project labs/23-the-moon-run -c Release
 dotnet run --project labs/24-the-last-mile -c Release
 dotnet run --project labs/25-the-tide-that-takes-it-back -c Release
+dotnet run --project labs/28-the-pump-crawl -c Release
 ```
 
 Each lesson folder holds:
@@ -239,6 +240,40 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     Luna for **2**, Titan for **3**, each priced in the game's own pulses. The three measured rows become
     `OrbitKeeping`/`OrbitKeepingTable` in Core; the armed autopilot now quotes the trim budget at arm time
     and holds the park until the captain disarms or the tank runs dry.
+28. [**The pump crawl**](28-the-pump-crawl/README.md) — the lesson where the ship learns to ask *can I
+    still refuel?* before the tank answers for it (#146/#157/#166). Depots ride the rails at planets,
+    stations and havens but **never at an ordinary moon**, so Titan and Luna are dry. Priced with the
+    game's own `TransferPlanner` and pulse kernel, the reach to the nearest pump is **29 pulses** from
+    a parked-at-Titan doorstep (Ringside) or **77** to the always-there haven (Enceladus) — the reliable
+    reach already **exceeds the flat 45-p / 18% autopilot reserve**, the #146 starve in one number. The
+    red line per region: **27–29 p** in the Saturn well, **infinite at Luna** (its only depot host is a
+    LEO station the 5 km/s capture cap can't match — a real gap for #157). Ships a Core service,
+    `FuelReachability.Assess`, that returns a well-aware verdict — Comfortable / Thin / CannotReachAPump —
+    for the #166 banner and 🦜 parrot squawk; the amber floor `reach + 18%` rides the crawl instead of a
+    flat fraction the well outgrows.
+29. [**The harbor pattern**](29-the-harbor-pattern/README.md) — the lesson where the ship learns what
+    a safe arrival looks like. The owner kept landing WRONG: in orbit "by luck" at Enceladus (#180),
+    stuck near a station with no way to deliver (#175). Two harbor doors, measured by flying a spread of
+    inbound trajectories through the real sim: a **station** clamp bubble (500,000 km / ≤8 km/s) never
+    refuses you but bills a pulse per ~1% of world speed you arrive hot with — a clean **4 km/s** coast
+    clamps for **0 pulses**, a 16 km/s botch for **68**; a **moon** door is the **949 km** Hill sphere
+    where a too-hot fall genuinely IMPACTS — 1 km/s parks for **9 pulses**, 3 km/s hits the moon. The
+    corridor is a constant-time-to-go glideslope (`v ≤ range/τ`, τ anchored on the autopilot's own
+    closing speed), embedded as `ApproachCorridor` in Core with a tested `Read(range, speed)` →
+    OnPattern/Hot/Missed + next-gate query — the seam the banner NEXT row (#159) and the #160 tutorial
+    narration speak. `--viz` draws the Enceladus corridor: a textbook fall coiling into a park beside a
+    botched one punching through.
+30. [**The mass-driver timetable**](30-the-mass-driver-timetable/README.md) — the lesson where the
+    owner's canon (Luna's mass drivers lobbing compute-core pods) becomes measured physics. A pod has
+    zero maneuver budget — the driver gives it everything at launch — so its whole future is a
+    closed-form Kepler conic, a rail (`TransferMath.PropagateKepler`). Above the **2.376 km/s** lunar
+    escape floor, a **retrograde** lob of ~2.6 km/s drops perihelion into Venus's lane, and ~**7.6 km/s**
+    threads perihelion to **0.373 AU** — the showpiece long shot to the Mercury compute yards; prograde
+    lobs climb toward Mars. The repeating cadence (`MassDriverSchedule`) is a bus timetable read off the
+    rail — half the pods always already in flight. The tactical punchline, priced with the game's own
+    `OrbitRule.PulsesFor`: a pod is cheapest at the launch end — **loiter-and-match near Earth for ~3.5
+    km/s (12 pulses)** vs a full Venus chase at **5202 m/s (17 pulses)**; chase it mid-dive and you buy
+    the transfer yourself. `--viz` draws the launch fan off Luna over the inner system.
 
 ## Framing rule
 
