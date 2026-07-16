@@ -1907,12 +1907,31 @@
         StateHasChanged();
     }
 
-    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData CaptainChip() =>
-        new(ShipDesk.Captain, "☠", "Captain", _mission.Describe(),
-            _mission.Kind == MissionKind.FlyTo ? DestinationEta() : null);
+    private SpaceSails.Client.Pages.Stations.DeskChips.ChipData CaptainChip()
+    {
+        // #207 dock-wins: a berthed ship's chip reads the same truth as the pilot banner — "Docked
+        // at X" — never a stale "Make for X · ETA" from a navigation that already completed.
+        bool docked = NavLockedByDock;
+        string primary = DeskChipStatus.PrimaryLine(docked, DockedBodyName(), _mission.Describe());
+        string? eta = DeskChipStatus.EtaLine(docked, _mission.Kind == MissionKind.FlyTo ? DestinationEta() : null);
+        // #207: the live contract's next action rides the captain's chip while a job is in hand, so
+        // "what to do next" is there where the captain is looking, not only in the Quests tab.
+        string? quest = CaptainQuestChipLine();
+        return new(ShipDesk.Captain, "☠", "Captain", primary, quest ?? eta, quest is null ? null : eta);
+    }
+
+    // The docked haven's real name (always populated while berthed), or null when flying.
+    private string? DockedBodyName() => _dockedHavenId is { } id ? BodyName(id) : null;
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData NavChip()
     {
+        // #207 dock-wins: a berthed ship's Nav chip mirrors the banner — "Docked at X" — instead of
+        // the stale "→ X" a completed navigation would otherwise leave standing.
+        if (NavLockedByDock)
+        {
+            return new(ShipDesk.Nav, "🧭", "Nav", DeskChipStatus.PrimaryLine(true, DockedBodyName(), ""), null, null);
+        }
+
         // M26: the ETA rides the objective line, so time-to-destination shows on every desk.
         string eta = DestinationEta() is { } e ? $" · {e}" : "";
         // #147 coherence: when the autopilot has stood down, no desk chip may claim a mission it no
@@ -4452,7 +4471,8 @@
                 locked.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
                 locked.Ship.Callsign, $"cargo: {locked.Ship.CargoClass} ({locked.Ship.CargoUnits}u)",
                 locked.State.Position, locked.State.Velocity,
-                0, NpcColor, InPlasmaAt(locked.State.Position));
+                0, NpcColor, InPlasmaAt(locked.State.Position),
+                IsDepot: locked.Ship.DepotBodyId is not null);
         }
 
         if (_nearestBody is CelestialBody body)
@@ -4477,7 +4497,8 @@
                     npc.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
                     npc.Ship.Callsign, $"cargo: {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)",
                     npc.State.Position, npc.State.Velocity,
-                    0, NpcColor, InPlasmaAt(npc.State.Position));
+                    0, NpcColor, InPlasmaAt(npc.State.Position),
+                    IsDepot: npc.Ship.DepotBodyId is not null);
             }
         }
 
@@ -8985,7 +9006,10 @@
             double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
             if (d2 <= r2)
             {
-                string flavor = isDepot ? "depot" : npc.CurrentlyObserved ? "contact" : "last seen";
+                // #208: the depot twin of a port carries its kind AND a phrase, so it never reads as
+                // a second look-alike of the dock haven ("Rusty Roadstead Depot · depot — cargo pod"
+                // vs "Rusty Roadstead · dock haven — walk ashore"). Dock at havens; board depots.
+                string flavor = isDepot ? "depot — cargo pod" : npc.CurrentlyObserved ? "contact" : "last seen";
                 found.Add((new PickCandidate('S', npc.Ship.Id, $"{npc.Ship.Callsign} · {flavor}", isDepot ? "📦" : "🛰"),
                     d2, isDepot ? 1 : 0));
             }
@@ -9020,7 +9044,9 @@
                 double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
                 if (d2 <= hit * hit)
                 {
-                    (string flavor, string icon) = body.IsHaven ? ("haven", "🏴") : ("body", "🪐");
+                    // #208: a moon haven (parked-in, no ⚓ dock) carries its walk-in phrase too, so the
+                    // picker's port entries all read their kind at a glance.
+                    (string flavor, string icon) = body.IsHaven ? ("haven — lie low in orbit", "🏴") : ("body", "🪐");
                     found.Add((new PickCandidate('B', body.Id, $"{body.Name} · {flavor}", icon), d2, 2));
                 }
             }
@@ -9038,7 +9064,7 @@
                 double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
                 if (d2 <= hit * hit)
                 {
-                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · dock haven", "⚓"), d2, 2));
+                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · dock haven — walk ashore", "⚓"), d2, 2));
                 }
             }
         }
@@ -11982,17 +12008,78 @@
         // Tuesday plan PR-A: a fetch job no longer leaves the wreck labelled on the map. The Fixer
         // hands you a transponder fix instead — an intel card at the Comms desk with a 🔭 hook that
         // aims the scope. The wreck stays hidden until an actual scan resolves it.
-        if (offer.Kind == QuestKind.Fetch && offer.SourceBodyId is { } wreckId && IsBodyHidden(wreckId))
+        if (offer.Kind == QuestKind.Fetch && offer.SourceBodyId is { } wreckId && IsBodyHidden(wreckId)
+            && !_scopeIntel.Any(si => si.BodyId == wreckId))
         {
-            if (!_scopeIntel.Any(si => si.BodyId == wreckId))
-            {
-                _scopeIntel.Add(BuildWreckIntel(wreckId, offer.Giver, DockedStationName()));
-            }
-            ShowPulseMessage($"Job taken: {offer.Title}. The Fixer slid you a transponder fix — work it at the Comms desk (🔭) — filed in the Captain's ledger (0).");
-            return;
+            _scopeIntel.Add(BuildWreckIntel(wreckId, offer.Giver, DockedStationName()));
         }
 
-        ShowPulseMessage($"Job taken: {offer.Title}. Finish it, then collect at any berth.");
+        // #207: accepting ANY contract kind now SPEAKS in-face — a #119-style receipt naming the job
+        // and its giver, then the immediate next action — so the captain is never left guessing at the
+        // moment of acceptance ("I took the parcel but the mission is quite unclear"). The live
+        // next-action also rides the Captain desk chip (CaptainQuestChipLine) while the job is in hand.
+        ContractFacts facts = FactsFor(offer);
+        ShowPulseMessage($"{MissionBrief.Receipt(facts.Kind, facts.Giver)} {MissionBrief.NextLine(facts)}");
+    }
+
+    // #207: map a live quest onto the pure Core brief text (giver title-cased, delivery world named
+    // off the ephemeris). Kind-specific fields: a crack names its hatch id, a hunt/intel its prey.
+    private ContractFacts FactsFor(Quest q) => new(
+        Kind: ToContractKind(q.Kind),
+        Giver: GiverDisplay(q.Giver),
+        DestName: q.TargetCallsign,
+        DestParent: q.Kind == QuestKind.CargoRun ? DestParentName(q.DestBodyId) : null,
+        TargetName: q.Kind == QuestKind.Crack ? q.TargetShipId : q.TargetCallsign,
+        Pin: q.Pin,
+        Charted: q.SourceBodyId is not { } src || !IsBodyHidden(src),
+        PickedUp: q.State is QuestState.PickedUp);
+
+    private static ContractKind ToContractKind(QuestKind kind) => kind switch
+    {
+        QuestKind.Hunt => ContractKind.Hunt,
+        QuestKind.CargoRun => ContractKind.CargoRun,
+        QuestKind.Intel => ContractKind.Intel,
+        QuestKind.Fetch => ContractKind.Fetch,
+        QuestKind.Crack => ContractKind.Crack,
+        _ => ContractKind.CargoRun,
+    };
+
+    // The delivery world for a cargo run's "…, Mars" place tag — the destination haven's parent
+    // planet, skipping a heliocentric station's parent (the sun, which reads wrong as a place).
+    private string? DestParentName(string? destId)
+    {
+        if (BodyById(destId) is not { ParentId: { } pid }) return null;
+        if (BodyById(pid) is not { } parent) return null;
+        return parent.ParentId is null ? null : parent.Name;
+    }
+
+    // Title-case a giver's shout-name for prose ("MADAM COIL" → "Madam Coil", "GILT-EYE" →
+    // "Gilt-Eye", "ONE-EYE SILAS" → "One-Eye Silas"). The offer card keeps the loud upper-case ◈
+    // name; the ledger receipt and the next-action line read as sentences, so they title-case it.
+    private static string GiverDisplay(string giver)
+    {
+        if (string.IsNullOrWhiteSpace(giver)) return giver;
+        return string.Join(' ', giver
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(TitleWord));
+
+        static string TitleWord(string w) => string.Join('-',
+            w.Split('-').Select(p => p.Length == 0
+                ? p
+                : char.ToUpperInvariant(p[0]) + p[1..].ToLowerInvariant()));
+    }
+
+    // #207: the live next action for the Captain chip — the contract still in hand, its immediate
+    // step. An Active cargo run overlays the POSITIONAL detail (too far / in the envelope), read off
+    // ship state; every other kind uses the static per-kind step (MissionBrief.Action).
+    private string? CaptainQuestChipLine()
+    {
+        Quest? q = _quests.FirstOrDefault(x => x.State is QuestState.Active or QuestState.PickedUp);
+        if (q is null) return null;
+        string action = q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && BodyById(q.DestBodyId) is { } dest
+            ? $"deliver to {q.TargetCallsign} — {CargoNextAction(dest)}"
+            : MissionBrief.Action(FactsFor(q));
+        return action.Length == 0 ? null : MissionBrief.NextPrefix + action;
     }
 
     // The orbit estimate the Fixer hands over: numbers grounded in the wreck's real rail, worded
@@ -12404,6 +12491,15 @@
                 $"🕸 {ship}", [line], prov,
                 ScopeTipId: null, ShowDarkWeb: true, DossierShipId: npc is not null ? entry.ShipId : null));
         }
+
+        // #208: a standing note explaining the haven/depot pair the picker now tags — the owner asked
+        // for it "in ledger" so the twin-port confusion has one discoverable, permanent answer. Filed
+        // last so live tips stay on top; it is evergreen background, no action.
+        tips.Add(new Stations.Captain.LedgerTip(
+            "⚓ Ports come in twos",
+            ["The haven has the bar and the berth; the depot is the pod riding nearby with the goods. Dock at havens; board depots."],
+            "standing note",
+            ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
 
         return tips.ToArray();
     }
