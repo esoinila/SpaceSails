@@ -100,6 +100,7 @@
     align-items: center;    /* tabs · banner · alert strip stay top-centred */
     gap: 0.4rem;
     padding: 0.5rem 0.75rem 0;
+}
 
 /* The shuttle-bay airlock pop-up (#163): same card family as the bar offer, but a scrollable list of
    berths in shuttle range. */
