@@ -94,6 +94,17 @@ public static class AutopilotRehearsal
     /// (the caller passes tank − reserve). Hitting it sets <see cref="RehearsalResult.BudgetExceeded"/>
     /// and stops early — which is exactly what makes the doomed Titan case cheap to rehearse.</param>
     /// <param name="capturePath">Record the trajectory for the #148 intended-path polyline.</param>
+    /// <param name="schedule">The #146 in-well transfer plan from <see cref="TransferPlanner"/>, when
+    /// the arm rode a cheap Lambert arc instead of the legacy approach loop. When present, the
+    /// rehearsal FIRST flies the scheduled departure burn(s) — coasting exactly to each burn epoch,
+    /// pricing the impulse with the same <see cref="OrbitRule.PulsesFor"/> the live loop spends, and
+    /// bailing <see cref="RehearsalResult.BudgetExceeded"/> the moment the running cost clears the
+    /// budget — then coasts with the capture decision GATED (never consulting
+    /// <see cref="OrbitRule.AutopilotDecision"/> until the ship is honestly near the target), and only
+    /// then falls into the unchanged terminal-capture loop below. The gate is the whole point: Titan's
+    /// <see cref="OrbitRule.CaptureRangeFloorMeters"/> floor makes the ship "in capture range" for the
+    /// entire Enceladus→Titan cruise, so an ungated decision would immediately Approach at ~7 km/s rel
+    /// and restart the velocity-reset hemorrhage right through the cheap arc.</param>
     public static RehearsalResult Rehearse(
         ShipState ship,
         ICelestialEphemeris ephemeris,
@@ -102,7 +113,8 @@ public static class AutopilotRehearsal
         int budgetPulses,
         bool capturePath = false,
         double maxHorizonSeconds = DefaultMaxHorizonSeconds,
-        int maxIterations = DefaultMaxIterations)
+        int maxIterations = DefaultMaxIterations,
+        TransferPlanner.Schedule? schedule = null)
     {
         var path = new List<TrajectorySample>(capturePath ? 512 : 0);
         void Record(ShipState s)
@@ -133,6 +145,74 @@ public static class AutopilotRehearsal
 
         int pulses = 0, approachBurns = 0, iterations = 0;
         Record(ship);
+
+        // #146 in-well transfer: fly the scheduled departure burn(s) first, then coast to the arrival
+        // with the capture decision GATED. Titan's 3e9 m capture floor makes the ship "in range" the
+        // whole cruise, so consulting AutopilotDecision now would Approach at ~7 km/s rel and restart
+        // the velocity-reset bleed straight through the cheap arc. We stay muzzled until the ship is
+        // honestly near the target — within max(60 s, 1% TOF) of arrival, OR inside the HONEST
+        // Hill-scaled capture range (CaptureRangeHillRadii·hill, WITHOUT the floor) — then fall into
+        // the terminal-capture loop unchanged.
+        if (schedule is { } sch)
+        {
+            IReadOnlyList<TransferPlanner.BurnStep> burns = sch.Burns;
+            double departTime = burns.Count > 0 ? burns[0].SimTime : ship.SimTime;
+            foreach (TransferPlanner.BurnStep burn in burns)
+            {
+                // Coast exactly to the burn epoch in ≤ CoastStepSeconds strides (RunAdaptive lands
+                // exactly on the requested end time, the same way it lands on ManeuverPlan nodes), so
+                // the impulse is applied from the true drifted state — never from a warp-jumped one.
+                while (ship.SimTime < burn.SimTime && iterations++ < maxIterations)
+                {
+                    double dt = Math.Min(CoastStepSeconds, burn.SimTime - ship.SimTime);
+                    ship = simulator.RunAdaptive(ship, dt);
+                    Record(ship);
+                }
+
+                // Price the impulse at the ship's speed JUST BEFORE the burn, the same OrbitRule.PulsesFor
+                // kernel the live loop spends with, then budget-check exactly like the Approach case.
+                int burnCost = OrbitRule.PulsesFor(burn.DeltaV.Length, ship.Velocity.Length);
+                pulses += burnCost;
+                approachBurns++;
+                if (pulses > budgetPulses)
+                {
+                    return new RehearsalResult(
+                        false, pulses, approachBurns, ship.SimTime - startTime, true, false, path);
+                }
+
+                ship = ship with { Velocity = ship.Velocity + burn.DeltaV };
+                Record(ship);
+            }
+
+            // Coast to the arrival gate, decisions muzzled. The whole Enceladus→Titan cruise sits
+            // inside Titan's 3e9 m capture floor, so this transfer arc is stepped fine throughout: the
+            // raw Lambert-to-centre arc is a near-collision course whose terminal capture is sensitive
+            // to integration error, and a coarse cruise stride visibly changes the captured cost. To
+            // keep the #148 intended-path polyline spanning the WHOLE arc without exhausting the 4096
+            // sample cap on multi-day fine steps, path RECORDING is throttled to a coarse cadence while
+            // the integration stays fine.
+            double tof = sch.ArrivalTime - departTime;
+            double gateTime = sch.ArrivalTime - Math.Max(60.0, 0.01 * tof);
+            double honestRange = OrbitRule.CaptureRangeHillRadii * hill;
+            double lastRecord = ship.SimTime;
+            while (ship.SimTime < endTime && iterations++ < maxIterations)
+            {
+                Vector2d bodyPos = ephemeris.Position(body.Id, ship.SimTime);
+                double distance = (ship.Position - bodyPos).Length;
+                if (ship.SimTime >= gateTime || distance < honestRange)
+                {
+                    break; // gate open — hand off to the terminal-capture loop below.
+                }
+
+                ship = simulator.RunAdaptive(ship, FineStepSeconds);
+                if (ship.SimTime - lastRecord >= CoastStepSeconds)
+                {
+                    Record(ship);
+                    lastRecord = ship.SimTime;
+                }
+            }
+            Record(ship); // always mark the hand-off point.
+        }
 
         while (ship.SimTime < endTime && iterations++ < maxIterations)
         {

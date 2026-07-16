@@ -87,7 +87,21 @@ public static class TransferPlanner
         double ArrivalRelativeSpeed,
         double PlannedDeltaVTotal,
         int EstimatedPulses,
-        string Summary);
+        string Summary)
+    {
+        /// <summary>The lean hand-off the rehearsal and the live tick loop actually fly: just the
+        /// burns and when the arc reaches the moon (<see cref="DepartTime"/> + time of flight). The
+        /// arrival time is the gate that keeps <see cref="OrbitRule.AutopilotDecision"/> muzzled until
+        /// the ship is honestly near the target — see <see cref="AutopilotRehearsal.Rehearse"/>.</summary>
+        public Schedule ToSchedule() => new(Burns, DepartTime + TimeOfFlightSeconds);
+    }
+
+    /// <summary>The executable core of a solved transfer: the departure burn(s) and the sim time the
+    /// arc arrives at the target moon. Consumed by <see cref="AutopilotRehearsal.Rehearse"/> and the
+    /// live armed-insertion loop — both execute due burns exactly at their epochs and gate the capture
+    /// decision on <see cref="ArrivalTime"/> so the giant's pull can't restart the #146 velocity-reset
+    /// bleed while the cheap arc is still in flight.</summary>
+    public readonly record struct Schedule(IReadOnlyList<BurnStep> Burns, double ArrivalTime);
 
     /// <summary>
     /// Solve for the departure burn that rides <paramref name="request"/>'s parent well onto a
