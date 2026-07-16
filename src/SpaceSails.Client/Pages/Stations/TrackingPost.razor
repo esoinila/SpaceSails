@@ -144,9 +144,11 @@
                     {
                         double rd = (c.State.Position - ShipPosition).Length;
                         double rv = (c.State.Velocity - ShipVelocity).Length;
+                        double rc = RelativeMotion.ClosingSpeed(ShipPosition, ShipVelocity, c.State.Position, c.State.Velocity);
                         <div class="d-flex justify-content-between">
                             <span>@(c.IsThreat ? "🐺 " : "")@c.Callsign</span>
-                            <span class="text-secondary">@FormatWallDistance(rd) · rel @((rv / 1000).ToString("F2")) km/s</span>
+                            @* #210: one voice — the signed range-rate, not a bare magnitude. *@
+                            <span class="text-secondary">@FormatWallDistance(rd) · rel @((rv / 1000).ToString("F2")) km/s · @RelativeMotion.WordedBefore(rc, "F2")</span>
                         </div>
                     }
                 }
@@ -266,7 +268,7 @@
                         Vector2d velocity = candidate?.State.Velocity ?? entry.LastObservation.Velocity;
                         double distance = (position - ShipPosition).Length;
                         double relSpeed = (velocity - ShipVelocity).Length;
-                        double closing = distance > 0 ? (ShipVelocity - velocity).Dot((position - ShipPosition) / distance) : 0;
+                        double closing = RelativeMotion.ClosingSpeed(ShipPosition, ShipVelocity, position, velocity);
                         double bearingDeg = TrackingStation.Bearing(position - ShipPosition) * 180.0 / Math.PI;
                         if (bearingDeg < 0) { bearingDeg += 360; }
                         bool isThreat = candidate?.IsThreat ?? false;
@@ -283,7 +285,7 @@
                                     <span>@(onScope ? "● ON SCOPE" : "")</span>
                                 </div>
                                 <div>@FormatWallDistance(distance) · rel @((relSpeed / 1000).ToString("F2")) km/s ·
-                                     @(closing >= 0 ? $"closing {closing / 1000:F2}" : $"opening {-closing / 1000:F2}") km/s</div>
+                                     @RelativeMotion.WordedBefore(closing, "F2")</div>
                                 <div class="text-secondary">brg @((int)bearingDeg)° · @daysAgo.ToString("F1")d since fix@(candidate?.CargoDetail is { } cd ? $" · {cd}" : "")</div>
                                 <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
                                 @if (BeaconLine(sight) is { } beaconLine)

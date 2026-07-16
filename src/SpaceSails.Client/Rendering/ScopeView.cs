@@ -28,6 +28,8 @@ public sealed class ScopeView
     private static readonly RgbaColor ScopeRim = new(90, 200, 190, 140);
     private static readonly RgbaColor BracketColor = new(120, 255, 190, 200);
     private static readonly RgbaColor HudText = new(150, 240, 210);
+    private static readonly RgbaColor RelClosing = new(120, 225, 165);   // dim green — the gap is shrinking
+    private static readonly RgbaColor RelOpening = new(225, 195, 120);   // dim amber — the gap is opening
     private static readonly RgbaColor StarDim = new(150, 160, 180, 120);
     private static readonly RgbaColor StarBright = new(230, 235, 245, 200);
     private static readonly RgbaColor Plasma = new(80, 220, 220, 46);
@@ -72,7 +74,10 @@ public sealed class ScopeView
         }
 
         double distance = (target.Position - shipPosition).Length;
-        double relSpeed = (target.Velocity - shipVelocity).Length;
+        // #210: the range-rate, SIGNED — positive closing (the gap shrinking), negative opening —
+        // in the tracked-target card's one-voice convention, so the calm Scope says whether we're
+        // getting closer, not just a bare magnitude.
+        double closing = RelativeMotion.ClosingSpeed(shipPosition, shipVelocity, target.Position, target.Velocity);
         // The sprite noses along its velocity; screen y is down, world y is up.
         double heading = Math.Atan2(-(target.Velocity.Y), target.Velocity.X);
 
@@ -102,7 +107,10 @@ public sealed class ScopeView
             _renderer.DrawText(8, 30, detail, new RgbaColor(150, 240, 210, 160), "10px monospace");
         }
         _renderer.DrawText(8, s - 10, FormatDistance(distance), HudText, "bold 12px monospace");
-        _renderer.DrawText(s - 8, s - 10, $"{relSpeed / 1000:F1} km/s rel", HudText, "11px monospace", TextAlign.Right);
+        // #210 quiet color assist: dim green while closing, dim amber while opening — a calm cue,
+        // never an alarm. NO TARGET / body / ship all read the same signed convention.
+        RgbaColor relColor = closing >= 0 ? RelClosing : RelOpening;
+        _renderer.DrawText(s - 8, s - 10, RelativeMotion.WordedAfter(closing), relColor, "11px monospace", TextAlign.Right);
         _renderer.DrawText(cx, s - 10, LockLabel, new RgbaColor(120, 255, 190, 170), "9px monospace", TextAlign.Center);
 
         DrawRim(s);

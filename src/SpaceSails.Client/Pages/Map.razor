@@ -183,7 +183,7 @@
                 @foreach (PickCandidate pick in pickList)
                 {
                     PickCandidate local = pick;
-                    <button type="button" class="btn btn-sm btn-outline-info text-start py-0" title="This is the one I meant — open it"
+                    <button type="button" class="btn btn-sm btn-outline-info text-start py-0" title="@PickHint(local)"
                             @onclick="() => OpenPickCandidate(local)">@local.Icon @local.Label</button>
                 }
             </div>
@@ -251,22 +251,27 @@
                 {
                     @if (_destinationBodyId == menuBody.Id)
                     {
-                        <button type="button" class="btn btn-sm btn-outline-warning" title="Drop this body as the destination"
+                        <button type="button" class="btn btn-sm btn-outline-warning" title="Drop this body as the destination — the autopilot stops steering to it"
                                 @onclick="() => SetDestination(null)">
                             ✕ Clear destination
                         </button>
                     }
                     else
                     {
-                        <button type="button" class="btn btn-sm btn-info" title="Make this body the destination — the autopilot navigates to its orbit"
+                        <button type="button" class="btn btn-sm btn-info"
+                                title="@(HarborClassOf(menuBody.Id) == HarborClass.Dock ? "Make this haven the destination — the autopilot flies you in to its dock" : "Make this body the destination — the autopilot navigates to its orbit")"
                                 @onclick="() => SetDestination(menuBody.Id)">
-                            🎯 Set destination — navigate to orbit
+                            🎯 Set destination — @(HarborClassOf(menuBody.Id) == HarborClass.Dock ? "navigate to dock" : "navigate to orbit")
                         </button>
                     }
                     <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
-                            disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : "Arm the autopilot to slip into orbit here when the window opens")"
+                            disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : ArmMenuHint(menuBody.Id))"
                             @onclick="() => ToggleArmedInsertionFromMenu(menuBody.Id)">
-                        🛰 @(_armedOrbitBodyId == menuBody.Id ? "Auto-insert ARMED — disarm" : "Arm auto-insert at window")
+                        @(_armedOrbitBodyId == menuBody.Id
+                            ? "🛰 Armed — click to disarm"
+                            : HarborClassOf(menuBody.Id) == HarborClass.Dock
+                                ? HarborVocabulary.ArmAction(HarborClass.Dock, menuBody.Name)
+                                : "🛰 Arm auto-insert at window")
                     </button>
                 }
                 else
@@ -300,6 +305,8 @@
                 <div class="text-secondary mb-1">
                     @FormatDistance((menuNpc.State.Position - _ship.Position).Length) ·
                     rel @(((menuNpc.State.Velocity - _ship.Velocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
+                    @* #210: the SIGNED range-rate — are we closing or opening — same voice as the dossier card. *@
+                    @RelativeMotion.WordedBefore(RelativeMotion.ClosingSpeed(_ship.Position, _ship.Velocity, menuNpc.State.Position, menuNpc.State.Velocity)) ·
                     scope tracking her now
                 </div>
             }
@@ -989,12 +996,23 @@
                                                the POSITIVE nudge (#154, both buttons were inverted vs what the player sees). *@
                                             <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate counter-clockwise (+15°)"
                                                     @onclick="() => NudgeHeading(node, 15)">↺</button>
+                                            @* #201: the burn angle is ship-heading-RELATIVE by default — 0 = straight
+                                               ahead, +90 = starboard, −90 = port — the lateral-closing move the owner
+                                               types mid-chase. The rel/abs toggle keeps the old world heading a click
+                                               away; the stored HeadingDegrees is always world-space (BurnHeadingConvention). *@
                                             <div class="input-group input-group-sm map-plot-heading">
                                                 <input type="text" inputmode="decimal" class="form-control form-control-sm"
-                                                       value="@(node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture))"
-                                                       title="Nose heading in degrees (0° = +X, counter-clockwise)"
+                                                       value="@(_burnAngleAbsolute
+                                                           ? node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture)
+                                                           : BurnHeadingConvention.WorldToRelative(HeadingAlongCourseAt(node.SimTime), node.HeadingDegrees).ToString("+0.#;-0.#;0", CultureInfo.InvariantCulture))"
+                                                       title="@(_burnAngleAbsolute
+                                                           ? "Absolute nose heading in degrees (0° = +X, counter-clockwise)"
+                                                           : "Burn angle off the ship's heading — 0 = straight ahead, +90 = starboard (right), −90 = port (left)")"
                                                        @onchange="e => SetHeading(node, e)" @onkeydown:stopPropagation="true" />
                                                 <span class="input-group-text">°</span>
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                        title="@(_burnAngleAbsolute ? "Reading absolute world heading — click for ship-relative (±off heading)" : "Reading ship-relative angle (0 ahead, +90 starboard, −90 port) — click for absolute world heading")"
+                                                        @onclick="() => _burnAngleAbsolute = !_burnAngleAbsolute">@(_burnAngleAbsolute ? "abs" : "rel")</button>
                                             </div>
                                             <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate clockwise (−15°)"
                                                     @onclick="() => NudgeHeading(node, -15)">↻</button>
@@ -1051,7 +1069,7 @@
                                     <span class="map-plan-step-pip" title="@_is" aria-hidden="true"></span>
                                     <span class="map-plan-step-caret" aria-hidden="true">@(_insOpen ? "▾" : "▸")</span>
                                     <span class="flex-grow-1">
-                                        🛰 @(_orbitKept ? "Holding orbit at" : "Insert at") @BodyName(_armedId)
+                                        🛰 @(_orbitKept ? "Holding orbit at" : HarborVocabulary.ArmedStepVerb(HarborClassOf(_armedId))) @BodyName(_armedId)
                                         <span class="text-secondary">— @(_orbitKept ? (_keepTrimPulsesPerDay > 0 ? $"keeping · trim ≈{_keepTrimPulsesPerDay} p/day" : "keeping the park") : _active ? "flying the approach" : "armed · waiting for the window")</span>
                                         @* The promise the autopilot quoted at arm time (#146): the whole-journey
                                            budget it proved affordable before committing. *@
@@ -1078,7 +1096,7 @@
                                         <button type="button" class="btn btn-sm btn-outline-warning w-100"
                                                 disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : "Stand the autopilot down and fly the ship by hand")"
                                                 @onclick="() => ToggleArmedInsertion(_armedId)">
-                                            🛰 @(_orbitKept ? "Hand back the ship — release the kept orbit at" : "Disarm auto-orbit at") @BodyName(_armedId)
+                                            🛰 @(_orbitKept ? "Hand back the ship — release the kept orbit at" : HarborClassOf(_armedId) == HarborClass.Dock ? "Disarm the dock approach to" : "Disarm auto-orbit at") @BodyName(_armedId)
                                         </button>
                                         <div class="text-secondary small mt-1">@(_orbitKept ? "The autopilot is HOLDING this orbit with trims. Release it and you fly by hand — it takes a confirming second click (#179)." : $"Target: {BodyName(_armedId)} — set from the navigation-target panel below; disarm here, then arm a different body.")</div>
                                     </div>
@@ -1131,13 +1149,13 @@
                     relative — the autopilot's burns from there cost ≈ @info.EstPulses pulses.
                 </div>
                 <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == dp.BodyId ? "btn-success" : !NavLockedByDock && info.InRange ? "btn-info" : "btn-outline-info")"
-                        disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : "Arm the autopilot to park in orbit at this pass")"
+                        disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : ArmMenuHint(dp.BodyId))"
                         @onclick="() => ToggleArmedInsertion(dp.BodyId)">
-                    🛰 @(_armedOrbitBodyId == dp.BodyId
-                        ? $"Autopilot ARMED for {dp.BodyName} — click to disarm"
-                        : IsStationTarget(dp.BodyId)
-                            ? "Autopilot to here"
-                            : $"Arm auto-orbit at {dp.BodyName}")
+                    @(_armedOrbitBodyId == dp.BodyId
+                        ? $"🛰 Autopilot ARMED for {dp.BodyName} — click to disarm"
+                        : HarborClassOf(dp.BodyId) == HarborClass.Dock
+                            ? HarborVocabulary.ArmAction(HarborClass.Dock, dp.BodyName)
+                            : $"🛰 Arm auto-orbit at {dp.BodyName}")
                 </button>
             }
             else
@@ -1233,7 +1251,7 @@
             </div>
             <div>@dossier.StatusLine</div>
             <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
-                 @(dossier.Closing >= 0 ? $"closing {dossier.Closing / 1000:F1}" : $"opening {-dossier.Closing / 1000:F1}") km/s</div>
+                 @RelativeMotion.WordedBefore(dossier.Closing)</div>
             @if (dossier.TrackQuality is { } quality)
             {
                 <div>📡 telescope fix @((int)(quality * 100))% <span class="text-secondary">— sharpen it at the Sensors desk</span></div>
@@ -1952,8 +1970,11 @@
     {
         string arrow = node.Mode == BurnMode.Vector ? "✚"
             : node.Action == ManeuverAction.Accelerate ? "▲" : "▼";
+        // #201: mirror the input's convention — ship-relative by default ("+90° rel"), absolute on toggle.
         string dir = node.Mode == BurnMode.Vector
-            ? $"{node.HeadingDegrees.ToString("0", CultureInfo.InvariantCulture)}°"
+            ? (_burnAngleAbsolute
+                ? $"{node.HeadingDegrees.ToString("0", CultureInfo.InvariantCulture)}°"
+                : $"{BurnHeadingConvention.WorldToRelative(HeadingAlongCourseAt(node.SimTime), node.HeadingDegrees).ToString("+0;-0;0", CultureInfo.InvariantCulture)}° rel")
             : node.Action == ManeuverAction.Accelerate ? "prograde" : "retrograde";
         string when = node.Executed ? "fired"
             : node.SimTime <= SimTime ? "now"
@@ -2045,22 +2066,51 @@
             UpcomingSteps: steps.Count > 0 ? steps : null));
     }
 
-    // The armed orbit-insert step's plain-language label, with the parked altitude when OrbitInfo
-    // resolves the armed body — "orbit-insert at Enceladus (313 km)". Falls back to the bare body
-    // name when the altitude isn't cheaply known.
+    // The armed-arrival step's plain-language label — routed through the Core one-voice vocabulary
+    // (#203) so a real orbit reads "orbit-insert at Enceladus (alt 313 km)" while a μ≤0 dock haven
+    // reads "dock envelope at Cinder Roost — slow to ≤8 km/s" (no phantom orbit, no "(0 km)"). The
+    // parked ALTITUDE above the surface (not the orbital radius) is the captain-facing number.
     private string InsertStepLabel()
     {
+        HarborClass harbor = HarborClassOf(_armedOrbitBodyId);
         string body = BodyName(_armedOrbitBodyId!);
-        if (OrbitInfo() is { } oi && oi.Body.Id == _armedOrbitBodyId)
+        string? altitude = null;
+        if (harbor == HarborClass.Orbit && OrbitInfo() is { } oi && oi.Body.Id == _armedOrbitBodyId)
         {
             double parkAlt = OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius;
             if (parkAlt > 0)
             {
-                return $"orbit-insert at {body} ({FormatDistance(parkAlt)})";
+                altitude = FormatAltitude(parkAlt);
             }
         }
-        return $"orbit-insert at {body}";
+        return HarborVocabulary.ArrivalStep(harbor, body, altitude);
     }
+
+    // #203: which one voice a body speaks — a mass-less (μ≤0) dock haven is clamped, not orbited.
+    private HarborClass HarborClassOf(string? bodyId)
+    {
+        CelestialBody? body = bodyId is null ? null : _ephemeris?.Bodies.FirstOrDefault(b => b.Id == bodyId);
+        return body is { Mu: <= 0 } ? HarborClass.Dock : HarborClass.Orbit;
+    }
+
+    // #203: captain-facing distance-to-a-body is ALWAYS altitude above the surface, unit-labelled
+    // ("alt 313 km") — never the raw orbital radius, which stays in engineering/lab surfaces.
+    private static string FormatAltitude(double metersAboveSurface) => $"alt {FormatDistance(metersAboveSurface)}";
+
+    // #203 item 3: the arm action's consequence in one sentence, harbor-aware, for the context menu
+    // and the nav-target arm button (extends #197's tooltip standard to the map menus).
+    private string ArmMenuHint(string? bodyId) => HarborClassOf(bodyId) == HarborClass.Dock
+        ? "The autopilot flies the approach, matches speed, and brings you into the dock envelope — you press ⚓ Dock at the end"
+        : "The autopilot flies the approach and slips into orbit here when the capture window opens";
+
+    // #203 item 3: each disambiguation-picker entry states what opening it will do.
+    private static string PickHint(PickCandidate pick) => pick.Kind switch
+    {
+        'S' => "Open this contact — track it, mark a target of interest, or set up a trade run",
+        'H' => "Open this hunter — put the scope on it, or work a firing solution in the war room",
+        'B' => "Open this body — set it as your destination or arm the autopilot to it",
+        _ => "Open the one you meant",
+    };
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData SensorsChip()
     {
@@ -2553,6 +2603,11 @@
 
     private bool _horizonDirty;
     private double _lastHorizonReprojectMs;
+
+    // #201: the burn-angle input's convention. Default false = ship-relative (0 ahead, +90 starboard,
+    // −90 port); toggled true reads/writes the absolute world heading. The stored HeadingDegrees is
+    // always world-space regardless — only the display and parse are translated (BurnHeadingConvention).
+    private bool _burnAngleAbsolute;
 
     // M18: the planner's proximity warning. Computed AFTER edits settle (300 ms idle), not per
     // drag tick — the scan touches every body along up to 8000 samples, too heavy for a
@@ -5980,7 +6035,9 @@
                 ? "window OPEN"
                 : "window open — this radius is tide-chaotic (Lab 16); autopilot parks you deeper";
         if (oi.Armed && oi.InCaptureRange)
-            return $"autopilot flying the approach — insertion at ≈{FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))}";
+            // #203: altitude above the surface, unit-labelled — the SAME number the banner's
+            // "orbit-insert (alt N km)" row shows, never the raw orbital radius the panel used to quote.
+            return $"autopilot flying the approach — insertion at ≈{FormatAltitude(OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius)}";
         if (oi.InCaptureRange) return "in capture range — auto-orbit can park you";
         // #153: once inside the capture range (e.g. already bound/orbiting) the gap goes NEGATIVE —
         // the old line printed "close in -2,982,642 km to capture range". Read it honestly instead:
@@ -8747,7 +8804,11 @@
         string raw = (e.Value?.ToString() ?? string.Empty).Replace(',', '.');
         if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double deg))
         {
-            node.HeadingDegrees = WrapDegrees(deg);
+            // #201: the field is ship-relative by default (0 ahead, +90 starboard, −90 port). Map it
+            // back to the world heading the physics burns along; absolute mode types the world angle direct.
+            node.HeadingDegrees = _burnAngleAbsolute
+                ? WrapDegrees(deg)
+                : BurnHeadingConvention.RelativeToWorld(HeadingAlongCourseAt(node.SimTime), deg);
             RebuildPlan();
             ReprojectTrajectory();
         }
@@ -9448,9 +9509,8 @@
 
         double distance = (position - _ship.Position).Length;
         double relSpeed = (velocity - _ship.Velocity).Length;
-        double closing = distance > 0
-            ? (_ship.Velocity - velocity).Dot((position - _ship.Position) / distance)
-            : 0;
+        // #210: one voice — the signed range-rate through the shared Core helper.
+        double closing = RelativeMotion.ClosingSpeed(_ship.Position, _ship.Velocity, position, velocity);
 
         double? quality = null;
         if (_trackingPost is not null && _trackingPost.TryGetTrack(id, out TrackedTarget track))
@@ -11212,11 +11272,6 @@
     // way to lie low there. Moon havens (mu > 0) you hide at by orbiting instead. This is the split
     // the ⚓ marker, the scope's "HAVEN ⚓ DOCK" tag and the Nav hint all key off.
     private static bool IsDockableHaven(CelestialBody body) => body is { IsHaven: true, Mu: <= 0 };
-
-    // #155: is this nav target a μ=0 station? Its arm button reads "Autopilot to here" (you dock, not
-    // orbit) and the autopilot's terminal success is the dock envelope, not an orbital insertion.
-    private bool IsStationTarget(string bodyId) =>
-        _ephemeris?.Bodies.FirstOrDefault(b => b.Id == bodyId)?.Kind == BodyKind.Station;
 
     // Near a dock but coasting too hot to clamp — the one gate players hit most. Returns the nudge
     // to show on a greyed-out Dock button, or null when there's nothing to nudge about.
