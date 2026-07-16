@@ -42,6 +42,7 @@ dotnet run --project labs/19-the-grand-tour -c Release
 dotnet run --project labs/20-the-long-goodbye -c Release
 dotnet run --project labs/22-the-air-brake -c Release
 dotnet run --project labs/23-the-moon-run -c Release
+dotnet run --project labs/24-the-last-mile -c Release
 ```
 
 Each lesson folder holds:
@@ -78,9 +79,11 @@ readout (5.204 AU, 28.98 km/s) interpolated from the integrator's own samples.*
 lesson [19](19-the-grand-tour/README.md) (the showcase — the flown Grand Tour with its aim-offset
 sweep as a toggleable group), lesson [20](20-the-long-goodbye/README.md) (the same tour coasted
 to a fixed 2026 present, with calendar dates from 1977 to now and a "she is here now" finale marker),
-and lesson [23](23-the-moon-run/README.md) (the Saturn-centric moon run — the planned Lambert
+lesson [23](23-the-moon-run/README.md) (the Saturn-centric moon run — the planned Lambert
 transfer arc with its ghost ship and burn/closest markers, and Wednesday's spiral-of-resets as a
-toggleable comparison group).
+toggleable comparison group), and lesson [24](24-the-last-mile/README.md) (the last mile — the
+co-orbital phasing loop with its enter/re-match markers, Ringside and the moons on their rings, and
+the near-co-orbital direct hop and the legacy point-and-throttle chase as toggleable groups).
 
 **Wiring a new lesson** takes about six lines around the sample lists the probe already has —
 everything behind `LabViz.Wants(args)` so the no-flag output never changes:
@@ -210,6 +213,19 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     planner's one prograde departure burn, flown end to end in the real N-body sim, passes 73 Mm from
     Titan and captures for **96 pulses total — a 7.1× cut**. `--viz` draws the Saturn-centric arc with
     the old spiral as a toggleable comparison.
+
+24. [**The last mile**](24-the-last-mile/README.md) — the lesson where "almost there" is its own
+    orbital problem. The owner, 92,640 km behind Ringside Exchange on the SAME Saturn lane, watched
+    the autopilot decline at 229 pulses: Lambert can't price a phasing loop (it sweeps 2π, the blind
+    spot), and pointing-and-throttling costs **4.0 km/s** for one brute approach that arrives at 4 km/s
+    it can't shed. The fix is 1960s rendezvous doctrine — change your PERIOD, not your path: dip inside,
+    coast k laps, re-match. The bus math closes to machine epsilon against the Kepler rate, but Ringside's
+    authored rail is 0.024% off Kepler, so per-lap drift bends the cheapest bus to **k=2 dip at 27.5 m/s**
+    (not the k=6 the Δv formula alone would pick). Flown two-burn through the real N-body sim, it closes
+    the 92,640 km along-track gap and coasts to **4.9 Mm at 2 m/s matched** — inside the 500,000 km / ≤8 km/s
+    dock envelope with 100× margin, for **2 pulses**. `TransferPlanner.Solve` returns the whole
+    cheaper-vs-sooner trade table (the "heat on us" tactic); `--viz` draws the phasing loop with the
+    direct hop and the legacy chase as toggleable groups.
 
 ## Framing rule
 
