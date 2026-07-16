@@ -202,8 +202,9 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     fan and the capture spiral.
 
 23. [**The moon run**](23-the-moon-run/README.md) — the lesson where the game's autopilot learns
-    orbital mechanics. Wednesday's reset loop burned 677 pulses (54.5 km/s) fighting Saturn to reach
-    Titan; the geometry prices the hop at 6.04 km/s. Reproduce the hemorrhage honestly, then teach the
+    orbital mechanics. Wednesday's reset loop hemorrhaged fuel fighting Saturn (#146) — flown honestly
+    from the Enceladus doorstep it burns 677 pulses (54.5 km/s) to reach Titan, a hop the geometry
+    prices at 6.04 km/s. Reproduce the hemorrhage honestly, then teach the
     fix the game now flies (`TransferMath` + `TransferPlanner`, Curtis chs. 2/5/6): plan in the giant's
     frame — the window is a 36.8 h bus timetable, the porkchop's floor IS Hohmann (6.02 km/s), and the
     planner's one prograde departure burn, flown end to end in the real N-body sim, passes 73 Mm from

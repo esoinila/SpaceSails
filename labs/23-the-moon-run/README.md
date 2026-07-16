@@ -1,7 +1,8 @@
 # Lesson 23 — The moon run
 
-*The autopilot's Wednesday-night Titan approach burned 677 pulses fighting Saturn. The geometry
-says the trip costs a fraction of that — if you stop treating the well as an enemy and start
+*The owner's Wednesday-night Titan approach hemorrhaged fuel fighting Saturn (#146); flown
+honestly from the Enceladus doorstep, that same reset loop burns 677 pulses. The geometry says
+the trip costs a fraction of that — if you stop treating the well as an enemy and start
 treating it as the road. This is the lesson where the game's autopilot learns orbital mechanics,
 and the Core code that flies it is the code on this page.*
 
