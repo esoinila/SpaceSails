@@ -283,4 +283,104 @@ public class AutopilotRehearsalTests
         Assert.True(r.BudgetExceeded, "A 5-pulse budget must trip BudgetExceeded on the departure burn.");
         Assert.False(r.Captured, "It must never report a capture it could not afford.");
     }
+
+    // ---- #155 the last mile: co-orbital rendezvous with the Ringside Exchange STATION, rehearsed ----
+    //
+    // The owner's stranded arm: 92,640 km from Ringside Exchange (sol.json line 23: μ=0 station on
+    // Saturn's rail, orbitRadius 1.35e9, period 1.6006e6) on nearly the same lane, where the legacy
+    // autopilot DECLINED at ≈229 p — absurd against the geometry. Lane 1's rendezvous planner prices the
+    // closed-form phasing bus (k=1 dip ≈ 1 pulse of Δv). Rehearsing WITH that two-burn schedule must
+    // deliver the ship into the DOCK ENVELOPE (DockRule) — the μ=0 terminal success, no OrbitRule.Insert.
+    //
+    // Fixture note (same as the moon-run block above): the full sol.json SaturnSystem() carries Saturn's
+    // real ~9.6 km/s heliocentric velocity, so OrbitRule.PulsesFor prices the burns the way the live loop
+    // will, not against a zeroed world speed.
+
+    private const double SaturnMu = 3.7931187e16;
+
+    // A ship on the Ringside Exchange's Saturn rail, behindMeters along-track BEHIND the station (the
+    // station leads it, CCW prograde), co-moving at the local circular speed. Built in Saturn's frame
+    // (station world velocity + parent-relative circular velocity) so pulses price against the ship's true
+    // heliocentric speed. 92,640 km behind = 9.264e7 m — the owner's exact #155 gap.
+    private static ShipState RingsideShip(ICelestialEphemeris eph, double behindMeters = 9.264e7)
+    {
+        Vector2d saturnPos = eph.Position("saturn", 0);
+        Vector2d saturnVel = BodyVel(eph, "saturn", 0);
+        Vector2d ringPos = eph.Position("ringside-exchange", 0);
+        Vector2d rel = ringPos - saturnPos;
+        double ringR = rel.Length;
+        double angle = Math.Atan2(rel.Y, rel.X) - behindMeters / ringR; // trailing the CCW station
+        Vector2d relPos = new Vector2d(Math.Cos(angle), Math.Sin(angle)) * ringR;
+        Vector2d tangent = new Vector2d(-Math.Sin(angle), Math.Cos(angle)); // CCW prograde
+        double vCirc = Math.Sqrt(SaturnMu / ringR);
+        return new ShipState(saturnPos + relPos, saturnVel + tangent * vCirc, 0);
+    }
+
+    private static TransferPlanner.Result SolveRingside(Simulator sim, ICelestialEphemeris eph, ShipState ship) =>
+        TransferPlanner.Solve(sim, eph, new TransferPlanner.Request(ship, "saturn", "ringside-exchange", MaxWaitSeconds: 0));
+
+    [Fact]
+    public void StationRun_WithSchedule_DeliversIntoTheDockEnvelope_Cheap_WhereLegacyDeclinedAt229p()
+    {
+        // T6: Solve the phasing bus, then rehearse WITH its schedule. The μ=0 station is "captured" the
+        // instant the ship is inside the dock envelope (DockRule) — matched and alongside — for the price
+        // of the two rendezvous burns alone (no insertion). The last mile is ~1 pulse of Δv, not the
+        // legacy 229-pulse refusal.
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        ShipState ship = RingsideShip(eph);
+
+        TransferPlanner.Result plan = SolveRingside(sim, eph, ship);
+        Assert.True(plan.Ok, $"the rendezvous planner should quote a phasing bus; failure='{plan.Failure}'");
+        Assert.Equal(2, plan.Burns.Count); // enter the phasing ellipse, re-match on return
+
+        AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "ringside-exchange", budgetPulses: 120, schedule: plan.ToSchedule());
+        _out.WriteLine($"STATION-RUN with schedule: captured={r.Captured} deliverable={r.Deliverable} " +
+            $"pulses={r.Pulses} burns={r.ApproachBurns} durDays={r.SimDurationSeconds / 86400:F2} " +
+            $"planQuote={plan.EstimatedPulses} totDv={plan.PlannedDeltaVTotal:F1} alts={plan.Alternatives.Count}");
+
+        Assert.True(r.Captured, "The scheduled rendezvous should reach the dock envelope (μ=0 station success).");
+        Assert.True(r.Deliverable, $"The last mile must be promisable; pulses={r.Pulses}, captured={r.Captured}.");
+        Assert.True(r.Pulses <= 10, $"The station rendezvous should be cheap (≤10 p); got pulses={r.Pulses}.");
+    }
+
+    [Fact]
+    public void StationRun_Schedule_IsDeterministic()
+    {
+        // T7: the station case is deterministic — two identical scheduled rehearsals produce identical cost
+        // and duration (client WASM and server must agree on the last-mile verdict).
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        ShipState ship = RingsideShip(eph);
+
+        TransferPlanner.Result plan = SolveRingside(sim, eph, ship);
+        Assert.True(plan.Ok, $"the rendezvous planner should quote a phasing bus; failure='{plan.Failure}'");
+        TransferPlanner.Schedule schedule = plan.ToSchedule();
+
+        AutopilotRehearsal.RehearsalResult a = AutopilotRehearsal.Rehearse(ship, eph, sim, "ringside-exchange", 120, schedule: schedule);
+        AutopilotRehearsal.RehearsalResult b = AutopilotRehearsal.Rehearse(ship, eph, sim, "ringside-exchange", 120, schedule: schedule);
+
+        Assert.True(a.Captured && b.Captured, "both runs must reach the dock envelope");
+        Assert.Equal(a.Pulses, b.Pulses);
+        Assert.Equal(a.SimDurationSeconds, b.SimDurationSeconds);
+    }
+
+    [Fact]
+    public void StationRun_Schedule_TinyBudget_BailsBudgetExceeded()
+    {
+        // T8: a 1-pulse budget can't afford both rendezvous burns — the rehearsal trips BudgetExceeded
+        // while flying the scheduled arc, and must never report a capture it could not pay for. The budget
+        // guard is identical to the moon-run and Approach cases; a μ=0 station gets no free pass.
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        ShipState ship = RingsideShip(eph);
+
+        TransferPlanner.Result plan = SolveRingside(sim, eph, ship);
+        Assert.True(plan.Ok, $"the rendezvous planner should quote a phasing bus; failure='{plan.Failure}'");
+
+        AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "ringside-exchange", budgetPulses: 1, schedule: plan.ToSchedule());
+        _out.WriteLine($"STATION-RUN tiny budget: captured={r.Captured} budgetExceeded={r.BudgetExceeded} pulses={r.Pulses}");
+
+        Assert.True(r.BudgetExceeded, "A 1-pulse budget must trip BudgetExceeded flying the rendezvous.");
+        Assert.False(r.Captured, "It must never report a dock-envelope capture it could not afford.");
+    }
 }

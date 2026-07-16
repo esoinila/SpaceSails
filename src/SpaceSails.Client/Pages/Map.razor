@@ -401,8 +401,10 @@
             {
                 <span class="pilot-banner-who">🧭 YOU HAVE THE SHIP</span>
                 @* #147: when the autopilot stood down (declined to arm, or handed back), the banner
-                   carries the persistent reason so "who is flying" also answers "why", at any warp. *@
-                <span class="pilot-banner-mode">@(AutopilotStoodDown ? _autopilotStandDownReason : "manual — the helm answers to you")</span>
+                   carries the persistent reason so "who is flying" also answers "why", at any warp.
+                   #155: a graceful station delivery is a SUCCESS, not a handback — it shows the
+                   persistent "dock is ready" line instead (AutopilotStoodDown stays false). *@
+                <span class="pilot-banner-mode">@(AutopilotStoodDown ? _autopilotStandDownReason : _dockReadyStatus ?? "manual — the helm answers to you")</span>
             }
         </button>
     }
@@ -974,7 +976,9 @@
                         @onclick="() => ToggleArmedInsertion(dp.BodyId)">
                     🛰 @(_armedOrbitBodyId == dp.BodyId
                         ? $"Autopilot ARMED for {dp.BodyName} — click to disarm"
-                        : $"Arm auto-orbit at {dp.BodyName}")
+                        : IsStationTarget(dp.BodyId)
+                            ? "Autopilot to here"
+                            : $"Arm auto-orbit at {dp.BodyName}")
                 </button>
             }
             else
@@ -4148,6 +4152,7 @@
     private int _armedBudgetPulses;              // rehearsal-quoted total cost for the current arm
     private int _armedSpentPulses;               // approach+insert pulses spent since this arm
     private string? _autopilotStandDownReason;   // persistent "you have the ship" line (decline/handback)
+    private string? _dockReadyStatus;            // #155: persistent "in the envelope — hit ⚓ Dock" line, a station SUCCESS (never a #147 handback)
     private IReadOnlyList<TrajectorySample>? _autopilotPlanPath; // #148: the rehearsed INTENDED path
 
     // ---- #146 the moon run: the cached in-well transfer plan for the current arm. When arming rides a
@@ -4243,11 +4248,32 @@
         _armedOrbitBodyId = null;
         ResetApproachTracking();
         ResetAutopilotBudget();
+        _dockReadyStatus = null; // a loud handback replaces any prior "dock is ready" success line
         _autopilotStandDownReason = reason;
         LogAutopilotEvent(reason);
         Warp = 1;               // auto-drop: the drop must not slip past unseen at 10,000× warp
         _effectiveWarp = 1;
         ShowPulseMessage($"🛰 {reason}");
+    }
+
+    // #155 the last mile: the GRACEFUL station stand-down. When the armed target is a μ=0 station and the
+    // rendezvous schedule has flown the ship into the dock envelope (matched and alongside), the autopilot
+    // has SUCCEEDED — this is NOT the #147 loud handback. The tell in code: it never sets
+    // _autopilotStandDownReason, so AutopilotStoodDown stays FALSE and no "you have the ship / here's why
+    // it failed" surface lights up; instead it posts _dockReadyStatus, a success line. It clears the arm,
+    // files a ledger receipt, and (like every stand-down) drops warp to 1× so the captain doesn't blow past
+    // the berth at 10,000×. Docking stays the captain's ⚓ click — the autopilot never auto-clamps.
+    private void AutopilotStandInEnvelope(CelestialBody station)
+    {
+        _armedOrbitBodyId = null;
+        ResetApproachTracking();
+        ResetAutopilotBudget();
+        _autopilotStandDownReason = null; // SUCCESS — deliberately NOT a handback surface (#147 vs #155)
+        _dockReadyStatus = $"🛰 in the dock envelope at {station.Name} — hit ⚓ Dock to clamp on";
+        LogAutopilotEvent($"autopilot delivered {station.Name} — matched inside the dock envelope; hit ⚓ Dock to clamp on");
+        Warp = 1;               // auto-drop so the arrival moment isn't missed at warp
+        _effectiveWarp = 1;
+        ShowPulseMessage(_dockReadyStatus);
     }
 
     // ---- M24: destination — the body the captain MEANS to reach. Clicking a planet on the
@@ -5144,6 +5170,8 @@
             return;
         }
 
+        _dockReadyStatus = null; // a fresh arm/disarm supersedes any lingering "dock is ready" success line
+
         // Disarming (toggle off) the currently-armed body: a plain, quiet stand-down by the captain.
         if (_armedOrbitBodyId == bodyId)
         {
@@ -5182,7 +5210,12 @@
                 if (plan.Ok)
                 {
                     schedule = plan.ToSchedule();
-                    transferSummary = plan.Summary;
+                    // #155: quote the winner's one-line summary; when the rendezvous priced a trade table
+                    // (cheaper-vs-sooner), tack on "(+N other windows)" so the captain knows more lanes
+                    // exist. The full table UI is #159/D2 territory — here we only hint the count.
+                    transferSummary = plan.Alternatives.Count > 1
+                        ? $"{plan.Summary} (+{plan.Alternatives.Count - 1} other windows)"
+                        : plan.Summary;
                 }
                 else
                 {
@@ -5247,6 +5280,30 @@
         double h = 1.0;
         Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
         double hill = OrbitRule.HillRadius(body, parent.Mu);
+
+        // #155 the last mile: a μ=0 station is never orbited — its capture is the dock envelope (DockRule),
+        // mirroring the rehearsal. The rendezvous schedule's two burns fly the ship into the berth; burn 2
+        // (fired in the tick-advance split at the rendezvous epoch) is what matches the station's drift, so
+        // stay FULLY muzzled until every scheduled burn has fired — letting AutopilotDecision fire an
+        // Approach before then would double-pay for that match. Once the schedule is done and the ship is
+        // matched & alongside, stand down GRACEFULLY (AutopilotStandInEnvelope — a SUCCESS, not a #147
+        // handback) and let the captain clamp on with ⚓ Dock. Insert can never fire on a μ=0 body, so if
+        // the ship isn't in the envelope yet the legacy Approach loop below can only close the gap, never
+        // falsely "orbit-capture" the station.
+        if (body.Kind == BodyKind.Station)
+        {
+            if (_armedTransferSchedule is { } stSched && _armedTransferBurnsFired < stSched.Burns.Count)
+            {
+                return; // still flying the rendezvous — the split fires the burns; coast, decisions muzzled
+            }
+            if (DockRule.InEnvelope(_ship, bodyPos, bodyVel, body.BodyRadius))
+            {
+                AutopilotStandInEnvelope(body);
+                return;
+            }
+            // Schedule done (or none available) but not yet matched/alongside — fall through to the legacy
+            // Approach loop to match velocity and close the last stretch; its reserve guard stays intact.
+        }
 
         // #146 the moon run: while a transfer schedule is still in flight, keep AutopilotDecision MUZZLED.
         // Titan's 3e9 m capture floor makes the ship "inside capture range" for the ENTIRE Enceladus→Titan
@@ -10417,13 +10474,21 @@
     private string? _dockedHavenId;   // the station haven we're clamped to, or null
     private Vector2d _dockOffset;     // frozen ship-minus-dock offset while clamped (the arm's reach)
 
-    private const double DockReachMeters = 5e8;    // how close you must coast to throw the clamp on
-    private const double DockMatchSpeedMps = 8000;  // and how nearly matched to its drift (tunable)
+    // The dock envelope lives in Core (DockRule, #155) so the arm-time rehearsal, the live station
+    // stand-down and this UI can never quote different numbers. These aliases keep the call sites reading
+    // the same way they did when the literals lived here.
+    private const double DockReachMeters = DockRule.EnvelopeMeters;    // how close you must coast to throw the clamp on
+    private const double DockMatchSpeedMps = DockRule.MatchSpeed;      // and how nearly matched to its drift
 
     // A station haven you clamp onto (⚓): mass-less, so it can't be orbited — the dock is the only
     // way to lie low there. Moon havens (mu > 0) you hide at by orbiting instead. This is the split
     // the ⚓ marker, the scope's "HAVEN ⚓ DOCK" tag and the Nav hint all key off.
     private static bool IsDockableHaven(CelestialBody body) => body is { IsHaven: true, Mu: <= 0 };
+
+    // #155: is this nav target a μ=0 station? Its arm button reads "Autopilot to here" (you dock, not
+    // orbit) and the autopilot's terminal success is the dock envelope, not an orbital insertion.
+    private bool IsStationTarget(string bodyId) =>
+        _ephemeris?.Bodies.FirstOrDefault(b => b.Id == bodyId)?.Kind == BodyKind.Station;
 
     // Near a dock but coasting too hot to clamp — the one gate players hit most. Returns the nudge
     // to show on a greyed-out Dock button, or null when there's nothing to nudge about.
@@ -11254,7 +11319,7 @@
         HoldAtDock();                                        // match the drift now so nothing lurches
         StaleFutureNodes();                                  // a berth cancels any pending burns
         _armedOrbitBodyId = null;                            // and disarms any pending auto-insert (issue #126)
-        _autopilotStandDownReason = null; ResetAutopilotBudget(); // a berth is a fresh start — clear any handback surface
+        _autopilotStandDownReason = null; _dockReadyStatus = null; ResetAutopilotBudget(); // a berth is a fresh start — clear any handback/dock-ready surface
         SetDeckForDock(dock.Id);                             // weld on the walk-through tube if this haven has an interior
         ShowPulseMessage(HavenInterior.HasInterior(dock.Id)
             ? $"⚓ Clamped on at {dock.Name} — gangway's mated. Head to the Deck and walk the tube ashore."
