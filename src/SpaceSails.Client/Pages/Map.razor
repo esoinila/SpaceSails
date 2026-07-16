@@ -387,28 +387,68 @@
     {
         string? _armed = _armedOrbitBodyId;
         bool _autopilot = _armed is not null;
-        <button type="button" class="pilot-banner @(_autopilot ? "pilot-banner-auto" : "pilot-banner-manual")"
-                title="@(_autopilot ? "The autopilot is flying the ship — click to go to Nav and take back the stick" : "You are flying the ship by hand")"
-                @onclick="() => SwitchDesk(ShipDesk.Nav)">
-            @if (_autopilot)
-            {
-                <span class="pilot-banner-who">🛰 AUTOPILOT HAS THE SHIP</span>
-                @* PR-D1: the mode line names the active step so "who is flying" also answers "at
-                   which step" — same counter the Nav-desk flight plan shows, one source of truth. *@
-                @* #180: a degrading bound orbit outranks the "who's flying" line — losing an orbit
-                   must never be discovered by looking. *@
-                <span class="pilot-banner-mode @(_orbitDegradeWarning is not null ? (_orbitDegradeSeverity >= 2 ? "pilot-banner-alert-red" : "pilot-banner-alert-amber") : null)">@(_orbitDegradeWarning ?? $"{(AutopilotFlyingApproach ? "approach" : "auto-orbit")} → {BodyName(_armed!)}{(FlightPlanStepCount() > 0 ? $" · step {FlightPlanCurrentStep()}/{FlightPlanStepCount()}" : "")}")</span>
-            }
-            else
-            {
-                <span class="pilot-banner-who">🧭 YOU HAVE THE SHIP</span>
-                @* #147: when the autopilot stood down (declined to arm, or handed back), the banner
-                   carries the persistent reason so "who is flying" also answers "why", at any warp.
-                   #155: a graceful station delivery is a SUCCESS, not a handback — it shows the
-                   persistent "dock is ready" line instead (AutopilotStoodDown stays false). *@
-                <span class="pilot-banner-mode @(_orbitDegradeWarning is not null ? (_orbitDegradeSeverity >= 2 ? "pilot-banner-alert-red" : "pilot-banner-alert-amber") : null)">@(_orbitDegradeWarning ?? (AutopilotStoodDown ? _autopilotStandDownReason : _dockReadyStatus ?? "manual — the helm answers to you"))</span>
-            }
-        </button>
+        @* #159/#184: the banner speaks the whole plan. FlightNowNext() is the ONE source (the Nav
+           header and desk chips read it too), returning an ordered row list: the pinned NOW row, then
+           the queue — each pending burn, then the orbit-insert as its OWN plain-language row (#171/#173,
+           no more "step 1/1" crash-or-orbit doubt). The ▲▼ arrows page the queue when it runs past NEXT;
+           the NOW row is always the active step, so the list auto-scrolls to what the ship is doing. *@
+        FlightPlanStatus _banner = FlightNowNext();
+        IReadOnlyList<FlightPlanRow> _rows = _banner.Rows;
+        int _queueCount = Math.Max(0, _rows.Count - 1);
+        int _rowOffset = _queueCount == 0 ? 0 : Math.Clamp(_bannerRowOffset, 0, _queueCount - 1);
+        @* NOW text: the row list, except a #155 dock-ready SUCCESS still speaks its own line while manual. *@
+        string _nowText = _rows.Count > 0 ? _rows[0].Text : "NOW: coasting";
+        if (!_autopilot && !AutopilotStoodDown && _dockReadyStatus is not null && _nowText == "NOW: coasting")
+        {
+            _nowText = _dockReadyStatus;
+        }
+        <div class="pilot-banner @(_autopilot ? "pilot-banner-auto" : "pilot-banner-manual")"
+             role="button" tabindex="0"
+             title="@(_autopilot ? "The autopilot is flying the ship — click to go to Nav and take back the stick" : "You are flying the ship by hand")"
+             @onclick="() => SwitchDesk(ShipDesk.Nav)">
+            <span class="pilot-banner-who">@(_autopilot ? "🛰 AUTOPILOT HAS THE SHIP" : "🧭 YOU HAVE THE SHIP")</span>
+            <div class="pilot-banner-rows">
+                <div class="pilot-banner-mode pilot-banner-now">@_nowText</div>
+                @if (_queueCount > 0)
+                {
+                    <div class="pilot-banner-queue">
+                        <span class="pilot-banner-mode pilot-banner-next">@_rows[1 + _rowOffset].Text</span>
+                        @if (_queueCount > 1)
+                        {
+                            <span class="pilot-banner-pager">
+                                <button type="button" class="pilot-banner-arrow" title="Earlier step"
+                                        disabled="@(_rowOffset == 0)"
+                                        @onclick="BannerPageUp" @onclick:stopPropagation="true">▲</button>
+                                <span class="pilot-banner-pageno">@(_rowOffset + 1)/@_queueCount</span>
+                                <button type="button" class="pilot-banner-arrow" title="Later step"
+                                        disabled="@(_rowOffset >= _queueCount - 1)"
+                                        @onclick="BannerPageDown" @onclick:stopPropagation="true">▼</button>
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* #166: the ship-wide alert strip — collision, fuel, orbit-decay, one voice. Unacknowledged
+           alerts shout (red/amber, ✕ to silence); an acknowledged alert lingers dimmed while its
+           condition holds. Reads the same ShipAlerts channel the parrot and the ledger read. *@
+        if (_shipAlerts.Any)
+        {
+            <div class="ship-alert-strip">
+                @foreach (ShipAlert _alert in _shipAlerts.Active)
+                {
+                    <div class="ship-alert @(_alert.Severity == AlertSeverity.Red ? "ship-alert-red" : "ship-alert-amber") @(_alert.Acknowledged ? "ship-alert-ack" : null)">
+                        <span class="ship-alert-msg">@_alert.Message</span>
+                        @if (!_alert.Acknowledged)
+                        {
+                            <button type="button" class="ship-alert-silence" title="Silence this alert (it stays until the condition clears)"
+                                    @onclick="() => AcknowledgeAlert(_alert.Kind)">✕</button>
+                        }
+                    </div>
+                }
+            </div>
+        }
     }
 
     @if (_activeDesk == ShipDesk.Nav)
@@ -1831,27 +1871,34 @@
         _selectedPlanNode = null;
     }
 
-    // The NOW / next readout for the Nav desk, built through the shared Core helper so it can never
-    // contradict the pilot banner. Next = the earliest pending burn, else the armed insertion.
+    // The NOW / next readout AND the full banner row list, built through the shared Core helper so the
+    // banner, the Nav header, and the desk chips can never contradict (#159/#184). The queue below NOW
+    // names every step still ahead top to bottom: each pending burn in time order, then the armed
+    // orbit-insert — so the approach and the orbit step are SEPARATE, plain-language rows (#171/#173).
     private FlightPlanStatus FlightNowNext()
     {
-        PlanNode? nextBurn = null;
+        var steps = new List<FlightPlanStep>();
+
+        // Pending burns, earliest first.
+        var pending = new List<PlanNode>();
         foreach (PlanNode node in _planNodes)
         {
             if (node.Stale || node.Executed || node.SimTime <= SimTime) continue;
-            if (nextBurn is null || node.SimTime < nextBurn.SimTime) nextBurn = node;
+            pending.Add(node);
+        }
+        pending.Sort((a, b) => a.SimTime.CompareTo(b.SimTime));
+        foreach (PlanNode node in pending)
+        {
+            steps.Add(new FlightPlanStep(BurnStepLabel(node), $"in {FormatDuration(node.SimTime - SimTime)}", FlightStepState.Planned));
         }
 
-        string? nextLabel = null, nextEta = null;
-        if (nextBurn is not null)
+        // The armed orbit-insert — named in plain language ("will it orbit or crash?" → it says so),
+        // with the parked altitude when we know it, and the insertion's Armed/Active step state.
+        if (_armedOrbitBodyId is not null)
         {
-            nextLabel = BurnStepLabel(nextBurn);
-            nextEta = $"in {FormatDuration(nextBurn.SimTime - SimTime)}";
-        }
-        else if (_armedOrbitBodyId is not null)
-        {
-            nextLabel = $"insertion at {BodyName(_armedOrbitBodyId)}";
-            nextEta = ArmedInsertionSimTime is { } t ? $"in {FormatDuration(t - SimTime)}" : "at window";
+            string eta = ArmedInsertionSimTime is { } t ? $"in {FormatDuration(t - SimTime)}" : "at window";
+            steps.Add(new FlightPlanStep(
+                InsertStepLabel(), eta, FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach)));
         }
 
         return FlightPlanStatusBuilder.Build(new FlightPlanInputs(
@@ -1860,12 +1907,33 @@
             AutopilotArmed: _armedOrbitBodyId is not null,
             AutopilotFlyingApproach: AutopilotFlyingApproach,
             AutopilotBodyName: _armedOrbitBodyId is null ? null : BodyName(_armedOrbitBodyId),
-            NextStepLabel: nextLabel,
-            NextStepEta: nextEta,
+            NextStepLabel: null,
+            NextStepEta: null,
             // #147: the persistent "you have the ship" reason — a decline or a loud handback — so the
             // now line survives high warp instead of a 1.5-s toast. Only when not armed (else the ship
             // is flying again and the armed line wins).
-            HandbackReason: _armedOrbitBodyId is null ? _autopilotStandDownReason : null));
+            HandbackReason: _armedOrbitBodyId is null ? _autopilotStandDownReason : null,
+            // COORDINATION SEAM (Friday §0): the priority lane fills HoldingLine with the kept-orbit
+            // NOW line once station-keeping owns the park; until then it is null and the flying phases win.
+            HoldingLine: null,
+            UpcomingSteps: steps.Count > 0 ? steps : null));
+    }
+
+    // The armed orbit-insert step's plain-language label, with the parked altitude when OrbitInfo
+    // resolves the armed body — "orbit-insert at Enceladus (313 km)". Falls back to the bare body
+    // name when the altitude isn't cheaply known.
+    private string InsertStepLabel()
+    {
+        string body = BodyName(_armedOrbitBodyId!);
+        if (OrbitInfo() is { } oi && oi.Body.Id == _armedOrbitBodyId)
+        {
+            double parkAlt = OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius;
+            if (parkAlt > 0)
+            {
+                return $"orbit-insert at {body} ({FormatDistance(parkAlt)})";
+            }
+        }
+        return $"orbit-insert at {body}";
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData SensorsChip()
@@ -2821,7 +2889,6 @@
     private double _parrotBubbleUntilMs;
     private double _parrotCooldownUntilMs;
     private int _parrotCounter;
-    private string? _parrotLastImpactBody;
     private bool _parrotSawWobble, _parrotSawArc, _parrotSawHunter, _parrotSawPrey, _parrotSawPyramid;
     private readonly HashSet<string> _parrotOffBooks = [];
 
@@ -2847,17 +2914,8 @@
             _parrotSquawk = null;
         }
 
-        bool impact = _closestPass is { Impact: true };
-        string? impactBody = impact ? _closestPass!.Value.BodyName : null;
-        if (impact && impactBody != _parrotLastImpactBody)
-        {
-            _parrotLastImpactBody = impactBody;
-            SquawkNow(Parrot.Squawk.Impact, nowMs, impactBody, force: true);
-        }
-        else if (!impact)
-        {
-            _parrotLastImpactBody = null;
-        }
+        // #166: the collision squawk now rides the ShipAlerts channel (UpdateShipAlerts) so the banner
+        // strip, the ledger, and the parrot all speak from one crossing — see there for the ROCKS AHEAD.
 
         bool prey = SelectedCaptureTarget() is { } target && CaptureRule.IsInWindow(_ship, target.State);
         if (prey && !_parrotSawPrey)
@@ -2927,6 +2985,59 @@
 
         _parrotSawPyramid = pyramidInSky;
     }
+
+    // #166: drive the ship-wide alert channel from live sim state each tick. Collision and fuel are
+    // evaluated here; the orbit-degradation alert is raised/cleared from UpdateParkStability (its own
+    // edge detector) through RaiseOrbitDegrade/ClearOrbitDegrade. On a rising edge the channel returns
+    // true — the cue to squawk the parrot, log a receipt, and (for a red) drop warp so it can't be
+    // blown past. The banner strip and desk chips read the channel; nothing here re-shouts per tick.
+    private void UpdateShipAlerts(double nowMs)
+    {
+        // Collision: the current course has a ballistic impact / sub-surface pass in the horizon.
+        if (_closestPass is { Impact: true } cp)
+        {
+            string body = cp.BodyName;
+            if (_shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"ROCKS AHEAD! — impact with {body}", SimTime))
+            {
+                SquawkNow(Parrot.Squawk.Impact, nowMs, body, force: true);
+                LogAutopilotEvent($"⚠ collision alarm — impact course with {body}");
+                Warp = 1; // an impact at 10,000× is unwatchable
+            }
+        }
+        else
+        {
+            _shipAlerts.Clear(AlertKind.Collision);
+        }
+
+        // Fuel: amber at the 18% autopilot reserve, red at the reach-a-pump floor (FuelAlertRule).
+        switch (FuelAlertRule.Evaluate(_reactionMassPulses, ReactionMassCapacity))
+        {
+            case AlertSeverity.Red:
+                if (_shipAlerts.Raise(AlertKind.Fuel, AlertSeverity.Red,
+                        $"fuel critical — {_reactionMassPulses} p left, can't reach a pump", SimTime))
+                {
+                    SquawkNow(Parrot.Squawk.FuelLow, nowMs, force: true);
+                    LogAutopilotEvent($"⚠ fuel critical — {_reactionMassPulses} p, below the reach-a-pump floor");
+                    Warp = 1;
+                }
+                break;
+            case AlertSeverity.Amber:
+                if (_shipAlerts.Raise(AlertKind.Fuel, AlertSeverity.Amber,
+                        $"fuel low — {_reactionMassPulses} p left, under the autopilot reserve", SimTime))
+                {
+                    SquawkNow(Parrot.Squawk.FuelLow, nowMs);
+                    LogAutopilotEvent($"fuel low — {_reactionMassPulses} p, under the 18% reserve");
+                }
+                break;
+            default:
+                _shipAlerts.Clear(AlertKind.Fuel);
+                break;
+        }
+    }
+
+    // #166: the captain silences one alert's shout — it lingers as a dimmed chip while the condition
+    // holds, and a fresh crossing (or an escalation) shouts again.
+    private void AcknowledgeAlert(AlertKind kind) => _shipAlerts.Acknowledge(kind);
 
     // ---- M28 (Sunday PR-D): the Ancients' pilot — pyramid satellites & auto-plot charges ----
     private int _ancientCharges;
@@ -4245,6 +4356,18 @@
     private string? _autopilotStandDownReason;   // persistent "you have the ship" line (decline/handback)
     private string? _dockReadyStatus;            // #155: persistent "in the envelope — hit ⚓ Dock" line, a station SUCCESS (never a #147 handback)
     private IReadOnlyList<TrajectorySample>? _autopilotPlanPath; // #148: the rehearsed INTENDED path
+
+    // ---- #166: the ship-wide alert channel. One edge-triggered, acknowledgeable source the banner
+    // strip, the ledger, and the 🦜 parrot all read. Three founding conditions raise/clear here:
+    // collision (ROCKS AHEAD), fuel (amber at the 18% reserve, red at the reach-a-pump floor), and the
+    // #180/#183 orbit-degradation warning (migrated in). Evaluated each tick in UpdateShipAlerts. ----
+    private readonly ShipAlerts _shipAlerts = new();
+
+    // #159/#184: which queued step the multi-row banner shows below the pinned NOW row. The ▲▼ arrows
+    // page it; the render clamps it to the live queue so a completed step never leaves it out of range.
+    private int _bannerRowOffset;
+    private void BannerPageUp() => _bannerRowOffset = Math.Max(0, _bannerRowOffset - 1);
+    private void BannerPageDown() => _bannerRowOffset++;
 
     // ---- #179: disarming the autopilot is what dropped the owner off orbit; confirm it once. The
     // first disarm click arms this pending flag (with a short expiry) and asks; a second click within
@@ -6824,6 +6947,7 @@
         }
 
         UpdateParrot(highResTimestampMs);
+        UpdateShipAlerts(highResTimestampMs);
 
         // M28: the CALCULATING FIRING SOLUTION reveal — one Newton iteration per beat.
         if (_fireSolution is { } fireSolution && _revealedIterations < fireSolution.Trace.Count
@@ -12241,10 +12365,20 @@
         Warp = 1; // auto-drop so the decay isn't blown past at warp
         LogAutopilotEvent(_orbitDegradeWarning);
         ShowPulseMessage(_orbitDegradeWarning);
+
+        // #166: the third founding alert now speaks through the shared channel too. Raise fires only on
+        // the rising edge / an escalation to red — so the parrot squawks once per crossing, not per tick.
+        if (_shipAlerts.Raise(AlertKind.OrbitDegrade, subsurface ? AlertSeverity.Red : AlertSeverity.Amber,
+                _orbitDegradeWarning, SimTime))
+        {
+            SquawkNow(Parrot.Squawk.OrbitDecay, _lastTimestampMs ?? 0, force: true);
+        }
     }
 
     private void ClearOrbitDegrade()
     {
+        _shipAlerts.Clear(AlertKind.OrbitDegrade);
+
         if (_orbitDegradeWarning is null)
         {
             return;
