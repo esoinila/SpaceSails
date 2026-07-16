@@ -11,6 +11,7 @@
     @foreach (ChipData chip in Chips)
     {
         <div class="desk-chip" role="button" tabindex="0"
+             title="Get up and take the @chip.Label desk"
              @onclick="() => OnSelect.InvokeAsync(chip.Desk)"
              @onkeydown="e => OnChipKeyDown(e, chip.Desk)">
             <div class="desk-chip-title"><span class="desk-chip-icon">@chip.Icon</span> @chip.Label</div>

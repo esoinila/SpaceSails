@@ -35,7 +35,7 @@
         <div class="mb-2 @(WobbleActive ? "text-warning fw-bold" : "text-secondary")">
             @(WobbleActive ? "Deck's tilty — steady on. 🍹" : "Steady legs, for now.")
         </div>
-        <button type="button" class="btn btn-sm btn-outline-warning w-100 mb-2" @onclick="() => OnPourRum.InvokeAsync()">
+        <button type="button" class="btn btn-sm btn-outline-warning w-100 mb-2" title="Pour a tot of rum from the locker — steadies the crew's legs when the deck goes tilty" @onclick="() => OnPourRum.InvokeAsync()">
             Pour a tot
         </button>
         @if (LastRumLine is not null)

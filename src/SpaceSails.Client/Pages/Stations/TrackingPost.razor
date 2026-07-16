@@ -30,7 +30,7 @@
         }
         else
         {
-            <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the tracking post and stow the telescope panel" @onclick="() => OnClose.InvokeAsync()"></button>
         }
     </div>
     <div class="card-body p-2 small @(FullScreen ? "tracking-post-desk-body" : "")">
@@ -65,27 +65,31 @@
             <div class="flex-grow-1">
                 <label class="form-label mb-0 d-block">Bearing @((int)_centerBearingDeg)°</label>
                 <input type="range" class="form-range" min="0" max="359" step="1" value="@_centerBearingDeg"
+                       title="Swing the scope's aim around the sky — sets the center bearing of the manual sweep wedge"
                        @oninput="OnBearingInput" @onkeydown:stopPropagation="true" />
                 <label class="form-label mb-0 d-block">Arc width @((int)_arcWidthDeg)°</label>
                 <input type="range" class="form-range" min="5" max="360" step="1" value="@_arcWidthDeg"
+                       title="Open or narrow the sweep — a wide arc searches more sky at once, a tight one drills a single bearing"
                        @oninput="OnArcInput" @onkeydown:stopPropagation="true" />
                 @* PR-C: the corridor-watch dropdown is gone — trade lanes are clickable regions
                    on the map itself now. The sliders remain for a truly manual aim. *@
                 @if (_activeJob is null)
                 {
-                    <button type="button" class="btn btn-sm btn-info w-100" @onclick="StartSweep">Start sweep</button>
+                    <button type="button" class="btn btn-sm btn-info w-100" title="Point the telescope at the aimed wedge and sweep it for ships that don't advertise themselves" @onclick="StartSweep">Start sweep</button>
                 }
                 else
                 {
-                    <button type="button" class="btn btn-sm btn-outline-warning w-100" @onclick="StopSweep">Stop sweep</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning w-100" title="Abort the running sweep and hand the telescope back to the queue" @onclick="StopSweep">Stop sweep</button>
                 }
                 @* M27: the eyes are open by default — a passive watch keeps a full-circle sweep
                    running whenever nothing manual is queued. *@
                 <button type="button" class="btn btn-sm w-100 mt-1 @(_passiveWatch ? "btn-success" : "btn-outline-secondary")"
+                        title="Keep the eyes open — a full-circle survey runs itself whenever no manual sweep or task holds the scope"
                         @onclick="TogglePassiveWatch">
                     👁 Passive watch: @(_passiveWatch ? "ON — always scanning" : "off")
                 </button>
                 <button type="button" class="btn btn-sm w-100 mt-1 @(RadarActive ? "btn-danger" : "btn-outline-danger")"
+                        title="Light the active radar for exact close-range fixes — but every ship in earshot now knows exactly where you are"
                         @onclick="() => OnRadarToggle.InvokeAsync(!RadarActive)">
                     📡 @(RadarActive ? "ACTIVE RADAR ON — LOUD" : "Active radar (close range — loud)")
                 </button>
@@ -292,8 +296,10 @@
                                             title="War-room target of interest — a DIFFERENT slot than the nav destination"
                                             @onclick="() => OnSetInterest.InvokeAsync(entry.ShipId)">🎯</button>
                                     <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                            title="Take a fresh fix on this contact now — a zero-age observation tightens the prediction cone"
                                             @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
                                     <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                            title="Drop this track from the ledger and free the telescope slot"
                                             @onclick="() => Drop(entry.ShipId)">Drop</button>
                                 </div>
                             </div>
@@ -326,8 +332,9 @@
                                 <td class="text-end align-middle">@daysAgo.ToString("F1")d</td>
                                 <td class="text-end align-middle text-nowrap">
                                     <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                            title="Take a fresh fix on this contact now — a zero-age observation tightens the prediction cone"
                                             @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @onclick="() => Drop(entry.ShipId)">Drop</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Drop this track from the ledger and free the telescope slot" @onclick="() => Drop(entry.ShipId)">Drop</button>
                                 </td>
                             </tr>
                         }
