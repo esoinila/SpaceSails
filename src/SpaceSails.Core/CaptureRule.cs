@@ -37,6 +37,35 @@ public static class CaptureRule
         (player.Position - target.Position).LengthSquared <= CaptureRadiusMeters * CaptureRadiusMeters
         && (player.Velocity - target.Velocity).LengthSquared <= MaxRelativeSpeed * MaxRelativeSpeed;
 
+    /// <summary>Whether a boarding may PROCEED this instant (#177/#178). Boarding is a felony, and
+    /// the owner got robbed-by-accident when autopilot flew him through a moon and a selected depot
+    /// slid into the window — so proximity ALONE must never board.</summary>
+    public enum BoardingIntent
+    {
+        /// <summary>No boardable target in the window — nothing to decide.</summary>
+        NoWindow,
+
+        /// <summary>In the window, but the captain has not declared hostile intent on THIS target:
+        /// an opportunity to surface, never an act to commit.</summary>
+        Opportunity,
+
+        /// <summary>The captain has explicitly authorized boarding THIS target — the felony is
+        /// deliberate, and the shuttles may fly.</summary>
+        Authorized,
+    }
+
+    /// <summary>
+    /// The hostile-intent gate: only when the captain's authorization names the SAME target that is
+    /// in the window does boarding proceed (<see cref="BoardingIntent.Authorized"/>). In the window
+    /// without that word is an <see cref="BoardingIntent.Opportunity"/> — the caller may offer it,
+    /// but must not accrue a single tick of boarding. This is the structural fix for auto-piracy:
+    /// no input of proximity alone can ever return <see cref="BoardingIntent.Authorized"/>.
+    /// </summary>
+    public static BoardingIntent EvaluateBoarding(bool inWindow, string? targetId, string? authorizedTargetId) =>
+        !inWindow || targetId is null ? BoardingIntent.NoWindow
+        : authorizedTargetId is not null && authorizedTargetId == targetId ? BoardingIntent.Authorized
+        : BoardingIntent.Opportunity;
+
     /// <summary>
     /// Sim seconds of continuous window the shuttles need at this instant's geometry.
     /// Tight+slow ≈ 30 s; at the envelope's sloppy corner (5 km/s, 5e8 m) ≈ 455 s — more

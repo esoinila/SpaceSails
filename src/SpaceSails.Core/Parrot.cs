@@ -22,6 +22,7 @@ public static class Parrot
         FalseColors,
         HunterBacksOff,
         SpaceBarBreak,
+        ContractPaid,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -56,6 +57,8 @@ public static class Parrot
         ["SQUAWK! The wolf's got cold feet — and one of 'em's solid oak!", "He's peggin' it, captain! Hop along, timber-toes!", "One leg wood, the other WOULD if it could — he's RUNNING! SQUAWK!"],
         // SpaceBarBreak — puns for lying low at The Space Bar (sometimes you just need a break)
         ["Sometimes you just need a Space Bar break! SQUAWK!", "Pull up a stool, captain — no wolves drink here!", "Tab's open, sails are down — hit the Space Bar! SQUAWK!"],
+        // ContractPaid (#185) — the bird SINGS when a job pays out. A celebration, not an alarm.
+        ["🎵 A job well flown and the purse is FULL — SQUAWK, we're PAID, captain!", "🎵 Yo-ho, the hold's empty and the coin's aboard! Sing it! SQUAWK!", "🎵 Contract's DONE and the drinks are FREE — SQUAWK SQUAWK hooray!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line
