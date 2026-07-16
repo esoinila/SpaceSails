@@ -227,7 +227,9 @@ public static class HavenInterior
         var hatch = new DeckPlan.Wall(1, ShipHatchY, 4, ShipHatchY, false, true);
 
         var walls = new List<DeckPlan.Wall>(ship.Walls.Where(w => !w.Equals(hatch)));
-        var doors = new List<DeckPlan.Door>();
+        // Seed from the ship's own doors so the shuttle-bay airlock (#163) travels with the ship into
+        // every docked complex — that is the captain's ride home, so the return hop is never stranded.
+        var doors = new List<DeckPlan.Door>(ship.Doors);
         var labels = new List<(float X, float Y, string Text)>(ship.RoomLabels);
 
         // Tube: the umbilical from the ship's hatch up to the hall's south edge.

@@ -17,7 +17,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -273,6 +273,12 @@ public sealed class DeckPlan
             new(ConsoleKind.Cantina, 11, 7.5f, "CANTINA"),
             new(ConsoleKind.Cargo, -5, -6.5f, "CARGO"),
             new(ConsoleKind.Shuttle, -8, 6.5f, "SHUTTLE BAY"),
+
+            // The shuttle-bay airlock (#163): a door to the actual shuttles, in the bay's port hull just
+            // outboard of the cradle. Walk up and it opens the "places in shuttle range" pop-up — the
+            // door you understand as a flight. Kept clear of the SHUTTLE BAY console (−8, 6.5) so [E]
+            // doesn't grab the wrong one. Drawn as the amber airlock door (see the Door added below).
+            new(ConsoleKind.ShuttleAirlock, -4.5f, 8.7f, "🚀 SHUTTLE AIRLOCK"),
             new(ConsoleKind.Vent, -20, -4.5f, "VENT PANEL"),
             new(ConsoleKind.Head, 16.25f, -6.5f, "HEAD 🚽"), // the space toilet (3D-reno Phase 3)
 
@@ -316,10 +322,19 @@ public sealed class DeckPlan
         // Cantina tables (plan-driven now): three tops with a view, port side.
         (float X, float Y)[] tables = [(8, 7.5f), (11, 6), (14, 7.5f)];
 
+        // The shuttle-bay airlock door (#163): an amber auto-door across the bay's port hull, in front
+        // of the cradle, drawn exactly like the docking-tube airlocks. It sits ON the intact hull wall
+        // (the hull stays closed, so the raycaster never escapes) — walking through it is the shuttle
+        // trip itself, resolved by the "places in shuttle range" pop-up, not a physical step into vacuum.
+        Door[] doors =
+        [
+            new(-6, 10, -3, 10),
+        ];
+
         return new DeckPlan(walls, consoles, roomLabels, backdrops,
             spawnX: 21, spawnY: 0, // on the bridge, facing the bow glass
             droidCount: 3, fillDroids: FillShipDroids, location: ShipLocation,
-            shipFixtures: true, tables: tables);
+            doors: doors, shipFixtures: true, tables: tables);
     }
 
     // --- Droid pirate infantry 🤖🏴‍☠️ ---
