@@ -44,7 +44,8 @@ public class FlightPlanStatusTests
             Docked: false, DockedHavenName: null,
             AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Titan",
             NextStepLabel: "insertion at Titan", NextStepEta: "at window"));
-        Assert.Equal("NOW: coasting — autopilot armed for Titan", s.NowLine);
+        // #159/#184 owner mock: the coast phase names the transfer arc and its target, in plain language.
+        Assert.Equal("NOW: coasting the transfer arc to Titan", s.NowLine);
         Assert.Equal("NEXT: insertion at Titan at window", s.NextLine);
     }
 
@@ -55,7 +56,43 @@ public class FlightPlanStatusTests
             Docked: false, DockedHavenName: null,
             AutopilotArmed: true, AutopilotFlyingApproach: true, AutopilotBodyName: "Titan",
             NextStepLabel: "insertion at Titan", NextStepEta: "at window"));
-        Assert.Equal("NOW: autopilot approach → Titan", s.NowLine);
+        // #171: plain language — the ship SAYS it is approaching, and the queue names the orbit-insert.
+        Assert.Equal("NOW: approaching Titan — autopilot flying", s.NowLine);
+    }
+
+    [Fact]
+    public void Now_Inserting_OutranksApproach()
+    {
+        // #171/#173: the window is open, the autopilot is circularizing — the NOW line must say
+        // "inserting into orbit", not leave the captain guessing "orbit or crash?".
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: true, AutopilotBodyName: "Enceladus",
+            NextStepLabel: null, NextStepEta: null,
+            AutopilotInserting: true));
+        Assert.Equal("NOW: inserting into orbit at Enceladus", s.NowLine);
+    }
+
+    [Fact]
+    public void Now_HoldingLine_IsTheKeptOrbitNowRow_BelowDockAboveFlying()
+    {
+        // Coordination seam (Friday §0, priority lane): a kept orbit's verbatim line becomes the NOW
+        // row, outranking every flying phase but not a dock.
+        const string held = "🛰 AUTOPILOT HOLDS THE ORBIT — Enceladus, 313 km, trim ≈2 p/day";
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: true, AutopilotBodyName: "Enceladus",
+            NextStepLabel: null, NextStepEta: null,
+            AutopilotInserting: true, HoldingLine: held));
+        Assert.Equal(held, s.NowLine);
+        Assert.Equal(held, s.Rows[0].Text);
+
+        // A dock still wins over a kept orbit.
+        FlightPlanStatus docked = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: true, DockedHavenName: "Ringside",
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: null, NextStepEta: null, HoldingLine: held));
+        Assert.Equal("NOW: docked at Ringside", docked.NowLine);
     }
 
     [Fact]
@@ -129,7 +166,7 @@ public class FlightPlanStatusTests
             AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Enceladus",
             NextStepLabel: "insertion at Enceladus", NextStepEta: "at window",
             HandbackReason: "something old"));
-        Assert.Equal("NOW: coasting — autopilot armed for Enceladus", s.NowLine);
+        Assert.Equal("NOW: coasting the transfer arc to Enceladus", s.NowLine);
     }
 
     [Fact]
@@ -162,5 +199,100 @@ public class FlightPlanStatusTests
             AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
             NextStepLabel: null, NextStepEta: null));
         Assert.Equal("NOW: docked at haven", s.NowLine);
+    }
+
+    // ---- #159/#184: the multi-row banner list ----
+
+    [Fact]
+    public void Rows_NowIsAlwaysTheActiveFirstRow()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: false, AutopilotFlyingApproach: false, AutopilotBodyName: null,
+            NextStepLabel: null, NextStepEta: null));
+        Assert.Single(s.Rows);
+        Assert.Equal(FlightRowKind.Now, s.Rows[0].Kind);
+        Assert.True(s.Rows[0].IsActive);
+        Assert.Equal(FlightStepState.Active, s.Rows[0].State);
+        Assert.Equal("NOW: coasting", s.Rows[0].Text);
+    }
+
+    [Fact]
+    public void Rows_LegacyNextBecomesTheSecondRow_AndNextLine()
+    {
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Titan",
+            NextStepLabel: "insertion at Titan", NextStepEta: "at window"));
+        Assert.Equal(2, s.Rows.Count);
+        Assert.Equal(FlightRowKind.Next, s.Rows[1].Kind);
+        Assert.Equal("NEXT: insertion at Titan at window", s.Rows[1].Text);
+        Assert.Equal(s.NextLine, s.Rows[1].Text);
+        Assert.False(s.Rows[1].IsActive);
+    }
+
+    [Fact]
+    public void Rows_UpcomingSteps_NameBurnThenApproachThenInsert_TopToBottom()
+    {
+        // The full planned flight spoken as rows: two pending burns queued ahead of the orbit-insert.
+        // More than two rows → the banner shows its ▲▼ arrows.
+        var steps = new List<FlightPlanStep>
+        {
+            new("burn ▲ 14 p", "in 2d 4h", FlightStepState.Planned),
+            new("burn ▼ 3 p", "in 3d 1h", FlightStepState.Planned),
+            new("orbit-insert at Enceladus (313 km)", "at window", FlightStepState.Armed),
+        };
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Enceladus",
+            NextStepLabel: null, NextStepEta: null,
+            UpcomingSteps: steps));
+
+        Assert.Equal(4, s.Rows.Count); // NOW + 3 queued
+        Assert.Equal(FlightRowKind.Now, s.Rows[0].Kind);
+        Assert.Equal("NOW: coasting the transfer arc to Enceladus", s.Rows[0].Text);
+        Assert.Equal(FlightRowKind.Next, s.Rows[1].Kind);
+        Assert.Equal("NEXT: burn ▲ 14 p in 2d 4h", s.Rows[1].Text);
+        Assert.Equal(FlightRowKind.Later, s.Rows[2].Kind);
+        Assert.Equal("THEN: burn ▼ 3 p in 3d 1h", s.Rows[2].Text);
+        Assert.Equal(FlightRowKind.Later, s.Rows[3].Kind);
+        Assert.Equal("THEN: orbit-insert at Enceladus (313 km) at window", s.Rows[3].Text);
+        Assert.Equal(FlightStepState.Armed, s.Rows[3].State);
+    }
+
+    [Fact]
+    public void Rows_ApproachAndInsert_AreSeparateRows_ClosingTheCrashOrOrbitDoubt()
+    {
+        // #171/#173: while flying the approach, the queue still names the orbit-insert as its own row —
+        // the ship SAYS it will orbit, it is not left to be discovered.
+        var steps = new List<FlightPlanStep>
+        {
+            new("orbit-insert at Enceladus (313 km)", "at window", FlightStepState.Armed),
+        };
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: true, AutopilotBodyName: "Enceladus",
+            NextStepLabel: null, NextStepEta: null,
+            UpcomingSteps: steps));
+        Assert.Equal("NOW: approaching Enceladus — autopilot flying", s.Rows[0].Text);
+        Assert.Equal("NEXT: orbit-insert at Enceladus (313 km) at window", s.Rows[1].Text);
+    }
+
+    [Fact]
+    public void Rows_BlankStepLabels_AreSkipped()
+    {
+        var steps = new List<FlightPlanStep>
+        {
+            new("   ", "in 1h", FlightStepState.Planned),
+            new("orbit-insert at Titan", "at window", FlightStepState.Armed),
+        };
+        FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Titan",
+            NextStepLabel: null, NextStepEta: null,
+            UpcomingSteps: steps));
+        Assert.Equal(2, s.Rows.Count); // the blank step dropped; insert promoted to NEXT
+        Assert.Equal(FlightRowKind.Next, s.Rows[1].Kind);
+        Assert.Equal("NEXT: orbit-insert at Titan at window", s.Rows[1].Text);
     }
 }
