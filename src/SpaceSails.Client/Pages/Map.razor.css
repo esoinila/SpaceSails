@@ -477,6 +477,20 @@
     opacity: 0.9;
 }
 
+/* #180: orbit degrading — amber for the tide-chaotic band, red for a surface-grazing orbit. The
+   pilot banner is the surface until the #166 ShipAlerts channel lands. */
+.pilot-banner-alert-amber {
+    color: #ffcf6b;
+    font-weight: 800;
+    opacity: 1;
+}
+
+.pilot-banner-alert-red {
+    color: #ff7a7a;
+    font-weight: 800;
+    opacity: 1;
+}
+
 /* Manual: calm, neutral — nothing alarming, you have the stick. */
 .pilot-banner-manual {
     background: rgba(20, 28, 36, 0.85);
