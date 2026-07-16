@@ -84,21 +84,34 @@
     justify-content: center;
 }
 
+/* #195: the top-of-flight-view status column — desk tabs, pilot banner, ship-alert strip. These were
+   three independently top-anchored ABSOLUTE layers whose fixed `top`s assumed a one-row banner, so a
+   2–3 row banner (#159/#184) floated OVER the Nav toolbar and hid the 'checklist'/'?' buttons (#123's
+   living example). This column is IN FLOW now, and the Nav HUD (.map-hud) below it is in flow too, so
+   the column claims real height and a taller banner PUSHES the toolbar down instead of covering it. */
+.map-topstack {
+    /* In FLOW (position:relative, not absolute) so it claims real height at the top of the map — the
+       .map-hud block below then flows under it and a taller banner pushes the toolbar down (#195). */
+    position: relative;
+    z-index: 24;
+    pointer-events: none;   /* the gaps pass clicks to the canvas; each child re-enables its own */
+    display: flex;
+    flex-direction: column;
+    align-items: center;    /* tabs · banner · alert strip stay top-centred */
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem 0;
+}
+
 .map-hud {
-    position: absolute;
-    /* Clears the desk tab bar (top: 0.5rem) AND the pilot-in-command banner (#127, top: 3.0rem,
-       centered) that sit above it — the toolbar is left-anchored and can span past center at typical
-       widths, so it is dropped below both rather than risk sharing a row with the centered banner. */
-    top: 5.9rem;
-    left: 0.75rem;
-    pointer-events: none;
-    max-width: calc(100% - 1.5rem);
-    /* Round-2 blind-UI audit (docs/MondayPonder/UIUsabilityNotes.md, fixes 1 & 2): the interactive HUD
-       column — the Plot/Pause toolbar and the flight plan that now owns the sling/skim editors — must
-       win any overlap with the dismissible tutorial ad and the bottom-left "soft catch" checklist, so
-       neither can occlude or intercept its controls. Sits ABOVE those (ad 12, tutorial default) and
-       BELOW the pilot banner (24) / desk tabs (25) so it never covers who-is-flying. */
+    /* #195: an in-flow block that follows .map-topstack (was absolute top:5.9rem), so the banner above
+       it can never overlap it — it starts below the banner's real height, whatever that grows to. */
+    position: relative;
     z-index: 22;
+    pointer-events: none;
+    width: fit-content;
+    max-width: 100%;
+    padding-left: 0.75rem;
+    margin-top: 0.4rem;
 }
 
 .map-hud .btn-toolbar,
@@ -106,6 +119,14 @@
 .map-hud .map-frame,
 .map-hud .map-plot {
     pointer-events: auto;
+}
+
+/* #123/#195: the Nav toolbar wraps cleanly. When the strip is too narrow for warp · Pause · Follow ·
+   Plot · Dock · Scope · ? · checklist on one line, the row-gap keeps the wrapped line clear of the one
+   above instead of letting 'Scope / ? / checklist' collide with their neighbours. */
+.map-hud .btn-toolbar {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
 }
 
 /* #143 — the frame chip lives outside the Plot panel now (it governs the Play ribbon too), so it
@@ -424,11 +445,7 @@
 /* ---- PR-11: duty-station desks (docs/SaturdayPlan/StationDesks.md) ---- */
 
 .desk-tab-bar {
-    position: absolute;
-    top: 0.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 25;
+    /* #195: a centered flow child of .map-topstack now (was absolute top:0.5rem, left:50%). */
     pointer-events: auto;
     display: flex;
     gap: 0.25rem;
@@ -440,11 +457,8 @@
    actually flying the ship. Top-center, just under the desk tabs, on every desk. Big and readable
    from across the room; the two states are colour-coded so a glance is enough. */
 .pilot-banner {
-    position: absolute;
-    top: 3.0rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 24;
+    /* #195: a centered flow child of .map-topstack now (was absolute top:3.0rem, left:50%). Because it
+       claims real height here, growing to 2–3 rows pushes the toolbar down instead of covering it. */
     pointer-events: auto;
     /* #159/#184: the who indicator on top, the NOW/NEXT plan rows stacked beneath it. */
     display: flex;
@@ -529,16 +543,14 @@
 /* #166: the ship-wide alert strip, just under the pilot banner. Loud while unacknowledged; a
    silenced alert lingers dimmed until its condition clears. */
 .ship-alert-strip {
-    position: absolute;
-    top: 7.6rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 25;
+    /* #195: a centered flow child of .map-topstack now (was absolute top:7.6rem) — it stacks directly
+       under the banner, so the two can no longer overlap each other or the toolbar. */
     pointer-events: auto;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.25rem;
-    max-width: calc(100% - 1.5rem);
+    max-width: 100%;
 }
 
 .ship-alert {
@@ -925,31 +937,8 @@
     z-index: 40;
 }
 
-/* Tutorials advertisement — a dismissible pointer on the Nav map, sitting below the Layers row so
-   the two never collide. Points new players to the Captain's Tutorials tab, one desk over.
-   Round-2 audit fix 1: lowered below the HUD column (z 22) so it can no longer intercept the Plot /
-   Pause toolbar buttons it drifts over at wide viewports — the toolbar now wins the overlap. */
-.tutorial-ad {
-    position: absolute;
-    top: 6rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 12;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    max-width: min(42rem, 92vw);
-    padding: 0.4rem 0.55rem 0.4rem 0.9rem;
-    background: rgba(6, 9, 15, 0.9);
-    border: 1px solid rgba(120, 200, 255, 0.5);
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-}
-
-.tutorial-ad-text {
-    color: #e8eef6;
-    font-size: 0.9rem;
-}
+/* (#195) The Nav-map tutorials advertisement was removed — it floated over the toolbar and presumed
+   onboarding the tutorial flow (#160) should own. Its .tutorial-ad / .tutorial-ad-text rules went with it. */
 
 .map-layers-panel {
     position: absolute;

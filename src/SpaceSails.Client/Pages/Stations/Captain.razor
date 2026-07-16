@@ -10,6 +10,7 @@
 @{
     RenderFragment<ShipMission> Card = m =>
         @<div class="captain-card @(IsSelected(m) ? "captain-card-selected" : "")" role="button" tabindex="0"
+              title="Give this order — the ship makes for it at once, and the captain's word is final the moment it's given"
               @onclick="() => Pick(m)" @onkeydown="e => OnCardKeyDown(e, m)">
             @m.Describe()
         </div>;
@@ -21,12 +22,16 @@
     <div class="captain-view-toggle">
         <div class="btn-group btn-group-sm" role="group" aria-label="Captain view">
             <button type="button" class="btn @(_view == CaptainView.Orders ? "btn-info" : "btn-outline-light")"
+                    title="Show the orders catalog — pick the ship's mission"
                     @onclick="() => SetView(CaptainView.Orders)">⚓ Orders</button>
             <button type="button" class="btn @(_view == CaptainView.Status ? "btn-info" : "btn-outline-light")"
+                    title="Show the whole ship at a glance — every station's board writ large"
                     @onclick="() => SetView(CaptainView.Status)">🧭 Ship status</button>
             <button type="button" class="btn @(_view == CaptainView.Tutorials ? "btn-info" : "btn-outline-light")"
+                    title="Put the crew to school — pick a lesson that plays out at the helm"
                     @onclick="() => SetView(CaptainView.Tutorials)">🎓 Tutorials</button>
             <button type="button" class="btn @(_view == CaptainView.Ledger ? "btn-info" : "btn-outline-light")"
+                    title="Open the captain's ledger — every job in hand and every whisper worth keeping"
                     @onclick="() => SetView(CaptainView.Ledger)">📜 Ledger</button>
         </div>
     </div>
@@ -65,7 +70,7 @@
                     @(ShotAuthorized ? "✅ NEXT SHOT AUTHORIZED — click to withdraw" : "✍ AUTHORIZE NEXT SHOT")
                 </button>
                 <label class="text-light captain-fire-at-will">
-                    <input type="checkbox" checked="@FireAtWill" @onchange="() => OnToggleFireAtWill.InvokeAsync()" />
+                    <input type="checkbox" checked="@FireAtWill" title="Standing order — let the gun deck fire on hostiles without waiting on your word each time" @onchange="() => OnToggleFireAtWill.InvokeAsync()" />
                     ⚓ fire at will (standing order)
                 </label>
             </div>
@@ -79,6 +84,7 @@
             @foreach (DeskChips.ChipData chip in StatusChips)
             {
                 <div class="captain-status-card" role="button" tabindex="0"
+                     title="Take the chair at this station"
                      @onclick="() => OnGoToDesk.InvokeAsync(chip.Desk)"
                      @onkeydown="e => OnStatusKeyDown(e, chip.Desk)">
                     <div class="captain-group-header"><span class="captain-group-icon">@chip.Icon</span> @chip.Label</div>
@@ -114,6 +120,7 @@
                             bool active = ActiveTutorial == idx;
                             bool done = ActiveTutorial < 0 || idx < ActiveTutorial;
                             <div class="captain-card @(active ? "captain-card-selected" : "")" role="button" tabindex="0"
+                                 title="Begin this lesson — it plays out at the helm with a checklist to follow"
                                  @onclick="() => OnStartTutorial.InvokeAsync(idx)" @onkeydown="e => OnTutorialKeyDown(e, idx)">
                                 <div class="fw-bold">@(active ? "▶ " : done ? "✓ " : "")@Tutorials[idx].Title</div>
                                 <div class="captain-card-blurb text-secondary small">@Tutorials[idx].Blurb</div>
@@ -165,6 +172,7 @@
                                 @if (q.ShowScopeButton)
                                 {
                                     <button type="button" class="btn btn-sm btn-info py-0 px-1 mt-1 text-start"
+                                            title="Aim the scope where the tip points and jump to Sensors to run the scan"
                                             @onclick="() => OnPointScope.InvokeAsync()">
                                         🔭 Point the scope where the tip says
                                     </button>
@@ -203,6 +211,7 @@
                                 @if (t.ScopeTipId is { } scopeId)
                                 {
                                     <button type="button" class="btn btn-sm btn-info py-0 px-1 mt-1 text-start"
+                                            title="Aim the scope where this tip points and jump to Sensors to run the scan"
                                             @onclick="() => OnScopeTip.InvokeAsync(scopeId)">
                                         🔭 Point the scope where this says
                                     </button>
@@ -213,11 +222,13 @@
                                         @if (t.ShowDarkWeb)
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                                    title="Jump to Comms and open the dark-web node this tip points to"
                                                     @onclick="() => OnRouteToDarkWeb.InvokeAsync()">→ dark web</button>
                                         }
                                         @if (t.DossierShipId is { } dossierId)
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                                    title="Jump to Comms and open this ship's dossier"
                                                     @onclick="() => OnRouteToDossier.InvokeAsync(dossierId)">→ dossier</button>
                                         }
                                     </div>
