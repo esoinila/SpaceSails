@@ -6175,6 +6175,15 @@
         ReprojectTrajectory();
         _camera.CenterOn(_ship.Position);
 
+        // The tutorial checklist is Earth-anchored ("the Luna pod", "dock at Earth and sell") —
+        // riding along to Saturn it's just noise (owner, first Saturn milk-run playtest). Any
+        // non-Earth start hides it; the Captain's Tutorials tab reopens a lesson deliberately
+        // (StartTutorial reseeds and re-shows), so nothing is lost, only misplaced.
+        if (id != "earth")
+        {
+            _showTutorial = false;
+        }
+
         // A docked locale: clamp onto the berth (the tick's HoldAtDock then pins the ship to the
         // station's drift), weld on the walk-through complex, and drop the avatar aboard by the gangway
         // facing the tube — a couple of steps from walking straight across into the bar.
