@@ -43,6 +43,7 @@ dotnet run --project labs/20-the-long-goodbye -c Release
 dotnet run --project labs/22-the-air-brake -c Release
 dotnet run --project labs/23-the-moon-run -c Release
 dotnet run --project labs/24-the-last-mile -c Release
+dotnet run --project labs/25-the-tide-that-takes-it-back -c Release
 dotnet run --project labs/28-the-pump-crawl -c Release
 ```
 
@@ -228,6 +229,17 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     cheaper-vs-sooner trade table (the "heat on us" tactic); `--viz` draws the phasing loop with the
     direct hop and the legacy chase as toggleable groups.
 
+25. [**The tide that takes it back**](25-the-tide-that-takes-it-back/README.md) — the lesson where
+    the autopilot learns to KEEP an orbit, not just reach one. The owner auto-parked at Enceladus and
+    watched the orbit quietly die. Swept in the live N-body field: Luna and Titan have a stable park
+    core out to ~0.5 Hill, but **Enceladus has none** — its Hill sphere is only 3.8 body radii, so the
+    0.33-Hill park sits at 1.24 R and Saturn's tide forces e≈0.3, crashing an unkept orbit within half
+    a day (the owner's stranded ship, from first principles). Then the keeping bill: a park-radius-pinned
+    trim on a quarter-period cadence (fighting the tide every tick is a treadmill — 332 trims/day — but
+    riding its reversible oscillation pays only the secular drift) holds Enceladus for **27 pulses/day**,
+    Luna for **2**, Titan for **3**, each priced in the game's own pulses. The three measured rows become
+    `OrbitKeeping`/`OrbitKeepingTable` in Core; the armed autopilot now quotes the trim budget at arm time
+    and holds the park until the captain disarms or the tank runs dry.
 28. [**The pump crawl**](28-the-pump-crawl/README.md) — the lesson where the ship learns to ask *can I
     still refuel?* before the tank answers for it (#146/#157/#166). Depots ride the rails at planets,
     stations and havens but **never at an ordinary moon**, so Titan and Luna are dry. Priced with the
