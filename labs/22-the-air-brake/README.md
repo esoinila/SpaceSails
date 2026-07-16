@@ -72,16 +72,16 @@ deceleration of **3 g**:
 
 ```
   peri alt km  min alt km   dv shed m/s    peak g                       outcome
-            5         0.4          3803      5.76   TOO DEEP: hull holed + captured
-           20        13.4          3301      3.76   TOO DEEP: hull holed + captured
-           40        33.9          1664      1.95   captured, apoapsis 20.6 R_J
+            5         0.1          3990      5.81TOO DEEP: hull holed + captured
+           20        13.5          3294      3.76TOO DEEP: hull holed + captured
+           40        34.0          1662      1.95   captured, apoapsis 20.7 R_J
            60        54.2           845      1.00   captured, apoapsis 50.3 R_J
-           80        74.4           431      0.52   captured, apoapsis 170.3 R_J
-          100        94.6           220      0.26   exits, v_inf 2.05 km/s
-          130       124.7            81      0.10   exits, v_inf 4.58 km/s
-          170       164.9            21      0.03   exits, v_inf 5.31 km/s
-          220       215.2             4      0.00   exits, v_inf 5.50 km/s
-          300       295.6             0      0.00   exits, v_inf 5.53 km/s
+           80        74.4           431      0.52  captured, apoapsis 170.4 R_J
+          100        94.6           220      0.26        exits, v_inf 2.05 km/s
+          130       124.7            81      0.10        exits, v_inf 4.58 km/s
+          170       164.9            21      0.03        exits, v_inf 5.31 km/s
+          220       215.2             4      0.00        exits, v_inf 5.50 km/s
+          300       295.6             0      0.00        exits, v_inf 5.53 km/s
 ```
 
 Three zones fall straight out of the exponential: **too shallow** (above ~220 km, under 50 m/s shed
@@ -97,16 +97,16 @@ entry depth. The burn-up line is **6.5 g** (Apollo crews held ~6–7):
 
 ```
   peri alt km  min alt km   dv shed m/s    peak g                   outcome
-          110       108.8            56      0.08   skips out, v_inf 1.02 km/s
-          100        98.6           198      0.28   CAPTURED, apo 373630 km
-           95        93.5           374      0.52   CAPTURED, apo 127516 km
-           90        88.4           714      0.96   CAPTURED, apo 53900 km
-           85        83.1          1395      1.75   CAPTURED, apo 23021 km
-           80        77.5          3019      3.12   CAPTURED, apo 7725 km
-           75         0.0         14351      6.28   BURN-UP (augers in)
-           70         0.0         14361      8.13   BURN-UP (augers in)
-           65         0.0         14353     10.88   BURN-UP (augers in)
-           60         0.0         14345     13.30   BURN-UP (augers in)
+          110       108.8            56      0.08skips out, v_inf 1.02 km/s
+          100        98.6           198      0.28   CAPTURED, apo 374444 km
+           95        93.5           374      0.52   CAPTURED, apo 127877 km
+           90        88.4           712      0.96    CAPTURED, apo 54168 km
+           85        83.1          1387      1.75    CAPTURED, apo 23259 km
+           80        77.6          2961      3.11     CAPTURED, apo 8020 km
+           75         0.0         14295      6.36       BURN-UP (augers in)
+           70         0.0         14343      8.08       BURN-UP (augers in)
+           65         0.0         14397     10.88       BURN-UP (augers in)
+           60         0.0         14444     13.39       BURN-UP (augers in)
 ```
 
 The honest punchline: the band that **captures without burning up** spans a periapsis altitude of
@@ -123,10 +123,10 @@ periapsis, and **spend no propellant after the aim**. Each skim drops the apoaps
 
 ```
   pass  peri alt km   dv shed m/s    peak g     energy J/kg        apoapsis
-     1         66.4           564      0.67       -15699632       114.4 R_J
-     2         56.0           797      0.93       -62848106        27.8 R_J
-     3         44.7          1164      1.31      -130737557        12.9 R_J
-     4         32.9          1732      1.85      -229410476         6.9 R_J
+     1         66.4           564      0.67       -15683931       114.5 R_J
+     2         56.0           796      0.93       -62801884        27.9 R_J
+     3         44.7          1163      1.31      -130627040        12.9 R_J
+     4         32.9          1730      1.85      -229157321         6.9 R_J
 ```
 
 Pass 1 alone turns the hyperbolic arrival (`E > 0`) bound (`E < 0`): the atmosphere captured the
