@@ -824,9 +824,12 @@
                                                 @onclick="() => ToggleBurnMode(node)">@(node.Mode == BurnMode.Vector ? "✚" : "±")</button>
                                         @if (node.Mode == BurnMode.Vector)
                                         {
-                                            @* X-Pilot: a world-space heading in degrees, plus quick ±15° nudges. *@
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate −15°"
-                                                    @onclick="() => NudgeHeading(node, -15)">↺</button>
+                                            @* X-Pilot: a world-space heading in degrees, plus quick ±15° nudges. The glyphs
+                                               promise the VISIBLE rotation of the map arrow: heading is math-CCW (Y up) but the
+                                               screen draws Y down, so +15° turns the drawn arrow counter-clockwise — ↺ must be
+                                               the POSITIVE nudge (#154, both buttons were inverted vs what the player sees). *@
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate counter-clockwise (+15°)"
+                                                    @onclick="() => NudgeHeading(node, 15)">↺</button>
                                             <div class="input-group input-group-sm map-plot-heading">
                                                 <input type="text" inputmode="decimal" class="form-control form-control-sm"
                                                        value="@(node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture))"
@@ -834,8 +837,8 @@
                                                        @onchange="e => SetHeading(node, e)" @onkeydown:stopPropagation="true" />
                                                 <span class="input-group-text">°</span>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate +15°"
-                                                    @onclick="() => NudgeHeading(node, 15)">↻</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Rotate clockwise (−15°)"
+                                                    @onclick="() => NudgeHeading(node, -15)">↻</button>
                                         }
                                         else
                                         {
