@@ -79,6 +79,20 @@ public static class OrbitRule
     /// strips the outer Hill. The park target is capped here.</summary>
     public const double ParkCeilingHillFraction = 0.9;
 
+    /// <summary>Upper edge of the tide-STABLE park band, as a fraction of the Hill sphere. The
+    /// autopilot circularizes at <see cref="ParkStableHillFraction"/> (≈ 0.33 Hill); the Enceladus
+    /// 10-day / ≈36-orbit drift sweep (Lab 16) mapped robust stability out to ≈ 0.33 Hill and chaos
+    /// nearer half-Hill (an orbit at ≈ 0.53 Hill strips over hours — the owner's stranded ship, #180).
+    /// This 0.4-Hill edge sits a small grace above the 0.33 park so the autopilot's own insertion
+    /// never trips the tide-risk verdict, while a manual park anywhere near half-Hill does.</summary>
+    public const double ParkStableCeilingHillFraction = 0.4;
+
+    /// <summary>Multiplicative grace applied to the <see cref="ParkingRadius"/> when it defines the
+    /// stable-band ceiling for a very deep well (Hill so tight that the park is clamped up off the
+    /// surface, above 0.4 Hill). Keeps the autopilot's own circular park just inside the band under
+    /// floating-point round-off.</summary>
+    public const double StableBandGrace = 1.02;
+
     /// <summary>Hill-sphere radius: where the body's gravity owns a satellite against its parent's tide.
     /// Uses the body's <see cref="CelestialBody.OrbitRadius"/> (semi-major axis) — the stable, mean
     /// value. For an eccentric body whose Hill sphere breathes with distance, prefer the
@@ -141,6 +155,95 @@ public static class OrbitRule
         double ceiling = ParkCeilingHillFraction * hillRadius;
         double target = Math.Max(ParkStableHillFraction * hillRadius, floor);
         return ceiling <= floor ? floor : Math.Min(target, ceiling);
+    }
+
+    /// <summary>The upper radius of the tide-STABLE park band about a body — the widest a bound
+    /// orbit's apoapsis may reach before the sun's tide starts to strip it (Lab 16 drift sweep,
+    /// #180). Normally <see cref="ParkStableCeilingHillFraction"/>·Hill (0.4 Hill), a small grace
+    /// above the 0.33-Hill autopilot park; for a very deep well whose park is clamped up off the
+    /// surface it is the park radius itself with a hair of grace, so the autopilot's own insertion
+    /// is never judged unstable.</summary>
+    public static double StableParkCeiling(CelestialBody body, double hillRadius) =>
+        Math.Max(ParkStableCeilingHillFraction * hillRadius, ParkingRadius(body, hillRadius) * StableBandGrace);
+
+    /// <summary>True when a CIRCULAR park at <paramref name="radius"/> would be tide-stable: at or
+    /// above the surface floor (<see cref="SurfaceParkRadii"/>·R) and at or below the stable-band
+    /// ceiling (<see cref="StableParkCeiling"/>). This is exactly the test the manual Enter-orbit
+    /// press needs — it circularizes at the ship's current radius — so a press in the chaotic band
+    /// (the owner's ≈ 0.53-Hill Enceladus park, #180) is caught before it strands the ship.</summary>
+    public static bool RadiusInStableBand(double radius, CelestialBody body, double hillRadius) =>
+        radius >= SurfaceParkRadii * body.BodyRadius && radius <= StableParkCeiling(body, hillRadius);
+
+    /// <summary>Verdict on a bound orbit's long-term survival — the moon-grade stability check the
+    /// manual Enter-orbit button lacked (#179/#180).</summary>
+    public enum ParkStabilityVerdict
+    {
+        /// <summary>Bound, whole orbit inside the tide-stable band (floor … <see cref="StableParkCeiling"/>).</summary>
+        Stable,
+
+        /// <summary>Bound, but the apoapsis reaches into the tide-chaotic zone above the stable band —
+        /// the sun's tide will pump and strip it over hours (Lab 16). The owner's ≈ 0.53-Hill park.</summary>
+        TideRisk,
+
+        /// <summary>Bound, but the periapsis dips below the surface floor — the orbit intersects the
+        /// body; impact is coming.</summary>
+        Subsurface,
+
+        /// <summary>Not gravitationally captured (non-negative two-body energy about the body, or
+        /// outside its Hill sphere).</summary>
+        NotBound,
+    }
+
+    /// <summary>
+    /// Classify a ship's orbit about <paramref name="body"/> from its two-body elements — the moon-grade
+    /// stability verdict the manual orbit press and the degradation alert both read (#180). Energy and
+    /// specific angular momentum give the semi-major axis and eccentricity, hence periapsis and apoapsis
+    /// (same conic math as <see cref="TransferPlanner"/>'s Periapsis helper); the apses are then judged
+    /// against the tide-stable band whose ceiling the Enceladus 10-day / ≈36-orbit drift sweep (Lab 16)
+    /// mapped: robust to ≈ 0.33 Hill, chaotic near half-Hill.
+    /// <list type="bullet">
+    /// <item><see cref="ParkStabilityVerdict.NotBound"/> — energy ≥ 0 (hyperbolic/parabolic) or outside the Hill sphere.</item>
+    /// <item><see cref="ParkStabilityVerdict.Subsurface"/> — periapsis below <see cref="SurfaceParkRadii"/>·R (checked first: impact is the most urgent failure).</item>
+    /// <item><see cref="ParkStabilityVerdict.TideRisk"/> — apoapsis above <see cref="StableParkCeiling"/> (into the chaotic outer band).</item>
+    /// <item><see cref="ParkStabilityVerdict.Stable"/> — the whole orbit sits inside the stable band.</item>
+    /// </list>
+    /// </summary>
+    public static ParkStabilityVerdict ParkStability(
+        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, double hillRadius)
+    {
+        Vector2d r = ship.Position - bodyPosition;
+        double radius = r.Length;
+        if (!(radius > 0) || !(hillRadius > 0) || !(body.Mu > 0) || radius >= hillRadius)
+        {
+            return ParkStabilityVerdict.NotBound;
+        }
+
+        Vector2d v = ship.Velocity - bodyVelocity;
+        double mu = body.Mu;
+        double energy = v.LengthSquared / 2 - mu / radius;
+        if (energy >= 0)
+        {
+            return ParkStabilityVerdict.NotBound; // unbound: no periapsis/apoapsis to speak of
+        }
+
+        double h = r.X * v.Y - r.Y * v.X;                       // specific angular momentum
+        double a = -mu / (2 * energy);                          // semi-major axis (>0 when bound)
+        double e = Math.Sqrt(Math.Max(0, 1 + 2 * energy * h * h / (mu * mu)));
+        double periapsis = a * (1 - e);
+        double apoapsis = a * (1 + e);
+
+        // Impact first — the most urgent failure. Then the tide-chaotic outer band.
+        if (periapsis < SurfaceParkRadii * body.BodyRadius)
+        {
+            return ParkStabilityVerdict.Subsurface;
+        }
+
+        if (apoapsis > StableParkCeiling(body, hillRadius))
+        {
+            return ParkStabilityVerdict.TideRisk;
+        }
+
+        return ParkStabilityVerdict.Stable;
     }
 
     /// <summary>The periapsis the safe approach aims for — the closest the ballistic fall comes to
