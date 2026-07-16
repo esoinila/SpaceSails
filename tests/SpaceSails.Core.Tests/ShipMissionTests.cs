@@ -82,13 +82,16 @@ public class ShipMissionTests
         Assert.Contains(catalog.TradeRuns, m => m.OriginBodyId == "mercury-compute" && m.DestinationBodyId == "earth");
 
         // Havens in sol.json: Enceladus (moon) and Ringside Exchange (station) out at Saturn, plus
-        // the inner grey-market docks Cinder Roost (Venus), The Space Bar (Mars) and The Tilt (Uranus).
+        // the inner grey-market docks Cinder Roost (Venus), The Space Bar (Mars) and The Tilt (Uranus),
+        // and Selene Gate — the Luna-vicinity fuel port added for #157 (its haven flag closes Lab 28's
+        // stranded-at-Luna gap and, like any haven, offers a lay-low berth).
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "enceladus");
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "ringside-exchange");
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "cinder-roost");
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "the-space-bar");
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "the-tilt");
-        Assert.Equal(5, catalog.LayLow.Count);
+        Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "selene-gate");
+        Assert.Equal(6, catalog.LayLow.Count);
 
         // Survey corridors collapse direction: saturn/mars from one route, earth/mercury-compute
         // from two routes (opposite directions) must still yield a single corridor.

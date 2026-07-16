@@ -205,6 +205,29 @@ public static class FuelReachability
             verdict, nearest.DepotBodyId, reach, remainingPulses, margin, safeReserve, reachable, reason);
     }
 
+    /// <summary>
+    /// #157 · The refuel gate the Trade desk reads: is the ship genuinely alongside a fuel pump right now,
+    /// so "⛽ FILL HER UP" is a berth-side click rather than a trip? Scans every depot-bearing body in the
+    /// system (stations + havens — the same hosts <see cref="TrafficSchedule.GenerateDepots"/> spawns
+    /// pumps by) and applies the SAME <see cref="AtPump"/> truth <see cref="Assess"/> uses for its
+    /// zero-reach Comfortable verdict, so the button and the alarm can never disagree about "you are
+    /// docked". Well-independent (it does not need to know which planet's well you are in) and cheap —
+    /// pure distance / dock-envelope tests, no transfer solves. Returns the pump you are alongside (the
+    /// first found), or null. Deterministic.
+    /// </summary>
+    public static CelestialBody? AlongsidePump(ICelestialEphemeris ephemeris, ShipState ship)
+    {
+        foreach (CelestialBody body in ephemeris.Bodies)
+        {
+            if ((body.Kind == BodyKind.Station || body.IsHaven) && AtPump(ephemeris, ship, body))
+            {
+                return body;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>True when the ship is genuinely parked at a pump — refuelling is a berth-side click,
     /// not a transfer: inside a haven moon's Hill sphere (orbiting it), or inside a station's dock
     /// envelope. Deliberately NOT the capture range (whose 3e9 m floor reaches millions of km — that
