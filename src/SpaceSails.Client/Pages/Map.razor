@@ -120,6 +120,54 @@
         </div>
     }
 
+    @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
+       bay's airlock lists the places within one shuttle hop. An interior berth is pickable — confirm and
+       the crossing IS the trip, you step off ashore there; a body in range with nowhere to step off says
+       so honestly; nothing in range keeps the door shut. Same overlay family as the deck-offer-card. *@
+    @if (_deckMode && _shuttleBayStops is { } shuttleStops)
+    {
+        <div class="deck-shuttle-card">
+            <div class="deck-shuttle-title">🚀 Shuttle bay airlock — in range</div>
+            @if (shuttleStops.Count == 0)
+            {
+                <div class="deck-shuttle-empty">
+                    Nothing in shuttle range — no berth within
+                    @((ShuttleRange.RangeMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km.
+                    The hatch stays shut.
+                </div>
+            }
+            else
+            {
+                <div class="deck-shuttle-rows">
+                    @foreach (ShuttleStop stop in shuttleStops)
+                    {
+                        ShuttleStop local = stop;
+                        <div class="deck-shuttle-row">
+                            <div class="deck-shuttle-dest">
+                                <span class="deck-shuttle-name">@(local.HasBerth ? "⚓" : "🌑") @local.Body.Name</span>
+                                <span class="deck-shuttle-meta">@FormatDistance(local.DistanceMeters) · ETA @FormatDuration(local.TravelSeconds)</span>
+                            </div>
+                            @if (local.HasBerth)
+                            {
+                                <button type="button" class="btn btn-sm btn-warning"
+                                        title="Take the shuttle to @local.Body.Name — the clock advances by the crossing, then you step off ashore"
+                                        @onclick="() => TakeShuttleTo(local)">Take the shuttle →</button>
+                            }
+                            else
+                            {
+                                <span class="deck-shuttle-noberth"
+                                      title="In shuttle range, but there's nowhere to step off yet">no berth ashore yet</span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            <div class="deck-shuttle-actions">
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="CloseShuttleBayDoor">Close hatch</button>
+            </div>
+        </div>
+    }
+
     @* The chooser (owner: "if many objects under click we let the user choose what they
        meant"): candidates ranked contacts → depots → bodies, lane and sky scan last. *@
     @if (_pickMenu is { Count: > 0 } pickList)
@@ -4248,6 +4296,9 @@
                 {
                     ShowPulseMessage("Shuttle ready in the cradle. K-77 and R-3B standing by.");
                 }
+                break;
+            case DeckPlan.ConsoleKind.ShuttleAirlock:
+                OpenShuttleBayDoor();
                 break;
             case DeckPlan.ConsoleKind.CommsSeat:
                 SwitchDesk(ShipDesk.Comms);
@@ -11223,6 +11274,7 @@
             PullAvatarAboard();
         }
         _deckPanX = _deckPanY = 0; // fresh deck: drop any drag-pan so the follow-cam isn't offset
+        _shuttleBayStops = null;   // a fresh deck shuts any open shuttle-bay hatch (#163)
         RefreshAshore();
     }
 
@@ -11240,6 +11292,96 @@
     // "Ashore" is a place on the continuous deck now, not a mode: true once you're past the tube in
     // the station room. Kept fresh as you walk so quest/status flavor can read it.
     private void RefreshAshore() => _ashore = _deckPlan.FollowCam && _avatarY > StationFloorY;
+
+    // ---- The shuttle-bay airlock: "the door you understand as a flight" (#163) ----
+    // Walking up to the bay's airlock (ConsoleKind.ShuttleAirlock) opens a pop-up of the places within
+    // one shuttle hop (ShuttleRange). Picking a berth and confirming IS the trip: the sim clock advances
+    // by the crossing and you step off ashore in the destination's interior — no separate flight
+    // minigame. The bay's airlock travels with the ship into every docked complex (HavenInterior seeds
+    // its doors from the ship's), so the same door at the destination is the ride home — never stranded.
+
+    // One reachable stop: the body, how far, the crossing time, and whether there's a berth to step off
+    // at (a walkable interior). Bodies in range without one show honestly as "no berth ashore yet".
+    private sealed record ShuttleStop(CelestialBody Body, double DistanceMeters, double TravelSeconds, bool HasBerth);
+
+    // Null = the hatch is shut; a list (possibly empty) = the pop-up is open.
+    private List<ShuttleStop>? _shuttleBayStops;
+
+    // Every non-planet body within one hop of where the ship floats now, nearest first. The sun and the
+    // planets themselves are never shuttle berths; the berth we're already clamped to is skipped.
+    private List<ShuttleStop> ShuttleDestinationsInRange()
+    {
+        var stops = new List<ShuttleStop>();
+        if (_ephemeris is null)
+        {
+            return stops;
+        }
+        Vector2d shipPos = _ship.Position;
+        foreach (CelestialBody b in _ephemeris.Bodies)
+        {
+            if (b.ParentId is null || b.Kind == BodyKind.Planet || b.Id == _dockedHavenId)
+            {
+                continue; // the sun / a gas giant / the berth we're already at
+            }
+            double dist = (shipPos - _ephemeris.Position(b.Id, SimTime)).Length;
+            if (dist <= b.BodyRadius || !ShuttleRange.InRange(dist))
+            {
+                continue; // basically on it already, or out of shuttle range
+            }
+            stops.Add(new ShuttleStop(b, dist, ShuttleRange.TravelSeconds(dist), HavenInterior.HasInterior(b.Id)));
+        }
+        stops.Sort((a, c) => a.DistanceMeters.CompareTo(c.DistanceMeters));
+        return stops;
+    }
+
+    private void OpenShuttleBayDoor() => _shuttleBayStops = ShuttleDestinationsInRange();
+
+    private void CloseShuttleBayDoor() => _shuttleBayStops = null;
+
+    // Take the shuttle to a berth in range — the door is the flight. Only interior station havens (μ≤0,
+    // clampable) are ever pickable, so arriving reuses the clamp-and-go-ashore path: advance the clock
+    // by the crossing, clamp at the destination, weld on its walkable complex, and step off in the hall.
+    private void TakeShuttleTo(ShuttleStop stop)
+    {
+        if (_ephemeris is null)
+        {
+            return;
+        }
+        CelestialBody dest = stop.Body;
+        double newT = SimTime + stop.TravelSeconds;
+
+        const double h = 1.0;
+        Vector2d destPos = _ephemeris.Position(dest.Id, newT);
+        Vector2d destVel = (_ephemeris.Position(dest.Id, newT + h) - _ephemeris.Position(dest.Id, newT - h)) / (2 * h);
+        Vector2d outward = destPos == Vector2d.Zero ? new Vector2d(1, 0) : destPos.Normalized();
+        _ship = new ShipState(destPos + outward * 3_000, destVel, newT, _ship.Charge); // 3 km off the ~1 km station
+        SimTime = newT;
+
+        _dockedHavenId = dest.Id;
+        _dockOffset = _ship.Position - destPos;             // freeze the arm's reach at the new berth
+        _nearestBody = dest;
+        _nearestBodyPosition = destPos;
+        _nearestBodyVelocity = destVel;
+        _armedOrbitBodyId = null;                           // a berth disarms any pending auto-insert
+        _autopilotStandDownReason = null; _dockReadyStatus = null;
+        ResetAutopilotBudget();
+        StaleFutureNodes();                                 // a berth cancels any pending burns
+        HoldAtDock();                                       // pin the ship to the station's drift now
+        SetDeckForDock(dest.Id);                            // weld on the destination's walkable complex
+
+        // Emerge in the destination interior: you stepped off the shuttle past the gangway, into the
+        // concourse — not back aboard your own bridge.
+        (_avatarX, _avatarY, _avatarHeading) = (2.5, StationFloorY + 6, Math.PI / 2);
+        RefreshAshore();
+        _deckMode = true;
+        _activeDesk = ShipDesk.Deck;
+
+        _shuttleBayStops = null;
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage($"🚀 Shuttle away — {FormatDuration(stop.TravelSeconds)} later you step off at {dest.Name}.");
+        CompleteCargoRunQuests(dest.Id); // arriving at a delivery berth still closes a cargo run (M-Q3)
+        PayCompletedQuests();
+    }
 
     // --- Ashore quests (M-Q1): the hooded stranger at the bar table ---
 
