@@ -50,6 +50,34 @@ public class FlightPlanStatusTests
     }
 
     [Fact]
+    public void NextRow_SpeaksTheHarborVocabularyVerbatim_OneVoice()
+    {
+        // #203: the banner NEXT row is the same text HarborVocabulary composes — a real orbit keeps
+        // "orbit-insert (alt N km)", a μ≤0 dock haven reads "dock envelope … slow to ≤8 km/s". The
+        // caller composes the label through the one truth; the builder only slots and prefixes it.
+        FlightPlanStatus orbit = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Enceladus",
+            NextStepLabel: null, NextStepEta: null,
+            UpcomingSteps: new[]
+            {
+                new FlightPlanStep(HarborVocabulary.ArrivalStep(HarborClass.Orbit, "Enceladus", "alt 313 km"), "at window", FlightStepState.Armed),
+            }));
+        Assert.Equal("NEXT: orbit-insert at Enceladus (alt 313 km) at window", orbit.NextLine);
+
+        FlightPlanStatus dock = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
+            Docked: false, DockedHavenName: null,
+            AutopilotArmed: true, AutopilotFlyingApproach: false, AutopilotBodyName: "Cinder Roost",
+            NextStepLabel: null, NextStepEta: null,
+            UpcomingSteps: new[]
+            {
+                new FlightPlanStep(HarborVocabulary.ArrivalStep(HarborClass.Dock, "Cinder Roost"), "in 1 h", FlightStepState.Armed),
+            }));
+        Assert.Equal("NEXT: dock envelope at Cinder Roost — slow to ≤8 km/s in 1 h", dock.NextLine);
+        Assert.DoesNotContain("orbit-insert", dock.NextLine!);
+    }
+
+    [Fact]
     public void Now_FlyingApproach_NamesTheAutopilotAndBody()
     {
         FlightPlanStatus s = FlightPlanStatusBuilder.Build(new FlightPlanInputs(
