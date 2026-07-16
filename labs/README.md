@@ -43,6 +43,7 @@ dotnet run --project labs/20-the-long-goodbye -c Release
 dotnet run --project labs/22-the-air-brake -c Release
 dotnet run --project labs/23-the-moon-run -c Release
 dotnet run --project labs/24-the-last-mile -c Release
+dotnet run --project labs/28-the-pump-crawl -c Release
 ```
 
 Each lesson folder holds:
@@ -226,6 +227,18 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     dock envelope with 100× margin, for **2 pulses**. `TransferPlanner.Solve` returns the whole
     cheaper-vs-sooner trade table (the "heat on us" tactic); `--viz` draws the phasing loop with the
     direct hop and the legacy chase as toggleable groups.
+
+28. [**The pump crawl**](28-the-pump-crawl/README.md) — the lesson where the ship learns to ask *can I
+    still refuel?* before the tank answers for it (#146/#157/#166). Depots ride the rails at planets,
+    stations and havens but **never at an ordinary moon**, so Titan and Luna are dry. Priced with the
+    game's own `TransferPlanner` and pulse kernel, the reach to the nearest pump is **29 pulses** from
+    a parked-at-Titan doorstep (Ringside) or **77** to the always-there haven (Enceladus) — the reliable
+    reach already **exceeds the flat 45-p / 18% autopilot reserve**, the #146 starve in one number. The
+    red line per region: **27–29 p** in the Saturn well, **infinite at Luna** (its only depot host is a
+    LEO station the 5 km/s capture cap can't match — a real gap for #157). Ships a Core service,
+    `FuelReachability.Assess`, that returns a well-aware verdict — Comfortable / Thin / CannotReachAPump —
+    for the #166 banner and 🦜 parrot squawk; the amber floor `reach + 18%` rides the crawl instead of a
+    flat fraction the well outgrows.
 
 ## Framing rule
 
