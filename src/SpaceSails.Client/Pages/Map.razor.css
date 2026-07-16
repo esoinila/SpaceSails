@@ -216,6 +216,25 @@
     max-width: 100%;
 }
 
+/* #206 — the every-body frame overflow. A compact inline control sized to its "frame… ▾" label, not
+   the full row, so it sits among the contextual chips rather than dominating them. */
+.map-frame-picker {
+    width: auto;
+    display: inline-block;
+    height: 1.6rem;
+    font-size: 0.75rem;
+    background-color: rgba(33, 37, 41, 0.9);
+    color: #dee2e6;
+    border-color: #495057;
+}
+
+/* #209 — the honest ribbon-length note, tucked just under the Path-length slider. */
+.map-ribbon-note {
+    margin-top: -0.15rem;
+    margin-bottom: 0.35rem;
+    line-height: 1.15;
+}
+
 .map-plot {
     /* Wide enough that the X-Pilot node row — mode toggle, ↺ heading input ↻, pulses, percent,
        retime, delete — lays out in full without the node list scrolling horizontally, with room
