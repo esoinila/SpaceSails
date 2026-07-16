@@ -41,6 +41,7 @@ dotnet run --project labs/18-the-free-return -c Release
 dotnet run --project labs/19-the-grand-tour -c Release
 dotnet run --project labs/20-the-long-goodbye -c Release
 dotnet run --project labs/22-the-air-brake -c Release
+dotnet run --project labs/23-the-moon-run -c Release
 ```
 
 Each lesson folder holds:
@@ -75,8 +76,11 @@ readout (5.204 AU, 28.98 km/s) interpolated from the integrator's own samples.*
 
 **Supported so far:** lesson [01](01-falling-is-orbiting/README.md) (the minimal example),
 lesson [19](19-the-grand-tour/README.md) (the showcase — the flown Grand Tour with its aim-offset
-sweep as a toggleable group), and lesson [20](20-the-long-goodbye/README.md) (the same tour coasted
-to a fixed 2026 present, with calendar dates from 1977 to now and a "she is here now" finale marker).
+sweep as a toggleable group), lesson [20](20-the-long-goodbye/README.md) (the same tour coasted
+to a fixed 2026 present, with calendar dates from 1977 to now and a "she is here now" finale marker),
+and lesson [23](23-the-moon-run/README.md) (the Saturn-centric moon run — the planned Lambert
+transfer arc with its ghost ship and burn/closest markers, and Wednesday's spiral-of-resets as a
+toggleable comparison group).
 
 **Wiring a new lesson** takes about six lines around the sample lists the probe already has —
 everything behind `LabViz.Wants(args)` so the no-flag output never changes:
@@ -196,6 +200,15 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     capture flown pass by pass — a hyperbolic arrival turned bound (114 → 7 R_J) on drag alone, zero
     burns after the aim. The same drag powers the game's skim/skip node; `--viz` draws the corridor
     fan and the capture spiral.
+
+23. [**The moon run**](23-the-moon-run/README.md) — the lesson where the game's autopilot learns
+    orbital mechanics. Wednesday's reset loop burned 677 pulses (54.5 km/s) fighting Saturn to reach
+    Titan; the geometry prices the hop at 6.04 km/s. Reproduce the hemorrhage honestly, then teach the
+    fix the game now flies (`TransferMath` + `TransferPlanner`, Curtis chs. 2/5/6): plan in the giant's
+    frame — the window is a 36.8 h bus timetable, the porkchop's floor IS Hohmann (6.02 km/s), and the
+    planner's one prograde departure burn, flown end to end in the real N-body sim, passes 73 Mm from
+    Titan and captures for **96 pulses total — a 7.1× cut**. `--viz` draws the Saturn-centric arc with
+    the old spiral as a toggleable comparison.
 
 ## Framing rule
 
