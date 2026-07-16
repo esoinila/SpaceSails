@@ -239,6 +239,18 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     `FuelReachability.Assess`, that returns a well-aware verdict — Comfortable / Thin / CannotReachAPump —
     for the #166 banner and 🦜 parrot squawk; the amber floor `reach + 18%` rides the crawl instead of a
     flat fraction the well outgrows.
+29. [**The harbor pattern**](29-the-harbor-pattern/README.md) — the lesson where the ship learns what
+    a safe arrival looks like. The owner kept landing WRONG: in orbit "by luck" at Enceladus (#180),
+    stuck near a station with no way to deliver (#175). Two harbor doors, measured by flying a spread of
+    inbound trajectories through the real sim: a **station** clamp bubble (500,000 km / ≤8 km/s) never
+    refuses you but bills a pulse per ~1% of world speed you arrive hot with — a clean **4 km/s** coast
+    clamps for **0 pulses**, a 16 km/s botch for **68**; a **moon** door is the **949 km** Hill sphere
+    where a too-hot fall genuinely IMPACTS — 1 km/s parks for **9 pulses**, 3 km/s hits the moon. The
+    corridor is a constant-time-to-go glideslope (`v ≤ range/τ`, τ anchored on the autopilot's own
+    closing speed), embedded as `ApproachCorridor` in Core with a tested `Read(range, speed)` →
+    OnPattern/Hot/Missed + next-gate query — the seam the banner NEXT row (#159) and the #160 tutorial
+    narration speak. `--viz` draws the Enceladus corridor: a textbook fall coiling into a park beside a
+    botched one punching through.
 
 ## Framing rule
 
