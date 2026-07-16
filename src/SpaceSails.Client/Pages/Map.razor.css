@@ -1229,3 +1229,70 @@
 .pin-pad-cancel:hover {
     background: rgba(224, 228, 236, 0.1);
 }
+
+/* #185 — the completion fanfare. A finished contract is a CELEBRATION, centred over everything,
+   the coin arriving in the open, the giver grateful, the parrot singing. */
+.mission-celebration-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 1400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 6, 11, 0.6);
+    pointer-events: auto;
+}
+
+.mission-celebration {
+    max-width: min(30rem, 90vw);
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    color: #e8ecf4;
+    background: linear-gradient(180deg, rgba(20, 26, 40, 0.98), rgba(8, 11, 18, 0.98));
+    border: 1px solid rgba(255, 200, 120, 0.55);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.7), 0 0 1.5rem rgba(255, 200, 120, 0.25);
+}
+
+.mc-fanfare {
+    color: #ffd479;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.mc-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+}
+
+.mc-giver {
+    color: #ffd479;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.35rem;
+}
+
+.mc-thanks {
+    font-style: italic;
+    color: #cfe0f5;
+    margin-bottom: 0.6rem;
+}
+
+.mc-payment {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #7ee787;
+    margin-bottom: 0.5rem;
+}
+
+.mc-parrot {
+    color: #f0c674;
+    margin-bottom: 0.4rem;
+}
+
+.mc-history {
+    font-size: 0.85rem;
+    color: #9aa6bd;
+}
