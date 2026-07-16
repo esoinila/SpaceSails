@@ -5983,11 +5983,19 @@
         IEnumerable<NpcShip> initial = pods.Concat(traffic).Concat(depots);
         if (_scenarioName.Contains("Sol", StringComparison.OrdinalIgnoreCase))
         {
+            // Luna's mass drivers, lobbing compute-core pods on a steady cadence (worldbuilding §1;
+            // Lab 30 "The mass-driver timetable"): a modest run of ballistic pods fired retrograde
+            // toward the inner system, half already in flight at world-load, so the "Luna's mass
+            // drivers lobbing compute-core pods" the scenario description promises is literally on the
+            // map as tiny moving objects. Zero maneuver budget, empty plan — they coast their conic.
+            IReadOnlyList<NpcShip> lunaDriver = MassDriverSchedule.GenerateCadence(
+                _ephemeris, MassDriverSchedule.MassDriverRun.LunaMilkRun(), baseSimTime: _ship.SimTime, count: 4);
+
             // The pod is the first hunt's soft catch, placed relative to the player so the hunt is
             // always deliverable (see StarterPod). The second hunt's stubborn Lark is NOT seeded here
             // — she's spawned when the first hunt ends (SeedSecondHuntTarget), co-moving with the
             // player's state then, so her escape jink is never stale from a slow first hunt.
-            initial = new[] { TrafficSchedule.StarterPod(_ship) }.Concat(initial);
+            initial = new[] { TrafficSchedule.StarterPod(_ship) }.Concat(lunaDriver).Concat(initial);
         }
         _npcStates = initial.Select(s => new NpcState { Ship = s }).ToArray();
 
