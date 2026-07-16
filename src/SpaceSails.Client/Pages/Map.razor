@@ -752,6 +752,26 @@
                             title="@opt.Title"
                             @onclick="() => SetPlotFrame(opt.Id)">@opt.Label@(opt.Suggested && !active ? " ✦" : "")</button>
                 }
+                @* #206 — the compact chips above are contextual (Sun · local giant · target); this overflow
+                   makes EVERY body pickable as origin from anywhere (owner: "All planets and moons need it"),
+                   grouped by parent. The pick gives it an active chip; #144's law holds (one frame rules map
+                   + plotting ribbon + readouts). *@
+                <select class="form-select form-select-sm py-0 map-frame-picker"
+                        value="@(_plotFrameBodyId ?? "")" @onchange="OnFramePicked"
+                        title="Pick ANY planet, moon, or station as the map/plot origin — the choice rules both views (#206)">
+                    @* value="" (Sun / inertial) shows this placeholder; an exotic frame shows its own name,
+                       so the picker always reads the live origin and pairs with its chip. *@
+                    <option value="">frame… ▾</option>
+                    @foreach ((string groupLabel, List<CelestialBody> members) in FramePickerGroups())
+                    {
+                        <optgroup label="@groupLabel">
+                            @foreach (CelestialBody b in members)
+                            {
+                                <option value="@b.Id">@b.Name</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
                 <span class="text-secondary ms-1" title="Ship speed in the selected frame">@FrameSpeedReadout()</span>
             </div>
         </div>
@@ -775,6 +795,14 @@
                 <input type="range" class="form-range" min="0" max="100" step="1"
                        value="@HorizonSliderValue" title="Length of the navigation line (log scale)"
                        @oninput="OnHorizonSliderInput" @onkeydown:stopPropagation="true" />
+                @* #209 — say the state: when a frame crop or the projection cap makes the drawn ribbon
+                   shorter than the full picture, name why (never a silently short path). *@
+                @{ var _ribbonNote = RibbonHorizonNote(); }
+                @if (_ribbonNote is { } _rn)
+                {
+                    <div class="small map-ribbon-note @(_rn.Warn ? "text-warning fw-bold" : "text-info")"
+                         title="How long a stretch of the plotted course the ribbon actually draws, and why">@_rn.Text</div>
+                }
                 @* #168: this pass/insertion block appears and vanishes at plot cadence (a closest pass
                    comes and goes as the sim ticks / the scrub moves) and its text reflows. Reserve its
                    tallest state (pass line + insert button) in an always-rendered fixed-height container
@@ -2518,6 +2546,11 @@
     // cheap in interpreted WASM (~5.8k steps); plan-node times still land exactly.
     private const double PlotHorizonSeconds = 730 * 24 * 3600;
 
+    // #209 — the auto projection length. With no plan the ribbon holds this local default; with a plan
+    // it reaches the plan's furthest encounter plus the margin, clamped to PlotHorizonSeconds.
+    private const double AutoHorizonMinSeconds = 30 * 86400;
+    private const double AutoHorizonMarginSeconds = 90 * 86400;
+
     // #145 — in a co-moving frame around a Hill-sphere body the full solar-scale ribbon draws as a
     // spirograph coil (the owner's 7-day Titan approach = ~8-10 laps of Saturn). So the DRAWN length
     // is truncated to ~this many LOCAL orbital periods at the ship's current radius around the frame
@@ -2662,18 +2695,46 @@
                 return days * 86400;
             }
 
-            double lastNode = 0;
-            foreach (PlanNode node in _planNodes)
-            {
-                if (!node.Stale && node.SimTime > lastNode)
-                {
-                    lastNode = node.SimTime;
-                }
-            }
-
-            double horizon = lastNode > SimTime ? lastNode - SimTime + 90 * 86400 : 30 * 86400;
-            return Math.Clamp(horizon, 30 * 86400, PlotHorizonSeconds);
+            // #209: auto is PLAN-AWARE. The projection reaches the plan's furthest encounter (the
+            // rehearsal's arrival, the plotted destination pass, or the furthest live burn node) plus a
+            // margin; with no plan it holds the local default. PlanFurthestEpochSeconds is the ONE truth
+            // (no second estimator); the clamp stops a runaway plan asking for an un-affordable reproject.
+            return PlotHorizon.AutoProjectionSeconds(
+                PlanFurthestEpochSeconds(), AutoHorizonMinSeconds, AutoHorizonMarginSeconds, PlotHorizonSeconds);
         }
+    }
+
+    // #209 — the plan's furthest encounter, in seconds AHEAD of now: the single length the auto ribbon
+    // must reach. Reads the one true schedule — the autopilot rehearsal's arrival (the #148 intended
+    // path's last sample), the plotted destination closest-pass, and the furthest live burn node — never
+    // a second estimator. 0 when there is no plan (no armed autopilot, no destination pass, no nodes).
+    private double PlanFurthestEpochSeconds()
+    {
+        double now = SimTime;
+        double furthest = 0;
+
+        // Armed autopilot: the rehearsed path's final sample IS the arrival/insertion instant (#146/#148).
+        if (_armedOrbitBodyId is not null && _autopilotPlanPath is { Count: > 0 } path)
+        {
+            furthest = Math.Max(furthest, path[^1].SimTime - now);
+        }
+
+        // The plotted path's closest pass by the destination — the encounter the captain is aiming at.
+        if (_destinationPass is { } dp)
+        {
+            furthest = Math.Max(furthest, dp.SimTime - now);
+        }
+
+        // The furthest future burn node — so a plotted departure's ribbon reaches at least its last burn.
+        foreach (PlanNode node in _planNodes)
+        {
+            if (!node.Stale && node.SimTime > now)
+            {
+                furthest = Math.Max(furthest, node.SimTime - now);
+            }
+        }
+
+        return furthest;
     }
     private const int MaxNodePulses = 20;
     private const int MinNodePulses = 1;
@@ -7520,6 +7581,39 @@
         }
     }
 
+    // #206 — the every-body frame overflow. Controlled: its value mirrors the live frame (empty = the
+    // "frame… ▾" placeholder, which is the Sun / inertial default), so picking never leaves the control
+    // out of step with the active origin. The pick also flows through SetPlotFrame, so the chip row and
+    // both views stay one truth (#144).
+    private void OnFramePicked(ChangeEventArgs e)
+    {
+        string? picked = e.Value?.ToString();
+        SetPlotFrame(string.IsNullOrEmpty(picked) ? null : picked);
+    }
+
+    // #206 — every body in the scenario, grouped by parent for the overflow picker: the Sun's children
+    // (the planets, plus any sun-orbiting station) under "Planets", then each planet's moons + stations
+    // under the planet's name. Body order within a group follows the ephemeris. A parent with no
+    // children yields no group.
+    private List<(string Label, List<CelestialBody> Members)> FramePickerGroups()
+    {
+        var groups = new List<(string, List<CelestialBody>)>();
+        if (_ephemeris is null)
+        {
+            return groups;
+        }
+        foreach (CelestialBody parent in _ephemeris.Bodies)
+        {
+            List<CelestialBody> members = _ephemeris.Bodies.Where(b => b.ParentId == parent.Id).ToList();
+            if (members.Count == 0)
+            {
+                continue;
+            }
+            groups.Add((parent.Id == "sun" ? "Planets" : parent.Name, members));
+        }
+        return groups;
+    }
+
     // #145 — the DISPLAYED trajectory length, scaled to the frame's local timescale. null in the
     // Sun/inertial frame (draw the full ribbon, byte-identical to pre-#145) or when the frame body
     // has no local orbit to scale to (the Sun itself, a mass-less dock). Otherwise: how many seconds
@@ -7528,20 +7622,40 @@
     // projection. Recomputed per frame, so the arc tightens as the ship falls in.
     private double? FrameDisplayWindowSeconds()
     {
+        if (FrameLocalWindowSeconds() is null)
+        {
+            return null; // the Sun / inertial frame, or a mass-less dock — no truncation, full ribbon
+        }
+        return ResolveRibbon().DrawnSeconds;
+    }
+
+    // #145/#209 — ~1.25 local orbital periods of the current frame body (one sqrt), or null when there
+    // is nothing to scale to: the Sun / inertial frame, or a mass-less dock. Null is the byte-identical
+    // full-length draw path; a value is the local timescale the drawn ribbon is scaled to.
+    private double? FrameLocalWindowSeconds()
+    {
         if (_plotFrameBodyId is null || _ephemeris is null)
         {
-            return null; // Sun frame: no truncation
+            return null;
         }
         CelestialBody? frame = _ephemeris.Bodies.FirstOrDefault(b => b.Id == _plotFrameBodyId);
         if (frame is null || frame.ParentId is null || frame.Mu <= 0)
         {
-            return null; // the Sun itself, or a mass-less dock — nothing to orbit, nothing to scale to
+            return null;
         }
-
         double radius = (_ship.Position - _ephemeris.Position(frame.Id, SimTime)).Length;
+        if (!(radius > 0))
+        {
+            return null;
+        }
+        return FrameWindowLocalPeriods * OrbitRule.LocalOrbitPeriod(radius, frame.Mu);
+    }
 
-        // Floor: never hide the near-term course. A few hours, or the next FUTURE plan node + margin,
-        // whichever is larger — so the flight plan's NEXT line and the ribbon can't contradict (#145.5).
+    // #145.5 — the frame-INDEPENDENT floor: never hide the near-term course. A few hours, stretched to
+    // the next imminent FUTURE plan node + margin so the flight plan's NEXT line and the ribbon can't
+    // contradict. Plan-awareness (the FURTHEST encounter) is folded in by PlotHorizon.DrawnWindow.
+    private double FrameWindowBaseFloorSeconds()
+    {
         double floor = FrameWindowFloorSeconds;
         double nextNode = double.PositiveInfinity;
         foreach (PlanNode node in _planNodes)
@@ -7555,8 +7669,30 @@
         {
             floor = Math.Max(floor, (nextNode - SimTime) + FrameWindowNodeMarginSeconds);
         }
+        return floor;
+    }
 
-        return OrbitRule.FrameScaledWindowSeconds(radius, frame.Mu, CurrentPlotHorizonSeconds, floor, FrameWindowLocalPeriods);
+    // #145/#209 — the resolved drawn ribbon window + the honest note explaining its length. ONE call, so
+    // the drawn ribbon (DrawShipTrajectory) and the panel note (RibbonHorizonNote) never disagree.
+    private PlotHorizon.RibbonResult ResolveRibbon() =>
+        PlotHorizon.DrawnWindow(
+            CurrentPlotHorizonSeconds, FrameLocalWindowSeconds() ?? 0, PlanFurthestEpochSeconds(), FrameWindowBaseFloorSeconds());
+
+    // #209 — the say-the-state note for the Plotting panel: when the ribbon is cropped shorter than the
+    // full picture, name WHY, so the captain never reads a silently short path. null when the ribbon
+    // reaches the plan / the full projection.
+    private (string Text, bool Warn)? RibbonHorizonNote()
+    {
+        PlotHorizon.RibbonResult r = ResolveRibbon();
+        return r.Note switch
+        {
+            // FrameLocalPeriods implies a scalable frame body (local window > 0), so it is never null here.
+            PlotHorizon.RibbonNote.FrameLocalPeriods =>
+                ($"ribbon: {FrameWindowLocalPeriods.ToString("0.##", CultureInfo.InvariantCulture)} {BodyName(_plotFrameBodyId!)} periods (frame auto)", false),
+            PlotHorizon.RibbonNote.CappedShortOfPlan =>
+                ($"ribbon capped at {FormatHorizon(r.DrawnSeconds)} — plan runs to {FormatHorizon(PlanFurthestEpochSeconds())}", true),
+            _ => null,
+        };
     }
 
     private void DrawShipTrajectory()
