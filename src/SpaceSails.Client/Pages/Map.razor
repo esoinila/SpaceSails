@@ -628,6 +628,21 @@
                     <span class="text-secondary">· hold the match; closer &amp; slower boards faster</span>
                 </div>
             }
+            @* #177/#178 — a boardable hull is in range, but piracy is never automatic. Offer it;
+               the shuttles do not move until the captain says so. Standing down is free and silent. *@
+            @if (_plunderOpportunityTargetId is not null)
+            {
+                <hr />
+                <div class="fw-bold text-warning">🏴 PLUNDER OPPORTUNITY — @_captureTargetCallsign in boarding range</div>
+                <div class="small text-secondary mb-1">
+                    Boarding @_captureTargetCallsign is PIRACY — you'll take their cargo and carry the heat.
+                    Hostile acts need the captain's word.
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-danger" @onclick="AuthorizePlunder">🏴 Board her — commit piracy</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="DeclinePlunder">Stand down</button>
+                </div>
+            }
         </div>
 
         @* #135/#143 — reference-frame selector. Near a gas giant a moon-to-moon course is useless in
@@ -1510,6 +1525,29 @@
     }
 
     <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDesk" />
+
+    @* #185: the completion fanfare. A finished contract is a CELEBRATION — who paid us, what for,
+       the coin, the giver grateful in their own voice, and the parrot singing. The money is shown
+       arriving here; it never just silently appears in the ledger. *@
+    @if (_celebration is { } party)
+    {
+        <div class="mission-celebration-backdrop" @onclick="DismissCelebration">
+            <div class="mission-celebration" @onclick:stopPropagation="true">
+                <div class="mc-fanfare">🎉 CONTRACT COMPLETE 🎉</div>
+                <div class="mc-title">@party.Title</div>
+                <div class="mc-giver">◈ @party.GiverName</div>
+                <div class="mc-thanks">@party.GiverThanks</div>
+                <div class="mc-payment">💰 +@party.PaidCredits.ToString("N0", CultureInfo.InvariantCulture) cr received</div>
+                <div class="mc-parrot">🦜 @party.ParrotSong</div>
+                <div class="mc-history">
+                    @(party.MissionsWithGiver <= 1
+                        ? $"A new name in your logbook — your first job for {party.GiverName}."
+                        : $"Job #{party.MissionsWithGiver} for {party.GiverName}. You've got a history now.")
+                </div>
+                <button type="button" class="btn btn-warning btn-sm mt-2" @onclick="DismissCelebration">Raise a glass 🍻</button>
+            </div>
+        </div>
+    }
 
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
@@ -2549,7 +2587,7 @@
         "Open the traffic board and select the Luna pod",
         "Plot an intercept — enter Plot, add a burn, watch the ribbon cross its cone",
         "Close to boarding range and match velocity",
-        "Hold the window — board it",
+        "Hold the window — 🏴 authorize the board (piracy needs the captain's word)",
         "Dock at Earth and sell",
         "Spend it — buy an upgrade",
         // Second hunt — the gun (the stubborn He3 freighter Nervous Lark)
@@ -4011,6 +4049,11 @@
                 if (_captureEngaged && SelectedCaptureTarget() is { } prey)
                 {
                     LaunchShuttleRun(prey);
+                }
+                else if (_plunderOpportunityTargetId is not null)
+                {
+                    // In range, but the felony isn't authorized yet — the shuttle waits on the word.
+                    ShowPulseMessage("Shuttle's fuelled — but boarding's piracy. Authorize the 🏴 plunder first (the Nav HUD's asking).");
                 }
                 else
                 {
@@ -9605,19 +9648,30 @@
     private void UpdateCapture(double dtRealSeconds)
     {
         NpcState? npc = SelectedCaptureTarget();
-        if (npc is not null && CaptureRule.IsInWindow(_ship, npc.State))
+        bool inWindow = npc is not null && CaptureRule.IsInWindow(_ship, npc.State);
+
+        // #177/#178 — hostile acts are NEVER automatic. The owner got robbed-by-accident when
+        // autopilot flew him through a moon and a selected DEPOT slid into the boarding window.
+        // The gate is structural: proximity alone can only ever surface an OPPORTUNITY; a felony
+        // needs the captain's word (AuthorizePlunder), exactly like the gun needs it to fire.
+        CaptureRule.BoardingIntent intent =
+            CaptureRule.EvaluateBoarding(inWindow, npc?.Ship.Id, _plunderAuthorizedTargetId);
+
+        if (inWindow)
         {
-            if (_captureProgress <= 0)
-            {
-                AdvanceTutorial(2); // step 3: window first engages
-            }
+            AdvanceTutorial(2); // step 3: window first engages (opportunity or authorized)
+        }
+
+        if (intent == CaptureRule.BoardingIntent.Authorized)
+        {
+            _plunderOpportunityTargetId = null;
 
             // Boarding shuttles fly in REAL time, warp be damned (M14): passive progress
             // accrues at wall-clock rate, so warping doesn't fast-forward a boarding and the
             // deckhand's wait is real — while the captain who flies the run docks in seconds.
             // PR-7: a compliant (warned or bribed) target has heaved to — shuttles cross in half
             // the time (ComplianceBoardingFactor). Stubborn ships and un-warned ones get no break.
-            double requiredSeconds = CaptureRule.RequiredSecondsFor(_ship, npc.State)
+            double requiredSeconds = CaptureRule.RequiredSecondsFor(_ship, npc!.State)
                 * (IsCompliantBoarding(npc) ? EncounterRule.ComplianceBoardingFactor : 1.0);
             _captureProgress += Math.Clamp(dtRealSeconds, 0, 0.1) / requiredSeconds;
             _captureEngaged = true;
@@ -9628,14 +9682,54 @@
             {
                 Board(npc);
                 _captureProgress = 0;
+                _plunderAuthorizedTargetId = null; // one authorization, one boarding
             }
+        }
+        else if (intent == CaptureRule.BoardingIntent.Opportunity)
+        {
+            // In range, but no hostile intent declared: OFFER it, accrue nothing. Declining is free.
+            _plunderOpportunityTargetId = npc!.Ship.Id;
+            _captureTargetCallsign = npc.Ship.Callsign;
+            _captureProgress = 0;
+            _captureEngaged = false;
         }
         else
         {
             _captureProgress = 0;
             _captureEngaged = false;
             _captureTargetCallsign = null;
+            _plunderOpportunityTargetId = null;
         }
+    }
+
+    // ---- #177/#178: the captain approves the space-crimes. A boarding is a felony (heat, someone
+    // else's hull); like the gun (AuthorizeShot), it never fires without the captain's explicit
+    // word. _plunderAuthorizedTargetId names the one hull the captain has OK'd; UpdateCapture only
+    // accrues against a matching target. Declining is FREE and SILENT (owner ruling). ----
+    private string? _plunderAuthorizedTargetId;   // the hull the captain has OK'd to board
+    private string? _plunderOpportunityTargetId;  // an in-window target awaiting the captain's word
+
+    private void AuthorizePlunder()
+    {
+        NpcState? npc = SelectedCaptureTarget();
+        if (npc is null)
+        {
+            return;
+        }
+
+        _plunderAuthorizedTargetId = npc.Ship.Id;
+        _plunderOpportunityTargetId = null;
+        ShowPulseMessage($"CAPTAIN: 🏴 boarding {npc.Ship.Callsign} authorized — this is PIRACY, and it'll draw heat");
+        StateHasChanged();
+    }
+
+    // Declining a plunder opportunity is free and silent (owner ruling): dismiss it, no heat, no
+    // fuss. Clears any standing authorization too — a stand-down means stand down.
+    private void DeclinePlunder()
+    {
+        _plunderOpportunityTargetId = null;
+        _plunderAuthorizedTargetId = null;
+        StateHasChanged();
     }
 
     private void Board(NpcState npc)
@@ -11263,6 +11357,9 @@
     {
         _credits += q.Reward;
         q.State = QuestState.TurnedIn;
+        // A history builds even in the shadows — but quietly: no fanfare would suit an under-the-
+        // table hand-off, so the relationship is seeded (#185) without the pop-up the bar job gets.
+        _contacts.RecordCompletion(q.Giver, q.Giver, q.Reward, SimTime);
         ShowPulseMessage($"The wallet changes hands under the table — +{q.Reward:N0} cr, and we never met. 🕶");
     }
 
@@ -11271,6 +11368,7 @@
     {
         _credits += q.Reward;
         q.State = QuestState.TurnedIn;
+        _contacts.RecordCompletion(q.Giver, q.Giver, q.Reward, SimTime); // seed the history, keep it quiet
         ShowPulseMessage($"The package slides across the table — +{q.Reward:N0} cr, no receipt. 🕶");
     }
 
@@ -11374,18 +11472,58 @@
             : $"enter orbit at {dest.Name} to deliver 📦";
     }
 
-    // Turn in any finished contracts on berthing — the reward lands in the ledger.
+    // The relationship system's seed (#185): the SAVED history of who we've done jobs for — a real
+    // fact ("we now have a history with the lady at the Ringside bar") the future system reads.
+    private readonly ContactLedger _contacts = new();
+
+    // The fanfare (#185): a completion is a CELEBRATION, not a silent credit. One pop-up at a time;
+    // extras queue so a double payout still gets its due.
+    private MissionCelebration? _celebration;
+    private readonly Queue<MissionCelebration> _celebrationQueue = new();
+
+    // Turn in any finished contracts on berthing — and make the money's arrival a CELEBRATION
+    // (#185, owner: "Now the money just appeared... It is a CELEBRATION"). The payout is booked
+    // INSIDE the fanfare flow, the giver is grateful in their own voice, the parrot SINGS, and the
+    // job is remembered as a real relationship. The reward never again just silently appears.
     private void PayCompletedQuests()
     {
         foreach (Quest q in _quests)
         {
-            if (q.State == QuestState.Complete)
+            if (q.State != QuestState.Complete)
             {
-                _credits += q.Reward;
-                q.State = QuestState.TurnedIn;
-                ShowPulseMessage($"Contract paid: {q.Title} — +{q.Reward:N0} cr. 💰");
+                continue;
             }
+
+            _credits += q.Reward;            // the coin lands — but as part of the fanfare, not alone
+            q.State = QuestState.TurnedIn;
+
+            // Book a real, saved fact: we now have a history with this task giver.
+            ContactHistory history = _contacts.RecordCompletion(q.Giver, q.Giver, q.Reward, SimTime);
+            _celebrationQueue.Enqueue(Celebrations.ForCompletion(
+                q.Title, q.Giver, q.Reward, history.MissionsCompleted, _parrotCounter));
         }
+
+        ShowNextCelebration();
+    }
+
+    // Surface the next queued fanfare (one pop-up at a time): the parrot SINGS, the cue plays.
+    private void ShowNextCelebration()
+    {
+        if (_celebration is not null || _celebrationQueue.Count == 0)
+        {
+            return;
+        }
+
+        _celebration = _celebrationQueue.Dequeue();
+        SquawkNow(Parrot.Squawk.ContractPaid, _lastTimestampMs ?? 0, force: true); // the bird sings 🦜
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
+    private void DismissCelebration()
+    {
+        _celebration = null;
+        ShowNextCelebration(); // if a second contract paid at the same berth, raise a glass to it too
     }
 
     // Project the quest ledger for the Captain's-desk Quests tab (M-Q2) — newest work on top.
