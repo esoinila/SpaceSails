@@ -665,6 +665,15 @@
     box-shadow: none;
 }
 
+/* #205: the approve/stand-down chips on an actionable (boarding) alert — compact so they ride the
+   strip without stretching it; the silence ✕ still floats to the far right past them. */
+.ship-alert-action {
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.1;
+    padding: 0.05rem 0.45rem;
+}
+
 .ship-alert-silence {
     margin-left: auto;
     background: transparent;

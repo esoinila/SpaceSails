@@ -22,7 +22,8 @@ public sealed class ScopeView
         RgbaColor Color,
         bool InPlasma,
         bool IsHaven = false,    // bodies only — a pirate bolthole
-        bool Dockable = false);  // …and a mass-less one you clamp onto (⚓), not orbit
+        bool Dockable = false,   // …and a mass-less one you clamp onto (⚓), not orbit
+        bool IsDepot = false);   // a freighter that is really a port's cargo depot (#208), tagged DEPOT
 
     private static readonly RgbaColor ScopeBackground = new(3, 6, 10);
     private static readonly RgbaColor ScopeRim = new(90, 200, 190, 140);
@@ -121,6 +122,8 @@ public sealed class ScopeView
     {
         TargetKind.Body when t.IsHaven => t.Dockable ? "HAVEN ⚓ DOCK" : "HAVEN",
         TargetKind.Body => t.BodyRadius > 1e8 ? "STAR" : "PLANET",
+        // #208: a depot is a port's cargo pod you board, not a hauler in transit — say so.
+        TargetKind.Freighter when t.IsDepot => "DEPOT",
         TargetKind.Freighter => "FREIGHTER",
         TargetKind.Pod => "CARGO POD",
         TargetKind.Player => "SHIP ∙ CREW",

@@ -51,4 +51,15 @@ public class ParrotTests
     {
         Assert.Contains("Space Bar", Parrot.Line(Parrot.Squawk.SpaceBarBreak, 0));
     }
+
+    [Fact]
+    public void Plunder_NamesTheHaul_AcrossTheRotation()
+    {
+        // #202: the bird names what was just stolen — the haul phrase fills the {0} slot in every line.
+        for (int i = 0; i < 3; i++)
+        {
+            string line = Parrot.Line(Parrot.Squawk.Plunder, i, "six crates of He3 out of the Larkspur");
+            Assert.Contains("six crates of He3 out of the Larkspur", line);
+        }
+    }
 }

@@ -25,6 +25,7 @@ public static class Parrot
         FuelLow,
         OrbitDecay,
         ContractPaid,
+        Plunder,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -65,6 +66,9 @@ public static class Parrot
         ["She's slippin' the orbit! SQUAWK!", "The tide's got her, captain — re-park or run!", "Round and DOWN we go! Fix the orbit! SQUAWK!"],
         // ContractPaid (#185) — the bird SINGS when a job pays out. A celebration, not an alarm.
         ["🎵 A job well flown and the purse is FULL — SQUAWK, we're PAID, captain!", "🎵 Yo-ho, the hold's empty and the coin's aboard! Sing it! SQUAWK!", "🎵 Contract's DONE and the drinks are FREE — SQUAWK SQUAWK hooray!"],
+        // Plunder (#202) — the bird names the haul, celebratory-piratical. {0} is the haul phrase
+        // ("six crates of He3 out of the Larkspur").
+        ["🏴 {0} — and PLUNDERED, captain! SQUAWK!", "Loot's aboard — {0}! Yo-ho-ho!", "{0}, and not a soul to stop us! SQUAWK!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line
