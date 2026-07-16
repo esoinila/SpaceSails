@@ -128,9 +128,14 @@ public static class AutopilotRehearsal
         CelestialBody? body = FindBody(ephemeris, targetBodyId);
         if (body?.ParentId is null)
         {
-            // Nothing orbit-able (the sun, a station): not a journey the autopilot flies.
+            // Nothing orbit-able (the sun, or a parentless station): not a journey the autopilot flies.
             return new RehearsalResult(false, 0, 0, 0, false, false, path);
         }
+
+        // #155 the last mile: a station orbits its parent (μ=0) but is NEVER orbited in turn — its
+        // terminal success is the dock envelope (DockRule), not OrbitRule.Insert. The gate/coast machinery
+        // below is identical; only the "captured" test in the terminal loop differs (see isStation).
+        bool isStation = body.Kind == BodyKind.Station;
 
         CelestialBody? parent = FindBody(ephemeris, body.ParentId);
         if (parent is null)
@@ -218,6 +223,20 @@ public static class AutopilotRehearsal
         {
             Vector2d bodyPos = ephemeris.Position(body.Id, ship.SimTime);
             Vector2d bodyVel = BodyVelocity(ephemeris, body.Id, ship.SimTime);
+
+            // #155 STATION arrival: a μ=0 station is "captured" the instant the ship is inside the dock
+            // envelope (DockRule) — coasting alongside within range and matched — evaluated only once the
+            // schedule's arrival gate has opened (the pre-loop above coasted us to it). The rendezvous
+            // schedule's two burns are the whole cost; there is NO OrbitRule.Insert to price for a
+            // mass-less body. If the gate opened but we're not yet in the envelope, we fall through to the
+            // legacy decision loop: Approach still works on a μ=0 body (it matches velocity and closes the
+            // short range), and its budget guard stays. Insert can never fire here (WindowOpen needs
+            // distance < hill = 0), so the ship is never falsely "orbit-captured".
+            if (isStation && DockRule.InEnvelope(ship, bodyPos, bodyVel, body.BodyRadius))
+            {
+                return new RehearsalResult(
+                    true, pulses, approachBurns, ship.SimTime - startTime, false, false, path);
+            }
 
             // A moon's parent planet is a solid body the approach chord must round; a planet's
             // parent is the sun, which is never routed around (matches CheckArmedInsertion 5026).

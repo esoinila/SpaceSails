@@ -51,6 +51,23 @@ public static class TransferPlanner
     /// states stay honest.</summary>
     private const double CoarseStep = 900.0;
 
+    /// <summary>Rendezvous mode (#155) triggers when |r_ship − r_target| ≤ this fraction of the
+    /// target's parent-relative radius — the near-co-orbital band where Lambert's single-rev solver
+    /// is structurally blind (a phasing loop returns to its own start = the 2π singularity).</summary>
+    private const double CoOrbitalRadiusFraction = 0.075;
+
+    /// <summary>Phasing candidates are priced for k = 1..this many catch-up laps × both families
+    /// (dip inward / swell outward). More laps = cheaper burns, longer wait — the trade table.</summary>
+    private const int PhasingMaxRevolutions = 6;
+
+    /// <summary>Fixed prep offset (s) before the first phasing burn — the deterministic departure
+    /// epoch at which the phase gap, ship radius, and rail velocities are all read.</summary>
+    private const double PhasingPrepOffsetSeconds = 600.0;
+
+    /// <summary>A phasing ellipse's apoapsis must clear no more than this fraction of the parent's
+    /// own Hill sphere (about the sun) — never swell into the tide-stripped outer Hill.</summary>
+    private const double PhasingHillApoapsisFraction = 0.9;
+
     /// <summary>
     /// A transfer request. The caller passes the ship's state at solve time (the arm click or the
     /// lab's departure instant) — its <see cref="ShipState.SimTime"/> must be consistent with the
@@ -87,7 +104,8 @@ public static class TransferPlanner
         double ArrivalRelativeSpeed,
         double PlannedDeltaVTotal,
         int EstimatedPulses,
-        string Summary)
+        string Summary,
+        IReadOnlyList<Alternative> Alternatives)
     {
         /// <summary>The lean hand-off the rehearsal and the live tick loop actually fly: just the
         /// burns and when the arc reaches the moon (<see cref="DepartTime"/> + time of flight). The
@@ -95,6 +113,20 @@ public static class TransferPlanner
         /// the ship is honestly near the target — see <see cref="AutopilotRehearsal.Rehearse"/>.</summary>
         public Schedule ToSchedule() => new(Burns, DepartTime + TimeOfFlightSeconds);
     }
+
+    /// <summary>One row of the cheaper-vs-sooner trade table (#155): a candidate plan the winner was
+    /// chosen from, priced for the UI's tactical choice ("comes in handy when there is heat on us").
+    /// The winner is always row 0; the rest are ordered by arrival time. <see cref="Label"/> names the
+    /// candidate ("direct hop" for the porkchop hop, "phasing k=N (dip|swell)" for a co-orbital bus),
+    /// <see cref="WaitSeconds"/> is how long the ship coasts before it is at the target, and
+    /// <see cref="ArrivalTime"/> is the sim clock at rendezvous. Never null on a Result — an empty
+    /// list on a refusal, a single winner row when only the porkchop found a plan.</summary>
+    public readonly record struct Alternative(
+        string Label,
+        double DeltaVTotal,
+        int EstimatedPulses,
+        double WaitSeconds,
+        double ArrivalTime);
 
     /// <summary>The executable core of a solved transfer: the departure burn(s) and the sim time the
     /// arc arrives at the target moon. Consumed by <see cref="AutopilotRehearsal.Rehearse"/> and the
@@ -173,6 +205,22 @@ public static class TransferPlanner
             maxWait = double.IsFinite(synodic) ? 1.25 * synodic : shipPeriod;
         }
 
+        // 2b. Rendezvous mode (#155): when the ship shares the target's lane, Lambert's single-rev
+        //     solver is structurally blind — so ALSO price the closed-form phasing maneuver below and
+        //     merge. Detect co-orbital by parent-relative radii at solve time. The 1.25×synodic wait
+        //     default explodes toward infinity for equal-period lanes (exactly this case), which would
+        //     make the porkchop coast an absurd, WASM-hostile span — so bound the co-orbital porkchop
+        //     to a single ship lap; the phasing candidates own the long windows (all k ≤ 6). The
+        //     non-co-orbital sizing is untouched, so the moon-run porkchop stays byte-identical.
+        Vector2d targetPos0 = ephemeris.Position(targetBody.Id, t0);
+        double targetRadius0 = (targetPos0 - parentPos0).Length;
+        bool coOrbital = targetRadius0 > 0
+            && Math.Abs(shipRadius0 - targetRadius0) <= CoOrbitalRadiusFraction * targetRadius0;
+        if (coOrbital && !(request.MaxWaitSeconds > 0))
+        {
+            maxWait = shipPeriod;
+        }
+
         // 3. Build the departure grid: 24 real coasted ship states across the window, advanced
         //    incrementally grid-to-grid (deterministic and cheap — each hop is one short adaptive
         //    coast). TrajectorySample carries no velocity, so the full state cannot be read off a
@@ -204,67 +252,269 @@ public static class TransferPlanner
             }
         }
 
-        if (best is not { } coarse)
+        // 6. One 5×5 half-cell refine around the porkchop winner (½-cell spacing, so ±one coarse cell
+        //    each way at double the resolution). A co-orbital lane usually leaves this null — Lambert
+        //    has no honest single-rev arc across a ~0 gap — and the phasing candidates carry the plan.
+        Cell? porkchopWinner = null;
+        if (best is { } coarse)
+        {
+            double halfDep = dtGrid / 2;
+            double halfTof = tofStep / 2;
+            for (int i = -2; i <= 2; i++)
+            {
+                double tDep = coarse.DepartTime + i * halfDep;
+                if (tDep < t0 || tDep > t0 + maxWait)
+                {
+                    continue;
+                }
+
+                ShipState st = StateAt(simulator, ship, depStates, t0, dtGrid, tDep);
+                for (int j = -2; j <= 2; j++)
+                {
+                    double tof = coarse.Tof + j * halfTof;
+                    if (!(tof > 0))
+                    {
+                        continue;
+                    }
+
+                    best = Better(best, EvaluateCell(ephemeris, parentBody, targetBody, parentMu, parentSafe, st, tDep, tof));
+                }
+            }
+
+            porkchopWinner = best!.Value; // Better never nulls a non-null first argument.
+        }
+
+        // 7. Rendezvous mode. When co-orbital, price the closed-form phasing maneuver (Curtis 6.5) as
+        //    a pool of k×family candidates and merge with the porkchop hop. Everything the schedule
+        //    needs is read at a fixed prep offset so the answer is a pure function of the inputs.
+        var candidates = new List<PlanCandidate>();
+        if (porkchopWinner is { } pw)
+        {
+            candidates.Add(FromPorkchop(pw, t0, targetBody));
+        }
+
+        if (coOrbital)
+        {
+            double tDep = t0 + PhasingPrepOffsetSeconds;
+            ShipState shipAtDep = simulator.RunAdaptive(ship, PhasingPrepOffsetSeconds, maxTimeStep: CoarseStep);
+            Vector2d parentPosDep = ephemeris.Position(parentBody.Id, tDep);
+            Vector2d parentVelDep = TransferMath.BodyVelocity(ephemeris, parentBody.Id, tDep);
+            Vector2d shipRelPos = shipAtDep.Position - parentPosDep;
+            Vector2d shipRelVel = shipAtDep.Velocity - parentVelDep;
+            Vector2d targetRelPos = ephemeris.Position(targetBody.Id, tDep) - parentPosDep;
+            double rDep = shipRelPos.Length;
+
+            // The rails run counter-clockwise; a retrograde ship cannot ride a phasing bus. Refuse
+            // loudly rather than quote a plan the geometry forbids.
+            double angularMomentum = shipRelPos.X * shipRelVel.Y - shipRelPos.Y * shipRelVel.X;
+            if (angularMomentum < 0)
+            {
+                return Failed(
+                    $"the ship circles {parentBody.Name} retrograde (clockwise) — the rendezvous rails run " +
+                    "counter-clockwise; match the lane's direction before arming a co-orbital rendezvous");
+            }
+
+            if (rDep > 0)
+            {
+                double gap = TransferMath.PhaseGap(shipRelPos, targetRelPos);
+                Vector2d progradeUnit = new Vector2d(-shipRelPos.Y, shipRelPos.X) / rDep;
+                double parentHillCeiling = ParentHillCeiling(ephemeris, parentBody);
+
+                for (int k = 1; k <= PhasingMaxRevolutions; k++)
+                {
+                    for (int family = 0; family < 2; family++)
+                    {
+                        if (BuildPhasingCandidate(
+                                ephemeris, parentBody, targetBody, parentMu, parentSafe, parentHillCeiling,
+                                rDep, gap, progradeUnit, shipRelVel, shipAtDep.Velocity.Length,
+                                tDep, k, dipInside: family == 0, request.MaxWaitSeconds, request.MaxDeltaV) is { } row)
+                        {
+                            candidates.Add(row);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 8. Merge and pick the winner — the cheapest feasible plan across both pools.
+        if (candidates.Count == 0)
         {
             return Failed(
                 "no feasible transfer window in the coast — every arc threads the planet, arrives too fast to capture, " +
                 "or has no single-rev solution; widen the wait or ease the search");
         }
 
-        // 6. One 5×5 half-cell refine around the winner (½-cell spacing, so ±one coarse cell each way
-        //    at double the resolution). Off-grid departure states come from the same incremental cache.
-        double halfDep = dtGrid / 2;
-        double halfTof = tofStep / 2;
-        for (int i = -2; i <= 2; i++)
+        var affordable = candidates.Where(c => c.TotalDeltaV <= request.MaxDeltaV).ToList();
+        if (affordable.Count == 0)
         {
-            double tDep = coarse.DepartTime + i * halfDep;
-            if (tDep < t0 || tDep > t0 + maxWait)
-            {
-                continue;
-            }
-
-            ShipState st = StateAt(simulator, ship, depStates, t0, dtGrid, tDep);
-            for (int j = -2; j <= 2; j++)
-            {
-                double tof = coarse.Tof + j * halfTof;
-                if (!(tof > 0))
-                {
-                    continue;
-                }
-
-                best = Better(best, EvaluateCell(ephemeris, parentBody, targetBody, parentMu, parentSafe, st, tDep, tof));
-            }
-        }
-
-        // Better never nulls a non-null first argument, so best stays set through the refine.
-        Cell winner = best!.Value;
-        if (winner.Cost > request.MaxDeltaV)
-        {
+            double cheapest = candidates.Min(c => c.TotalDeltaV);
             return Failed(
-                $"cheapest transfer to {targetBody.Name} costs {winner.Cost / 1000:F1} km/s — over the " +
+                $"cheapest transfer to {targetBody.Name} costs {cheapest / 1000:F1} km/s — over the " +
                 $"{request.MaxDeltaV / 1000:F1} km/s ceiling; raise MaxDeltaV or find a nearer moon");
         }
 
-        // 7. Emit the single departure burn and the honest bill. Δv is priced in pulses with the SAME
-        //    OrbitRule.PulsesFor the live approach/insertion burns spend — departure at the ship's
-        //    world speed at burn, arrival at the target's world speed at arrival — so the quote and
-        //    the eventual spend come from one source.
-        int pulses = OrbitRule.PulsesFor(winner.DepartDeltaV, winner.ShipWorldSpeed)
-                     + OrbitRule.PulsesFor(winner.ArriveDeltaV, winner.TargetWorldSpeed);
+        int winnerIdx = 0;
+        for (int i = 1; i < affordable.Count; i++)
+        {
+            if (affordable[i].TotalDeltaV < affordable[winnerIdx].TotalDeltaV)
+            {
+                winnerIdx = i;
+            }
+        }
 
-        string summary =
-            $"transfer to {targetBody.Name}: burn {winner.DepartDeltaV / 1000:F2} km/s in {(winner.DepartTime - t0) / 3600:F1} h, " +
-            $"arrive in {winner.Tof / 86400:F1} d at {winner.ArriveDeltaV / 1000:F2} km/s rel (est. {pulses} pulses)";
+        PlanCandidate winner = affordable[winnerIdx];
+
+        // 9. The trade table (#155): winner first, then every other affordable candidate by arrival
+        //    time (deterministic tie-breaks). The direct hop is included whenever the porkchop found
+        //    one — the UI's sooner-vs-cheaper choice reads exactly this list.
+        var alternatives = new List<Alternative>(affordable.Count) { ToAlternative(winner) };
+        alternatives.AddRange(affordable
+            .Where((_, i) => i != winnerIdx)
+            .OrderBy(c => c.ArrivalTime)
+            .ThenBy(c => c.TotalDeltaV)
+            .ThenBy(c => c.Label, StringComparer.Ordinal)
+            .Select(ToAlternative));
 
         return new Result(
             Ok: true,
             Failure: null,
             DepartTime: winner.DepartTime,
-            TimeOfFlightSeconds: winner.Tof,
-            Burns: [new BurnStep(winner.DepartTime, winner.DeltaVWorld)],
+            TimeOfFlightSeconds: winner.TimeOfFlight,
+            Burns: winner.Burns,
             ArrivalRelativeSpeed: winner.ArrivalRelativeSpeed,
-            PlannedDeltaVTotal: winner.Cost,
-            EstimatedPulses: pulses,
+            PlannedDeltaVTotal: winner.TotalDeltaV,
+            EstimatedPulses: winner.Pulses,
+            Summary: winner.Summary,
+            Alternatives: alternatives);
+    }
+
+    /// <summary>A unified candidate — either the porkchop hop or one phasing bus — carrying everything
+    /// needed to emit the winning <see cref="Result"/> and its <see cref="Alternative"/> row.</summary>
+    private readonly record struct PlanCandidate(
+        string Label,
+        IReadOnlyList<BurnStep> Burns,
+        double DepartTime,
+        double TimeOfFlight,
+        double ArrivalRelativeSpeed,
+        double TotalDeltaV,
+        int Pulses,
+        double WaitSeconds,
+        double ArrivalTime,
+        string Summary);
+
+    private static Alternative ToAlternative(PlanCandidate c) =>
+        new(c.Label, c.TotalDeltaV, c.Pulses, c.WaitSeconds, c.ArrivalTime);
+
+    /// <summary>The porkchop winner as a candidate — its pulse pricing and summary are byte-for-byte
+    /// the pre-#155 emit, so a non-co-orbital solve is unchanged but for gaining a one-row table.</summary>
+    private static PlanCandidate FromPorkchop(Cell w, double t0, CelestialBody target)
+    {
+        int pulses = OrbitRule.PulsesFor(w.DepartDeltaV, w.ShipWorldSpeed)
+                     + OrbitRule.PulsesFor(w.ArriveDeltaV, w.TargetWorldSpeed);
+        string summary =
+            $"transfer to {target.Name}: burn {w.DepartDeltaV / 1000:F2} km/s in {(w.DepartTime - t0) / 3600:F1} h, " +
+            $"arrive in {w.Tof / 86400:F1} d at {w.ArriveDeltaV / 1000:F2} km/s rel (est. {pulses} pulses)";
+        return new PlanCandidate(
+            Label: "direct hop",
+            Burns: [new BurnStep(w.DepartTime, w.DeltaVWorld)],
+            DepartTime: w.DepartTime,
+            TimeOfFlight: w.Tof,
+            ArrivalRelativeSpeed: w.ArrivalRelativeSpeed,
+            TotalDeltaV: w.Cost,
+            Pulses: pulses,
+            WaitSeconds: w.DepartTime - t0,
+            ArrivalTime: w.DepartTime + w.Tof,
+            Summary: summary);
+    }
+
+    /// <summary>0.9 × the parent's own Hill sphere about ITS parent (the sun, for a planet) — the
+    /// apoapsis ceiling a phasing ellipse must clear. Inert (+∞) when the parent is the root or its
+    /// grandparent is mass-less: there is no outer tide to respect.</summary>
+    private static double ParentHillCeiling(ICelestialEphemeris ephemeris, CelestialBody parent)
+    {
+        if (parent.ParentId is null)
+        {
+            return double.PositiveInfinity;
+        }
+
+        CelestialBody? grand = Find(ephemeris, parent.ParentId);
+        return grand is { Mu: > 0 }
+            ? PhasingHillApoapsisFraction * OrbitRule.HillRadius(parent, grand.Mu)
+            : double.PositiveInfinity;
+    }
+
+    /// <summary>
+    /// Price one phasing bus: coast <paramref name="revolutions"/> laps on the ellipse
+    /// <see cref="TransferMath.PhasingOrbit"/> hands back (dip inward to chase a leader, or swell
+    /// outward to be lapped), then re-match. Two burns, both known at solve time: burn 1 leaves the
+    /// circular lane onto the phasing ellipse (and trims any small radial drift — priced as a vector
+    /// difference); apsis-to-apsis integer revs return the ship to the burn point with the same
+    /// velocity vector, so burn 2 (re-matching the target that has now arrived there) is known too.
+    /// Null when the geometry/lap count is impossible, the ellipse threads the planet or swells into
+    /// the tide-stripped outer Hill, the wait exceeds the caller's cap, or the bill beats the ceiling.
+    /// </summary>
+    private static PlanCandidate? BuildPhasingCandidate(
+        ICelestialEphemeris ephemeris, CelestialBody parent, CelestialBody target,
+        double parentMu, double parentSafe, double parentHillCeiling,
+        double rDep, double gap, Vector2d progradeUnit, Vector2d shipRelVel, double shipWorldSpeed,
+        double tDep, int revolutions, bool dipInside, double maxWaitSeconds, double maxDeltaV)
+    {
+        if (TransferMath.PhasingOrbit(rDep, gap, parentMu, revolutions, dipInside) is not { } plan)
+        {
+            return null;
+        }
+
+        if (plan.Periapsis <= parentSafe || plan.Apoapsis >= parentHillCeiling)
+        {
+            return null;
+        }
+
+        double waitSeconds = plan.WaitSeconds;
+        if (maxWaitSeconds > 0 && waitSeconds > maxWaitSeconds)
+        {
+            return null;
+        }
+
+        double tRdv = tDep + waitSeconds;
+
+        // The phasing velocity at the burn apsis: prograde (radial unit rotated +90°, the CCW rails'
+        // direction), magnitude from vis-viva at the burn radius. The same vector re-appears at the
+        // rendezvous apsis a whole number of laps later.
+        double phasingSpeed = Math.Sqrt(parentMu * (2 / rDep - 1 / plan.SemiMajorAxis));
+        Vector2d vPhasing = progradeUnit * phasingSpeed;
+
+        Vector2d dv1 = vPhasing - shipRelVel;
+        Vector2d targetRelVelRdv = TransferMath.BodyVelocity(ephemeris, target.Id, tRdv)
+                                   - TransferMath.BodyVelocity(ephemeris, parent.Id, tRdv);
+        Vector2d dv2 = targetRelVelRdv - vPhasing;
+
+        double dv1mag = dv1.Length;
+        double dv2mag = dv2.Length;
+        double total = dv1mag + dv2mag;
+        if (total > maxDeltaV)
+        {
+            return null;
+        }
+
+        double targetWorldSpeed = TransferMath.BodyVelocity(ephemeris, target.Id, tRdv).Length;
+        int pulses = OrbitRule.PulsesFor(dv1mag, shipWorldSpeed)
+                     + OrbitRule.PulsesFor(dv2mag, targetWorldSpeed);
+
+        string family = dipInside ? "dip" : "swell";
+        string summary =
+            $"rendezvous {target.Name}: {revolutions} lap {family} phasing, {total:F0} m/s over " +
+            $"{waitSeconds / 86400:F1} d, close within {dv2mag:F0} m/s rel (est. {pulses} p)";
+
+        return new PlanCandidate(
+            Label: $"phasing k={revolutions} ({family})",
+            Burns: [new BurnStep(tDep, dv1), new BurnStep(tRdv, dv2)],
+            DepartTime: tDep,
+            TimeOfFlight: waitSeconds,
+            ArrivalRelativeSpeed: dv2mag,
+            TotalDeltaV: total,
+            Pulses: pulses,
+            WaitSeconds: waitSeconds,
+            ArrivalTime: tRdv,
             Summary: summary);
     }
 
@@ -393,5 +643,6 @@ public static class TransferPlanner
 
     private static Result Failed(string reason) => new(
         Ok: false, Failure: reason, DepartTime: 0, TimeOfFlightSeconds: 0,
-        Burns: [], ArrivalRelativeSpeed: 0, PlannedDeltaVTotal: 0, EstimatedPulses: 0, Summary: reason);
+        Burns: [], ArrivalRelativeSpeed: 0, PlannedDeltaVTotal: 0, EstimatedPulses: 0, Summary: reason,
+        Alternatives: []);
 }
