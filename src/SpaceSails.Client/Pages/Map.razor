@@ -9662,6 +9662,13 @@
             AdvanceTutorial(2); // step 3: window first engages (opportunity or authorized)
         }
 
+        // Resolve the plunder OFFER honouring a stand-down: a declined hull stays silent for the
+        // rest of this pass (the every-frame tick would otherwise re-raise the prompt immortally);
+        // exiting the window or selecting a new hull re-arms it. The pure helper owns the re-arm.
+        CaptureRule.PlunderPrompt prompt =
+            CaptureRule.ResolvePlunderPrompt(intent, npc?.Ship.Id, _plunderDeclinedTargetId);
+        _plunderDeclinedTargetId = prompt.DeclinedTargetId;
+
         if (intent == CaptureRule.BoardingIntent.Authorized)
         {
             _plunderOpportunityTargetId = null;
@@ -9685,9 +9692,9 @@
                 _plunderAuthorizedTargetId = null; // one authorization, one boarding
             }
         }
-        else if (intent == CaptureRule.BoardingIntent.Opportunity)
+        else if (prompt.Offer)
         {
-            // In range, but no hostile intent declared: OFFER it, accrue nothing. Declining is free.
+            // In range, no hostile intent declared, and not stood-down: OFFER it, accrue nothing.
             _plunderOpportunityTargetId = npc!.Ship.Id;
             _captureTargetCallsign = npc.Ship.Callsign;
             _captureProgress = 0;
@@ -9695,10 +9702,15 @@
         }
         else
         {
+            // Out of the window, or an opportunity the captain already stood down from: no prompt,
+            // no progress, no nag.
+            _plunderOpportunityTargetId = null;
             _captureProgress = 0;
             _captureEngaged = false;
-            _captureTargetCallsign = null;
-            _plunderOpportunityTargetId = null;
+            if (intent == CaptureRule.BoardingIntent.NoWindow)
+            {
+                _captureTargetCallsign = null;
+            }
         }
     }
 
@@ -9708,6 +9720,7 @@
     // accrues against a matching target. Declining is FREE and SILENT (owner ruling). ----
     private string? _plunderAuthorizedTargetId;   // the hull the captain has OK'd to board
     private string? _plunderOpportunityTargetId;  // an in-window target awaiting the captain's word
+    private string? _plunderDeclinedTargetId;     // a hull the captain stood down from — silent for this pass
 
     private void AuthorizePlunder()
     {
@@ -9724,9 +9737,12 @@
     }
 
     // Declining a plunder opportunity is free and silent (owner ruling): dismiss it, no heat, no
-    // fuss. Clears any standing authorization too — a stand-down means stand down.
+    // fuss. Remembers the hull so UpdateCapture's every-frame tick won't re-raise the prompt while
+    // we're still flying past it (the offer re-arms once the pass ends or a new hull is selected).
+    // Clears any standing authorization too — a stand-down means stand down.
     private void DeclinePlunder()
     {
+        _plunderDeclinedTargetId = _plunderOpportunityTargetId; // silence this hull for the rest of the pass
         _plunderOpportunityTargetId = null;
         _plunderAuthorizedTargetId = null;
         StateHasChanged();

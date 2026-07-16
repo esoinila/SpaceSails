@@ -66,6 +66,34 @@ public static class CaptureRule
         : authorizedTargetId is not null && authorizedTargetId == targetId ? BoardingIntent.Authorized
         : BoardingIntent.Opportunity;
 
+    /// <summary>The result of resolving whether to surface the plunder OFFER this frame, honouring a
+    /// stand-down: <see cref="Offer"/> is whether to show the prompt, and <see cref="DeclinedTargetId"/>
+    /// is the memory the caller should carry into the next frame (re-armed as needed).</summary>
+    public readonly record struct PlunderPrompt(bool Offer, string? DeclinedTargetId);
+
+    /// <summary>
+    /// Decide whether a plunder opportunity should be OFFERED, given a possible earlier stand-down.
+    /// The every-frame capture tick re-evaluates the same geometry, so a bare "dismiss" would be
+    /// immortal — the prompt would re-appear the very next frame while the hull is still in the
+    /// window. So a decline is remembered per-hull: while THAT hull is the one on offer the prompt
+    /// stays silent, but the memory lapses the moment the intent leaves the window (the pass ended)
+    /// or a DIFFERENT hull comes on offer (a new selection) — so a fresh pass, or a new target, may
+    /// offer again, while the same continuous pass never nags. Pure, so the state machine is tested
+    /// in Core rather than inferred from the razor tick.
+    /// </summary>
+    public static PlunderPrompt ResolvePlunderPrompt(BoardingIntent intent, string? targetId, string? declinedTargetId)
+    {
+        // A standing decline suppresses the offer only while the SAME hull is the one in the window.
+        if (intent == BoardingIntent.Opportunity && declinedTargetId is not null && declinedTargetId == targetId)
+        {
+            return new PlunderPrompt(Offer: false, DeclinedTargetId: declinedTargetId);
+        }
+
+        // Anything else — no window, an authorized boarding, or a different hull on offer — re-arms:
+        // the decline lapses, and a genuine opportunity (a new/undeclined hull) is offered.
+        return new PlunderPrompt(Offer: intent == BoardingIntent.Opportunity, DeclinedTargetId: null);
+    }
+
     /// <summary>
     /// Sim seconds of continuous window the shuttles need at this instant's geometry.
     /// Tight+slow ≈ 30 s; at the envelope's sloppy corner (5 km/s, 5e8 m) ≈ 455 s — more

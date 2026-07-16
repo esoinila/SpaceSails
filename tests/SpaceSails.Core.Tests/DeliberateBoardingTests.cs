@@ -71,4 +71,69 @@ public class DeliberateBoardingTests
                 CaptureRule.EvaluateBoarding(true, "prey", null));
         }
     }
+
+    // ---- The stand-down must actually stick. The every-frame capture tick re-evaluates the same
+    // geometry, so a bare dismiss is immortal; ResolvePlunderPrompt carries a declined memory. ----
+
+    [Fact]
+    public void FreshOpportunity_IsOffered()
+    {
+        CaptureRule.PlunderPrompt p =
+            CaptureRule.ResolvePlunderPrompt(CaptureRule.BoardingIntent.Opportunity, "depot", declinedTargetId: null);
+
+        Assert.True(p.Offer);
+        Assert.Null(p.DeclinedTargetId);
+    }
+
+    [Fact]
+    public void DeclinedHull_StaysSilent_WhileStillInTheWindow()
+    {
+        // The captain stood down from "depot"; every following frame the geometry still reads
+        // Opportunity for "depot" — but the prompt must NOT re-surface, and the memory persists.
+        for (int frame = 0; frame < 100; frame++)
+        {
+            CaptureRule.PlunderPrompt p =
+                CaptureRule.ResolvePlunderPrompt(CaptureRule.BoardingIntent.Opportunity, "depot", declinedTargetId: "depot");
+
+            Assert.False(p.Offer);                       // never nags
+            Assert.Equal("depot", p.DeclinedTargetId);   // remembers the stand-down across frames
+        }
+    }
+
+    [Fact]
+    public void LeavingTheWindow_ReArms_SoTheNextPassMayOfferAgain()
+    {
+        // Pass ends → NoWindow → the decline lapses.
+        CaptureRule.PlunderPrompt exited =
+            CaptureRule.ResolvePlunderPrompt(CaptureRule.BoardingIntent.NoWindow, targetId: null, declinedTargetId: "depot");
+        Assert.False(exited.Offer);
+        Assert.Null(exited.DeclinedTargetId);            // re-armed
+
+        // A fresh pass over the same hull now offers again.
+        CaptureRule.PlunderPrompt reapproach =
+            CaptureRule.ResolvePlunderPrompt(CaptureRule.BoardingIntent.Opportunity, "depot", exited.DeclinedTargetId);
+        Assert.True(reapproach.Offer);
+    }
+
+    [Fact]
+    public void SelectingADifferentHull_ReArms_AndOffersTheNewOne()
+    {
+        // Declined "depot", but now a DIFFERENT hull ("lark") is the one in the window: the stale
+        // decline lapses and the new hull is offered.
+        CaptureRule.PlunderPrompt p =
+            CaptureRule.ResolvePlunderPrompt(CaptureRule.BoardingIntent.Opportunity, "lark", declinedTargetId: "depot");
+
+        Assert.True(p.Offer);
+        Assert.Null(p.DeclinedTargetId);
+    }
+
+    [Fact]
+    public void AuthorizingClearsTheDeclineMemory()
+    {
+        CaptureRule.PlunderPrompt p =
+            CaptureRule.ResolvePlunderPrompt(CaptureRule.BoardingIntent.Authorized, "depot", declinedTargetId: "depot");
+
+        Assert.False(p.Offer);                 // no opportunity prompt during an authorized boarding
+        Assert.Null(p.DeclinedTargetId);       // and the stale decline is cleared
+    }
 }
