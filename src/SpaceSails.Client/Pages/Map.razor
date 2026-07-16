@@ -521,21 +521,36 @@
                 @(PlotMode ? "Play" : "Plot")
             </button>
             @* Berth at a grey-market dock (a station haven) — clamps on, no steering, the heat bleeds
-               off. Only appears when you've coasted up close and slow; mirrors the Orbit affordance. *@
+               off. #212: the button reads the ONE dock truth (_dockAffordance), the nearest DOCKABLE
+               haven passing DockRule — never the raw nearest body — so it can never disagree with the
+               envelope line. #211: latched so it doesn't blink as the drift phases. #213: when in range
+               but too hot it becomes ⚓ Match & clamp, quoting the terminal-match burn (visible paused). *@
             @if (_dockedHavenId is not null)
             {
                 <button type="button" class="btn btn-sm btn-warning me-2" @onclick="Undock"
                         title="Release the dock clamps and fly off">🚀 Undock</button>
             }
-            else if (DockableHavenHere() is not null)
+            else if (_dockAffordance.CanClampNow)
             {
                 <button type="button" class="btn btn-sm btn-outline-info me-2" @onclick="ToggleDock"
                         title="Clamp onto the dock and lie low — the heat bleeds off while you're berthed">⚓ Dock</button>
             }
-            else if (DockSpeedNudge() is { } dockNudge)
+            else if (_dockAffordance.NeedsMatch)
             {
-                @* Alongside a ⚓ dock but coasting too hot to clamp — show the gate, greyed, so it teaches. *@
-                <button type="button" class="btn btn-sm btn-outline-secondary me-2" disabled title="@dockNudge">⚓ Dock</button>
+                @* Alongside but coasting too hot to clamp — one press flies the terminal match (the same
+                   burn the armed autopilot flies), then leaves the plain ⚓ Dock. *@
+                <button type="button" class="btn btn-sm btn-info me-2" @onclick="MatchAndClamp"
+                        title="@($"Fly the terminal match — nulls the {(_dockAffordance.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)} km/s drift into the clamp window, then hit ⚓ Dock")">
+                    ⚓ Match &amp; clamp — ≈@(_dockAffordance.MatchPulses) p
+                </button>
+            }
+            else if (_dockAffordance.Phase == DockPhase.TooHot)
+            {
+                @* In range but the match is unaffordable — refuse with the numbers, greyed so it teaches. *@
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2" disabled
+                        title="@($"Too hot to clamp — the terminal match needs ≈{_dockAffordance.MatchPulses} p, only {_reactionMassPulses} aboard")">
+                    ⚓ Match &amp; clamp — needs ≈@(_dockAffordance.MatchPulses) p
+                </button>
             }
             <button type="button" class="btn btn-sm @(_showScope ? "btn-info" : "btn-outline-light") ms-2" title="Open or close the telescope scope window" @onclick="ToggleScope">
                 Scope
@@ -2011,8 +2026,16 @@
         if (_armedOrbitBodyId is not null && !_orbitKept)
         {
             string eta = ArmedInsertionSimTime is { } t ? $"in {FormatDuration(t - SimTime)}" : "at window";
+            // #204: a μ=0 station is never orbit-inserted — the plan's final step is the ⚓ dock. For an
+            // honest errand the autopilot clamps itself ("⚓ auto-dock"); a hostile-flagged run keeps the
+            // captain's-word grammar ("⚓ Dock — your call").
+            string label = BodyById(_armedOrbitBodyId) is { } armed && IsDockableHaven(armed)
+                ? (AutoDockHonest(armed)
+                    ? $"⚓ auto-dock at {armed.Name}"
+                    : $"⚓ Dock at {armed.Name} — your call in the envelope")
+                : InsertStepLabel();
             steps.Add(new FlightPlanStep(
-                InsertStepLabel(), eta, FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach)));
+                label, eta, FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach)));
         }
 
         // Friday §0 (owner ruling): the kept-orbit NOW line, composed HERE and fed through main's
@@ -4638,6 +4661,20 @@
     // the berth at 10,000×. Docking stays the captain's ⚓ click — the autopilot never auto-clamps.
     private void AutopilotStandInEnvelope(CelestialBody station)
     {
+        // #204: when the errand is honest (a friendly dock haven, nothing hostile-flagged), the ⚓ belongs
+        // in the autopilot list — the ship completes the clamp itself, through the SAME path the manual
+        // press and the #213 match use. The terminal match that brought it into the envelope already
+        // fired above (the legacy Approach loop), so this is just the confirming clamp. Hostile-flagged
+        // anything NEVER auto-docks (#186/#178): the captain's-word grammar stays, standing down into the
+        // envelope for the manual ⚓ press.
+        if (AutoDockHonest(station) && ResolveDockHaven(station.Id) is { } t)
+        {
+            LogAutopilotEvent($"autopilot delivered {station.Name} — matched in the dock envelope; auto-docking (honest errand)");
+            Warp = 1; _effectiveWarp = 1;
+            ClampOntoHaven(t.Body, t.Pos, $"🛰 auto-docked at {station.Name} —");
+            return;
+        }
+
         _armedOrbitBodyId = null;
         ResetApproachTracking();
         ResetAutopilotBudget();
@@ -4648,6 +4685,15 @@
         _effectiveWarp = 1;
         ShowPulseMessage(_dockReadyStatus);
     }
+
+    // #204/#186: the autopilot completes the clamp itself only for an HONEST arrival — the armed
+    // destination is a dock haven and nothing about the errand is hostile-flagged (no authorized plunder,
+    // no plunder opportunity in play). A felony keeps the captain's-word grammar. Pure boundary lives in
+    // Core (DockAffordanceRule.ShouldAutoDock) so it is unit-testable.
+    private bool AutoDockHonest(CelestialBody station) =>
+        DockAffordanceRule.ShouldAutoDock(
+            IsDockableHaven(station),
+            _plunderAuthorizedTargetId is not null || _plunderOpportunityTargetId is not null);
 
     // ---- M24: destination — the body the captain MEANS to reach. Clicking a planet on the
     // map sets it; the orbit-assist panel then coaches the approach to that body instead of
@@ -5657,7 +5703,15 @@
         ResetApproachTracking(); // every arm starts convergence tracking clean
         _destinationBodyId = bodyId; // arming says "this is where we're going"
         string trimQuote = _keepTrimPulsesPerDay > 0 ? $"; then holds the orbit, trim ≈{_keepTrimPulsesPerDay} p/day" : "";
-        ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p; the ship will park at {BodyName(bodyId)} when the window opens{trimQuote} 🛰");
+        // #204: the arm-time quote names the final step. A μ=0 station ends at the ⚓ berth, not a park —
+        // for an honest errand the autopilot auto-docks; a hostile-flagged run stands into the envelope
+        // for the captain's ⚓ Dock.
+        string arrival = BodyById(bodyId) is { } armedBody && IsDockableHaven(armedBody)
+            ? (AutoDockHonest(armedBody)
+                ? $"auto-dock at {BodyName(bodyId)}"
+                : $"stand into the dock envelope at {BodyName(bodyId)} for your ⚓ Dock")
+            : $"park at {BodyName(bodyId)}";
+        ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p; the ship will {arrival} when the window opens{trimQuote} 🛰");
     }
 
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
@@ -6000,7 +6054,9 @@
         string km(double m) => (m / 1000).ToString("N0", CultureInfo.InvariantCulture);
         if (_dockedHavenId == oi.Body.Id) return "clamped on — lying low";
         if (oi.Distance > DockReachMeters) return $"coast within {km(DockReachMeters)} km to clamp on";
-        if (oi.RelSpeed > DockMatchSpeedMps) return $"alongside — slow to ≤{km(DockMatchSpeedMps)} km/s, then hit ⚓ Dock";
+        // #213: in range but too hot — the ⚓ Match & clamp button flies the terminal match; the line
+        // names the same act instead of the old "slow it down yourself, then hit ⚓ Dock".
+        if (oi.RelSpeed > DockMatchSpeedMps) return "alongside but hot — hit ⚓ Match & clamp to null the drift into the window";
         return "alongside and matched — hit ⚓ Dock to clamp on";
     }
 
@@ -6961,6 +7017,7 @@
         }
 
         UpdateDockStatus();
+        UpdateDockAffordance(); // #212/#211/#213: recompute the one-truth ⚓ affordance (runs paused too)
         UpdateOrbitedBody();
         UpdateCapture(dtRealSeconds);
         UpdateEncounters();
@@ -11202,6 +11259,61 @@
     private string? _dockedHavenId;   // the station haven we're clamped to, or null
     private Vector2d _dockOffset;     // frozen ship-minus-dock offset while clamped (the arm's reach)
 
+    // #212/#211/#213: the ONE dock affordance truth — the toolbar ⚓ button and the envelope line both
+    // read this, so text and button can never disagree. Recomputed every OnTick (paused or not, so the
+    // quote survives pause), latch state carried frame-to-frame so the offer doesn't blink as the
+    // orbiting station's relative speed phases in and out.
+    private DockAffordance _dockAffordance = DockAffordance.Hidden;
+    private bool _dockLatched;
+
+    // Recompute the one-truth dock affordance from the SAME focus-first selection the envelope line uses
+    // (destination/armed haven first, then nearest dockable haven). Runs every frame — including paused —
+    // so a captain reading the board sees the same affordances and the #213 match quote before anything
+    // fires. While clamped there is no affordance (the 🚀 Undock button owns the slot).
+    private void UpdateDockAffordance()
+    {
+        if (_dockedHavenId is not null || _ephemeris is null)
+        {
+            _dockAffordance = DockAffordance.Hidden;
+            _dockLatched = false;
+            return;
+        }
+
+        List<DockHaven> havens = new();
+        const double h = 1.0;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (!IsDockableHaven(body) || IsBodyHidden(body.Id))
+            {
+                continue;
+            }
+
+            Vector2d pos = _ephemeris.Position(body.Id, SimTime);
+            Vector2d vel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
+            bool focus = body.Id == _destinationBodyId || body.Id == _armedOrbitBodyId;
+            havens.Add(new DockHaven(body, pos, vel, focus));
+        }
+
+        _dockAffordance = DockAffordanceRule.Evaluate(_ship, havens, _reactionMassPulses, _dockLatched);
+        _dockLatched = _dockAffordance.Latched;
+    }
+
+    // Resolve a haven's live world state straight from the ephemeris — used so docking clamps onto the
+    // SELECTED haven (the affordance's one truth), never onto whichever body happens to be _nearestBody
+    // (Mars photobombing the Roadstead was exactly #212).
+    private (CelestialBody Body, Vector2d Pos, Vector2d Vel)? ResolveDockHaven(string id)
+    {
+        if (_ephemeris is null || _ephemeris.Bodies.FirstOrDefault(b => b.Id == id) is not { } body)
+        {
+            return null;
+        }
+
+        const double h = 1.0;
+        Vector2d pos = _ephemeris.Position(id, SimTime);
+        Vector2d vel = (_ephemeris.Position(id, SimTime + h) - _ephemeris.Position(id, SimTime - h)) / (2 * h);
+        return (body, pos, vel);
+    }
+
     // The dock envelope lives in Core (DockRule, #155) so the arm-time rehearsal, the live station
     // stand-down and this UI can never quote different numbers. These aliases keep the call sites reading
     // the same way they did when the literals lived here.
@@ -11218,39 +11330,13 @@
     private bool IsStationTarget(string bodyId) =>
         _ephemeris?.Bodies.FirstOrDefault(b => b.Id == bodyId)?.Kind == BodyKind.Station;
 
-    // Near a dock but coasting too hot to clamp — the one gate players hit most. Returns the nudge
-    // to show on a greyed-out Dock button, or null when there's nothing to nudge about.
-    private string? DockSpeedNudge()
-    {
-        if (_dockedHavenId is not null || _nearestBody is not { } near || !IsDockableHaven(near))
-        {
-            return null;
-        }
-
-        double distance = (_ship.Position - _nearestBodyPosition).Length;
-        if (distance <= near.BodyRadius || distance > DockReachMeters)
-        {
-            return null; // not in reach yet — the Nav "Nearest" line teaches the "get closer" half
-        }
-
-        double relSpeed = (_ship.Velocity - _nearestBodyVelocity).Length;
-        return relSpeed > DockMatchSpeedMps ? $"Too fast to clamp — slow to ≤{DockMatchSpeedMps / 1000:N0} km/s" : null;
-    }
-
-    // The station haven we're close enough (and slow enough) to clamp onto right now, if any.
-    private CelestialBody? DockableHavenHere()
-    {
-        if (_dockedHavenId is not null || _nearestBody is not { IsHaven: true, Mu: <= 0 } dock)
-        {
-            return null;
-        }
-
-        double distance = (_ship.Position - _nearestBodyPosition).Length;
-        double relSpeed = (_ship.Velocity - _nearestBodyVelocity).Length;
-        return distance > dock.BodyRadius && distance <= DockReachMeters && relSpeed <= DockMatchSpeedMps
-            ? dock
+    // The station haven we're close enough (and slow enough) to clamp onto right now, if any — read
+    // from the one-truth affordance (#212) so it names the SAME haven the envelope line does, never the
+    // raw nearest body.
+    private CelestialBody? DockableHavenHere() =>
+        _dockedHavenId is null && _dockAffordance.CanClampNow && _dockAffordance.HavenId is { } id
+            ? BodyById(id)
             : null;
-    }
 
     // Go-ashore (2026-07-07; the walk-through tube, 2026-07-08). Docking now welds the ship to the
     // station by a narrow umbilical with two automatic airlock doors, and you simply WALK your avatar
@@ -12274,21 +12360,75 @@
             return;
         }
 
-        if (DockableHavenHere() is not { } dock)
+        // Clamp onto the ONE dock truth (#212) — the affordance's selected haven — resolving its live
+        // world state straight from the ephemeris, never from _nearestBodyPosition (which may be the
+        // planet the station orbits).
+        if (DockableHavenHere() is not { } dock || ResolveDockHaven(dock.Id) is not { } t)
         {
             return;
         }
 
+        ClampOntoHaven(t.Body, t.Pos);
+    }
+
+    // #213: fly the terminal match, then leave the plain clamp. Reuses the SAME burn the armed autopilot
+    // flies at a station (OrbitRule.Approach with μ=0 / no obstacle) and the SAME kernel to price it, so
+    // the bill matches the quote the button showed (even while paused). One press nulls the drift into
+    // the clamp window; the plain ⚓ Dock then goes live for the captain's confirming press.
+    private void MatchAndClamp()
+    {
+        if (_dockedHavenId is not null)
+        {
+            return;
+        }
+
+        // Already matched (the drift phased under the cap between the render and the click) — just clamp.
+        if (_dockAffordance.CanClampNow)
+        {
+            ToggleDock();
+            return;
+        }
+
+        if (_dockAffordance.HavenId is not { } id || ResolveDockHaven(id) is not { } t)
+        {
+            return;
+        }
+
+        int quote = _dockAffordance.MatchPulses;
+        int cost = OrbitRule.ApproachPulseCost(_ship, t.Pos, t.Vel, t.Body, null, 0);
+        if (cost > _reactionMassPulses)
+        {
+            // #213 hopelessly hot: refuse with the numbers rather than a silent no-op or a broken clamp.
+            ShowPulseMessage($"⚓ too hot to match at {t.Body.Name} — needs ≈{cost} p, only {_reactionMassPulses} aboard. Bleed speed and come around.");
+            return;
+        }
+
+        _ship = OrbitRule.Approach(_ship, t.Pos, t.Vel, t.Body, null, 0);
+        _reactionMassPulses -= cost;
+        StaleFutureNodes();
+        Warp = 1; _effectiveWarp = 1; // don't blow past the berth the match just delivered you to
+        // #185 no-silent-money, applied to outflows: name the bill against the quote.
+        ShowPulseMessage($"⚓ matched at {t.Body.Name} — {cost} p spent (quoted ≈{quote}). Hit ⚓ Dock to clamp on.");
+        RendererInterop.PlayCue("burn");
+        UpdateDockAffordance(); // so the plain ⚓ Dock button appears this frame
+    }
+
+    // The clamp itself — shared by the manual ⚓ Dock press and the #204 honest auto-dock. Freezes the
+    // arm's reach off the haven's own position (not _nearestBody), welds the tube, settles cargo runs.
+    private void ClampOntoHaven(CelestialBody dock, Vector2d dockPos, string? arrivalNote = null)
+    {
         _dockedHavenId = dock.Id;
-        _dockOffset = _ship.Position - _nearestBodyPosition; // freeze the arm's reach at berth
+        _dockOffset = _ship.Position - dockPos;               // freeze the arm's reach at berth
         HoldAtDock();                                        // match the drift now so nothing lurches
         StaleFutureNodes();                                  // a berth cancels any pending burns
         _armedOrbitBodyId = null;                            // and disarms any pending auto-insert (issue #126)
         _autopilotStandDownReason = null; _dockReadyStatus = null; ResetAutopilotBudget(); // a berth is a fresh start — clear any handback/dock-ready surface
+        _dockAffordance = DockAffordance.Hidden; _dockLatched = false;
         SetDeckForDock(dock.Id);                             // weld on the walk-through tube if this haven has an interior
-        ShowPulseMessage(HavenInterior.HasInterior(dock.Id)
+        string ashore = HavenInterior.HasInterior(dock.Id)
             ? $"⚓ Clamped on at {dock.Name} — gangway's mated. Head to the Deck and walk the tube ashore."
-            : $"⚓ Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off.");
+            : $"⚓ Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off.";
+        ShowPulseMessage(arrivalNote is null ? ashore : $"{arrivalNote} {ashore}");
         RendererInterop.PlayCue("board");
         CompleteCargoRunQuests(dock.Id); // arriving at the delivery berth finishes a cargo run (M-Q3)
         PayCompletedQuests();            // then any finished bar contracts pay out (M-Q1)
