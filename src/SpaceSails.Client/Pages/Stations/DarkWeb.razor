@@ -15,7 +15,7 @@
         <span class="fw-bold small">Dark web market 🕸</span>
         @if (!FullScreen)
         {
-            <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="() => OnClose.InvokeAsync()"></button>
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the dark web market and step back to the desk" @onclick="() => OnClose.InvokeAsync()"></button>
         }
     </div>
     <div class="card-body p-2 small dark-web-scroll @(FullScreen ? "dark-web-desk-body" : "")">
@@ -47,7 +47,7 @@
                                 </td>
                                 <td class="text-end align-middle text-nowrap">
                                     <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
-                                            disabled="@(known || Credits < price)" @onclick="() => BuyIntel(ship, price)">
+                                            disabled="@(known || Credits < price)" title="Buy this ship's route intel — pin its off-the-books course to your ledger for the price shown" @onclick="() => BuyIntel(ship, price)">
                                         @(known ? "Known" : $"{price:N0} cr")
                                     </button>
                                 </td>
@@ -75,7 +75,7 @@
                                     <div class="text-secondary">@t.CargoClass (@t.CargoUnits u) — quality @((int)(t.Quality * 100))%</div>
                                 </td>
                                 <td class="text-end align-middle text-nowrap">
-                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-1" @onclick="() => SellTrack(t, price)">
+                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-1" title="Fence this telescope track — cash out your own sighting for the credits shown" @onclick="() => SellTrack(t, price)">
                                         Sell @price.ToString("N0", CultureInfo.InvariantCulture) cr
                                     </button>
                                 </td>
