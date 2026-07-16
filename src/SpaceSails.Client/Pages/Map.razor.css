@@ -712,6 +712,71 @@
     margin: 0.35rem 0;
 }
 
+/* ⛽ FILL HER UP (#157): a car-dashboard fuel gauge in the Trade desk. Big readout, a bar banded
+   green / amber (<18% reserve) / red (floor), and a fat fill button — the desk's plain answer to
+   "how do I refuel her?". */
+.fuel-desk-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    color: rgba(255, 213, 128, 0.9);
+    margin-bottom: 0.35rem;
+}
+
+.fuel-gauge {
+    position: relative;
+    height: 2.4rem;
+    border-radius: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+
+.fuel-gauge-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    transition: width 0.25s ease;
+}
+
+.fuel-gauge.fuel-green .fuel-gauge-fill {
+    background: linear-gradient(90deg, rgba(46, 204, 113, 0.55), rgba(46, 204, 113, 0.85));
+}
+
+.fuel-gauge.fuel-amber .fuel-gauge-fill {
+    background: linear-gradient(90deg, rgba(241, 196, 15, 0.55), rgba(243, 156, 18, 0.9));
+}
+
+.fuel-gauge.fuel-red .fuel-gauge-fill {
+    background: linear-gradient(90deg, rgba(231, 76, 60, 0.6), rgba(192, 57, 43, 0.95));
+}
+
+.fuel-gauge-readout {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    height: 100%;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.fuel-gauge-cap {
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.75;
+    margin-left: 0.2rem;
+}
+
+.fuel-alongside {
+    color: rgba(255, 213, 128, 0.85);
+}
+
+.fuel-fill-btn {
+    letter-spacing: 0.04em;
+}
+
 .desk-traffic-scroll {
     max-height: calc(90vh - 6rem);
     overflow-y: auto;
