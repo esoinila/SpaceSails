@@ -43,6 +43,29 @@ public static class PlotHorizon
         return Math.Clamp(horizon, minSeconds, capSeconds);
     }
 
+    /// <summary>
+    /// #265 — cap the projection/ribbon horizon for a CAPTURED ship. A bound orbit projected for the
+    /// full solar-leg horizon draws many precessing revolutions (the owner's Uranus "eight-petal flower"),
+    /// and the petal-to-petal drift is the projection integrator wandering through the deep-periapsis
+    /// passes, not an honest future. So once the achieved orbit is bound — <paramref name="boundPeriodSeconds"/>
+    /// is <see cref="OrbitRule.BoundOrbitPeriod"/>, null on an unbound leg — the horizon is capped to about
+    /// one revolution (<paramref name="revolutions"/> × period; a touch over 1 so the ribbon closes its
+    /// loop and reads "and so on", not a hard chop). Transfer/hyperbolic legs (null period) and a bound
+    /// ship with a plotted departure that genuinely extends the future (<paramref name="planFurthestSeconds"/>
+    /// &gt; 0) keep the full length.
+    /// </summary>
+    public static double BoundOrbitHorizon(
+        double fullHorizonSeconds, double? boundPeriodSeconds, double planFurthestSeconds, double revolutions = 1.15)
+    {
+        // Cap only a genuinely bound orbit (finite, positive period) that no plotted departure extends;
+        // an unbound leg (null period) or a plan reaching past the park keeps the full-length ribbon.
+        if (boundPeriodSeconds is { } period && period > 0 && !(planFurthestSeconds > 0))
+        {
+            return Math.Min(fullHorizonSeconds, revolutions * period);
+        }
+        return fullHorizonSeconds;
+    }
+
     /// <summary>Why the drawn ribbon is the length it is — the honesty note the panel prints.</summary>
     public enum RibbonNote
     {

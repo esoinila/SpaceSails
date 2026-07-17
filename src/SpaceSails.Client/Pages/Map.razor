@@ -3754,18 +3754,44 @@
     {
         get
         {
+            double horizon;
             if (_horizonChoice != "auto" && double.TryParse(_horizonChoice, out double days))
             {
-                return days * 86400;
+                horizon = days * 86400;
+            }
+            else
+            {
+                // #209: auto is PLAN-AWARE. The projection reaches the plan's furthest encounter (the
+                // rehearsal's arrival, the plotted destination pass, or the furthest live burn node) plus a
+                // margin; with no plan it holds the local default. PlanFurthestEpochSeconds is the ONE truth
+                // (no second estimator); the clamp stops a runaway plan asking for an un-affordable reproject.
+                horizon = PlotHorizon.AutoProjectionSeconds(
+                    PlanFurthestEpochSeconds(), AutoHorizonMinSeconds, AutoHorizonMarginSeconds, PlotHorizonSeconds);
             }
 
-            // #209: auto is PLAN-AWARE. The projection reaches the plan's furthest encounter (the
-            // rehearsal's arrival, the plotted destination pass, or the furthest live burn node) plus a
-            // margin; with no plan it holds the local default. PlanFurthestEpochSeconds is the ONE truth
-            // (no second estimator); the clamp stops a runaway plan asking for an un-affordable reproject.
-            return PlotHorizon.AutoProjectionSeconds(
-                PlanFurthestEpochSeconds(), AutoHorizonMinSeconds, AutoHorizonMarginSeconds, PlotHorizonSeconds);
+            // #265: once the achieved orbit is BOUND to a body, cap the horizon at ~one revolution so the
+            // ribbon draws a single closing loop, not a precessing bouquet (the owner's Uranus flower). A
+            // plotted departure (PlanFurthestEpochSeconds > 0) or an unbound transfer/hyperbolic leg keeps
+            // the full length. Capping the PROJECTION, not just the draw, also spares the integrator the
+            // deep-periapsis passes whose drift painted the extra petals in the first place.
+            return PlotHorizon.BoundOrbitHorizon(horizon, BoundOrbitPeriodSeconds(), PlanFurthestEpochSeconds());
         }
+    }
+
+    // #265 — the period (s) of the ship's currently-achieved bound orbit about its dominant body, or null
+    // when the ship is on a transfer/hyperbolic leg (not captured). Reads the SAME body + Hill the orbit
+    // panel judges capture against (OrbitInfo), so "bound" here and the panel's "bound — parked" never
+    // disagree. Cheap: a finite-difference body velocity and one energy/√ in OrbitRule.BoundOrbitPeriod.
+    private double? BoundOrbitPeriodSeconds()
+    {
+        if (_ephemeris is null || OrbitInfo() is not { Bound: true } oi)
+        {
+            return null;
+        }
+        Vector2d pos = _ephemeris.Position(oi.Body.Id, SimTime);
+        const double h = 1.0;
+        Vector2d vel = (_ephemeris.Position(oi.Body.Id, SimTime + h) - _ephemeris.Position(oi.Body.Id, SimTime - h)) / (2 * h);
+        return OrbitRule.BoundOrbitPeriod(_ship, pos, vel, oi.Body, oi.Hill);
     }
 
     // #209 — the plan's furthest encounter, in seconds AHEAD of now: the single length the auto ribbon
