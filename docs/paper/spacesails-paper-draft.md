@@ -36,7 +36,7 @@ the failures taught the game.
 
 - The pitch: a piracy game on the surface, a numerical-methods and orbital-mechanics
   classroom underneath. "Secretly edutainment" is the design law, not an accident: the
-  owner's first shipped software (SoittoPeli, 1998) was music edutainment for children,
+  owner's first shipped software (SoittoPeli, 2000) was music edutainment for children,
   and SpaceSails carries the same DNA deliberately.
 - Thesis: honesty is the unifying design constraint. The simulation never lies (determinism,
   §2), the instruments never lie (uncertainty cones that admit what they don't know, §3),
