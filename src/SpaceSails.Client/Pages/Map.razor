@@ -1428,6 +1428,39 @@
             {
                 <div class="text-secondary">Projecting the course… the closest pass appears here in a moment.</div>
             }
+
+            @* #246 🚀 LONG HAUL — the destination's OWN planet is the void mode's stop. The arrival promise
+               is stated plainly (owner: "the navigation UI does not say I will get to Uranus"): reaches in
+               N d, or misses with the closest pass named. When it reaches AND the coast is a long dark, the
+               one-button offer to jump the void appears (refused, with the reason, while the sky isn't clear). *@
+            @if (_longHaulPlanet is { } lhPlanet && _longHaulReach is { } lhReach && lhReach.ArrivalSimTime > SimTime)
+            {
+                string lhDestName = _destinationBodyId is { } lhDestId ? BodyName(lhDestId) : lhPlanet.Name;
+                bool lhLong = lhReach.Reaches && lhReach.ElapsedSecondsFrom(SimTime) >= LongHaul.LongThresholdSeconds;
+                <div class="mt-2 pt-2 border-top border-secondary">
+                    <div class="@(lhReach.Reaches ? "text-info" : "text-warning") mb-1">
+                        🚀 @LongHaul.ReachVerdict(lhPlanet.Name, lhReach, SimTime)
+                    </div>
+                    @if (lhLong)
+                    {
+                        LongHaul.Blocker lhBlock = LongHaulBlocker(lhReach, lhPlanet.Id);
+                        <div class="text-secondary small mb-1">
+                            @LongHaul.Promise(lhPlanet.Name, lhReach.CaptureRangeMeters, FormatSimTime(lhReach.ArrivalSimTime), 0, LongHaulLastMilePulses())
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm @(lhBlock == LongHaul.Blocker.None ? "btn-warning" : "btn-outline-secondary")"
+                                disabled="@(lhBlock != LongHaul.Blocker.None)"
+                                title="@(lhBlock == LongHaul.Blocker.None ? "Cross the void in one jump — the clock advances to arrival and the ship wakes at the capture gate" : LongHaul.RefusalText(lhBlock, lhDestName))"
+                                @onclick="EngageLongHaul">
+                            @LongHaul.Offer(lhDestName, 0, FormatSimTime(lhReach.ArrivalSimTime))
+                        </button>
+                        @if (lhBlock != LongHaul.Blocker.None)
+                        {
+                            <div class="text-warning small mt-1">@LongHaul.RefusalText(lhBlock, lhDestName)</div>
+                        }
+                    }
+                </div>
+            }
         </div>
     }
 
@@ -2763,6 +2796,117 @@
     // Whole sim-days of coast still ahead, for the advert copy.
     private int LongCoastDays => (int)Math.Round((_skipNext.Epoch - SimTime) / DaySeconds);
 
+    // ===== #246 🚀 LONG HAUL — the void is COMPUTED, not animated =====
+    // Where #172's warp-skip INTEGRATES a coast you want to watch, the long haul JUMPS a void you don't:
+    // it places the ship at the closed-form conic's arrival state (LongHaul.Project) and advances the
+    // clock there. Everything time-derived (rails, heat, interest, pod/cache timers) is a pure function of
+    // sim time, so the world is consistent by construction — the one non-pure actor, a hunter mid-chase,
+    // is refused ("the sky is clear"), and the bus stops at the destination planet's capture range.
+
+    // The last-mile pulse quote from the current course's destination pass, when the plot has one.
+    private int LongHaulLastMilePulses() =>
+        _destinationPass is { } dp && DestinationPassInfo(dp) is { } info ? info.EstPulses : 0;
+
+    // The gate, read live from the world: hunters up (any wolf on the board — not just actively closing —
+    // is "sky not clear", and none of a chase is a pure function of time), a kept orbit to disarm first,
+    // or still inside the departure well.
+    private LongHaul.Blocker LongHaulBlocker(LongHaul.Reach reach, string targetPlanetId)
+    {
+        bool anyHunter = _hunters.Any(h => !h.BrokenOff && !h.CaughtPlayer);
+        bool insideWell = _ephemeris is not null && LongHaul.InsideAnyWell(_ship, _ephemeris, targetPlanetId);
+        return LongHaul.Evaluate(reach, anyHunter, _orbitKept, insideWell, SimTime);
+    }
+
+    // Engage the haul: refuse-with-reason if the gate is shut, else jump the clock, place the ship at the
+    // capture-range handover, reconcile the world's integrated actors (NPC traffic) to the new epoch, and
+    // announce + autosave. One frame of real time; the void is never integrated.
+    private void EngageLongHaul()
+    {
+        if (_ephemeris is null || _longHaulPlanet is not { } planet || _longHaulReach is not { } reach)
+        {
+            return;
+        }
+
+        string destName = _destinationBodyId is { } d ? BodyName(d) : planet.Name;
+        LongHaul.Blocker blocker = LongHaulBlocker(reach, planet.Id);
+        if (blocker != LongHaul.Blocker.None)
+        {
+            ShowPulseMessage(LongHaul.RefusalText(blocker, destName));
+            return;
+        }
+
+        // (c) the banner flips — the autopilot owns the leg, not "you have the ship".
+        ShowPulseMessage(LongHaul.BannerNow(destName));
+
+        // (d) THE JUMP: advance the clock to the arrival epoch and place the ship on the solved conic's
+        // arrival state — at the destination planet's capture range (the bus stop).
+        double daysPassed = Math.Round(reach.ElapsedSecondsFrom(SimTime) / DaySeconds);
+        _ship = reach.ArrivalState;
+        SimTime = reach.ArrivalSimTime;
+
+        // Reconcile the only actors the world integrates rather than derives (NPC traffic). Everything else
+        // — rails, heat decay (haven mult off in flight), interest, pod/cache/quest timers — is a pure
+        // function of the new sim time and reconciles itself on the next tick.
+        ReconcileNpcClocksTo(SimTime);
+
+        StaleFutureNodes();          // the course's burns are behind us; drop any pending nodes
+        ResetAutopilotBudget();
+        _autopilotStandDownReason = null;
+        _skipActive = false;         // any warp-skip is moot now
+        _passDirty = true;           // reproject from the arrival state
+        _scrubOffsetSeconds = 0;
+
+        // (e) announce, book the ledger line on the news wire, and autosave the crossing.
+        ShowPulseMessage(LongHaul.Completed(destName, (int)daysPassed));
+        PushNewsEvent(NewsWire.NewsEventKind.LongHaulComplete, destName, $"{(int)daysPassed} d crossed");
+        RequestVaultSave();
+        ReprojectTrajectory();
+    }
+
+    // Catch the world's integrated actors up to a jumped clock WITHOUT grinding the per-tick 60 s NPC loop
+    // (which would be ~a quarter-million fixed steps per ship across a 172-day void). Depots ride pure
+    // rails and need nothing; active/newly-activating traffic is advanced in a single adaptive coast that
+    // still fires its scheduled burns. Hunters are never here — the mode refuses while any is on the board.
+    private void ReconcileNpcClocksTo(double newT)
+    {
+        if (_npcSimulator is null || _ephemeris is null)
+        {
+            return;
+        }
+
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Arrived)
+            {
+                continue;
+            }
+
+            if (!npc.Active)
+            {
+                if (newT < npc.Ship.ActivationTime)
+                {
+                    continue; // still fitting out at the new epoch — leave it for StepNpcs to activate
+                }
+
+                npc.Active = true;
+                npc.State = npc.Ship.InitialState;
+            }
+
+            if (npc.Ship.DepotBodyId is not null)
+            {
+                continue; // a depot is a pure function of sim time — StepNpcs recomputes it from the rails
+            }
+
+            if (npc.State.SimTime < newT)
+            {
+                // A wide far-field stride cap (6 h) keeps the one-shot cross-void catch-up cheap; RunAdaptive
+                // still auto-refines near a body, and cosmetic traffic needs no finer far from one.
+                npc.State = _npcSimulator.RunAdaptive(
+                    npc.State, newT - npc.State.SimTime, npc.Disabled ? null : npc.Ship.Plan, maxTimeStep: 21600.0);
+            }
+        }
+    }
+
     // The warp readout's text: paused, skipping (event + ETA), or the plain multiplier.
     private string WarpReadout =>
         Paused ? "∥"
@@ -3334,6 +3478,8 @@
     private ClosestApproach.Pass? _armablePass;
     private ClosestApproach.Pass? _destinationPass;   // M25: the plotted path's closest pass by THE destination
     private ClosestApproach.Pass? _slingablePass;     // PR-G: the tightest PLANET pass inside its Hill sphere — the sling handle
+    private LongHaul.Reach? _longHaulReach;           // #246: the void-crossing projection toward the destination's own planet
+    private CelestialBody? _longHaulPlanet;           // #246: that sun-orbiting planet, named in the promise/verdict
     private bool _passDirty;
     private double _lastReprojectMs;
 
@@ -7965,6 +8111,12 @@
                         _destinationPass = pass;
                     }
                 }
+
+                // #246: the long-haul reach toward the destination's OWN planet (the void mode stops at its
+                // capture range), recomputed on the same reprojection cadence the nav card reads. Cheap: a
+                // closed-form conic march, no integration.
+                _longHaulPlanet = _destinationBodyId is { } destId ? LongHaul.JumpTargetPlanet(_ephemeris, destId) : null;
+                _longHaulReach = _longHaulPlanet is { } lhPlanet ? LongHaul.Project(_ship, _ephemeris, lhPlanet) : null;
             }
 
             UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute
