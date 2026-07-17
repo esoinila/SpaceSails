@@ -477,6 +477,20 @@ public partial class Map
                 return; // NOT armed — the whole point of the promise
             }
 
+            // #267 surface clearance: a rehearsal can be Deliverable (reaches a bound park within budget)
+            // yet its point-mass PATH still thread a body it passes — the solve doesn't know a planet is in
+            // the way. Verify the rehearsed line clears every body, judging the TARGET from its achieved
+            // park (the #229 lesson) so a valid arrival AT the moon never false-refuses; the target's parent
+            // and any brushed-by planet are judged over the whole path. Reuses the rehearsal's own samples —
+            // no re-flight. A threaded planet is refused with the reason, in the captain's voice.
+            if (SurfaceClearance.Check(r.Path, _ephemeris, bodyId) is { } clearance)
+            {
+                _autopilotStandDownReason = $"autopilot declines {name}: {SurfaceClearance.RefusalText(clearance)}.";
+                ResetAutopilotBudget();
+                ShowPulseMessage($"🛰 {_autopilotStandDownReason}");
+                return; // NOT armed — the line threads a body
+            }
+
             _armedBudgetPulses = r.Pulses;
             _armedSpentPulses = 0;
             CachePlanForAlarm(bodyId, r); // #148/#196/#219: draw the intended path AND cache its alarm pass, together

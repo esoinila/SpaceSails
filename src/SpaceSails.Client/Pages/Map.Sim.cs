@@ -898,6 +898,12 @@ public partial class Map
                 _longHaulPlanet = LongHaulTargetPlanet(_destinationBodyId); // null unless a real void to cross
                 _longHaulReach = _longHaulPlanet is { } lhPlanet ? LongHaul.Project(_ship, _ephemeris, lhPlanet) : null;
                 _longHaulDeparture = _longHaulPlanet is { } lhp2 ? LongHaul.SolveDeparture(_ship, _ephemeris, lhp2) : null;
+                // #267: price the destination departure's surface-clearance verdict on THIS cadence (once,
+                // not per render) so the chip/card offer gate reads it cheaply — the arc-sampling scan is too
+                // heavy to run every frame.
+                _longHaulClearanceBlock = _longHaulPlanet is { } lhp3 && _longHaulDeparture is { Ok: true } lhDep
+                    ? LongHaulClearanceBlock(lhDep, lhp3)
+                    : null;
             }
 
             UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute

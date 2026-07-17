@@ -311,6 +311,57 @@ public static class LongHaul
     }
 
     /// <summary>
+    /// #267 — sample the ship's heliocentric coast as a drawn path of world-space samples, for the
+    /// surface-clearance gate (<see cref="SurfaceClearance.Check"/>). Marches the SAME closed-form conic
+    /// <see cref="Project"/> and <see cref="PropagateHeliocentricTo"/> fly — re-seeding each stride so the
+    /// universal anomaly never grows into the Stumpff overflow regime — and records one world-space sample
+    /// per stride up to <paramref name="untilEpoch"/>. This is NOT a second integrator: it is the one
+    /// heliocentric kernel, sampled, so the clearance gate judges the very arc the jump will ride. Pure and
+    /// deterministic (a fixed stride schedule, no clock, no randomness).
+    /// </summary>
+    /// <param name="ship">The (post-departure-burn) ship state whose conic is being verified.</param>
+    /// <param name="ephemeris">The same rails the sim flies.</param>
+    /// <param name="sun">The root heliocentric attractor the coast is a conic about.</param>
+    /// <param name="untilEpoch">Stop sampling at this sim clock (the arrival epoch).</param>
+    /// <param name="maxSamples">Sample cap — the stride widens to fit a multi-year haul under it.</param>
+    public static IReadOnlyList<TrajectorySample> SampleHeliocentricPath(
+        ShipState ship, ICelestialEphemeris ephemeris, CelestialBody sun, double untilEpoch, int maxSamples = 512)
+    {
+        var path = new List<TrajectorySample> { new(ship.SimTime, ship.Position) };
+        double t0 = ship.SimTime;
+        if (sun is not { Mu: > 0 } || untilEpoch <= t0)
+        {
+            return path;
+        }
+
+        double sunMu = sun.Mu;
+        Vector2d relPos = ship.Position - ephemeris.Position(sun.Id, t0);
+        Vector2d relVel = ship.Velocity - TransferMath.BodyVelocity(ephemeris, sun.Id, t0);
+
+        // Fixed stride, the #246 6 h cadence, widened so a multi-year haul stays under the sample cap.
+        double span = untilEpoch - t0;
+        double step = Math.Max(ProjectStepSeconds, span / Math.Max(1, maxSamples - 1));
+
+        double t = t0;
+        while (t < untilEpoch && path.Count < maxSamples)
+        {
+            double dt = Math.Min(step, untilEpoch - t);
+            if (TransferMath.PropagateKepler(relPos, relVel, dt, sunMu) is not { } k
+                || !double.IsFinite(k.Position.X) || !double.IsFinite(k.Position.Y))
+            {
+                break; // degenerate conic — stop at the last good state
+            }
+
+            relPos = k.Position;
+            relVel = k.Velocity;
+            t += dt;
+            path.Add(new TrajectorySample(t, ephemeris.Position(sun.Id, t) + relPos));
+        }
+
+        return path;
+    }
+
+    /// <summary>
     /// The one gate the whole mode keys off: is the long haul clear to jump the ship to
     /// <paramref name="reach"/>'s arrival? Ordered so the loudest, most actionable reason wins — a hunter
     /// in the sky, then a kept orbit to disarm, then still-in-the-well, then a hop too short to bother, then
