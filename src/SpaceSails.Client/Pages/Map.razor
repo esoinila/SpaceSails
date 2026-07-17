@@ -439,6 +439,24 @@
                                 ? HarborVocabulary.ArmAction(HarborClass.Dock, menuBody.Name)
                                 : "🛰 Arm auto-insert at window")
                     </button>
+                    @* #246/#249 🚀 LONG HAUL — the PRIMARY entry (owner: "autopilot into vicinity from clicking
+                       the target"). When the clicked body sits across the void, the menu recognizes the long-
+                       haul distance and offers it as a third action that SETS the destination AND engages in
+                       one press — no card-hunting. Visible-but-disabled with the reason (#212), even docked
+                       (the undock is part of engaging). *@
+                    @if (LongHaulTargetPlanet(menuBody.Id) is { } lhMenuPlanet)
+                    {
+                        LongHaul.Departure lhMenuDep = LongHaul.SolveDeparture(_ship, _ephemeris!, lhMenuPlanet);
+                        string? lhMenuBlock = LongHaulOfferBlock(lhMenuDep, lhMenuPlanet.Name);
+                        <button type="button" class="btn btn-sm @(lhMenuBlock is null ? "btn-warning" : "btn-outline-secondary")"
+                                disabled="@(lhMenuBlock is not null)"
+                                title="@(lhMenuBlock ?? $"Set {menuBody.Name} as destination and autopilot the whole void in one jump — wake at {lhMenuPlanet.Name}'s capture range; the last mile stays premium")"
+                                @onclick="() => EngageLongHaulFromMenu(menuBody.Id)">
+                            @(lhMenuDep.Ok
+                                ? LongHaul.MenuAction(lhMenuPlanet.Name, lhMenuDep.DeparturePulses, FormatSimTime(lhMenuDep.ArrivalCenterTime))
+                                : $"🚀 Long haul to {lhMenuPlanet.Name} — no window from here")
+                        </button>
+                    }
                 }
                 else
                 {
@@ -710,6 +728,19 @@
                         title="The coast costs nothing — the skip spends only time. Jump to the next event."
                         @onclick="StartSkip">
                     ⏭ Long coast ahead (@LongCoastDays d) — skip it
+                </button>
+            }
+            @* #246/#249 🚀 the long haul as a toolbar chip — a SECONDARY surface (the map context menu is
+               the primary entry) mirroring the offer while a long destination is set. Placement per #236,
+               beside the ⏭ advert. Visible-but-disabled with the reason (#212). *@
+            @if (LongHaulTargetPlanet(_destinationBodyId) is { } lhChipPlanet && _longHaulDeparture is { Ok: true } lhChipDep)
+            {
+                string? lhChipBlock = LongHaulOfferBlock(_longHaulDeparture, lhChipPlanet.Name);
+                <button type="button" class="btn btn-sm @(lhChipBlock is null ? "btn-warning" : "btn-outline-secondary") me-2"
+                        disabled="@(lhChipBlock is not null)"
+                        title="@(lhChipBlock ?? $"Autopilot the whole void to {lhChipPlanet.Name} vicinity in one jump — wake at the capture gate; the last mile stays premium")"
+                        @onclick="EngageLongHaul">
+                    🚀 Long haul (@lhChipDep.DeparturePulses p)
                 </button>
             }
             <button type="button" class="btn btn-sm @(Paused ? "btn-warning" : "btn-outline-light") me-2" title="Pause or resume the flow of sim time" @onclick="TogglePause">
@@ -1429,35 +1460,38 @@
                 <div class="text-secondary">Projecting the course… the closest pass appears here in a moment.</div>
             }
 
-            @* #246 🚀 LONG HAUL — the destination's OWN planet is the void mode's stop. The arrival promise
-               is stated plainly (owner: "the navigation UI does not say I will get to Uranus"): reaches in
-               N d, or misses with the closest pass named. When it reaches AND the coast is a long dark, the
-               one-button offer to jump the void appears (refused, with the reason, while the sky isn't clear). *@
-            @if (_longHaulPlanet is { } lhPlanet && _longHaulReach is { } lhReach && lhReach.ArrivalSimTime > SimTime)
+            @* #246/#249 🚀 LONG HAUL — the destination's OWN planet is the void mode's stop. The OFFER is the
+               solved cheap DEPARTURE (reachable from a berth or any coast), never gated on the current coast
+               reaching. The current-coast Reach still speaks the honest PROMISE VERDICT ("does NOT reach —
+               closest pass X AU") for a manual coast. Visible-but-disabled with the reason, never hidden (#212). *@
+            @if (LongHaulTargetPlanet(_destinationBodyId) is { } lhPlanet)
             {
                 string lhDestName = _destinationBodyId is { } lhDestId ? BodyName(lhDestId) : lhPlanet.Name;
-                bool lhLong = lhReach.Reaches && lhReach.ElapsedSecondsFrom(SimTime) >= LongHaul.LongThresholdSeconds;
+                string? lhBlock = LongHaulOfferBlock(_longHaulDeparture, lhPlanet.Name);
                 <div class="mt-2 pt-2 border-top border-secondary">
-                    <div class="@(lhReach.Reaches ? "text-info" : "text-warning") mb-1">
-                        🚀 @LongHaul.ReachVerdict(lhPlanet.Name, lhReach, SimTime)
-                    </div>
-                    @if (lhLong)
+                    @* The manual-coast verdict: does THIS course reach, or how far does it miss? *@
+                    @if (_longHaulReach is { } lhReach)
                     {
-                        LongHaul.Blocker lhBlock = LongHaulBlocker(lhReach, lhPlanet.Id);
+                        <div class="@(lhReach.Reaches ? "text-info" : "text-secondary") small mb-1">
+                            🚀 @LongHaul.ReachVerdict(lhPlanet.Name, lhReach, SimTime)
+                        </div>
+                    }
+                    @if (_longHaulDeparture is { Ok: true } lhDep)
+                    {
                         <div class="text-secondary small mb-1">
-                            @LongHaul.Promise(lhPlanet.Name, lhReach.CaptureRangeMeters, FormatSimTime(lhReach.ArrivalSimTime), 0, LongHaulLastMilePulses())
+                            @LongHaul.Promise(lhPlanet.Name, LongHaulCaptureRange(lhPlanet), FormatSimTime(lhDep.ArrivalCenterTime), lhDep.DeparturePulses, LongHaulLastMilePulses())
                         </div>
                         <button type="button"
-                                class="btn btn-sm @(lhBlock == LongHaul.Blocker.None ? "btn-warning" : "btn-outline-secondary")"
-                                disabled="@(lhBlock != LongHaul.Blocker.None)"
-                                title="@(lhBlock == LongHaul.Blocker.None ? "Cross the void in one jump — the clock advances to arrival and the ship wakes at the capture gate" : LongHaul.RefusalText(lhBlock, lhDestName))"
+                                class="btn btn-sm @(lhBlock is null ? "btn-warning" : "btn-outline-secondary")"
+                                disabled="@(lhBlock is not null)"
+                                title="@(lhBlock ?? "Autopilot the whole void in one jump — charge the departure, wake at the capture gate; the last mile stays premium")"
                                 @onclick="EngageLongHaul">
-                            @LongHaul.Offer(lhDestName, 0, FormatSimTime(lhReach.ArrivalSimTime))
+                            @LongHaul.Offer(lhDestName, lhDep.DeparturePulses, FormatSimTime(lhDep.ArrivalCenterTime))
                         </button>
-                        @if (lhBlock != LongHaul.Blocker.None)
-                        {
-                            <div class="text-warning small mt-1">@LongHaul.RefusalText(lhBlock, lhDestName)</div>
-                        }
+                    }
+                    @if (lhBlock is not null)
+                    {
+                        <div class="text-warning small mt-1">@lhBlock</div>
                     }
                 </div>
             }
@@ -2807,40 +2841,119 @@
     private int LongHaulLastMilePulses() =>
         _destinationPass is { } dp && DestinationPassInfo(dp) is { } info ? info.EstPulses : 0;
 
-    // The gate, read live from the world: hunters up (any wolf on the board — not just actively closing —
-    // is "sky not clear", and none of a chase is a pure function of time), a kept orbit to disarm first,
-    // or still inside the departure well.
-    private LongHaul.Blocker LongHaulBlocker(LongHaul.Reach reach, string targetPlanetId)
+    // A destination is a genuine long-haul target when its own sun-orbiting planet exists AND the ship is
+    // not already inside that planet's capture range (there is a real void to cross). Drives the offer's
+    // visibility on the map menu, the nav card, and the toolbar chip — never gated on the CURRENT coast
+    // reaching, which from a berth it never does (#249 fix).
+    private CelestialBody? LongHaulTargetPlanet(string? destBodyId)
     {
-        bool anyHunter = _hunters.Any(h => !h.BrokenOff && !h.CaughtPlayer);
-        bool insideWell = _ephemeris is not null && LongHaul.InsideAnyWell(_ship, _ephemeris, targetPlanetId);
-        return LongHaul.Evaluate(reach, anyHunter, _orbitKept, insideWell, SimTime);
+        if (_ephemeris is null || destBodyId is null || LongHaul.JumpTargetPlanet(_ephemeris, destBodyId) is not { } planet)
+        {
+            return null;
+        }
+
+        CelestialBody? sun = planet.ParentId is null ? null : _ephemeris.Bodies.FirstOrDefault(b => b.Id == planet.ParentId);
+        if (sun is null)
+        {
+            return null;
+        }
+
+        double capture = OrbitRule.CaptureRange(OrbitRule.HillRadius(planet, sun.Mu));
+        double dist = (_ship.Position - _ephemeris.Position(planet.Id, SimTime)).Length;
+        return dist > capture ? planet : null; // already in the vicinity → nothing to haul
     }
 
-    // Engage the haul: refuse-with-reason if the gate is shut, else jump the clock, place the ship at the
-    // capture-range handover, reconcile the world's integrated actors (NPC traffic) to the new epoch, and
-    // announce + autosave. One frame of real time; the void is never integrated.
-    private void EngageLongHaul()
+    // The gate for the DEPARTURE-based offer: null = clear to engage; else the spoken reason (visible-but-
+    // disabled, never hidden — #212). Order: hunter on the board, a kept orbit to disarm, the planner can't
+    // solve, then the tank can't afford it. No InsideWell check — the departure burn IS the well-escape;
+    // engaging from a berth is exactly the point (the undock is part of engaging).
+    private string? LongHaulOfferBlock(LongHaul.Departure? departure, string planetName)
     {
-        if (_ephemeris is null || _longHaulPlanet is not { } planet || _longHaulReach is not { } reach)
+        if (_hunters.Any(h => !h.BrokenOff && !h.CaughtPlayer))
+        {
+            return LongHaul.RefusalText(LongHaul.Blocker.HunterActive, planetName);
+        }
+
+        if (_orbitKept)
+        {
+            return LongHaul.RefusalText(LongHaul.Blocker.Keeping, planetName);
+        }
+
+        if (departure is not { Ok: true } dep)
+        {
+            return "🚀 " + (departure?.Failure ?? "no departure arc from here yet — give the plot a moment");
+        }
+
+        int reserve = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
+        int budget = Math.Max(0, _reactionMassPulses - reserve);
+        return dep.DeparturePulses > budget ? LongHaul.RefusalBudget(dep.DeparturePulses, _reactionMassPulses) : null;
+    }
+
+    // The destination planet's capture range (the void mode's stop), for the promise's "capture (X AU)".
+    private double LongHaulCaptureRange(CelestialBody planet)
+    {
+        CelestialBody? sun = planet.ParentId is { } pid ? _ephemeris?.Bodies.FirstOrDefault(b => b.Id == pid) : null;
+        return sun is null ? OrbitRule.CaptureRangeFloorMeters : OrbitRule.CaptureRange(OrbitRule.HillRadius(planet, sun.Mu));
+    }
+
+    // The nav-card 🚀 button — uses the reproject-computed departure for the current destination.
+    private void EngageLongHaul() => EngageLongHaulTo(_destinationBodyId, _longHaulPlanet, _longHaulDeparture);
+
+    // The MAP CONTEXT-MENU primary entry (owner refinement): one click SETS the destination AND engages.
+    // Solves the departure fresh from the current state so it works straight off a berth, no card-hunting.
+    private void EngageLongHaulFromMenu(string bodyId)
+    {
+        CloseBodyMenu();
+        SetDestination(bodyId);
+        if (_ephemeris is null || LongHaul.JumpTargetPlanet(_ephemeris, bodyId) is not { } planet)
         {
             return;
         }
 
-        string destName = _destinationBodyId is { } d ? BodyName(d) : planet.Name;
-        LongHaul.Blocker blocker = LongHaulBlocker(reach, planet.Id);
-        if (blocker != LongHaul.Blocker.None)
+        EngageLongHaulTo(bodyId, planet, LongHaul.SolveDeparture(_ship, _ephemeris, planet));
+    }
+
+    // Engage the haul: refuse-with-reason if the gate is shut; else solve is already in hand — charge the
+    // departure pulses, apply the burn, and JUMP along the SOLVED conic to the planet's capture range (which
+    // reaches by construction). One frame of real time; the void is never integrated.
+    private void EngageLongHaulTo(string? destBodyId, CelestialBody? planet, LongHaul.Departure? departure)
+    {
+        if (_ephemeris is null || planet is null)
         {
-            ShowPulseMessage(LongHaul.RefusalText(blocker, destName));
             return;
         }
 
-        // (c) the banner flips — the autopilot owns the leg, not "you have the ship".
+        string destName = destBodyId is { } d ? BodyName(d) : planet.Name;
+        string? block = LongHaulOfferBlock(departure, planet.Name);
+        if (block is not null)
+        {
+            ShowPulseMessage(block);
+            return;
+        }
+
+        LongHaul.Departure dep = departure!.Value;
+
+        // Compute the jump BEFORE committing any side effect: ride the post-burn conic to the capture gate.
+        ShipState postBurn = _ship with { Velocity = dep.PostBurnVelocity };
+        double horizon = (dep.ArrivalCenterTime - postBurn.SimTime) + 30.0 * DaySeconds;
+        LongHaul.Reach reach = LongHaul.Project(postBurn, _ephemeris, planet, horizon);
+        if (!reach.Reaches)
+        {
+            ShowPulseMessage($"🚀 the solved arc slipped past {planet.Name} — re-plot and try the long haul again");
+            return; // vanishingly unlikely: the post-burn conic targets the planet by construction
+        }
+
+        // Commit. (a/b) undock is part of engaging; charge the honest departure pulses; (c) flip the banner.
+        if (_dockedHavenId is not null)
+        {
+            Undock();
+        }
+
         ShowPulseMessage(LongHaul.BannerNow(destName));
+        _reactionMassPulses = Math.Max(0, _reactionMassPulses - dep.DeparturePulses);
 
-        // (d) THE JUMP: advance the clock to the arrival epoch and place the ship on the solved conic's
-        // arrival state — at the destination planet's capture range (the bus stop).
-        double daysPassed = Math.Round(reach.ElapsedSecondsFrom(SimTime) / DaySeconds);
+        // (d) THE JUMP: place the ship at the planet's capture range on the solved conic; advance the clock.
+        double daysPassed = Math.Round(reach.ElapsedSecondsFrom(postBurn.SimTime) / DaySeconds);
         _ship = reach.ArrivalState;
         SimTime = reach.ArrivalSimTime;
 
@@ -2849,7 +2962,7 @@
         // function of the new sim time and reconciles itself on the next tick.
         ReconcileNpcClocksTo(SimTime);
 
-        StaleFutureNodes();          // the course's burns are behind us; drop any pending nodes
+        StaleFutureNodes();          // any pending burns are behind us now
         ResetAutopilotBudget();
         _autopilotStandDownReason = null;
         _skipActive = false;         // any warp-skip is moot now
@@ -2895,6 +3008,18 @@
             if (npc.Ship.DepotBodyId is not null)
             {
                 continue; // a depot is a pure function of sim time — StepNpcs recomputes it from the rails
+            }
+
+            // If the ship's whole plan has played out before the new epoch, it reached its destination long
+            // ago — mark it arrived rather than integrate years of post-plan ballistic drift (a multi-year
+            // long haul would otherwise grind tens of thousands of steps per freighter). This mirrors
+            // StepNpcs' own despawn: past the last node, the run is over.
+            IReadOnlyList<ManeuverNode> nodes = npc.Ship.Plan.Nodes;
+            double lastNodeTime = nodes.Count > 0 ? nodes[^1].SimTime : npc.Ship.ActivationTime;
+            if (newT >= lastNodeTime)
+            {
+                npc.Arrived = true;
+                continue;
             }
 
             if (npc.State.SimTime < newT)
@@ -3478,8 +3603,9 @@
     private ClosestApproach.Pass? _armablePass;
     private ClosestApproach.Pass? _destinationPass;   // M25: the plotted path's closest pass by THE destination
     private ClosestApproach.Pass? _slingablePass;     // PR-G: the tightest PLANET pass inside its Hill sphere — the sling handle
-    private LongHaul.Reach? _longHaulReach;           // #246: the void-crossing projection toward the destination's own planet
-    private CelestialBody? _longHaulPlanet;           // #246: that sun-orbiting planet, named in the promise/verdict
+    private LongHaul.Reach? _longHaulReach;           // #246: the CURRENT coast's reach — the manual-coast promise verdict ONLY
+    private CelestialBody? _longHaulPlanet;           // #246: the destination's sun-orbiting planet, named in the promise/verdict
+    private LongHaul.Departure? _longHaulDeparture;   // #246/#249 fix: the solved cheap departure the OFFER quotes and engages
     private bool _passDirty;
     private double _lastReprojectMs;
 
@@ -8112,11 +8238,14 @@
                     }
                 }
 
-                // #246: the long-haul reach toward the destination's OWN planet (the void mode stops at its
-                // capture range), recomputed on the same reprojection cadence the nav card reads. Cheap: a
-                // closed-form conic march, no integration.
-                _longHaulPlanet = _destinationBodyId is { } destId ? LongHaul.JumpTargetPlanet(_ephemeris, destId) : null;
+                // #246: the destination's OWN planet (the void mode stops at its capture range) and the
+                // solved cheap DEPARTURE the offer quotes — recomputed on the reprojection cadence. The
+                // departure solve (not the current-coast Project) is what the offer keys off, so the button
+                // is reachable from a berth or any coast (#249 fix). The current-coast Project stays too, but
+                // only for the manual-coast PROMISE verdict line ("does NOT reach — closest pass X AU").
+                _longHaulPlanet = LongHaulTargetPlanet(_destinationBodyId); // null unless a real void to cross
                 _longHaulReach = _longHaulPlanet is { } lhPlanet ? LongHaul.Project(_ship, _ephemeris, lhPlanet) : null;
+                _longHaulDeparture = _longHaulPlanet is { } lhp2 ? LongHaul.SolveDeparture(_ship, _ephemeris, lhp2) : null;
             }
 
             UpdateInterceptEstimate(); // M27: the war room's clock rides the same recompute
