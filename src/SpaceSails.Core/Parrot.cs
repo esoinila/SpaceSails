@@ -28,6 +28,7 @@ public static class Parrot
         Plunder,
         Busted,
         LongHaul,
+        Adrift,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -77,6 +78,10 @@ public static class Parrot
         // LongHaul (#172) — a long dead coast ahead; the bird votes fast-forward and points at the ⏭ button.
         // The coast is free, only time passes: SMASH the button and it'll wake ye at the next event.
         ["Loooong haul, captain — smash that ⏭ and I'll squawk ye awake!", "Days of nothing ahead. The bird votes fast-forward.", "Wake me at the burn — you know the button. SQUAWK!"],
+        // Adrift (#266) — out of reaction mass with no pump in reach: the founding "we're stranded"
+        // alert. The bird names the fix and PROPOSES the tow (the owner went adrift for real and couldn't
+        // find the one button the moment existed to offer — so the parrot offers it aloud).
+        ["We're dry, captain — shall I whistle for a tow? SQUAWK!", "Dead in the black, not a pulse left — say the word and I'll whistle up a rescue!", "Adrift and drifting! Call the tug, captain — I'll squawk 'em over. SQUAWK!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line

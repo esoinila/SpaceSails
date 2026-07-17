@@ -68,6 +68,23 @@ public class ParrotTests
     }
 
     [Fact]
+    public void Adrift_ProposesATow_AcrossTheRotation()
+    {
+        // #266: out of reaction mass, the bird PROPOSES the rescue — every line offers a tow/rescue/whistle
+        // so a stranded captain hears the fix, not just the alarm.
+        for (int i = 0; i < 3; i++)
+        {
+            string line = Parrot.Line(Parrot.Squawk.Adrift, i);
+            Assert.True(
+                line.Contains("tow", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("rescue", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("tug", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("whistle", StringComparison.OrdinalIgnoreCase),
+                $"expected a tow/rescue proposal, got: {line}");
+        }
+    }
+
+    [Fact]
     public void Plunder_NamesTheHaul_AcrossTheRotation()
     {
         // #202: the bird names what was just stolen — the haul phrase fills the {0} slot in every line.
