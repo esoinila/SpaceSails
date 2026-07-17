@@ -700,6 +700,14 @@
             <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light") me-2" title="Keep the camera locked on the ship as she flies" @onclick="ToggleFollow">
                 Follow Ship
             </button>
+            @* #237 — clickable zoom: not every captain has a mouse wheel (and automation drives one
+               poorly). One real step per press, zooming toward the viewport centre. *@
+            <button type="button" class="btn btn-sm btn-outline-light" title="Zoom the map in one step — no mouse wheel needed" @onclick="() => ZoomStep(zoomIn: true)">
+                🔍+
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light me-2" title="Zoom the map out one step — no mouse wheel needed" @onclick="() => ZoomStep(zoomIn: false)">
+                🔍−
+            </button>
             <button type="button" class="btn btn-sm @(PlotMode ? "btn-success" : "btn-outline-light") me-2" title="Switch between flying live and plotting a course on the map" @onclick="TogglePlotMode">
                 @(PlotMode ? "Play" : "Plot")
             </button>
@@ -11479,6 +11487,11 @@
         double factor = e.DeltaY > 0 ? 1.15 : 1 / 1.15;
         _camera.ZoomBy(factor, e.OffsetX, e.OffsetY);
     }
+
+    // #237 — the wheel-free zoom: one REAL step per press (×1.6, vs the wheel's 1.15 crawl),
+    // toward the viewport centre so the button never yanks the view sideways.
+    private void ZoomStep(bool zoomIn) =>
+        _camera.ZoomBy(zoomIn ? 1 / 1.6 : 1.6, _viewportWidth / 2.0, _viewportHeight / 2.0);
 
     private void OnPointerDown(PointerEventArgs e)
     {
