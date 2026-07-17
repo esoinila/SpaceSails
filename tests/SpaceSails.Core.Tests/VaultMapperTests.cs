@@ -168,6 +168,31 @@ public class VaultMapperTests
         Assert.Null(VaultResume.Select(null, Vector2d.Zero, []));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Resume_IdAndName_AlwaysCoRefer_AgainstRealSol(bool docked)
+    {
+        // #256: a real export had HavenId/HavenName resolved from two different lookups and could name
+        // one bar while pointing at another. Select derives BOTH from one HavenLocus, so for every
+        // dockable haven in the shipped scenario the resume's name must be the id's true name — no
+        // resume can ever wake the captain at the wrong bar.
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var havens = eph.Bodies
+            .Where(b => b.IsHaven && b.Mu <= 0)
+            .Select(b => new VaultResume.HavenLocus(b.Id, b.Name, eph.Position(b.Id, 0)))
+            .ToList();
+        Assert.NotEmpty(havens);
+
+        foreach (VaultResume.HavenLocus h in havens)
+        {
+            ResumeSection? resume = VaultResume.Select(docked ? h.Id : null, h.Position, havens);
+            Assert.NotNull(resume);
+            string trueName = eph.Bodies.Single(b => b.Id == resume!.HavenId).Name;
+            Assert.Equal(trueName, resume!.HavenName); // id and name co-refer, always
+        }
+    }
+
     [Fact]
     public void FullVaultBuiltFromLiveLedgers_SurvivesSerialization()
     {
