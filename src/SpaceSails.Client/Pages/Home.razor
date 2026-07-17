@@ -51,8 +51,8 @@
     <div class="row g-4 justify-content-center">
         @foreach ((string slug, string title, string tag, string blurb) in Scenarios)
         {
-            <div class="col-md-4">
-                <div class="card h-100 bg-dark text-light border-secondary">
+            <div class="col-md-6">
+                <div class="card h-100 bg-dark text-light border-info">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">
                             @title
@@ -68,6 +68,38 @@
             </div>
         }
     </div>
+
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8">
+            <details class="bg-dark text-light border border-secondary rounded p-3">
+                <summary class="fw-bold">Archived scenarios — the roads less sailed</summary>
+                <p class="small text-secondary mt-2 mb-3">
+                    Alternate skies from earlier voyages. Still flyable, still Newtonian — just no
+                    longer the maiden launch. Pick one and set sail into the odd.
+                </p>
+                <div class="row g-3">
+                    @foreach ((string slug, string title, string tag, string blurb) in Archived)
+                    {
+                        <div class="col-md-4">
+                            <div class="card h-100 bg-dark text-light border-secondary">
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="card-title">
+                                        @title
+                                        @if (tag.Length > 0)
+                                        {
+                                            <span class="badge bg-info text-dark ms-1">@tag</span>
+                                        }
+                                    </h6>
+                                    <p class="card-text small flex-grow-1">@blurb</p>
+                                    <a class="btn btn-outline-primary btn-sm mt-2" href="map?scenario=@slug">Launch</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </details>
+        </div>
+    </div>
 </div>
 
 @code {
@@ -76,6 +108,12 @@
         ("sol", "Sol", "",
          "The real solar system, pure Newtonian. Nine worlds on rails, He3 haulers inbound from Saturn, " +
          "and Luna's mass drivers lobbing compute-core pods. Where every pirate learns the trade."),
+    ];
+
+    // Archived skies — kept for the labs that teach them, but no longer the maiden launch.
+    // Collapsed into the "Archived scenarios" drawer on the front page (issue #258).
+    private static readonly (string Slug, string Title, string Tag, string Blurb)[] Archived =
+    [
         ("sol-eu", "Sol (Electric)", "EU ⚡",
          "The same sky, awake. Hull charge builds near the Sun and inside plasma streams; vent it or glow " +
          "on every sensor in the system. Ride the Saturn–Jupiter river — fast, bright, and watched."),
