@@ -26,10 +26,10 @@ public class AutopilotRehearsalTests
     [Fact]
     public void ReserveFloor_IsAFifthIshOfCapacity_ConstantInCore()
     {
-        // 18% of the 250-pulse starter tank ≈ 45; of an upgraded 400-pulse tank ≈ 72. A real cushion
-        // that also absorbs the rehearsal's step-size error.
-        Assert.Equal(45, AutopilotRehearsal.ReservePulses(250));
-        Assert.Equal(72, AutopilotRehearsal.ReservePulses(400));
+        // 18% of the 500-pulse starter tank (#262) ≈ 90; of an upgraded 650-pulse tank ≈ 117. A real
+        // cushion that also absorbs the rehearsal's step-size error.
+        Assert.Equal(90, AutopilotRehearsal.ReservePulses(500));
+        Assert.Equal(117, AutopilotRehearsal.ReservePulses(650));
         Assert.True(AutopilotRehearsal.ReservePulses(1) >= 1, "Reserve never rounds to zero.");
     }
 

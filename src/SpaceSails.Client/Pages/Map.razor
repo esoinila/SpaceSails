@@ -3528,7 +3528,7 @@
     // M3 additions
     private double _simAccumulator;
     private double _lastPulseSimTime = -PulseCooldownSeconds; // so the very first pulse isn't rejected
-    private int _reactionMassPulses = 250;
+    private int _reactionMassPulses = 500;
     private const double PulseCooldownSeconds = 1.0;
     // Gravity bends the real path away from a ribbon projected in the past, so re-project after
     // this much sim time even without a pulse (≈2 real seconds at max warp).
@@ -3902,7 +3902,7 @@
     private IReadOnlyList<Stations.Captain.TutorialItem> TutorialCards() =>
         TutorialTracks.Select(t => new Stations.Captain.TutorialItem(t.Title, t.Blurb)).ToArray();
 
-    private int ReactionMassCapacity => 250 + 150 * _massLevel;
+    private int ReactionMassCapacity => 500 + 150 * _massLevel;
     private int CargoCapacity => 10 + 10 * _holdLevel;
     private bool Adrift => _reactionMassPulses == 0 && !_docked;
     private static int UpgradePrice(int level) => 2000 * (1 << level);
@@ -15346,7 +15346,7 @@
         }
     }
 
-    private int ReactionMassCapacityFor(int massLevel) => 250 + 150 * massLevel;
+    private int ReactionMassCapacityFor(int massLevel) => 500 + 150 * massLevel;
 
     // Set the ship down at the nearest haven (the clinic), riding its velocity — a starter-grade parked
     // state. Returns the haven's name for the wake card.
