@@ -226,6 +226,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.BarPatron:
                 TalkToStranger();
                 break;
+            case DeckPlan.ConsoleKind.Barkeep:
+                TalkToBarkeep();
+                break;
             case DeckPlan.ConsoleKind.Hatch:
                 KnockOnHatch();
                 break;

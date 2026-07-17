@@ -118,6 +118,8 @@ public sealed record ContactRecord
     public bool Hostile { get; init; }
     /// <summary>Signed running balance (+ they hold our coin, − we owe them). Invariant: == Σ txn.</summary>
     public long CreditBalance { get; init; }
+    /// <summary>#247 — goodwill stood at the bar (a round for the room). Non-transactional; defaults 0.</summary>
+    public int Goodwill { get; init; }
     public IReadOnlyList<CreditTxnRecord> Transactions { get; init; } = [];
 }
 

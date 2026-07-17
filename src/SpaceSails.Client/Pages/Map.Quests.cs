@@ -598,6 +598,122 @@ public partial class Map
         ShowPulseMessage(line);
     }
 
+    // --- #247 The barkeep: buying a drink ashore ---------------------------------------------------
+    // Owner ashore at the Rusty Roadstead: "How do I get a drink at the Rusty bar here? Did we forget
+    // to add the bar-keep :-D". Drinking already lived aboard (the Galley 'Pour a tot'); this is the
+    // same beat ashore. The barkeep card is opened by pressing E at the counter; the per-bar house
+    // special, name and rumors are pure Core data (Barkeeps). Same drunkenness law both places — a
+    // poured drink routes through the very PourRum the Galley calls (one tot count, one wobble).
+    private Core.Interior.Barkeep? _barMenu;   // the open barkeep card (null = shut)
+    private string? _barNotice;                 // the last thing the keep said, shown on the card
+
+    private void TalkToBarkeep()
+    {
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.Barkeep })
+        {
+            return;
+        }
+        if (_dockedHavenId is not { } id || Barkeeps.For(id) is not { } keep)
+        {
+            ShowPulseMessage("The bar's unattended just now — nobody behind the counter.");
+            return;
+        }
+        _barMenu = keep;
+        _barNotice = keep.Greeting;
+    }
+
+    private void CloseBarkeep()
+    {
+        _barMenu = null;
+        _barNotice = null;
+    }
+
+    // Buy the house special: debit the purse, then apply the SAME drunkenness the Galley tot does — the
+    // drink rides through PourRum, so a third round ashore makes the deck just as tilty as one aboard.
+    // A #119-style receipt names the drink and the spend (the repo loves receipts).
+    private void BuyHouseSpecial()
+    {
+        if (_barMenu is not { } keep)
+        {
+            return;
+        }
+        Core.Interior.BarTab tab = keep.PourHouseSpecial(_credits);
+        if (!tab.Poured)
+        {
+            _barNotice = tab.Line;
+            ShowPulseMessage(tab.Line);
+            return;
+        }
+        _credits = tab.RemainingCredits;
+        PourRum($"{keep.DrinkName} — {keep.DrinkFlavor}"); // one wobble law, aboard and ashore
+        _barNotice = tab.Line;
+        ShowPulseMessage($"{tab.Line} (−{tab.Cost:N0} cr)");
+        RequestVaultSave(); // #225: the purse moved
+    }
+
+    // Buy a round for the whole room — a bigger spend that WARMS the regulars actually drinking here
+    // (#247 kin #224: the cheap way to thaw a cold contact). Goodwill is booked on the ContactLedger,
+    // the same saved book that holds mission history and bank balances — a future relationship layer
+    // reads it. You drink too, so the round counts as a tot on your own legs.
+    private void BuyRoundForRoom()
+    {
+        if (_barMenu is not { } keep)
+        {
+            return;
+        }
+        Core.Interior.BarTab tab = keep.BuyRound(_credits);
+        if (!tab.Poured)
+        {
+            _barNotice = tab.Line;
+            ShowPulseMessage(tab.Line);
+            return;
+        }
+        _credits = tab.RemainingCredits;
+
+        bool backOpen = _dockedHavenId is { } st
+            && UnlockedHatchesFor(st).Any(h => HavenInterior.HatchGrowsWing(st, h));
+        var warmed = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (DeckPlan.ConsoleSpot c in _deckPlan.Consoles)
+        {
+            if (c.Kind != DeckPlan.ConsoleKind.BarPatron)
+            {
+                continue;
+            }
+            string giver = c.Label.Replace("◈", "").Trim();
+            if (!seen.Add(giver))
+            {
+                continue; // one contact can hold two consoles (the roaming Magpie) — warm them once
+            }
+            // The roaming Magpie only drinks with the room when their rota has them in it this watch.
+            if (giver.Contains("MAGPIE", StringComparison.OrdinalIgnoreCase)
+                && !HavenInterior.ResolveMagpie(SimTime, backOpen).Present)
+            {
+                continue;
+            }
+            _contacts.AddGoodwill(giver, giver, 1);
+            warmed.Add(GiverDisplay(giver));
+        }
+
+        PourRum($"{keep.DrinkName}, all round — {keep.DrinkFlavor}"); // your glass is in it too
+        string cheers = warmed.Count > 0 ? $" {string.Join(", ", warmed)} raise a glass to you." : "";
+        _barNotice = tab.Line + cheers;
+        ShowPulseMessage($"{tab.Line}{cheers} (−{tab.Cost:N0} cr)");
+        RequestVaultSave(); // #225: the purse moved and goodwill was booked
+    }
+
+    // Ask the barkeep what they've heard — a cheap tip line for flavor (deterministic per sim-hour).
+    private void AskBarkeepForRumor()
+    {
+        if (_barMenu is not { } keep)
+        {
+            return;
+        }
+        string rumor = keep.RumorAt(SimTime);
+        _barNotice = rumor;
+        ShowPulseMessage($"🍺 {keep.Name}: {rumor}");
+    }
+
     // Pick a live target for a hunt contract — prefer off-books ships (the kind you couldn't just read
     // off the public traffic board, so the stranger's tip is actually worth something). Chosen from
     // sim time + the current berth so the booth's offer is stable frame to frame, and skips ships

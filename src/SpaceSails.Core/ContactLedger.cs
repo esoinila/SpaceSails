@@ -60,6 +60,12 @@ public readonly record struct ContactHistory(
     /// <see cref="Transactions"/> entry's <see cref="CreditTransaction.Amount"/>.</summary>
     public long CreditBalance { get; init; }
 
+    /// <summary>Warmth toward this contact that wasn't bought with a job — the cheap way to thaw a cold
+    /// one (#247 kin #224): standing a round at the bar while they're drinking nudges it up. Additive and
+    /// SAVED like the rest of the book; a future relationship layer reads it beside
+    /// <see cref="MissionsCompleted"/> to know a contact has been made welcome, not just useful.</summary>
+    public int Goodwill { get; init; }
+
     // Stored as ImmutableArray but read through a default-safe accessor: a ContactHistory built the old
     // way (or a `default` struct) never ran this initializer, leaving the field `IsDefault` — so the
     // getter coalesces to Empty rather than throwing. Round-trips through `with { Transactions = ... }`.
@@ -101,9 +107,13 @@ public readonly record struct ContactHistory(
         Transactions = Transactions.Add(txn),
     };
 
-    /// <summary>True once there is any history to read — an honest job done, a hull we robbed, or coin
-    /// in the air (banked with them or owed to them).</summary>
-    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0;
+    /// <summary>Warm this contact by <paramref name="delta"/> goodwill (a round bought at the bar). No
+    /// coin moves — this is the non-transactional twin of <see cref="WithCredit"/>.</summary>
+    public ContactHistory WithGoodwill(int delta) => this with { Goodwill = Goodwill + delta };
+
+    /// <summary>True once there is any history to read — an honest job done, a hull we robbed, coin
+    /// in the air (banked with them or owed to them), or a round stood them (goodwill).</summary>
+    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0;
 }
 
 /// <summary>
@@ -159,6 +169,19 @@ public sealed class ContactLedger
             ? existing with { DisplayName = displayName }
             : ContactHistory.New(contactId, displayName);
         ContactHistory updated = current.WithCredit(txn);
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>#247 — warm a contact by standing them a round at the bar (kin #224): add goodwill,
+    /// creating their record on first dealing. Books no coin — the non-transactional twin of
+    /// <see cref="ApplyCredit"/>. Returns the updated history so the caller can narrate the warming.</summary>
+    public ContactHistory AddGoodwill(string contactId, string displayName, int delta)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+        ContactHistory updated = current.WithGoodwill(delta);
         _byId[contactId] = updated;
         return updated;
     }

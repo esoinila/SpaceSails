@@ -33,6 +33,7 @@ public static class VaultMapper
                 LastCompletedSimTime = h.LastCompletedSimTime,
                 Hostile = h.Hostile,
                 CreditBalance = h.CreditBalance,
+                Goodwill = h.Goodwill,
                 Transactions = h.Transactions
                     .Select(t => new CreditTxnRecord((int)t.Kind, t.Amount, t.SimTime, t.Note))
                     .ToList(),
@@ -63,6 +64,7 @@ public static class VaultMapper
                 r.LastCompletedSimTime, r.Hostile)
             {
                 CreditBalance = r.CreditBalance,
+                Goodwill = r.Goodwill,
                 Transactions = txns,
             };
             ledger.Load(history);
