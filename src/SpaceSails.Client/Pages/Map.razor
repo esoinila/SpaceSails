@@ -1517,12 +1517,53 @@
         </div>
     }
 
-    @if (Adrift)
+    @* #266: the adrift lifeline. The old strip rendered UNDER the masthead (z-order behind .map-topstack)
+       and hid the one button a stranded captain needs — the #262 stranding proved it. Now the state
+       SAYS itself on the shared #166 alert strip (above), the parrot proposes the tow, and the rescue is
+       a real pop-up (below) with the terms visible. What remains inline is a clear, viewport-clamped
+       re-open affordance (#253) that lives clear of the banner's no-button zone (#236) — shown only while
+       adrift with the offer dismissed, so a captain who declined can always call the tug back. *@
+    @if (Adrift && !_showRescueOffer)
     {
         <div class="map-adrift">
-            <div class="alert alert-danger d-flex align-items-center gap-3 mb-0 shadow" role="alert">
-                <span class="fw-bold">Adrift — out of reaction mass.</span>
-                <button type="button" class="btn btn-sm btn-light" title="Call for a tow — a rescue tug brings reaction mass" @onclick="RequestRescue">Request rescue</button>
+            <button type="button" class="map-adrift-reopen" title="Adrift — out of reaction mass. Open the rescue offer and read its terms." @onclick="OpenRescueOffer">
+                🛟 Adrift — request rescue
+            </button>
+        </div>
+    }
+
+    @* #266: the rescue offer, a piracy-pop-up-style modal (#243 legible-gate family). The terms are
+       VISIBLE before accepting — who comes (a tug), what it brings (reaction mass), what it costs (the
+       whole hold, confiscated, enumerated with hot cargo marked), and a clear accept/decline. Going
+       adrift is a story beat, not a strip. Auto-opens on the rising edge; re-openable while stranded. *@
+    @if (_showRescueOffer && Adrift)
+    {
+        IReadOnlyList<RescueOffer.FeeLine> _rescueLines = RescueFeeLines();
+        <div class="rescue-backdrop" @onclick="CloseRescueOffer">
+            <div class="rescue-card" @onclick:stopPropagation="true">
+                <div class="rescue-hail">🛟 ADRIFT — OUT OF REACTION MASS</div>
+                <div class="rescue-quote">"We're dry, captain. Not a pulse left, and no pump in reach. Shall I whistle for a tow?"</div>
+                <div class="rescue-terms">
+                    <div class="rescue-brings">🚀 @RescueOffer.TowPromise(ReactionMassCapacity)</div>
+                    <div class="rescue-fee">💸 @RescueOffer.FeeHeadline(_rescueLines)</div>
+                    @if (_rescueLines.Count > 0)
+                    {
+                        <ul class="rescue-manifest">
+                            @foreach (RescueOffer.FeeLine _line in _rescueLines)
+                            {
+                                <li>@(_line.Hot ? "🔥" : "📦") @_line.Units @_line.CargoClass (@_line.Value.ToString("N0", CultureInfo.InvariantCulture) cr)@(_line.Hot ? " — hot" : "")</li>
+                            }
+                        </ul>
+                    }
+                </div>
+                <div class="rescue-options">
+                    <button type="button" class="btn btn-warning rescue-accept" title="Whistle for the tug — top the tank, surrender the hold" @onclick="AcceptRescue">
+                        🛟 Accept the tow — surrender the hold
+                    </button>
+                    <button type="button" class="btn btn-outline-light rescue-decline" title="Wave the tug off — you stay adrift; the offer stands" @onclick="CloseRescueOffer">
+                        Decline — stay adrift
+                    </button>
+                </div>
             </div>
         </div>
     }
@@ -4326,6 +4367,31 @@
             default:
                 _shipAlerts.Clear(AlertKind.Fuel);
                 break;
+        }
+
+        // #266: ADRIFT — the tank is empty and we're not docked. The founding "we're stranded" beat rides
+        // this same channel (like ROCKS AHEAD and orbit-decay): the strip says the state, the ledger logs
+        // it, the parrot proposes the tow — and the rescue POP-UP opens on the rising edge so the one
+        // button the moment exists to offer is in the captain's face, never buried in the masthead's
+        // shadow (the #262 stranding). The action lives in the pop-up, not the banner (#236).
+        if (Adrift)
+        {
+            if (_shipAlerts.Raise(AlertKind.Adrift, AlertSeverity.Red,
+                    "ADRIFT — out of reaction mass. The parrot's whistling for a tow; open the rescue offer.", SimTime))
+            {
+                SquawkNow(Parrot.Squawk.Adrift, nowMs, force: true);
+                LogAutopilotEvent("⚠ adrift — out of reaction mass; rescue offered");
+                Warp = 1; // stranded is not a thing to watch at 10,000×
+                _showRescueOffer = true; // the offer pops up the instant we go dry
+            }
+        }
+        else
+        {
+            // Under way again (rescued, or a burn found a pump): clear the alert and dismiss any stale offer.
+            if (_shipAlerts.Clear(AlertKind.Adrift))
+            {
+                _showRescueOffer = false;
+            }
         }
     }
 
@@ -11946,6 +12012,8 @@
             .ToArray();
     }
 
+    // #266: the adrift rescue. The tug tops the tank; the fee is the whole hold, confiscated. The terms
+    // are shown BEFORE this fires — see the rescue pop-up (AcceptRescue is its only caller now).
     private void RequestRescue()
     {
         _reactionMassPulses = ReactionMassCapacity;
@@ -11953,6 +12021,28 @@
         _cargoValue = 0;
         _cargoByClass.Clear();
         ShowPulseMessage("Rescue fee: all cargo confiscated");
+    }
+
+    // #266 — the rescue offer pop-up (piracy-pop-up family): a real modal with the terms visible before
+    // accepting. Auto-opens the instant we go adrift (UpdateShipAlerts); re-openable from the inline
+    // adrift affordance while stranded; Decline just dismisses (the offer stands until we're under way).
+    private bool _showRescueOffer;
+
+    // The confiscation manifest the offer enumerates — the live hold, by class, with hot flagged (#266).
+    private IReadOnlyList<RescueOffer.FeeLine> RescueFeeLines() =>
+        CargoManifest()
+            .Select(e => new RescueOffer.FeeLine(e.CargoClass, e.Units, e.Value, IsHotClass(e.CargoClass)))
+            .ToList();
+
+    private void OpenRescueOffer() => _showRescueOffer = true;
+
+    private void CloseRescueOffer() => _showRescueOffer = false; // Decline: dismiss; the offer re-opens from the strip
+
+    private void AcceptRescue()
+    {
+        RequestRescue();
+        _showRescueOffer = false;
+        _shipAlerts.Clear(AlertKind.Adrift); // the tow has us; clear the founding alert immediately
     }
 
     // ---- M14: the boarding run ----

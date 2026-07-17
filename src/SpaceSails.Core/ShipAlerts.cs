@@ -39,6 +39,13 @@ public enum AlertKind
     /// its approve/stand-down chips to. Shot authorization and boarding authorization are separate
     /// consents; this alert carries the boarding one.</summary>
     Boarding,
+
+    /// <summary>#266 — the tank is empty and no pump is in reach: the ship is ADRIFT. A founding "we're
+    /// stranded" condition that rides this one channel like the rest, so the banner says the state, the
+    /// ledger logs it, and the parrot squawks the rescue proposal once per crossing. The rescue itself
+    /// is a pop-up gate (the terms must be visible before accepting), not a banner button — this alert
+    /// only SHOUTS and says-the-state; #236 keeps the action off the masthead.</summary>
+    Adrift,
 }
 
 /// <summary>One live alert. Immutable snapshot; the channel replaces it wholesale on any change.</summary>

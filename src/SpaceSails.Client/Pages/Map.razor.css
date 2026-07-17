@@ -334,13 +334,113 @@
     pointer-events: auto;
 }
 
+/* #266: the adrift re-open affordance. The old strip sat at top:0.75rem behind .map-topstack (z-index
+   24) — buried under the masthead, the button a stranded captain needs occluded by the ship's own
+   nameplate (#262). It now lives at the BOTTOM centre, clear of the masthead and the toolbar, above the
+   canvas but below every modal, and viewport-clamped (#253). Not the banner's no-button zone (#236). */
 .map-adrift {
     position: absolute;
-    top: 0.75rem;
+    bottom: 4.5rem;
     left: 50%;
     transform: translateX(-50%);
+    max-width: calc(100% - 1.5rem);
     pointer-events: auto;
-    z-index: 10;
+    z-index: 30;
+}
+
+.map-adrift-reopen {
+    border: 1px solid rgba(255, 120, 120, 0.7);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+    background: linear-gradient(180deg, rgba(190, 40, 40, 0.96), rgba(130, 20, 20, 0.98));
+    box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 1rem rgba(255, 70, 70, 0.35);
+    cursor: pointer;
+    animation: adrift-pulse 1.8s ease-in-out infinite;
+}
+
+.map-adrift-reopen:hover {
+    background: linear-gradient(180deg, rgba(220, 60, 60, 0.98), rgba(160, 30, 30, 1));
+}
+
+@keyframes adrift-pulse {
+    0%, 100% { box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 0.6rem rgba(255, 70, 70, 0.3); }
+    50% { box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 1.4rem rgba(255, 90, 90, 0.6); }
+}
+
+/* #266: the rescue offer modal — the piracy-pop-up family (reuses the .busted card grammar). A real
+   gate: the terms are read before the hold is surrendered. */
+.rescue-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 1360; /* above the desks/deck overlays, in the modal band with view-object/busted */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 3, 6, 0.82);
+    pointer-events: auto;
+}
+
+.rescue-card {
+    max-width: min(34rem, 92vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    color: #eef1f6;
+    background: linear-gradient(180deg, rgba(30, 18, 20, 0.98), rgba(10, 7, 9, 0.99));
+    border: 1px solid rgba(255, 120, 120, 0.55);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.8), 0 0 1.6rem rgba(255, 90, 90, 0.28);
+}
+
+.rescue-hail {
+    color: #ff9a9a;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+}
+
+.rescue-quote {
+    font-style: italic;
+    color: #d7e0f2;
+    margin-bottom: 0.75rem;
+}
+
+.rescue-terms {
+    text-align: left;
+    margin-bottom: 0.9rem;
+}
+
+.rescue-brings {
+    color: #a9e6c0;
+    margin-bottom: 0.4rem;
+}
+
+.rescue-fee {
+    color: #ffce7a;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.rescue-manifest {
+    margin: 0.2rem 0 0;
+    padding-left: 1.4rem;
+    color: #e6d3d3;
+    font-size: 0.9rem;
+}
+
+.rescue-manifest li {
+    margin-bottom: 0.1rem;
+}
+
+.rescue-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .map-scope {
