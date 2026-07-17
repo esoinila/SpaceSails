@@ -500,6 +500,11 @@ public partial class Map
             while (npc.State.SimTime < _ship.SimTime)
             {
                 // M28: a slug through the sail ends all burns — the hulk drifts ballistic.
+                // #264: NPCs are deliberately NOT impact-enforced. They fly scheduled trader/hunter
+                // routes that never dive under a surface (a plan that did would despawn on arrival, not
+                // impact), and there is no death/re-birth flow for an NPC to enter. SurfaceImpact is
+                // built step-robust precisely so the PLAYER's detection can't be tunnelled by a coarse
+                // step; the 60 s NPC cadence needs no crossing check because nothing here can strike.
                 npc.State = _npcSimulator!.Step(npc.State, npc.Disabled ? null : npc.Ship.Plan);
             }
 
