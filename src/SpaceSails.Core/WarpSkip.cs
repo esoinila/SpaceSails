@@ -21,6 +21,22 @@ public static class WarpSkip
     /// outer and inner planets" (one sim-day).</summary>
     public const double LongCoastThresholdSeconds = 86_400.0;
 
+    /// <summary>
+    /// #261 — the JUMP-SCALE ceiling: a coast longer than this must NOT be INTEGRATED by the skip. Above
+    /// it the skip hands the void to closed-form conic propagation + a world re-seed (the long-haul
+    /// mechanism), never the tick loop — because integrating it is the #255/#257 freeze class through the
+    /// skip's side door: "the void is computed, not slogged" (#246/#249/#255/#257).
+    ///
+    /// <para>Why 5 sim-days. The freeze is the near-body fixed-1 s regime — when the arrival coast drops
+    /// warp below the adaptive threshold, the live loop grinds ~86_400 gravity steps per skipped day (a
+    /// live 717 d arrival coast ground ~62M steps: minutes of a pinned, frozen tab). Below 5 d the
+    /// worst-case fixed-step cost is a couple dozen frames — the honest skip's design scale, the
+    /// hours-to-days you WANT to watch. At and above 5 d the step count climbs into the thousands-of-frames
+    /// freeze. Five days is also exactly the line the long haul already draws between "a coast you watch"
+    /// and "a void you compute" (<see cref="LongHaul.LongThresholdSeconds"/>): one law, one number.</para>
+    /// </summary>
+    public const double JumpScaleThresholdSeconds = 5.0 * 86_400.0;
+
     /// <summary>The final approach window over which the skip eases warp down toward 1×, so an
     /// UN-guarded event epoch (a plan end, a keeping trim) isn't overshot by more than about one
     /// integrator quantum. Guarded events (scheduled burns, arrival insertions) land exactly on their
@@ -179,4 +195,50 @@ public static class WarpSkip
 
         return new LongCoastDecision(true, new LongCoastState(true, next.Epoch));
     }
+
+    // ===== #261 — the jump-scale skip: COMPUTE the void, never integrate it =====
+
+    /// <summary>Is the coast to the next event long enough that the skip must COMPUTE it (advance the conic
+    /// + re-seed) rather than INTEGRATE it (the freeze risk)? See <see cref="JumpScaleThresholdSeconds"/>.</summary>
+    public static bool IsJumpScale(double remainingSeconds) => remainingSeconds > JumpScaleThresholdSeconds;
+
+    /// <summary>
+    /// Is the leg from <paramref name="nowSeconds"/> to <paramref name="targetEpoch"/> BALLISTIC — no
+    /// planned burn fires strictly inside it? Closed-form conic advance is honest only across a coast with
+    /// no impulse in the middle: an impulse must fire from the true drifted state, not from a state jumped
+    /// past it. The long-coast case is ballistic by definition, and the skip only ever aims at the SOONEST
+    /// event — so a burn before the target would itself be the target; this is the checkable guard that
+    /// keeps that invariant true (and future-proofs it against new candidate sources). Epochs at or before
+    /// now, and at the target itself (the endpoint), do NOT count as "inside".
+    /// </summary>
+    public static bool IsBallisticLeg(double nowSeconds, double targetEpoch, IEnumerable<double> plannedBurnEpochs)
+    {
+        foreach (double e in plannedBurnEpochs)
+        {
+            if (e > nowSeconds + ArriveToleranceSeconds && e < targetEpoch - ArriveToleranceSeconds)
+            {
+                return false; // an impulse mid-leg — this coast must be flown, not jumped.
+            }
+        }
+
+        return true;
+    }
+
+    // The words for the COMPUTED skip's short beat — the coast consumed, not slogged (house voice, pure
+    // text so they are unit-tested like every other line the feature speaks). A mundane fast-forward, not
+    // the long haul's dramatic CROSSING THE VOID: the overlay says so.
+
+    /// <summary>The computed-skip overlay headline.</summary>
+    public const string CoastConsumedTitle = "COAST CONSUMED";
+
+    /// <summary>The overlay's destination line: which event this fast-forward lets out at.</summary>
+    public static string CoastConsumedBound(string eventLabel) => $"forward to {eventLabel}";
+
+    /// <summary>The reckoning note while a jump-scale coast is being computed (not integrated).</summary>
+    public static string CoastComputingNote(int days) =>
+        $"⏭ {days} d of dead coast reckoned, not slogged — the clock skips the void";
+
+    /// <summary>The arrival announcement once the computed coast is behind you.</summary>
+    public static string CoastConsumedAnnounce(int days, string eventLabel) =>
+        $"⏭ {days} d of coast computed — arrived at {eventLabel}";
 }

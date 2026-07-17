@@ -193,4 +193,62 @@ public class WarpSkipTests
 
         Assert.False(d.Fire);
     }
+
+    // ---- #261: the jump-scale threshold — above it the skip COMPUTES the void, never integrates it ----
+
+    [Fact]
+    public void IsJumpScale_TrueOnlyAboveTheThreshold()
+    {
+        // A day-scale coast (the honest warp-skip's design scale) is NOT jump-scale.
+        Assert.False(WarpSkip.IsJumpScale(WarpSkip.LongCoastThresholdSeconds));       // 1 day
+        Assert.False(WarpSkip.IsJumpScale(WarpSkip.JumpScaleThresholdSeconds));       // exactly the line
+        Assert.False(WarpSkip.IsJumpScale(WarpSkip.JumpScaleThresholdSeconds - 1));
+
+        // The 717-day arrival coast that froze the tab is squarely jump-scale.
+        Assert.True(WarpSkip.IsJumpScale(WarpSkip.JumpScaleThresholdSeconds + 1));
+        Assert.True(WarpSkip.IsJumpScale(717.0 * 86_400.0));
+    }
+
+    [Fact]
+    public void JumpScaleThreshold_MatchesTheLongHaulVoidLine()
+    {
+        // One law, one number: the skip's "compute don't integrate" line IS the long haul's
+        // "a void you compute, not a coast you watch" line (5 sim-days).
+        Assert.Equal(LongHaul.LongThresholdSeconds, WarpSkip.JumpScaleThresholdSeconds);
+        Assert.Equal(5.0 * 86_400.0, WarpSkip.JumpScaleThresholdSeconds);
+    }
+
+    // ---- #261: ballistic-leg detection — closed form is honest only with no impulse mid-coast ----
+
+    [Fact]
+    public void IsBallisticLeg_NoBurns_IsBallistic()
+    {
+        Assert.True(WarpSkip.IsBallisticLeg(0, 700.0 * 86_400.0, Array.Empty<double>()));
+    }
+
+    [Fact]
+    public void IsBallisticLeg_BurnStrictlyInside_IsNotBallistic()
+    {
+        // A plotted burn mid-coast must fire from the true drifted state — the leg cannot be jumped.
+        Assert.False(WarpSkip.IsBallisticLeg(0, 1_000_000, new[] { 500_000.0 }));
+    }
+
+    [Fact]
+    public void IsBallisticLeg_BurnAtTheEndpoints_IsStillBallistic()
+    {
+        // The skip aims at the SOONEST event, so a burn IS the target's own epoch (the endpoint), never
+        // strictly inside; and a burn at/behind now has already fired. Neither breaks the ballistic leg.
+        double target = 1_000_000;
+        Assert.True(WarpSkip.IsBallisticLeg(0, target, new[] { target }));           // burn == target
+        Assert.True(WarpSkip.IsBallisticLeg(1_000, target, new[] { 1_000.0 }));      // burn == now
+        Assert.True(WarpSkip.IsBallisticLeg(1_000, target, new[] { 500.0 }));        // burn in the past
+    }
+
+    [Fact]
+    public void IsBallisticLeg_OneInnerBurnAmongOuter_IsNotBallistic()
+    {
+        // Any single impulse strictly inside disqualifies the closed-form path, however many coast.
+        double target = 2_000_000;
+        Assert.False(WarpSkip.IsBallisticLeg(0, target, new[] { -10.0, target, 1_234_567.0 }));
+    }
 }

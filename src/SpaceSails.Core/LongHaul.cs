@@ -252,6 +252,65 @@ public static class LongHaul
     }
 
     /// <summary>
+    /// #261 — advance the ship's heliocentric coast along its closed-form conic to a target epoch WITHOUT
+    /// integrating. The jump-scale warp-skip reuses this so a multi-year ballistic coast becomes a clock
+    /// advance, not the ~62M tick steps that froze the tab. Marches <see cref="TransferMath.PropagateKepler"/>
+    /// about the sun in fixed strides, re-seeding each stride so the universal anomaly never grows into the
+    /// Stumpff cosh/sinh overflow regime (the same incremental reasoning as <see cref="Project"/>). Pure and
+    /// deterministic: a fixed stride schedule, no clock, no randomness — client and any replay agree.
+    ///
+    /// <para>HONEST ONLY IN OPEN HELIOCENTRIC CRUISE. The live integrator (<see cref="Simulator"/>) is
+    /// n-body; the sun-relative conic is the true model of the ship's motion only clear of every planet's
+    /// well. The caller MUST gate on <see cref="InsideAnyWell"/> — deep in a well the coast is a conic
+    /// around THAT body, and this heliocentric advance would lie (correctness beats elegance: fall back to
+    /// chunked integration there). Conserves the sun-relative conic invariants by construction.</para>
+    /// </summary>
+    /// <param name="ship">The ship's state at the departure instant (already coasting in open space).</param>
+    /// <param name="ephemeris">The same rails the live sim flies.</param>
+    /// <param name="sun">The root heliocentric attractor the coast is a conic about.</param>
+    /// <param name="targetEpoch">The sim clock to advance the coast to. At/​before now is a no-op clock set.</param>
+    public static ShipState PropagateHeliocentricTo(
+        ShipState ship, ICelestialEphemeris ephemeris, CelestialBody sun, double targetEpoch)
+    {
+        double t0 = ship.SimTime;
+        if (sun is not { Mu: > 0 } || targetEpoch <= t0)
+        {
+            return ship with { SimTime = Math.Max(t0, targetEpoch) };
+        }
+
+        double sunMu = sun.Mu;
+        Vector2d relPos = ship.Position - ephemeris.Position(sun.Id, t0);
+        Vector2d relVel = ship.Velocity - TransferMath.BodyVelocity(ephemeris, sun.Id, t0);
+
+        // Fixed stride: the #246 6 h cadence, but let a multi-year haul stretch the stride so the march
+        // stays a few thousand closed-form hops (cheap) instead of tens of thousands. Deterministic — the
+        // schedule is a pure function of the span, no clock.
+        double span = targetEpoch - t0;
+        double step = Math.Max(ProjectStepSeconds, span / 3000.0);
+
+        double t = t0;
+        while (t < targetEpoch)
+        {
+            double dt = Math.Min(step, targetEpoch - t);
+            if (TransferMath.PropagateKepler(relPos, relVel, dt, sunMu) is not { } k
+                || !double.IsFinite(k.Position.X) || !double.IsFinite(k.Position.Y))
+            {
+                break; // degenerate conic — stop at the last good state; fold at the reached clock below.
+            }
+
+            relPos = k.Position;
+            relVel = k.Velocity;
+            t += dt;
+        }
+
+        // Fold the sun-relative state back into world coordinates through the sun's own rail at the reached
+        // clock, so position and SimTime stay consistent even if a degenerate stride broke the march early.
+        Vector2d worldPos = ephemeris.Position(sun.Id, t) + relPos;
+        Vector2d worldVel = TransferMath.BodyVelocity(ephemeris, sun.Id, t) + relVel;
+        return new ShipState(worldPos, worldVel, t, ship.Charge);
+    }
+
+    /// <summary>
     /// The one gate the whole mode keys off: is the long haul clear to jump the ship to
     /// <paramref name="reach"/>'s arrival? Ordered so the loudest, most actionable reason wins — a hunter
     /// in the sky, then a kept orbit to disarm, then still-in-the-well, then a hop too short to bother, then
