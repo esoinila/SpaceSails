@@ -47,6 +47,21 @@ public sealed class CacheLedger
         return cache;
     }
 
+    /// <summary>Rehydrate one cache verbatim in saved order (the personal-vault load path, #225).
+    /// Unlike <see cref="Learn"/> it appends to the END, so replaying the saved <see cref="Caches"/>
+    /// list front-to-back reproduces the exact newest-first order. Idempotent on id.</summary>
+    public void Load(TreasureCache cache)
+    {
+        if (!_caches.Any(c => c.Id == cache.Id))
+        {
+            _caches.Add(cache);
+        }
+    }
+
+    /// <summary>Restore the mint counter after a load so a freshly-buried chest cannot collide its id
+    /// with a loaded one (#225). Clamped so a garbled value can never rewind the counter.</summary>
+    public void RestoreMintIndex(int nextMintIndex) => _seq = Math.Max(_seq, Math.Max(0, nextMintIndex));
+
     /// <summary>The known caches buried at a body (the dig-here list for the shuttle pop-up).</summary>
     public IEnumerable<TreasureCache> CachesAt(string bodyId) =>
         _caches.Where(c => c.BodyId == bodyId);

@@ -36,6 +36,19 @@
                 <div class="start-picker-title">Choose your start</div>
                 <div class="start-picker-sub">Where does this run begin? Earth is the usual berth — the rest skip the haul out (handy for playtesting).</div>
                 <div class="start-picker-list">
+                    @* The personal vault (#225): a saved run leads the picker — continue DOCKED at the
+                       berth the vault remembers, above the fresh starts. *@
+                    @if (_resumeAvailable)
+                    {
+                        <button type="button" class="start-picker-option start-picker-continue" title="Pick up where you left off — the vault wakes you docked at this berth"
+                                @onclick="ContinueFromSave">
+                            <span class="start-picker-icon">💾</span>
+                            <span class="start-picker-text">
+                                <span class="start-picker-label">Continue — docked at @(_resumeHavenName ?? "your last berth")</span>
+                                <span class="start-picker-blurb">Resume your saved run: purse, cargo, contacts, hoard and heat, all restored.@(_resumeTampered ? " 📛 ledger marked — the save file was edited outside the game." : "")</span>
+                            </span>
+                        </button>
+                    }
                     @foreach (StartPoint sp in StartPoints.Where(s => !s.Test))
                     {
                         StartPoint option = sp;
@@ -1937,6 +1950,7 @@
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
                                                               OnReopenStartPicker="ReopenStartPicker"
+                                                              OnSaveVault="SaveVaultManually" OnExportVault="ExportVault" OnImportVault="ImportVault"
                                                               InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
                 }
             </div>
@@ -7064,6 +7078,7 @@
         }
         else
         {
+            PeekSavedVault(); // #225: surface a "Continue — docked at <haven>" lead if a vault exists.
             _showStartPicker = true;
         }
 
@@ -7484,6 +7499,8 @@
             : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
         _lastTimestampMs = highResTimestampMs;
         _frameNowMs = highResTimestampMs;
+
+        FlushVaultSaveIfDirty();  // #225: one debounced autosave write per frame when a durable event fired
 
         UpdateNearestBody();
         CheckFetchPickup();     // coasting past the wreck grabs a fetch job's goods
@@ -10929,6 +10946,7 @@
             AdvanceTutorial(StepBoardFreighter); // second hunt, step 5: boarding the holed hulk
         }
         RaiseHeatFromRobbery(npc);
+        RequestVaultSave(); // #225: a boarding changed cargo, contacts (plunder) and heat
     }
 
     private void UpdateDockStatus()
@@ -10969,6 +10987,7 @@
         _hotCargo.Launder(); // fenced — the hot flags go with the cargo
         AdvanceTutorial(4); // step 5: first sale
         AdvanceTutorial(StepSellHe3); // second hunt, step 6: fencing the He3 closes the tutorial
+        RequestVaultSave(); // #225: a sale changed the purse and emptied the hold
     }
 
     // #157 "How do I fill her up?" — the FIRST place the tank is ever REFILLED (every other flow only
@@ -12322,6 +12341,7 @@
         _treasureMapCard = cache;
         RendererInterop.PlayCue("reveal");
         ShowPulseMessage($"⛏ Chest buried on {stop.Body.Name} — {cache.ContentsLine()} off the books. Map filed (🗺).");
+        RequestVaultSave(); // #225: the hoard changed — persist coin/cargo/cache moves
     }
 
     // Fly the shuttle down and dig at the X: lift EVERY cache we know of at this body back onto the
@@ -12366,6 +12386,7 @@
         string lost = unitsLost > 0 ? $" ({unitsLost}u left — hold full)" : "";
         ShowPulseMessage($"🗺 Dug up {coinBack:N0} cr + {unitsBack} units on {stop.Body.Name}{lost}. X marked the spot.");
         PayCompletedQuests();
+        RequestVaultSave(); // #225: a dig moves coin/cargo/caches — persist it
     }
 
     // The shuttle round-trip's clock cost: advance the sim clock and re-stamp the loitering ship at the
@@ -13362,6 +13383,7 @@
         {
             session.Notice = $"Parked {park:N0} cr with {session.DisplayName} — off the purse, earning while it's quiet. 💰";
         }
+        RequestVaultSave(); // #225: a bank move changed both the purse and the ledger balance
     }
 
     // Draw parked coin back out. In person or (for a wire contact) over the dark web — the channel was
@@ -13384,6 +13406,7 @@
         _contacts.ApplyCredit(session.ContactId, session.DisplayName,
             FavorBank.WithdrawalTxn(take, SimTime, $"drew {take:N0} cr"));
         session.Notice = $"Drew {take:N0} cr back into the purse from {session.DisplayName}.";
+        RequestVaultSave(); // #225: purse + ledger balance changed
     }
 
     // Pay off an interest-bearing debt with coin on hand (drives a negative balance back toward zero).
@@ -13405,6 +13428,7 @@
         _contacts.ApplyCredit(session.ContactId, session.DisplayName,
             FavorBank.RepaymentTxn(pay, SimTime, $"repaid {pay:N0} cr"));
         session.Notice = $"Paid {pay:N0} cr toward what you owe {session.DisplayName}.";
+        RequestVaultSave(); // #225: purse + ledger balance changed
     }
 
     // A modest, standard favor line — roughly a good top-up (≈ half a tank at the inner price). Kept
@@ -13450,6 +13474,7 @@
         _contacts.ApplyCredit(contactId, sheet.DisplayName,
             FavorBank.BorrowTxn(principal, SimTime, $"favor wire — {principal:N0} cr gas money"));
         _favorObligations.Add(FavorObligation.ForLoan(sheet, principal, SimTime));
+        RequestVaultSave(); // #225: a borrow books coin + a favor-debt obligation
         return true;
     }
 
@@ -13466,6 +13491,410 @@
     // The discovery watch (ruling 4): the last whole day we resolved the per-cache discovery roll, so
     // a warp that skips days can't skip a roll. -1 = nothing resolved yet.
     private long _lastCacheCheckPeriod = -1;
+
+    // ─────────────────────────────────────────────────────────────────────────────────────────────
+    // The personal vault (#225): the pirate's LIFE, durable across a server restart. localStorage
+    // autosave + export/import a .json file; the resume is always a BERTH (owner's dock-resume law),
+    // never a stored orbit. What is NOT saved (deliberate dev-kindness, documented in Vault.cs): NPC
+    // positions, a hunter mid-chase (heat IS saved, but the pursuit resolves as escaped on reload),
+    // and autopilot plans — all recomputed from the fresh docked state.
+    // ─────────────────────────────────────────────────────────────────────────────────────────────
+    private const string VaultStorageKey = "spacesails.vault.v1";
+
+    // Peeked at boot so the start picker can lead with "Continue — docked at <haven>".
+    private bool _resumeAvailable;
+    private string? _resumeHavenName;
+    private bool _resumeTampered;
+    private Vault? _pendingResumeVault;
+
+    // One debounced write path: every save-worthy event just raises this flag; the tick flushes a
+    // single write, so a burst (dock → payment → deck) costs one serialize, not three.
+    private bool _autosaveDirty;
+
+    /// <summary>Request an autosave (debounced). Wired to every durable event: dock, undock, payment,
+    /// boarding resolution, bury/dig, and every bank transaction.</summary>
+    private void RequestVaultSave() => _autosaveDirty = true;
+
+    private void FlushVaultSaveIfDirty()
+    {
+        if (!_autosaveDirty)
+        {
+            return;
+        }
+
+        _autosaveDirty = false;
+        TryWriteVault();
+    }
+
+    private void TryWriteVault()
+    {
+        if (!_worldReady || _ephemeris is null)
+        {
+            return;
+        }
+
+        try
+        {
+            RendererInterop.VaultWrite(VaultStorageKey, VaultSerializer.Save(BuildVault()));
+        }
+        catch
+        {
+            // An autosave must NEVER break the sim — a full storage or a serialize hiccup is silent;
+            // the owner still has the export button and the previous good autosave.
+        }
+    }
+
+    /// <summary>Gather the whole durable life into a vault envelope. Physics (orbit/trajectory) is
+    /// deliberately absent — the resume section names the berth to wake at instead.</summary>
+    private Vault BuildVault()
+    {
+        List<CargoLine> hold = _cargoByClass
+            .Where(kv => kv.Value > 0)
+            .Select(kv => new CargoLine(kv.Key, kv.Value))
+            .ToList();
+
+        return new Vault
+        {
+            SavedSimTime = _ship.SimTime,
+            Purse = new PurseSection(_credits),
+            Ship = new ShipSection
+            {
+                ReactionMassPulses = _reactionMassPulses,
+                SlugAmmo = _slugAmmo,
+                MissileAmmo = _missileAmmo,
+            },
+            Cargo = new CargoSection(hold, VaultMapper.ToHotLines(_hotCargo)),
+            Heat = new HeatSection(_heat.Level, _heat.RaisedAtSimTime),
+            Contacts = VaultMapper.ToSection(_contacts),
+            Caches = VaultMapper.ToSection(_caches),
+            Quests = BuildQuestsSection(),
+            Insurance = VaultMapper.ToSection(_insurance),
+            Upgrades = new UpgradesSection
+            {
+                MassLevel = _massLevel,
+                SensorLevel = _sensorLevel,
+                HoldLevel = _holdLevel,
+                TelescopeLevel = _telescopeLevel,
+            },
+            DiceItems = BuildDiceItemsSection(),
+            Resume = BuildResumeSection(),
+        };
+    }
+
+    private QuestsSection BuildQuestsSection()
+    {
+        var quests = _quests.Select(q =>
+        {
+            var fields = new Dictionary<string, string>();
+            if (!string.IsNullOrEmpty(q.TargetShipId)) fields["targetShipId"] = q.TargetShipId;
+            if (!string.IsNullOrEmpty(q.TargetCallsign)) fields["targetCallsign"] = q.TargetCallsign;
+            if (q.DestBodyId is { } dest) fields["destBodyId"] = dest;
+            if (q.SourceBodyId is { } src) fields["sourceBodyId"] = src;
+            if (q.Pin is { } pin) fields["pin"] = pin;
+
+            return new QuestRecord
+            {
+                Id = q.Id,
+                Kind = q.Kind.ToString(),
+                Status = q.State.ToString(),
+                Title = q.Title,
+                Detail = q.Blurb,
+                GiverContactId = q.Giver,
+                RewardCredits = q.Reward,
+                Fields = fields,
+            };
+        }).ToList();
+
+        return new QuestsSection { Quests = quests, Obligations = VaultMapper.ToRecords(_favorObligations) };
+    }
+
+    // The persistent dice items (TTRPG helpers). Today only the boarding-nets jammer exists (the
+    // dice-helper seam, #222); it saves as a labelled +2 modifier so the section is future-proof.
+    private const string NetJammerItemId = "boarding-nets-jammer";
+
+    private DiceItemsSection BuildDiceItemsSection()
+    {
+        var items = new List<DiceItemRecord>();
+        if (_hasNetJammer)
+        {
+            items.Add(new DiceItemRecord(NetJammerItemId, "Boarding-nets jammer", 2));
+        }
+
+        return new DiceItemsSection(items);
+    }
+
+    // The resume berth: docked haven if clamped, else the nearest dockable haven at save time (never a
+    // trajectory). Positions are read at the current sim time so a load rebuilds the ship clamped at
+    // the load-time ephemeris.
+    private ResumeSection? BuildResumeSection()
+    {
+        if (_ephemeris is null)
+        {
+            return null;
+        }
+
+        var havens = _ephemeris.Bodies
+            .Where(IsDockableHaven)
+            .Select(b => new VaultResume.HavenLocus(b.Id, b.Name, _ephemeris.Position(b.Id, _ship.SimTime)))
+            .ToList();
+
+        return VaultResume.Select(_dockedHavenId, _ship.Position, havens);
+    }
+
+    // Boot peek: is there a saved run, and where does it resume? Caches the loaded vault for Continue.
+    private void PeekSavedVault()
+    {
+        try
+        {
+            string? raw = RendererInterop.VaultRead(VaultStorageKey);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return;
+            }
+
+            Vault vault = VaultSerializer.Load(raw);
+            _pendingResumeVault = vault;
+            _resumeAvailable = true;
+            _resumeTampered = vault.Tampered;
+            _resumeHavenName = vault.Resume?.HavenName;
+        }
+        catch
+        {
+            _resumeAvailable = false;
+            _pendingResumeVault = null;
+        }
+    }
+
+    // The picker's "Continue — docked at <haven>": restore the saved life instead of a fresh start.
+    private async Task ContinueFromSave()
+    {
+        _showStartPicker = false;
+        if (_pendingResumeVault is { } vault)
+        {
+            ApplyVault(vault);
+            if (vault.Tampered)
+            {
+                ShowPulseMessage("📛 Vault loaded — the file was edited outside the game; the ledger is marked tampered.");
+            }
+        }
+
+        if (!_deckMode && _activeDesk != ShipDesk.Nav)
+        {
+            SwitchDesk(ShipDesk.Nav);
+        }
+
+        StateHasChanged();
+        await _focusableDiv.FocusAsync();
+    }
+
+    /// <summary>Restore a vault into live state. Economy first (order-independent), then dock at the
+    /// resume berth LAST so the ship is built fresh alongside the haven at load-time ephemeris — the
+    /// owner's law that a resume is a berth, never a stored orbit.</summary>
+    private void ApplyVault(Vault vault)
+    {
+        if (vault.Purse is { } purse)
+        {
+            _credits = (int)Math.Clamp(purse.Credits, int.MinValue, int.MaxValue);
+        }
+
+        if (vault.Ship is { } ship)
+        {
+            _reactionMassPulses = (int)Math.Max(0, Math.Round(ship.ReactionMassPulses));
+            _slugAmmo = Math.Max(0, ship.SlugAmmo);
+            _missileAmmo = Math.Max(0, ship.MissileAmmo);
+        }
+
+        if (vault.Upgrades is { } up)
+        {
+            _massLevel = Math.Max(0, up.MassLevel);
+            _sensorLevel = Math.Max(0, up.SensorLevel);
+            _holdLevel = Math.Max(0, up.HoldLevel);
+            _telescopeLevel = Math.Max(0, up.TelescopeLevel);
+            RebuildSensor();
+        }
+
+        ApplyCargo(vault.Cargo);
+
+        if (vault.Heat is { } heat)
+        {
+            _heat = new HeatState(heat.Level, heat.RaisedAtSimTime);
+        }
+
+        VaultMapper.Apply(vault.Contacts, _contacts);
+        VaultMapper.Apply(vault.Caches, _caches);
+        _insurance = VaultMapper.ToInsurance(vault.Insurance);
+        ApplyObligationsAndQuests(vault.Quests);
+        ApplyDiceItems(vault.DiceItems);
+        ApplyResumeBerth(vault.Resume, vault.SavedSimTime);
+    }
+
+    private void ApplyCargo(CargoSection? cargo)
+    {
+        if (cargo is null)
+        {
+            return;
+        }
+
+        _cargoByClass.Clear();
+        foreach (CargoLine line in cargo.Hold)
+        {
+            if (line.Units > 0)
+            {
+                _cargoByClass[line.CargoClass] = line.Units;
+            }
+        }
+
+        VaultMapper.ApplyHot(cargo.Hot, _hotCargo);
+        RecomputeCargoTotals();
+    }
+
+    private void RecomputeCargoTotals()
+    {
+        _cargoUnits = _cargoByClass.Values.Sum();
+        _cargoValue = _cargoByClass.Sum(kv => kv.Value * CargoMarket.UnitValue(kv.Key));
+    }
+
+    private void ApplyObligationsAndQuests(QuestsSection? quests)
+    {
+        _favorObligations.Clear();
+        _quests.Clear();
+        if (quests is null)
+        {
+            return;
+        }
+
+        foreach (FavorObligation obligation in VaultMapper.ToObligations(quests.Obligations))
+        {
+            _favorObligations.Add(obligation);
+        }
+
+        int maxSeq = _questSeq;
+        foreach (QuestRecord r in quests.Quests)
+        {
+            if (!Enum.TryParse(r.Kind, out QuestKind kind))
+            {
+                continue; // an unknown future quest kind — skip it, keep the rest (tolerant by design)
+            }
+
+            Enum.TryParse(r.Status, out QuestState state);
+            var quest = new Quest(
+                r.Id, kind, r.GiverContactId,
+                r.Fields.GetValueOrDefault("targetShipId", ""),
+                r.Fields.GetValueOrDefault("targetCallsign", ""),
+                r.Title, r.Detail, r.RewardCredits,
+                r.Fields.GetValueOrDefault("destBodyId"),
+                r.Fields.GetValueOrDefault("sourceBodyId"),
+                r.Fields.GetValueOrDefault("pin"))
+            {
+                State = state,
+            };
+            _quests.Add(quest);
+            maxSeq = Math.Max(maxSeq, TrailingInt(r.Id));
+        }
+
+        _questSeq = maxSeq; // new quest ids mint beyond every restored one
+    }
+
+    private static int TrailingInt(string id)
+    {
+        int i = id.Length;
+        while (i > 0 && char.IsDigit(id[i - 1]))
+        {
+            i--;
+        }
+
+        return i < id.Length && int.TryParse(id.AsSpan(i), out int n) ? n : 0;
+    }
+
+    private void ApplyDiceItems(DiceItemsSection? dice)
+    {
+        _hasNetJammer = dice?.Items.Any(i => i.ItemId == NetJammerItemId) ?? false;
+    }
+
+    // Dock the ship at the resume berth: built fresh alongside the haven at the SAVED sim time (bodies
+    // are deterministic from time, so this reconstructs the world exactly), zero relative velocity,
+    // clamped. No stored orbit ever crosses the save boundary.
+    private void ApplyResumeBerth(ResumeSection? resume, double savedSimTime)
+    {
+        string? havenId = resume?.HavenId;
+        if (_ephemeris is null || havenId is null || _ephemeris.Bodies.All(b => b.Id != havenId))
+        {
+            ApplyStart("earth"); // no berth to resume at — fall back to a fresh Earth spawn
+            return;
+        }
+
+        _dockedHavenId = null;
+        SetDeckForDock(null);
+
+        const double h = 1.0;
+        Vector2d dockPos = _ephemeris.Position(havenId, savedSimTime);
+        Vector2d vel = (_ephemeris.Position(havenId, savedSimTime + h) - _ephemeris.Position(havenId, savedSimTime - h)) / (2 * h);
+        Vector2d outward = dockPos == Vector2d.Zero ? new Vector2d(1, 0) : dockPos.Normalized();
+        _ship = new ShipState(dockPos + outward * 3_000, vel, savedSimTime);
+
+        SimTime = savedSimTime;
+        _dockedHavenId = havenId;
+        _dockOffset = _ship.Position - dockPos;
+        SetDeckForDock(havenId);
+        (_avatarX, _avatarY, _avatarHeading) = (2.5, 6, Math.PI / 2);
+        _deckMode = true;
+        _activeDesk = ShipDesk.Deck;
+
+        ReprojectTrajectory();
+        _camera.CenterOn(_ship.Position);
+    }
+
+    // Captain-desk actions (#225): a manual save, an export download, and an import file-picker.
+    private void SaveVaultManually()
+    {
+        TryWriteVault();
+        ShowPulseMessage("💾 Saved to the vault.");
+    }
+
+    private void ExportVault()
+    {
+        try
+        {
+            RendererInterop.VaultDownload("spacesails-vault.json", VaultSerializer.Save(BuildVault()));
+            ShowPulseMessage("⬇ Vault exported as spacesails-vault.json.");
+        }
+        catch
+        {
+            ShowPulseMessage("Export failed — the browser blocked the download.");
+        }
+    }
+
+    private async Task ImportVault()
+    {
+        string text;
+        try
+        {
+            text = await RendererInterop.VaultImport();
+        }
+        catch
+        {
+            return; // a cancelled or failed picker is a no-op
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        Vault vault = VaultSerializer.Load(text);
+        ApplyVault(vault);
+        RequestVaultSave(); // adopt the imported vault as the new autosave
+        ShowPulseMessage(vault.Tampered
+            ? "📛 Vault imported — the file was edited outside the game; the ledger is marked tampered."
+            : "⬆ Vault imported.");
+        if (!_deckMode && _activeDesk != ShipDesk.Nav)
+        {
+            SwitchDesk(ShipDesk.Nav);
+        }
+
+        StateHasChanged();
+        await _focusableDiv.FocusAsync();
+    }
 
     // The treasure-map card currently on screen (the full-screen artifact), or null. Shown on burying
     // a fresh chest and any time the captain opens a map from the ledger's 🗺 section.
@@ -13517,6 +13946,7 @@
         }
 
         ShowNextCelebration();
+        RequestVaultSave(); // #225: a payout changed the purse, contacts and obligations
     }
 
     // Surface the next queued fanfare (one pop-up at a time): the parrot SINGS, the cue plays.
@@ -13869,6 +14299,7 @@
         RendererInterop.PlayCue("board");
         CompleteCargoRunQuests(dock.Id); // arriving at the delivery berth finishes a cargo run (M-Q3)
         PayCompletedQuests();            // then any finished bar contracts pay out (M-Q1)
+        RequestVaultSave();              // #225: a dock is the canonical resume state — autosave it
     }
 
     private const double UndockPushMps = 300; // gentle shove off the clamp so the ship drifts clear
@@ -13895,6 +14326,7 @@
         string name = _nearestBody?.Name ?? "the dock";
         _dockedHavenId = null;
         ShowPulseMessage($"Clamps released — pushing off from {name}. 🚀");
+        RequestVaultSave(); // #225: undock resumes at the nearest haven; persist the new resume basis
     }
 
     // While clamped, the ship rides the dock: recompute the station's state at the live SimTime and
@@ -14159,6 +14591,7 @@
         _cargoUnits = Math.Max(0, _cargoUnits);
         _cargoValue = Math.Max(0, _cargoValue);
         RendererInterop.PlayCue("board");
+        RequestVaultSave(); // #225: a boarding resolution changed purse, cargo and heat
     }
 
     // BRIBE: pay the dice-rolled fee to keep the cargo; the hunter breaks off, heat is UNCHANGED (you

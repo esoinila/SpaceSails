@@ -162,4 +162,9 @@ public sealed class ContactLedger
         _byId[contactId] = updated;
         return updated;
     }
+
+    /// <summary>Rehydrate one contact's whole history verbatim (the personal-vault load path, #225).
+    /// Unlike the recording mutators this does not derive anything — it stores exactly what was saved,
+    /// keyed by <see cref="ContactHistory.ContactId"/>, so a round-trip through the vault is lossless.</summary>
+    public void Load(ContactHistory history) => _byId[history.ContactId] = history;
 }

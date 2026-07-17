@@ -1240,6 +1240,27 @@
     outline: none;
 }
 
+/* #225: the "Continue — docked at <haven>" lead sits above the fresh starts and reads as the primary
+   action — a warm green accent so a returning player's eye lands on it first. */
+.start-picker-continue {
+    border-color: rgba(120, 230, 160, 0.6);
+    background: rgba(120, 230, 160, 0.1);
+    margin-bottom: 0.35rem;
+}
+
+.start-picker-continue:hover,
+.start-picker-continue:focus-visible {
+    border-color: rgba(120, 230, 160, 0.9);
+    background: rgba(120, 230, 160, 0.18);
+}
+
+/* The Captain-desk vault buttons (Save / Export / Import) wrap on a narrow desk. */
+.captain-vault-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
 .start-picker-icon {
     font-size: 1.7rem;
     line-height: 1;

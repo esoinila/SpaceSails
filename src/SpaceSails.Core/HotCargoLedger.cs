@@ -33,6 +33,20 @@ public sealed class HotCargoLedger
     /// <summary>The hot units currently flagged for a class (0 if none).</summary>
     public int HotUnits(string cargoClass) => _hotByClass.GetValueOrDefault(cargoClass);
 
+    /// <summary>Every flagged class and its hot-unit count — the read the personal vault (#225)
+    /// serializes (there was no key enumeration before). Reconstruct on load via <see cref="Stamp"/>.</summary>
+    public IReadOnlyDictionary<string, int> Entries => _hotByClass;
+
+    /// <summary>Restore one class's hot-unit count verbatim on a vault load (#225): a direct set, not
+    /// an additive <see cref="Stamp"/>, so a round-trip is lossless. Non-positive counts are ignored.</summary>
+    public void Load(string cargoClass, int hotUnits)
+    {
+        if (hotUnits > 0)
+        {
+            _hotByClass[cargoClass] = hotUnits;
+        }
+    }
+
     /// <summary>Total hot units across all classes — the "how much evidence is aboard" read.</summary>
     public int TotalHotUnits
     {
