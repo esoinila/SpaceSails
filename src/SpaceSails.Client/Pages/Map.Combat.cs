@@ -1702,6 +1702,50 @@ public partial class Map
         StateHasChanged();
     }
 
+    // #264 — the impact enforcer's consequence. Lab 16's "periapsis under the surface — impact coming"
+    // finally arrives: a LIVE-FLOWN step reached a body's surface radius (SurfaceImpact caught the
+    // crossing; the ship never flew the interior). Reuse the BUSTED freeze-frame → brain-backup
+    // resurrection whole — the death machinery is not duplicated — so you wake at the nearest haven's
+    // clinic in the insurance rustbucket, ship and visible cargo gone, banked/buried safe. There is no
+    // collector here (the planet collected), no heat, no dice: straight to the freeze. Say-the-state:
+    // the ledger logs it, the strip shouts it, the parrot squawks. Docked ships and havens on rails
+    // can't reach here — the caller exempts the dock and SurfaceImpact skips zero-radius havens.
+    private void TriggerImpact(SurfaceImpact.Crossing hit)
+    {
+        if (_busted is not null)
+        {
+            return; // already mid-reckoning — one death at a time
+        }
+
+        Warp = 1;
+        _effectiveWarp = 1;
+
+        // Pin the ship to the point of contact so nothing coasts on behind the modal; the resurrection
+        // resets it onto the clinic haven when the captain wakes.
+        _ship = _ship with { Position = hit.Position, Velocity = Vector2d.Zero, SimTime = hit.SimTime };
+
+        RendererInterop.PlayCue("board");    // impact/volley hook (a dedicated cue is a follow-up)
+        RendererInterop.PlayCue("gameover"); // game-over-music hook
+
+        _busted = new BustedEncounter
+        {
+            HunterId = string.Empty,        // no collector — the surface collected
+            HunterCallsign = hit.BodyName,
+            Heat = 0,
+            Seed = DiceRule.Seed("impact", (long)hit.SimTime),
+            Bribe = default,                // unused on the impact path (no bribe to a planet)
+            Phase = BustedEncounter.Stage.Impact,
+            ImpactBodyName = hit.BodyName,
+        };
+
+        string line = $"💥 IMPACT — the ship struck {hit.BodyName}. Periapsis went under the surface, and the surface won.";
+        LogAutopilotEvent(line);
+        ShowPulseMessage(line);
+        _shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"IMPACT — struck {hit.BodyName}", SimTime);
+        SquawkNow(Parrot.Squawk.Impact, _lastTimestampMs ?? 0, hit.BodyName, force: true);
+        StateHasChanged();
+    }
+
     // The dice helpers a resist/Bolivia roll carries — the purchasable-modifier seam. One example is
     // shipped (the Boarding-nets jammer); the shop of helpers is a follow-up (owner §5.0).
     private List<DiceModifier> ResistModifiers()
@@ -2020,7 +2064,9 @@ public partial class Map
     // side (BustedRule / BoliviaEncounter); this holds what's been rolled and which panel to show.
     private sealed class BustedEncounter
     {
-        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected }
+        // Impact (#264): a body's surface collected the ship — no collector, no dice, straight to the
+        // freeze-frame → clinic re-birth. Reuses this whole encounter so the death machinery is shared.
+        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected, Impact }
 
         public required string HunterId { get; init; }
         public required string HunterCallsign { get; init; }
@@ -2034,6 +2080,7 @@ public partial class Map
         public string? ClinicName { get; set; }
         public int ClinicBillCr { get; set; }
         public string? HullDescription { get; set; }
+        public string? ImpactBodyName { get; set; } // #264: the body that collected the ship
 
         // Bolivia progress
         public OpposedRoll? BoliviaInitiative { get; set; }

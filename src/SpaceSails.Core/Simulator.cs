@@ -42,6 +42,68 @@ public sealed class Simulator
     /// <summary>Advance one fixed timestep. Maneuver nodes scheduled inside the step fire first.</summary>
     public ShipState Step(ShipState state, ManeuverPlan? plan = null) => StepBy(state, plan, TimeStep);
 
+    /// <summary>
+    /// #264 — the sanity bound above which one live step is split into equal substeps so a close, fast
+    /// pass stays energy-honest. The fixed 1 s step is accurate on a cruise, but at a deep-well periapsis
+    /// the point-mass acceleration is large and <c>a·dt</c> can be a real fraction of the speed; a single
+    /// semi-implicit Euler step then drifts orbital energy (the owner's Uranus incident shed km/s on pure
+    /// integration error, masquerading as aerobraking). Split whenever <c>a·dt &gt; 0.05·|v|</c> — a 5 %
+    /// velocity kick in one step. Away from every mass <c>a·dt</c> is negligible, so the guard never fires
+    /// and the flight is bit-identical to <see cref="Step"/>: only a genuine close approach pays.
+    /// </summary>
+    public const double MaxVelocityChangeFraction = 0.05;
+
+    /// <summary>Hard cap on live substeps so a graze can never stall a frame (#264).</summary>
+    public const int MaxLiveSubsteps = 64;
+
+    /// <summary>
+    /// One live step, adaptively substepped near a mass so a fast close pass keeps its energy (#264).
+    /// Identical to <see cref="Step"/> — same result to the bit — whenever the close-approach sanity
+    /// bound (<see cref="MaxVelocityChangeFraction"/>) is not exceeded, which is the entire solar cruise;
+    /// only a deep, fast periapsis drives the substep count up (capped at <see cref="MaxLiveSubsteps"/>).
+    /// This is the live game's honest replacement for a raw fixed step; a minimum-radius clamp was
+    /// rejected on purpose (it changes the physics), and the surface itself is enforced separately by
+    /// <see cref="SurfaceImpact"/>, so nothing here ever integrates the interior.
+    /// </summary>
+    public ShipState StepGuarded(ShipState state, ManeuverPlan? plan = null) => StepGuarded(state, plan, TimeStep);
+
+    /// <inheritdoc cref="StepGuarded(ShipState, ManeuverPlan?)"/>
+    public ShipState StepGuarded(ShipState state, ManeuverPlan? plan, double dt)
+    {
+        int substeps = LiveSubstepCount(state.Position, state.Velocity, state.SimTime, dt);
+        if (substeps <= 1)
+        {
+            return StepBy(state, plan, dt);
+        }
+
+        double sub = dt / substeps;
+        for (int i = 0; i < substeps; i++)
+        {
+            state = StepBy(state, plan, sub);
+        }
+
+        return state;
+    }
+
+    /// <summary>
+    /// How many equal substeps a step of <paramref name="dt"/> needs to keep the velocity kick under the
+    /// sanity bound: 1 (no split) whenever the point-mass acceleration is gentle — everywhere but a close,
+    /// fast pass — and <c>ceil(a·dt / bound)</c> capped at <see cref="MaxLiveSubsteps"/> otherwise. The
+    /// bound has an absolute 1 m/s floor so a near-stationary ship deep in a well still splits sanely.
+    /// </summary>
+    public int LiveSubstepCount(Vector2d position, Vector2d velocity, double simTime, double dt)
+    {
+        double accel = GravitationalAcceleration(position, simTime).Length;
+        if (accel <= 0.0)
+        {
+            return 1;
+        }
+
+        double bound = Math.Max(velocity.Length * MaxVelocityChangeFraction, 1.0);
+        double ratio = accel * dt / bound;
+        return ratio <= 1.0 ? 1 : Math.Min(MaxLiveSubsteps, (int)Math.Ceiling(ratio));
+    }
+
     private ShipState StepBy(ShipState state, ManeuverPlan? plan, double dt)
     {
         Vector2d velocity = state.Velocity;

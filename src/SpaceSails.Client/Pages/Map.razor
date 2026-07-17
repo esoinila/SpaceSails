@@ -2164,7 +2164,7 @@
        grammar. *@
     @if (_busted is { } bust)
     {
-        <div class="busted-backdrop @(bust.Phase == BustedEncounter.Stage.FreezeFrame ? "busted-sepia" : "")">
+        <div class="busted-backdrop @(bust.Phase is BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact ? "busted-sepia" : "")">
             <div class="busted-card" @onclick:stopPropagation="true">
                 @switch (bust.Phase)
                 {
@@ -2266,6 +2266,20 @@
                                 <div class="busted-math">Running: net @bust.BoliviaNet — @(bust.BoliviaNet >= 0 ? "holding the line" : "going under")</div>
                             }
                         }
+                        break;
+
+                    case BustedEncounter.Stage.Impact:
+                        @* #264: the surface collected the ship. Reuses the freeze-frame grammar (sepia
+                           backdrop, one held beat) and hands off to the SAME brain-backup resurrection —
+                           no collector, no dice; "impact coming" finally arrives. *@
+                        <div class="busted-freeze">
+                            <div class="busted-freeze-art busted-explosion" title="art: the ship folding into the surface at periapsis — the kerosene-explosion budget">
+                                <span class="bf-flash">💥</span>
+                            </div>
+                            <div class="busted-freeze-caption">"…the periapsis said 'under the surface'. It wasn't bluffing."</div>
+                            <div class="busted-quote">The hull meets @bust.ImpactBodyName at speed. No corridor, no atmosphere to catch you — just rock. The freeze-frame holds.</div>
+                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                        </div>
                         break;
 
                     case BustedEncounter.Stage.FreezeFrame:

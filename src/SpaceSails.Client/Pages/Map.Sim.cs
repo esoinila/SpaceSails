@@ -735,6 +735,11 @@ public partial class Map
                 }
             }
 
+            // #264: remember where this quantum started so a surface crossing can be caught across the
+            // whole advance — the ship AND the body move, and SurfaceImpact interpolates both.
+            Vector2d posBeforeStep = _ship.Position;
+            double timeBeforeStep = _ship.SimTime;
+
             if (_dockedHavenId is not null)
             {
                 // Clamped in a dock: don't run the gravity integrator at all — it would fling the
@@ -751,10 +756,26 @@ public partial class Map
             }
             else
             {
-                _ship = _simulator.Step(_ship, _plan);
+                // #264: StepGuarded, not Step — a deep, fast periapsis substeps so it stays energy-honest
+                // instead of shedding km/s on integration error (the Uranus "flower"). Identical to Step
+                // everywhere the pass isn't close and fast.
+                _ship = _simulator.StepGuarded(_ship, _plan);
             }
             _simAccumulator -= quantum;
             stepsThisFrame++;
+
+            // #264: the say-the-state law's missing consequence. If this integrated step actually reached
+            // a body's surface radius, that is an impact — end the flight at the crossing (never having
+            // flown the interior) through the shared BUSTED freeze-frame → clinic re-birth. Docked ships
+            // took the clock-only branch above and havens carry no BodyRadius, so both are exempt.
+            if (_dockedHavenId is null && _busted is null && _ephemeris is not null
+                && SurfaceImpact.FirstCrossing(posBeforeStep, timeBeforeStep, _ship.Position, _ship.SimTime, _ephemeris)
+                    is { } surfaceHit)
+            {
+                TriggerImpact(surfaceHit);
+                _simAccumulator = 0;
+                break; // the freeze-frame owns the moment; stop consuming the accumulator this frame
+            }
 
             if (applyTransferBurnAfterStep)
             {
