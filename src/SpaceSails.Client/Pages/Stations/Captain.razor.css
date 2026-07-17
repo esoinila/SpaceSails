@@ -146,6 +146,10 @@
 .captain-quest-status-complete { color: #9fe6b0; }
 .captain-quest-status-paid { color: rgba(224, 228, 236, 0.55); }
 
+/* PR-WIRE — the favor-bank accounts on the ledger: a soft gold left border marks a money line. */
+.captain-ledger-account { border-left: 3px solid rgba(255, 212, 121, 0.6); }
+.captain-account-txn { line-height: 1.4; }
+
 .captain-quest-reward {
     font-weight: 700;
     color: #9fe6b0;
