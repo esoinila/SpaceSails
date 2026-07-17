@@ -44,6 +44,7 @@ dotnet run --project labs/22-the-air-brake -c Release
 dotnet run --project labs/23-the-moon-run -c Release
 dotnet run --project labs/24-the-last-mile -c Release
 dotnet run --project labs/25-the-tide-that-takes-it-back -c Release
+dotnet run --project labs/27-the-getaway -c Release
 dotnet run --project labs/28-the-pump-crawl -c Release
 ```
 
@@ -240,6 +241,22 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     Luna for **2**, Titan for **3**, each priced in the game's own pulses. The three measured rows become
     `OrbitKeeping`/`OrbitKeepingTable` in Core; the armed autopilot now quotes the trim budget at arm time
     and holds the park until the captain disarms or the tank runs dry.
+26. **The soft arrival** — *reserved* (Titan aerocapture as an arrival mode; composes labs 22 + 23).
+27. [**The getaway**](27-the-getaway/README.md) — the lesson where the wolves get an honesty contract.
+    The game already flags `CaughtPlayer`, but PR-BUSTED's RESIST/RUN dice want real odds. Flown through
+    the REAL thrust-only pursuit law (`EncounterRule.AdvanceHunter`, no gravity by the owner's ruling),
+    the killer identity is `u²/(2a)` = **9,000 km**: a wolf that accelerates across more open space than
+    that arrives above its 3 km/s catch cap and **overshoots**. So the envelope has a clean cliff — a
+    grab is earnable only inside ~the **300,000 km** catch radius at a modest flee speed; past it the
+    closest pass screams through at 24–55 km/s and cannot grab. The three escapes, measured: the **sling**
+    (a real Earth→Jupiter crank) donates **12 km/s** of heliocentric speed for free — **6.7 h** of
+    continuous perfectly-aimed thrust the wolf would need, and it was pointed at your old vector; the
+    **skim** heat-bleed dips Jupiter's air for a clean **1,567 m/s** shed (40 km, under 3 g) the dragless
+    wolf keeps as **52 min** of overshoot; the **phasing juke** (lesson 24's k-table, read for evasion)
+    voids the wolf's 0.5 Mm firing solution in **7.5 h** for a one-lap dip down to 45 h for the cheap
+    six-lap bus — the owner's cheaper-sooner tradeoff. Ships `PursuitOdds` in Core: a pure query mapping
+    a chase geometry to the honest chance-class (and dice modifier) of each escape — the seam the BUSTED
+    pop-up reads. `--viz` draws one sling escape (whip past Jupiter) and one juke (stale the intercept).
 28. [**The pump crawl**](28-the-pump-crawl/README.md) — the lesson where the ship learns to ask *can I
     still refuel?* before the tank answers for it (#146/#157/#166). Depots ride the rails at planets,
     stations and havens but **never at an ordinary moon**, so Titan and Luna are dry. Priced with the
