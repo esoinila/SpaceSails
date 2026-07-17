@@ -147,23 +147,92 @@
                                 <span class="deck-shuttle-name">@(local.HasBerth ? "⚓" : "🌑") @local.Body.Name</span>
                                 <span class="deck-shuttle-meta">@FormatDistance(local.DistanceMeters) · ETA @FormatDuration(local.TravelSeconds)</span>
                             </div>
-                            @if (local.HasBerth)
-                            {
-                                <button type="button" class="btn btn-sm btn-warning"
-                                        title="Take the shuttle to @local.Body.Name — the clock advances by the crossing, then you step off ashore"
-                                        @onclick="() => TakeShuttleTo(local)">Take the shuttle →</button>
-                            }
-                            else
-                            {
-                                <span class="deck-shuttle-noberth"
-                                      title="In shuttle range, but there's nowhere to step off yet">no berth ashore yet</span>
-                            }
+                            <div class="deck-shuttle-row-actions">
+                                @if (local.HasBerth)
+                                {
+                                    <button type="button" class="btn btn-sm btn-warning"
+                                            title="Take the shuttle to @local.Body.Name — the clock advances by the crossing, then you step off ashore"
+                                            @onclick="() => TakeShuttleTo(local)">Take the shuttle →</button>
+                                }
+                                @* #223: a landable moon/asteroid grows the buried-treasure doors. Bury sinks
+                                   coin/cargo off the ship (invisible to confiscation); Dig lifts a known cache. *@
+                                @if (IsLandableForCache(local.Body))
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-warning"
+                                            title="Fly the shuttle down and bury a chest on @local.Body.Name — off the ship, off the books"
+                                            @onclick="() => OpenBuryChooser(local)">⛏ Bury a chest</button>
+                                }
+                                @if (_caches.HasCacheAt(local.Body.Id))
+                                {
+                                    <button type="button" class="btn btn-sm btn-success"
+                                            title="Fly the shuttle down and dig at the X — the map never lies"
+                                            @onclick="() => DigAt(local)">🗺 Dig at the X</button>
+                                }
+                                @if (!local.HasBerth && !IsLandableForCache(local.Body) && !_caches.HasCacheAt(local.Body.Id))
+                                {
+                                    <span class="deck-shuttle-noberth"
+                                          title="In shuttle range, but there's nowhere to step off yet">no berth ashore yet</span>
+                                }
+                            </div>
                         </div>
                     }
                 </div>
             }
             <div class="deck-shuttle-actions">
                 <button type="button" class="btn btn-sm btn-outline-light" @onclick="CloseShuttleBayDoor">Close hatch</button>
+            </div>
+        </div>
+    }
+
+    @* #223: the bury-a-chest chooser — pick how much of the purse to sink; the hold goes in whole
+       (it's small). Confirming flies the shuttle down: the clock advances by the crossing, the loot
+       leaves the ship, and the map card is minted. *@
+    @if (_buryTarget is { } buryStop)
+    {
+        <div class="deck-shuttle-card">
+            <div class="deck-shuttle-title">⛏ Bury a chest on @buryStop.Body.Name</div>
+            <div class="bury-chooser-body">
+                <div class="bury-row">
+                    <span>Coin to bury</span>
+                    <span class="bury-coin">@_buryCoin.ToString("N0", CultureInfo.InvariantCulture) cr</span>
+                </div>
+                <div class="bury-steppers">
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBuryCoin(-500)">−500</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBuryCoin(-100)">−100</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBuryCoin(100)">+100</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBuryCoin(500)">+500</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="() => SetBuryCoin(_credits)">All @_credits.ToString("N0", CultureInfo.InvariantCulture)</button>
+                </div>
+                <div class="bury-row bury-cargo">
+                    <span>Hold buried with it</span>
+                    <span>@(_cargoUnits > 0 ? $"{_cargoUnits} units ({HotHoldUnits()} hot)" : "empty")</span>
+                </div>
+                <div class="bury-note">Buried loot is off the ship — the collectors take only what they can see.</div>
+            </div>
+            <div class="deck-shuttle-actions">
+                <button type="button" class="btn btn-sm btn-warning" disabled="@(_buryCoin <= 0 && _cargoUnits <= 0)"
+                        title="Fly the shuttle down and bury the chest — the crossing costs the clock"
+                        @onclick="() => ConfirmBury(buryStop)">Bury it ⛏ (@FormatDuration(buryStop.TravelSeconds))</button>
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBury">Never mind</button>
+            </div>
+        </div>
+    }
+
+    @* #223: the treasure-map card — a full-screen artifact (celebration family). Big body image slot
+       (placeholder art until the grok lane fills the manifest), the body as a BIG CAPTION, the
+       bearing/paces line, and the big red X. X always marks the spot; the barflies swear it never does. *@
+    @if (_treasureMapCard is { } map)
+    {
+        <div class="mission-celebration-backdrop" @onclick="DismissMapCard">
+            <div class="treasure-map-card" @onclick:stopPropagation="true">
+                <div class="tm-art" style="background-image: @TreasureMapArtCss(map.BodyId);">
+                    <div class="tm-x">✗</div>
+                </div>
+                <div class="tm-caption">@map.Caption(BodyName(map.BodyId))</div>
+                <div class="tm-bearing">🧭 @map.BearingLine</div>
+                <div class="tm-contents">🧰 @map.ContentsLine()</div>
+                <div class="tm-flavor">✗ marks the spot. (The barflies swear it never does — out here, they're wrong every time.)</div>
+                <button type="button" class="btn btn-warning btn-sm mt-2" title="Tuck the map into the Captain's ledger" @onclick="DismissMapCard">Into the ledger 🗺</button>
             </div>
         </div>
     }
@@ -1761,6 +1830,7 @@
                                                               OnPointScope="PointScopeForActiveFetch"
                                                               Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
+                                                              Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
                                                               OnReopenStartPicker="ReopenStartPicker"
                                                               InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
                 }
@@ -4149,7 +4219,7 @@
     // _tutorialStep, which linear-chains its steps. A hunt is met when its target ship is brought
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
-    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack }
+    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, FetchCache }
     // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
     // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
     // Crack is the same face-to-face shape but the pickup is a locked hatch *here*: walk to the named
@@ -6432,6 +6502,7 @@
         string? fetchCheat = null;
         string? crackCheat = null;
         string? tipCheat = null;
+        string? hoardCheat = null;
         string? slingCheat = null;
         string? skimCheat = null;
         string? backroomCheat = null;
@@ -6496,6 +6567,17 @@
                 if (candidate is "route")
                 {
                     tipCheat = candidate;
+                }
+            }
+            else if (pair.StartsWith("hoard=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #223 dev cheat: /map?hoard=mine|rumor|both seeds the ledger's 🗺 section so the map
+                // card and dig doors are reachable without flying a full bury run. mine = one of OUR
+                // chests on Phobos; rumor = a bought rumour map to an NPC hoard; both = one of each.
+                string candidate = Uri.UnescapeDataString(pair["hoard=".Length..]).ToLowerInvariant();
+                if (candidate is "mine" or "rumor" or "both")
+                {
+                    hoardCheat = candidate;
                 }
             }
             else if (pair.StartsWith("sling=", StringComparison.OrdinalIgnoreCase))
@@ -6685,6 +6767,11 @@
             InjectTipCheat(); // seed a representative route tip so the ledger's Tips & intel is reachable
         }
 
+        if (hoardCheat is not null)
+        {
+            InjectHoardCheat(hoardCheat); // #223: seed a buried chest and/or a bought rumour map
+        }
+
         // Tuesday plan PR-A: ?start=wreck drops you 2 km off the roadster — you're on top of her, so
         // chart her quietly (no "found it!" fanfare when you were parked alongside all along). This
         // also keeps ?start=wreck&fetch=active green.
@@ -6862,6 +6949,41 @@
         _intelLedger.Add(new RouteIntel(subject.Ship.Id, SimTime, RouteIntel.DefaultValiditySeconds, Price: 0));
         _routeIntelProvenance[subject.Ship.Id] = new IntelProvenance("GILT-EYE", DockedStationName(), SimTime);
         ShowPulseMessage($"🧪 Test: route tip on {subject.Ship.Callsign} — filed in the Captain's ledger (0).");
+    }
+
+    // #223 dev cheat: seed the ledger's 🗺 section without a full bury run. "mine" buries one of OUR
+    // chests on Phobos; "rumor" is the standalone PURCHASE path — pay a barfly for a map to an NPC hoard
+    // (deliverable 5), no delivery strings, keep whatever we dig; "both" seeds one of each.
+    private void InjectHoardCheat(string mode)
+    {
+        if (mode is "mine" or "both")
+        {
+            _caches.Bury("phobos", coin: 1800, [new CacheCargo("He3", 3, Hot: true)], SimTime, "you", playerOwned: true);
+            SeedDiscoveryWatch();
+        }
+        if (mode is "rumor" or "both")
+        {
+            BuyRumorMap($"cheat|{DockedStationName()}");
+        }
+        ShowPulseMessage("🧪 Test: hoard seeded — open the Captain's ledger (0) → 🗺 Treasure maps.");
+    }
+
+    // The standalone rumour-map purchase (deliverable 5): a barfly sells a map to some NPC's forgotten
+    // hoard, dice-priced. Buying LEARNS the cache (the same dig path as our own chests) — no delivery
+    // obligation, the loot is ours to keep. Skips the buy if the purse can't cover the asking price.
+    private bool BuyRumorMap(string drawKey)
+    {
+        RumorMaps.Rumor rumor = RumorMaps.Generate(drawKey);
+        if (_credits < rumor.PriceCredits)
+        {
+            ShowPulseMessage($"🗺 A rumour map's on the table — {rumor.PriceCredits:N0} cr — but the purse won't cover it.");
+            return false;
+        }
+        _credits -= rumor.PriceCredits;
+        _caches.Learn(rumor.Cache);
+        RendererInterop.PlayCue("reveal");
+        ShowPulseMessage($"🗺 Bought a rumour map for {rumor.PriceCredits:N0} cr — {rumor.Cache.Owner}'s hoard on {BodyName(rumor.Cache.BodyId)}. Dig it up before someone else does.");
+        return true;
     }
 
     private ShipState InitializeShipState()
@@ -11753,6 +11875,187 @@
         PayCompletedQuests();
     }
 
+    // ---- #223 buried treasure: the shuttle door's second life ----
+    // A landable moon/asteroid grows two doors on the shuttle-bay pop-up: ⛏ Bury (sink coin/cargo off
+    // the ship) and 🗺 Dig (lift a known cache). Both fly the shuttle DOWN and back — the mothership
+    // loiters, the clock advances by the crossing (heat bleeds, traffic drifts), the ship never
+    // relocates. Buried loot lives in _caches, never in _credits/_cargoByClass, so a confiscation that
+    // reads only carried goods can never see it. X always marks the spot.
+
+    // A body you can put a chest on: a moon or asteroid (a surface to walk), never a station or planet.
+    private bool IsLandableForCache(CelestialBody b) => b.Kind == BodyKind.Moon;
+
+    // Is a cargo class hot (stolen)? Today the loot ledger is the evidence of a heist — a class we've
+    // ever boarded reads as hot in the hold. The BUSTED lane owns the authoritative per-unit flag; this
+    // is the honest read HOARD has until then (the seam both agree on: hot = stolen-flagged).
+    private bool IsHotClass(string cargoClass) =>
+        _lootLedger.Any(l => string.Equals(l.CargoClass, cargoClass, StringComparison.OrdinalIgnoreCase));
+
+    // Hot units currently in the hold (what confiscation would see as evidence — until it's buried).
+    private int HotHoldUnits() => _cargoByClass.Where(kv => IsHotClass(kv.Key)).Sum(kv => kv.Value);
+
+    private void OpenBuryChooser(ShuttleStop stop)
+    {
+        _buryTarget = stop;
+        _buryCoin = Math.Min(_credits, 500); // a sensible opening bid; the dial and "All" adjust it
+        _shuttleBayStops = null;             // the chooser replaces the door list
+    }
+
+    private void CancelBury() => _buryTarget = null;
+
+    private void AdjustBuryCoin(int delta) => _buryCoin = Math.Clamp(_buryCoin + delta, 0, _credits);
+
+    private void SetBuryCoin(int amount) => _buryCoin = Math.Clamp(amount, 0, _credits);
+
+    // Fly the shuttle down and bury the chest: take the loot OFF the ship, advance the clock by the
+    // crossing, mint the cache + its map, and show the map card. Nothing here touches confiscation —
+    // buried is invisible by construction.
+    private void ConfirmBury(ShuttleStop stop)
+    {
+        if (_ephemeris is null)
+        {
+            return;
+        }
+        int coin = Math.Clamp(_buryCoin, 0, _credits);
+        // The whole hold goes in (it's small): snapshot the manifest into cache lines, hot-flagged.
+        var cargo = _cargoByClass
+            .Where(kv => kv.Value > 0)
+            .Select(kv => new CacheCargo(kv.Key, kv.Value, IsHotClass(kv.Key)))
+            .ToList();
+        if (coin <= 0 && cargo.Count == 0)
+        {
+            _buryTarget = null;
+            return;
+        }
+
+        // The trip costs the clock (heat bleeds, traffic drifts) — the mothership loiters in place.
+        AdvanceShuttleClock(stop.TravelSeconds);
+
+        // Loot leaves the ship's books.
+        _credits -= coin;
+        _cargoUnits = 0;
+        _cargoValue = 0;
+        _cargoByClass.Clear();
+
+        TreasureCache cache = _caches.Bury(stop.Body.Id, coin, cargo, SimTime, "you", playerOwned: true);
+        SeedDiscoveryWatch();
+
+        _buryTarget = null;
+        _treasureMapCard = cache;
+        RendererInterop.PlayCue("reveal");
+        ShowPulseMessage($"⛏ Chest buried on {stop.Body.Name} — {cache.ContentsLine()} off the books. Map filed (🗺).");
+    }
+
+    // Fly the shuttle down and dig at the X: lift EVERY cache we know of at this body back onto the
+    // ship (coin to the purse, cargo to the hold up to capacity), advance the clock by the crossing.
+    private void DigAt(ShuttleStop stop)
+    {
+        if (_ephemeris is null || !_caches.HasCacheAt(stop.Body.Id))
+        {
+            return;
+        }
+        AdvanceShuttleClock(stop.TravelSeconds);
+
+        var lifted = _caches.CachesAt(stop.Body.Id).ToList();
+        int coinBack = 0, unitsBack = 0, unitsLost = 0;
+        foreach (TreasureCache known in lifted)
+        {
+            TreasureCache? dug = _caches.Dig(known.Id);
+            if (dug is not { } c)
+            {
+                continue;
+            }
+            _credits += c.Coin;
+            coinBack += c.Coin;
+            foreach (CacheCargo line in c.Cargo)
+            {
+                int room = CargoCapacity - _cargoUnits;
+                int take = Math.Min(room, line.Units);
+                if (take > 0)
+                {
+                    _cargoUnits += take;
+                    _cargoValue += take * CargoMarket.UnitValue(line.CargoClass);
+                    _cargoByClass[line.CargoClass] = _cargoByClass.GetValueOrDefault(line.CargoClass) + take;
+                    unitsBack += take;
+                }
+                unitsLost += line.Units - take; // no room in the hold — left in the dust
+            }
+            // A recovered chest can close a fetch-a-cache job that pointed at it (#223).
+            CompleteFetchCacheFor(c);
+        }
+
+        RendererInterop.PlayCue("board");
+        string lost = unitsLost > 0 ? $" ({unitsLost}u left — hold full)" : "";
+        ShowPulseMessage($"🗺 Dug up {coinBack:N0} cr + {unitsBack} units on {stop.Body.Name}{lost}. X marked the spot.");
+        PayCompletedQuests();
+    }
+
+    // The shuttle round-trip's clock cost: advance the sim clock and re-stamp the loitering ship at the
+    // new time (frozen in place — the shuttle moved, not the mothership). Re-pin to the dock if berthed.
+    private void AdvanceShuttleClock(double travelSeconds)
+    {
+        double newT = SimTime + Math.Max(0.0, travelSeconds);
+        _ship = new ShipState(_ship.Position, _ship.Velocity, newT, _ship.Charge);
+        SimTime = newT;
+        if (_dockedHavenId is not null)
+        {
+            HoldAtDock();
+        }
+        RunCacheDiscoveryWatch();
+    }
+
+    private void DismissMapCard() => _treasureMapCard = null;
+
+    // A per-body placeholder art fill for the map card's big image slot until the grok image lane fills
+    // the manifest (docs/FridaySecondPlan/hoard-image-manifest.md). Deterministic tint per body so
+    // Phobos always reads the same. A real asset would be art/treasure-<bodyId>.jpg dropped in behind this.
+    private static string TreasureMapArtCss(string bodyId)
+    {
+        int h = Math.Abs(bodyId.GetHashCode());
+        int hue = h % 360;
+        return $"radial-gradient(circle at 38% 32%, hsl({hue}, 40%, 34%), hsl({(hue + 28) % 360}, 45%, 12%) 70%)";
+    }
+
+    // ---- The discovery watch (ruling 4): rivals find our hoards on a slow roll ----
+
+    // Start the watch at the current day the first time we bury, so a just-dug chest isn't rolled for
+    // the partial current day.
+    private void SeedDiscoveryWatch()
+    {
+        if (_lastCacheCheckPeriod < 0)
+        {
+            _lastCacheCheckPeriod = DiscoveryRule.PeriodIndex(SimTime);
+        }
+    }
+
+    // Resolve the per-cache discovery roll across every whole day elapsed since the last check (so a
+    // warp that skips days can't skip a roll). A found cache is GONE — a ledger squawk marks the loss.
+    private void RunCacheDiscoveryWatch()
+    {
+        if (_lastCacheCheckPeriod < 0)
+        {
+            return; // nothing buried yet
+        }
+        long nowPeriod = DiscoveryRule.PeriodIndex(SimTime);
+        if (nowPeriod <= _lastCacheCheckPeriod)
+        {
+            return;
+        }
+        foreach (TreasureCache c in _caches.Caches.Where(c => c.PlayerOwned).ToList())
+        {
+            // Never roll a cache for days before it was in the ground: start its scan at the later of
+            // the global last-check and its own burial day.
+            long from = Math.Max(_lastCacheCheckPeriod, DiscoveryRule.PeriodIndex(c.BuriedSimTime));
+            if (DiscoveryRule.DiscoveredWithin(c.Id, from, SimTime) is not null)
+            {
+                _caches.Remove(c.Id);
+                RendererInterop.PlayCue("alarm");
+                ShowPulseMessage($"🏴‍☠️ Someone dug up our chest on {BodyName(c.BodyId)} — {c.ContentsLine()} gone. Split the hoards next time.");
+            }
+        }
+        _lastCacheCheckPeriod = nowPeriod;
+    }
+
     // --- Ashore quests (M-Q1): the hooded stranger at the bar table ---
 
     // Walk up to a booth and press E. Which patron you're next to (from their console label) sets who
@@ -11981,7 +12284,7 @@
         {
             _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
             _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
-            _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver) ?? MakeCrackOffer(giver),
+            _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver) ?? MakeFetchCacheOffer(giver) ?? MakeCrackOffer(giver),
             _ => MakeHuntOffer(giver),
         };
         if (offer is null)
@@ -12133,6 +12436,43 @@
             DestBodyId: dest.Id, SourceBodyId: "derelict-roadster");
     }
 
+    // #223: the Fixer's cache run — a map to SOMEONE ELSE'S buried hoard. The recovery flow and the
+    // mission flow are one code path: accept learns the cache (so the shuttle-bay 🗺 Dig appears at the
+    // body), digging it up sets PickedUp, and carrying the chest to the Fixer's bar pays out. Offered
+    // only when a landable moon carries a named landmark to pace off (the monolith is the storied one).
+    private Quest? MakeFetchCacheOffer(string giver)
+    {
+        if (_ephemeris is null || _dockedHavenId is not { } here)
+        {
+            return null;
+        }
+        if (_quests.Any(q => q.Kind == QuestKind.FetchCache && q.State != QuestState.TurnedIn))
+        {
+            return null; // one cache run at a time
+        }
+        // Only send them to a storied moon they can actually reach from this bar — one sharing the
+        // station's planet, so it's in the same neighbourhood the shuttle can cross.
+        string? planetId = BodyById(here)?.ParentId;
+        CelestialBody? dig = _ephemeris.Bodies
+            .Where(b => b.Kind == BodyKind.Moon && Landmarks.HasNamedSite(b.Id) && b.ParentId == planetId)
+            .OrderBy(b => b.Id, StringComparer.Ordinal)
+            .FirstOrDefault();
+        if (dig is null)
+        {
+            return null; // no storied landing site within reach of this bar
+        }
+        string barName = BodyName(here);
+        const int reward = 3200;
+        string drawKey = $"{here}|fetchcache|{(int)(SimTime / 86400)}";
+        RumorMaps.Rumor rumor = RumorMaps.Generate(drawKey, dig.Id);
+        string blurb = $"“A client wants a chest lifted — {rumor.Cache.Owner} buried it out on {dig.Name} and won't be collecting. Here's the map: {rumor.Cache.BearingLine}. Dig it up, bring the lot to me here at {barName}. {reward:N0} cr, clean.”";
+        // TargetShipId carries the (deterministic) cache id so the dig can match it; Pin carries the draw
+        // key so AcceptOffer re-mints and LEARNS the exact same cache.
+        return new Quest($"fetchcache-{++_questSeq}", QuestKind.FetchCache, giver,
+            rumor.Cache.Id, barName, "Lift a buried chest", blurb, reward,
+            DestBodyId: here, SourceBodyId: dig.Id, Pin: drawKey);
+    }
+
     // The Fixer's other line of work, when the roadster job is spoken for: crack a locked hatch here at
     // this station. Picks one of the deck's locked departments deterministically, quotes its real access
     // code, and pays on hand-over — a quick, self-contained job with no flying (contrast the fetch).
@@ -12205,6 +12545,13 @@
             _scopeIntel.Add(BuildWreckIntel(wreckId, offer.Giver, DockedStationName()));
         }
 
+        // #223: accepting a cache run LEARNS the target cache (same code path as a rumour map) — the
+        // shuttle-bay 🗺 Dig door now appears at that body, and the map lands in the ledger's 🗺 section.
+        if (offer.Kind == QuestKind.FetchCache && offer.Pin is { } drawKey && offer.SourceBodyId is { } digBody)
+        {
+            _caches.Learn(RumorMaps.Generate(drawKey, digBody).Cache);
+        }
+
         // #207: accepting ANY contract kind now SPEAKS in-face — a #119-style receipt naming the job
         // and its giver, then the immediate next action — so the captain is never left guessing at the
         // moment of acceptance ("I took the parcel but the mission is quite unclear"). The live
@@ -12223,7 +12570,8 @@
         TargetName: q.Kind == QuestKind.Crack ? q.TargetShipId : q.TargetCallsign,
         Pin: q.Pin,
         Charted: q.SourceBodyId is not { } src || !IsBodyHidden(src),
-        PickedUp: q.State is QuestState.PickedUp);
+        PickedUp: q.State is QuestState.PickedUp,
+        CacheBody: q.Kind == QuestKind.FetchCache ? BodyName(q.SourceBodyId ?? "") : null);
 
     private static ContractKind ToContractKind(QuestKind kind) => kind switch
     {
@@ -12231,6 +12579,7 @@
         QuestKind.CargoRun => ContractKind.CargoRun,
         QuestKind.Intel => ContractKind.Intel,
         QuestKind.Fetch => ContractKind.Fetch,
+        QuestKind.FetchCache => ContractKind.FetchCache,
         QuestKind.Crack => ContractKind.Crack,
         _ => ContractKind.CargoRun,
     };
@@ -12388,6 +12737,26 @@
                 q.State = QuestState.Complete;
                 ShowPulseMessage($"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
             }
+            // #223: a fetch-a-cache job pays when the DUG chest is carried back to the giver's bar.
+            else if (q is { Kind: QuestKind.FetchCache, State: QuestState.PickedUp } && q.DestBodyId == dockId)
+            {
+                q.State = QuestState.Complete;
+                ShowPulseMessage($"Chest delivered to {q.TargetCallsign} — {q.Reward:N0} cr for the recovery. 🗺");
+            }
+        }
+    }
+
+    // #223: digging up a cache advances any fetch-a-cache job that pointed at it — the chest is now in
+    // hand (PickedUp); the giver's bar is the drop. Idempotent per quest.
+    private void CompleteFetchCacheFor(TreasureCache cache)
+    {
+        foreach (Quest q in _quests)
+        {
+            if (q is { Kind: QuestKind.FetchCache, State: QuestState.Active } && q.TargetShipId == cache.Id)
+            {
+                q.State = QuestState.PickedUp;
+                ShowPulseMessage($"{MissionBrief.NextPrefix}{MissionBrief.Action(FactsFor(q))}");
+            }
         }
     }
 
@@ -12486,6 +12855,25 @@
     // Captain's ledger alongside the honest autopilot receipts (the established tip idiom).
     private readonly List<LootRecord> _lootLedger = [];
 
+    // #223: the captain's hoards — every buried chest we know of, ours and any rival's whose map we
+    // hold. Buried loot lives HERE, never in _credits / _cargoByClass, so a boarding confiscation
+    // (which reads only carried goods) can never see it. The map card and the ledger's 🗺 section
+    // read this book; the discovery watch prunes it.
+    private readonly CacheLedger _caches = new();
+
+    // The discovery watch (ruling 4): the last whole day we resolved the per-cache discovery roll, so
+    // a warp that skips days can't skip a roll. -1 = nothing resolved yet.
+    private long _lastCacheCheckPeriod = -1;
+
+    // The treasure-map card currently on screen (the full-screen artifact), or null. Shown on burying
+    // a fresh chest and any time the captain opens a map from the ledger's 🗺 section.
+    private TreasureCache? _treasureMapCard;
+
+    // The bury-a-chest chooser: the body we're about to bury on and how much of the purse to sink. Null
+    // when the chooser is shut. Cargo goes in whole (the hold is small); coin is the dial.
+    private ShuttleStop? _buryTarget;
+    private int _buryCoin;
+
     // The fanfare (#185): a completion is a CELEBRATION, not a silent credit. One pop-up at a time;
     // extras queue so a double payout still gets its due.
     private MissionCelebration? _celebration;
@@ -12549,6 +12937,8 @@
                 (QuestKind.Fetch, QuestState.PickedUp) => ($"📦 Carrying — hand off at {q.TargetCallsign}", "active"),
                 (QuestKind.Crack, QuestState.Active) => ($"▶ Crack hatch {q.TargetShipId} — code {q.Pin}", "active"),
                 (QuestKind.Crack, QuestState.PickedUp) => ("📦 Package lifted — take it to The Fixer", "active"),
+                (QuestKind.FetchCache, QuestState.Active) => ($"🗺 Dig at the X on {BodyName(q.SourceBodyId ?? "")}", "active"),
+                (QuestKind.FetchCache, QuestState.PickedUp) => ($"📦 Chest lifted — carry it to {q.TargetCallsign}", "active"),
                 (_, QuestState.Active) => ("▶ On the hook", "active"),
                 (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
                 _ => ("💰 Paid", "paid"),
@@ -12567,6 +12957,7 @@
                 QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
                 QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
                 QuestKind.Crack => $"Key {q.Pin} into hatch {q.TargetShipId} here, lift the package, then hand it back to The Fixer.",
+                QuestKind.FetchCache => $"Take the shuttle down to {BodyName(q.SourceBodyId ?? "")}, dig up the marked chest, then carry the lot to {q.TargetCallsign}.",
                 _ => "",
             };
             // #175: the live next action for an in-hand cargo run, read off ship state (too far / in the
@@ -12634,6 +13025,25 @@
     // route tips carry "→ dark web" always and "→ dossier" when the ship is a known contact. Provenance
     // is attached where we recorded it (Fixer fetches, Gilt-Eye tips, the cheats); older/bought entries
     // render unattributed rather than being withheld.
+    // #223: the ledger's 🗺 treasure-maps section — every known cache as a viewable map card.
+    private Stations.Captain.CacheMapItem[] LedgerMaps() =>
+        _caches.Caches.Select(c => new Stations.Captain.CacheMapItem(
+            c.Id, c.Caption(BodyName(c.BodyId)), c.BearingLine, c.ContentsLine(),
+            GiverDisplay(c.Owner), c.PlayerOwned)).ToArray();
+
+    // Open the full-screen map card for a cache the captain clicked in the ledger.
+    private void ViewMapFromLedger(string cacheId)
+    {
+        foreach (TreasureCache c in _caches.Caches)
+        {
+            if (c.Id == cacheId)
+            {
+                _treasureMapCard = c;
+                return;
+            }
+        }
+    }
+
     private Stations.Captain.LedgerTip[] LedgerTips()
     {
         var tips = new List<Stations.Captain.LedgerTip>();
@@ -12904,6 +13314,10 @@
         // #175: settle any moon-haven cargo run whose ship is parked in orbit — the owner who was
         // ALREADY orbiting Enceladus when the parcel loaded gets paid here, since no dock event fires.
         CompleteBoundCargoRunQuests();
+
+        // #223: resolve the buried-cache discovery roll as sim time rolls past whole days — rivals find
+        // our hoards on a slow roll whether we're flying, warping, or docked.
+        RunCacheDiscoveryWatch();
 
         bool wasHidden = !double.IsNaN(_hiddenAtHavenSinceSimTime);
         bool hidden = IsHiddenAtHaven();
