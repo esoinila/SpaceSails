@@ -198,6 +198,13 @@ public partial class Map
     private string? _dockedHavenId;   // the station haven we're clamped to, or null
     private Vector2d _dockOffset;     // frozen ship-minus-dock offset while clamped (the arm's reach)
 
+    // #268 pay-at-the-pump: the deferred bill for a ⚓ Match & clamp burn. The redirect impulse fires at the
+    // press (instant, #213), but its pulses are NOT taken then — they ride this tab and settle only when the
+    // clamp lands (ClampOntoHaven). A diverging/aborted approach that never clamps drops the tab uncharged
+    // (UpdateDockAffordance), so a leg that never delivered keeps no fuel it never earned. Pure logic in
+    // Core.MatchClampLedger; this is the one live copy the client mutates.
+    private MatchClampLedger _matchLedger = MatchClampLedger.Empty;
+
     // #212/#211/#213: the ONE dock affordance truth — the toolbar ⚓ button and the envelope line both
     // read this, so text and button can never disagree. Recomputed every OnTick (paused or not, so the
     // quote survives pause), latch state carried frame-to-frame so the offer doesn't blink as the
@@ -233,8 +240,23 @@ public partial class Map
             havens.Add(new DockHaven(body, pos, vel, focus));
         }
 
-        _dockAffordance = DockAffordanceRule.Evaluate(_ship, havens, _reactionMassPulses, _dockLatched);
+        // #268: the affordance reads the EFFECTIVE tank — pulses already on a pending match tab are
+        // spoken-for (committed, just not yet settled), so the ⚓ offer and its affordability reflect what's
+        // actually free to burn, not the full tank the deferred take hasn't hit yet.
+        int effectiveTank = Math.Max(0, _reactionMassPulses - _matchLedger.Pulses);
+        _dockAffordance = DockAffordanceRule.Evaluate(_ship, havens, effectiveTank, _dockLatched);
         _dockLatched = _dockAffordance.Latched;
+
+        // #268: a match tab whose berth is no longer under the clamp button — the ship diverged out of the
+        // envelope, or the affordance now names a different haven — dropped without delivery. Release it
+        // UNCHARGED: an aborted or diverging approach keeps no money it never earned. (Settlement is only ever
+        // the clamp; while the ship holds the berth the affordance keeps a ⚓ button on this same haven.)
+        if (_matchLedger.Owes
+            && !(_dockAffordance.HavenId == _matchLedger.HavenId && _dockAffordance.ShowButton))
+        {
+            ShowPulseMessage($"⚓ match stood down at {BodyName(_matchLedger.HavenId!)} — {_matchLedger.Pulses} p released, unspent (never clamped on).");
+            _matchLedger = _matchLedger.Abort();
+        }
     }
 
     // Resolve a haven's live world state straight from the ephemeris — used so docking clamps onto the
@@ -342,6 +364,7 @@ public partial class Map
         _armedOrbitBodyId = null;                           // a berth disarms any pending auto-insert
         _autopilotStandDownReason = null; _dockReadyStatus = null;
         ResetAutopilotBudget();
+        _matchLedger = _matchLedger.Abort();                // #268: a shuttle hop abandons any match tab, uncharged
         StaleFutureNodes();                                 // a berth cancels any pending burns
         HoldAtDock();                                       // pin the ship to the station's drift now
         SetDeckForDock(dest.Id);                            // weld on the destination's walkable complex
@@ -418,19 +441,31 @@ public partial class Map
 
         int quote = _dockAffordance.MatchPulses;
         int cost = OrbitRule.ApproachPulseCost(_ship, t.Pos, t.Vel, t.Body, null, 0);
-        if (cost > _reactionMassPulses)
+        // #268: the refuse-with-reason gate still checks the WHOLE match against the tank BEFORE the burn —
+        // can't start what you can't afford (#213/#262). But it checks the EFFECTIVE tank: any pulses already
+        // on the tab for this same berth are spoken-for, so a second redirect can't over-commit what a first
+        // already promised. Checking affordability and TAKING the money are different acts — the take waits
+        // for the clamp.
+        int committed = _matchLedger.HavenId == id ? _matchLedger.Pulses : 0;
+        int free = _reactionMassPulses - committed;
+        if (cost > free)
         {
             // #213 hopelessly hot: refuse with the numbers rather than a silent no-op or a broken clamp.
-            ShowPulseMessage($"⚓ too hot to match at {t.Body.Name} — needs ≈{cost} p, only {_reactionMassPulses} aboard. Bleed speed and come around.");
+            ShowPulseMessage($"⚓ too hot to match at {t.Body.Name} — needs ≈{cost} p, only {free} free aboard. Bleed speed and come around.");
             return;
         }
 
         _ship = OrbitRule.Approach(_ship, t.Pos, t.Vel, t.Body, null, 0);
-        _reactionMassPulses -= cost;
+        // #268 pay-at-the-pump: the redirect impulse fires NOW (instant match, #213) but its pulses are NOT
+        // taken here — they go on the tab and settle only when the clamp lands (ClampOntoHaven). If the
+        // approach diverges or is abandoned before the berth is made, the tab drops uncharged. The gauge stays
+        // honest: it does not fall until the flight has actually delivered you.
+        _matchLedger = _matchLedger.Accrue(t.Body.Id, cost);
         StaleFutureNodes();
         Warp = 1; _effectiveWarp = 1; // don't blow past the berth the match just delivered you to
-        // #185 no-silent-money, applied to outflows: name the bill against the quote.
-        ShowPulseMessage($"⚓ matched at {t.Body.Name} — {cost} p spent (quoted ≈{quote}). Hit ⚓ Dock to clamp on.");
+        // #185 no-silent-money, applied to outflows: name the bill against the quote, and say plainly it is
+        // owed-on-delivery, not taken now.
+        ShowPulseMessage($"⚓ matched at {t.Body.Name} — {cost} p on the tab (quoted ≈{quote}); settles when you clamp on. Hit ⚓ Dock.");
         RendererInterop.PlayCue("burn");
         UpdateDockAffordance(); // so the plain ⚓ Dock button appears this frame
     }
@@ -439,6 +474,16 @@ public partial class Map
     // arm's reach off the haven's own position (not _nearestBody), welds the tube, settles cargo runs.
     private void ClampOntoHaven(CelestialBody dock, Vector2d dockPos, string? arrivalNote = null)
     {
+        // #268 pay-at-the-pump: a deferred ⚓ Match & clamp burn settles HERE, on delivery — the leg landed,
+        // so the pulses it actually fired come off the tank now (never at the button press). Clamping at any
+        // OTHER berth clears the abandoned tab without charge; a diverging approach that never clamps already
+        // dropped it uncharged upstream (UpdateDockAffordance).
+        (int matchCharge, _matchLedger) = _matchLedger.Settle(dock.Id);
+        if (matchCharge > 0)
+        {
+            _reactionMassPulses = Math.Max(0, _reactionMassPulses - matchCharge);
+        }
+
         _dockedHavenId = dock.Id;
         // #269: completing the clamp ATTACHES. The old code only froze the arm at wherever the ship
         // floated (_ship.Position - dockPos) — but the 500,000 km approach envelope means that could be
@@ -458,7 +503,9 @@ public partial class Map
         string ashore = HavenInterior.HasInterior(dock.Id)
             ? $"⚓ Clamped on at {dock.Name} — gangway's mated. Head to the Deck and walk the tube ashore."
             : $"⚓ Clamped on at {dock.Name} — the arm's holding us. Lie low; the heat'll bleed off.";
-        ShowPulseMessage(arrivalNote is null ? ashore : $"{arrivalNote} {ashore}");
+        // #268: say the state — when the match tab settled on this clamp, name the pulses it took on delivery.
+        string settled = matchCharge > 0 ? $"Match settled — {matchCharge} p spent. " : "";
+        ShowPulseMessage(arrivalNote is null ? $"{settled}{ashore}" : $"{arrivalNote} {settled}{ashore}");
         RendererInterop.PlayCue("board");
         CompleteCargoRunQuests(dock.Id); // arriving at the delivery berth finishes a cargo run (M-Q3)
         PayCompletedQuests();            // then any finished bar contracts pay out (M-Q1)
