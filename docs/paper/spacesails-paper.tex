@@ -20,7 +20,7 @@
 and the Human-PO / AI-Head-Coder Method That Built It}
 \author{Erno Soinila, D.Sc.\ (Eng.)\\\small Senior AI Engineer, Efima --- Product Owner\\\small \texttt{erno.soinila@efima.com}
 \and Claude (Fable~5)$^{*}$\\\small Head Coder\\\small Anthropic}
-\date{\small DRAFT v0.2 --- July 2026}
+\date{\small DRAFT v0.3 --- July 2026}
 
 \begin{document}
 
@@ -33,19 +33,27 @@ SpaceSails is a browser-native solar-system sailing and piracy game whose engine
 deterministic 2D $N$-body integrator compiled to WebAssembly. Nothing in it cheats: every
 trajectory is integrated, every prediction is honestly uncertain, and the hardest maneuvers
 are hard because physics says so. The same properties that make the game honest make it a
-classroom: the repository ships a thirteen-lesson numerical-methods lab course that runs on
-the game's own engine, and the game's newest mechanic --- fire control --- is the shooting
-method for boundary value problems, played. We describe (1)~the system: a determinism-first
-core, adaptive symplectic integration with exact maneuver-node landing, honest uncertainty
-cones, and a closed-form no-tunneling proximity test; (2)~the duty-station interface that
-distributes one simulation across eight crew desks; and (3)~the process: a two-person team ---
-a human product owner and an AI ``head coder'' --- that took the project from empty repository
-to roughly sixty reviewed, tested, merged pull requests in four days, with the owner approving
-PRs from a phone and the AI implementing, verifying in a live browser, and managing the merge
-train. We argue the combination --- deterministic simulation as both gameplay substrate and
-curriculum, plus AI-driven implementation under tight human product direction --- is a
-repeatable method, and we report what it cost, where it failed, and what the failures taught
-the game.
+classroom: the repository ships a numerical-methods lab course --- now roughly thirty
+type-it-in lessons --- that runs on the game's own engine, and the game ships \emph{the
+numbers the labs measure}. This is the method we most want to convey: measure a mechanic in
+a probe first, then ship the measured number --- the autopilot's orbit-keeping trim budget,
+the wolves' pursuit-escape envelope, the harbor-approach corridor, the mass-driver
+timetable --- so that \emph{every number in the game is a number a probe printed}. We
+describe (1)~the system: a determinism-first core, adaptive symplectic integration with
+exact maneuver-node landing, honest uncertainty cones, and a closed-form no-tunneling
+proximity test; (2)~the game that grew on it --- a ship that narrates its own flight,
+autopilot that \emph{keeps} an orbit at a quoted trim cost, deliberate piracy resolved by
+on-screen dice, buried treasure with generated maps, a favor bank, and a tolerant save
+vault; (3)~the duty-station interface that distributes one simulation across eight crew
+desks; and (4)~the process: a two-person team --- a human product owner and an AI ``head
+coder'' who \emph{orchestrates} multiple implementation agents working in parallel across
+isolated git worktrees --- that took the project from empty repository to 165 reviewed,
+tested, merged pull requests across 12 active coding days (with travel breaks in between),
+the owner approving from a phone and the AI planning, reviewing, verifying in the owner's
+own live browser, and running the merge train. We argue the combination --- deterministic
+simulation as both gameplay substrate and curriculum, plus orchestrated AI implementation
+under tight human product direction --- is a repeatable method, and we report what it cost,
+where it failed, and what the failures taught the game.
 \end{minipage}
 \end{center}
 \vspace{1.5em}
@@ -64,7 +72,7 @@ acknowledgment with the same content.}%
 On the surface, SpaceSails is a piracy game: solar sails, cargo pods, hunters, a gun deck.
 Underneath, it is a numerical-methods and orbital-mechanics classroom, and the disguise is
 deliberate. ``Secretly edutainment'' is the project's design law, not an accident of scope:
-the owner's first shipped software (SoittoPeli, 1998) was music edutainment for children,
+the owner's first shipped software (SoittoPeli, 2000) was music edutainment for children,
 and SpaceSails carries the same DNA on purpose.
 
 Our thesis is that \emph{honesty} is the unifying design constraint, and that it pays for
@@ -87,9 +95,17 @@ This paper contributes:
         damped Newton iteration over launch bearing and ejection charge, with every
         residual evaluated by one flight of the real integrator --- surfaced as a visible,
         converging \textsc{calculating firing solution} moment (\S\ref{sec:shooting});
-  \item an experience report of the human-PO / AI-head-coder method at unusual cadence,
-        with the working agreements that made review at that pace possible
-        (\S\ref{sec:process}).
+  \item the \emph{lab-to-game pipeline} as a repeatable R\&D method
+        (\S\ref{sec:labs}): a growing ladder of console probes that measure a mechanic
+        honestly, after which the game ships the measured number rather than a tuned
+        guess --- orbit-keeping trims, the pursuit-escape cliff, harbor corridors, and a
+        mass-driver timetable, each traced to the probe that printed it;
+  \item an experience report of an \emph{orchestrated} human-PO / AI-head-coder method
+        (\S\ref{sec:process}): one lead model that plans, reviews, and merges while several
+        implementation agents work in parallel isolated worktrees, plus a live-browser
+        triage loop in which the AI reads and repairs the owner's own running tab
+        mid-playtest, with the working agreements --- and failure modes --- that made
+        review at content-per-day scale possible.
 \end{enumerate}
 
 Because the entire project lives in one public repository built at high cadence, its git
@@ -299,17 +315,102 @@ instruments are themselves gameplay: sun-glare detection asymmetry makes anti-su
 pirate's hunting angle; a charged hull glows farther than it sees; and the mutual-visibility
 readout (``do we see them, or do they see us first?'') turns the sensor model into strategy.
 
+\section{The Game That Grew on the Core}
+\label{sec:game}
+
+The physics of \S\ref{sec:core} is the substrate; the last stretch of development was
+mostly \emph{game} built on top of it, and almost all of it came from a single recurring
+playtest complaint. The owner would fly a full mission end to end --- take a contract at a
+bar, plot a cross-well transfer, park at a moon, deliver a parcel --- and report the same
+diagnosis every time: \emph{the flying worked; the ship never said what it was doing.} The
+mechanics below are the answers, and each one obeys the project's honesty law: the game
+states its own state, and states it in numbers a probe measured.
+
+\subsection{A ship that speaks}
+
+The ship now narrates its own flight through one authoritative voice. A single
+plan-status builder feeds a \textsc{now}/\textsc{next} banner (``\textsc{now}: coasting the
+transfer arc \textperiodcentered\ \textsc{next}: insert at 313\,km, $\sim$2\,h'') that
+scrolls to the active step as each becomes current, so the plan and the instruments can
+never disagree --- there is one source of truth. Underneath it runs an edge-triggered,
+acknowledgeable alert channel that the banner strip, the desk chips, the ledger, and the
+in-fiction parrot all read from: rocks-ahead collision alarms, an amber fuel warning at the
+reserve line and red when no pump is reachable, and an orbit-degrading warning as the
+backstop. Burns --- manual, plan-node, autopilot, or scheduled --- announce themselves with
+a wall-clock-timed thruster flash and rumble that even $10{,}000\times$ warp cannot hide,
+and mission completion earns a genuine payoff instead of coin silently appearing: a
+celebration, a grateful contact, and the first entry in a relationship that later mechanics
+build on.
+
+\subsection{Autopilot that keeps the orbit}
+
+The owner made orbit safety a design law: armed auto-orbit must end in a \emph{kept} orbit,
+not merely an achieved one --- ``the orbit keeping should always be the job of autopilot
+this close to a moon, never a manual task.'' The autopilot therefore holds the park with
+periodic station-keeping trims and, decisively, \emph{quotes their cost at arm time}: the
+banner over a held orbit reads ``\textsc{autopilot holds the orbit --- Enceladus, 313\,km,
+trim $\approx$27\,p/day},'' where the 27~pulses/day is not a tuned constant but the figure
+Lab~25 measured for Enceladus's particular tide (\S\ref{sec:labs}). The degradation alarm
+is the backstop that fires only if keeping fails or the tank runs dry.
+
+\subsection{Deliberate piracy, resolved by dice}
+
+Piracy is now an act the captain \emph{commits}, never one that happens automatically:
+hostile boarding and plunder require an explicit authorization, the same are-you-sure the
+weapons already demanded, because ``hostile acts are never automatic.'' The consequence
+side is the catch encounter. When a heat-hunter's honest catch test (catch radius and
+relative speed, \S\ref{sec:desks}) flips, warp yanks to $1\times$, the ship is grappled,
+and a \textsc{busted} pop-up opens in the collector's voice with three options ---
+\emph{submit} (they confiscate a heat-scaled share of what they can \emph{see}),
+\emph{bribe}, or \emph{resist} (a dice-run last stand). The resolution runs on a single
+Core dice/modifier rule --- a deliberate, cheap tabletop-style mechanic for the outcomes we
+chose not to deep-code, with the roll and its modifiers shown on screen. Two design laws
+keep it humane: it is \emph{never} game over --- a mercy rule guarantees confiscation leaves
+enough fuel to reach the nearest pump plus a berth fee, computed from the same fuel-%
+reachability service the fuel alarm uses --- and the RESIST/RUN odds quoted in the pop-up
+are Lab~27's measured pursuit numbers, not vibes.
+
+\subsection{Buried treasure, the favor bank, and a durable life}
+
+The law takes what it can \emph{see}, which turns hiding loot into strategy. Three
+mechanics form one economy of consequence. \emph{Buried treasure}: at any landable body in
+shuttle range, the shuttle-bay airlock gains a ``bury a chest'' destination that caches coin
+or cargo on the surface, invisible to confiscation; burying generates a full-screen
+\emph{treasure map} --- a captioned image of the body with a bearing and pace-count from its
+best landmark (``\textsc{phobos --- from the monolith, 40 paces anti-spinward}''), and,
+per the owner's Indiana Jones wink, a big red X that is \emph{always} exactly right. The
+same code path powers a ``fetch a cache'' mission kind, where a contact hands you a map to
+someone else's hoard. \emph{The favor bank}: a contact with real mission history can wire
+anonymized fuel money when you are broke at a pump (with strings --- a fee, an
+interest-bearing debt, or a favor owed), and you can deposit your own coin with a trusted
+contact, invisible to confiscation like buried cargo --- a goodwill you can literally bank
+on, tracked as one signed balance on the contact ledger. And \emph{the vault}: the pirate's
+life --- relationships, balances, caches, maps, insurance --- persists as versioned, field-%
+tolerant JSON plus a checksum, so an old save loads the parts it understands forever and a
+tampered one loads anyway but says so. It is not a physics snapshot; it is a life made
+durable.
+
+\subsection{The door family and the fuel gauge}
+
+Two smaller systems round out the world. A car-gauge-plain fuel economy makes reaction mass
+a visible trade item (``\textsc{fill her up}''), with pulse depots that ride the rails at
+planets, stations, and havens but never at an ordinary moon --- the gap that Lab~28 turned
+into an honest reachability verdict. And a family of walkable ``doors'' gives the ship's
+interior continuity with the sky outside: the docking tube, the shuttle-bay airlock flown as
+a short piloted hop, and (on the board for Phobos) a beanstalk whose two ends are paired
+walkable ports --- each door a transition the player understands as a flight, not a menu.
+
 \section{Secretly a Classroom}
 \label{sec:classroom}
 
 \subsection{The Gravity Lab}
 
-The repository ships thirteen type-it-in lessons (\texttt{labs/}), each a console probe
-referencing the game's own \texttt{SpaceSails.Core}: motivation, the standard-textbook
-treatment (with Curtis pointers), what the game simplifies away, a numerical experiment
-with real printed output, and ``break it yourself'' exercises. The honesty rule is
-absolute: every printed number came from running that lesson's probe; rerun and re-paste,
-never hand-edit.
+The repository ships a growing ladder of type-it-in lessons --- roughly thirty at this
+writing (\texttt{labs/}) --- each a console probe referencing the game's own
+\texttt{SpaceSails.Core}: motivation, the standard-textbook treatment (with Curtis
+pointers), what the game simplifies away, a numerical experiment with real printed output,
+and ``break it yourself'' exercises. The honesty rule is absolute: every printed number came
+from running that lesson's probe; rerun and re-paste, never hand-edit.
 
 \subsection{The labs falsify the game --- and the game gets fixed}
 \label{sec:lab8}
@@ -386,24 +487,168 @@ deck --- one weapon system distributed across two stations. Each locked solution
 its ``gunner's lesson'' (lead angle, time of flight): the solver as flight instructor,
 teaching the same intuition manual intercepts demand.
 
+\subsection{The lab-to-game pipeline: every number a probe printed}
+\label{sec:labs}
+
+Fire control (\S\ref{sec:shooting}) is the sharpest instance of a general method, not a
+one-off. The lab course is a working R\&D bench: when the game needs a new behavior, a lab
+\emph{measures} it first against the shipping engine, and only then does the game ship the
+measured number. The pattern is worth stating plainly because it is the paper's most
+reusable idea --- \emph{measure in a lab, then ship the measured number} --- and the newest
+labs exist because a playtest exposed a mechanic the game was faking. Labs~21--30, by name
+and one-line finding:
+
+\begin{itemize}
+  \item \textbf{Lab~21, ``The Commuter''} (\emph{reserved}): an Earth$\leftrightarrow$Mars
+        Persephone cycler computed honestly in the rails, to land beside the free-return
+        lesson.
+  \item \textbf{Lab~22, ``The air brake''}: the one new Core ingredient the flight assists
+        needed --- an exponential atmosphere with a single ballistic-coefficient knob; the
+        Apollo skip's capture-without-burn-up corridor is $\sim$20\,km of periapsis altitude
+        wide, and a fuel-out arrival is turned bound ($114\!\to\!7\,R_J$) on drag alone.
+  \item \textbf{Lab~23, ``The moon run''}: the autopilot learns orbital mechanics ---
+        Wednesday's reset loop burned 677 pulses fighting Saturn; planning in the giant's
+        frame (a 36.8\,h transfer window whose porkchop floor \emph{is} Hohmann) flies the
+        same hop for \textbf{96 pulses}, a $7.1\times$ cut.
+  \item \textbf{Lab~24, ``The last mile''}: ``almost there'' is its own orbital problem ---
+        point-and-throttle chasing costs 4.0\,km/s and arrives too hot to stop; 1960s
+        change-your-period rendezvous doctrine closes a 92{,}640\,km along-track gap for
+        \textbf{2 pulses}, and \texttt{TransferPlanner} returns the whole cheaper-vs-sooner
+        trade table.
+  \item \textbf{Lab~25, ``The tide that takes it back''}: the autopilot learns to
+        \emph{keep} an orbit. Swept in the live field, Luna and Titan have a stable park
+        core but \emph{Enceladus has none} --- its Hill sphere is only 3.8 body radii, so an
+        unkept park crashes within half a day. The keeping bill, priced in the game's own
+        pulses: Enceladus \textbf{27\,p/day}, Luna \textbf{2}, Titan \textbf{3} --- the
+        exact numbers the armed autopilot now quotes (\S\ref{sec:game}).
+  \item \textbf{Lab~26, ``The soft arrival''} (\emph{reserved}): Titan aerocapture as an
+        arrival mode, composing Labs~22 and~23.
+  \item \textbf{Lab~27, ``The getaway''}: the wolves' honesty contract. Flown through the
+        real thrust-only pursuit law, the killer identity $u^2/2a$ makes a grab earnable only
+        inside $\sim$the 300{,}000\,km catch radius at modest flee speed --- a clean pursuit
+        cliff past which the closest pass screams through at 24--55\,km/s and cannot grab;
+        the three measured escapes (a Jupiter sling donating 12\,km/s, a 1{,}567\,m/s
+        heat-bleed skim, a phasing juke that voids the firing solution) become the
+        \texttt{PursuitOdds} the BUSTED pop-up reads.
+  \item \textbf{Lab~28, ``The pump crawl''}: can the ship still reach a fuel pump? Depots
+        never ride an ordinary moon, so the reach to the nearest pump is 29 pulses from a
+        Titan doorstep --- already beyond the old flat 45-pulse reserve, the fuel-starve bug
+        in one number. It ships \texttt{FuelReachability.Assess}, a well-aware
+        Comfortable/Thin/CannotReachAPump verdict, and it also became the BUSTED encounter's
+        mercy law (never confiscate below reach-a-pump).
+  \item \textbf{Lab~29, ``The harbor pattern''}: what a safe arrival looks like. Flying a
+        spread of inbound trajectories measures two harbor doors --- a station clamp bubble
+        that bills a pulse per $\sim$1\% of world speed you arrive hot with, and a moon door
+        (the 949\,km Hill sphere) where a too-hot fall genuinely impacts. The corridor is a
+        constant-time-to-go glideslope, shipped as \texttt{ApproachCorridor}, the seam the
+        banner's \textsc{next} row and the tutorial narration speak.
+  \item \textbf{Lab~30, ``The mass-driver timetable''}: the owner's canon (Luna lobbing
+        compute-core pods) becomes measured physics. A pod has zero maneuver budget, so its
+        future is a closed-form Kepler conic; above the 2.376\,km/s lunar-escape floor a
+        retrograde lob threads perihelion toward the Mercury compute yards, and the repeating
+        cadence is a bus timetable read off the rail --- half the pods always already in
+        flight.
+\end{itemize}
+
+The through-line: five of these labs (23--25, 27, 29) were commissioned by a specific
+playtest failure and returned a specific constant --- 96 pulses, 27\,p/day, a 300{,}000\,km
+cliff, a 949\,km door --- that the game now displays to the player as the honest cost of
+what they are doing. The curriculum is the game's R\&D department, and its output is the
+game's numbers.
+
 \section{Experience Report: a Human PO and an AI Head Coder}
 \label{sec:process}
 
 \subsection{Roles}
 
 The owner sets vision, plays every build, files corrections in plain language (``the
-sensors are off by default --- why?''), and approves pull requests, often from a phone.
-The AI implements, tests, \emph{verifies live in a real browser via automation}, writes
-the PR narratives, and runs the merge train. Review is by playing, not by reading diffs
-alone.
+sensors are off by default --- why?''), and approves pull requests, often from a phone. The
+AI is a \emph{head coder}, not a single programmer: it decomposes the owner's intent into
+lanes, writes each lane a coordination brief, dispatches an implementation agent per lane,
+reviews and integrates the results, verifies live in the owner's own browser, writes the PR
+narratives, and runs the merge train. Review is by playing, not by reading diffs alone.
 
-\subsection{Cadence}
+\subsection{Content per active day, honestly counted}
+\label{sec:cadence}
 
-As of 2026-07-05: from empty repository to the full game plan (M0--M10) in one day of
-implementation; roughly sixty merged PRs over four days; $\sim$180 deterministic Core
-tests (239 at the time of this revision); a thirteen-lesson lab course; and the entire
-fire-control feature set shipped overnight as a six-PR stacked chain reviewed at morning
-coffee.
+We deliberately do not report a session speed record. The metric that matters for a game is
+how much \emph{content} lands, and the honest denominator is \emph{active coding days}, not
+wall-clock days: the project ran over a calendar span that included travel breaks with no
+merges at all. Counting merged pull requests by their squash-commit
+\texttt{(\#N)} suffix on \texttt{main}\,\footnote{Method: squash merges leave no merge
+commits, so \texttt{git log --merges} finds nothing. We instead count first-parent commits
+on \texttt{main} whose subject ends in a \texttt{(\#N)} pull-request suffix, one per merged
+PR, and group them by author date:
+\texttt{git log --date=short --pretty='\%ad \%s' origin/main | grep -E '\textbackslash(\#[0-9]+\textbackslash)\$'}.
+Days with zero such commits are idle days and are excluded from the active-day count.}
+gives \textbf{165 merged PRs} over \textbf{12 active days} --- \textbf{13.75 PRs per active
+day} --- inside a 16-day calendar window. The distribution (Table~\ref{tab:cadence}) shows
+both the ramp and the honest gaps.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lr@{\hspace{2em}}lr@{}}
+\toprule
+Date & PRs & Date & PRs \\
+\midrule
+Jul 02 & 1  & Jul 13 & 2  \\
+Jul 03 & 23 & Jul 14 & 17 \\
+Jul 04 & 25 & Jul 15 & 14 \\
+Jul 05 & 32 & Jul 16 & 18 \\
+Jul 06 & 11 & Jul 17 & 16 \\
+Jul 07 & 2  & \multicolumn{2}{l}{Jul 09--12: \emph{travel, 0}} \\
+Jul 08 & 4  & \textbf{Total} & \textbf{165} \\
+\bottomrule
+\end{tabular}
+\caption{Merged PRs per active day. 165 PRs / 12 active days $=$ 13.75 per active day;
+the Jul~09--12 gap is a travel break, excluded from the denominator.}
+\label{tab:cadence}
+\end{table}
+
+Volume is not the claim; the claim is that it was \emph{reviewed} volume. Every PR was
+played on a fresh build, and the suite grew alongside it --- from empty repository to the
+full game plan in the first days, and to roughly 600 deterministic Core tests and a
+$\sim$30-lesson lab course by this writing.
+
+\subsection{Orchestration: one lead, many agents, parallel worktrees}
+\label{sec:orchestration}
+
+The throughput above is not one model typing faster; it is one \emph{lead} model
+coordinating several implementation agents at once. Each agent works in its own isolated
+git worktree, so lanes never share a working tree and cannot clobber each other mid-edit.
+The lead writes each lane a coordination brief with explicit ownership boundaries --- which
+files a lane may touch, and the one-line-append-at-a-marked-anchor rule for the shared
+hotspot files --- then merges integration-branch-first: results land on an integration
+branch and are played there before any button touches \texttt{main}. When two lanes
+conflict, the conflict is sent \emph{back to its author agent} to resolve, because that
+agent holds the context the merge does not. The discipline is what lets review-by-playing
+scale: the lead's attention is spent on intent and integration, not on typing every line.
+
+Adversarial review is part of the loop, and it earns its keep by catching real bugs ---
+including the lead's own. Two representative saves: the lead once hand-stitched a CSS change
+with an unbalanced brace, which no compiler exists to catch (CSS has none) and which only a
+live bench flight revealed --- now a brace-balance check after any hand-edited CSS is
+standing law, and the bench flight is mandatory. And on another defect the lead proposed a
+root-cause hypothesis that a review lane \emph{refuted}, returning the true root cause
+instead. Being honest about these --- an AI lead is wrong in specific, ordinary ways --- is
+what makes the method credible rather than a demo.
+
+\subsection{The live-browser loop: reading the owner's own tab}
+\label{sec:livebrowser}
+
+The tightest feedback path in the project is the lead driving the owner's \emph{actual}
+running browser tab during a playtest. Two examples show the range. In the first, the owner
+revealed the Derelict Roadster but could not click it; the lead read the live tab,
+root-caused a class filter in the object picker that excluded the Roadster's category,
+shipped the fix to \texttt{main}, and the owner continued \emph{the same mission} minutes
+later --- triage-and-fix inside one sitting, no repro build required. In the second, a
+``phantom Dock button'' appeared to lie about being dockable; the lead read the numbers off
+a \emph{paused} frame's screenshot and found the presentation, not the simulation, at fault
+--- the same class of perception bug as the earlier ``three target locks,'' where the
+physics was right and the readout wrong. The screenshot-evidence loop --- decide from the
+frame's actual printed numbers, not from what the UI seems to say --- is how those get
+caught.
 
 \subsection{Working agreements that made the pace safe}
 
@@ -412,8 +657,11 @@ coffee.
         what the reviewer plays is what the tests tested.
   \item \textbf{Core-first with tests}: every mechanic lands as a pure rule with a
         deterministic test before any UI touches it.
-  \item \textbf{Merge-train hygiene}: one new file per parallel lane; one-line appends at
-        marked anchors in the shared hotspot file.
+  \item \textbf{Worktree isolation \& merge-train hygiene}: one agent per isolated worktree;
+        one new file per parallel lane; one-line appends at marked anchors in the shared
+        hotspot file; integration-branch-first before any merge button.
+  \item \textbf{The bench flight is not optional}: it is the only compiler some bugs (a CSS
+        brace, a perception mismatch) will ever meet.
   \item \textbf{No unverified claims}: every sentence in a PR body is verified in a live
         browser before it is written.
 \end{itemize}
@@ -422,16 +670,20 @@ coffee.
 
 The interpreted-WASM freeze class (hit twice); the destroyed-canvas class --- a Blazor
 conditional unmounting a canvas leaves the renderer holding a dead context (found three
-times, then prevented by convention); the ``three target locks'' perception bug, where the
-simulation was right and the presentation lied; transient Pages deploy failures and the
-retry playbook; and a stacked-PR merge-train pitfall --- deleting a merged base branch
-auto-closes its children --- recovered live and folded into the plan document's procedure.
+times, then prevented by convention); the perception-bug class, where the simulation was
+right and the presentation lied (``three target locks''; the phantom Dock button); the
+lead's own unbalanced CSS brace, caught only by a live bench flight and now guarded by a
+standing brace check; a lead root-cause hypothesis refuted by its own review lane; transient
+Pages deploy failures and the retry playbook; and a stacked-PR merge-train pitfall ---
+deleting a merged base branch auto-closes its children --- recovered live and folded into
+the plan document's procedure.
 
 \subsection{What the AI could not do}
 
 Choose what the game should feel like. Every mechanic in \S\ref{sec:desks}--%
-\S\ref{sec:classroom} traces to an owner sentence written in plain language. The method's
-throughput is the owner's taste executed quickly, not replaced.
+\S\ref{sec:classroom} traces to an owner sentence written in plain language --- the ship's
+voice, orbit-keeping as law, GTA-style BUSTED, buried treasure, the favor bank. The
+method's throughput is the owner's taste executed quickly, not replaced.
 
 \section{Related Work}
 
@@ -443,14 +695,18 @@ disguise strategy; our addition is making the curriculum executable against the 
 engine. Determinism-first architectures descend from lockstep RTS netcode traditions.
 Prior AI-pair-programming experience reports describe a programmer and an assistant; we
 report a different split --- \emph{product owner and head coder} --- in which the human
-writes no code at all.
+writes no code at all and the AI is not one coder but a lead orchestrating several
+implementation agents across isolated worktrees (\S\ref{sec:orchestration}).
 
 \section{Limitations and Future Work}
 
 The simulation is a 2D ecliptic plane with on-rails circular ephemerides. Multiplayer is
-archived pending the economy's server-side move; persistence is absent by design so far.
-Lesson~13 (``Shooting, literally'') is drafted as the fire-control lab and lands with its
-probe. The Ancients' auto-plot deliberately rations automation to protect the pedagogy.
+archived pending the economy's server-side move. Persistence now exists for the
+\emph{life} but not the physics: the vault (\S\ref{sec:game}) durably stores relationships,
+balances, caches, and maps, while the mid-flight world state is still a fresh start ---
+deliberately, so a save is a pirate's biography, not a checkpoint. Several labs remain
+reserved (the Persephone cycler, the Titan soft arrival), and the Ancients' auto-plot
+deliberately rations automation to protect the pedagogy.
 
 \section{Summary}
 
@@ -460,18 +716,22 @@ game-design tool (honest instruments whose admissions of ignorance are mechanics
 a pedagogical tool (a lab course that is also an adversarial regression suite). The
 engine's best fixes --- the impulse-aware cone of Eq.~\eqref{eq:cone-new}, the closed-form
 no-tunneling test of Eq.~\eqref{eq:notunnel} --- were forced by its own curriculum, and
-its flagship mechanic is a numerical method played at the gun deck. Around that core, a
-two-person human-PO / AI-head-coder team sustained roughly fifteen reviewed, merged PRs
-per day without lowering the review bar, because determinism made playing the build a
-sound review procedure. We believe both halves --- the simulation-as-curriculum design and
-the PO/head-coder process --- are repeatable, and we offer the repository itself as the
-evidence.
+its flagship mechanic is a numerical method played at the gun deck. On that same bench the
+game grew a voice, an orbit-keeping autopilot, a GTA-style catch encounter, and a buried-%
+treasure economy --- every displayed number first measured by a probe. Around that core, a
+two-person human-PO / AI-head-coder team --- one lead orchestrating parallel implementation
+agents --- sustained 165 reviewed, merged PRs across 12 active coding days (13.75 per active
+day) without lowering the review bar, because determinism made playing the build a sound
+review procedure. We believe both halves --- the simulation-as-curriculum design and the
+orchestrated PO/head-coder process --- are repeatable, and we offer the repository itself as
+the evidence.
 
 \section*{Acknowledgments}
 
 SpaceSails was built as a holiday project, and it was possible at this cadence because of
-Anthropic's generous usage allowance for the Claude models through Claude Code --- roughly
-sixty reviewed pull requests of head-coder work, live-browser verification included. That
+Anthropic's generous usage allowance for the Claude models through Claude Code --- 165
+reviewed pull requests of head-coder and implementation-agent work, live-browser
+verification included. That
 allowance is, in a real sense, the project's funding agency, and we acknowledge it as
 such. Anthropic neither directed nor reviewed this work. SpaceSails is a personal project
 of the first author and is not affiliated with Efima or Anthropic.

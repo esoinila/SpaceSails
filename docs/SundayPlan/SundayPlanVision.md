@@ -60,7 +60,7 @@ fly themselves.
 
 ## The soul of it: secretly edutainment
 
-The owner's first programming job (SoittoPeli, 1998) was music edutainment for children —
+The owner's first programming job (SoittoPeli, 2000) was music edutainment for children —
 gen-AI accompaniment from a Kohonen neural network, the singing game added to make it fun.
 SpaceSails carries the same DNA on purpose: a piracy game on the surface, a numerical-methods
 and orbital-mechanics classroom underneath (the Gravity Lab, and now fire control as the
