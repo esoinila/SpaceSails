@@ -8051,16 +8051,11 @@
         };
     }
 
-    // A ship state co-moving with a body, a given distance radially outward from it (from the Sun's
-    // frame). offsetMeters 0 sits right on the body; a few thousand metres clears a station, ~1e7+ a moon.
+    // A ship state co-moving with a body at boot (SimTime 0), a given distance radially outward from it
+    // (from the Sun's frame). offsetMeters 0 sits right on the body; a few thousand metres clears a
+    // station, ~1e7+ a moon. Delegates to the shared BerthState.CoMoving construction (#269).
     private ShipState CoMovingBy(string bodyId, double offsetMeters)
-    {
-        const double h = 1.0;
-        Vector2d pos = _ephemeris!.Position(bodyId, 0);
-        Vector2d vel = (_ephemeris.Position(bodyId, h) - _ephemeris.Position(bodyId, -h)) / (2 * h);
-        Vector2d outward = pos == Vector2d.Zero ? new Vector2d(1, 0) : pos.Normalized();
-        return new ShipState(pos + outward * offsetMeters, vel, 0);
-    }
+        => BerthState.CoMoving(_ephemeris!, bodyId, 0, offsetMeters);
 
     // The Captain's "🧭 Set course to a start point…" button: bring the chooser back up mid-run so a
     // locale can be (re)picked from the chart-room, not just at boot. ApplyStart is re-entrant, so the
@@ -12916,18 +12911,16 @@
         CelestialBody dest = stop.Body;
         double newT = SimTime + stop.TravelSeconds;
 
-        const double h = 1.0;
+        // The shuttle sets the ship down on the destination's rail — the shared co-moving berth state (#269).
         Vector2d destPos = _ephemeris.Position(dest.Id, newT);
-        Vector2d destVel = (_ephemeris.Position(dest.Id, newT + h) - _ephemeris.Position(dest.Id, newT - h)) / (2 * h);
-        Vector2d outward = destPos == Vector2d.Zero ? new Vector2d(1, 0) : destPos.Normalized();
-        _ship = new ShipState(destPos + outward * 3_000, destVel, newT, _ship.Charge); // 3 km off the ~1 km station
+        _ship = BerthState.CoMoving(_ephemeris, dest.Id, newT, BerthState.BerthOffsetMeters, _ship.Charge);
         SimTime = newT;
 
         _dockedHavenId = dest.Id;
         _dockOffset = _ship.Position - destPos;             // freeze the arm's reach at the new berth
         _nearestBody = dest;
         _nearestBodyPosition = destPos;
-        _nearestBodyVelocity = destVel;
+        _nearestBodyVelocity = _ship.Velocity;              // the berth rides the destination's drift
         _armedOrbitBodyId = null;                           // a berth disarms any pending auto-insert
         _autopilotStandDownReason = null; _dockReadyStatus = null;
         ResetAutopilotBudget();
@@ -14500,14 +14493,21 @@
             return;
         }
 
+        // #256: the id is the truth we resume at; the name is a convenience the picker showed. If the
+        // vault's two fields disagree (a real export had HavenId 'the-space-bar' with HavenName 'The
+        // Rusty Roadstead' — a nearest-haven computation and a display lookup that resolved DIFFERENT
+        // bars), prefer the id and mark the ledger rather than wake the captain at the wrong bar. New
+        // saves can't disagree — VaultResume.Select derives both from one HavenLocus — but old files can.
+        if (resume?.HavenName is { } savedName && BodyName(havenId) is { } trueName && savedName != trueName)
+        {
+            LogAutopilotEvent($"the vault's memory of where we were is smudged — it named '{savedName}', but the berth is {trueName}; resuming by id");
+        }
+
         _dockedHavenId = null;
         SetDeckForDock(null);
 
-        const double h = 1.0;
         Vector2d dockPos = _ephemeris.Position(havenId, savedSimTime);
-        Vector2d vel = (_ephemeris.Position(havenId, savedSimTime + h) - _ephemeris.Position(havenId, savedSimTime - h)) / (2 * h);
-        Vector2d outward = dockPos == Vector2d.Zero ? new Vector2d(1, 0) : dockPos.Normalized();
-        _ship = new ShipState(dockPos + outward * 3_000, vel, savedSimTime);
+        _ship = BerthState.CoMoving(_ephemeris, havenId, savedSimTime, BerthState.BerthOffsetMeters); // the shared berth build (#269)
 
         SimTime = savedSimTime;
 
@@ -14972,8 +14972,16 @@
     private void ClampOntoHaven(CelestialBody dock, Vector2d dockPos, string? arrivalNote = null)
     {
         _dockedHavenId = dock.Id;
-        _dockOffset = _ship.Position - dockPos;               // freeze the arm's reach at berth
-        HoldAtDock();                                        // match the drift now so nothing lurches
+        // #269: completing the clamp ATTACHES. The old code only froze the arm at wherever the ship
+        // floated (_ship.Position - dockPos) — but the 500,000 km approach envelope means that could be
+        // 100,000 km out on a divergent conic (the owner clamped onto The Tilt from 103,989 km, still
+        // diving at Uranus, while the HUD read "clamped on, rel 0.0"). Snap the ship onto the haven's
+        // rail instead: the co-moving berth state (a berth offset out, the haven's orbital velocity), the
+        // SAME construction a vault resume boots with. One body, one rail — the arm's reach is now a
+        // berth's width, not a third of the map.
+        _ship = BerthState.CoMoving(_ephemeris!, dock.Id, SimTime, BerthState.BerthOffsetMeters, _ship.Charge);
+        _dockOffset = _ship.Position - dockPos;               // the arm's reach is now the berth offset
+        HoldAtDock();                                        // and HoldAtDock keeps it pinned every tick
         StaleFutureNodes();                                  // a berth cancels any pending burns
         _armedOrbitBodyId = null;                            // and disarms any pending auto-insert (issue #126)
         _autopilotStandDownReason = null; _dockReadyStatus = null; ResetAutopilotBudget(); // a berth is a fresh start — clear any handback/dock-ready surface
