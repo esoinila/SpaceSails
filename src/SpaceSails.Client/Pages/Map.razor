@@ -2289,12 +2289,26 @@
         // Friday §0 (owner ruling): the kept-orbit NOW line, composed HERE and fed through main's
         // #190 HoldingLine seam — ONE code path in the builder, which slots it below Docked and above
         // every flying phase: "🛰 AUTOPILOT HOLDS THE ORBIT — <body>, <alt>, trim ≈N p/day", never
-        // "you have the ship". Parked altitude is the ship's body-relative radius (the park distance).
+        // "you have the ship".
+        // #220 / #203: quote the PARK altitude (the held value the keeper trims back to,
+        // ParkingRadius − surface, "alt N km"), NOT the instantaneous body-relative radius — the kept
+        // orbit's forced eccentricity makes that raw radius oscillate, so the snapshot disagreed with
+        // itself (holding said "278 km" while Nearest said "217 km"). The live wobble stays on the
+        // Nearest line; the holding line states the steady park the autopilot is keeping.
         string? holdingLine = null;
         if (_orbitKept && _armedOrbitBodyId is not null && _ephemeris is not null)
         {
-            Vector2d keptPos = _ephemeris.Position(_armedOrbitBodyId, SimTime);
-            string alt = FormatDistance((_ship.Position - keptPos).Length);
+            // The steady park the keeper trims back to: ParkingRadius − surface, "alt N km" (#203). The
+            // kept body IS the bound body while keeping, so its Hill radius is UpdateOrbitedBody's cached
+            // one. If (defensively) that isn't available, fall back to the instantaneous radius so the
+            // NOW line never vanishes — but the park altitude is the value that stays steady on this line.
+            CelestialBody? keptBody = BodyById(_armedOrbitBodyId);
+            double parkAlt = keptBody is not null && _orbitedBodyId == _armedOrbitBodyId && _orbitedBodyHillRadius > 0
+                ? OrbitRule.ParkingRadius(keptBody, _orbitedBodyHillRadius) - keptBody.BodyRadius
+                : 0;
+            string alt = parkAlt > 0
+                ? FormatAltitude(parkAlt)
+                : FormatDistance((_ship.Position - _ephemeris.Position(_armedOrbitBodyId, SimTime)).Length);
             string trim = _keepTrimPulsesPerDay > 0 ? $", trim ≈{_keepTrimPulsesPerDay} p/day" : "";
             holdingLine = $"🛰 AUTOPILOT HOLDS THE ORBIT — {BodyName(_armedOrbitBodyId)}, {alt}{trim}";
         }
@@ -3478,9 +3492,15 @@
         // the plan working, not news; the ballistic alarm returns the instant the plan is gone (disarm/
         // handback → _autopilotPlanClosestPass null). A plan whose OWN path goes subsurface leaves an
         // Impact pass cached and shouts red immediately — a bad plan shouts LOUDER, not softer.
+        // #220: while the autopilot HOLDS the park (keeping active AND the next trim is funded), the
+        // ballistic projection's between-trim dip toward the surface is the keeper working, not danger —
+        // the alarm trusts the kept orbit. `_orbitKept` alone is the "keeping ended" edge (StationKeep
+        // clears it on an unbound orbit or a dry tank; a disarm clears it via ResetApproachTracking), so
+        // the alarm returns to the ballistic course the instant keeping ends (#183/#193 backstop).
         bool armedWithPlan = _armedOrbitBodyId is not null && _autopilotPlanPath is { Count: >= 2 };
+        bool keepingHoldsOrbit = _orbitKept && _keepTrimFunded;
         ClosestApproach.Pass? collision =
-            CollisionAlertRule.Evaluate(armedWithPlan, _closestPass, _autopilotPlanClosestPass);
+            CollisionAlertRule.Evaluate(armedWithPlan, keepingHoldsOrbit, _closestPass, _autopilotPlanClosestPass);
         if (collision is { } cp)
         {
             string body = cp.BodyName;
@@ -4892,6 +4912,10 @@
     private int _keepTrimPulsesPerDay;                    // Lab 25 trim budget quoted at arm time / at park
     private double _keepNextCheckTime;                    // sim-time of the next trim-cadence check
     private int _keepTrimsFired;                          // trims spent this keeping session (diagnostic/ledger)
+    // #220: the next trim is affordable — recomputed every tick keeping is active (CheckArmedInsertion's
+    // kept branch). Read ONLY as `_orbitKept && _keepTrimFunded`, so a stale value after a disarm/handback
+    // (when _orbitKept is already false) can never keep the collision alarm falsely trusting a dead keep.
+    private bool _keepTrimFunded;
 
     // ---- #146 the moon run: the cached in-well transfer plan for the current arm. When arming rides a
     // cheap Lambert arc (TransferPlanner) instead of the legacy approach loop, the schedule's departure
@@ -4919,6 +4943,24 @@
         _orbitKept = false;
         _keepTrimPulsesPerDay = 0;
         _keepTrimsFired = 0;
+    }
+
+    // #219 one-arm semantics: the collision alarm's plan-trust is only sound if EVERY arm caches BOTH
+    // the plan PATH (drawn as the #148 intended track, and the `armedWithPlan` gate in UpdateShipAlerts)
+    // AND the plan's collision PASS, together — one drifting without the other is exactly the #196/#219
+    // bug (a plan the ballistic alarm then judges raw). All arm entry points already funnel through the
+    // single ToggleArmedInsertion — the destination card's Auto-orbit button, the nav-target panel's Arm
+    // button, the body context menu (ToggleArmedInsertionFromMenu), the O-key, and the #183 out-of-band
+    // manual press (EnterOrbit, when the current radius is tide-chaotic) — so this is the ONE place the
+    // pair is set. The pass is the plan's ACHIEVED PARK, not its powered approach: a deliverable
+    // rehearsal's coarse terminal coast grazes the surface a step before the insert lifts it back, and
+    // that graze must NOT fire ROCKS AHEAD on a valid armed approach (AutopilotRehearsal.PlanCollisionPass).
+    private void CachePlanForAlarm(string bodyId, AutopilotRehearsal.RehearsalResult r)
+    {
+        _autopilotPlanPath = r.Path;
+        _autopilotPlanClosestPass = _ephemeris is null
+            ? null
+            : AutopilotRehearsal.PlanCollisionPass(r, _ephemeris, bodyId);
     }
 
     // #146: does this arm ride a cheap in-well transfer rather than the legacy approach loop? The target
@@ -6024,8 +6066,7 @@
 
             _armedBudgetPulses = r.Pulses;
             _armedSpentPulses = 0;
-            _autopilotPlanPath = r.Path; // #148: draw the intended path, not the ballistic loops
-            _autopilotPlanClosestPass = ClosestApproach.MostSevere(r.Path, _ephemeris); // #196: the alarm trusts this while armed
+            CachePlanForAlarm(bodyId, r); // #148/#196/#219: draw the intended path AND cache its alarm pass, together
             _armedTransferSchedule = schedule;
             _armedTransferBurnsFired = 0;
             _armedTransferSummary = transferSummary
@@ -6095,6 +6136,14 @@
         if (_orbitKept)
         {
             StationKeep(body, parent, bodyPos, bodyVel, hill);
+            // #220: does keeping still earn the collision alarm's trust this tick? StationKeep flips
+            // _orbitKept off the instant keeping ends (unbound, or the tank can't afford the next trim);
+            // if it still holds, recompute FUNDED from the post-trim state — the next trim's pulse cost
+            // against the tank. Read as `_orbitKept && _keepTrimFunded` in UpdateShipAlerts, so a healthy
+            // held park's subsurface between-trim dip is trusted, and a dry-tank keep shouts immediately.
+            _keepTrimFunded = _orbitKept &&
+                OrbitKeeping.TrimPulseCost(_ship, bodyPos, bodyVel, body, OrbitRule.ParkingRadius(body, hill))
+                    <= _reactionMassPulses;
             return;
         }
 

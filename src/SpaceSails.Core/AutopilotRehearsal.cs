@@ -286,6 +286,50 @@ public static class AutopilotRehearsal
         return new RehearsalResult(false, pulses, approachBurns, ship.SimTime - startTime, false, true, path);
     }
 
+    /// <summary>
+    /// The plan pass the collision alarm should judge for an ARMED plan (#219) — the plan's ACHIEVED
+    /// outcome, not its powered approach. A DELIVERABLE rehearsal proves the ship captures into a safe
+    /// park; the coarse-stepped terminal coast records a target-body graze (even a sub-surface one)
+    /// right before <see cref="OrbitRule.Insert"/> circularizes it back above the surface, but that
+    /// graze is the insert working, NOT news — feeding it to <see cref="CollisionAlertRule"/> raw made
+    /// ROCKS AHEAD cry on a perfectly valid armed approach. So for the target we judge the ACHIEVED
+    /// PARK (the final, post-insert sample) instead of the transient approach minimum, while still
+    /// reporting any OTHER body the arc threads and a plan whose achieved park is itself subsurface —
+    /// a genuinely bad plan shouts LOUDER, not softer. A non-deliverable rehearsal (never armed, but
+    /// honest for callers/tests) is judged over its whole path. Null when there is no path to judge.
+    /// </summary>
+    public static ClosestApproach.Pass? PlanCollisionPass(
+        RehearsalResult result, ICelestialEphemeris ephemeris, string targetBodyId)
+    {
+        IReadOnlyList<TrajectorySample> path = result.Path;
+        if (path.Count < 2)
+        {
+            return null;
+        }
+
+        TrajectorySample park = path[^1]; // the rehearsal returns right after the insert: the park.
+        ClosestApproach.Pass? best = null;
+        foreach (ClosestApproach.Pass pass in ClosestApproach.Passes(path, ephemeris))
+        {
+            ClosestApproach.Pass judged = pass;
+            if (result.Deliverable && pass.BodyId == targetBodyId)
+            {
+                // Trust the deliverable insertion: measure the target from the ACHIEVED park, not the
+                // approach graze it resolves. The park sits above the surface, so a valid approach is
+                // silent; a park that is itself subsurface still surfaces as an Impact here.
+                double d = (park.Position - ephemeris.Position(targetBodyId, park.SimTime)).Length;
+                judged = pass with { Distance = d, SimTime = park.SimTime, ShipPosition = park.Position };
+            }
+
+            if (best is null || judged.Severity < best.Value.Severity)
+            {
+                best = judged;
+            }
+        }
+
+        return best;
+    }
+
     private static CelestialBody? FindBody(ICelestialEphemeris ephemeris, string id)
     {
         foreach (CelestialBody b in ephemeris.Bodies)
