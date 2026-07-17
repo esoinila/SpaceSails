@@ -32,6 +32,7 @@
     <Project Path="labs/22-the-air-brake/Lab22.csproj" />
     <Project Path="labs/23-the-moon-run/Lab23.csproj" />
     <Project Path="labs/24-the-last-mile/Lab24.csproj" />
+    <Project Path="labs/27-the-getaway/Lab27.csproj" />
     <Project Path="labs/29-the-harbor-pattern/Lab29.csproj" />
   </Folder>
 </Solution>
