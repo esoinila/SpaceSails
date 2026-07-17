@@ -187,6 +187,82 @@ public class LongHaulTests
         }
     }
 
+    // ---- #261: PropagateHeliocentricTo — advance the coast to an EPOCH in closed form (the jump-scale skip) ----
+
+    [Fact]
+    public void PropagateHeliocentricTo_LandsExactlyOnTheTargetEpoch()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        (ShipState ship, double tArr) = ShipBoundForUranus(eph);
+        CelestialBody sun = eph.Bodies.Single(b => b.Id == "sun");
+
+        ShipState at = LongHaul.PropagateHeliocentricTo(ship, eph, sun, tArr);
+
+        Assert.Equal(tArr, at.SimTime, 6); // the clock lands on the requested epoch, to the second
+    }
+
+    [Fact]
+    public void PropagateHeliocentricTo_ConservesTheConicInvariants()
+    {
+        // "Consistent by construction": the advanced state sits on the SAME sun-relative Kepler conic the
+        // ship departed on — specific orbital energy and specific angular momentum are conserved.
+        ICelestialEphemeris eph = MakeSol();
+        (ShipState ship, double tArr) = ShipBoundForUranus(eph);
+        CelestialBody sun = eph.Bodies.Single(b => b.Id == "sun");
+
+        ShipState at = LongHaul.PropagateHeliocentricTo(ship, eph, sun, tArr);
+
+        static double Energy(Vector2d p, Vector2d v) => 0.5 * v.LengthSquared - SunMu / p.Length;
+        static double AngMom(Vector2d p, Vector2d v) => p.X * v.Y - p.Y * v.X;
+
+        Assert.Equal(Energy(ship.Position, ship.Velocity), Energy(at.Position, at.Velocity), Math.Abs(Energy(ship.Position, ship.Velocity)) * 1e-3);
+        Assert.Equal(AngMom(ship.Position, ship.Velocity), AngMom(at.Position, at.Velocity), Math.Abs(AngMom(ship.Position, ship.Velocity)) * 1e-3);
+    }
+
+    [Fact]
+    public void PropagateHeliocentricTo_MatchesTheLiveIntegrator_WhenClearOfEveryWell()
+    {
+        // The honesty claim: in open heliocentric cruise (a sun-only field, the regime the caller gates on
+        // via InsideAnyWell) the closed-form advance agrees with the live n-body integrator marching the
+        // same coast — so the jump-scale skip lands where slogging the void would have, without the grind.
+        var sunOnly = new CircularOrbitEphemeris(new[]
+        {
+            new CelestialBody("sun", "Sun", null, SunMu, 6.9634e9, 0, 0, 0),
+        });
+        CelestialBody sun = sunOnly.Bodies.Single(b => b.Id == "sun");
+
+        // A bound heliocentric coast well clear of the sun's surface: circular-ish at 5 AU, slightly eccentric.
+        var r = new Vector2d(7.5e11, 0);
+        double vCirc = Math.Sqrt(SunMu / r.Length);
+        var ship = new ShipState(r, new Vector2d(0, vCirc * 1.05), 0);
+
+        double target = 120.0 * 86400.0;
+        ShipState closed = LongHaul.PropagateHeliocentricTo(ship, sunOnly, sun, target);
+
+        var sim = new Simulator(sunOnly, 1.0);
+        ShipState flown = sim.RunAdaptive(ship, target, null, minTimeStep: 1.0, maxTimeStep: 3600.0);
+
+        double sep = (closed.Position - flown.Position).Length;
+        // Agree to a small fraction of the orbit radius — the semi-implicit integrator drifts a touch over
+        // 120 days, but the closed-form conic and the flown coast describe the same motion.
+        Assert.True(sep < 0.01 * r.Length, $"closed-form vs flown separation {sep:E3} m too large");
+        Assert.Equal(target, closed.SimTime, 6);
+    }
+
+    [Fact]
+    public void PropagateHeliocentricTo_PastOrNoTime_IsAClockSet()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        (ShipState ship, _) = ShipBoundForUranus(eph, t0: 1000);
+        CelestialBody sun = eph.Bodies.Single(b => b.Id == "sun");
+
+        // A target at/behind now doesn't move the ship — it only ever advances a coast forward.
+        ShipState same = LongHaul.PropagateHeliocentricTo(ship, eph, sun, ship.SimTime);
+        Assert.Equal(ship.Position.X, same.Position.X, 0);
+        Assert.Equal(ship.Position.Y, same.Position.Y, 0);
+        Assert.Equal(ship.SimTime, same.SimTime, 6);
+    }
+
     [Fact]
     public void Project_MissingCourse_ReportsClosestPass_NotReached()
     {

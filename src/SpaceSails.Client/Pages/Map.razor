@@ -84,6 +84,20 @@
         </div>
     }
 
+    @* #261 — the COMPUTED skip's short beat: a jump-scale coast is reckoned in closed form (or chunked with
+       yields), never integrated into a frozen tab. A mundane fast-forward, not the long haul's dramatic
+       CROSSING THE VOID — so it says "COAST CONSUMED" and lets out in a beat. *@
+    @if (_coastSkipActive)
+    {
+        <div class="jump-overlay">
+            <div class="jump-overlay-inner">
+                <div class="jump-overlay-title">⏭ @WarpSkip.CoastConsumedTitle</div>
+                <div class="jump-overlay-bound">@WarpSkip.CoastConsumedBound(_coastSkipLabel)</div>
+                <div class="jump-overlay-note">@WarpSkip.CoastComputingNote(_coastSkipDays)</div>
+            </div>
+        </div>
+    }
+
     @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
        player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
     @if (_viewObject is { } vo)
@@ -2763,11 +2777,21 @@
     };
 
     // The captain pressed ⏭: lock the target and engage skip mode. Disabled when nothing is armed.
-    private void StartSkip()
+    private async Task StartSkip()
     {
         WarpSkip.NextEvent next = NextSkippableEvent();
         _skipNext = next;
         if (!next.Found)
+        {
+            return;
+        }
+
+        // #261 — a JUMP-SCALE coast is never integrated: that is the #255/#257 freeze class through the
+        // skip's side door (a 717 d arrival coast = ~62M fixed-1 s steps, a pinned tab for minutes). Above
+        // the threshold, compute the void — advance the conic in closed form and re-seed like the long haul,
+        // or (if the leg isn't a clean heliocentric ballistic coast) chunk the integration with awaited
+        // yields so the tab always paints. Below the threshold the honest tick-by-tick warp-skip stands.
+        if (WarpSkip.IsJumpScale(next.Epoch - SimTime) && await TrySkipByComputation(next))
         {
             return;
         }
@@ -2798,7 +2822,7 @@
         LogAutopilotEvent("⏭ skip stopped by the captain");
     }
 
-    private void ToggleSkip()
+    private async Task ToggleSkip()
     {
         if (_skipActive)
         {
@@ -2806,8 +2830,156 @@
         }
         else
         {
-            StartSkip();
+            await StartSkip();
         }
+    }
+
+    // ===== #261 — the COMPUTED skip: reckon a jump-scale coast, never grind it =====
+    // The freeze is the near-body fixed-1 s regime during a long arrival coast (warp auto-drops, the loop
+    // grinds ~86_400 gravity steps per day). The law is already ruled — the void is computed, not slogged.
+    // The clean, tested path is the long haul's own machinery: for a BALLISTIC leg in OPEN heliocentric
+    // cruise, advance the ship along its closed-form conic to the target epoch, re-seed the world there, and
+    // say the state. Otherwise (a burn inside the leg, or the ship deep in a well where the heliocentric
+    // conic is a lie against the n-body integrator) fall back to chunked integration that PAINTS between
+    // chunks — never a dead frame. Correctness beats elegance: closed form only where it is honest.
+
+    // The upcoming burn epochs the ballistic test reads — the same plotted-node + armed-transfer sources
+    // NextSkippableEvent's Burn candidate is built from, so the two agree on where impulses fire.
+    private IEnumerable<double> UpcomingBurnEpochs()
+    {
+        double now = SimTime;
+        foreach (PlanNode node in _planNodes)
+        {
+            if (!node.Stale && !node.Executed && node.SimTime > now)
+            {
+                yield return node.SimTime;
+            }
+        }
+
+        if (_armedTransferSchedule is { } sch)
+        {
+            for (int i = _armedTransferBurnsFired; i < sch.Burns.Count; i++)
+            {
+                yield return sch.Burns[i].SimTime;
+            }
+        }
+    }
+
+    // Try to CONSUME the jump-scale coast without integrating it. Returns true when it owned the skip (the
+    // caller then skips the honest warp path); false only if it could not run at all (no ephemeris / a jump
+    // already in progress), leaving the honest warp-skip to take it.
+    private async Task<bool> TrySkipByComputation(WarpSkip.NextEvent next)
+    {
+        // Docked: the berth pins the ship (HoldAtDock overrides the integrator), so the honest skip already
+        // advances the clock ONLY — cheap, freeze-free, and it keeps the ship on the dock. Never integrate a
+        // docked ship here: RunAdaptive would fling it off the mass-less station. Defer to the honest path.
+        if (_ephemeris is null || _jumpInProgress || _dockedHavenId is not null)
+        {
+            return false;
+        }
+
+        double targetEpoch = next.Epoch;
+        string label = SkipEventLabel(next.Kind);
+
+        // Honest closed form needs a BALLISTIC leg (no impulse to fire mid-coast) AND open heliocentric
+        // cruise (the Simulator is n-body — the sun-relative conic is the true motion only clear of every
+        // well). Either miss → chunked integration with yields (still no freeze, and no lie).
+        CelestialBody? sun = _ephemeris.Bodies.FirstOrDefault(b => b.ParentId is null && b.Mu > 0);
+        bool ballistic = WarpSkip.IsBallisticLeg(SimTime, targetEpoch, UpcomingBurnEpochs());
+        bool heliocentricCruise = sun is not null && !LongHaul.InsideAnyWell(_ship, _ephemeris);
+
+        if (ballistic && heliocentricCruise)
+        {
+            await ConsumeCoastClosedForm(sun!, targetEpoch, label);
+        }
+        else
+        {
+            await ConsumeCoastChunked(targetEpoch, label);
+        }
+
+        return true;
+    }
+
+    // The CLOSED-FORM path: advance the ship's conic to the target epoch in one pure computation, re-seed
+    // the world there, autosave, and play a short "coast consumed" beat. No integration touches the void.
+    private async Task ConsumeCoastClosedForm(CelestialBody sun, double targetEpoch, string label)
+    {
+        int days = (int)Math.Round((targetEpoch - SimTime) / DaySeconds);
+
+        // Compute the arrival state BEFORE any side effect (mirrors the long haul's commit order).
+        ShipState arrival = LongHaul.PropagateHeliocentricTo(_ship, _ephemeris!, sun, targetEpoch);
+
+        // #255 vault safety: commit the personal life NOW, so a tab death mid-beat loses only the skip.
+        RequestVaultSave();
+        FlushVaultSaveIfDirty();
+
+        // Freeze the tick (OnTick returns early on _jumpInProgress) and raise the beat.
+        _jumpInProgress = true;
+        _coastSkipActive = true;
+        _coastSkipDays = days;
+        _coastSkipLabel = label;
+        StateHasChanged();
+        await Task.Delay(700); // a beat to read the state — the coast is gone, not ground
+
+        // Commit atomically: re-seed the world at the target epoch (drops stale movers, keeps depot rails,
+        // arms RefillTraffic — the same tested mechanism the long haul uses), place the ship, advance clock.
+        ReseedWorldForJump(targetEpoch);
+        _ship = arrival;
+        SimTime = arrival.SimTime;
+
+        StaleFutureNodes();
+        _skipActive = false;
+        _passDirty = true;
+        _scrubOffsetSeconds = 0;
+
+        _coastSkipActive = false;
+        _jumpInProgress = false;
+
+        ShowPulseMessage(WarpSkip.CoastConsumedAnnounce(days, label));
+        LogAutopilotEvent(WarpSkip.CoastConsumedAnnounce(days, label));
+        RequestVaultSave();
+        ReprojectTrajectory();
+        StateHasChanged();
+    }
+
+    // The FALLBACK path (a burn mid-leg, or in a planet's well where closed form would lie): still fast-
+    // forward, but by INTEGRATING in awaited chunks that paint between them — never a dead frame (issue #261
+    // option 1). Runs the same adaptive integrator the live loop uses, with the plan, so burns fire honestly;
+    // lands exactly on the target epoch. The overlay ticks the remaining days down as it goes.
+    private async Task ConsumeCoastChunked(double targetEpoch, string label)
+    {
+        const double ChunkSeconds = 6.0 * 3600.0; // 6 sim-hours reckoned per painted chunk
+
+        _jumpInProgress = true;
+        _coastSkipActive = true;
+        _coastSkipLabel = label;
+
+        while (SimTime < targetEpoch - WarpSkip.ArriveToleranceSeconds)
+        {
+            double span = Math.Min(ChunkSeconds, targetEpoch - SimTime);
+            _ship = _simulator!.RunAdaptive(_ship, span, _plan);
+            SimTime = _ship.SimTime;
+            _coastSkipDays = (int)Math.Round((targetEpoch - SimTime) / DaySeconds);
+            StateHasChanged();
+            await Task.Yield(); // let the tab paint this chunk before the next
+        }
+
+        ReseedWorldForJump(targetEpoch);
+        SimTime = _ship.SimTime;
+
+        StaleFutureNodes();
+        _skipActive = false;
+        _passDirty = true;
+        _scrubOffsetSeconds = 0;
+
+        _coastSkipActive = false;
+        _jumpInProgress = false;
+
+        ShowPulseMessage($"⏭ arrived at: {label}");
+        LogAutopilotEvent($"⏭ coast integrated in chunks — arrived at {label}");
+        RequestVaultSave();
+        ReprojectTrajectory();
+        StateHasChanged();
     }
 
     // Interruptions win, always. Called by the interruption sites that do NOT already yank warp (a fuel
@@ -3600,6 +3772,12 @@
     private int _skipWarpCommanded;                               // the warp DriveSkip last set (catch-all)
     private WarpSkip.NextEvent _skipNext = WarpSkip.NextEvent.None; // cached per frame for the button/chip
     private WarpSkip.LongCoastState _longCoast = WarpSkip.LongCoastState.Idle; // long-coast advert edge
+
+    // #261 — the COMPUTED skip's beat: a jump-scale coast is reckoned (closed form) or chunked (yields),
+    // never integrated into a frozen tab. Drives the "COAST CONSUMED" overlay while the void is consumed.
+    private bool _coastSkipActive;
+    private int _coastSkipDays;
+    private string _coastSkipLabel = "";
 
     private double? _lastTimestampMs;
     private double _lastHudUpdateMs;
