@@ -817,11 +817,16 @@
    instrument cards clear of the strip and are left untouched. */
 .desk-layer:not(.desk-layer-passthrough) {
     align-items: flex-start;
-    padding-top: 5.75rem;
+    /* Clearance under the top stack. 5.75rem was tuned for the ONE-row banner; the #190 voice runs
+       2–3 rows ("YOU HAVE THE SHIP / NOW: …/ NEXT: …"), which slid every desk's own header row —
+       the owner caught the Captain's Orders/Status/Tutorials/Ledger toggle — underneath it. 8.25rem
+       clears the 3-row banner plus the alert strip's first line. (The proper fix is the desks
+       joining the #197 flow column; tracked, this is the clearance until then.) */
+    padding-top: 8.25rem;
 }
 
 .desk-layer:not(.desk-layer-passthrough) .desk-content {
-    height: calc(100vh - 7.75rem);
+    height: calc(100vh - 10.25rem);
 }
 
 .desk-layer-dimmed {
