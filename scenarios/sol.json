@@ -12,6 +12,7 @@
     { "id": "selene-gate", "name": "Selene Gate", "parentId": "earth", "mu": 0, "bodyRadiusM": 1000, "orbitRadiusM": 3.844e8, "orbitPeriodS": 2.3606e6, "initialPhaseRad": 0.4, "kind": "station", "haven": true },
     { "id": "satellite-factory", "name": "Highport Satellite Works", "parentId": "earth", "mu": 0, "bodyRadiusM": 300, "orbitRadiusM": 6.771e6, "orbitPeriodS": 5546, "initialPhaseRad": 2.4, "kind": "station" },
     { "id": "mars",    "name": "Mars",    "parentId": "sun", "mu": 4.282837e13,      "bodyRadiusM": 3.3895e6,  "orbitRadiusM": 2.2794e11,  "orbitPeriodS": 5.93551e7,   "initialPhaseRad": 2.7 },
+    { "id": "phobos",  "name": "Phobos",  "parentId": "mars", "mu": 7.1e5,          "bodyRadiusM": 1.1e4,     "orbitRadiusM": 9.377e6,    "orbitPeriodS": 27554,       "initialPhaseRad": 1.4, "kind": "moon" },
     { "id": "the-space-bar", "name": "The Rusty Roadstead", "parentId": "mars", "mu": 0, "bodyRadiusM": 900, "orbitRadiusM": 1.2e7, "orbitPeriodS": 7200, "initialPhaseRad": 3.1, "kind": "station", "haven": true },
     { "id": "derelict-roadster", "name": "Derelict Roadster", "parentId": "sun", "mu": 0, "bodyRadiusM": 3, "orbitRadiusM": 1.7e11, "orbitPeriodS": 3.82e7, "initialPhaseRad": 2.5, "kind": "station", "hidden": true },
     { "id": "jupiter", "name": "Jupiter", "parentId": "sun", "mu": 1.26686534e17,    "bodyRadiusM": 6.9911e7,  "orbitRadiusM": 7.7857e11,  "orbitPeriodS": 3.74336e8,   "initialPhaseRad": 3.6, "atmosphere": { "refDensity": 4.0e-6, "scaleHeightM": 3.0e4, "topAltitudeM": 4.0e5 } },

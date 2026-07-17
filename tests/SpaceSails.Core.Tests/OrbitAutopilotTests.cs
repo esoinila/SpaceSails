@@ -317,6 +317,11 @@ public class OrbitAutopilotTests
         foreach (CelestialBody body in ephemeris.Bodies)
         {
             if (body.Mu <= 0 || body.ParentId is null) continue; // stations/sun: not bus stops
+            // #164: Phobos is a deliberate deep-well outlier — its Hill sphere (~16 km) barely clears
+            // its own 11 km radius, so it is a "land on it / hover by it" body, NOT an orbit-insertion
+            // target (the treasure island, reached by the shuttle door, never a parked orbit). It is
+            // exempt from the sane-parked-orbit invariant by design, not by accident.
+            if (body.Id == "phobos") continue;
             CelestialBody parent = bodies[body.ParentId];
             double hill = OrbitRule.HillRadius(body, parent.Mu);
 

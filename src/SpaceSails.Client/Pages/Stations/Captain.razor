@@ -282,6 +282,31 @@
                         }
                     }
                 </div>
+
+                @* #223: the buried-treasure maps — every chest we know of, ours and any rival's whose
+                   map we hold. Viewable any time: click a map to throw the full-screen card back up. *@
+                <div class="captain-ledger-section-label text-info fw-bold small mt-3">🗺 Treasure maps</div>
+                <div class="captain-group-cards">
+                    @if (Maps.Count == 0)
+                    {
+                        <div class="captain-empty">No maps in the ledger. Bury a chest on a landable moon via the shuttle-bay door — X always marks the spot.</div>
+                    }
+                    else
+                    {
+                        @foreach (CacheMapItem m in Maps)
+                        {
+                            CacheMapItem map = m;
+                            <div class="captain-card captain-ledger-tip" role="button" tabindex="0"
+                                 title="Open the map card"
+                                 @onclick="() => OnViewMap.InvokeAsync(map.CacheId)">
+                                <div class="fw-bold">🗺 @map.Caption</div>
+                                <div class="captain-card-blurb text-secondary small">🧭 @map.Bearing</div>
+                                <div class="captain-card-blurb text-secondary small">🧰 @map.Contents</div>
+                                <div class="captain-ledger-prov text-secondary small fst-italic">@(map.PlayerOwned ? "your hoard" : $"{map.Owner}'s hoard — a map you hold")</div>
+                            </div>
+                        }
+                    }
+                </div>
             </div>
         </div>
     }
@@ -468,6 +493,18 @@
     public sealed record LedgerTip(
         string Title, IReadOnlyList<string> Lines, string? Provenance,
         string? ScopeTipId, bool ShowDarkWeb, string? DossierShipId);
+
+    /// <summary>#223: the ledger's 🗺 treasure-maps section. Every buried chest we know of, ours and
+    /// any rival's whose map we hold — clicking one throws its full-screen card back up (OnViewMap).</summary>
+    [Parameter] public IReadOnlyList<CacheMapItem> Maps { get; set; } = [];
+
+    /// <summary>Open the full-screen map card for a cache id.</summary>
+    [Parameter] public EventCallback<string> OnViewMap { get; set; }
+
+    /// <summary>One map in the ledger's 🗺 section — the caption, the bearing line, the contents, and
+    /// whose hoard it is. The cache id drives the "view the card" jump.</summary>
+    public sealed record CacheMapItem(
+        string CacheId, string Caption, string Bearing, string Contents, string Owner, bool PlayerOwned);
 
     // PR-WIRE — the favor bank's accounts, projected by Map for the ledger's 💰 Accounts section.
     [Parameter] public IReadOnlyList<AccountRow> Accounts { get; set; } = [];

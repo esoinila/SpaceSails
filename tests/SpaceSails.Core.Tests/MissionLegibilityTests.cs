@@ -37,6 +37,28 @@ public class MissionLegibilityTests
             MissionBrief.Receipt(ContractKind.Intel, ""));
     }
 
+    // ---- Fetch-a-cache (#223) ----
+
+    [Fact]
+    public void FetchCache_BeforeDig_SaysDigAtTheX_OnTheBody()
+    {
+        string next = MissionBrief.NextLine(new ContractFacts(
+            ContractKind.FetchCache, "Madam Coil", DestName: "The Rusty Roadstead", DestParent: "Mars",
+            CacheBody: "Phobos", PickedUp: false));
+        Assert.Contains("dig at the X on Phobos", next);
+        Assert.StartsWith(MissionBrief.NextPrefix, next);
+    }
+
+    [Fact]
+    public void FetchCache_AfterDig_SaysDeliverTheChestToTheGiver()
+    {
+        string next = MissionBrief.NextLine(new ContractFacts(
+            ContractKind.FetchCache, "Madam Coil", DestName: "The Rusty Roadstead", DestParent: "Mars",
+            CacheBody: "Phobos", PickedUp: true));
+        Assert.Contains("deliver the chest to Madam Coil", next);
+        Assert.Contains("The Rusty Roadstead, Mars", next);
+    }
+
     // ---- Next action per kind (#207 (1b), the kind audit (3)) ----
 
     [Fact]

@@ -1503,6 +1503,112 @@
     color: #9aa6bd;
 }
 
+/* #223 buried treasure — the shuttle-row action cluster, the bury chooser, and the map card. */
+.deck-shuttle-row-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.bury-chooser-body {
+    margin: 0.4rem 0 0.6rem;
+    color: #dbe4f3;
+}
+
+.bury-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.3rem;
+}
+
+.bury-coin {
+    font-weight: 800;
+    color: #ffd479;
+    font-size: 1.1rem;
+}
+
+.bury-steppers {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.bury-cargo {
+    color: #cfe0f5;
+}
+
+.bury-note {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: #9aa6bd;
+}
+
+/* The full-screen treasure-map artifact — celebration family, but built around a big image slot. */
+.treasure-map-card {
+    max-width: min(34rem, 92vw);
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+    color: #f3ead2;
+    background: linear-gradient(180deg, #2a2114, #17110a);
+    border: 1px solid rgba(255, 210, 130, 0.6);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.75), 0 0 1.6rem rgba(255, 200, 120, 0.25);
+}
+
+.tm-art {
+    position: relative;
+    height: 12rem;
+    background-size: cover;
+    background-position: center;
+    border-bottom: 1px solid rgba(255, 210, 130, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* X ALWAYS marks the spot — big, red, unmissable, dead centre of the marked ground. */
+.tm-x {
+    font-size: 4.5rem;
+    font-weight: 900;
+    color: #ff3b30;
+    text-shadow: 0 0 0.4rem rgba(0, 0, 0, 0.9), 0 0 1.2rem rgba(255, 59, 48, 0.6);
+    transform: rotate(-8deg);
+    line-height: 1;
+}
+
+.tm-caption {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #ffd479;
+    margin: 0.7rem 1rem 0.2rem;
+}
+
+.tm-bearing {
+    color: #f0e2c2;
+    margin: 0.15rem 1rem;
+}
+
+.tm-contents {
+    color: #cfe0f5;
+    margin: 0.15rem 1rem 0.3rem;
+}
+
+.tm-flavor {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: #b7a988;
+    margin: 0.2rem 1rem;
+}
+
+.treasure-map-card .btn {
+    margin-bottom: 1rem;
+
 /* PR-BUSTED — the catch pop-up (owner ruling §5). Reuses the celebration modal's backdrop grammar,
    in the collector's harder colours; the freeze-frame goes full-bleed sepia. */
 .busted-backdrop {
@@ -1663,4 +1769,5 @@
     0% { opacity: 0.55; transform: scale(0.9); }
     50% { opacity: 0.95; transform: scale(1.05); }
     100% { opacity: 0.55; transform: scale(0.9); }
+}
 }

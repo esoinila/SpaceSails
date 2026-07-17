@@ -20,6 +20,7 @@ public enum ContractKind
     Intel,
     Fetch,
     Crack,
+    FetchCache,
 }
 
 /// <summary>Everything the brief text needs, already resolved to display strings by the caller
@@ -41,7 +42,8 @@ public readonly record struct ContractFacts(
     string? TargetName = null,
     string? Pin = null,
     bool Charted = false,
-    bool PickedUp = false);
+    bool PickedUp = false,
+    string? CacheBody = null);
 
 /// <summary>The captain-legible brief for a contract: the receipt filed at acceptance and the
 /// immediate next physical action, both as one-voice strings (#119 / #207).</summary>
@@ -77,6 +79,9 @@ public static class MissionBrief
         ContractKind.Fetch => "fly to the roadster and prise the wallet loose",
         ContractKind.Crack when f.PickedUp => $"hand the package to {NameOr(f.Giver, "the Fixer")} here",
         ContractKind.Crack => $"key {NameOr(f.Pin, "the code")} into hatch {NameOr(f.TargetName, "the lockup")} here, then hand it to {NameOr(f.Giver, "the Fixer")}",
+        // Fetch-a-cache (#223): the map is already in hand — walk the paces, dig, deliver the chest.
+        ContractKind.FetchCache when f.PickedUp => $"deliver the chest to {NameOr(f.Giver, "the Fixer")} at {NameOr(f.DestName, "the bar")}{Place(f.DestParent)}",
+        ContractKind.FetchCache => $"dig at the X on {NameOr(f.CacheBody, "the marked body")} — take the shuttle down and walk the paces",
         // Intel is a gift of information, settled on the spot — no task to fly.
         _ => "",
     };
@@ -88,6 +93,7 @@ public static class MissionBrief
         ContractKind.Hunt => "bounty",
         ContractKind.Intel => "tip",
         ContractKind.Fetch => "recovery job",
+        ContractKind.FetchCache => "cache run",
         ContractKind.Crack => "break-in",
         _ => "job",
     };
