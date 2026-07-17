@@ -455,7 +455,21 @@ public partial class Map
             return;
         }
 
-        _ship = OrbitRule.Approach(_ship, t.Pos, t.Vel, t.Body, null, 0);
+        // #267 surface clearance: the terminal match aims straight at the station and ignores the planet it
+        // orbits — from an offset it puts the ship on a Uranus orbit that dives BELOW the surface (the
+        // owner's live "route through the planet"). Refuse BEFORE the impulse fires OR the tab opens (a
+        // refusal must precede spending — or promising — fuel): OrbitRule.Approach is pure, so project the
+        // candidate post-match line and, if it threads the haven's parent, bail with the reason having
+        // touched neither _ship nor the ledger. The haven itself is judged from its achieved berth (a
+        // legitimate arrival AT it is not a threaded planet, the #229 lesson). The captain flies clear first.
+        ShipState matched = OrbitRule.Approach(_ship, t.Pos, t.Vel, t.Body, null, 0);
+        if (PlannedClearanceViolation(matched, t.Body.Id) is { } clearance)
+        {
+            ShowPulseMessage($"⚓ {SurfaceClearance.RefusalText(clearance)}. Close the gap to {t.Body.Name} first.");
+            return;
+        }
+
+        _ship = matched;
         // #268 pay-at-the-pump: the redirect impulse fires NOW (instant match, #213) but its pulses are NOT
         // taken here — they go on the tab and settle only when the clamp lands (ClampOntoHaven). If the
         // approach diverges or is abandoned before the berth is made, the tab drops uncharged. The gauge stays
@@ -468,6 +482,24 @@ public partial class Map
         ShowPulseMessage($"⚓ matched at {t.Body.Name} — {cost} p on the tab (quoted ≈{quote}); settles when you clamp on. Hit ⚓ Dock.");
         RendererInterop.PlayCue("burn");
         UpdateDockAffordance(); // so the plain ⚓ Dock button appears this frame
+    }
+
+    // #267 — the surface-clearance gate for a planner COMMIT point that produces a fresh ballistic state
+    // (the terminal match). Projects the CANDIDATE post-burn state over the SAME plot horizon the ribbon
+    // draws, with the SAME ProjectAdaptive kernel the ribbon and the collision pass use (one truth — the
+    // check judges exactly the line the captain sees), then asks SurfaceClearance whether it clears every
+    // body it passes. The arrival target is judged from its achieved end so a legitimate dock is never a
+    // false refusal (the #229 lesson). Null = clear to fly; a Violation = refuse with the reason.
+    private SurfaceClearance.Violation? PlannedClearanceViolation(ShipState candidate, string? arrivalBodyId)
+    {
+        if (_ephemeris is null || _simulator is null)
+        {
+            return null;
+        }
+
+        IReadOnlyList<TrajectorySample> path = _simulator.ProjectAdaptive(
+            candidate, null, CurrentPlotHorizonSeconds, maxTimeStep: 3 * 3600, maxSamples: 8000);
+        return SurfaceClearance.Check(path, _ephemeris, arrivalBodyId);
     }
 
     // The clamp itself — shared by the manual ⚓ Dock press and the #204 honest auto-dock. Freezes the

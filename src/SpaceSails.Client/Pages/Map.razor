@@ -480,7 +480,7 @@
                     @if (LongHaulTargetPlanet(menuBody.Id) is { } lhMenuPlanet)
                     {
                         LongHaul.Departure lhMenuDep = LongHaul.SolveDeparture(_ship, _ephemeris!, lhMenuPlanet);
-                        string? lhMenuBlock = LongHaulOfferBlock(lhMenuDep, lhMenuPlanet.Name);
+                        string? lhMenuBlock = LongHaulOfferBlock(lhMenuDep, lhMenuPlanet, LongHaulClearanceBlock(lhMenuDep, lhMenuPlanet));
                         <button type="button" class="btn btn-sm @(lhMenuBlock is null ? "btn-warning" : "btn-outline-secondary")"
                                 disabled="@(lhMenuBlock is not null)"
                                 title="@(lhMenuBlock ?? $"Set {menuBody.Name} as destination and autopilot the whole void in one jump — wake at {lhMenuPlanet.Name}'s capture range; the last mile stays premium")"
@@ -768,7 +768,7 @@
                beside the ⏭ advert. Visible-but-disabled with the reason (#212). *@
             @if (LongHaulTargetPlanet(_destinationBodyId) is { } lhChipPlanet && _longHaulDeparture is { Ok: true } lhChipDep)
             {
-                string? lhChipBlock = LongHaulOfferBlock(_longHaulDeparture, lhChipPlanet.Name);
+                string? lhChipBlock = LongHaulOfferBlock(_longHaulDeparture, lhChipPlanet, _longHaulClearanceBlock);
                 <button type="button" class="btn btn-sm @(lhChipBlock is null ? "btn-warning" : "btn-outline-secondary") me-2"
                         disabled="@(lhChipBlock is not null)"
                         title="@(lhChipBlock ?? $"Autopilot the whole void to {lhChipPlanet.Name} vicinity in one jump — wake at the capture gate; the last mile stays premium")"
@@ -1500,7 +1500,7 @@
             @if (LongHaulTargetPlanet(_destinationBodyId) is { } lhPlanet)
             {
                 string lhDestName = _destinationBodyId is { } lhDestId ? BodyName(lhDestId) : lhPlanet.Name;
-                string? lhBlock = LongHaulOfferBlock(_longHaulDeparture, lhPlanet.Name);
+                string? lhBlock = LongHaulOfferBlock(_longHaulDeparture, lhPlanet, _longHaulClearanceBlock);
                 <div class="mt-2 pt-2 border-top border-secondary">
                     @* The manual-coast verdict: does THIS course reach, or how far does it miss? *@
                     @if (_longHaulReach is { } lhReach)

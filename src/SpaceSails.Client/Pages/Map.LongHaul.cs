@@ -386,8 +386,13 @@ public partial class Map
     // disabled, never hidden — #212). Order: hunter on the board, a kept orbit to disarm, the planner can't
     // solve, then the tank can't afford it. No InsideWell check — the departure burn IS the well-escape;
     // engaging from a berth is exactly the point (the undock is part of engaging).
-    private string? LongHaulOfferBlock(LongHaul.Departure? departure, string planetName)
+    // The offer gate. Order: hunter, kept orbit, no solve, unaffordable, then the #267 surface-clearance
+    // refusal — the LAST and priciest check, so it is precomputed by the caller (the cached destination
+    // path reads _longHaulClearanceBlock, recomputed on the reproject cadence; the menu path, which already
+    // re-solves the departure per render, computes it fresh via LongHaulClearanceBlock). Null = clear to go.
+    private string? LongHaulOfferBlock(LongHaul.Departure? departure, CelestialBody planet, string? clearanceBlock)
     {
+        string planetName = planet.Name;
         if (_hunters.Any(h => !h.BrokenOff && !h.CaughtPlayer))
         {
             return LongHaul.RefusalText(LongHaul.Blocker.HunterActive, planetName);
@@ -405,7 +410,34 @@ public partial class Map
 
         int reserve = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
         int budget = Math.Max(0, _reactionMassPulses - reserve);
-        return dep.DeparturePulses > budget ? LongHaul.RefusalBudget(dep.DeparturePulses, _reactionMassPulses) : null;
+        if (dep.DeparturePulses > budget)
+        {
+            return LongHaul.RefusalBudget(dep.DeparturePulses, _reactionMassPulses);
+        }
+
+        return clearanceBlock; // #267: the precomputed surface-clearance refusal, or null when the arc is clear
+    }
+
+    // #267 — the surface-clearance refusal for a solved long-haul departure, or null when the arc clears
+    // every body. The departure is a point-mass conic: it can reach the destination while its path threads
+    // the Sun (a low-perihelion transfer) or crosses another planet's disk. Sample the post-burn heliocentric
+    // coast (the SAME closed-form kernel the jump rides — no second integrator) and judge it clear. The
+    // destination planet is exempt: the haul stops at its capture range, far above the surface — arriving
+    // there is the whole point (the #229 arrival rule). Priced once per reproject, not per render.
+    private string? LongHaulClearanceBlock(LongHaul.Departure departure, CelestialBody planet)
+    {
+        if (_ephemeris is null || !departure.Ok
+            || (planet.ParentId is { } sunId ? _ephemeris.Bodies.FirstOrDefault(b => b.Id == sunId) : null) is not { } sun)
+        {
+            return null;
+        }
+
+        ShipState postBurn = _ship with { Velocity = departure.PostBurnVelocity };
+        IReadOnlyList<TrajectorySample> path =
+            LongHaul.SampleHeliocentricPath(postBurn, _ephemeris, sun, departure.ArrivalCenterTime);
+        return SurfaceClearance.Check(path, _ephemeris, planet.Id) is { } clearance
+            ? $"🚀 {SurfaceClearance.RefusalText(clearance)} — re-plot the departure before the long haul"
+            : null;
     }
 
     // The destination planet's capture range (the void mode's stop), for the promise's "capture (X AU)".
@@ -449,7 +481,10 @@ public partial class Map
         }
 
         string destName = destBodyId is { } d ? BodyName(d) : planet.Name;
-        string? block = LongHaulOfferBlock(departure, planet.Name);
+        // #267: compute the clearance verdict fresh on the click — the engage may run off a menu whose
+        // solved departure was never the cached destination one.
+        string? clearanceBlock = departure is { Ok: true } dep0 ? LongHaulClearanceBlock(dep0, planet) : null;
+        string? block = LongHaulOfferBlock(departure, planet, clearanceBlock);
         if (block is not null)
         {
             ShowPulseMessage(block);
@@ -592,6 +627,7 @@ public partial class Map
     private LongHaul.Reach? _longHaulReach;           // #246: the CURRENT coast's reach — the manual-coast promise verdict ONLY
     private CelestialBody? _longHaulPlanet;           // #246: the destination's sun-orbiting planet, named in the promise/verdict
     private LongHaul.Departure? _longHaulDeparture;   // #246/#249 fix: the solved cheap departure the OFFER quotes and engages
+    private string? _longHaulClearanceBlock;          // #267: cached surface-clearance refusal for the destination's departure (or null when clear)
 
     // #255 — the diegetic jump overlay + the re-seed guard. While _jumpInProgress the tick loop freezes
     // (OnTick returns early) so the world never integrates the void; _jumpActive drives the full-screen
