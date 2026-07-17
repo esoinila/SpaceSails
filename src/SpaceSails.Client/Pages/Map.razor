@@ -9731,6 +9731,24 @@
                     found.Add((new PickCandidate('B', body.Id, $"{body.Name} · dock haven — walk ashore", "⚓"), d2, 2));
                 }
             }
+
+            // The owner's roadster lesson: a REVEALED non-haven station (a wreck, a compute farm, a
+            // factory) fell through both loops above — visible on the map, untargetable by click. They
+            // are destinations too: the μ=0 arm flow flies you alongside (no clamp — that's the point;
+            // the fetch pickup is proximity). Hidden ones stay off the picker until charted (PR-A).
+            foreach (CelestialBody body in _ephemeris.Bodies)
+            {
+                if (IsBodyHidden(body.Id)) continue;
+                if (body.Kind != BodyKind.Station || IsDockableHaven(body)) continue;
+                (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
+                double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
+                double hit = Math.Max(Math.Clamp(drawnPx, 14, 80), radiusPx);
+                double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
+                if (d2 <= hit * hit)
+                {
+                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · station — come alongside", "🛰"), d2, 2));
+                }
+            }
         }
 
         return [.. found.OrderBy(f => f.Rank).ThenBy(f => f.DistSq).Select(f => f.Pick)];
