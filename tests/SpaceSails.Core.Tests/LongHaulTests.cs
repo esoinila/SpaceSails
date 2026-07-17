@@ -275,6 +275,74 @@ public class LongHaulTests
             LongHaul.MenuAction("Uranus", 37, "Sol-Day 5920"));
     }
 
+    // The client's map-menu / card / chip visibility gate: a destination offers the long haul when its
+    // sun-orbiting planet exists AND the ship is not already inside that planet's capture range.
+    private static CelestialBody? OfferTargetPlanet(ICelestialEphemeris eph, ShipState ship, string destId)
+    {
+        if (LongHaul.JumpTargetPlanet(eph, destId) is not { } planet)
+        {
+            return null;
+        }
+
+        CelestialBody? sun = planet.ParentId is { } pid ? eph.Bodies.FirstOrDefault(b => b.Id == pid) : null;
+        if (sun is null)
+        {
+            return null;
+        }
+
+        double capture = OrbitRule.CaptureRange(OrbitRule.HillRadius(planet, sun.Mu));
+        double dist = (ship.Position - eph.Position(planet.Id, ship.SimTime)).Length;
+        return dist > capture ? planet : null;
+    }
+
+    [Fact]
+    public void LongHaulOffer_AppearsForEveryFarDestinationClass_FromRustyRoadstead()
+    {
+        // The #246/#249/#250 fix, verified live and pinned here: from The Rusty Roadstead (off Mars) the
+        // 🚀 offer resolves to the destination's PLANET vicinity for EVERY picker class — dock haven, moon,
+        // planet, non-haven station — with the departure solvable and the menu wording naming the planet.
+        // (The owner's "The Tilt lacks the rocket" was a within-capture-range state: at Uranus vicinity the
+        // gate correctly hides it — see the paired test below.)
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ship = new ShipState(eph.Position("the-space-bar", 0), TransferMath.BodyVelocity(eph, "the-space-bar", 0), 0);
+
+        (string dest, string planet)[] cases =
+        {
+            ("the-tilt", "uranus"),          // dock haven at Uranus → "autopilot to Uranus vicinity"
+            ("miranda", "uranus"),           // moon of Uranus
+            ("uranus", "uranus"),            // the planet itself
+            ("neptune", "neptune"),          // a further planet
+            ("satellite-factory", "earth"),  // a non-haven station orbiting a planet
+        };
+
+        foreach ((string dest, string planet) in cases)
+        {
+            CelestialBody? target = OfferTargetPlanet(eph, ship, dest);
+            Assert.True(target is not null, $"{dest} should offer a long haul from The Rusty Roadstead");
+            Assert.Equal(planet, target!.Id);
+
+            LongHaul.Departure dep = LongHaul.SolveDeparture(ship, eph, target);
+            Assert.True(dep.Ok, $"{dest}: {dep.Failure}");
+            Assert.Contains($"autopilot to {target.Name} vicinity", LongHaul.MenuAction(target.Name, dep.DeparturePulses, "Sol-Day 1"));
+        }
+    }
+
+    [Fact]
+    public void LongHaulOffer_IsCorrectlyHidden_WhenAlreadyInThePlanetVicinity()
+    {
+        // The paired truth: docked at The Tilt (inside Uranus's capture range), clicking The Tilt/Miranda/
+        // Uranus offers NO long haul — you're already there; the last mile is the dock/arm, not a jump.
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var atTilt = new ShipState(eph.Position("the-tilt", 0), TransferMath.BodyVelocity(eph, "the-tilt", 0), 0);
+
+        Assert.Null(OfferTargetPlanet(eph, atTilt, "the-tilt"));
+        Assert.Null(OfferTargetPlanet(eph, atTilt, "miranda"));
+        Assert.Null(OfferTargetPlanet(eph, atTilt, "uranus"));
+
+        // But a FAR body from the very same berth still offers it — the gate is per-destination, not global.
+        Assert.NotNull(OfferTargetPlanet(eph, atTilt, "earth"));
+    }
+
     // ---- Consistency by construction: heat / interest are single-application-equals-integrated ----
 
     [Fact]
