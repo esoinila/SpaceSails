@@ -371,8 +371,10 @@
        meant"): candidates ranked contacts → depots → bodies, lane and sky scan last. *@
     @if (_pickMenu is { Count: > 0 } pickList)
     {
+        @* #253: header + one row per candidate, flipped away from the near edge. *@
+        var pickAt = ClampMenu(_pickMenuX, _pickMenuY, pickList.Count);
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @((_pickMenuX + 14).ToString("F0", CultureInfo.InvariantCulture))px; top: @(_pickMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+             style="left: @(pickAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(pickAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="text-secondary me-2">Which one?</span>
                 <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this chooser"
@@ -436,8 +438,10 @@
        M29: also live on the Sensors desk, where the map is clickable through the desk layer. *@
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)
     {
+        @* #253: up to three action rows on Nav (set dest · arm · 🚀 long haul), two on Sensors. *@
+        var bodyAt = ClampMenu(_bodyMenuX, _bodyMenuY, 3);
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(_bodyMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_bodyMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+             style="left: @(bodyAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(bodyAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-bold me-2">@menuBody.Name</span>
                 <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this body's menu"
@@ -510,8 +514,10 @@
        actions: telescope tracking and the war-room interest (intercept clock, firing solutions). *@
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
     {
+        @* #253: a vitals line plus up to three actions (interest · track · scan). *@
+        var shipAt = ClampMenu(_shipMenuX, _shipMenuY, 4);
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(_shipMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_shipMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+             style="left: @(shipAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(shipAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-bold me-2">@menuNpc.Ship.Callsign</span>
                 <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this contact's menu"
@@ -565,8 +571,10 @@
        Replaces the tracking post's "— manual aim —" dropdown: the lane IS the control. *@
     @if (_activeDesk == ShipDesk.Sensors && _corridorMenuLane is { } menuLane)
     {
+        @* #253: a sweep-cost line plus the two sweep actions. *@
+        var corridorAt = ClampMenu(_corridorMenuX, _corridorMenuY, 3);
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(_corridorMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_corridorMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+             style="left: @(corridorAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(corridorAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-bold me-2">📦 @menuLane.Name</span>
                 <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this lane's menu"
@@ -594,8 +602,10 @@
        guideline hint when the spot sits near a known lane. *@
     @if (_activeDesk == ShipDesk.Sensors && _skyMenuWorld is { } skyPoint)
     {
+        @* #253: a scan-cost line plus the scan action (and, near a lane, a sweep). *@
+        var skyAt = ClampMenu(_skyMenuX, _skyMenuY, 4);
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
-             style="left: @(_skyMenuX.ToString("F0", CultureInfo.InvariantCulture))px; top: @(_skyMenuY.ToString("F0", CultureInfo.InvariantCulture))px">
+             style="left: @(skyAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(skyAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-bold me-2">✨ Open sky</span>
                 <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close" title="Close this patch's menu"
