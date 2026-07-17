@@ -1459,3 +1459,165 @@
     font-size: 0.85rem;
     color: #9aa6bd;
 }
+
+/* PR-BUSTED — the catch pop-up (owner ruling §5). Reuses the celebration modal's backdrop grammar,
+   in the collector's harder colours; the freeze-frame goes full-bleed sepia. */
+.busted-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 1410; /* above the celebration modal — a catch interrupts everything */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 3, 6, 0.82);
+    pointer-events: auto;
+}
+
+.busted-backdrop.busted-sepia {
+    background: radial-gradient(circle at 50% 40%, rgba(90, 60, 25, 0.9), rgba(10, 7, 3, 0.97));
+}
+
+.busted-card {
+    max-width: min(34rem, 92vw);
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    color: #eef1f6;
+    background: linear-gradient(180deg, rgba(30, 18, 20, 0.98), rgba(10, 7, 9, 0.99));
+    border: 1px solid rgba(255, 90, 90, 0.55);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.8), 0 0 1.6rem rgba(255, 70, 70, 0.28);
+}
+
+.busted-hail {
+    color: #ff8a8a;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    font-size: 1.1rem;
+    margin-bottom: 0.35rem;
+}
+
+.busted-heat {
+    color: #ffce7a;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.busted-quote {
+    font-style: italic;
+    color: #d7e0f2;
+    margin-bottom: 0.75rem;
+}
+
+.busted-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.busted-opt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 0.1rem;
+    padding: 0.55rem 0.8rem;
+    white-space: normal;
+}
+
+.busted-opt .bo-title {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.busted-opt .bo-detail {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.busted-receipt {
+    text-align: left;
+    display: inline-block;
+    margin: 0.25rem auto 0.75rem;
+    color: #ffd0d0;
+    font-size: 0.92rem;
+}
+
+.busted-receipt div {
+    margin: 0.1rem 0;
+}
+
+.busted-math {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: #9aa6bd;
+}
+
+.busted-roll {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+    color: #cfe0f5;
+    margin: 0.15rem 0;
+}
+
+.busted-close {
+    margin-top: 0.6rem;
+}
+
+/* The freeze-frame — homage, not film: two silhouetted rogues bursting into muzzle-flash light,
+   sepia, held. The <art> slots are placeholders the grok image lane fills (see image manifest). */
+.busted-freeze {
+    text-align: center;
+    color: #f3e2c4;
+}
+
+.busted-freeze-art {
+    position: relative;
+    height: 9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.5rem 0 0.75rem;
+    background: radial-gradient(circle at 50% 55%, rgba(255, 236, 180, 0.9), rgba(120, 78, 30, 0.4) 45%, rgba(20, 12, 5, 0.9));
+    border-radius: 0.6rem;
+    overflow: hidden;
+    filter: sepia(0.7) contrast(1.1);
+}
+
+.busted-freeze-art .bf-silhouettes {
+    font-size: 3rem;
+    filter: brightness(0.15);
+    z-index: 2;
+}
+
+.busted-freeze-art .bf-flash {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6rem;
+    color: #fff6dc;
+    opacity: 0.85;
+    animation: busted-flash 1.6s ease-out infinite;
+}
+
+.busted-explosion {
+    height: 6rem;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 180, 90, 0.95), rgba(120, 40, 10, 0.5) 50%, rgba(15, 8, 4, 0.95));
+    filter: sepia(0.3) contrast(1.2);
+}
+
+.busted-freeze-caption {
+    font-style: italic;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #ffe9c0;
+    margin-bottom: 0.4rem;
+}
+
+@keyframes busted-flash {
+    0% { opacity: 0.55; transform: scale(0.9); }
+    50% { opacity: 0.95; transform: scale(1.05); }
+    100% { opacity: 0.55; transform: scale(0.9); }
+}

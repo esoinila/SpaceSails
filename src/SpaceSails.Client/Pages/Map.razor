@@ -1452,6 +1452,16 @@
                                                 </button>
                                             </td>
                                         </tr>
+                                        @* PR-BUSTED: the one shipped dice helper — a named +2 on any last stand (the
+                                           purchasable-modifier seam; the shop of helpers is a follow-up). *@
+                                        <tr>
+                                            <td>Boarding-nets jammer<br /><span class="text-secondary">@(_hasNetJammer ? "fitted — +2 on resist" : "+2 on any last stand")</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-info" disabled="@(_hasNetJammer || _credits < NetJammerPriceCr)" title="A named +2 modifier on resist/Bolivia initiative — proves the dice-helper seam" @onclick="BuyNetJammer">
+                                                    @(_hasNetJammer ? "OWNED" : $"{NetJammerPriceCr:N0} cr")
+                                                </button>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </DockMarket>
@@ -1789,6 +1799,153 @@
                         : $"Job #{party.MissionsWithGiver} for {party.GiverName}. You've got a history now.")
                 </div>
                 <button type="button" class="btn btn-warning btn-sm mt-2" title="Toast the payday and clear the fanfare" @onclick="DismissCelebration">Raise a glass 🍻</button>
+            </div>
+        </div>
+    }
+
+    @* PR-BUSTED (owner ruling §5): the catch. A hunter runs you down → warp yanks to 1×, the ship is
+       grappled, and this pop-up opens in the collector's voice. SUBMIT / BRIBE / RESIST, GTA-BUSTED
+       grammar — never game over (the Bolivia freeze-frame ends in brain-backup resurrection). The dice
+       are rolled Core-side and shown here, modifiers listed. Reuses the celebration modal's backdrop
+       grammar. *@
+    @if (_busted is { } bust)
+    {
+        <div class="busted-backdrop @(bust.Phase == BustedEncounter.Stage.FreezeFrame ? "busted-sepia" : "")">
+            <div class="busted-card" @onclick:stopPropagation="true">
+                @switch (bust.Phase)
+                {
+                    case BustedEncounter.Stage.Demand:
+                        <div class="busted-hail">⛓ CAUGHT — @bust.HunterCallsign has you grappled</div>
+                        <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
+                        <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
+                        int _hotUnits = _hotCargo.TotalHotUnits;
+                        int _coinShare = (int)Math.Round(_credits * BustedRule.CoinFraction(bust.Heat));
+                        bool _canBribe = _credits >= bust.Bribe.Total;
+                        <div class="busted-options">
+                            <button type="button" class="btn btn-warning busted-opt" @onclick="() => BustedSubmit(false)">
+                                <span class="bo-title">🤍 SUBMIT</span>
+                                <span class="bo-detail">They take @_hotUnits hot cargo unit@(_hotUnits == 1 ? "" : "s") + ~@_coinShare.ToString("N0") cr. Heat clears to 0.</span>
+                            </button>
+                            <button type="button" class="btn btn-info busted-opt" disabled="@(!_canBribe)" @onclick="BustedBribe">
+                                <span class="bo-title">💰 BRIBE — @bust.Bribe.Total.ToString("N0") cr</span>
+                                <span class="bo-detail">@bust.Bribe.Describe()@(_canBribe ? " · keep the cargo, heat unchanged" : " · you can't cover it")</span>
+                            </button>
+                            <button type="button" class="btn btn-danger busted-opt" @onclick="BustedResist">
+                                <span class="bo-title">🔫 RESIST@(bust.Heat >= EncounterRule.MaxHeatLevel ? " — THE BOLIVIA" : "")</span>
+                                <span class="bo-detail">@(bust.Heat >= EncounterRule.MaxHeatLevel
+                                    ? "All guns blazing. A last stand on the dice — you fight clear, or you don't."
+                                    : "One opposed roll. Win and they peel off; lose and it's a harsher cut.")@(_hasNetJammer ? " (jammer +2)" : "")</span>
+                            </button>
+                        </div>
+                        break;
+
+                    case BustedEncounter.Stage.Confiscated:
+                        <div class="busted-hail">⛓ CONFISCATED</div>
+                        @if (bust.Confiscation is { } conf)
+                        {
+                            <div class="busted-receipt">
+                                @if (conf.CoinTaken > 0)
+                                {
+                                    <div>💰 −@conf.CoinTaken.ToString("N0") cr from the purse</div>
+                                }
+                                @foreach (BustedRule.CargoSeizure s in conf.Seizures)
+                                {
+                                    <div>@(s.Hot ? "🔥" : "📦") −@s.Units @s.CargoClass (@s.Value.ToString("N0") cr)@(s.Hot ? " — hot" : " — clean, minimum take")</div>
+                                }
+                                @if (conf.CoinTaken == 0 && conf.Seizures.Count == 0)
+                                {
+                                    <div>Nothing to take — you fly clean. They log it and cut you loose.</div>
+                                }
+                                <div class="busted-math">@string.Join(" · ", conf.Breakdown.Select(m => $"{m.Label}: {m.Value}"))</div>
+                            </div>
+                        }
+                        <div class="busted-quote">"Debt collected. Heat's off the books — for now. Fly straight, captain."</div>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="CloseBusted">Take the hit</button>
+                        break;
+
+                    case BustedEncounter.Stage.BribedOff:
+                    case BustedEncounter.Stage.ResistWon:
+                    case BustedEncounter.Stage.Fled:
+                        <div class="busted-hail">@(bust.Phase == BustedEncounter.Stage.Fled ? "🏴 BROKE CLEAR" : bust.Phase == BustedEncounter.Stage.ResistWon ? "🔫 THEY PEEL OFF" : "💰 PAID OFF")</div>
+                        @if (bust.ResistRoll is { } rr)
+                        {
+                            <div class="busted-roll">You: @rr.Challenger.Describe()</div>
+                            <div class="busted-roll">Collector: @rr.Defender.Describe()</div>
+                        }
+                        <div class="busted-quote">@bust.ResultMessage</div>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="CloseBusted">Fly on</button>
+                        break;
+
+                    case BustedEncounter.Stage.ResistLost:
+                        <div class="busted-hail">🔫 THEY BOARD ANYWAY</div>
+                        @if (bust.ResistRoll is { } rl)
+                        {
+                            <div class="busted-roll">You: @rl.Challenger.Describe()</div>
+                            <div class="busted-roll">Collector: @rl.Defender.Describe()</div>
+                        }
+                        <div class="busted-quote">"Nice try. Now it costs extra." — they take the submission terms plus a harsher cut.</div>
+                        <button type="button" class="btn btn-danger busted-close" @onclick="BustedResistLostConfirm">Brace for it</button>
+                        break;
+
+                    case BustedEncounter.Stage.Bolivia:
+                        <div class="busted-hail">🔫 THE BOLIVIA — the last stand</div>
+                        @if (bust.BoliviaInitiative is { } init)
+                        {
+                            <div class="busted-roll">Initiative — You: @init.Challenger.Total vs Collector: @init.Defender.Total</div>
+                        }
+                        @if (bust.BoliviaBeatIndex < BoliviaEncounter.Script.Count)
+                        {
+                            EncounterBeat beat = BoliviaEncounter.Script[bust.BoliviaBeatIndex];
+                            <div class="busted-quote">@beat.Narration</div>
+                            <div class="busted-options">
+                                @foreach (EncounterChoice choice in beat.Choices)
+                                {
+                                    string cid = choice.Id;
+                                    <button type="button" class="btn btn-outline-danger busted-opt" @onclick="() => BustedBoliviaChoose(cid)">
+                                        <span class="bo-title">@choice.Label</span>
+                                        <span class="bo-detail">@choice.Hint (@(choice.Modifier.Value >= 0 ? "+" : "−")@Math.Abs(choice.Modifier.Value))</span>
+                                    </button>
+                                }
+                            </div>
+                            @if (bust.BoliviaOutcomes.Count > 0)
+                            {
+                                <div class="busted-math">Running: net @bust.BoliviaNet — @(bust.BoliviaNet >= 0 ? "holding the line" : "going under")</div>
+                            }
+                        }
+                        break;
+
+                    case BustedEncounter.Stage.FreezeFrame:
+                        <div class="busted-freeze">
+                            <div class="busted-freeze-art" title="art: two silhouetted rogues charging into blinding muzzle-flash light — homage, sepia freeze">
+                                <span class="bf-silhouettes">🏴‍☠️🔫</span>
+                                <span class="bf-flash">✷</span>
+                            </div>
+                            <div class="busted-freeze-caption">"…and here we thought this was the easy money."</div>
+                            <div class="busted-quote">One massive volley. The freeze-frame holds. Sepia.</div>
+                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                        </div>
+                        break;
+
+                    case BustedEncounter.Stage.Resurrected:
+                        <div class="busted-hail">🧠 BRAIN-BACKUP RESTORED</div>
+                        <div class="busted-freeze-art busted-explosion" title="art: the old ship blowing up — the kerosene-explosion budget">
+                            <span class="bf-flash">💥</span>
+                        </div>
+                        <div class="busted-quote">
+                            You wake at @bust.ClinicName's clinic in @bust.HullDescription. The old ship and
+                            everything visible aboard is gone — but nothing buried or banked was ever on it.
+                            The tank's at the mercy floor: enough to crawl to a pump, not a metre more.
+                        </div>
+                        <div class="busted-receipt">
+                            <div>💰 @BustedRule.InsuranceCredits.ToString("N0") cr insurance stake</div>
+                            <div>🏥 −@bust.ClinicBillCr.ToString("N0") cr clinic bill (the rebirth tax)</div>
+                            <div>👛 @_credits.ToString("N0") cr in hand</div>
+                            <div>⛽ @_reactionMassPulses p — the reach-a-pump reserve</div>
+                            <div>🔧 all upgrades reset to starter grade</div>
+                        </div>
+                        <button type="button" class="btn btn-light busted-close" @onclick="CloseBusted">Board the rustbucket</button>
+                        break;
+                }
             </div>
         </div>
     }
@@ -2535,6 +2692,21 @@
     private HeatState _heat = HeatState.None;
     private readonly List<HunterState> _hunters = [];
     private int _hunterSeq;
+
+    // PR-BUSTED: the catch economy of consequence (ruling §5). Hot cargo is stamped at theft time
+    // when heat > 0 and launders when heat cools to 0; the confiscation reads this book. The parrot
+    // quotes the current exposure at each upward heat crossing (_lastAnnouncedHeat is the edge). One
+    // purchasable dice helper is shipped to prove the modifier seam (owner: many small helpers later).
+    private readonly HotCargoLedger _hotCargo = new();
+    private int _lastAnnouncedHeat;
+    private bool _hasNetJammer;                       // "Boarding-nets jammer" — +2 on resist initiative
+    private const int NetJammerPriceCr = 350;
+    private BustedEncounter? _busted;                 // the open BUSTED pop-up, null when free
+
+    // Rebirth taxes & the insurance seam (issues #227 + #225): resurrection CONSULTS this policy through
+    // InsuranceRule today, so #227's vendor lane never reopens the catch code. Ships as Uninsured — the
+    // rustbucket + full clinic bill. Plain/JSON-friendly for the #225 save vault.
+    private PirateInsurance _insurance = PirateInsurance.Uninsured;
     private double _hiddenAtHavenSinceSimTime = double.NaN; // NaN = not currently hidden
     private static readonly RgbaColor HunterColor = new(255, 90, 90);
     private static readonly string[] HunterCallsigns =
@@ -10459,6 +10631,12 @@
             _cargoValue += take * CargoMarket.UnitValue(npc.Ship.CargoClass);
             _cargoByClass[npc.Ship.CargoClass] = _cargoByClass.GetValueOrDefault(npc.Ship.CargoClass) + take;
 
+            // PR-BUSTED (ruling §5.1): a heist committed WHILE UNDER HEAT stamps the haul hot at theft
+            // time — the stolen-under-heat evidence the collectors confiscate in full. The theft's heat
+            // is the CURRENT level (before this robbery raises it): a first crime from a cold start is
+            // not yet hot. Launders off later when heat cools to 0 (see UpdateEncounters).
+            _hotCargo.Stamp(npc.Ship.CargoClass, take, _heat.Level);
+
             // #202: theft gets books and a voice. (a) A loot line in the SAME Captain's ledger the
             // honest receipts use — what, units, worth, off whom, where, when (LedgerTips projects it).
             // (b) The 🦜 names the haul, once per boarding (Board fires once per capture — an honest
@@ -10518,6 +10696,7 @@
         _cargoUnits = 0;
         _cargoValue = 0;
         _cargoByClass.Clear();
+        _hotCargo.Launder(); // fenced — the hot flags go with the cargo
         AdvanceTutorial(4); // step 5: first sale
         AdvanceTutorial(StepSellHe3); // second hunt, step 6: fencing the He3 closes the tutorial
     }
@@ -12901,6 +13080,13 @@
             return;
         }
 
+        // PR-BUSTED: while a boarding pop-up is open, encounters freeze — the captain is making a
+        // choice at 1×, no new hunter runs him down over the top of it.
+        if (_busted is not null)
+        {
+            return;
+        }
+
         // #175: settle any moon-haven cargo run whose ship is parked in orbit — the owner who was
         // ALREADY orbiting Enceladus when the parcel loaded gets paid here, since no dock event fires.
         CompleteBoundCargoRunQuests();
@@ -12929,6 +13115,23 @@
         double hiddenDuration = hidden ? SimTime - _hiddenAtHavenSinceSimTime : 0;
 
         _heat = EncounterRule.DecayHeat(_heat, SimTime, hidden);
+
+        // PR-BUSTED (ruling §5.1): when heat fully cools, the stolen cargo launders — the evidence
+        // leaves the books. And at each UPWARD heat crossing the parrot names the confiscation exposure
+        // (owner: "Heat two, captain — they'll take a third of the purse if they catch us!"), riding the
+        // same #166 alert edges the rest of the ship's voice does.
+        if (_heat.Level == 0 && _hotCargo.Any)
+        {
+            _hotCargo.Launder();
+            ShowPulseMessage("The trail's cold — your hot cargo just became honest freight again.");
+        }
+
+        if (_heat.Level > _lastAnnouncedHeat)
+        {
+            SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(_heat.Level), force: true);
+        }
+
+        _lastAnnouncedHeat = _heat.Level;
 
         for (int i = _hunters.Count - 1; i >= 0; i--)
         {
@@ -12969,14 +13172,368 @@
         }
     }
 
+    // PR-BUSTED (owner ruling §5): the catch is no longer an instant tax that leaves the collector
+    // inert — it OPENS the boarding pop-up. Warp yanks to 1×, the ship is grappled, and the collector
+    // hails with a demand and three options (SUBMIT / BRIBE / RESIST). The seed is folded from the
+    // hunter's identity and the sim moment, so every roll in this encounter is reproducible.
     private void ApplyHunterCatch(HunterState hunter)
     {
+        Warp = 1;
+        _effectiveWarp = 1;
+        RendererInterop.PlayCue("board");
+
+        ulong seed = DiceRule.Seed("busted", HunterSeqOf(hunter.Id), (long)SimTime);
+        _busted = new BustedEncounter
+        {
+            HunterId = hunter.Id,
+            HunterCallsign = hunter.Callsign,
+            Heat = Math.Max(1, _heat.Level),
+            Seed = seed,
+            Bribe = BustedRule.BribeDemand(Math.Max(1, _heat.Level), seed),
+        };
+
+        SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(Math.Max(1, _heat.Level)), force: true);
+        StateHasChanged();
+    }
+
+    // The dice helpers a resist/Bolivia roll carries — the purchasable-modifier seam. One example is
+    // shipped (the Boarding-nets jammer); the shop of helpers is a follow-up (owner §5.0).
+    private List<DiceModifier> ResistModifiers()
+    {
+        var mods = new List<DiceModifier>();
+        if (_hasNetJammer)
+        {
+            mods.Add(new DiceModifier("Boarding-nets jammer", +2));
+        }
+
+        return mods;
+    }
+
+    private static long HunterSeqOf(string hunterId) =>
+        int.TryParse(hunterId.AsSpan(hunterId.LastIndexOf('-') + 1), out int n) ? n : 0;
+
+    // ---- The three options ----
+
+    // SUBMIT: confiscate all hot cargo + a heat share of the purse (with the minimum-take fallback and
+    // the mercy floors), then clear heat to 0 — the debt is collected.
+    private void BustedSubmit(bool harsher = false)
+    {
+        if (_busted is not { } b)
+        {
+            return;
+        }
+
+        BustedRule.Confiscation c = BustedRule.Confiscate(
+            b.Heat, _credits, _hotCargo.BuildLots(_cargoByClass), b.Seed, harsher);
+        ApplyConfiscation(c);
+        _heat = EncounterRule.RaiseHeat(HeatState.None, 0, SimTime); // clears to 0 — debt collected
+        _lastAnnouncedHeat = 0;
+        _hotCargo.Launder();
+        b.Confiscation = c;
+        b.Phase = BustedEncounter.Stage.Confiscated;
+        StateHasChanged();
+    }
+
+    private void ApplyConfiscation(BustedRule.Confiscation c)
+    {
+        _credits = c.CoinLeft;
+        foreach (BustedRule.CargoSeizure s in c.Seizures)
+        {
+            int have = _cargoByClass.GetValueOrDefault(s.CargoClass);
+            int taken = Math.Min(have, s.Units);
+            if (taken <= 0)
+            {
+                continue;
+            }
+
+            int left = have - taken;
+            if (left > 0)
+            {
+                _cargoByClass[s.CargoClass] = left;
+            }
+            else
+            {
+                _cargoByClass.Remove(s.CargoClass);
+                _hotCargo.Forget(s.CargoClass);
+            }
+
+            _cargoUnits -= taken;
+            _cargoValue -= taken * CargoMarket.UnitValue(s.CargoClass);
+        }
+
+        _cargoUnits = Math.Max(0, _cargoUnits);
+        _cargoValue = Math.Max(0, _cargoValue);
+        RendererInterop.PlayCue("board");
+    }
+
+    // BRIBE: pay the dice-rolled fee to keep the cargo; the hunter breaks off, heat is UNCHANGED (you
+    // bought this patrol, not the law). Can't afford → the button is greyed with the number.
+    private void BustedBribe()
+    {
+        if (_busted is not { } b || _credits < b.Bribe.Total)
+        {
+            return;
+        }
+
+        _credits -= b.Bribe.Total;
+        RemoveHunter(b.HunterId);
+        b.ResultMessage = $"{b.Bribe.Total:N0} cr changes hands. {b.HunterCallsign} logs a clean sweep and sheers off — heat unchanged. You bought this patrol, not the law.";
+        b.Phase = BustedEncounter.Stage.BribedOff;
+        SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
+        StateHasChanged();
+    }
+
+    // RESIST: heat 1–2 → one opposed dice check (lose = SUBMIT + harsher cut; win = hunter broken off,
+    // heat +1). Heat 3 → the full Bolivia.
+    private void BustedResist()
+    {
+        if (_busted is not { } b)
+        {
+            return;
+        }
+
+        if (b.Heat >= EncounterRule.MaxHeatLevel)
+        {
+            b.Phase = BustedEncounter.Stage.Bolivia;
+            b.BoliviaInitiative = BoliviaEncounter.RollInitiative(b.Seed, b.Heat, ResistModifiers());
+            b.BoliviaNet = b.BoliviaInitiative.Value.Margin;
+            b.BoliviaBeatIndex = 0;
+            SquawkNow(Parrot.Squawk.FiringSolution, _lastTimestampMs ?? 0, force: true);
+            StateHasChanged();
+            return;
+        }
+
+        OpposedRoll roll = BustedRule.ResistCheck(b.Heat, b.Seed, ResistModifiers());
+        b.ResistRoll = roll;
+        if (roll.ChallengerWins)
+        {
+            RemoveHunter(b.HunterId);
+            _heat = EncounterRule.RaiseHeat(_heat, 1, SimTime); // a win pins the wolves meaner
+            b.ResultMessage = $"You break {b.HunterCallsign}'s boarding — they peel off nursing the dent. Heat climbs; the next wave is meaner.";
+            b.Phase = BustedEncounter.Stage.ResistWon;
+            SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
+        }
+        else
+        {
+            b.Phase = BustedEncounter.Stage.ResistLost;
+        }
+
+        StateHasChanged();
+    }
+
+    private void BustedResistLostConfirm() => BustedSubmit(harsher: true);
+
+    // A Bolivia beat: fold the choice, roll it, advance. After the last beat, tally and decide.
+    private void BustedBoliviaChoose(string choiceId)
+    {
+        if (_busted is not { } b || b.Phase != BustedEncounter.Stage.Bolivia)
+        {
+            return;
+        }
+
+        EncounterBeat beat = BoliviaEncounter.Script[b.BoliviaBeatIndex];
+        EncounterChoice choice = beat.Choices[0];
+        foreach (EncounterChoice c in beat.Choices)
+        {
+            if (c.Id == choiceId) { choice = c; break; }
+        }
+
+        OpposedRoll roll = BoliviaEncounter.RollBeat(b.Seed, b.BoliviaBeatIndex, choice, b.Heat, ResistModifiers());
+        b.BoliviaNet += roll.Margin;
+        b.BoliviaOutcomes.Add(new BoliviaEncounter.BeatOutcome(b.BoliviaBeatIndex, choice.Id, roll));
+        b.BoliviaBeatIndex++;
+
+        if (b.BoliviaBeatIndex >= BoliviaEncounter.Script.Count)
+        {
+            b.BoliviaEnding = BoliviaEncounter.Decide(b.BoliviaNet);
+            if (b.BoliviaEnding == BoliviaEncounter.Ending.Flee)
+            {
+                RemoveHunter(b.HunterId); // left tied up at their own ship
+                _heat = new HeatState(BoliviaEncounter.FleeHeat, SimTime);
+                _lastAnnouncedHeat = BoliviaEncounter.FleeHeat;
+                b.ResultMessage = $"You fight clear — {b.HunterCallsign} left tied up at their own ship. You slip away carrying heat {BoliviaEncounter.FleeHeat}.";
+                b.Phase = BustedEncounter.Stage.Fled;
+                SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
+            }
+            else
+            {
+                b.Phase = BustedEncounter.Stage.FreezeFrame;
+                RendererInterop.PlayCue("board");        // volley hook (audio cue is a follow-up)
+                RendererInterop.PlayCue("gameover");     // game-over-music hook
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    // THE FREEZE-FRAME → brain-backup resurrection: wake at the nearest haven's clinic in an insurance
+    // rustbucket. Everything VISIBLE aboard is gone; the tank comes up at the mercy floor (reach-a-pump
+    // reserve), so you wake grounded near a pump, not stranded. Buried/banked survives (it lives
+    // off-ship — other lanes). Never a dead save.
+    private void BustedResurrect()
+    {
+        if (_busted is not { } b)
+        {
+            return;
+        }
+
+        RemoveHunter(b.HunterId);
+        int mercyFloor = MercyFloorPulses();
+
+        // Consult the insurance policy at rebirth (issue #227 seam): None-tier returns the uninsured
+        // rustbucket + full clinic bill untouched; a covered tier would ease it — the pure rule decides.
+        RebirthOutcome outcome = InsuranceRule.ApplyToRebirth(
+            _insurance, SimTime, InsuranceRule.DefaultRebirth(mercyFloor));
+        BustedRule.ResurrectionKit kit = outcome.Kit;
+
+        // The rebirth tax (issue #227): the clinic bill is booked against the stake, floored at 0 — a
+        // shortfall is a debt the WIRE lane's bank will reconcile against banked/buried funds at merge.
+        int afterBill = Math.Max(0, kit.Credits - outcome.ClinicBillCr);
+        LogAutopilotEvent($"🏥 Clinic bill: −{outcome.ClinicBillCr:N0} cr (brain-backup wake-up). Insurance: {_insurance.Tier}.");
+
+        _credits = afterBill;
         _cargoUnits = 0;
         _cargoValue = 0;
         _cargoByClass.Clear();
-        _credits = Math.Max(0, _credits - EncounterRule.CatchFineCredits);
-        ShowPulseMessage($"{hunter.Callsign} runs you down — cargo seized, {EncounterRule.CatchFineCredits} cr fine. The gentleman's game has a price.");
-        RendererInterop.PlayCue("board");
+        _hotCargo.Launder();
+        _reactionMassPulses = Math.Min(kit.ReactionMassPulses, ReactionMassCapacityFor(kit.MassLevel));
+        _slugAmmo = kit.SlugAmmo;
+        _missileAmmo = kit.MissileAmmo;
+        _massLevel = kit.MassLevel;
+        _sensorLevel = kit.SensorLevel;
+        _holdLevel = kit.HoldLevel;
+        _telescopeLevel = kit.TelescopeLevel;
+        _hasNetJammer = false;
+        RebuildSensor();
+        _heat = HeatState.None;
+        _lastAnnouncedHeat = 0;
+        b.ClinicBillCr = outcome.ClinicBillCr;
+        b.HullDescription = outcome.HullDescription;
+
+        // Wake at the nearest haven's clinic: reset the ship state onto that haven, riding its rails.
+        string clinicName = WakeAtNearestHaven();
+        b.ClinicName = clinicName;
+        b.Phase = BustedEncounter.Stage.Resurrected;
+        StateHasChanged();
+    }
+
+    // The mercy floor in pulses: the reach-a-pump reserve FuelReachability prices for where we are, so
+    // the rustbucket wakes with just enough to crawl to fuel. Falls back to the flat autopilot reserve
+    // when no well reads (deep space) — never zero.
+    private int MercyFloorPulses()
+    {
+        int flat = AutopilotRehearsal.ReservePulses(ReactionMassCapacityFor(0));
+        if (_ephemeris is null || _simulator is null || CurrentWellBodyId() is not { } well)
+        {
+            return flat;
+        }
+
+        try
+        {
+            FuelReachability.Assessment a = FuelReachability.Assess(
+                _simulator, _ephemeris, _ship, ReactionMassCapacityFor(0), ReactionMassCapacityFor(0), well);
+            return a.SafeReservePulses > 0 ? a.SafeReservePulses : flat;
+        }
+        catch
+        {
+            return flat;
+        }
+    }
+
+    private int ReactionMassCapacityFor(int massLevel) => 250 + 150 * massLevel;
+
+    // Set the ship down at the nearest haven (the clinic), riding its velocity — a starter-grade parked
+    // state. Returns the haven's name for the wake card.
+    private string WakeAtNearestHaven()
+    {
+        if (_ephemeris is null)
+        {
+            return "a frontier clinic";
+        }
+
+        CelestialBody? nearest = null;
+        double best = double.MaxValue;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (!body.IsHaven)
+            {
+                continue;
+            }
+
+            double d = (_ephemeris.Position(body.Id, SimTime) - _ship.Position).Length;
+            if (d < best) { best = d; nearest = body; }
+        }
+
+        if (nearest is null)
+        {
+            return "a frontier clinic";
+        }
+
+        Vector2d pos = _ephemeris.Position(nearest.Id, SimTime);
+        Vector2d vel = TransferMath.BodyVelocity(_ephemeris, nearest.Id, SimTime);
+        _ship = new ShipState(pos, vel, SimTime);
+        ReprojectTrajectory();
+        _camera.CenterOn(_ship.Position);
+        return nearest.Name;
+    }
+
+    private void RemoveHunter(string hunterId)
+    {
+        for (int i = _hunters.Count - 1; i >= 0; i--)
+        {
+            if (_hunters[i].Id == hunterId)
+            {
+                _hunters.RemoveAt(i);
+            }
+        }
+    }
+
+    private void CloseBusted()
+    {
+        _busted = null;
+        StateHasChanged();
+    }
+
+    // Buy the one shipped dice helper: a Boarding-nets jammer, a named +2 on resist/Bolivia initiative
+    // (the modifier seam; the shop is a follow-up). One-time purchase, lost on resurrection.
+    private void BuyNetJammer()
+    {
+        if (_hasNetJammer || _credits < NetJammerPriceCr)
+        {
+            return;
+        }
+
+        _credits -= NetJammerPriceCr;
+        _hasNetJammer = true;
+        ShowPulseMessage("Boarding-nets jammer fitted — +2 on any last stand. The collectors hate it.");
+        StateHasChanged();
+    }
+
+    // The open BUSTED pop-up's state — grappled, at 1×, the captain choosing. The dice are rolled Core-
+    // side (BustedRule / BoliviaEncounter); this holds what's been rolled and which panel to show.
+    private sealed class BustedEncounter
+    {
+        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected }
+
+        public required string HunterId { get; init; }
+        public required string HunterCallsign { get; init; }
+        public required int Heat { get; init; }
+        public required ulong Seed { get; init; }
+        public required DiceRoll Bribe { get; init; }
+        public Stage Phase { get; set; } = Stage.Demand;
+        public OpposedRoll? ResistRoll { get; set; }
+        public BustedRule.Confiscation? Confiscation { get; set; }
+        public string? ResultMessage { get; set; }
+        public string? ClinicName { get; set; }
+        public int ClinicBillCr { get; set; }
+        public string? HullDescription { get; set; }
+
+        // Bolivia progress
+        public OpposedRoll? BoliviaInitiative { get; set; }
+        public int BoliviaBeatIndex { get; set; }
+        public int BoliviaNet { get; set; }
+        public List<BoliviaEncounter.BeatOutcome> BoliviaOutcomes { get; } = [];
+        public BoliviaEncounter.Ending? BoliviaEnding { get; set; }
     }
 
     private void DrawHunters()
