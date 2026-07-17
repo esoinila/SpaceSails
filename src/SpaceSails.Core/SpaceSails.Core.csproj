@@ -10,4 +10,59 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Version stamp (#254): inject the git short SHA + build timestamp into a generated partial of
+       BuildStamp so the running app can show which commit is live ("build d957fb4 · 2026-07-17 21:40")
+       and kill build-ghosting at a glance. Runs before CoreCompile so the generated source is in the
+       compile set.
+
+       Robustness contract:
+       - Git missing / not a repo / no .git (source drop, some CI checkouts): `git rev-parse` fails,
+         ContinueOnError swallows it, and the SHA falls back to "dev" — the build never breaks on the
+         stamp's account.
+       - No dirty-build loop: WriteOnlyWhenDifferent means back-to-back builds inside the same minute
+         produce identical content and skip the rewrite (so incremental builds stay clean). A build a
+         minute later refreshes the timestamp — that's the whole point.
+       - The file lives under obj/ (IntermediateOutputPath), so it's never committed. -->
+  <Target Name="GenerateBuildStamp" BeforeTargets="CoreCompile">
+    <Exec Command="git rev-parse --short=7 HEAD"
+          ConsoleToMSBuild="true"
+          ContinueOnError="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low"
+          WorkingDirectory="$(MSBuildProjectDirectory)">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitShortSha" />
+      <Output TaskParameter="ExitCode" PropertyName="_GitExitCode" />
+    </Exec>
+
+    <PropertyGroup>
+      <_BuildStampSha Condition="'$(_GitExitCode)' == '0' and '$(_GitShortSha)' != ''">$(_GitShortSha.Trim())</_BuildStampSha>
+      <_BuildStampSha Condition="'$(_BuildStampSha)' == ''">dev</_BuildStampSha>
+      <!-- HH\:mm forces a literal ':' — a bare ':' renders the build machine's culture time separator
+           (e.g. '.' under fi-FI), which we don't want in the stamp. -->
+      <_BuildStampTime>$([System.DateTime]::UtcNow.ToString('yyyy-MM-dd HH\:mm'))</_BuildStampTime>
+      <_BuildStampFile>$(IntermediateOutputPath)BuildStamp.g.cs</_BuildStampFile>
+    </PropertyGroup>
+
+    <!-- One item per line; %3B keeps the C# statement semicolons out of MSBuild's item separator. -->
+    <ItemGroup>
+      <_BuildStampLine Include="// &lt;auto-generated/&gt;" />
+      <_BuildStampLine Include="namespace SpaceSails.Core%3B" />
+      <_BuildStampLine Include="public static partial class BuildStamp" />
+      <_BuildStampLine Include="{" />
+      <_BuildStampLine Include='    public const string CommitSha = "$(_BuildStampSha)"%3B' />
+      <_BuildStampLine Include='    public const string BuildTimeUtc = "$(_BuildStampTime)"%3B' />
+      <_BuildStampLine Include="}" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_BuildStampFile)"
+                      Lines="@(_BuildStampLine)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <Compile Include="$(_BuildStampFile)" />
+      <FileWrites Include="$(_BuildStampFile)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

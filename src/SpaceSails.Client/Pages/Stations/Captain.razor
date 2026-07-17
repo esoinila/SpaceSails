@@ -121,6 +121,9 @@
                 </div>
             }
         </div>
+        @* Version stamp (#254): the captain sees which build she's flying, right on the status board. *@
+        <div class="captain-build-stamp text-secondary small mt-3 font-monospace"
+             title="Compile-time git SHA + build time (UTC)">@BuildStamp.Display</div>
     }
     else if (_view == CaptainView.Tutorials)
     {

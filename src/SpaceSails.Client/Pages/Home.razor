@@ -1,4 +1,5 @@
 @page "/"
+@using SpaceSails.Core
 
 <PageTitle>SpaceSails</PageTitle>
 
@@ -99,6 +100,11 @@
                 </div>
             </details>
         </div>
+    </div>
+
+    @* Version stamp (#254) — which commit is live, so nobody chases a fixed-yesterday ghost. *@
+    <div class="text-center mt-5">
+        <span class="small text-secondary font-monospace" title="Compile-time git SHA + build time (UTC)">@BuildStamp.Display</span>
     </div>
 </div>
 
