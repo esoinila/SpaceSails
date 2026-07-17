@@ -65,6 +65,25 @@
         </div>
     }
 
+    @* #255 — the diegetic long-haul jump overlay: the one loading bar allowed to be a FEATURE. While
+       the world re-seeds at the arrival epoch, the screen SAYS the state — CROSSING THE VOID, the years
+       ticking up, and a charming note that the bus does not stop out here. No cancel is offered. *@
+    @if (_jumpActive)
+    {
+        <div class="jump-overlay">
+            <div class="jump-overlay-inner">
+                <div class="jump-overlay-title">🚀 @LongHaul.VoidTitle</div>
+                <div class="jump-overlay-year">@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)</div>
+                <div class="jump-overlay-bar">
+                    <div class="jump-overlay-fill" style="width:@(_jumpTotalYears > 0 ? (int)(100.0 * Math.Clamp(_jumpYear, 0, _jumpTotalYears) / _jumpTotalYears) : 100)%"></div>
+                </div>
+                <div class="jump-overlay-bound">@LongHaul.VoidBound(_jumpDestName)</div>
+                <div class="jump-overlay-note">@_jumpFlavor</div>
+                <div class="jump-overlay-nostop">@LongHaul.VoidNoStop</div>
+            </div>
+        </div>
+    }
+
     @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
        player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
     @if (_viewObject is { } vo)
@@ -2897,11 +2916,11 @@
     }
 
     // The nav-card 🚀 button — uses the reproject-computed departure for the current destination.
-    private void EngageLongHaul() => EngageLongHaulTo(_destinationBodyId, _longHaulPlanet, _longHaulDeparture);
+    private Task EngageLongHaul() => EngageLongHaulTo(_destinationBodyId, _longHaulPlanet, _longHaulDeparture);
 
     // The MAP CONTEXT-MENU primary entry (owner refinement): one click SETS the destination AND engages.
     // Solves the departure fresh from the current state so it works straight off a berth, no card-hunting.
-    private void EngageLongHaulFromMenu(string bodyId)
+    private async Task EngageLongHaulFromMenu(string bodyId)
     {
         CloseBodyMenu();
         SetDestination(bodyId);
@@ -2910,15 +2929,21 @@
             return;
         }
 
-        EngageLongHaulTo(bodyId, planet, LongHaul.SolveDeparture(_ship, _ephemeris, planet));
+        await EngageLongHaulTo(bodyId, planet, LongHaul.SolveDeparture(_ship, _ephemeris, planet));
     }
 
-    // Engage the haul: refuse-with-reason if the gate is shut; else solve is already in hand — charge the
-    // departure pulses, apply the burn, and JUMP along the SOLVED conic to the planet's capture range (which
-    // reaches by construction). One frame of real time; the void is never integrated.
-    private void EngageLongHaulTo(string? destBodyId, CelestialBody? planet, LongHaul.Departure? departure)
+    // Engage the haul (#246 solve → #255 crossing): refuse-with-reason if the gate is shut; else the solve
+    // is in hand — charge the departure pulses, place the ship at the SOLVED conic's capture-range arrival
+    // (reaches by construction), and advance the clock there. The void is NEVER integrated: instead the
+    // world is RE-SEEDED at the arrival epoch with the same tested spawn/wave code a fresh boot uses (owner
+    // 2026-07-17: "just use the mechanism we have for the different spawn points — the physics is preserved,
+    // and that spawning code is tested to work"). Personal continuity (purse, heat, contacts, caches,
+    // quests, insurance, upgrades) rides the live fields untouched; every time-derived personal system keys
+    // off an ABSOLUTE sim-time checkpoint, so a decade of decay/accrual applies itself the moment the clock
+    // jumps — no replay needed. The crossing runs as an awaited, painting cinematic so the tab never freezes.
+    private async Task EngageLongHaulTo(string? destBodyId, CelestialBody? planet, LongHaul.Departure? departure)
     {
-        if (_ephemeris is null || planet is null)
+        if (_ephemeris is null || planet is null || _jumpInProgress)
         {
             return;
         }
@@ -2943,7 +2968,11 @@
             return; // vanishingly unlikely: the post-burn conic targets the planet by construction
         }
 
-        // Commit. (a/b) undock is part of engaging; charge the honest departure pulses; (c) flip the banner.
+        double crossingSeconds = reach.ElapsedSecondsFrom(postBurn.SimTime);
+        double daysPassed = Math.Round(crossingSeconds / DaySeconds);
+        double arrivalEpoch = reach.ArrivalSimTime;
+
+        // Commit the departure: undock (part of engaging), charge the honest pulses, flip the banner.
         if (_dockedHavenId is not null)
         {
             Undock();
@@ -2952,15 +2981,33 @@
         ShowPulseMessage(LongHaul.BannerNow(destName));
         _reactionMassPulses = Math.Max(0, _reactionMassPulses - dep.DeparturePulses);
 
-        // (d) THE JUMP: place the ship at the planet's capture range on the solved conic; advance the clock.
-        double daysPassed = Math.Round(reach.ElapsedSecondsFrom(postBurn.SimTime) / DaySeconds);
+        // #255 VAULT SAFETY (pre-advance autosave): commit the personal life NOW, so a tab death mid-crossing
+        // loses only the jump itself. The undock above already set a berth-resume near the departure.
+        RequestVaultSave();
+        FlushVaultSaveIfDirty();
+
+        // Raise the diegetic overlay and FREEZE the tick (the re-seed owns the clock; nothing integrates).
+        // The #246 bottle-pop squawk fires at engage; ESC/cancel is not offered — the overlay says so.
+        _jumpTotalYears = LongHaul.VoidYears(crossingSeconds);
+        _jumpYear = 0;
+        _jumpDestName = destName;
+        _jumpFlavor = VoidFlavor(_jumpTotalYears);
+        _jumpActive = true;
+        _jumpInProgress = true;
+        SquawkNow(Parrot.Squawk.LongHaul, _frameNowMs, force: true);
+        RendererInterop.PlayCue("voidjump");
+        StateHasChanged();
+
+        // Play the crossing as a short cinematic beat — the year counter ticks up over a couple of seconds
+        // while the tab stays fully responsive (there is NOTHING heavy to compute: the world is deterministic
+        // from sim time, so the jump is a clock advance + a cheap re-seed, not a decade of integration).
+        await RunVoidCinematic();
+
+        // COMMIT the crossing atomically: re-seed the world at the arrival epoch, place the ship at the
+        // capture-range arrival, advance the clock.
+        ReseedWorldForJump(arrivalEpoch);
         _ship = reach.ArrivalState;
         SimTime = reach.ArrivalSimTime;
-
-        // Reconcile the only actors the world integrates rather than derives (NPC traffic). Everything else
-        // — rails, heat decay (haven mult off in flight), interest, pod/cache/quest timers — is a pure
-        // function of the new sim time and reconciles itself on the next tick.
-        ReconcileNpcClocksTo(SimTime);
 
         StaleFutureNodes();          // any pending burns are behind us now
         ResetAutopilotBudget();
@@ -2969,68 +3016,62 @@
         _passDirty = true;           // reproject from the arrival state
         _scrubOffsetSeconds = 0;
 
-        // (e) announce, book the ledger line on the news wire, and autosave the crossing.
+        _jumpInProgress = false;
+        _jumpActive = false;
+
+        // Announce the arrival, book the ledger line, and autosave the FAR side of the void.
         ShowPulseMessage(LongHaul.Completed(destName, (int)daysPassed));
+        RendererInterop.PlayCue("board");
         PushNewsEvent(NewsWire.NewsEventKind.LongHaulComplete, destName, $"{(int)daysPassed} d crossed");
         RequestVaultSave();
         ReprojectTrajectory();
+        StateHasChanged();
     }
 
-    // Catch the world's integrated actors up to a jumped clock WITHOUT grinding the per-tick 60 s NPC loop
-    // (which would be ~a quarter-million fixed steps per ship across a 172-day void). Depots ride pure
-    // rails and need nothing; active/newly-activating traffic is advanced in a single adaptive coast that
-    // still fires its scheduled burns. Hunters are never here — the mode refuses while any is on the board.
-    private void ReconcileNpcClocksTo(double newT)
+    // #255 — re-seed the world at the arrival epoch WITHOUT integrating the void or freezing the tab. The
+    // depots are pure rails (StepNpcs recomputes each from the new sim time — correct at any epoch, zero
+    // cost), so they are kept as-is. Every transient stateful actor — mid-flight strangers, pods, a decoy
+    // ghost, rounds in flight — belonged to the world we departed a decade ago and is dropped (a decade past
+    // its last plotted node it has long arrived/expired anyway; see the DecadeJump_Retires… test). Fresh
+    // ambient traffic repopulates AT the arrival epoch through the existing, tested RefillTraffic wave path
+    // over the following sim-hour — deliberately NOT run here, because NPC route-planning is far too heavy to
+    // do at the (frozen) engage moment on the interpreted-WASM build (measured: ~20-40 s per hauler). This is
+    // the owner's architecture — reuse the tested spawn mechanism, physics preserved — with the planning cost
+    // kept off the dramatic beat. Transient world reset is acceptable (the hunter-refusal law already bars
+    // jumping out of a live chase).
+    private void ReseedWorldForJump(double epoch)
     {
-        if (_npcSimulator is null || _ephemeris is null)
-        {
-            return;
-        }
-
-        foreach (NpcState npc in _npcStates)
-        {
-            if (npc.Arrived)
-            {
-                continue;
-            }
-
-            if (!npc.Active)
-            {
-                if (newT < npc.Ship.ActivationTime)
-                {
-                    continue; // still fitting out at the new epoch — leave it for StepNpcs to activate
-                }
-
-                npc.Active = true;
-                npc.State = npc.Ship.InitialState;
-            }
-
-            if (npc.Ship.DepotBodyId is not null)
-            {
-                continue; // a depot is a pure function of sim time — StepNpcs recomputes it from the rails
-            }
-
-            // If the ship's whole plan has played out before the new epoch, it reached its destination long
-            // ago — mark it arrived rather than integrate years of post-plan ballistic drift (a multi-year
-            // long haul would otherwise grind tens of thousands of steps per freighter). This mirrors
-            // StepNpcs' own despawn: past the last node, the run is over.
-            IReadOnlyList<ManeuverNode> nodes = npc.Ship.Plan.Nodes;
-            double lastNodeTime = nodes.Count > 0 ? nodes[^1].SimTime : npc.Ship.ActivationTime;
-            if (newT >= lastNodeTime)
-            {
-                npc.Arrived = true;
-                continue;
-            }
-
-            if (npc.State.SimTime < newT)
-            {
-                // A wide far-field stride cap (6 h) keeps the one-shot cross-void catch-up cheap; RunAdaptive
-                // still auto-refines near a body, and cosmetic traffic needs no finer far from one.
-                npc.State = _npcSimulator.RunAdaptive(
-                    npc.State, newT - npc.State.SimTime, npc.Disabled ? null : npc.Ship.Plan, maxTimeStep: 21600.0);
-            }
-        }
+        _npcStates = _npcStates.Where(n => n.Ship.DepotBodyId is not null).ToArray();
+        _lastRefillCheckSimTime = epoch; // let RefillTraffic repopulate movers over the next sim-hour of play
+        _ordnance.Clear();               // rounds in flight belonged to the world we left
+        _beaconGhost = null;             // any decoy ghost is a decade stale
+        _pursuitTrail.Clear();
     }
+
+    // The crossing cinematic: tick the year counter 1 → total over ~2.2 s of theater, then hold the full bar
+    // a beat before the void lets out. Pure UI — the tab paints every frame (no heavy work runs during it).
+    private async Task RunVoidCinematic()
+    {
+        int perTickMs = Math.Clamp(2200 / Math.Max(1, _jumpTotalYears), 90, 400);
+        for (int year = 1; year <= _jumpTotalYears; year++)
+        {
+            _jumpYear = year;
+            StateHasChanged();
+            await Task.Delay(perTickMs);
+        }
+
+        await Task.Delay(260);
+    }
+
+    // The overlay's parrot-aging wink, scaled to how much void is being crossed (owner: "maybe the parrot
+    // aging jokes"). Pure flavor; the bird gets saltier the longer the dark.
+    private static string VoidFlavor(int years) => years switch
+    {
+        <= 1 => "🦜 the parrot barely blinks — a short dark",
+        <= 3 => "🦜 the parrot preens through the quiet years",
+        <= 6 => "🦜 the parrot has picked up two new swear words by now",
+        _ => "🦜 the parrot is greying at the crest — mind the long years out here",
+    };
 
     // The warp readout's text: paused, skipping (event + ETA), or the plain multiplier.
     private string WarpReadout =>
@@ -3606,6 +3647,17 @@
     private LongHaul.Reach? _longHaulReach;           // #246: the CURRENT coast's reach — the manual-coast promise verdict ONLY
     private CelestialBody? _longHaulPlanet;           // #246: the destination's sun-orbiting planet, named in the promise/verdict
     private LongHaul.Departure? _longHaulDeparture;   // #246/#249 fix: the solved cheap departure the OFFER quotes and engages
+
+    // #255 — the diegetic jump overlay + the re-seed guard. While _jumpInProgress the tick loop freezes
+    // (OnTick returns early) so the world never integrates the void; _jumpActive drives the full-screen
+    // "CROSSING THE VOID" overlay whose year counter ticks as the arrival-epoch fleet re-seeds.
+    private bool _jumpActive;
+    private bool _jumpInProgress;
+    private int _jumpYear;
+    private int _jumpTotalYears;
+    private string _jumpDestName = "";
+    private string _jumpFlavor = "";
+
     private bool _passDirty;
     private double _lastReprojectMs;
 
@@ -8030,6 +8082,13 @@
         _lastTimestampMs = highResTimestampMs;
         _frameNowMs = highResTimestampMs;
 
+        // #255: a long haul is crossing — the world is frozen mid-jump (the re-seed owns the clock, and
+        // the void is never integrated). The overlay paints via Blazor; the canvas holds its last frame.
+        if (_jumpInProgress)
+        {
+            return;
+        }
+
         FlushVaultSaveIfDirty();  // #225: one debounced autosave write per frame when a durable event fired
 
         UpdateNearestBody();
@@ -10954,6 +11013,20 @@
                 npc.State = TrafficSchedule.DepotState(
                     npc.Ship.Id, npc.Ship.DepotBodyId, npc.Ship.DepotOrbitRadius, npc.Ship.DepotPhase,
                     _ephemeris!, _ship.SimTime);
+                continue;
+            }
+
+            // #255 — the freeze class: if the world clock has leapt an epoch ahead of this mover (a long-haul
+            // jump, a far-epoch vault resume, or a ?simhours boot cheat left it seeded near epoch 0 while
+            // SimTime is years on), do NOT integrate the void — that is millions of 60 s Steps and a
+            // hard-frozen tab. ReseedWorldForJump already retires movers on the jump/resume paths; this is the
+            // last-line guard so no future path can ever grind. The mover belonged to the world we left, so
+            // retire it exactly as the re-seed would and let RefillTraffic repopulate at the current epoch.
+            // Depots never reach here (rails, closed-form, handled above); honest warp never opens a gap this
+            // wide in one frame (see TrafficSchedule.NpcMaxCatchUpSeconds).
+            if (TrafficSchedule.IsCatchUpStale(_ship.SimTime - npc.State.SimTime))
+            {
+                npc.Arrived = true;
                 continue;
             }
 
@@ -14411,6 +14484,16 @@
         _ship = new ShipState(dockPos + outward * 3_000, vel, savedSimTime);
 
         SimTime = savedSimTime;
+
+        // #255 — the freeze class: the world was seeded with movers at boot epoch ~0 BEFORE this vault
+        // restore runs (traffic is generated once during OnAfterRender, then the start picker offers
+        // "Continue"). Jumping the clock to a far savedSimTime (the owner's 8.3-year "the-tilt" save) would
+        // leave every scheduled mover a decade behind — StepNpcs would try to integrate the whole gap at the
+        // 60 s NpcTimeStep on the first frame and hard-freeze the tab. Re-seed exactly as a long-haul jump
+        // does: keep the pure-rails depots, drop the epoch-0 movers, and let RefillTraffic repopulate fresh
+        // AT the resume epoch. A vault resume IS a void crossing — the world we left is a decade gone.
+        ReseedWorldForJump(savedSimTime);
+
         _dockedHavenId = havenId;
         _dockOffset = _ship.Position - dockPos;
         SetDeckForDock(havenId);

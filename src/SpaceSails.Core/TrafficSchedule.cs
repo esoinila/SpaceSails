@@ -60,6 +60,22 @@ public static class TrafficSchedule
     /// </summary>
     public const double NpcTimeStep = 60;
 
+    /// <summary>#255 — the freeze class: the widest NPC catch-up gap that is still HONEST WARP. Past 30
+    /// sim-days the gap is not warp, it is an epoch discontinuity — a long-haul jump, or a vault resumed at
+    /// a far sim-epoch (the owner's 8.3-year "the-tilt" save) landing the world clock years ahead of a mover
+    /// still seeded near epoch 0. The live loop can NEVER legitimately open a gap this wide in one frame: the
+    /// player's clock advances at most MaxStepsPerFrame × 1 s ≈ 5.6 h per frame (accumulator-clamped, even on
+    /// a tab resumed from suspension), and a scheduled mover activates the same frame its ActivationTime is
+    /// crossed — so 30 days sits ~128× above the widest honest per-frame catch-up yet far below any real void.
+    /// A gap past it means integrating the void at <see cref="NpcTimeStep"/> would grind millions of Steps and
+    /// hard-freeze the tab; the mover belongs to the world we left, so it is retired and RefillTraffic
+    /// repopulates fresh at the epoch (the same fate <c>ReseedWorldForJump</c> assigns for free).</summary>
+    public const double NpcMaxCatchUpSeconds = 30.0 * Day;
+
+    /// <summary>#255 — true when a live NPC catch-up gap is an epoch leap, not warp: integrate it and the tab
+    /// freezes, so the caller must retire the mover instead. See <see cref="NpcMaxCatchUpSeconds"/>.</summary>
+    public static bool IsCatchUpStale(double gapSeconds) => gapSeconds > NpcMaxCatchUpSeconds;
+
     // Coarse on purpose: catch-up replays years of transfer at startup in interpreted WASM.
     // The resulting state is *declared* truth, so coarseness costs accuracy of the fiction, not
     // determinism of the sim.
