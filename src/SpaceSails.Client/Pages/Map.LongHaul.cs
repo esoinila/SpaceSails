@@ -479,6 +479,10 @@ public partial class Map
         }
 
         ShowPulseMessage(LongHaul.BannerNow(destName));
+        // #268 pay-at-the-pump — CORRECT AS-IS, left alone. Unlike ⚓ Match & clamp, this charge IS the
+        // burn firing: the departure burn genuinely fires HERE, at engage, before the void-crossing jump
+        // (#249/#250's burns-then-jumps order — the post-burn conic above was computed FROM this Δv). So
+        // taking the pulses now is charging as the burn executes, not billing a flight the ship hasn't flown.
         _reactionMassPulses = Math.Max(0, _reactionMassPulses - dep.DeparturePulses);
 
         // #255 VAULT SAFETY (pre-advance autosave): commit the personal life NOW, so a tab death mid-crossing
