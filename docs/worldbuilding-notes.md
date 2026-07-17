@@ -77,6 +77,21 @@ distract from it.*
   RequiredSecondsFor math becomes literal gameplay). Prey interiors can be generated from
   ship kind. Third-person = the same deck renderer with a camera following the avatar.
 
+
+## 7. Phobos — the strangest port in Sol (owner-endorsed, 2026-07-17)
+
+- The pieces already converging on one 27-km moon: the **85 m monolith** on the Stickney rim
+  (#164 — a meeting place for deals, now a real `Landmark` since #231), the flagship
+  **treasure island** (the first map card reads "PHOBOS — from the monolith, N paces..."),
+  and the **beanstalk** candidate (#234 — at Phobos scale a space elevator is a rope with a
+  rock on the end; materials stress is a rounding error).
+- The vision: a port that shouldn't exist and does. Deals sealed in the monolith's shadow,
+  hoards buried in its regolith, cargo riding a cable no engineer had to be clever about,
+  and the elevator's two ends as paired walkable ports — the door family's vertical member
+  (docking tube → shuttle bay → the long ride).
+- Nobody agrees who built the monolith; everybody agrees the anchor bolts for the cable went
+  in suspiciously easily.
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |
@@ -89,3 +104,4 @@ distract from it.*
 | Telescope track-hold | post-M12 | holding the scope on a target improves its Observation quality → visibly tighter cone |
 | Shuttle boarding sequence | post-M12 | walk to bay → fly shuttle across (rel-velocity drift minigame) → prey interior |
 | Third-person deck camera | post-M12 | deck renderer + avatar-following camera |
+| Phobos, strangest port | after #225 arc | Lab 31 beanstalk numbers -> elevator haven pair at Phobos (#164/#231/#234) |
