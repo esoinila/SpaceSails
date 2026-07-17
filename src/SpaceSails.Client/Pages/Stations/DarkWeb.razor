@@ -57,6 +57,42 @@
                 </table>
             }
 
+            @* PR-WIRE — the favor bank over the wire (FridaySecondPlan §0, ruling 6). Dark-web-native
+               contacts you have history with will move coin for you from anywhere: deposit safe from
+               confiscation, draw it back, or borrow gas money on a favor. In-person-only contacts (the
+               asteroid hermit, the Magpie) never appear here — you bank those across their table. *@
+            <div class="text-secondary mb-1">🏦 Favor bank — wire-capable contacts:</div>
+            @if (WireContacts.Count == 0)
+            {
+                <div class="text-secondary mb-2">No wire-capable contacts yet. Do a job for a dark-web fixer (Madam Coil, The Fixer, Gilt-Eye) and they'll bank for you from anywhere.</div>
+            }
+            else
+            {
+                <table class="table table-sm table-dark mb-2">
+                    <tbody>
+                        @foreach (WireContact wc in WireContacts)
+                        {
+                            WireContact w = wc;
+                            <tr>
+                                <td>
+                                    @w.DisplayName
+                                    <div class="text-secondary">
+                                        @(w.Balance > 0 ? $"holds {w.Balance:N0} cr of yours"
+                                          : w.Balance < 0 ? $"you owe {(-w.Balance):N0} cr"
+                                          : "no coin between you yet")
+                                    </div>
+                                </td>
+                                <td class="text-end align-middle text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
+                                            title="Open this contact's account over the wire — deposit, withdraw or borrow"
+                                            @onclick="() => OnOpenWireBank.InvokeAsync(w.ContactId)">💰 Bank</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
             <div class="text-secondary mb-1">Your sellable tracks (quality ≥ 50%):</div>
             @if (!SellableTracks.Any())
             {
@@ -123,6 +159,18 @@
 
     [Parameter] public IReadOnlyList<MarketShip> MarketShips { get; set; } = [];
     [Parameter] public IReadOnlyList<TrackedShipInfo> TrackedShips { get; set; } = [];
+
+    /// <summary>PR-WIRE — a wire-capable contact for the favor-bank panel: their id (for the callback),
+    /// display name, and signed balance (+ = they hold our coin; − = we owe them).</summary>
+    public readonly record struct WireContact(string ContactId, string DisplayName, long Balance);
+
+    /// <summary>The dark-web-native contacts the player has history with — projected by Map. Empty until
+    /// the player has done business with a wire-capable fixer.</summary>
+    [Parameter] public IReadOnlyList<WireContact> WireContacts { get; set; } = [];
+
+    /// <summary>Raised when the player opens a contact's account over the wire — Map opens the bank card
+    /// (channel-checked) for that contact id.</summary>
+    [Parameter] public EventCallback<string> OnOpenWireBank { get; set; }
 
     /// <summary>Raised after a successful intel buy (the callsign bought) — Map.razor drops a
     /// line on the news wire (PR-14); this component never needs to know the wire exists.</summary>

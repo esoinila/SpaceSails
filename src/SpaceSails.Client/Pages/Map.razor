@@ -120,6 +120,90 @@
         </div>
     }
 
+    @* PR-WIRE — the favor bank card (FridaySecondPlan §0). Opened at a contact's table with 'b' (in
+       person) or from the dark-web desk (wire). Park coin off the purse (safe from confiscation),
+       draw it back, or borrow gas money against a favor. Same overlay family as the deck-offer-card. *@
+    @if (_bankSession is { } bank)
+    {
+        long _bankBal = _contacts.For(bank.ContactId).CreditBalance;
+        int _bankMissions = _contacts.For(bank.ContactId).MissionsCompleted;
+        bool _bankTrusted = ContactSheets.WillStake(_bankMissions);
+        TrustTier _bankTier = ContactSheets.TrustFor(_bankMissions);
+        <div class="deck-offer-card deck-bank-card">
+            <div class="deck-offer-giver">💰 @bank.DisplayName's ledger @(bank.ViaWire ? "· 🕸 wire" : "· 🤝 in person")</div>
+            <div class="deck-bank-balance small">
+                @if (_bankBal > 0)
+                {
+                    <span class="text-success">They hold @_bankBal.ToString("N0", CultureInfo.InvariantCulture) cr of yours</span>
+                }
+                else if (_bankBal < 0)
+                {
+                    <span class="text-danger">You owe them @((-_bankBal).ToString("N0", CultureInfo.InvariantCulture)) cr</span>
+                }
+                else
+                {
+                    <span class="text-secondary">No coin between you yet</span>
+                }
+                <span class="text-secondary"> · trust: @_bankTier · purse @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</span>
+            </div>
+            @if (_heat.Level > 0)
+            {
+                <div class="deck-bank-warn small text-warning">⚠ Heat @_heat.Level — parking coin now is FENCING: a cut comes off the top (still less than the collectors would take).</div>
+            }
+            <div class="deck-bank-actions">
+                <div class="deck-bank-row small">
+                    <span class="deck-bank-label">Deposit</span>
+                    @foreach (long amt in BankAmounts)
+                    {
+                        long a = amt;
+                        <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
+                                disabled="@(_credits < a)" title="@($"Park {a:N0} cr with {bank.DisplayName} — off the purse, safe from confiscation")"
+                                @onclick="() => BankDeposit(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                    }
+                </div>
+                <div class="deck-bank-row small">
+                    <span class="deck-bank-label">Withdraw</span>
+                    @foreach (long amt in BankAmounts)
+                    {
+                        long a = amt;
+                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                disabled="@(_bankBal < a)" title="@($"Draw {a:N0} cr back into the purse")"
+                                @onclick="() => BankWithdraw(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                    }
+                </div>
+                @if (_bankBal < 0)
+                {
+                    <div class="deck-bank-row small">
+                        <span class="deck-bank-label">Repay</span>
+                        @foreach (long amt in BankAmounts)
+                        {
+                            long a = amt;
+                            <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
+                                    disabled="@(_credits < a)" title="@($"Pay {a:N0} cr toward what you owe {bank.DisplayName}")"
+                                    @onclick="() => BankRepay(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                        }
+                    </div>
+                }
+                @if (_bankTrusted && _bankBal >= 0)
+                {
+                    <div class="deck-bank-row small">
+                        <span class="deck-bank-label">Borrow</span>
+                        <button type="button" class="btn btn-sm btn-warning py-0 px-1"
+                                title="@($"Take {BankLoanPrincipal:N0} cr on a favor — you'll owe {bank.DisplayName} one quiet delivery")"
+                                @onclick="() => BorrowFavorFromBank()">📡 favor wire · @BankLoanPrincipal.ToString("N0", CultureInfo.InvariantCulture) cr</button>
+                    </div>
+                }
+            </div>
+            @if (bank.Notice is { } notice)
+            {
+                <div class="deck-bank-notice small">@notice</div>
+            }
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-outline-light" title="Close the ledger and step back" @onclick="CloseBank">Done</button>
+            </div>
+        </div>
+    }
+
     @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
        bay's airlock lists the places within one shuttle hop. An interior berth is pickable — confirm and
        the crossing IS the trip, you step off ashore there; a body in range with nowhere to step off says
@@ -1518,6 +1602,16 @@
                                         else if (_fill.Pulses <= 0)
                                         {
                                             <div class="fuel-note small text-danger mt-1">Not enough credits for even one pulse (@_fuelPrice cr/p).</div>
+                                            @* PR-WIRE: broke at the pump — the dream's anonymized favor wire. A trusted
+                                               dark-web-native contact wires gas money; you owe them one quiet delivery. *@
+                                            @if (BestWireLenderId() is { } lender)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-warning mt-2 w-100"
+                                                        title="@($"Call in a favor — {ContactSheets.For(lender).DisplayName} wires you {PumpLoanPrincipal(_fuelRoom, _fuelPrice):N0} cr for fuel. You'll owe one quiet delivery.")"
+                                                        @onclick="CallInFavorAtPump">
+                                                    📡 Call in a favor — @ContactSheets.For(lender).DisplayName wires @PumpLoanPrincipal(_fuelRoom, _fuelPrice).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            }
                                         }
                                         else if (_fill.Pulses < _fuelRoom)
                                         {
@@ -1654,7 +1748,7 @@
                             </div>
                             @if (_commsSelectedId == "darkweb")
                             {
-                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
                             }
                             else
                             {
@@ -1770,6 +1864,7 @@
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"
                                                               Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
+                                                              Accounts="LedgerAccounts()"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               OnReopenStartPicker="ReopenStartPicker"
                                                               InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
@@ -4341,7 +4436,7 @@
     // _tutorialStep, which linear-chains its steps. A hunt is met when its target ship is brought
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
-    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack }
+    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor }
     // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
     // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
     // Crack is the same face-to-face shape but the pickup is a locked hatch *here*: walk to the named
@@ -4507,6 +4602,10 @@
                 return true;
             case "e" or "E":
                 InteractAtConsole();
+                return true;
+            case "b" or "B":
+                // PR-WIRE: bank at the contact's table — deposit, withdraw or borrow (in person).
+                OpenBankAtBar();
                 return true;
             default:
                 return false;
@@ -10788,6 +10887,57 @@
         _fuelDirSig = null; // any cached "nearest pump" directions are stale now
     }
 
+    // PR-WIRE — the broke-at-a-pump borrow (the dream's anonymized gas-by-wire). A trusted, dark-web-
+    // native contact we have history with will wire fuel money on a favor. Picks the most-trusted such
+    // contact (most jobs done), or null if none qualifies — the button only shows when this is non-null.
+    private string? BestWireLenderId()
+    {
+        string? best = null;
+        int bestMissions = -1;
+        foreach ((string id, ContactHistory h) in _contacts.Entries)
+        {
+            if (!FavorBank.CanWireLoan(ContactSheets.For(id), h.MissionsCompleted))
+            {
+                continue;
+            }
+            if (h.MissionsCompleted > bestMissions)
+            {
+                bestMissions = h.MissionsCompleted;
+                best = id;
+            }
+        }
+        return best;
+    }
+
+    // The favor line a pump borrow draws: enough to fill the room at the current price, capped so a
+    // single favor never wires a fortune (BankLoanPrincipal is the ceiling — a good top-up, no more).
+    private long PumpLoanPrincipal(int room, int pricePerPulse) =>
+        Math.Min(BankLoanPrincipal, Math.Max(100L, (long)Math.Max(0, room) * Math.Max(1, pricePerPulse)));
+
+    // Wire the favor at the pump and fill what it buys — the stranded captain's rescue. Books the debt
+    // and raises the quiet-delivery obligation; then spends the wired coin straight into the tank.
+    private void CallInFavorAtPump()
+    {
+        if (_ephemeris is null || FuelReachability.AlongsidePump(_ephemeris, _ship) is not { } pump)
+        {
+            return;
+        }
+        if (BestWireLenderId() is not { } lender)
+        {
+            return;
+        }
+        int room = ReactionMassCapacity - _reactionMassPulses;
+        int price = FuelMarket.PricePerPulse(_ephemeris.Position(pump.Id, SimTime).Length);
+        long principal = PumpLoanPrincipal(room, price);
+        if (!BankBorrowFavor(lender, principal, viaWire: true))
+        {
+            return;
+        }
+        string lenderName = ContactSheets.For(lender).DisplayName;
+        ShowPulseMessage($"📡 {lenderName} wires {principal:N0} cr, no questions — you owe them one quiet delivery. Fill her up.");
+        BuyFuel(int.MaxValue); // spend the fresh coin straight into the tank
+    }
+
     // The honest "how do I refuel from here" line for the Trade desk when the ship is NOT alongside a pump
     // (#157 item 3). Priced by FuelReachability against the current well so the desk always answers the
     // question — with directions, not a dead button. Cached on a coarse position/tank signature so the
@@ -12205,6 +12355,14 @@
             return;
         }
 
+        // PR-WIRE: a favor called in. If we owe this contact a wired debt and haven't yet been handed
+        // the delivery, they slide it across the table now — one quiet delivery, in their own voice.
+        if (MakeFavorDeliveryOffer(giver) is { } favorOffer)
+        {
+            _pendingOffer = favorOffer;
+            return;
+        }
+
         Quest? offer = giver switch
         {
             _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
@@ -12306,6 +12464,42 @@
         string blurb = $"“Quiet parcel, no questions. Gets to {dest.Name} in one piece, you walk with {reward:N0} cr. {drop}”";
         return new Quest($"run-{++_questSeq}", QuestKind.CargoRun, giver,
             "", dest.Name, $"Run a parcel to {dest.Name}", blurb, reward, DestBodyId: dest.Id);
+    }
+
+    // PR-WIRE — the favor called in. When we owe a contact a wired debt (a FavorObligation from a
+    // borrow) and don't already have their delivery in hand, they hand us one quiet parcel now, in
+    // their voice. Delivering it works the debt off (PayCompletedQuests books the repayment). The
+    // destination is a haven other than this one, picked stably by sim time + berth.
+    private Quest? MakeFavorDeliveryOffer(string giver)
+    {
+        FavorObligation? match = null;
+        foreach (FavorObligation o in _favorObligations)
+        {
+            if (string.Equals(o.ContactId, giver, StringComparison.OrdinalIgnoreCase)) { match = o; break; }
+        }
+        if (match is not { } debt)
+        {
+            return null;
+        }
+        if (_quests.Any(q => q.Kind == QuestKind.Favor && string.Equals(q.Giver, giver, StringComparison.OrdinalIgnoreCase) && q.State != QuestState.TurnedIn))
+        {
+            return null; // already carrying their favor
+        }
+
+        List<CelestialBody> havens = (_ephemeris?.Bodies ?? [])
+            .Where(b => b.IsHaven && b.Id != _dockedHavenId)
+            .OrderBy(b => b.Id, StringComparer.Ordinal)
+            .ToList();
+        if (havens.Count == 0)
+        {
+            return null;
+        }
+
+        CelestialBody dest = havens[OfferIndex(havens.Count)];
+        string drop = IsDockableHaven(dest) ? "Berth there and we're square." : "Park in orbit there and we're square.";
+        string blurb = $"{debt.VoiceLine} Get it to {dest.Name} in one piece. {drop}";
+        return new Quest($"favor-{++_questSeq}", QuestKind.Favor, giver,
+            "", dest.Name, $"Quiet delivery for {GiverDisplay(giver)}", blurb, (int)debt.PrincipalCredits, DestBodyId: dest.Id);
     }
 
     // A whisper on an off-books ghost — the payoff IS the tip. Accepting drops a fresh route-intel
@@ -12447,7 +12641,7 @@
         Kind: ToContractKind(q.Kind),
         Giver: GiverDisplay(q.Giver),
         DestName: q.TargetCallsign,
-        DestParent: q.Kind == QuestKind.CargoRun ? DestParentName(q.DestBodyId) : null,
+        DestParent: q.Kind is QuestKind.CargoRun or QuestKind.Favor ? DestParentName(q.DestBodyId) : null,
         TargetName: q.Kind == QuestKind.Crack ? q.TargetShipId : q.TargetCallsign,
         Pin: q.Pin,
         Charted: q.SourceBodyId is not { } src || !IsBodyHidden(src),
@@ -12460,6 +12654,7 @@
         QuestKind.Intel => ContractKind.Intel,
         QuestKind.Fetch => ContractKind.Fetch,
         QuestKind.Crack => ContractKind.Crack,
+        QuestKind.Favor => ContractKind.CargoRun, // a favor delivery reads as a cargo run in the brief
         _ => ContractKind.CargoRun,
     };
 
@@ -12611,10 +12806,12 @@
     {
         foreach (Quest q in _quests)
         {
-            if (q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && q.DestBodyId == dockId)
+            if (q is { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active } && q.DestBodyId == dockId)
             {
                 q.State = QuestState.Complete;
-                ShowPulseMessage($"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
+                ShowPulseMessage(q.Kind == QuestKind.Favor
+                    ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
+                    : $"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
             }
         }
     }
@@ -12664,12 +12861,14 @@
         bool delivered = false;
         foreach (Quest q in _quests)
         {
-            if (q is not { Kind: QuestKind.CargoRun, State: QuestState.Active, DestBodyId: { } destId }) continue;
+            if (q is not { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active, DestBodyId: { } destId }) continue;
             if (BodyById(destId) is not { } dest || IsDockableHaven(dest)) continue; // stations: ⚓ Dock path
             if (IsBoundAtMoonHaven(dest))
             {
                 q.State = QuestState.Complete;
-                ShowPulseMessage($"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
+                ShowPulseMessage(q.Kind == QuestKind.Favor
+                    ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
+                    : $"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
                 delivered = true;
             }
         }
@@ -12708,7 +12907,182 @@
 
     // The relationship system's seed (#185): the SAVED history of who we've done jobs for — a real
     // fact ("we now have a history with the lady at the Ringside bar") the future system reads.
+    // PR-WIRE (FridaySecondPlan §0): the same book now also carries the favor bank's signed credit
+    // balances (deposits, loans) via ContactLedger.ApplyCredit.
     private readonly ContactLedger _contacts = new();
+
+    // PR-WIRE — the favor bank. One open bank card at a time (deposit / withdraw / borrow at a
+    // contact), plus the favor debts we've taken on (each surfaces later as one quiet delivery in the
+    // contact's voice — FavorObligation). Both are session state; the future save layer serializes the
+    // ledger balances, not these transient UI holders.
+    private BankSession? _bankSession;
+    private readonly List<FavorObligation> _favorObligations = [];
+
+    // The open bank card: whose desk we're at, their character sheet, and whether we reached them over
+    // the wire (dark-web desk) or in person (their bar table) — the channel gates what's allowed.
+    private sealed record BankSession(string ContactId, string DisplayName, ContactSheet Sheet, bool ViaWire)
+    {
+        public string? Notice { get; set; } // the last action's receipt, shown on the card
+    }
+
+    // Standard bank denominations for the card's quick buttons (the purse and balances are in credits).
+    private static readonly long[] BankAmounts = [100, 500, 1000];
+
+    // Open the favor-bank card for a contact. Channel-checked by the caller: in person (their bar) works
+    // for anyone; over the wire only for a dark-web-native contact (ruling 6).
+    private void OpenBank(string contactId, bool viaWire)
+    {
+        ContactSheet sheet = ContactSheets.For(contactId);
+        if (viaWire && !FavorBank.CanBankRemotely(sheet))
+        {
+            ShowPulseMessage($"{sheet.DisplayName} won't touch the wire — that account is in person only. 🤝");
+            return;
+        }
+        _bankSession = new BankSession(contactId, sheet.DisplayName, sheet, viaWire);
+    }
+
+    private void CloseBank() => _bankSession = null;
+
+    // Open the bank at the bar patron you're standing at (the 'b' key, in person). Their character sheet
+    // decides nothing here — every contact banks in person — but a stranger with no history still opens,
+    // so a first deposit can seed a relationship you later borrow against.
+    private void OpenBankAtBar()
+    {
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.BarPatron } spot)
+        {
+            ShowPulseMessage("Stand at a contact's table to open an account. 💰");
+            return;
+        }
+        string giver = spot.Label.Replace("◈", "").Trim();
+        OpenBank(giver, viaWire: false);
+    }
+
+    // Park coin with a contact (the bank). Calm → the whole sum lands and earns interest; heated →
+    // fencing: a dice-rolled cut proportional to heat is taken on the way in, ALWAYS less than the
+    // collector would confiscate (FavorBank, ruling 5). Deposited coin is off the purse — invisible to
+    // confiscation by construction (the BUSTED lane reads only _credits + carried cargo, never the
+    // ledger balances). Returns quietly if the purse can't cover it.
+    private void BankDeposit(long amount)
+    {
+        if (_bankSession is not { } session || amount <= 0)
+        {
+            return;
+        }
+        long park = Math.Min(amount, _credits);
+        if (park <= 0)
+        {
+            session.Notice = "Nothing in the purse to park.";
+            return;
+        }
+
+        int heat = _heat.Level;
+        double roll = FavorBank.Roll($"{session.ContactId}|deposit|{SimTime:F0}|{park}");
+        FavorBank.DepositQuote quote = FavorBank.PriceDeposit(park, heat, roll);
+
+        _credits -= (int)park;                       // the whole sum leaves the purse
+        _contacts.ApplyCredit(session.ContactId, session.DisplayName,
+            FavorBank.DepositTxn(quote.Credited, SimTime,
+                heat > 0 ? $"fenced {park:N0} cr (heat {heat})" : $"parked {park:N0} cr"));
+        if (quote.Cut > 0)
+        {
+            _contacts.ApplyCredit(session.ContactId, session.DisplayName,
+                FavorBank.FenceCutTxn(quote.Cut, SimTime, $"fence's cut, {quote.CutFraction * 100:F0}%"));
+            session.Notice = $"Fenced {park:N0} cr while hot — {session.DisplayName} took {quote.Cut:N0} cr ({quote.CutFraction * 100:F0}%); {quote.Credited:N0} cr banked, safe from the collectors.";
+        }
+        else
+        {
+            session.Notice = $"Parked {park:N0} cr with {session.DisplayName} — off the purse, earning while it's quiet. 💰";
+        }
+    }
+
+    // Draw parked coin back out. In person or (for a wire contact) over the dark web — the channel was
+    // enforced when the card opened. Only the positive part of the balance is ours to withdraw.
+    private void BankWithdraw(long amount)
+    {
+        if (_bankSession is not { } session || amount <= 0)
+        {
+            return;
+        }
+        long balance = _contacts.For(session.ContactId).CreditBalance;
+        long take = Math.Min(amount, balance);
+        if (take <= 0)
+        {
+            session.Notice = "No coin of yours parked here to draw.";
+            return;
+        }
+
+        _credits += (int)take;
+        _contacts.ApplyCredit(session.ContactId, session.DisplayName,
+            FavorBank.WithdrawalTxn(take, SimTime, $"drew {take:N0} cr"));
+        session.Notice = $"Drew {take:N0} cr back into the purse from {session.DisplayName}.";
+    }
+
+    // Pay off an interest-bearing debt with coin on hand (drives a negative balance back toward zero).
+    private void BankRepay(long amount)
+    {
+        if (_bankSession is not { } session || amount <= 0)
+        {
+            return;
+        }
+        long owed = -_contacts.For(session.ContactId).CreditBalance; // positive = what we owe
+        long pay = Math.Min(Math.Min(amount, owed), _credits);
+        if (pay <= 0)
+        {
+            session.Notice = owed <= 0 ? "You owe them nothing." : "Not enough coin to pay it down.";
+            return;
+        }
+
+        _credits -= (int)pay;
+        _contacts.ApplyCredit(session.ContactId, session.DisplayName,
+            FavorBank.RepaymentTxn(pay, SimTime, $"repaid {pay:N0} cr"));
+        session.Notice = $"Paid {pay:N0} cr toward what you owe {session.DisplayName}.";
+    }
+
+    // A modest, standard favor line — roughly a good top-up (≈ half a tank at the inner price). Kept
+    // flat so the string (one quiet delivery) is always proportionate; never a fortune on a promise.
+    private const long BankLoanPrincipal = 600;
+
+    // Borrow the standard favor line from the contact whose bank card is open (in person or by wire).
+    private void BorrowFavorFromBank()
+    {
+        if (_bankSession is not { } session)
+        {
+            return;
+        }
+        if (BankBorrowFavor(session.ContactId, BankLoanPrincipal, session.ViaWire))
+        {
+            session.Notice = $"{session.DisplayName} wires you {BankLoanPrincipal:N0} cr. You owe them one quiet delivery — it'll come. 📡";
+        }
+    }
+
+    // Borrow gas money against a favor (the dream's anonymized wire). Books the principal as debt and
+    // raises ONE quiet-delivery obligation that arrives later in the contact's voice; working that
+    // delivery off IS the repayment. Trusted contacts only. Returns true if the wire went through.
+    private bool BankBorrowFavor(string contactId, long principal, bool viaWire)
+    {
+        ContactSheet sheet = ContactSheets.For(contactId);
+        int missions = _contacts.For(contactId).MissionsCompleted;
+        if (!ContactSheets.WillStake(missions))
+        {
+            ShowPulseMessage($"{sheet.DisplayName} won't stake a captain they barely know — do a few jobs first. 🤝");
+            return false;
+        }
+        if (viaWire && !sheet.CanWire)
+        {
+            ShowPulseMessage($"{sheet.DisplayName} deals in person only — no wire from here. 🤝");
+            return false;
+        }
+        if (principal <= 0)
+        {
+            return false;
+        }
+
+        _credits += (int)principal;
+        _contacts.ApplyCredit(contactId, sheet.DisplayName,
+            FavorBank.BorrowTxn(principal, SimTime, $"favor wire — {principal:N0} cr gas money"));
+        _favorObligations.Add(FavorObligation.ForLoan(sheet, principal, SimTime));
+        return true;
+    }
 
     // #202: the crimes' books — a loot line per completed boarding, newest first, projected into the
     // Captain's ledger alongside the honest autopilot receipts (the established tip idiom).
@@ -12729,6 +13103,19 @@
         {
             if (q.State != QuestState.Complete)
             {
+                continue;
+            }
+
+            // PR-WIRE: a favor delivery pays no coin — working it off REPAYS the wired debt. Book the
+            // principal back onto the ledger (balance climbs toward zero), clear the obligation, and
+            // give it a quiet receipt rather than the coin fanfare (no money changed hands).
+            if (q.Kind == QuestKind.Favor)
+            {
+                q.State = QuestState.TurnedIn;
+                _contacts.ApplyCredit(q.Giver, q.Giver,
+                    FavorBank.RepaymentTxn(q.Reward, SimTime, $"quiet delivery — favor to {GiverDisplay(q.Giver)} repaid"));
+                _favorObligations.RemoveAll(o => string.Equals(o.ContactId, q.Giver, StringComparison.OrdinalIgnoreCase));
+                ShowPulseMessage($"The favor's square with {GiverDisplay(q.Giver)} — the debt's off the books. 📡");
                 continue;
             }
 
@@ -12764,6 +13151,47 @@
         ShowNextCelebration(); // if a second contract paid at the same berth, raise a glass to it too
     }
 
+    // PR-WIRE — project the favor bank's accounts for the Captain ledger's 💰 section: every contact
+    // with coin in the air (parked with them, or owed to them), balance both ways, newest passbook
+    // lines first. Contacts with a clean-zero book and no transactions are skipped — nothing to show.
+    private Stations.Captain.AccountRow[] LedgerAccounts()
+    {
+        var rows = new List<Stations.Captain.AccountRow>();
+        foreach ((string id, ContactHistory h) in _contacts.Entries)
+        {
+            if (h.CreditBalance == 0 && h.Transactions.Length == 0)
+            {
+                continue;
+            }
+            ContactSheet sheet = ContactSheets.For(id);
+            string channel = sheet.CanWire
+                ? "🕸 wires anywhere — bank at the dark-web desk or their table"
+                : "🤝 in person only — bank at their table (press B)";
+            List<string> lines = h.Transactions
+                .Reverse()
+                .Take(6)
+                .Select(t => $"{TxnIcon(t.Kind)} {(t.Amount >= 0 ? "+" : "")}{t.Amount:N0} cr — {t.Note} (day {t.SimTime / 86400:F0})")
+                .ToList();
+            rows.Add(new Stations.Captain.AccountRow(sheet.DisplayName, h.CreditBalance, channel, lines));
+        }
+        // Debts first (they need attention), then deposits, largest magnitude on top.
+        rows.Sort((x, y) => Math.Sign(x.Balance).CompareTo(Math.Sign(y.Balance)) is var s && s != 0
+            ? s
+            : Math.Abs(y.Balance).CompareTo(Math.Abs(x.Balance)));
+        return rows.ToArray();
+    }
+
+    private static string TxnIcon(CreditKind kind) => kind switch
+    {
+        CreditKind.Deposit => "💰",
+        CreditKind.Withdrawal => "🏧",
+        CreditKind.Interest => "📈",
+        CreditKind.FenceCut => "✂",
+        CreditKind.Borrow => "📡",
+        CreditKind.Repayment => "✅",
+        _ => "·",
+    };
+
     // Project the quest ledger for the Captain's-desk Quests tab (M-Q2) — newest work on top.
     private Stations.Captain.QuestItem[] QuestCards() =>
         _quests.AsEnumerable().Reverse().Select(q =>
@@ -12777,6 +13205,7 @@
                 (QuestKind.Fetch, QuestState.PickedUp) => ($"📦 Carrying — hand off at {q.TargetCallsign}", "active"),
                 (QuestKind.Crack, QuestState.Active) => ($"▶ Crack hatch {q.TargetShipId} — code {q.Pin}", "active"),
                 (QuestKind.Crack, QuestState.PickedUp) => ("📦 Package lifted — take it to The Fixer", "active"),
+                (QuestKind.Favor, QuestState.Active) => ($"📡 Favor owed — quiet delivery to {q.TargetCallsign}", "active"),
                 (_, QuestState.Active) => ("▶ On the hook", "active"),
                 (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
                 _ => ("💰 Paid", "paid"),
@@ -12784,7 +13213,7 @@
             // #175: the delivery instruction is kind-aware — a MOON haven has no ⚓ dock, you park in
             // its orbit; only a STATION haven is "berth there". Saying the right one kills the trap the
             // owner hit hunting for a Dock button that a moon never has.
-            CelestialBody? cargoDest = q.Kind == QuestKind.CargoRun ? BodyById(q.DestBodyId) : null;
+            CelestialBody? cargoDest = q.Kind is QuestKind.CargoRun or QuestKind.Favor ? BodyById(q.DestBodyId) : null;
             string cargoDetail = cargoDest is not null && !IsDockableHaven(cargoDest)
                 ? $"Carry the parcel to {q.TargetCallsign} — park in orbit there to deliver."
                 : $"Carry the parcel to {q.TargetCallsign} — berth there (⚓ Dock) to deliver.";
@@ -12792,6 +13221,7 @@
             {
                 QuestKind.Hunt => $"Hunt {q.TargetCallsign} — hole her sail or board her.",
                 QuestKind.CargoRun => cargoDetail,
+                QuestKind.Favor => $"{cargoDetail} Working it off clears the {q.Reward:N0} cr you owe {GiverDisplay(q.Giver)}.",
                 QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
                 QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
                 QuestKind.Crack => $"Key {q.Pin} into hatch {q.TargetShipId} here, lift the package, then hand it back to The Fixer.",
@@ -12799,12 +13229,14 @@
             };
             // #175: the live next action for an in-hand cargo run, read off ship state (too far / in the
             // envelope / enter orbit). Only while Active — a delivered run drops back to the plain card.
-            string? nextAction = q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && cargoDest is not null
+            string? nextAction = q is { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active } && cargoDest is not null
                 ? CargoNextAction(cargoDest)
                 : null;
             string rewardText = q.Kind == QuestKind.Intel
                 ? "🕸 route tip"
-                : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
+                : q.Kind == QuestKind.Favor
+                    ? $"📡 clears {q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr favor"
+                    : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
             (IReadOnlyList<Stations.Captain.QuestStep> steps, bool showScope) = FetchStagePlan(q);
             return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind, steps, showScope, nextAction);
         }).ToArray();
@@ -13720,6 +14152,25 @@
         }
 
         return ships;
+    }
+
+    // PR-WIRE — the wire-capable contacts for the dark-web favor-bank panel: every contact we have
+    // history with whose character sheet banks over the wire (ruling 6). In-person-only contacts (the
+    // hermit, the Magpie) are excluded — you bank those across their table, not the dark web.
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.WireContact> DarkWebWireContacts()
+    {
+        var rows = new List<SpaceSails.Client.Pages.Stations.DarkWeb.WireContact>();
+        foreach ((string id, ContactHistory h) in _contacts.Entries)
+        {
+            ContactSheet sheet = ContactSheets.For(id);
+            if (!sheet.CanWire)
+            {
+                continue;
+            }
+            rows.Add(new SpaceSails.Client.Pages.Stations.DarkWeb.WireContact(id, sheet.DisplayName, h.CreditBalance));
+        }
+        rows.Sort((a, b) => string.CompareOrdinal(a.DisplayName, b.DisplayName));
+        return rows;
     }
 
     // Thin, read-only projection of the tracking-post ledger + live NPC state, for the dark

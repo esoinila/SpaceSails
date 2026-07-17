@@ -84,6 +84,49 @@
     justify-content: center;
 }
 
+/* PR-WIRE — the favor-bank card (deposit / withdraw / borrow). Rides the same overlay family as the
+   offer card; left-aligned rows since it's a working ledger, not a single pitch. */
+.deck-bank-card {
+    text-align: left;
+    border-color: rgba(255, 212, 121, 0.5);
+}
+
+.deck-bank-balance {
+    margin-bottom: 0.5rem;
+}
+
+.deck-bank-warn {
+    margin-bottom: 0.5rem;
+    line-height: 1.35;
+}
+
+.deck-bank-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+}
+
+.deck-bank-row {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.deck-bank-label {
+    display: inline-block;
+    min-width: 4.5rem;
+    color: #b7c0d0;
+    font-weight: 600;
+}
+
+.deck-bank-notice {
+    color: #9fe6b0;
+    line-height: 1.35;
+    margin-bottom: 0.5rem;
+}
+
 /* #195: the top-of-flight-view status column — desk tabs, pilot banner, ship-alert strip. These were
    three independently top-anchored ABSOLUTE layers whose fixed `top`s assumed a one-row banner, so a
    2–3 row banner (#159/#184) floated OVER the Nav toolbar and hid the 'checklist'/'?' buttons (#123's
