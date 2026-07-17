@@ -47,6 +47,24 @@
         </div>
     }
 
+    @* The personal vault (#225): save the pirate's life against a server restart. The autosave already
+       fires on every dock, payment, boarding and bank move; these are the manual save, an export you
+       keep as a .json file, and an import to bring one back. *@
+    @if (OnSaveVault.HasDelegate)
+    {
+        <div class="captain-start-jump captain-vault-actions">
+            <button type="button" class="btn btn-sm btn-outline-success"
+                    title="Write the vault now — relationships, balances, hoard, heat, all of it (also autosaves on every dock/payment)"
+                    @onclick="() => OnSaveVault.InvokeAsync()">💾 Save to vault</button>
+            <button type="button" class="btn btn-sm btn-outline-light"
+                    title="Download the vault as a .json file you can keep against a server wipe"
+                    @onclick="() => OnExportVault.InvokeAsync()">⬇ Export vault (.json)</button>
+            <button type="button" class="btn btn-sm btn-outline-light"
+                    title="Load a vault .json file — replaces the current run's saved life"
+                    @onclick="() => OnImportVault.InvokeAsync()">⬆ Import vault</button>
+        </div>
+    }
+
     @* The mission statement and weapons authority belong to the working desk (Orders / Status);
        the reference tabs (Tutorials, Quests) stand on their own. *@
     @if (_view is CaptainView.Orders or CaptainView.Status)
@@ -427,6 +445,12 @@
     // Reopens Map's start-point picker (playtest / "begin elsewhere" jump). Optional — the button
     // only shows when Map wires it.
     [Parameter] public EventCallback OnReopenStartPicker { get; set; }
+
+    // The personal vault (#225): a manual save, an export-to-file, and an import-from-file. Optional —
+    // the buttons only show when Map wires them.
+    [Parameter] public EventCallback OnSaveVault { get; set; }
+    [Parameter] public EventCallback OnExportVault { get; set; }
+    [Parameter] public EventCallback OnImportVault { get; set; }
 
     // Tutorials tab (the picker used to float on the Nav map; starting a lesson is a captain's order).
     [Parameter] public IReadOnlyList<TutorialItem> Tutorials { get; set; } = [];

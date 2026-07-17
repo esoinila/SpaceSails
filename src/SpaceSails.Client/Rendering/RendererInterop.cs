@@ -75,6 +75,31 @@ internal static partial class RendererInterop
     [JSImport("loadImage", ModuleName)]
     internal static partial void LoadImage(int id, string url);
 
+    // ─── The personal vault (#225): localStorage + export/import file interop. ───
+    // Same module as the renderer (functions appended to renderer.js). All are defensive JS-side, so
+    // a private-mode storage throw or a cancelled picker never surfaces as an exception here.
+
+    /// <summary>Read the saved vault JSON from localStorage, or null if none is stored.</summary>
+    [JSImport("vaultRead", ModuleName)]
+    internal static partial string? VaultRead(string key);
+
+    /// <summary>Write the vault JSON to localStorage; false if storage refused it (quota/private mode).</summary>
+    [JSImport("vaultWrite", ModuleName)]
+    internal static partial bool VaultWrite(string key, string json);
+
+    /// <summary>Forget the stored vault (a fresh start that abandons the save).</summary>
+    [JSImport("vaultClear", ModuleName)]
+    internal static partial void VaultClear(string key);
+
+    /// <summary>Download the vault as a .json file the owner keeps against a server wipe.</summary>
+    [JSImport("vaultDownload", ModuleName)]
+    internal static partial void VaultDownload(string filename, string json);
+
+    /// <summary>Open a file picker and resolve the chosen .json file's text (empty if cancelled).</summary>
+    [JSImport("vaultImport", ModuleName)]
+    [return: JSMarshalAs<JSType.Promise<JSType.String>>]
+    internal static partial Task<string> VaultImport();
+
     /// <summary>Raised once per animation frame by <c>renderer.js</c>'s render loop.</summary>
     public static event Action<double>? FrameTick;
 

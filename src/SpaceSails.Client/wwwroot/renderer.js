@@ -320,3 +320,87 @@ export function playCue(kind) {
         // Audio is decoration: autoplay policies or missing WebAudio must never break the game.
     }
 }
+
+// ─── The personal vault (#225): localStorage autosave + export/import a .json file. ───
+// Kept tiny and defensive — a private-browsing localStorage throw, a storage quota, or a cancelled
+// file picker must NEVER break the game; the worst case is "the save didn't take", surfaced in C#.
+
+/** Read the vault JSON from localStorage, or null if none / storage unavailable. */
+export function vaultRead(key) {
+    try {
+        return window.localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+/** Write the vault JSON to localStorage. Returns true on success. */
+export function vaultWrite(key, json) {
+    try {
+        window.localStorage.setItem(key, json);
+        return true;
+    } catch {
+        return false; // quota or private-mode denial — C# just notes the autosave didn't land.
+    }
+}
+
+/** Forget the vault (used by a fresh start that abandons the save). */
+export function vaultClear(key) {
+    try {
+        window.localStorage.removeItem(key);
+    } catch {
+        // nothing to do — a storage that can't clear also can't have saved.
+    }
+}
+
+/** Download the vault as a .json file the owner can keep against a server wipe. */
+export function vaultDownload(filename, json) {
+    try {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+        // A blocked download is not fatal; the localStorage autosave still holds the vault.
+    }
+}
+
+/** Open a file picker and resolve the chosen .json file's text (or '' if cancelled/failed). */
+export function vaultImport() {
+    return new Promise((resolve) => {
+        try {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json,.json';
+            input.style.display = 'none';
+            document.body.appendChild(input);
+
+            const done = (text) => {
+                try { document.body.removeChild(input); } catch { /* already gone */ }
+                resolve(text);
+            };
+
+            input.addEventListener('change', () => {
+                const file = input.files && input.files[0];
+                if (!file) { done(''); return; }
+                const reader = new FileReader();
+                reader.onload = () => done(typeof reader.result === 'string' ? reader.result : '');
+                reader.onerror = () => done('');
+                reader.readAsText(file);
+            });
+            // A cancel fires no 'change'; resolve empty after focus returns so the caller never hangs.
+            window.addEventListener('focus', () => setTimeout(() => {
+                if (!input.files || input.files.length === 0) { done(''); }
+            }, 300), { once: true });
+
+            input.click();
+        } catch {
+            resolve('');
+        }
+    });
+}
