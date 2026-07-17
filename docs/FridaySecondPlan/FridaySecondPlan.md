@@ -119,14 +119,40 @@ CSS has no compiler, only the bench flight caught it), and the bench flight is m
 - **#164 Phobos + monolith** — pulled onto the board by PR-HOARD (first treasure island).
 - **#161 boot profile / #162 new-voyage picker** — housekeeping when a lane runs short.
 
-## 5. Questions for the owner (the plan builds around the answers)
+## 5. OWNER RULINGS (answered over coffee, 2026-07-17 morning — now law)
 
-1. Confiscation table — happy with 20/35/50% of carried coin by heat, + all hot cargo?
-2. Bribe pricing — flat per heat level, or a fraction of what they'd have taken?
-3. RESIST stakes — is "lose the fight → harsher cut" enough until damage-control exists?
-4. Can rivals ever FIND a buried cache (a risk knob), or is buried always safe this milestone?
-5. Favor-debt terms — fee vs interest vs obligation contract: all three, or pick one to ship first?
-6. Deposited coin at a contact: withdrawable anywhere via comms, or only in person at their bar?
+0. **The dice are the engine.** A new pillar: TTRPG mechanics — roll for initiative, on-screen
+   dice animation, mostly auto-played encounters with a few choices — are the DELIBERATE cheap
+   way to make playable the things we don't want to deep-code (a little homage to the hobby).
+   Up-speccing the Bolivia option is where many small purchasable helpers live (dice modifiers,
+   never OP). One Core dice/modifier rule, every consequence system rolls on it.
+1. **Confiscation**: the collectors take **all stolen cargo from heists committed while under
+   heat** (hot-flagged at theft time). When heat fully cools, stolen cargo launders — it becomes
+   safe(r). If the coin is all squirreled away (banked/buried), they take a MINIMUM from cargo
+   instead — the law never leaves empty-handed. The mercy law (reach-a-pump + berth fee) stands.
+2. **Bribe**: the amount is DICE — rolled on screen, modifiers visible.
+3. **RESIST stakes ladder**: heat 1–2 → lose = harsher cut. Heat 3 → **the full Bolivia**: the
+   encounter runs on dice (initiative, a few choices), and it ends one of two ways —
+   **(a) FLEE**: you fight clear, the collector is left tied up at their own ship (that hunter
+   disappears from the board), and you escape carrying heat 2; or **(b) THE FREEZE-FRAME**: a
+   generated still in the spirit of Butch Cassidy and the Sundance Kid's last charge — two
+   silhouetted rogues bursting into blinding muzzle-flash light, sepia freeze, game-over music
+   under one massive volley (an HOMAGE composition: our pirates, no film-frame reproduction, no
+   real likenesses; caption a paraphrased wink at "thought we were in trouble", not the verbatim
+   line). Death is not deletion: **brain-backup resurrection** (the Iain M. Banks / Culture
+   homage — tolerant and forgiving without ever being weak; a positive future, deliberately).
+   You wake at the nearest haven's clinic in an insurance rustbucket; the ship and everything
+   VISIBLE aboard is gone (this is where the kerosene-explosion art budget goes — pics of the
+   ship blowing up) — and everything BURIED or BANKED is untouched. The hoard is the salvation:
+   the dream's loop, closed.
+4. **Cache discovery risk: YES** — caches can be found, by rivals and BY US (finding other
+   people's loot is play); the risk is the reason to split hoards across many small caches.
+5. **The favor bank runs on distress**: fencing money to safety WHILE HEATED costs a cut
+   proportional to heat (dice-rolled) — always less than the collector would take; deposits made
+   while CALM earn decent interest. Same dice engine.
+6. **Withdrawal is in the contact's character**: each contact's sheet says how they deal — an
+   asteroid hermit banks in person only; a dark-web-native contact wires anywhere. The character
+   sheet (a small per-contact record on the ledger) is now canon.
 
 ## 6. The testing protocol (unchanged — it caught everything, including the lead's own brace)
 
