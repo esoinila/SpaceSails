@@ -117,6 +117,44 @@ public class VaultSerializerTests
         Assert.True(loaded.Resume!.WasDocked);
     }
 
+    // #255 — the vault round-trips a long-haul jump: the crossing writes the vault (personal life) with
+    // SavedSimTime at the ARRIVAL epoch, a decade past when the heat was raised. The whole life survives the
+    // round-trip, and because heat keys off an absolute checkpoint, reading it at the jumped clock decays a
+    // decade's worth in one closed-form step — no per-tick replay, exactly as the live restore does.
+    [Fact]
+    public void JumpVault_RoundTrips_AndAppliesElapsedDecayOnRestore()
+    {
+        double raisedAt = 100.0 * 86400.0;
+        double arrivalEpoch = raisedAt + 3655.0 * 86400.0; // a Mars->Uranus decade after the heat was raised
+
+        var preJump = new Vault
+        {
+            Version = Vault.CurrentVersion,
+            SavedSimTime = arrivalEpoch,
+            Purse = new PurseSection(4200),
+            Heat = new HeatSection(4, raisedAt),
+            Contacts = new ContactsSection(
+            [
+                new ContactRecord { ContactId = "madam-coil", DisplayName = "Madam Coil", CreditBalance = 500 },
+            ]),
+        };
+
+        Vault loaded = VaultSerializer.Load(VaultSerializer.Save(preJump));
+
+        // The personal life crossed the void intact.
+        Assert.False(loaded.Tampered);
+        Assert.Equal(arrivalEpoch, loaded.SavedSimTime);
+        Assert.Equal(4200, loaded.Purse!.Credits);
+        Assert.Equal("madam-coil", loaded.Contacts!.Contacts[0].ContactId);
+        Assert.Equal(4, loaded.Heat!.Level);                 // stored level is untouched — the RULE decays it
+        Assert.Equal(raisedAt, loaded.Heat.RaisedAtSimTime); // the absolute checkpoint survived the jump
+
+        // Restore-time closed-form decay: read at the jumped clock and a decade of heat is gone at once.
+        HeatState restored = EncounterRule.DecayHeat(
+            new HeatState(loaded.Heat.Level, loaded.Heat.RaisedAtSimTime), loaded.SavedSimTime, atHavenOrbit: false);
+        Assert.Equal(0, restored.Level);
+    }
+
     [Theory]
     [InlineData("purse")]
     [InlineData("ship")]

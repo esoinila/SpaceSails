@@ -488,6 +488,28 @@ public static class LongHaul
     public static string Completed(string destName, int daysPassed) =>
         $"🚀 long haul complete — {daysPassed} d passed; arrived at {destName} capture range";
 
+    // ===== The diegetic jump overlay (#255) — the one loading bar that is a FEATURE, not a spinner =====
+    // Say-the-state at the most dramatic moment the game has: a full-screen crossing that NARRATES the
+    // void it is computing. Pure text so it is unit-tested like every other line the mode speaks.
+
+    /// <summary>The whole void reduced to whole years, floor 1 — the counter the overlay ticks up
+    /// ("year 3 of 10"). A sub-year hop still reads as a one-year crossing so the beat always lands.</summary>
+    public static int VoidYears(double seconds) => Math.Max(1, (int)Math.Round(seconds / (365.0 * 86_400.0)));
+
+    /// <summary>The overlay's headline — the crossing, named.</summary>
+    public const string VoidTitle = "CROSSING THE VOID";
+
+    /// <summary>The ticking sub-line: which year of the crossing this frame is painting.</summary>
+    public static string VoidYearLine(int year, int totalYears) =>
+        $"year {Math.Clamp(year, 1, Math.Max(1, totalYears))} of {Math.Max(1, totalYears)}";
+
+    /// <summary>The charming "no cancel" note — the bus does not stop in the void (owner: ESC is not
+    /// offered mid-jump, but the overlay says so with a wink rather than a greyed-out button).</summary>
+    public const string VoidNoStop = "the bus does not stop in the void — settle in, we're already gone";
+
+    /// <summary>The destination line under the bar: where this crossing lets out.</summary>
+    public static string VoidBound(string destName) => $"bound for {destName}";
+
     /// <summary>The passbook / ledger line the jump books.</summary>
     public static string LedgerLine(string destName, int daysPassed, int pulsesSpent) =>
         $"🚀 long haul to {destName}: {daysPassed} d crossed, {pulsesSpent} p";

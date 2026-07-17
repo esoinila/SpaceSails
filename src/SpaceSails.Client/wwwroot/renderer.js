@@ -291,6 +291,7 @@ const CUES = {
     hit:   { freq: 660, to: 990, duration: 0.3,  gain: 0.10, type: 'triangle' }, // splash — bright ping up
     miss:  { freq: 440, to: 160, duration: 0.5,  gain: 0.07, type: 'sine' },     // round gone — sad fall
     reveal:{ freq: 587, to: 1175, duration: 0.45, gain: 0.08, type: 'sine' },    // a scan resolves it — bright discovery rise
+    voidjump:{ freq: 196, to: 784, duration: 0.7, gain: 0.10, type: 'sawtooth' }, // #255 long-haul engage — a rising bottle-pop whoosh into the void
 };
 
 export function playCue(kind) {

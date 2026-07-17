@@ -30,6 +30,63 @@ public class TrafficAndPredictionTests
         }
     }
 
+    // #255 — the long-haul re-seed leans on GenerateWave's existing "seed the world AT an epoch"
+    // ability (owner's architecture: reuse the tested spawn mechanism instead of integrating the void).
+    // Seeding at a future epoch T is deterministic and produces a world genuinely "at T" — mid-flight
+    // ships are en route as of T, not t=0 — so ambient traffic repopulates correctly after a decade jump.
+    [Fact]
+    public void GenerateWave_SeedsTheWorldAtEpoch_Deterministically()
+    {
+        var ephemeris = Sol();
+        double epoch = 3655.0 * 86400.0; // the Mars->Uranus decade the jump lands at
+
+        IReadOnlyList<NpcShip> a = TrafficSchedule.GenerateWave(ephemeris, seed: 99, count: 8, epoch, waveNumber: 2);
+        IReadOnlyList<NpcShip> b = TrafficSchedule.GenerateWave(ephemeris, seed: 99, count: 8, epoch, waveNumber: 2);
+        Assert.Equal(a.Count, b.Count);
+        for (int i = 0; i < a.Count; i++)
+        {
+            Assert.Equal(a[i].Id, b[i].Id);
+            Assert.Equal(a[i].InitialState, b[i].InitialState);
+        }
+
+        // Mid-flight ships (a virtual PAST departure) are active in the neighbourhood of T, not near 0 —
+        // the world clock has moved to the arrival epoch.
+        var midFlight = a.Where(s => s.DepartureTime < epoch).ToList();
+        Assert.True(midFlight.Count >= 3, $"Expected several mid-flight ships at epoch, got {midFlight.Count}.");
+        foreach (NpcShip ship in midFlight)
+        {
+            Assert.InRange(ship.ActivationTime, epoch - 1.0, epoch + 7300.0);
+            Assert.Equal(ship.ActivationTime, ship.InitialState.SimTime);
+        }
+    }
+
+    // #255 — the freeze class: the live StepNpcs catch-up guard. A gap of honest warp (a frame's worth,
+    // even a full accumulator-clamped 5.6 h) must integrate; a gap of an epoch leap (the 8.3-year "the-tilt"
+    // vault resume, the Mars->Uranus decade jump) must NOT — integrating years at the 60 s NpcTimeStep is
+    // millions of Steps and a frozen tab, so the caller retires the mover instead. The boundary is pure and
+    // lives in Core so it is unit-testable, not buried in Map.razor.
+    [Fact]
+    public void CatchUpGuard_IntegratesHonestWarp_ButRetiresAnEpochLeap()
+    {
+        // The widest HONEST per-frame catch-up: MaxStepsPerFrame(20000) × player dt(1 s) + one NpcTimeStep of
+        // overshoot ~= 5.6 h. Well under the threshold — the live loop must integrate these, never drop a
+        // ship mid-flight during ordinary warp.
+        double widestHonestFrame = 20000.0 * 1.0 + TrafficSchedule.NpcTimeStep;
+        Assert.False(TrafficSchedule.IsCatchUpStale(widestHonestFrame));
+        Assert.False(TrafficSchedule.IsCatchUpStale(0));
+        Assert.False(TrafficSchedule.IsCatchUpStale(TrafficSchedule.NpcMaxCatchUpSeconds)); // the boundary is inclusive-safe
+
+        // Epoch leaps: the void a jump crosses / a far vault resumes at. These MUST be classed stale so the
+        // mover is retired rather than integrated (the freeze the guard exists to prevent).
+        Assert.True(TrafficSchedule.IsCatchUpStale(3655.0 * Day));       // Mars->Uranus decade jump
+        Assert.True(TrafficSchedule.IsCatchUpStale(260_568_425.0));      // the owner's 8.3-year "the-tilt" save
+
+        // The threshold sits far above honest warp yet far below any real void — no legitimate leg lands in
+        // the gap between them (~128× the widest honest frame, ~40× below a single year).
+        Assert.True(TrafficSchedule.NpcMaxCatchUpSeconds > 100.0 * widestHonestFrame);
+        Assert.True(TrafficSchedule.NpcMaxCatchUpSeconds < 365.0 * Day);
+    }
+
     [Fact]
     public void TrafficSchedule_MidFlightShips_AreActiveNearTimeZero()
     {

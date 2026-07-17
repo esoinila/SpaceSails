@@ -495,4 +495,66 @@ public class LongHaulTests
         Assert.Contains("leave the well", LongHaul.RefusalText(LongHaul.Blocker.InsideWell, "Uranus"));
         Assert.Contains("does not reach", LongHaul.RefusalText(LongHaul.Blocker.DoesNotReach, "Uranus"));
     }
+
+    // ---- #255: the diegetic jump overlay's voice (pure text, unit-tested like the rest of the mode) ----
+
+    [Fact]
+    public void VoidOverlay_SpeaksTheCrossing()
+    {
+        Assert.Equal("CROSSING THE VOID", LongHaul.VoidTitle);
+        Assert.Contains("does not stop", LongHaul.VoidNoStop);
+        Assert.Equal("bound for The Tilt", LongHaul.VoidBound("The Tilt"));
+
+        // Whole-year counter, floor 1 so even a sub-year hop reads as a one-year crossing.
+        Assert.Equal(1, LongHaul.VoidYears(3.0 * 86400.0));           // 3 days -> year 1
+        Assert.Equal(10, LongHaul.VoidYears(3655.0 * 86400.0));       // the Mars->Uranus decade
+        Assert.Equal(1, LongHaul.VoidYears(0));
+
+        // The ticking sub-line clamps the year into [1, total] so the overlay never reads "year 0 of 10".
+        Assert.Equal("year 1 of 10", LongHaul.VoidYearLine(0, 10));
+        Assert.Equal("year 3 of 10", LongHaul.VoidYearLine(3, 10));
+        Assert.Equal("year 10 of 10", LongHaul.VoidYearLine(99, 10));
+    }
+
+    // ---- #255: closed-form retirement == the fate an integration would reach ----
+
+    // The re-seed retires the entire pre-jump world (no per-NPC integration of the void) and rebuilds it
+    // fresh at the arrival epoch. This is only honest if, after a decade, every stateful ship WOULD in fact
+    // have finished its run — i.e. its last plotted node lies before the arrival epoch, so integrating it
+    // forward reaches the same "arrived / despawned" fate the closed-form retire assigns for free.
+    [Fact]
+    public void DecadeJump_RetiresEveryStatefulShip_AsIntegrationWould()
+    {
+        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        double epoch = 3655.0 * 86400.0; // Mars -> Uranus decade
+
+        IReadOnlyList<NpcShip> fleet = TrafficSchedule.Generate(eph, seed: 42, count: 8);
+        Assert.NotEmpty(fleet);
+        foreach (NpcShip ship in fleet.Where(s => s.DepotBodyId is null))
+        {
+            double lastNode = ship.Plan.Nodes.Count > 0 ? ship.Plan.Nodes[^1].SimTime : ship.ActivationTime;
+            Assert.True(lastNode < epoch,
+                $"{ship.Callsign}'s run ends at {lastNode:E3}s, not before the {epoch:E3}s arrival epoch — retire-all would be a lie.");
+        }
+    }
+
+    // ---- #255: elapsed-time personal rules apply themselves on the clock jump (no replay) ----
+
+    // Heat keys off an ABSOLUTE checkpoint (RaisedAtSimTime), so advancing the clock a decade in one jump
+    // applies a decade of decay the instant it is next read — the vault carries the checkpoint, the jump
+    // moves the clock, and the closed-form rule does the rest. (Same shape for interest/insurance/caches.)
+    [Fact]
+    public void DecadeJump_AppliesElapsedHeatDecay_FromAbsoluteCheckpoint()
+    {
+        double raisedAt = 100.0 * 86400.0;
+        var hot = new HeatState(4, raisedAt);
+
+        // Read at the pre-jump clock: still hot (barely any time has passed).
+        HeatState justAfter = EncounterRule.DecayHeat(hot, raisedAt + 60.0, atHavenOrbit: false);
+        Assert.True(justAfter.Level >= 3, "heat should not have decayed in a minute");
+
+        // Read at the post-jump clock (a decade later): a decade of decay applies itself, no replay needed.
+        HeatState afterDecade = EncounterRule.DecayHeat(hot, raisedAt + 3655.0 * 86400.0, atHavenOrbit: false);
+        Assert.Equal(0, afterDecade.Level);
+    }
 }
