@@ -8,15 +8,16 @@ namespace SpaceSails.Core;
 /// hardcoded in a razor.
 ///
 /// <para><b>Where the number comes from.</b> The economy already sets the scale: a captain starts with
-/// <c>1,500 cr</c>, a clean milk run sells for ~<c>2,000 cr</c>, cargo runs ~100–1,200 cr/unit, and a
-/// tank is <c>250</c> pulses (a cross-well transfer spends ~10–120 of them). We want a full-from-near-empty
-/// refill to be a <em>meaningful</em> line item — felt, planned around — but never a soft-lock. At
+/// <c>1,500 cr</c>, a clean milk run sells for ~<c>2,000 cr</c>, cargo runs ~100–1,200 cr/unit, and the
+/// tank is <c>500</c> pulses (#262 — sized so inner-system fuel intuitions survive the outer dark; a
+/// cross-well transfer spends ~10–120 of them). We want a full-from-near-empty refill to be a
+/// <em>meaningful</em> line item — felt, planned around — but never a soft-lock. At
 /// <see cref="InnerPricePerPulse"/> = 3 cr/pulse:
 /// <list type="bullet">
-/// <item>a full 250-p tank costs <c>750 cr</c> — half a starting purse: meaningful, never crushing (and
-/// you never actually buy 250 from zero — an empty tank is already stranded);</item>
-/// <item>the usual top-up from the amber reserve (~45 p) back to full (~205 p) is <c>615 cr</c> — covered
-/// by a single modest cargo sale;</item>
+/// <item>a full 500-p tank costs <c>1,500 cr</c> — a whole starting purse: meaningful, never crushing (and
+/// you never actually buy 500 from zero — an empty tank is already stranded);</item>
+/// <item>the usual top-up from the amber reserve (~90 p) back to full (~410 p) is <c>1,230 cr</c> — covered
+/// by a single good cargo sale;</item>
 /// <item>the fuel to set up a big ~120-p cross-well haul is <c>360 cr</c>, a rounding error against the
 /// thousands the He3 in the hold is worth.</item>
 /// </list></para>
@@ -30,7 +31,7 @@ namespace SpaceSails.Core;
 public static class FuelMarket
 {
     /// <summary>Inner-system price of one reaction-mass pulse, in credits. See the class remarks for the
-    /// derivation from the 1,500-cr purse / 250-p tank economy.</summary>
+    /// derivation from the 1,500-cr purse / 500-p tank economy.</summary>
     public const int InnerPricePerPulse = 3;
 
     /// <summary>Outer-system price of one pulse — the markup past the belt where fuel is dear.</summary>

@@ -28,7 +28,7 @@ public static class AutopilotRehearsal
     /// <summary>The reserve the autopilot always keeps back, as a fraction of tank capacity. The
     /// arm-time contract refuses any journey whose rehearsed cost would eat into it, and the live
     /// loop stands down loudly rather than burn through it — so the ship is never stranded a burn
-    /// short of anywhere. 18% of a 250-pulse tank is ~45 pulses: a real cushion that also soaks up
+    /// short of anywhere. 18% of a 500-pulse tank is ~90 pulses: a real cushion that also soaks up
     /// the rehearsal's step-size error (see the fidelity note above).</summary>
     public const double ReserveFraction = 0.18;
 
