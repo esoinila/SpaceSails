@@ -177,10 +177,13 @@ public static class LongHaul
 
         double DistanceOf(ShipState s) => (s.Position - ephemeris.Position(targetPlanet.Id, s.SimTime)).Length;
 
-        // Tighten the step so no capture zone is ever stepped clean over: never let one stride carry the
-        // ship more than a quarter of the capture radius (the coarse step wins for the wide outer wells).
+        // Tighten the step so no capture zone is ever stepped clean over (never carry the ship more than a
+        // quarter of the capture radius in one stride), but for a MULTI-YEAR heliocentric haul let the
+        // stride grow so the march stays ~a few thousand iterations instead of tens of thousands — the wide
+        // outer capture zones have the room. Short-horizon calls keep the #246 6 h cadence exactly.
         double shipSpeed = Math.Max(relVel.Length, 1.0);
-        double step = Math.Min(ProjectStepSeconds, Math.Max(60.0, 0.25 * captureRange / shipSpeed));
+        double capZoneCap = Math.Max(60.0, 0.25 * captureRange / shipSpeed);
+        double step = Math.Min(capZoneCap, Math.Max(ProjectStepSeconds, horizonSeconds / 3000.0));
 
         ShipState prevAbs = Absolute(relPos, relVel, t0);
         double closest = DistanceOf(prevAbs);
@@ -325,6 +328,114 @@ public static class LongHaul
         return false;
     }
 
+    // ===== The DEPARTURE solve — the offer's basis, so the mode is reachable from a berth (#246/#249 fix) =====
+    // The #249 offer gated on Project of the CURRENT coast reaching the planet — which never happens from a
+    // berth or an arbitrary coast, so the button was unreachable in exactly the situation it was built for.
+    // The bus INCLUDES the departure burn: solve the cheap heliocentric arc from the ship's own state here
+    // and now, quote its departure pulses, and the jump then rides the POST-BURN conic — which reaches by
+    // construction. We do NOT reuse TransferPlanner: its arrival-matching cost and MaxRelativeSpeed gate are
+    // for ORBITAL CAPTURE, and the long haul defers capture to the premium last mile (it only has to REACH
+    // the capture range, arriving hot is fine). So this is a pure departure-only Lambert scan.
+
+    /// <summary>Departure-time-of-flight cells scanned from here-and-now — coarse is plenty for the cheap
+    /// row (the winner is refined only by picking the min over the scan).</summary>
+    private const int DepartureTofCells = 28;
+
+    private const double DepartureTofLowFraction = 0.25;
+    private const double DepartureTofHighFraction = 1.6;
+
+    /// <summary>A solved long-haul departure: the immediate burn that puts the ship on a heliocentric arc
+    /// reaching the destination planet, priced honestly, with the arrival epoch and the last-mile relative
+    /// speed the premium capture will have to kill. <see cref="Ok"/> false carries the verbatim reason.</summary>
+    /// <param name="PostBurnVelocity">The ship's WORLD velocity after the departure burn (the Lambert
+    /// departure velocity) — apply it to the current state and the coast rides the solved conic.</param>
+    /// <param name="DepartureDeltaV">|burn| in m/s.</param>
+    /// <param name="DeparturePulses">Priced with the same <see cref="OrbitRule.PulsesFor"/> kernel the live
+    /// burns spend with — the number the offer quotes and the tank budget is checked against.</param>
+    /// <param name="ArrivalCenterTime">Sim clock when the arc reaches the planet's centre; the jump stops a
+    /// touch earlier, at the capture range (Project on the post-burn state finds the exact gate).</param>
+    /// <param name="ArrivalRelativeSpeed">Speed relative to the planet at arrival — the premium last mile.</param>
+    public readonly record struct Departure(
+        bool Ok,
+        string? Failure,
+        Vector2d PostBurnVelocity,
+        double DepartureDeltaV,
+        int DeparturePulses,
+        double ArrivalCenterTime,
+        double ArrivalRelativeSpeed);
+
+    /// <summary>
+    /// Solve the cheap immediate departure that reaches <paramref name="targetPlanet"/> from the ship's
+    /// current heliocentric state. Scans time-of-flight (departing now) around the Hohmann scale, Lambert-
+    /// solving each and keeping the one with the least departure Δv (the cheap bus). Pure/deterministic.
+    /// </summary>
+    public static Departure SolveDeparture(ShipState ship, ICelestialEphemeris ephemeris, CelestialBody targetPlanet)
+    {
+        CelestialBody? sun = targetPlanet.ParentId is null ? null : Find(ephemeris, targetPlanet.ParentId);
+        if (sun is not { Mu: > 0 })
+        {
+            return new Departure(false, $"{targetPlanet.Name} has no usable heliocentric frame to haul across", default, 0, 0, 0, 0);
+        }
+
+        double t0 = ship.SimTime;
+        double sunMu = sun.Mu;
+        Vector2d sunPos0 = ephemeris.Position(sun.Id, t0);
+        Vector2d sunVel0 = TransferMath.BodyVelocity(ephemeris, sun.Id, t0);
+        Vector2d r1 = ship.Position - sunPos0;
+        Vector2d vShip = ship.Velocity - sunVel0;
+        double r1Len = r1.Length;
+        if (!(r1Len > 0))
+        {
+            return new Departure(false, "the ship has no heliocentric radius to depart from", default, 0, 0, 0, 0);
+        }
+
+        double shipWorldSpeed = ship.Velocity.Length;
+        double hohmannTof = TransferMath.Hohmann(r1Len, targetPlanet.OrbitRadius, sunMu).TransferSeconds;
+
+        bool found = false;
+        double bestDv = double.PositiveInfinity;
+        Vector2d bestV1 = default;
+        double bestArrival = 0, bestArrivalRel = 0;
+
+        for (int i = 0; i < DepartureTofCells; i++)
+        {
+            double frac = DepartureTofLowFraction
+                + (DepartureTofHighFraction - DepartureTofLowFraction) * i / (DepartureTofCells - 1);
+            double tof = hohmannTof * frac;
+            if (!(tof > 0))
+            {
+                continue;
+            }
+
+            double tArrive = t0 + tof;
+            Vector2d r2 = ephemeris.Position(targetPlanet.Id, tArrive) - ephemeris.Position(sun.Id, tArrive);
+            if (TransferMath.Lambert(r1, r2, tof, sunMu) is not { } lam)
+            {
+                continue;
+            }
+
+            double dv = (lam.V1 - vShip).Length;
+            if (dv < bestDv)
+            {
+                Vector2d planetVel = TransferMath.BodyVelocity(ephemeris, targetPlanet.Id, tArrive)
+                                     - TransferMath.BodyVelocity(ephemeris, sun.Id, tArrive);
+                bestDv = dv;
+                bestV1 = lam.V1 + sunVel0;                     // fold the sun frame back into world velocity
+                bestArrival = tArrive;
+                bestArrivalRel = (lam.V2 - planetVel).Length;
+                found = true;
+            }
+        }
+
+        if (!found)
+        {
+            return new Departure(false, $"no departure arc to {targetPlanet.Name} from here — the geometry won't close", default, 0, 0, 0, 0);
+        }
+
+        int pulses = OrbitRule.PulsesFor(bestDv, shipWorldSpeed);
+        return new Departure(true, null, bestV1, bestDv, pulses, bestArrival, bestArrivalRel);
+    }
+
     // ===== The one voice for the long haul's words (HarborVocabulary-style; pure text, unit-tested) =====
 
     /// <summary>A metric distance spoken in AU, the outer-system unit ("2.34 AU").</summary>
@@ -339,6 +450,17 @@ public static class LongHaul
     /// <summary>The arm-surface OFFER beside the normal options (#246 item 1): what the button says.</summary>
     public static string Offer(string destName, int pulsesNow, string arriveDateText) =>
         $"🚀 Long haul to {destName} — ≈{pulsesNow} p, arrive {arriveDateText}";
+
+    /// <summary>The MAP CONTEXT-MENU action (owner refinement: the primary entry). One click from the map
+    /// sets the destination AND engages — "autopilot to &lt;planet&gt; vicinity" (the owner's wording; it
+    /// lands at the capture range, the last mile stays premium).</summary>
+    public static string MenuAction(string planetName, int pulsesNow, string arriveDateText) =>
+        $"🚀 Long haul — autopilot to {planetName} vicinity (≈{pulsesNow} p, arrive {arriveDateText})";
+
+    /// <summary>The visible-but-disabled refusal when the solved departure outruns the tank (owner: never a
+    /// hidden button — the affordance explains, #212). Speaks the number.</summary>
+    public static string RefusalBudget(int neededPulses, int tankPulses) =>
+        $"🚀 long haul needs ≈{neededPulses} p; tank has {tankPulses} — top up or find a cheaper window";
 
     /// <summary>The pre-commit PROMISE, stated plainly (#246 item 3 / owner "the UI does not say I will
     /// get to Uranus"): the destination verdict, the capture radius in AU, the arrival date, the cost now

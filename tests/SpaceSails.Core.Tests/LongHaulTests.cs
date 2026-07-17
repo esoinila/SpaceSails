@@ -204,6 +204,77 @@ public class LongHaulTests
         Assert.True(reach.ClosestApproachMeters > reach.CaptureRangeMeters);
     }
 
+    // ---- The DEPARTURE solve: the offer is reachable from a berth (#246/#249 fix) ----
+
+    // A berth-like state: co-moving with Mars on its heliocentric lane (a station off Mars rides Mars's
+    // orbit). Its CURRENT coast never climbs to Uranus — the #249 offer, gated on that, was unreachable.
+    private static ShipState BerthOffMars(ICelestialEphemeris eph, double t0 = 0) =>
+        new(eph.Position("mars", t0), TransferMath.BodyVelocity(eph, "mars", t0), t0);
+
+    [Fact]
+    public void SolveDeparture_OffersFromABerth_WhereTheCurrentCoastNeverReaches()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+        ShipState berth = BerthOffMars(eph);
+
+        // The crux of the fix: the current coast does NOT reach Uranus (co-moving with Mars)...
+        Assert.False(LongHaul.Project(berth, eph, uranus).Reaches);
+
+        // ...yet the departure solve still finds an affordable cheap arc to offer.
+        LongHaul.Departure dep = LongHaul.SolveDeparture(berth, eph, uranus);
+        Assert.True(dep.Ok, dep.Failure);
+        Assert.True(dep.DeparturePulses is > 0 and < 120, $"expected an affordable departure, got {dep.DeparturePulses} p");
+        Assert.True(dep.ArrivalCenterTime > berth.SimTime);
+        Assert.True(dep.ArrivalRelativeSpeed > 0);
+    }
+
+    [Fact]
+    public void SolveDeparture_PostBurnConic_ReachesUranusCaptureRange_EndToEnd()
+    {
+        // The engage-from-berth state math: charge the burn, apply PostBurnVelocity, and the jump rides the
+        // SOLVED conic — which by construction reaches the planet's capture range.
+        ICelestialEphemeris eph = MakeSol();
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+        ShipState berth = BerthOffMars(eph);
+
+        LongHaul.Departure dep = LongHaul.SolveDeparture(berth, eph, uranus);
+        Assert.True(dep.Ok, dep.Failure);
+
+        ShipState postBurn = berth with { Velocity = dep.PostBurnVelocity };
+        double horizon = (dep.ArrivalCenterTime - berth.SimTime) + 10.0 * 86400.0;
+        LongHaul.Reach reach = LongHaul.Project(postBurn, eph, uranus, horizon);
+
+        Assert.True(reach.Reaches);
+        double arrivalDist = (reach.ArrivalState.Position - eph.Position("uranus", reach.ArrivalSimTime)).Length;
+        Assert.Equal(reach.CaptureRangeMeters, arrivalDist, reach.CaptureRangeMeters * 1e-3); // stops AT the gate
+        Assert.True(reach.ArrivalSimTime > berth.SimTime);
+        Assert.True(reach.ArrivalSimTime <= dep.ArrivalCenterTime + 1.0);                     // a touch before centre
+    }
+
+    [Fact]
+    public void SolveDeparture_NoHeliocentricFrame_FailsWithReason()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        CelestialBody sun = eph.Bodies.Single(b => b.Id == "sun");
+        var ship = new ShipState(new Vector2d(2.2794e11, 0), new Vector2d(0, 24000), 0);
+
+        LongHaul.Departure dep = LongHaul.SolveDeparture(ship, eph, sun); // the root has no parent frame
+        Assert.False(dep.Ok);
+        Assert.False(string.IsNullOrWhiteSpace(dep.Failure));
+    }
+
+    [Fact]
+    public void RefusalBudget_AndMenuAction_SpeakThePlainWords()
+    {
+        Assert.Equal(
+            "🚀 long haul needs ≈180 p; tank has 40 — top up or find a cheaper window",
+            LongHaul.RefusalBudget(180, 40));
+        Assert.Equal(
+            "🚀 Long haul — autopilot to Uranus vicinity (≈37 p, arrive Sol-Day 5920)",
+            LongHaul.MenuAction("Uranus", 37, "Sol-Day 5920"));
+    }
+
     // ---- Consistency by construction: heat / interest are single-application-equals-integrated ----
 
     [Fact]
