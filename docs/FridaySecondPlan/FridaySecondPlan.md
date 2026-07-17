@@ -154,6 +154,21 @@ CSS has no compiler, only the bench flight caught it), and the bench flight is m
    asteroid hermit banks in person only; a dark-web-native contact wires anywhere. The character
    sheet (a small per-contact record on the ledger) is now canon.
 
+## 5b. SECOND COFFEE ADDENDUM (owner, same morning — filed as #225/#226/#227)
+
+- **#225 The vault**: the things of personal value — relationships, balances, caches, maps, dice
+  items, insurance, sanity — persist as versioned, field-tolerant JSON + checksum (browser store +
+  export/import). Old files load their understood parts forever; a failed checksum loads anyway but
+  says so ("tampered — ledger marked"). Not a physics snapshot — a pirate's LIFE, durable. Ships
+  right after the second-wind lanes land (they define the records).
+- **#226 The sanity meter**: stress fills it (heat time, boardings, a survived Bolivia, long dry
+  voyages); shore leave drains it (bars, tots, the Space Bar break — the Galley finally matters);
+  a FULL meter triggers a dramatic dice-scripted episode, never a stat-death. Work-only piracy is
+  now bad seamanship by rule.
+- **#227 Pirate Insurance**: re-birth taxes you (clinic bill + the rustbucket as uninsured
+  default); a purchasable policy softens it — better hull, covered bills, one honest sentence of
+  fine print. The BUSTED lane ships the insurance SEAM today so the policy lane never reopens it.
+
 ## 6. The testing protocol (unchanged — it caught everything, including the lead's own brace)
 
 Owner flies fresh builds hands-on and streams findings; the lead triages from the live tab with
