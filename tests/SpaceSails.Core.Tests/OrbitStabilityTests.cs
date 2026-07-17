@@ -97,4 +97,53 @@ public class OrbitStabilityTests
         double park = OrbitRule.ParkingRadius(Moon, Hill);
         Assert.True(park <= OrbitRule.StableParkCeiling(Moon, Hill));
     }
+
+    // ---- #265: the bound-orbit period the plot ribbon caps to (one closing revolution) ------------
+
+    [Fact]
+    public void BoundOrbitPeriod_CircularPark_EqualsTheLocalCircularPeriod()
+    {
+        // A circular park (a = r) revolves in exactly the local circular period — the one revolution the
+        // captured ribbon should draw instead of a bouquet.
+        double radius = OrbitRule.ParkStableHillFraction * Hill;
+        var ship = CircularParkAt(OrbitRule.ParkStableHillFraction);
+
+        double? period = OrbitRule.BoundOrbitPeriod(ship, Vector2d.Zero, Vector2d.Zero, Moon, Hill);
+
+        Assert.NotNull(period);
+        Assert.Equal(OrbitRule.LocalOrbitPeriod(radius, Moon.Mu), period!.Value, 3);
+    }
+
+    [Fact]
+    public void BoundOrbitPeriod_EccentricBound_UsesTheSemiMajorAxis()
+    {
+        // Ship at apoapsis 400 km with a semi-major axis of 300 km (bound): T = 2π√(a³/μ), NOT the local
+        // circular period at the current 400 km radius — the ellipse's own revolution.
+        double ra = 400e3, a = 300e3;
+        double va = Math.Sqrt(2 * (Moon.Mu / ra - Moon.Mu / (2 * a)));
+        var ship = new ShipState(new Vector2d(ra, 0), new Vector2d(0, va), 0);
+
+        double? period = OrbitRule.BoundOrbitPeriod(ship, Vector2d.Zero, Vector2d.Zero, Moon, Hill);
+
+        Assert.NotNull(period);
+        Assert.Equal(2 * Math.PI * Math.Sqrt(a * a * a / Moon.Mu), period!.Value, 3);
+    }
+
+    [Fact]
+    public void BoundOrbitPeriod_HyperbolicFlyby_IsNull()
+    {
+        // Positive two-body energy — never captured, so there is no revolution to cap to (full ribbon).
+        var ship = new ShipState(new Vector2d(300e3, 0), new Vector2d(0, 2000), 0);
+
+        Assert.Null(OrbitRule.BoundOrbitPeriod(ship, Vector2d.Zero, Vector2d.Zero, Moon, Hill));
+    }
+
+    [Fact]
+    public void BoundOrbitPeriod_OutsideTheHillSphere_IsNull()
+    {
+        // Beyond the Hill sphere the body does not own the ship — an unbound leg, full ribbon.
+        var ship = new ShipState(new Vector2d(2 * Hill, 0), new Vector2d(0, 50), 0);
+
+        Assert.Null(OrbitRule.BoundOrbitPeriod(ship, Vector2d.Zero, Vector2d.Zero, Moon, Hill));
+    }
 }

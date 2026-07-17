@@ -120,4 +120,40 @@ public class PlotHorizonTests
         Assert.Equal(10 * Day, r.DrawnSeconds, 3);
         Assert.Equal(PlotHorizon.RibbonNote.None, r.Note); // reaches the full projection: nothing to flag
     }
+
+    // ---- #265: BoundOrbitHorizon — cap a captured ship's ribbon to ~one revolution -----------------
+
+    [Fact]
+    public void BoundOrbitHorizon_Captured_CapsToAboutOneRevolution()
+    {
+        // A 2-day park revolution projected over the 60-day horizon drew the owner's Uranus flower; cap
+        // it to ~1.15 revolutions so the ribbon closes its loop and reads "and so on".
+        double period = 2 * Day;
+        double horizon = PlotHorizon.BoundOrbitHorizon(60 * Day, period, planFurthestSeconds: 0);
+        Assert.Equal(1.15 * period, horizon, 3);
+    }
+
+    [Fact]
+    public void BoundOrbitHorizon_UnboundLeg_KeepsTheFullHorizon()
+    {
+        // Null period = a transfer/hyperbolic leg where the future genuinely extends: draw all of it.
+        Assert.Equal(60 * Day, PlotHorizon.BoundOrbitHorizon(60 * Day, null, planFurthestSeconds: 0), 3);
+    }
+
+    [Fact]
+    public void BoundOrbitHorizon_CapturedButDepartureIsPlotted_KeepsTheFullHorizon()
+    {
+        // Bound now, but a plotted departure reaches 40 d out — keep the transfer ribbon, don't clip it
+        // to the park loop.
+        double horizon = PlotHorizon.BoundOrbitHorizon(60 * Day, 2 * Day, planFurthestSeconds: 40 * Day);
+        Assert.Equal(60 * Day, horizon, 3);
+    }
+
+    [Fact]
+    public void BoundOrbitHorizon_RevolutionCapNeverExceedsTheProjection()
+    {
+        // A slow park whose 1.15 revolutions dwarf the (already short) projection just draws the projection.
+        double horizon = PlotHorizon.BoundOrbitHorizon(5 * Day, 40 * Day, planFurthestSeconds: 0);
+        Assert.Equal(5 * Day, horizon, 3);
+    }
 }

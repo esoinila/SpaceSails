@@ -117,6 +117,36 @@ public static class OrbitRule
         2 * Math.PI * Math.Sqrt(radius * radius * radius / mu);
 
     /// <summary>
+    /// #265 — the period (s) of a ship's BOUND two-body orbit about a body, or null when the orbit is
+    /// not captured (non-negative energy, i.e. parabolic/hyperbolic) or the ship is outside the body's
+    /// Hill sphere. The period is one full revolution — the length a captured ship's plot ribbon should
+    /// draw instead of a precessing bouquet. Same energy/semi-major-axis kernel as <see cref="ParkStability"/>:
+    /// a = −μ/(2·energy), T = 2π·√(a³/μ). Unbound legs (a transfer or a hyperbolic pass) return null so
+    /// the caller keeps the full-length ribbon where the future genuinely extends.
+    /// </summary>
+    public static double? BoundOrbitPeriod(
+        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, double hillRadius)
+    {
+        Vector2d r = ship.Position - bodyPosition;
+        double radius = r.Length;
+        if (!(radius > 0) || !(hillRadius > 0) || !(body.Mu > 0) || radius >= hillRadius)
+        {
+            return null;
+        }
+
+        Vector2d v = ship.Velocity - bodyVelocity;
+        double mu = body.Mu;
+        double energy = v.LengthSquared / 2 - mu / radius;
+        if (energy >= 0)
+        {
+            return null; // unbound: no revolution to close
+        }
+
+        double a = -mu / (2 * energy);                          // semi-major axis (>0 when bound)
+        return 2 * Math.PI * Math.Sqrt(a * a * a / mu);
+    }
+
+    /// <summary>
     /// #145 — how many seconds of a time-parameterized trajectory to DISPLAY in a co-moving frame
     /// around a Hill-sphere body. The full projection is sized for solar legs (days–weeks); drawn
     /// inside a moon system it renders as a spirograph coil (the owner's 7-day Titan approach = ~8-10

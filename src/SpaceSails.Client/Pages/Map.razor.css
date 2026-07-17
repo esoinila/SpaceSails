@@ -392,8 +392,13 @@
     flex: 0 0 auto;
 }
 
+/* #260 — the X-Pilot heading readout crams a signed 1-decimal degree value, its ° suffix AND the
+   abs/rel toggle button into one input-group. At 5rem the number clipped exactly where the captain
+   flies by hand (the manual close-in, angles off the panel) — widen so "-172.5°" reads in full. The
+   step-edit row is flex-wrap inside the width:32rem / max-width:100% plotting panel, so the extra
+   width wraps rather than pushing past the viewport (#253 clamping holds). */
 .map-plot-heading {
-    width: 5rem;
+    width: 8.5rem;
     flex: 0 0 auto;
 }
 
