@@ -27,6 +27,7 @@ public static class Parrot
         ContractPaid,
         Plunder,
         Busted,
+        LongHaul,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -73,6 +74,9 @@ public static class Parrot
         // Busted (PR-BUSTED) — at each heat crossing the bird names the confiscation exposure. {0} is
         // the rate phrase ("a THIRD of the purse and all the hot cargo, captain").
         ["Collectors want {0}! SQUAWK!", "Mind the long arm — {0}!", "If they catch us it's {0}! SQUAWK SQUAWK!"],
+        // LongHaul (#172) — a long dead coast ahead; the bird votes fast-forward and points at the ⏭ button.
+        // The coast is free, only time passes: SMASH the button and it'll wake ye at the next event.
+        ["Loooong haul, captain — smash that ⏭ and I'll squawk ye awake!", "Days of nothing ahead. The bird votes fast-forward.", "Wake me at the burn — you know the button. SQUAWK!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line

@@ -53,6 +53,21 @@ public class ParrotTests
     }
 
     [Fact]
+    public void LongHaul_VotesFastForward_AndPointsAtTheSkipButton()
+    {
+        // #172: a long dead coast ahead — the bird nudges the captain toward the ⏭ skip control.
+        for (int i = 0; i < 3; i++)
+        {
+            string line = Parrot.Line(Parrot.Squawk.LongHaul, i);
+            Assert.True(
+                line.Contains("⏭", StringComparison.Ordinal)
+                    || line.Contains("fast-forward", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("button", StringComparison.OrdinalIgnoreCase),
+                $"expected a fast-forward / skip nudge, got: {line}");
+        }
+    }
+
+    [Fact]
     public void Plunder_NamesTheHaul_AcrossTheRotation()
     {
         // #202: the bird names what was just stolen — the haul phrase fills the {0} slot in every line.
