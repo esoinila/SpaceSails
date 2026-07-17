@@ -24,6 +24,7 @@
     { "id": "enceladus", "name": "Enceladus", "parentId": "saturn", "mu": 7.211e9,   "bodyRadiusM": 2.5226e5, "orbitRadiusM": 2.38037e8, "orbitPeriodS": 1.183868e5, "initialPhaseRad": 2.0, "kind": "moon", "haven": true },
     { "id": "ringside-exchange", "name": "Ringside Exchange", "parentId": "saturn", "mu": 0, "bodyRadiusM": 1000, "orbitRadiusM": 1.35e9, "orbitPeriodS": 1.6006e6, "initialPhaseRad": 5.0, "kind": "station", "haven": true },
     { "id": "uranus",  "name": "Uranus",  "parentId": "sun", "mu": 5.793939e15,      "bodyRadiusM": 2.5362e7,  "orbitRadiusM": 2.87246e12, "orbitPeriodS": 2.65104e9,   "initialPhaseRad": 5.4 },
+    { "id": "miranda", "name": "Miranda", "parentId": "uranus", "mu": 4.4e9, "bodyRadiusM": 2.358e5, "orbitRadiusM": 1.299e8, "orbitPeriodS": 122083, "initialPhaseRad": 2.3, "kind": "moon" },
     { "id": "the-tilt", "name": "The Tilt", "parentId": "uranus", "mu": 0, "bodyRadiusM": 1000, "orbitRadiusM": 8.0e7, "orbitPeriodS": 14000, "initialPhaseRad": 4.7, "kind": "station", "haven": true },
     { "id": "neptune", "name": "Neptune", "parentId": "sun", "mu": 6.836529e15,      "bodyRadiusM": 2.4622e7,  "orbitRadiusM": 4.49506e12, "orbitPeriodS": 5.2004e9,    "initialPhaseRad": 0.4 }
   ],

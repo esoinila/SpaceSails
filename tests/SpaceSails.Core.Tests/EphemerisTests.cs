@@ -13,8 +13,9 @@ public class EphemerisTests
         // Enceladus, Ringside Exchange, plus the inner grey-market docks Cinder Roost (Venus),
         // The Space Bar (Mars) and The Tilt (Uranus) — the derelict roadster (go-ashore fetch job),
         // and Selene Gate, the Luna-vicinity fuel port that closes Lab 28's stranded-at-Luna gap (#157).
-        Assert.Equal(24, scenario.Bodies.Count); // +Phobos (#164, the treasure-island moon of Mars)
+        Assert.Equal(25, scenario.Bodies.Count); // +Phobos (#164) +Miranda (#246, the shuttle-bury moon off The Tilt)
         Assert.Contains(scenario.Bodies, b => b.Id == "saturn");
+        Assert.Contains(scenario.Bodies, b => b.Id == "miranda" && b.ParentId == "uranus" && b.Kind == "moon");
         Assert.Contains(scenario.Bodies, b => b.Id == "phobos" && b.ParentId == "mars" && b.Kind == "moon");
         Assert.Contains(scenario.Bodies, b => b.Id == "luna" && b.ParentId == "earth");
         Assert.Contains(scenario.Bodies, b => b.Id == "selene-gate" && b.ParentId == "earth" && b.Haven);
