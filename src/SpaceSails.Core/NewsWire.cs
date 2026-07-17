@@ -24,6 +24,7 @@ public static class NewsWire
         SlugHit,
         SlugMissed,
         HunterBrokeOff,
+        LongHaulComplete,
     }
 
     /// <summary>One player-triggered event, dated and named. <paramref name="Subject"/> is the
@@ -202,6 +203,8 @@ public static class NewsWire
             $"A mass-driver round evaporated somewhere past {evt.Subject}'s wake. Warning, or bad gunnery — opinions differ.",
         NewsEventKind.HunterBrokeOff =>
             $"{evt.Subject} has broken off the chase — the contract, it seems, wasn't worth the hull. Someone's underwriters are furious.",
+        NewsEventKind.LongHaulComplete =>
+            $"A ship crossed the deep black to {evt.Subject} — weeks of void{(evt.Detail is null ? "" : $" ({evt.Detail})")}, one long silence, then a berth light on the scope.",
         _ => "Static on the wire.",
     };
 }

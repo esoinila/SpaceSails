@@ -154,6 +154,16 @@ public class NewsWireTests
     }
 
     [Fact]
+    public void Headline_LongHaulComplete_NamesTheDestination()
+    {
+        var evt = new NewsWire.NewsEvent(NewsWire.NewsEventKind.LongHaulComplete, 1000, "The Tilt", "172 d crossed");
+
+        string headline = NewsWire.Headline(evt);
+        Assert.Contains("The Tilt", headline);
+        Assert.Contains("172 d crossed", headline);
+    }
+
+    [Fact]
     public void Headline_IsDeterministic_SameEventSameText()
     {
         var evt = new NewsWire.NewsEvent(NewsWire.NewsEventKind.RobberyCommitted, 1000, "SS Meridian");

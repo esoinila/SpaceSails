@@ -1,0 +1,359 @@
+using SpaceSails.Contracts;
+
+namespace SpaceSails.Core.Tests;
+
+/// <summary>
+/// QA gates for #246 — 🚀 LONG HAUL, the void-crossing autopilot mode. The headline promise is
+/// "consistent BY CONSTRUCTION": the jump places the ship at the closed-form conic's arrival state and
+/// advances the clock there, and every time-derived system (rails, heat, interest, pod/cache timers) is
+/// a pure function of sim time — so the tests assert the jump-state equals what integrating tick-by-tick
+/// would give. Plus the guard rules (refuse while hunted / in-well / short / off-course), the
+/// arrival-at-capture-range placement, the promise wording, and Miranda's ephemeris + shuttle-range.
+/// </summary>
+public class LongHaulTests
+{
+    private const double SunMu = 1.32712440018e20;
+    private const double MarsMu = 4.282837e13;
+    private const double UranusMu = 5.793939e15;
+    private const double MirandaMu = 4.4e9;
+
+    // The Sol subset the haul lives in: the sun at the origin, Mars and Uranus on their sol.json rails,
+    // and Uranus's satellites Miranda (moon) + The Tilt (dock haven) — the acceptance destination.
+    private static ICelestialEphemeris MakeSol()
+    {
+        var bodies = new[]
+        {
+            new CelestialBody("sun", "Sun", null, SunMu, 6.9634e9, 0, 0, 0),
+            new CelestialBody("mars", "Mars", "sun", MarsMu, 3.3895e6, 2.2794e11, 5.93551e7, 2.7),
+            new CelestialBody("uranus", "Uranus", "sun", UranusMu, 2.5362e7, 2.87246e12, 2.65104e9, 5.4),
+            new CelestialBody("miranda", "Miranda", "uranus", MirandaMu, 2.358e5, 1.299e8, 122083, 2.3, BodyKind.Moon),
+            new CelestialBody("the-tilt", "The Tilt", "uranus", 0, 1000, 8.0e7, 14000, 4.7, BodyKind.Station, IsHaven: true),
+        };
+        return new CircularOrbitEphemeris(bodies);
+    }
+
+    // A ship on a heliocentric Lambert arc that genuinely closes on Uranus at tArr — Lambert proposes the
+    // departure velocity, so the coasting conic really does reach the planet (no hand-waved state).
+    private static (ShipState Ship, double ArrivalTime) ShipBoundForUranus(ICelestialEphemeris eph, double t0 = 0)
+    {
+        double tArr = t0 + 200.0 * 86400.0;
+        Vector2d r2 = eph.Position("uranus", tArr);
+        Vector2d dir = r2.Normalized();
+        Vector2d perp = new Vector2d(dir.Y, -dir.X);          // −90°, so the prograde sweep to Uranus is ~90°
+        Vector2d r1 = perp * 5e11;                            // an open-space heliocentric start, well clear of any well
+        TransferMath.LambertSolution lam = TransferMath.Lambert(r1, r2, tArr - t0, SunMu)
+            ?? throw new InvalidOperationException("test setup: Lambert failed to find the Uranus arc");
+        return (new ShipState(r1, lam.V1, t0), tArr);
+    }
+
+    // ---- Miranda joins the world (#246 item 4) ----
+
+    [Fact]
+    public void Miranda_Ephemeris_MatchesRealishParams()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        CelestialBody miranda = eph.Bodies.Single(b => b.Id == "miranda");
+
+        Assert.Equal("uranus", miranda.ParentId);
+        Assert.Equal(BodyKind.Moon, miranda.Kind);
+        Assert.False(miranda.IsHaven);
+        Assert.Equal(1.299e8, miranda.OrbitRadius, 3);      // ≈ 129,900 km
+        Assert.Equal(122083, miranda.OrbitPeriod, 0);       // ≈ 1.413 d
+        Assert.Equal(2.358e5, miranda.BodyRadius, 3);       // ≈ 235.8 km
+        Assert.Equal(4.4e9, miranda.Mu, 3);
+    }
+
+    [Fact]
+    public void Miranda_IsInTheRealSolScenario_LandableAndShuttleReachableFromTheTilt()
+    {
+        // Guards the actual scenarios/sol.json data file (not just the inline fixture): Miranda is present,
+        // a landable moon of Uranus, and every phase of its orbit sits inside a shuttle hop of The Tilt —
+        // so #231's bury flow lists it when docked at The Tilt with zero code changes.
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CelestialBody miranda = eph.Bodies.Single(b => b.Id == "miranda");
+
+        Assert.Equal("uranus", miranda.ParentId);
+        Assert.Equal(BodyKind.Moon, miranda.Kind);       // landable (the bury flow keys off Kind == Moon)
+        Assert.False(miranda.IsHaven);
+
+        double worst = 0;
+        for (double t = 0; t <= miranda.OrbitPeriod; t += miranda.OrbitPeriod / 128.0)
+        {
+            worst = Math.Max(worst, (eph.Position("the-tilt", t) - eph.Position("miranda", t)).Length);
+        }
+
+        Assert.True(worst > miranda.BodyRadius);         // not "basically on it already"
+        Assert.True(ShuttleRange.InRange(worst), $"worst Tilt→Miranda gap {worst:E3} m must be within a shuttle hop");
+    }
+
+    [Fact]
+    public void Miranda_SitsWithinShuttleRange_OfTheTilt_AtEveryPhase()
+    {
+        ICelestialEphemeris eph = MakeSol();
+
+        // The worst case is the two on opposite sides of Uranus: their orbit radii simply add. Sample a
+        // full Miranda period to be sure the real geometry never beats the bound.
+        double worst = 0;
+        for (double t = 0; t <= 122083; t += 122083 / 64.0)
+        {
+            double d = (eph.Position("the-tilt", t) - eph.Position("miranda", t)).Length;
+            worst = Math.Max(worst, d);
+        }
+
+        Assert.True(worst <= 8.0e7 + 1.299e8 + 1.0);        // ≤ sum of the two orbit radii
+        Assert.True(ShuttleRange.InRange(worst));            // and comfortably inside the 5e8 m shuttle hop
+    }
+
+    // ---- JumpTargetPlanet: a destination resolves to the sun-orbiting planet the haul stops at ----
+
+    [Fact]
+    public void JumpTargetPlanet_ResolvesUpTheParentChain()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        Assert.Equal("uranus", LongHaul.JumpTargetPlanet(eph, "the-tilt")?.Id);   // station → its planet
+        Assert.Equal("uranus", LongHaul.JumpTargetPlanet(eph, "miranda")?.Id);    // moon → its planet
+        Assert.Equal("uranus", LongHaul.JumpTargetPlanet(eph, "uranus")?.Id);     // a planet is its own target
+        Assert.Null(LongHaul.JumpTargetPlanet(eph, "sun"));                       // the root hauls nowhere
+    }
+
+    // ---- The arrival: stop AT capture range, on the closed-form conic (#246 items 1d, 2) ----
+
+    [Fact]
+    public void Project_ReachingCourse_StopsAtCaptureRange()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        (ShipState ship, double tArr) = ShipBoundForUranus(eph);
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+
+        LongHaul.Reach reach = LongHaul.Project(ship, eph, uranus);
+
+        Assert.True(reach.Reaches);
+        double expectedCapture = OrbitRule.CaptureRange(OrbitRule.HillRadius(uranus, SunMu));
+        Assert.Equal(expectedCapture, reach.CaptureRangeMeters, 0);
+
+        // The bus stops AT the capture range: the arrival sits on the gate, not at the planet's centre.
+        double arrivalDist = (reach.ArrivalState.Position - eph.Position("uranus", reach.ArrivalSimTime)).Length;
+        Assert.Equal(reach.CaptureRangeMeters, arrivalDist, expectedCapture * 1e-3);
+
+        // And it arrives BEFORE the full arc closes on the centre (the last mile is the existing machinery).
+        Assert.True(reach.ArrivalSimTime < tArr);
+        Assert.True(reach.ArrivalSimTime > ship.SimTime);
+    }
+
+    [Fact]
+    public void Project_ArrivalState_LiesOnTheSameClosedFormConic()
+    {
+        // "Consistent by construction" for the ship: the jump places it at a point on the SAME heliocentric
+        // Kepler conic it departed on. The method-independent proof is that the two conic invariants —
+        // specific orbital energy (½v² − μ/r) and specific angular momentum (r × v), both sun-relative
+        // (the sun sits at the world origin) — are conserved from departure to the placed arrival state.
+        ICelestialEphemeris eph = MakeSol();
+        (ShipState ship, _) = ShipBoundForUranus(eph);
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+
+        LongHaul.Reach reach = LongHaul.Project(ship, eph, uranus);
+        Assert.True(reach.Reaches);
+
+        static double Energy(Vector2d p, Vector2d v) => 0.5 * v.LengthSquared - SunMu / p.Length;
+        static double AngMom(Vector2d p, Vector2d v) => p.X * v.Y - p.Y * v.X;
+
+        double e0 = Energy(ship.Position, ship.Velocity);
+        double e1 = Energy(reach.ArrivalState.Position, reach.ArrivalState.Velocity);
+        double h0 = AngMom(ship.Position, ship.Velocity);
+        double h1 = AngMom(reach.ArrivalState.Position, reach.ArrivalState.Velocity);
+
+        Assert.Equal(e0, e1, Math.Abs(e0) * 1e-3);
+        Assert.Equal(h0, h1, Math.Abs(h0) * 1e-3);
+    }
+
+    [Fact]
+    public void Project_BodyPositions_AreThePureEphemerisFunction_AtTheArrivalEpoch()
+    {
+        // "consistent by construction" for the rails: the world at the arrival clock is exactly ephemeris(t),
+        // whether you integrated there or jumped — the ephemeris is a pure function of sim time.
+        ICelestialEphemeris eph = MakeSol();
+        (ShipState ship, _) = ShipBoundForUranus(eph);
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+
+        LongHaul.Reach reach = LongHaul.Project(ship, eph, uranus);
+        ICelestialEphemeris independent = MakeSol(); // a second rail set, built from scratch
+
+        foreach (string id in new[] { "mars", "uranus", "miranda", "the-tilt" })
+        {
+            Vector2d viaJump = eph.Position(id, reach.ArrivalSimTime);
+            Vector2d recomputed = independent.Position(id, reach.ArrivalSimTime);
+            Assert.Equal(viaJump.X, recomputed.X, 0);
+            Assert.Equal(viaJump.Y, recomputed.Y, 0);
+        }
+    }
+
+    [Fact]
+    public void Project_MissingCourse_ReportsClosestPass_NotReached()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+
+        // A ship on a tidy circular heliocentric lane at Mars's radius never climbs to Uranus.
+        Vector2d r = new Vector2d(2.2794e11, 0);
+        double v = Math.Sqrt(SunMu / r.Length);
+        var ship = new ShipState(r, new Vector2d(0, v), 0);
+
+        LongHaul.Reach reach = LongHaul.Project(ship, eph, uranus);
+
+        Assert.False(reach.Reaches);
+        Assert.True(reach.ClosestApproachMeters > reach.CaptureRangeMeters);
+    }
+
+    // ---- Consistency by construction: heat / interest are single-application-equals-integrated ----
+
+    [Fact]
+    public void HeatDecay_JumpAppliedOnce_EqualsTickByTick_HavenMultOffInFlight()
+    {
+        // The jump applies DecayHeat once at the arrival clock; DecayHeat is idempotent and
+        // path-independent, so one application over the span equals stepping through it. In flight the
+        // haven multiplier does NOT apply (#246 item 2) — the ship is crossing the void, not resting.
+        var start = new HeatState(3, 0);
+        double arrival = 25.0 * 86400.0;          // ≈1.25 decay periods → drops one level, checkpoint advances
+        double mid = 12.0 * 86400.0;
+
+        HeatState oneShot = EncounterRule.DecayHeat(start, arrival, atHavenOrbit: false);
+        HeatState stepped = EncounterRule.DecayHeat(EncounterRule.DecayHeat(start, mid, false), arrival, false);
+
+        Assert.Equal(stepped.Level, oneShot.Level);
+        Assert.Equal(stepped.RaisedAtSimTime, oneShot.RaisedAtSimTime, 1e-6);
+        Assert.Equal(2, oneShot.Level);
+    }
+
+    [Fact]
+    public void BankInterest_OverJumpSpan_IsTheClosedForm()
+    {
+        // Parked coin grows by the pure closed form over the elapsed days — the jump books it once for the
+        // whole span (calm only; a hot deck earns nothing).
+        long balance = 100_000;
+        double days = 40.0;
+        long expected = (long)Math.Round(balance * FavorBank.DailyInterestRate * days);
+
+        Assert.Equal(expected, FavorBank.AccrueInterest(balance, days, heatLevel: 0));
+        Assert.Equal(0, FavorBank.AccrueInterest(balance, days, heatLevel: 1));
+    }
+
+    [Fact]
+    public void PodRailAndCacheTimers_LandClosedForm_AtTheJumpEpoch()
+    {
+        // The mode's premise for the rest of the world: pod rails (Lab 30 closed-form conic) and cache
+        // discovery windows (floor(t / period)) are pure functions of sim time. The post-jump world reads
+        // them at the arrival epoch directly — no integration of the void — and lands exactly where
+        // stepping tick-by-tick would.
+        var launch = new ShipState(new Vector2d(1.5e11, 0), new Vector2d(0, 3.2e4), 0);
+        double arrival = 172.0 * 86400.0;
+
+        ShipState pod = MassDriverSchedule.PodRailState(launch, arrival, SunMu)!.Value;
+        Assert.Equal(arrival, pod.SimTime, 0);
+        Assert.True(double.IsFinite(pod.Position.X) && double.IsFinite(pod.Position.Y));
+        Assert.Equal(pod.Position.X, MassDriverSchedule.PodRailState(launch, arrival, SunMu)!.Value.Position.X, 0);
+
+        long windowsCrossed = DiscoveryRule.PeriodIndex(arrival) - DiscoveryRule.PeriodIndex(0);
+        Assert.Equal(172, windowsCrossed); // DiscoveryRule.PeriodSeconds == one sim-day
+    }
+
+    // ---- The gate: refuse while hunted / keeping / in-well / short / off-course (#246 items 1, 2) ----
+
+    [Fact]
+    public void Evaluate_CleanLongReach_IsClearToGo()
+    {
+        var reach = new LongHaul.Reach(true, 60.0 * 86400.0, default, 3.5e11, 3.5e11, 60.0 * 86400.0);
+        Assert.Equal(LongHaul.Blocker.None, LongHaul.Evaluate(reach, anyHunterActive: false, keepingOrbit: false, insideWell: false, fromSimTime: 0));
+    }
+
+    [Fact]
+    public void Evaluate_RefusesWhileHunted_FirstOfAll()
+    {
+        var reach = new LongHaul.Reach(true, 60.0 * 86400.0, default, 3.5e11, 3.5e11, 60.0 * 86400.0);
+        // Even with every other reason also present, the hunter is the reason spoken.
+        Assert.Equal(LongHaul.Blocker.HunterActive,
+            LongHaul.Evaluate(reach, anyHunterActive: true, keepingOrbit: true, insideWell: true, fromSimTime: 0));
+    }
+
+    [Fact]
+    public void Evaluate_RefusesWhileKeeping_ThenInWell_ThenOffCourse_ThenShort()
+    {
+        var reaching = new LongHaul.Reach(true, 60.0 * 86400.0, default, 3.5e11, 3.5e11, 60.0 * 86400.0);
+        var missing = new LongHaul.Reach(false, 60.0 * 86400.0, default, 3.5e11, 9e11, 30.0 * 86400.0);
+        var shortHop = new LongHaul.Reach(true, 2.0 * 86400.0, default, 3.5e11, 3.5e11, 2.0 * 86400.0);
+
+        Assert.Equal(LongHaul.Blocker.Keeping, LongHaul.Evaluate(reaching, false, keepingOrbit: true, insideWell: true, 0));
+        Assert.Equal(LongHaul.Blocker.InsideWell, LongHaul.Evaluate(reaching, false, false, insideWell: true, 0));
+        Assert.Equal(LongHaul.Blocker.DoesNotReach, LongHaul.Evaluate(missing, false, false, false, 0));
+        Assert.Equal(LongHaul.Blocker.ShortHop, LongHaul.Evaluate(shortHop, false, false, false, 0));
+    }
+
+    [Fact]
+    public void AnyHunterActive_TrueOnlyForAFlyingUnbrokenHunter()
+    {
+        var atOrigin = new ShipState(Vector2d.Zero, Vector2d.Zero, 0);
+        HunterState active = new("h1", "Wolf", "mars", 0, 100, atOrigin, false, false);
+        HunterState fittingOut = active with { ActivationSimTime = 1e9 };  // not flying yet
+        HunterState brokenOff = active with { BrokenOff = true };
+        HunterState caught = active with { CaughtPlayer = true };
+
+        Assert.True(LongHaul.AnyHunterActive(new[] { active }, simTime: 200));
+        Assert.False(LongHaul.AnyHunterActive(new[] { fittingOut }, simTime: 200));
+        Assert.False(LongHaul.AnyHunterActive(new[] { brokenOff }, simTime: 200));
+        Assert.False(LongHaul.AnyHunterActive(new[] { caught }, simTime: 200));
+        Assert.False(LongHaul.AnyHunterActive(Array.Empty<HunterState>(), simTime: 200));
+    }
+
+    [Fact]
+    public void InsideAnyWell_TrueDeepInMars_ExemptForTheTargetPlanet()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        Vector2d marsPos = eph.Position("mars", 0);
+        var atMars = new ShipState(marsPos + new Vector2d(1e8, 0), Vector2d.Zero, 0); // well inside Mars's Hill sphere
+
+        Assert.True(LongHaul.InsideAnyWell(atMars, eph));
+
+        // Sitting inside the DESTINATION planet's own well is not a blocker — arriving there is the point.
+        Vector2d uranusPos = eph.Position("uranus", 0);
+        var atUranus = new ShipState(uranusPos + new Vector2d(1e9, 0), Vector2d.Zero, 0);
+        Assert.False(LongHaul.InsideAnyWell(atUranus, eph, exemptPlanetId: "uranus"));
+    }
+
+    // ---- The promise, the offer, the announcement, the refusal — one voice (#246 items 1, 3, 5) ----
+
+    [Fact]
+    public void UranusCaptureRange_IsTheOwnersPromiseNumber_234Au()
+    {
+        ICelestialEphemeris eph = MakeSol();
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+        double capture = OrbitRule.CaptureRange(OrbitRule.HillRadius(uranus, SunMu));
+
+        Assert.Equal("2.34 AU", LongHaul.FormatAu(capture));
+    }
+
+    [Fact]
+    public void PromiseAndVerdict_SayTheDestinationPlainly()
+    {
+        var reaches = new LongHaul.Reach(true, 172.0 * 86400.0, default, 3.4995e11, 3.4995e11, 172.0 * 86400.0);
+        var misses = new LongHaul.Reach(false, 0, default, 3.4995e11, 5.9e11, 0);
+
+        Assert.Equal("this course reaches Uranus capture in 172 d", LongHaul.ReachVerdict("Uranus", reaches, 0));
+        Assert.Equal("this coast does NOT reach Uranus — closest pass 3.94 AU", LongHaul.ReachVerdict("Uranus", misses, 0));
+
+        Assert.Equal(
+            "course reaches Uranus capture (2.34 AU) on Sol-Day 172 — ≈0 p now, ≈41 p quoted for the last mile",
+            LongHaul.Promise("Uranus", 3.4995e11, "Sol-Day 172", 0, 41));
+
+        Assert.Equal("🚀 Long haul to The Tilt — ≈0 p, arrive Sol-Day 172", LongHaul.Offer("The Tilt", 0, "Sol-Day 172"));
+        Assert.Equal("🚀 AUTOPILOT HAS THE SHIP — NOW: long haul to Uranus", LongHaul.BannerNow("Uranus"));
+        Assert.Equal("🚀 long haul complete — 172 d passed; arrived at The Tilt capture range", LongHaul.Completed("The Tilt", 172));
+    }
+
+    [Fact]
+    public void RefusalText_SpeaksTheReason()
+    {
+        Assert.Contains("sky is clear", LongHaul.RefusalText(LongHaul.Blocker.HunterActive, "Uranus"));
+        Assert.Contains("disarm the kept orbit", LongHaul.RefusalText(LongHaul.Blocker.Keeping, "Uranus"));
+        Assert.Contains("leave the well", LongHaul.RefusalText(LongHaul.Blocker.InsideWell, "Uranus"));
+        Assert.Contains("does not reach", LongHaul.RefusalText(LongHaul.Blocker.DoesNotReach, "Uranus"));
+    }
+}
