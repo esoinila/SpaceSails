@@ -1,4 +1,35 @@
+using System.Collections.Immutable;
+
 namespace SpaceSails.Core;
+
+/// <summary>What a single credit movement on the favor bank was (PR-WIRE, FridaySecondPlan §0). The
+/// amount is the SIGNED delta it applied to <see cref="ContactHistory.CreditBalance"/> — so the sum
+/// of every transaction's amount is exactly the running balance, a book that always foots.</summary>
+public enum CreditKind
+{
+    /// <summary>We parked coin with the contact (balance ↑ — they hold our money).</summary>
+    Deposit,
+
+    /// <summary>The distress cut a fence takes on the way in while we're HEATED (balance ↓, but less
+    /// than the collector would take — see <see cref="FavorBank"/>).</summary>
+    FenceCut,
+
+    /// <summary>Calm-weather interest the contact pays on parked coin (balance ↑).</summary>
+    Interest,
+
+    /// <summary>We drew our parked coin back out (balance ↓ toward zero).</summary>
+    Withdrawal,
+
+    /// <summary>The contact wired us gas money — we now owe them (balance ↓ below zero).</summary>
+    Borrow,
+
+    /// <summary>We paid a debt down, in coin or by working off a favor (balance ↑ toward zero).</summary>
+    Repayment,
+}
+
+/// <summary>One line in a contact's passbook: what kind of move, the signed credit delta, when, and a
+/// human note. A <c>readonly record struct</c> so a future save layer serializes it flat.</summary>
+public readonly record struct CreditTransaction(CreditKind Kind, long Amount, double SimTime, string Note);
 
 /// <summary>
 /// The relationship seam (#185, owner: "we have a relationship now to the task giver"). A small,
@@ -6,6 +37,12 @@ namespace SpaceSails.Core;
 /// fixer, a fence. Today it counts the jobs we've finished together, the coin they've paid, and
 /// when we last delivered; the future relationship system reads it to know a history exists at
 /// all. Deliberately one record type, not a system.
+///
+/// <para>PR-WIRE (FridaySecondPlan §0, the favor bank) grows two additive fields on the SAME book:
+/// a signed <see cref="CreditBalance"/> (+ = they hold OUR coin; − = we owe THEM) and the
+/// <see cref="Transactions"/> that produced it. Both default to empty/zero, so every pre-existing
+/// construction (and a <c>default</c> struct) still reads as a clean-slate contact with no money in
+/// the air — the field exists now, canon, without disturbing the celebration or plunder flows.</para>
 /// </summary>
 /// <param name="Hostile">#202 — the NEGATIVE seam: we boarded and robbed this contact. One field, not
 /// a system — a future reputation layer reads it to know the history is a bad one (a fence won't buy,
@@ -18,6 +55,23 @@ public readonly record struct ContactHistory(
     double LastCompletedSimTime,
     bool Hostile = false)
 {
+    /// <summary>The signed running balance with this contact: positive when they hold our banked coin
+    /// (a deposit we can draw back), negative when we owe them (gas money they wired). The sum of every
+    /// <see cref="Transactions"/> entry's <see cref="CreditTransaction.Amount"/>.</summary>
+    public long CreditBalance { get; init; }
+
+    // Stored as ImmutableArray but read through a default-safe accessor: a ContactHistory built the old
+    // way (or a `default` struct) never ran this initializer, leaving the field `IsDefault` — so the
+    // getter coalesces to Empty rather than throwing. Round-trips through `with { Transactions = ... }`.
+    private readonly ImmutableArray<CreditTransaction> _transactions;
+
+    /// <summary>The passbook: every credit movement with this contact, oldest first.</summary>
+    public ImmutableArray<CreditTransaction> Transactions
+    {
+        get => _transactions.IsDefault ? ImmutableArray<CreditTransaction>.Empty : _transactions;
+        init => _transactions = value;
+    }
+
     /// <summary>A blank slate for a contact we've not yet done business with.</summary>
     public static ContactHistory New(string contactId, string displayName) =>
         new(contactId, displayName, 0, 0, double.NegativeInfinity);
@@ -38,8 +92,18 @@ public readonly record struct ContactHistory(
         LastCompletedSimTime = simTime,
     };
 
-    /// <summary>True once there is any history to read — an honest job done, or a hull we robbed.</summary>
-    public bool HasHistory => MissionsCompleted > 0 || Hostile;
+    /// <summary>Post one credit movement: append it to the passbook and move the balance by its signed
+    /// amount. The invariant <c>CreditBalance == Σ Transactions.Amount</c> holds for any history built
+    /// from <see cref="New"/> and only ever mutated through here.</summary>
+    public ContactHistory WithCredit(CreditTransaction txn) => this with
+    {
+        CreditBalance = CreditBalance + txn.Amount,
+        Transactions = Transactions.Add(txn),
+    };
+
+    /// <summary>True once there is any history to read — an honest job done, a hull we robbed, or coin
+    /// in the air (banked with them or owed to them).</summary>
+    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0;
 }
 
 /// <summary>
@@ -80,6 +144,21 @@ public sealed class ContactLedger
             ? existing with { DisplayName = displayName }
             : ContactHistory.New(contactId, displayName);
         ContactHistory updated = current.WithPlunder(simTime);
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>PR-WIRE — the ONE mutation the favor bank performs: post a signed credit movement
+    /// (deposit, fence cut, interest, withdrawal, borrow, repayment) against a contact, creating their
+    /// record on first dealing. Additive by construction — the celebration and plunder flows are
+    /// untouched, and both sibling lanes (BUSTED confiscation, HOARD caches) can read
+    /// <see cref="ContactHistory.CreditBalance"/> without a new API. Returns the updated history.</summary>
+    public ContactHistory ApplyCredit(string contactId, string displayName, CreditTransaction txn)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+        ContactHistory updated = current.WithCredit(txn);
         _byId[contactId] = updated;
         return updated;
     }

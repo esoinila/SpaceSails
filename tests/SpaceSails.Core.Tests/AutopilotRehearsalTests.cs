@@ -139,6 +139,70 @@ public class AutopilotRehearsalTests
     }
 
     [Fact]
+    public void PlanCollisionPass_TrustsTheDeliverableInsertion_NoFalseImpactOnAValidApproach()
+    {
+        // #219 repro at Core: armed auto-orbit at Enceladus, alongside at 3 M km. The rehearsal captures
+        // cleanly (Deliverable), but the coarse-stepped terminal coast records a target graze that dips
+        // BELOW Enceladus's surface a step before the insert circularizes it back to a safe park. Raw
+        // MostSevere over that path reports an Impact — which made ROCKS AHEAD cry on a valid armed
+        // approach. PlanCollisionPass judges the ACHIEVED PARK instead: no false impact.
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        Vector2d saturnPos = eph.Position("saturn", 0);
+        Vector2d encPos = eph.Position("enceladus", 0);
+        Vector2d encVel = BodyVel(eph, "enceladus", 0);
+        Vector2d outward = (encPos - saturnPos).Normalized();
+        var ship = new ShipState(encPos + outward * 3e6, encVel, 0);
+
+        int budget = Tank - AutopilotRehearsal.ReservePulses(Tank);
+        AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
+            ship, eph, sim, "enceladus", budget, capturePath: true);
+        Assert.True(r.Deliverable, "The alongside Enceladus park must be promisable (the arm succeeds).");
+
+        // The raw whole-path pass IS a false Enceladus impact — the graze the insertion resolves.
+        ClosestApproach.Pass? raw = ClosestApproach.MostSevere(r.Path, eph);
+        Assert.NotNull(raw);
+        Assert.True(raw!.Value is { BodyId: "enceladus", Impact: true },
+            $"Precondition: the raw path grazes subsurface (was {raw.Value.BodyName}, impact={raw.Value.Impact}).");
+
+        // PlanCollisionPass judges the achieved park — NOT an impact, so the alarm stays silent.
+        ClosestApproach.Pass? plan = AutopilotRehearsal.PlanCollisionPass(r, eph, "enceladus");
+        _out.WriteLine($"#219: raw sev={raw.Value.Severity:F3} impact={raw.Value.Impact}; " +
+            $"plan pass sev={plan?.Severity:F3} impact={plan?.Impact}");
+        Assert.NotNull(plan);
+        Assert.False(plan!.Value.Impact, "The deliverable plan's ACHIEVED PARK is above the surface — no alarm.");
+
+        // And the whole point: fed to the rule, an armed valid approach is silent.
+        Assert.Null(CollisionAlertRule.Evaluate(
+            armedWithValidPlan: true, keepingHoldsOrbit: false, ballisticPass: raw, planPass: plan));
+    }
+
+    [Fact]
+    public void PlanCollisionPass_StillShoutsWhenTheAchievedParkIsSubsurface()
+    {
+        // A genuinely bad plan shouts LOUDER: if the last (achieved-park) sample is itself under the
+        // surface, PlanCollisionPass reports the impact even for a "deliverable" result.
+        (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();
+        CelestialBody enc = eph.Bodies.First(b => b.Id == "enceladus");
+
+        // Hand-built rehearsal whose final sample sits inside Enceladus's surface (a subsurface park).
+        // Each sample is offset from Enceladus's position AT THAT sample's time (the moon moves ~12.6 km/s).
+        var path = new List<TrajectorySample>
+        {
+            new(0, eph.Position("enceladus", 0) + new Vector2d(1e7, 0)),
+            new(100, eph.Position("enceladus", 100) + new Vector2d(enc.BodyRadius * 0.5, 0)), // "park": subsurface
+        };
+        var bad = new AutopilotRehearsal.RehearsalResult(
+            Captured: true, Pulses: 10, ApproachBurns: 1, SimDurationSeconds: 100,
+            BudgetExceeded: false, HorizonReached: false, Path: path);
+        Assert.True(bad.Deliverable);
+
+        ClosestApproach.Pass? plan = AutopilotRehearsal.PlanCollisionPass(bad, eph, "enceladus");
+        Assert.NotNull(plan);
+        Assert.True(plan!.Value is { BodyId: "enceladus", Impact: true },
+            "A plan whose achieved park is subsurface must still surface as an impact.");
+    }
+
+    [Fact]
     public void NonOrbitableTarget_IsNotAJourney()
     {
         (Simulator sim, ICelestialEphemeris eph) = SaturnSystem();

@@ -120,6 +120,90 @@
         </div>
     }
 
+    @* PR-WIRE — the favor bank card (FridaySecondPlan §0). Opened at a contact's table with 'b' (in
+       person) or from the dark-web desk (wire). Park coin off the purse (safe from confiscation),
+       draw it back, or borrow gas money against a favor. Same overlay family as the deck-offer-card. *@
+    @if (_bankSession is { } bank)
+    {
+        long _bankBal = _contacts.For(bank.ContactId).CreditBalance;
+        int _bankMissions = _contacts.For(bank.ContactId).MissionsCompleted;
+        bool _bankTrusted = ContactSheets.WillStake(_bankMissions);
+        TrustTier _bankTier = ContactSheets.TrustFor(_bankMissions);
+        <div class="deck-offer-card deck-bank-card">
+            <div class="deck-offer-giver">💰 @bank.DisplayName's ledger @(bank.ViaWire ? "· 🕸 wire" : "· 🤝 in person")</div>
+            <div class="deck-bank-balance small">
+                @if (_bankBal > 0)
+                {
+                    <span class="text-success">They hold @_bankBal.ToString("N0", CultureInfo.InvariantCulture) cr of yours</span>
+                }
+                else if (_bankBal < 0)
+                {
+                    <span class="text-danger">You owe them @((-_bankBal).ToString("N0", CultureInfo.InvariantCulture)) cr</span>
+                }
+                else
+                {
+                    <span class="text-secondary">No coin between you yet</span>
+                }
+                <span class="text-secondary"> · trust: @_bankTier · purse @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</span>
+            </div>
+            @if (_heat.Level > 0)
+            {
+                <div class="deck-bank-warn small text-warning">⚠ Heat @_heat.Level — parking coin now is FENCING: a cut comes off the top (still less than the collectors would take).</div>
+            }
+            <div class="deck-bank-actions">
+                <div class="deck-bank-row small">
+                    <span class="deck-bank-label">Deposit</span>
+                    @foreach (long amt in BankAmounts)
+                    {
+                        long a = amt;
+                        <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
+                                disabled="@(_credits < a)" title="@($"Park {a:N0} cr with {bank.DisplayName} — off the purse, safe from confiscation")"
+                                @onclick="() => BankDeposit(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                    }
+                </div>
+                <div class="deck-bank-row small">
+                    <span class="deck-bank-label">Withdraw</span>
+                    @foreach (long amt in BankAmounts)
+                    {
+                        long a = amt;
+                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                disabled="@(_bankBal < a)" title="@($"Draw {a:N0} cr back into the purse")"
+                                @onclick="() => BankWithdraw(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                    }
+                </div>
+                @if (_bankBal < 0)
+                {
+                    <div class="deck-bank-row small">
+                        <span class="deck-bank-label">Repay</span>
+                        @foreach (long amt in BankAmounts)
+                        {
+                            long a = amt;
+                            <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
+                                    disabled="@(_credits < a)" title="@($"Pay {a:N0} cr toward what you owe {bank.DisplayName}")"
+                                    @onclick="() => BankRepay(a)">@a.ToString("N0", CultureInfo.InvariantCulture)</button>
+                        }
+                    </div>
+                }
+                @if (_bankTrusted && _bankBal >= 0)
+                {
+                    <div class="deck-bank-row small">
+                        <span class="deck-bank-label">Borrow</span>
+                        <button type="button" class="btn btn-sm btn-warning py-0 px-1"
+                                title="@($"Take {BankLoanPrincipal:N0} cr on a favor — you'll owe {bank.DisplayName} one quiet delivery")"
+                                @onclick="() => BorrowFavorFromBank()">📡 favor wire · @BankLoanPrincipal.ToString("N0", CultureInfo.InvariantCulture) cr</button>
+                    </div>
+                }
+            </div>
+            @if (bank.Notice is { } notice)
+            {
+                <div class="deck-bank-notice small">@notice</div>
+            }
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-outline-light" title="Close the ledger and step back" @onclick="CloseBank">Done</button>
+            </div>
+        </div>
+    }
+
     @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
        bay's airlock lists the places within one shuttle hop. An interior berth is pickable — confirm and
        the crossing IS the trip, you step off ashore there; a body in range with nowhere to step off says
@@ -1521,6 +1605,16 @@
                                                 </button>
                                             </td>
                                         </tr>
+                                        @* PR-BUSTED: the one shipped dice helper — a named +2 on any last stand (the
+                                           purchasable-modifier seam; the shop of helpers is a follow-up). *@
+                                        <tr>
+                                            <td>Boarding-nets jammer<br /><span class="text-secondary">@(_hasNetJammer ? "fitted — +2 on resist" : "+2 on any last stand")</span></td>
+                                            <td class="text-end align-middle">
+                                                <button type="button" class="btn btn-sm btn-outline-info" disabled="@(_hasNetJammer || _credits < NetJammerPriceCr)" title="A named +2 modifier on resist/Bolivia initiative — proves the dice-helper seam" @onclick="BuyNetJammer">
+                                                    @(_hasNetJammer ? "OWNED" : $"{NetJammerPriceCr:N0} cr")
+                                                </button>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </DockMarket>
@@ -1577,6 +1671,16 @@
                                         else if (_fill.Pulses <= 0)
                                         {
                                             <div class="fuel-note small text-danger mt-1">Not enough credits for even one pulse (@_fuelPrice cr/p).</div>
+                                            @* PR-WIRE: broke at the pump — the dream's anonymized favor wire. A trusted
+                                               dark-web-native contact wires gas money; you owe them one quiet delivery. *@
+                                            @if (BestWireLenderId() is { } lender)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-warning mt-2 w-100"
+                                                        title="@($"Call in a favor — {ContactSheets.For(lender).DisplayName} wires you {PumpLoanPrincipal(_fuelRoom, _fuelPrice):N0} cr for fuel. You'll owe one quiet delivery.")"
+                                                        @onclick="CallInFavorAtPump">
+                                                    📡 Call in a favor — @ContactSheets.For(lender).DisplayName wires @PumpLoanPrincipal(_fuelRoom, _fuelPrice).ToString("N0", CultureInfo.InvariantCulture) cr
+                                                </button>
+                                            }
                                         }
                                         else if (_fill.Pulses < _fuelRoom)
                                         {
@@ -1713,7 +1817,7 @@
                             </div>
                             @if (_commsSelectedId == "darkweb")
                             {
-                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
                             }
                             else
                             {
@@ -1829,6 +1933,7 @@
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"
                                                               Tips="LedgerTips()" OnScopeTip="PointScopeFromLedger"
+                                                              Accounts="LedgerAccounts()"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
                                                               OnReopenStartPicker="ReopenStartPicker"
@@ -1859,6 +1964,153 @@
                         : $"Job #{party.MissionsWithGiver} for {party.GiverName}. You've got a history now.")
                 </div>
                 <button type="button" class="btn btn-warning btn-sm mt-2" title="Toast the payday and clear the fanfare" @onclick="DismissCelebration">Raise a glass 🍻</button>
+            </div>
+        </div>
+    }
+
+    @* PR-BUSTED (owner ruling §5): the catch. A hunter runs you down → warp yanks to 1×, the ship is
+       grappled, and this pop-up opens in the collector's voice. SUBMIT / BRIBE / RESIST, GTA-BUSTED
+       grammar — never game over (the Bolivia freeze-frame ends in brain-backup resurrection). The dice
+       are rolled Core-side and shown here, modifiers listed. Reuses the celebration modal's backdrop
+       grammar. *@
+    @if (_busted is { } bust)
+    {
+        <div class="busted-backdrop @(bust.Phase == BustedEncounter.Stage.FreezeFrame ? "busted-sepia" : "")">
+            <div class="busted-card" @onclick:stopPropagation="true">
+                @switch (bust.Phase)
+                {
+                    case BustedEncounter.Stage.Demand:
+                        <div class="busted-hail">⛓ CAUGHT — @bust.HunterCallsign has you grappled</div>
+                        <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
+                        <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
+                        int _hotUnits = _hotCargo.TotalHotUnits;
+                        int _coinShare = (int)Math.Round(_credits * BustedRule.CoinFraction(bust.Heat));
+                        bool _canBribe = _credits >= bust.Bribe.Total;
+                        <div class="busted-options">
+                            <button type="button" class="btn btn-warning busted-opt" @onclick="() => BustedSubmit(false)">
+                                <span class="bo-title">🤍 SUBMIT</span>
+                                <span class="bo-detail">They take @_hotUnits hot cargo unit@(_hotUnits == 1 ? "" : "s") + ~@_coinShare.ToString("N0") cr. Heat clears to 0.</span>
+                            </button>
+                            <button type="button" class="btn btn-info busted-opt" disabled="@(!_canBribe)" @onclick="BustedBribe">
+                                <span class="bo-title">💰 BRIBE — @bust.Bribe.Total.ToString("N0") cr</span>
+                                <span class="bo-detail">@bust.Bribe.Describe()@(_canBribe ? " · keep the cargo, heat unchanged" : " · you can't cover it")</span>
+                            </button>
+                            <button type="button" class="btn btn-danger busted-opt" @onclick="BustedResist">
+                                <span class="bo-title">🔫 RESIST@(bust.Heat >= EncounterRule.MaxHeatLevel ? " — THE BOLIVIA" : "")</span>
+                                <span class="bo-detail">@(bust.Heat >= EncounterRule.MaxHeatLevel
+                                    ? "All guns blazing. A last stand on the dice — you fight clear, or you don't."
+                                    : "One opposed roll. Win and they peel off; lose and it's a harsher cut.")@(_hasNetJammer ? " (jammer +2)" : "")</span>
+                            </button>
+                        </div>
+                        break;
+
+                    case BustedEncounter.Stage.Confiscated:
+                        <div class="busted-hail">⛓ CONFISCATED</div>
+                        @if (bust.Confiscation is { } conf)
+                        {
+                            <div class="busted-receipt">
+                                @if (conf.CoinTaken > 0)
+                                {
+                                    <div>💰 −@conf.CoinTaken.ToString("N0") cr from the purse</div>
+                                }
+                                @foreach (BustedRule.CargoSeizure s in conf.Seizures)
+                                {
+                                    <div>@(s.Hot ? "🔥" : "📦") −@s.Units @s.CargoClass (@s.Value.ToString("N0") cr)@(s.Hot ? " — hot" : " — clean, minimum take")</div>
+                                }
+                                @if (conf.CoinTaken == 0 && conf.Seizures.Count == 0)
+                                {
+                                    <div>Nothing to take — you fly clean. They log it and cut you loose.</div>
+                                }
+                                <div class="busted-math">@string.Join(" · ", conf.Breakdown.Select(m => $"{m.Label}: {m.Value}"))</div>
+                            </div>
+                        }
+                        <div class="busted-quote">"Debt collected. Heat's off the books — for now. Fly straight, captain."</div>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="CloseBusted">Take the hit</button>
+                        break;
+
+                    case BustedEncounter.Stage.BribedOff:
+                    case BustedEncounter.Stage.ResistWon:
+                    case BustedEncounter.Stage.Fled:
+                        <div class="busted-hail">@(bust.Phase == BustedEncounter.Stage.Fled ? "🏴 BROKE CLEAR" : bust.Phase == BustedEncounter.Stage.ResistWon ? "🔫 THEY PEEL OFF" : "💰 PAID OFF")</div>
+                        @if (bust.ResistRoll is { } rr)
+                        {
+                            <div class="busted-roll">You: @rr.Challenger.Describe()</div>
+                            <div class="busted-roll">Collector: @rr.Defender.Describe()</div>
+                        }
+                        <div class="busted-quote">@bust.ResultMessage</div>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="CloseBusted">Fly on</button>
+                        break;
+
+                    case BustedEncounter.Stage.ResistLost:
+                        <div class="busted-hail">🔫 THEY BOARD ANYWAY</div>
+                        @if (bust.ResistRoll is { } rl)
+                        {
+                            <div class="busted-roll">You: @rl.Challenger.Describe()</div>
+                            <div class="busted-roll">Collector: @rl.Defender.Describe()</div>
+                        }
+                        <div class="busted-quote">"Nice try. Now it costs extra." — they take the submission terms plus a harsher cut.</div>
+                        <button type="button" class="btn btn-danger busted-close" @onclick="BustedResistLostConfirm">Brace for it</button>
+                        break;
+
+                    case BustedEncounter.Stage.Bolivia:
+                        <div class="busted-hail">🔫 THE BOLIVIA — the last stand</div>
+                        @if (bust.BoliviaInitiative is { } init)
+                        {
+                            <div class="busted-roll">Initiative — You: @init.Challenger.Total vs Collector: @init.Defender.Total</div>
+                        }
+                        @if (bust.BoliviaBeatIndex < BoliviaEncounter.Script.Count)
+                        {
+                            EncounterBeat beat = BoliviaEncounter.Script[bust.BoliviaBeatIndex];
+                            <div class="busted-quote">@beat.Narration</div>
+                            <div class="busted-options">
+                                @foreach (EncounterChoice choice in beat.Choices)
+                                {
+                                    string cid = choice.Id;
+                                    <button type="button" class="btn btn-outline-danger busted-opt" @onclick="() => BustedBoliviaChoose(cid)">
+                                        <span class="bo-title">@choice.Label</span>
+                                        <span class="bo-detail">@choice.Hint (@(choice.Modifier.Value >= 0 ? "+" : "−")@Math.Abs(choice.Modifier.Value))</span>
+                                    </button>
+                                }
+                            </div>
+                            @if (bust.BoliviaOutcomes.Count > 0)
+                            {
+                                <div class="busted-math">Running: net @bust.BoliviaNet — @(bust.BoliviaNet >= 0 ? "holding the line" : "going under")</div>
+                            }
+                        }
+                        break;
+
+                    case BustedEncounter.Stage.FreezeFrame:
+                        <div class="busted-freeze">
+                            <div class="busted-freeze-art" title="art: two silhouetted rogues charging into blinding muzzle-flash light — homage, sepia freeze">
+                                <span class="bf-silhouettes">🏴‍☠️🔫</span>
+                                <span class="bf-flash">✷</span>
+                            </div>
+                            <div class="busted-freeze-caption">"…and here we thought this was the easy money."</div>
+                            <div class="busted-quote">One massive volley. The freeze-frame holds. Sepia.</div>
+                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                        </div>
+                        break;
+
+                    case BustedEncounter.Stage.Resurrected:
+                        <div class="busted-hail">🧠 BRAIN-BACKUP RESTORED</div>
+                        <div class="busted-freeze-art busted-explosion" title="art: the old ship blowing up — the kerosene-explosion budget">
+                            <span class="bf-flash">💥</span>
+                        </div>
+                        <div class="busted-quote">
+                            You wake at @bust.ClinicName's clinic in @bust.HullDescription. The old ship and
+                            everything visible aboard is gone — but nothing buried or banked was ever on it.
+                            The tank's at the mercy floor: enough to crawl to a pump, not a metre more.
+                        </div>
+                        <div class="busted-receipt">
+                            <div>💰 @BustedRule.InsuranceCredits.ToString("N0") cr insurance stake</div>
+                            <div>🏥 −@bust.ClinicBillCr.ToString("N0") cr clinic bill (the rebirth tax)</div>
+                            <div>👛 @_credits.ToString("N0") cr in hand</div>
+                            <div>⛽ @_reactionMassPulses p — the reach-a-pump reserve</div>
+                            <div>🔧 all upgrades reset to starter grade</div>
+                        </div>
+                        <button type="button" class="btn btn-light busted-close" @onclick="CloseBusted">Board the rustbucket</button>
+                        break;
+                }
             </div>
         </div>
     }
@@ -2202,12 +2454,26 @@
         // Friday §0 (owner ruling): the kept-orbit NOW line, composed HERE and fed through main's
         // #190 HoldingLine seam — ONE code path in the builder, which slots it below Docked and above
         // every flying phase: "🛰 AUTOPILOT HOLDS THE ORBIT — <body>, <alt>, trim ≈N p/day", never
-        // "you have the ship". Parked altitude is the ship's body-relative radius (the park distance).
+        // "you have the ship".
+        // #220 / #203: quote the PARK altitude (the held value the keeper trims back to,
+        // ParkingRadius − surface, "alt N km"), NOT the instantaneous body-relative radius — the kept
+        // orbit's forced eccentricity makes that raw radius oscillate, so the snapshot disagreed with
+        // itself (holding said "278 km" while Nearest said "217 km"). The live wobble stays on the
+        // Nearest line; the holding line states the steady park the autopilot is keeping.
         string? holdingLine = null;
         if (_orbitKept && _armedOrbitBodyId is not null && _ephemeris is not null)
         {
-            Vector2d keptPos = _ephemeris.Position(_armedOrbitBodyId, SimTime);
-            string alt = FormatDistance((_ship.Position - keptPos).Length);
+            // The steady park the keeper trims back to: ParkingRadius − surface, "alt N km" (#203). The
+            // kept body IS the bound body while keeping, so its Hill radius is UpdateOrbitedBody's cached
+            // one. If (defensively) that isn't available, fall back to the instantaneous radius so the
+            // NOW line never vanishes — but the park altitude is the value that stays steady on this line.
+            CelestialBody? keptBody = BodyById(_armedOrbitBodyId);
+            double parkAlt = keptBody is not null && _orbitedBodyId == _armedOrbitBodyId && _orbitedBodyHillRadius > 0
+                ? OrbitRule.ParkingRadius(keptBody, _orbitedBodyHillRadius) - keptBody.BodyRadius
+                : 0;
+            string alt = parkAlt > 0
+                ? FormatAltitude(parkAlt)
+                : FormatDistance((_ship.Position - _ephemeris.Position(_armedOrbitBodyId, SimTime)).Length);
             string trim = _keepTrimPulsesPerDay > 0 ? $", trim ≈{_keepTrimPulsesPerDay} p/day" : "";
             holdingLine = $"🛰 AUTOPILOT HOLDS THE ORBIT — {BodyName(_armedOrbitBodyId)}, {alt}{trim}";
         }
@@ -2605,6 +2871,21 @@
     private HeatState _heat = HeatState.None;
     private readonly List<HunterState> _hunters = [];
     private int _hunterSeq;
+
+    // PR-BUSTED: the catch economy of consequence (ruling §5). Hot cargo is stamped at theft time
+    // when heat > 0 and launders when heat cools to 0; the confiscation reads this book. The parrot
+    // quotes the current exposure at each upward heat crossing (_lastAnnouncedHeat is the edge). One
+    // purchasable dice helper is shipped to prove the modifier seam (owner: many small helpers later).
+    private readonly HotCargoLedger _hotCargo = new();
+    private int _lastAnnouncedHeat;
+    private bool _hasNetJammer;                       // "Boarding-nets jammer" — +2 on resist initiative
+    private const int NetJammerPriceCr = 350;
+    private BustedEncounter? _busted;                 // the open BUSTED pop-up, null when free
+
+    // Rebirth taxes & the insurance seam (issues #227 + #225): resurrection CONSULTS this policy through
+    // InsuranceRule today, so #227's vendor lane never reopens the catch code. Ships as Uninsured — the
+    // rustbucket + full clinic bill. Plain/JSON-friendly for the #225 save vault.
+    private PirateInsurance _insurance = PirateInsurance.Uninsured;
     private double _hiddenAtHavenSinceSimTime = double.NaN; // NaN = not currently hidden
     private static readonly RgbaColor HunterColor = new(255, 90, 90);
     private static readonly string[] HunterCallsigns =
@@ -3376,9 +3657,15 @@
         // the plan working, not news; the ballistic alarm returns the instant the plan is gone (disarm/
         // handback → _autopilotPlanClosestPass null). A plan whose OWN path goes subsurface leaves an
         // Impact pass cached and shouts red immediately — a bad plan shouts LOUDER, not softer.
+        // #220: while the autopilot HOLDS the park (keeping active AND the next trim is funded), the
+        // ballistic projection's between-trim dip toward the surface is the keeper working, not danger —
+        // the alarm trusts the kept orbit. `_orbitKept` alone is the "keeping ended" edge (StationKeep
+        // clears it on an unbound orbit or a dry tank; a disarm clears it via ResetApproachTracking), so
+        // the alarm returns to the ballistic course the instant keeping ends (#183/#193 backstop).
         bool armedWithPlan = _armedOrbitBodyId is not null && _autopilotPlanPath is { Count: >= 2 };
+        bool keepingHoldsOrbit = _orbitKept && _keepTrimFunded;
         ClosestApproach.Pass? collision =
-            CollisionAlertRule.Evaluate(armedWithPlan, _closestPass, _autopilotPlanClosestPass);
+            CollisionAlertRule.Evaluate(armedWithPlan, keepingHoldsOrbit, _closestPass, _autopilotPlanClosestPass);
         if (collision is { } cp)
         {
             string body = cp.BodyName;
@@ -4219,7 +4506,7 @@
     // _tutorialStep, which linear-chains its steps. A hunt is met when its target ship is brought
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
-    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, FetchCache }
+    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache }
     // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
     // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
     // Crack is the same face-to-face shape but the pickup is a locked hatch *here*: walk to the named
@@ -4385,6 +4672,10 @@
                 return true;
             case "e" or "E":
                 InteractAtConsole();
+                return true;
+            case "b" or "B":
+                // PR-WIRE: bank at the contact's table — deposit, withdraw or borrow (in person).
+                OpenBankAtBar();
                 return true;
             default:
                 return false;
@@ -4790,6 +5081,10 @@
     private int _keepTrimPulsesPerDay;                    // Lab 25 trim budget quoted at arm time / at park
     private double _keepNextCheckTime;                    // sim-time of the next trim-cadence check
     private int _keepTrimsFired;                          // trims spent this keeping session (diagnostic/ledger)
+    // #220: the next trim is affordable — recomputed every tick keeping is active (CheckArmedInsertion's
+    // kept branch). Read ONLY as `_orbitKept && _keepTrimFunded`, so a stale value after a disarm/handback
+    // (when _orbitKept is already false) can never keep the collision alarm falsely trusting a dead keep.
+    private bool _keepTrimFunded;
 
     // ---- #146 the moon run: the cached in-well transfer plan for the current arm. When arming rides a
     // cheap Lambert arc (TransferPlanner) instead of the legacy approach loop, the schedule's departure
@@ -4817,6 +5112,24 @@
         _orbitKept = false;
         _keepTrimPulsesPerDay = 0;
         _keepTrimsFired = 0;
+    }
+
+    // #219 one-arm semantics: the collision alarm's plan-trust is only sound if EVERY arm caches BOTH
+    // the plan PATH (drawn as the #148 intended track, and the `armedWithPlan` gate in UpdateShipAlerts)
+    // AND the plan's collision PASS, together — one drifting without the other is exactly the #196/#219
+    // bug (a plan the ballistic alarm then judges raw). All arm entry points already funnel through the
+    // single ToggleArmedInsertion — the destination card's Auto-orbit button, the nav-target panel's Arm
+    // button, the body context menu (ToggleArmedInsertionFromMenu), the O-key, and the #183 out-of-band
+    // manual press (EnterOrbit, when the current radius is tide-chaotic) — so this is the ONE place the
+    // pair is set. The pass is the plan's ACHIEVED PARK, not its powered approach: a deliverable
+    // rehearsal's coarse terminal coast grazes the surface a step before the insert lifts it back, and
+    // that graze must NOT fire ROCKS AHEAD on a valid armed approach (AutopilotRehearsal.PlanCollisionPass).
+    private void CachePlanForAlarm(string bodyId, AutopilotRehearsal.RehearsalResult r)
+    {
+        _autopilotPlanPath = r.Path;
+        _autopilotPlanClosestPass = _ephemeris is null
+            ? null
+            : AutopilotRehearsal.PlanCollisionPass(r, _ephemeris, bodyId);
     }
 
     // #146: does this arm ride a cheap in-well transfer rather than the legacy approach loop? The target
@@ -5922,8 +6235,7 @@
 
             _armedBudgetPulses = r.Pulses;
             _armedSpentPulses = 0;
-            _autopilotPlanPath = r.Path; // #148: draw the intended path, not the ballistic loops
-            _autopilotPlanClosestPass = ClosestApproach.MostSevere(r.Path, _ephemeris); // #196: the alarm trusts this while armed
+            CachePlanForAlarm(bodyId, r); // #148/#196/#219: draw the intended path AND cache its alarm pass, together
             _armedTransferSchedule = schedule;
             _armedTransferBurnsFired = 0;
             _armedTransferSummary = transferSummary
@@ -5993,6 +6305,14 @@
         if (_orbitKept)
         {
             StationKeep(body, parent, bodyPos, bodyVel, hill);
+            // #220: does keeping still earn the collision alarm's trust this tick? StationKeep flips
+            // _orbitKept off the instant keeping ends (unbound, or the tank can't afford the next trim);
+            // if it still holds, recompute FUNDED from the post-trim state — the next trim's pulse cost
+            // against the tank. Read as `_orbitKept && _keepTrimFunded` in UpdateShipAlerts, so a healthy
+            // held park's subsurface between-trim dip is trusted, and a dry-tank keep shouts immediately.
+            _keepTrimFunded = _orbitKept &&
+                OrbitKeeping.TrimPulseCost(_ship, bodyPos, bodyVel, body, OrbitRule.ParkingRadius(body, hill))
+                    <= _reactionMassPulses;
             return;
         }
 
@@ -10581,6 +10901,12 @@
             _cargoValue += take * CargoMarket.UnitValue(npc.Ship.CargoClass);
             _cargoByClass[npc.Ship.CargoClass] = _cargoByClass.GetValueOrDefault(npc.Ship.CargoClass) + take;
 
+            // PR-BUSTED (ruling §5.1): a heist committed WHILE UNDER HEAT stamps the haul hot at theft
+            // time — the stolen-under-heat evidence the collectors confiscate in full. The theft's heat
+            // is the CURRENT level (before this robbery raises it): a first crime from a cold start is
+            // not yet hot. Launders off later when heat cools to 0 (see UpdateEncounters).
+            _hotCargo.Stamp(npc.Ship.CargoClass, take, _heat.Level);
+
             // #202: theft gets books and a voice. (a) A loot line in the SAME Captain's ledger the
             // honest receipts use — what, units, worth, off whom, where, when (LedgerTips projects it).
             // (b) The 🦜 names the haul, once per boarding (Board fires once per capture — an honest
@@ -10640,6 +10966,7 @@
         _cargoUnits = 0;
         _cargoValue = 0;
         _cargoByClass.Clear();
+        _hotCargo.Launder(); // fenced — the hot flags go with the cargo
         AdvanceTutorial(4); // step 5: first sale
         AdvanceTutorial(StepSellHe3); // second hunt, step 6: fencing the He3 closes the tutorial
     }
@@ -10680,6 +11007,57 @@
             ? $"⛽ Bought the {quote.Pulses} p you could afford at {BodyName(pump.Id)} ({quote.Cost:N0} cr) — {capacity - _reactionMassPulses} p of room left"
             : $"⛽ Filled her up at {BodyName(pump.Id)} — {quote.Pulses} p for {quote.Cost:N0} cr");
         _fuelDirSig = null; // any cached "nearest pump" directions are stale now
+    }
+
+    // PR-WIRE — the broke-at-a-pump borrow (the dream's anonymized gas-by-wire). A trusted, dark-web-
+    // native contact we have history with will wire fuel money on a favor. Picks the most-trusted such
+    // contact (most jobs done), or null if none qualifies — the button only shows when this is non-null.
+    private string? BestWireLenderId()
+    {
+        string? best = null;
+        int bestMissions = -1;
+        foreach ((string id, ContactHistory h) in _contacts.Entries)
+        {
+            if (!FavorBank.CanWireLoan(ContactSheets.For(id), h.MissionsCompleted))
+            {
+                continue;
+            }
+            if (h.MissionsCompleted > bestMissions)
+            {
+                bestMissions = h.MissionsCompleted;
+                best = id;
+            }
+        }
+        return best;
+    }
+
+    // The favor line a pump borrow draws: enough to fill the room at the current price, capped so a
+    // single favor never wires a fortune (BankLoanPrincipal is the ceiling — a good top-up, no more).
+    private long PumpLoanPrincipal(int room, int pricePerPulse) =>
+        Math.Min(BankLoanPrincipal, Math.Max(100L, (long)Math.Max(0, room) * Math.Max(1, pricePerPulse)));
+
+    // Wire the favor at the pump and fill what it buys — the stranded captain's rescue. Books the debt
+    // and raises the quiet-delivery obligation; then spends the wired coin straight into the tank.
+    private void CallInFavorAtPump()
+    {
+        if (_ephemeris is null || FuelReachability.AlongsidePump(_ephemeris, _ship) is not { } pump)
+        {
+            return;
+        }
+        if (BestWireLenderId() is not { } lender)
+        {
+            return;
+        }
+        int room = ReactionMassCapacity - _reactionMassPulses;
+        int price = FuelMarket.PricePerPulse(_ephemeris.Position(pump.Id, SimTime).Length);
+        long principal = PumpLoanPrincipal(room, price);
+        if (!BankBorrowFavor(lender, principal, viaWire: true))
+        {
+            return;
+        }
+        string lenderName = ContactSheets.For(lender).DisplayName;
+        ShowPulseMessage($"📡 {lenderName} wires {principal:N0} cr, no questions — you owe them one quiet delivery. Fill her up.");
+        BuyFuel(int.MaxValue); // spend the fresh coin straight into the tank
     }
 
     // The honest "how do I refuel from here" line for the Trade desk when the ship is NOT alongside a pump
@@ -12280,6 +12658,14 @@
             return;
         }
 
+        // PR-WIRE: a favor called in. If we owe this contact a wired debt and haven't yet been handed
+        // the delivery, they slide it across the table now — one quiet delivery, in their own voice.
+        if (MakeFavorDeliveryOffer(giver) is { } favorOffer)
+        {
+            _pendingOffer = favorOffer;
+            return;
+        }
+
         Quest? offer = giver switch
         {
             _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
@@ -12381,6 +12767,42 @@
         string blurb = $"“Quiet parcel, no questions. Gets to {dest.Name} in one piece, you walk with {reward:N0} cr. {drop}”";
         return new Quest($"run-{++_questSeq}", QuestKind.CargoRun, giver,
             "", dest.Name, $"Run a parcel to {dest.Name}", blurb, reward, DestBodyId: dest.Id);
+    }
+
+    // PR-WIRE — the favor called in. When we owe a contact a wired debt (a FavorObligation from a
+    // borrow) and don't already have their delivery in hand, they hand us one quiet parcel now, in
+    // their voice. Delivering it works the debt off (PayCompletedQuests books the repayment). The
+    // destination is a haven other than this one, picked stably by sim time + berth.
+    private Quest? MakeFavorDeliveryOffer(string giver)
+    {
+        FavorObligation? match = null;
+        foreach (FavorObligation o in _favorObligations)
+        {
+            if (string.Equals(o.ContactId, giver, StringComparison.OrdinalIgnoreCase)) { match = o; break; }
+        }
+        if (match is not { } debt)
+        {
+            return null;
+        }
+        if (_quests.Any(q => q.Kind == QuestKind.Favor && string.Equals(q.Giver, giver, StringComparison.OrdinalIgnoreCase) && q.State != QuestState.TurnedIn))
+        {
+            return null; // already carrying their favor
+        }
+
+        List<CelestialBody> havens = (_ephemeris?.Bodies ?? [])
+            .Where(b => b.IsHaven && b.Id != _dockedHavenId)
+            .OrderBy(b => b.Id, StringComparer.Ordinal)
+            .ToList();
+        if (havens.Count == 0)
+        {
+            return null;
+        }
+
+        CelestialBody dest = havens[OfferIndex(havens.Count)];
+        string drop = IsDockableHaven(dest) ? "Berth there and we're square." : "Park in orbit there and we're square.";
+        string blurb = $"{debt.VoiceLine} Get it to {dest.Name} in one piece. {drop}";
+        return new Quest($"favor-{++_questSeq}", QuestKind.Favor, giver,
+            "", dest.Name, $"Quiet delivery for {GiverDisplay(giver)}", blurb, (int)debt.PrincipalCredits, DestBodyId: dest.Id);
     }
 
     // A whisper on an off-books ghost — the payoff IS the tip. Accepting drops a fresh route-intel
@@ -12566,7 +12988,7 @@
         Kind: ToContractKind(q.Kind),
         Giver: GiverDisplay(q.Giver),
         DestName: q.TargetCallsign,
-        DestParent: q.Kind == QuestKind.CargoRun ? DestParentName(q.DestBodyId) : null,
+        DestParent: q.Kind is QuestKind.CargoRun or QuestKind.Favor ? DestParentName(q.DestBodyId) : null,
         TargetName: q.Kind == QuestKind.Crack ? q.TargetShipId : q.TargetCallsign,
         Pin: q.Pin,
         Charted: q.SourceBodyId is not { } src || !IsBodyHidden(src),
@@ -12581,6 +13003,7 @@
         QuestKind.Fetch => ContractKind.Fetch,
         QuestKind.FetchCache => ContractKind.FetchCache,
         QuestKind.Crack => ContractKind.Crack,
+        QuestKind.Favor => ContractKind.CargoRun, // a favor delivery reads as a cargo run in the brief
         _ => ContractKind.CargoRun,
     };
 
@@ -12732,10 +13155,12 @@
     {
         foreach (Quest q in _quests)
         {
-            if (q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && q.DestBodyId == dockId)
+            if (q is { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active } && q.DestBodyId == dockId)
             {
                 q.State = QuestState.Complete;
-                ShowPulseMessage($"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
+                ShowPulseMessage(q.Kind == QuestKind.Favor
+                    ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
+                    : $"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
             }
             // #223: a fetch-a-cache job pays when the DUG chest is carried back to the giver's bar.
             else if (q is { Kind: QuestKind.FetchCache, State: QuestState.PickedUp } && q.DestBodyId == dockId)
@@ -12805,12 +13230,14 @@
         bool delivered = false;
         foreach (Quest q in _quests)
         {
-            if (q is not { Kind: QuestKind.CargoRun, State: QuestState.Active, DestBodyId: { } destId }) continue;
+            if (q is not { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active, DestBodyId: { } destId }) continue;
             if (BodyById(destId) is not { } dest || IsDockableHaven(dest)) continue; // stations: ⚓ Dock path
             if (IsBoundAtMoonHaven(dest))
             {
                 q.State = QuestState.Complete;
-                ShowPulseMessage($"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
+                ShowPulseMessage(q.Kind == QuestKind.Favor
+                    ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
+                    : $"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
                 delivered = true;
             }
         }
@@ -12849,7 +13276,182 @@
 
     // The relationship system's seed (#185): the SAVED history of who we've done jobs for — a real
     // fact ("we now have a history with the lady at the Ringside bar") the future system reads.
+    // PR-WIRE (FridaySecondPlan §0): the same book now also carries the favor bank's signed credit
+    // balances (deposits, loans) via ContactLedger.ApplyCredit.
     private readonly ContactLedger _contacts = new();
+
+    // PR-WIRE — the favor bank. One open bank card at a time (deposit / withdraw / borrow at a
+    // contact), plus the favor debts we've taken on (each surfaces later as one quiet delivery in the
+    // contact's voice — FavorObligation). Both are session state; the future save layer serializes the
+    // ledger balances, not these transient UI holders.
+    private BankSession? _bankSession;
+    private readonly List<FavorObligation> _favorObligations = [];
+
+    // The open bank card: whose desk we're at, their character sheet, and whether we reached them over
+    // the wire (dark-web desk) or in person (their bar table) — the channel gates what's allowed.
+    private sealed record BankSession(string ContactId, string DisplayName, ContactSheet Sheet, bool ViaWire)
+    {
+        public string? Notice { get; set; } // the last action's receipt, shown on the card
+    }
+
+    // Standard bank denominations for the card's quick buttons (the purse and balances are in credits).
+    private static readonly long[] BankAmounts = [100, 500, 1000];
+
+    // Open the favor-bank card for a contact. Channel-checked by the caller: in person (their bar) works
+    // for anyone; over the wire only for a dark-web-native contact (ruling 6).
+    private void OpenBank(string contactId, bool viaWire)
+    {
+        ContactSheet sheet = ContactSheets.For(contactId);
+        if (viaWire && !FavorBank.CanBankRemotely(sheet))
+        {
+            ShowPulseMessage($"{sheet.DisplayName} won't touch the wire — that account is in person only. 🤝");
+            return;
+        }
+        _bankSession = new BankSession(contactId, sheet.DisplayName, sheet, viaWire);
+    }
+
+    private void CloseBank() => _bankSession = null;
+
+    // Open the bank at the bar patron you're standing at (the 'b' key, in person). Their character sheet
+    // decides nothing here — every contact banks in person — but a stranger with no history still opens,
+    // so a first deposit can seed a relationship you later borrow against.
+    private void OpenBankAtBar()
+    {
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.BarPatron } spot)
+        {
+            ShowPulseMessage("Stand at a contact's table to open an account. 💰");
+            return;
+        }
+        string giver = spot.Label.Replace("◈", "").Trim();
+        OpenBank(giver, viaWire: false);
+    }
+
+    // Park coin with a contact (the bank). Calm → the whole sum lands and earns interest; heated →
+    // fencing: a dice-rolled cut proportional to heat is taken on the way in, ALWAYS less than the
+    // collector would confiscate (FavorBank, ruling 5). Deposited coin is off the purse — invisible to
+    // confiscation by construction (the BUSTED lane reads only _credits + carried cargo, never the
+    // ledger balances). Returns quietly if the purse can't cover it.
+    private void BankDeposit(long amount)
+    {
+        if (_bankSession is not { } session || amount <= 0)
+        {
+            return;
+        }
+        long park = Math.Min(amount, _credits);
+        if (park <= 0)
+        {
+            session.Notice = "Nothing in the purse to park.";
+            return;
+        }
+
+        int heat = _heat.Level;
+        double roll = FavorBank.Roll($"{session.ContactId}|deposit|{SimTime:F0}|{park}");
+        FavorBank.DepositQuote quote = FavorBank.PriceDeposit(park, heat, roll);
+
+        _credits -= (int)park;                       // the whole sum leaves the purse
+        _contacts.ApplyCredit(session.ContactId, session.DisplayName,
+            FavorBank.DepositTxn(quote.Credited, SimTime,
+                heat > 0 ? $"fenced {park:N0} cr (heat {heat})" : $"parked {park:N0} cr"));
+        if (quote.Cut > 0)
+        {
+            _contacts.ApplyCredit(session.ContactId, session.DisplayName,
+                FavorBank.FenceCutTxn(quote.Cut, SimTime, $"fence's cut, {quote.CutFraction * 100:F0}%"));
+            session.Notice = $"Fenced {park:N0} cr while hot — {session.DisplayName} took {quote.Cut:N0} cr ({quote.CutFraction * 100:F0}%); {quote.Credited:N0} cr banked, safe from the collectors.";
+        }
+        else
+        {
+            session.Notice = $"Parked {park:N0} cr with {session.DisplayName} — off the purse, earning while it's quiet. 💰";
+        }
+    }
+
+    // Draw parked coin back out. In person or (for a wire contact) over the dark web — the channel was
+    // enforced when the card opened. Only the positive part of the balance is ours to withdraw.
+    private void BankWithdraw(long amount)
+    {
+        if (_bankSession is not { } session || amount <= 0)
+        {
+            return;
+        }
+        long balance = _contacts.For(session.ContactId).CreditBalance;
+        long take = Math.Min(amount, balance);
+        if (take <= 0)
+        {
+            session.Notice = "No coin of yours parked here to draw.";
+            return;
+        }
+
+        _credits += (int)take;
+        _contacts.ApplyCredit(session.ContactId, session.DisplayName,
+            FavorBank.WithdrawalTxn(take, SimTime, $"drew {take:N0} cr"));
+        session.Notice = $"Drew {take:N0} cr back into the purse from {session.DisplayName}.";
+    }
+
+    // Pay off an interest-bearing debt with coin on hand (drives a negative balance back toward zero).
+    private void BankRepay(long amount)
+    {
+        if (_bankSession is not { } session || amount <= 0)
+        {
+            return;
+        }
+        long owed = -_contacts.For(session.ContactId).CreditBalance; // positive = what we owe
+        long pay = Math.Min(Math.Min(amount, owed), _credits);
+        if (pay <= 0)
+        {
+            session.Notice = owed <= 0 ? "You owe them nothing." : "Not enough coin to pay it down.";
+            return;
+        }
+
+        _credits -= (int)pay;
+        _contacts.ApplyCredit(session.ContactId, session.DisplayName,
+            FavorBank.RepaymentTxn(pay, SimTime, $"repaid {pay:N0} cr"));
+        session.Notice = $"Paid {pay:N0} cr toward what you owe {session.DisplayName}.";
+    }
+
+    // A modest, standard favor line — roughly a good top-up (≈ half a tank at the inner price). Kept
+    // flat so the string (one quiet delivery) is always proportionate; never a fortune on a promise.
+    private const long BankLoanPrincipal = 600;
+
+    // Borrow the standard favor line from the contact whose bank card is open (in person or by wire).
+    private void BorrowFavorFromBank()
+    {
+        if (_bankSession is not { } session)
+        {
+            return;
+        }
+        if (BankBorrowFavor(session.ContactId, BankLoanPrincipal, session.ViaWire))
+        {
+            session.Notice = $"{session.DisplayName} wires you {BankLoanPrincipal:N0} cr. You owe them one quiet delivery — it'll come. 📡";
+        }
+    }
+
+    // Borrow gas money against a favor (the dream's anonymized wire). Books the principal as debt and
+    // raises ONE quiet-delivery obligation that arrives later in the contact's voice; working that
+    // delivery off IS the repayment. Trusted contacts only. Returns true if the wire went through.
+    private bool BankBorrowFavor(string contactId, long principal, bool viaWire)
+    {
+        ContactSheet sheet = ContactSheets.For(contactId);
+        int missions = _contacts.For(contactId).MissionsCompleted;
+        if (!ContactSheets.WillStake(missions))
+        {
+            ShowPulseMessage($"{sheet.DisplayName} won't stake a captain they barely know — do a few jobs first. 🤝");
+            return false;
+        }
+        if (viaWire && !sheet.CanWire)
+        {
+            ShowPulseMessage($"{sheet.DisplayName} deals in person only — no wire from here. 🤝");
+            return false;
+        }
+        if (principal <= 0)
+        {
+            return false;
+        }
+
+        _credits += (int)principal;
+        _contacts.ApplyCredit(contactId, sheet.DisplayName,
+            FavorBank.BorrowTxn(principal, SimTime, $"favor wire — {principal:N0} cr gas money"));
+        _favorObligations.Add(FavorObligation.ForLoan(sheet, principal, SimTime));
+        return true;
+    }
 
     // #202: the crimes' books — a loot line per completed boarding, newest first, projected into the
     // Captain's ledger alongside the honest autopilot receipts (the established tip idiom).
@@ -12892,6 +13494,19 @@
                 continue;
             }
 
+            // PR-WIRE: a favor delivery pays no coin — working it off REPAYS the wired debt. Book the
+            // principal back onto the ledger (balance climbs toward zero), clear the obligation, and
+            // give it a quiet receipt rather than the coin fanfare (no money changed hands).
+            if (q.Kind == QuestKind.Favor)
+            {
+                q.State = QuestState.TurnedIn;
+                _contacts.ApplyCredit(q.Giver, q.Giver,
+                    FavorBank.RepaymentTxn(q.Reward, SimTime, $"quiet delivery — favor to {GiverDisplay(q.Giver)} repaid"));
+                _favorObligations.RemoveAll(o => string.Equals(o.ContactId, q.Giver, StringComparison.OrdinalIgnoreCase));
+                ShowPulseMessage($"The favor's square with {GiverDisplay(q.Giver)} — the debt's off the books. 📡");
+                continue;
+            }
+
             _credits += q.Reward;            // the coin lands — but as part of the fanfare, not alone
             q.State = QuestState.TurnedIn;
 
@@ -12924,6 +13539,47 @@
         ShowNextCelebration(); // if a second contract paid at the same berth, raise a glass to it too
     }
 
+    // PR-WIRE — project the favor bank's accounts for the Captain ledger's 💰 section: every contact
+    // with coin in the air (parked with them, or owed to them), balance both ways, newest passbook
+    // lines first. Contacts with a clean-zero book and no transactions are skipped — nothing to show.
+    private Stations.Captain.AccountRow[] LedgerAccounts()
+    {
+        var rows = new List<Stations.Captain.AccountRow>();
+        foreach ((string id, ContactHistory h) in _contacts.Entries)
+        {
+            if (h.CreditBalance == 0 && h.Transactions.Length == 0)
+            {
+                continue;
+            }
+            ContactSheet sheet = ContactSheets.For(id);
+            string channel = sheet.CanWire
+                ? "🕸 wires anywhere — bank at the dark-web desk or their table"
+                : "🤝 in person only — bank at their table (press B)";
+            List<string> lines = h.Transactions
+                .Reverse()
+                .Take(6)
+                .Select(t => $"{TxnIcon(t.Kind)} {(t.Amount >= 0 ? "+" : "")}{t.Amount:N0} cr — {t.Note} (day {t.SimTime / 86400:F0})")
+                .ToList();
+            rows.Add(new Stations.Captain.AccountRow(sheet.DisplayName, h.CreditBalance, channel, lines));
+        }
+        // Debts first (they need attention), then deposits, largest magnitude on top.
+        rows.Sort((x, y) => Math.Sign(x.Balance).CompareTo(Math.Sign(y.Balance)) is var s && s != 0
+            ? s
+            : Math.Abs(y.Balance).CompareTo(Math.Abs(x.Balance)));
+        return rows.ToArray();
+    }
+
+    private static string TxnIcon(CreditKind kind) => kind switch
+    {
+        CreditKind.Deposit => "💰",
+        CreditKind.Withdrawal => "🏧",
+        CreditKind.Interest => "📈",
+        CreditKind.FenceCut => "✂",
+        CreditKind.Borrow => "📡",
+        CreditKind.Repayment => "✅",
+        _ => "·",
+    };
+
     // Project the quest ledger for the Captain's-desk Quests tab (M-Q2) — newest work on top.
     private Stations.Captain.QuestItem[] QuestCards() =>
         _quests.AsEnumerable().Reverse().Select(q =>
@@ -12939,6 +13595,7 @@
                 (QuestKind.Crack, QuestState.PickedUp) => ("📦 Package lifted — take it to The Fixer", "active"),
                 (QuestKind.FetchCache, QuestState.Active) => ($"🗺 Dig at the X on {BodyName(q.SourceBodyId ?? "")}", "active"),
                 (QuestKind.FetchCache, QuestState.PickedUp) => ($"📦 Chest lifted — carry it to {q.TargetCallsign}", "active"),
+                (QuestKind.Favor, QuestState.Active) => ($"📡 Favor owed — quiet delivery to {q.TargetCallsign}", "active"),
                 (_, QuestState.Active) => ("▶ On the hook", "active"),
                 (_, QuestState.Complete) => ("✓ Done — collect at any berth", "complete"),
                 _ => ("💰 Paid", "paid"),
@@ -12946,7 +13603,7 @@
             // #175: the delivery instruction is kind-aware — a MOON haven has no ⚓ dock, you park in
             // its orbit; only a STATION haven is "berth there". Saying the right one kills the trap the
             // owner hit hunting for a Dock button that a moon never has.
-            CelestialBody? cargoDest = q.Kind == QuestKind.CargoRun ? BodyById(q.DestBodyId) : null;
+            CelestialBody? cargoDest = q.Kind is QuestKind.CargoRun or QuestKind.Favor ? BodyById(q.DestBodyId) : null;
             string cargoDetail = cargoDest is not null && !IsDockableHaven(cargoDest)
                 ? $"Carry the parcel to {q.TargetCallsign} — park in orbit there to deliver."
                 : $"Carry the parcel to {q.TargetCallsign} — berth there (⚓ Dock) to deliver.";
@@ -12954,6 +13611,7 @@
             {
                 QuestKind.Hunt => $"Hunt {q.TargetCallsign} — hole her sail or board her.",
                 QuestKind.CargoRun => cargoDetail,
+                QuestKind.Favor => $"{cargoDetail} Working it off clears the {q.Reward:N0} cr you owe {GiverDisplay(q.Giver)}.",
                 QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
                 QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
                 QuestKind.Crack => $"Key {q.Pin} into hatch {q.TargetShipId} here, lift the package, then hand it back to The Fixer.",
@@ -12962,12 +13620,14 @@
             };
             // #175: the live next action for an in-hand cargo run, read off ship state (too far / in the
             // envelope / enter orbit). Only while Active — a delivered run drops back to the plain card.
-            string? nextAction = q is { Kind: QuestKind.CargoRun, State: QuestState.Active } && cargoDest is not null
+            string? nextAction = q is { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active } && cargoDest is not null
                 ? CargoNextAction(cargoDest)
                 : null;
             string rewardText = q.Kind == QuestKind.Intel
                 ? "🕸 route tip"
-                : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
+                : q.Kind == QuestKind.Favor
+                    ? $"📡 clears {q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr favor"
+                    : $"{q.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr";
             (IReadOnlyList<Stations.Captain.QuestStep> steps, bool showScope) = FetchStagePlan(q);
             return new Stations.Captain.QuestItem(q.Title, detail, rewardText, label, kind, steps, showScope, nextAction);
         }).ToArray();
@@ -13311,6 +13971,13 @@
             return;
         }
 
+        // PR-BUSTED: while a boarding pop-up is open, encounters freeze — the captain is making a
+        // choice at 1×, no new hunter runs him down over the top of it.
+        if (_busted is not null)
+        {
+            return;
+        }
+
         // #175: settle any moon-haven cargo run whose ship is parked in orbit — the owner who was
         // ALREADY orbiting Enceladus when the parcel loaded gets paid here, since no dock event fires.
         CompleteBoundCargoRunQuests();
@@ -13343,6 +14010,23 @@
         double hiddenDuration = hidden ? SimTime - _hiddenAtHavenSinceSimTime : 0;
 
         _heat = EncounterRule.DecayHeat(_heat, SimTime, hidden);
+
+        // PR-BUSTED (ruling §5.1): when heat fully cools, the stolen cargo launders — the evidence
+        // leaves the books. And at each UPWARD heat crossing the parrot names the confiscation exposure
+        // (owner: "Heat two, captain — they'll take a third of the purse if they catch us!"), riding the
+        // same #166 alert edges the rest of the ship's voice does.
+        if (_heat.Level == 0 && _hotCargo.Any)
+        {
+            _hotCargo.Launder();
+            ShowPulseMessage("The trail's cold — your hot cargo just became honest freight again.");
+        }
+
+        if (_heat.Level > _lastAnnouncedHeat)
+        {
+            SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(_heat.Level), force: true);
+        }
+
+        _lastAnnouncedHeat = _heat.Level;
 
         for (int i = _hunters.Count - 1; i >= 0; i--)
         {
@@ -13383,14 +14067,368 @@
         }
     }
 
+    // PR-BUSTED (owner ruling §5): the catch is no longer an instant tax that leaves the collector
+    // inert — it OPENS the boarding pop-up. Warp yanks to 1×, the ship is grappled, and the collector
+    // hails with a demand and three options (SUBMIT / BRIBE / RESIST). The seed is folded from the
+    // hunter's identity and the sim moment, so every roll in this encounter is reproducible.
     private void ApplyHunterCatch(HunterState hunter)
     {
+        Warp = 1;
+        _effectiveWarp = 1;
+        RendererInterop.PlayCue("board");
+
+        ulong seed = DiceRule.Seed("busted", HunterSeqOf(hunter.Id), (long)SimTime);
+        _busted = new BustedEncounter
+        {
+            HunterId = hunter.Id,
+            HunterCallsign = hunter.Callsign,
+            Heat = Math.Max(1, _heat.Level),
+            Seed = seed,
+            Bribe = BustedRule.BribeDemand(Math.Max(1, _heat.Level), seed),
+        };
+
+        SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(Math.Max(1, _heat.Level)), force: true);
+        StateHasChanged();
+    }
+
+    // The dice helpers a resist/Bolivia roll carries — the purchasable-modifier seam. One example is
+    // shipped (the Boarding-nets jammer); the shop of helpers is a follow-up (owner §5.0).
+    private List<DiceModifier> ResistModifiers()
+    {
+        var mods = new List<DiceModifier>();
+        if (_hasNetJammer)
+        {
+            mods.Add(new DiceModifier("Boarding-nets jammer", +2));
+        }
+
+        return mods;
+    }
+
+    private static long HunterSeqOf(string hunterId) =>
+        int.TryParse(hunterId.AsSpan(hunterId.LastIndexOf('-') + 1), out int n) ? n : 0;
+
+    // ---- The three options ----
+
+    // SUBMIT: confiscate all hot cargo + a heat share of the purse (with the minimum-take fallback and
+    // the mercy floors), then clear heat to 0 — the debt is collected.
+    private void BustedSubmit(bool harsher = false)
+    {
+        if (_busted is not { } b)
+        {
+            return;
+        }
+
+        BustedRule.Confiscation c = BustedRule.Confiscate(
+            b.Heat, _credits, _hotCargo.BuildLots(_cargoByClass), b.Seed, harsher);
+        ApplyConfiscation(c);
+        _heat = EncounterRule.RaiseHeat(HeatState.None, 0, SimTime); // clears to 0 — debt collected
+        _lastAnnouncedHeat = 0;
+        _hotCargo.Launder();
+        b.Confiscation = c;
+        b.Phase = BustedEncounter.Stage.Confiscated;
+        StateHasChanged();
+    }
+
+    private void ApplyConfiscation(BustedRule.Confiscation c)
+    {
+        _credits = c.CoinLeft;
+        foreach (BustedRule.CargoSeizure s in c.Seizures)
+        {
+            int have = _cargoByClass.GetValueOrDefault(s.CargoClass);
+            int taken = Math.Min(have, s.Units);
+            if (taken <= 0)
+            {
+                continue;
+            }
+
+            int left = have - taken;
+            if (left > 0)
+            {
+                _cargoByClass[s.CargoClass] = left;
+            }
+            else
+            {
+                _cargoByClass.Remove(s.CargoClass);
+                _hotCargo.Forget(s.CargoClass);
+            }
+
+            _cargoUnits -= taken;
+            _cargoValue -= taken * CargoMarket.UnitValue(s.CargoClass);
+        }
+
+        _cargoUnits = Math.Max(0, _cargoUnits);
+        _cargoValue = Math.Max(0, _cargoValue);
+        RendererInterop.PlayCue("board");
+    }
+
+    // BRIBE: pay the dice-rolled fee to keep the cargo; the hunter breaks off, heat is UNCHANGED (you
+    // bought this patrol, not the law). Can't afford → the button is greyed with the number.
+    private void BustedBribe()
+    {
+        if (_busted is not { } b || _credits < b.Bribe.Total)
+        {
+            return;
+        }
+
+        _credits -= b.Bribe.Total;
+        RemoveHunter(b.HunterId);
+        b.ResultMessage = $"{b.Bribe.Total:N0} cr changes hands. {b.HunterCallsign} logs a clean sweep and sheers off — heat unchanged. You bought this patrol, not the law.";
+        b.Phase = BustedEncounter.Stage.BribedOff;
+        SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
+        StateHasChanged();
+    }
+
+    // RESIST: heat 1–2 → one opposed dice check (lose = SUBMIT + harsher cut; win = hunter broken off,
+    // heat +1). Heat 3 → the full Bolivia.
+    private void BustedResist()
+    {
+        if (_busted is not { } b)
+        {
+            return;
+        }
+
+        if (b.Heat >= EncounterRule.MaxHeatLevel)
+        {
+            b.Phase = BustedEncounter.Stage.Bolivia;
+            b.BoliviaInitiative = BoliviaEncounter.RollInitiative(b.Seed, b.Heat, ResistModifiers());
+            b.BoliviaNet = b.BoliviaInitiative.Value.Margin;
+            b.BoliviaBeatIndex = 0;
+            SquawkNow(Parrot.Squawk.FiringSolution, _lastTimestampMs ?? 0, force: true);
+            StateHasChanged();
+            return;
+        }
+
+        OpposedRoll roll = BustedRule.ResistCheck(b.Heat, b.Seed, ResistModifiers());
+        b.ResistRoll = roll;
+        if (roll.ChallengerWins)
+        {
+            RemoveHunter(b.HunterId);
+            _heat = EncounterRule.RaiseHeat(_heat, 1, SimTime); // a win pins the wolves meaner
+            b.ResultMessage = $"You break {b.HunterCallsign}'s boarding — they peel off nursing the dent. Heat climbs; the next wave is meaner.";
+            b.Phase = BustedEncounter.Stage.ResistWon;
+            SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
+        }
+        else
+        {
+            b.Phase = BustedEncounter.Stage.ResistLost;
+        }
+
+        StateHasChanged();
+    }
+
+    private void BustedResistLostConfirm() => BustedSubmit(harsher: true);
+
+    // A Bolivia beat: fold the choice, roll it, advance. After the last beat, tally and decide.
+    private void BustedBoliviaChoose(string choiceId)
+    {
+        if (_busted is not { } b || b.Phase != BustedEncounter.Stage.Bolivia)
+        {
+            return;
+        }
+
+        EncounterBeat beat = BoliviaEncounter.Script[b.BoliviaBeatIndex];
+        EncounterChoice choice = beat.Choices[0];
+        foreach (EncounterChoice c in beat.Choices)
+        {
+            if (c.Id == choiceId) { choice = c; break; }
+        }
+
+        OpposedRoll roll = BoliviaEncounter.RollBeat(b.Seed, b.BoliviaBeatIndex, choice, b.Heat, ResistModifiers());
+        b.BoliviaNet += roll.Margin;
+        b.BoliviaOutcomes.Add(new BoliviaEncounter.BeatOutcome(b.BoliviaBeatIndex, choice.Id, roll));
+        b.BoliviaBeatIndex++;
+
+        if (b.BoliviaBeatIndex >= BoliviaEncounter.Script.Count)
+        {
+            b.BoliviaEnding = BoliviaEncounter.Decide(b.BoliviaNet);
+            if (b.BoliviaEnding == BoliviaEncounter.Ending.Flee)
+            {
+                RemoveHunter(b.HunterId); // left tied up at their own ship
+                _heat = new HeatState(BoliviaEncounter.FleeHeat, SimTime);
+                _lastAnnouncedHeat = BoliviaEncounter.FleeHeat;
+                b.ResultMessage = $"You fight clear — {b.HunterCallsign} left tied up at their own ship. You slip away carrying heat {BoliviaEncounter.FleeHeat}.";
+                b.Phase = BustedEncounter.Stage.Fled;
+                SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
+            }
+            else
+            {
+                b.Phase = BustedEncounter.Stage.FreezeFrame;
+                RendererInterop.PlayCue("board");        // volley hook (audio cue is a follow-up)
+                RendererInterop.PlayCue("gameover");     // game-over-music hook
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    // THE FREEZE-FRAME → brain-backup resurrection: wake at the nearest haven's clinic in an insurance
+    // rustbucket. Everything VISIBLE aboard is gone; the tank comes up at the mercy floor (reach-a-pump
+    // reserve), so you wake grounded near a pump, not stranded. Buried/banked survives (it lives
+    // off-ship — other lanes). Never a dead save.
+    private void BustedResurrect()
+    {
+        if (_busted is not { } b)
+        {
+            return;
+        }
+
+        RemoveHunter(b.HunterId);
+        int mercyFloor = MercyFloorPulses();
+
+        // Consult the insurance policy at rebirth (issue #227 seam): None-tier returns the uninsured
+        // rustbucket + full clinic bill untouched; a covered tier would ease it — the pure rule decides.
+        RebirthOutcome outcome = InsuranceRule.ApplyToRebirth(
+            _insurance, SimTime, InsuranceRule.DefaultRebirth(mercyFloor));
+        BustedRule.ResurrectionKit kit = outcome.Kit;
+
+        // The rebirth tax (issue #227): the clinic bill is booked against the stake, floored at 0 — a
+        // shortfall is a debt the WIRE lane's bank will reconcile against banked/buried funds at merge.
+        int afterBill = Math.Max(0, kit.Credits - outcome.ClinicBillCr);
+        LogAutopilotEvent($"🏥 Clinic bill: −{outcome.ClinicBillCr:N0} cr (brain-backup wake-up). Insurance: {_insurance.Tier}.");
+
+        _credits = afterBill;
         _cargoUnits = 0;
         _cargoValue = 0;
         _cargoByClass.Clear();
-        _credits = Math.Max(0, _credits - EncounterRule.CatchFineCredits);
-        ShowPulseMessage($"{hunter.Callsign} runs you down — cargo seized, {EncounterRule.CatchFineCredits} cr fine. The gentleman's game has a price.");
-        RendererInterop.PlayCue("board");
+        _hotCargo.Launder();
+        _reactionMassPulses = Math.Min(kit.ReactionMassPulses, ReactionMassCapacityFor(kit.MassLevel));
+        _slugAmmo = kit.SlugAmmo;
+        _missileAmmo = kit.MissileAmmo;
+        _massLevel = kit.MassLevel;
+        _sensorLevel = kit.SensorLevel;
+        _holdLevel = kit.HoldLevel;
+        _telescopeLevel = kit.TelescopeLevel;
+        _hasNetJammer = false;
+        RebuildSensor();
+        _heat = HeatState.None;
+        _lastAnnouncedHeat = 0;
+        b.ClinicBillCr = outcome.ClinicBillCr;
+        b.HullDescription = outcome.HullDescription;
+
+        // Wake at the nearest haven's clinic: reset the ship state onto that haven, riding its rails.
+        string clinicName = WakeAtNearestHaven();
+        b.ClinicName = clinicName;
+        b.Phase = BustedEncounter.Stage.Resurrected;
+        StateHasChanged();
+    }
+
+    // The mercy floor in pulses: the reach-a-pump reserve FuelReachability prices for where we are, so
+    // the rustbucket wakes with just enough to crawl to fuel. Falls back to the flat autopilot reserve
+    // when no well reads (deep space) — never zero.
+    private int MercyFloorPulses()
+    {
+        int flat = AutopilotRehearsal.ReservePulses(ReactionMassCapacityFor(0));
+        if (_ephemeris is null || _simulator is null || CurrentWellBodyId() is not { } well)
+        {
+            return flat;
+        }
+
+        try
+        {
+            FuelReachability.Assessment a = FuelReachability.Assess(
+                _simulator, _ephemeris, _ship, ReactionMassCapacityFor(0), ReactionMassCapacityFor(0), well);
+            return a.SafeReservePulses > 0 ? a.SafeReservePulses : flat;
+        }
+        catch
+        {
+            return flat;
+        }
+    }
+
+    private int ReactionMassCapacityFor(int massLevel) => 250 + 150 * massLevel;
+
+    // Set the ship down at the nearest haven (the clinic), riding its velocity — a starter-grade parked
+    // state. Returns the haven's name for the wake card.
+    private string WakeAtNearestHaven()
+    {
+        if (_ephemeris is null)
+        {
+            return "a frontier clinic";
+        }
+
+        CelestialBody? nearest = null;
+        double best = double.MaxValue;
+        foreach (CelestialBody body in _ephemeris.Bodies)
+        {
+            if (!body.IsHaven)
+            {
+                continue;
+            }
+
+            double d = (_ephemeris.Position(body.Id, SimTime) - _ship.Position).Length;
+            if (d < best) { best = d; nearest = body; }
+        }
+
+        if (nearest is null)
+        {
+            return "a frontier clinic";
+        }
+
+        Vector2d pos = _ephemeris.Position(nearest.Id, SimTime);
+        Vector2d vel = TransferMath.BodyVelocity(_ephemeris, nearest.Id, SimTime);
+        _ship = new ShipState(pos, vel, SimTime);
+        ReprojectTrajectory();
+        _camera.CenterOn(_ship.Position);
+        return nearest.Name;
+    }
+
+    private void RemoveHunter(string hunterId)
+    {
+        for (int i = _hunters.Count - 1; i >= 0; i--)
+        {
+            if (_hunters[i].Id == hunterId)
+            {
+                _hunters.RemoveAt(i);
+            }
+        }
+    }
+
+    private void CloseBusted()
+    {
+        _busted = null;
+        StateHasChanged();
+    }
+
+    // Buy the one shipped dice helper: a Boarding-nets jammer, a named +2 on resist/Bolivia initiative
+    // (the modifier seam; the shop is a follow-up). One-time purchase, lost on resurrection.
+    private void BuyNetJammer()
+    {
+        if (_hasNetJammer || _credits < NetJammerPriceCr)
+        {
+            return;
+        }
+
+        _credits -= NetJammerPriceCr;
+        _hasNetJammer = true;
+        ShowPulseMessage("Boarding-nets jammer fitted — +2 on any last stand. The collectors hate it.");
+        StateHasChanged();
+    }
+
+    // The open BUSTED pop-up's state — grappled, at 1×, the captain choosing. The dice are rolled Core-
+    // side (BustedRule / BoliviaEncounter); this holds what's been rolled and which panel to show.
+    private sealed class BustedEncounter
+    {
+        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected }
+
+        public required string HunterId { get; init; }
+        public required string HunterCallsign { get; init; }
+        public required int Heat { get; init; }
+        public required ulong Seed { get; init; }
+        public required DiceRoll Bribe { get; init; }
+        public Stage Phase { get; set; } = Stage.Demand;
+        public OpposedRoll? ResistRoll { get; set; }
+        public BustedRule.Confiscation? Confiscation { get; set; }
+        public string? ResultMessage { get; set; }
+        public string? ClinicName { get; set; }
+        public int ClinicBillCr { get; set; }
+        public string? HullDescription { get; set; }
+
+        // Bolivia progress
+        public OpposedRoll? BoliviaInitiative { get; set; }
+        public int BoliviaBeatIndex { get; set; }
+        public int BoliviaNet { get; set; }
+        public List<BoliviaEncounter.BeatOutcome> BoliviaOutcomes { get; } = [];
+        public BoliviaEncounter.Ending? BoliviaEnding { get; set; }
     }
 
     private void DrawHunters()
@@ -13528,6 +14566,25 @@
         }
 
         return ships;
+    }
+
+    // PR-WIRE — the wire-capable contacts for the dark-web favor-bank panel: every contact we have
+    // history with whose character sheet banks over the wire (ruling 6). In-person-only contacts (the
+    // hermit, the Magpie) are excluded — you bank those across their table, not the dark web.
+    private IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.WireContact> DarkWebWireContacts()
+    {
+        var rows = new List<SpaceSails.Client.Pages.Stations.DarkWeb.WireContact>();
+        foreach ((string id, ContactHistory h) in _contacts.Entries)
+        {
+            ContactSheet sheet = ContactSheets.For(id);
+            if (!sheet.CanWire)
+            {
+                continue;
+            }
+            rows.Add(new SpaceSails.Client.Pages.Stations.DarkWeb.WireContact(id, sheet.DisplayName, h.CreditBalance));
+        }
+        rows.Sort((a, b) => string.CompareOrdinal(a.DisplayName, b.DisplayName));
+        return rows;
     }
 
     // Thin, read-only projection of the tracking-post ledger + live NPC state, for the dark

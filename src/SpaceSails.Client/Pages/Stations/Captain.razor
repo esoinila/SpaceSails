@@ -189,6 +189,44 @@
                     }
                 </div>
 
+                @* PR-WIRE — the favor bank's books (FridaySecondPlan §0). Balances both ways: coin we've
+                   parked with a contact (safe from confiscation), and gas money we owe. Read-only here;
+                   the deposit/withdraw/borrow controls live at the contact's table and the dark-web desk. *@
+                <div class="captain-ledger-section-label text-info fw-bold small mt-3">💰 Accounts</div>
+                <div class="captain-group-cards">
+                    @if (Accounts.Count == 0)
+                    {
+                        <div class="captain-empty">No coin in the air. Park a stake with a trusted contact ashore (press B at their table) and it rides safe from the collectors.</div>
+                    }
+                    else
+                    {
+                        @foreach (AccountRow acct in Accounts)
+                        {
+                            AccountRow a = acct;
+                            <div class="captain-card captain-ledger-account">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">@a.DisplayName</span>
+                                    <span class="fw-bold @(a.Balance > 0 ? "text-success" : a.Balance < 0 ? "text-danger" : "text-secondary")">
+                                        @(a.Balance > 0
+                                            ? $"holds {a.Balance:N0} cr of yours"
+                                            : a.Balance < 0
+                                                ? $"you owe {(-a.Balance):N0} cr"
+                                                : "square")
+                                    </span>
+                                </div>
+                                @if (a.Channel is { } channel)
+                                {
+                                    <div class="captain-card-blurb text-secondary small">@channel</div>
+                                }
+                                @foreach (string line in a.Transactions)
+                                {
+                                    <div class="captain-account-txn text-secondary small">@line</div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+
                 <div class="captain-ledger-section-label text-info fw-bold small mt-3">🔭 Tips &amp; intel</div>
                 <div class="captain-group-cards">
                     @if (Tips.Count == 0)
@@ -467,6 +505,14 @@
     /// whose hoard it is. The cache id drives the "view the card" jump.</summary>
     public sealed record CacheMapItem(
         string CacheId, string Caption, string Bearing, string Contents, string Owner, bool PlayerOwned);
+
+    // PR-WIRE — the favor bank's accounts, projected by Map for the ledger's 💰 Accounts section.
+    [Parameter] public IReadOnlyList<AccountRow> Accounts { get; set; } = [];
+
+    /// <summary>One contact's bank standing for the ledger. <paramref name="Balance"/> is signed
+    /// (+ = they hold our coin; − = we owe them); <paramref name="Channel"/> is the one-line "how they
+    /// bank" hint; <paramref name="Transactions"/> is the recent passbook, newest first.</summary>
+    public sealed record AccountRow(string DisplayName, long Balance, string? Channel, IReadOnlyList<string> Transactions);
 
     public enum CaptainView { Orders, Status, Tutorials, Ledger }
     private CaptainView _view;

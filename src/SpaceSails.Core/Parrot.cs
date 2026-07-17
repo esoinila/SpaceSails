@@ -26,6 +26,7 @@ public static class Parrot
         OrbitDecay,
         ContractPaid,
         Plunder,
+        Busted,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -69,6 +70,9 @@ public static class Parrot
         // Plunder (#202) — the bird names the haul, celebratory-piratical. {0} is the haul phrase
         // ("six crates of He3 out of the Larkspur").
         ["🏴 {0} — and PLUNDERED, captain! SQUAWK!", "Loot's aboard — {0}! Yo-ho-ho!", "{0}, and not a soul to stop us! SQUAWK!"],
+        // Busted (PR-BUSTED) — at each heat crossing the bird names the confiscation exposure. {0} is
+        // the rate phrase ("a THIRD of the purse and all the hot cargo, captain").
+        ["Collectors want {0}! SQUAWK!", "Mind the long arm — {0}!", "If they catch us it's {0}! SQUAWK SQUAWK!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line
