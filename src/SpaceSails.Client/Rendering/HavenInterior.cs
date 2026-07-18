@@ -431,12 +431,14 @@ public static class HavenInterior
             ? new DeckPlan.Droid(m.X + sway, m.Y, m.FacingRad, "Magpie")
             : new DeckPlan.Droid(-9999, -9999, 0, "Magpie"); // out of reach this watch — off-frame
 
-        // #247 — the barkeep, pacing their patch behind the counter (owner: "a barkeep pacing their bar
-        // area is fine"). No rota (they don't leave the bar): a deterministic sine sweep along the
-        // counter, the same idiom as the seated regulars' sway, so first-person sees them move. Centred on
-        // the counter's LEFT FLANK (owner 2026-07-18), tracking the console at x −3.5, with a modest sweep
-        // so they stay behind the left half of the counter (x −5..10), at the bar as the art depicts it.
-        double pace = 2.0 * System.Math.Sin(simTime * 0.00035);
+        // #247 — the barkeep, pacing their patch BEHIND the counter (owner: "a barkeep pacing their bar
+        // area is fine"; and 2026-07-18: "in all bars that have a bar-desk in their graphics the barkeep
+        // is positioned behind the bar desk"). No rota (they don't leave the bar): a deterministic sine
+        // sweep, the same idiom as the seated regulars' sway. Centred on the counter's LEFT FLANK — every
+        // bar art (Roadstead, Cinder, Ringside, Tilt) draws its counter and back-bar shelves down the LEFT
+        // wall — and confined to x [−5, −2] so the sweep never wanders out from behind the counter (the
+        // counter wall runs x −5..10) into the room. One shared geometry ⇒ this fixes all four bars.
+        double pace = 1.5 * System.Math.Sin(simTime * 0.00035);
         buffer[9] = new DeckPlan.Droid(-3.5 + pace, BarTopY - 1.5, -System.Math.PI / 2, "Barkeep");
     }
 }
