@@ -952,6 +952,7 @@ public partial class Map
         UpdateCapture(dtRealSeconds);
         UpdateEncounters();
         UpdateLocalTrade(dtRealSeconds);
+        StepNerve(dtRealSeconds); // #317: the nerve gauge advances every tick — regolith drains, the ship eases
 
         UpdatePrediction();
 

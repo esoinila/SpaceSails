@@ -52,6 +52,7 @@ public sealed class Vault
     public UpgradesSection? Upgrades { get; init; }
     public DiceItemsSection? DiceItems { get; init; }
     public ProgressSection? Progress { get; init; }
+    public NerveSection? Nerve { get; init; }
     public ResumeSection? Resume { get; init; }
 
     /// <summary>Set true by <see cref="VaultSerializer.Load"/> when the stored checksum did not match
@@ -231,6 +232,24 @@ public sealed record ProgressSection
     /// <summary>True once the captain has started or finished a tutorial lesson. Gates the fresh-start
     /// nav-screen promotion: an Earth start greets only a captain for whom this is still false.</summary>
     public bool TutorialPlayed { get; init; }
+}
+
+// ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──
+
+/// <summary>The captain's nerve (#317 / #226): the sanity gauge that debuts on surface excursions.
+/// Persisted so a captain who fled a moon shaking is still shaking after a reload — the ease-off is time
+/// spent aboard, never the load itself. Its own independently-optional section: a pre-#317 file simply
+/// lacks it and defaults to a full, calm gauge with an unseen monolith.</summary>
+public sealed record NerveSection
+{
+    /// <summary>Current nerve, 0..<see cref="NerveModel.Max"/> (full = steady hands, 0 = nerves shot).
+    /// Defaults full so a file that carries the section but not this field — or no section at all — loads
+    /// calm rather than at the "nerves shot" floor a bare <c>default(double)</c> would imply.</summary>
+    public double Nerve { get; init; } = NerveModel.Max;
+
+    /// <summary>True once the captain has laid eyes on the monolith. Persisted so the big first-sight hit
+    /// (<see cref="NerveModel.MonolithSightShock"/>) fires once in a life and never again on a revisit.</summary>
+    public bool MonolithSeen { get; init; }
 }
 
 // ── The resume berth (owner's law): where the pirate wakes, always docked. ──
