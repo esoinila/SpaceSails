@@ -145,6 +145,13 @@ public static class AutopilotRehearsal
 
         double hill = OrbitRule.HillRadius(body, parent.Mu);
         double captureRange = OrbitRule.CaptureRange(hill);
+
+        // #286: bound the kept-orbit radius so the circularized park clears the moon's PARENT planet.
+        // Measured once at arm time from the moon's current distance; for a planet (parent = the sun) and
+        // for every shipped moon this cap is far wider than the tide-stable park, so it is inert — the
+        // guard that an inner moon with a small Hill sphere can never be rehearsed into threading its world.
+        double keptRadiusCap = OrbitRule.MaxKeptRadiusUnderParent(
+            ephemeris.InstantaneousOrbitRadius(body.Id, ship.SimTime), parent);
         double startTime = ship.SimTime;
         double endTime = startTime + maxHorizonSeconds;
 
@@ -245,7 +252,7 @@ public static class AutopilotRehearsal
                 : new OrbitRule.ApproachObstacle(
                     ephemeris.Position(parent.Id, ship.SimTime), parent.BodyRadius * OrbitRule.ParentSafeBodyRadii);
 
-            switch (OrbitRule.AutopilotDecision(ship, bodyPos, bodyVel, body, hill))
+            switch (OrbitRule.AutopilotDecision(ship, bodyPos, bodyVel, body, hill, keptRadiusCap))
             {
                 case OrbitRule.AutopilotAction.Approach:
                     int approachCost = OrbitRule.ApproachPulseCost(ship, bodyPos, bodyVel, body, obstacle, hill);
