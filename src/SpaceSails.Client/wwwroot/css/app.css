@@ -2,6 +2,22 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* #299 — the overlay z-index scale, as ONE source of truth. These five band anchors mirror
+   SpaceSails.Core.OverlayBands (BaseMap / MapChrome / DesksAndPopups / DistressLifeline / Modal);
+   Map.razor.css sets every overlay's z-index to var(--z-BAND) (or calc(var(--z-BAND) + N) for a fine
+   layer within a band). CssZBandSyncTests parses this block AND Map.razor.css and fails `dotnet test`
+   the moment a value drifts from the Core constants — so a CSS edit that would bury a critical control
+   (Lab 34 / #293) goes red in the build, not in a playtest. Defined here (global, unscoped) rather than
+   in a scoped .razor.css so :root actually reaches the document root and the vars cascade everywhere.
+   Keep these values in lockstep with OverlayBands; do NOT hand-tune an overlay past its band. */
+:root {
+    --z-base-map: 0;
+    --z-map-chrome: 10;
+    --z-desks-popups: 1200;
+    --z-distress-lifeline: 1340;
+    --z-modal: 1360;
+}
+
 /* Owner request: "Peek" — temporarily clear every panel to read the map, then bring them back
    (👁 Peek button in the desk tab bar, or the ` hotkey). Fades every overlay that's a direct
    child of the map page EXCEPT the live canvas, the desk tab bar (which carries the button and

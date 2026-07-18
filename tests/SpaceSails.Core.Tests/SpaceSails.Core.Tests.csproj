@@ -27,4 +27,12 @@
     <Content Include="..\..\scenarios\*.json" Link="scenarios\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- #299 — the z-band sync gate reads the LIVE stylesheets. Copy them beside the test assembly every
+       build (a CSS edit rebuilds the test project → recopies), so CssZBandSyncTests parses the current
+       source, not a stale snapshot, with no dependency on the working directory. -->
+  <ItemGroup>
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\css\app.css" Link="cssource\app.css" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\SpaceSails.Client\Pages\Map.razor.css" Link="cssource\Map.razor.css" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

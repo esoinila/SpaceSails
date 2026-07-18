@@ -31,11 +31,12 @@ public static class RescueLifeline
     /// reserved — nothing stops a later pointer-events overlay in the 31..1320 band painting over it.</summary>
     public const int PreLabZIndex = 30;
 
-    /// <summary>The reserved distress-lifeline band this lab moves <c>.map-adrift</c> into
-    /// (Map.razor.css:348, kept in sync): above every non-rescue overlay the state machine can raise
-    /// (desk/deck pop-ups top out at 1320), just below the rescue modal it opens (<c>.rescue-backdrop</c>
-    /// z-index 1360, Map.razor.css:378). The lifeline is the last thing anything may paint over.</summary>
-    public const int LifelineZIndex = 1340;
+    /// <summary>The reserved distress-lifeline band <c>.map-adrift</c> lives in: above every non-rescue
+    /// overlay the state machine can raise (desk/deck pop-ups top out at <see cref="OverlayBands.ViewObjectBackdrop"/>),
+    /// just below the rescue modal it opens (<see cref="OverlayBands.RescueBackdrop"/>). The lifeline is
+    /// the last thing anything may paint over. Sourced from <see cref="OverlayBands"/> (#299), which the
+    /// CSS mirrors and <c>CssZBandSyncTests</c> keeps honest — no hand-transcribed z-value here anymore.</summary>
+    public const int LifelineZIndex = OverlayBands.DistressLifeline;
 
     /// <summary>A standard flight viewport (CSS px). Desktop 1280x800 by default; the tests also sweep
     /// narrow/short sizes to prove the affordance never leaves the screen.</summary>
@@ -63,22 +64,22 @@ public static class RescueLifeline
     /// </summary>
     public static IReadOnlyList<Overlay> OutOfPowerOverlays(Rect viewport)
     {
-        // .map-dest-panel — nav-target box, bottom:0.75rem, width:38rem, z-index 12 (Map.razor.css:658-666).
-        Overlay destPanel = BottomCentre(viewport, ".map-dest-panel", widthRem: 38, heightRem: 9, zIndex: 12);
+        // .map-dest-panel — nav-target box, bottom:0.75rem, width:38rem (Map.razor.css). z from the band scale.
+        Overlay destPanel = BottomCentre(viewport, ".map-dest-panel", widthRem: 38, heightRem: 9, zIndex: OverlayBands.MapDestPanel);
 
-        // .map-dossier — target dossier, bottom:0.75rem, width:30rem, z-index 20 (Map.razor.css:1145-1154).
-        Overlay dossier = BottomCentre(viewport, ".map-dossier", widthRem: 30, heightRem: 7, zIndex: 20);
+        // .map-dossier — target dossier, bottom:0.75rem, width:30rem (Map.razor.css). z from the band scale.
+        Overlay dossier = BottomCentre(viewport, ".map-dossier", widthRem: 30, heightRem: 7, zIndex: OverlayBands.MapDossier);
 
-        // .map-scope — Nav scope canvas, 280px, bottom/right 0.75rem, no z-index → 0 (Map.razor.css:446-458).
+        // .map-scope — Nav scope canvas, 280px, bottom/right 0.75rem, no z-index → base map (Map.razor.css).
         const double scope = 280;
         Overlay scopePanel = new(
             ".map-scope",
             new Rect(viewport.Right - 0.75 * Rem - scope, viewport.Bottom - 0.75 * Rem - scope, scope, scope),
-            0);
+            OverlayBands.BaseMap);
 
-        // .desk-layer — full-screen near-opaque desk shield, z-index 15 (Map.razor.css:902-907). A
-        // full-screen gate below the pill; harmless, included so the audit sees the whole stack.
-        Overlay deskLayer = new(".desk-layer", viewport, 15);
+        // .desk-layer — full-screen near-opaque desk shield (Map.razor.css). A full-screen gate below the
+        // pill; harmless, included so the audit sees the whole stack. z from the band scale.
+        Overlay deskLayer = new(".desk-layer", viewport, OverlayBands.DeskLayer);
 
         return [destPanel, dossier, scopePanel, deskLayer];
     }
@@ -103,7 +104,7 @@ public static class RescueLifeline
         const double w = 44.0 * Rem;
         const double h = 4.0 * Rem;
         double x = viewport.X + (viewport.W - w) / 2;
-        return new Overlay("masthead/pilot-banner", new Rect(x, viewport.Y, w, h), ZIndex: 24);
+        return new Overlay("masthead/pilot-banner", new Rect(x, viewport.Y, w, h), ZIndex: OverlayBands.MapTopstack);
     }
 
     /// <summary>A stand-in for ANY pointer-events pop-up authored into the desk/deck overlay band
@@ -117,7 +118,7 @@ public static class RescueLifeline
         const double h = 16.0 * Rem;
         double x = viewport.X + (viewport.W - w) / 2;
         double y = viewport.Bottom - 3.0 * Rem - h; // sinks over the pill's bottom anchor.
-        return new Overlay("desk-band-popup (z≤1320)", new Rect(x, y, w, h), ZIndex: 1320);
+        return new Overlay("desk-band-popup (z≤1320)", new Rect(x, y, w, h), ZIndex: OverlayBands.ViewObjectBackdrop);
     }
 
     private static Overlay BottomCentre(Rect viewport, string name, double widthRem, double heightRem, int zIndex)

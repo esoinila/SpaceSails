@@ -37,7 +37,7 @@
     border: 1px solid rgba(255, 200, 120, 0.28);
     border-radius: 0.5rem;
     pointer-events: none;
-    z-index: 1200;
+    z-index: var(--z-desks-popups);
 }
 
 /* A bar stranger's contract offer, over the deck canvas (go-ashore quests). Same overlay family as
@@ -56,7 +56,7 @@
     border-radius: 0.6rem;
     box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
     pointer-events: auto;
-    z-index: 1250;
+    z-index: calc(var(--z-desks-popups) + 50);
 }
 
 .deck-offer-giver {
@@ -136,7 +136,7 @@
     /* In FLOW (position:relative, not absolute) so it claims real height at the top of the map — the
        .map-hud block below then flows under it and a taller banner pushes the toolbar down (#195). */
     position: relative;
-    z-index: 24;
+    z-index: calc(var(--z-map-chrome) + 14);
     pointer-events: none;   /* the gaps pass clicks to the canvas; each child re-enables its own */
     display: flex;
     flex-direction: column;
@@ -161,7 +161,7 @@
     border-radius: 0.6rem;
     box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
     pointer-events: auto;
-    z-index: 1250;
+    z-index: calc(var(--z-desks-popups) + 50);
 }
 
 .deck-shuttle-title {
@@ -230,7 +230,7 @@
     /* #195: an in-flow block that follows .map-topstack (was absolute top:5.9rem), so the banner above
        it can never overlap it — it starts below the banner's real height, whatever that grows to. */
     position: relative;
-    z-index: 22;
+    z-index: calc(var(--z-map-chrome) + 12);
     pointer-events: none;
     width: fit-content;
     max-width: 100%;
@@ -352,7 +352,7 @@
     transform: translateX(-50%);
     max-width: calc(100% - 1.5rem);
     pointer-events: auto;
-    z-index: 1340;
+    z-index: var(--z-distress-lifeline);
 }
 
 .map-adrift-reopen {
@@ -382,7 +382,7 @@
 .rescue-backdrop {
     position: absolute;
     inset: 0;
-    z-index: 1360; /* above the desks/deck overlays, in the modal band with view-object/busted */
+    z-index: var(--z-modal); /* above the desks/deck overlays, in the modal band with view-object/busted */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -471,7 +471,7 @@
 .map-loading {
     position: absolute;
     inset: 0;
-    z-index: 50;
+    z-index: calc(var(--z-map-chrome) + 40);
     background: #060912;
 }
 
@@ -670,14 +670,14 @@
     width: 38rem;
     max-width: calc(100% - 1.5rem);
     pointer-events: auto;
-    z-index: 12;
+    z-index: calc(var(--z-map-chrome) + 2);
     border: 1px solid rgba(120, 220, 255, 0.5);
 }
 
 /* M24: planet click menu — anchored at the click point, above the canvas. */
 .map-body-menu {
     position: absolute;
-    z-index: 20;
+    z-index: calc(var(--z-map-chrome) + 10);
     pointer-events: auto;
     min-width: 12rem;
     max-width: 16rem;
@@ -909,7 +909,7 @@
 .desk-layer {
     position: absolute;
     inset: 0;
-    z-index: 15;
+    z-index: calc(var(--z-map-chrome) + 5);
     background: rgba(6, 9, 15, 0.92);
     pointer-events: auto;
     display: flex;
@@ -1125,7 +1125,7 @@
     position: absolute;
     right: 0.9rem;
     bottom: 23.5rem;
-    z-index: 26;
+    z-index: calc(var(--z-map-chrome) + 16);
     pointer-events: none;
     display: flex;
     align-items: center;
@@ -1154,7 +1154,7 @@
     left: 50%;
     transform: translateX(-50%);
     bottom: 0.75rem;
-    z-index: 20;
+    z-index: calc(var(--z-map-chrome) + 10);
     pointer-events: auto;
     border: 1px solid rgba(150, 255, 210, 0.45);
     width: 30rem;
@@ -1258,7 +1258,7 @@
     position: absolute;
     top: 3.2rem;
     left: 0.75rem;
-    z-index: 40;
+    z-index: calc(var(--z-map-chrome) + 30);
 }
 
 /* Round-2 audit fix 4: the Layers control was dead-center at top 3.2rem, stacking on top of the
@@ -1268,7 +1268,7 @@
     position: absolute;
     top: 3.2rem;
     left: 0.75rem;
-    z-index: 40;
+    z-index: calc(var(--z-map-chrome) + 30);
 }
 
 /* (#195) The Nav-map tutorials advertisement was removed — it floated over the toolbar and presumed
@@ -1295,7 +1295,7 @@
 .start-picker-backdrop {
     position: absolute;
     inset: 0;
-    z-index: 1300; /* a full-screen gate — above every desk layer and deck overlay (max 1250) */
+    z-index: calc(var(--z-desks-popups) + 100); /* a full-screen gate — above every desk layer and deck overlay (max 1250) */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1405,7 +1405,7 @@
 .view-object-backdrop {
     position: absolute;
     inset: 0;
-    z-index: 1320; /* above the deck overlays and even the start picker */
+    z-index: calc(var(--z-desks-popups) + 120); /* above the deck overlays and even the start picker */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1472,7 +1472,7 @@
 .pin-backdrop {
     position: absolute;
     inset: 0;
-    z-index: 1320;
+    z-index: calc(var(--z-desks-popups) + 120);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1579,7 +1579,7 @@
 .mission-celebration-backdrop {
     position: absolute;
     inset: 0;
-    z-index: 1400;
+    z-index: calc(var(--z-modal) + 40);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1752,7 +1752,7 @@
 .busted-backdrop {
     position: absolute;
     inset: 0;
-    z-index: 1410; /* above the celebration modal — a catch interrupts everything */
+    z-index: calc(var(--z-modal) + 50); /* above the celebration modal — a catch interrupts everything */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1915,7 +1915,7 @@
 .jump-overlay {
     position: fixed;
     inset: 0;
-    z-index: 1400;
+    z-index: calc(var(--z-modal) + 40);
     display: flex;
     align-items: center;
     justify-content: center;
