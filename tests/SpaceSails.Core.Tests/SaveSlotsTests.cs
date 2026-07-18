@@ -160,6 +160,70 @@ public class SaveSlotsTests
     }
 
     [Fact]
+    public void Export_SerializesTheLiveState_ByteStable()
+    {
+        // Export writes VaultSerializer.Save(BuildVault()) — the LIVE moment, not a stored slot. The
+        // load-bearing guarantee is that those bytes ARE the state: re-loading and re-saving them is a
+        // fixed point (so an exported file, re-imported, is byte-for-byte the same voyage).
+        var live = new Vault
+        {
+            SavedSimTime = 2_600_000,
+            Purse = new PurseSection(1234),
+            Ship = new ShipSection { ReactionMassPulses = 42, SlugAmmo = 3, MissileAmmo = 1 },
+            Resume = new ResumeSection { HavenId = "the-tilt", HavenName = "The Tilt", WasDocked = true },
+        };
+        string exported = VaultSerializer.Save(live);
+        string reExported = VaultSerializer.Save(VaultSerializer.Load(exported));
+        Assert.Equal(exported, reExported);
+    }
+
+    [Fact]
+    public void ImportThenReload_ContinuesTheImportedState_NoExtraSavePress()
+    {
+        // The client import writes the imported bytes into the autosave slot (RequestVaultSave adopts it).
+        // Model that: after import, Continue (Newest) resumes the imported state with no further press.
+        var book = new SaveSlotBook(new MemStore());
+
+        // The player is currently at Mars (autosave).
+        Vault current = VaultAt("the-space-bar", "The Rusty Roadstead", docked: true, simTime: 0);
+        book.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(current), MetaFor(current, SaveSlotKind.Autosave, 10));
+
+        // They import a file captured at The Tilt — it becomes the autosave at once.
+        Vault imported = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 2_600_000);
+        string importedJson = VaultSerializer.Save(imported);
+        book.Save(SaveSlotBook.AutoSlotId, importedJson, MetaFor(imported, SaveSlotKind.Autosave, 20));
+
+        SaveSlotMeta? cont = book.Newest();
+        Assert.Equal(SaveSlotBook.AutoSlotId, cont!.Id);
+        Assert.Equal("The Tilt", cont.Where); // Continue matches what the player just imported
+        Assert.Equal(importedJson, book.ReadPayload(SaveSlotBook.AutoSlotId)); // exactly the imported bytes
+    }
+
+    [Fact]
+    public void BankCurrentFirst_ThenImport_KeepsBothTheOldAndNew()
+    {
+        // The import consent's "bank current first" escape: bank the running voyage to a free manual slot,
+        // THEN let the imported file become the autosave. Both survive — the old is recoverable.
+        var book = new SaveSlotBook(new MemStore());
+
+        Vault current = VaultAt("the-space-bar", "The Rusty Roadstead", docked: true, simTime: 5_000);
+        string currentJson = VaultSerializer.Save(current);
+        book.Save(SaveSlotBook.AutoSlotId, currentJson, MetaFor(current, SaveSlotKind.Autosave, 10));
+
+        // Escape: bank the current autosave state into manual slot 1.
+        book.Save(SaveSlotBook.ManualSlotId(1), currentJson, MetaFor(current, SaveSlotKind.Manual, 11));
+
+        // Then import replaces the autosave with the new voyage.
+        Vault imported = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 2_600_000);
+        book.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(imported), MetaFor(imported, SaveSlotKind.Autosave, 12));
+
+        // The banked old voyage is intact and loadable; the autosave is the imported one.
+        Assert.Equal(currentJson, book.ReadPayload(SaveSlotBook.ManualSlotId(1)));
+        Assert.Equal("The Rusty Roadstead", book.Get(SaveSlotBook.ManualSlotId(1))!.Where);
+        Assert.Equal("The Tilt", book.Newest()!.Where);
+    }
+
+    [Fact]
     public void List_OrdersAutosaveFirst_ThenManualById()
     {
         var book = new SaveSlotBook(new MemStore());
