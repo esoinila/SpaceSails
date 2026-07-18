@@ -356,9 +356,20 @@ public partial class Map
     // sim time, so the world is consistent by construction — the one non-pure actor, a hunter mid-chase,
     // is refused ("the sky is clear"), and the bus stops at the destination planet's capture range.
 
-    // The last-mile pulse quote from the current course's destination pass, when the plot has one.
+    // The last-mile pulse quote (#262): the arrival INSERTION brake, priced from the SOLVED departure's
+    // arrival speeds — this works straight off a berth, where there is no plotted destination pass yet (the
+    // #249 lesson). The departure solve already knows the arrival relative speed, so the brake to shed into
+    // the clamp window is a pure function of it. Falls back to a plotted destination pass's insert cost only
+    // when no long-haul departure is in hand (a manual coast already inside the plot horizon).
     private int LongHaulLastMilePulses() =>
-        _destinationPass is { } dp && DestinationPassInfo(dp) is { } info ? info.EstPulses : 0;
+        _longHaulDeparture is { Ok: true } dep
+            ? LongHaul.InsertionFor(dep).Pulses
+            : _destinationPass is { } dp && DestinationPassInfo(dp) is { } info ? info.EstPulses : 0;
+
+    // #262 — the reserve-aware pulse budget the long-haul bills are weighed against (the tank minus the
+    // autopilot reserve). One source so LongHaulOfferBlock and the engage's round-bill gate never diverge.
+    private int LongHaulBudgetPulses() =>
+        Math.Max(0, _reactionMassPulses - AutopilotRehearsal.ReservePulses(ReactionMassCapacity));
 
     // A destination is a genuine long-haul target when its own sun-orbiting planet exists AND the ship is
     // not already inside that planet's capture range (there is a real void to cross). Drives the offer's
@@ -408,11 +419,22 @@ public partial class Map
             return "🚀 " + (departure?.Failure ?? "no departure arc from here yet — give the plot a moment");
         }
 
-        int reserve = AutopilotRehearsal.ReservePulses(ReactionMassCapacity);
-        int budget = Math.Max(0, _reactionMassPulses - reserve);
-        if (dep.DeparturePulses > budget)
+        int budget = LongHaulBudgetPulses();
+        // #262: the round-bill gate. An unpayable DEPARTURE is always a hard refuse (that burn genuinely fires
+        // at engage — you cannot fire what you cannot pay). An unpayable ROUND bill (departure + arrival brake)
+        // is WARN-and-proceed by default, and only a hard block here when the owner flips
+        // LongHaul.RefuseOnUnpayableRoundBill — so the button stays live for the warn path (the warning lands
+        // at engage, not as a disabled button). RefuseDeparture reuses the existing budget refusal wording.
+        LongHaul.Insertion insertion = LongHaul.InsertionFor(dep);
+        LongHaul.RoundBillVerdict verdict = LongHaul.EvaluateRoundBill(dep.DeparturePulses, insertion.Pulses, budget);
+        if (verdict == LongHaul.RoundBillVerdict.RefuseDeparture)
         {
             return LongHaul.RefusalBudget(dep.DeparturePulses, _reactionMassPulses);
+        }
+
+        if (verdict == LongHaul.RoundBillVerdict.RefuseRoundBill)
+        {
+            return LongHaul.RoundBillRefusal(planetName, dep.DeparturePulses + insertion.Pulses, _reactionMassPulses);
         }
 
         return clearanceBlock; // #267: the precomputed surface-clearance refusal, or null when the arc is clear
@@ -493,6 +515,15 @@ public partial class Map
 
         LongHaul.Departure dep = departure!.Value;
 
+        // #262 — the arrival brake, quoted as a step of this trip, plus the round-bill verdict. The gate above
+        // has already hard-refused an unpayable DEPARTURE (and, if the owner flipped RefuseOnUnpayableRoundBill,
+        // an unpayable round bill). Here the DEFAULT (warn) path files the brake as a step and, when the tank
+        // won't cover it, WARNS the captain in-voice — they sail on eyes-open, to coast in hot and shed by hand.
+        LongHaul.Insertion insertion = LongHaul.InsertionFor(dep);
+        LongHaul.RoundBillVerdict roundBill =
+            LongHaul.EvaluateRoundBill(dep.DeparturePulses, insertion.Pulses, LongHaulBudgetPulses());
+        bool hotArrival = roundBill == LongHaul.RoundBillVerdict.WarnHotArrival;
+
         // Compute the jump BEFORE committing any side effect: ride the post-burn conic to the capture gate.
         ShipState postBurn = _ship with { Velocity = dep.PostBurnVelocity };
         double horizon = (dep.ArrivalCenterTime - postBurn.SimTime) + 30.0 * DaySeconds;
@@ -519,6 +550,15 @@ public partial class Map
         // (#249/#250's burns-then-jumps order — the post-burn conic above was computed FROM this Δv). So
         // taking the pulses now is charging as the burn executes, not billing a flight the ship hasn't flown.
         _reactionMassPulses = Math.Max(0, _reactionMassPulses - dep.DeparturePulses);
+
+        // #262: file the arrival brake as a step of the trip (persistent log), and — the conservative default —
+        // WARN in-voice when the tank can't fund it. The brake is NOT charged here: it settles at delivery
+        // through the existing match-and-clamp machinery (#277) when the ship clamps on, no second billing path.
+        LogAutopilotEvent(LongHaul.InsertionStep(destName, insertion.Pulses));
+        if (hotArrival)
+        {
+            LogAutopilotEvent(LongHaul.RoundBillWarning(destName, insertion.Pulses));
+        }
 
         // #255 VAULT SAFETY (pre-advance autosave): commit the personal life NOW, so a tab death mid-crossing
         // loses only the jump itself. The undock above already set a berth-resume near the departure.
@@ -560,6 +600,13 @@ public partial class Map
 
         // Announce the arrival, book the ledger line, and autosave the FAR side of the void.
         ShowPulseMessage(LongHaul.Completed(destName, (int)daysPassed));
+        // #262: if the arrival brake went unfunded, land with the warning up — right when the captain must
+        // shed by hand into the clamp window. The brake still settles through match-and-clamp when they dock.
+        if (hotArrival)
+        {
+            ShowPulseMessage(LongHaul.RoundBillWarning(destName, insertion.Pulses));
+            LogAutopilotEvent(LongHaul.RoundBillWarning(destName, insertion.Pulses));
+        }
         RendererInterop.PlayCue("board");
         PushNewsEvent(NewsWire.NewsEventKind.LongHaulComplete, destName, $"{(int)daysPassed} d crossed");
         RequestVaultSave();

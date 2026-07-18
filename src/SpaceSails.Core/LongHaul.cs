@@ -464,7 +464,11 @@ public static class LongHaul
     /// burns spend with — the number the offer quotes and the tank budget is checked against.</param>
     /// <param name="ArrivalCenterTime">Sim clock when the arc reaches the planet's centre; the jump stops a
     /// touch earlier, at the capture range (Project on the post-burn state finds the exact gate).</param>
-    /// <param name="ArrivalRelativeSpeed">Speed relative to the planet at arrival — the premium last mile.</param>
+    /// <param name="ArrivalRelativeSpeed">Speed relative to the planet at arrival — the speed the arrival
+    /// insertion brake (#262) must shed to reach the clamp/capture window.</param>
+    /// <param name="ArrivalSpeed">The ship's WORLD (heliocentric) speed at arrival — the "current speed" the
+    /// insertion brake is priced against (<see cref="OrbitRule.PulsesFor"/>), the same kernel the live
+    /// approach/insert burns spend with. Zero on a failed solve.</param>
     public readonly record struct Departure(
         bool Ok,
         string? Failure,
@@ -472,7 +476,8 @@ public static class LongHaul
         double DepartureDeltaV,
         int DeparturePulses,
         double ArrivalCenterTime,
-        double ArrivalRelativeSpeed);
+        double ArrivalRelativeSpeed,
+        double ArrivalSpeed);
 
     /// <summary>
     /// Solve the cheap immediate departure that reaches <paramref name="targetPlanet"/> from the ship's
@@ -484,7 +489,7 @@ public static class LongHaul
         CelestialBody? sun = targetPlanet.ParentId is null ? null : Find(ephemeris, targetPlanet.ParentId);
         if (sun is not { Mu: > 0 })
         {
-            return new Departure(false, $"{targetPlanet.Name} has no usable heliocentric frame to haul across", default, 0, 0, 0, 0);
+            return new Departure(false, $"{targetPlanet.Name} has no usable heliocentric frame to haul across", default, 0, 0, 0, 0, 0);
         }
 
         double t0 = ship.SimTime;
@@ -496,7 +501,7 @@ public static class LongHaul
         double r1Len = r1.Length;
         if (!(r1Len > 0))
         {
-            return new Departure(false, "the ship has no heliocentric radius to depart from", default, 0, 0, 0, 0);
+            return new Departure(false, "the ship has no heliocentric radius to depart from", default, 0, 0, 0, 0, 0);
         }
 
         double shipWorldSpeed = ship.Velocity.Length;
@@ -505,7 +510,7 @@ public static class LongHaul
         bool found = false;
         double bestDv = double.PositiveInfinity;
         Vector2d bestV1 = default;
-        double bestArrival = 0, bestArrivalRel = 0;
+        double bestArrival = 0, bestArrivalRel = 0, bestArrivalSpeed = 0;
 
         for (int i = 0; i < DepartureTofCells; i++)
         {
@@ -527,23 +532,117 @@ public static class LongHaul
             double dv = (lam.V1 - vShip).Length;
             if (dv < bestDv)
             {
-                Vector2d planetVel = TransferMath.BodyVelocity(ephemeris, targetPlanet.Id, tArrive)
-                                     - TransferMath.BodyVelocity(ephemeris, sun.Id, tArrive);
+                Vector2d sunVelArrive = TransferMath.BodyVelocity(ephemeris, sun.Id, tArrive);
+                Vector2d planetVel = TransferMath.BodyVelocity(ephemeris, targetPlanet.Id, tArrive) - sunVelArrive;
                 bestDv = dv;
                 bestV1 = lam.V1 + sunVel0;                     // fold the sun frame back into world velocity
                 bestArrival = tArrive;
                 bestArrivalRel = (lam.V2 - planetVel).Length;
+                bestArrivalSpeed = (lam.V2 + sunVelArrive).Length; // world (heliocentric) speed at arrival — the insertion's pricing basis
                 found = true;
             }
         }
 
         if (!found)
         {
-            return new Departure(false, $"no departure arc to {targetPlanet.Name} from here — the geometry won't close", default, 0, 0, 0, 0);
+            return new Departure(false, $"no departure arc to {targetPlanet.Name} from here — the geometry won't close", default, 0, 0, 0, 0, 0);
         }
 
         int pulses = OrbitRule.PulsesFor(bestDv, shipWorldSpeed);
-        return new Departure(true, null, bestV1, bestDv, pulses, bestArrival, bestArrivalRel);
+        return new Departure(true, null, bestV1, bestDv, pulses, bestArrival, bestArrivalRel, bestArrivalSpeed);
+    }
+
+    // ===== #262 — THE ARRIVAL INSERTION as a planned, quoted STEP of the long haul =====
+    // The owner's stranding (playtest 2026-07-17): delivered to The Tilt (Uranus) with 32/250 pulses at
+    // 29.8 km/s relative — inside clamp distance but far above the ≤8 km/s clamp speed, no fuel to brake.
+    // The bus banks the honest DEPARTURE burn (#250) and delivers to the capture range on the solved conic
+    // (#249), but the ARRIVAL insertion — the 30-50 km/s a captain must shed at an outer world to slow to
+    // the clamp/capture window — was an unbudgeted debt. #262 makes it a QUOTED step: the departure solve
+    // already knows the arrival relative speed, so the insertion Δv (and its pulse bill) is a pure function
+    // of it. The engage gate then quotes the ROUND bill (departure + insertion), and the insertion executes
+    // through the existing delivery-time match-and-clamp machinery (#277) — no second billing path.
+
+    /// <summary>The relative speed the arrival insertion brake must bleed down to before the last mile can
+    /// complete — the dock clamp speed (<see cref="DockRule.MatchSpeed"/>, 8 km/s: below it a station clamp
+    /// or an orbit insert can be flown, above it the ship coasts in too hot to catch, the owner's 29.8 km/s
+    /// Tilt stranding). One tunable: raise it and the quote shrinks, lower it and the brake is quoted harder.</summary>
+    public const double InsertionTargetSpeed = DockRule.MatchSpeed;
+
+    /// <summary>DESIGN DEFAULT for the owner's still-open question (#262): when the departure is payable but
+    /// the ROUND bill (departure + arrival brake) is not, do we hard-REFUSE or WARN-and-proceed? Conservative
+    /// default is <c>false</c> — WARN the captain in-voice and let them sail on eyes-open (a payable departure
+    /// already gets you moving; the brake debt is spoken, not enforced). Flip this one const to <c>true</c>
+    /// to hard-refuse an unpayable round bill instead.</summary>
+    public const bool RefuseOnUnpayableRoundBill = false;
+
+    /// <summary>The arrival insertion brake, quoted (#262): the Δv to shed from the arrival relative speed
+    /// down to the clamp/capture window, and its pulse bill priced with the one <see cref="OrbitRule.PulsesFor"/>
+    /// kernel. <see cref="Needed"/> is false when the coast already arrives slow enough to catch (no brake owed).</summary>
+    /// <param name="DeltaV">|brake| in m/s — the speed to shed (0 when the arrival is already in the window).</param>
+    /// <param name="Pulses">The insertion bill, the number quoted alongside the departure and summed into the round bill.</param>
+    /// <param name="ArrivalRelativeSpeed">Speed relative to the target at arrival (the debt's origin).</param>
+    /// <param name="TargetSpeed">The window the brake bleeds down to (<see cref="InsertionTargetSpeed"/>).</param>
+    public readonly record struct Insertion(double DeltaV, int Pulses, double ArrivalRelativeSpeed, double TargetSpeed)
+    {
+        /// <summary>True when the arrival is hot enough to owe a real brake (some pulses to shed).</summary>
+        public bool Needed => Pulses > 0;
+    }
+
+    /// <summary>Quote the arrival insertion brake from the arrival speeds (#262). Pure: the Δv is the speed
+    /// above the clamp window to shed, priced against the ship's world speed at arrival (the same "current
+    /// speed" basis every assisted burn is priced against).</summary>
+    public static Insertion SolveInsertion(
+        double arrivalRelativeSpeed, double arrivalSpeed, double targetSpeed = InsertionTargetSpeed)
+    {
+        double shed = Math.Max(0.0, arrivalRelativeSpeed - targetSpeed);
+        int pulses = shed > 0 ? OrbitRule.PulsesFor(shed, arrivalSpeed) : 0;
+        return new Insertion(shed, pulses, arrivalRelativeSpeed, targetSpeed);
+    }
+
+    /// <summary>The arrival insertion brake for a solved departure (#262), or an empty (no-brake) quote when
+    /// the departure did not solve.</summary>
+    public static Insertion InsertionFor(Departure departure, double targetSpeed = InsertionTargetSpeed) =>
+        departure.Ok
+            ? SolveInsertion(departure.ArrivalRelativeSpeed, departure.ArrivalSpeed, targetSpeed)
+            : default;
+
+    /// <summary>The round-bill gate's verdict (#262): the engage already refuses an unpayable DEPARTURE (you
+    /// cannot fire a burn you cannot pay); this extends it to the whole trip.</summary>
+    public enum RoundBillVerdict
+    {
+        /// <summary>The tank covers departure AND the arrival brake — the whole trip is paid for.</summary>
+        Clear,
+
+        /// <summary>The departure is payable but the round bill is not — the conservative default WARNS and
+        /// lets the captain sail on, coasting in hot with the brake unfunded (see <see cref="RefuseOnUnpayableRoundBill"/>).</summary>
+        WarnHotArrival,
+
+        /// <summary>The departure itself outruns the tank — the existing hard refusal (unchanged behavior).</summary>
+        RefuseDeparture,
+
+        /// <summary>The round bill outruns the tank AND the flag is flipped to hard-refuse it.</summary>
+        RefuseRoundBill,
+    }
+
+    /// <summary>Evaluate the round bill against the tank (#262). Departure unaffordable is always a hard
+    /// refuse (the departure burn genuinely fires at engage). A payable departure with an unpayable round
+    /// bill is WARN or REFUSE per <paramref name="refuseOnUnpayableRound"/> — the one owner-flippable choice.</summary>
+    public static RoundBillVerdict EvaluateRoundBill(
+        int departurePulses, int insertionPulses, int budgetPulses,
+        bool refuseOnUnpayableRound = RefuseOnUnpayableRoundBill)
+    {
+        if (departurePulses > budgetPulses)
+        {
+            return RoundBillVerdict.RefuseDeparture;
+        }
+
+        long round = (long)departurePulses + Math.Max(0, insertionPulses);
+        if (round > budgetPulses)
+        {
+            return refuseOnUnpayableRound ? RoundBillVerdict.RefuseRoundBill : RoundBillVerdict.WarnHotArrival;
+        }
+
+        return RoundBillVerdict.Clear;
     }
 
     // ===== The one voice for the long haul's words (HarborVocabulary-style; pure text, unit-tested) =====
@@ -571,6 +670,23 @@ public static class LongHaul
     /// hidden button — the affordance explains, #212). Speaks the number.</summary>
     public static string RefusalBudget(int neededPulses, int tankPulses) =>
         $"🚀 long haul needs ≈{neededPulses} p; tank has {tankPulses} — top up or find a cheaper window";
+
+    /// <summary>#262 — the arrival insertion brake, named as a step in the trip. The flight plan's second
+    /// quoted burn beside the departure: what it costs and what it buys (slowing into the clamp window).</summary>
+    public static string InsertionStep(string destName, int pulses) =>
+        $"🛬 arrival brake at {destName} — ≈{pulses} p to shed into the clamp window (settles on the dock)";
+
+    /// <summary>#262 — the in-voice WARNING (the conservative default) when the departure is payable but the
+    /// round bill is not: the captain may sail on, eyes-open, coasting in too hot to catch without the brake.</summary>
+    public static string RoundBillWarning(string destName, int insertionPulses) =>
+        $"🚀 the bus includes the departure burn — but the arrival brake at {destName} wants ≈{insertionPulses} p " +
+        "the tank won't hold; sail on and you'll coast in hot, no fuel to shed speed";
+
+    /// <summary>#262 — the hard REFUSAL of an unpayable round bill, when the owner flips
+    /// <see cref="RefuseOnUnpayableRoundBill"/> to true. Speaks the whole-trip number.</summary>
+    public static string RoundBillRefusal(string destName, int roundPulses, int tankPulses) =>
+        $"🚀 the whole trip to {destName} wants ≈{roundPulses} p — departure plus the arrival brake — " +
+        $"and the tank holds {tankPulses}; top up before the long haul";
 
     /// <summary>The pre-commit PROMISE, stated plainly (#246 item 3 / owner "the UI does not say I will
     /// get to Uranus"): the destination verdict, the capture radius in AU, the arrival date, the cost now

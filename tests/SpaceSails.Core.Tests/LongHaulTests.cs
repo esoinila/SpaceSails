@@ -419,6 +419,132 @@ public class LongHaulTests
         Assert.NotNull(OfferTargetPlanet(eph, atTilt, "earth"));
     }
 
+    // ---- #262: the ARRIVAL INSERTION quoted as a step, and the ROUND-bill gate ----
+
+    [Fact]
+    public void SolveDeparture_CarriesArrivalWorldSpeed_ForInsertionPricing()
+    {
+        // The insertion brake is priced against the ship's WORLD speed at arrival (the same "current speed"
+        // basis every assisted burn uses), so the departure solve must surface it.
+        ICelestialEphemeris eph = MakeSol();
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+        ShipState berth = BerthOffMars(eph);
+
+        LongHaul.Departure dep = LongHaul.SolveDeparture(berth, eph, uranus);
+        Assert.True(dep.Ok, dep.Failure);
+        Assert.True(dep.ArrivalSpeed > 0, "the arrival world speed must be carried for the insertion quote");
+
+        // Sanity: the arrival RELATIVE speed cannot exceed the world speed plus the planet's own orbital
+        // speed — the two are consistent frames of the same arrival.
+        Vector2d uranusVel = TransferMath.BodyVelocity(eph, "uranus", dep.ArrivalCenterTime);
+        Assert.True(dep.ArrivalRelativeSpeed <= dep.ArrivalSpeed + uranusVel.Length + 1.0);
+    }
+
+    [Fact]
+    public void SolveInsertion_QuotesTheBrakeToShed_DownToTheClampWindow()
+    {
+        // A hot arrival: shed everything above the clamp window; the Δv is exactly that excess, priced with
+        // the shared PulsesFor kernel against the arrival world speed.
+        double arrivalRel = 29_800;   // the owner's 29.8 km/s Tilt arrival
+        double arrivalSpeed = 20_000; // world speed at the outer world
+        LongHaul.Insertion ins = LongHaul.SolveInsertion(arrivalRel, arrivalSpeed);
+
+        Assert.True(ins.Needed);
+        Assert.Equal(arrivalRel - LongHaul.InsertionTargetSpeed, ins.DeltaV, 1e-6);
+        Assert.Equal(OrbitRule.PulsesFor(arrivalRel - LongHaul.InsertionTargetSpeed, arrivalSpeed), ins.Pulses);
+        Assert.Equal(LongHaul.InsertionTargetSpeed, ins.TargetSpeed);
+    }
+
+    [Fact]
+    public void SolveInsertion_ArrivingInsideTheWindow_OwesNoBrake()
+    {
+        // A gentle arrival already under the clamp speed: no brake owed, zero pulses.
+        LongHaul.Insertion ins = LongHaul.SolveInsertion(LongHaul.InsertionTargetSpeed - 500, 12_000);
+        Assert.False(ins.Needed);
+        Assert.Equal(0, ins.DeltaV, 1e-9);
+        Assert.Equal(0, ins.Pulses);
+    }
+
+    [Fact]
+    public void InsertionFor_SolvedBerthDeparture_QuotesTheBrakeFromTheArrivalItSolved()
+    {
+        // The whole point of #262: from a berth the departure solves AND the arrival brake is quoted straight
+        // from the arrival speeds that same solve produced — the debt that stranded the owner is now a number
+        // the trip carries, computed by construction (not a fixture-specific magnitude).
+        ICelestialEphemeris eph = MakeSol();
+        CelestialBody uranus = eph.Bodies.Single(b => b.Id == "uranus");
+        ShipState berth = BerthOffMars(eph);
+
+        LongHaul.Departure dep = LongHaul.SolveDeparture(berth, eph, uranus);
+        Assert.True(dep.Ok, dep.Failure);
+
+        LongHaul.Insertion ins = LongHaul.InsertionFor(dep);
+        // The quote is EXACTLY the pure function of the departure's own arrival speeds — one source, no drift.
+        LongHaul.Insertion expected = LongHaul.SolveInsertion(dep.ArrivalRelativeSpeed, dep.ArrivalSpeed);
+        Assert.Equal(expected.DeltaV, ins.DeltaV, 1e-6);
+        Assert.Equal(expected.Pulses, ins.Pulses);
+        // Well-formed either way: a brake is owed iff the arrival is above the clamp window.
+        Assert.Equal(dep.ArrivalRelativeSpeed > LongHaul.InsertionTargetSpeed, ins.Needed);
+        Assert.True(ins.Pulses >= 0);
+    }
+
+    [Fact]
+    public void InsertionFor_FailedDeparture_IsAnEmptyQuote()
+    {
+        LongHaul.Insertion ins = LongHaul.InsertionFor(
+            new LongHaul.Departure(false, "no arc", default, 0, 0, 0, 0, 0));
+        Assert.False(ins.Needed);
+        Assert.Equal(0, ins.Pulses);
+    }
+
+    [Fact]
+    public void EvaluateRoundBill_PayableWholeTrip_IsClear()
+    {
+        Assert.Equal(LongHaul.RoundBillVerdict.Clear, LongHaul.EvaluateRoundBill(40, 60, budgetPulses: 120));
+    }
+
+    [Fact]
+    public void EvaluateRoundBill_UnpayableDeparture_IsAlwaysAHardRefuse()
+    {
+        // The departure burn genuinely fires at engage — an unpayable departure is refused no matter the flag.
+        Assert.Equal(LongHaul.RoundBillVerdict.RefuseDeparture,
+            LongHaul.EvaluateRoundBill(200, 60, budgetPulses: 120, refuseOnUnpayableRound: false));
+        Assert.Equal(LongHaul.RoundBillVerdict.RefuseDeparture,
+            LongHaul.EvaluateRoundBill(200, 60, budgetPulses: 120, refuseOnUnpayableRound: true));
+    }
+
+    [Fact]
+    public void EvaluateRoundBill_PayableDepartureButUnpayableRound_WarnsByDefault_RefusesWhenFlipped()
+    {
+        // The owner's still-open question, both settings pinned: default WARNS (proceed eyes-open), flip REFUSES.
+        Assert.False(LongHaul.RefuseOnUnpayableRoundBill); // the shipped conservative default
+
+        Assert.Equal(LongHaul.RoundBillVerdict.WarnHotArrival,
+            LongHaul.EvaluateRoundBill(40, 200, budgetPulses: 120, refuseOnUnpayableRound: false));
+        Assert.Equal(LongHaul.RoundBillVerdict.RefuseRoundBill,
+            LongHaul.EvaluateRoundBill(40, 200, budgetPulses: 120, refuseOnUnpayableRound: true));
+    }
+
+    [Fact]
+    public void RoundBillAndInsertion_SpeakThePlainWords()
+    {
+        Assert.Equal(
+            "🛬 arrival brake at The Tilt — ≈120 p to shed into the clamp window (settles on the dock)",
+            LongHaul.InsertionStep("The Tilt", 120));
+        Assert.Contains("the bus includes the departure burn", LongHaul.RoundBillWarning("The Tilt", 120));
+        Assert.Contains("arrival brake at The Tilt wants ≈120 p", LongHaul.RoundBillWarning("The Tilt", 120));
+        Assert.Contains("coast in hot", LongHaul.RoundBillWarning("The Tilt", 120));
+        Assert.Contains("departure plus the arrival brake", LongHaul.RoundBillRefusal("The Tilt", 160, 40));
+    }
+
+    [Fact]
+    public void InsertionTargetSpeed_IsTheDockClampWindow()
+    {
+        // The brake bleeds down to the SAME clamp speed the dock machinery gates on (#277 match-and-clamp),
+        // so the quote and the actual delivery-time settle speak one threshold — no second source to drift.
+        Assert.Equal(DockRule.MatchSpeed, LongHaul.InsertionTargetSpeed);
+    }
+
     // ---- Consistency by construction: heat / interest are single-application-equals-integrated ----
 
     [Fact]
