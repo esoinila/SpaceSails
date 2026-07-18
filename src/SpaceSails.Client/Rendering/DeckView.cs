@@ -73,6 +73,19 @@ public sealed class DeckView
     private static readonly RgbaColor SegDim = new(90, 50, 45, 200);     // #314: a frozen 00, dim glyph
     private static readonly RgbaColor ZapColor = new(180, 255, 210, 235);// #314: the sentry's zap line
     private static readonly RgbaColor TextDim = new(140, 160, 180, 170);
+
+    // #348 (owner, 2026-07-18: "make these room texts have better contrast … the Med Bay should stand out
+    // from the cabins more … make it the shiny clean room that stands out from the bunk rooms. Like the
+    // exception that makes the role.. it can look old and used but clean."). The room labels used to draw
+    // in the dim grey TextDim, which the cabin art JPGs swallowed. Now every room label rides a subtle
+    // dark backing plate (the house sentry-counter / SANITY-plate idiom) under a brighter fill, so the
+    // schematic reads over the panels. MED BAY is the deliberate exception — the one clean room among the
+    // grubby bunks: a whiter, cooler label on a cleaner plate with a thin cyan-white keyline.
+    private static readonly RgbaColor RoomLabelText = new(214, 228, 242, 245);    // brighter than the old TextDim
+    private static readonly RgbaColor RoomLabelPlate = new(8, 12, 18, 170);       // subtle dark backing, reads over art
+    private static readonly RgbaColor MedBayText = new(240, 250, 255, 252);       // clean-room white, faint cool cast
+    private static readonly RgbaColor MedBayPlate = new(16, 26, 32, 165);         // a cleaner, cooler plate than the bunks
+    private static readonly RgbaColor MedBayKeyline = new(150, 222, 236, 155);    // the tidy edge — a thin cyan-white keyline
     private static readonly RgbaColor DoorShut = new(255, 180, 90, 220);   // amber airlock door, closed
     private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
     private static readonly RgbaColor DoorLocked = new(120, 140, 170, 210);// another berth's sealed hatch
@@ -152,9 +165,12 @@ public sealed class DeckView
             }
         }
 
+        // #348: each room label on its own dark backing plate for contrast over the art panels, with
+        // MED BAY drawn as the clean-room exception (see the RoomLabel* colours above).
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
         {
-            _renderer.DrawText(P(lx, ly).X, P(lx, ly).Y, text, TextDim, "10px monospace", TextAlign.Center);
+            (float lxp, float lyp) = P(lx, ly);
+            DrawRoomLabel(lxp, lyp, text, medBay: text == "MED BAY");
         }
 
         // #313 surface ground overlays: own caches' ✗ marks and a panic-dropped chest (drawn under the
@@ -375,6 +391,26 @@ public sealed class DeckView
         Span<float> s = _scratch.AsSpan(0, 8);
         s[0] = x; s[1] = y; s[2] = x + w; s[3] = y; s[4] = x + w; s[5] = y + h; s[6] = x; s[7] = y + h;
         _renderer.DrawPolygon(s, color, color, 1f);
+    }
+
+    // #348: a room label with a subtle dark backing plate (raised contrast over the cabin art), and the
+    // MED BAY exception — a whiter, cooler label on a cleaner plate ringed by a thin cyan-white keyline,
+    // "the shiny clean room that stands out from the bunk rooms" (owner, 2026-07-18). The plate sits in
+    // the float command buffer (flushed under all text), so it always backs the glyphs and never covers
+    // them. Text draws on the alphabetic baseline at (cx, cy); the plate is sized to the monospace run
+    // (~6px/char at 10px) and seated around that baseline.
+    private void DrawRoomLabel(float cx, float cy, string text, bool medBay)
+    {
+        float w = text.Length * 6.0f + 9f;
+        const float h = 13f;
+        float x0 = cx - w / 2f, y0 = cy - 10f;
+        FillRect(x0, y0, w, h, medBay ? MedBayPlate : RoomLabelPlate);
+        if (medBay)
+        {
+            DrawRectOutline(x0, y0, w, h, MedBayKeyline); // the clean room's tidy edge — the exception's keyline
+        }
+        _renderer.DrawText(cx, cy, text, medBay ? MedBayText : RoomLabelText,
+            medBay ? "bold 10px monospace" : "10px monospace", TextAlign.Center);
     }
 
     // The crude motion-tracker fan (top-right corner, screen-space): a graph-paper radar showing MOVING

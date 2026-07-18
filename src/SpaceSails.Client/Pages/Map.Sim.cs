@@ -1123,26 +1123,7 @@ public partial class Map
         {
             MoveAvatar(dtRealSeconds);
             StepSurface(dtRealSeconds); // #295/#313: dig channel, the Old Ones' converging chase, linger trickle
-            if (_fpMode)
-            {
-                BuildSkyBodies();
-                double deckWorldAngle = Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X);
-                _fpView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime,
-                    _avatarX, _avatarY, _avatarHeading, deckWorldAngle, _skyBodies, LocationHint());
-            }
-            else
-            {
-                _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
-                    _avatarX, _avatarY, _avatarHeading,
-                    _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
-                    Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
-                    // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
-                    // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
-                    // stays gauge-free by construction.)
-                    Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
-                    ShowNerve: true, NerveCompact: _surface is null),
-                    _deckPanX, _deckPanY, BuildSurfaceHud());
-            }
+            DrawWalkFrame();
 
             if (_showScope && _scopeView is not null)
             {
@@ -1247,7 +1228,36 @@ public partial class Map
             InvokeAsync(StateHasChanged);
         }
     }
-    
+
+    // The one walked-view paint — first person or the top-down deck — for whatever plan is welded on
+    // right now. Pulled out of OnTick (#348) so the descent can render the FIRST surface frame once
+    // under the still-up door (WarmFirstSurfaceFrameAsync): the cold DeckView.Draw of the enlarged
+    // regolith is the last synchronous block that tripped Chrome's page-unresponsive dialog, and paying
+    // it there — off the rAF loop, on its own yield — leaves the live loop warm.
+    private void DrawWalkFrame()
+    {
+        if (_fpMode)
+        {
+            BuildSkyBodies();
+            double deckWorldAngle = Math.Atan2(_ship.Velocity.Y, _ship.Velocity.X);
+            _fpView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime,
+                _avatarX, _avatarY, _avatarHeading, deckWorldAngle, _skyBodies, LocationHint());
+        }
+        else
+        {
+            _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
+                _avatarX, _avatarY, _avatarHeading,
+                _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
+                Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
+                // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
+                // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
+                // stays gauge-free by construction.)
+                Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
+                ShowNerve: true, NerveCompact: _surface is null),
+                _deckPanX, _deckPanY, BuildSurfaceHud());
+        }
+    }
+
     private void UpdateNearestBody()
     {
         double minDistanceSq = double.MaxValue;
