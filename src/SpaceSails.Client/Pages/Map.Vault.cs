@@ -192,10 +192,6 @@ public partial class Map
     // door, opened from the captain's desk. One surface, two doors.
     private bool _showSaveDrawer;
 
-    // #310: the experimental non-Sol skies are demoted below a footer toggle on the front door — a new
-    // player never trips over the barely-playtested scenarios.
-    private bool _showScenarioStarts;
-
     private void OpenSaveDrawer()
     {
         RefreshSlotList();
@@ -216,25 +212,22 @@ public partial class Map
     private static readonly string[] AllSlotIds =
         [SaveSlotBook.AutoSlotId, .. ManualSlotIds];
 
-    // #312: the New-voyage "start at a berth" expander — a modest shelf for the bench to boot a fresh
-    // campaign already docked at any dockable haven, routed through the SAME StartDockedAtHaven the
-    // ?dock=<id> cheat uses (no parallel boot code). The truly-new player still sees one big New-voyage.
-    private bool _showBerthStarts;
-
-    // Every dockable station haven (id + name) for the expander, straight from the one registry (#297).
+    // Every dockable station haven (id + name), inner → outer (scenario body order), straight from the one
+    // registry (#297/#288) — the front door's primary "pick a berth to begin" list AND the ?dock menu.
     private IReadOnlyList<(string Id, string Name)> BerthStarts()
         => _ephemeris is null
             ? []
             : [.. DockableHavens.All(_ephemeris).Select(b => (b.Id, b.Name))];
 
-    // Boot a brand-new voyage already clamped on at a chosen berth — the expander's action. Dismisses the
-    // front door and hands to the shared docked-start path, then lands on the deck/Nav like ChooseStart.
+    // Boot a brand-new voyage already clamped on at a chosen berth — the front door's primary start action
+    // (docked-starts rework, 2026-07-18). Dismisses the front door and hands to the shared docked-start
+    // path, then lands on the deck (walkable haven) or the Nav map (pumps-only berth).
     private async Task ChooseBerthStart(string havenId)
     {
         _showStartPicker = false;
-        _showBerthStarts = false;
         EnterNewGameThread(); // a berth start is a NEW voyage — fresh universe, fresh thread (feat/game-threads)
         StartDockedAtHaven(havenId);
+        MaybeGreetTutorialHome(havenId); // a fresh new captain picking Selene Gate gets the soft-catch lesson, seeded here
         if (!_deckMode && _activeDesk != ShipDesk.Nav)
         {
             SwitchDesk(ShipDesk.Nav);
@@ -723,7 +716,7 @@ public partial class Map
         string? havenId = resume?.HavenId;
         if (_ephemeris is null || havenId is null || _ephemeris.Bodies.All(b => b.Id != havenId))
         {
-            ApplyStart("earth"); // no berth to resume at — fall back to a fresh Earth spawn
+            ApplyStart("earth"); // no berth to resume at — fall back to the docked tutorial home (Selene Gate)
             return;
         }
 

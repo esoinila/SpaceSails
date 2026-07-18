@@ -101,7 +101,7 @@ public partial class Map
         "Plot an intercept — enter Plot, add a burn, watch the ribbon cross its cone",
         "Close to boarding range and match velocity",
         "Hold the window — 🏴 authorize the board (piracy needs the captain's word)",
-        "Dock at Earth and sell",
+        "Dock at a station's market and sell",
         "Spend it — buy an upgrade",
         // Second hunt — the gun (the stubborn He3 freighter Nervous Lark)
         "Find the stubborn He3 freighter (Nervous Lark) and select her",

@@ -1389,6 +1389,15 @@
     text-align: center;
 }
 
+/* Docked-starts rework (2026-07-18): the "pick a berth to begin" heading over the primary berth list. */
+.start-picker-berths-intro {
+    margin: 0.2rem 0 0.6rem;
+    color: rgba(224, 228, 236, 0.82);
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-align: center;
+}
+
 .start-picker-list {
     display: flex;
     flex-direction: column;

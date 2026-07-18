@@ -159,39 +159,31 @@
 
             @if (!inGame)
             {
-                <button type="button" class="start-picker-option start-picker-newvoyage"
-                        title="Begin a brand-new voyage in the Sol system, fresh out of Earth orbit"
-                        @onclick='() => ChooseStart("earth")'>
-                    <span class="start-picker-icon">🌍</span>
-                    <span class="start-picker-text">
-                        <span class="start-picker-label">New voyage</span>
-                        <span class="start-picker-blurb">Start clean in the Sol system — fresh out of Earth orbit.</span>
-                    </span>
-                </button>
-
-                @* #312: a modest 'start at a berth' shelf for the bench — boot a fresh campaign already
-                   docked at any haven, routed through the same StartDockedAtHaven the ?dock cheat uses.
-                   The truly-new player ignores it; the parallel-campaign runner opens it. *@
-                <button type="button" class="save-scenarios-toggle save-berth-toggle"
-                        title="Begin a new voyage already clamped on at a chosen berth (for running a parallel campaign at a specific site)"
-                        @onclick="() => _showBerthStarts = !_showBerthStarts">@(_showBerthStarts ? "▾" : "▸") …or start a new voyage docked at a berth</button>
-                @if (_showBerthStarts)
-                {
-                    <div class="save-slots-list save-berth-starts">
-                        @foreach ((string Id, string Name) berth in BerthStarts())
-                        {
-                            (string Id, string Name) b = berth;
-                            <button type="button" class="start-picker-option" title="Begin a new voyage already clamped on at this berth"
-                                    @onclick="() => ChooseBerthStart(b.Id)">
-                                <span class="start-picker-icon">⚓</span>
-                                <span class="start-picker-text">
-                                    <span class="start-picker-label">@b.Name</span>
-                                    <span class="start-picker-blurb">New voyage, already docked at @b.Name.</span>
-                                </span>
-                            </button>
-                        }
-                    </div>
-                }
+                @* Docked-starts rework (owner ruling, 2026-07-18 playtest): "All starting points should be
+                   the docked positions… never ever Earth as default." A new voyage is no longer a
+                   free-flying Earth cast-off — it is a CHOICE OF BERTH, every one a station you clamp onto
+                   (and, where the haven has a bar, walk ashore into, jobs waiting on the table). The whole
+                   dockable-haven registry is offered here, prominent, inner → outer — the same berths the
+                   ?dock cheat and the CI smoke sweep read, so a new haven joins the picker for free. Each
+                   routes through the one shared clamp (ChooseBerthStart → StartDockedAtHaven). *@
+                <div class="start-picker-berths-intro">Begin a new voyage — every start is docked at a station. Pick a berth:</div>
+                <div class="save-slots-list save-berth-starts">
+                    @foreach ((string Id, string Name) berth in BerthStarts())
+                    {
+                        (string Id, string Name) b = berth;
+                        bool walkable = SpaceSails.Client.Rendering.HavenInterior.HasInterior(b.Id);
+                        bool tutorialHome = b.Id == TutorialHomeHavenId;
+                        <button type="button" class="start-picker-option @(tutorialHome ? "start-picker-newvoyage" : "")"
+                                title="@(walkable ? "Begin a new voyage clamped on here — walk up the tube into the bar, jobs on the table" : "Begin a new voyage clamped on at this berth — a fuel pump and the Nav map")"
+                                @onclick="() => ChooseBerthStart(b.Id)">
+                            <span class="start-picker-icon">@(tutorialHome ? "🌙" : "⚓")</span>
+                            <span class="start-picker-text">
+                                <span class="start-picker-label">@b.Name@(tutorialHome ? " — recommended for a first voyage" : "")</span>
+                                <span class="start-picker-blurb">New voyage, already docked at @b.Name.@(walkable ? " Walk ashore into the bar." : "")@(tutorialHome ? " In Luna's orbit, where the compute-core pods launch — the soft-catch lesson begins here." : "")</span>
+                            </span>
+                        </button>
+                    }
+                </div>
             }
 
             @* #312 — the WHOLE rack, always: all ten slots (rolling autosave + nine manual berths). Occupied
@@ -231,28 +223,10 @@
                     <button type="button" class="btn btn-sm btn-outline-light"
                             title="Load a vault .json file as a new voyage"
                             @onclick="ImportVault">⬆ Import a save file</button>
-                    <button type="button" class="save-scenarios-toggle"
-                            title="Advanced: begin in an experimental, barely-playtested star system (not recommended for a first voyage)"
-                            @onclick="() => _showScenarioStarts = !_showScenarioStarts">@(_showScenarioStarts ? "▾" : "▸") Other skies (experimental)</button>
+                    <a class="btn btn-sm btn-outline-info" href="/"
+                       title="Back to the front page — the scenario chooser and the Captain's Guide">🏠 Front page &amp; other scenarios</a>
                 }
             </div>
-
-            @if (!inGame && _showScenarioStarts)
-            {
-                <div class="save-slots-list save-scenarios">
-                    @foreach (StartPoint sp in StartPoints.Where(s => !s.Test && s.Id != "earth"))
-                    {
-                        StartPoint option = sp;
-                        <button type="button" class="start-picker-option" title="Start the voyage from this berth — experimental, lightly tested" @onclick="() => ChooseStart(option.Id)">
-                            <span class="start-picker-icon">@option.Icon</span>
-                            <span class="start-picker-text">
-                                <span class="start-picker-label">@option.Label</span>
-                                <span class="start-picker-blurb">@option.Blurb</span>
-                            </span>
-                        </button>
-                    }
-                </div>
-            }
         }
     </div>;
     }

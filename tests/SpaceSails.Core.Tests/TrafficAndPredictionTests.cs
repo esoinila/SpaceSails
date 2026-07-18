@@ -147,6 +147,42 @@ public class TrafficAndPredictionTests
         Assert.True(CaptureRule.IsInWindow(closed, pod.InitialState));
     }
 
+    [Theory]
+    [InlineData("selene-gate", 0.0)]          // the cislunar tutorial home, fresh game (epoch 0)
+    [InlineData("cinder-roost", 4.5e7)]       // Venus bar, ~1.4 years in
+    [InlineData("the-tilt", 2.62e8)]          // Uranus, ~8.3 years — the owner's far-epoch "the-tilt" save
+    public void StarterTargets_TriggerRelativeToAcceptance_NotAnEarthT0Clock(string berthId, double acceptSimTime)
+    {
+        // Owner ruling (2026-07-18 playtest): every start is DOCKED, "never ever Earth", and the tutorial's
+        // targets "get going" when the lesson is TAKEN ON — so the pod and the freighter must seed relative
+        // to wherever the ship actually is at acceptance, at ANY sim epoch, with no hidden Earth/t=0 anchor.
+        // Build the exact docked-start state the client hands SeedFirstHunt/SeedSecondHunt at that moment
+        // (BerthState.CoMoving), at a far epoch and a non-Earth berth, and prove the target is co-moving,
+        // catchable, and stamped at THAT time — the trigger stores everything relative to acceptance.
+        var ephemeris = Sol();
+        ShipState docked = BerthState.CoMoving(ephemeris, berthId, acceptSimTime, BerthState.BerthOffsetMeters);
+
+        foreach (NpcShip target in new[]
+                 {
+                     TrafficSchedule.StarterPod(docked),
+                     TrafficSchedule.StarterFreighter(docked),
+                 })
+        {
+            // Stamped at acceptance, never t=0 — no absolute-epoch clock hides in the seed.
+            Assert.Equal(acceptSimTime, target.InitialState.SimTime);
+            Assert.Equal(acceptSimTime, target.ActivationTime);
+
+            // Co-moving with the ship at acceptance: closing distance is the only task, wherever/whenever.
+            double relSpeed = (docked.Velocity - target.InitialState.Velocity).Length;
+            Assert.True(relSpeed < CaptureRule.MaxRelativeSpeed,
+                $"{berthId}@{acceptSimTime:F0}s: {target.Id} rel speed {relSpeed:F0} m/s must be under the board limit.");
+
+            // A real but short intercept abeam the docked ship — never an unreachable fly-through.
+            double distance = (docked.Position - target.InitialState.Position).Length;
+            Assert.InRange(distance, CaptureRule.CaptureRadiusMeters, 5e9);
+        }
+    }
+
     // The player's canonical start (Map.InitializeShipState): 5e9 m radially out from Earth,
     // co-moving with Earth's heliocentric orbit.
     private static ShipState StarterPlayer(CircularOrbitEphemeris ephemeris)

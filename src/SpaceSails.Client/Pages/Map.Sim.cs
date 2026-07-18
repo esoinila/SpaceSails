@@ -463,11 +463,14 @@ public partial class Map
             IReadOnlyList<NpcShip> lunaDriver = MassDriverSchedule.GenerateCadence(
                 _ephemeris, MassDriverSchedule.MassDriverRun.LunaMilkRun(), baseSimTime: _ship.SimTime, count: 4);
 
-            // The pod is the first hunt's soft catch, placed relative to the player so the hunt is
-            // always deliverable (see StarterPod). The second hunt's stubborn Lark is NOT seeded here
-            // — she's spawned when the first hunt ends (SeedSecondHuntTarget), co-moving with the
-            // player's state then, so her escape jink is never stale from a slow first hunt.
-            initial = new[] { TrafficSchedule.StarterPod(_ship) }.Concat(lunaDriver).Concat(initial);
+            // Ruling-2 (2026-07-18): the first-hunt soft catch is NO LONGER seeded at boot. With every
+            // start now DOCKED (and never a T=0 Earth cast-off), the tutorial pod would spawn abeam a
+            // free-flying Earth ship that is about to be clamped onto a station somewhere else entirely —
+            // an orphan. Instead the target "gets going" when the lesson is TAKEN ON: the auto-greet at
+            // the Selene Gate tutorial home (ApplyStart) and the Captain's-tab StartTutorial both call
+            // SeedFirstHuntTarget, which places the pod relative to where the ship actually is THEN. The
+            // stubborn Lark is likewise spawned only when the first hunt ends (SeedSecondHuntTarget).
+            initial = lunaDriver.Concat(initial);
         }
         _npcStates = initial.Select(s => new NpcState { Ship = s }).ToArray();
 
@@ -602,32 +605,31 @@ public partial class Map
         return new ShipState(initialPosition, initialVelocity, 0);
     }
 
-    // --- Start points (2026-07-08) ---
-    // "Why should it always start from Earth?" Named starts that jump the just-built world to a
-    // locale — either as a playtest shortcut (skip the long haul to test the interesting bit) or as a
-    // genuine choice of where a run begins. One registry feeds both the /map?start=<id> URL and the
-    // boot picker overlay. The heavy lifting mirrors the tutorial Seed* pattern: place the ship (and,
-    // for a docked berth, clamp and step ashore), then frame the camera. Body ids are scenario data.
-    // Test:true starts are reachable by /map?start=<id> but hidden from the boot picker — dev-only
-    // jumps for exercising a mission stage without the flight to it.
+    // --- Start points (2026-07-08; docked-starts rework 2026-07-18) ---
+    // "Why should it always start from Earth?" — and the answer, owner ruling 2026-07-18: it never does.
+    // Every named start now CLAMPS onto a station (DockedStarts maps the id → haven); the /map?start=<id>
+    // URL routes through ApplyStart → the one shared clamp (StartDockedAtHaven). Body ids are
+    // scenario data. Test:true starts are dev-only free-flying jumps (they exercise a free approach), hidden
+    // from the picker. The picker itself no longer reads this list — it offers the live dockable-haven
+    // registry (BerthStarts) — so this is now purely the /map?start= alias table with human labels.
     private sealed record StartPoint(string Id, string Icon, string Label, string Blurb, bool Test = false);
 
     private static readonly StartPoint[] StartPoints =
     [
-        new("earth", "🌍", "Earth — the usual berth",
-            "The standard opening: fresh out of Earth orbit, last run's takings in the purse and hold."),
-        new("cinder-roost", "🌋", "Cinder Roost — docked",
+        new("earth", "🌙", "Selene Gate — docked (Luna orbit)",
+            "The classic first voyage, minus the Earth-centrism: begin clamped on at Selene Gate, in Luna's orbit, where the compute-core pods launch. The soft-catch lesson starts here."),
+        new("cinder-roost", "🌋", "Cinder Roost — docked (Venus)",
             "In Venus' sulphur clouds — begin already clamped on at Cinder Roost, a short walk up the tube to The Cinder Lounge."),
-        new("space-bar", "🍸", "The Rusty Roadstead — docked",
+        new("space-bar", "🍸", "The Rusty Roadstead — docked (Mars)",
             "Skip the haul to Mars — begin already clamped on at The Rusty Roadstead, a short walk up the tube to the bar's tables."),
-        new("jupiter", "🪐", "Jupiter — the Galilean moons",
-            "Out at Jupiter, co-moving beside Europa — fly Ganymede and Callisto without the long cruise from the inner system."),
-        new("saturn", "🌙", "Saturn — the moons",
-            "Among Saturn's moons by the Ringside Exchange — Enceladus and Titan a short burn away."),
-        new("ringside", "💍", "Ringside Exchange — docked",
-            "In Saturn's rings — begin already clamped on at Ringside Exchange, a short walk up the tube to The Ringside Bar."),
-        new("the-tilt", "❄️", "The Tilt — docked",
+        new("jupiter", "🪐", "The Red Eye — docked (Jupiter)",
+            "Out among the Galilean moons — begin already clamped on at The Red Eye, Europa and Ganymede a short burn away."),
+        new("saturn", "💍", "Ringside Exchange — docked (Saturn)",
+            "In Saturn's rings — begin already clamped on at Ringside Exchange, a short walk up the tube to The Ringside Bar; Enceladus and Titan a burn away."),
+        new("the-tilt", "❄️", "The Tilt — docked (Uranus)",
             "Way out at Uranus — begin already clamped on at The Tilt, a short walk up the tube to its cold, lonely bar."),
+        new("the-deep", "🌀", "The Deep — docked (Neptune)",
+            "At the edge of the charts — begin already clamped on at The Deep, above Neptune, a fuel pump and a long way from anyone."),
         new("wreck", "🚗", "The Derelict Roadster — alongside (test)",
             "Co-moving beside the lost roadster, sunward of Mars — for testing the fetch pickup.", Test: true),
         new("enceladus", "❄️", "Enceladus — alongside (test)",
@@ -643,38 +645,25 @@ public partial class Map
         _dockedHavenId = null;   // drop any prior clamp before the jump
         SetDeckForDock(null);    // back to the bare ship deck (pulls you aboard if you'd wandered ashore)
 
+        // Owner ruling (2026-07-18): every start is a DOCKED start — clamp onto the haven the id names,
+        // never a free-flying "fresh out of Earth orbit" spawn. The id resolves to a dockable haven via
+        // DockedStarts (incl. the friendly aliases and the retired 'earth' → Selene Gate fallback), and
+        // the ONE shared clamp lays it down — a co-moving berth, a welded interior (or the Nav map for a
+        // pumps-only berth), HoldAtDock pinning it — so a picked start is byte-for-byte a real arrival.
+        if (ResolveDockStartId(id) is { } havenId)
+        {
+            StartDockedAtHaven(havenId);
+            MaybeGreetTutorialHome(havenId);
+            return;
+        }
+
+        // The only non-docked starts left are the dev-only Test jumps (the derelict roadster, the
+        // Enceladus capture band) that deliberately exercise a free-flying approach — kept for the bench.
         _ship = PlaceShipForStart(id);
         ReprojectTrajectory();
         _camera.CenterOn(_ship.Position);
-
-        // #292 the nav screen is not a billboard: the tutorial checklist is Earth-anchored ("the Luna
-        // pod", "dock at Earth and sell"), so it greets ONLY a fresh cast-off from Earth, and only a
-        // captain who hasn't played it yet (owner, 2026-07-18). A non-Earth start, or a captain who has
-        // already played, keeps the nav real estate clear — the Captain's Tutorials tab (0) reopens a
-        // lesson deliberately (StartTutorial reseeds and re-shows), so nothing is lost, only relocated.
-        TutorialStartMode mode = id == "earth" ? TutorialStartMode.FreshFromEarth : TutorialStartMode.FreshElsewhere;
-        _showTutorial = TutorialPromotion.ShouldPromote(mode, _tutorialPlayed);
-
-        // A docked locale: clamp onto the berth (the tick's HoldAtDock then pins the ship to the
-        // station's drift), weld on the walk-through complex, and drop the avatar aboard by the gangway
-        // facing the tube — a couple of steps from walking straight across into the bar.
-        if (DockedStarts.TryGetValue(id, out string? dockBody))
-        {
-            Vector2d dockPos = _ephemeris!.Position(dockBody, 0);
-            _dockedHavenId = dockBody;
-            _dockOffset = _ship.Position - dockPos;
-            SetDeckForDock(dockBody);
-            (_avatarX, _avatarY, _avatarHeading) = (2.5, 6, Math.PI / 2); // in the airlock corridor, facing up the tube
-            _deckMode = true;
-            _activeDesk = ShipDesk.Deck;
-        }
-        else
-        {
-            // A free-flying locale (Earth, Jupiter, Saturn): leave any ashore/deck view we jumped FROM
-            // so the ship map actually shows (mattered when the picker was reopened while docked — the
-            // ship moved but the deck stayed on screen). ChooseStart then brings up the Nav desk.
-            _deckMode = false;
-        }
+        _showTutorial = false;
+        _deckMode = false;
     }
 
     // #288: resolve a /map?dock=<id> value to a dockable-haven body id, or null if it names no berth.
@@ -753,25 +742,24 @@ public partial class Map
     // jump is safe from anywhere.
     private void ReopenStartPicker() => _showStartPicker = true;
 
-    // Boot-picker (or Captain-desk reopen) choice: dismiss the overlay and jump to the locale. Always
-    // ApplyStart — even "Earth": at boot the world is already there so it's a no-op re-place, but when
-    // the picker is reopened mid-run (e.g. while docked at a Venus bar) Earth is a genuine jump that
-    // has to unclamp and move the ship. A docked start lands you ashore on the deck; any other locale
-    // drops you on the Nav map so the jump is actually visible. Focus returns so keys drive ship/walk.
-    private async Task ChooseStart(string id)
+    // #292/ruling-2 (owner 2026-07-18): the nav-screen checklist is no billboard. It greets ONLY a
+    // brand-new captain beginning a fresh voyage at the cislunar tutorial home (Selene Gate, in Luna's
+    // orbit — where the first lesson's compute-core pod actually launches), and seeds that pod RIGHT
+    // HERE, at acceptance, relative to where the ship is NOW — never on a T=0 Earth clock. Any other
+    // berth, or a captain who has already played, keeps the real estate clear; the Captain's Tutorials
+    // tab (0) reopens a lesson deliberately (StartTutorial reseeds and re-shows). Called after the clamp
+    // is laid, from every fresh-voyage start path (ApplyStart and the picker's ChooseBerthStart).
+    private void MaybeGreetTutorialHome(string havenId)
     {
-        _showStartPicker = false;
-        // feat/game-threads (owner 2026-07-18): picking a start IS beginning a new voyage — a fresh universe
-        // in its own game thread, sharing nothing with the run it was launched from (in memory or on disk).
-        // The previous run isn't lost: its autosave lives on under its own thread, resumable via Continue.
-        EnterNewGameThread();
-        ApplyStart(id);
-        if (!_deckMode && _activeDesk != ShipDesk.Nav)
+        if (havenId != TutorialHomeHavenId
+            || !TutorialPromotion.ShouldPromote(TutorialStartMode.FreshFromEarth, _tutorialPlayed))
         {
-            SwitchDesk(ShipDesk.Nav);
+            return;
         }
-        StateHasChanged();
-        await _focusableDiv.FocusAsync();
+
+        _tutorialStep = 0;
+        _showTutorial = true;
+        SeedFirstHuntTarget(); // the target gets going when the lesson is taken on, wherever we are
     }
 
     private void OnCanvasResized(double widthPx, double heightPx)
