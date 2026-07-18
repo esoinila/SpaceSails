@@ -671,21 +671,60 @@
                         <span class="bury-cargo">none aboard — rearm at a haven</span>
                     }
                 </div>
+                @* #348: name the beach-comber kit that ALWAYS rides down (owner: "mention that shovel and
+                   metal detectors are here by default. Let's have a pick az also"). Copy only — the shovel
+                   and detector already drive the dig/probe; the pickaxe is named here as standard gear.
+                   PICKAXE MECHANIC HOOK: if the pick later earns a mechanic (a bedrock re-roll, or digging
+                   THROUGH the beach-comber D100's "too hard" result), wire it in SurfaceGroundInteract /
+                   BeachComber — do NOT build it here, this line just puts the tool in the captain's hands.
+                   GEN-AI GEAR ART: a natural spot for a later Grok kit illustration sits beside this line
+                   (leave it text-only for now — no placeholder image). *@
+                <div class="bury-row bury-gear">
+                    <span>🧰 Beach-comber kit — standard issue</span>
+                    <span class="bury-cargo">a shovel, a metal detector & a pickaxe, aboard every trip</span>
+                </div>
+                @* #348: the flight time lives in the BODY now, not the button (owner: "The button looks
+                   like the chest contains 5 hours of time"). The crossing costs the same with or without
+                   cargo, and the destination list already shows this as ETA — so we say it plainly, once,
+                   tied to the flight and nothing else. *@
+                <div class="bury-row bury-eta">
+                    <span>🛰 Flight down</span>
+                    <span class="bury-cargo">ETA @FormatDuration(boardStop.TravelSeconds) — same with or without a chest</span>
+                </div>
             </div>
             @* #327 the ship calls home: the hold quote before you commit to the walk down. In-voice, from
                the live tank — a short clock is the captain's informed choice, never a silent maroon. *@
             <div class="bury-row @(BoardingHoldSeverity() >= 2 ? "text-danger" : "text-info")">
                 <span>@BoardingHoldQuote()</span>
             </div>
-            <div class="deck-shuttle-actions">
-                <button type="button" class="btn btn-sm btn-warning" disabled="@(_boardCoin <= 0 && _cargoUnits <= 0)"
-                        title="Board with a chest loaded — you can bury it on the ground, or bring it home unspent"
-                        @onclick="() => ConfirmBoarding(boardStop, true)">🛸 Board with a chest (@FormatDuration(boardStop.TravelSeconds))</button>
-                <button type="button" class="btn btn-sm btn-outline-warning"
-                        title="Board empty-handed — a look around @boardStop.Body.Name commits to nothing"
-                        @onclick="() => ConfirmBoarding(boardStop, false)">🛸 Board empty-handed</button>
-                <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBoarding">Never mind</button>
-            </div>
+            @* #348: ONE Board button (owner: "We should just have one board button"). You board with
+               whatever the dialog shows above — a loaded chest, or an empty sling. An empty sling raises
+               the "are you certain?" prompt below instead of a second button. *@
+            @if (_boardEmptyConfirm)
+            {
+                @* The empty-sling confirm — NOT a scold. An empty trip is a legitimate fishing
+                   expedition: walk the regolith and probe for shallow treasure the beach-comber turns up. *@
+                <div class="bury-row bury-empty-confirm text-info">
+                    <span>🪛 Board empty-handed? No coin, no cargo in the sling — that's a fishing expedition. Walk the regolith and probe the beach-comber's D100 for shallow treasure. Certain?</span>
+                </div>
+                <div class="deck-shuttle-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Board with an empty sling — go probe @boardStop.Body.Name for shallow treasure"
+                            @onclick="() => ConfirmBoarding(boardStop)">🛸 Yes — go fishing</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Back to the load-out — put something in the chest first"
+                            @onclick="() => _boardEmptyConfirm = false">Load something first</button>
+                </div>
+            }
+            else
+            {
+                <div class="deck-shuttle-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Board the shuttle for @boardStop.Body.Name with whatever's loaded above — decide what to do on the ground"
+                            @onclick="() => TryBoard(boardStop)">🛸 Board</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBoarding">Never mind</button>
+                </div>
+            }
         </div>
     }
 
