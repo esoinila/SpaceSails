@@ -1410,6 +1410,183 @@
     font-size: 0.85rem;
 }
 
+/* #310 — the save/load surface (front door + in-game drawer share these). */
+.save-surface {
+    width: min(38rem, 96vw);
+}
+
+/* Honest boot state (#310, #212): the door says it is warming rather than eating clicks. */
+.save-warming {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 1.1rem 1rem;
+    color: rgba(224, 228, 236, 0.8);
+    font-size: 0.95rem;
+}
+
+.save-warming-spin {
+    font-size: 1.4rem;
+    display: inline-block;
+    animation: save-warming-turn 2.2s linear infinite;
+}
+
+@keyframes save-warming-turn {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* The one prominent "New voyage" (Sol) — a cool blue accent, distinct from the warm Continue green. */
+.start-picker-newvoyage {
+    border-color: rgba(120, 200, 255, 0.55);
+    background: rgba(120, 200, 255, 0.08);
+    margin-bottom: 0.35rem;
+}
+
+.start-picker-newvoyage:hover,
+.start-picker-newvoyage:focus-visible {
+    border-color: rgba(120, 200, 255, 0.9);
+    background: rgba(120, 200, 255, 0.16);
+}
+
+.save-slots-label {
+    margin: 0.9rem 0 0.4rem;
+    color: rgba(224, 228, 236, 0.55);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.save-slots-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 42vh;
+    overflow-y: auto;
+}
+
+.slot-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.35rem;
+}
+
+.slot-load {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.55rem 0.8rem;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.5rem;
+    color: #e8eef6;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.slot-load:hover,
+.slot-load:focus-visible {
+    border-color: rgba(120, 200, 255, 0.75);
+    background: rgba(120, 200, 255, 0.12);
+    outline: none;
+}
+
+.slot-row-auto .slot-load {
+    border-color: rgba(120, 230, 160, 0.45);
+}
+
+.slot-load-empty {
+    color: rgba(224, 228, 236, 0.55);
+    border-style: dashed;
+}
+
+.slot-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.slot-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.slot-where {
+    font-weight: 600;
+    font-size: 0.98rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slot-when {
+    color: rgba(224, 228, 236, 0.62);
+    font-size: 0.78rem;
+}
+
+.slot-stamp {
+    color: rgba(224, 228, 236, 0.4);
+    font-size: 0.68rem;
+    font-family: ui-monospace, monospace;
+}
+
+.slot-mini {
+    flex: 0 0 auto;
+    padding: 0 0.55rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.5rem;
+    color: rgba(224, 228, 236, 0.8);
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.slot-mini:hover {
+    border-color: rgba(120, 200, 255, 0.7);
+    color: #e8eef6;
+}
+
+.slot-mini-danger:hover {
+    border-color: rgba(255, 140, 140, 0.8);
+    color: #ffb0b0;
+}
+
+.save-surface-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.save-surface-foot-center {
+    justify-content: center;
+    margin-top: 1.3rem;
+}
+
+.save-scenarios-toggle {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: rgba(224, 228, 236, 0.5);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.save-scenarios-toggle:hover {
+    color: rgba(224, 228, 236, 0.85);
+}
+
+.save-scenarios {
+    margin-top: 0.5rem;
+    max-height: 34vh;
+}
+
 /* View-object popup: inspect a Gen-AI image (a souvenir, a lore prop) up close. */
 .view-object-backdrop {
     position: absolute;
