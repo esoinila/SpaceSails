@@ -34,6 +34,7 @@ public static class VaultMapper
                 Hostile = h.Hostile,
                 CreditBalance = h.CreditBalance,
                 Goodwill = h.Goodwill,
+                KnownTells = h.KnownTells.ToList(),
                 Transactions = h.Transactions
                     .Select(t => new CreditTxnRecord((int)t.Kind, t.Amount, t.SimTime, t.Note))
                     .ToList(),
@@ -65,6 +66,7 @@ public static class VaultMapper
             {
                 CreditBalance = r.CreditBalance,
                 Goodwill = r.Goodwill,
+                KnownTells = r.KnownTells.ToImmutableArray(),
                 Transactions = txns,
             };
             ledger.Load(history);

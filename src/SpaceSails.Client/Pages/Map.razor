@@ -266,6 +266,20 @@
                 <div class="deck-bank-notice small">@note</div>
             }
             <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
+            @* #306 The drink as a two-edged trust maneuver: a known contact drinking here can be stood a
+               glass — trust up, and the 2D6 decides whether they open up or YOU slip a tell. Refusing
+               (waving off) costs a little goodwill: the choice is never free. *@
+            @foreach ((string giver, string display) in PresentBarContacts())
+            {
+                <div class="deck-offer-actions">
+                    <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
+                            title="@($"Stand {display} a drink ({keep.DrinkPrice} cr) — trust up; the 2D6 decides if they open up or you slip a tell")"
+                            @onclick="@(() => BuyContactDrink(giver))">🥃 Stand @display a drink · @keep.DrinkPrice cr</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            title="@($"Wave off — {display} reads a refused glass as suspicion (small goodwill hit)")"
+                            @onclick="@(() => DeclineContactDrink(giver))">✋ Wave off</button>
+                </div>
+            }
             <div class="deck-offer-actions">
                 <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
                         title="@($"Buy the house special — {keep.DrinkPrice} cr")" @onclick="BuyHouseSpecial">🍹 @keep.DrinkName · @keep.DrinkPrice cr</button>

@@ -78,6 +78,20 @@ public readonly record struct ContactHistory(
         init => _transactions = value;
     }
 
+    // Same default-safe idiom as Transactions: an old-way / `default` ContactHistory never ran this
+    // initializer, so the getter coalesces the IsDefault field to Empty rather than throwing.
+    private readonly ImmutableArray<string> _knownTells;
+
+    /// <summary>#306 — the blade's far edge: the tells this contact now knows about US (a hot-cargo
+    /// hold, a heat status, a plan) because we slipped them over a drink. A SAVED, additive record so a
+    /// future consequence layer can read what a contact could use against us — the honest mirror of the
+    /// goodwill a shared drink also earns. Deduped: a tell already known is not recorded twice.</summary>
+    public ImmutableArray<string> KnownTells
+    {
+        get => _knownTells.IsDefault ? ImmutableArray<string>.Empty : _knownTells;
+        init => _knownTells = value;
+    }
+
     /// <summary>A blank slate for a contact we've not yet done business with.</summary>
     public static ContactHistory New(string contactId, string displayName) =>
         new(contactId, displayName, 0, 0, double.NegativeInfinity);
@@ -111,9 +125,17 @@ public readonly record struct ContactHistory(
     /// coin moves — this is the non-transactional twin of <see cref="WithCredit"/>.</summary>
     public ContactHistory WithGoodwill(int delta) => this with { Goodwill = Goodwill + delta };
 
+    /// <summary>#306 — record that this contact now knows <paramref name="tell"/> about us (a tell we
+    /// slipped over a drink). Idempotent: a tell already on the book returns an unchanged history, so a
+    /// leak recorded twice is still one fact known.</summary>
+    public ContactHistory WithKnownTell(string tell) =>
+        string.IsNullOrWhiteSpace(tell) || KnownTells.Contains(tell)
+            ? this
+            : this with { KnownTells = KnownTells.Add(tell) };
+
     /// <summary>True once there is any history to read — an honest job done, a hull we robbed, coin
     /// in the air (banked with them or owed to them), or a round stood them (goodwill).</summary>
-    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0;
+    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0;
 }
 
 /// <summary>
@@ -182,6 +204,20 @@ public sealed class ContactLedger
             ? existing with { DisplayName = displayName }
             : ContactHistory.New(contactId, displayName);
         ContactHistory updated = current.WithGoodwill(delta);
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>#306 — record that a contact now knows a tell about us (we slipped it over a drink),
+    /// creating their record on first dealing. Books no coin and no goodwill — the honest cost twin of
+    /// <see cref="AddGoodwill"/>: the same drink that warms a contact can hand them something on us.
+    /// Idempotent per tell. Returns the updated history so the caller can narrate the slip.</summary>
+    public ContactHistory RecordKnownTell(string contactId, string displayName, string tell)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+        ContactHistory updated = current.WithKnownTell(tell);
         _byId[contactId] = updated;
         return updated;
     }
