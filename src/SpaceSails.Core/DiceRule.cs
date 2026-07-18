@@ -29,6 +29,26 @@ public static class DiceRule
         return new DiceRoll($"d{sides}", face, modifiers ?? [], seed);
     }
 
+    /// <summary>Roll a POOL of <paramref name="count"/> dice of <paramref name="sides"/> faces on one
+    /// seed — the 2D6 primitive the TTRPG homage leans on (owner: "show the player the dies that were
+    /// cast"). Each die is salted apart so the faces of a 2D6 never correlate on the shared seed; the
+    /// named modifier stack rides on top exactly as a single <see cref="Roll"/> would. Returned as a
+    /// <see cref="DicePool"/> so the client can SHOW every face plus the running sum.</summary>
+    public static DicePool RollPool(
+        ulong seed, int count = 2, int sides = 6, IReadOnlyList<DiceModifier>? modifiers = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(sides, 1);
+        int[] faces = new int[count];
+        for (int i = 0; i < count; i++)
+        {
+            // Salt each die by its index so the two faces of a 2D6 are independent streams.
+            faces[i] = new DeterministicRandom(Mix(seed, 0xD1CE_0000_0000_0000UL + (ulong)i)).NextInt(1, sides + 1);
+        }
+
+        return new DicePool($"{count}D{sides}", faces, modifiers ?? [], seed);
+    }
+
     /// <summary>An opposed check: challenger vs. defender, each their own seeded d-<paramref name="sides"/>
     /// roll with their own modifier stack. Salted apart so the two dice never correlate on a shared seed.
     /// A tie goes to the DEFENDER (the house edge) — see <see cref="OpposedRoll.ChallengerWins"/>.</summary>
@@ -141,6 +161,69 @@ public readonly record struct DiceRoll(
         }
 
         parts.Append("  = ").Append(Total);
+        return parts.ToString();
+    }
+}
+
+/// <summary>
+/// A settled POOL roll — several dice cast at once (a 2D6), their named modifier stack, and the seed.
+/// Pure data; the on-screen dice-tray reveal lives client-side. The natural roll is
+/// <see cref="FaceTotal"/> (the summed pips) and <see cref="Total"/> adds the modifiers, so the
+/// spelled-out math reads the same as a single <see cref="DiceRoll"/>.
+/// </summary>
+public readonly record struct DicePool(
+    string DieLabel, IReadOnlyList<int> Faces, IReadOnlyList<DiceModifier> Modifiers, ulong Seed)
+{
+    /// <summary>The summed pips across every die — the natural roll before modifiers.</summary>
+    public int FaceTotal
+    {
+        get
+        {
+            int sum = 0;
+            foreach (int f in Faces)
+            {
+                sum += f;
+            }
+
+            return sum;
+        }
+    }
+
+    /// <summary>The sum of every modifier's value (can be negative).</summary>
+    public int ModifierTotal
+    {
+        get
+        {
+            int sum = 0;
+            foreach (DiceModifier m in Modifiers)
+            {
+                sum += m.Value;
+            }
+
+            return sum;
+        }
+    }
+
+    /// <summary>The pips plus every modifier — the number that decides the episode.</summary>
+    public int Total => FaceTotal + ModifierTotal;
+
+    /// <summary>The math, spelled out for the reveal:
+    /// <c>2D6: 4+5=9  −2 (load in the corridor)  = 7</c>.</summary>
+    public string Describe()
+    {
+        var parts = new System.Text.StringBuilder();
+        parts.Append(DieLabel).Append(": ").Append(string.Join('+', Faces)).Append('=').Append(FaceTotal);
+        foreach (DiceModifier m in Modifiers)
+        {
+            parts.Append("  ").Append(m.Value >= 0 ? '+' : '−').Append(System.Math.Abs(m.Value))
+                .Append(" (").Append(m.Label).Append(')');
+        }
+
+        if (Modifiers.Count > 0)
+        {
+            parts.Append("  = ").Append(Total);
+        }
+
         return parts.ToString();
     }
 }

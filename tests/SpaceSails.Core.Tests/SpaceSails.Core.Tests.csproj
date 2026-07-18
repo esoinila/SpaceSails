@@ -33,6 +33,7 @@
   <ItemGroup>
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\css\app.css" Link="cssource\app.css" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\Pages\Map.razor.css" Link="cssource\Map.razor.css" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\SpaceSails.Client\Components\DiceTray.razor.css" Link="cssource\DiceTray.razor.css" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

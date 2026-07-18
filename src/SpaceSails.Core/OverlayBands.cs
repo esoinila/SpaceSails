@@ -91,6 +91,11 @@ public static class OverlayBands
     /// <summary><c>.start-picker-backdrop</c> — the starting-berth picker gate.</summary>
     public const int StartPickerBackdrop = DesksAndPopups + 100; // 1300
 
+    /// <summary><c>.dice-tray</c> — THE DICE TRAY (#305): the crude 2D6 reveal a dice-scripted event raises
+    /// (aerobrake episodes now; Reevers/BUSTED/drinks next). A come-and-go pop-up that sits above the routine
+    /// desk cards yet safely BELOW the distress lifeline — a dice reveal must never bury the rescue button.</summary>
+    public const int DiceTray = DesksAndPopups + 60;             // 1260
+
     /// <summary><c>.view-object-backdrop</c> — the object-view pop-up.</summary>
     public const int ViewObjectBackdrop = DesksAndPopups + 120;  // 1320
 

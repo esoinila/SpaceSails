@@ -361,12 +361,15 @@ public static class Aerobrake
         return DiceEpisodeHook is { } hook ? hook(cost) : cost;
     }
 
-    /// <summary>THE DICE-EPISODE HOOK (owner's still-open Q3, #290 / the Saturday plan's risk-currency
-    /// question). v1 ships the DETERMINISTIC cost above; when the owner rules for dice-scripted episodes in
-    /// the BUSTED-engine house style, assign a function here that takes the deterministic <see cref="PassCost"/>
-    /// and returns the rolled one (e.g. a die that tears the sail early on a hot-but-under-line pass, or spikes
-    /// the heat). It is a single clearly-named seam: null = deterministic, assigned = dice. Kept out of
-    /// <see cref="Price"/> so quotes stay pure; the live execution applies it per flown pass.</summary>
+    /// <summary>THE DICE-EPISODE HOOK (owner's Q3, resolved for dice in #305: "Let's use dice there, I love
+    /// it"). It takes the deterministic <see cref="PassCost"/> and returns the rolled one: null = deterministic,
+    /// assigned = dice. The SHIPPED implementation is <see cref="AerobrakeEpisodes.Roll"/> — a seeded 2D6
+    /// episode table (clean pass, heat spike, g wobble, corridor drama, a torn sail on a bad roll) that also
+    /// raises a <see cref="DiceEvent"/> for the on-screen dice tray. The live per-pass execution calls
+    /// <see cref="AerobrakeEpisodes.Roll"/> directly (it needs the pass's SEED, which this bare cost→cost seam
+    /// cannot carry) and applies its <see cref="AerobrakeEpisodes.Episode.Cost"/>; this hook remains the
+    /// low-level manual override for a test or a bespoke currency. Kept out of <see cref="Price"/> so quotes
+    /// stay pure — only the flown pass rolls.</summary>
     public static Func<PassCost, PassCost>? DiceEpisodeHook { get; set; }
 
     // ===== The one voice for the aerobrake's words (HarborVocabulary-style; pure text, unit-tested) =====
