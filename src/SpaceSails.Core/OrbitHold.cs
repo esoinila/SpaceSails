@@ -126,6 +126,14 @@ public static class OrbitHold
     public const string NotHoldingComms =
         "⚠ the ship is NOT holding this orbit — no one is trimming it; it will drift while you're down";
 
+    /// <summary>The call when the ship rides a berth (owner ruling, #331 follow-up 2026-07-18: "being
+    /// docked to a station should mean we don't need to spend fuel for orbit keeping ourselves, as the
+    /// station with much larger mass does that for us"). The keeper is skipped while docked (HoldAtDock
+    /// pins the ship), so there is no hold clock to count down and no fuel spent — say THAT plainly,
+    /// never a countdown or a misleading "∞". A calm line: the docked ship carries no orbit risk.</summary>
+    public const string DockedComms =
+        "⚓ docked — the station holds the ship, no fuel spent on keeping";
+
     /// <summary>The quote the boarding panel states before the captain commits to walking down — in
     /// voice, honest, from the live tank. A kept orbit quotes its hold; an unkept one says so plainly.</summary>
     public static string BoardingQuote(bool orbitKept, double holdSeconds)
