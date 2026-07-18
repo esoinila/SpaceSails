@@ -448,3 +448,49 @@ bridge seat not opening its desk (or opening the wrong one).
 **Broken looks like:** the Captain tab/key not present or not leading the bar, selecting a mission
 requiring a second click/confirm, the chip missing from the strip or not docked at the top, or the
 chip's text not matching the desk's own "ship's articles" headline.
+
+---
+
+## Appendix A — URL dev cheats (start from the testable situation)
+
+Owner's bench rule (2026-07-18): *"being able to start from the testable situation helps us
+smoke-test faster."* Append these to the map URL (`/map?a=1&b=2`) to boot straight into a set-up
+instead of flying there. All are dev/test hooks — none affect a normal launch from the home page.
+
+| Cheat | Effect |
+|---|---|
+| `?scenario=<name>` | Load `scenarios/<name>.json` (default `sol`; unknown → silent fall back to Sol). |
+| `?start=<id>` | Jump the built world to a named start point (see the boot picker's registry). |
+| **`?dock=<haven-id>`** | **Boot already CLAMPED ON at any dockable berth — clean state, live services (#288).** |
+| **`?fuel=N`** | **Boot with N reaction-mass pulses in the tank (clamped to capacity) (#288).** |
+| **`?credits=N`** | **Boot with N credits in the purse (#288).** |
+| `?simhours=N` | Jump the sim clock to N hours at boot. |
+| `?reveal=<bodyId>` | Chart a hidden body at boot (repeatable). |
+| `?ellipse=1` | Append a visibly eccentric demo body (Kepler rails). |
+| `?sling=<bodyId>` / `?skim=<bodyId>` | Boot onto an approach arc with a close pass / atmosphere graze. |
+
+### The dockable berths — `?dock=<id>` (#288 / #289)
+
+`?dock=<id>` rides the **same clamp path a real arrival takes** (co-moving berth + `ClampOntoHaven`),
+so a docked start is byte-for-byte a genuine dock — no parallel boot path. The berth id is any
+**dockable station haven** (`IsHaven` + massless). The full list is **logged to the browser console
+on every boot** (`[SpaceSails] Dockable berths — /map?dock=<id>: …`), sourced from
+`SpaceSails.Core.DockableHavens`, so it's always current. In the shipped Sol scenario:
+
+| Berth id | Where | Interior? |
+|---|---|---|
+| `cinder-roost` | Venus' clouds | ✅ walk ashore |
+| `selene-gate` | Luna vicinity (Earth) | — |
+| `the-space-bar` | off Mars (The Rusty Roadstead) | ✅ walk ashore |
+| `red-eye` | **Jupiter — The Red Eye (#289 outer oasis)** | — |
+| `ringside-exchange` | Saturn's rings | ✅ walk ashore |
+| `the-tilt` | Uranus | ✅ walk ashore |
+| `the-deep` | **Neptune — The Deep (#289 outer oasis)** | — |
+
+The friendly `?start=` aliases work too (`?dock=ringside` == `?dock=ringside-exchange`). Every id is
+swept by `DockedStartSweepTests` (boots clean, docked, pump live), and the **outer-oasis law** (#289 —
+every gas giant from Jupiter out carries a self-sustaining fuel haven) is locked there as well.
+
+**Try it:** open `/map?dock=the-deep&fuel=40&credits=9000`. Confirm you boot clamped on at The Deep out
+at Neptune, the tank reads 40 pulses, the purse 9000 cr, and the Trade desk's `⛽ FILL HER UP` is live
+(you're alongside a pump). Then `/map?dock=red-eye` — same, out at Jupiter among the Galilean moons.

@@ -13,7 +13,9 @@ public class EphemerisTests
         // Enceladus, Ringside Exchange, plus the inner grey-market docks Cinder Roost (Venus),
         // The Space Bar (Mars) and The Tilt (Uranus) — the derelict roadster (go-ashore fetch job),
         // and Selene Gate, the Luna-vicinity fuel port that closes Lab 28's stranded-at-Luna gap (#157).
-        Assert.Equal(25, scenario.Bodies.Count); // +Phobos (#164) +Miranda (#246, the shuttle-bury moon off The Tilt)
+        // +Phobos (#164) +Miranda (#246, the shuttle-bury moon off The Tilt) +The Red Eye (Jupiter) and
+        // +The Deep (Neptune) — the outer oases that close the Jupiter/Neptune pump deserts (#289).
+        Assert.Equal(27, scenario.Bodies.Count);
         Assert.Contains(scenario.Bodies, b => b.Id == "saturn");
         Assert.Contains(scenario.Bodies, b => b.Id == "miranda" && b.ParentId == "uranus" && b.Kind == "moon");
         Assert.Contains(scenario.Bodies, b => b.Id == "phobos" && b.ParentId == "mars" && b.Kind == "moon");
@@ -22,6 +24,9 @@ public class EphemerisTests
         Assert.Contains(scenario.Bodies, b => b.Id == "titan" && b.ParentId == "saturn" && b.Kind == "moon");
         Assert.Contains(scenario.Bodies, b => b.Id == "mercury-compute" && b.Kind == "station");
         Assert.Contains(scenario.Bodies, b => b.Id == "enceladus" && b.Haven);
+        // The #289 outer oases: a self-sustaining haven at Jupiter and at Neptune (both dockable stations).
+        Assert.Contains(scenario.Bodies, b => b.Id == "red-eye" && b.ParentId == "jupiter" && b.Kind == "station" && b.Haven);
+        Assert.Contains(scenario.Bodies, b => b.Id == "the-deep" && b.ParentId == "neptune" && b.Kind == "station" && b.Haven);
     }
 
     [Fact]

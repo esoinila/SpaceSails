@@ -284,7 +284,9 @@ public partial class Map
     // A station haven you clamp onto (⚓): mass-less, so it can't be orbited — the dock is the only
     // way to lie low there. Moon havens (mu > 0) you hide at by orbiting instead. This is the split
     // the ⚓ marker, the scope's "HAVEN ⚓ DOCK" tag and the Nav hint all key off.
-    private static bool IsDockableHaven(CelestialBody body) => body is { IsHaven: true, Mu: <= 0 };
+    // The one truth (#288): shared with the Core DockableHavens registry the ?dock cheat and the CI smoke
+    // sweep read, so the client's clamp gate and the tested berth list can never drift apart.
+    private static bool IsDockableHaven(CelestialBody body) => DockableHavens.IsDockable(body);
 
     // The station haven we're close enough (and slow enough) to clamp onto right now, if any — read
     // from the one-truth affordance (#212) so it names the SAME haven the envelope line does, never the
