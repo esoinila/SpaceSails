@@ -53,6 +53,91 @@ public class BarkeepTests
         Assert.Null(Barkeeps.For("not-a-station"));
     }
 
+    // --- The bar DESK, placed on the counter drawn in each backdrop (Lane 2, 2026-07-18 "Evening wind").
+    // Owner: "the bar-keep service position … needs to be AT that desk … not the middle of the empty
+    // floor … Not on top of a window — and the bar to be on top of the bar in the picture." These pin the
+    // per-image geometry so a future art swap or refactor can't quietly drift the keep back into the
+    // window band the #247 first pass parked them in.
+
+    // The bar patron stools HavenInterior seats down the LEFT wall, in the same (X, Y-offset-above-HallTopY)
+    // space BarDesk maps into — so a clearance check needs no hall-frame math. One-Eye Silas is the near
+    // one (a stool right where the counter service point wants to be); The Fixer is the back-corner one.
+    private const float SilasX = -9f, SilasYOff = 6f;
+    private const float FixerX = -9f, FixerYOff = 16f;
+    private const double InteractRadius = 3.0; // mirrors DeckPlan.InteractRadius — E grabs a console within this
+
+    [Fact]
+    public void EveryWalkableStation_HasABarDesk()
+    {
+        foreach (string id in WalkableStations)
+        {
+            Assert.NotNull(BarDesks.For(id));
+        }
+        Assert.Equal(WalkableStations.Length, BarDesks.AllDesks.Count);
+    }
+
+    [Fact]
+    public void For_UnknownBerth_HasNoBarDesk()
+    {
+        Assert.Null(BarDesks.For("earth"));
+        Assert.Null(BarDesks.For("not-a-station"));
+    }
+
+    [Fact]
+    public void EveryBarDesk_SitsOnTheLeftCounter_OffTheWindow_AndOffTheFront()
+    {
+        foreach (BarDesk desk in BarDesks.AllDesks)
+        {
+            // On the LEFT (where every backdrop draws the counter + back-bar shelves): left of room centre.
+            Assert.True(desk.ServiceX < 0, $"{desk.BodyId} keep should be on the left counter (x<0), was {desk.ServiceX}");
+            Assert.InRange(desk.ServiceU, 0.10f, 0.45f);
+
+            // NOT on the window: the far window wall is BoxDepth (22) above the hall; the service point
+            // and the droid one du behind the counter (ServiceYOffset + ~3) must stay well short of it.
+            Assert.True(desk.ServiceYOffset <= 18f,
+                $"{desk.BodyId} keep too close to the window wall (offset {desk.ServiceYOffset})");
+
+            // NOT the middle of the empty floor at the front: kept back from the hall door.
+            Assert.True(desk.ServiceYOffset >= 5f,
+                $"{desk.BodyId} keep too far forward, into the open floor (offset {desk.ServiceYOffset})");
+        }
+    }
+
+    [Fact]
+    public void EveryBarkeepConsole_IsReachable_WithoutGrabbingAPatronStool()
+    {
+        // Standing AT the service point, no earlier-listed regular may be inside E's radius, or E would
+        // talk to them instead of pouring a drink (NearestConsoleSpot returns the first console in reach).
+        foreach (BarDesk desk in BarDesks.AllDesks)
+        {
+            double toSilas = Dist(desk.ServiceX, desk.ServiceYOffset, SilasX, SilasYOff);
+            double toFixer = Dist(desk.ServiceX, desk.ServiceYOffset, FixerX, FixerYOff);
+            Assert.True(toSilas > InteractRadius, $"{desk.BodyId} keep only {toSilas:0.00} from Silas — E would grab the stool");
+            Assert.True(toFixer > InteractRadius, $"{desk.BodyId} keep only {toFixer:0.00} from The Fixer");
+        }
+    }
+
+    [Fact]
+    public void BarDeskFractions_ArePinnedPerImage()
+    {
+        // The exact per-image reads (Roadstead / Cinder / Ringside / Tilt). Change these only alongside
+        // the art or a deliberate re-placement — they are the owner-facing "the bar is on the bar" contract.
+        AssertDesk("the-space-bar", 0.270f, 0.620f);
+        AssertDesk("cinder-roost", 0.260f, 0.600f);
+        AssertDesk("ringside-exchange", 0.260f, 0.615f);
+        AssertDesk("the-tilt", 0.250f, 0.580f);
+    }
+
+    private static void AssertDesk(string id, float u, float v)
+    {
+        BarDesk desk = BarDesks.For(id)!;
+        Assert.Equal(u, desk.ServiceU, 3);
+        Assert.Equal(v, desk.ServiceV, 3);
+    }
+
+    private static double Dist(float ax, float ay, float bx, float by)
+        => System.Math.Sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
+
     [Fact]
     public void PourHouseSpecial_DebitsExactPrice_WhenAffordable()
     {

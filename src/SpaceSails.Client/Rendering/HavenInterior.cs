@@ -326,8 +326,21 @@ public static class HavenInterior
         // do I get a drink at the Rusty bar here? Did we forget to add the bar-keep :-D". The counter is
         // a real wall (you belly up, you don't walk through it); the barkeep console sits on the players'
         // side of it, so E leans in for the house special. The keep's name + drink come from Core.
-        float counterY = BarTopY - 3f;
-        walls.Add(new(-5, counterY, 10, counterY, false, false)); // the bar counter, waist-high
+        //
+        // 2026-07-18 ("Evening wind" plan) — the per-image correction. The first pass shared ONE counter
+        // for all four bars and pinned it three du off the far wall (BarTopY − 3), which dropped the keep
+        // and the pacing droid up in the window/ceiling band of every backdrop. The owner ruled per-image:
+        // "the bar-keep service position … needs to be AT that desk … not the middle of the empty floor …
+        // Not on top of a window — and the bar to be on top of the bar in the picture." So each bar now
+        // reads its desk off its OWN art (Core BarDesks), and the counter is placed there — down the LEFT,
+        // mid-depth, where every backdrop actually draws it. The service point (S) is the [E] spot on the
+        // players' side; the counter wall sits just BEHIND it (toward the window) and the droid paces
+        // behind that (see FillComplexDroids). A safe fallback keeps any unlisted bar sane.
+        BarDesk desk = BarDesks.For(spec.BodyId) ?? new BarDesk(spec.BodyId, 0.26f, 0.60f, 4.5f);
+        float serviceX = desk.ServiceX;
+        float serviceY = HallTopY + desk.ServiceYOffset;   // mid-depth on the desk, clear of the window
+        float counterY = serviceY + 1f;                     // the counter wall, one du behind the service line
+        walls.Add(new(serviceX - desk.CounterHalfWidth, counterY, serviceX + desk.CounterHalfWidth, counterY, false, false)); // waist-high bar counter, on the pictured desk
         Barkeep? keep = Barkeeps.For(spec.BodyId);
         string keepLabel = keep is { } bk ? $"🍺 BARKEEP · {bk.Name}" : "🍺 BARKEEP";
 
@@ -348,12 +361,13 @@ public static class HavenInterior
             // The Magpie's bar stop — a roaming patron (PR-F). They aren't always here; walk up and the
             // game reads their rota, so an empty chair means they've drifted off (bar → gone → back room).
             new(DeckPlan.ConsoleKind.BarPatron, (float)MagpieBarPost.X, (float)MagpieBarPost.Y, "◈ THE MAGPIE"),
-            // #247 — the barkeep, at the counter's LEFT FLANK (owner 2026-07-18: "move the bar-keep
-            // position to the bar in the picture … left flank"). The counter runs x −5..10; the keeper
-            // stands at its left end, matching the cantina art, so the captain bellies up to the left side
-            // and finds them there. The console sits on the players' side (counterY − 2), and the [E]
-            // radius reaches it from the walkable hall side below.
-            new(DeckPlan.ConsoleKind.Barkeep, -3.5f, counterY - 2, keepLabel),
+            // #247 — the barkeep service console, ON the desk drawn in this bar's art (owner 2026-07-18,
+            // "Evening wind": "the bar-keep service position … needs to be AT that desk … the bar to be on
+            // top of the bar in the picture"). It sits at the desk's service point (S) — down the LEFT,
+            // mid-depth — on the players' (hall-door) side of the counter wall, so the captain bellies up
+            // from below and the [E] radius leans in for the house special. Kept > InteractRadius from
+            // One-Eye Silas's stool (−9, HallTopY+6) so E never grabs the wrong regular.
+            new(DeckPlan.ConsoleKind.Barkeep, serviceX, serviceY, keepLabel),
             // The gift shop: walk up, press E, view the Gen-AI souvenir + its location gag. Kept clear
             // of the bar patrons (Coil at x14) so E doesn't grab the wrong console.
             new(DeckPlan.ConsoleKind.ViewObject, 6, HallTopY + 3, "👕 SOUVENIR TEE", spec.TshirtArt, spec.Gag),
@@ -403,7 +417,7 @@ public static class HavenInterior
 
         return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
-            droidCount: 10, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen),
+            droidCount: 10, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY),
             location: (x, y) => x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
                               : y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
@@ -416,7 +430,8 @@ public static class HavenInterior
     // Fixer), and — index 8 — the roaming Magpie, placed by their sim-time rota. Shared across every
     // station (one geometry); deterministic in sim time, stateless. When the Magpie's rota puts them
     // out of reach (gone, or the back room before it's open), they're parked far off-frame.
-    private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer, bool backRoomOpen)
+    private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer, bool backRoomOpen,
+        double barkeepX, double barkeepServiceY)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // fills [0..3)
         double sway = 0.05 * System.Math.Sin(simTime * 0.0009);
@@ -432,13 +447,13 @@ public static class HavenInterior
             : new DeckPlan.Droid(-9999, -9999, 0, "Magpie"); // out of reach this watch — off-frame
 
         // #247 — the barkeep, pacing their patch BEHIND the counter (owner: "a barkeep pacing their bar
-        // area is fine"; and 2026-07-18: "in all bars that have a bar-desk in their graphics the barkeep
-        // is positioned behind the bar desk"). No rota (they don't leave the bar): a deterministic sine
-        // sweep, the same idiom as the seated regulars' sway. Centred on the counter's LEFT FLANK — every
-        // bar art (Roadstead, Cinder, Ringside, Tilt) draws its counter and back-bar shelves down the LEFT
-        // wall — and confined to x [−5, −2] so the sweep never wanders out from behind the counter (the
-        // counter wall runs x −5..10) into the room. One shared geometry ⇒ this fixes all four bars.
+        // area is fine"; and 2026-07-18, "Evening wind": "in all bars that have a bar-desk in their
+        // graphics the barkeep is positioned behind the bar desk"). No rota (they don't leave the bar): a
+        // deterministic sine sweep, the same idiom as the seated regulars' sway. Centred on THIS bar's
+        // service point (BarDesks), one du further back than the counter wall — so the keep works the far
+        // side of the desk drawn in the art, never the window band the first pass parked them in. Facing
+        // south (−π/2), across the bar toward the captain.
         double pace = 1.5 * System.Math.Sin(simTime * 0.00035);
-        buffer[9] = new DeckPlan.Droid(-3.5 + pace, BarTopY - 1.5, -System.Math.PI / 2, "Barkeep");
+        buffer[9] = new DeckPlan.Droid(barkeepX + pace, barkeepServiceY + 2, -System.Math.PI / 2, "Barkeep");
     }
 }
