@@ -85,6 +85,14 @@ public class VaultSerializerTests
         DiceItems = new DiceItemsSection([new DiceItemRecord("boarding-nets", "Boarding nets", 2)]),
         Progress = new ProgressSection { TutorialPlayed = true },
         Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
+        Overheard = new OverheardSection
+        {
+            Lines =
+            [
+                new OverheardLine("“Prices run soft on ice at the next berth.”", 12345.0, "GILT-EYE", "THE RINGSIDE BAR"),
+                new OverheardLine("“A ghost runs dark past the rings this watch.”", 12360.5, "THE MAGPIE", "THE RINGSIDE BAR"),
+            ],
+        },
         Resume = new ResumeSection { HavenId = "ringside", HavenName = "Ringside", WasDocked = true },
     };
 
@@ -173,6 +181,7 @@ public class VaultSerializerTests
     [InlineData("diceItems")]
     [InlineData("progress")]
     [InlineData("nerve")]
+    [InlineData("overheard")]
     [InlineData("resume")]
     public void EachSection_RoundTrips_Independently(string section)
     {
@@ -192,6 +201,7 @@ public class VaultSerializerTests
             "diceItems" => new Vault { DiceItems = full.DiceItems },
             "progress" => new Vault { Progress = full.Progress },
             "nerve" => new Vault { Nerve = full.Nerve },
+            "overheard" => new Vault { Overheard = full.Overheard },
             "resume" => new Vault { Resume = full.Resume },
             _ => throw new ArgumentOutOfRangeException(nameof(section)),
         };
@@ -228,6 +238,30 @@ public class VaultSerializerTests
         Assert.Equal(17.25, loaded.Nerve!.Nerve, 6);
         Assert.True(loaded.Nerve.MonolithSeen);
         Assert.False(loaded.Tampered);
+    }
+
+    [Fact]
+    public void Overheard_SurvivesTheVaultRoundTrip_TheWordsYouPaidForDoNotVanish()
+    {
+        // Owner 2026-07-18: bar intel "may not hide" and must not "autodisappear" — so an overheard tip is
+        // a durable record that round-trips. A received tip → an entry that is still there after a reload.
+        IReadOnlyList<OverheardLine> log = OverheardLog.Append(
+            [], new OverheardLine("“The collectors swept Ringside yesterday.”", 999.0, "CASS", "THE RINGSIDE BAR"));
+        var vault = new Vault { Overheard = new OverheardSection { Lines = log } };
+
+        Vault loaded = VaultSerializer.Load(VaultSerializer.Save(vault));
+        Assert.NotNull(loaded.Overheard);
+        Assert.Single(loaded.Overheard!.Lines);
+        Assert.Equal("“The collectors swept Ringside yesterday.”", loaded.Overheard.Lines[0].Text);
+        Assert.Equal("CASS", loaded.Overheard.Lines[0].Source);
+        Assert.Equal("THE RINGSIDE BAR", loaded.Overheard.Lines[0].BarName);
+        Assert.Equal(999.0, loaded.Overheard.Lines[0].SimTime, 6);
+    }
+
+    [Fact]
+    public void Overheard_MissingSection_DefaultsToAnEmptyBook()
+    {
+        Assert.Empty(new OverheardSection().Lines);
     }
 
     [Fact]
