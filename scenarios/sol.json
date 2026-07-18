@@ -31,17 +31,27 @@
     { "id": "the-deep", "name": "The Deep", "parentId": "neptune", "mu": 0, "bodyRadiusM": 1000, "orbitRadiusM": 6.0e7, "orbitPeriodS": 3.53e4, "initialPhaseRad": 2.9, "kind": "station", "haven": true }
   ],
   "traffic": {
+    "// Zubrin's solar economy (#291)": "He3 is the oil of the outer system, scooped at the giants and their moons. The busiest lanes — the Gulf-of-Hormuz corridors — are the scoop worlds feeding Jupiter's energy-hungry habitat mega-works at Europa, not commutes from Earth. Earth is one node among several. Weights = economic activity: the giant He3 corridors carry the tonnage; the inner runs tick over in the background. 'publishesTimetable: false' = a discreet outer-reaches hauler (worldbuilding par.4) — flies and shows on sensors, never on the public board.",
     "routes": [
-      { "from": "saturn", "to": "mars", "cargo": "He3" },
-      { "from": "saturn", "to": "earth", "cargo": "He3" },
-      { "from": "jupiter", "to": "mars", "cargo": "He3" },
-      { "from": "mars", "to": "earth", "cargo": "Machinery" },
-      { "from": "earth", "to": "mars", "cargo": "Ice" },
-      { "from": "venus", "to": "earth", "cargo": "Alloys" },
-      { "from": "titan", "to": "mars", "cargo": "He3", "publishesTimetable": false },
-      { "from": "titan", "to": "earth", "cargo": "He3", "publishesTimetable": false },
-      { "from": "mercury-compute", "to": "earth", "cargo": "Compute cores" },
-      { "from": "earth", "to": "mercury-compute", "cargo": "Compute cores" }
+      { "from": "saturn", "to": "mars",   "cargo": "He3", "weight": 4 },
+      { "from": "saturn", "to": "earth",  "cargo": "He3", "weight": 3 },
+      { "from": "jupiter", "to": "mars",  "cargo": "He3", "weight": 3 },
+      { "from": "titan",  "to": "europa", "cargo": "He3", "weight": 7 },
+      { "from": "saturn", "to": "europa", "cargo": "He3", "weight": 6 },
+      { "from": "uranus", "to": "europa", "cargo": "He3", "weight": 5, "publishesTimetable": false },
+      { "from": "neptune", "to": "ganymede", "cargo": "He3", "weight": 4, "publishesTimetable": false },
+      { "from": "titan",  "to": "mars",   "cargo": "He3", "weight": 2, "publishesTimetable": false },
+      { "from": "titan",  "to": "earth",  "cargo": "He3", "weight": 2, "publishesTimetable": false },
+      { "from": "uranus", "to": "ringside-exchange", "cargo": "Deuterium slush", "weight": 2, "publishesTimetable": false },
+      { "// construction supply": "the resource chain feeding Jupiter's energy-hungry mega-works — reactor mass, hab sections and mining rigs out of the outer refineries and ring shipyards, inbound to Europa/Ganymede. Inward hauls the planner flies cleanly (outward inner-to-giant transfers are phase-fragile).",
+        "from": "neptune", "to": "europa", "cargo": "Reactor mass", "weight": 3, "publishesTimetable": false },
+      { "from": "saturn", "to": "ganymede", "cargo": "Habitat structurals", "weight": 3 },
+      { "from": "uranus", "to": "ganymede", "cargo": "Mining rigs", "weight": 2, "publishesTimetable": false },
+      { "from": "mars",   "to": "earth",  "cargo": "Machinery", "weight": 2 },
+      { "from": "earth",  "to": "mars",   "cargo": "Ice", "weight": 1 },
+      { "from": "venus",  "to": "earth",  "cargo": "Alloys", "weight": 2 },
+      { "from": "mercury-compute", "to": "earth", "cargo": "Compute cores", "weight": 1 },
+      { "from": "earth", "to": "mercury-compute", "cargo": "Compute cores", "weight": 1 }
     ],
     "podLaunchers": [
       { "body": "luna", "cargo": "Compute cores" },
