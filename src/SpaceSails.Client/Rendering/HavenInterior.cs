@@ -348,8 +348,12 @@ public static class HavenInterior
             // The Magpie's bar stop — a roaming patron (PR-F). They aren't always here; walk up and the
             // game reads their rota, so an empty chair means they've drifted off (bar → gone → back room).
             new(DeckPlan.ConsoleKind.BarPatron, (float)MagpieBarPost.X, (float)MagpieBarPost.Y, "◈ THE MAGPIE"),
-            // #247 — the barkeep, at the counter. Walk up, press E, buy the house special (or a round).
-            new(DeckPlan.ConsoleKind.Barkeep, 2.5f, counterY - 2, keepLabel),
+            // #247 — the barkeep, at the counter's LEFT FLANK (owner 2026-07-18: "move the bar-keep
+            // position to the bar in the picture … left flank"). The counter runs x −5..10; the keeper
+            // stands at its left end, matching the cantina art, so the captain bellies up to the left side
+            // and finds them there. The console sits on the players' side (counterY − 2), and the [E]
+            // radius reaches it from the walkable hall side below.
+            new(DeckPlan.ConsoleKind.Barkeep, -3.5f, counterY - 2, keepLabel),
             // The gift shop: walk up, press E, view the Gen-AI souvenir + its location gag. Kept clear
             // of the bar patrons (Coil at x14) so E doesn't grab the wrong console.
             new(DeckPlan.ConsoleKind.ViewObject, 6, HallTopY + 3, "👕 SOUVENIR TEE", spec.TshirtArt, spec.Gag),
@@ -427,10 +431,14 @@ public static class HavenInterior
             ? new DeckPlan.Droid(m.X + sway, m.Y, m.FacingRad, "Magpie")
             : new DeckPlan.Droid(-9999, -9999, 0, "Magpie"); // out of reach this watch — off-frame
 
-        // #247 — the barkeep, pacing their patch behind the counter (owner: "a barkeep pacing their bar
-        // area is fine"). No rota (they don't leave the bar): a deterministic sine sweep along the
-        // counter, the same idiom as the seated regulars' sway, so first-person sees them move.
-        double pace = 2.6 * System.Math.Sin(simTime * 0.00035);
-        buffer[9] = new DeckPlan.Droid(2.5 + pace, BarTopY - 1.5, -System.Math.PI / 2, "Barkeep");
+        // #247 — the barkeep, pacing their patch BEHIND the counter (owner: "a barkeep pacing their bar
+        // area is fine"; and 2026-07-18: "in all bars that have a bar-desk in their graphics the barkeep
+        // is positioned behind the bar desk"). No rota (they don't leave the bar): a deterministic sine
+        // sweep, the same idiom as the seated regulars' sway. Centred on the counter's LEFT FLANK — every
+        // bar art (Roadstead, Cinder, Ringside, Tilt) draws its counter and back-bar shelves down the LEFT
+        // wall — and confined to x [−5, −2] so the sweep never wanders out from behind the counter (the
+        // counter wall runs x −5..10) into the room. One shared geometry ⇒ this fixes all four bars.
+        double pace = 1.5 * System.Math.Sin(simTime * 0.00035);
+        buffer[9] = new DeckPlan.Droid(-3.5 + pace, BarTopY - 1.5, -System.Math.PI / 2, "Barkeep");
     }
 }

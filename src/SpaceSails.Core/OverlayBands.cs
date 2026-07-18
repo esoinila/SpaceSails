@@ -79,8 +79,11 @@ public static class OverlayBands
 
     // ---- DesksAndPopups members ------------------------------------------------------------------
 
-    /// <summary><c>.deck-pulse-toast</c> — a transient deck toast.</summary>
-    public const int DeckPulseToast = DesksAndPopups + 0;   // 1200
+    /// <summary><c>.deck-pulse-toast</c> — a transient deck toast. Sits ABOVE the routine deck/offer cards
+    /// (owner 2026-07-18: "the rumor is slightly blocked by the offer-a-round dialog" — a status/intel line
+    /// the player paid a round to hear may not be occluded by the dialog, #212), yet below the dice tray
+    /// (+60) and every gate/lifeline above — a toast may never out-rank a critical control.</summary>
+    public const int DeckPulseToast = DesksAndPopups + 55;  // 1255
 
     /// <summary><c>.deck-offer-card</c> — a raised deck offer card.</summary>
     public const int DeckOfferCard = DesksAndPopups + 50;   // 1250

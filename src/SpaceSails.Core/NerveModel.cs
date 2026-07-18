@@ -105,6 +105,124 @@ public static class NerveModel
     /// <summary>Deal a one-time lump shock (the monolith's first-sight hit), clamped to the gauge.</summary>
     public static double Shock(double nerve, double amount) => Clamp(nerve - amount);
 
+    // ── A drink steadies the nerve (#308/#321 → #226): the NAMED SANITY-RELIEF SEAM, wired. ──────────
+    //
+    // Owner, live at a bar with a shot gauge (2026-07-18): "I need a drink to restore sanity?" — yes.
+    // And the ruling that shapes the curve (same day, supersedes the flat first-draft amounts):
+    //   "Drinking with somebody should restore sanity at any level (conversation + drink) but drinking
+    //    alone only [helps a little] … you cannot drink yourself back from the edge alone."
+    //
+    // The law, in three layers, all pure and FLAGGED for the owner's tuning:
+    //   1. TYPE. A drink SHARED with a contact (the #308 flow — conversation AND the glass) is the real
+    //      medicine: a flat lump that lands at ANY nerve level, even nerves shot. A LONE drink (the bar
+    //      house special, the galley tot) is weak medicine that WEAKENS as the nerve worsens — from the
+    //      type's full value at steady hands down to a single point at the shot floor. Ordering in
+    //      spirit stays tot < bar < shared (shared is now categorically different, not merely bigger).
+    //   2. DIMINISHING REPEAT. Rounds in quick succession soothe less each time — the second half of the
+    //      first — read straight off the EXISTING tilty-legs tot count (no parallel counter invented).
+    //   3. DRUNK STOPS IT. Once the tot count reaches the deck's own tilty-legs threshold, a further
+    //      drink restores NOTHING — "the rum has stopped helping, captain." Drunk is not sane.
+    //
+    // NOT here (still #226 proper): rest, sleep, and the full R&R economy — the deeper accelerants. This
+    // seam is the DRINK only.
+
+    /// <summary>The three ways a drink reaches the captain's nerve (#308/#321). The medicine differs by
+    /// company, not just by price.</summary>
+    public enum DrinkKind
+    {
+        /// <summary>A tot poured aboard from the galley locker — a lone drink, the weakest solo medicine.</summary>
+        GalleyTot,
+
+        /// <summary>The bar's house special, drunk alone at the counter — solo medicine, a touch stronger.</summary>
+        BarSpecial,
+
+        /// <summary>A glass shared with a contact across the table (#308) — conversation AND the drink,
+        /// the real medicine that steadies the hands at ANY level.</summary>
+        SharedWithContact,
+    }
+
+    /// <summary>Full restore of a lone galley tot at steady hands, before the level-curve and diminishing
+    /// bite (FLAGGED for tuning).</summary>
+    public const double GalleyTotBaseRestore = 10.0;
+
+    /// <summary>Full restore of a lone bar house special at steady hands, before the level-curve and
+    /// diminishing bite (FLAGGED for tuning).</summary>
+    public const double BarSpecialBaseRestore = 18.0;
+
+    /// <summary>A shared drink's restore — flat and level-independent: company steadies the hands even
+    /// when nerves are shot (owner's trust-anthropology ruling; FLAGGED for tuning).</summary>
+    public const double SharedDrinkRestore = 24.0;
+
+    /// <summary>The single point a lone drink can still manage at the shot floor — you cannot drink your
+    /// way back from the edge alone; you need a face across the table (owner: "moves the needle by one").</summary>
+    public const double SoloFloorRestore = 1.0;
+
+    /// <summary>The tot count (1-based, AFTER the pour is counted) at which drunkenness has set in and a
+    /// further drink restores nothing. THE SAME tilty-legs threshold the deck's rum law uses (the third
+    /// tot makes the deck tilty) — one drunkenness law, not a parallel one.</summary>
+    public const int DrunkTotCount = 3;
+
+    /// <summary>Whether this pour count is at/past the tilty-legs threshold — drunk, and past helping.</summary>
+    public static bool DrunkAt(int totNumber) => totNumber >= DrunkTotCount;
+
+    /// <summary>The diminishing-repeat factor for the Nth pour of a spree: the first soothes full, the
+    /// second half, the drunk third-and-after nothing. Keyed off the existing tot count.</summary>
+    public static double RepeatFactor(int totNumber) => totNumber switch
+    {
+        <= 1 => 1.0,
+        2 => 0.5,
+        _ => 0.0, // drunk — see DrunkAt
+    };
+
+    /// <summary>The solo weak-medicine curve: <see cref="SoloFloorRestore"/> at the shot floor, rising to
+    /// <paramref name="full"/> at steady hands, linear in the current nerve fraction. A lone drink helps
+    /// least exactly when the captain needs it most.</summary>
+    private static double SoloCurve(double full, double nerve) =>
+        SoloFloorRestore + (full - SoloFloorRestore) * Fraction(nerve);
+
+    /// <summary>The base restore a drink offers at the given nerve, BEFORE diminishing-repeat: shared
+    /// drinks are flat and level-independent; lone drinks ride the weak-medicine curve down toward a
+    /// single point at the floor.</summary>
+    public static double BaseRestoreAt(DrinkKind kind, double nerve) => kind switch
+    {
+        DrinkKind.SharedWithContact => SharedDrinkRestore,
+        DrinkKind.BarSpecial => SoloCurve(BarSpecialBaseRestore, nerve),
+        DrinkKind.GalleyTot => SoloCurve(GalleyTotBaseRestore, nerve),
+        _ => 0.0,
+    };
+
+    /// <summary>How much nerve this drink actually returns: the level-shaped base times the
+    /// diminishing-repeat factor, and flat zero once drunk. Never negative.</summary>
+    public static double RestoreAmount(DrinkKind kind, double nerve, int totNumber) =>
+        DrunkAt(totNumber)
+            ? 0.0
+            : System.Math.Max(0.0, BaseRestoreAt(kind, nerve) * RepeatFactor(totNumber));
+
+    /// <summary>Apply a drink's restore to the current nerve, clamped to the gauge — the seam the bar and
+    /// the galley both call. Pure: same nerve + same drink + same tot count always yields the same rise.</summary>
+    public static double DrinkRestore(double nerve, DrinkKind kind, int totNumber) =>
+        Clamp(nerve + RestoreAmount(kind, nerve, totNumber));
+
+    /// <summary>The in-voice steadying note for a drink's receipt/pulse line — the words the gauge's rise
+    /// is spoken with. Drunk says the rum has stopped helping; a shared glass names the company; a lone
+    /// drink that barely moves the needle at the edge admits it needs a face across the table.</summary>
+    public static string SteadyingNote(DrinkKind kind, int totNumber, double restored)
+    {
+        if (DrunkAt(totNumber))
+        {
+            return "the rum has stopped helping, captain — drunk is not steady hands";
+        }
+        if (restored < 2.0)
+        {
+            return kind == DrinkKind.SharedWithContact
+                ? "the company helps more than the glass"
+                : "barely a flicker — you'd need a face across the table for more";
+        }
+        return kind == DrinkKind.SharedWithContact
+            ? "the company steadies the hands — the shakes ease"
+            : "the hands remember how to be still";
+    }
+
     /// <summary>Clamp any value into the gauge's [<see cref="Min"/>, <see cref="Max"/>] range.</summary>
     public static double Clamp(double nerve) => System.Math.Clamp(nerve, Min, Max);
 

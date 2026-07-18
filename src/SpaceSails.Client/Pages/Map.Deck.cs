@@ -24,7 +24,7 @@ public partial class Map
 
     /// <summary>The Galley's "Pour a tot" button funnels through the exact same PourRum the deck
     /// cantina console uses (see InteractAtConsole's Cantina case) — one rum ledger, two doors.</summary>
-    private void PourRumFromGalley() => ShowPulseMessage(PourRum(null));
+    private void PourRumFromGalley() => ShowPulseMessage(PourRum(null, NerveModel.DrinkKind.GalleyTot));
 
     private bool RumWobbleActive => (_lastTimestampMs ?? 0) < _wobbleUntilMs;
 
@@ -480,18 +480,33 @@ public partial class Map
         "To absent friends and slow freighters. 🍹",
     ];
 
-    private string PourRum(string? overrideLine)
+    private string PourRum(string? overrideLine, NerveModel.DrinkKind kind = NerveModel.DrinkKind.GalleyTot)
     {
         double now = _lastTimestampMs ?? 0;
         _rumTots = now - _lastRumMs < 90_000 ? _rumTots + 1 : 1;
         _lastRumMs = now;
         RendererInterop.PlayCue("rum");
-        string line = _rumTots >= 3
+
+        // #308/#321 → #226 — the sanity-relief seam, wired: a drink steadies the nerve. The SAME tot
+        // count that tilts the deck also diminishes the relief and, once drunk, stops it (NerveModel owns
+        // the law; drunk ⇒ zero). Shared drinks work at any level; a lone tot is weak medicine. Rest and
+        // the full R&R economy stay #226. The nerve rides the vault, so a steadier captain persists.
+        double beforeNerve = _nerve;
+        _nerve = NerveModel.DrinkRestore(_nerve, kind, _rumTots);
+        double restored = _nerve - beforeNerve;
+        string steadying = NerveModel.SteadyingNote(kind, _rumTots, restored);
+
+        string baseLine = _rumTots >= 3
             ? "That was the third tot. The deck feels… tilty. 🍹"
             : overrideLine ?? RumLines[(int)((SimTime / 60) % RumLines.Length)];
+        string line = $"{baseLine} — {steadying}";
         if (_rumTots >= 3)
         {
             _wobbleUntilMs = now + 25_000;
+        }
+        if (restored > 0)
+        {
+            RequestVaultSave(); // the nerve moved — persist the steadier hands (galley path saves here too)
         }
 
         _lastRumLine = line;

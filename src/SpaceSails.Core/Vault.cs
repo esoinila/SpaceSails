@@ -53,6 +53,7 @@ public sealed class Vault
     public DiceItemsSection? DiceItems { get; init; }
     public ProgressSection? Progress { get; init; }
     public NerveSection? Nerve { get; init; }
+    public OverheardSection? Overheard { get; init; }
     public ResumeSection? Resume { get; init; }
 
     /// <summary>Set true by <see cref="VaultSerializer.Load"/> when the stored checksum did not match
@@ -255,6 +256,24 @@ public sealed record NerveSection
     /// <summary>True once the captain has laid eyes on the monolith. Persisted so the big first-sight hit
     /// (<see cref="NerveModel.MonolithSightShock"/>) fires once in a life and never again on a revisit.</summary>
     public bool MonolithSeen { get; init; }
+}
+
+// ── Overheard at the bar (#308/#283 → owner 2026-07-18): the words the player paid a round to hear. ──
+
+/// <summary>One durable line of bar intel the captain has been handed (#308 OpensUp intel, a barkeep
+/// rumor firmed into a tip, a round's volunteered whisper). Owner's law: "the words the player paid a
+/// round to hear may not hide" and "it autodisappears which is not convenient" — so every such line is
+/// WRITTEN here, revisitable, rather than lived and lost in a transient toast. A <c>readonly record
+/// struct</c> — flat, tolerant, trivially round-tripped.</summary>
+public readonly record struct OverheardLine(string Text, double SimTime, string Source, string BarName);
+
+/// <summary>The captain's "overheard at the bar" book (the #119 receipt/ledger idiom, for intel): a
+/// capped, time-ordered log of the tips and rumors handed across the counter. Its own
+/// independently-optional section — a pre-existing file simply lacks it and defaults to an empty book.</summary>
+public sealed record OverheardSection
+{
+    /// <summary>The overheard lines, oldest first. Capped by the writer (see <c>OverheardLog</c>).</summary>
+    public IReadOnlyList<OverheardLine> Lines { get; init; } = [];
 }
 
 // ── The resume berth (owner's law): where the pirate wakes, always docked. ──
