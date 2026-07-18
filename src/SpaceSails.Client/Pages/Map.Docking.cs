@@ -303,15 +303,18 @@ public partial class Map
     // minigame. The bay's airlock travels with the ship into every docked complex (HavenInterior seeds
     // its doors from the ship's), so the same door at the destination is the ride home — never stranded.
 
-    // One reachable stop: the body, how far, the crossing time, and whether there's a berth to step off
-    // at (a walkable interior). Bodies in range without one show honestly as "no berth ashore yet".
-    private sealed record ShuttleStop(CelestialBody Body, double DistanceMeters, double TravelSeconds, bool HasBerth);
+    // One reachable stop on the destination board (#313): the body, how far / how long, and how the row
+    // reads — a berth to step off at, a landable surface to walk, and/or a place with a chest already in
+    // the ground. The classification is the pure, tested ShuttleExcursion.Destinations rule.
+    private sealed record ShuttleStop(
+        CelestialBody Body, double DistanceMeters, double TravelSeconds,
+        bool HasBerth, bool IsLandable, bool HasCache);
 
-    // Null = the hatch is shut; a list (possibly empty) = the pop-up is open.
+    // Null = the hatch is shut; a list (possibly empty) = the destination board is open.
     private List<ShuttleStop>? _shuttleBayStops;
 
-    // Every non-planet body within one hop of where the ship floats now, nearest first. The sun and the
-    // planets themselves are never shuttle berths; the berth we're already clamped to is skipped.
+    // The destination board: every body within one hop, classified by orbit context (the pure Core
+    // rule), then re-joined to the live CelestialBody the UI needs to render each row.
     private List<ShuttleStop> ShuttleDestinationsInRange()
     {
         var stops = new List<ShuttleStop>();
@@ -320,26 +323,60 @@ public partial class Map
             return stops;
         }
         Vector2d shipPos = _ship.Position;
-        foreach (CelestialBody b in _ephemeris.Bodies)
+        var byId = _ephemeris.Bodies.ToDictionary(b => b.Id);
+        var candidates = _ephemeris.Bodies.Select(b => new ShuttleExcursion.Candidate(
+            b.Id, b.Kind, b.ParentId,
+            (shipPos - _ephemeris.Position(b.Id, SimTime)).Length, b.BodyRadius,
+            HasInterior: HavenInterior.HasInterior(b.Id), HasCache: _caches.HasCacheAt(b.Id)));
+
+        foreach (ShuttleExcursion.Destination d in ShuttleExcursion.Destinations(candidates, _dockedHavenId))
         {
-            if (b.ParentId is null || b.Kind == BodyKind.Planet || b.Id == _dockedHavenId)
+            if (byId.TryGetValue(d.BodyId, out CelestialBody? body))
             {
-                continue; // the sun / a gas giant / the berth we're already at
+                stops.Add(new ShuttleStop(body, d.DistanceMeters, d.TravelSeconds, d.HasBerth, d.IsLandableSurface, d.HasCache));
             }
-            double dist = (shipPos - _ephemeris.Position(b.Id, SimTime)).Length;
-            if (dist <= b.BodyRadius || !ShuttleRange.InRange(dist))
-            {
-                continue; // basically on it already, or out of shuttle range
-            }
-            stops.Add(new ShuttleStop(b, dist, ShuttleRange.TravelSeconds(dist), HavenInterior.HasInterior(b.Id)));
         }
-        stops.Sort((a, c) => a.DistanceMeters.CompareTo(c.DistanceMeters));
         return stops;
     }
 
     private void OpenShuttleBayDoor() => _shuttleBayStops = ShuttleDestinationsInRange();
 
     private void CloseShuttleBayDoor() => _shuttleBayStops = null;
+
+    // ── #313: destination-first boarding. Picking a landable surface opens the boarding panel: an
+    //    OPTIONAL 'load a chest' step (cargo, not a confession), then walk down. Boarding empty-handed is
+    //    a complete visit. The chest is the chosen coin + the whole (small) hold, packed by the one Core
+    //    Pack the shortcut shares. ──
+    private ShuttleStop? _boardTarget;
+    private int _boardCoin;
+
+    private void OpenBoardingPanel(ShuttleStop stop)
+    {
+        _boardTarget = stop;
+        _boardCoin = 0;               // #313: presume NOTHING — you are not declaring a plan
+        _shuttleBayStops = null;      // the panel replaces the board
+    }
+
+    private void CancelBoarding() => _boardTarget = null;
+
+    private void AdjustBoardCoin(int delta) => _boardCoin = Math.Clamp(_boardCoin + delta, 0, _credits);
+
+    private void SetBoardCoin(int amount) => _boardCoin = Math.Clamp(amount, 0, _credits);
+
+    // Land: pack whatever (if anything) was loaded and grow the tube in place. The hold rides as cargo
+    // and only leaves the ship's books if it actually goes into the ground at a dig.
+    private void ConfirmBoarding(ShuttleStop stop, bool withChest)
+    {
+        var hold = withChest
+            ? _cargoByClass.Where(kv => kv.Value > 0)
+                .Select(kv => new CacheCargo(kv.Key, kv.Value, IsHotClass(kv.Key)))
+                .ToList()
+            : new List<CacheCargo>();
+        ShuttleExcursion.ChestLoad chest = withChest
+            ? ShuttleExcursion.Pack(_boardCoin, _credits, hold)
+            : ShuttleExcursion.Pack(0, _credits, []);
+        BeginSurfaceExcursion(stop, chest);
+    }
 
     // Take the shuttle to a berth in range — the door is the flight. Only interior station havens (μ≤0,
     // clampable) are ever pickable, so arriving reuses the clamp-and-go-ashore path: advance the clock

@@ -1090,7 +1090,7 @@ public partial class Map
         if (_deckMode)
         {
             MoveAvatar(dtRealSeconds);
-            StepReevers(dtRealSeconds); // #295: the watchdogs close on the digger while ashore
+            StepSurface(dtRealSeconds); // #295/#313: dig channel, the Old Ones' converging chase, linger trickle
             if (_fpMode)
             {
                 BuildSkyBodies();
@@ -1104,7 +1104,7 @@ public partial class Map
                     _avatarX, _avatarY, _avatarHeading,
                     _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
                     Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId)),
-                    _deckPanX, _deckPanY);
+                    _deckPanX, _deckPanY, BuildSurfaceHud());
             }
 
             if (_showScope && _scopeView is not null)
