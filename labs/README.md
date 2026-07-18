@@ -49,6 +49,7 @@ dotnet run --project labs/28-the-pump-crawl -c Release
 dotnet run --project labs/29-the-harbor-pattern -c Release
 dotnet run --project labs/30-the-mass-driver-timetable -c Release
 dotnet run --project labs/32-aerocapture-at-the-ice-giant -c Release
+dotnet run --project labs/33-aerobrake-in-the-live-loop -c Release
 dotnet run --project labs/34-the-unclickable-lifeline -c Release
 ```
 
@@ -308,6 +309,16 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     Mars **PLAY** (gentle sub-g corridors); Titan (**12.8 g**) and Venus (**310 g**) are landing
     atmospheres, not skim atmospheres — the first flight of the sol.json Titan/Venus shells for capture.
     Proposes Uranus/Neptune/Mars shells and feeds a future AEROBRAKE step (#262/PR-D1).
+33. [**Aerobrake in the LIVE loop**](33-aerobrake-in-the-live-loop/README.md) — Lab 32 printed the physics in
+    a clean pinned frame; this flies the same Core drag in the **live n-body sim** (Sun pinned, Uranus on its
+    real orbit at ~6.8 km/s, its atmosphere translating with it) to prove the #290 aerobrake affordance before
+    the button ships. The shipped quote `Aerobrake.Price` reproduces Lab 32's headline to the pulse
+    (**42 propulsive / 31 air-assisted / 11 saved, corridor closed**); the free tightening campaign
+    **converges under the real integrator** (apoapsis strictly falls, pass after pass); a Galilean check shows
+    the moving atmosphere sheds the **exact** Δv the pinned frame did (Δ = 0.00 m/s) — the pinned lab was
+    honest. It also surfaces one refinement the energy accounting glossed: the live at-periapsis bridge runs a
+    few pulses dearer than the quote (~13 vs 11.3 km/s), because only the pre-periapsis half of the free shed
+    precedes the capture burn — flagged for the owner's quote calibration.
 
 34. [**The unclickable lifeline**](34-the-unclickable-lifeline/README.md) — the lab that measures the
     *UI* the way the others measure physics, because "the rescue-me button was barely clickable when we
