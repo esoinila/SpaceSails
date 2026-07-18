@@ -29,6 +29,21 @@ public partial class Map
 
     private const int MaxSurfaceReevers = ReeverRaid.MaxReevers; // buffer: 3 crew + 6 ≤ MaxDroids(10)
 
+    // #317 · The nerve gauge (first slice of #226's Fail Forward sanity). The captain's nerve, 0..100:
+    // full = steady hands, empty = nerves shot. Drains from the regolith's stressors, eases off aboard,
+    // and — unlike Reever positions — PERSISTS in the vault (a captain who fled shaking is still shaking
+    // after a reload). Display-first: the bar bottoming out only SPEAKS; consequences stay with #226.
+    private double _nerve = NerveModel.Steady;
+    private bool _monolithSeen; // the Lovecraftian first-sight hit fires once in a life (persisted)
+
+    // First sight of the monolith: within this many deck-units of it, the captain lays eyes on the thing
+    // (owner's #313 maze). Reaches the maze approach (outer wall ~12 du out) with margin. FLAGGED for tuning.
+    private const double MonolithSightRange = 26.0;
+
+    // Cornered: a Reever wedged up-field of the captain and this close laterally reads as a net across the
+    // escape (owner: "being cornered"). A cheap geometry check — no pathfinding. FLAGGED for tuning.
+    private const double CornerLateralRange = 7.0;
+
     // The live excursion, or null when we're not on a surface. Reever state is client-only real-time
     // (never saved — same law as any NPC position).
     private SurfaceExcursion? _surface;
@@ -390,6 +405,87 @@ public partial class Map
         StepReevers(dtRealSeconds);
         StepLingerTrickle(dtRealSeconds);
         TryRecoverDroppedChest();
+        StepNerve(dtRealSeconds);
+    }
+
+    // ── #317 The nerve gauge: the regolith frays it, the ship's safety eases it, the monolith gores it. ──
+
+    // The stressors tick ONLY out on the regolith (owner: "a sanity bar when on planet"). Moving contacts
+    // on the tracker, a live chase, digging under threat and being cornered each drain the nerve; the first
+    // sight of the monolith is the big one-time hit (the #226 hook #318 named). Up through the airlock the
+    // ship is safety — the ease-off is StepNerveRecovery's job, so this frame does nothing there.
+    private void StepNerve(double dtRealSeconds)
+    {
+        if (_surface is not { } ex || MoonSurface.IsSafeAboard(_avatarY))
+        {
+            return;
+        }
+
+        var stressors = new NerveModel.Stressors(
+            MovingContacts: CountMovingReevers(),
+            ChaseActive: _reevers.Count > 0,
+            Digging: ex.Channeling,
+            Cornered: IsCornered());
+        _nerve = NerveModel.Drain(_nerve, in stressors, dtRealSeconds);
+
+        // First sight of the monolith — fires exactly once in a captain's life (the flag is vault-persisted).
+        if (!_monolithSeen && SeesMonolith())
+        {
+            _monolithSeen = true;
+            _nerve = NerveModel.Shock(_nerve, NerveModel.MonolithSightShock);
+            RendererInterop.PlayCue("alarm");
+            ShowPulseMessage("👁 The monolith resolves out of the dark — too regular, too old, too patient. Something behind your eyes lurches, and your hands remember it.");
+            RequestVaultSave();
+        }
+    }
+
+    // The ease-off (owner: "back aboard through the airlock eases the nerve over time; the ship is safety").
+    // Runs every tick from the sim loop: whenever the captain is NOT out on the regolith — flying, docked,
+    // or stood back up through the airlock mid-excursion — the nerve returns gently toward steady. The
+    // deeper restoration economy (sleep, R&R, a drink with a friend — #306/#308 seams) stays with #226.
+    private void StepNerveRecovery(double dtRealSeconds)
+    {
+        bool onRegolith = _surface is not null && !MoonSurface.IsSafeAboard(_avatarY);
+        if (!onRegolith && _nerve < NerveModel.Max)
+        {
+            _nerve = NerveModel.Recover(_nerve, dtRealSeconds);
+        }
+    }
+
+    private int CountMovingReevers()
+    {
+        int n = 0;
+        foreach (Reever r in _reevers)
+        {
+            if (MotionTracker.IsMoving(r.Vx, r.Vy))
+            {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    // A net between the captain and the tube: an Old One wedged up-field (nearer the tube mouth than the
+    // captain) and laterally close enough to block the sprint. Cheap geometry, matching the encirclement
+    // the pack already leans into — the "cornered" the owner named, priced as a stressor.
+    private bool IsCornered()
+    {
+        foreach (Reever r in _reevers)
+        {
+            if (r.Y > _avatarY + 1.0 && r.Y <= MoonSurface.SurfaceTopY + 0.5 &&
+                Math.Abs(r.X - _avatarX) < CornerLateralRange)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool SeesMonolith()
+    {
+        double dx = _avatarX - MoonSurface.MonolithX;
+        double dy = _avatarY - MoonSurface.MonolithY;
+        return (dx * dx) + (dy * dy) <= MonolithSightRange * MonolithSightRange;
     }
 
     private void StepReevers(double dtRealSeconds)
@@ -575,7 +671,9 @@ public partial class Map
             Blips: blips.Select(b => (b.Bearing, b.Range)).ToList(),
             Cadence: (int)MotionTracker.CadenceFor(nearest),
             Readout: MotionTracker.Readout(nearest, closing),
-            CacheMarks: marks);
+            CacheMarks: marks,
+            Nerve: _nerve,
+            NerveReadout: NerveModel.Readout(_nerve));
     }
 
     // Seed the 2D6 from place + integer-second instant — deterministic, replayable in a test.

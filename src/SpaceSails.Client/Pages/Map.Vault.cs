@@ -206,6 +206,7 @@ public partial class Map
             },
             DiceItems = BuildDiceItemsSection(),
             Progress = new ProgressSection { TutorialPlayed = _tutorialPlayed }, // #292
+            Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Resume = BuildResumeSection(),
         };
     }
@@ -398,6 +399,14 @@ public partial class Map
         // an old save from before this flag — defaults to false, which is harmless: the greeting is
         // still suppressed below because a LOAD is not a fresh Earth start), then keep the nav clear.
         _tutorialPlayed = vault.Progress?.TutorialPlayed ?? _tutorialPlayed;
+
+        // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking
+        // after a reload, and the monolith's first-sight hit stays spent. A missing section defaults calm.
+        if (vault.Nerve is { } nerve)
+        {
+            _nerve = NerveModel.Clamp(nerve.Nerve);
+            _monolithSeen = nerve.MonolithSeen;
+        }
 
         ApplyResumeBerth(vault.Resume, vault.SavedSimTime);
 

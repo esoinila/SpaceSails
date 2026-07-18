@@ -25,7 +25,9 @@ public sealed class DeckView
         System.Collections.Generic.IReadOnlyList<(double Bearing, double Range)> Blips,
         int Cadence,                 // MotionTracker.Cadence as int
         string Readout,
-        System.Collections.Generic.IReadOnlyList<(double X, double Y, bool Haunted)> CacheMarks);
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, bool Haunted)> CacheMarks,
+        double Nerve,                // #317: 0..100 (NerveModel.Max = steady). Drawn in the OPPOSITE corner
+        string NerveReadout);        // to the motion tracker — the channel-law corner gauge, never on the grid
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -247,6 +249,14 @@ public sealed class DeckView
             DrawMotionTracker(widthPx, heightPx, simTime, tHud);
         }
 
+        // #317 the nerve gauge: a crude deck-plan bar in the TOP-LEFT corner — the opposite corner from the
+        // motion tracker (which owns top-right), never over the grid (the dig-channel channel law). On-planet
+        // only: the SurfaceHud is null off-surface, so the ship draws none of it.
+        if (surface is { } nHud)
+        {
+            DrawNerveGauge(simTime, nHud);
+        }
+
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or
         // how to go ashore — the tester could only guess "airlock" by genre convention.
         _renderer.DrawText(ox, heightPx - 10,
@@ -299,6 +309,52 @@ public sealed class DeckView
         }
 
         _renderer.DrawText(cx, cy + r + 9, hud.Readout, TrackerRing, "8px monospace", TextAlign.Center);
+    }
+
+    // #317 the nerve gauge (top-left, screen-space): a crude deck-plan bar — full teal = steady hands,
+    // draining through amber to blood as the regolith's stressors fray the captain. The whole gauge trembles
+    // harder the lower the nerve falls (the "tremor in the glyph" the flavor ladder names), and a house-voice
+    // line reads out beneath it. Display-only — this slice never rolls, exits, or ends a run (#226 owns that).
+    private static readonly RgbaColor NerveFrame = new(150, 170, 190, 175);
+    private void DrawNerveGauge(double simTime, in SurfaceHud hud)
+    {
+        double frac = NerveModel.Fraction(hud.Nerve);
+        NerveModel.NerveBand band = NerveModel.BandFor(hud.Nerve);
+        RgbaColor fill = band switch
+        {
+            NerveModel.NerveBand.Steady => new RgbaColor(120, 220, 170, 235),
+            NerveModel.NerveBand.Rattled => new RgbaColor(185, 220, 130, 235),
+            NerveModel.NerveBand.Shaken => new RgbaColor(230, 200, 90, 240),
+            NerveModel.NerveBand.Fraying => new RgbaColor(235, 150, 80, 245),
+            _ => new RgbaColor(230, 80, 70, 250),
+        };
+
+        // The trembling scales with how much nerve is GONE — steady hands are still, shot ones shake hard.
+        double tremor = 1.0 - frac;
+        float jx = (float)(Math.Sin(simTime * 0.02) * tremor * tremor * 3.0);
+        float jy = (float)(Math.Cos(simTime * 0.017) * tremor * tremor * 2.0);
+
+        float x0 = 16f + jx, y0 = 22f + jy;
+        const float w = 132f, h = 12f;
+
+        _renderer.DrawText(x0, y0 - 5, "NERVE", NerveFrame, "8px monospace", TextAlign.Left);
+        FillRect(x0, y0, w, h, new RgbaColor(14, 18, 24, 210));           // the empty channel
+        FillRect(x0, y0, w * (float)frac, h, fill);                       // the fill
+        for (int i = 1; i < 5; i++)                                       // crude deck-plan segments
+        {
+            float tx = x0 + w * i / 5f;
+            DrawSeg((tx, y0), (tx, y0 + h), new RgbaColor(10, 14, 20, 160), 1f);
+        }
+        DrawRectOutline(x0, y0, w, h, NerveFrame);                        // the frame
+        _renderer.DrawText(x0, y0 + h + 10, hud.NerveReadout, fill, "9px monospace", TextAlign.Left);
+    }
+
+    private void DrawRectOutline(float x, float y, float w, float h, RgbaColor color)
+    {
+        Span<float> s = _scratch.AsSpan(0, 10);
+        s[0] = x; s[1] = y; s[2] = x + w; s[3] = y; s[4] = x + w; s[5] = y + h;
+        s[6] = x; s[7] = y + h; s[8] = x; s[9] = y;
+        _renderer.DrawPolyline(s, color, 1.5f);
     }
 
     private void DrawSeg((float X, float Y) a, (float X, float Y) b, RgbaColor color, float width)
