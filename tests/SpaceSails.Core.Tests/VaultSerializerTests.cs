@@ -83,6 +83,7 @@ public class VaultSerializerTests
         Insurance = new InsuranceSection((int)InsuranceTier.Premium, 200000.0),
         Upgrades = new UpgradesSection { MassLevel = 2, SensorLevel = 1, HoldLevel = 3, TelescopeLevel = 1 },
         DiceItems = new DiceItemsSection([new DiceItemRecord("boarding-nets", "Boarding nets", 2)]),
+        Progress = new ProgressSection { TutorialPlayed = true },
         Resume = new ResumeSection { HavenId = "ringside", HavenName = "Ringside", WasDocked = true },
     };
 
@@ -114,6 +115,7 @@ public class VaultSerializerTests
         Assert.Equal("cacheId", loaded.Quests!.Quests[0].Fields.Keys.First());
         Assert.Single(loaded.Quests.Obligations);
         Assert.Equal(3, loaded.Cargo!.Hot[0].HotUnits);
+        Assert.True(loaded.Progress!.TutorialPlayed); // #292 — the onboarding bit rides the vault losslessly
         Assert.True(loaded.Resume!.WasDocked);
     }
 
@@ -166,6 +168,7 @@ public class VaultSerializerTests
     [InlineData("insurance")]
     [InlineData("upgrades")]
     [InlineData("diceItems")]
+    [InlineData("progress")]
     [InlineData("resume")]
     public void EachSection_RoundTrips_Independently(string section)
     {
@@ -183,6 +186,7 @@ public class VaultSerializerTests
             "insurance" => new Vault { Insurance = full.Insurance },
             "upgrades" => new Vault { Upgrades = full.Upgrades },
             "diceItems" => new Vault { DiceItems = full.DiceItems },
+            "progress" => new Vault { Progress = full.Progress },
             "resume" => new Vault { Resume = full.Resume },
             _ => throw new ArgumentOutOfRangeException(nameof(section)),
         };

@@ -866,9 +866,16 @@
                 Scope
             </button>
             <a class="btn btn-sm btn-outline-secondary" href="/guide" target="_blank" title="Captain's Guide">?</a>
-            <a class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" role="button" @onclick="ToggleTutorial" title="Show/hide the current lesson's checklist">
-                🏴 checklist
-            </a>
+            @* #292: the nav screen is not a billboard. The checklist toggle is a minimal pointer that
+               appears ONLY while a lesson is actually in hand (or its card is open) — no persistent
+               tutorial chrome for a veteran. Starting or replaying a lesson lives at the Captain's desk
+               (0) → Tutorials, the quieter room where the picker already moved. *@
+            @if (ActiveTutorialIndex() >= 0 || _showTutorial)
+            {
+                <a class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" role="button" @onclick="ToggleTutorial" title="Show/hide the current lesson's checklist — pick or replay lessons at the Captain's desk (0) → Tutorials">
+                    🏴 checklist
+                </a>
+            }
             @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
         </div>
 
