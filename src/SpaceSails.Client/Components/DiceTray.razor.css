@@ -1,0 +1,110 @@
+/* THE DICE TRAY (#305) — crude TTRPG table style (the deck-plan aesthetic law: crude is correct, no
+   fancy rendering). The z-index rides the OverlayBands scheme via the --z-desks-popups band anchor
+   (declared in app.css :root, inherited into this scoped component) — a fine +60 layer that sits over
+   the routine desk cards yet safely below the distress lifeline (--z-distress-lifeline). CssZBandSyncTests
+   parses this file and fails the build if the z-index ever drifts from OverlayBands.DiceTray, so the
+   band law is enforced, not eyeballed. */
+
+.dice-tray {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 1.5rem;
+    z-index: calc(var(--z-desks-popups) + 60); /* OverlayBands.DiceTray = 1260 */
+    display: flex;
+    justify-content: center;
+    pointer-events: none; /* the backdrop passes clicks; only the card catches them */
+}
+
+.dice-tray-card {
+    pointer-events: auto;
+    max-width: min(92vw, 30rem);
+    background: #14100a;
+    border: 2px solid #b9942f;
+    border-radius: 2px;
+    box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6);
+    padding: 0.7rem 0.9rem 0.8rem;
+    color: #efe6d0;
+    font-family: "Courier New", monospace;
+    text-align: center;
+}
+
+.dice-tray-cap {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: #b9942f;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.dice-tray-dice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+}
+
+/* A crude boxed die face — a hand-drawn square with the number. No pip art; crude is correct. */
+.dice-face {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 2px solid #efe6d0;
+    border-radius: 3px;
+    background: #efe6d0;
+    color: #14100a;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.dice-tray-eq {
+    font-size: 1.2rem;
+    color: #b9942f;
+    padding: 0 0.15rem;
+}
+
+.dice-tray-total {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #f4d67a;
+}
+
+.dice-tray-math {
+    font-size: 0.72rem;
+    color: #a99a76;
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+}
+
+.dice-tray-headline {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.dice-tray-detail {
+    font-size: 0.8rem;
+    color: #c9bd9c;
+    margin-bottom: 0.6rem;
+}
+
+.dice-tray-close {
+    background: transparent;
+    border: 1px solid #b9942f;
+    border-radius: 2px;
+    color: #b9942f;
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.8rem;
+    cursor: pointer;
+}
+
+.dice-tray-close:hover {
+    background: #b9942f;
+    color: #14100a;
+}

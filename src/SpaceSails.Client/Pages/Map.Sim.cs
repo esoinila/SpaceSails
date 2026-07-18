@@ -918,6 +918,7 @@ public partial class Map
         if (stepsThisFrame > 0)
         {
             CheckSailHole(); // PR-I: a too-deep cloud-top dip holes the sail (before burns can fire)
+            TrackAerobrakePass(); // #305: a completed haze pass rolls its 2D6 episode into the dice tray
             AccountForFiredNodes();
             if (_dockedHavenId is null)
             {

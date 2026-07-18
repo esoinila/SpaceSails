@@ -1,0 +1,52 @@
+@using SpaceSails.Core
+
+@* THE DICE TRAY (#305) — the one shared reveal every dice-scripted system casts into. It shows the
+   dice that were rolled (the owner's TTRPG homage: "show the player the dies that were cast") in the
+   crude deck-plan table style: boxed 2D6 faces, the spelled-out math, and the episode line. It knows
+   nothing about the aerobrake, BUSTED or the drinks lane — it renders a Core DiceEvent and dismisses.
+   Any system adopts it by raising a DiceEvent (see Map.RaiseDiceEvent). z-index rides the OverlayBands
+   scheme (the --z-desks-popups band), so the sync gate protects it and it can never bury the lifeline. *@
+
+@if (Event is { } ev)
+{
+    <div class="dice-tray" @onclick="Dismiss">
+        <div class="dice-tray-card" @onclick:stopPropagation="true">
+            <div class="dice-tray-cap">🎲 @ev.Source · @ev.DieLabel</div>
+
+            <div class="dice-tray-dice">
+                @foreach (int face in ev.Faces)
+                {
+                    <span class="dice-face" aria-label="@($"die showing {face}")">@face</span>
+                }
+                <span class="dice-tray-eq">=</span>
+                <span class="dice-tray-total">@ev.Total</span>
+            </div>
+
+            <div class="dice-tray-math">@ev.DescribeMath()</div>
+
+            <div class="dice-tray-headline">@ev.Headline</div>
+            @if (!string.IsNullOrWhiteSpace(ev.Detail))
+            {
+                <div class="dice-tray-detail">@ev.Detail</div>
+            }
+
+            <button type="button" class="dice-tray-close" @onclick="Dismiss">let the dice lie</button>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>The cast dice to show, or null when the tray is closed.</summary>
+    [Parameter] public DiceEvent? Event { get; set; }
+
+    /// <summary>Raised when the captain dismisses the tray (or clicks off it).</summary>
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private async Task Dismiss()
+    {
+        if (OnDismiss.HasDelegate)
+        {
+            await OnDismiss.InvokeAsync();
+        }
+    }
+}

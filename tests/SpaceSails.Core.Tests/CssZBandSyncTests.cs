@@ -116,6 +116,20 @@ public class CssZBandSyncTests
     }
 
     [Fact]
+    public void TheDiceTray_ResolvesToItsBandConstant_AndSitsBelowTheLifeline()
+    {
+        // #305 — the shared dice tray is a separate component, but its z-index still rides the band scheme.
+        // The gate parses its scoped stylesheet and pins it to OverlayBands.DiceTray, and asserts it can
+        // never out-rank the distress lifeline (a dice reveal must never bury the rescue button).
+        string trayCss = ReadCss("DiceTray.razor.css");
+        IReadOnlyDictionary<string, int> bands = ParseRootBands();
+
+        int tray = ResolveSelectorZ(trayCss, ".dice-tray", bands);
+        Assert.Equal(OverlayBands.DiceTray, tray);
+        Assert.True(tray < OverlayBands.DistressLifeline, "the dice tray must sit below the distress lifeline");
+    }
+
+    [Fact]
     public void TheDistressLifeline_OutRanksEveryDesksAndPopupsOverlay_InTheLiveCss()
     {
         // The load-bearing invariant, verified against the stylesheet itself: the reserved lifeline band
