@@ -105,6 +105,106 @@ public static class ContactDrink
         <= 9 => DrinkOutcome.Warm,
         _ => currentGoodwill >= TrustForBusiness ? DrinkOutcome.BusinessUnlock : DrinkOutcome.OpensUp,
     };
+
+    // --- The OFFER, resolved BEFORE a credit moves (#347, owner playtest 2026-07-18) ------------------
+    // "The person may refuse the drink here. That possibility should be determined first… If we just buy
+    // it then we don't know what they would have and if they accept it." So standing a contact a glass is
+    // now two beats: the captain OFFERS, and the contact — deterministically from seed — ACCEPTS or waves
+    // off. Only an accepted glass is poured (and only then does the shared-drink 2D6 above decide the
+    // edge). A warm contact takes it gladly; a wary one (you're running heat or hot cargo) may pass.
+
+    /// <summary>2D6 total (after modifiers) at or above which the contact accepts an offered glass. Set
+    /// low — most people take a free drink — so a refusal reads as real suspicion, not bad luck.</summary>
+    public const int AcceptThreshold = 6;
+
+    /// <summary>The pure accept/refuse verdict for a settled offer total — the boundary the client and any
+    /// future server share. At or above <see cref="AcceptThreshold"/> the glass is taken.</summary>
+    public static bool Accepts(int total) => total >= AcceptThreshold;
+
+    /// <summary>Roll whether a contact accepts an offered drink, before anything is bought.</summary>
+    /// <param name="seed">Folds the contact and the moment (salted apart from <see cref="Roll"/>, so the
+    /// offer and the shared-drink roll are independent) — deterministic and replayable in a test.</param>
+    /// <param name="currentGoodwill">Goodwill BEFORE the offer: a warm contact (≥ <see cref="WarmThreshold"/>)
+    /// takes the glass readily.</param>
+    /// <param name="holdingSecret">True when you're carrying heat or hot cargo — you read as shifty, and a
+    /// wary contact is likelier to wave the glass off.</param>
+    public static DrinkOfferResult OfferDrink(ulong seed, int currentGoodwill, bool holdingSecret)
+    {
+        int face1 = DiceRule.Roll(DiceRule.Seed(seed, "drink-offer-a"), Faces).Face;
+        int face2 = DiceRule.Roll(DiceRule.Seed(seed, "drink-offer-b"), Faces).Face;
+
+        var modifiers = new List<DiceModifier>();
+        if (currentGoodwill >= WarmThreshold)
+        {
+            modifiers.Add(new DiceModifier("they know you", +2));
+        }
+
+        if (holdingSecret)
+        {
+            modifiers.Add(new DiceModifier("you read as shifty", -2));
+        }
+
+        int total = face1 + face2;
+        foreach (DiceModifier m in modifiers)
+        {
+            total += m.Value;
+        }
+
+        return new DrinkOfferResult(face1, face2, modifiers, seed, Accepts(total));
+    }
+}
+
+/// <summary>A settled drink-OFFER 2D6 (#347): the two natural faces, the named modifier stack, the seed,
+/// and whether the contact <see cref="Accepted"/> the glass. Pure data — the caller pours (and rolls the
+/// shared-drink <see cref="DrinkParley"/>) only on an accept; a refusal costs nothing but the ask.</summary>
+public readonly record struct DrinkOfferResult(
+    int Face1,
+    int Face2,
+    IReadOnlyList<DiceModifier> Modifiers,
+    ulong Seed,
+    bool Accepted)
+{
+    /// <summary>The natural pips: the two d6 faces summed, 2..12 before modifiers.</summary>
+    public int Pips => Face1 + Face2;
+
+    /// <summary>The sum of every modifier's value (can be negative).</summary>
+    public int ModifierTotal
+    {
+        get
+        {
+            int sum = 0;
+            foreach (DiceModifier m in Modifiers)
+            {
+                sum += m.Value;
+            }
+
+            return sum;
+        }
+    }
+
+    /// <summary>The pips plus every modifier — the number the accept/refuse verdict reads.</summary>
+    public int Total => Pips + ModifierTotal;
+
+    /// <summary>The math, spelled out for the reveal:
+    /// <c>2d6: 3 + 4 = 7  −2 (you read as shifty) = 5 → they wave it off</c>.</summary>
+    public string Describe()
+    {
+        var parts = new System.Text.StringBuilder();
+        parts.Append("2d6: ").Append(Face1).Append(" + ").Append(Face2).Append(" = ").Append(Pips);
+        foreach (DiceModifier m in Modifiers)
+        {
+            parts.Append("  ").Append(m.Value >= 0 ? '+' : '−').Append(System.Math.Abs(m.Value))
+                .Append(" (").Append(m.Label).Append(')');
+        }
+
+        if (Modifiers.Count > 0)
+        {
+            parts.Append("  = ").Append(Total);
+        }
+
+        parts.Append(" → ").Append(Accepted ? "they take the glass" : "they wave it off");
+        return parts.ToString();
+    }
 }
 
 /// <summary>A settled drink-parley 2D6 (#306): the two natural d6 faces, the named modifier stack, the

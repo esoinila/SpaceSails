@@ -529,20 +529,22 @@
                 <div class="deck-bank-notice small">@note</div>
             }
             <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
-            @* #306/#308 The drink as a two-edged trust maneuver, restructured (owner 2026-07-18): standing a
-               contact a glass is the CAPTAIN's own idea, so it opens an OFFER MOMENT (pour it / cancel) — a
-               cancel is free (no "unwet glass" debit; reconsidering your own idea is not a betrayal). After a
-               round for the room, every present regular is satisfied for this visit and shows a toast state
-               instead of an offer; an extra personal drink is still available, never demanded. *@
+            @* #306/#308/#347 The drink as a two-edged trust maneuver, OFFER-FIRST (owner 2026-07-18: "The
+               person may refuse the drink here. That possibility should be determined first"). Extending the
+               offer is the CAPTAIN's own idea, so it opens an OFFER MOMENT (offer it / cancel) — a cancel is
+               free (reconsidering your own idea is not a betrayal). Confirming is where the CONTACT decides
+               accept/refuse; only an accepted glass is bought and poured. After a round for the room, every
+               present regular is satisfied for this visit and shows a toast state; a personal offer is still
+               available, never demanded. *@
             @foreach ((string giver, string display) in PresentBarContacts())
             {
                 @if (_pendingContactDrink == giver)
                 {
                     <div class="deck-offer-actions">
-                        <span class="bar-offer-moment small">Stand @display a glass?</span>
+                        <span class="bar-offer-moment small">Offer @display a drink?</span>
                         <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
-                                title="@($"Pour it — you stand {display} a {keep.DrinkName} ({keep.DrinkPrice} cr); the 2D6 decides if they open up or you slip a tell")"
-                                @onclick="@(() => BuyContactDrink(giver))">🥃 Pour it · @keep.DrinkPrice cr</button>
+                                title="@($"Offer {display} a {keep.DrinkName} ({keep.DrinkPrice} cr) — they may accept or refuse; only if they take it is it poured, and the 2D6 decides if they open up or you slip a tell")"
+                                @onclick="@(() => BuyContactDrink(giver))">🥃 Offer it · @keep.DrinkPrice cr</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary"
                                 title="Changed your mind — no harm done" @onclick="CancelContactDrinkOffer">Cancel</button>
                     </div>
@@ -552,16 +554,16 @@
                     <div class="deck-offer-actions">
                         <span class="bar-toasted small">🍻 @display toasted you with the room</span>
                         <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.DrinkPrice)"
-                                title="@($"Stand {display} a personal glass on top of the round — extra warmth, never demanded")"
-                                @onclick="@(() => OfferContactDrink(giver))">🥃 Stand another · @keep.DrinkPrice cr</button>
+                                title="@($"Offer {display} a personal glass on top of the round — they may still refuse; extra warmth, never demanded")"
+                                @onclick="@(() => OfferContactDrink(giver))">🥃 Offer another · @keep.DrinkPrice cr</button>
                     </div>
                 }
                 else
                 {
                     <div class="deck-offer-actions">
                         <button type="button" class="btn btn-sm btn-warning"
-                                title="@($"Stand {display} a drink ({keep.DrinkPrice} cr) — a sign of trust; the 2D6 decides if they open up or you slip a tell")"
-                                @onclick="@(() => OfferContactDrink(giver))">🥃 Stand @display a drink · @keep.DrinkPrice cr</button>
+                                title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — a sign of trust they may accept or refuse; if taken, the 2D6 decides if they open up or you slip a tell")"
+                                @onclick="@(() => OfferContactDrink(giver))">🥃 Offer @display a drink · @keep.DrinkPrice cr</button>
                     </div>
                 }
             }
