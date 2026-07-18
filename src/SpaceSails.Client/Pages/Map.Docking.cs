@@ -351,15 +351,29 @@ public partial class Map
     private int _boardCoin;
     private int _boardBots;   // #314: how many ship sentries to load as surface escorts (0..roster)
 
+    // #348 (owner, 2026-07-18 playtest): the Board button commits to whatever the dialog shows — one
+    // button, no "empty-handed" twin. Boarding with a literally empty sling (no coin, no cargo) is a
+    // legitimate fishing expedition, so we don't block it — we just ask once. True while that "are you
+    // sure?" prompt is up, replacing the normal action row in the same card.
+    private bool _boardEmptyConfirm;
+
     private void OpenBoardingPanel(ShuttleStop stop)
     {
         _boardTarget = stop;
         _boardCoin = 0;               // #313: presume NOTHING — you are not declaring a plan
-        _boardBots = 0;               // #314: no escorts loaded until the captain asks for them
+        // #348: droids default to ALL aboard (owner: "Why would I ever go without both droids to keep me
+        // safe. It should be so by default"). The −/+ stepper stays for the odd case, but every available
+        // sentry rides down unless the captain drops one.
+        _boardBots = AvailableBots;
+        _boardEmptyConfirm = false;
         _shuttleBayStops = null;      // the panel replaces the board
     }
 
-    private void CancelBoarding() => _boardTarget = null;
+    private void CancelBoarding()
+    {
+        _boardTarget = null;
+        _boardEmptyConfirm = false;
+    }
 
     private void AdjustBoardCoin(int delta) => _boardCoin = Math.Clamp(_boardCoin + delta, 0, _credits);
 
@@ -373,8 +387,8 @@ public partial class Map
     private string BotMusterLine => _shipBots.Count switch
     {
         0 => "Sentry bots — none aboard (rearm at a haven)",
-        1 => $"{_shipBots[0].Unit} stands ready — bring it?",
-        _ => $"{string.Join(" and ", _shipBots.Select(b => b.Unit))} stand ready — bring them?",
+        1 => $"{_shipBots[0].Unit} rides escort by default",
+        _ => $"{string.Join(" and ", _shipBots.Select(b => b.Unit))} ride escort by default",
     };
     private void AdjustBoardBots(int delta) => _boardBots = Math.Clamp(_boardBots + delta, 0, AvailableBots);
 
@@ -383,18 +397,30 @@ public partial class Map
         ? ""
         : string.Join(", ", _shipBots.Take(_boardBots).Select(b => $"{b.Unit} ({SentryBot.Readout(b.Rounds)})"));
 
-    // Land: pack whatever (if anything) was loaded and grow the tube in place. The hold rides as cargo
-    // and only leaves the ship's books if it actually goes into the ground at a dig.
-    private async Task ConfirmBoarding(ShuttleStop stop, bool withChest)
+    // #348: ONE Board button. Board with whatever the dialog shows — coin + the whole small hold, if any.
+    // If the sling is literally empty (no coin, no cargo) it's a fishing expedition, still a first-class
+    // trip, so we don't forbid it — we raise the one-time "are you certain?" prompt and let the captain
+    // confirm. Anything loaded boards straight away.
+    private async Task TryBoard(ShuttleStop stop)
     {
-        var hold = withChest
-            ? _cargoByClass.Where(kv => kv.Value > 0)
-                .Select(kv => new CacheCargo(kv.Key, kv.Value, IsHotClass(kv.Key)))
-                .ToList()
-            : new List<CacheCargo>();
-        ShuttleExcursion.ChestLoad chest = withChest
-            ? ShuttleExcursion.Pack(_boardCoin, _credits, hold)
-            : ShuttleExcursion.Pack(0, _credits, []);
+        if (_boardCoin <= 0 && _cargoUnits <= 0)
+        {
+            _boardEmptyConfirm = true; // empty sling — ask once before the walk down
+            return;
+        }
+        await ConfirmBoarding(stop);
+    }
+
+    // Land: pack whatever (if anything) was loaded and grow the tube in place. The hold rides as cargo
+    // and only leaves the ship's books if it actually goes into the ground at a dig. An empty pack is a
+    // valid fishing expedition (the caller already confirmed it).
+    private async Task ConfirmBoarding(ShuttleStop stop)
+    {
+        var hold = _cargoByClass.Where(kv => kv.Value > 0)
+            .Select(kv => new CacheCargo(kv.Key, kv.Value, IsHotClass(kv.Key)))
+            .ToList();
+        ShuttleExcursion.ChestLoad chest = ShuttleExcursion.Pack(_boardCoin, _credits, hold);
+        _boardEmptyConfirm = false;
         await BeginSurfaceExcursion(stop, chest, _boardBots); // #314: bring the loaded sentries down too
     }
 
