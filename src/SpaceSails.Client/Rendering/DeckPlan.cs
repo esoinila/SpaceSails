@@ -17,7 +17,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -39,6 +39,14 @@ public sealed class DeckPlan
 
     public const double InteractRadius = 3.0;
     public const double AvatarRadius = 0.7;
+
+    /// <summary>The SHUTTLE-BAY HATCH on the ship's bottom hull (#295): the wild-side threshold the
+    /// down-tube mates to, mirroring the top airlock hatch that mates the station tube. The bare ship
+    /// seals it; a surface excursion (see <c>MoonSurface</c>) carves it open and grows the tube below.
+    /// The crew-only-door law lives here: Reevers may chase to this line but never cross it.</summary>
+    public const float ShuttleHatchY = -10f;
+    public const float ShuttleHatchX1 = -9f;
+    public const float ShuttleHatchX2 = -5f;
 
     /// <summary>Upper bound on droids in any one plan — the render buffers size to this. Bumped to 9
     /// for the docked complex's roaming NPC (PR-F: a station patron on a sim-time rota, index 8), then
@@ -221,7 +229,12 @@ public sealed class DeckPlan
             new(-18, 10, -24, 7, false, true),
             new(-24, 7, -24, -7, false, true),
             new(-24, -7, -18, -10, false, true),
-            new(-18, -10, 20, -10, false, true),
+            // The bottom hull, split around the SHUTTLE-BAY HATCH (#295: the bay moved to the bottom
+            // edge — the wild side). Sealed on the bare ship, exactly like the top airlock hatch; a
+            // surface excursion opens it and mates the down-tube (see MoonSurface).
+            new(-18, -10, ShuttleHatchX1, -10, false, true),
+            new(ShuttleHatchX2, -10, 20, -10, false, true),
+            new(ShuttleHatchX1, -10, ShuttleHatchX2, -10, false, true), // the hatch itself — sealed here
 
             // --- Bridge bulkhead (x=18), door on the centerline, 4 du wide ---
             new(18, 10, 18, 2, false, false),
@@ -248,14 +261,17 @@ public sealed class DeckPlan
             new(11, -3, 11, -10, false, false),       // CABIN 2 / CABIN 1
             new(7.5f, -3, 7.5f, -10, false, false),   // CABIN 3 / CABIN 2
 
-            // --- Shuttle bay (port, x -12..-1, y 3..10): corridor wall, wide bay door ---
+            // --- Cargo hold (port, x -12..-1, y 3..10): corridor wall, wide bay door (#295: the hold
+            //     and the shuttle bay swapped sides so the bay meets the bottom hull — geography intact,
+            //     walls unchanged, only the room's identity + fixtures moved). ---
             // Its starboard wall pulled back to x=-1 to open the wide airlock corridor slot (x -1..6).
             new(-1, 3, -3, 3, false, false),
             new(-7, 3, -12, 3, false, false),
             new(-1, 10, -1, 3, false, false),
             new(-12, 10, -12, 3, false, false),
 
-            // --- Cargo hold (starboard, x -12..2, y -10..-3) ---
+            // --- Shuttle bay (bottom-port, x -12..2, y -10..-3): the wild-side bay, its hatch on the
+            //     bottom hull. K-77 and R-3B are stationed here; the down-tube grows from the hatch. ---
             new(2, -3, -3, -3, false, false),
             new(-7, -3, -12, -3, false, false),
             new(2, -10, 2, -3, false, false),
@@ -272,14 +288,14 @@ public sealed class DeckPlan
             new(ConsoleKind.NavPost, 24, -2.5f, "NAV POST"),
             new(ConsoleKind.Scope, 20, 7, "SCOPE"),
             new(ConsoleKind.Cantina, 11, 7.5f, "CANTINA"),
-            new(ConsoleKind.Cargo, -5, -6.5f, "CARGO"),
-            new(ConsoleKind.Shuttle, -8, 6.5f, "SHUTTLE BAY"),
+            new(ConsoleKind.Cargo, -5, 6.5f, "CARGO"),        // #295: the hold is now the top-port room
+            new(ConsoleKind.Shuttle, -10, -6.5f, "SHUTTLE BAY"), // #295: the bay is now bottom-port
 
-            // The shuttle-bay airlock (#163): a door to the actual shuttles, in the bay's port hull just
-            // outboard of the cradle. Walk up and it opens the "places in shuttle range" pop-up — the
-            // door you understand as a flight. Kept clear of the SHUTTLE BAY console (−8, 6.5) so [E]
-            // doesn't grab the wrong one. Drawn as the amber airlock door (see the Door added below).
-            new(ConsoleKind.ShuttleAirlock, -4.5f, 8.7f, "🚀 SHUTTLE AIRLOCK"),
+            // The shuttle-bay airlock (#163; moved to the bottom hull hatch for #295): walk up and it
+            // opens the "places in shuttle range" pop-up — the door you understand as a flight, and now
+            // the hinge the surface excursion grows a down-tube from. Kept clear of the SHUTTLE BAY
+            // console (−10, −6.5) so [E] doesn't grab the wrong one. Drawn as the amber airlock door.
+            new(ConsoleKind.ShuttleAirlock, -6.5f, -8.7f, "🚀 SHUTTLE AIRLOCK"),
             new(ConsoleKind.Vent, -20, -4.5f, "VENT PANEL"),
             new(ConsoleKind.Head, 16.25f, -6.5f, "HEAD 🚽"), // the space toilet (3D-reno Phase 3)
 
@@ -304,8 +320,8 @@ public sealed class DeckPlan
             (11, 5, "CANTINA"),
             (2.5f, 12f, "⚓ AIRLOCK"),
             (12.75f, -9f, "CABIN 1"), (9.25f, -9f, "CABIN 2"), (5.75f, -9f, "CABIN 3"),
-            (-5, 8.5f, "SHUTTLE BAY"),
-            (-5, -8.5f, "CARGO HOLD"),
+            (-6, 8.5f, "CARGO HOLD"),
+            (-6, -8.5f, "SHUTTLE BAY"),
             (-19, 5, "ENGINE ROOM"),
         ];
 
@@ -323,13 +339,14 @@ public sealed class DeckPlan
         // Cantina tables (plan-driven now): three tops with a view, port side.
         (float X, float Y)[] tables = [(8, 7.5f), (11, 6), (14, 7.5f)];
 
-        // The shuttle-bay airlock door (#163): an amber auto-door across the bay's port hull, in front
-        // of the cradle, drawn exactly like the docking-tube airlocks. It sits ON the intact hull wall
-        // (the hull stays closed, so the raycaster never escapes) — walking through it is the shuttle
-        // trip itself, resolved by the "places in shuttle range" pop-up, not a physical step into vacuum.
+        // The shuttle-bay airlock door (#163; #295 moved it to the bottom hull hatch): an amber
+        // auto-door across the SHUTTLE-BAY HATCH on the bottom hull. On the bare ship it sits on the
+        // sealed hatch (the hull stays closed, the raycaster never escapes) — walking through it is the
+        // shuttle flight, resolved by the "places in shuttle range" pop-up. A surface excursion opens
+        // the hatch and grows a down-tube through it (see MoonSurface).
         Door[] doors =
         [
-            new(-6, 10, -3, 10),
+            new(ShuttleHatchX1, -10, ShuttleHatchX2, -10),
         ];
 
         return new DeckPlan(walls, consoles, roomLabels, backdrops,
@@ -342,10 +359,10 @@ public sealed class DeckPlan
     // Positions are pure functions of sim time: no state, deterministic, free.
     private static void FillShipDroids(double simTime, Droid[] droids)
     {
-        // Two boarding troopers at parade rest in the shuttle bay, idle-swaying.
+        // Two boarding troopers at parade rest in the shuttle bay (now bottom-port, #295), idle-swaying.
         double sway = 0.08 * Math.Sin(simTime * 0.0011);
-        droids[0] = new Droid(-4.5 + sway, 7.5, -Math.PI / 2, "K-77");
-        droids[1] = new Droid(-2.5 - sway, 7.5, -Math.PI / 2, "R-3B");
+        droids[0] = new Droid(-4.5 + sway, -7.5, Math.PI / 2, "K-77");
+        droids[1] = new Droid(-2.5 - sway, -7.5, Math.PI / 2, "R-3B");
 
         // One patrolling the corridor, bow to stern and back (triangle wave, ~40 s loop).
         double phase = simTime % 40000 / 40000.0;
@@ -362,7 +379,7 @@ public sealed class DeckPlan
         if (x > 6 && y > 3) return "CANTINA";
         if (x > 4 && y < -3) return x > 14.5 ? "HEAD" : "CABINS";
         if (x > 4) return "CORRIDOR";
-        if (x > -12) return y > 3 ? "SHUTTLE BAY" : y < -3 ? "CARGO HOLD" : "CORRIDOR";
+        if (x > -12) return y > 3 ? "CARGO HOLD" : y < -3 ? "SHUTTLE BAY" : "CORRIDOR";
         return "CORRIDOR";
     }
 }

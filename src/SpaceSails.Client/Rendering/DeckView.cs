@@ -111,25 +111,25 @@ public sealed class DeckView
 
         if (isShip)
         {
-            // Cargo crates: one per unit aboard.
+            // Cargo crates: one per unit aboard (in the top-port hold now — #295).
             for (int i = 0; i < Math.Min(state.CargoUnits, 12); i++)
             {
-                (float cx, float cy) = P(-10 + (i % 4) * 1.9, -5 - (i / 4) * 1.6);
+                (float cx, float cy) = P(-10 + (i % 4) * 1.9, 5 + (i / 4) * 1.6);
                 DrawBox(cx, cy, 0.65f * scale, CrateColor);
             }
 
-            // Shuttle in its cradle — or away doing piracy.
+            // Shuttle in its cradle (bottom-port bay now — #295) — or away doing piracy.
             if (!state.ShuttleAway)
             {
-                DrawShuttle(P(-6.5, 6.5), scale, simTime);
+                DrawShuttle(P(-6.5, -6.5), scale, simTime);
             }
             else
             {
-                (float bx, float by) = P(-6.5, 6.5);
+                (float bx, float by) = P(-6.5, -6.5);
                 _renderer.DrawText(bx, by, "— AWAY —", new RgbaColor(255, 170, 80, 200), "bold 11px monospace", TextAlign.Center);
                 if (Math.Sin(simTime * 0.005) > 0)
                 {
-                    DrawSeg(P(-11, 9.9), P(-2, 9.9), new RgbaColor(255, 120, 80, 220), 3f);
+                    DrawSeg(P(-9, -9.9), P(-5, -9.9), new RgbaColor(255, 120, 80, 220), 3f);
                 }
             }
 

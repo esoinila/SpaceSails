@@ -36,6 +36,11 @@ public readonly record struct CacheCargo(string CargoClass, int Units, bool Hot)
 /// <param name="Owner">Whose hoard this is — "you" for the player, else the NPC/contact name.</param>
 /// <param name="PlayerOwned">True when the player buried it (the discovery roll only threatens ours;
 /// an NPC cache is only ours to take once we hold its map).</param>
+/// <param name="ReeverLevel">The stash's standing Reever presence (#295): 0..<see cref="ReeverRaid.MaxReevers"/>
+/// watchdogs haunt this ground, left by whatever pack turned out at burial. It re-arms the 2D6 on every
+/// return (our dig or a rival's search) and hardens the stash against a rival's slow discovery roll — a
+/// Reever-haunted moon is the best vault with the most dangerous key. Defaults to 0 so every older saved
+/// cache (and every rumour/NPC chest) round-trips unchanged.</param>
 public readonly record struct TreasureCache(
     string Id,
     string BodyId,
@@ -46,7 +51,8 @@ public readonly record struct TreasureCache(
     IReadOnlyList<CacheCargo> Cargo,
     double BuriedSimTime,
     string Owner,
-    bool PlayerOwned)
+    bool PlayerOwned,
+    int ReeverLevel = 0)
 {
     /// <summary>Total cargo units in the chest (0 when it holds only coin).</summary>
     public int TotalCargoUnits => Cargo?.Sum(c => c.Units) ?? 0;
