@@ -76,6 +76,39 @@ public partial class Map
     private static readonly string[] ManualSlotIds =
         [.. Enumerable.Range(1, SaveSlotBook.ManualSlotCount).Select(SaveSlotBook.ManualSlotId)];
 
+    // The WHOLE rack (#312), in fixed slot order: the rolling autosave first, then the nine manual berths.
+    // The front door and the captain's-desk drawer both render all ten — occupied ones (newest-first from
+    // the label list) then empty berths — so the logbook is a shelf, never just the occupied handful.
+    private static readonly string[] AllSlotIds =
+        [SaveSlotBook.AutoSlotId, .. ManualSlotIds];
+
+    // #312: the New-voyage "start at a berth" expander — a modest shelf for the bench to boot a fresh
+    // campaign already docked at any dockable haven, routed through the SAME StartDockedAtHaven the
+    // ?dock=<id> cheat uses (no parallel boot code). The truly-new player still sees one big New-voyage.
+    private bool _showBerthStarts;
+
+    // Every dockable station haven (id + name) for the expander, straight from the one registry (#297).
+    private IReadOnlyList<(string Id, string Name)> BerthStarts()
+        => _ephemeris is null
+            ? []
+            : [.. DockableHavens.All(_ephemeris).Select(b => (b.Id, b.Name))];
+
+    // Boot a brand-new voyage already clamped on at a chosen berth — the expander's action. Dismisses the
+    // front door and hands to the shared docked-start path, then lands on the deck/Nav like ChooseStart.
+    private async Task ChooseBerthStart(string havenId)
+    {
+        _showStartPicker = false;
+        _showBerthStarts = false;
+        StartDockedAtHaven(havenId);
+        if (!_deckMode && _activeDesk != ShipDesk.Nav)
+        {
+            SwitchDesk(ShipDesk.Nav);
+        }
+
+        StateHasChanged();
+        await _focusableDiv.FocusAsync();
+    }
+
     // One debounced write path: every save-worthy event just raises this flag; the tick flushes a
     // single write, so a burst (dock → payment → deck) costs one serialize, not three.
     private bool _autosaveDirty;
@@ -558,13 +591,38 @@ public partial class Map
     }
 
     // EXPORT = the LIVE state at press time, never a stale slot (owner, #310). Reads current game state,
-    // serializes it fresh, downloads it.
+    // serializes it fresh, downloads it — NAMED for the harbor it was saved at (#312): the file names the
+    // place, so six files in Downloads no longer play "which one is the Uranus save?".
     private void ExportVault()
     {
         try
         {
-            RendererInterop.VaultDownload("spacesails-vault.json", VaultSerializer.Save(BuildVault()));
-            ShowPulseMessage("⬇ Exported this moment as spacesails-vault.json.");
+            Vault live = BuildVault();
+            string name = SaveFileNames.ForMeta(BuildSlotMeta(live, SaveSlotKind.Autosave));
+            RendererInterop.VaultDownload(name, VaultSerializer.Save(live));
+            ShowPulseMessage($"⬇ Exported this moment as {name}.");
+        }
+        catch
+        {
+            ShowPulseMessage("Export failed — the browser blocked the download.");
+        }
+    }
+
+    // Per-slot EXPORT (#312): download a stored slot's bytes byte-for-byte, named for THAT slot's state
+    // (its label — place · day · when-saved), not the live moment. So exporting slot 3 gives you exactly
+    // the voyage banked in slot 3, in a file that names where slot 3 was.
+    private void ExportSlot(string slotId)
+    {
+        try
+        {
+            if (Slots.ReadPayload(slotId) is not { } raw || string.IsNullOrWhiteSpace(raw) || Slots.Get(slotId) is not { } meta)
+            {
+                return;
+            }
+
+            string name = SaveFileNames.ForMeta(meta);
+            RendererInterop.VaultDownload(name, raw);
+            ShowPulseMessage($"⬇ Exported {meta.Where} as {name}.");
         }
         catch
         {
@@ -577,6 +635,10 @@ public partial class Map
     // updates to the imported state, so Continue matches what the player sees.
     private bool _importConfirming;
     private string? _importPendingText;
+
+    // The label the consent screen shows, read FROM THE FILE'S CONTENTS (#312) — never the filename, so a
+    // renamed spacesails-vault (5).json still says "The Tilt · day 34" before the captain commits to it.
+    private SaveSlotMeta? _importPreview;
 
     private async Task ImportVault()
     {
@@ -595,9 +657,60 @@ public partial class Map
             return;
         }
 
+        // Read the label from the file itself so the ask can say WHAT it is about to board.
+        try
+        {
+            _importPreview = SaveSlotLabels.PreviewMeta(VaultSerializer.Load(text));
+        }
+        catch
+        {
+            _importPreview = null; // an unreadable file: the ask still warns, just without a label
+        }
+
         // Hold the picked file and ask before it replaces the running voyage.
         _importPendingText = text;
         _importConfirming = true;
+        StateHasChanged();
+    }
+
+    // IMPORT INTO A BERTH (#312): bank a picked file straight into a chosen slot WITHOUT boarding it — the
+    // live game keeps flying. This is the shelf: file the rescued Downloads voyages into named berths, then
+    // Load the one you mean. Distinct from the top-level Import (which becomes live after the ask): two
+    // buttons, two labelled truths (#310 semantics law). At boot there is no live state to protect; in-game
+    // this leaves the rolling autosave and the running voyage entirely untouched.
+    private async Task ImportIntoSlot(string slotId)
+    {
+        string text;
+        try
+        {
+            text = await RendererInterop.VaultImport();
+        }
+        catch
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        try
+        {
+            Vault vault = VaultSerializer.Load(text);
+            SaveSlotKind kind = slotId == SaveSlotBook.AutoSlotId ? SaveSlotKind.Autosave : SaveSlotKind.Manual;
+            // Store the file's bytes byte-for-byte; the label is read from the file's own content.
+            Slots.Save(slotId, text, BuildSlotMeta(vault, kind));
+            RefreshSlotList();
+            ShowPulseMessage(vault.Tampered
+                ? $"🗄 Banked into slot {slotId} — {SaveSlotLabels.Where(vault)} 📛 (edited outside the game). Not boarded; Load it when you mean to."
+                : $"🗄 Banked into slot {slotId} — {SaveSlotLabels.Where(vault)}. Not boarded; Load it when you mean to.");
+        }
+        catch
+        {
+            ShowPulseMessage("Import refused — that file wasn't a readable save.");
+        }
+
         StateHasChanged();
     }
 
@@ -616,6 +729,7 @@ public partial class Map
     {
         _importConfirming = false;
         _importPendingText = null;
+        _importPreview = null;
     }
 
     private async Task ApplyPendingImport()
@@ -623,6 +737,7 @@ public partial class Map
         string? text = _importPendingText;
         _importConfirming = false;
         _importPendingText = null;
+        _importPreview = null;
         if (string.IsNullOrWhiteSpace(text))
         {
             return;

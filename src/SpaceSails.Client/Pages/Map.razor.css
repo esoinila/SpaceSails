@@ -1587,6 +1587,74 @@
     max-height: 34vh;
 }
 
+/* #312 — the whole rack. Empty berths read as dashed, dimmed, non-clickable placeholders that still
+   carry their file-in button; the newest save wears a '← latest' badge tying it to the Continue head. */
+.slot-row-empty .slot-load-empty {
+    cursor: default;
+    opacity: 0.75;
+}
+
+.slot-where-empty {
+    font-weight: 500;
+    font-style: italic;
+    color: rgba(224, 228, 236, 0.5);
+}
+
+.slot-latest {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0 0.35rem;
+    border-radius: 0.35rem;
+    background: rgba(120, 230, 160, 0.18);
+    border: 1px solid rgba(120, 230, 160, 0.5);
+    color: #9fe9bd;
+    font-size: 0.68rem;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+/* #312 — the 'start docked at a berth' toggle sits left under New voyage, not floated right. */
+.save-berth-toggle {
+    margin-left: 0;
+    align-self: flex-start;
+    text-align: left;
+}
+
+/* #312 — the 'start docked at a berth' shelf under New voyage (the bench's parallel-campaign boot). */
+.save-berth-starts {
+    margin-top: 0.5rem;
+    max-height: 30vh;
+}
+
+/* #312 — the import consent's label, read from the FILE's contents (never the filename). */
+.import-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin: 0.5rem 0 0.2rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: 0.5rem;
+    background: rgba(120, 200, 255, 0.08);
+    border: 1px solid rgba(120, 200, 255, 0.28);
+}
+
+.import-preview-where {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.import-preview-when {
+    color: rgba(224, 228, 236, 0.62);
+    font-size: 0.78rem;
+}
+
+.import-preview-unknown {
+    color: #ffb0b0;
+    border-color: rgba(255, 140, 140, 0.4);
+    background: rgba(255, 140, 140, 0.08);
+    font-size: 0.85rem;
+}
+
 /* View-object popup: inspect a Gen-AI image (a souvenir, a lore prop) up close. */
 .view-object-backdrop {
     position: absolute;

@@ -88,6 +88,84 @@ public static class SaveSlotLabels
 
         return resume.WasDocked ? resume.HavenName : $"adrift near {resume.HavenName}";
     }
+
+    /// <summary>The label an import screen shows, read STRAIGHT FROM the file's contents (never the
+    /// filename — a renamed file still identifies itself). WHERE + sim day + the tampered mark, all from
+    /// the vault payload. Real-time/build-stamp are left blank: they live in the slot manifest, not the
+    /// portable file, so a file preview honestly shows only what the file itself carries.</summary>
+    public static SaveSlotMeta PreviewMeta(Vault? vault) => new()
+    {
+        Kind = SaveSlotKind.Manual,
+        Where = Where(vault),
+        WasDocked = vault?.Resume?.WasDocked ?? false,
+        SavedSimTime = vault?.SavedSimTime ?? 0,
+        SimDay = (int)((vault?.SavedSimTime ?? 0) / 86400),
+        Tampered = vault?.Tampered ?? false,
+    };
+}
+
+/// <summary>
+/// Filesystem-safe export filenames, spun from the SAME label machinery the slots show (#312). One
+/// truth: the harbor in the filename IS the <see cref="SaveSlotLabels.Where"/> line, slugged. Ends the
+/// browser's <c>spacesails-vault (5).json</c> roulette — the file names the place it was saved at.
+/// Shape: <c>spacesails-&lt;place-slug&gt;-day&lt;N&gt;-&lt;yyyy-MM-dd-HHmm&gt;.json</c>,
+/// e.g. <c>spacesails-the-tilt-day34-2026-07-18-1022.json</c>.
+/// </summary>
+public static class SaveFileNames
+{
+    /// <summary>Slug a WHERE line into a filesystem-safe token: lower-case ASCII letters/digits, every
+    /// run of anything else collapsed to a single dash, ends trimmed. "adrift near The Tilt" →
+    /// "adrift-near-the-tilt"; "The Tilt" → "the-tilt"; empty/exotic → "voyage".</summary>
+    public static string Slug(string? where)
+    {
+        if (string.IsNullOrWhiteSpace(where))
+        {
+            return "voyage";
+        }
+
+        var sb = new System.Text.StringBuilder(where.Length);
+        bool pendingDash = false;
+        foreach (char c in where.ToLowerInvariant())
+        {
+            if (char.IsAsciiLetterOrDigit(c))
+            {
+                if (pendingDash && sb.Length > 0)
+                {
+                    sb.Append('-');
+                }
+
+                sb.Append(c);
+                pendingDash = false;
+            }
+            else
+            {
+                pendingDash = true;
+            }
+        }
+
+        return sb.Length == 0 ? "voyage" : sb.ToString();
+    }
+
+    /// <summary>The export filename for a slot's (or the live moment's) label — the one true filename
+    /// builder. Reads WHERE, the sim day, and the real-time stamp reconstructed from the label's
+    /// monotonic tick, so a per-slot export names the SLOT's state and a live export names THIS moment.</summary>
+    public static string ForMeta(SaveSlotMeta meta)
+    {
+        ArgumentNullException.ThrowIfNull(meta);
+        DateTimeOffset realTime = meta.SavedRealTicks > 0
+            ? new DateTimeOffset(meta.SavedRealTicks, TimeSpan.Zero)
+            : DateTimeOffset.UtcNow;
+        return For(meta.Where, meta.SimDay, realTime);
+    }
+
+    /// <summary>Build the filename from its parts: <c>spacesails-&lt;place&gt;-day&lt;N&gt;-&lt;stamp&gt;.json</c>.</summary>
+    public static string For(string? where, int simDay, DateTimeOffset realTime)
+    {
+        string place = Slug(where);
+        int day = Math.Max(0, simDay);
+        string stamp = realTime.ToString("yyyy-MM-dd-HHmm", System.Globalization.CultureInfo.InvariantCulture);
+        return $"spacesails-{place}-day{day}-{stamp}.json";
+    }
 }
 
 /// <summary>The keyed store a <see cref="SaveSlotBook"/> reads and writes — one method per localStorage
@@ -146,12 +224,17 @@ public sealed class SaveSlotBook
     /// <summary>The stable id of manual slot N (1..9).</summary>
     public static string ManualSlotId(int n) => n.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-    /// <summary>Every occupied slot's label, autosave first, then manual slots in id order.</summary>
+    /// <summary>Every occupied slot's label, NEWEST FIRST by the monotonic <see cref="SaveSlotMeta.SavedRealTicks"/>
+    /// (autosave included) — so the top row is always the same save <see cref="Newest"/> returns and the Continue
+    /// headline points at (#312 ordering law: the owner's Tilt autosave must be row 1, not sunk below older entries).
+    /// Ties go to the autosave, then by id — the exact tie-break <see cref="Newest"/> uses, so "row 1 == Continue"
+    /// holds after every save/import/autosave event. Slot numbers are row LABELS, never positions.</summary>
     public IReadOnlyList<SaveSlotMeta> List()
     {
         Manifest m = ReadManifest();
         return [.. m.Slots
-            .OrderBy(s => s.Kind == SaveSlotKind.Autosave ? 0 : 1)
+            .OrderByDescending(s => s.SavedRealTicks)
+            .ThenBy(s => s.Kind == SaveSlotKind.Autosave ? 0 : 1)
             .ThenBy(s => s.Id, StringComparer.Ordinal)];
     }
 

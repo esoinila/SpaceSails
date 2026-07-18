@@ -224,7 +224,7 @@ public class SaveSlotsTests
     }
 
     [Fact]
-    public void List_OrdersAutosaveFirst_ThenManualById()
+    public void List_OnATickTie_OrdersAutosaveFirst_ThenManualById()
     {
         var book = new SaveSlotBook(new MemStore());
         Vault v = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 0);
@@ -232,7 +232,182 @@ public class SaveSlotsTests
         book.Save(SaveSlotBook.ManualSlotId(1), VaultSerializer.Save(v), MetaFor(v, SaveSlotKind.Manual, 1));
         book.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(v), MetaFor(v, SaveSlotKind.Autosave, 1));
 
+        // On an EXACT tick tie the tie-break is autosave-first, then id — the same tie-break Newest uses.
         var ids = book.List().Select(s => s.Id).ToList();
         Assert.Equal([SaveSlotBook.AutoSlotId, "1", "2"], ids);
+    }
+
+    // ── #312: the ordering law. The owner's Tilt autosave was NOT the top row because #311's List()
+    //    ordered by KIND (autosave always first) then id — a fixed order that ignored the monotonic tick,
+    //    so it disagreed with Newest() (tick-based) whenever the newest save wasn't the autosave. List()
+    //    now sorts NEWEST FIRST by tick, so row 1 is always exactly what Continue resumes. ──
+
+    [Fact]
+    public void List_SortsNewestFirst_ByTick_EvenAManualBankAboveAnOlderAutosave()
+    {
+        var book = new SaveSlotBook(new MemStore());
+
+        // An autosave at Mars (older), then a deliberate manual bank at The Tilt (newer tick).
+        Vault mars = VaultAt("the-space-bar", "The Rusty Roadstead", docked: true, simTime: 0);
+        book.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(mars), MetaFor(mars, SaveSlotKind.Autosave, ticks: 10));
+        Vault tilt = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 2_600_000);
+        book.Save(SaveSlotBook.ManualSlotId(3), VaultSerializer.Save(tilt), MetaFor(tilt, SaveSlotKind.Manual, ticks: 20));
+
+        var rows = book.List();
+        Assert.Equal("3", rows[0].Id);              // the newer manual bank sits ABOVE the older autosave
+        Assert.Equal("The Tilt", rows[0].Where);
+        Assert.Equal(SaveSlotBook.AutoSlotId, rows[1].Id);
+    }
+
+    [Fact]
+    public void RowOne_AlwaysEqualsContinueTarget_AfterEverySaveImportOrAutosaveEvent()
+    {
+        var book = new SaveSlotBook(new MemStore());
+
+        void AssertRowOneIsContinue()
+        {
+            SaveSlotMeta? cont = book.Newest();
+            Assert.NotNull(cont);
+            Assert.Equal(cont!.Id, book.List()[0].Id); // the Continue headline and list row 1 are one save
+        }
+
+        // Autosave rolls in.
+        Vault a = VaultAt("the-space-bar", "The Rusty Roadstead", docked: true, simTime: 0);
+        book.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(a), MetaFor(a, SaveSlotKind.Autosave, 10));
+        AssertRowOneIsContinue();
+
+        // A manual bank (newer) — row 1 must move to it.
+        Vault b = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 2_600_000);
+        book.Save(SaveSlotBook.ManualSlotId(1), VaultSerializer.Save(b), MetaFor(b, SaveSlotKind.Manual, 20));
+        AssertRowOneIsContinue();
+        Assert.Equal("1", book.List()[0].Id);
+
+        // The autosave rolls forward again (newest) — row 1 returns to the autosave.
+        Vault c = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 2_700_000);
+        book.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(c), MetaFor(c, SaveSlotKind.Autosave, 30));
+        AssertRowOneIsContinue();
+        Assert.Equal(SaveSlotBook.AutoSlotId, book.List()[0].Id);
+
+        // An import banked into a berth (newest by the moment it was filed) — row 1 tracks it too.
+        Vault d = VaultAt("cinder-roost", "Cinder Roost", docked: true, simTime: 500_000);
+        book.Save(SaveSlotBook.ManualSlotId(5), VaultSerializer.Save(d), MetaFor(d, SaveSlotKind.Manual, 40));
+        AssertRowOneIsContinue();
+    }
+
+    // ── #312: named exports. The filename carries the harbor, spun from the same label the slots show. ──
+
+    [Fact]
+    public void FileName_ForMeta_NamesThePlaceDayAndStamp()
+    {
+        var savedAt = new DateTimeOffset(2026, 7, 18, 10, 22, 0, TimeSpan.Zero);
+        var meta = new SaveSlotMeta
+        {
+            Where = "The Tilt",
+            SimDay = 34,
+            SavedRealTicks = savedAt.UtcTicks,
+        };
+
+        Assert.Equal("spacesails-the-tilt-day34-2026-07-18-1022.json", SaveFileNames.ForMeta(meta));
+    }
+
+    [Fact]
+    public void FileName_Slug_IsFilesystemSafe_AndCollapsesPunctuation()
+    {
+        Assert.Equal("the-tilt", SaveFileNames.Slug("The Tilt"));
+        Assert.Equal("the-rusty-roadstead", SaveFileNames.Slug("The Rusty Roadstead"));
+        Assert.Equal("adrift-near-the-tilt", SaveFileNames.Slug("adrift near The Tilt"));
+        Assert.Equal("unknown-waters", SaveFileNames.Slug("unknown waters"));
+        Assert.Equal("cinder-roost", SaveFileNames.Slug("  Cinder — Roost!!  ")); // trims + collapses
+        Assert.Equal("voyage", SaveFileNames.Slug(""));                            // empty → a safe fallback
+        Assert.Equal("voyage", SaveFileNames.Slug("＊＊＊"));                        // all-exotic → fallback
+    }
+
+    [Fact]
+    public void FileName_FromASlotsOwnLabel_NamesThatSlotsState_NotTheLiveMoment()
+    {
+        // Per-slot export names the SLOT's harbor: a slot banked adrift near Uranus on day 12 names itself.
+        var savedAt = new DateTimeOffset(2026, 1, 2, 3, 4, 0, TimeSpan.Zero);
+        Vault v = VaultAt("the-tilt", "The Tilt", docked: false, simTime: 12 * 86400.0);
+        SaveSlotMeta meta = MetaFor(v, SaveSlotKind.Manual, savedAt.UtcTicks);
+
+        Assert.Equal("spacesails-adrift-near-the-tilt-day12-2026-01-02-0304.json", SaveFileNames.ForMeta(meta));
+    }
+
+    // ── #312: the import preview label is read FROM THE FILE'S CONTENTS, never the filename. ──
+
+    [Fact]
+    public void ImportPreview_LabelComesFromFileContent_NotTheFilename()
+    {
+        // A vault captured docked at The Tilt on sim day 30 — however the file on disk is (re)named.
+        Vault onDisk = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 2_600_000);
+        string bytes = VaultSerializer.Save(onDisk);
+
+        // The preview parses the bytes and reads the label straight from them.
+        SaveSlotMeta preview = SaveSlotLabels.PreviewMeta(VaultSerializer.Load(bytes));
+
+        Assert.Equal("The Tilt", preview.Where);
+        Assert.True(preview.WasDocked);
+        Assert.Equal((int)(2_600_000 / 86400), preview.SimDay);
+        // The portable file carries no real-time/build stamp — the preview honestly leaves those blank.
+        Assert.Equal("", preview.RealTimeLabel);
+        Assert.Equal("", preview.BuildStamp);
+    }
+
+    [Fact]
+    public void ImportPreview_AdriftOrUnknown_AndCarriesTheTamperedMark()
+    {
+        Assert.Equal("adrift near The Tilt",
+            SaveSlotLabels.PreviewMeta(VaultAt("the-tilt", "The Tilt", docked: false, 0)).Where);
+        Assert.Equal("unknown waters", SaveSlotLabels.PreviewMeta(new Vault()).Where);
+        Assert.False(SaveSlotLabels.PreviewMeta(new Vault()).Tampered);
+    }
+
+    // ── #312: import a file INTO a berth banks it there WITHOUT boarding — the live state is untouched. ──
+
+    [Fact]
+    public void ImportIntoBerth_BanksTheFile_WithoutTouchingTheLiveAutosave()
+    {
+        var book = new SaveSlotBook(new MemStore());
+
+        // The live game is at Mars (the rolling autosave).
+        Vault live = VaultAt("the-space-bar", "The Rusty Roadstead", docked: true, simTime: 5_000);
+        string liveJson = VaultSerializer.Save(live);
+        book.Save(SaveSlotBook.AutoSlotId, liveJson, MetaFor(live, SaveSlotKind.Autosave, 10));
+
+        // A rescued Downloads file is banked INTO manual berth 5 — modelled as a Save to that slot.
+        Vault rescued = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 2_600_000);
+        string rescuedJson = VaultSerializer.Save(rescued);
+        book.Save(SaveSlotBook.ManualSlotId(5), rescuedJson, MetaFor(rescued, SaveSlotKind.Manual, 11));
+
+        // The live autosave is byte-for-byte unchanged — the import did NOT board.
+        Assert.Equal(liveJson, book.ReadPayload(SaveSlotBook.AutoSlotId));
+        Assert.Equal("The Rusty Roadstead", book.Get(SaveSlotBook.AutoSlotId)!.Where);
+        // And the berth now holds exactly the rescued file's bytes.
+        Assert.Equal(rescuedJson, book.ReadPayload(SaveSlotBook.ManualSlotId(5)));
+        Assert.Equal("The Tilt", book.Get(SaveSlotBook.ManualSlotId(5))!.Where);
+    }
+
+    // ── #312: the rack renders all ten slots (autosave + nine berths), empty ones as empty berths. ──
+
+    [Fact]
+    public void Rack_IsAllTenSlots_WithTheRightOccupancy()
+    {
+        // The whole rack the UI renders: the autosave id plus manual ids "1".."9".
+        string[] allSlotIds =
+            [SaveSlotBook.AutoSlotId, .. Enumerable.Range(1, SaveSlotBook.ManualSlotCount).Select(SaveSlotBook.ManualSlotId)];
+        Assert.Equal(10, allSlotIds.Length);
+
+        var book = new SaveSlotBook(new MemStore());
+        Vault v = VaultAt("the-tilt", "The Tilt", docked: true, simTime: 0);
+        book.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(v), MetaFor(v, SaveSlotKind.Autosave, 30));
+        book.Save(SaveSlotBook.ManualSlotId(2), VaultSerializer.Save(v), MetaFor(v, SaveSlotKind.Manual, 20));
+
+        var occupied = book.List().Select(s => s.Id).ToHashSet();
+        var empty = allSlotIds.Where(id => !occupied.Contains(id)).ToList();
+
+        Assert.Equal(2, occupied.Count);                       // autosave + berth 2 occupied
+        Assert.Equal(8, empty.Count);                          // the other eight berths are empty
+        Assert.Equal(10, occupied.Count + empty.Count);        // every slot is accounted for, none twice
+        Assert.Contains(SaveSlotBook.ManualSlotId(9), empty);  // berth 9 renders as an empty berth
     }
 }

@@ -34,25 +34,53 @@
        the barely-tested non-Sol skies are demoted to a footer toggle. Same surface, in-game, opens from
        the captain's desk (_showSaveDrawer). *@
     @{
-        // One slot row — the label (WHERE · day N · real time · build), and its actions. In-game the row
-        // can also be overwritten (bank here) with the LIVE state; at boot it is load/clear only.
-        RenderFragment<(SaveSlotMeta Meta, bool InGame)> SlotRow = ctx =>
-    @<div class="slot-row @(ctx.Meta.Kind == SaveSlotKind.Autosave ? "slot-row-auto" : "")">
-        <button type="button" class="slot-load" title="Load this voyage — replaces the current run with this saved life (purse, cargo, contacts, hoard, heat)"
-                @onclick="() => LoadSlot(ctx.Meta.Id)">
-            <span class="slot-icon">@(ctx.Meta.Kind == SaveSlotKind.Autosave ? "💾" : "📼")</span>
-            <span class="slot-text">
-                <span class="slot-where">@(ctx.Meta.WasDocked ? "⚓ " : "🛰 ")@ctx.Meta.Where@(ctx.Meta.Tampered ? " 📛" : "")</span>
-                <span class="slot-when">@(ctx.Meta.Kind == SaveSlotKind.Autosave ? "autosave · " : $"slot {ctx.Meta.Id} · ")day @ctx.Meta.SimDay · @ctx.Meta.RealTimeLabel</span>
-                <span class="slot-stamp">@ctx.Meta.BuildStamp</span>
-            </span>
-        </button>
-        @if (ctx.InGame && ctx.Meta.Kind == SaveSlotKind.Manual)
+        // One slot row in the WHOLE rack (#312): every one of the ten slots — the rolling autosave and the
+        // nine manual berths — occupied or an "— empty berth —". Every action states what it reads/writes
+        // (the #310 semantics law). Occupied: Load (boards it), Export (named for its harbor), Overwrite-
+        // with-current (in-game, manual), Clear. Empty: Bank this moment (in-game). Any slot: Import a file
+        // INTO this berth — banks it here WITHOUT boarding, distinct from the top-level board-it Import.
+        // Row 1 (the newest save, the same one Continue resumes) wears a '← latest' badge.
+        RenderFragment<(string Id, SaveSlotMeta? Meta, bool InGame, bool IsLatest)> SlotRow = ctx =>
+    @<div class="slot-row @(ctx.Id == SaveSlotBook.AutoSlotId ? "slot-row-auto" : "") @(ctx.Meta is null ? "slot-row-empty" : "")">
+        @if (ctx.Meta is { } m)
         {
-            <button type="button" class="slot-mini" title="Overwrite this slot with THIS moment (the live game right now)"
-                    @onclick="() => SaveToSlot(ctx.Meta.Id)">⤓ bank here</button>
-            <button type="button" class="slot-mini slot-mini-danger" title="Clear this slot — forgets its saved voyage"
-                    @onclick="() => DeleteSlot(ctx.Meta.Id)">🗑</button>
+            <button type="button" class="slot-load" title="Load this voyage — BOARDS it: replaces the current run with this saved life (purse, cargo, contacts, hoard, heat)"
+                    @onclick="() => LoadSlot(ctx.Id)">
+                <span class="slot-icon">@(ctx.Id == SaveSlotBook.AutoSlotId ? "💾" : "📼")</span>
+                <span class="slot-text">
+                    <span class="slot-where">@(m.WasDocked ? "⚓ " : "🛰 ")@m.Where@(m.Tampered ? " 📛" : "")@(ctx.IsLatest ? " " : "")@if (ctx.IsLatest){<span class="slot-latest">← latest</span>}</span>
+                    <span class="slot-when">@(ctx.Id == SaveSlotBook.AutoSlotId ? "autosave · " : $"slot {ctx.Id} · ")day @m.SimDay · @m.RealTimeLabel</span>
+                    <span class="slot-stamp">@m.BuildStamp</span>
+                </span>
+            </button>
+            <button type="button" class="slot-mini" title="Export THIS berth's saved voyage to a .json file, named for the place and day it holds"
+                    @onclick="() => ExportSlot(ctx.Id)">⬇</button>
+            @if (ctx.InGame && ctx.Id != SaveSlotBook.AutoSlotId)
+            {
+                <button type="button" class="slot-mini" title="Overwrite this berth with THIS moment (the live game right now)"
+                        @onclick="() => SaveToSlot(ctx.Id)">⤓ bank here</button>
+            }
+            <button type="button" class="slot-mini" title="Import a file INTO this berth — banks it here WITHOUT boarding; the running voyage keeps flying. Load it later to board it."
+                    @onclick="() => ImportIntoSlot(ctx.Id)">📥 file</button>
+            @if (ctx.Id != SaveSlotBook.AutoSlotId)
+            {
+                <button type="button" class="slot-mini slot-mini-danger" title="Clear this berth — forgets its saved voyage"
+                        @onclick="() => DeleteSlot(ctx.Id)">🗑</button>
+            }
+        }
+        else
+        {
+            <div class="slot-load slot-load-empty">
+                <span class="slot-icon">○</span>
+                <span class="slot-text"><span class="slot-where slot-where-empty">— empty berth —</span><span class="slot-when">@(ctx.Id == SaveSlotBook.AutoSlotId ? "autosave" : $"slot {ctx.Id}")</span></span>
+            </div>
+            @if (ctx.InGame && ctx.Id != SaveSlotBook.AutoSlotId)
+            {
+                <button type="button" class="slot-mini" title="Bank THIS moment (the live game right now) into this empty berth"
+                        @onclick="() => SaveToSlot(ctx.Id)">⤓ bank here</button>
+            }
+            <button type="button" class="slot-mini" title="Import a file INTO this berth — banks it here WITHOUT boarding. This is how you shelve a rescued Downloads save into a named berth."
+                    @onclick="() => ImportIntoSlot(ctx.Id)">📥 file</button>
         }
     </div>;
 
@@ -100,29 +128,48 @@
                         <span class="start-picker-blurb">Start clean in the Sol system — fresh out of Earth orbit.</span>
                     </span>
                 </button>
+
+                @* #312: a modest 'start at a berth' shelf for the bench — boot a fresh campaign already
+                   docked at any haven, routed through the same StartDockedAtHaven the ?dock cheat uses.
+                   The truly-new player ignores it; the parallel-campaign runner opens it. *@
+                <button type="button" class="save-scenarios-toggle save-berth-toggle"
+                        title="Begin a new voyage already clamped on at a chosen berth (for running a parallel campaign at a specific site)"
+                        @onclick="() => _showBerthStarts = !_showBerthStarts">@(_showBerthStarts ? "▾" : "▸") …or start a new voyage docked at a berth</button>
+                @if (_showBerthStarts)
+                {
+                    <div class="save-slots-list save-berth-starts">
+                        @foreach ((string Id, string Name) berth in BerthStarts())
+                        {
+                            (string Id, string Name) b = berth;
+                            <button type="button" class="start-picker-option" title="Begin a new voyage already clamped on at this berth"
+                                    @onclick="() => ChooseBerthStart(b.Id)">
+                                <span class="start-picker-icon">⚓</span>
+                                <span class="start-picker-text">
+                                    <span class="start-picker-label">@b.Name</span>
+                                    <span class="start-picker-blurb">New voyage, already docked at @b.Name.</span>
+                                </span>
+                            </button>
+                        }
+                    </div>
+                }
             }
 
-            <div class="save-slots-label">@(_slotList.Count == 0 ? "No saved voyages yet." : "Saved voyages")</div>
+            @* #312 — the WHOLE rack, always: all ten slots (rolling autosave + nine manual berths). Occupied
+               berths NEWEST FIRST (the same order Continue reads — row 1 is the latest), then empty berths
+               sink to the bottom as '— empty berth —', each still a target you can file a save into. *@
+            <div class="save-slots-label">@(_slotList.Count == 0 ? "No saved voyages yet — file a save into a berth below, or start a new voyage." : "Saved voyages — newest first")</div>
             <div class="save-slots-list">
+                @{
+                    string? latestId = _slotList.Count > 0 ? _slotList[0].Id : null;
+                }
                 @foreach (SaveSlotMeta meta in _slotList)
                 {
-                    @SlotRow((meta, inGame))
+                    @SlotRow((meta.Id, meta, inGame, meta.Id == latestId))
                 }
-                @if (inGame)
+                @* Empty berths at the bottom, in fixed rack order (autosave, then 1..9). *@
+                @foreach (string id in AllSlotIds.Where(id => _slotList.All(s => s.Id != id)))
                 {
-                    @* Empty manual slots the captain can bank THIS moment into (pre-haul, pre-bury). *@
-                    @foreach (string id in ManualSlotIds.Where(id => _slotList.All(s => s.Id != id)))
-                    {
-                        string slotId = id;
-                        <div class="slot-row slot-row-empty">
-                            <button type="button" class="slot-load slot-load-empty"
-                                    title="Bank THIS moment (the live game right now) into this empty slot"
-                                    @onclick="() => SaveToSlot(slotId)">
-                                <span class="slot-icon">＋</span>
-                                <span class="slot-text"><span class="slot-where">Bank this moment → slot @slotId</span></span>
-                            </button>
-                        </div>
-                    }
+                    @SlotRow((id, (SaveSlotMeta?)null, inGame, false))
                 }
             </div>
 
@@ -191,8 +238,21 @@
     {
         <div class="start-picker-backdrop">
             <div class="start-picker save-surface">
-                <div class="start-picker-title">Replace the current voyage?</div>
-                <div class="start-picker-sub">The file you picked will become the live game at once. Your current run isn't saved to a slot yet unless you bank it.</div>
+                <div class="start-picker-title">Board this saved voyage?</div>
+                @* #312: the label is read FROM THE FILE'S CONTENTS, never its name — a renamed file still
+                   says what it is before the captain commits to boarding it. *@
+                @if (_importPreview is { } p)
+                {
+                    <div class="import-preview">
+                        <span class="import-preview-where">@(p.WasDocked ? "⚓ " : "🛰 ")@p.Where@(p.Tampered ? " 📛 edited outside the game" : "")</span>
+                        <span class="import-preview-when">day @p.SimDay · read from the file's own contents</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="import-preview import-preview-unknown">The file didn't parse as a save — boarding it may do nothing.</div>
+                }
+                <div class="start-picker-sub">This file will become the live game at once. Your current run isn't saved to a slot yet unless you bank it. (To shelve a file WITHOUT boarding, use “📥 file” on a berth instead.)</div>
                 <div class="save-surface-foot save-surface-foot-center">
                     <button type="button" class="btn btn-sm btn-outline-success"
                             title="Bank the current voyage to a free slot, THEN load the imported file"
