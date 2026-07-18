@@ -42,6 +42,13 @@ longer. Every mechanic below serves that clock.
      `LiftChestHere`; rumor-bought maps of rivals' hoards already file in the ledger as "a map
      you hold" — what's missing is digging at a tipped spot you don't own, and the drop flow)*.
    **Both action paths must work**: chest aboard → bury; no chest → hunt/lift.
+   - **Verbal tips paint candidate spots** (owner: "we could receive verbal instructions about
+     where a treasure is... then we could show possible places to try our luck on the map. Then
+     we are in Reever Town :-D"). A spoken tip is deliberately FUZZY — "86 paces anti-spinward"
+     resolves to SEVERAL candidate dig spots on the surface map, and you try your luck spot by
+     spot. Every candidate sits deep in the tide's ground, so the treasure hunt and the eviction
+     clock are the same mechanic: the longer the tip takes to run down, the more of Reever Town
+     you meet.
 
 ### The ground itself
 10. The walk area should feel like a **planet — big and round**, not a fenced square. **Natural
