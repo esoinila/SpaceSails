@@ -208,6 +208,7 @@ public partial class Map
             DiceItems = BuildDiceItemsSection(),
             Progress = new ProgressSection { TutorialPlayed = _tutorialPlayed }, // #292
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
+            Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             Resume = BuildResumeSection(),
         };
     }
@@ -418,6 +419,10 @@ public partial class Map
             _nerve = NerveModel.Clamp(nerve.Nerve);
             _monolithSeen = nerve.MonolithSeen;
         }
+
+        // The "overheard at the bar" book (owner 2026-07-18): the tips/rumors a player was handed are
+        // durable and revisitable — they survive the reload rather than living-and-vanishing in a toast.
+        _overheard = vault.Overheard is { } book ? [.. book.Lines] : [];
 
         ApplyResumeBerth(vault.Resume, vault.SavedSimTime);
 

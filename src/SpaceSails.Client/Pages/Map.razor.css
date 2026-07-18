@@ -37,7 +37,10 @@
     border: 1px solid rgba(255, 200, 120, 0.28);
     border-radius: 0.5rem;
     pointer-events: none;
-    z-index: var(--z-desks-popups);
+    /* #302 z-law: sit ABOVE the deck offer/bar card (which is +50) so a status/intel line is never
+       occluded by the dialog (#212, owner 2026-07-18 "the rumor is slightly blocked by the dialog").
+       Still inside the desks-popups band, below the arrival-brake card (+90) and the full-screen gates. */
+    z-index: calc(var(--z-desks-popups) + 60);
 }
 
 /* A bar stranger's contract offer, over the deck canvas (go-ashore quests). Same overlay family as
@@ -134,6 +137,44 @@
     color: #9fe6b0;
     line-height: 1.35;
     margin-bottom: 0.5rem;
+}
+
+/* Owner 2026-07-18 — the bar's offer-moment confirm ("Stand <name> a glass?"), the post-round toast
+   state, and the durable "overheard here" strip. All live INSIDE the bar card so a tip a player paid a
+   round to hear is readable and never occluded by the dialog (#212 — the words may not hide). */
+.bar-offer-moment {
+    align-self: center;
+    color: #ffd479;
+    font-style: italic;
+    margin-right: 0.25rem;
+}
+
+.bar-toasted {
+    align-self: center;
+    color: #9fe6b0;
+    margin-right: 0.25rem;
+}
+
+.bar-overheard {
+    margin: 0.35rem 0 0.5rem;
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+    background: rgba(20, 28, 40, 0.6);
+    border-left: 2px solid rgba(159, 230, 176, 0.5);
+    border-radius: 0.3rem;
+}
+
+.bar-overheard-head {
+    color: #b7c0d0;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.2rem;
+}
+
+.bar-overheard-line {
+    color: #cfe6d6;
+    line-height: 1.35;
+    margin-bottom: 0.15rem;
 }
 
 /* #195: the top-of-flight-view status column — desk tabs, pilot banner, ship-alert strip. These were

@@ -506,18 +506,55 @@
                 <div class="deck-bank-notice small">@note</div>
             }
             <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
-            @* #306 The drink as a two-edged trust maneuver: a known contact drinking here can be stood a
-               glass — trust up, and the 2D6 decides whether they open up or YOU slip a tell. Refusing
-               (waving off) costs a little goodwill: the choice is never free. *@
+            @* #306/#308 The drink as a two-edged trust maneuver, restructured (owner 2026-07-18): standing a
+               contact a glass is the CAPTAIN's own idea, so it opens an OFFER MOMENT (pour it / cancel) — a
+               cancel is free (no "unwet glass" debit; reconsidering your own idea is not a betrayal). After a
+               round for the room, every present regular is satisfied for this visit and shows a toast state
+               instead of an offer; an extra personal drink is still available, never demanded. *@
             @foreach ((string giver, string display) in PresentBarContacts())
             {
-                <div class="deck-offer-actions">
-                    <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
-                            title="@($"Stand {display} a drink ({keep.DrinkPrice} cr) — trust up; the 2D6 decides if they open up or you slip a tell")"
-                            @onclick="@(() => BuyContactDrink(giver))">🥃 Stand @display a drink · @keep.DrinkPrice cr</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            title="@($"Wave off — {display} reads a refused glass as suspicion (small goodwill hit)")"
-                            @onclick="@(() => DeclineContactDrink(giver))">✋ Wave off</button>
+                @if (_pendingContactDrink == giver)
+                {
+                    <div class="deck-offer-actions">
+                        <span class="bar-offer-moment small">Stand @display a glass?</span>
+                        <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
+                                title="@($"Pour it — you stand {display} a {keep.DrinkName} ({keep.DrinkPrice} cr); the 2D6 decides if they open up or you slip a tell")"
+                                @onclick="@(() => BuyContactDrink(giver))">🥃 Pour it · @keep.DrinkPrice cr</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                title="Changed your mind — no harm done" @onclick="CancelContactDrinkOffer">Cancel</button>
+                    </div>
+                }
+                else if (_roundThisVisit)
+                {
+                    <div class="deck-offer-actions">
+                        <span class="bar-toasted small">🍻 @display toasted you with the room</span>
+                        <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.DrinkPrice)"
+                                title="@($"Stand {display} a personal glass on top of the round — extra warmth, never demanded")"
+                                @onclick="@(() => OfferContactDrink(giver))">🥃 Stand another · @keep.DrinkPrice cr</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="deck-offer-actions">
+                        <button type="button" class="btn btn-sm btn-warning"
+                                title="@($"Stand {display} a drink ({keep.DrinkPrice} cr) — a sign of trust; the 2D6 decides if they open up or you slip a tell")"
+                                @onclick="@(() => OfferContactDrink(giver))">🥃 Stand @display a drink · @keep.DrinkPrice cr</button>
+                    </div>
+                }
+            }
+            @* Overheard here (#119 receipt idiom): the tips/rumors you've heard at this counter, kept where
+               a round-loosened tongue's words can be re-read — they may not hide and may not auto-vanish. *@
+            @{
+                IReadOnlyList<Core.OverheardLine> overheard = OverheardHere(3);
+            }
+            @if (overheard.Count > 0)
+            {
+                <div class="bar-overheard small">
+                    <div class="bar-overheard-head">Overheard here</div>
+                    @foreach (Core.OverheardLine o in overheard)
+                    {
+                        <div class="bar-overheard-line">@o.Text</div>
+                    }
                 </div>
             }
             <div class="deck-offer-actions">

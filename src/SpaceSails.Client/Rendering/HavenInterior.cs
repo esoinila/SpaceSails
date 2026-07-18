@@ -348,8 +348,12 @@ public static class HavenInterior
             // The Magpie's bar stop — a roaming patron (PR-F). They aren't always here; walk up and the
             // game reads their rota, so an empty chair means they've drifted off (bar → gone → back room).
             new(DeckPlan.ConsoleKind.BarPatron, (float)MagpieBarPost.X, (float)MagpieBarPost.Y, "◈ THE MAGPIE"),
-            // #247 — the barkeep, at the counter. Walk up, press E, buy the house special (or a round).
-            new(DeckPlan.ConsoleKind.Barkeep, 2.5f, counterY - 2, keepLabel),
+            // #247 — the barkeep, at the counter's LEFT FLANK (owner 2026-07-18: "move the bar-keep
+            // position to the bar in the picture … left flank"). The counter runs x −5..10; the keeper
+            // stands at its left end, matching the cantina art, so the captain bellies up to the left side
+            // and finds them there. The console sits on the players' side (counterY − 2), and the [E]
+            // radius reaches it from the walkable hall side below.
+            new(DeckPlan.ConsoleKind.Barkeep, -3.5f, counterY - 2, keepLabel),
             // The gift shop: walk up, press E, view the Gen-AI souvenir + its location gag. Kept clear
             // of the bar patrons (Coil at x14) so E doesn't grab the wrong console.
             new(DeckPlan.ConsoleKind.ViewObject, 6, HallTopY + 3, "👕 SOUVENIR TEE", spec.TshirtArt, spec.Gag),
@@ -429,8 +433,10 @@ public static class HavenInterior
 
         // #247 — the barkeep, pacing their patch behind the counter (owner: "a barkeep pacing their bar
         // area is fine"). No rota (they don't leave the bar): a deterministic sine sweep along the
-        // counter, the same idiom as the seated regulars' sway, so first-person sees them move.
-        double pace = 2.6 * System.Math.Sin(simTime * 0.00035);
-        buffer[9] = new DeckPlan.Droid(2.5 + pace, BarTopY - 1.5, -System.Math.PI / 2, "Barkeep");
+        // counter, the same idiom as the seated regulars' sway, so first-person sees them move. Centred on
+        // the counter's LEFT FLANK (owner 2026-07-18), tracking the console at x −3.5, with a modest sweep
+        // so they stay behind the left half of the counter (x −5..10), at the bar as the art depicts it.
+        double pace = 2.0 * System.Math.Sin(simTime * 0.00035);
+        buffer[9] = new DeckPlan.Droid(-3.5 + pace, BarTopY - 1.5, -System.Math.PI / 2, "Barkeep");
     }
 }

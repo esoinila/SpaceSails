@@ -538,6 +538,31 @@ public partial class Map
     private Core.Interior.Barkeep? _barMenu;   // the open barkeep card (null = shut)
     private string? _barNotice;                 // the last thing the keep said, shown on the card
 
+    // ── The bar VISIT (owner 2026-07-18): a round satisfies the room for THIS stay, and loosens tongues
+    // once. Kept as light session state keyed to the docked bar — no new persistence (the coordinator's
+    // "trivially cheap through existing session state"). A different berth (or undock → _dockedHavenId
+    // clears) starts a fresh visit; re-docking the SAME bar in one session keeps the visit, which is fine.
+    private string? _barVisitStation;      // which docked station this visit's social state belongs to
+    private bool _roundThisVisit;          // a round for the room has been stood this visit
+    private string? _pendingContactDrink;  // the giver whose "pour it / cancel" offer moment is open
+
+    // #308/#283 → owner 2026-07-18 ("may not hide"; "autodisappears which is not convenient"): every bar
+    // tip/rumor is written to a DURABLE, revisitable book that rides the vault, not lived-and-lost in a
+    // toast. The transient line is just the doorbell; this is the record.
+    private List<Core.OverheardLine> _overheard = [];
+
+    // Fold this bar visit's state to the current berth: a new (or no) berth wipes the "round stood" and
+    // any half-open offer moment, so satisfied/loosened state never leaks across visits.
+    private void EnsureBarVisit()
+    {
+        if (_barVisitStation != _dockedHavenId)
+        {
+            _barVisitStation = _dockedHavenId;
+            _roundThisVisit = false;
+            _pendingContactDrink = null;
+        }
+    }
+
     private void TalkToBarkeep()
     {
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.Barkeep })
@@ -549,6 +574,7 @@ public partial class Map
             ShowPulseMessage("The bar's unattended just now — nobody behind the counter.");
             return;
         }
+        EnsureBarVisit();
         _barMenu = keep;
         _barNotice = keep.Greeting;
     }
@@ -557,6 +583,36 @@ public partial class Map
     {
         _barMenu = null;
         _barNotice = null;
+        _pendingContactDrink = null; // a half-open offer moment does not survive stepping back from the bar
+    }
+
+    // Append a heard line to the durable "overheard at the bar" book, capped, and persist it. The receipt
+    // (#119 idiom) so the words the captain paid for are revisitable, not gone with the toast.
+    private void Overhear(string text, string source)
+    {
+        string bar = _barMenu?.BarName ?? (_dockedHavenId is { } id ? Barkeeps.For(id)?.BarName : null) ?? "THE BAR";
+        _overheard = [.. Core.OverheardLog.Append(_overheard, new Core.OverheardLine(text, SimTime, source, bar))];
+        RequestVaultSave(); // #225: the book grew
+    }
+
+    // The recent lines overheard in THIS bar, newest first — the card's revisitable "overheard here"
+    // strip, so a tip you paid a round to hear is still readable when you lean back on the counter.
+    private IReadOnlyList<Core.OverheardLine> OverheardHere(int max)
+    {
+        string? bar = _barMenu?.BarName;
+        if (bar is null)
+        {
+            return [];
+        }
+        var here = new List<Core.OverheardLine>();
+        for (int i = _overheard.Count - 1; i >= 0 && here.Count < max; i--)
+        {
+            if (string.Equals(_overheard[i].BarName, bar, StringComparison.OrdinalIgnoreCase))
+            {
+                here.Add(_overheard[i]);
+            }
+        }
+        return here;
     }
 
     // Buy the house special: debit the purse, then apply the SAME drunkenness the Galley tot does — the
@@ -576,10 +632,12 @@ public partial class Map
             return;
         }
         _credits = tab.RemainingCredits;
-        PourRum($"{keep.DrinkName} — {keep.DrinkFlavor}"); // one wobble law, aboard and ashore
-        _barNotice = tab.Line;
-        ShowPulseMessage($"{tab.Line} (−{tab.Cost:N0} cr)");
-        RequestVaultSave(); // #225: the purse moved
+        // A lone drink at the counter — weak medicine (NerveModel), steadier the higher your nerve already
+        // is, and just one point at the shot floor. The receipt carries the steadying note PourRum builds.
+        string receipt = PourRum($"{keep.DrinkName} — {keep.DrinkFlavor}", NerveModel.DrinkKind.BarSpecial);
+        _barNotice = receipt;
+        ShowPulseMessage($"{receipt} (−{tab.Cost:N0} cr)");
+        RequestVaultSave(); // #225: the purse moved (and PourRum saved the nerve)
     }
 
     // Buy a round for the whole room — a bigger spend that WARMS the regulars actually drinking here
@@ -601,9 +659,15 @@ public partial class Map
         }
         _credits = tab.RemainingCredits;
 
+        // A round SATISFIES the room for this visit: only the FIRST round loosens tongues (owner: "their
+        // initiative … not a vending machine"). A second round the same visit still warms goodwill (#283)
+        // but the tongues are already loose — no re-roll.
+        bool loosenTongues = !_roundThisVisit;
+
         bool backOpen = _dockedHavenId is { } st
             && UnlockedHatchesFor(st).Any(h => HavenInterior.HatchGrowsWing(st, h));
         var warmed = new List<string>();
+        var volunteered = new List<string>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (DeckPlan.ConsoleSpot c in _deckPlan.Consoles)
         {
@@ -622,16 +686,58 @@ public partial class Map
             {
                 continue;
             }
+
+            // Owner 2026-07-18 — a round loosens tongues: each regular who drank rolls, on their own
+            // initiative, whether to volunteer something. Known contacts (goodwill-weighted) offer better
+            // material; strangers give vague color. Seeded per-NPC + this bar visit, deterministic. Once
+            // per visit only (the gate above), routed into the durable overheard book (no auto-vanish).
+            if (loosenTongues)
+            {
+                bool known = _contacts.For(giver).HasHistory;
+                ulong seed = DiceRule.Seed($"round-tip:{giver}:{_dockedHavenId}", (long)SimTime);
+                TipTier tier = RoundTips.Volunteer(seed, _contacts.For(giver).Goodwill, known);
+                if (VolunteeredTipLine(giver, GiverDisplay(giver), tier) is { } tip)
+                {
+                    Overhear(tip, giver);
+                    volunteered.Add(tip);
+                }
+            }
+
             _contacts.AddGoodwill(giver, giver, 1);
             warmed.Add(GiverDisplay(giver));
         }
 
-        PourRum($"{keep.DrinkName}, all round — {keep.DrinkFlavor}"); // your glass is in it too
+        _roundThisVisit = true;
+        // The captain's own glass is in the round — a lone drink for the nerve (you're pouring, not sharing
+        // a table). NerveModel's weak-solo curve + the tot-count drunk gate apply.
+        string receipt = PourRum($"{keep.DrinkName}, all round — {keep.DrinkFlavor}", NerveModel.DrinkKind.BarSpecial);
         string cheers = warmed.Count > 0 ? $" {string.Join(", ", warmed)} raise a glass to you." : "";
-        _barNotice = tab.Line + cheers;
-        ShowPulseMessage($"{tab.Line}{cheers} (−{tab.Cost:N0} cr)");
-        RequestVaultSave(); // #225: the purse moved and goodwill was booked
+        string tips = volunteered.Count > 0 ? "  " + string.Join("  ", volunteered) : "";
+        _barNotice = tab.Line + cheers + tips;
+        // The words the player paid a round to hear ride the durable book (above) AND a lingering toast.
+        ShowPulseMessage($"{receipt}{cheers}{tips} (−{tab.Cost:N0} cr)");
+        RequestVaultSave(); // #225: the purse moved, goodwill booked, the overheard book grew
     }
+
+    // The line a round-loosened regular volunteers, by how good their roll turned out. Solid/Choice hand
+    // real intel (the same #308 OpensUp material — a dark-running ship, a heat warning, a price whisper);
+    // vague is atmosphere only. Null when they stay quiet.
+    private string? VolunteeredTipLine(string giver, string display, TipTier tier) => tier switch
+    {
+        TipTier.Choice or TipTier.Solid => $"🍻 {display}, loosened by the round, leans in: {OpenIntelLine(giver)}",
+        TipTier.Vague => $"🍻 {display} raises the glass: {VagueColorLine()}",
+        _ => null,
+    };
+
+    private static readonly string[] VagueColor =
+    [
+        "“Quiet season. Too quiet, if you ask me.”",
+        "“Watch the docks after dark. That's all I'll say.”",
+        "“Somebody always owes somebody out here.”",
+        "“The good runs dried up. Or the good runners got careful.”",
+    ];
+
+    private string VagueColorLine() => VagueColor[(int)((SimTime / 60) % VagueColor.Length)];
 
     // Ask the barkeep what they've heard — a cheap tip line for flavor (deterministic per sim-hour).
     private void AskBarkeepForRumor()
@@ -642,6 +748,7 @@ public partial class Map
         }
         string rumor = keep.RumorAt(SimTime);
         _barNotice = rumor;
+        Overhear($"🍺 {keep.Name}: {rumor}", keep.Name); // durable — a rumor heard doesn't auto-vanish (#212)
         ShowPulseMessage($"🍺 {keep.Name}: {rumor}");
     }
 
@@ -706,6 +813,7 @@ public partial class Map
         {
             return;
         }
+        _pendingContactDrink = null; // the offer moment resolves into the pour
         if (!PresentBarContacts().Any(c => c.Giver.Equals(giver, StringComparison.OrdinalIgnoreCase)))
         {
             return; // not present, or not a known contact, just now — no effect
@@ -728,9 +836,10 @@ public partial class Map
 
         _contacts.AddGoodwill(giver, giver, parley.GoodwillDelta);
 
-        // SANITY-RELIEF SEAM (#226): a shared drink is sanity relief; PourRum's tot/pulse line stands in
-        // until #226 deposits the meter's relief value here. You clink glasses — your own legs feel it.
-        PourRum($"{keep.DrinkName} with {display} — {keep.DrinkFlavor}");
+        // SANITY-RELIEF SEAM (#226), WIRED: a shared drink is the real medicine — conversation AND the
+        // glass. NerveModel restores it at ANY nerve level (owner's ruling), the whole point of company
+        // over a lone drink. Still rides the one wobble/tot law via PourRum.
+        PourRum($"{keep.DrinkName} with {display} — {keep.DrinkFlavor}", NerveModel.DrinkKind.SharedWithContact);
 
         string line;
         switch (parley.Outcome)
@@ -746,6 +855,7 @@ public partial class Map
 
             case DrinkOutcome.OpensUp:
                 line = $"🍷 {display} warms and leans in: {OpenIntelLine(giver)}";
+                Overhear(line, giver); // durable — intel you paid for doesn't auto-vanish (#212, owner)
                 break;
 
             case DrinkOutcome.BusinessUnlock:
@@ -771,9 +881,30 @@ public partial class Map
         RequestVaultSave(); // #225: the purse moved, goodwill/tells were booked
     }
 
-    // #306 item 3: refusing has a price. A known contact reads a waved-off glass as suspicion — a small
-    // goodwill debit and an in-voice line. Never free, never fatal.
-    private void DeclineContactDrink(string giver)
+    // Open the "stand <name> a drink" OFFER MOMENT — a small confirm (pour it / cancel) on the card.
+    // Owner ruling 2026-07-18 ("what decision does the wave off represent?"): standing a drink is the
+    // captain's OWN idea, so it opens a moment you can back out of freely — there is no standing wave-off.
+    private void OfferContactDrink(string giver)
+    {
+        if (_barMenu is null
+            || !PresentBarContacts().Any(c => c.Giver.Equals(giver, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+        _pendingContactDrink = giver;
+    }
+
+    // Back out of your OWN offer — a plain CANCEL. No debit, no "unwet glass" line: punishing someone for
+    // reconsidering their own idea is theater, not a decision (owner ruling 2026-07-18).
+    private void CancelContactDrinkOffer() => _pendingContactDrink = null;
+
+    // NAMED SEAM (#226/#306, owner 2026-07-18) — NOT WIRED. The −2 "unwet glass" debit belongs to a
+    // future NPC-INITIATED offer: when a CONTACT buys/invites the captain to drink and the captain
+    // declines, THAT refusal (a social expectation pointing AT the captain) reads as suspicion and costs
+    // goodwill. Today no such NPC-initiated flow exists, so this is deliberately unreferenced — the home
+    // for ContactDrink.RefusalDebit when that flow is built. Do not wire it to a standing menu button:
+    // you cannot decline an offer nobody made.
+    private void DeclineNpcInitiatedDrink(string giver)
     {
         if (_barMenu is null
             || !PresentBarContacts().Any(c => c.Giver.Equals(giver, StringComparison.OrdinalIgnoreCase)))
@@ -782,7 +913,7 @@ public partial class Map
         }
         _contacts.AddGoodwill(giver, giver, -ContactDrink.RefusalDebit);
         string display = GiverDisplay(giver);
-        _barNotice = $"✋ You wave off the round. {display} studies your unwet glass, and something cools between you.";
+        _barNotice = $"✋ You wave off their round. {display} studies your unwet glass, and something cools between you.";
         ShowPulseMessage(_barNotice);
         RequestVaultSave(); // #225: goodwill moved
     }

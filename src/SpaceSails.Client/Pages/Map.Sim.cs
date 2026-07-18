@@ -1572,7 +1572,12 @@ public partial class Map
     private void ShowPulseMessage(string message)
     {
         _pulseMessage = message;
-        _pulseMessageExpiresMs = (_lastTimestampMs ?? 0) + 1500;
+        // Owner 2026-07-18 ("it autodisappears which is not convenient"): a line lingers long enough to
+        // READ — the dwell scales with its length (≈45 ms/char) so the words a player paid a round to
+        // hear aren't gone before they land. Short status pulses keep the old brisk 1.5 s floor; long
+        // intel lines get up to ~8 s. (The durable "overheard" book is the real record; this is the doorbell.)
+        double dwell = Math.Clamp((message?.Length ?? 0) * 45.0, 1500.0, 8000.0);
+        _pulseMessageExpiresMs = (_lastTimestampMs ?? 0) + dwell;
     }
     private bool _dragMoved;
     private double _downClientX, _downClientY;
