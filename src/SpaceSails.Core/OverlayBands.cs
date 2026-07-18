@@ -88,6 +88,11 @@ public static class OverlayBands
     /// <summary><c>.deck-shuttle-card</c> — the shuttle-bay card.</summary>
     public const int DeckShuttleCard = DesksAndPopups + 50; // 1250
 
+    /// <summary><c>.arrival-brake-card</c> — the #304 arrival-brake consent card. Above the routine deck
+    /// cards (a heat-of-arrival decision must not be buried under a stray context menu) but still well below
+    /// the reserved distress lifeline — a brake ask may never out-rank a stranded captain's rescue button.</summary>
+    public const int ArrivalBrakeCard = DesksAndPopups + 90; // 1290
+
     /// <summary><c>.start-picker-backdrop</c> — the starting-berth picker gate.</summary>
     public const int StartPickerBackdrop = DesksAndPopups + 100; // 1300
 

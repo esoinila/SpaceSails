@@ -95,6 +95,7 @@ public class CssZBandSyncTests
         { ".deck-pulse-toast", OverlayBands.DeckPulseToast },
         { ".deck-offer-card", OverlayBands.DeckOfferCard },
         { ".deck-shuttle-card", OverlayBands.DeckShuttleCard },
+        { ".arrival-brake-card", OverlayBands.ArrivalBrakeCard },
         { ".start-picker-backdrop", OverlayBands.StartPickerBackdrop },
         { ".view-object-backdrop", OverlayBands.ViewObjectBackdrop },
         { ".pin-backdrop", OverlayBands.PinBackdrop },
@@ -138,7 +139,7 @@ public class CssZBandSyncTests
         IReadOnlyDictionary<string, int> bands = ParseRootBands();
 
         int lifeline = ResolveSelectorZ(css, ".map-adrift", bands);
-        foreach (string popup in new[] { ".deck-offer-card", ".start-picker-backdrop", ".view-object-backdrop", ".pin-backdrop" })
+        foreach (string popup in new[] { ".deck-offer-card", ".arrival-brake-card", ".start-picker-backdrop", ".view-object-backdrop", ".pin-backdrop" })
         {
             Assert.True(lifeline > ResolveSelectorZ(css, popup, bands), $"lifeline must out-rank {popup}");
         }

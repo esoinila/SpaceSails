@@ -1185,6 +1185,7 @@ public partial class Map
         UpdateParrot(highResTimestampMs);
         UpdateShipAlerts(highResTimestampMs);
         EvaluateLongCoastAdvert(highResTimestampMs); // #172: refresh the next-event cache + long-coast squawk
+        UpdateArrivalBrakeGate(highResTimestampMs);  // #304: raise the arrival-brake ask while the window is open
 
         // M28: the CALCULATING FIRING SOLUTION reveal — one Newton iteration per beat.
         if (_fireSolution is { } fireSolution && _revealedIterations < fireSolution.Trace.Count
