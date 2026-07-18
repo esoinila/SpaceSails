@@ -187,6 +187,23 @@ public static class OrbitRule
         return ceiling <= floor ? floor : Math.Min(target, ceiling);
     }
 
+    /// <summary>#286 — a hair of extra grace beyond the parent's #278 clearance band that a
+    /// moon-kept orbit keeps from the parent, as a fraction of the parent's radius. So a clamped
+    /// park doesn't sit exactly on the gate boundary. 0.1 R matches the surface safety band.</summary>
+    public const double ParentKeepGraceRadii = 0.1;
+
+    /// <summary>#286 — the largest kept-orbit radius about a MOON whose whole swept circle still clears
+    /// the PARENT planet. A circular park of radius r about a moon at distance <paramref name="distanceToParent"/>
+    /// from its parent comes within (d − r) of the parent's centre, so keeping the swept circle out of the
+    /// parent's #278 <see cref="SurfaceClearance.ClearanceRadius"/> band (plus a <see cref="ParentKeepGraceRadii"/>
+    /// grace) requires r ≤ d − clearance − grace. This is the ONLY new geometry the #286 clamp adds; the
+    /// clearance itself is the reused surface-clearance gate, so "safe to plan over the parent" and "safe to
+    /// keep an orbit beside it" speak the same number. For every shipped moon this cap is far wider than the
+    /// tide-stable <see cref="ParkingRadius"/>, so the clamp is inert; it is the guard that an inner moon with
+    /// a small Hill sphere and a sky-filling parent can never thread the world it circles beside.</summary>
+    public static double MaxKeptRadiusUnderParent(double distanceToParent, CelestialBody parent) =>
+        distanceToParent - SurfaceClearance.ClearanceRadius(parent) - ParentKeepGraceRadii * parent.BodyRadius;
+
     /// <summary>The upper radius of the tide-STABLE park band about a body — the widest a bound
     /// orbit's apoapsis may reach before the sun's tide starts to strip it (Lab 16 drift sweep,
     /// #180). Normally <see cref="ParkStableCeilingHillFraction"/>·Hill (0.4 Hill), a small grace
@@ -500,12 +517,18 @@ public static class OrbitRule
     /// open or the sun's tide has bent the fall off (closing speed under half the approach
     /// speed). Coasting nicely toward the window costs nothing.
     /// </summary>
+    /// <param name="keptRadiusCap">#286 — an upper bound on the kept-orbit radius so the swept park
+    /// clears the moon's PARENT planet (<see cref="MaxKeptRadiusUnderParent"/>). The insert fires only
+    /// once the ship is deeper than <c>min(ParkingRadius, keptRadiusCap)</c>, so the circularized orbit
+    /// is guaranteed flyable. Defaults to +∞ — no cap, the pre-#286 behaviour for planets and for every
+    /// caller that passes no parent context (all existing tests unchanged).</param>
     public static AutopilotAction AutopilotDecision(
-        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, double hillRadius)
+        ShipState ship, Vector2d bodyPosition, Vector2d bodyVelocity, CelestialBody body, double hillRadius,
+        double keptRadiusCap = double.PositiveInfinity)
     {
         double distance = (ship.Position - bodyPosition).Length;
         if (WindowOpen(ship, bodyPosition, bodyVelocity, body, hillRadius)
-            && distance < ParkingRadius(body, hillRadius))
+            && distance < Math.Min(ParkingRadius(body, hillRadius), keptRadiusCap))
         {
             return AutopilotAction.Insert;
         }

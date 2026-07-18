@@ -491,6 +491,29 @@ public partial class Map
                 return; // NOT armed — the line threads a body
             }
 
+            // #286 moon-docked clearance: the rehearsal's path ends at the insertion, so the #278 gate above
+            // never sees the KEPT orbit that follows. A kept orbit around a moon can be geometrically bigger
+            // than the moon's clearance from its parent — it would sweep through the planet the moon circles
+            // beside. Judge the kept orbit itself: if the moon has no flyable park at all, refuse with the
+            // reason (never thread the planet silently); if the standard park would breach the parent, note
+            // that the autopilot will hold a tighter orbit. Inert for every shipped moon (the tide-stable
+            // park clears the parent with a wide margin) — the guard for any future inner moon.
+            if (target is not null
+                && MoonOrbitClearance.Solve(_ephemeris, target, SimTime) is { } keptVerdict)
+            {
+                if (keptVerdict.NoSafeOrbit)
+                {
+                    _autopilotStandDownReason = $"autopilot declines {name}: {MoonOrbitClearance.RefusalText(keptVerdict)}.";
+                    ResetAutopilotBudget();
+                    ShowPulseMessage($"🛰 {_autopilotStandDownReason}");
+                    return; // NOT armed — no kept orbit there clears the planet
+                }
+                if (keptVerdict.Clamped)
+                {
+                    ShowPulseMessage($"🛰 {MoonOrbitClearance.RefusalText(keptVerdict)}.");
+                }
+            }
+
             _armedBudgetPulses = r.Pulses;
             _armedSpentPulses = 0;
             CachePlanForAlarm(bodyId, r); // #148/#196/#219: draw the intended path AND cache its alarm pass, together
@@ -557,6 +580,12 @@ public partial class Map
         double h = 1.0;
         Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
         double hill = OrbitRule.HillRadius(body, parent.Mu);
+        // #286: the kept-orbit radius is bounded so the circularized park clears the moon's PARENT planet.
+        // Inert for every shipped moon (the tide-stable park is far tighter than this cap); the guard that
+        // an inner moon with a small Hill sphere can never be circled through the world beside it.
+        double keptRadiusCap = OrbitRule.MaxKeptRadiusUnderParent(
+            _ephemeris.InstantaneousOrbitRadius(body.Id, SimTime), parent);
+        double keptPark = Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
 
         // Friday §0: once parked, the autopilot HOLDS the orbit — station-keeping owns the tick, not
         // the approach/insert loop below. It stays here until the captain disarms or the tank runs dry.
@@ -569,7 +598,7 @@ public partial class Map
             // against the tank. Read as `_orbitKept && _keepTrimFunded` in UpdateShipAlerts, so a healthy
             // held park's subsurface between-trim dip is trusted, and a dry-tank keep shouts immediately.
             _keepTrimFunded = _orbitKept &&
-                OrbitKeeping.TrimPulseCost(_ship, bodyPos, bodyVel, body, OrbitRule.ParkingRadius(body, hill))
+                OrbitKeeping.TrimPulseCost(_ship, bodyPos, bodyVel, body, keptPark)
                     <= _reactionMassPulses;
             return;
         }
@@ -625,7 +654,7 @@ public partial class Map
             : new OrbitRule.ApproachObstacle(
                 _ephemeris.Position(parent.Id, SimTime), parent.BodyRadius * OrbitRule.ParentSafeBodyRadii);
 
-        switch (OrbitRule.AutopilotDecision(_ship, bodyPos, bodyVel, body, hill))
+        switch (OrbitRule.AutopilotDecision(_ship, bodyPos, bodyVel, body, hill, keptRadiusCap))
         {
             case OrbitRule.AutopilotAction.Approach:
                 double distance = (_ship.Position - bodyPos).Length;
@@ -703,7 +732,7 @@ public partial class Map
                 _armedTransferSummary = null;
                 _armedTransferBurnsFired = 0;
                 ResetApproachTracking();
-                double park = OrbitRule.ParkingRadius(body, hill);
+                double park = keptPark; // #286: the clamped park the keeper trims back to (clears the parent)
                 _orbitKept = true;
                 _keepTrimPulsesPerDay = OrbitKeepingTable.TrimPulsesPerDay(
                     body, hill, parent.Mu, body.OrbitRadius, _ship.Velocity.Length);
@@ -740,7 +769,11 @@ public partial class Map
             return;
         }
 
-        double park = OrbitRule.ParkingRadius(body, hill);
+        // #286: trim back to the CLAMPED park (bounded so the kept orbit clears the parent), not the raw
+        // tide-stable radius — otherwise a clamped orbit would be trimmed back out toward the planet.
+        double park = Math.Min(
+            OrbitRule.ParkingRadius(body, hill),
+            OrbitRule.MaxKeptRadiusUnderParent(_ephemeris!.InstantaneousOrbitRadius(body.Id, SimTime), parent));
         if (SimTime < _keepNextCheckTime)
         {
             return; // between cadence points — let the reversible oscillation reverse itself
