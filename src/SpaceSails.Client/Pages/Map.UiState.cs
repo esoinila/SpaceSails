@@ -84,6 +84,15 @@ public partial class Map
         _activeDesk = desk;
     }
 
+    // 2026-07-18 playtest: the mouse's route into a desk. Every clickable desk switch — the tab bar, the
+    // pilot banner, the desk chips, the "⚔ war room" jump — funnels through here so the switch happens
+    // AND the keyboard comes home to the map div (RefocusMap), instead of dying on the clicked button.
+    private async Task SwitchDeskFromClick(ShipDesk desk)
+    {
+        SwitchDesk(desk);
+        await RefocusMap();
+    }
+
     // Addendum (owner, 2026-07-04 evening): a chip is the station's tightest CURRENT-OBJECTIVE
     // summary, not a raw-stats dump — see docs/SaturdayPlan/StationDesks.md.
     private IReadOnlyList<SpaceSails.Client.Pages.Stations.DeskChips.ChipData> BuildDeskChips()
@@ -463,6 +472,15 @@ public partial class Map
     private bool _peekMap;
 
     private void TogglePeekMap() => _peekMap = !_peekMap;
+
+    // 2026-07-18 playtest: the peek button shares the desk-tab bar, so a click stole focus off the map div
+    // the same way a tab did. The mouse toggles peek through here so the keyboard comes home; the ` hotkey
+    // still calls TogglePeekMap directly (it already owns focus).
+    private async Task TogglePeekMapFromClick()
+    {
+        TogglePeekMap();
+        await RefocusMap();
+    }
 
     // M20: ships and pods are clickable on the map — same effect as picking their traffic row.
     // ---- The unified picker (owner: "hard to click things that are close by"; Gemini
