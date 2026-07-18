@@ -761,6 +761,10 @@ public partial class Map
     private async Task ChooseStart(string id)
     {
         _showStartPicker = false;
+        // feat/game-threads (owner 2026-07-18): picking a start IS beginning a new voyage — a fresh universe
+        // in its own game thread, sharing nothing with the run it was launched from (in memory or on disk).
+        // The previous run isn't lost: its autosave lives on under its own thread, resumable via Continue.
+        EnterNewGameThread();
         ApplyStart(id);
         if (!_deckMode && _activeDesk != ShipDesk.Nav)
         {

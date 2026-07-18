@@ -151,6 +151,11 @@ public sealed class ContactLedger
     /// <summary>The saved cast of contacts — what a future persistence layer serializes.</summary>
     public IReadOnlyDictionary<string, ContactHistory> Entries => _byId;
 
+    /// <summary>Forget every contact — the per-game-thread reset (feat/game-threads, owner 2026-07-18):
+    /// a NEW voyage begins with no history at all, so the relationships (and debts) of a previous run
+    /// never bleed into a fresh universe.</summary>
+    public void Clear() => _byId.Clear();
+
     /// <summary>This contact's history, or a blank slate if we've never dealt with them.</summary>
     public ContactHistory For(string contactId) =>
         _byId.TryGetValue(contactId, out ContactHistory h) ? h : ContactHistory.New(contactId, contactId);

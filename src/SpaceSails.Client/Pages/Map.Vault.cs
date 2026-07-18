@@ -33,16 +33,150 @@ public partial class Map
     // reads and writes; the vault payload rides its own per-slot key (lossless), a small manifest holds
     // the labels. One rolling AUTOSAVE slot follows the ship (Continue reads it); nine MANUAL banks the
     // captain fills deliberately and the autosave never touches.
-    private SaveSlotBook? _slots;
-    private SaveSlotBook Slots => _slots ??= new SaveSlotBook(new RendererSlotStore());
+    //
+    // feat/game-threads (owner 2026-07-18): each GAME START is its own universe — a game-thread GUID,
+    // minted client-side, that namespaces the WHOLE ten-slot book (SaveSlotBook's per-thread keyspace).
+    // So a NEW voyage never reads another thread's slots ("the roadster already found in a new game"
+    // leak), and Continue resumes the ACTIVE thread. The GameThreadRegistry is the thin index of which
+    // universes exist and which is active. Guids are minted HERE (Core stays pure).
+    private readonly RendererSlotStore _slotStore = new();
 
-    /// <summary>The ISlotStore the book writes through: the defensive localStorage interop (a private-mode
-    /// throw or a full quota is swallowed JS-side, so a save that "didn't take" never breaks the sim).</summary>
+    // The active game thread (universe). Null until a game is started/continued/migrated; every autosave
+    // path first EnsureGameThread()s so a durable write always lands in a real thread, never the default
+    // (un-namespaced) shelf.
+    private string? _activeThreadId;
+
+    private GameThreadRegistry? _threads;
+    private GameThreadRegistry Threads => _threads ??= new GameThreadRegistry(_slotStore);
+
+    // The book for the active thread, rebuilt whenever the active thread changes. An empty/null active id
+    // yields the DEFAULT (pre-thread) shelf — only ever seen transiently before the first thread is minted
+    // or adopted; gameplay writes always run through EnsureGameThread first.
+    private SaveSlotBook? _slots;
+    private string _slotsBoundThreadId = "￿"; // sentinel: matches no real id/empty, forces first build
+    private SaveSlotBook Slots
+    {
+        get
+        {
+            string tid = _activeThreadId ?? "";
+            if (_slots is null || _slotsBoundThreadId != tid)
+            {
+                _slots = new SaveSlotBook(_slotStore, tid);
+                _slotsBoundThreadId = tid;
+            }
+
+            return _slots;
+        }
+    }
+
+    /// <summary>The ISlotStore the book and registry write through: the defensive localStorage interop (a
+    /// private-mode throw or a full quota is swallowed JS-side, so a save that "didn't take" never breaks
+    /// the sim).</summary>
     private sealed class RendererSlotStore : ISlotStore
     {
         public string? Read(string key) => RendererInterop.VaultRead(key);
         public void Write(string key, string value) => RendererInterop.VaultWrite(key, value);
         public void Clear(string key) => RendererInterop.VaultClear(key);
+    }
+
+    // Mint a brand-new game thread and make it active — the fresh universe every new voyage gets. The GUID
+    // is client-only (Core takes a string). The thread is registered immediately (stamped active) so a
+    // reload mid-new-game continues THIS thread, not the one it was started from.
+    private void BeginNewGameThread()
+    {
+        _activeThreadId = Guid.NewGuid().ToString("N");
+        long now = DateTimeOffset.UtcNow.UtcTicks;
+        Threads.Touch(_activeThreadId, "unknown waters", 0, now);
+        RefreshThreadList();
+        RefreshSlotList();
+    }
+
+    // Lazily ensure SOME active thread exists before a durable write — covers the direct-start paths that
+    // bypass the new-voyage buttons (the ?start=/?dock= dev cheats), so their autosave still lands in a
+    // real, isolated thread rather than the default shelf.
+    private void EnsureGameThread()
+    {
+        if (string.IsNullOrEmpty(_activeThreadId))
+        {
+            BeginNewGameThread();
+        }
+    }
+
+    // The whole "begin a new voyage" gesture: wipe the live universe back to a clean slate, THEN mint the
+    // fresh thread it will save under. The two together are the fix for the owner's leak — a new start
+    // shares NOTHING with the run it was launched from, in memory (this reset) or on disk (the new thread).
+    // Called by every new-voyage entry (the front-door New voyage, the scenario "other skies", the berth
+    // starts). NOT called by Continue/Load/Import (those hydrate a saved universe instead).
+    private void EnterNewGameThread()
+    {
+        ResetLiveStateForNewGame();
+        BeginNewGameThread();
+    }
+
+    // Reset every scrap of durable + discovered state to a brand-new-game slate (owner 2026-07-18: "different
+    // game starts don't share state", and the follow-up: "mission statuses reset from the new game starting").
+    // This is the exact inverse of BuildVault (so a new game equals a blank vault) PLUS the two SESSION-scoped
+    // discovery sets the vault deliberately never carries — _revealedBodyIds (where "the roadster is found"
+    // actually lives) and the scope-intel cards. The sim clock itself returns to the beginning date via the
+    // ApplyStart/StartDockedAtHaven that runs right after (it rebuilds the ship at epoch 0).
+    private void ResetLiveStateForNewGame()
+    {
+        // Purse + hold: the same opening stake a fresh boot lays down (Map.Trade constants), so a New voyage
+        // is byte-for-byte the standard Earth opening.
+        _credits = StartingCredits;
+        _cargoByClass.Clear();
+        foreach ((string cargoClass, int units) in StartingManifest)
+        {
+            _cargoByClass[cargoClass] = _cargoByClass.GetValueOrDefault(cargoClass) + units;
+        }
+
+        _hotCargo.Launder();
+        RecomputeCargoTotals();
+
+        // Ship consumables + the sentry roster, fresh.
+        _slugAmmo = 12;
+        _missileAmmo = 4;
+        _shipBots.Clear();
+        foreach (string unit in SentryBot.RosterUnits)
+        {
+            _shipBots.Add(new ShipBot(unit, SentryBot.MaxMagazine));
+        }
+
+        // Upgrades back to base (and the tank to the base capacity that implies), sensor rebuilt.
+        _massLevel = 0;
+        _sensorLevel = 0;
+        _holdLevel = 0;
+        _telescopeLevel = 0;
+        _reactionMassPulses = ReactionMassCapacity; // = 500 at mass level 0
+        _hasNetJammer = false;
+        RebuildSensor();
+
+        // Heat, nerve, insurance — the mood of the run, all calm again.
+        _heat = HeatState.None;
+        _nerve = NerveModel.Steady;
+        _monolithSeen = false;
+        _insurance = PirateInsurance.Uninsured;
+
+        // The mission/contract slate and every relationship, wiped: a new universe owes nobody and knows
+        // nobody (owner: mission statuses reset with the new game). New quest ids mint from zero again.
+        _quests.Clear();
+        _questSeq = 0;
+        _favorObligations.Clear();
+        _contacts.Clear();
+
+        // The hoard and the bar-intel book — knowledge of a previous run's world, gone.
+        _caches.Clear();
+        _overheard = [];
+
+        // THE leak's home: the session-scoped "found it" sets. Clearing _revealedBodyIds re-hides every
+        // scenario-hidden body (the derelict roadster among them) so a new game must re-discover it; the
+        // scope-intel cards (scan fixes) go with it. _hiddenBodyIds is scenario data — left untouched.
+        _revealedBodyIds.Clear();
+        _scopeIntel.Clear();
+
+        // #292 note: _tutorialPlayed is deliberately NOT reset here. Whether a fresh universe re-runs the
+        // tutorial (and its date-triggered target rush) is the docked-starts lane's rework, not this one;
+        // this lane owns that the persistence model resets and isolates the mission slate above.
     }
 
     // Peeked at boot so the front-door load view can lead with "Continue — <where>".
@@ -99,6 +233,7 @@ public partial class Map
     {
         _showStartPicker = false;
         _showBerthStarts = false;
+        EnterNewGameThread(); // a berth start is a NEW voyage — fresh universe, fresh thread (feat/game-threads)
         StartDockedAtHaven(havenId);
         if (!_deckMode && _activeDesk != ShipDesk.Nav)
         {
@@ -128,9 +263,11 @@ public partial class Map
         TryWriteVault();
     }
 
-    // The rolling autosave: rewrite the ONE autosave slot with the live state. This is the fix for the
-    // Mars pull — a fresh scenario start writes NOTHING here (it is not a durable in-play event), so an
-    // accidental "Rusty Roadstead — docked" pick can no longer overwrite where you actually are.
+    // The rolling autosave: rewrite the ACTIVE THREAD's autosave slot with the live state. This is the fix
+    // for the Mars pull — a fresh scenario start writes NOTHING here (it is not a durable in-play event),
+    // so an accidental "Rusty Roadstead — docked" pick can no longer overwrite where you actually are — and
+    // the fix for the cross-game leak: the write lands in THIS universe's thread (feat/game-threads), never
+    // another's. The registry is touched alongside so "the newest thread" stays true and Continue current.
     private void TryWriteVault()
     {
         if (!_worldReady || _ephemeris is null)
@@ -140,8 +277,12 @@ public partial class Map
 
         try
         {
+            EnsureGameThread(); // a durable event always saves into a real, isolated thread
             Vault live = BuildVault();
-            Slots.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(live), BuildSlotMeta(live, SaveSlotKind.Autosave));
+            SaveSlotMeta meta = BuildSlotMeta(live, SaveSlotKind.Autosave);
+            Slots.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(live), meta);
+            Threads.Touch(_activeThreadId!, meta.Where, meta.SimDay, meta.SavedRealTicks);
+            RefreshThreadList();
             RefreshSlotList();
         }
         catch
@@ -273,17 +414,24 @@ public partial class Map
         return VaultResume.Select(_dockedHavenId, _ship.Position, havens);
     }
 
-    // Boot peek: migrate any pre-#310 single save into the shelf, then read the newest slot so the
-    // front-door load view can lead with "Continue — <where>". Caches that newest vault for Continue.
+    // Boot peek: adopt any pre-thread saves into a game thread, bind to the ACTIVE thread, then read its
+    // newest slot so the front-door load view can lead with "Continue — <where>". Caches that vault for
+    // Continue. Also exposes the OTHER threads (the registry) for the front door's parallel-voyage list.
     private void PeekSavedVault()
     {
         try
         {
-            MigrateLegacyVaultIfNeeded();
+            MigrateToThreadsIfNeeded();
+
+            // Bind to the universe the game should resume (explicit-active, else newest). Null => a true
+            // first run: no threads yet, one is minted when the captain picks a New voyage.
+            _activeThreadId = Threads.Active()?.Id;
+            RefreshThreadList();
             RefreshSlotList();
 
             SaveSlotMeta? newest = Slots.Newest();
-            if (newest is null || Slots.ReadPayload(newest.Id) is not { } raw || string.IsNullOrWhiteSpace(raw))
+            if (_activeThreadId is null || newest is null
+                || Slots.ReadPayload(newest.Id) is not { } raw || string.IsNullOrWhiteSpace(raw))
             {
                 _resumeAvailable = false;
                 _pendingResumeVault = null;
@@ -307,31 +455,73 @@ public partial class Map
         }
     }
 
-    // #310 migration: a player who saved before the shelf existed has one vault under the legacy key.
-    // Seed BOTH the rolling autosave (so Continue immediately continues it — "where I actually am") AND
-    // manual slot 1 (the deliberate bank the issue names), so nothing is lost and the old save is a slot.
-    private void MigrateLegacyVaultIfNeeded()
+    // ── feat/game-threads migration: fold every pre-thread save into a freshly minted game thread, so a
+    //    returning captain loses nothing and their one universe becomes thread #1 (the owner's migration
+    //    law: "existing single-vault saves appear as slot 1, nothing lost"). Two shapes are adopted:
+    //      (a) the #310 ten-slot DEFAULT shelf → copied wholesale into a new thread (all ten berths kept);
+    //      (b) the pre-#310 single vault key → seeded as the thread's autosave AND manual slot 1.
+    //    Runs once: the moment any thread exists (registry non-empty), migration is done forever. The old
+    //    keys are left in place (harmless, never re-read) so a rollback still finds the original saves. ──
+    private void MigrateToThreadsIfNeeded()
     {
-        if (!Slots.NeedsMigration() || Slots.LegacyPayload() is not { } legacyJson || string.IsNullOrWhiteSpace(legacyJson))
+        if (!Threads.IsEmpty)
         {
-            return;
+            return; // already on threads — nothing to adopt
         }
 
         try
         {
-            Vault legacy = VaultSerializer.Load(legacyJson);
-            SaveSlotMeta auto = BuildSlotMeta(legacy, SaveSlotKind.Autosave);
-            Slots.Save(SaveSlotBook.AutoSlotId, legacyJson, auto);
-            Slots.Save(SaveSlotBook.ManualSlotId(1), legacyJson, auto with { Kind = SaveSlotKind.Manual });
+            var defaultShelf = new SaveSlotBook(_slotStore); // the un-namespaced, pre-thread book
+            IReadOnlyList<SaveSlotMeta> existing = defaultShelf.List();
+
+            if (existing.Count > 0)
+            {
+                // (a) Adopt the whole #310 shelf into a new thread, byte-for-byte.
+                string threadId = Guid.NewGuid().ToString("N");
+                var threadBook = new SaveSlotBook(_slotStore, threadId);
+                threadBook.CopyFrom(defaultShelf);
+                SaveSlotMeta newest = existing[0]; // List() is newest-first
+                Threads.Touch(threadId, newest.Where, newest.SimDay, newest.SavedRealTicks);
+                return;
+            }
+
+            if (defaultShelf.NeedsMigration()
+                && defaultShelf.LegacyPayload() is { } legacyJson && !string.IsNullOrWhiteSpace(legacyJson))
+            {
+                // (b) Adopt the ancient single-slot vault as a thread's autosave + manual slot 1.
+                Vault legacy = VaultSerializer.Load(legacyJson);
+                string threadId = Guid.NewGuid().ToString("N");
+                var threadBook = new SaveSlotBook(_slotStore, threadId);
+                SaveSlotMeta auto = BuildSlotMeta(legacy, SaveSlotKind.Autosave);
+                threadBook.Save(SaveSlotBook.AutoSlotId, legacyJson, auto);
+                threadBook.Save(SaveSlotBook.ManualSlotId(1), legacyJson, auto with { Kind = SaveSlotKind.Manual });
+                Threads.Touch(threadId, auto.Where, auto.SimDay, auto.SavedRealTicks);
+            }
         }
         catch
         {
-            // A corrupt legacy file simply doesn't migrate — the new shelf starts empty; nothing crashes.
+            // A corrupt legacy file simply doesn't migrate — the shelf starts empty; nothing crashes.
         }
     }
 
-    // The front door's "Continue — <where>": restore the newest slot instead of a fresh start.
+    // The registry's threads, newest-first, for the front-door "other voyages" list (a minimal load-a-game
+    // door — #310's full picker builds on this keying). The active thread is the one Continue leads with.
+    private IReadOnlyList<GameThreadInfo> _threadList = [];
+    private void RefreshThreadList() => _threadList = Threads.List();
+
+    // The front door's "Continue — <where>": restore the ACTIVE thread's newest slot instead of a fresh start.
     private Task ContinueFromSave() => LoadSlot(Slots.Newest()?.Id);
+
+    // Continue a DIFFERENT universe (the other-voyages list): make it active, then resume its newest slot.
+    // A deliberate switch (SetActive, not Touch) so choosing an older thread doesn't falsely bump it newest
+    // until it actually plays and autosaves.
+    private Task ContinueThread(string threadId)
+    {
+        Threads.SetActive(threadId);
+        _activeThreadId = threadId;
+        RefreshSlotList();
+        return LoadSlot(Slots.Newest()?.Id);
+    }
 
     // Load a specific slot by id (the front-door list, the captain's-desk drawer, or Continue-newest).
     private async Task LoadSlot(string? slotId)
@@ -363,6 +553,17 @@ public partial class Map
     /// owner's law that a resume is a berth, never a stored orbit.</summary>
     private void ApplyVault(Vault vault)
     {
+        // Clear the ADDITIVE ledgers first (feat/game-threads). VaultMapper.Apply / ApplyHot LOAD into a
+        // ledger without clearing, and _revealedBodyIds is never vaulted — so without this, loading a save
+        // (especially switching to another universe via the other-voyages door) would MERGE the old run's
+        // contacts, hoards, hot flags and discoveries into the loaded one. A load must be the loaded life,
+        // whole and alone. (The other sections below already replace-on-apply, so they need no pre-clear.)
+        _contacts.Clear();
+        _caches.Clear();
+        _hotCargo.Launder();
+        _revealedBodyIds.Clear();
+        _scopeIntel.Clear();
+
         if (vault.Purse is { } purse)
         {
             _credits = (int)Math.Clamp(purse.Credits, int.MinValue, int.MaxValue);
@@ -769,8 +970,13 @@ public partial class Map
         }
 
         Vault vault = VaultSerializer.Load(text);
+        // An imported file is a whole universe arriving — give it its OWN thread (feat/game-threads) so it
+        // never overwrites the autosave of the run that was live; that run stays intact under its own thread
+        // and remains resumable. ApplyVault clears the slate first, so the imported life boards clean.
+        BeginNewGameThread();
         ApplyVault(vault);
-        RequestVaultSave(); // the rolling autosave adopts the imported state → Continue matches the screen
+        RequestVaultSave(); // the new thread's autosave adopts the imported state → Continue matches the screen
+        RefreshThreadList();
         RefreshSlotList();
         ShowPulseMessage(vault.Tampered
             ? "📛 Imported — the file was edited outside the game; the ledger is marked tampered."
