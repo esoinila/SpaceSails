@@ -97,6 +97,12 @@ public partial class Map
     // as the shuttle ride, not a frozen click. See BeginSurfaceExcursion.
     private bool _shuttleDescending;
 
+    // #329 follow-up: the coarse descent phase the door narrates RIGHT NOW. The descent runs several
+    // first-time synchronous blocks (clock jump, tube/surface/maze weld, first cold render) that each
+    // tripped Chrome's page-unresponsive dialog on the Debug bundle; DescentPhaseAsync sets this and
+    // yields between them so the door repaints and no single block blocks the main thread too long.
+    private string? _descentPhase;
+
     // #314: the ship's sentry roster — the two real boarding troopers (K-77, R-3B), each with a 99-round
     // magazine that survives a berth-to-berth save (Map.Vault). Full on a fresh ship; drained by use,
     // refilled at a haven's rearm line (Map.Trade). Bots carried down to a surface leave this list for the
@@ -184,14 +190,18 @@ public partial class Map
         _boardTarget = null;
         _shuttleBayStops = null;
 
-        // #318 follow-up: the tube + wide-surface plan build below is synchronous (small on Release,
-        // amplified on the Debug bundle). Raise the honest 'shuttle descending…' door — a 🛸 flying on a
-        // compositor-thread CSS animation — and let it PAINT before the block, so a slow build reads as
-        // the ride down, not a frozen click. Dropped once the surface is welded on and walkable.
+        // #318/#329 follow-up: the descent runs several FIRST-TIME synchronous blocks back to back — the
+        // clock jump + buried-cache discovery scan, then the tube/surface/monolith-maze + collision weld,
+        // then the first (cold-interpreted) render of the enlarged deck. On the ~100×-slower Debug bundle
+        // each can pass Chrome's page-unresponsive threshold, so the owner saw the dialog fire TWICE.
+        // Same cure as the boot: raise the flying-🛸 descent door and yield to the browser BETWEEN the
+        // coarse phases (each narrated), so no single phase blocks the main thread long enough to trip it.
+        // We do NOT restructure any generation logic — only phase-yield around the existing calls.
         _shuttleDescending = true;
-        StateHasChanged();
-        await Task.Delay(1);
 
+        // Phase 1 — clear the bay: advance the clock across the crossing (and the discovery scan the
+        // time-jump can trigger for buried caches).
+        await DescentPhaseAsync("clearing the bay…");
         AdvanceShuttleClock(stop.TravelSeconds); // the flight down (abstracted by the tube) costs the clock
 
         var excursion = new SurfaceExcursion
@@ -225,11 +235,20 @@ public partial class Map
             ? OrbitHold.HoldSeconds(_reactionMassPulses, _keepTrimPulsesPerDay)
             : 0;
 
+        // Phase 2 — weld the tube + wide surface + monolith maze + collision segments onto the deck.
+        await DescentPhaseAsync("welding the tube…");
         RebuildSurfaceDeck();
+
+        // Phase 3 — read the ground: flip to the deck view, then yield ONE more time so the first
+        // (cold-path) render of the enlarged surface paints UNDER the still-up door — that frame is then
+        // its own isolated block, never chained onto the weld above. Only then drop the door.
+        await DescentPhaseAsync("reading the ground…");
         _deckMode = true;
         _activeDesk = ShipDesk.Deck;
         _deckPanX = _deckPanY = 0;
-        _shuttleDescending = false; // the surface is welded on and walkable — drop the descent door
+        StateHasChanged();
+        await Task.Delay(1);
+        _shuttleDescending = false; // surface welded, walkable, and painted once — drop the descent door
         RendererInterop.PlayCue("board");
         string load = chest.IsEmpty
             ? "No chest loaded — a look around, nothing to declare."
@@ -238,6 +257,18 @@ public partial class Map
             ? $" {take} sentry bot{(take == 1 ? "" : "s")} in the sling — press T on the surface to set one down."
             : "";
         ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
+        _descentPhase = null;
+    }
+
+    // #329 follow-up: narrate a coarse descent phase and hand the frame back to the browser so the queued
+    // render paints (the flying-🛸 door repaints with the new sub-line) before the next synchronous block.
+    // Task.Delay(1) parks on a browser timer — the yield that resets Chrome's page-unresponsive timer, so
+    // each phase's block is measured on its own and never chains into a multi-second freeze.
+    private async Task DescentPhaseAsync(string phase)
+    {
+        _descentPhase = phase;
+        StateHasChanged();
+        await Task.Delay(1);
     }
 
     // (Re)build the ship + tube + surface plan for the live excursion, honoring what we carry and which

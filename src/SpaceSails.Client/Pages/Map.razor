@@ -26,12 +26,15 @@
     }
     else if (_shuttleDescending)
     {
-        @* #318 follow-up: the Board→surface build is another synchronous block. The wait becomes the
-           ride — a 🛸 flies across on a pure CSS transform (compositor thread), so it keeps moving
-           while the tube/surface welds on, and foreshadows the mid-tube shuttle glyph ahead. *@
+        @* #318/#329 follow-up: the Board→surface descent runs several first-time synchronous blocks
+           (clock jump, tube/surface/maze weld, first cold render). A 🛸 flies across on a pure CSS
+           transform (compositor thread), so it keeps moving while they run; the sub-line narrates the
+           current coarse phase, set by DescentPhaseAsync which yields between phases so no single block
+           trips Chrome's page-unresponsive dialog. *@
         <div class="map-loading shuttle-descent d-flex flex-column justify-content-center align-items-center">
             <div class="wait-shuttle-lane"><span class="wait-shuttle" aria-hidden="true">🛸</span></div>
-            <div class="text-light mt-3" role="status">Shuttle descending…</div>
+            <div class="text-light mt-3">Shuttle descending…</div>
+            <div class="text-secondary small mt-1" role="status">@(_descentPhase ?? "mating the airlock…")</div>
         </div>
     }
     <canvas id="@CanvasId" class="map-canvas"
