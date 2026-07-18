@@ -49,6 +49,7 @@ dotnet run --project labs/28-the-pump-crawl -c Release
 dotnet run --project labs/29-the-harbor-pattern -c Release
 dotnet run --project labs/30-the-mass-driver-timetable -c Release
 dotnet run --project labs/32-aerocapture-at-the-ice-giant -c Release
+dotnet run --project labs/34-the-unclickable-lifeline -c Release
 ```
 
 Each lesson folder holds:
@@ -307,6 +308,20 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     Mars **PLAY** (gentle sub-g corridors); Titan (**12.8 g**) and Venus (**310 g**) are landing
     atmospheres, not skim atmospheres — the first flight of the sol.json Titan/Venus shells for capture.
     Proposes Uranus/Neptune/Mars shells and feeds a future AEROBRAKE step (#262/PR-D1).
+
+34. [**The unclickable lifeline**](34-the-unclickable-lifeline/README.md) — the lab that measures the
+    *UI* the way the others measure physics, because "the rescue-me button was barely clickable when we
+    ran out of power… this problem keeps biting us." Whether a control buried in a ~15-layer overlay
+    stack is actually *pressable* is emergent geometry, so we compute it: `OverlayLayout` turns "is this
+    reachable?" into a pure-geometry query (free hit-area clear of every higher pointer-events layer,
+    verdicts naming `Occluded` / **`BarelyClickable`** / `OffViewport`), and `RescueLifeline` encodes the
+    real Map HUD as a CSS-cited registry. The gate asserts the rescue affordance is **`Reachable`, 100%
+    free, at every viewport from 1280×800 down to 320×480** — and it has teeth: it fails the pre-#262
+    layout (the strip buried under the masthead, `Occluded`) that shipped the reported bug. The fix rides
+    along: `.map-adrift` moves into a reserved distress band (**z 1340**, above every non-rescue overlay,
+    below the rescue modal), making reachability an invariant instead of a hand-tuned value. Weighs four
+    CI approaches (bUnit, geometry law, CSS audit, Playwright) and graduates the geometry law — zero new
+    infrastructure, runs in the existing `dotnet test`.
 
 ## Framing rule
 
