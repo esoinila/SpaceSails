@@ -65,6 +65,25 @@ public static class HavenInterior
             "art/selene-gate-hall.jpg", "art/selene-gate-bar.jpg",
             "art/selene-gate-hall.jpg", "art/selene-gate-bar.jpg",
             "“I visited Luna, the oldest port in the system, and all I got was this regolith-grey T-shirt.”"),
+        // The Red Eye — the storm-watcher port in orbit off Jupiter (#352 follow-through, night shift
+        // 2026-07-18→19). Selene Gate closed the Luna gap; these two outer havens (#289) were the last
+        // berths that docked to "nothing to walk to". Pilgrims come to stare at the Great Red Spot, so the
+        // immigration authority is JUPITER (→ hatch ids J-05 …), the quip a customs stare-down, the bar THE
+        // STORMWATCH BAR off its Spot-in-the-window backdrop. Grok-generated scene art (hall + bar); the
+        // gift-shop tee/magnet reuse those backdrops as postcards until a dedicated souvenir pass is drawn.
+        new("red-eye", "THE RED EYE", "JUPITER", "the Spot doesn't blink — try to match it", "THE STORMWATCH BAR",
+            "art/red-eye-hall.jpg", "art/red-eye-bar.jpg",
+            "art/red-eye-hall.jpg", "art/red-eye-bar.jpg",
+            "“I made the pilgrimage to the Great Red Spot and all I got was this T-shirt.”"),
+        // The Deep — the farthest port in the system, in orbit off Neptune (#352 follow-through, night
+        // shift 2026-07-18→19). Cold, half-empty, frost on the pipes, icicles down the dome: the end of
+        // every road. Immigration authority NEPTUNE (→ hatch ids N-05 …), the quip the last stamp before
+        // the dark, the bar THE DEEP END off its Neptune-in-the-window backdrop. Grok-generated scene art
+        // (hall + bar); the gift-shop tee/magnet reuse those backdrops as postcards for now.
+        new("the-deep", "THE DEEP", "NEPTUNE", "last port before the dark — dress warm", "THE DEEP END",
+            "art/the-deep-hall.jpg", "art/the-deep-bar.jpg",
+            "art/the-deep-hall.jpg", "art/the-deep-bar.jpg",
+            "“I reached the end of the system at Neptune and all I got was this frost-bitten T-shirt.”"),
     ];
 
     // Keyed by "bodyId|<sorted opened-hatch ids>", so the locked concourse and the wing-grown variant

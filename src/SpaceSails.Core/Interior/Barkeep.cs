@@ -114,6 +114,32 @@ public static class Barkeeps
                 "“Look up — that's home in the window. Everyone drinks a little slower once they've seen it.”",
             ]),
 
+        // The Stormwatch Bar — The Red Eye, in orbit off Jupiter. The storm-watcher port (#352 follow-
+        // through, night shift 2026-07-18→19); pilgrims come to stare at the Great Red Spot and the keep
+        // pours something that swirls red and never quite settles, same as the storm out the window.
+        new("red-eye", "Galiana “Gale” Marek", "THE STORMWATCH BAR",
+            "the Eyewall",
+            "A slow red swirl that never quite settles — the same storm as the Spot outside, poured into a glass and still turning. It's been going four centuries; give it an hour and you'll watch it all night.",
+            8, 50,
+            [
+                "“Pilgrims come to stare at the Spot. Stay long enough and it stares back — that's when they leave.”",
+                "“Anything red in the window, anything red in the glass. We keep it simple this far out.”",
+                "“The storm's older than every soul who ever docked here. Humbling, if you let it be.”",
+            ]),
+
+        // The Deep End — The Deep, out at Neptune, the farthest port in the system (#352 follow-through,
+        // night shift 2026-07-18→19). Cold, half-empty, frost on the pipes; the keep is the one who never
+        // left, and pours the last honest drink before the long dark.
+        new("the-deep", "Elias “Rime” Kaddour", "THE DEEP END",
+            "the Deep Freeze",
+            "Poured over a shard of pipe-frost and left to fog the glass — colder than the window, darker than the water. The last honest drink before the long fall out-system, and Rime pours it slow because out here there's nowhere else to be.",
+            8, 50,
+            [
+                "“End of every road, this. Past the window it's just dark all the way down.”",
+                "“Half the berths froze shut seasons back. Quiet suits some folk — suits me.”",
+                "“Mind the frost on the rail. Everything out here's colder than it looks, drinks included.”",
+            ]),
+
         // The Tilt Bar — out at Uranus, where everything's sideways.
         new("the-tilt", "Halden Frost", "THE TILT BAR",
             "the Sideways Blue",
