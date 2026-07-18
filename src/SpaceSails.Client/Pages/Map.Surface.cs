@@ -51,9 +51,37 @@ public partial class Map
     private double _lastReeverCatchMs;
     private double? _lastNearestReeverRange; // for the tracker's closing/drifting read
 
+    // #314: the ship's sentry roster — the two real boarding troopers (K-77, R-3B), each with a 99-round
+    // magazine that survives a berth-to-berth save (Map.Vault). Full on a fresh ship; drained by use,
+    // refilled at a haven's rearm line (Map.Trade). Bots carried down to a surface leave this list for the
+    // excursion and return (unless abandoned).
+    private readonly List<ShipBot> _shipBots =
+        [.. SentryBot.RosterUnits.Select(u => new ShipBot(u, SentryBot.MaxMagazine))];
+
+    private sealed class ShipBot(string unit, int rounds)
+    {
+        public string Unit { get; } = unit;
+        public int Rounds { get; set; } = rounds;
+    }
+
     private sealed class Reever
     {
         public double X, Y, Facing, Vx, Vy;
+        public int HitsTaken;   // #314: rounds a sentry has ground into it (downs at RoundsPerReever)
+    }
+
+    // #314: a sentry on the surface — carried in the sling or deployed and holding the line, with its
+    // dwindling magazine. Deployed bots fire the SentryBot volley; a firing bot flags a brief zap line.
+    private sealed class SurfaceBot
+    {
+        public required string Unit { get; init; }
+        public int Rounds { get; set; }
+        public bool Deployed { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double AimX { get; set; }
+        public double AimY { get; set; }
+        public double FiringUntilMs { get; set; }
     }
 
     private sealed class DigChannel
@@ -80,6 +108,9 @@ public partial class Map
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
         public int Catches { get; set; }
+        public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
+        public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
+        public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
 
         // A chest is in hand right now: something was loaded, not yet buried, not dropped.
         public bool Carrying => (PendingCoin > 0 || PendingCargo.Count > 0) && !Buried && !ChestDropped;
@@ -92,7 +123,7 @@ public partial class Map
     // surface. The chest is optional cargo already packed by the boarding panel; boarding empty-handed
     // is a complete, valid sightseeing hop. NO teleport: the captain keeps standing at the bay and the
     // down-tube + surface weld on below, so they walk down continuously.
-    private void BeginSurfaceExcursion(ShuttleStop stop, ShuttleExcursion.ChestLoad chest)
+    private void BeginSurfaceExcursion(ShuttleStop stop, ShuttleExcursion.ChestLoad chest, int botsToBring = 0)
     {
         if (_ephemeris is null)
         {
@@ -103,7 +134,7 @@ public partial class Map
 
         AdvanceShuttleClock(stop.TravelSeconds); // the flight down (abstracted by the tube) costs the clock
 
-        _surface = new SurfaceExcursion
+        var excursion = new SurfaceExcursion
         {
             Stop = stop,
             RestoreHavenId = _dockedHavenId,
@@ -111,6 +142,18 @@ public partial class Map
             PendingCargo = [.. chest.Cargo],
             ThreatSeed = ReeverSeed(stop.Body.Id),
         };
+
+        // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet
+        // deployed). They leave _shipBots for the excursion and return on liftoff unless abandoned.
+        int take = Math.Clamp(botsToBring, 0, _shipBots.Count);
+        for (int i = 0; i < take; i++)
+        {
+            ShipBot b = _shipBots[0];
+            _shipBots.RemoveAt(0);
+            excursion.Bots.Add(new SurfaceBot { Unit = b.Unit, Rounds = b.Rounds, Deployed = false });
+        }
+
+        _surface = excursion;
         _reevers.Clear();
         _lastNearestReeverRange = null;
 
@@ -122,7 +165,10 @@ public partial class Map
         string load = chest.IsEmpty
             ? "No chest loaded — a look around, nothing to declare."
             : "A chest rides in the cargo sling.";
-        ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
+        string bots = take > 0
+            ? $" {take} sentry bot{(take == 1 ? "" : "s")} in the sling — press T on the surface to set one down."
+            : "";
+        ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
     }
 
     // (Re)build the ship + tube + surface plan for the live excursion, honoring what we carry and which
@@ -402,6 +448,7 @@ public partial class Map
             return;
         }
         StepDigChannel(dtRealSeconds);
+        StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
         StepLingerTrickle(dtRealSeconds);
         TryRecoverDroppedChest();
@@ -476,6 +523,156 @@ public partial class Map
         return (dx * dx) + (dy * dy) <= MonolithSightRange * MonolithSightRange;
     }
 
+    // #314: the sentry line. Every SentryBot.FireIntervalSeconds, deployed non-dry bots each put one
+    // round into the nearest Old One in their arc — the counter ticks down, the Reever soaks a hit, and
+    // at RoundsPerReever hits it drops to a husk left where it fell. Pure resolution in Core; this owns
+    // the cadence, the zap-line flash, and the husk ledger. Dry bots freeze silent.
+    private void StepSentries(double dtRealSeconds)
+    {
+        if (_surface is not { } ex || ex.Bots.Count == 0)
+        {
+            return;
+        }
+        ex.FireTimer += dtRealSeconds;
+        if (ex.FireTimer < SentryBot.FireIntervalSeconds)
+        {
+            return;
+        }
+        ex.FireTimer = 0;
+
+        var live = ex.Bots.Where(b => b.Deployed && b.Rounds > 0).ToList();
+        if (live.Count == 0 || _reevers.Count == 0)
+        {
+            return;
+        }
+
+        var deployed = live.Select(b => new SentryBot.Deployed(b.Unit, b.X, b.Y, b.Rounds)).ToList();
+        var targets = _reevers.Select(r => new SentryBot.Target(r.X, r.Y, r.HitsTaken)).ToList();
+        SentryBot.Volley volley = SentryBot.Step(deployed, targets);
+
+        // Fold the drained magazines back and flash a zap line from each bot that fired.
+        double nowMs = _lastTimestampMs ?? 0;
+        for (int i = 0; i < live.Count; i++)
+        {
+            SurfaceBot bot = live[i];
+            bool fired = volley.Bots[i].Rounds < bot.Rounds;
+            bot.Rounds = volley.Bots[i].Rounds;
+            if (fired && NearestReeverInArc(bot) is { } aim)
+            {
+                bot.AimX = aim.X;
+                bot.AimY = aim.Y;
+                bot.FiringUntilMs = nowMs + 120;
+            }
+        }
+
+        // Re-map surviving Reevers' hit counts (position-match; the list order is preserved by Step's
+        // survivor pass, which drops downed ones in index order). Rebuild from the survivor list.
+        ApplyReeverSurvivors(volley.Reevers);
+
+        if (volley.Husks.Count > 0)
+        {
+            foreach (SentryBot.Husk h in volley.Husks)
+            {
+                ex.Husks.Add((h.X, h.Y));
+            }
+            RendererInterop.PlayCue("alarm");
+            ShowPulseMessage($"🔫 Zap — {volley.Husks.Count} Old One{(volley.Husks.Count == 1 ? "" : "s")} down, {(volley.Husks.Count == 1 ? "a husk" : "husks")} left in the regolith. The sentries hold — watch the counters.");
+        }
+        // No per-shot cue: the guns fire five times a second — the zap-line flash and the ticking
+        // counter carry the feedback; only a downed Old One earns a sound.
+    }
+
+    // Rebuild _reevers from the SentryBot survivor snapshot: downed ones are gone, survivors carry their
+    // new hit counts. Matches by index over the live list Step was fed (same order, downed dropped).
+    private void ApplyReeverSurvivors(IReadOnlyList<SentryBot.Target> survivors)
+    {
+        // Survivors preserve the fed order with downed entries removed, so walk both lists in step.
+        int s = 0;
+        var kept = new List<Reever>(survivors.Count);
+        foreach (Reever r in _reevers)
+        {
+            if (s < survivors.Count && Math.Abs(survivors[s].X - r.X) < 1e-6 && Math.Abs(survivors[s].Y - r.Y) < 1e-6)
+            {
+                r.HitsTaken = survivors[s].HitsTaken;
+                kept.Add(r);
+                s++;
+            }
+            // else: this Reever was downed this volley — drop it.
+        }
+        if (kept.Count != _reevers.Count)
+        {
+            _reevers.Clear();
+            _reevers.AddRange(kept);
+        }
+    }
+
+    private (double X, double Y)? NearestReeverInArc(SurfaceBot bot)
+    {
+        double bestSq = SentryBot.RangeDeckUnits * SentryBot.RangeDeckUnits;
+        (double, double)? best = null;
+        foreach (Reever r in _reevers)
+        {
+            double dx = r.X - bot.X, dy = r.Y - bot.Y;
+            double d2 = (dx * dx) + (dy * dy);
+            if (d2 <= bestSq)
+            {
+                bestSq = d2;
+                best = (r.X, r.Y);
+            }
+        }
+        return best;
+    }
+
+    // #314: deploy a carried sentry at the captain's feet, or retrieve a deployed one they're standing on.
+    // The [E]-style act on the bare ground — no console, so it's the T key (Map.Deck). Retrieval wins when
+    // you're on top of a bot (dry or not); else you set one down.
+    private void DeployOrRetrieveSentry()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        // Retrieve: a deployed bot within reach → back into the sling (keeps its remaining rounds).
+        SurfaceBot? onFoot = null;
+        double bestSq = DeckPlan.InteractRadius * DeckPlan.InteractRadius;
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (!b.Deployed)
+            {
+                continue;
+            }
+            double dx = b.X - _avatarX, dy = b.Y - _avatarY;
+            double d2 = (dx * dx) + (dy * dy);
+            if (d2 <= bestSq)
+            {
+                bestSq = d2;
+                onFoot = b;
+            }
+        }
+        if (onFoot is not null)
+        {
+            onFoot.Deployed = false;
+            RendererInterop.PlayCue("board");
+            ShowPulseMessage($"🤖 {onFoot.Unit} shouldered — counter at {SentryBot.Readout(onFoot.Rounds)}. Back in the sling.");
+            return;
+        }
+
+        // Deploy: the first carried bot goes down where you stand, facing the field.
+        SurfaceBot? carried = ex.Bots.FirstOrDefault(b => !b.Deployed);
+        if (carried is null)
+        {
+            ShowPulseMessage(ex.Bots.Count == 0
+                ? "No sentry bots loaded — bring them down at boarding next time."
+                : "Every bot's already deployed. Walk onto one and press T to pick it up.");
+            return;
+        }
+        carried.Deployed = true;
+        carried.X = _avatarX;
+        carried.Y = _avatarY;
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage($"🤖 {carried.Unit} deployed — magazine {SentryBot.Readout(carried.Rounds)}. It'll hold this arc until the counter reads 00. Bots buy time, not safety.");
+    }
+
     private void StepReevers(double dtRealSeconds)
     {
         if (_surface is null || _reevers.Count == 0)
@@ -488,6 +685,20 @@ public partial class Map
         bool caught = false;
         foreach (Reever r in _reevers)
         {
+            // #314: a live sentry pins the Old Ones on its arc — a Reever under a deployed, non-dry bot's
+            // guns is held where it stands (stopped, not slowed) while it's ground down. Once the counter
+            // reads 00 the gun goes quiet and the shamble resumes. This is "bots buy time, never safety".
+            if (PinnedBySentry(r))
+            {
+                r.Vx = 0;
+                r.Vy = 0;
+                r.Facing = Math.Atan2(_avatarY - r.Y, _avatarX - r.X);
+                if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
+                {
+                    caught = true;
+                }
+                continue;
+            }
             // Crude encirclement: aim a little toward the tube choke so the pack cuts the escape angle
             // instead of trailing single-file — the cornering loss-condition becomes real geometry.
             double aimX = _avatarX + (MoonSurface.SpawnX - _avatarX) * EncircleBias;
@@ -508,6 +719,23 @@ public partial class Map
         {
             ReeverCatch();
         }
+    }
+
+    // True if any deployed, non-dry sentry has this Old One inside its firing arc — the pin that holds it.
+    private bool PinnedBySentry(Reever r)
+    {
+        if (_surface is not { } ex)
+        {
+            return false;
+        }
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (b.Deployed && b.Rounds > 0 && SentryBot.InRange(b.X, b.Y, r.X, r.Y))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Lingering wakes more (owner: "the longer you linger, the more turn out") — but ONLY once a pack is
@@ -564,6 +792,24 @@ public partial class Map
         ex.Channel = null;
         bool escapedWithWatchdogs = _reevers.Count > 0;
         TreasureCache? buried = ex.Cache;
+
+        // #314: carried sentries come home (with their drained magazines); any left DEPLOYED on the
+        // ground is abandoned — a write-off with a ledger line (#119 voice). Retrieve them before liftoff
+        // to keep them.
+        int abandoned = 0;
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (b.Deployed)
+            {
+                abandoned++;
+                LogAutopilotEvent(SentryBot.AbandonLedgerLine(b.Unit, b.Rounds));
+            }
+            else
+            {
+                _shipBots.Add(new ShipBot(b.Unit, b.Rounds));
+            }
+        }
+
         _surface = null;
         _reevers.Clear();
         _lastNearestReeverRange = null;
@@ -572,6 +818,9 @@ public partial class Map
         (_avatarX, _avatarY, _avatarHeading) = (-6, -6.5, Math.PI / 2); // step off into the bay
         RendererInterop.PlayCue("board");
 
+        string botTail = abandoned > 0
+            ? $" {abandoned} sentry bot{(abandoned == 1 ? "" : "s")} left behind — written off."
+            : "";
         if (buried is { } cache)
         {
             _treasureMapCard = cache;
@@ -579,12 +828,12 @@ public partial class Map
             string tail = escapedWithWatchdogs
                 ? $" {cache.ReeverLevel} Old One(s) haunt this ground now — the best kind of lock."
                 : "";
-            ShowPulseMessage($"🛸 Lifted off {ex.Stop.Body.Name}. Map filed (🗺).{tail}");
+            ShowPulseMessage($"🛸 Lifted off {ex.Stop.Body.Name}. Map filed (🗺).{tail}{botTail}");
         }
         else
         {
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
-            ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}");
+            ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}");
         }
     }
 
@@ -652,6 +901,13 @@ public partial class Map
         var marks = OwnCachePositionsAt(ex.Stop.Body.Id)
             .Select(c => (c.X, c.Y, c.ReeverLevel > 0)).ToList();
 
+        double nowMs = _lastTimestampMs ?? 0;
+        var bots = ex.Bots
+            .Where(b => b.Deployed)
+            .Select(b => (b.X, b.Y, SentryBot.Readout(b.Rounds), b.Rounds <= 0, b.FiringUntilMs > nowMs, b.AimX, b.AimY))
+            .ToList();
+        var husks = ex.Husks.Select(h => (h.X, h.Y)).ToList();
+
         return new DeckView.SurfaceHud(
             DigProgress: ex.Channel?.Progress ?? -1,
             SiteX: MoonSurface.DigFieldX, SiteY: MoonSurface.DigFieldY,
@@ -661,7 +917,9 @@ public partial class Map
             Readout: MotionTracker.Readout(nearest, closing),
             CacheMarks: marks,
             Nerve: _nerve,
-            NerveReadout: NerveModel.Readout(_nerve));
+            NerveReadout: NerveModel.Readout(_nerve),
+            Bots: bots,
+            Husks: husks);
     }
 
     // Seed the 2D6 from place + integer-second instant — deterministic, replayable in a test.

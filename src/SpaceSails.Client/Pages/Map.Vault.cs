@@ -190,6 +190,7 @@ public partial class Map
                 ReactionMassPulses = _reactionMassPulses,
                 SlugAmmo = _slugAmmo,
                 MissileAmmo = _missileAmmo,
+                SentryMagazines = _shipBots.Select(b => b.Rounds).ToList(), // #314
             },
             Cargo = new CargoSection(hold, VaultMapper.ToHotLines(_hotCargo)),
             Heat = new HeatSection(_heat.Level, _heat.RaisedAtSimTime),
@@ -371,6 +372,18 @@ public partial class Map
             _reactionMassPulses = (int)Math.Max(0, Math.Round(ship.ReactionMassPulses));
             _slugAmmo = Math.Max(0, ship.SlugAmmo);
             _missileAmmo = Math.Max(0, ship.MissileAmmo);
+
+            // #314: rebuild the full sentry roster (K-77, R-3B) from the saved magazines, padding any
+            // missing entry to a full mag — a load never permanently shrinks the roster.
+            _shipBots.Clear();
+            IReadOnlyList<int> mags = ship.SentryMagazines;
+            for (int i = 0; i < SentryBot.RosterUnits.Count; i++)
+            {
+                int rounds = mags is not null && i < mags.Count
+                    ? Math.Clamp(mags[i], 0, SentryBot.MaxMagazine)
+                    : SentryBot.MaxMagazine;
+                _shipBots.Add(new ShipBot(SentryBot.RosterUnits[i], rounds));
+            }
         }
 
         if (vault.Upgrades is { } up)

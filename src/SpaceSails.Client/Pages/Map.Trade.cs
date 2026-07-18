@@ -203,6 +203,47 @@ public partial class Map
         _fuelDirSig = null; // any cached "nearest pump" directions are stale now
     }
 
+    // #314 — the sentry rearm line. A docked haven's armory tops off the ship's bot magazines at one
+    // honest price (SentryBot.RestockPricePerRound), buying only what the purse affords and printing a
+    // #119 receipt. Sits with the fuel/repair services — a berth chore, never available in open space.
+    private int SentryRoundsMissing() => _shipBots.Sum(b => SentryBot.RestockCost(b.Rounds)) / SentryBot.RestockPricePerRound;
+
+    private int SentryRestockCost() => _shipBots.Sum(b => SentryBot.RestockCost(b.Rounds));
+
+    private void RestockSentries()
+    {
+        if (_dockedHavenId is null)
+        {
+            return; // the button only shows at a berth, but never trust the caller
+        }
+        if (_shipBots.Count == 0)
+        {
+            ShowPulseMessage("No sentry bots aboard to rearm — they're down on the surface (or written off).");
+            return;
+        }
+
+        var mags = _shipBots.Select(b => b.Rounds).ToList();
+        SentryBot.RestockQuote quote = SentryBot.QuoteRestock(mags, _credits);
+        if (quote.RoundsBought <= 0)
+        {
+            ShowPulseMessage(SentryRoundsMissing() <= 0
+                ? "🤖 Magazines already read full — nothing to rack."
+                : $"Not enough credits — sentry rounds are {SentryBot.RestockPricePerRound} cr each and you hold {_credits:N0} cr.");
+            return;
+        }
+
+        for (int i = 0; i < _shipBots.Count; i++)
+        {
+            _shipBots[i].Rounds = quote.Magazines[i];
+        }
+        _credits -= quote.Cost;
+        RendererInterop.PlayCue("board");
+        string receipt = SentryBot.RestockReceiptLine(quote.RoundsBought, quote.Cost);
+        LogAutopilotEvent(receipt);
+        ShowPulseMessage(receipt);
+        RequestVaultSave();
+    }
+
     // PR-WIRE — the broke-at-a-pump borrow (the dream's anonymized gas-by-wire). A trusted, dark-web-
     // native contact we have history with will wire fuel money on a favor. Picks the most-trusted such
     // contact (most jobs done), or null if none qualifies — the button only shows when this is non-null.

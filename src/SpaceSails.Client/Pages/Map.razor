@@ -597,6 +597,24 @@
                     <span>Hold loaded with it</span>
                     <span>@(_cargoUnits > 0 ? $"{_cargoUnits} units ({HotHoldUnits()} hot)" : "empty")</span>
                 </div>
+                @* #314: load the ship's sentry bots as surface escorts — they hold the line against the
+                   Old Ones until their 99-round magazines run dry. A margin you buy, not safety. *@
+                <div class="bury-row">
+                    <span>🤖 Sentry bots down</span>
+                    <span class="bury-coin">@_boardBots of @AvailableBots</span>
+                </div>
+                <div class="bury-steppers">
+                    <button type="button" class="btn btn-sm btn-outline-light" disabled="@(_boardBots <= 0)" @onclick="() => AdjustBoardBots(-1)">−1 bot</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" disabled="@(_boardBots >= AvailableBots)" @onclick="() => AdjustBoardBots(1)">+1 bot</button>
+                    @if (_boardBots > 0)
+                    {
+                        <span class="bury-cargo">@LoadedBotsSummary()</span>
+                    }
+                    else if (AvailableBots == 0)
+                    {
+                        <span class="bury-cargo">none aboard — rearm at a haven</span>
+                    }
+                </div>
             </div>
             <div class="deck-shuttle-actions">
                 <button type="button" class="btn btn-sm btn-warning" disabled="@(_boardCoin <= 0 && _cargoUnits <= 0)"
@@ -2178,6 +2196,37 @@
                                     }
                                 </div>
                             </div>
+                            @* #314 — the sentry rearm line, sitting with the berth's services. Tops the
+                               ship's bot magazines back to 99 at one honest price; a receipt prints. *@
+                            @if (_dockedHavenId is not null)
+                            {
+                                <div class="fuel-desk card bg-dark bg-opacity-50 text-light mb-2">
+                                    <div class="card-body p-2">
+                                        <div class="fuel-desk-title fw-bold">🤖 SENTRY ARMORY</div>
+                                        @if (_shipBots.Count == 0)
+                                        {
+                                            <div class="small text-secondary mt-1">No bots aboard — they're deployed on a surface, or written off.</div>
+                                        }
+                                        else
+                                        {
+                                            int _sentryMissing = SentryRoundsMissing();
+                                            int _sentryCost = SentryRestockCost();
+                                            <div class="small mt-1">
+                                                @foreach (var _b in _shipBots)
+                                                {
+                                                    <span class="me-2">@_b.Unit <span class="fw-bold" style="color:#ff5a46">@SentryBot.Readout(_b.Rounds)</span></span>
+                                                }
+                                            </div>
+                                            <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2"
+                                                    disabled="@(_sentryMissing <= 0 || _credits < 2)"
+                                                    title="@($"Rack {_sentryMissing} rounds across the roster at {SentryBot.RestockPricePerRound} cr each")"
+                                                    @onclick="RestockSentries">
+                                                @(_sentryMissing <= 0 ? "Magazines full" : $"🔫 Rearm sentries — {_sentryMissing} rounds · {_sentryCost:N0} cr")
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
                             <div class="trade-manifest-panel card bg-dark bg-opacity-50 text-light">
                             <div class="card-header py-1"><span class="fw-bold small">Cargo manifest</span></div>
                             <div class="card-body p-2 small">
