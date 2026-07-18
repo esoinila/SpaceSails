@@ -1413,6 +1413,27 @@ public partial class Map
         }
     }
 
+    // #351 — the audit's keyboard cancel path: dismiss the top-most open deck/flight overlay, reusing
+    // each card's existing house closer (a ✕/Cancel/Done button already lives on every one of these). The
+    // order is most-modal first, so a stacked moment (a contact-drink offer sitting atop the bar menu)
+    // peels one layer at a time. Deliberately EXCLUDED: the shuttle boarding panel (_boardTarget — another
+    // lane is reworking it) and the save/start drawers (the scenario-starts region keeps its own chrome).
+    // Returns true when it consumed the key by closing something.
+    private bool TryDismissTopOverlay()
+    {
+        if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
+        if (_pendingOffer is not null) { DeclineOffer(); return true; }
+        if (_bankSession is not null) { CloseBank(); return true; }
+        if (_barMenu is not null) { CloseBarkeep(); return true; }
+        if (_shuttleBayStops is not null) { CloseShuttleBayDoor(); return true; }
+        if (_pinJob is not null) { CancelPin(); return true; }
+        if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
+        if (_viewObject is not null) { CloseViewObject(); return true; }
+        if (_showRescueOffer) { _showRescueOffer = false; return true; }
+        if (_celebration is not null) { DismissCelebration(); return true; }
+        return false;
+    }
+
     private void OnKeyDown(KeyboardEventArgs e)
     {
         if (_shuttleRun is not null)
@@ -1465,6 +1486,15 @@ public partial class Map
 
         if (e.Key == "Escape")
         {
+            // #351 (owner 2026-07-18: "No way to close this dialog? Where is cancel?") — Escape is the
+            // keyboard CANCEL for the deck/flight cards: close the top-most open overlay first (reusing
+            // each card's own house closer), and only fall through to the helm when nothing's open to
+            // dismiss. Without this, Escape over an open offer card yanked the captain off the deck to Nav.
+            if (TryDismissTopOverlay())
+            {
+                StateHasChanged();
+                return;
+            }
             // Ashore, Escape doesn't switch desks (that would leave the surface silently) — let it fall
             // through to nothing rather than yanking the captain up the tube.
             if (_surface is null)

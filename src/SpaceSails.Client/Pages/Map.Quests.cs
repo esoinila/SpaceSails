@@ -1011,7 +1011,11 @@ public partial class Map
         }
 
         NpcState prey = candidates[OfferIndex(candidates.Count)];
-        int reward = 250 + prey.Ship.CargoUnits * 60;
+        // #349: a bounty keeps its cargo-weighted floor, plus the HAUL premium for how deep into the
+        // system the chase drags you — hunting a runner bound for the outer dark pays for the long chase,
+        // not just her hold. Reach is the prey's destination measured from this berth.
+        int reward = HaulReward.WithFloor(250 + prey.Ship.CargoUnits * 60,
+            HelioRadiusMeters(_dockedHavenId), HelioRadiusMeters(prey.Ship.DestinationId));
         string route = RouteLabel(prey.Ship);
         string blurb = prey.Ship.PublishesTimetable
             ? $"“See {prey.Ship.Callsign}, running {route}? She's carrying, and I want her stopped. Bring her down — {reward:N0} cr in it for you.”"
@@ -1035,13 +1039,18 @@ public partial class Map
         }
 
         CelestialBody dest = havens[OfferIndex(havens.Count)];
-        int reward = 300 + (int)(dest.OrbitRadius / 1e10); // farther berths pay a little more
+        // #349: the purse scales with the actual HAUL — the heliocentric void from where the job is taken
+        // (this berth) to the destination — not the old flat 300 that read a station's tiny local orbit and
+        // paid the same to Luna as to Neptune. A cross-system parcel now pays like the long trip it is.
+        int reward = HaulReward.ForHaul(HelioRadiusMeters(_dockedHavenId), HelioRadiusMeters(dest.Id));
         // #175: a moon haven has no ⚓ dock — you deliver by parking in its orbit — so the pitch names
         // the right last move instead of promising a "berth" that a moon never has.
         string drop = IsDockableHaven(dest) ? "Berth there and it's done." : "Park in orbit there and it's done.";
-        string blurb = $"“Quiet parcel, no questions. Gets to {dest.Name} in one piece, you walk with {reward:N0} cr. {drop}”";
+        // #349: name the destination's ADDRESS (station — PLANET system), so the captain knows what
+        // planet the drop is on without zooming every moon.
+        string blurb = $"“Quiet parcel, no questions. Gets to {BodyAddress(dest.Id)} in one piece, you walk with {reward:N0} cr. {drop}”";
         return new Quest($"run-{++_questSeq}", QuestKind.CargoRun, giver,
-            "", dest.Name, $"Run a parcel to {dest.Name}", blurb, reward, DestBodyId: dest.Id);
+            "", dest.Name, $"Run a parcel to {BodyAddress(dest.Id)}", blurb, reward, DestBodyId: dest.Id);
     }
 
     // PR-WIRE — the favor called in. When we owe a contact a wired debt (a FavorObligation from a
@@ -1075,7 +1084,9 @@ public partial class Map
 
         CelestialBody dest = havens[OfferIndex(havens.Count)];
         string drop = IsDockableHaven(dest) ? "Berth there and we're square." : "Park in orbit there and we're square.";
-        string blurb = $"{debt.VoiceLine} Get it to {dest.Name} in one piece. {drop}";
+        // #349: name the drop's address (station — PLANET system) so the favor points at a place the
+        // captain can find. (The purse is the debt principal — a favor clears what you owe, it isn't paid.)
+        string blurb = $"{debt.VoiceLine} Get it to {BodyAddress(dest.Id)} in one piece. {drop}";
         return new Quest($"favor-{++_questSeq}", QuestKind.Favor, giver,
             "", dest.Name, $"Quiet delivery for {GiverDisplay(giver)}", blurb, (int)debt.PrincipalCredits, DestBodyId: dest.Id);
     }
@@ -1127,7 +1138,9 @@ public partial class Map
 
         CelestialBody dest = dests[OfferIndex(dests.Count)];
         const int reward = 4200; // a dead man's fortune, in a currency nobody can trace
-        string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting sunward of Mars — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {dest.Name}. {reward:N0} cr, and we never spoke.”";
+        // #349: name the hand-off's address (station — PLANET system) so the captain knows where the
+        // associate waits without hunting every moon.
+        string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting sunward of Mars — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {BodyAddress(dest.Id)}. {reward:N0} cr, and we never spoke.”";
         return new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, giver,
             "", dest.Name, "Fetch the roadster's lost wallet", blurb, reward,
             DestBodyId: dest.Id, SourceBodyId: "derelict-roadster");
@@ -1162,7 +1175,8 @@ public partial class Map
         const int reward = 3200;
         string drawKey = $"{here}|fetchcache|{(int)(SimTime / 86400)}";
         RumorMaps.Rumor rumor = RumorMaps.Generate(drawKey, dig.Id);
-        string blurb = $"“A client wants a chest lifted — {rumor.Cache.Owner} buried it out on {dig.Name} and won't be collecting. Here's the map: {rumor.Cache.BearingLine}. Dig it up, bring the lot to me here at {barName}. {reward:N0} cr, clean.”";
+        // #349: name the dig moon's address (moon — PLANET system) so the captain knows which sky to fly to.
+        string blurb = $"“A client wants a chest lifted — {rumor.Cache.Owner} buried it out on {BodyAddress(dig.Id)} and won't be collecting. Here's the map: {rumor.Cache.BearingLine}. Dig it up, bring the lot to me here at {barName}. {reward:N0} cr, clean.”";
         // TargetShipId carries the (deterministic) cache id so the dig can match it; Pin carries the draw
         // key so AcceptOffer re-mints and LEARNS the exact same cache.
         return new Quest($"fetchcache-{++_questSeq}", QuestKind.FetchCache, giver,
@@ -1289,6 +1303,45 @@ public partial class Map
         if (BodyById(destId) is not { ParentId: { } pid }) return null;
         if (BodyById(pid) is not { } parent) return null;
         return parent.ParentId is null ? null : parent.Name;
+    }
+
+    // #349 — the PLANET-LEVEL ancestor of a body: walk up parents until the next one up is the
+    // parentless root (the Sun). A moon or a station rides its planet around the Sun, so this is the
+    // body whose heliocentric orbit sets both the reward's "reach" and the place's system name. A body
+    // that IS a planet (its parent is the Sun) returns itself; a heliocentric station returns itself too.
+    private CelestialBody? PlanetLevelAncestor(CelestialBody? body)
+    {
+        CelestialBody? b = body;
+        while (b is { ParentId: { } pid } && BodyById(pid) is { } parent)
+        {
+            if (parent.ParentId is null) break; // parent is the Sun — b is already planet-level
+            b = parent;
+        }
+        return b;
+    }
+
+    // #349 — a body's heliocentric orbit radius (metres): the orbit radius of its planet-level ancestor,
+    // i.e. how far out in the solar system it actually sits. 0 for the Sun or an unknown id. This is the
+    // input HaulReward scales a contract's purse on, so a Uranus berth pays for a Uranus-deep haul.
+    private double HelioRadiusMeters(string? bodyId) =>
+        PlanetLevelAncestor(BodyById(bodyId))?.OrbitRadius ?? 0.0;
+
+    // #349 — a place's ADDRESS: its own name plus the PLANET whose system it rides in, in one house idiom
+    // ("Ringside Exchange — SATURN system"). The owner's pain (2026-07-18): "how can I even know what
+    // planet this place is on ... Am I to zoom into every planet and moon to find this place?" A planet
+    // itself, or a heliocentric station with no planet above it, reads plainly by name — there is no
+    // system to name. Used on every offer blurb and ledger line that points the captain at a berth.
+    private string BodyAddress(string? bodyId)
+    {
+        CelestialBody? b = BodyById(bodyId);
+        if (b is null)
+        {
+            return bodyId is null ? "" : BodyName(bodyId);
+        }
+        CelestialBody? planet = PlanetLevelAncestor(b);
+        return planet is null || planet.Id == b.Id
+            ? b.Name
+            : $"{b.Name} — {planet.Name.ToUpperInvariant()} system";
     }
 
     // Title-case a giver's shout-name for prose ("MADAM COIL" → "Madam Coil", "GILT-EYE" →
@@ -1810,9 +1863,12 @@ public partial class Map
             // its orbit; only a STATION haven is "berth there". Saying the right one kills the trap the
             // owner hit hunting for a Dock button that a moon never has.
             CelestialBody? cargoDest = q.Kind is QuestKind.CargoRun or QuestKind.Favor ? BodyById(q.DestBodyId) : null;
+            // #349: the accepted-job ledger line names the drop's ADDRESS (station — PLANET system), the
+            // same idiom the offer used, so the captain can find the planet from the ledger too.
+            string cargoAddress = cargoDest is not null ? BodyAddress(cargoDest.Id) : q.TargetCallsign;
             string cargoDetail = cargoDest is not null && !IsDockableHaven(cargoDest)
-                ? $"Carry the parcel to {q.TargetCallsign} — park in orbit there to deliver."
-                : $"Carry the parcel to {q.TargetCallsign} — berth there (⚓ Dock) to deliver.";
+                ? $"Carry the parcel to {cargoAddress} — park in orbit there to deliver."
+                : $"Carry the parcel to {cargoAddress} — berth there (⚓ Dock) to deliver.";
             string detail = q.Kind switch
             {
                 QuestKind.Hunt => $"Hunt {q.TargetCallsign} — hole her sail or board her.",
