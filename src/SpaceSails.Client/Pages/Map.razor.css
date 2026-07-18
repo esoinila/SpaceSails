@@ -337,7 +337,14 @@
 /* #266: the adrift re-open affordance. The old strip sat at top:0.75rem behind .map-topstack (z-index
    24) — buried under the masthead, the button a stranded captain needs occluded by the ship's own
    nameplate (#262). It now lives at the BOTTOM centre, clear of the masthead and the toolbar, above the
-   canvas but below every modal, and viewport-clamped (#253). Not the banner's no-button zone (#236). */
+   canvas but below every modal, and viewport-clamped (#253). Not the banner's no-button zone (#236).
+
+   #293 (Lab 34): the lifeline sits in a RESERVED distress band — z-index 1340, above every non-rescue
+   overlay the state machine can raise (desk/deck pop-ups top out at 1320), just below the rescue modal
+   it opens (.rescue-backdrop, z-index 1360). z-30 merely cleared the base HUD known at #266 time; the
+   reserved band makes "nothing may bury the stranded captain's button" an INVARIANT, not an accident of
+   hand-tuned values re-checked by eye. The RescueLifeline registry + OverlayLayout law assert it in CI;
+   keep this number in sync with SpaceSails.Core.RescueLifeline.LifelineZIndex. */
 .map-adrift {
     position: absolute;
     bottom: 4.5rem;
@@ -345,7 +352,7 @@
     transform: translateX(-50%);
     max-width: calc(100% - 1.5rem);
     pointer-events: auto;
-    z-index: 30;
+    z-index: 1340;
 }
 
 .map-adrift-reopen {
