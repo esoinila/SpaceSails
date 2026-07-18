@@ -134,6 +134,29 @@
                 </button>
             }
 
+            @* feat/game-threads — the OTHER universes: every game thread that isn't the one Continue leads
+               with, each a one-click door back into that parallel run. A minimal load-a-game path (the full
+               ten-savegame picker is #310's lane) so a migrated campaign is never hidden behind a newer one. *@
+            @if (!inGame && _threadList.Any(t => t.Id != _activeThreadId))
+            {
+                <div class="save-slots-label">Other voyages</div>
+                <div class="save-slots-list save-threads-list">
+                    @foreach (GameThreadInfo t in _threadList.Where(t => t.Id != _activeThreadId))
+                    {
+                        GameThreadInfo thread = t;
+                        <button type="button" class="start-picker-option start-picker-otherthread"
+                                title="Continue this separate voyage — its own universe, saved apart from the others"
+                                @onclick="() => ContinueThread(thread.Id)">
+                            <span class="start-picker-icon">🧭</span>
+                            <span class="start-picker-text">
+                                <span class="start-picker-label">Continue — @(string.IsNullOrWhiteSpace(thread.Where) ? "a saved voyage" : thread.Where)</span>
+                                <span class="start-picker-blurb">A separate voyage · day @thread.SimDay.</span>
+                            </span>
+                        </button>
+                    }
+                </div>
+            }
+
             @if (!inGame)
             {
                 <button type="button" class="start-picker-option start-picker-newvoyage"
