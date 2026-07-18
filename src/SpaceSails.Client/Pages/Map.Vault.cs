@@ -109,10 +109,6 @@ public partial class Map
         await _focusableDiv.FocusAsync();
     }
 
-    // Is a slot id the one Continue would resume (the newest save)? The rack badges that row '← latest',
-    // and the ordering law (#312) guarantees it is row 1 of the list.
-    private bool IsLatestSlot(string slotId) => Slots.Newest()?.Id == slotId;
-
     // One debounced write path: every save-worthy event just raises this flag; the tick flushes a
     // single write, so a burst (dock → payment → deck) costs one serialize, not three.
     private bool _autosaveDirty;
