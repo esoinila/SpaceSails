@@ -465,8 +465,8 @@
        M29: also live on the Sensors desk, where the map is clickable through the desk layer. *@
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)
     {
-        @* #253: up to three action rows on Nav (set dest · arm · 🚀 long haul), two on Sensors. *@
-        var bodyAt = ClampMenu(_bodyMenuX, _bodyMenuY, 3);
+        @* #253/#290: up to four action rows on Nav (set dest · arm · 🚀 long haul · 🪂 aerobrake), two on Sensors. *@
+        var bodyAt = ClampMenu(_bodyMenuX, _bodyMenuY, 4);
         <div class="map-body-menu bg-dark bg-opacity-75 rounded p-2 text-light small shadow"
              style="left: @(bodyAt.X.ToString("F0", CultureInfo.InvariantCulture))px; top: @(bodyAt.Y.ToString("F0", CultureInfo.InvariantCulture))px">
             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -519,6 +519,20 @@
                             @(lhMenuDep.Ok
                                 ? LongHaul.MenuAction(lhMenuPlanet.Name, lhMenuDep.DeparturePulses, FormatSimTime(lhMenuDep.ArrivalCenterTime))
                                 : $"🚀 Long haul to {lhMenuPlanet.Name} — no window from here")
+                        </button>
+                    }
+                    @* #290 🪂 AEROBRAKE — the third way to pay the arrival bill (beside the propulsive insert
+                       and the warn-and-coast). Shown only for skim-atmosphere worlds (Uranus first; the
+                       giants, Earth, Mars — never Titan/Venus). Quotes the honest trade, or is visible-but-
+                       disabled with the reason (#212). The quote is priced once on menu-open (it flies drag). *@
+                    @if (AerobrakeMenuQuote(menuBody) is { } abQuote)
+                    {
+                        bool abArmed = _aerobrakeArmedBodyId == menuBody.Id;
+                        <button type="button" class="btn btn-sm @(abArmed ? "btn-success" : abQuote.Offered ? "btn-warning" : "btn-outline-secondary")"
+                                disabled="@(!abQuote.Offered && !abArmed)"
+                                title="@Aerobrake.Trade(menuBody.Name, abQuote)"
+                                @onclick="() => EngageAerobrakeFromMenu(menuBody.Id)">
+                            @(abArmed ? $"🪂 Aerobrake armed at {menuBody.Name} — click to disarm" : Aerobrake.MenuAction(menuBody.Name, abQuote))
                         </button>
                     }
                 }

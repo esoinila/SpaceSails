@@ -653,6 +653,7 @@ public partial class Map
         _bodyMenuBody = body;
         _bodyMenuX = clientX; // #253: raw anchor; ClampMenu offsets + flips at render
         _bodyMenuY = clientY;
+        ComputeAerobrakeQuote(body); // #290: price the aerobrake once on open (it flies drag — never per render)
         StateHasChanged(); // pointer events don't auto-render (IHandleEvent) — show the menu now
     }
 
