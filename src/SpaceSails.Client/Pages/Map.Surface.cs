@@ -161,11 +161,18 @@ public partial class Map
         public double FiringUntilMs { get; set; }
     }
 
+    // The three things a channeled dig can be (beach-comber kit): bury a carried chest where you stand,
+    // lift an own cache back up at its ✗, or probe an empty hole to try your luck (the fishing expedition).
+    private enum DigKind { Bury, Lift, Probe }
+
     private sealed class DigChannel
     {
         public double Progress;       // 0..1
-        public bool BuryingNew;       // true = bury a carried chest; false = lift a cache
-        public string? CacheId;       // the cache being lifted (null for a new bury)
+        public DigKind Kind;          // bury / lift / probe
+        public string? CacheId;       // the cache being lifted (null for a bury or a probe)
+        public double AnchorX, AnchorY; // where the shovel bit in — stepping away from HERE aborts, and a
+                                        // bury records this spot as the ✗ (free-form, playtest bug #5)
+        public int SquareX, SquareY;  // the probe's beach-comber square (unused for bury/lift)
         public ReeverRoll Roll;       // rolled at channel START so the threat can interrupt the bar
         public bool Rolled;           // reevers spawned for this channel
     }
@@ -192,6 +199,13 @@ public partial class Map
 
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
+
+        // The per-visit swept grid (owner, 2026-07-18: "some kind of grid system onto planet Miranda for
+        // marking the checked squares on that visit"). Every beach-comber square probed THIS excursion,
+        // keyed by its integer BeachComber square → what the throw turned up, so the deck-plan can paint a
+        // subtle checked/bedrock mark. Client-only and per-visit — a fresh SurfaceExcursion on the next
+        // landing starts empty, exactly like the Reever positions (never saved).
+        public Dictionary<(int X, int Y), BeachComber.Outcome> Swept { get; } = [];
         public int Catches { get; set; }
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
@@ -278,8 +292,8 @@ public partial class Map
         _shuttleDescending = false; // surface welded, walkable, and painted once — drop the descent door
         RendererInterop.PlayCue("board");
         string load = chest.IsEmpty
-            ? "No chest loaded — a look around, nothing to declare."
-            : "A chest rides in the cargo sling.";
+            ? "Empty sling — a fishing expedition: probe the regolith for shallow treasure (E where you stand)."
+            : "A chest rides in the cargo sling — bury it anywhere on the regolith (E where you stand).";
         string bots = take > 0
             ? $" {take} sentry bot{(take == 1 ? "" : "s")} in the sling — press T on the surface to set one down."
             : "";
@@ -308,10 +322,13 @@ public partial class Map
             return;
         }
         _deckPlan = MoonSurface.SurfaceDeck(
-            ex.Stop.Body.Name, ex.Carrying, OwnCachePositionsAt(ex.Stop.Body.Id),
+            ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
             3 + ReeverEngineCeiling, FillSurfaceDroids);
     }
 
+    // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
+    // mark and the 'dig at the X' console land where the shovel did. A legacy/rumour cache with no stored
+    // spot falls back to the deterministic hash-scatter, so every old save still plants a stable ✗.
     private List<(string Id, double X, double Y, int ReeverLevel)> OwnCachePositionsAt(string bodyId)
     {
         var list = new List<(string, double, double, int)>();
@@ -321,15 +338,21 @@ public partial class Map
             {
                 continue;
             }
-            (double x, double y) = MoonSurface.CachePosition(c.Id);
+            (double x, double y) = c is { DigX: { } dx, DigY: { } dy }
+                ? (dx, dy)
+                : MoonSurface.CachePosition(c.Id);
             list.Add((c.Id, x, y, c.ReeverLevel));
         }
         return list;
     }
 
-    // ── The dig site [E]: a timed, abortable channel. The 2D6 roll fires at channel START so the pack
-    //    can turn out and close on you WHILE the bar fills — the watch is the gameplay. ──
+    // ── Digging [E]: a timed, abortable channel. The 2D6 roll fires at channel START so the pack can turn
+    //    out and close on you WHILE the bar fills — the watch is the gameplay. Two entry points now: an own
+    //    cache's ✗ console (DigSiteInteract, 'dig at the X'), and the BARE GROUND (SurfaceGroundInteract,
+    //    the beach-comber kit — bury a carried chest or probe an empty hole where you stand). ──
 
+    // The ✗ console: 'dig at the X' lifts the own cache nearest this mark. The only surviving dig CONSOLE —
+    // free-form burying/probing retired the fixed ⛏ site (they ride SurfaceGroundInteract instead).
     private void DigSiteInteract()
     {
         if (_surface is not { } ex)
@@ -344,27 +367,59 @@ public partial class Map
         {
             return;
         }
-
-        bool buryHere = spot.Label.StartsWith("⛏", StringComparison.Ordinal);
-        if (buryHere)
+        string? nearest = NearestOwnCacheId(ex.Stop.Body.Id, spot.X, spot.Y);
+        if (nearest is null)
         {
-            if (!ex.Carrying)
-            {
-                ShowPulseMessage("Nothing in the sling to bury.");
-                return;
-            }
-            BeginDig(ex, buryingNew: true, cacheId: null);
+            ShowPulseMessage("The X is scuffed to nothing — no chest here.");
+            return;
+        }
+        BeginDig(ex, DigKind.Lift, cacheId: nearest, anchorX: spot.X, anchorY: spot.Y);
+    }
+
+    // The beach-comber kit's bare-ground [E] (owner, Evening wind 2026-07-18): dig where you STAND. With a
+    // chest in the sling this buries it here — bury anywhere; empty-handed it probes a hole to try your luck
+    // — a fishing expedition, a first-class trip, never a dead end. Either way the ground must be reasonable
+    // regolith (outside the landing band and the walls), and the D100 first decides whether it's diggable at
+    // all — some ground is too hard, and the die handles that. Called from the deck E handler when no
+    // console is in reach (Map.Deck); a no-op off the surface.
+    private void SurfaceGroundInteract()
+    {
+        if (_surface is not { } ex || ex.Channeling)
+        {
+            return;
+        }
+        // Safe up in the tube / aboard, or up on the landing band — no digging the fused pad.
+        if (!MoonSurface.IsDiggableGround(_avatarX, _avatarY))
+        {
+            ShowPulseMessage(ex.Carrying
+                ? "The landing pad's fused rockcrete — no burying here. Carry it out onto the regolith."
+                : "Nothing to probe on the landing pad — it's fused rockcrete. Walk out onto the regolith.");
+            return;
+        }
+
+        (int sqX, int sqY) = BeachComber.SquareOf(_avatarX, _avatarY);
+
+        // The die's first job (owner: "some surfaces may be too hard to dig … the die could handle those").
+        // Bedrock refuses the dig outright — no hole, no watch — but the square is now KNOWN and joins the
+        // swept grid so the sweep reads it as checked.
+        Probe probe = BeachComber.Roll(ex.Stop.Body.Id, sqX, sqY);
+        if (probe.IsTooHard)
+        {
+            ex.Swept[(sqX, sqY)] = probe.Outcome;
+            RendererInterop.PlayCue("board");
+            ShowPulseMessage(ex.Carrying
+                ? "⛏ The shovel rings off bedrock — this square won't take a chest. Try a step over."
+                : "⛏ The shovel rings off bedrock a foot down — too hard to dig here. Try another square.");
+            return;
+        }
+
+        if (ex.Carrying)
+        {
+            BeginDig(ex, DigKind.Bury, cacheId: null, anchorX: _avatarX, anchorY: _avatarY);
         }
         else
         {
-            // 'Dig at the X': the own cache nearest this mark.
-            string? nearest = NearestOwnCacheId(ex.Stop.Body.Id, spot.X, spot.Y);
-            if (nearest is null)
-            {
-                ShowPulseMessage("The X is scuffed to nothing — no chest here.");
-                return;
-            }
-            BeginDig(ex, buryingNew: false, cacheId: nearest);
+            BeginDig(ex, DigKind.Probe, cacheId: null, anchorX: _avatarX, anchorY: _avatarY, squareX: sqX, squareY: sqY);
         }
     }
 
@@ -385,21 +440,29 @@ public partial class Map
 
     // Start the channel and ROLL THE WATCHDOGS NOW — the pack (if any) turns out at the edges and begins
     // to shamble in while the shovel-bar fills. No modal: the dice reveal rides the pulse line, the grid
-    // stays visible so the captain watches the tide.
-    private void BeginDig(SurfaceExcursion ex, bool buryingNew, string? cacheId)
+    // stays visible so the captain watches the tide. The anchor is where the shovel bit in — stepping away
+    // from HERE aborts (no more fixed console to test), and a bury records it as the ✗ (playtest bug #5).
+    private void BeginDig(SurfaceExcursion ex, DigKind kind, string? cacheId, double anchorX, double anchorY, int squareX = 0, int squareY = 0)
     {
         int standing = WatchdogLevelAt(ex.Stop.Body.Id);
         ReeverRoll roll = ReeverRaid.Roll(ReeverSeed(ex.Stop.Body.Id), standing);
-        ex.Channel = new DigChannel { BuryingNew = buryingNew, CacheId = cacheId, Roll = roll };
+        ex.Channel = new DigChannel
+        {
+            Kind = kind, CacheId = cacheId, Roll = roll,
+            AnchorX = anchorX, AnchorY = anchorY, SquareX = squareX, SquareY = squareY,
+        };
         RendererInterop.PlayCue("board");
         RaiseReevers(roll); // spawn the pack (if roused) so it's already closing during the bar
         ex.Channel.Rolled = true;
-        ShowPulseMessage(buryingNew
-            ? "⛏ Digging a hole… hold position. Watch the tracker — step away to abort."
-            : "⛏ Working the X open… hold position. Step away to abort.");
+        ShowPulseMessage(kind switch
+        {
+            DigKind.Bury => "⛏ Digging a hole to bury the chest… hold position. Watch the tracker — step away to abort.",
+            DigKind.Lift => "⛏ Working the X open… hold position. Step away to abort.",
+            _ => "⛏ Sinking a probe hole… hold position. Watch the tracker — step away to abort.",
+        });
     }
 
-    // Advance the channel each frame. Stepping off the site aborts (chest back in hand, hole abandoned,
+    // Advance the channel each frame. Stepping off the anchor aborts (chest back in hand, hole abandoned,
     // sprint begins); filling the bar completes the act.
     private void StepDigChannel(double dtRealSeconds)
     {
@@ -407,13 +470,10 @@ public partial class Map
         {
             return;
         }
-        // Away from the site → abort.
-        double siteDist = double.MaxValue;
-        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.DigSite })
-        {
-            siteDist = 0;
-        }
-        if (siteDist > DeckPlan.InteractRadius)
+        // Away from where the shovel bit in → abort. (Free-form digs have no console to test, so we hold
+        // the captain to the anchor point the dig started at.)
+        double dx = _avatarX - ch.AnchorX, dy = _avatarY - ch.AnchorY;
+        if ((dx * dx) + (dy * dy) > DeckPlan.InteractRadius * DeckPlan.InteractRadius)
         {
             AbortDig(ex);
             return;
@@ -428,28 +488,43 @@ public partial class Map
 
     private void AbortDig(SurfaceExcursion ex)
     {
+        DigKind? kind = ex.Channel?.Kind;
         ex.Channel = null;
-        ShowPulseMessage(_reevers.Count > 0
-            ? "🩸 You drop the shovel — the ground's abandoned. RUN (or drop the chest: press G)."
-            : "You stop digging and shoulder the chest. The hole's left half-dug.");
+        if (_reevers.Count == 0)
+        {
+            ShowPulseMessage("You stop digging. The hole's left half-dug.");
+            return;
+        }
+        ShowPulseMessage(kind switch
+        {
+            DigKind.Bury => "🩸 You drop the shovel — the hole's abandoned. RUN (or drop the chest: press G).",
+            DigKind.Lift => "🩸 You leave the X half-open. RUN.",
+            _ => "🩸 You drop the shovel — the probe's abandoned. RUN.",
+        });
     }
 
     private void CompleteDig(SurfaceExcursion ex, DigChannel ch)
     {
         ex.Channel = null;
-        if (ch.BuryingNew)
+        switch (ch.Kind)
         {
-            BuryChestHere(ex, ch.Roll);
-        }
-        else if (ch.CacheId is { } id)
-        {
-            LiftChestHere(ex, id, ch.Roll);
+            case DigKind.Bury:
+                BuryChestHere(ex, ch.Roll, ch.AnchorX, ch.AnchorY);
+                break;
+            case DigKind.Lift when ch.CacheId is { } id:
+                LiftChestHere(ex, id, ch.Roll);
+                break;
+            case DigKind.Probe:
+                ProbeHere(ex, ch.SquareX, ch.SquareY);
+                break;
         }
     }
 
-    // The carried chest goes into the ground — invisible to confiscation by construction. The presence
-    // LEFT on the chest is the pack that turned out (the standing watchdog level, hardened by this roll).
-    private void BuryChestHere(SurfaceExcursion ex, ReeverRoll roll)
+    // The carried chest goes into the ground AT THE ANCHOR — where the shovel dug, recorded on the cache so
+    // the ✗ and 'dig at the X' land exactly there (playtest bug #5, no more hash-scatter). Invisible to
+    // confiscation by construction; the presence LEFT on the chest is the pack that turned out (the standing
+    // watchdog level, hardened by this roll).
+    private void BuryChestHere(SurfaceExcursion ex, ReeverRoll roll, double digX, double digY)
     {
         int coin = Math.Clamp(ex.PendingCoin, 0, _credits);
         _credits -= coin;
@@ -459,14 +534,48 @@ public partial class Map
 
         int standing = WatchdogLevelAt(ex.Stop.Body.Id);
         int presence = Math.Max(standing, roll.Reevers);
-        TreasureCache cache = _caches.Bury(ex.Stop.Body.Id, coin, ex.PendingCargo, SimTime, "you", playerOwned: true, presence);
+        TreasureCache cache = _caches.Bury(ex.Stop.Body.Id, coin, ex.PendingCargo, SimTime, "you", playerOwned: true, presence, digX, digY);
         SeedDiscoveryWatch();
 
         ex.Buried = true;
         ex.Cache = cache;
-        RebuildSurfaceDeck(); // the ⛏ site is spent; the new ✗ joins the ground
+        RebuildSurfaceDeck(); // the chest is down; the new ✗ joins the ground where you dug
         RequestVaultSave();
-        ShowPulseMessage($"⛏ Chest buried — {cache.ContentsLine()} off the books. Now get back to the shuttle.");
+        ShowPulseMessage($"⛏ Chest buried — {cache.ContentsLine()} off the books. The ✗ marks this spot. Now get back to the shuttle.");
+    }
+
+    // The beach-comber probe resolves (the fishing expedition's payoff, or its honest shrug). The D100
+    // already ruled out bedrock at BeginDig, so this hole turned up either nothing (the common case,
+    // "unlucky … but still possible") or a rare shallow find — a little coin and maybe a scrap. Modest by
+    // design: luck, never an economy. Either way the square joins the per-visit swept grid.
+    private void ProbeHere(SurfaceExcursion ex, int squareX, int squareY)
+    {
+        Probe probe = BeachComber.Roll(ex.Stop.Body.Id, squareX, squareY);
+        ex.Swept[(squareX, squareY)] = probe.Outcome;
+
+        if (!probe.IsFind)
+        {
+            RendererInterop.PlayCue("board");
+            ShowPulseMessage("🕳 Nothing but regolith down there. The detector stays quiet — you mark the square and move on.");
+            return;
+        }
+
+        // A shallow find: pocket the coin, and take the scrap if the hold has room (else leave it — a
+        // scrap's not worth a sprint). Small numbers on purpose.
+        _credits += probe.FindCoin;
+        int scrapTaken = 0;
+        if (probe.FindScrapUnits > 0 && _cargoUnits < CargoCapacity)
+        {
+            int take = Math.Min(probe.FindScrapUnits, CargoCapacity - _cargoUnits);
+            _cargoUnits += take;
+            _cargoValue += take * CargoMarket.UnitValue(BeachComber.FindCargoClass);
+            _cargoByClass[BeachComber.FindCargoClass] = _cargoByClass.GetValueOrDefault(BeachComber.FindCargoClass) + take;
+            scrapTaken = take;
+        }
+        RendererInterop.PlayCue("reveal");
+        RequestVaultSave();
+        string scrapTail = scrapTaken > 0 ? $" + {scrapTaken} scrap of salvage" : "";
+        ShowPulseMessage($"✨ The detector chirps — you turn up {probe.FindCoin:N0} cr{scrapTail} a few inches down. Luck, not a fortune. Mark it and keep moving.");
     }
 
     private void LiftChestHere(SurfaceExcursion ex, string cacheId, ReeverRoll roll)
@@ -1096,12 +1205,21 @@ public partial class Map
             .ToList();
         var husks = ex.Husks.Select(h => (h.X, h.Y)).ToList();
 
+        // The per-visit swept grid: every beach-comber square probed this excursion, at its centre, with
+        // a hard-ground flag so the deck-plan paints a bedrock mark distinct from a plain checked square.
+        var swept = ex.Swept
+            .Select(kv =>
+            {
+                (double cx, double cy) = BeachComber.SquareCenter(kv.Key.X, kv.Key.Y);
+                return (cx, cy, kv.Value == BeachComber.Outcome.TooHard);
+            })
+            .ToList();
+
         (string Line, int Severity)? orbit = SurfaceOrbitComms(); // #327: the ship calling home
 
         return new DeckView.SurfaceHud(
             TrackerCaptions: BuildTrackerCaptions(ex, marks.Count),
             DigProgress: ex.Channel?.Progress ?? -1,
-            SiteX: MoonSurface.DigFieldX, SiteY: MoonSurface.DigFieldY,
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
             Blips: blips.Select(b => (b.Bearing, b.Range)).ToList(),
             Cadence: (int)MotionTracker.CadenceFor(nearest),
@@ -1113,7 +1231,8 @@ public partial class Map
             Husks: husks,
             KeyHints: BuildSurfaceKeyHints(ex),
             OrbitComms: orbit?.Line,          // #327: the ship's calling-home line, never buried
-            OrbitSeverity: orbit?.Severity ?? 0);
+            OrbitSeverity: orbit?.Severity ?? 0,
+            SweptSquares: swept);
     }
 
     // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
@@ -1150,12 +1269,18 @@ public partial class Map
     {
         var lines = new List<string>();
 
-        // The dig affordance — only when there is a reason to dig (a chest to bury, or an own ✗ to lift).
+        // The dig affordance, honest to the sling (playtest bug #1 / owner ruling #9: the ground must SAY
+        // what's possible). Carrying → bury anywhere you stand; empty → the beach-comber probe, a real
+        // fishing expedition, never a dead end. An own ✗ in this ground always earns its own lift line.
         if (ex.Carrying)
         {
-            lines.Add("⛏ E at the dig site — bury the chest deep");
+            lines.Add("⛏ E on the regolith — bury the chest where you stand");
         }
-        else if (ownMarkCount > 0)
+        else
+        {
+            lines.Add("🪛 E on the regolith — probe for shallow treasure");
+        }
+        if (ownMarkCount > 0)
         {
             lines.Add("🗺 E at your ✗ — dig the cache back up");
         }

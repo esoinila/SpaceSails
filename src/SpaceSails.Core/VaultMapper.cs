@@ -111,12 +111,14 @@ public static class VaultMapper
         Owner = c.Owner,
         PlayerOwned = c.PlayerOwned,
         ReeverLevel = c.ReeverLevel,
+        DigX = c.DigX,
+        DigY = c.DigY,
     };
 
     private static TreasureCache ToCache(CacheRecord r) => new(
         r.Id, r.BodyId, r.LandmarkName, r.Bearing, r.Paces, r.Coin,
         (r.Cargo ?? []).Select(g => new CacheCargo(g.CargoClass, g.Units, g.Hot)).ToList(),
-        r.BuriedSimTime, r.Owner, r.PlayerOwned, r.ReeverLevel);
+        r.BuriedSimTime, r.Owner, r.PlayerOwned, r.ReeverLevel, r.DigX, r.DigY);
 
     // ── Hot cargo (the stolen-while-heated flags). These ride in CargoSection.Hot. ──
 

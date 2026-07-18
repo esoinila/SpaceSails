@@ -25,7 +25,6 @@ public sealed class DeckView
     /// (moving blips by bearing/range, cadence-pulsed). Null off-surface — the ship draws none of it.</summary>
     public readonly record struct SurfaceHud(
         double DigProgress,          // <0 = not channeling
-        double SiteX, double SiteY,
         bool HasDroppedChest, double DropX, double DropY,
         System.Collections.Generic.IReadOnlyList<(double Bearing, double Range)> Blips,
         int Cadence,                 // MotionTracker.Cadence as int
@@ -49,7 +48,12 @@ public sealed class DeckView
         // detector"): short contextual lines seated BENEATH the tracker readout in the left instrument
         // column — the dig-site and sentry affordances spelled out. Column chrome only, never over the
         // grid (the OverlayBands / dig-channel-watch law). Optional so earlier callers still compile.
-        System.Collections.Generic.IReadOnlyList<string>? TrackerCaptions = null);
+        System.Collections.Generic.IReadOnlyList<string>? TrackerCaptions = null,
+        // Beach-comber kit (owner, 2026-07-18: "some kind of grid system onto planet Miranda for marking
+        // the checked squares on that visit"): the per-visit swept grid — each probed square at its centre,
+        // Hard = the shovel rang off bedrock. Drawn as a subtle dug/checked glyph ON the regolith, under
+        // the movers. Optional so earlier callers still compile.
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, bool Hard)>? SweptSquares = null);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -157,6 +161,25 @@ public sealed class DeckView
         // avatar/droids so a mover can stand on them).
         if (surface is { } hud)
         {
+            // Beach-comber kit: the per-visit swept grid, drawn FIRST so every other ground mark sits on
+            // top. A checked square is a faint dug divot (a small ring + tick); a bedrock square rings off
+            // with a dim ✕ — the sweep at a glance, in the deck-plan NetHack idiom (subtle, never loud).
+            if (hud.SweptSquares is { } swept)
+            {
+                foreach ((double swx, double swy, bool hard) in swept)
+                {
+                    (float sx, float sy) = P(swx, swy);
+                    if (hard)
+                    {
+                        _renderer.DrawText(sx, sy + 3, "✕", new RgbaColor(120, 110, 95, 150), "10px monospace", TextAlign.Center);
+                    }
+                    else
+                    {
+                        _renderer.DrawCircle(sx, sy, 0.35f * scale, null, new RgbaColor(110, 130, 120, 130), 1f);
+                        _renderer.DrawText(sx, sy + 3, "·", new RgbaColor(120, 150, 135, 160), "10px monospace", TextAlign.Center);
+                    }
+                }
+            }
             foreach ((double mx, double my, bool haunted) in hud.CacheMarks)
             {
                 (float sx, float sy) = P(mx, my);

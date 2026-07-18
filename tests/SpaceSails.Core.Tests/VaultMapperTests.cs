@@ -69,6 +69,59 @@ public class VaultMapperTests
     }
 
     [Fact]
+    public void Caches_RoundTrip_PreservesFreeFormDigSpot()
+    {
+        // Beach-comber kit (playtest bug #5): a free-form bury records the REAL dug coords on the cache.
+        // They must survive the vault round-trip so the ✗ reloads exactly where the shovel dug.
+        var ledger = new CacheLedger();
+        ledger.Bury("miranda", 500, [], 80000, "you", playerOwned: true, reeverLevel: 2, digX: -6.5, digY: -71.25);
+
+        var restored = new CacheLedger();
+        VaultMapper.Apply(VaultMapper.ToSection(ledger), restored);
+
+        TreasureCache c = restored.Caches.Single();
+        Assert.True(c.HasDigSpot);
+        Assert.Equal(-6.5, c.DigX);
+        Assert.Equal(-71.25, c.DigY);
+    }
+
+    [Fact]
+    public void Caches_OldVaultWithoutDigSpot_FallsBackToHashPosition()
+    {
+        // Backward compat: a pre-beach-comber cache record has no DigX/DigY (both null). It must load with
+        // HasDigSpot == false so the client falls back to the deterministic hash-scatter — a lossless
+        // round-trip for every legacy save (no coords in, no coords out).
+        var section = new CachesSection
+        {
+            NextMintIndex = 1,
+            Caches =
+            [
+                new CacheRecord
+                {
+                    Id = "cache-you-0",
+                    BodyId = "phobos",
+                    LandmarkName = "the monolith",
+                    Bearing = "sunward",
+                    Paces = 40,
+                    Coin = 900,
+                    Owner = "you",
+                    PlayerOwned = true,
+                    ReeverLevel = 1,
+                    // DigX / DigY deliberately unset — the old shape.
+                },
+            ],
+        };
+
+        var restored = new CacheLedger();
+        VaultMapper.Apply(section, restored);
+
+        TreasureCache c = restored.Caches.Single();
+        Assert.Null(c.DigX);
+        Assert.Null(c.DigY);
+        Assert.False(c.HasDigSpot); // the client reads this and scatters the ✗ by hash instead
+    }
+
+    [Fact]
     public void HotCargo_RoundTrip_ViaLines()
     {
         var hot = new HotCargoLedger();
