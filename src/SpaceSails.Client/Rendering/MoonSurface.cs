@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SpaceSails.Core;
 
 namespace SpaceSails.Client.Rendering;
 
@@ -29,7 +30,10 @@ public static class MoonSurface
     public const float SurfaceTopY = -20f;
 
     // #313: Miranda GREW — a wide field so dig-worthy distance costs commitment (distance = risk).
-    private const float SurfaceBottomY = -84f;
+    /// <summary>The deep edge — the far bottom rim of the field. Lane-1 (owner, 2026-07-18): the tide of
+    /// Reevers claws out of the regolith here, "coming from bottom of screen … at random intervals", far
+    /// below the followed camera so each contact paints on the tracker long before it crests into view.</summary>
+    public const float SurfaceBottomY = -84f;
     private const float SurfaceLeftX = -44f;
     private const float SurfaceRightX = 34f;
 
@@ -51,6 +55,19 @@ public static class MoonSurface
     /// <summary>The crew-only threshold (owner): Old Ones are penned on the surface at the tube mouth and
     /// can never climb it — the door won't open to them. Fed to <c>ReeverChase.Step</c>.</summary>
     public const double ReeverBarrierY = SurfaceTopY;
+
+    /// <summary>Lane-1 · The TIDE's northern limit (owner, 2026-07-18): tide Reevers hold the deep and
+    /// "will stop venturing too far" toward the landing. Well south of the absolute
+    /// <see cref="ReeverBarrierY"/> — so the deep dig-ground floods no matter how many sentries hold a
+    /// spot (time there is bounded), while a sightseer up at the landing is never reached. Derived from
+    /// the field geometry by the pure <see cref="ReeverTide.HomeRangeY"/> so the law is Core-testable.</summary>
+    public static readonly double ReeverTideHomeRangeY = ReeverTide.HomeRangeY(SurfaceTopY, SurfaceBottomY);
+
+    /// <summary>Where a tide Reever claws out for spawn index — a deterministic, seed-jittered x spread
+    /// across the deep edge (<see cref="ReeverTide.SpawnX"/>), just inside the bottom rim so it walks the
+    /// field rather than piling against the outer wall.</summary>
+    public static (double X, double Y) TideSpawnPoint(ulong threatSeed, int spawnIndex) =>
+        (ReeverTide.SpawnX(threatSeed, spawnIndex, SurfaceLeftX + 3, SurfaceRightX - 3), SurfaceBottomY + 1.5);
 
     /// <summary>The avatar's fallback spawn (the excursion keeps the captain where they stood at the bay,
     /// so this is only a safety default).</summary>

@@ -44,7 +44,12 @@ public sealed class DeckView
         // (the #324 HUD-visibility law). Null when the excursion carries no orbit risk. Severity colours
         // it: 0 calm teal (steady), 1 amber (slipping), 2 red (failing / lost) — the maroon, never silent.
         string? OrbitComms = null,
-        int OrbitSeverity = 0);
+        int OrbitSeverity = 0,
+        // Lane-1 (owner, 2026-07-18: "advertise the dig and bot options in text under the motion
+        // detector"): short contextual lines seated BENEATH the tracker readout in the left instrument
+        // column — the dig-site and sentry affordances spelled out. Column chrome only, never over the
+        // grid (the OverlayBands / dig-channel-watch law). Optional so earlier callers still compile.
+        System.Collections.Generic.IReadOnlyList<string>? TrackerCaptions = null);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -352,7 +357,6 @@ public sealed class DeckView
     // The crude motion-tracker fan (top-right corner, screen-space): a graph-paper radar showing MOVING
     // contacts by bearing + range, clamped to the ring when beyond it. Blips pulse faster as they close.
     private static readonly RgbaColor TrackerRing = new(120, 200, 150, 150);
-    private static readonly RgbaColor TrackerBlip = new(120, 255, 160, 230);
 
     // #330 · Where the left-edge instrument column begins under the SANITY plate (its base bottom ≈ 70px
     // + a small consistent gap). The tracker's centre sits directly below this — one honest column.
@@ -372,8 +376,10 @@ public sealed class DeckView
         // Sizes scale with the disc so a shrunk tracker stays legible and a big one reads across the map.
         float labelPx = (float)Math.Clamp(r * 0.13, 10, 15);
         float readoutPx = (float)Math.Clamp(r * 0.11, 9, 13);
-        float blipNear = (float)Math.Max(3.6, r * 0.055);
-        float blipFar = (float)Math.Max(2.8, r * 0.042);
+        // Lane-1 (owner, 2026-07-18): the Reever blips read SMALLER than the old contacts — a tight,
+        // insistent dot, not a fat one, so a crowding tide is a rash of pinpricks rather than a smear.
+        float blipNear = (float)Math.Max(2.6, r * 0.042);
+        float blipFar = (float)Math.Max(2.0, r * 0.032);
 
         // The graph-paper fan: an opaque backing disc, three rings + crosshair.
         _renderer.DrawCircle(cx, cy, r + 6f, new RgbaColor(6, 11, 10, 238), TrackerRing, 1f);
@@ -384,9 +390,13 @@ public sealed class DeckView
         DrawSeg((cx, cy - r), (cx, cy + r), new RgbaColor(120, 200, 150, 70), 1f);
         _renderer.DrawText(cx, cy - r - 8, "MOTION TRACKER", TrackerRing, $"bold {labelPx:0}px monospace", TextAlign.Center);
 
-        // Cadence → blink phase. Silent(0) steady, up to Imminent(3) frantic.
-        double hz = hud.Cadence switch { 3 => 6.0, 2 => 3.0, 1 => 1.3, _ => 0.0 };
-        bool on = hz <= 0 || Math.Sin(simTime * 0.001 * hz * 2 * Math.PI) > -0.2;
+        // Lane-1 (owner, 2026-07-18): the Reever blips are red and "pulsing like a heartbeat" — the
+        // creatures' pulse on the sweep. A lub-dub envelope drives the blips' size and glow, quickening
+        // with the tracker cadence as the nearest closes; even a far-off tide keeps a slow, live beat.
+        double beatHz = hud.Cadence switch { 3 => 2.4, 2 => 1.6, 1 => 1.0, _ => 0.75 };
+        double beat = Heartbeat((simTime * 0.001 * beatHz) % 1.0); // 0..1 lub-dub envelope
+        byte beatAlpha = (byte)(120 + (135 * beat));
+        float beatScale = 0.72f + (0.5f * (float)beat);
 
         const double maxRange = 60.0; // du mapped to the ring's edge; farther clamps to the rim
         foreach ((double bearing, double range) in hud.Blips)
@@ -395,11 +405,39 @@ public sealed class DeckView
             // World bearing: +x = right, +y = port (up on screen) → screen y flips.
             float bx = cx + (float)(Math.Cos(bearing) * rr);
             float by = cy - (float)(Math.Sin(bearing) * rr);
-            var col = on ? TrackerBlip : new RgbaColor(120, 255, 160, 90);
-            _renderer.DrawCircle(bx, by, range > maxRange ? blipFar : blipNear, col, col);
+            float sz = (range > maxRange ? blipFar : blipNear) * beatScale;
+            var col = new RgbaColor(235, 70, 60, beatAlpha); // watchdog red, pulsing
+            _renderer.DrawCircle(bx, by, sz, col, col);
         }
 
         _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, $"{readoutPx:0}px monospace", TextAlign.Center);
+
+        // Lane-1: the dig/sentry captions seated beneath the readout (owner: "advertise the dig and bot
+        // options in text under the motion detector"). Column chrome only — and drawn only while each line
+        // clears the viewport bottom, so a short screen never buries the keybar under them.
+        if (hud.TrackerCaptions is { Count: > 0 } captions)
+        {
+            float capPx = (float)Math.Clamp(r * 0.095, 9, 12);
+            float capY = cy + r + 14 + readoutPx + 8f;
+            foreach (string caption in captions)
+            {
+                if (string.IsNullOrEmpty(caption) || capY > heightPx - 16)
+                {
+                    break;
+                }
+                _renderer.DrawText(cx, capY, caption, TextDim, $"{capPx:0}px monospace", TextAlign.Center);
+                capY += capPx + 5f;
+            }
+        }
+    }
+
+    // A lub-dub heartbeat envelope over a [0,1) beat phase: two quick gaussian thumps near the start of
+    // the cycle, then a rest — the shape the Reever blips pulse to (owner: "pulsing like a heartbeat").
+    private static double Heartbeat(double phase)
+    {
+        double lub = Math.Exp(-Math.Pow((phase - 0.06) / 0.05, 2));
+        double dub = 0.7 * Math.Exp(-Math.Pow((phase - 0.20) / 0.055, 2));
+        return Math.Min(1.0, lub + dub);
     }
 
     // #317 the nerve gauge (top-left, screen-space): a crude deck-plan bar — full teal = steady hands,

@@ -27,14 +27,20 @@ public partial class Map
     // the pack cuts angles to corner the captain instead of trailing single-file. Cheap, no pathfinding.
     private const double EncircleBias = 0.28;
 
-    private const int MaxSurfaceReevers = ReeverRaid.MaxReevers; // buffer: 3 crew + 6 ≤ MaxDroids(10)
+    // Lane-1 · the ENGINE ceiling on simultaneously ACTIVE Reevers (owner, 2026-07-18). This is a perf
+    // guard, NOT a gameplay cap: the tide as a rule never stops ("without any limited number"), but we
+    // won't hold more than this many live contacts at once for the render/step budget. Generous by
+    // design — the tide rarely reaches it unless the captain lingers deep for a very long time. Sizes the
+    // surface droid buffer (3 crew + this ≤ DeckPlan.MaxDroids = 27).
+    private const int ReeverEngineCeiling = 24;
 
-    // #318 false-hang follow-up: per-frame ceilings for the linger trickle. The step delta is clamped to
+    // #318 false-hang follow-up: per-frame ceilings for the surface spawners. The step delta is clamped to
     // MaxSurfaceStepSeconds (the same 0.1 s cap StepReevers uses) so a background-tab resume can't hand a
-    // multi-second delta into the wake accumulator, and at most MaxLingerWakesPerFrame wake-checks run in
-    // any one frame — a hard guard so the loop can never spin the frame (see ReeverRaid.LingerTicksDue).
+    // multi-second delta into an accumulator, and at most MaxTideSpawnsPerFrame claw-outs resolve in any
+    // one frame — a hard guard so the loop can never spin the frame. The backlog simply catches up over
+    // the next few frames; the tide is relentless, never instantaneous.
     private const double MaxSurfaceStepSeconds = 0.1;
-    private const int MaxLingerWakesPerFrame = 8;
+    private const int MaxTideSpawnsPerFrame = 4;
 
     // #317 · The nerve gauge (first slice of #226's Fail Forward sanity). The captain's nerve, 0..100:
     // full = steady hands, empty = nerves shot. Drains from the regolith's stressors, eases off aboard,
@@ -129,6 +135,11 @@ public partial class Map
         public double X, Y, Facing, Vx, Vy;
         public int HitsTaken;   // #314: rounds a sentry has ground into it (downs at RoundsPerReever)
 
+        // Lane-1: a TIDE Reever (clawed up from the deep edge, owner 2026-07-18) versus a dig-roll pack
+        // member. The tide holds to its home range (never ventures near the landing); the pack chases to
+        // the very crew-only door. Same creature, two leashes.
+        public bool Tide;
+
         // #324: crude line-of-sight memory. A Reever only tracks the captain's LIVE position while it can
         // SEE them (no wall between); blind, it shambles to where it last laid eyes, then leans on the tube
         // choke. Duck behind a wall and it loses your live position — the maze becomes a real instrument.
@@ -169,8 +180,16 @@ public partial class Map
         public double DropX, DropY;
         public bool Buried { get; set; }                 // the carried chest went into the ground
         public DigChannel? Channel { get; set; }
-        public double LingerSeconds { get; set; }        // time a pack has been up (drives the trickle)
-        public int LingerTicks { get; set; }
+
+        // Lane-1 · the tide clock (owner, 2026-07-18): the deep hands up a Reever every seeded gap, for
+        // the whole excursion, with no fixed total. TideSeconds accrues real time; when it crosses the
+        // seeded TideNextGap a Reever claws out and the index advances (which re-seeds the next gap and
+        // its spawn x). Pure cadence in ReeverTide; this is just the client's accumulator.
+        public double TideSeconds { get; set; }
+        public double TideNextGap { get; set; }
+        public int TideSpawnIndex { get; set; }
+        public bool TideAnnounced { get; set; }          // the one-time "the deep stirs" notice has fired
+
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
         public int Catches { get; set; }
@@ -290,7 +309,7 @@ public partial class Map
         }
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Name, ex.Carrying, OwnCachePositionsAt(ex.Stop.Body.Id),
-            3 + MaxSurfaceReevers, FillSurfaceDroids);
+            3 + ReeverEngineCeiling, FillSurfaceDroids);
     }
 
     private List<(string Id, double X, double Y, int ReeverLevel)> OwnCachePositionsAt(string bodyId)
@@ -537,7 +556,7 @@ public partial class Map
         double baseY = Math.Min(_avatarY - 4, MoonSurface.MonolithY + 10);
         for (int i = 0; i < count; i++)
         {
-            if (_reevers.Count >= MaxSurfaceReevers)
+            if (_reevers.Count >= ReeverEngineCeiling)
             {
                 break;
             }
@@ -548,7 +567,7 @@ public partial class Map
         }
     }
 
-    // The surface tick: chase, dig channel, and the linger trickle — all cheap, no pathfinding.
+    // The surface tick: dig channel, sentries, the chase, and the ambient tide — all cheap, no pathfinding.
     private void StepSurface(double dtRealSeconds)
     {
         if (_surface is null)
@@ -558,7 +577,7 @@ public partial class Map
         StepDigChannel(dtRealSeconds);
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
-        StepLingerTrickle(dtRealSeconds);
+        StepTide(dtRealSeconds);
         TryRecoverDroppedChest();
     }
 
@@ -830,7 +849,12 @@ public partial class Map
             double aimX = tgtX + (MoonSurface.SpawnX - tgtX) * EncircleBias;
             double aimY = tgtY + (MoonSurface.SurfaceTopY - tgtY) * EncircleBias;
             double ox = r.X, oy = r.Y;
-            (double nx, double ny) = ReeverChase.Step(r.X, r.Y, aimX, aimY, step, MoonSurface.ReeverBarrierY, walls, reeverRadius);
+            // Lane-1: two leashes. A dig-roll PACK member chases to the very crew-only door
+            // (ReeverBarrierY); a TIDE Reever holds the deep and turns back at its home range — owner
+            // 2026-07-18: they "will stop venturing too far" toward the landing. The barrier IS the leash
+            // (ReeverChase caps y at it), so bots can pin a deep spot but never protect the whole field.
+            double barrier = r.Tide ? MoonSurface.ReeverTideHomeRangeY : MoonSurface.ReeverBarrierY;
+            (double nx, double ny) = ReeverChase.Step(r.X, r.Y, aimX, aimY, step, barrier, walls, reeverRadius);
             r.Vx = dt > 0 ? (nx - ox) / dt : 0;
             r.Vy = dt > 0 ? (ny - oy) / dt : 0;
             r.X = nx;
@@ -864,31 +888,64 @@ public partial class Map
         return false;
     }
 
-    // Lingering wakes more (owner: "the longer you linger, the more turn out") — but ONLY once a pack is
-    // already up from a dig, so a sightseeing visit still rolls no dice. A dice-gated trickle: overstaying
-    // converts margin into a closing net; a brisk captain never reaches a second tick.
-    private void StepLingerTrickle(double dtRealSeconds)
+    // Lane-1 · THE TIDE (owner, Saturday-evening playtest 2026-07-18): "even with bots there is only so
+    // long time to stay there." The deep hands up a Reever at seeded, jittered intervals for the WHOLE
+    // excursion — no fixed total ("reevers coming from bottom of screen without any limited number … at
+    // random intervals"). This supersedes the old dig-gated linger trickle: the tide runs from the moment
+    // the boots hit regolith, not only after a dig, so time in the deep field is bounded on any visit. The
+    // acute ReeverRaid pack (BeginDig) still turns out ON TOP of it — the tide is the ambient pressure.
+    private void StepTide(double dtRealSeconds)
     {
-        if (_surface is not { } ex || _reevers.Count == 0 || _reevers.Count >= MaxSurfaceReevers)
+        if (_surface is not { } ex)
         {
             return;
         }
-        // #318 false-hang follow-up: clamp the frame delta before it feeds an accumulator + loop. A tab
-        // resumed from the background (rAF suspended) can hand us a delta of many seconds; StepReevers
-        // already caps its own step at MaxSurfaceStepSeconds for the same reason. Then advance at most a
-        // small, fixed number of wake-checks this frame (ReeverRaid.LingerTicksDue caps it) — the honest
-        // fallback is to catch any backlog up over the next few frames, never spin one frame.
-        ex.LingerSeconds += Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds);
-        int advance = ReeverRaid.LingerTicksDue(ex.LingerSeconds, ex.LingerTicks, MaxLingerWakesPerFrame);
-        for (int i = 0; i < advance && _reevers.Count < MaxSurfaceReevers; i++)
+        // #318-style guard: clamp the frame delta before it feeds the accumulator so a background-tab
+        // resume (rAF suspended, a multi-second delta) can't spawn a wall of Reevers in one frame — and
+        // resolve at most MaxTideSpawnsPerFrame claw-outs this frame, letting any backlog trail over the
+        // next few. TideSeconds only ever grows by a clamped ≤0.1 s, so in practice this loops 0–1 times.
+        ex.TideSeconds += Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds);
+        if (ex.TideNextGap <= 0.0)
         {
-            ex.LingerTicks++;
-            if (ReeverRaid.WakesOnLingerTick(ex.ThreatSeed, ex.LingerTicks))
+            ex.TideNextGap = ReeverTide.NextGap(ex.ThreatSeed, ex.TideSpawnIndex);
+        }
+
+        int resolved = 0;
+        while (ex.TideSeconds >= ex.TideNextGap && resolved < MaxTideSpawnsPerFrame)
+        {
+            resolved++;
+            ex.TideSeconds -= ex.TideNextGap;
+            // The engine ceiling is a perf guard, not a gameplay cap: at the ceiling the claw-out is
+            // skipped this beat but the tide clock rolls right on, so the deep resumes handing them up the
+            // instant a sentry drops one and frees a slot.
+            if (_reevers.Count < ReeverEngineCeiling)
             {
-                SpawnReevers(1);
-                RendererInterop.PlayCue("alarm");
-                ShowPulseMessage("🎲 Another Old One claws free — the net thickens. Leave, captain.");
+                SpawnTideReever(ex);
             }
+            ex.TideSpawnIndex++;
+            ex.TideNextGap = ReeverTide.NextGap(ex.ThreatSeed, ex.TideSpawnIndex);
+        }
+
+        // Don't bank unbounded seconds while pinned at the ceiling — hold at a single gap's worth so the
+        // tide resumes promptly (not in a sudden flood) once a slot frees.
+        if (_reevers.Count >= ReeverEngineCeiling && ex.TideSeconds > ex.TideNextGap)
+        {
+            ex.TideSeconds = ex.TideNextGap;
+        }
+    }
+
+    // One tide Reever claws out of the deep edge at its seeded spawn point and begins to shamble up the
+    // field. Silent by design — the motion tracker is the warning, not a klaxon (owner: "they should show
+    // in the motion detector long before on the map"); only the first of an excursion earns a line so the
+    // player learns the deep is alive. Marked Tide so StepReevers leashes it to the home range.
+    private void SpawnTideReever(SurfaceExcursion ex)
+    {
+        (double x, double y) = MoonSurface.TideSpawnPoint(ex.ThreatSeed, ex.TideSpawnIndex);
+        _reevers.Add(new Reever { X = x, Y = y, Facing = Math.PI / 2, Tide = true });
+        if (!ex.TideAnnounced)
+        {
+            ex.TideAnnounced = true;
+            ShowPulseMessage("〜 The tracker stirs — something's moving in the deep, far below. The regolith never stays empty for long. Don't linger.");
         }
     }
 
@@ -999,7 +1056,7 @@ public partial class Map
     private void FillSurfaceDroids(double simTime, DeckPlan.Droid[] buffer)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // [0..3): the crew
-        for (int i = 0; i < MaxSurfaceReevers; i++)
+        for (int i = 0; i < ReeverEngineCeiling; i++)
         {
             int slot = 3 + i;
             if (i < _reevers.Count)
@@ -1042,6 +1099,7 @@ public partial class Map
         (string Line, int Severity)? orbit = SurfaceOrbitComms(); // #327: the ship calling home
 
         return new DeckView.SurfaceHud(
+            TrackerCaptions: BuildTrackerCaptions(ex, marks.Count),
             DigProgress: ex.Channel?.Progress ?? -1,
             SiteX: MoonSurface.DigFieldX, SiteY: MoonSurface.DigFieldY,
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
@@ -1081,6 +1139,41 @@ public partial class Map
         }
         parts.Add("F — first person");
         return string.Join(" ∙ ", parts);
+    }
+
+    // Lane-1 (owner, 2026-07-18: "advertise the dig and bot options in text under the motion detector"):
+    // the short contextual lines seated below the tracker readout in the left instrument column. They
+    // teach the two levers the surface offers — the DIG (the reason to come, the reason to hurry) and the
+    // SENTRY (the thing that buys time against the tide, never safety). Kept to a couple of lines so the
+    // column stays legible; empty entries are skipped by the renderer.
+    private List<string> BuildTrackerCaptions(SurfaceExcursion ex, int ownMarkCount)
+    {
+        var lines = new List<string>();
+
+        // The dig affordance — only when there is a reason to dig (a chest to bury, or an own ✗ to lift).
+        if (ex.Carrying)
+        {
+            lines.Add("⛏ E at the dig site — bury the chest deep");
+        }
+        else if (ownMarkCount > 0)
+        {
+            lines.Add("🗺 E at your ✗ — dig the cache back up");
+        }
+
+        // The sentry affordance — spell out T while it matters (a bot in the sling to set, or ones holding
+        // the line). The tide never stops, so the caption tells the truth: they buy time, not safety.
+        int carried = ex.Bots.Count(b => !b.Deployed);
+        int deployed = ex.Bots.Count(b => b.Deployed);
+        if (carried > 0)
+        {
+            lines.Add($"🤖 T — set a sentry ({carried} in the sling)");
+        }
+        else if (deployed > 0)
+        {
+            lines.Add($"🤖 {deployed} sentry holding — buys time, not safety");
+        }
+
+        return lines;
     }
 
     // Seed the 2D6 from place + integer-second instant — deterministic, replayable in a test.

@@ -52,8 +52,10 @@ public sealed class DeckPlan
 
     /// <summary>Upper bound on droids in any one plan — the render buffers size to this. Bumped to 9
     /// for the docked complex's roaming NPC (PR-F: a station patron on a sim-time rota, index 8), then
-    /// to 10 for the bar's barkeep pacing behind the counter (#247, index 9).</summary>
-    public const int MaxDroids = 10;
+    /// to 10 for the bar's barkeep pacing behind the counter (#247, index 9). Lane-1 (owner, 2026-07-18):
+    /// the surface tide needs room for the 3 crew + the engine ceiling on live Reevers (24), so the
+    /// buffer grows to 27 — only the surface plan ever fills that far; the ship/complex still fill ≤10.</summary>
+    public const int MaxDroids = 27;
 
     public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
 
