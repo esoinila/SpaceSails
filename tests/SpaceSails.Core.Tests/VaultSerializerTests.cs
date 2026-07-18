@@ -84,6 +84,7 @@ public class VaultSerializerTests
         Upgrades = new UpgradesSection { MassLevel = 2, SensorLevel = 1, HoldLevel = 3, TelescopeLevel = 1 },
         DiceItems = new DiceItemsSection([new DiceItemRecord("boarding-nets", "Boarding nets", 2)]),
         Progress = new ProgressSection { TutorialPlayed = true },
+        Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
         Resume = new ResumeSection { HavenId = "ringside", HavenName = "Ringside", WasDocked = true },
     };
 
@@ -116,6 +117,8 @@ public class VaultSerializerTests
         Assert.Single(loaded.Quests.Obligations);
         Assert.Equal(3, loaded.Cargo!.Hot[0].HotUnits);
         Assert.True(loaded.Progress!.TutorialPlayed); // #292 — the onboarding bit rides the vault losslessly
+        Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
+        Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
         Assert.True(loaded.Resume!.WasDocked);
     }
 
@@ -169,6 +172,7 @@ public class VaultSerializerTests
     [InlineData("upgrades")]
     [InlineData("diceItems")]
     [InlineData("progress")]
+    [InlineData("nerve")]
     [InlineData("resume")]
     public void EachSection_RoundTrips_Independently(string section)
     {
@@ -187,6 +191,7 @@ public class VaultSerializerTests
             "upgrades" => new Vault { Upgrades = full.Upgrades },
             "diceItems" => new Vault { DiceItems = full.DiceItems },
             "progress" => new Vault { Progress = full.Progress },
+            "nerve" => new Vault { Nerve = full.Nerve },
             "resume" => new Vault { Resume = full.Resume },
             _ => throw new ArgumentOutOfRangeException(nameof(section)),
         };
@@ -208,6 +213,32 @@ public class VaultSerializerTests
         Assert.Equal(0, loaded.Heat!.Level);
         Assert.True(double.IsNegativeInfinity(loaded.Heat.RaisedAtSimTime));
         Assert.False(loaded.Tampered);
+    }
+
+    [Fact]
+    public void Nerve_SurvivesTheVaultRoundTrip_StillShakingAfterReload()
+    {
+        // #317 — the nerve gauge persists losslessly: a captain who fled a moon shaking must still be
+        // shaking on reload (the ease-off is time aboard, never the load), and the monolith's first-sight
+        // hit stays spent so a revisit never re-fires the big Lovecraftian shock.
+        var vault = new Vault { Nerve = new NerveSection { Nerve = 17.25, MonolithSeen = true } };
+        Vault loaded = VaultSerializer.Load(VaultSerializer.Save(vault));
+
+        Assert.NotNull(loaded.Nerve);
+        Assert.Equal(17.25, loaded.Nerve!.Nerve, 6);
+        Assert.True(loaded.Nerve.MonolithSeen);
+        Assert.False(loaded.Tampered);
+    }
+
+    [Fact]
+    public void Nerve_MissingSection_DefaultsToACalmGauge()
+    {
+        // A pre-#317 file carries no nerve section: the reader returns null and the game defaults a full,
+        // calm gauge. (Proven here at the contract layer: a section that IS present but omits the field
+        // defaults its Nerve to Max, not to a bare-double 0 = "nerves shot".)
+        var section = new NerveSection();
+        Assert.Equal(NerveModel.Max, section.Nerve, 6);
+        Assert.False(section.MonolithSeen);
     }
 
     [Fact]

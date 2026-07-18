@@ -139,6 +139,55 @@ public static class NerveModel
         _ => NerveBand.Shot,
     };
 
+    // ── The one-per-frame state advance: the on-planet-only law, the airlock ease-off, the once-in-a-life
+    //    monolith hit — all in one pure step the client calls each tick, and a test can pin exactly. ──
+
+    /// <summary>One frame's worth of the captain's situation, as the client reads it off the live world.
+    /// <paramref name="OnExcursion"/> is true whenever a surface excursion is live at all (the gauge shows
+    /// only then — on-planet only). <paramref name="OnRegolith"/> is true only when actually out on the
+    /// surface (false when stood back up through the airlock — the ship is safety). <paramref name="SeesMonolith"/>
+    /// is whether the monolith is in sight THIS frame. Stressors are only consulted on the regolith.</summary>
+    public readonly record struct Frame(
+        bool OnExcursion, bool OnRegolith, bool SeesMonolith, Stressors Stressors, double DtSeconds);
+
+    /// <summary>The result of advancing one frame: the new nerve, the (possibly newly-set) monolith-seen
+    /// flag, whether the big first-sight hit fired THIS frame (so the client can sound the cue and speak),
+    /// and whether the gauge should be visible (on-planet only).</summary>
+    public readonly record struct Step(double Nerve, bool MonolithSeen, bool MonolithHitFired, bool GaugeVisible);
+
+    /// <summary>Advance the nerve one frame. The whole on-planet law in one deterministic place:
+    /// <list type="bullet">
+    /// <item>the gauge is visible ONLY during an excursion (<see cref="Frame.OnExcursion"/>) — hidden aboard
+    /// the ship in flight or docked;</item>
+    /// <item>out on the regolith the stressors drain it, and the FIRST time the monolith comes into sight
+    /// (once in a life — the flag latches) it takes the big lump;</item>
+    /// <item>anywhere safe — up through the airlock mid-excursion, or off-planet entirely — the nerve eases
+    /// back toward steady.</item>
+    /// </list>
+    /// Pure: same nerve + same seen-flag + same frame → same <see cref="Step"/>, every time.</summary>
+    public static Step Advance(double nerve, bool monolithSeen, in Frame f)
+    {
+        double n = nerve;
+        bool fired = false;
+
+        if (f.OnExcursion && f.OnRegolith)
+        {
+            n = Drain(n, f.Stressors, f.DtSeconds);
+            if (!monolithSeen && f.SeesMonolith)
+            {
+                monolithSeen = true;
+                fired = true;
+                n = Shock(n, MonolithSightShock);
+            }
+        }
+        else
+        {
+            n = Recover(n, f.DtSeconds); // the ship is safety — the airlock ease-off, and off-planet calm
+        }
+
+        return new Step(n, monolithSeen, fired, GaugeVisible: f.OnExcursion);
+    }
+
     /// <summary>The house-voice line for a rung — the escalating flavor the gauge reads out. No numbers,
     /// no mechanics; a mood that slides as the bar falls.</summary>
     public static string Flavor(NerveBand band) => band switch

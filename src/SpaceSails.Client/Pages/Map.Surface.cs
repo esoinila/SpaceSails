@@ -405,50 +405,38 @@ public partial class Map
         StepReevers(dtRealSeconds);
         StepLingerTrickle(dtRealSeconds);
         TryRecoverDroppedChest();
-        StepNerve(dtRealSeconds);
     }
 
     // ── #317 The nerve gauge: the regolith frays it, the ship's safety eases it, the monolith gores it. ──
 
-    // The stressors tick ONLY out on the regolith (owner: "a sanity bar when on planet"). Moving contacts
-    // on the tracker, a live chase, digging under threat and being cornered each drain the nerve; the first
-    // sight of the monolith is the big one-time hit (the #226 hook #318 named). Up through the airlock the
-    // ship is safety — the ease-off is StepNerveRecovery's job, so this frame does nothing there.
+    // The one per-frame nerve advance, called from the sim loop every tick (not just on the surface): the
+    // pure NerveModel.Advance owns the whole on-planet law — drain only out on the regolith (moving contacts,
+    // a live chase, digging under threat, being cornered), the once-in-a-life monolith first-sight hit (the
+    // #226 hook #318 named), and the airlock/off-planet ease-off (the ship is safety). The client's only job
+    // is to read the live situation and, when the big hit fires, sound the cue and speak.
     private void StepNerve(double dtRealSeconds)
     {
-        if (_surface is not { } ex || MoonSurface.IsSafeAboard(_avatarY))
-        {
-            return;
-        }
+        bool onExcursion = _surface is { } ex;
+        bool onRegolith = onExcursion && !MoonSurface.IsSafeAboard(_avatarY);
 
-        var stressors = new NerveModel.Stressors(
-            MovingContacts: CountMovingReevers(),
-            ChaseActive: _reevers.Count > 0,
-            Digging: ex.Channeling,
-            Cornered: IsCornered());
-        _nerve = NerveModel.Drain(_nerve, in stressors, dtRealSeconds);
+        var frame = new NerveModel.Frame(
+            OnExcursion: onExcursion,
+            OnRegolith: onRegolith,
+            SeesMonolith: onRegolith && SeesMonolith(),
+            Stressors: onRegolith
+                ? new NerveModel.Stressors(CountMovingReevers(), _reevers.Count > 0, _surface!.Channeling, IsCornered())
+                : default,
+            DtSeconds: dtRealSeconds);
 
-        // First sight of the monolith — fires exactly once in a captain's life (the flag is vault-persisted).
-        if (!_monolithSeen && SeesMonolith())
+        NerveModel.Step step = NerveModel.Advance(_nerve, _monolithSeen, in frame);
+        _nerve = step.Nerve;
+        _monolithSeen = step.MonolithSeen;
+
+        if (step.MonolithHitFired)
         {
-            _monolithSeen = true;
-            _nerve = NerveModel.Shock(_nerve, NerveModel.MonolithSightShock);
             RendererInterop.PlayCue("alarm");
             ShowPulseMessage("👁 The monolith resolves out of the dark — too regular, too old, too patient. Something behind your eyes lurches, and your hands remember it.");
             RequestVaultSave();
-        }
-    }
-
-    // The ease-off (owner: "back aboard through the airlock eases the nerve over time; the ship is safety").
-    // Runs every tick from the sim loop: whenever the captain is NOT out on the regolith — flying, docked,
-    // or stood back up through the airlock mid-excursion — the nerve returns gently toward steady. The
-    // deeper restoration economy (sleep, R&R, a drink with a friend — #306/#308 seams) stays with #226.
-    private void StepNerveRecovery(double dtRealSeconds)
-    {
-        bool onRegolith = _surface is not null && !MoonSurface.IsSafeAboard(_avatarY);
-        if (!onRegolith && _nerve < NerveModel.Max)
-        {
-            _nerve = NerveModel.Recover(_nerve, dtRealSeconds);
         }
     }
 
