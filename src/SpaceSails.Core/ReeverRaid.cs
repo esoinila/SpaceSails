@@ -45,6 +45,35 @@ public static class ReeverRaid
     public static bool WakesOnLingerTick(ulong seed, int tickIndex) =>
         DiceRule.Roll(DiceRule.Seed(seed, $"linger-wake:{tickIndex}"), Faces).Face >= 5;
 
+    /// <summary>How many linger-wake ticks a single frame should advance, given the total real seconds a
+    /// pack has been up (<paramref name="lingerSeconds"/>) and how many ticks have already fired
+    /// (<paramref name="ticksAlreadyFired"/>) — hard-capped at <paramref name="perFrameBudget"/>.
+    ///
+    /// <para>#318 false-hang follow-up: the client consumes this to drive the wake loop, so the count it
+    /// returns is exactly the loop's iteration budget for the frame. A frame resumed from a backgrounded
+    /// tab (rAF suspended) can hand over a multi-second — or, from a stale clock, non-finite — delta;
+    /// feeding that straight into <c>(int)(lingerSeconds / LingerTickSeconds)</c> would ask the loop to
+    /// iterate an unbounded number of times in ONE frame (a visible stall). This clamps it: non-finite or
+    /// non-positive input yields 0, and the pending count never exceeds the budget — the honest fallback
+    /// is simply "catch the remaining ticks up over the next few frames".</para></summary>
+    public static int LingerTicksDue(double lingerSeconds, int ticksAlreadyFired, int perFrameBudget)
+    {
+        if (perFrameBudget <= 0 || ticksAlreadyFired < 0
+            || !double.IsFinite(lingerSeconds) || lingerSeconds <= 0.0)
+        {
+            return 0;
+        }
+
+        double due = lingerSeconds / LingerTickSeconds;
+        double pending = due - ticksAlreadyFired;
+        if (pending <= 0.0)
+        {
+            return 0;
+        }
+
+        return pending >= perFrameBudget ? perFrameBudget : (int)pending;
+    }
+
     /// <summary>Roll the 2D6 for a dig on haunted ground. <paramref name="seed"/> folds the place and
     /// the moment (the caller passes <see cref="DiceRule.Seed(string, long[])"/> over body + burial
     /// instant); <paramref name="watchdogLevel"/> is the stash's standing Reever presence, added to the

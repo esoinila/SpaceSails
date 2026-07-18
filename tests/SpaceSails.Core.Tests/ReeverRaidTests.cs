@@ -122,6 +122,59 @@ public class ReeverRaidTests
         Assert.InRange(wakes, 60, 240); // ~1/3 cadence, never a guaranteed flood nor silence
     }
 
+    // ── #318 false-hang follow-up: LingerTicksDue is the per-frame budget the wake loop iterates. It
+    //    MUST stay bounded no matter how ugly the frame delta gets, so one resumed/stale frame can never
+    //    stall the tab (the class of block that presented as the reported "boot hang"). ──
+
+    [Fact]
+    public void LingerTicksDue_advances_normally_within_budget()
+    {
+        // ~3.4 ticks' worth of seconds, none fired yet → 3 whole ticks (LingerTickSeconds = 9).
+        Assert.Equal(3, ReeverRaid.LingerTicksDue(ReeverRaid.LingerTickSeconds * 3.4, ticksAlreadyFired: 0, perFrameBudget: 8));
+        // Already caught up → nothing due.
+        Assert.Equal(0, ReeverRaid.LingerTicksDue(ReeverRaid.LingerTickSeconds * 3.0, ticksAlreadyFired: 3, perFrameBudget: 8));
+        // A little more banked than fired → just the new whole tick.
+        Assert.Equal(1, ReeverRaid.LingerTicksDue(ReeverRaid.LingerTickSeconds * 4.2, ticksAlreadyFired: 3, perFrameBudget: 8));
+    }
+
+    [Fact]
+    public void LingerTicksDue_caps_a_huge_delta_at_the_per_frame_budget()
+    {
+        // A tab resumed from the background can hand over a multi-second — here, absurd — linger total.
+        // The raw arithmetic (int)(1e12 / 9) is ~1.1e11: without the cap the wake loop would iterate that
+        // many times in ONE frame — a hard stall. The budget holds it to a handful; the backlog catches
+        // up over later frames.
+        Assert.Equal(8, ReeverRaid.LingerTicksDue(1e12, ticksAlreadyFired: 0, perFrameBudget: 8));
+        Assert.Equal(8, ReeverRaid.LingerTicksDue(double.MaxValue, ticksAlreadyFired: 0, perFrameBudget: 8));
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    [InlineData(-42.0)]
+    [InlineData(0.0)]
+    public void LingerTicksDue_is_zero_for_nonfinite_or_nonpositive_seconds(double lingerSeconds)
+    {
+        Assert.Equal(0, ReeverRaid.LingerTicksDue(lingerSeconds, ticksAlreadyFired: 0, perFrameBudget: 8));
+    }
+
+    [Fact]
+    public void LingerTicksDue_never_exceeds_budget_across_a_wide_sweep()
+    {
+        for (int budget = 1; budget <= 12; budget++)
+        {
+            foreach (double seconds in new[] { 0.05, 9.0, 91.0, 5_000.0, 1e9, 1e18 })
+            {
+                for (int fired = 0; fired <= 5; fired++)
+                {
+                    int due = ReeverRaid.LingerTicksDue(seconds, fired, budget);
+                    Assert.InRange(due, 0, budget);
+                }
+            }
+        }
+    }
+
     // ── The crew-only door law (ReeverChase) ──
 
     [Fact]

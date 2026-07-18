@@ -1436,6 +1436,52 @@
     to { transform: rotate(360deg); }
 }
 
+/* #318 false-hang follow-up: the honest-wait glyphs for the two synchronous boot/board blocks.
+   CRITICAL: both animations use ONLY `transform` (and `opacity`), so the browser runs them on the
+   COMPOSITOR thread — they keep moving even while the WASM main thread is blocked inside a synchronous
+   generation phase. That is the whole point: a glyph that keeps moving proves the app is alive through
+   the block. They are NOT driven by JS or Blazor render ticks (those freeze exactly when it matters).
+   Do not animate layout properties (width/top/margin) here — that would force main-thread layout. */
+
+/* Boot ('plotting the traffic lanes…') → a slowly turning gear, the warming-the-reactor idiom, live. */
+.wait-gear {
+    display: inline-block;
+    font-size: 2.6rem;
+    line-height: 1;
+    animation: save-warming-turn 2.4s linear infinite;
+    will-change: transform;
+}
+
+/* Board/descent ('shuttle descending…') → a small shuttle flying a slow descending diagonal with a
+   fade at each end, so it loops as shuttle-after-shuttle coming down — crude deck-plan style. */
+.shuttle-descent {
+    background: rgba(6, 9, 18, 0.86);
+}
+
+.wait-shuttle-lane {
+    width: 8rem;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.wait-shuttle {
+    display: inline-block;
+    font-size: 1.7rem;
+    line-height: 1;
+    animation: wait-shuttle-fly 2.6s ease-in-out infinite;
+    will-change: transform, opacity;
+}
+
+@keyframes wait-shuttle-fly {
+    0%   { transform: translate(-2.6rem, -1.4rem) rotate(6deg); opacity: 0; }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translate(2.6rem, 1.4rem) rotate(6deg); opacity: 0; }
+}
+
 /* The one prominent "New voyage" (Sol) — a cool blue accent, distinct from the warm Continue green. */
 .start-picker-newvoyage {
     border-color: rgba(120, 200, 255, 0.55);
