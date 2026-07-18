@@ -37,10 +37,11 @@
     border: 1px solid rgba(255, 200, 120, 0.28);
     border-radius: 0.5rem;
     pointer-events: none;
-    /* #302 z-law: sit ABOVE the deck offer/bar card (which is +50) so a status/intel line is never
-       occluded by the dialog (#212, owner 2026-07-18 "the rumor is slightly blocked by the dialog").
-       Still inside the desks-popups band, below the arrival-brake card (+90) and the full-screen gates. */
-    z-index: calc(var(--z-desks-popups) + 60);
+    /* #302/#299 z-law (mirror of OverlayBands.DeckPulseToast): sit ABOVE the deck offer/bar card (+50) so a
+       status/intel line is never occluded by the dialog (#212, owner 2026-07-18 "the rumor is slightly
+       blocked by the offer-a-round dialog"). Still below the dice tray (+60), the arrival-brake card (+90),
+       every gate, and — by construction — the reserved distress lifeline. */
+    z-index: calc(var(--z-desks-popups) + 55);
 }
 
 /* A bar stranger's contract offer, over the deck canvas (go-ashore quests). Same overlay family as
