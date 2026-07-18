@@ -176,6 +176,9 @@ public partial class Map
         // shortcut, and the same registry the boot picker offers. Unknown start id → the picker shows.
         string scenarioName = "sol";
         string? startId = null;
+        string? dockCheat = null;      // /map?dock=<haven-id>: boot already clamped onto ANY dockable haven (#288)
+        int? fuelCheat = null;         // /map?fuel=N: boot with N reaction-mass pulses in the tank (#288)
+        int? creditsCheat = null;      // /map?credits=N: boot with N credits in the purse (#288)
         string? fetchCheat = null;
         string? crackCheat = null;
         string? tipCheat = null;
@@ -203,6 +206,39 @@ public partial class Map
                 if (StartPoints.Any(s => s.Id == candidate))
                 {
                     startId = candidate;
+                }
+            }
+            else if (pair.StartsWith("dock=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #288 dev cheat: /map?dock=<haven-id> boots the ship already CLAMPED ON at that berth —
+                // clean state, live services — so every dockable position smoke-tests without the long
+                // navigate tax. Any dockable station haven works (DockableHavens; the full id list is
+                // console-logged on boot and lives in docs/testing-guide.md), plus the friendly start
+                // aliases (e.g. dock=ringside == dock=ringside-exchange). Validated once the world is built.
+                string candidate = Uri.UnescapeDataString(pair["dock=".Length..]).ToLowerInvariant();
+                if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+                {
+                    dockCheat = candidate;
+                }
+            }
+            else if (pair.StartsWith("fuel=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #288 dev cheat: /map?fuel=N seeds the tank at boot (clamped to capacity), so a low-fuel
+                // situation — the #262 "can I reach a pump?" test — is reachable in-situ without burning down.
+                string candidate = Uri.UnescapeDataString(pair["fuel=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int f) && f >= 0)
+                {
+                    fuelCheat = f;
+                }
+            }
+            else if (pair.StartsWith("credits=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #288 dev cheat: /map?credits=N seeds the purse at boot, so a can-you-afford-it situation
+                // (a fill-up, a bribe, an upgrade) is testable in-situ without grinding a run first.
+                string candidate = Uri.UnescapeDataString(pair["credits=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int c) && c >= 0)
+                {
+                    creditsCheat = c;
                 }
             }
             else if (pair.StartsWith("fetch=", StringComparison.OrdinalIgnoreCase))
@@ -320,6 +356,9 @@ public partial class Map
         }
         _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
+        // #288: print the enumerable registry of every dockable berth to the browser console on boot, so
+        // the bench never guesses an id — /map?dock=<id> boots already clamped on at any of these.
+        Console.WriteLine($"[SpaceSails] Dockable berths — /map?dock=<id>: {string.Join(", ", DockableHavens.AllIds(_ephemeris))}");
         // Tuesday plan PR-A: the scenario's off-the-charts bodies (e.g. the derelict roadster). They
         // stay dark until an intel-fed scan (or a dev reveal cheat) charts them.
         _hiddenBodyIds.Clear();
@@ -415,7 +454,11 @@ public partial class Map
         // Start point: an explicit /map?start=<id> jumps straight there (the renderer is live now, so
         // a docked-&-ashore start's board cue is safe); with no param, offer the boot picker so a
         // playtester (or a player who'd rather not always cast off from Earth) can choose a locale.
-        if (startId is not null)
+        if (dockCheat is not null && ResolveDockStartId(dockCheat) is { } dockHaven)
+        {
+            StartDockedAtHaven(dockHaven); // #288: boot already clamped on at any dockable berth
+        }
+        else if (startId is not null)
         {
             ApplyStart(startId);
         }
@@ -477,6 +520,18 @@ public partial class Map
         {
             _showStartPicker = false;
             SeedSkimCheat(skimCheat);
+        }
+
+        // ?credits=N / ?fuel=N (#288): seed the purse and tank last, after any start has laid down the
+        // defaults, so an in-situ situation (afford a fill-up, reach a pump) is set up straight from boot.
+        if (creditsCheat is { } seedCredits)
+        {
+            _credits = seedCredits;
+        }
+
+        if (fuelCheat is { } seedPulses)
+        {
+            _reactionMassPulses = Math.Clamp(seedPulses, 0, ReactionMassCapacity);
         }
 
         // ?simhours=N: jump the sim clock at boot so the roaming Magpie's rota can be sampled (PR-F).
@@ -581,6 +636,52 @@ public partial class Map
             // ship moved but the deck stayed on screen). ChooseStart then brings up the Nav desk.
             _deckMode = false;
         }
+    }
+
+    // #288: resolve a /map?dock=<id> value to a dockable-haven body id, or null if it names no berth.
+    // Accepts both the haven's own body id (e.g. "the-tilt", "red-eye") and the friendly start aliases
+    // (e.g. "ringside" → "ringside-exchange", "space-bar" → "the-space-bar"), so either form docks.
+    private string? ResolveDockStartId(string idOrAlias)
+    {
+        if (_ephemeris is null)
+        {
+            return null;
+        }
+
+        string havenId = DockedStarts.TryGetValue(idOrAlias, out string? mapped) ? mapped : idOrAlias;
+        return _ephemeris.Bodies.FirstOrDefault(b => b.Id == havenId && DockableHavens.IsDockable(b))?.Id;
+    }
+
+    // #288: boot already clamped onto ANY dockable station haven — the smoke-test hook that generalises
+    // ApplyStart's docked branch (four curated DockedStarts) to every haven in the scenario. Rides the
+    // one true clamp (ClampOntoHaven: co-moving berth via BerthState.CoMoving, welds any interior, pins
+    // via HoldAtDock, saves the resume vault) so a docked-cheat start is byte-for-byte a real arrival.
+    // Steps ashore where there's a walkable interior; otherwise leaves you on the bare ship deck at Nav.
+    private void StartDockedAtHaven(string havenId)
+    {
+        if (_ephemeris is null || ResolveDockHaven(havenId) is not { } dock || !DockableHavens.IsDockable(dock.Body))
+        {
+            return;
+        }
+
+        _showStartPicker = false;
+        _showTutorial = false;          // an outer berth is no place for the Earth-anchored checklist
+        SetDeckForDock(null);           // drop any deck we might be jumping from
+        ClampOntoHaven(dock.Body, dock.Pos);
+
+        if (HavenInterior.HasInterior(havenId))
+        {
+            (_avatarX, _avatarY, _avatarHeading) = (2.5, 6, Math.PI / 2); // in the airlock, facing up the tube
+            _deckMode = true;
+            _activeDesk = ShipDesk.Deck;
+        }
+        else
+        {
+            _deckMode = false;          // no walkable complex out here — sit on the Nav map, clamped on
+        }
+
+        ReprojectTrajectory();
+        _camera.CenterOn(_ship.Position);
     }
 
     // The ship's state for a start point. Reuses InitializeShipState's finite-difference "co-moving

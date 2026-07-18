@@ -91,7 +91,10 @@ public class ShipMissionTests
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "the-space-bar");
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "the-tilt");
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "selene-gate");
-        Assert.Equal(6, catalog.LayLow.Count);
+        // The #289 outer oases: a lay-low haven now rides Jupiter (The Red Eye) and Neptune (The Deep).
+        Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "red-eye");
+        Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "the-deep");
+        Assert.Equal(8, catalog.LayLow.Count);
 
         // Survey corridors collapse direction: saturn/mars from one route, earth/mercury-compute
         // from two routes (opposite directions) must still yield a single corridor.
