@@ -34,7 +34,12 @@ public sealed class DeckView
         System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Husks = null,
         // #324: the contextual surface keybar — the deploy/drop keys spelled out along the bottom while
         // they're live (a bot in the sling shows [T], a chest in hand shows [G]). #212 affordances-never-hide.
-        string? KeyHints = null);
+        string? KeyHints = null,
+        // #327 the ship calls home: the mothership's in-voice orbit line, painted plainly across the top
+        // (the #324 HUD-visibility law). Null when the excursion carries no orbit risk. Severity colours
+        // it: 0 calm teal (steady), 1 amber (slipping), 2 red (failing / lost) — the maroon, never silent.
+        string? OrbitComms = null,
+        int OrbitSeverity = 0);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -303,6 +308,20 @@ public sealed class DeckView
         if (surface is { } nHud)
         {
             DrawNerveGauge(simTime, nHud);
+        }
+
+        // #327 the ship calls home: the mothership's orbit line, painted plainly across the TOP-CENTRE —
+        // the one channel the owner's Miranda maroon never had. Never buried (the #324 visibility law):
+        // calm teal while it holds, amber as it slips, a pulsing red for the last call and the maroon.
+        if (surface is { OrbitComms: { Length: > 0 } orbitLine } oHud)
+        {
+            RgbaColor color = oHud.OrbitSeverity switch
+            {
+                >= 2 => new RgbaColor(255, 90, 70, (byte)(170 + 85 * (0.5 + 0.5 * Math.Sin(simTime * 4.0)))),
+                1 => new RgbaColor(255, 190, 100, 235),
+                _ => new RgbaColor(130, 225, 205, 220),
+            };
+            _renderer.DrawText(widthPx / 2f, 20, orbitLine, color, "13px monospace", TextAlign.Center);
         }
 
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or

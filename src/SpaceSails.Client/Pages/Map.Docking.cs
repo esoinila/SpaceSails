@@ -398,6 +398,25 @@ public partial class Map
         await BeginSurfaceExcursion(stop, chest, _boardBots); // #314: bring the loaded sentries down too
     }
 
+    // #327 the quote before you board DOWN: the ship states its hold honestly from the live tank — "can
+    // hold this orbit ~N on the tank" — so boarding down with a short clock is the captain's INFORMED
+    // choice (the owner's Miranda maroon, warned instead of silent). A ship riding a berth carries no
+    // orbit risk; a kept orbit quotes pulses ÷ the Lab-25 trim rate; an unkept one says so plainly.
+    private string BoardingHoldQuote()
+    {
+        if (_dockedHavenId is not null)
+        {
+            return "🛰 the ship rides the berth — safe while you're down.";
+        }
+        double hold = _orbitKept ? OrbitHold.HoldSeconds(_reactionMassPulses, _keepTrimPulsesPerDay) : 0;
+        return OrbitHold.BoardingQuote(_orbitKept, hold);
+    }
+
+    // #327: how loudly the boarding panel paints the hold quote — red when the ship isn't holding this
+    // orbit (it will drift), calm when it's berthed or truly holding. The captain sees the risk before
+    // committing to the walk down.
+    private int BoardingHoldSeverity() => _dockedHavenId is null && !_orbitKept ? 2 : 0;
+
     // Take the shuttle to a berth in range — the door is the flight. Only interior station havens (μ≤0,
     // clampable) are ever pickable, so arriving reuses the clamp-and-go-ashore path: advance the clock
     // by the crossing, clamp at the destination, weld on its walkable complex, and step off in the hall.

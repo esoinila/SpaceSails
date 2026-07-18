@@ -632,6 +632,11 @@
                     }
                 </div>
             </div>
+            @* #327 the ship calls home: the hold quote before you commit to the walk down. In-voice, from
+               the live tank — a short clock is the captain's informed choice, never a silent maroon. *@
+            <div class="bury-row @(BoardingHoldSeverity() >= 2 ? "text-danger" : "text-info")">
+                <span>@BoardingHoldQuote()</span>
+            </div>
             <div class="deck-shuttle-actions">
                 <button type="button" class="btn btn-sm btn-warning" disabled="@(_boardCoin <= 0 && _cargoUnits <= 0)"
                         title="Board with a chest loaded — you can bury it on the ground, or bring it home unspent"
