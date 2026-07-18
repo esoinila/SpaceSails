@@ -43,9 +43,10 @@ public static class MoonSurface
     public const float MonolithX = -6f;
     public const float MonolithY = -70f;
 
-    /// <summary>Where a NEW chest goes into the ground — deep by the monolith, the commitment spot.</summary>
-    public const float DigFieldX = MonolithX + 8f;
-    public const float DigFieldY = MonolithY + 4f;
+    /// <summary>Where a NEW chest goes into the ground — deep by the monolith (open floor to its port,
+    /// clear of the maze spurs), the commitment spot: a long walk out, a worse sprint back.</summary>
+    public const float DigFieldX = MonolithX - 5f;
+    public const float DigFieldY = MonolithY;
 
     /// <summary>The crew-only threshold (owner): Old Ones are penned on the surface at the tube mouth and
     /// can never climb it — the door won't open to them. Fed to <c>ReeverChase.Step</c>.</summary>
@@ -130,10 +131,11 @@ public static class MoonSurface
         var consoles = new List<DeckPlan.ConsoleSpot>(
             ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock))
         {
-            // The way home: board the shuttle at the tube mouth (kept clear of the tube walls). Always here.
-            new(DeckPlan.ConsoleKind.SurfaceAirlock, TubeCenterX, LandingBandY + 1.5f, "🛸 BOARD THE SHUTTLE"),
-            // The lonely automated kiosk — a PLACE has amenities (owner addendum 2). Last restocked before the war.
-            new(DeckPlan.ConsoleKind.Kiosk, SurfaceLeftX + 6, LandingBandY, "🛒 SOUVENIR KIOSK"),
+            // The way home: board the shuttle just off the tube mouth (kept clear of the tube walls). Always here.
+            new(DeckPlan.ConsoleKind.SurfaceAirlock, TubeCenterX + 3.5f, SurfaceTopY - 2.5f, "🛸 BOARD THE SHUTTLE"),
+            // The lonely automated kiosk — a PLACE has amenities (owner addendum 2). Near the landing, port
+            // of the tube. Last restocked before the war.
+            new(DeckPlan.ConsoleKind.Kiosk, TubeCenterX - 9f, LandingBandY, "🛒 SOUVENIR KIOSK"),
         };
 
         // The ⛏ dig site only exists when there is a reason to dig — a chest in cargo to bury (deep, by
