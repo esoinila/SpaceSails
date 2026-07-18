@@ -185,6 +185,22 @@ public class OrbitHoldTests
         Assert.Contains("for free", q);
     }
 
+    // ── #331 follow-up: docked means the station keeps the orbit, no fuel spent ──
+
+    [Fact]
+    public void DockedComms_SaysNoFuelSpent_NotACountdown()
+    {
+        // Owner ruling: docked at a station, its mass holds the orbit for us. The line must say that
+        // plainly — no "min"/"h"/"days" countdown, no misleading "∞" — a calm, explicit reassurance.
+        string line = OrbitHold.DockedComms;
+        Assert.False(string.IsNullOrWhiteSpace(line));
+        Assert.Contains("docked", line);
+        Assert.Contains("no fuel", line);
+        Assert.DoesNotContain("min", line);
+        Assert.DoesNotContain("∞", line);
+        Assert.DoesNotContain("indefinitely", line);
+    }
+
     // ── The humaniser reads honestly across scales ──
 
     [Theory]

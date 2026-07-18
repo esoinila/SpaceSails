@@ -67,13 +67,21 @@ public partial class Map
     // #327: the in-voice orbit line the surface HUD shows — the ship calling down as its hold erodes. The
     // owner's Miranda maroon was LOVED as story; the SILENCE was the bug. While the shuttle is down and
     // the mothership floats FREE (a moon is no dockable berth), the ship reports its hold every tick:
-    // steady → slipping → failing → lost, never buried. Null when the excursion carries no orbit risk —
-    // off-surface, or the mothership is clamped safe at a berth (HoldAtDock pins it; nothing to lose).
+    // steady → slipping → failing → lost, never buried. Null only OFF-surface; on an excursion it always
+    // speaks. A docked ship gets its own calm line (#331 follow-up) — the station holds it, no fuel spent
+    // — instead of a hold countdown, and the ladder can never fire (this returns before any StageFor).
     private (string Line, int Severity)? SurfaceOrbitComms()
     {
-        if (_surface is null || _dockedHavenId is not null)
+        if (_surface is null)
         {
-            return null; // not on a surface, or the ship rides a berth — no orbit to strip
+            return null; // not on a surface — nothing to report
+        }
+
+        if (_dockedHavenId is not null)
+        {
+            // Owner ruling (#331 follow-up): docked at a station, its mass holds the orbit for us — no
+            // fuel spent, no hold to count down. Say so plainly rather than a countdown or a false "∞".
+            return (OrbitHold.DockedComms, 0);
         }
 
         if (_orbitKept)

@@ -406,7 +406,7 @@ public partial class Map
     {
         if (_dockedHavenId is not null)
         {
-            return "🛰 the ship rides the berth — safe while you're down.";
+            return OrbitHold.DockedComms; // #331 follow-up: the station holds it, no fuel spent on keeping
         }
         double hold = _orbitKept ? OrbitHold.HoldSeconds(_reactionMassPulses, _keepTrimPulsesPerDay) : 0;
         return OrbitHold.BoardingQuote(_orbitKept, hold);
