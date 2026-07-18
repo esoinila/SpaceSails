@@ -59,6 +59,12 @@ public partial class Map
     private bool _started;
     private bool _worldReady;
 
+    // #318 false-hang follow-up: the coarse boot phase the loading door shows RIGHT NOW. The world build
+    // runs a few seconds of synchronous planning (traffic generation) which, on the ~100×-slower dev
+    // (Debug WASM) bundle, reads as a frozen tab if nothing paints. Each phase sets this then yields so
+    // the door animates its own progress and the tab stays responsive, instead of a silent block.
+    private string? _bootPhase;
+
     private int _viewportWidth = 1280;
     private int _viewportHeight = 800;
 
@@ -160,6 +166,18 @@ public partial class Map
     private Vector2d _nearestBodyPosition;
     private Vector2d _nearestBodyVelocity;
     private ElementReference _focusableDiv;
+
+    // #318 false-hang follow-up: announce a coarse boot phase and hand the frame back to the browser so
+    // the queued render actually paints before the next synchronous planning block. Task.Delay(1) (vs a
+    // bare Task.Yield) reliably parks on a browser timer, giving the compositor a chance to flush the
+    // loading door — the animated ⚙ gear keeps turning on its own (CSS, compositor thread), the phase
+    // text updates, and the tab never reads as a dead freeze even when the block runs long on Debug WASM.
+    private async Task BootPhaseAsync(string phase)
+    {
+        _bootPhase = phase;
+        StateHasChanged();
+        await Task.Delay(1);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -402,11 +420,15 @@ public partial class Map
         }
 
         // Generate traffic once from the same deterministic Core planner the server uses. This does a
-        // few seconds of planning work; yield first so the initial (empty) map paints and stays
-        // responsive, then build the NPC live-state wrappers.
-        await Task.Yield();
+        // few seconds of planning work — and each coarse step (pods / freighters / depots / mass-driver
+        // pods) is its own synchronous block. #318 follow-up: paint an honest phase line and yield to the
+        // browser BEFORE each block, so the loading door shows progress and the tab stays paintable
+        // instead of one silent multi-second freeze (badly amplified on the Debug/dev bundle). We do NOT
+        // parallelise or restructure the planners — just phase-yield around them.
         // Pods first so "the Luna pod" is the top of the board and the obvious tutorial prey.
+        await BootPhaseAsync("plotting the traffic lanes — pods…");
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris, seed: 43, count: 3);
+        await BootPhaseAsync("plotting the traffic lanes — freighters…");
         IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris, seed: 42, count: 8);
         // The derelict roadster is a dead wreck, not a trading post — it's a station body only so its
         // map label reads at a sane zoom (the fetch-mission target). Drop the depot GenerateDepots
@@ -414,6 +436,7 @@ public partial class Map
         // A depot on a hidden body would leak it (the depot marker/menu would give the wreck away).
         // Filter generically on hidden+unrevealed, not the wreck's id — every future secret body is
         // covered for free (Tuesday plan PR-A).
+        await BootPhaseAsync("plotting the traffic lanes — supply depots…");
         IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(_ephemeris, seed: 44)
             .Where(d => d.DepotBodyId is null || !IsBodyHidden(d.DepotBodyId)).ToList();
 
@@ -429,6 +452,7 @@ public partial class Map
             // toward the inner system, half already in flight at world-load, so the "Luna's mass
             // drivers lobbing compute-core pods" the scenario description promises is literally on the
             // map as tiny moving objects. Zero maneuver budget, empty plan — they coast their conic.
+            await BootPhaseAsync("plotting the traffic lanes — Luna's mass drivers…");
             IReadOnlyList<NpcShip> lunaDriver = MassDriverSchedule.GenerateCadence(
                 _ephemeris, MassDriverSchedule.MassDriverRun.LunaMilkRun(), baseSimTime: _ship.SimTime, count: 4);
 

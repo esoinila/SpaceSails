@@ -29,6 +29,13 @@ public partial class Map
 
     private const int MaxSurfaceReevers = ReeverRaid.MaxReevers; // buffer: 3 crew + 6 ≤ MaxDroids(10)
 
+    // #318 false-hang follow-up: per-frame ceilings for the linger trickle. The step delta is clamped to
+    // MaxSurfaceStepSeconds (the same 0.1 s cap StepReevers uses) so a background-tab resume can't hand a
+    // multi-second delta into the wake accumulator, and at most MaxLingerWakesPerFrame wake-checks run in
+    // any one frame — a hard guard so the loop can never spin the frame (see ReeverRaid.LingerTicksDue).
+    private const double MaxSurfaceStepSeconds = 0.1;
+    private const int MaxLingerWakesPerFrame = 8;
+
     // #317 · The nerve gauge (first slice of #226's Fail Forward sanity). The captain's nerve, 0..100:
     // full = steady hands, empty = nerves shot. Drains from the regolith's stressors, eases off aboard,
     // and — unlike Reever positions — PERSISTS in the vault (a captain who fled shaking is still shaking
@@ -50,6 +57,11 @@ public partial class Map
     private readonly List<Reever> _reevers = [];
     private double _lastReeverCatchMs;
     private double? _lastNearestReeverRange; // for the tracker's closing/drifting read
+
+    // #318 false-hang follow-up: true while the tube + wide-surface plan welds on after 'Board' — the
+    // brief synchronous build the loading-style descent door covers (a flying 🛸), so a slow build reads
+    // as the shuttle ride, not a frozen click. See BeginSurfaceExcursion.
+    private bool _shuttleDescending;
 
     // #314: the ship's sentry roster — the two real boarding troopers (K-77, R-3B), each with a 99-round
     // magazine that survives a berth-to-berth save (Map.Vault). Full on a fresh ship; drained by use,
@@ -123,7 +135,7 @@ public partial class Map
     // surface. The chest is optional cargo already packed by the boarding panel; boarding empty-handed
     // is a complete, valid sightseeing hop. NO teleport: the captain keeps standing at the bay and the
     // down-tube + surface weld on below, so they walk down continuously.
-    private void BeginSurfaceExcursion(ShuttleStop stop, ShuttleExcursion.ChestLoad chest, int botsToBring = 0)
+    private async Task BeginSurfaceExcursion(ShuttleStop stop, ShuttleExcursion.ChestLoad chest, int botsToBring = 0)
     {
         if (_ephemeris is null)
         {
@@ -131,6 +143,14 @@ public partial class Map
         }
         _boardTarget = null;
         _shuttleBayStops = null;
+
+        // #318 follow-up: the tube + wide-surface plan build below is synchronous (small on Release,
+        // amplified on the Debug bundle). Raise the honest 'shuttle descending…' door — a 🛸 flying on a
+        // compositor-thread CSS animation — and let it PAINT before the block, so a slow build reads as
+        // the ride down, not a frozen click. Dropped once the surface is welded on and walkable.
+        _shuttleDescending = true;
+        StateHasChanged();
+        await Task.Delay(1);
 
         AdvanceShuttleClock(stop.TravelSeconds); // the flight down (abstracted by the tube) costs the clock
 
@@ -161,6 +181,7 @@ public partial class Map
         _deckMode = true;
         _activeDesk = ShipDesk.Deck;
         _deckPanX = _deckPanY = 0;
+        _shuttleDescending = false; // the surface is welded on and walkable — drop the descent door
         RendererInterop.PlayCue("board");
         string load = chest.IsEmpty
             ? "No chest loaded — a look around, nothing to declare."
@@ -747,9 +768,14 @@ public partial class Map
         {
             return;
         }
-        ex.LingerSeconds += dtRealSeconds;
-        int dueTicks = (int)(ex.LingerSeconds / ReeverRaid.LingerTickSeconds);
-        while (ex.LingerTicks < dueTicks && _reevers.Count < MaxSurfaceReevers)
+        // #318 false-hang follow-up: clamp the frame delta before it feeds an accumulator + loop. A tab
+        // resumed from the background (rAF suspended) can hand us a delta of many seconds; StepReevers
+        // already caps its own step at MaxSurfaceStepSeconds for the same reason. Then advance at most a
+        // small, fixed number of wake-checks this frame (ReeverRaid.LingerTicksDue caps it) — the honest
+        // fallback is to catch any backlog up over the next few frames, never spin one frame.
+        ex.LingerSeconds += Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds);
+        int advance = ReeverRaid.LingerTicksDue(ex.LingerSeconds, ex.LingerTicks, MaxLingerWakesPerFrame);
+        for (int i = 0; i < advance && _reevers.Count < MaxSurfaceReevers; i++)
         {
             ex.LingerTicks++;
             if (ReeverRaid.WakesOnLingerTick(ex.ThreatSeed, ex.LingerTicks))

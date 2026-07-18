@@ -376,7 +376,7 @@ public partial class Map
 
     // Land: pack whatever (if anything) was loaded and grow the tube in place. The hold rides as cargo
     // and only leaves the ship's books if it actually goes into the ground at a dig.
-    private void ConfirmBoarding(ShuttleStop stop, bool withChest)
+    private async Task ConfirmBoarding(ShuttleStop stop, bool withChest)
     {
         var hold = withChest
             ? _cargoByClass.Where(kv => kv.Value > 0)
@@ -386,7 +386,7 @@ public partial class Map
         ShuttleExcursion.ChestLoad chest = withChest
             ? ShuttleExcursion.Pack(_boardCoin, _credits, hold)
             : ShuttleExcursion.Pack(0, _credits, []);
-        BeginSurfaceExcursion(stop, chest, _boardBots); // #314: bring the loaded sentries down too
+        await BeginSurfaceExcursion(stop, chest, _boardBots); // #314: bring the loaded sentries down too
     }
 
     // Take the shuttle to a berth in range — the door is the flight. Only interior station havens (μ≤0,
