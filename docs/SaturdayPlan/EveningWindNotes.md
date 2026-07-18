@@ -75,6 +75,19 @@ longer. Every mechanic below serves that clock.
     `HavenInterior.cs`) — that assumption yields to per-image coordinates wherever it's wrong.
     Runs as its **own Opus branch**: check every bar, reposition each.
 
+### The nerve gauge (sanity — #226 Fail Forward, on the #317 first slice)
+18. **Don't drain the nerve too fast on sightings** — diminishing returns (owner: "seeing one
+    reever after already seeing one more does not make you that much faster more nuts"). The
+    first contact of a watch is the shock; the rest of the pack stacks only a sliver each. *(In
+    today's playtest one dig took the captain from steady hands to nerves shot — too steep.)*
+19. **"If they get to skin, that is a different thing"** — actual Reever contact is the big,
+    undiminished hit. Sightings fray; touch breaks.
+20. **The overdraw rule**: nerve already empty + more sanity damage → the captain **goes crazy
+    and dramatically exits the scene**, and **the piracy insurance issues a new captain** :-D.
+    Fail Forward, not game over — the run continues under a fresh name; the ledger, the ship and
+    the hoards persist. (Ropecon Fail Forward/sanity system is the canonical source for the
+    shape of this.)
+
 ## Implementation queue (owner: "let's get coding", 2026-07-18)
 
 - **Lane 1 — the tide + the instrument column** (#1–#4, #14–#15): endless deep-edge spawner,
@@ -82,7 +95,7 @@ longer. Every mechanic below serves that clock.
 - **Lane 2 — the bar-keep audit** (#16–#17): per-image service positions across all four bars.
   Separate Opus branch.
 - Later lanes (beach-comber kit + fishing expeditions #5–#9, the round ground #10, bot crew
-  #11–#13) queue behind these.
+  #11–#13, nerve tuning + the insurance captain #18–#20) queue behind these.
 - **Miranda is the prototype ground** (owner: "main focus on Miranda and shuttle treasure
   fixings … let's prototype on Miranda, because those reevers :-D"). More shuttle destinations
   come AFTER the loop sings here — one haunted moon teaches us faster than five quiet ones.
