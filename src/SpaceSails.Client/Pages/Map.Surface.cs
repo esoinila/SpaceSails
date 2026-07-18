@@ -58,6 +58,40 @@ public partial class Map
     private double _lastReeverCatchMs;
     private double? _lastNearestReeverRange; // for the tracker's closing/drifting read
 
+    // #327 the ship calls home: the mothership's station-keeping hold (sim-seconds) at the moment the
+    // captain boarded DOWN — the reference the escalating ladder measures against (OrbitHold). Positive
+    // = boarded with a real kept-orbit hold; 0 = boarded onto an orbit no one is keeping (a standing red
+    // on the surface). Set in BeginSurfaceExcursion, read by SurfaceOrbitComms.
+    private double _orbitHoldAtBoarding;
+
+    // #327: the in-voice orbit line the surface HUD shows — the ship calling down as its hold erodes. The
+    // owner's Miranda maroon was LOVED as story; the SILENCE was the bug. While the shuttle is down and
+    // the mothership floats FREE (a moon is no dockable berth), the ship reports its hold every tick:
+    // steady → slipping → failing → lost, never buried. Null when the excursion carries no orbit risk —
+    // off-surface, or the mothership is clamped safe at a berth (HoldAtDock pins it; nothing to lose).
+    private (string Line, int Severity)? SurfaceOrbitComms()
+    {
+        if (_surface is null || _dockedHavenId is not null)
+        {
+            return null; // not on a surface, or the ship rides a berth — no orbit to strip
+        }
+
+        if (_orbitKept)
+        {
+            double remaining = OrbitHold.HoldSeconds(_reactionMassPulses, _keepTrimPulsesPerDay);
+            double boarding = _orbitHoldAtBoarding > 0 ? _orbitHoldAtBoarding : remaining;
+            OrbitHold.Stage stage = OrbitHold.StageFor(remaining, boarding);
+            return (OrbitHold.Comms(stage, remaining), OrbitHold.Severity(stage));
+        }
+
+        // Not keeping. If we boarded WITH a hold, the keeper has since given up (the tank ran dry, a loud
+        // handback) — the orbit is degrading: the maroon, announced. If we never had a hold, no one was
+        // ever trimming it — a standing red the whole excursion. Either way, loud, never silent.
+        return _orbitHoldAtBoarding > 0
+            ? (OrbitHold.Comms(OrbitHold.Stage.Lost, 0), OrbitHold.Severity(OrbitHold.Stage.Lost))
+            : (OrbitHold.NotHoldingComms, 2);
+    }
+
     // #318 false-hang follow-up: true while the tube + wide-surface plan welds on after 'Board' — the
     // brief synchronous build the loading-style descent door covers (a flying 🛸), so a slow build reads
     // as the shuttle ride, not a frozen click. See BeginSurfaceExcursion.
@@ -182,6 +216,14 @@ public partial class Map
         _surface = excursion;
         _reevers.Clear();
         _lastNearestReeverRange = null;
+
+        // #327: snapshot the mothership's hold at the moment of boarding DOWN — the reference the surface
+        // ladder erodes against. A kept orbit quotes pulses ÷ Lab-25 trim rate; an unkept one is 0 (the
+        // surface then flies a standing "not holding" red). A berthed ship carries no orbit risk (0 too;
+        // SurfaceOrbitComms gates it out by _dockedHavenId anyway).
+        _orbitHoldAtBoarding = _orbitKept && _dockedHavenId is null
+            ? OrbitHold.HoldSeconds(_reactionMassPulses, _keepTrimPulsesPerDay)
+            : 0;
 
         RebuildSurfaceDeck();
         _deckMode = true;
@@ -958,6 +1000,8 @@ public partial class Map
             .ToList();
         var husks = ex.Husks.Select(h => (h.X, h.Y)).ToList();
 
+        (string Line, int Severity)? orbit = SurfaceOrbitComms(); // #327: the ship calling home
+
         return new DeckView.SurfaceHud(
             DigProgress: ex.Channel?.Progress ?? -1,
             SiteX: MoonSurface.DigFieldX, SiteY: MoonSurface.DigFieldY,
@@ -970,7 +1014,9 @@ public partial class Map
             NerveReadout: NerveModel.Readout(_nerve),
             Bots: bots,
             Husks: husks,
-            KeyHints: BuildSurfaceKeyHints(ex));
+            KeyHints: BuildSurfaceKeyHints(ex),
+            OrbitComms: orbit?.Line,          // #327: the ship's calling-home line, never buried
+            OrbitSeverity: orbit?.Severity ?? 0);
     }
 
     // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
