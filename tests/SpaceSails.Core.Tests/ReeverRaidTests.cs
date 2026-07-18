@@ -51,12 +51,12 @@ public class ReeverRaidTests
     [Theory]
     [InlineData(2, 0)]
     [InlineData(6, 0)]
-    [InlineData(7, 1)]
-    [InlineData(8, 1)]
-    [InlineData(9, 2)]
-    [InlineData(10, 2)]
-    [InlineData(11, 3)]
-    [InlineData(12, 3)]
+    [InlineData(7, 2)]
+    [InlineData(8, 2)]
+    [InlineData(9, 4)]
+    [InlineData(10, 4)]
+    [InlineData(11, 6)]
+    [InlineData(12, 6)]
     public void ReeversFor_FollowsTheWatchdogBands(int total, int expected)
     {
         Assert.Equal(expected, ReeverRaid.ReeversFor(total));
@@ -99,9 +99,27 @@ public class ReeverRaidTests
         }
 
         Assert.Contains(0, seen);
-        Assert.Contains(1, seen);
         Assert.Contains(2, seen);
-        Assert.Contains(3, seen);
+        Assert.Contains(4, seen);
+        Assert.Contains(6, seen);
+    }
+
+    [Fact]
+    public void LingerWake_IsDeterministic_AndTrendsUpOverTicks()
+    {
+        // Deterministic per (seed, tick): the same excursion replays the same trickle.
+        for (int t = 1; t <= 20; t++)
+        {
+            Assert.Equal(ReeverRaid.WakesOnLingerTick(7777, t), ReeverRaid.WakesOnLingerTick(7777, t));
+        }
+
+        // Over many ticks a fair share wake — lingering really does thicken the net (but never every tick).
+        int wakes = 0;
+        for (int t = 1; t <= 300; t++)
+        {
+            if (ReeverRaid.WakesOnLingerTick(31337, t)) wakes++;
+        }
+        Assert.InRange(wakes, 60, 240); // ~1/3 cadence, never a guaranteed flood nor silence
     }
 
     // ── The crew-only door law (ReeverChase) ──
