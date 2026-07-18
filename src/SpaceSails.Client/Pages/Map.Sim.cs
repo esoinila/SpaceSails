@@ -1128,7 +1128,12 @@ public partial class Map
                 _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
                     _avatarX, _avatarY, _avatarHeading,
                     _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
-                    Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId)),
+                    Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
+                    // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
+                    // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
+                    // stays gauge-free by construction.)
+                    Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
+                    ShowNerve: true, NerveCompact: _surface is null),
                     _deckPanX, _deckPanY, BuildSurfaceHud());
             }
 
@@ -1426,7 +1431,15 @@ public partial class Map
         // range/number fields), so typing into them never reaches this handler at all.
         if (e.Key.Length == 1 && e.Key[0] is >= '1' and <= '7')
         {
-            SwitchDesk((ShipDesk)(e.Key[0] - '0'));
+            var deskKey = (ShipDesk)(e.Key[0] - '0');
+            // #330: ashore, a desk shortcut can't silently yank the captain off the regolith — the desks
+            // are a tube ride up. Deck (7) is where they already stand, so it stays a no-op switch.
+            if (_surface is not null && deskKey != ShipDesk.Deck)
+            {
+                ShowPulseMessage("🧭 The nav desk is a tube ride away, captain — board the shuttle to get back to it.");
+                return;
+            }
+            SwitchDesk(deskKey);
             return;
         }
 
@@ -1434,13 +1447,23 @@ public partial class Map
         // mid-deck-walk, checked before HandleDeckKey/the pulse switch).
         if (e.Key == "0")
         {
+            if (_surface is not null)
+            {
+                ShowPulseMessage("🧭 The captain's desk is a tube ride away — board the shuttle first.");
+                return;
+            }
             SwitchDesk(ShipDesk.Captain);
             return;
         }
 
         if (e.Key == "Escape")
         {
-            SwitchDesk(ShipDesk.Nav);
+            // Ashore, Escape doesn't switch desks (that would leave the surface silently) — let it fall
+            // through to nothing rather than yanking the captain up the tube.
+            if (_surface is null)
+            {
+                SwitchDesk(ShipDesk.Nav);
+            }
             return;
         }
 

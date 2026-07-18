@@ -65,4 +65,49 @@ public class MotionTrackerTests
         Assert.Equal("movement — 12 du, drifting", MotionTracker.Readout(12.4, closing: false));
         Assert.Equal("no movement — for now", MotionTracker.Readout(null, closing: false));
     }
+
+    // ── #330 · the left-edge instrument column: the tracker seats under the SANITY plate, big, and
+    //    stays fully on-screen (shrinking rather than clipping on a small viewport). ──
+
+    private const double ColumnTop = 82.0;   // the SANITY plate's bottom + gap, as DeckView uses
+
+    [Fact]
+    public void TrackerAnchor_SeatsInTheLeftColumn_BelowTheSanityPlate()
+    {
+        (double cx, double cy) = MotionTracker.TrackerAnchor(1280, 800, radius: 116, ColumnTop);
+
+        // Left edge: the disc hugs the left inset, well left of centre.
+        Assert.True(cx < 1280 / 2.0, "the tracker must sit on the LEFT, not centre/right");
+        Assert.Equal(18 + 116 + 6, cx, 3);   // leftInset + radius + disc pad
+
+        // Below the plate: its caption (radius+18 above the centre) clears the column top.
+        Assert.True(cy - (116 + 18) >= ColumnTop - 1e-6, "the tracker must sit BELOW the SANITY plate");
+    }
+
+    [Fact]
+    public void TrackerAnchor_StaysInsideTheViewport_AtEverySize()
+    {
+        foreach ((int w, int h) in new[] { (1280, 800), (1024, 640), (768, 500), (480, 400), (360, 320) })
+        {
+            double r = MotionTracker.TrackerRadius(w, h, ColumnTop, desired: 116);
+            (double cx, double cy) = MotionTracker.TrackerAnchor(w, h, r, ColumnTop);
+
+            // The whole disc is within the viewport horizontally and vertically.
+            Assert.True(cx - r >= 0, $"disc runs off the left at {w}x{h}");
+            Assert.True(cx + r <= w, $"disc runs off the right at {w}x{h}");
+            Assert.True(cy - r >= 0, $"disc runs off the top at {w}x{h}");
+            Assert.True(cy + r <= h, $"disc runs off the bottom at {w}x{h}");
+        }
+    }
+
+    [Fact]
+    public void TrackerRadius_ShrinksOnSmallViewports_ButNeverBelowTheFloor_NorAboveDesired()
+    {
+        double big = MotionTracker.TrackerRadius(1280, 800, ColumnTop, desired: 116);
+        double small = MotionTracker.TrackerRadius(360, 320, ColumnTop, desired: 116);
+
+        Assert.Equal(116, big, 3);            // a roomy viewport gets the full desired size
+        Assert.True(small < big, "a small viewport must shrink the disc");
+        Assert.True(small >= 44, "but never collapse below the readable floor");
+    }
 }

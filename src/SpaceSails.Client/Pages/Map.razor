@@ -962,25 +962,30 @@
        never again hide a control (#123). *@
     <div class="map-topstack">
 
-    @* Station tab bar (StationDesks.md rule 3): always visible, top center, works on every desk —
-       the keyboard-shortcut equivalent for players who'd rather click. Captain (PR-15) leads the
-       bar with its `0` key, ahead of Nav's `1` — the captain's word comes before the helm's. *@
-    <div class="desk-tab-bar bg-dark bg-opacity-75 rounded p-1">
-        @foreach (ShipDesk desk in TabBarOrder)
-        {
-            <button type="button" class="btn btn-sm desk-tab @(_activeDesk == desk ? "btn-info" : "btn-outline-light")"
-                    title="Switch to the @DeskLabel(desk) desk"
-                    @onclick="() => SwitchDesk(desk)">
-                @DeskKeyLabel(desk) @DeskLabel(desk)
+    @* Station tab bar (StationDesks.md rule 3): visible aboard on every desk — the keyboard-shortcut
+       equivalent for players who'd rather click. Captain (PR-15) leads the bar with its `0` key, ahead
+       of Nav's `1`. #330 (owner: "Should the tile buttons even be there when we are not on the ship?"):
+       HIDDEN on a surface excursion — the captain is off-ship and the desks are a tube ride away. The
+       captain's link to the ship overhead is #327's orbit-comms line, painted across the excursion HUD. *@
+    @if (_surface is null)
+    {
+        <div class="desk-tab-bar bg-dark bg-opacity-75 rounded p-1">
+            @foreach (ShipDesk desk in TabBarOrder)
+            {
+                <button type="button" class="btn btn-sm desk-tab @(_activeDesk == desk ? "btn-info" : "btn-outline-light")"
+                        title="Switch to the @DeskLabel(desk) desk"
+                        @onclick="() => SwitchDesk(desk)">
+                    @DeskKeyLabel(desk) @DeskLabel(desk)
+                </button>
+            }
+            @* Owner request: temporarily clear every panel to read the map, and back. Toggles the
+               .map-peek class (CSS fades the overlays, click passes through to the canvas). Hotkey ` . *@
+            <button type="button" class="btn btn-sm desk-tab @(_peekMap ? "btn-warning" : "btn-outline-light")"
+                    title="Peek at the map — hide the panels (` toggles)" @onclick="TogglePeekMap">
+                @(_peekMap ? "👁 Show panels" : "👁 Peek")
             </button>
-        }
-        @* Owner request: temporarily clear every panel to read the map, and back. Toggles the
-           .map-peek class (CSS fades the overlays, click passes through to the canvas). Hotkey ` . *@
-        <button type="button" class="btn btn-sm desk-tab @(_peekMap ? "btn-warning" : "btn-outline-light")"
-                title="Peek at the map — hide the panels (` toggles)" @onclick="TogglePeekMap">
-            @(_peekMap ? "👁 Show panels" : "👁 Peek")
-        </button>
-    </div>
+        </div>
+    }
 
     @* #127 (owner ruling: "WHO IS FLYING THE SHIP must be big and unmissable" — he watched the
        autopilot fly him into Saturn thinking he had the stick). One persistent banner at the top of
@@ -2502,7 +2507,12 @@
         </div>
     }
 
-    <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDesk" />
+    @* #330: the right-side desk status-chip column is ship chrome — hidden on a surface excursion so the
+       captain's corners are the excursion's own instruments (SANITY + motion tracker), nothing else. *@
+    @if (_surface is null)
+    {
+        <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDesk" />
+    }
 
     @* #185: the completion fanfare. A finished contract is a CELEBRATION — who paid us, what for,
        the coin, the giver grateful in their own voice, and the parrot singing. The money is shown

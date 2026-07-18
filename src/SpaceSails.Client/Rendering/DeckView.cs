@@ -13,7 +13,12 @@ public sealed class DeckView
     public readonly record struct State(
         double AvatarX, double AvatarY, double HeadingRad,
         int CargoUnits, double Charge, bool ShuttleAway, bool ElectricUniverse,
-        bool Docked = false);
+        bool Docked = false,
+        // #330 (owner: "we could have the sanity meter visible when we walk around"): the nerve gauge
+        // rides EVERY walk mode — surface, haven/bar ashore, and aboard the ship (compact, a whisper) —
+        // but never flight (the map view has its own instruments and never draws a DeckView). ShowNerve
+        // gates it; NerveCompact draws the subtler aboard size that must clear the deck chrome.
+        double Nerve = 0, string NerveReadout = "", bool ShowNerve = false, bool NerveCompact = false);
 
     /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
     /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan
@@ -302,12 +307,12 @@ public sealed class DeckView
             DrawMotionTracker(widthPx, heightPx, simTime, tHud);
         }
 
-        // #317 the nerve gauge: a crude deck-plan bar in the TOP-LEFT corner — the opposite corner from the
-        // motion tracker (which owns top-right), never over the grid (the dig-channel channel law). On-planet
-        // only: the SurfaceHud is null off-surface, so the ship draws none of it.
-        if (surface is { } nHud)
+        // #317/#330 the nerve gauge: a crude deck-plan bar in the TOP-LEFT column. On the surface it is the
+        // full-size head of the instrument column (the tracker seats beneath it); aboard the ship and in a
+        // haven it whispers (compact, tucked below the deck chrome). Shown in every walk mode, never flight.
+        if (state.ShowNerve)
         {
-            DrawNerveGauge(simTime, nHud);
+            DrawNerveGauge(simTime, state.Nerve, state.NerveReadout, state.NerveCompact);
         }
 
         // #327 the ship calls home: the mothership's orbit line, painted plainly across the TOP-CENTRE —
@@ -349,23 +354,35 @@ public sealed class DeckView
     private static readonly RgbaColor TrackerRing = new(120, 200, 150, 150);
     private static readonly RgbaColor TrackerBlip = new(120, 255, 160, 230);
 
+    // #330 · Where the left-edge instrument column begins under the SANITY plate (its base bottom ≈ 70px
+    // + a small consistent gap). The tracker's centre sits directly below this — one honest column.
+    private const double SanityColumnTop = 82.0;
+    private const double TrackerDesiredRadius = 116.0;   // owner: "make the motion meter bigger" — the ~115 class
+
     private void DrawMotionTracker(int widthPx, int heightPx, double simTime, in SurfaceHud hud)
     {
-        _ = heightPx;
-        // #324 (owner: "the motion tracker is too small"): the star instrument of the excursion, sized to
-        // read blips at a glance from mid-grid. Nearly doubled, inset from the top-right so no chrome
-        // buries it, on an opaque dark disc so it never washes out over the regolith.
-        float r = 78f;
-        float cx = widthPx - r - 24f, cy = r + 34f;
+        // #324/#330 (owner: "make the motion meter bigger and visible… put the motion under the sanity
+        // meter"): the excursion's star instrument, big enough to read at a glance, seated in the top-left
+        // column directly beneath the SANITY plate on an opaque disc. It SHRINKS proportionally on a small
+        // viewport rather than clipping, and the ship-desk chrome is hidden on-surface so nothing buries it.
+        float r = (float)MotionTracker.TrackerRadius(widthPx, heightPx, SanityColumnTop, TrackerDesiredRadius);
+        (double acx, double acy) = MotionTracker.TrackerAnchor(widthPx, heightPx, r, SanityColumnTop);
+        float cx = (float)acx, cy = (float)acy;
 
-        // The graph-paper fan: an opaque backing disc, two rings + crosshair.
-        _renderer.DrawCircle(cx, cy, r + 6f, new RgbaColor(6, 11, 10, 235), TrackerRing, 1f);
+        // Sizes scale with the disc so a shrunk tracker stays legible and a big one reads across the map.
+        float labelPx = (float)Math.Clamp(r * 0.13, 10, 15);
+        float readoutPx = (float)Math.Clamp(r * 0.11, 9, 13);
+        float blipNear = (float)Math.Max(3.6, r * 0.055);
+        float blipFar = (float)Math.Max(2.8, r * 0.042);
+
+        // The graph-paper fan: an opaque backing disc, three rings + crosshair.
+        _renderer.DrawCircle(cx, cy, r + 6f, new RgbaColor(6, 11, 10, 238), TrackerRing, 1f);
         _renderer.DrawCircle(cx, cy, r, null, TrackerRing, 1.75f);
         _renderer.DrawCircle(cx, cy, r * 0.66f, null, new RgbaColor(120, 200, 150, 85), 1f);
         _renderer.DrawCircle(cx, cy, r * 0.33f, null, new RgbaColor(120, 200, 150, 70), 1f);
         DrawSeg((cx - r, cy), (cx + r, cy), new RgbaColor(120, 200, 150, 70), 1f);
         DrawSeg((cx, cy - r), (cx, cy + r), new RgbaColor(120, 200, 150, 70), 1f);
-        _renderer.DrawText(cx, cy - r - 8, "MOTION TRACKER", TrackerRing, "bold 11px monospace", TextAlign.Center);
+        _renderer.DrawText(cx, cy - r - 8, "MOTION TRACKER", TrackerRing, $"bold {labelPx:0}px monospace", TextAlign.Center);
 
         // Cadence → blink phase. Silent(0) steady, up to Imminent(3) frantic.
         double hz = hud.Cadence switch { 3 => 6.0, 2 => 3.0, 1 => 1.3, _ => 0.0 };
@@ -379,10 +396,10 @@ public sealed class DeckView
             float bx = cx + (float)(Math.Cos(bearing) * rr);
             float by = cy - (float)(Math.Sin(bearing) * rr);
             var col = on ? TrackerBlip : new RgbaColor(120, 255, 160, 90);
-            _renderer.DrawCircle(bx, by, range > maxRange ? 3.4f : 4.6f, col, col);
+            _renderer.DrawCircle(bx, by, range > maxRange ? blipFar : blipNear, col, col);
         }
 
-        _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, "10px monospace", TextAlign.Center);
+        _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, $"{readoutPx:0}px monospace", TextAlign.Center);
     }
 
     // #317 the nerve gauge (top-left, screen-space): a crude deck-plan bar — full teal = steady hands,
@@ -390,10 +407,10 @@ public sealed class DeckView
     // harder the lower the nerve falls (the "tremor in the glyph" the flavor ladder names), and a house-voice
     // line reads out beneath it. Display-only — this slice never rolls, exits, or ends a run (#226 owns that).
     private static readonly RgbaColor NerveFrame = new(150, 170, 190, 175);
-    private void DrawNerveGauge(double simTime, in SurfaceHud hud)
+    private void DrawNerveGauge(double simTime, double nerve, string readout, bool compact)
     {
-        double frac = NerveModel.Fraction(hud.Nerve);
-        NerveModel.NerveBand band = NerveModel.BandFor(hud.Nerve);
+        double frac = NerveModel.Fraction(nerve);
+        NerveModel.NerveBand band = NerveModel.BandFor(nerve);
         RgbaColor fill = band switch
         {
             NerveModel.NerveBand.Steady => new RgbaColor(120, 220, 170, 235),
@@ -408,13 +425,18 @@ public sealed class DeckView
         float jx = (float)(Math.Sin(simTime * 0.02) * tremor * tremor * 3.0);
         float jy = (float)(Math.Cos(simTime * 0.017) * tremor * tremor * 2.0);
 
-        // #324 (owner: "let's make sanity visible :-D"): a big, plainly-labelled corner gauge on its own
-        // dark plate — sits below the first-person toggle (moved aside on-surface) so nothing buries it.
-        float x0 = 18f + jx, y0 = 30f + jy;
-        const float w = 210f, h = 18f;
+        // #324/#330 (owner: "let's make sanity visible :-D … even on the ship bar also"): a plainly-labelled
+        // top-left gauge on its own dark plate. Full-size on the regolith where the FP toggle steps aside;
+        // COMPACT aboard/ashore, tucked below the deck chrome (the top-left first-person toggle) so it
+        // whispers without colliding.
+        float w = compact ? 150f : 210f;
+        float h = compact ? 13f : 18f;
+        float labelPx = compact ? 9f : 11f;
+        float baseY = compact ? 112f : 30f;   // aboard: clear below the top-left FP toggle; surface: column head
+        float x0 = 18f + jx, y0 = baseY + jy;
 
         FillRect(x0 - 8f, y0 - 20f, w + 16f, h + 42f, new RgbaColor(6, 11, 10, 205));  // the backing plate
-        _renderer.DrawText(x0, y0 - 6, "SANITY", NerveFrame, "bold 11px monospace", TextAlign.Left);
+        _renderer.DrawText(x0, y0 - 6, "SANITY", NerveFrame, $"bold {labelPx:0}px monospace", TextAlign.Left);
         FillRect(x0, y0, w, h, new RgbaColor(14, 18, 24, 220));           // the empty channel
         FillRect(x0, y0, w * (float)frac, h, fill);                       // the fill
         for (int i = 1; i < 5; i++)                                       // crude deck-plan segments
@@ -423,7 +445,7 @@ public sealed class DeckView
             DrawSeg((tx, y0), (tx, y0 + h), new RgbaColor(10, 14, 20, 160), 1f);
         }
         DrawRectOutline(x0, y0, w, h, NerveFrame);                        // the frame
-        _renderer.DrawText(x0, y0 + h + 13, hud.NerveReadout, fill, "11px monospace", TextAlign.Left);
+        _renderer.DrawText(x0, y0 + h + 13, readout, fill, $"{labelPx:0}px monospace", TextAlign.Left);
     }
 
     private void DrawRectOutline(float x, float y, float w, float h, RgbaColor color)
