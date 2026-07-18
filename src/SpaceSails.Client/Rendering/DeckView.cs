@@ -25,6 +25,7 @@ public sealed class DeckView
     private static readonly RgbaColor CrateColor = new(200, 160, 90, 220);
     private static readonly RgbaColor ShuttleColor = new(150, 210, 255, 220);
     private static readonly RgbaColor DroidColor = new(150, 160, 180);
+    private static readonly RgbaColor ReeverColor = new(230, 80, 70);   // #295: watchdog red
     private static readonly RgbaColor TextDim = new(140, 160, 180, 170);
     private static readonly RgbaColor DoorShut = new(255, 180, 90, 220);   // amber airlock door, closed
     private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
@@ -160,11 +161,14 @@ public sealed class DeckView
         {
             DeckPlan.Droid droid = _droids[di];
             (float dx, float dy) = P(droid.X, droid.Y);
-            _renderer.DrawCircle(dx, dy, 0.5f * scale, DroidColor, DroidColor);
+            // #295: the Reevers read hostile — a red mark, not the crew's grey.
+            bool reever = droid.Name == "Reever";
+            RgbaColor mark = reever ? ReeverColor : DroidColor;
+            _renderer.DrawCircle(dx, dy, (reever ? 0.6f : 0.5f) * scale, mark, mark);
             float fx = dx + (float)Math.Cos(droid.FacingRad) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(droid.FacingRad) * scale * 0.8f;
-            DrawSeg((dx, dy), (fx, fy), DroidColor, 1.5f);
-            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name, TextDim, "8px monospace", TextAlign.Center);
+            DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
+            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name, reever ? ReeverColor : TextDim, "8px monospace", TextAlign.Center);
         }
 
         // Consoles.

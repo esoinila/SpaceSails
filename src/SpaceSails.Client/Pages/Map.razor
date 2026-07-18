@@ -316,13 +316,13 @@
                                 @if (IsLandableForCache(local.Body))
                                 {
                                     <button type="button" class="btn btn-sm btn-outline-warning"
-                                            title="Fly the shuttle down and bury a chest on @local.Body.Name — off the ship, off the books"
+                                            title="Land on @local.Body.Name and bury a chest on foot — off the ship, off the books (mind the Reevers)"
                                             @onclick="() => OpenBuryChooser(local)">⛏ Bury a chest</button>
                                 }
                                 @if (_caches.HasCacheAt(local.Body.Id))
                                 {
                                     <button type="button" class="btn btn-sm btn-success"
-                                            title="Fly the shuttle down and dig at the X — the map never lies"
+                                            title="Land and dig at the X on foot — the map never lies, but the watchdogs may still be about"
                                             @onclick="() => DigAt(local)">🗺 Dig at the X</button>
                                 }
                                 @if (!local.HasBerth && !IsLandableForCache(local.Body) && !_caches.HasCacheAt(local.Body.Id))
@@ -364,12 +364,12 @@
                     <span>Hold buried with it</span>
                     <span>@(_cargoUnits > 0 ? $"{_cargoUnits} units ({HotHoldUnits()} hot)" : "empty")</span>
                 </div>
-                <div class="bury-note">Buried loot is off the ship — the collectors take only what they can see.</div>
+                <div class="bury-note">Buried loot is off the ship — the collectors take only what they can see. You'll carry the chest out on foot; watch for Reevers.</div>
             </div>
             <div class="deck-shuttle-actions">
                 <button type="button" class="btn btn-sm btn-warning" disabled="@(_buryCoin <= 0 && _cargoUnits <= 0)"
-                        title="Fly the shuttle down and bury the chest — the crossing costs the clock"
-                        @onclick="() => ConfirmBury(buryStop)">Bury it ⛏ (@FormatDuration(buryStop.TravelSeconds))</button>
+                        title="Fly the shuttle down and step out onto the surface — you carry the chest to the dig site and bury it on foot"
+                        @onclick="() => ConfirmBury(buryStop)">Land &amp; carry it down ⛏ (@FormatDuration(buryStop.TravelSeconds))</button>
                 <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBury">Never mind</button>
             </div>
         </div>
@@ -388,6 +388,10 @@
                 <div class="tm-caption">@map.Caption(BodyName(map.BodyId))</div>
                 <div class="tm-bearing">🧭 @map.BearingLine</div>
                 <div class="tm-contents">🧰 @map.ContentsLine()</div>
+                @if (map.ReeverLevel > 0)
+                {
+                    <div class="tm-bearing">🐕 @map.ReeverLevel Reever@(map.ReeverLevel == 1 ? "" : "s") haunt this ground — the most dangerous lock in the system.</div>
+                }
                 <div class="tm-flavor">✗ marks the spot. (The barflies swear it never does — out here, they're wrong every time.)</div>
                 <button type="button" class="btn btn-warning btn-sm mt-2" title="Tuck the map into the Captain's ledger" @onclick="DismissMapCard">Into the ledger 🗺</button>
             </div>

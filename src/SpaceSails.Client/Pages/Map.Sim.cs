@@ -1080,6 +1080,7 @@ public partial class Map
         if (_deckMode)
         {
             MoveAvatar(dtRealSeconds);
+            StepReevers(dtRealSeconds); // #295: the watchdogs close on the digger while ashore
             if (_fpMode)
             {
                 BuildSkyBodies();

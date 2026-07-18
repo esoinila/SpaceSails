@@ -51,7 +51,7 @@ public static class MoonSurface
     /// come from the caller so the ship's crew AND the live Reevers ride the one droid buffer.
     /// </summary>
     public static DeckPlan SurfaceDeck(
-        string bodyDisplayName, int droidCount, System.Action<double, DeckPlan.Droid[]> fillDroids)
+        string bodyDisplayName, string digSiteLabel, int droidCount, System.Action<double, DeckPlan.Droid[]> fillDroids)
     {
         System.ArgumentNullException.ThrowIfNull(fillDroids);
         DeckPlan ship = DeckPlan.Ship;
@@ -81,7 +81,7 @@ public static class MoonSurface
             ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock))
         {
             // The dig site out on the regolith — walk up, press E to bury (or, on a return, to dig).
-            new(DeckPlan.ConsoleKind.DigSite, DigSiteX, DigSiteY, "⛏ DIG HERE"),
+            new(DeckPlan.ConsoleKind.DigSite, DigSiteX, DigSiteY, digSiteLabel),
             // The way home: board the shuttle at the tube mouth. Kept clear of the tube walls.
             new(DeckPlan.ConsoleKind.SurfaceAirlock, -7f, SurfaceTopY - 3f, "🚀 BOARD THE SHUTTLE"),
         };
