@@ -29,13 +29,52 @@ public partial class Map
     // positions, a hunter mid-chase (heat IS saved, but the pursuit resolves as escaped on reload),
     // and autopilot plans — all recomputed from the fresh docked state.
     // ─────────────────────────────────────────────────────────────────────────────────────────────
-    private const string VaultStorageKey = "spacesails.vault.v1";
+    // #310 — the ten-vault bookshelf. localStorage is reached through the ISlotStore the SaveSlotBook
+    // reads and writes; the vault payload rides its own per-slot key (lossless), a small manifest holds
+    // the labels. One rolling AUTOSAVE slot follows the ship (Continue reads it); nine MANUAL banks the
+    // captain fills deliberately and the autosave never touches.
+    private SaveSlotBook? _slots;
+    private SaveSlotBook Slots => _slots ??= new SaveSlotBook(new RendererSlotStore());
 
-    // Peeked at boot so the start picker can lead with "Continue — docked at <haven>".
+    /// <summary>The ISlotStore the book writes through: the defensive localStorage interop (a private-mode
+    /// throw or a full quota is swallowed JS-side, so a save that "didn't take" never breaks the sim).</summary>
+    private sealed class RendererSlotStore : ISlotStore
+    {
+        public string? Read(string key) => RendererInterop.VaultRead(key);
+        public void Write(string key, string value) => RendererInterop.VaultWrite(key, value);
+        public void Clear(string key) => RendererInterop.VaultClear(key);
+    }
+
+    // Peeked at boot so the front-door load view can lead with "Continue — <where>".
     private bool _resumeAvailable;
     private string? _resumeHavenName;
     private bool _resumeTampered;
     private Vault? _pendingResumeVault;
+
+    // The labels of every occupied slot, projected for the front-door and the captain's-desk drawer.
+    private IReadOnlyList<SaveSlotMeta> _slotList = [];
+
+    // The in-game save/load drawer (#310, #292 quiet-drawer law): the SAME surface as the boot front
+    // door, opened from the captain's desk. One surface, two doors.
+    private bool _showSaveDrawer;
+
+    // #310: the experimental non-Sol skies are demoted below a footer toggle on the front door — a new
+    // player never trips over the barely-playtested scenarios.
+    private bool _showScenarioStarts;
+
+    private void OpenSaveDrawer()
+    {
+        RefreshSlotList();
+        _resumeAvailable = Slots.Newest() is not null;
+        _resumeHavenName = Slots.Newest()?.Where;
+        _showSaveDrawer = true;
+    }
+
+    private void CloseSaveDrawer() => _showSaveDrawer = false;
+
+    // The nine manual slot ids (1..9), for the drawer/front-door to render a bank-to row per slot.
+    private static readonly string[] ManualSlotIds =
+        [.. Enumerable.Range(1, SaveSlotBook.ManualSlotCount).Select(SaveSlotBook.ManualSlotId)];
 
     // One debounced write path: every save-worthy event just raises this flag; the tick flushes a
     // single write, so a burst (dock → payment → deck) costs one serialize, not three.
@@ -56,6 +95,9 @@ public partial class Map
         TryWriteVault();
     }
 
+    // The rolling autosave: rewrite the ONE autosave slot with the live state. This is the fix for the
+    // Mars pull — a fresh scenario start writes NOTHING here (it is not a durable in-play event), so an
+    // accidental "Rusty Roadstead — docked" pick can no longer overwrite where you actually are.
     private void TryWriteVault()
     {
         if (!_worldReady || _ephemeris is null)
@@ -65,7 +107,9 @@ public partial class Map
 
         try
         {
-            RendererInterop.VaultWrite(VaultStorageKey, VaultSerializer.Save(BuildVault()));
+            Vault live = BuildVault();
+            Slots.Save(SaveSlotBook.AutoSlotId, VaultSerializer.Save(live), BuildSlotMeta(live, SaveSlotKind.Autosave));
+            RefreshSlotList();
         }
         catch
         {
@@ -73,6 +117,27 @@ public partial class Map
             // the owner still has the export button and the previous good autosave.
         }
     }
+
+    // The label beside a slot: WHERE (berth / adrift / unknown), WHEN (sim day + real wall-clock), and
+    // the build stamp (#254). DateTimeOffset.UtcNow is the browser's clock in WASM — no JS interop needed.
+    private SaveSlotMeta BuildSlotMeta(Vault vault, SaveSlotKind kind)
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        return new SaveSlotMeta
+        {
+            Kind = kind,
+            Where = SaveSlotLabels.Where(vault),
+            WasDocked = vault.Resume?.WasDocked ?? false,
+            SavedSimTime = vault.SavedSimTime,
+            SimDay = (int)(vault.SavedSimTime / 86400),
+            RealTimeLabel = now.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+            SavedRealTicks = now.UtcTicks,
+            BuildStamp = BuildStamp.Display,
+            Tampered = vault.Tampered,
+        };
+    }
+
+    private void RefreshSlotList() => _slotList = Slots.List();
 
     /// <summary>Gather the whole durable life into a vault envelope. Physics (orbit/trajectory) is
     /// deliberately absent — the resume section names the berth to wake at instead.</summary>
@@ -172,14 +237,20 @@ public partial class Map
         return VaultResume.Select(_dockedHavenId, _ship.Position, havens);
     }
 
-    // Boot peek: is there a saved run, and where does it resume? Caches the loaded vault for Continue.
+    // Boot peek: migrate any pre-#310 single save into the shelf, then read the newest slot so the
+    // front-door load view can lead with "Continue — <where>". Caches that newest vault for Continue.
     private void PeekSavedVault()
     {
         try
         {
-            string? raw = RendererInterop.VaultRead(VaultStorageKey);
-            if (string.IsNullOrWhiteSpace(raw))
+            MigrateLegacyVaultIfNeeded();
+            RefreshSlotList();
+
+            SaveSlotMeta? newest = Slots.Newest();
+            if (newest is null || Slots.ReadPayload(newest.Id) is not { } raw || string.IsNullOrWhiteSpace(raw))
             {
+                _resumeAvailable = false;
+                _pendingResumeVault = null;
                 return;
             }
 
@@ -187,7 +258,7 @@ public partial class Map
             _pendingResumeVault = vault;
             _resumeAvailable = true;
             _resumeTampered = vault.Tampered;
-            _resumeHavenName = vault.Resume?.HavenName;
+            _resumeHavenName = newest.Where;
             // #292: honor "tutorial played" even for a fresh Earth start this session — a returning
             // captain who finished the lessons last run should not be re-greeted just because they
             // pick a fresh Earth start over Continue. (Continue/Import overwrite this via ApplyVault.)
@@ -200,17 +271,46 @@ public partial class Map
         }
     }
 
-    // The picker's "Continue — docked at <haven>": restore the saved life instead of a fresh start.
-    private async Task ContinueFromSave()
+    // #310 migration: a player who saved before the shelf existed has one vault under the legacy key.
+    // Seed BOTH the rolling autosave (so Continue immediately continues it — "where I actually am") AND
+    // manual slot 1 (the deliberate bank the issue names), so nothing is lost and the old save is a slot.
+    private void MigrateLegacyVaultIfNeeded()
+    {
+        if (!Slots.NeedsMigration() || Slots.LegacyPayload() is not { } legacyJson || string.IsNullOrWhiteSpace(legacyJson))
+        {
+            return;
+        }
+
+        try
+        {
+            Vault legacy = VaultSerializer.Load(legacyJson);
+            SaveSlotMeta auto = BuildSlotMeta(legacy, SaveSlotKind.Autosave);
+            Slots.Save(SaveSlotBook.AutoSlotId, legacyJson, auto);
+            Slots.Save(SaveSlotBook.ManualSlotId(1), legacyJson, auto with { Kind = SaveSlotKind.Manual });
+        }
+        catch
+        {
+            // A corrupt legacy file simply doesn't migrate — the new shelf starts empty; nothing crashes.
+        }
+    }
+
+    // The front door's "Continue — <where>": restore the newest slot instead of a fresh start.
+    private Task ContinueFromSave() => LoadSlot(Slots.Newest()?.Id);
+
+    // Load a specific slot by id (the front-door list, the captain's-desk drawer, or Continue-newest).
+    private async Task LoadSlot(string? slotId)
     {
         _showStartPicker = false;
-        if (_pendingResumeVault is { } vault)
+        _showSaveDrawer = false;
+
+        if (slotId is not null && Slots.ReadPayload(slotId) is { } raw && !string.IsNullOrWhiteSpace(raw))
         {
+            Vault vault = VaultSerializer.Load(raw);
             ApplyVault(vault);
-            if (vault.Tampered)
-            {
-                ShowPulseMessage("📛 Vault loaded — the file was edited outside the game; the ledger is marked tampered.");
-            }
+            RequestVaultSave(); // #310: the rolling autosave now follows THIS life, so Continue matches it
+            ShowPulseMessage(vault.Tampered
+                ? "📛 Vault loaded — the file was edited outside the game; the ledger is marked tampered."
+                : $"💾 Loaded — {SaveSlotLabels.Where(vault)}.");
         }
 
         if (!_deckMode && _activeDesk != ShipDesk.Nav)
@@ -406,25 +506,77 @@ public partial class Map
         _camera.CenterOn(_ship.Position);
     }
 
-    // Captain-desk actions (#225): a manual save, an export download, and an import file-picker.
-    private void SaveVaultManually()
+    // ── The save/load surface (#310): one set of actions, two doors (the boot front-door and the
+    //    captain's-desk drawer). Manual bank to a slot, delete a slot, export the live moment, import a
+    //    file straight into play. Every control's razor tip says exactly what it reads and writes. ──
+
+    /// <summary>Bank the LIVE state into a specific manual slot (pre-haul, pre-bury — the vault moments).
+    /// The autosave never touches these, so a deliberate bank is safe from the rolling save.</summary>
+    private void SaveToSlot(string slotId)
     {
-        TryWriteVault();
-        ShowPulseMessage("💾 Saved to the vault.");
+        try
+        {
+            Vault live = BuildVault();
+            Slots.Save(slotId, VaultSerializer.Save(live), BuildSlotMeta(live, SaveSlotKind.Manual));
+            RefreshSlotList();
+            ShowPulseMessage($"💾 Banked to slot {slotId} — {SaveSlotLabels.Where(live)}.");
+        }
+        catch
+        {
+            ShowPulseMessage("The bank refused — storage is full or unavailable.");
+        }
     }
 
+    /// <summary>Empty a manual slot (the autosave slot is never offered for deletion — it re-fills itself).</summary>
+    private void DeleteSlot(string slotId)
+    {
+        Slots.Delete(slotId);
+        RefreshSlotList();
+        ShowPulseMessage($"🗑 Cleared slot {slotId}.");
+    }
+
+    // Legacy single-button "Save to vault": now banks the live moment into the first free manual slot
+    // (or slot 1). Kept so the captain's-desk quick-save button still works without opening the drawer.
+    private void SaveVaultManually()
+    {
+        string target = FirstFreeManualSlotId() ?? SaveSlotBook.ManualSlotId(1);
+        SaveToSlot(target);
+    }
+
+    private string? FirstFreeManualSlotId()
+    {
+        for (int n = 1; n <= SaveSlotBook.ManualSlotCount; n++)
+        {
+            string id = SaveSlotBook.ManualSlotId(n);
+            if (Slots.Get(id) is null)
+            {
+                return id;
+            }
+        }
+
+        return null;
+    }
+
+    // EXPORT = the LIVE state at press time, never a stale slot (owner, #310). Reads current game state,
+    // serializes it fresh, downloads it.
     private void ExportVault()
     {
         try
         {
             RendererInterop.VaultDownload("spacesails-vault.json", VaultSerializer.Save(BuildVault()));
-            ShowPulseMessage("⬇ Vault exported as spacesails-vault.json.");
+            ShowPulseMessage("⬇ Exported this moment as spacesails-vault.json.");
         }
         catch
         {
             ShowPulseMessage("Export failed — the browser blocked the download.");
         }
     }
+
+    // IMPORT = immediately the live game (owner, #310). Asks ONCE before replacing the current voyage,
+    // offering a one-click "bank current to a slot first" escape. After import the rolling autosave
+    // updates to the imported state, so Continue matches what the player sees.
+    private bool _importConfirming;
+    private string? _importPendingText;
 
     private async Task ImportVault()
     {
@@ -443,12 +595,46 @@ public partial class Map
             return;
         }
 
+        // Hold the picked file and ask before it replaces the running voyage.
+        _importPendingText = text;
+        _importConfirming = true;
+        StateHasChanged();
+    }
+
+    // "Bank current first, then import": the safety escape — the running voyage is banked to a free
+    // manual slot before the imported file becomes live, so nothing in-flight is lost.
+    private async Task ConfirmImportBankingFirst()
+    {
+        SaveVaultManually();
+        await ApplyPendingImport();
+    }
+
+    // "Replace now": the imported file becomes the live game at once (autosave adopts it).
+    private Task ConfirmImportReplace() => ApplyPendingImport();
+
+    private void CancelImport()
+    {
+        _importConfirming = false;
+        _importPendingText = null;
+    }
+
+    private async Task ApplyPendingImport()
+    {
+        string? text = _importPendingText;
+        _importConfirming = false;
+        _importPendingText = null;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
         Vault vault = VaultSerializer.Load(text);
         ApplyVault(vault);
-        RequestVaultSave(); // adopt the imported vault as the new autosave
+        RequestVaultSave(); // the rolling autosave adopts the imported state → Continue matches the screen
+        RefreshSlotList();
         ShowPulseMessage(vault.Tampered
-            ? "📛 Vault imported — the file was edited outside the game; the ledger is marked tampered."
-            : "⬆ Vault imported.");
+            ? "📛 Imported — the file was edited outside the game; the ledger is marked tampered."
+            : $"⬆ Imported — now flying {SaveSlotLabels.Where(vault)}.");
         if (!_deckMode && _activeDesk != ShipDesk.Nav)
         {
             SwitchDesk(ShipDesk.Nav);

@@ -348,6 +348,15 @@ public partial class Map
             }
         }
 
+        // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
+        // raise the front door NOW in its "warming the reactor" state, so the WASM warm-up never reads as
+        // a broken, click-eating menu. It flips to the live slots once _worldReady flips below.
+        if (dockCheat is null && startId is null && slingCheat is null && skimCheat is null)
+        {
+            _showStartPicker = true;
+            StateHasChanged();
+        }
+
         string json = await Http.GetStringAsync($"scenarios/{scenarioName}.json");
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         if (ellipseCheat)

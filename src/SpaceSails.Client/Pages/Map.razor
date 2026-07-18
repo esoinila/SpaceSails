@@ -29,30 +29,134 @@
     @* Start picker (2026-07-08): "why always Earth?" — a boot chooser of named start points, over
        the freshly-built world. Skips the long transit for playtesting and lets a run begin at a gas
        giant or already ashore. Suppressed when /map?start=<id> already picked one. Same registry. *@
-    @if (_showStartPicker)
-    {
-        <div class="start-picker-backdrop">
-            <div class="start-picker">
-                <div class="start-picker-title">Choose your start</div>
-                <div class="start-picker-sub">Where does this run begin? Earth is the usual berth — the rest skip the haul out (handy for playtesting).</div>
-                <div class="start-picker-list">
-                    @* The personal vault (#225): a saved run leads the picker — continue DOCKED at the
-                       berth the vault remembers, above the fresh starts. *@
-                    @if (_resumeAvailable)
+    @* #310 — the front door IS the load view. Its primary content is the save slots (place + when);
+       Continue-newest is the headline, one prominent "New voyage" launches Sol for a fresh player, and
+       the barely-tested non-Sol skies are demoted to a footer toggle. Same surface, in-game, opens from
+       the captain's desk (_showSaveDrawer). *@
+    @{
+        // One slot row — the label (WHERE · day N · real time · build), and its actions. In-game the row
+        // can also be overwritten (bank here) with the LIVE state; at boot it is load/clear only.
+        RenderFragment<(SaveSlotMeta Meta, bool InGame)> SlotRow = ctx =>
+    @<div class="slot-row @(ctx.Meta.Kind == SaveSlotKind.Autosave ? "slot-row-auto" : "")">
+        <button type="button" class="slot-load" title="Load this voyage — replaces the current run with this saved life (purse, cargo, contacts, hoard, heat)"
+                @onclick="() => LoadSlot(ctx.Meta.Id)">
+            <span class="slot-icon">@(ctx.Meta.Kind == SaveSlotKind.Autosave ? "💾" : "📼")</span>
+            <span class="slot-text">
+                <span class="slot-where">@(ctx.Meta.WasDocked ? "⚓ " : "🛰 ")@ctx.Meta.Where@(ctx.Meta.Tampered ? " 📛" : "")</span>
+                <span class="slot-when">@(ctx.Meta.Kind == SaveSlotKind.Autosave ? "autosave · " : $"slot {ctx.Meta.Id} · ")day @ctx.Meta.SimDay · @ctx.Meta.RealTimeLabel</span>
+                <span class="slot-stamp">@ctx.Meta.BuildStamp</span>
+            </span>
+        </button>
+        @if (ctx.InGame && ctx.Meta.Kind == SaveSlotKind.Manual)
+        {
+            <button type="button" class="slot-mini" title="Overwrite this slot with THIS moment (the live game right now)"
+                    @onclick="() => SaveToSlot(ctx.Meta.Id)">⤓ bank here</button>
+            <button type="button" class="slot-mini slot-mini-danger" title="Clear this slot — forgets its saved voyage"
+                    @onclick="() => DeleteSlot(ctx.Meta.Id)">🗑</button>
+        }
+    </div>;
+
+        RenderFragment<bool> SaveLoadSurface = inGame =>
+    @<div class="start-picker save-surface">
+        <div class="start-picker-title">@(inGame ? "🧭 Ship's logbook — saves" : "🛰 Space Sails")</div>
+        <div class="start-picker-sub">
+            @(inGame
+                ? "Load a saved voyage, or bank this moment to a slot. The autosave follows the ship on its own."
+                : "Your saved voyages. Continue where you left off — or begin a new one.")
+        </div>
+
+        @if (!_worldReady)
+        {
+            @* Honest boot state (#310, #212): the door SAYS it is warming rather than silently eating
+               clicks. Buttons are disabled until the reactor is warm. *@
+            <div class="save-warming">
+                <span class="save-warming-spin">⚙</span>
+                <span>Warming the reactor — the ship's computer is still booting. One moment…</span>
+            </div>
+        }
+        else
+        {
+            @if (_resumeAvailable)
+            {
+                <button type="button" class="start-picker-option start-picker-continue"
+                        title="Pick up where you actually are — loads the most recent save (the rolling autosave)"
+                        @onclick="ContinueFromSave">
+                    <span class="start-picker-icon">▶</span>
+                    <span class="start-picker-text">
+                        <span class="start-picker-label">Continue — @(_resumeHavenName ?? "your last berth")</span>
+                        <span class="start-picker-blurb">Resume the newest save: purse, cargo, contacts, hoard and heat, all restored.@(_resumeTampered ? " 📛 ledger marked — the save file was edited outside the game." : "")</span>
+                    </span>
+                </button>
+            }
+
+            @if (!inGame)
+            {
+                <button type="button" class="start-picker-option start-picker-newvoyage"
+                        title="Begin a brand-new voyage in the Sol system, fresh out of Earth orbit"
+                        @onclick='() => ChooseStart("earth")'>
+                    <span class="start-picker-icon">🌍</span>
+                    <span class="start-picker-text">
+                        <span class="start-picker-label">New voyage</span>
+                        <span class="start-picker-blurb">Start clean in the Sol system — fresh out of Earth orbit.</span>
+                    </span>
+                </button>
+            }
+
+            <div class="save-slots-label">@(_slotList.Count == 0 ? "No saved voyages yet." : "Saved voyages")</div>
+            <div class="save-slots-list">
+                @foreach (SaveSlotMeta meta in _slotList)
+                {
+                    @SlotRow((meta, inGame))
+                }
+                @if (inGame)
+                {
+                    @* Empty manual slots the captain can bank THIS moment into (pre-haul, pre-bury). *@
+                    @foreach (string id in ManualSlotIds.Where(id => _slotList.All(s => s.Id != id)))
                     {
-                        <button type="button" class="start-picker-option start-picker-continue" title="Pick up where you left off — the vault wakes you docked at this berth"
-                                @onclick="ContinueFromSave">
-                            <span class="start-picker-icon">💾</span>
-                            <span class="start-picker-text">
-                                <span class="start-picker-label">Continue — docked at @(_resumeHavenName ?? "your last berth")</span>
-                                <span class="start-picker-blurb">Resume your saved run: purse, cargo, contacts, hoard and heat, all restored.@(_resumeTampered ? " 📛 ledger marked — the save file was edited outside the game." : "")</span>
-                            </span>
-                        </button>
+                        string slotId = id;
+                        <div class="slot-row slot-row-empty">
+                            <button type="button" class="slot-load slot-load-empty"
+                                    title="Bank THIS moment (the live game right now) into this empty slot"
+                                    @onclick="() => SaveToSlot(slotId)">
+                                <span class="slot-icon">＋</span>
+                                <span class="slot-text"><span class="slot-where">Bank this moment → slot @slotId</span></span>
+                            </button>
+                        </div>
                     }
-                    @foreach (StartPoint sp in StartPoints.Where(s => !s.Test))
+                }
+            </div>
+
+            <div class="save-surface-foot">
+                @if (inGame)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Download the LIVE game right now as a .json file you keep against a server wipe"
+                            @onclick="ExportVault">⬇ Export this moment</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Load a vault .json file — it becomes the live game at once (it asks before replacing your voyage)"
+                            @onclick="ImportVault">⬆ Import file</button>
+                    <button type="button" class="btn btn-sm btn-outline-info"
+                            title="Close the logbook and return to the ship"
+                            @onclick="CloseSaveDrawer">Close</button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Load a vault .json file as a new voyage"
+                            @onclick="ImportVault">⬆ Import a save file</button>
+                    <button type="button" class="save-scenarios-toggle"
+                            title="Advanced: begin in an experimental, barely-playtested star system (not recommended for a first voyage)"
+                            @onclick="() => _showScenarioStarts = !_showScenarioStarts">@(_showScenarioStarts ? "▾" : "▸") Other skies (experimental)</button>
+                }
+            </div>
+
+            @if (!inGame && _showScenarioStarts)
+            {
+                <div class="save-slots-list save-scenarios">
+                    @foreach (StartPoint sp in StartPoints.Where(s => !s.Test && s.Id != "earth"))
                     {
                         StartPoint option = sp;
-                        <button type="button" class="start-picker-option" title="Start the voyage from this berth — skips the long haul out" @onclick="() => ChooseStart(option.Id)">
+                        <button type="button" class="start-picker-option" title="Start the voyage from this berth — experimental, lightly tested" @onclick="() => ChooseStart(option.Id)">
                             <span class="start-picker-icon">@option.Icon</span>
                             <span class="start-picker-text">
                                 <span class="start-picker-label">@option.Label</span>
@@ -60,6 +164,45 @@
                             </span>
                         </button>
                     }
+                </div>
+            }
+        }
+    </div>;
+    }
+
+    @if (_showStartPicker)
+    {
+        <div class="start-picker-backdrop">
+            @SaveLoadSurface(false)
+        </div>
+    }
+    else if (_showSaveDrawer)
+    {
+        <div class="start-picker-backdrop" @onclick="CloseSaveDrawer">
+            <div @onclick:stopPropagation="true">
+                @SaveLoadSurface(true)
+            </div>
+        </div>
+    }
+
+    @* #310 — the import consent: an import becomes the live game, so it asks once before replacing the
+       running voyage, with a one-click "bank current first" escape. *@
+    @if (_importConfirming)
+    {
+        <div class="start-picker-backdrop">
+            <div class="start-picker save-surface">
+                <div class="start-picker-title">Replace the current voyage?</div>
+                <div class="start-picker-sub">The file you picked will become the live game at once. Your current run isn't saved to a slot yet unless you bank it.</div>
+                <div class="save-surface-foot save-surface-foot-center">
+                    <button type="button" class="btn btn-sm btn-outline-success"
+                            title="Bank the current voyage to a free slot, THEN load the imported file"
+                            @onclick="ConfirmImportBankingFirst">💾 Bank current first, then import</button>
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Load the imported file now — the current run is discarded unless already saved"
+                            @onclick="ConfirmImportReplace">⬆ Replace now</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Keep flying the current voyage — cancel the import"
+                            @onclick="CancelImport">Cancel</button>
                 </div>
             </div>
         </div>
@@ -2221,7 +2364,7 @@
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
                                                               OnReopenStartPicker="ReopenStartPicker"
-                                                              OnSaveVault="SaveVaultManually" OnExportVault="ExportVault" OnImportVault="ImportVault"
+                                                              OnOpenSaves="OpenSaveDrawer"
                                                               InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
                 }
             </div>
