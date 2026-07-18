@@ -284,6 +284,24 @@ public partial class Map
         StateHasChanged();
     }
 
+    // ---- #253: keep every click menu inside the viewport ----
+    // The owner's playtest: The Tilt sat bottom-right, its menu ran off the bottom and hid the 🚀
+    // Long haul action. The map menus can't measure themselves without interop, so we estimate the
+    // box deterministically — the CSS max-width, plus a per-row height × the rows the menu will draw
+    // (header chrome folded into the base) — and hand it to MenuLayout, which flips it above/left of
+    // the click near an edge. Over-estimating rows only flips a touch early; it never overflows.
+    private const double MenuBoxWidthPx = 256;  // .map-body-menu max-width: 16rem
+    private const double MenuRowPx = 30;        // one btn-sm/info line + the d-grid gap
+    private const double MenuChromePx = 44;      // p-2 padding + the title/close header row
+
+    /// <summary>The on-screen top-left for a menu anchored at the click, sized from its visible row
+    /// count, clamped so no action ever renders past a viewport edge (#253).</summary>
+    private (double X, double Y) ClampMenu(double anchorX, double anchorY, int rows) =>
+        MenuLayout.ClampMenuPosition(
+            anchorX, anchorY,
+            MenuBoxWidthPx, MenuChromePx + rows * MenuRowPx,
+            _viewportWidth, _viewportHeight);
+
     // Dev cheat (/map?fetch=intel|active|picked): drop a fetch job straight into the ledger at a
     // stage, so a playtester can test each leg without flying the ones between.
     //   intel  = the new first stage: accepted, wreck HIDDEN, transponder fix in the Comms ledger.
@@ -618,7 +636,8 @@ public partial class Map
         }
 
         _shipMenuId = shipId;
-        _shipMenuX = clientX + 14;
+        // #253: store the raw click anchor — ClampMenu applies the offset AND the edge flip at render.
+        _shipMenuX = clientX;
         _shipMenuY = clientY;
         StateHasChanged();
     }
@@ -632,7 +651,7 @@ public partial class Map
         }
 
         _bodyMenuBody = body;
-        _bodyMenuX = clientX + 14;
+        _bodyMenuX = clientX; // #253: raw anchor; ClampMenu offsets + flips at render
         _bodyMenuY = clientY;
         StateHasChanged(); // pointer events don't auto-render (IHandleEvent) — show the menu now
     }
@@ -650,7 +669,7 @@ public partial class Map
 
             _corridorMenuLane = lane;
             _selectedCorridorKey = corridorKey;
-            _corridorMenuX = clientX + 14;
+            _corridorMenuX = clientX; // #253: raw anchor; ClampMenu offsets + flips at render
             _corridorMenuY = clientY;
             StateHasChanged();
             return;
@@ -756,7 +775,7 @@ public partial class Map
         // Scan size follows the zoom: what looks like "about here" on screen is what gets
         // scanned — zoom in for a tight expensive-per-area look, out for a broad survey.
         _skyMenuRadius = Math.Clamp(120 * _camera.MetersPerPixel, 2e9, 5e10);
-        _skyMenuX = clientX + 14;
+        _skyMenuX = clientX; // #253: raw anchor; ClampMenu offsets + flips at render
         _skyMenuY = clientY;
         StateHasChanged();
     }
