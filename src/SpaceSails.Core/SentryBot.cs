@@ -52,6 +52,23 @@ public static class SentryBot
     /// These are the escorts the captain loads — the roster, not an invention.</summary>
     public static IReadOnlyList<string> RosterUnits { get; } = new[] { "K-77", "R-3B" };
 
+    /// <summary>PR-324 · Rebuild the full roster's magazines from a save's stored list, padding any entry
+    /// the save doesn't carry (a pre-#314/#322 vault has none, or an old save that lacked
+    /// <c>ShipSection.SentryMagazines</c>) up to a FULL magazine. A load never permanently shrinks the
+    /// roster: an old captain always finds K-77 and R-3B standing ready with 99 rounds, never a phantom
+    /// empty rack. Deterministic and pure so the migration is a pinned law, not a client accident.</summary>
+    public static IReadOnlyList<int> RosterFromSave(IReadOnlyList<int>? saved)
+    {
+        var mags = new int[RosterUnits.Count];
+        for (int i = 0; i < mags.Length; i++)
+        {
+            mags[i] = saved is not null && i < saved.Count
+                ? System.Math.Clamp(saved[i], 0, MaxMagazine)
+                : MaxMagazine;
+        }
+        return mags;
+    }
+
     /// <summary>The crude two-digit readout for a magazine: "99".."00", clamped. The digits ARE the
     /// homage; the client renders them seven-segment on the grid, dimmed once <see cref="IsDry"/>.</summary>
     public static string Readout(int rounds) => System.Math.Clamp(rounds, 0, MaxMagazine).ToString("D2");

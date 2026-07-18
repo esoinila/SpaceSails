@@ -24,24 +24,47 @@ public static class ReeverChase
     /// <paramref name="avatarY"/>), then its Y is clamped to <paramref name="barrierY"/> so it can never
     /// climb the tube into the ship — the door won't open to it. Returns the Reever's new position.</summary>
     public static (double X, double Y) Step(
-        double reeverX, double reeverY, double avatarX, double avatarY, double stepDistance, double barrierY)
+        double reeverX, double reeverY, double avatarX, double avatarY, double stepDistance, double barrierY) =>
+        Step(reeverX, reeverY, avatarX, avatarY, stepDistance, barrierY, walls: null, radius: 0);
+
+    /// <summary>PR-324 · The wall-obeying chase. As the plain <see cref="Step(double,double,double,double,double,double)"/>,
+    /// but the step is a <see cref="SurfaceCollision.Slide"/> against <paramref name="walls"/> at the given
+    /// <paramref name="radius"/> — the SAME bump-and-slide the captain's own boots make — so a Reever
+    /// stops at a maze wall and grazes along it instead of clipping through. A Reever pinned flat against
+    /// a wall makes no progress, which means it is momentarily STATIONARY and drops off the motion
+    /// tracker for free (the motion-only law composes the dread). The crew-only barrier still caps Y.</summary>
+    public static (double X, double Y) Step(
+        double reeverX, double reeverY, double avatarX, double avatarY, double stepDistance, double barrierY,
+        IReadOnlyList<SurfaceCollision.Segment>? walls, double radius)
     {
         double dx = avatarX - reeverX;
         double dy = avatarY - reeverY;
         double dist = System.Math.Sqrt((dx * dx) + (dy * dy));
+        double moveX = 0, moveY = 0;
         if (dist > 1e-9 && stepDistance > 0)
         {
-            reeverX += dx / dist * stepDistance;
-            reeverY += dy / dist * stepDistance;
+            moveX = dx / dist * stepDistance;
+            moveY = dy / dist * stepDistance;
+        }
+
+        double nx, ny;
+        if (walls is { Count: > 0 })
+        {
+            (nx, ny) = SurfaceCollision.Slide(reeverX, reeverY, moveX, moveY, radius, walls);
+        }
+        else
+        {
+            nx = reeverX + moveX;
+            ny = reeverY + moveY;
         }
 
         // The crew-only threshold: a Reever is penned on the surface side and cannot follow past it.
-        if (reeverY > barrierY)
+        if (ny > barrierY)
         {
-            reeverY = barrierY;
+            ny = barrierY;
         }
 
-        return (reeverX, reeverY);
+        return (nx, ny);
     }
 
     /// <summary>True when a Reever is close enough to catch the digger. Only meaningful while the digger

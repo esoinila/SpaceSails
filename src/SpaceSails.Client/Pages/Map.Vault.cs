@@ -373,16 +373,14 @@ public partial class Map
             _slugAmmo = Math.Max(0, ship.SlugAmmo);
             _missileAmmo = Math.Max(0, ship.MissileAmmo);
 
-            // #314: rebuild the full sentry roster (K-77, R-3B) from the saved magazines, padding any
-            // missing entry to a full mag — a load never permanently shrinks the roster.
+            // #314/#324: rebuild the full sentry roster (K-77, R-3B) from the saved magazines, padding any
+            // missing entry to a full mag — a load never permanently shrinks the roster (the pinned Core
+            // law SentryBot.RosterFromSave). A pre-#322 vault with no SentryMagazines loads as full 99s.
             _shipBots.Clear();
-            IReadOnlyList<int> mags = ship.SentryMagazines;
+            IReadOnlyList<int> mags = SentryBot.RosterFromSave(ship.SentryMagazines);
             for (int i = 0; i < SentryBot.RosterUnits.Count; i++)
             {
-                int rounds = mags is not null && i < mags.Count
-                    ? Math.Clamp(mags[i], 0, SentryBot.MaxMagazine)
-                    : SentryBot.MaxMagazine;
-                _shipBots.Add(new ShipBot(SentryBot.RosterUnits[i], rounds));
+                _shipBots.Add(new ShipBot(SentryBot.RosterUnits[i], mags[i]));
             }
         }
 

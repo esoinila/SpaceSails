@@ -1,3 +1,5 @@
+using SpaceSails.Core;
+
 namespace SpaceSails.Client.Rendering;
 
 /// <summary>
@@ -56,6 +58,12 @@ public sealed class DeckPlan
     public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
 
     public Wall[] Walls { get; }
+
+    /// <summary>PR-324 · The walls as bare collidable/opaque segments — the single source the captain's
+    /// avatar, the surface Reevers (<c>ReeverChase</c>), and the crude line-of-sight check all share, so
+    /// the maze is law for everyone. Built once with the plan; both movers obey the same lines.</summary>
+    public SurfaceCollision.Segment[] CollisionSegments { get; }
+
     public ConsoleSpot[] Consoles { get; }
     public (float X, float Y, string Text)[] RoomLabels { get; }
     public Backdrop[] Backdrops { get; }
@@ -88,6 +96,11 @@ public sealed class DeckPlan
         (float X, float Y)[]? tables = null)
     {
         Walls = walls;
+        CollisionSegments = new SurfaceCollision.Segment[walls.Length];
+        for (int i = 0; i < walls.Length; i++)
+        {
+            CollisionSegments[i] = new SurfaceCollision.Segment(walls[i].X1, walls[i].Y1, walls[i].X2, walls[i].Y2);
+        }
         Consoles = consoles;
         RoomLabels = roomLabels;
         Backdrops = backdrops;
@@ -117,27 +130,12 @@ public sealed class DeckPlan
         return (nx, ny);
     }
 
-    private bool Collides(double x, double y)
-    {
-        foreach (Wall w in Walls)
-        {
-            if (DistanceToSegment(x, y, w.X1, w.Y1, w.X2, w.Y2) < AvatarRadius)
-            {
-                return true;
-            }
-        }
+    // PR-324 · The avatar's own collision is now the shared Core check (SurfaceCollision), the very same
+    // one the surface Reevers obey — one wall law for everyone on the walked ground.
+    private bool Collides(double x, double y) => SurfaceCollision.Blocked(x, y, AvatarRadius, CollisionSegments);
 
-        return false;
-    }
-
-    public static double DistanceToSegment(double px, double py, double x1, double y1, double x2, double y2)
-    {
-        double dx = x2 - x1, dy = y2 - y1;
-        double lengthSq = dx * dx + dy * dy;
-        double t = lengthSq > 0 ? Math.Clamp(((px - x1) * dx + (py - y1) * dy) / lengthSq, 0, 1) : 0;
-        double cx = x1 + t * dx, cy = y1 + t * dy;
-        return Math.Sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
-    }
+    public static double DistanceToSegment(double px, double py, double x1, double y1, double x2, double y2) =>
+        SurfaceCollision.DistanceToSegment(px, py, x1, y1, x2, y2);
 
     public ConsoleKind NearestConsole(double x, double y) => NearestConsoleSpot(x, y)?.Kind ?? ConsoleKind.None;
 

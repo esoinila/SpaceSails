@@ -31,7 +31,10 @@ public sealed class DeckView
         // #314: deployed sentries (with their 99-counter readout + a firing zap line) and the husks of
         // downed Old Ones — ON-grid marks, not corner widgets. Optional so #313 callers still compile.
         System.Collections.Generic.IReadOnlyList<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)>? Bots = null,
-        System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Husks = null);
+        System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Husks = null,
+        // #324: the contextual surface keybar — the deploy/drop keys spelled out along the bottom while
+        // they're live (a bot in the sling shows [T], a chest in hand shows [G]). #212 affordances-never-hide.
+        string? KeyHints = null);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -303,12 +306,14 @@ public sealed class DeckView
         }
 
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or
-        // how to go ashore — the tester could only guess "airlock" by genre convention.
-        _renderer.DrawText(ox, heightPx - 10,
-            state.Docked
+        // how to go ashore — the tester could only guess "airlock" by genre convention. On the surface
+        // the keybar turns contextual (#324): the deploy/drop keys spell themselves out while they matter.
+        string bottomHint = surface is { KeyHints: { Length: > 0 } hints }
+            ? hints
+            : state.Docked
                 ? "docked ⚓ walk up through the airlock to go ashore ∙ WASD — move ∙ E — interact ∙ F — first person ∙ Q — helm"
-                : "WASD / arrows — move ∙ E — interact ∙ F — first person ∙ Q — back to the helm",
-            TextDim, "11px monospace", TextAlign.Center);
+                : "WASD / arrows — move ∙ E — interact ∙ F — first person ∙ Q — back to the helm";
+        _renderer.DrawText(ox, heightPx - 10, bottomHint, TextDim, "11px monospace", TextAlign.Center);
 
         _renderer.EndFrame();
     }
@@ -328,15 +333,20 @@ public sealed class DeckView
     private void DrawMotionTracker(int widthPx, int heightPx, double simTime, in SurfaceHud hud)
     {
         _ = heightPx;
-        float r = 46f;
-        float cx = widthPx - r - 18f, cy = r + 18f;
+        // #324 (owner: "the motion tracker is too small"): the star instrument of the excursion, sized to
+        // read blips at a glance from mid-grid. Nearly doubled, inset from the top-right so no chrome
+        // buries it, on an opaque dark disc so it never washes out over the regolith.
+        float r = 78f;
+        float cx = widthPx - r - 24f, cy = r + 34f;
 
-        // The graph-paper fan: two rings + crosshair.
-        _renderer.DrawCircle(cx, cy, r, new RgbaColor(8, 14, 12, 180), TrackerRing, 1.5f);
-        _renderer.DrawCircle(cx, cy, r * 0.55f, null, new RgbaColor(120, 200, 150, 70), 1f);
-        DrawSeg((cx - r, cy), (cx + r, cy), new RgbaColor(120, 200, 150, 60), 1f);
-        DrawSeg((cx, cy - r), (cx, cy + r), new RgbaColor(120, 200, 150, 60), 1f);
-        _renderer.DrawText(cx, cy - r - 4, "MOTION", TrackerRing, "8px monospace", TextAlign.Center);
+        // The graph-paper fan: an opaque backing disc, two rings + crosshair.
+        _renderer.DrawCircle(cx, cy, r + 6f, new RgbaColor(6, 11, 10, 235), TrackerRing, 1f);
+        _renderer.DrawCircle(cx, cy, r, null, TrackerRing, 1.75f);
+        _renderer.DrawCircle(cx, cy, r * 0.66f, null, new RgbaColor(120, 200, 150, 85), 1f);
+        _renderer.DrawCircle(cx, cy, r * 0.33f, null, new RgbaColor(120, 200, 150, 70), 1f);
+        DrawSeg((cx - r, cy), (cx + r, cy), new RgbaColor(120, 200, 150, 70), 1f);
+        DrawSeg((cx, cy - r), (cx, cy + r), new RgbaColor(120, 200, 150, 70), 1f);
+        _renderer.DrawText(cx, cy - r - 8, "MOTION TRACKER", TrackerRing, "bold 11px monospace", TextAlign.Center);
 
         // Cadence → blink phase. Silent(0) steady, up to Imminent(3) frantic.
         double hz = hud.Cadence switch { 3 => 6.0, 2 => 3.0, 1 => 1.3, _ => 0.0 };
@@ -345,15 +355,15 @@ public sealed class DeckView
         const double maxRange = 60.0; // du mapped to the ring's edge; farther clamps to the rim
         foreach ((double bearing, double range) in hud.Blips)
         {
-            double rr = Math.Min(range / maxRange, 1.0) * (r - 4);
+            double rr = Math.Min(range / maxRange, 1.0) * (r - 6);
             // World bearing: +x = right, +y = port (up on screen) → screen y flips.
             float bx = cx + (float)(Math.Cos(bearing) * rr);
             float by = cy - (float)(Math.Sin(bearing) * rr);
             var col = on ? TrackerBlip : new RgbaColor(120, 255, 160, 90);
-            _renderer.DrawCircle(bx, by, range > maxRange ? 2.2f : 3f, col, col);
+            _renderer.DrawCircle(bx, by, range > maxRange ? 3.4f : 4.6f, col, col);
         }
 
-        _renderer.DrawText(cx, cy + r + 9, hud.Readout, TrackerRing, "8px monospace", TextAlign.Center);
+        _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, "10px monospace", TextAlign.Center);
     }
 
     // #317 the nerve gauge (top-left, screen-space): a crude deck-plan bar — full teal = steady hands,
@@ -379,11 +389,14 @@ public sealed class DeckView
         float jx = (float)(Math.Sin(simTime * 0.02) * tremor * tremor * 3.0);
         float jy = (float)(Math.Cos(simTime * 0.017) * tremor * tremor * 2.0);
 
-        float x0 = 16f + jx, y0 = 22f + jy;
-        const float w = 132f, h = 12f;
+        // #324 (owner: "let's make sanity visible :-D"): a big, plainly-labelled corner gauge on its own
+        // dark plate — sits below the first-person toggle (moved aside on-surface) so nothing buries it.
+        float x0 = 18f + jx, y0 = 30f + jy;
+        const float w = 210f, h = 18f;
 
-        _renderer.DrawText(x0, y0 - 5, "NERVE", NerveFrame, "8px monospace", TextAlign.Left);
-        FillRect(x0, y0, w, h, new RgbaColor(14, 18, 24, 210));           // the empty channel
+        FillRect(x0 - 8f, y0 - 20f, w + 16f, h + 42f, new RgbaColor(6, 11, 10, 205));  // the backing plate
+        _renderer.DrawText(x0, y0 - 6, "SANITY", NerveFrame, "bold 11px monospace", TextAlign.Left);
+        FillRect(x0, y0, w, h, new RgbaColor(14, 18, 24, 220));           // the empty channel
         FillRect(x0, y0, w * (float)frac, h, fill);                       // the fill
         for (int i = 1; i < 5; i++)                                       // crude deck-plan segments
         {
@@ -391,7 +404,7 @@ public sealed class DeckView
             DrawSeg((tx, y0), (tx, y0 + h), new RgbaColor(10, 14, 20, 160), 1f);
         }
         DrawRectOutline(x0, y0, w, h, NerveFrame);                        // the frame
-        _renderer.DrawText(x0, y0 + h + 10, hud.NerveReadout, fill, "9px monospace", TextAlign.Left);
+        _renderer.DrawText(x0, y0 + h + 13, hud.NerveReadout, fill, "11px monospace", TextAlign.Left);
     }
 
     private void DrawRectOutline(float x, float y, float w, float h, RgbaColor color)

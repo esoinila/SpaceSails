@@ -80,6 +80,12 @@ public partial class Map
     {
         public double X, Y, Facing, Vx, Vy;
         public int HitsTaken;   // #314: rounds a sentry has ground into it (downs at RoundsPerReever)
+
+        // #324: crude line-of-sight memory. A Reever only tracks the captain's LIVE position while it can
+        // SEE them (no wall between); blind, it shambles to where it last laid eyes, then leans on the tube
+        // choke. Duck behind a wall and it loses your live position — the maze becomes a real instrument.
+        public double LastSeenX, LastSeenY;
+        public bool EverSeen;
     }
 
     // #314: a sentry on the surface — carried in the sling or deployed and holding the line, with its
@@ -704,6 +710,10 @@ public partial class Map
         double step = ReeverSpeed * dt;
         bool onSurface = !MoonSurface.IsSafeAboard(_avatarY);
         bool caught = false;
+        // #324: the maze is law for the many too — the Reevers bump-and-slide on the SAME wall segments
+        // the captain does, and can only see the captain when no wall stands between.
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionSegments;
+        const double reeverRadius = DeckPlan.AvatarRadius;
         foreach (Reever r in _reevers)
         {
             // #314: a live sentry pins the Old Ones on its arc — a Reever under a deployed, non-dry bot's
@@ -720,12 +730,26 @@ public partial class Map
                 }
                 continue;
             }
+            // #324 line-of-sight: a Reever tracks the captain's LIVE position only while it can see them.
+            // A wall between the two breaks the look — then it shambles to the last spot it saw them, and
+            // (having never seen them, or arrived there) leans on the tube choke it always knows. Duck
+            // behind stone and the hunter loses your live position; a stopped Reever also drops off the
+            // motion tracker (motion-only law) — breaking sight in the maze is now real play.
+            if (SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, walls))
+            {
+                r.LastSeenX = _avatarX;
+                r.LastSeenY = _avatarY;
+                r.EverSeen = true;
+            }
+            double tgtX = r.EverSeen ? r.LastSeenX : MoonSurface.SpawnX;
+            double tgtY = r.EverSeen ? r.LastSeenY : MoonSurface.SurfaceTopY;
+
             // Crude encirclement: aim a little toward the tube choke so the pack cuts the escape angle
             // instead of trailing single-file — the cornering loss-condition becomes real geometry.
-            double aimX = _avatarX + (MoonSurface.SpawnX - _avatarX) * EncircleBias;
-            double aimY = _avatarY + (MoonSurface.SurfaceTopY - _avatarY) * EncircleBias;
+            double aimX = tgtX + (MoonSurface.SpawnX - tgtX) * EncircleBias;
+            double aimY = tgtY + (MoonSurface.SurfaceTopY - tgtY) * EncircleBias;
             double ox = r.X, oy = r.Y;
-            (double nx, double ny) = ReeverChase.Step(r.X, r.Y, aimX, aimY, step, MoonSurface.ReeverBarrierY);
+            (double nx, double ny) = ReeverChase.Step(r.X, r.Y, aimX, aimY, step, MoonSurface.ReeverBarrierY, walls, reeverRadius);
             r.Vx = dt > 0 ? (nx - ox) / dt : 0;
             r.Vy = dt > 0 ? (ny - oy) / dt : 0;
             r.X = nx;
@@ -945,7 +969,33 @@ public partial class Map
             Nerve: _nerve,
             NerveReadout: NerveModel.Readout(_nerve),
             Bots: bots,
-            Husks: husks);
+            Husks: husks,
+            KeyHints: BuildSurfaceKeyHints(ex));
+    }
+
+    // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
+    // the sling it spells out [T] deploy, and a chest in hand spells [G] drop. Affordances never hide.
+    private string BuildSurfaceKeyHints(SurfaceExcursion ex)
+    {
+        var parts = new List<string> { "WASD — move", "E — dig / use" };
+        bool carryingBot = ex.Bots.Any(b => !b.Deployed);
+        bool deployedUnderfoot = ex.Bots.Any(b => b.Deployed &&
+            ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
+                <= DeckPlan.InteractRadius * DeckPlan.InteractRadius);
+        if (carryingBot)
+        {
+            parts.Add("🤖 T — deploy a sentry");
+        }
+        else if (deployedUnderfoot)
+        {
+            parts.Add("🤖 T — pick up the sentry");
+        }
+        if (ex.Carrying)
+        {
+            parts.Add("G — drop the chest & sprint");
+        }
+        parts.Add("F — first person");
+        return string.Join(" ∙ ", parts);
     }
 
     // Seed the 2D6 from place + integer-second instant — deterministic, replayable in a test.
