@@ -75,6 +75,19 @@ public static class BarDesks
         // left of centre and clear of the window. Eyeballed off this frame; pinned in BarkeepTests.
         new("selene-gate", 0.300f, 0.585f, 4.5f),
 
+        // THE STORMWATCH BAR — The Red Eye / Jupiter (art/red-eye-bar.jpg, #352 follow-through). Bottle
+        // shelves and a long metal counter run down the LEFT; the counter is long and angles out toward
+        // mid-frame with the keep bent to his rag at its middle, the Great Red Spot mural filling the
+        // back-RIGHT wall. So the service stretch reads a touch central — like Selene's, the counter reaches
+        // out further — but still well left of centre and clear of the window. Eyeballed off this frame.
+        new("red-eye", 0.300f, 0.600f, 4.5f),
+
+        // THE DEEP END — The Deep / Neptune (art/the-deep-bar.jpg, #352 follow-through). Frost-rimed
+        // shelves and a straight counter down the LEFT, the keep standing mid-counter left over the ice
+        // shaker; the Neptune window is top-RIGHT with the hooded patron tables under it. The working length
+        // reads left-of-centre, mid-depth — off the window (behind) and the empty floor (front). Off-frame.
+        new("the-deep", 0.285f, 0.595f, 4.5f),
+
         // THE TILT BAR — Uranus (art/the-tilt-bar.jpg). Lit niche shelves and a long counter down the
         // LEFT (a little further forward here), the big Uranus window to the right and a small dim port
         // mid-frame — the keep sits left of both, on the counter.

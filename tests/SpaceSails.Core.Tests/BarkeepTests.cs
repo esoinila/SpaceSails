@@ -11,9 +11,10 @@ namespace SpaceSails.Core.Tests;
 public class BarkeepTests
 {
     // The station ids HavenInterior builds bars for; the-space-bar is the Rusty Roadstead's berth,
-    // selene-gate the oldest port off Luna (#352).
+    // selene-gate the oldest port off Luna (#352), red-eye/the-deep the two outer havens off Jupiter and
+    // Neptune given floors in the #352 follow-through (night shift 2026-07-18→19).
     private static readonly string[] WalkableStations =
-        ["the-space-bar", "cinder-roost", "ringside-exchange", "the-tilt", "selene-gate"];
+        ["the-space-bar", "cinder-roost", "ringside-exchange", "the-tilt", "selene-gate", "red-eye", "the-deep"];
 
     [Fact]
     public void EveryWalkableStation_HasANamedBarkeepWithAHouseSpecial()
@@ -128,6 +129,8 @@ public class BarkeepTests
         AssertDesk("ringside-exchange", 0.260f, 0.615f);
         AssertDesk("the-tilt", 0.250f, 0.580f);
         AssertDesk("selene-gate", 0.300f, 0.585f); // #352 — counter down the LEFT, Earthrise window upper-right
+        AssertDesk("red-eye", 0.300f, 0.600f);     // #352 follow-through — counter angles to mid-frame, Spot mural back-right
+        AssertDesk("the-deep", 0.285f, 0.595f);    // #352 follow-through — straight left counter, Neptune window top-right
     }
 
     private static void AssertDesk(string id, float u, float v)
