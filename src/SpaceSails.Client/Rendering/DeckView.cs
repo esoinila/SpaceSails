@@ -27,7 +27,11 @@ public sealed class DeckView
         string Readout,
         System.Collections.Generic.IReadOnlyList<(double X, double Y, bool Haunted)> CacheMarks,
         double Nerve,                // #317: 0..100 (NerveModel.Max = steady). Drawn in the OPPOSITE corner
-        string NerveReadout);        // to the motion tracker — the channel-law corner gauge, never on the grid
+        string NerveReadout,         // to the motion tracker — the channel-law corner gauge, never on the grid
+        // #314: deployed sentries (with their 99-counter readout + a firing zap line) and the husks of
+        // downed Old Ones — ON-grid marks, not corner widgets. Optional so #313 callers still compile.
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)>? Bots = null,
+        System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Husks = null);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -40,6 +44,12 @@ public sealed class DeckView
     private static readonly RgbaColor ShuttleColor = new(150, 210, 255, 220);
     private static readonly RgbaColor DroidColor = new(150, 160, 180);
     private static readonly RgbaColor ReeverColor = new(230, 80, 70);   // #295: watchdog red
+    private static readonly RgbaColor HuskColor = new(120, 70, 60, 150); // #314: a downed Old One's husk
+    private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
+    private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
+    private static readonly RgbaColor SegLit = new(255, 90, 70);         // #314: the 99-counter, seven-segment red
+    private static readonly RgbaColor SegDim = new(90, 50, 45, 200);     // #314: a frozen 00, dim glyph
+    private static readonly RgbaColor ZapColor = new(180, 255, 210, 235);// #314: the sentry's zap line
     private static readonly RgbaColor TextDim = new(140, 160, 180, 170);
     private static readonly RgbaColor DoorShut = new(255, 180, 90, 220);   // amber airlock door, closed
     private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
@@ -145,6 +155,16 @@ public sealed class DeckView
                 _renderer.DrawText(dx2, dy2 + 5, "🧰", new RgbaColor(200, 160, 90, 240), "15px monospace", TextAlign.Center);
                 _renderer.DrawText(dx2, dy2 - 11, "dropped chest", new RgbaColor(200, 160, 90, 180), "8px monospace", TextAlign.Center);
             }
+            // #314: husks of downed Old Ones — dim marks left where they fell (the forensic seed, #316).
+            if (hud.Husks is { } husks)
+            {
+                foreach ((double hkx, double hky) in husks)
+                {
+                    (float sx, float sy) = P(hkx, hky);
+                    _renderer.DrawCircle(sx, sy, 0.55f * scale, HuskColor, HuskColor);
+                    _renderer.DrawText(sx, sy + 3, "×", new RgbaColor(90, 60, 60, 220), "bold 11px monospace", TextAlign.Center);
+                }
+            }
         }
 
         if (isShip)
@@ -206,6 +226,31 @@ public sealed class DeckView
             float fy = dy - (float)Math.Sin(droid.FacingRad) * scale * 0.8f;
             DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
             _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name, reever ? ReeverColor : TextDim, "8px monospace", TextAlign.Center);
+        }
+
+        // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
+        // dropping, and its crude two-digit magazine readout riding above (seven-segment red, dim at 00).
+        // Drawn ON the grid, not a corner widget — the counter is meant to be read from across the map.
+        if (surface is { Bots: { } sentries })
+        {
+            foreach ((double bxr, double byr, string counter, bool dry, bool firing, double aimX, double aimY) in sentries)
+            {
+                (float sx, float sy) = P(bxr, byr);
+                if (firing && !dry)
+                {
+                    (float zx, float zy) = P(aimX, aimY);
+                    DrawSeg((sx, sy), (zx, zy), ZapColor, 1.6f);
+                    _renderer.DrawCircle(zx, zy, 3f, ZapColor, ZapColor);
+                }
+                RgbaColor body = dry ? BotDim : BotColor;
+                DrawBox(sx, sy, 0.55f * scale, body);
+                _renderer.DrawCircle(sx, sy, 0.3f * scale, body, body);
+                // The readout: a dark panel with the two big digits, so it reads like a magazine counter.
+                float pw = 1.7f * scale, ph = 1.15f * scale;
+                FillRect(sx - pw / 2, sy - 2.3f * scale, pw, ph, new RgbaColor(16, 10, 10, 225));
+                _renderer.DrawText(sx, sy - 1.35f * scale, counter, dry ? SegDim : SegLit,
+                    "bold 15px monospace", TextAlign.Center);
+            }
         }
 
         // Consoles.

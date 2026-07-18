@@ -349,11 +349,13 @@ public partial class Map
     //    Pack the shortcut shares. ──
     private ShuttleStop? _boardTarget;
     private int _boardCoin;
+    private int _boardBots;   // #314: how many ship sentries to load as surface escorts (0..roster)
 
     private void OpenBoardingPanel(ShuttleStop stop)
     {
         _boardTarget = stop;
         _boardCoin = 0;               // #313: presume NOTHING — you are not declaring a plan
+        _boardBots = 0;               // #314: no escorts loaded until the captain asks for them
         _shuttleBayStops = null;      // the panel replaces the board
     }
 
@@ -362,6 +364,15 @@ public partial class Map
     private void AdjustBoardCoin(int delta) => _boardCoin = Math.Clamp(_boardCoin + delta, 0, _credits);
 
     private void SetBoardCoin(int amount) => _boardCoin = Math.Clamp(amount, 0, _credits);
+
+    // #314: the sentries in the roster right now (each with its magazine), and the load-count stepper.
+    private int AvailableBots => _shipBots.Count;
+    private void AdjustBoardBots(int delta) => _boardBots = Math.Clamp(_boardBots + delta, 0, AvailableBots);
+
+    // A short read of what would go down: e.g. "K-77 (99), R-3B (07)". Empty when none loaded.
+    private string LoadedBotsSummary() => _boardBots <= 0
+        ? ""
+        : string.Join(", ", _shipBots.Take(_boardBots).Select(b => $"{b.Unit} ({SentryBot.Readout(b.Rounds)})"));
 
     // Land: pack whatever (if anything) was loaded and grow the tube in place. The hold rides as cargo
     // and only leaves the ship's books if it actually goes into the ground at a dig.
@@ -375,7 +386,7 @@ public partial class Map
         ShuttleExcursion.ChestLoad chest = withChest
             ? ShuttleExcursion.Pack(_boardCoin, _credits, hold)
             : ShuttleExcursion.Pack(0, _credits, []);
-        BeginSurfaceExcursion(stop, chest);
+        BeginSurfaceExcursion(stop, chest, _boardBots); // #314: bring the loaded sentries down too
     }
 
     // Take the shuttle to a berth in range — the door is the flight. Only interior station havens (μ≤0,

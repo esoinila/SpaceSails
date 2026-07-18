@@ -138,6 +138,13 @@ public partial class Map
                 // #313: the panic drop — ditch the chest to sprint full speed, recover it later.
                 DropChest();
                 return true;
+            case "t" or "T":
+                // #314: set down a carried sentry at your feet (or pick up one you're standing on).
+                if (_surface is not null)
+                {
+                    DeployOrRetrieveSentry();
+                }
+                return true;
             default:
                 return false;
         }

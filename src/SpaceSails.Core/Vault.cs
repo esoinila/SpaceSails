@@ -80,6 +80,11 @@ public sealed record ShipSection
     public double ReactionMassPulses { get; init; }
     public int SlugAmmo { get; init; }
     public int MissileAmmo { get; init; }
+
+    /// <summary>#314 — the sentry roster's magazines, one entry per ship bot (K-77, R-3B), each 0..99
+    /// rounds. Durable ship state like the other ammo above; a missing section (old file) defaults to a
+    /// full-loaded roster on the client. Order matches <see cref="SentryBot.RosterUnits"/>.</summary>
+    public IReadOnlyList<int> SentryMagazines { get; init; } = [];
 }
 
 /// <summary>The hold. Each line is a cargo class and its unit count; the hot (stolen-while-heated)
