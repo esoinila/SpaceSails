@@ -31,6 +31,38 @@ public class SentryBotTests
         Assert.False(SentryBot.IsDry(1));
     }
 
+    // ── #324 · muster: a load never permanently shrinks the roster (the pre-#322 vault defect) ──
+
+    [Fact]
+    public void RosterFromSave_PadsAMissingMagazine_ToFull()
+    {
+        // A pre-#314/#322 vault carried NO SentryMagazines — the roster must load as full 99s, not a
+        // phantom empty rack the owner can't find. (The owner's "where are my bots".)
+        IReadOnlyList<int> full = SentryBot.RosterFromSave(null);
+        Assert.Equal(SentryBot.RosterUnits.Count, full.Count);
+        Assert.All(full, r => Assert.Equal(SentryBot.MaxMagazine, r));
+
+        // An empty list (the Vault default) loads the same way.
+        IReadOnlyList<int> fromEmpty = SentryBot.RosterFromSave([]);
+        Assert.All(fromEmpty, r => Assert.Equal(SentryBot.MaxMagazine, r));
+    }
+
+    [Fact]
+    public void RosterFromSave_KeepsRealMagazines_AndPadsOnlyTheGap()
+    {
+        // A save that stored one drained bot (e.g. it went down while the other stayed home) keeps the
+        // stored value and pads the absent second slot to full — never loses the roster count.
+        IReadOnlyList<int> mags = SentryBot.RosterFromSave([7]);
+        Assert.Equal(SentryBot.RosterUnits.Count, mags.Count);
+        Assert.Equal(7, mags[0]);
+        Assert.Equal(SentryBot.MaxMagazine, mags[1]);
+
+        // Over-full or negative stored values clamp into the legal magazine range.
+        IReadOnlyList<int> clamped = SentryBot.RosterFromSave([150, -3]);
+        Assert.Equal(SentryBot.MaxMagazine, clamped[0]);
+        Assert.Equal(0, clamped[1]);
+    }
+
     [Fact]
     public void Step_DrainsTheCounter_ForEveryShotFired()
     {

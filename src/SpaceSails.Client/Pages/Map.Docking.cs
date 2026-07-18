@@ -367,6 +367,15 @@ public partial class Map
 
     // #314: the sentries in the roster right now (each with its magazine), and the load-count stepper.
     private int AvailableBots => _shipBots.Count;
+
+    // #324: the muster line, in-voice, so the boarding panel plainly SAYS the bots stand ready (the
+    // owner's "where are my bots" — they were aboard, just never named). Names the actual roster.
+    private string BotMusterLine => _shipBots.Count switch
+    {
+        0 => "Sentry bots — none aboard (rearm at a haven)",
+        1 => $"{_shipBots[0].Unit} stands ready — bring it?",
+        _ => $"{string.Join(" and ", _shipBots.Select(b => b.Unit))} stand ready — bring them?",
+    };
     private void AdjustBoardBots(int delta) => _boardBots = Math.Clamp(_boardBots + delta, 0, AvailableBots);
 
     // A short read of what would go down: e.g. "K-77 (99), R-3B (07)". Empty when none loaded.

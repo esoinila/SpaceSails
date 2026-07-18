@@ -1270,6 +1270,15 @@
     z-index: calc(var(--z-map-chrome) + 30);
 }
 
+/* #324: on a surface excursion the enlarged SANITY gauge owns the top-left corner (owner: "let's make
+   sanity visible"), so the first-person toggle steps down and to the right of it — nothing buries the
+   gauge, and the toggle stays plainly pressable (#212 affordances-never-hide). */
+.deck-view-toggle.on-surface {
+    top: auto;
+    bottom: 2.4rem;
+    left: 0.75rem;
+}
+
 /* Round-2 audit fix 4: the Layers control was dead-center at top 3.2rem, stacking on top of the
    centered pilot-in-command banner (top 3.0rem) — the "top-center cyan control" collision. Tuck it
    into the top-left corner, clear of the banner and above the HUD toolbar (top 5.9rem). */

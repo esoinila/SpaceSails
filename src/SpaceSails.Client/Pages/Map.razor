@@ -611,18 +611,20 @@
                     <span>Hold loaded with it</span>
                     <span>@(_cargoUnits > 0 ? $"{_cargoUnits} units ({HotHoldUnits()} hot)" : "empty")</span>
                 </div>
-                @* #314: load the ship's sentry bots as surface escorts — they hold the line against the
-                   Old Ones until their 99-round magazines run dry. A margin you buy, not safety. *@
+                @* #314/#324: load the ship's sentry bots as surface escorts — they hold the line against
+                   the Old Ones until their 99-round magazines run dry. A margin you buy, not safety. The
+                   row names the troopers in-voice (#212 affordances-never-hide) so the captain KNOWS the
+                   bots are aboard and offered — the owner's "where are my bots" gap. *@
                 <div class="bury-row">
-                    <span>🤖 Sentry bots down</span>
-                    <span class="bury-coin">@_boardBots of @AvailableBots</span>
+                    <span>🤖 @BotMusterLine</span>
+                    <span class="bury-coin">@_boardBots of @AvailableBots down</span>
                 </div>
                 <div class="bury-steppers">
                     <button type="button" class="btn btn-sm btn-outline-light" disabled="@(_boardBots <= 0)" @onclick="() => AdjustBoardBots(-1)">−1 bot</button>
                     <button type="button" class="btn btn-sm btn-outline-light" disabled="@(_boardBots >= AvailableBots)" @onclick="() => AdjustBoardBots(1)">+1 bot</button>
                     @if (_boardBots > 0)
                     {
-                        <span class="bury-cargo">@LoadedBotsSummary()</span>
+                        <span class="bury-cargo">@LoadedBotsSummary() — press T on the ground to deploy</span>
                     }
                     else if (AvailableBots == 0)
                     {
@@ -725,7 +727,7 @@
        visible button while you're aboard (top-down or first person). Mirrors HandleDeckKey's 'f'. *@
     @if (_deckMode)
     {
-        <button type="button" class="deck-view-toggle btn btn-sm btn-outline-info"
+        <button type="button" class="deck-view-toggle btn btn-sm btn-outline-info @(_surface is not null ? "on-surface" : "")"
                 title="@(_fpMode ? "Back to the top-down deck plan" : "Step into first person and walk the ship")"
                 @onclick="ToggleFirstPerson">
             @(_fpMode ? "🗺 Deck plan (F)" : "🧍 First person (F)")
