@@ -280,13 +280,25 @@ public partial class Map
         await DescentPhaseAsync("welding the tube…");
         RebuildSurfaceDeck();
 
-        // Phase 3 — read the ground: flip to the deck view, then yield ONE more time so the first
-        // (cold-path) render of the enlarged surface paints UNDER the still-up door — that frame is then
-        // its own isolated block, never chained onto the weld above. Only then drop the door.
+        // Phase 3 — read the ground: flip to the deck view, then paint the FIRST surface frame HERE,
+        // under the still-up door, before ever handing control to the live loop.
         await DescentPhaseAsync("reading the ground…");
         _deckMode = true;
         _activeDesk = ShipDesk.Deck;
         _deckPanX = _deckPanY = 0;
+
+        // #348 (owner, 2026-07-18 playtest: "let's also try to fix this timeout … we basically just add
+        // dynamically some web-page content … it was just one dialog"). #333 split the descent so no
+        // dialog fired TWICE, but ONE remained: the first LIVE deck frame. The renderer batches a whole
+        // frame into two interop calls, so DeckView.Draw is almost pure managed work — and its FIRST run
+        // for the enlarged regolith (all the wall/maze/HUD paths + the text JSON) is cold-interpreted on
+        // the ~100×-slower Debug bundle. The rAF loop fires it as a single un-yielded block the instant
+        // _deckMode flips, which is the surviving page-unresponsive dialog. The boot's cure, pointed here:
+        // pay that first frame NOW, off the rAF loop, split into its two heavy halves each on its own
+        // yield (the surface step, then the paint), so the cold tiering lands in isolated slices the
+        // browser breathes between. When the live loop takes over, the paths are warm and the frame cheap.
+        await WarmFirstSurfaceFrameAsync();
+
         StateHasChanged();
         await Task.Delay(1);
         _shuttleDescending = false; // surface welded, walkable, and painted once — drop the descent door
@@ -310,6 +322,38 @@ public partial class Map
         _descentPhase = phase;
         StateHasChanged();
         await Task.Delay(1);
+    }
+
+    // #348: pay the first surface frame HERE, under the descent door, so the live rAF loop never has to
+    // cold-run it as one long block (the surviving page-unresponsive dialog). Two isolated halves, each
+    // fronted by a yield: first StepSurface(0) warms the tide/chase/tracker code without advancing time,
+    // then one DrawWalkFrame() paints the enlarged deck once (invisible under the door) to tier up the
+    // batched DeckView.Draw + its text JSON. Guarded and try/caught — a warm-up is a nicety, never a
+    // thing that may break the walk down; if anything is not ready yet, the live loop simply pays it as
+    // before (still just the one dialog we had), so this can only help.
+    private async Task WarmFirstSurfaceFrameAsync()
+    {
+        if (_deckView is null || _renderer is null || _surface is null)
+        {
+            return;
+        }
+        try
+        {
+            _descentPhase = "reading the ground — the sweep…";
+            StateHasChanged();
+            await Task.Delay(1);
+            StepSurface(0); // zero dt: advances nothing, only tiers up the first cold surface step
+
+            _descentPhase = "reading the ground — the ground…";
+            StateHasChanged();
+            await Task.Delay(1);
+            DrawWalkFrame(); // one throwaway paint under the door — warms the cold DeckView.Draw
+            await Task.Delay(1);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"surface warm-up skipped: {ex}");
+        }
     }
 
     // (Re)build the ship + tube + surface plan for the live excursion, honoring what we carry and which
