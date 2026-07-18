@@ -98,6 +98,26 @@
         </div>
     }
 
+    @* #304 — THE ARRIVAL BRAKE ASKS (owner 2026-07-18: "it is hard to remember in the heat of the moment").
+       When a long haul lands the ship hot at a destination that owes a brake, the window opens and the ship
+       asks in the captain's voice, carrying the quoted bill. Fire fires it once (through the settle path);
+       Hold declines and snoozes, re-raising while the window remains. Same .deck-offer-card overlay family. *@
+    @if (_worldReady && !_deckMode && _brakeGate.Asking)
+    {
+        <div class="deck-offer-card arrival-brake-card">
+            <div class="deck-offer-giver">🛬 Arrival brake — @_brakeDestName</div>
+            <div class="deck-offer-blurb">@ArrivalBrakeAskText()</div>
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-warning"
+                        title="Fire the arrival brake now — sheds into the clamp window through the one settle path"
+                        @onclick="FireArrivalBrake">@(BrakeIsAerobrake ? "🪂 Commit the pass" : "🔥 Fire the brake")</button>
+                <button type="button" class="btn btn-sm btn-outline-light"
+                        title="Hold the brake — you have the ship; it'll ask again while you're still coming in hot"
+                        @onclick="DeclineArrivalBrake">Hold — I'll shed by hand</button>
+            </div>
+        </div>
+    }
+
     @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
        player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
     @if (_viewObject is { } vo)

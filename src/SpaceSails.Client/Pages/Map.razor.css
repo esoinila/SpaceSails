@@ -59,6 +59,15 @@
     z-index: calc(var(--z-desks-popups) + 50);
 }
 
+/* #304 — the arrival-brake consent card: the deck-offer-card family, but a heat-of-arrival tint and a
+   z-index just above the other deck cards (still below the distress lifeline and the full-screen gates), so
+   a brake ask in the heat of arrival is never buried under a stray context menu. #299 band = ArrivalBrakeCard. */
+.arrival-brake-card {
+    border-color: rgba(255, 150, 90, 0.6);
+    box-shadow: 0 0.5rem 2rem rgba(255, 90, 40, 0.25), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+    z-index: calc(var(--z-desks-popups) + 90);
+}
+
 .deck-offer-giver {
     color: #ffd479;
     font-weight: 700;
