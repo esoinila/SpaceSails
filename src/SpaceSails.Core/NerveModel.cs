@@ -139,6 +139,13 @@ public static class NerveModel
         /// <summary>A glass shared with a contact across the table (#308) — conversation AND the drink,
         /// the real medicine that steadies the hands at ANY level.</summary>
         SharedWithContact,
+
+        /// <summary>A calming pill from the ship's MED BAY (owner's Evening-wind ruling, 2026-07-18:
+        /// "change one cabin into med bay where calming pills can be retrieved to help restore sanity to
+        /// captain"). Not a drink, but it reaches the nerve through THIS same relief seam — reused, not
+        /// parallelled. A pill rides no rum spree and never makes the deck tilty; its finite shipboard
+        /// stock is the only limiter, so the client doses it as a single, un-diminished round (tot 1).</summary>
+        CalmingPill,
     }
 
     /// <summary>Full restore of a lone galley tot at steady hands, before the level-curve and diminishing
@@ -152,6 +159,12 @@ public static class NerveModel
     /// <summary>A shared drink's restore — flat and level-independent: company steadies the hands even
     /// when nerves are shot (owner's trust-anthropology ruling; FLAGGED for tuning).</summary>
     public const double SharedDrinkRestore = 24.0;
+
+    /// <summary>A calming pill's restore (owner 2026-07-18) — flat and level-independent like a shared
+    /// drink, because real medicine steadies the hands even when nerves are shot; a touch stronger than a
+    /// lone galley tot (10) and on a par with the bar's best pour, but flat rather than curved. Its finite
+    /// shipboard stock, not drunkenness, bounds its use (FLAGGED for tuning).</summary>
+    public const double CalmingPillRestore = 20.0;
 
     /// <summary>The single point a lone drink can still manage at the shot floor — you cannot drink your
     /// way back from the edge alone; you need a face across the table (owner: "moves the needle by one").</summary>
@@ -186,6 +199,7 @@ public static class NerveModel
     public static double BaseRestoreAt(DrinkKind kind, double nerve) => kind switch
     {
         DrinkKind.SharedWithContact => SharedDrinkRestore,
+        DrinkKind.CalmingPill => CalmingPillRestore, // flat, level-independent — medicine, not a mood
         DrinkKind.BarSpecial => SoloCurve(BarSpecialBaseRestore, nerve),
         DrinkKind.GalleyTot => SoloCurve(GalleyTotBaseRestore, nerve),
         _ => 0.0,
@@ -208,6 +222,14 @@ public static class NerveModel
     /// drink that barely moves the needle at the edge admits it needs a face across the table.</summary>
     public static string SteadyingNote(DrinkKind kind, int totNumber, double restored)
     {
+        if (kind == DrinkKind.CalmingPill)
+        {
+            // The med bay's voice (owner 2026-07-18): a pill has no drunk state and no rum spree — either
+            // it takes hold, or the nerves were already too steady for it to register.
+            return restored < 2.0
+                ? "the nerves were already steady — the pill barely registers"
+                : "the calming pill takes hold — the pulse slows, the hands go still";
+        }
         if (DrunkAt(totNumber))
         {
             return "the rum has stopped helping, captain — drunk is not steady hands";

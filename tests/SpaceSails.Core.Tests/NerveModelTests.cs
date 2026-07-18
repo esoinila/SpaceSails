@@ -307,4 +307,49 @@ public class NerveModelTests
         Assert.Contains("face across the table",
             NerveModel.SteadyingNote(NerveModel.DrinkKind.BarSpecial, 1, NerveModel.SoloFloorRestore));
     }
+
+    // --- MED BAY calming pill (owner's Evening-wind ruling, 2026-07-18): the pill reaches the nerve
+    //     through THIS same relief seam. Flat, level-independent medicine — a touch stronger than a lone
+    //     tot, bounded by finite stock (the client's business), not by drunkenness. ---
+
+    [Fact]
+    public void CalmingPill_RestoresFlatAndLevelIndependent_LikeMedicine()
+    {
+        // A pill soothes the same amount at the shot floor as at mid-nerve — it does not ride the solo
+        // weak-medicine curve; medicine steadies the hands even when nerves are shot.
+        double atFloor = NerveModel.RestoreAmount(NerveModel.DrinkKind.CalmingPill, NerveModel.Min, totNumber: 1);
+        double atMid = NerveModel.RestoreAmount(NerveModel.DrinkKind.CalmingPill, 50.0, totNumber: 1);
+        Assert.Equal(NerveModel.CalmingPillRestore, atFloor, 6);
+        Assert.Equal(NerveModel.CalmingPillRestore, atMid, 6);
+    }
+
+    [Fact]
+    public void CalmingPill_IsStrongerThanALoneGalleyTot()
+    {
+        // The owner's magnitude call: a pill restores more than a lone galley tot at any level below steady.
+        double nerve = 40.0;
+        double pill = NerveModel.RestoreAmount(NerveModel.DrinkKind.CalmingPill, nerve, totNumber: 1);
+        double tot = NerveModel.RestoreAmount(NerveModel.DrinkKind.GalleyTot, nerve, totNumber: 1);
+        Assert.True(pill > tot, "a calming pill is a touch stronger than a lone tot");
+    }
+
+    [Fact]
+    public void CalmingPill_AppliedToNerve_RaisesByItsFlatRestore_AndCapsAtGauge()
+    {
+        double before = 30.0;
+        double after = NerveModel.DrinkRestore(before, NerveModel.DrinkKind.CalmingPill, totNumber: 1);
+        Assert.Equal(before + NerveModel.CalmingPillRestore, after, 6);
+
+        // A pill at a near-full gauge cannot overflow past steady hands.
+        Assert.Equal(NerveModel.Max, NerveModel.DrinkRestore(95.0, NerveModel.DrinkKind.CalmingPill, totNumber: 1), 6);
+    }
+
+    [Fact]
+    public void CalmingPill_SpeaksTheMedBayVoice_ByOutcome()
+    {
+        Assert.Contains("takes hold",
+            NerveModel.SteadyingNote(NerveModel.DrinkKind.CalmingPill, totNumber: 1, NerveModel.CalmingPillRestore));
+        Assert.Contains("already steady",
+            NerveModel.SteadyingNote(NerveModel.DrinkKind.CalmingPill, totNumber: 1, restored: 0.0));
+    }
 }
