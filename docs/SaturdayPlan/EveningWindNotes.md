@@ -87,6 +87,11 @@ longer. Every mechanic below serves that clock.
     Fail Forward, not game over — the run continues under a fresh name; the ledger, the ship and
     the hoards persist. (Ropecon Fail Forward/sanity system is the canonical source for the
     shape of this.)
+21. **Recovery is quick where it's earned** — a drink at the bar or **resting** heals the nerve
+    fast (the #339 drink-steadies-the-nerve seam is the start of this lane; rest joins it).
+22. **One cabin becomes the MED BAY** — calming pills retrieved there restore the captain's
+    sanity. The ship deck's three cabins donate one; the med bay is the shipboard answer when
+    there's no bar in reach.
 
 ## Implementation queue (owner: "let's get coding", 2026-07-18)
 
