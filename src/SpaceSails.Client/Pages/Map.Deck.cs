@@ -281,6 +281,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.Head:
                 ShowPulseMessage(HeadQuip());
                 break;
+            case DeckPlan.ConsoleKind.MedKit:
+                ShowPulseMessage(TakePill());
+                break;
             case DeckPlan.ConsoleKind.Vent:
                 VentCharge();
                 break;
@@ -516,6 +519,39 @@ public partial class Map
 
         _lastRumLine = line;
         return line;
+    }
+
+    // ---- MED BAY 💊 (owner's Evening-wind ruling, 2026-07-18: "change one cabin into med bay where
+    //      calming pills can be retrieved to help restore sanity to captain"). CABIN 3 is reborn as the
+    //      med bay; its MED KIT console dispenses ONE calming pill per press, restoring the captain's
+    //      nerve through the SAME #339 relief seam the galley drink rides (NerveModel.DrinkRestore owns
+    //      the law — reused, not parallelled). Stock is a finite shipboard supply that starts at 6;
+    //      RESTOCKING is a later lane (no resupply seam yet). ----
+    private const int MedBayPillStock = 6;
+    private int _pills = MedBayPillStock;
+
+    private string TakePill()
+    {
+        if (_pills <= 0)
+        {
+            return "MED KIT: the pill cabinet is empty — the calming stock is spent. (Restock is a later lane.)";
+        }
+
+        _pills--;
+        // A pill rides no rum spree and never makes the deck tilty (tot 1 → full, un-diminished, never
+        // "drunk"); its finite stock is the only limiter. The nerve rides the vault, so a steadier
+        // captain persists across sessions — same as the galley path (see PourRum).
+        double beforeNerve = _nerve;
+        _nerve = NerveModel.DrinkRestore(_nerve, NerveModel.DrinkKind.CalmingPill, totNumber: 1);
+        double restored = _nerve - beforeNerve;
+        string steadying = NerveModel.SteadyingNote(NerveModel.DrinkKind.CalmingPill, totNumber: 1, restored);
+        if (restored > 0)
+        {
+            RequestVaultSave(); // the nerve moved — persist the steadier hands
+        }
+
+        string tail = _pills == 1 ? "1 pill left in the cabinet." : $"{_pills} pills left in the cabinet.";
+        return $"MED KIT: a calming pill, dry-swallowed. {tail} — {steadying}";
     }
 
     // ---- The HEAD 🚽 (3D-reno Phase 3): a gag fixture in the starboard berths. Pure flavor —

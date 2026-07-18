@@ -19,7 +19,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -299,6 +299,13 @@ public sealed class DeckPlan
             new(ConsoleKind.Vent, -20, -4.5f, "VENT PANEL"),
             new(ConsoleKind.Head, 16.25f, -6.5f, "HEAD 🚽"), // the space toilet (3D-reno Phase 3)
 
+            // MED BAY (owner's Evening-wind ruling, 2026-07-18: "change one cabin into med bay where
+            // calming pills can be retrieved to help restore sanity to captain"). CABIN 3 [x 4..7.5] is
+            // reborn as the med bay; its MED KIT console sits mid-berth (mirrors the HEAD's y), and [E]
+            // there takes one calming pill (see InteractAtConsole's MedKit case). The [E] hint is drawn
+            // automatically when the captain is near, so the label stays clean.
+            new(ConsoleKind.MedKit, 5.75f, -6.5f, "MED KIT 💊"),
+
             // The gangway to a docked haven (go-ashore, 2026-07-07; moved to the airlock vestibule
             // 2026-07-08). In the docked complex you walk the tube; on the bare ship, pressing E here
             // just teaches "clamp on first" (see InteractAtConsole's Airlock case).
@@ -319,7 +326,7 @@ public sealed class DeckPlan
             (22, -7, "BRIDGE"),
             (11, 5, "CANTINA"),
             (2.5f, 12f, "⚓ AIRLOCK"),
-            (12.75f, -9f, "CABIN 1"), (9.25f, -9f, "CABIN 2"), (5.75f, -9f, "CABIN 3"),
+            (12.75f, -9f, "CABIN 1"), (9.25f, -9f, "CABIN 2"), (5.75f, -9f, "MED BAY"), // CABIN 3 → MED BAY (owner 2026-07-18)
             (-6, 8.5f, "CARGO HOLD"),
             (-6, -8.5f, "SHUTTLE BAY"),
             (-19, 5, "ENGINE ROOM"),
@@ -332,7 +339,9 @@ public sealed class DeckPlan
             new("art/the-space-bar.jpg", 6, 10, 12, 7, 0.9f),   // CANTINA, zone x∈[6,18] y∈[3,10]
             new("art/cabin-tidy.jpg", 11, -3, 3.5f, 7, 0.9f),   // CABIN 1
             new("art/cabin-messy-a.jpg", 7.5f, -3, 3.5f, 7, 0.9f), // CABIN 2
-            new("art/cabin-messy-b.jpg", 4, -3, 3.5f, 7, 0.9f), // CABIN 3
+            // CABIN 3 → MED BAY (owner 2026-07-18): the med-bay backdrop replaces the old messy-cabin art,
+            // wired exactly as the cabin arts are (Grok-generated ship-med-bay.jpg, same zone/alpha).
+            new("art/ship-med-bay.jpg", 4, -3, 3.5f, 7, 0.9f), // MED BAY (was CABIN 3)
             new("art/space-head.jpg", 14.5f, -3, 3.5f, 7, 0.9f), // HEAD 🚽
         ];
 
@@ -377,7 +386,7 @@ public sealed class DeckPlan
         if (x < -14) return "ENGINE ROOM";
         if (x is > -1 and < 6 && y > 3) return y > 10 ? "AIRLOCK" : "AIRLOCK CORRIDOR";
         if (x > 6 && y > 3) return "CANTINA";
-        if (x > 4 && y < -3) return x > 14.5 ? "HEAD" : "CABINS";
+        if (x > 4 && y < -3) return x > 14.5 ? "HEAD" : x < 7.5 ? "MED BAY" : "CABINS"; // CABIN 3 → MED BAY (owner 2026-07-18)
         if (x > 4) return "CORRIDOR";
         if (x > -12) return y > 3 ? "CARGO HOLD" : y < -3 ? "SHUTTLE BAY" : "CORRIDOR";
         return "CORRIDOR";
