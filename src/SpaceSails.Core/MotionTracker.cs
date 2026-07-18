@@ -85,6 +85,40 @@ public static class MotionTracker
         _ => Cadence.Distant,
     };
 
+    /// <summary>PR-330 · The largest tracker radius up to <paramref name="desired"/> that still fits the
+    /// left-edge column beneath the SANITY plate at this viewport — so a small screen SHRINKS the disc
+    /// proportionally rather than clipping it (owner: bigger, and fully visible). Floored so it never
+    /// collapses to nothing.</summary>
+    public static double TrackerRadius(double width, double height, double columnTop, double desired)
+    {
+        const double margin = 10, leftInset = 18, labelReserve = 18, readoutReserve = 24, minR = 44;
+        double horiz = (width - margin - leftInset - 12) / 2.0;
+        double vert = (height - margin - columnTop - labelReserve - readoutReserve) / 2.0;
+        double r = System.Math.Min(desired, System.Math.Min(horiz, vert));
+        return System.Math.Max(minR, r);
+    }
+
+    /// <summary>PR-330 · The tracker's screen anchor (owner: "let's put the motion under the sanity
+    /// meter"): a left-edge instrument column, the disc centred directly BELOW the SANITY plate. Pure so
+    /// the placement clamps like a menu would — the whole widget (its caption above, its readout below)
+    /// is kept inside the viewport, shifting up at small heights so the bottom keybar is never buried.
+    /// <paramref name="columnTop"/> is the y the column may start at (the SANITY plate's bottom + gap).</summary>
+    public static (double Cx, double Cy) TrackerAnchor(double width, double height, double radius, double columnTop)
+    {
+        const double margin = 10, leftInset = 18, labelReserve = 18, readoutReserve = 24;
+        double cx = System.Math.Min(leftInset + radius + 6, System.Math.Max(margin, width - margin - radius - 6));
+        double halfTop = radius + labelReserve;   // disc + the caption above it
+        double halfBot = radius + readoutReserve;  // disc + the readout below it
+        double loCy = margin + halfTop;
+        double hiCy = height - margin - halfBot;
+        double cy = System.Math.Max(loCy, columnTop + halfTop);
+        if (hiCy >= loCy)
+        {
+            cy = System.Math.Min(cy, hiCy);
+        }
+        return (cx, cy);
+    }
+
     /// <summary>The house-voice readout for the tracker's nearest contact: "movement — 40 du, closing".
     /// <paramref name="closing"/> reflects whether the nearest range is shrinking (client-computed from
     /// the last sweep). No movers → the honest, cold "no movement — for now".</summary>
