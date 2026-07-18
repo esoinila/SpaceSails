@@ -47,10 +47,10 @@ public static class MoonSurface
     public const float MonolithX = -6f;
     public const float MonolithY = -70f;
 
-    /// <summary>Where a NEW chest goes into the ground — deep by the monolith (open floor to its port,
-    /// clear of the maze spurs), the commitment spot: a long walk out, a worse sprint back.</summary>
-    public const float DigFieldX = MonolithX - 5f;
-    public const float DigFieldY = MonolithY;
+    // #313's single fixed ⛏ DIG HERE field (DigFieldX/DigFieldY, deep by the monolith) is RETIRED by the
+    // beach-comber kit (owner, Evening wind 2026-07-18: "bury anywhere"). Burying and probing now happen
+    // where the captain STANDS — any diggable square (see IsDiggableGround) — so there is no one commitment
+    // spot; the whole deep field is fair game, and a swept grid remembers where you've already checked.
 
     /// <summary>The crew-only threshold (owner): Old Ones are penned on the surface at the tube mouth and
     /// can never climb it — the door won't open to them. Fed to <c>ReeverChase.Step</c>.</summary>
@@ -78,6 +78,15 @@ public static class MoonSurface
     /// crew-only-door law. The sprint is won here.</summary>
     public static bool IsSafeAboard(double avatarY) => avatarY > SurfaceTopY;
 
+    /// <summary>The beach-comber kit's "reasonable surface square" test (owner, 2026-07-18: bury/probe
+    /// anywhere "outside the landing band / walls"). A spot is diggable when it sits on the open regolith —
+    /// deeper than the landing band (so the fused landing pad and the way home stay off-limits) and inside
+    /// the field's fenced rim. Wall/maze squares never reach this: the shared collision keeps the avatar
+    /// out of them, so a spot the captain can stand on and pass this check is genuine open ground.</summary>
+    public static bool IsDiggableGround(double x, double y) =>
+        y < LandingBandY && y > SurfaceBottomY &&
+        x > SurfaceLeftX && x < SurfaceRightX;
+
     /// <summary>A deterministic surface position for an own cache's ✗ — scattered through the deep field
     /// so revisits find each mark in a stable spot (the record stores bearing/paces text, not a grid
     /// point, so we derive one). Kept below the landing band: every chest is a committed walk.</summary>
@@ -103,13 +112,13 @@ public static class MoonSurface
 
     /// <summary>
     /// Build the ship + dual-door airlock + down-tube + wide barren surface as one continuous walkable
-    /// plan. <paramref name="carryingChest"/> grows the ⛏ DIG HERE site (deep, by the monolith);
-    /// <paramref name="ownCaches"/> plant a 🗺 dig console at each own cache's ✗. <paramref name="fillDroids"/>
-    /// and <paramref name="droidCount"/> come from the caller so the crew and the live Old Ones share one
-    /// buffer.
+    /// plan. Burying and probing are now free-form (E where you stand — the beach-comber kit), so there is
+    /// no fixed ⛏ console; only each own cache's ✗ plants a 🗺 dig console at its recorded spot
+    /// (<paramref name="ownCaches"/>). <paramref name="fillDroids"/> and <paramref name="droidCount"/> come
+    /// from the caller so the crew and the live Old Ones share one buffer.
     /// </summary>
     public static DeckPlan SurfaceDeck(
-        string bodyDisplayName, bool carryingChest,
+        string bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids)
     {
@@ -155,14 +164,8 @@ public static class MoonSurface
             new(DeckPlan.ConsoleKind.Kiosk, TubeCenterX - 9f, LandingBandY, "🛒 SOUVENIR KIOSK"),
         };
 
-        // The ⛏ dig site only exists when there is a reason to dig — a chest in cargo to bury (deep, by
-        // the monolith — the commitment vault).
-        if (carryingChest)
-        {
-            consoles.Add(new(DeckPlan.ConsoleKind.DigSite, DigFieldX, DigFieldY, "⛏ DIG HERE"));
-        }
-
-        // An own cache's ✗ gets a dig console at its mark (contextual 'dig at the X').
+        // No fixed ⛏ console any more (beach-comber kit): burying is free-form, E where you stand. Only an
+        // own cache's ✗ gets a dig console at its mark (contextual 'dig at the X').
         foreach ((string _, double cx, double cy, int _) in ownCaches)
         {
             consoles.Add(new(DeckPlan.ConsoleKind.DigSite, (float)cx, (float)cy, "🗺 DIG AT THE X"));

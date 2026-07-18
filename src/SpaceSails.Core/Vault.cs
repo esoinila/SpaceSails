@@ -165,6 +165,13 @@ public sealed record CacheRecord
     /// <summary>The stash's standing Reever presence (#295), 0..3. Defaults to 0 so a pre-#295 vault
     /// file (no field) loads as an unhaunted chest — a lossless round-trip.</summary>
     public int ReeverLevel { get; init; }
+
+    /// <summary>The REAL dug spot (beach-comber kit, owner 2026-07-18 "bury anywhere" / playtest bug #5).
+    /// Nullable so an older vault file (no fields) loads with both null — the client then falls back to the
+    /// hash-scatter position (<c>MoonSurface.CachePosition</c>), a lossless round-trip for every legacy
+    /// cache. A free-form bury persists the actual coords, so the ✗ reloads where the shovel dug.</summary>
+    public double? DigX { get; init; }
+    public double? DigY { get; init; }
 }
 
 public sealed record CacheCargoRecord(string CargoClass, int Units, bool Hot);

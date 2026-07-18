@@ -60,13 +60,14 @@ public static class CacheMint
     /// no clock read (the caller passes the burial time).</summary>
     public static TreasureCache Bury(
         string id, string bodyId, int mintIndex, int coin, IReadOnlyList<CacheCargo> cargo,
-        double buriedSimTime, string owner, bool playerOwned, int reeverLevel = 0)
+        double buriedSimTime, string owner, bool playerOwned, int reeverLevel = 0,
+        double? digX = null, double? digY = null)
     {
         Landmark site = Landmarks.For(bodyId);
         string seed = SeedKey(bodyId, owner, buriedSimTime, mintIndex);
         return new TreasureCache(
             id, bodyId, site.Name, Bearing(seed), Paces(seed),
-            coin, cargo ?? [], buriedSimTime, owner, playerOwned, reeverLevel);
+            coin, cargo ?? [], buriedSimTime, owner, playerOwned, reeverLevel, digX, digY);
     }
 }
 

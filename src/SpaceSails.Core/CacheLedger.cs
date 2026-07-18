@@ -27,11 +27,11 @@ public sealed class CacheLedger
 
     /// <summary>Bury a freshly minted chest: it goes to the front of the ledger and its map is now
     /// ours to view any time. Returns the stored cache (with its final id and map text).</summary>
-    public TreasureCache Bury(string bodyId, int coin, IReadOnlyList<CacheCargo> cargo, double simTime, string owner, bool playerOwned, int reeverLevel = 0)
+    public TreasureCache Bury(string bodyId, int coin, IReadOnlyList<CacheCargo> cargo, double simTime, string owner, bool playerOwned, int reeverLevel = 0, double? digX = null, double? digY = null)
     {
         int mint = _seq++;
         string id = $"cache-{(playerOwned ? "you" : "npc")}-{mint}";
-        TreasureCache cache = CacheMint.Bury(id, bodyId, mint, coin, cargo, simTime, owner, playerOwned, reeverLevel);
+        TreasureCache cache = CacheMint.Bury(id, bodyId, mint, coin, cargo, simTime, owner, playerOwned, reeverLevel, digX, digY);
         _caches.Insert(0, cache);
         return cache;
     }

@@ -41,6 +41,13 @@ public readonly record struct CacheCargo(string CargoClass, int Units, bool Hot)
 /// return (our dig or a rival's search) and hardens the stash against a rival's slow discovery roll — a
 /// Reever-haunted moon is the best vault with the most dangerous key. Defaults to 0 so every older saved
 /// cache (and every rumour/NPC chest) round-trips unchanged.</param>
+/// <param name="DigX">The REAL surface x the chest went into the ground (beach-comber kit, owner Evening
+/// wind 2026-07-18: "bury anywhere"). Playtest bug #5: the ✗ used to render at a hash-scattered spot, not
+/// where you dug — free-form burying records the actual dug position so the mark, and "dig at the X",
+/// land where the shovel did. Null for an older save, a rumour/NPC chest, or any cache with no recorded
+/// spot; the client then falls back to the deterministic hash-scatter (<c>MoonSurface.CachePosition</c>),
+/// so every legacy cache round-trips unchanged.</param>
+/// <param name="DigY">The REAL surface y the chest went into the ground (see <paramref name="DigX"/>).</param>
 public readonly record struct TreasureCache(
     string Id,
     string BodyId,
@@ -52,8 +59,14 @@ public readonly record struct TreasureCache(
     double BuriedSimTime,
     string Owner,
     bool PlayerOwned,
-    int ReeverLevel = 0)
+    int ReeverLevel = 0,
+    double? DigX = null,
+    double? DigY = null)
 {
+    /// <summary>True when this cache recorded the actual dug spot (free-form bury) rather than leaning on
+    /// the hash-scatter — both coords present. A legacy or rumour cache has neither and falls back.</summary>
+    public bool HasDigSpot => DigX is not null && DigY is not null;
+
     /// <summary>Total cargo units in the chest (0 when it holds only coin).</summary>
     public int TotalCargoUnits => Cargo?.Sum(c => c.Units) ?? 0;
 

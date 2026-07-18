@@ -231,6 +231,11 @@ public partial class Map
     {
         switch (_deckPlan.NearestConsole(_avatarX, _avatarY))
         {
+            case DeckPlan.ConsoleKind.None:
+                // No console in reach. On a surface excursion, bare-ground E is the beach-comber dig —
+                // bury the carried chest here, or probe an empty hole (a no-op anywhere else).
+                SurfaceGroundInteract();
+                break;
             case DeckPlan.ConsoleKind.Airlock:
                 // Only the bare-ship gangway raises this (the docked complex drops the console — you
                 // walk the tube). So it's always the "can't go ashore here" nudge.
