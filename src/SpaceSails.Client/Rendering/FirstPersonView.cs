@@ -220,7 +220,9 @@ public sealed class FirstPersonView
             float baseY = cy + (float)(heightPx * WallHeightK / Math.Max(perp, 0.4)) / 2 * 0.96f;
             float u = h / 10f;
             double shade = 1.0 / (1.0 + perp * 0.05);
-            var body = new RgbaColor((byte)(DroidBody.R * shade), (byte)(DroidBody.G * shade), (byte)(DroidBody.B * shade));
+            // #295: a Reever reads hostile even in first person — a rust-red figure, not crew grey.
+            RgbaColor skin = droid.Name == "Reever" ? new RgbaColor(230, 80, 70) : DroidBody;
+            var body = new RgbaColor((byte)(skin.R * shade), (byte)(skin.G * shade), (byte)(skin.B * shade));
 
             // Legs.
             DrawSeg(x - 1.2f * u, baseY, x - 0.8f * u, baseY - 3f * u, body, 1.6f);
