@@ -521,11 +521,11 @@
     @if (_deckMode && _shuttleBayStops is { } shuttleStops)
     {
         <div class="deck-shuttle-card">
-            <div class="deck-shuttle-title">🚀 Shuttle bay airlock — in range</div>
+            <div class="deck-shuttle-title">🛸 Board the shuttle — where to?</div>
             @if (shuttleStops.Count == 0)
             {
                 <div class="deck-shuttle-empty">
-                    Nothing in shuttle range — no berth within
+                    Nothing in shuttle range — no destination within
                     @((ShuttleRange.RangeMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km.
                     The hatch stays shut.
                 </div>
@@ -538,8 +538,10 @@
                         ShuttleStop local = stop;
                         <div class="deck-shuttle-row">
                             <div class="deck-shuttle-dest">
-                                <span class="deck-shuttle-name">@(local.HasBerth ? "⚓" : "🌑") @local.Body.Name</span>
-                                <span class="deck-shuttle-meta">@FormatDistance(local.DistanceMeters) · ETA @FormatDuration(local.TravelSeconds)</span>
+                                <span class="deck-shuttle-name">@(local.HasBerth ? "⚓" : local.IsLandable ? "🌑" : "•") @local.Body.Name</span>
+                                <span class="deck-shuttle-meta">
+                                    @FormatDistance(local.DistanceMeters) · ETA @FormatDuration(local.TravelSeconds)@(local.HasCache ? " · a chest waits here 🗺" : "")
+                                </span>
                             </div>
                             <div class="deck-shuttle-row-actions">
                                 @if (local.HasBerth)
@@ -548,21 +550,15 @@
                                             title="Take the shuttle to @local.Body.Name — the clock advances by the crossing, then you step off ashore"
                                             @onclick="() => TakeShuttleTo(local)">Take the shuttle →</button>
                                 }
-                                @* #223: a landable moon/asteroid grows the buried-treasure doors. Bury sinks
-                                   coin/cargo off the ship (invisible to confiscation); Dig lifts a known cache. *@
-                                @if (IsLandableForCache(local.Body))
+                                @* #313: a landable surface — board it (destination, not intent). The tube grows in
+                                   place; what you do on the ground is decided on the ground. *@
+                                @if (local.IsLandable)
                                 {
                                     <button type="button" class="btn btn-sm btn-outline-warning"
-                                            title="Land on @local.Body.Name and bury a chest on foot — off the ship, off the books (mind the Reevers)"
-                                            @onclick="() => OpenBuryChooser(local)">⛏ Bury a chest</button>
+                                            title="Board the shuttle for @local.Body.Name — the down-tube grows on the map and you walk down. Bring cargo if you like; decide on the ground."
+                                            @onclick="() => OpenBoardingPanel(local)">🛸 Board for @local.Body.Name</button>
                                 }
-                                @if (_caches.HasCacheAt(local.Body.Id))
-                                {
-                                    <button type="button" class="btn btn-sm btn-success"
-                                            title="Land and dig at the X on foot — the map never lies, but the watchdogs may still be about"
-                                            @onclick="() => DigAt(local)">🗺 Dig at the X</button>
-                                }
-                                @if (!local.HasBerth && !IsLandableForCache(local.Body) && !_caches.HasCacheAt(local.Body.Id))
+                                @if (!local.HasBerth && !local.IsLandable)
                                 {
                                     <span class="deck-shuttle-noberth"
                                           title="In shuttle range, but there's nowhere to step off yet">no berth ashore yet</span>
@@ -578,36 +574,38 @@
         </div>
     }
 
-    @* #223: the bury-a-chest chooser — pick how much of the purse to sink; the hold goes in whole
-       (it's small). Confirming flies the shuttle down: the clock advances by the crossing, the loot
-       leaves the ship, and the map card is minted. *@
-    @if (_buryTarget is { } buryStop)
+    @* #313: the boarding panel — cargo, not a confession. An OPTIONAL 'load a chest' step (coin dial +
+       the whole small hold). Landing empty-handed is a complete visit; the intentions live on the ground. *@
+    @if (_boardTarget is { } boardStop)
     {
         <div class="deck-shuttle-card">
-            <div class="deck-shuttle-title">⛏ Bury a chest on @buryStop.Body.Name</div>
+            <div class="deck-shuttle-title">🛸 Board the shuttle → @boardStop.Body.Name</div>
             <div class="bury-chooser-body">
+                <div class="bury-note">Loading cargo is optional — you are not declaring a plan. Walk down, look around, buy a souvenir, or find a spot to dig. Your call, on the ground.</div>
                 <div class="bury-row">
-                    <span>Coin to bury</span>
-                    <span class="bury-coin">@_buryCoin.ToString("N0", CultureInfo.InvariantCulture) cr</span>
+                    <span>Coin in the chest (optional)</span>
+                    <span class="bury-coin">@_boardCoin.ToString("N0", CultureInfo.InvariantCulture) cr</span>
                 </div>
                 <div class="bury-steppers">
-                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBuryCoin(-500)">−500</button>
-                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBuryCoin(-100)">−100</button>
-                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBuryCoin(100)">+100</button>
-                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBuryCoin(500)">+500</button>
-                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="() => SetBuryCoin(_credits)">All @_credits.ToString("N0", CultureInfo.InvariantCulture)</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBoardCoin(-500)">−500</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBoardCoin(-100)">−100</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBoardCoin(100)">+100</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => AdjustBoardCoin(500)">+500</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="() => SetBoardCoin(_credits)">All @_credits.ToString("N0", CultureInfo.InvariantCulture)</button>
                 </div>
                 <div class="bury-row bury-cargo">
-                    <span>Hold buried with it</span>
+                    <span>Hold loaded with it</span>
                     <span>@(_cargoUnits > 0 ? $"{_cargoUnits} units ({HotHoldUnits()} hot)" : "empty")</span>
                 </div>
-                <div class="bury-note">Buried loot is off the ship — the collectors take only what they can see. You'll carry the chest out on foot; watch for Reevers.</div>
             </div>
             <div class="deck-shuttle-actions">
-                <button type="button" class="btn btn-sm btn-warning" disabled="@(_buryCoin <= 0 && _cargoUnits <= 0)"
-                        title="Fly the shuttle down and step out onto the surface — you carry the chest to the dig site and bury it on foot"
-                        @onclick="() => ConfirmBury(buryStop)">Land &amp; carry it down ⛏ (@FormatDuration(buryStop.TravelSeconds))</button>
-                <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBury">Never mind</button>
+                <button type="button" class="btn btn-sm btn-warning" disabled="@(_boardCoin <= 0 && _cargoUnits <= 0)"
+                        title="Board with a chest loaded — you can bury it on the ground, or bring it home unspent"
+                        @onclick="() => ConfirmBoarding(boardStop, true)">🛸 Board with a chest (@FormatDuration(boardStop.TravelSeconds))</button>
+                <button type="button" class="btn btn-sm btn-outline-warning"
+                        title="Board empty-handed — a look around @boardStop.Body.Name commits to nothing"
+                        @onclick="() => ConfirmBoarding(boardStop, false)">🛸 Board empty-handed</button>
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBoarding">Never mind</button>
             </div>
         </div>
     }

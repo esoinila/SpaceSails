@@ -325,30 +325,13 @@ public partial class Map
     // relocates. Buried loot lives in _caches, never in _credits/_cargoByClass, so a confiscation that
     // reads only carried goods can never see it. X always marks the spot.
 
-    // A body you can put a chest on: a moon or asteroid (a surface to walk), never a station or planet.
+    // A body you can put a chest on: a moon (a surface to walk), never a station or planet. (Now also
+    // encoded as the pure ShuttleExcursion.IsLandableSurface, which the destination board uses.)
     private bool IsLandableForCache(CelestialBody b) => b.Kind == BodyKind.Moon;
 
-    private void OpenBuryChooser(ShuttleStop stop)
-    {
-        _buryTarget = stop;
-        _buryCoin = Math.Min(_credits, 500); // a sensible opening bid; the dial and "All" adjust it
-        _shuttleBayStops = null;             // the chooser replaces the door list
-    }
-
-    private void CancelBury() => _buryTarget = null;
-
-    private void AdjustBuryCoin(int delta) => _buryCoin = Math.Clamp(_buryCoin + delta, 0, _credits);
-
-    private void SetBuryCoin(int amount) => _buryCoin = Math.Clamp(amount, 0, _credits);
-
-    // The chooser is confirmed: the chest is packed. Fly the shuttle down and open the WALKED surface
-    // scene (#295) — the actual burial happens out at the dig site, on foot. Retired the old
-    // fire-and-forget mint here; LandToBury / the dig-site [E] tell the story now (see Map.Surface).
-    private void ConfirmBury(ShuttleStop stop) => LandToBury(stop);
-
-    // Dig at the X is a walk too now (#295): land on the surface and lift the chest at the dig site,
-    // which re-rolls the same 2D6 watchdogs. See Map.Surface.LandToDig / LiftChestsHere.
-    private void DigAt(ShuttleStop stop) => LandToDig(stop);
+    // #313 retired the intent-first bury/dig chooser (OpenBuryChooser/ConfirmBury/DigAt and the old
+    // LandToBury/LandToDig). The single door now is destination-first: board a surface (Map.Docking's
+    // OpenBoardingPanel), walk down, and the intentions live on the ground, contextually (Map.Surface).
 
     private void DismissMapCard() => _treasureMapCard = null;
 
@@ -1554,11 +1537,6 @@ public partial class Map
     // The treasure-map card currently on screen (the full-screen artifact), or null. Shown on burying
     // a fresh chest and any time the captain opens a map from the ledger's 🗺 section.
     private TreasureCache? _treasureMapCard;
-
-    // The bury-a-chest chooser: the body we're about to bury on and how much of the purse to sink. Null
-    // when the chooser is shut. Cargo goes in whole (the hold is small); coin is the dial.
-    private ShuttleStop? _buryTarget;
-    private int _buryCoin;
 
     // The fanfare (#185): a completion is a CELEBRATION, not a silent credit. One pop-up at a time;
     // extras queue so a double payout still gets its due.

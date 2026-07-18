@@ -92,6 +92,10 @@ public partial class Map
     private readonly HashSet<string> _deckKeys = [];
     private const double AvatarSpeed = 9.0; // deck units per real second
 
+    // #313: carrying a chest on the surface slows the captain (0.8×) — still faster than the Old Ones'
+    // shamble (5.6), but DROPPING it (G) restores full speed. Off-surface / empty-handed = full speed.
+    private double CurrentWalkSpeed => _surface is { Carrying: true } ? AvatarSpeed * CarryChestSpeedFactor : AvatarSpeed;
+
     private const string ScopeCanvasId = "scope-canvas";
     private const int ScopeSizePx = 280;
     private ScopeView? _scopeView;
@@ -130,6 +134,10 @@ public partial class Map
                 // PR-WIRE: bank at the contact's table — deposit, withdraw or borrow (in person).
                 OpenBankAtBar();
                 return true;
+            case "g" or "G":
+                // #313: the panic drop — ditch the chest to sprint full speed, recover it later.
+                DropChest();
+                return true;
             default:
                 return false;
         }
@@ -155,7 +163,7 @@ public partial class Map
             double walk = (_deckKeys.Contains("w") ? 1 : 0) - (_deckKeys.Contains("s") ? 1 : 0);
             if (walk != 0)
             {
-                double step = AvatarSpeed * dt * walk;
+                double step = CurrentWalkSpeed * dt * walk;
                 (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY,
                     Math.Cos(_avatarHeading) * step, Math.Sin(_avatarHeading) * step);
                 RefreshAshore();
@@ -175,7 +183,7 @@ public partial class Map
         }
 
         double norm = Math.Sqrt(dx * dx + dy * dy);
-        double step2 = AvatarSpeed * dt;
+        double step2 = CurrentWalkSpeed * dt;
             if (wobble != 0 && (dx != 0 || dy != 0))
             {
                 double a = Math.Sin((_lastTimestampMs ?? 0) * 0.004) * 0.45;
@@ -296,6 +304,9 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.DigSite:
                 DigSiteInteract();
+                break;
+            case DeckPlan.ConsoleKind.Kiosk:
+                VisitKiosk();
                 break;
             case DeckPlan.ConsoleKind.SurfaceAirlock:
                 LiftOffFromSurface();

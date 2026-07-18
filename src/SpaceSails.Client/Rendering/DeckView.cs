@@ -15,6 +15,18 @@ public sealed class DeckView
         int CargoUnits, double Charge, bool ShuttleAway, bool ElectricUniverse,
         bool Docked = false);
 
+    /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
+    /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan
+    /// (moving blips by bearing/range, cadence-pulsed). Null off-surface — the ship draws none of it.</summary>
+    public readonly record struct SurfaceHud(
+        double DigProgress,          // <0 = not channeling
+        double SiteX, double SiteY,
+        bool HasDroppedChest, double DropX, double DropY,
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range)> Blips,
+        int Cadence,                 // MotionTracker.Cadence as int
+        string Readout,
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, bool Haunted)> CacheMarks);
+
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
     private static readonly RgbaColor InnerLine = new(110, 125, 145, 200);
@@ -41,7 +53,8 @@ public sealed class DeckView
         _renderer = renderer;
     }
 
-    public void Draw(DeckPlan plan, int widthPx, int heightPx, double simTime, in State state, double panX = 0, double panY = 0)
+    public void Draw(DeckPlan plan, int widthPx, int heightPx, double simTime, in State state,
+        double panX = 0, double panY = 0, SurfaceHud? surface = null)
     {
         _renderer.BeginFrame(widthPx, heightPx, Floor);
 
@@ -108,6 +121,28 @@ public sealed class DeckView
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
         {
             _renderer.DrawText(P(lx, ly).X, P(lx, ly).Y, text, TextDim, "10px monospace", TextAlign.Center);
+        }
+
+        // #313 surface ground overlays: own caches' ✗ marks and a panic-dropped chest (drawn under the
+        // avatar/droids so a mover can stand on them).
+        if (surface is { } hud)
+        {
+            foreach ((double mx, double my, bool haunted) in hud.CacheMarks)
+            {
+                (float sx, float sy) = P(mx, my);
+                var xcol = haunted ? new RgbaColor(230, 120, 90, 230) : new RgbaColor(230, 210, 120, 230);
+                _renderer.DrawText(sx, sy + 4, "✗", xcol, "bold 16px monospace", TextAlign.Center);
+                if (haunted)
+                {
+                    _renderer.DrawText(sx, sy - 12, "yours · something walks near it", new RgbaColor(230, 120, 90, 170), "8px monospace", TextAlign.Center);
+                }
+            }
+            if (hud.HasDroppedChest)
+            {
+                (float dx2, float dy2) = P(hud.DropX, hud.DropY);
+                _renderer.DrawText(dx2, dy2 + 5, "🧰", new RgbaColor(200, 160, 90, 240), "15px monospace", TextAlign.Center);
+                _renderer.DrawText(dx2, dy2 - 11, "dropped chest", new RgbaColor(200, 160, 90, 180), "8px monospace", TextAlign.Center);
+            }
         }
 
         if (isShip)
@@ -194,6 +229,24 @@ public sealed class DeckView
         float hy = ay - (float)Math.Sin(state.HeadingRad) * scale * 1.1f;
         DrawSeg((ax, ay), (hx, hy), AvatarColor, 2f);
 
+        // #313 the dig channel: a shovel glyph over the captain and a crude progress bar — the
+        // vulnerability window, drawn ON the grid so the player watches the tracker while it fills.
+        if (surface is { DigProgress: >= 0 } dig)
+        {
+            _renderer.DrawText(ax, ay - 1.6f * scale, "⛏", new RgbaColor(255, 230, 140, 240), "bold 15px monospace", TextAlign.Center);
+            float bw = 3.2f * scale, bh = 0.45f * scale;
+            float bx0 = ax - bw / 2, by0 = ay + 1.1f * scale;
+            FillRect(bx0, by0, bw, bh, new RgbaColor(20, 24, 30, 220));
+            FillRect(bx0, by0, bw * (float)Math.Clamp(dig.DigProgress, 0, 1), bh, new RgbaColor(255, 200, 90, 240));
+        }
+
+        // #313 the motion tracker: a crude corner fan of MOVING blips (bearing/range), including
+        // contacts beyond the grid edge — the early warning. Cadence pulses the blips as they close.
+        if (surface is { } tHud)
+        {
+            DrawMotionTracker(widthPx, heightPx, simTime, tHud);
+        }
+
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or
         // how to go ashore — the tester could only guess "airlock" by genre convention.
         _renderer.DrawText(ox, heightPx - 10,
@@ -203,6 +256,49 @@ public sealed class DeckView
             TextDim, "11px monospace", TextAlign.Center);
 
         _renderer.EndFrame();
+    }
+
+    private void FillRect(float x, float y, float w, float h, RgbaColor color)
+    {
+        Span<float> s = _scratch.AsSpan(0, 8);
+        s[0] = x; s[1] = y; s[2] = x + w; s[3] = y; s[4] = x + w; s[5] = y + h; s[6] = x; s[7] = y + h;
+        _renderer.DrawPolygon(s, color, color, 1f);
+    }
+
+    // The crude motion-tracker fan (top-right corner, screen-space): a graph-paper radar showing MOVING
+    // contacts by bearing + range, clamped to the ring when beyond it. Blips pulse faster as they close.
+    private static readonly RgbaColor TrackerRing = new(120, 200, 150, 150);
+    private static readonly RgbaColor TrackerBlip = new(120, 255, 160, 230);
+
+    private void DrawMotionTracker(int widthPx, int heightPx, double simTime, in SurfaceHud hud)
+    {
+        _ = heightPx;
+        float r = 46f;
+        float cx = widthPx - r - 18f, cy = r + 18f;
+
+        // The graph-paper fan: two rings + crosshair.
+        _renderer.DrawCircle(cx, cy, r, new RgbaColor(8, 14, 12, 180), TrackerRing, 1.5f);
+        _renderer.DrawCircle(cx, cy, r * 0.55f, null, new RgbaColor(120, 200, 150, 70), 1f);
+        DrawSeg((cx - r, cy), (cx + r, cy), new RgbaColor(120, 200, 150, 60), 1f);
+        DrawSeg((cx, cy - r), (cx, cy + r), new RgbaColor(120, 200, 150, 60), 1f);
+        _renderer.DrawText(cx, cy - r - 4, "MOTION", TrackerRing, "8px monospace", TextAlign.Center);
+
+        // Cadence → blink phase. Silent(0) steady, up to Imminent(3) frantic.
+        double hz = hud.Cadence switch { 3 => 6.0, 2 => 3.0, 1 => 1.3, _ => 0.0 };
+        bool on = hz <= 0 || Math.Sin(simTime * 0.001 * hz * 2 * Math.PI) > -0.2;
+
+        const double maxRange = 60.0; // du mapped to the ring's edge; farther clamps to the rim
+        foreach ((double bearing, double range) in hud.Blips)
+        {
+            double rr = Math.Min(range / maxRange, 1.0) * (r - 4);
+            // World bearing: +x = right, +y = port (up on screen) → screen y flips.
+            float bx = cx + (float)(Math.Cos(bearing) * rr);
+            float by = cy - (float)(Math.Sin(bearing) * rr);
+            var col = on ? TrackerBlip : new RgbaColor(120, 255, 160, 90);
+            _renderer.DrawCircle(bx, by, range > maxRange ? 2.2f : 3f, col, col);
+        }
+
+        _renderer.DrawText(cx, cy + r + 9, hud.Readout, TrackerRing, "8px monospace", TextAlign.Center);
     }
 
     private void DrawSeg((float X, float Y) a, (float X, float Y) b, RgbaColor color, float width)
