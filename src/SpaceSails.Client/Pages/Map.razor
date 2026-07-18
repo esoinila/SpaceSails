@@ -250,6 +250,33 @@
         </div>
     }
 
+    @* #247 — the barkeep's counter menu. Owner ashore: "How do I get a drink at the Rusty bar here?"
+       Walk up to the bar, press E: buy the house special (routes through the Galley's rum-tot law, so
+       overdoing it tilts the deck ashore too), stand a round for the room (warms the regulars), or ask
+       for a rumor. Same overlay family as the deck-offer-card. *@
+    @if (_deckMode && _barMenu is { } keep)
+    {
+        <div class="deck-offer-card">
+            <div class="deck-offer-giver">🍺 @keep.Name · @keep.BarName</div>
+            <div class="deck-offer-blurb">
+                House special: <strong>@keep.DrinkName</strong> — @keep.DrinkFlavor
+            </div>
+            @if (_barNotice is { } note)
+            {
+                <div class="deck-bank-notice small">@note</div>
+            }
+            <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
+                        title="@($"Buy the house special — {keep.DrinkPrice} cr")" @onclick="BuyHouseSpecial">🍹 @keep.DrinkName · @keep.DrinkPrice cr</button>
+                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
+                        title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
+                <button type="button" class="btn btn-sm btn-outline-info" title="Ask the barkeep what they've heard lately" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="CloseBarkeep">Done</button>
+            </div>
+        </div>
+    }
+
     @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
        bay's airlock lists the places within one shuttle hop. An interior berth is pickable — confirm and
        the crossing IS the trip, you step off ashore there; a body in range with nowhere to step off says

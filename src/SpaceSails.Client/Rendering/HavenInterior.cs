@@ -319,8 +319,17 @@ public static class HavenInterior
         walls.Add(new(BarLeft, HallTopY, BarLeft, BarTopY, false, true));
         walls.Add(new(BarRight, HallTopY, BarRight, BarTopY, false, true));
         walls.Add(new(BarLeft, BarTopY, BarRight, BarTopY, true, true)); // spinward window onto space
-        labels.Add((HallCenterX, BarTopY - 3, spec.BarName));
+        labels.Add((HallCenterX, BarTopY - 6.5f, spec.BarName));
         labels.Add((8f, HallTopY + 1.5f, "🎁 GIFT SHOP")); // every place has one (owner)
+
+        // #247 — the bar counter, and the BARKEEP behind it. Owner ashore at the Rusty Roadstead: "How
+        // do I get a drink at the Rusty bar here? Did we forget to add the bar-keep :-D". The counter is
+        // a real wall (you belly up, you don't walk through it); the barkeep console sits on the players'
+        // side of it, so E leans in for the house special. The keep's name + drink come from Core.
+        float counterY = BarTopY - 3f;
+        walls.Add(new(-5, counterY, 10, counterY, false, false)); // the bar counter, waist-high
+        Barkeep? keep = Barkeeps.For(spec.BodyId);
+        string keepLabel = keep is { } bk ? $"🍺 BARKEEP · {bk.Name}" : "🍺 BARKEEP";
 
         // Two locked back-room hatches off the bar — more of the place you can't get into (yet).
         char lvl = spec.Authority[0];
@@ -339,6 +348,8 @@ public static class HavenInterior
             // The Magpie's bar stop — a roaming patron (PR-F). They aren't always here; walk up and the
             // game reads their rota, so an empty chair means they've drifted off (bar → gone → back room).
             new(DeckPlan.ConsoleKind.BarPatron, (float)MagpieBarPost.X, (float)MagpieBarPost.Y, "◈ THE MAGPIE"),
+            // #247 — the barkeep, at the counter. Walk up, press E, buy the house special (or a round).
+            new(DeckPlan.ConsoleKind.Barkeep, 2.5f, counterY - 2, keepLabel),
             // The gift shop: walk up, press E, view the Gen-AI souvenir + its location gag. Kept clear
             // of the bar patrons (Coil at x14) so E doesn't grab the wrong console.
             new(DeckPlan.ConsoleKind.ViewObject, 6, HallTopY + 3, "👕 SOUVENIR TEE", spec.TshirtArt, spec.Gag),
@@ -388,7 +399,7 @@ public static class HavenInterior
 
         return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
-            droidCount: 9, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen),
+            droidCount: 10, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen),
             location: (x, y) => x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
                               : y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
@@ -415,5 +426,11 @@ public static class HavenInterior
         buffer[8] = m.Present
             ? new DeckPlan.Droid(m.X + sway, m.Y, m.FacingRad, "Magpie")
             : new DeckPlan.Droid(-9999, -9999, 0, "Magpie"); // out of reach this watch — off-frame
+
+        // #247 — the barkeep, pacing their patch behind the counter (owner: "a barkeep pacing their bar
+        // area is fine"). No rota (they don't leave the bar): a deterministic sine sweep along the
+        // counter, the same idiom as the seated regulars' sway, so first-person sees them move.
+        double pace = 2.6 * System.Math.Sin(simTime * 0.00035);
+        buffer[9] = new DeckPlan.Droid(2.5 + pace, BarTopY - 1.5, -System.Math.PI / 2, "Barkeep");
     }
 }

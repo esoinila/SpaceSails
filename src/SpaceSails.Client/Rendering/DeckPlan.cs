@@ -17,7 +17,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -41,8 +41,9 @@ public sealed class DeckPlan
     public const double AvatarRadius = 0.7;
 
     /// <summary>Upper bound on droids in any one plan — the render buffers size to this. Bumped to 9
-    /// for the docked complex's roaming NPC (PR-F: a station patron on a sim-time rota, index 8).</summary>
-    public const int MaxDroids = 9;
+    /// for the docked complex's roaming NPC (PR-F: a station patron on a sim-time rota, index 8), then
+    /// to 10 for the bar's barkeep pacing behind the counter (#247, index 9).</summary>
+    public const int MaxDroids = 10;
 
     public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
 
