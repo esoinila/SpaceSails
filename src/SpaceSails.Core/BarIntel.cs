@@ -92,4 +92,53 @@ public static class OverheardLog
 
         return list;
     }
+
+    /// <summary>
+    /// Collect the overheard book into the captain's ledger, GROUPED PER CONTACT (#347, owner playtest
+    /// 2026-07-18: "we should collect the useful rumors and tips into our ledger per contact… Tips, Intel,
+    /// Rumors :-D"). Each source who told you something becomes one <see cref="LedgerRumor"/> carrying
+    /// their lines newest-first; the groups themselves come back most-recently-heard first. Pure Core
+    /// projection so the client renders the cards rather than doing the grouping — the bug the owner hit
+    /// was that this crossing (durable book → ledger) was never wired at all.
+    /// </summary>
+    public static IReadOnlyList<LedgerRumor> PerContact(IReadOnlyList<OverheardLine>? log)
+    {
+        if (log is null || log.Count == 0)
+        {
+            return [];
+        }
+
+        // Bucket by source in first-seen order, each bucket newest-first; then order the buckets by their
+        // most recent line so the freshest talk sits on top — deterministic, no wall clock.
+        var order = new List<string>();
+        var buckets = new Dictionary<string, List<OverheardLine>>(System.StringComparer.OrdinalIgnoreCase);
+        foreach (OverheardLine line in log)
+        {
+            string key = string.IsNullOrWhiteSpace(line.Source) ? "The bar" : line.Source;
+            if (!buckets.TryGetValue(key, out List<OverheardLine>? lines))
+            {
+                lines = [];
+                buckets[key] = lines;
+                order.Add(key);
+            }
+
+            lines.Insert(0, line); // newest first within the contact
+        }
+
+        return [.. order
+            .Select(k => new LedgerRumor(k, buckets[k]))
+            .OrderByDescending(r => r.Lines[0].SimTime)];
+    }
+}
+
+/// <summary>Every tip/rumor one source has handed the captain, collected for the ledger's per-contact
+/// "Tips, Intel, Rumors" section (#347). <paramref name="Lines"/> are that source's overheard lines,
+/// newest first. A pure projection over the durable <c>OverheardLog</c>.</summary>
+public readonly record struct LedgerRumor(string Source, IReadOnlyList<OverheardLine> Lines)
+{
+    /// <summary>The most recent line's sim-time — when this contact last told you something.</summary>
+    public double LatestSimTime => Lines.Count > 0 ? Lines[0].SimTime : double.NegativeInfinity;
+
+    /// <summary>The bar the most recent line was heard in — where you last drank with this source.</summary>
+    public string LatestBar => Lines.Count > 0 ? Lines[0].BarName : "";
 }

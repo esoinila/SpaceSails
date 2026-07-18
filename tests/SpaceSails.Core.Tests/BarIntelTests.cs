@@ -93,4 +93,51 @@ public class BarIntelTests
         Assert.Equal($"line {OverheardLog.Cap + 9}", log[^1].Text);        // newest kept
         Assert.Equal($"line 10", log[0].Text);                            // oldest trimmed off the front
     }
+
+    // ── #347 rumor → ledger, GROUPED PER CONTACT (the bug: it never crossed into the ledger at all) ──
+
+    [Fact]
+    public void PerContact_EmptyBook_ProjectsNothing()
+    {
+        Assert.Empty(OverheardLog.PerContact(null));
+        Assert.Empty(OverheardLog.PerContact([]));
+    }
+
+    [Fact]
+    public void PerContact_GroupsBySource_NewestFirstWithinAndAcross()
+    {
+        // Coil spoke at t=1 and again at t=4; the barkeep at t=2. The freshest talk (Coil's t=4) heads the
+        // section, Coil's own lines come back newest-first, and every line stays with who told you.
+        IReadOnlyList<OverheardLine> log =
+        [
+            new OverheardLine("Coil: a soft price at the next berth", 1, "MADAM COIL", "THE CINDER LOUNGE"),
+            new OverheardLine("Keep: quiet week for gossip", 2, "Ember Vance", "THE CINDER LOUNGE"),
+            new OverheardLine("Coil: a ghost runs dark tonight", 4, "MADAM COIL", "THE CINDER LOUNGE"),
+        ];
+
+        IReadOnlyList<LedgerRumor> ledger = OverheardLog.PerContact(log);
+
+        Assert.Equal(2, ledger.Count);
+        Assert.Equal("MADAM COIL", ledger[0].Source);        // freshest source on top
+        Assert.Equal("Ember Vance", ledger[1].Source);
+        Assert.Equal(2, ledger[0].Lines.Count);
+        Assert.Equal("Coil: a ghost runs dark tonight", ledger[0].Lines[0].Text); // newest first within
+        Assert.Equal("Coil: a soft price at the next berth", ledger[0].Lines[1].Text);
+        Assert.Equal(4, ledger[0].LatestSimTime);
+        Assert.Equal("THE CINDER LOUNGE", ledger[0].LatestBar);
+    }
+
+    [Fact]
+    public void PerContact_KeepsEveryLine_AndNamesABlankSourceHonestly()
+    {
+        IReadOnlyList<OverheardLine> log =
+        [
+            new OverheardLine("unattributed murmur", 1, "", "THE TILT BAR"),
+        ];
+
+        IReadOnlyList<LedgerRumor> ledger = OverheardLog.PerContact(log);
+        Assert.Single(ledger);
+        Assert.Equal("The bar", ledger[0].Source); // a sourceless line still lands, filed to the room
+        Assert.Single(ledger[0].Lines);
+    }
 }

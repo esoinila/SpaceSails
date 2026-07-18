@@ -21,6 +21,15 @@ public sealed class CacheLedger
     /// <summary>Every known cache, newest first (the ledger's render order and what a save serializes).</summary>
     public IReadOnlyList<TreasureCache> Caches => _caches;
 
+    /// <summary>Wipe the ledger back to a fresh, empty hoard — the per-game-thread reset (feat/game-threads,
+    /// owner 2026-07-18): a NEW voyage is a NEW universe, so a chest we know of in one run must NOT be known
+    /// in the next. Also rewinds the mint counter so the fresh run's first burial mints from zero.</summary>
+    public void Clear()
+    {
+        _caches.Clear();
+        _seq = 0;
+    }
+
     /// <summary>A fresh, owner-scoped id + mint index for the next burial (monotonic, so two burials
     /// on the same body at the same instant never collide their map seed).</summary>
     public int NextMintIndex() => _seq;

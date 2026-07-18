@@ -134,6 +134,29 @@
                 </button>
             }
 
+            @* feat/game-threads — the OTHER universes: every game thread that isn't the one Continue leads
+               with, each a one-click door back into that parallel run. A minimal load-a-game path (the full
+               ten-savegame picker is #310's lane) so a migrated campaign is never hidden behind a newer one. *@
+            @if (!inGame && _threadList.Any(t => t.Id != _activeThreadId))
+            {
+                <div class="save-slots-label">Other voyages</div>
+                <div class="save-slots-list save-threads-list">
+                    @foreach (GameThreadInfo t in _threadList.Where(t => t.Id != _activeThreadId))
+                    {
+                        GameThreadInfo thread = t;
+                        <button type="button" class="start-picker-option start-picker-otherthread"
+                                title="Continue this separate voyage — its own universe, saved apart from the others"
+                                @onclick="() => ContinueThread(thread.Id)">
+                            <span class="start-picker-icon">🧭</span>
+                            <span class="start-picker-text">
+                                <span class="start-picker-label">Continue — @(string.IsNullOrWhiteSpace(thread.Where) ? "a saved voyage" : thread.Where)</span>
+                                <span class="start-picker-blurb">A separate voyage · day @thread.SimDay.</span>
+                            </span>
+                        </button>
+                    }
+                </div>
+            }
+
             @if (!inGame)
             {
                 @* Docked-starts rework (owner ruling, 2026-07-18 playtest): "All starting points should be
@@ -480,20 +503,22 @@
                 <div class="deck-bank-notice small">@note</div>
             }
             <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
-            @* #306/#308 The drink as a two-edged trust maneuver, restructured (owner 2026-07-18): standing a
-               contact a glass is the CAPTAIN's own idea, so it opens an OFFER MOMENT (pour it / cancel) — a
-               cancel is free (no "unwet glass" debit; reconsidering your own idea is not a betrayal). After a
-               round for the room, every present regular is satisfied for this visit and shows a toast state
-               instead of an offer; an extra personal drink is still available, never demanded. *@
+            @* #306/#308/#347 The drink as a two-edged trust maneuver, OFFER-FIRST (owner 2026-07-18: "The
+               person may refuse the drink here. That possibility should be determined first"). Extending the
+               offer is the CAPTAIN's own idea, so it opens an OFFER MOMENT (offer it / cancel) — a cancel is
+               free (reconsidering your own idea is not a betrayal). Confirming is where the CONTACT decides
+               accept/refuse; only an accepted glass is bought and poured. After a round for the room, every
+               present regular is satisfied for this visit and shows a toast state; a personal offer is still
+               available, never demanded. *@
             @foreach ((string giver, string display) in PresentBarContacts())
             {
                 @if (_pendingContactDrink == giver)
                 {
                     <div class="deck-offer-actions">
-                        <span class="bar-offer-moment small">Stand @display a glass?</span>
+                        <span class="bar-offer-moment small">Offer @display a drink?</span>
                         <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
-                                title="@($"Pour it — you stand {display} a {keep.DrinkName} ({keep.DrinkPrice} cr); the 2D6 decides if they open up or you slip a tell")"
-                                @onclick="@(() => BuyContactDrink(giver))">🥃 Pour it · @keep.DrinkPrice cr</button>
+                                title="@($"Offer {display} a {keep.DrinkName} ({keep.DrinkPrice} cr) — they may accept or refuse; only if they take it is it poured, and the 2D6 decides if they open up or you slip a tell")"
+                                @onclick="@(() => BuyContactDrink(giver))">🥃 Offer it · @keep.DrinkPrice cr</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary"
                                 title="Changed your mind — no harm done" @onclick="CancelContactDrinkOffer">Cancel</button>
                     </div>
@@ -503,16 +528,16 @@
                     <div class="deck-offer-actions">
                         <span class="bar-toasted small">🍻 @display toasted you with the room</span>
                         <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.DrinkPrice)"
-                                title="@($"Stand {display} a personal glass on top of the round — extra warmth, never demanded")"
-                                @onclick="@(() => OfferContactDrink(giver))">🥃 Stand another · @keep.DrinkPrice cr</button>
+                                title="@($"Offer {display} a personal glass on top of the round — they may still refuse; extra warmth, never demanded")"
+                                @onclick="@(() => OfferContactDrink(giver))">🥃 Offer another · @keep.DrinkPrice cr</button>
                     </div>
                 }
                 else
                 {
                     <div class="deck-offer-actions">
                         <button type="button" class="btn btn-sm btn-warning"
-                                title="@($"Stand {display} a drink ({keep.DrinkPrice} cr) — a sign of trust; the 2D6 decides if they open up or you slip a tell")"
-                                @onclick="@(() => OfferContactDrink(giver))">🥃 Stand @display a drink · @keep.DrinkPrice cr</button>
+                                title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — a sign of trust they may accept or refuse; if taken, the 2D6 decides if they open up or you slip a tell")"
+                                @onclick="@(() => OfferContactDrink(giver))">🥃 Offer @display a drink · @keep.DrinkPrice cr</button>
                     </div>
                 }
             }
@@ -645,21 +670,60 @@
                         <span class="bury-cargo">none aboard — rearm at a haven</span>
                     }
                 </div>
+                @* #348: name the beach-comber kit that ALWAYS rides down (owner: "mention that shovel and
+                   metal detectors are here by default. Let's have a pick az also"). Copy only — the shovel
+                   and detector already drive the dig/probe; the pickaxe is named here as standard gear.
+                   PICKAXE MECHANIC HOOK: if the pick later earns a mechanic (a bedrock re-roll, or digging
+                   THROUGH the beach-comber D100's "too hard" result), wire it in SurfaceGroundInteract /
+                   BeachComber — do NOT build it here, this line just puts the tool in the captain's hands.
+                   GEN-AI GEAR ART: a natural spot for a later Grok kit illustration sits beside this line
+                   (leave it text-only for now — no placeholder image). *@
+                <div class="bury-row bury-gear">
+                    <span>🧰 Beach-comber kit — standard issue</span>
+                    <span class="bury-cargo">a shovel, a metal detector & a pickaxe, aboard every trip</span>
+                </div>
+                @* #348: the flight time lives in the BODY now, not the button (owner: "The button looks
+                   like the chest contains 5 hours of time"). The crossing costs the same with or without
+                   cargo, and the destination list already shows this as ETA — so we say it plainly, once,
+                   tied to the flight and nothing else. *@
+                <div class="bury-row bury-eta">
+                    <span>🛰 Flight down</span>
+                    <span class="bury-cargo">ETA @FormatDuration(boardStop.TravelSeconds) — same with or without a chest</span>
+                </div>
             </div>
             @* #327 the ship calls home: the hold quote before you commit to the walk down. In-voice, from
                the live tank — a short clock is the captain's informed choice, never a silent maroon. *@
             <div class="bury-row @(BoardingHoldSeverity() >= 2 ? "text-danger" : "text-info")">
                 <span>@BoardingHoldQuote()</span>
             </div>
-            <div class="deck-shuttle-actions">
-                <button type="button" class="btn btn-sm btn-warning" disabled="@(_boardCoin <= 0 && _cargoUnits <= 0)"
-                        title="Board with a chest loaded — you can bury it on the ground, or bring it home unspent"
-                        @onclick="() => ConfirmBoarding(boardStop, true)">🛸 Board with a chest (@FormatDuration(boardStop.TravelSeconds))</button>
-                <button type="button" class="btn btn-sm btn-outline-warning"
-                        title="Board empty-handed — a look around @boardStop.Body.Name commits to nothing"
-                        @onclick="() => ConfirmBoarding(boardStop, false)">🛸 Board empty-handed</button>
-                <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBoarding">Never mind</button>
-            </div>
+            @* #348: ONE Board button (owner: "We should just have one board button"). You board with
+               whatever the dialog shows above — a loaded chest, or an empty sling. An empty sling raises
+               the "are you certain?" prompt below instead of a second button. *@
+            @if (_boardEmptyConfirm)
+            {
+                @* The empty-sling confirm — NOT a scold. An empty trip is a legitimate fishing
+                   expedition: walk the regolith and probe for shallow treasure the beach-comber turns up. *@
+                <div class="bury-row bury-empty-confirm text-info">
+                    <span>🪛 Board empty-handed? No coin, no cargo in the sling — that's a fishing expedition. Walk the regolith and probe the beach-comber's D100 for shallow treasure. Certain?</span>
+                </div>
+                <div class="deck-shuttle-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Board with an empty sling — go probe @boardStop.Body.Name for shallow treasure"
+                            @onclick="() => ConfirmBoarding(boardStop)">🛸 Yes — go fishing</button>
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            title="Back to the load-out — put something in the chest first"
+                            @onclick="() => _boardEmptyConfirm = false">Load something first</button>
+                </div>
+            }
+            else
+            {
+                <div class="deck-shuttle-actions">
+                    <button type="button" class="btn btn-sm btn-warning"
+                            title="Board the shuttle for @boardStop.Body.Name with whatever's loaded above — decide what to do on the ground"
+                            @onclick="() => TryBoard(boardStop)">🛸 Board</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="CancelBoarding">Never mind</button>
+                </div>
+            }
         </div>
     }
 

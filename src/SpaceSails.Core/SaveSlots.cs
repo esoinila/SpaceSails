@@ -192,13 +192,16 @@ public interface ISlotStore
 /// </summary>
 public sealed class SaveSlotBook
 {
-    /// <summary>The manifest key — the small JSON of labels (not the vaults themselves).</summary>
+    /// <summary>The manifest key of the UN-namespaced (default) book — the pre-thread shelf. The small JSON
+    /// of labels (not the vaults themselves). A per-thread book (feat/game-threads) derives its own key.</summary>
     public const string ManifestKey = "spacesails.slots.v1";
 
-    /// <summary>Per-slot payload key prefix; the full key is <c>PayloadPrefix + slotId</c>.</summary>
+    /// <summary>Per-slot payload key prefix of the default book; the full key is <c>PayloadPrefix + slotId</c>.
+    /// A per-thread book folds its thread id into the prefix so two universes never collide a slot.</summary>
     public const string PayloadPrefix = "spacesails.slot.v1.";
 
-    /// <summary>The pre-#310 single-slot key. Migrated into the autosave (and manual slot 1) on first run.</summary>
+    /// <summary>The pre-#310 single-slot key. Migrated into the autosave (and manual slot 1) on first run.
+    /// Global (never namespaced): it predates both threads and the shelf.</summary>
     public const string LegacyKey = "spacesails.vault.v1";
 
     /// <summary>The one rolling autosave's slot id.</summary>
@@ -215,14 +218,60 @@ public sealed class SaveSlotBook
 
     private readonly ISlotStore _store;
 
-    public SaveSlotBook(ISlotStore store)
+    // The per-thread key namespace (feat/game-threads). Empty for the default/legacy shelf — then the keys
+    // are exactly the pre-thread constants, so old saves are read back byte-for-byte and every existing test
+    // (which builds an un-namespaced book) still holds. Non-empty (a game-thread GUID) folds into the keys:
+    //   manifest  → spacesails.thread.<id>.slots.v1
+    //   payload   → spacesails.thread.<id>.slot.v1.<slotId>
+    // so two universes each keep their own ten-slot shelf, sharing nothing (owner 2026-07-18, the "roadster
+    // already found in a new game" leak: different game starts must not share state).
+    private readonly string _manifestKey;
+    private readonly string _payloadPrefix;
+
+    /// <summary>The game-thread this book is namespaced under, or "" for the default (pre-thread) shelf.</summary>
+    public string ThreadId { get; }
+
+    public SaveSlotBook(ISlotStore store) : this(store, "")
+    {
+    }
+
+    /// <summary>Open the shelf for one game thread. An empty <paramref name="threadId"/> is the default
+    /// (un-namespaced) shelf — the pre-thread keys, for reading legacy saves and for the migration source.</summary>
+    public SaveSlotBook(ISlotStore store, string threadId)
     {
         ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(threadId);
         _store = store;
+        ThreadId = threadId;
+        if (threadId.Length == 0)
+        {
+            _manifestKey = ManifestKey;
+            _payloadPrefix = PayloadPrefix;
+        }
+        else
+        {
+            _manifestKey = $"spacesails.thread.{threadId}.slots.v1";
+            _payloadPrefix = $"spacesails.thread.{threadId}.slot.v1.";
+        }
     }
 
     /// <summary>The stable id of manual slot N (1..9).</summary>
     public static string ManualSlotId(int n) => n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Copy every occupied slot (payload bytes + label) from another book into this one — the
+    /// migration primitive (feat/game-threads): the pre-thread shelf is adopted wholesale into a freshly
+    /// minted thread, losslessly, so nothing on the old shelf is lost when threads arrive.</summary>
+    public void CopyFrom(SaveSlotBook source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        foreach (SaveSlotMeta meta in source.List())
+        {
+            if (source.ReadPayload(meta.Id) is { } payload)
+            {
+                Save(meta.Id, payload, meta);
+            }
+        }
+    }
 
     /// <summary>Every occupied slot's label, NEWEST FIRST by the monotonic <see cref="SaveSlotMeta.SavedRealTicks"/>
     /// (autosave included) — so the top row is always the same save <see cref="Newest"/> returns and the Continue
@@ -261,7 +310,7 @@ public sealed class SaveSlotBook
     }
 
     /// <summary>The vault JSON stored in a slot, or null if the slot is empty.</summary>
-    public string? ReadPayload(string slotId) => _store.Read(PayloadPrefix + slotId);
+    public string? ReadPayload(string slotId) => _store.Read(_payloadPrefix + slotId);
 
     /// <summary>Bank a vault into a slot: write its payload byte-for-byte and upsert its label. The
     /// autosave uses <see cref="AutoSlotId"/>; a manual bank uses <see cref="ManualSlotId"/>.</summary>
@@ -271,7 +320,7 @@ public sealed class SaveSlotBook
         ArgumentNullException.ThrowIfNull(vaultJson);
         ArgumentNullException.ThrowIfNull(meta);
 
-        _store.Write(PayloadPrefix + slotId, vaultJson);
+        _store.Write(_payloadPrefix + slotId, vaultJson);
 
         Manifest m = ReadManifest();
         m.Slots.RemoveAll(s => s.Id == slotId);
@@ -282,7 +331,7 @@ public sealed class SaveSlotBook
     /// <summary>Empty a slot: forget its payload and drop its label. A no-op on an already-empty slot.</summary>
     public void Delete(string slotId)
     {
-        _store.Clear(PayloadPrefix + slotId);
+        _store.Clear(_payloadPrefix + slotId);
         Manifest m = ReadManifest();
         if (m.Slots.RemoveAll(s => s.Id == slotId) > 0)
         {
@@ -304,7 +353,7 @@ public sealed class SaveSlotBook
 
     private Manifest ReadManifest()
     {
-        string? raw = _store.Read(ManifestKey);
+        string? raw = _store.Read(_manifestKey);
         if (string.IsNullOrWhiteSpace(raw))
         {
             return new Manifest();
@@ -321,7 +370,7 @@ public sealed class SaveSlotBook
     }
 
     private void WriteManifest(Manifest m)
-        => _store.Write(ManifestKey, JsonSerializer.Serialize(m, JsonOptions));
+        => _store.Write(_manifestKey, JsonSerializer.Serialize(m, JsonOptions));
 
     private sealed class Manifest
     {

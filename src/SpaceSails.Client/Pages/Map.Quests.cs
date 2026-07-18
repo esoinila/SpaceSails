@@ -813,19 +813,22 @@ public partial class Map
         return found;
     }
 
-    // Buy a known contact drinking here a glass. Costs one house-special (you stand them a drink);
-    // goodwill rises MORE than a round's per-head nudge (ContactDrink.GoodwillPerDrink), and the
-    // salted-2D6 decides the edge: they open up (concrete intel, or business once trust runs deep), or
-    // YOU slip a tell that lands on their book. You drink too — the shared glass is sanity relief and
-    // rides the one wobble law via PourRum. The roll is shown on the receipt (#306 item 5; the shared
-    // dice tray is TODO(#305)). All state moves through the Vault (RequestVaultSave).
+    // Offer a known contact drinking here a glass — OFFER FIRST (#347, owner playtest 2026-07-18: "The
+    // person may refuse the drink here. That possibility should be determined first… If we just buy it
+    // then we don't know what they would have and if they accept it"). So before a single credit moves,
+    // the contact decides — deterministically from seed (ContactDrink.OfferDrink) — whether to take the
+    // glass. A refusal costs nothing but the ask. Only an ACCEPTED glass is poured, and only then does the
+    // shared-drink salted-2D6 (#306) decide the edge: they open up (concrete intel, or business once trust
+    // runs deep), or YOU slip a tell that lands on their book. You drink too — the shared glass is sanity
+    // relief and rides the one wobble law via PourRum. Both rolls are shown (#306 item 5; the shared dice
+    // tray is TODO(#305)). All state moves through the Vault (RequestVaultSave).
     private void BuyContactDrink(string giver)
     {
         if (_barMenu is not { } keep)
         {
             return;
         }
-        _pendingContactDrink = null; // the offer moment resolves into the pour
+        _pendingContactDrink = null; // the offer moment resolves into the ask
         if (!PresentBarContacts().Any(c => c.Giver.Equals(giver, StringComparison.OrdinalIgnoreCase)))
         {
             return; // not present, or not a known contact, just now — no effect
@@ -839,10 +842,22 @@ public partial class Map
             return;
         }
 
-        _credits -= keep.DrinkPrice;
-
         int goodwillBefore = _contacts.For(giver).Goodwill;
         bool holdingSecret = _heat.Level > 0 || HotHoldUnits() > 0; // the second reality to keep steady
+
+        // OFFER FIRST: the contact may wave the glass off before anything is bought. A warm contact takes
+        // it gladly; a wary one (you're running heat / hot cargo) may pass. Nothing debited on a refusal.
+        ulong offerSeed = DiceRule.Seed($"drink-offer:{giver}", (long)SimTime);
+        DrinkOfferResult offered = ContactDrink.OfferDrink(offerSeed, goodwillBefore, holdingSecret);
+        if (!offered.Accepted)
+        {
+            _barNotice = $"🚫 {RefusalLine(display, holdingSecret)}  🎲 {offered.Describe()}";
+            ShowPulseMessage(_barNotice); // no coin moved, no goodwill booked — the glass never left the bar
+            return;
+        }
+
+        _credits -= keep.DrinkPrice;
+
         ulong seed = DiceRule.Seed($"drink:{giver}", (long)SimTime);
         DrinkParley parley = ContactDrink.Roll(seed, goodwillBefore, holdingSecret);
 
@@ -893,9 +908,10 @@ public partial class Map
         RequestVaultSave(); // #225: the purse moved, goodwill/tells were booked
     }
 
-    // Open the "stand <name> a drink" OFFER MOMENT — a small confirm (pour it / cancel) on the card.
-    // Owner ruling 2026-07-18 ("what decision does the wave off represent?"): standing a drink is the
+    // Open the "offer <name> a drink" OFFER MOMENT — a small confirm (offer it / cancel) on the card.
+    // Owner ruling 2026-07-18 ("what decision does the wave off represent?"): extending the offer is the
     // captain's OWN idea, so it opens a moment you can back out of freely — there is no standing wave-off.
+    // Confirming (BuyContactDrink) is where the CONTACT then decides accept/refuse (#347).
     private void OfferContactDrink(string giver)
     {
         if (_barMenu is null
@@ -909,6 +925,29 @@ public partial class Map
     // Back out of your OWN offer — a plain CANCEL. No debit, no "unwet glass" line: punishing someone for
     // reconsidering their own idea is theater, not a decision (owner ruling 2026-07-18).
     private void CancelContactDrinkOffer() => _pendingContactDrink = null;
+
+    // The line a contact says when they wave off the offered glass (#347). Deterministic flavor keyed to
+    // sim time; a wary read (you're running heat / hot cargo) gets its own cooler tone. No goodwill moves —
+    // a refused offer is information, not an insult, and the captain paid nothing for it.
+    private string RefusalLine(string display, bool holdingSecret)
+    {
+        if (holdingSecret)
+        {
+            string[] wary =
+            [
+                $"{display} looks at your jumpy hands and slides the glass back. “Not from you, not tonight.”",
+                $"{display} reads something off you and passes. “Buy me one when you're travelling lighter.”",
+            ];
+            return wary[(int)((SimTime / 60) % wary.Length)];
+        }
+        string[] plain =
+        [
+            $"{display} lifts a hand — “I'm alright, friend. Maybe next round.”",
+            $"{display} shakes their head, easy about it. “Not just now. Thanks all the same.”",
+            $"{display} waves the glass off with a tired smile. “Another time.”",
+        ];
+        return plain[(int)((SimTime / 60) % plain.Length)];
+    }
 
     // NAMED SEAM (#226/#306, owner 2026-07-18) — NOT WIRED. The −2 "unwet glass" debit belongs to a
     // future NPC-INITIATED offer: when a CONTACT buys/invites the captain to drink and the captain
@@ -1939,6 +1978,21 @@ public partial class Map
             tips.Add(new Stations.Captain.LedgerTip(
                 $"🕸 {ship}", [line], prov,
                 ScopeTipId: null, ShowDarkWeb: true, DossierShipId: npc is not null ? entry.ShipId : null));
+        }
+
+        // #347 — the BUG the owner hit: the rumors and tips a contact hands you over a drink (and the
+        // barkeep's, and a round's volunteered whispers) were written to the durable overheard book and
+        // shown AT the counter, but never crossed into the Captain's ledger — so from this desk they
+        // "did not happen". Collect them here, GROUPED PER CONTACT (Core projection), each carrying who
+        // told you and where. Owner's vibe for the section: "Tips, Intel, Rumors :-D".
+        foreach (Core.LedgerRumor rumor in Core.OverheardLog.PerContact(_overheard))
+        {
+            string who = GiverDisplay(rumor.Source);
+            tips.Add(new Stations.Captain.LedgerTip(
+                $"👂 {who}",
+                rumor.Lines.Select(l => l.Text).ToArray(),
+                ProvenanceLine(who, rumor.LatestBar, rumor.LatestSimTime),
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
         }
 
         // #208: a standing note explaining the haven/depot pair the picker now tags — the owner asked

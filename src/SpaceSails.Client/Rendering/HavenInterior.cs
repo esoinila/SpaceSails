@@ -55,6 +55,16 @@ public static class HavenInterior
             "art/the-tilt-hall.jpg", "art/the-tilt-bar.jpg",
             "art/souvenir-tilt-tshirt.jpg", "art/souvenir-tilt-magnet.jpg",
             "“I went to Uranus for the proctologist — they were fully booked.”"),
+        // Selene Gate — the oldest port in the system, in orbit off Luna (#352, owner playtest 2026-07-18:
+        // docked but "there is nothing here to walk to"). The immigration authority is LUNA (→ hatch ids
+        // L-05 …), the deadpan quip customs' been-there tone, the bar the EARTHRISE off its home-in-the-
+        // window backdrop. The two scene arts are Grok-generated (hall + bar); the gift-shop tee/magnet
+        // reuse those backdrops as postcards until a dedicated souvenir pass is drawn — an Earthrise
+        // fridge magnet needs no apology.
+        new("selene-gate", "SELENE GATE", "LUNA", "oldest gate in the system — customs has seen it all", "THE EARTHRISE BAR",
+            "art/selene-gate-hall.jpg", "art/selene-gate-bar.jpg",
+            "art/selene-gate-hall.jpg", "art/selene-gate-bar.jpg",
+            "“I visited Luna, the oldest port in the system, and all I got was this regolith-grey T-shirt.”"),
     ];
 
     // Keyed by "bodyId|<sorted opened-hatch ids>", so the locked concourse and the wing-grown variant

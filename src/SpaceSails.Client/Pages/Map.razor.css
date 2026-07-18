@@ -2045,6 +2045,28 @@
     color: #9aa6bd;
 }
 
+/* #348: the standard beach-comber kit + the flight ETA — informational body rows, set off from the
+   load-out steppers by a faint rule so they read as "what always comes / what the trip costs", not
+   another dial. */
+.bury-gear {
+    padding-top: 0.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bury-gear > span:first-child,
+.bury-eta > span:first-child {
+    color: #cfe0f5;
+}
+
+/* #348: the empty-sling "are you certain?" line — a fishing-expedition nudge, not a scold, so it wraps
+   full width above its confirm buttons. */
+.bury-empty-confirm {
+    display: block;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    margin: 0.2rem 0 0.5rem;
+}
+
 /* The full-screen treasure-map artifact — celebration family, but built around a big image slot. */
 .treasure-map-card {
     max-width: min(34rem, 92vw);
