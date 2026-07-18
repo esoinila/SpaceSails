@@ -75,16 +75,35 @@ public partial class Map
         return "alongside and matched — hit ⚓ Dock to clamp on";
     }
 
-    // Start ids that begin already docked at a walkable station, mapped to the station body. These
-    // reuse the one docked-arrival path in ApplyStart / PlaceShipForStart (weld the complex, step
-    // aboard by the gangway) — so a new interior station is a scenario body + a spec + one line here.
+    // Start ids that begin already DOCKED at a station, mapped to the station body. Owner ruling
+    // (2026-07-18 playtest, verbatim): "All starting points should be the docked positions… We walk to
+    // a ship either from airlock or arrive by shuttle. We have no jobs ready if we start from space
+    // already." — so every start clamps onto a haven, never a free-flying "fresh out of Earth orbit"
+    // spawn, and NEVER Earth by default ("never ever Earth as default… we came to space to avoid
+    // thinking about Earth"). Selene Gate, in Luna's orbit, is the cislunar tutorial home that replaces
+    // the old free-flying Earth spawn — the Luna compute-core pod the first lesson chases launches right
+    // there. Every start routes through the one shared clamp (ApplyStart → StartDockedAtHaven →
+    // ClampOntoHaven), which welds a walkable interior where the haven has one and otherwise sits the
+    // ship on the Nav map, clamped on. Friendly aliases (jupiter → the Red Eye, saturn → Ringside) let a
+    // gas-giant start still mean "docked at that giant's berth." A new interior station is a scenario
+    // body + a HavenInterior spec + one line here.
     private static readonly Dictionary<string, string> DockedStarts = new()
     {
+        ["earth"] = "selene-gate",          // the fallback/tutorial home — Luna orbit, NOT free-flying Earth
+        ["selene-gate"] = "selene-gate",
         ["cinder-roost"] = "cinder-roost",
         ["space-bar"] = "the-space-bar",
+        ["jupiter"] = "red-eye",
+        ["red-eye"] = "red-eye",
+        ["saturn"] = "ringside-exchange",
         ["ringside"] = "ringside-exchange",
         ["the-tilt"] = "the-tilt",
+        ["the-deep"] = "the-deep",
     };
+
+    // The cislunar tutorial home: the berth a brand-new captain casts off from (in place of the retired
+    // free-flying Earth spawn). The first-hunt lesson's Luna pod is seeded here on acceptance.
+    private const string TutorialHomeHavenId = "selene-gate";
 
     // M29: situational awareness for trading — the shuttle-range ring around the ship,
     // visible whenever the zoom makes it readable. A partner inside the ring is a deal.
