@@ -32,39 +32,50 @@ longer. Every mechanic below serves that clock.
    impossible. Some ground is **too hard to dig**; the die handles that too.
 8. Burying stores the location **onto the map and into the ledger** *(confirmed working today —
    the map card files under 🗺 Treasure maps)*.
+9. **The empty sling is a fishing expedition, not a mistake** (owner ruling, later the same
+   evening). Going down with nothing to bury is a first-class trip with its own goals:
+   - **Lift somebody else's cache** — by a **tip** (the information about a spot to check is the
+     only cargo you need) or by plain **luck** (the D100 kit above).
+   - **Dead drop** — a known spot works as a drop point: one party buries, the other party's tip
+     says where to dig. (Natural hook for the masked-contracts lane, PR-E.)
+   - **Lift your own earlier hoard** — walk back to your ✗ *(the own-cache path exists today via
+     `LiftChestHere`; rumor-bought maps of rivals' hoards already file in the ledger as "a map
+     you hold" — what's missing is digging at a tipped spot you don't own, and the drop flow)*.
+   **Both action paths must work**: chest aboard → bury; no chest → hunt/lift.
 
 ### The ground itself
-9. The walk area should feel like a **planet — big and round**, not a fenced square. **Natural
-   barriers** (crater rims, crevasses, boulder fields) instead of box-maze walls.
+10. The walk area should feel like a **planet — big and round**, not a fenced square. **Natural
+    barriers** (crater rims, crevasses, boulder fields) instead of box-maze walls.
 
 ### Bots (the sentry crew)
-10. Bots **auto-exit the shuttle** on landing and *offer their services* — no memorized key.
+11. Bots **auto-exit the shuttle** on landing and *offer their services* — no memorized key.
     The **T key is too hard** for new players; guard positions should be a **mouse click**.
-11. **Burst-fire sound** when they engage — *like in the Aliens movie*.
-12. Bots **report in** as their magazine drops **below 50**.
+12. **Burst-fire sound** when they engage — *like in the Aliens movie*.
+13. Bots **report in** as their magazine drops **below 50**.
 
 ### The instrument column
-13. **Advertise the dig and bot actions in text under the motion tracker** — the left column
+14. **Advertise the dig and bot actions in text under the motion tracker** — the left column
     teaches the ground game.
-14. Reever blips on the tracker: **red**, **smaller**, **pulsing like a heartbeat**.
+15. Reever blips on the tracker: **red**, **smaller**, **pulsing like a heartbeat**.
 
 ### The bar-keep's post (haven interiors)
-15. Every bar whose art shows a **bar desk** must put the barkeep **service position** — the
+16. Every bar whose art shows a **bar desk** must put the barkeep **service position** — the
     console you press E at to get a drink — **at that desk in the picture**, never in the middle
     of the empty floor. The counter overlay sits **on top of the bar in the image**, never over a
     window. Table positions are low-priority; we don't sweat those.
-16. **Audit ALL bars per image** (Roadstead/Mars, Cinder Roost, Ringside, The Tilt). The #247 fix
+17. **Audit ALL bars per image** (Roadstead/Mars, Cinder Roost, Ringside, The Tilt). The #247 fix
     assumed one shared geometry ("all four arts draw the counter down the left",
     `HavenInterior.cs`) — that assumption yields to per-image coordinates wherever it's wrong.
     Runs as its **own Opus branch**: check every bar, reposition each.
 
 ## Implementation queue (owner: "let's get coding", 2026-07-18)
 
-- **Lane 1 — the tide + the instrument column** (#1–#4, #13–#14): endless deep-edge spawner,
+- **Lane 1 — the tide + the instrument column** (#1–#4, #14–#15): endless deep-edge spawner,
   home range, red heartbeat blips, column captions. Opus branch.
-- **Lane 2 — the bar-keep audit** (#15–#16): per-image service positions across all four bars.
+- **Lane 2 — the bar-keep audit** (#16–#17): per-image service positions across all four bars.
   Separate Opus branch.
-- Later lanes (beach-comber kit #5–#8, the round ground #9, bot crew #10–#12) queue behind these.
+- Later lanes (beach-comber kit + fishing expeditions #5–#9, the round ground #10, bot crew
+  #11–#13) queue behind these.
 - **Miranda is the prototype ground** (owner: "main focus on Miranda and shuttle treasure
   fixings … let's prototype on Miranda, because those reevers :-D"). More shuttle destinations
   come AFTER the loop sings here — one haunted moon teaches us faster than five quiet ones.
@@ -86,9 +97,12 @@ longer. Every mechanic below serves that clock.
 
 ## Bugs & rough edges from the playtest (separate from the design lanes)
 
-1. **Empty-sling excursion is a silent dead end** — with nothing to bury the ⛏ site never spawns
-   and nothing on the ground says why; the boarding chooser still advertises "find a spot to
-   dig." This caused a false "the ledger lost my map" report today.
+1. **Empty-sling excursion gives no ground feedback** — with nothing to bury the ⛏ site never
+   spawns and nothing on the ground says why; the boarding chooser still advertises "find a spot
+   to dig." This caused a false "the ledger lost my map" report today. *Superseded in part by
+   ruling #9: the empty sling becomes a legitimate fishing expedition (lift by tip/luck, dead
+   drop, lift your own) — the remaining fix is that whichever path you're on, the ground must
+   SAY what's possible.*
 2. **`logged 0d 16h 13m`** on just-created ledger entries — reads as an age, shows a timestamp.
 3. **Keyboard focus loss** after closing the map card (and after some clicks): desk hotkeys 0–7
    and E go dead until a click refocuses the map div.
