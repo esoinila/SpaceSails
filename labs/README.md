@@ -46,6 +46,9 @@ dotnet run --project labs/24-the-last-mile -c Release
 dotnet run --project labs/25-the-tide-that-takes-it-back -c Release
 dotnet run --project labs/27-the-getaway -c Release
 dotnet run --project labs/28-the-pump-crawl -c Release
+dotnet run --project labs/29-the-harbor-pattern -c Release
+dotnet run --project labs/30-the-mass-driver-timetable -c Release
+dotnet run --project labs/32-aerocapture-at-the-ice-giant -c Release
 ```
 
 Each lesson folder holds:
@@ -291,6 +294,19 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     `OrbitRule.PulsesFor`: a pod is cheapest at the launch end — **loiter-and-match near Earth for ~3.5
     km/s (12 pulses)** vs a full Venus chase at **5202 m/s (17 pulses)**; chase it mid-dive and you buy
     the transfer yourself. `--viz` draws the launch fan off Luna over the inner system.
+32. [**Aerocapture: the ice giant's haze is the free brake**](32-aerocapture-at-the-ice-giant/README.md) —
+    the lesson where the owner arrives at Uranus stranded (29.8 km/s relative, 32 pulses) and asks if the
+    air can stop him. Reusing lab 22's Core drag unchanged, the corridor is measured against arrival
+    *speed*: **300 km wide at 4 km/s, ~20 km at 16 km/s, then CLOSED above ~16 km/s** — the stranding at
+    29.8 is nearly double critical, so no single pass both captures and survives 3 g. The honest campaign:
+    a hyperbolic arrival gets **one** pass, so a pure air campaign can't even begin; the 3 g pass sheds
+    **4 km/s free** and you bridge the remaining **11.3 km/s** propulsively — and once bound, five free
+    passes drop the apoapsis **60 → 1.4 R_U** for zero fuel. In game units the punch lands: a pure-propellant
+    capture is **42 pulses (impossible on 32)**; the haze pays **11**, bringing it to **31 — one pulse
+    inside the tank**. The which-worlds table sorts the system by a single `grab g`: the giants, Earth and
+    Mars **PLAY** (gentle sub-g corridors); Titan (**12.8 g**) and Venus (**310 g**) are landing
+    atmospheres, not skim atmospheres — the first flight of the sol.json Titan/Venus shells for capture.
+    Proposes Uranus/Neptune/Mars shells and feeds a future AEROBRAKE step (#262/PR-D1).
 
 ## Framing rule
 
