@@ -286,7 +286,13 @@ public partial class Map
 
     private void OpenRescueOffer() => _showRescueOffer = true;
 
-    private void CloseRescueOffer() => _showRescueOffer = false; // Decline: dismiss; the offer re-opens from the strip
+    // Decline: dismiss; the offer re-opens from the strip. 2026-07-18 playtest: closing a flight-view
+    // overlay hands the keyboard back to the map div (RefocusMap), like the treasure-map card does.
+    private async Task CloseRescueOffer()
+    {
+        _showRescueOffer = false;
+        await RefocusMap();
+    }
 
     private void ToggleTutorial() => _showTutorial = !_showTutorial;
 
@@ -333,7 +339,13 @@ public partial class Map
     // LandToBury/LandToDig). The single door now is destination-first: board a surface (Map.Docking's
     // OpenBoardingPanel), walk down, and the intentions live on the ground, contextually (Map.Surface).
 
-    private void DismissMapCard() => _treasureMapCard = null;
+    // 2026-07-18 playtest: "Into the ledger" (and the backdrop click) closed the card but left focus on the
+    // button, so the desk hotkeys went dead. Close AND hand the keyboard back to the map div (the one idiom).
+    private async Task DismissMapCard()
+    {
+        _treasureMapCard = null;
+        await RefocusMap();
+    }
 
     // A per-body placeholder art fill for the map card's big image slot until the grok image lane fills
     // the manifest (docs/FridaySecondPlan/hoard-image-manifest.md). Deterministic tint per body so
@@ -1884,19 +1896,21 @@ public partial class Map
 
         // The autopilot's receipts (#147): every stand-down filed as a ledger line, newest first, so a
         // handback the owner warped past is still on the record afterward — the established tip idiom.
+        // 2026-07-18 playtest: the provenance is the receipt's AGE, not the wall clock — a line cut
+        // seconds ago now reads "logged just now", never "logged 0d 16h 13m" (LedgerClock).
         foreach ((double simTime, string text) in _autopilotEvents)
         {
             tips.Add(new Stations.Captain.LedgerTip(
-                "🛰 Autopilot", [text], $"logged {FormatSimTime(simTime)}",
+                "🛰 Autopilot", [text], $"logged {LedgerClock.Age(simTime, SimTime)}",
                 ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
         }
 
         // #202: the piracy receipts — the shadow ledger of the honest jobs. What, units, worth, off
-        // whom, where; the sim-when rides the provenance line, same as the autopilot receipts above.
+        // whom, where; the sim-when rides the provenance line as an AGE, same as the autopilot receipts.
         foreach (LootRecord loot in _lootLedger)
         {
             tips.Add(new Stations.Captain.LedgerTip(
-                "🏴 Plunder", [loot.Describe()], $"taken {FormatSimTime(loot.SimTime)}",
+                "🏴 Plunder", [loot.Describe()], $"taken {LedgerClock.Age(loot.SimTime, SimTime)}",
                 ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
         }
 

@@ -149,6 +149,13 @@ public partial class Map
 
     private void OnFocusOut(FocusEventArgs e) => _deckKeys.Clear();
 
+    // 2026-07-18 playtest: after a mouse affordance — closing the treasure-map card ("Into the ledger"),
+    // clicking a desk tab — DOM focus stayed on the button, so the map div went deaf to the 0–7 desk keys
+    // and E until the captain clicked the page again. The one idiom: every click that should hand the
+    // keyboard back to the helm routes its state change through here, then pulls focus home to the map div.
+    // Keyboard paths already own focus, so they never call this — this is the mouse's way back to the keys.
+    private async Task RefocusMap() => await _focusableDiv.FocusAsync();
+
     private static string Canonical(string key) => key switch
     {
         "W" or "ArrowUp" => "w",

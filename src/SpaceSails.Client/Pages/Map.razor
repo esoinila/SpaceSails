@@ -1011,14 +1011,14 @@
             {
                 <button type="button" class="btn btn-sm desk-tab @(_activeDesk == desk ? "btn-info" : "btn-outline-light")"
                         title="Switch to the @DeskLabel(desk) desk"
-                        @onclick="() => SwitchDesk(desk)">
+                        @onclick="() => SwitchDeskFromClick(desk)">
                     @DeskKeyLabel(desk) @DeskLabel(desk)
                 </button>
             }
             @* Owner request: temporarily clear every panel to read the map, and back. Toggles the
                .map-peek class (CSS fades the overlays, click passes through to the canvas). Hotkey ` . *@
             <button type="button" class="btn btn-sm desk-tab @(_peekMap ? "btn-warning" : "btn-outline-light")"
-                    title="Peek at the map — hide the panels (` toggles)" @onclick="TogglePeekMap">
+                    title="Peek at the map — hide the panels (` toggles)" @onclick="TogglePeekMapFromClick">
                 @(_peekMap ? "👁 Show panels" : "👁 Peek")
             </button>
         </div>
@@ -1051,7 +1051,7 @@
         <div class="pilot-banner @(_autopilot ? "pilot-banner-auto" : "pilot-banner-manual")"
              role="button" tabindex="0"
              title="@(_autopilot ? "The autopilot is flying the ship — click to go to Nav and take back the stick" : "You are flying the ship by hand")"
-             @onclick="() => SwitchDesk(ShipDesk.Nav)">
+             @onclick="() => SwitchDeskFromClick(ShipDesk.Nav)">
             <span class="pilot-banner-who">@(_autopilot ? "🛰 AUTOPILOT HAS THE SHIP" : "🧭 YOU HAVE THE SHIP")</span>
             <div class="pilot-banner-rows">
                 <div class="pilot-banner-mode pilot-banner-now">@_nowText</div>
@@ -2085,7 +2085,7 @@
                 <button type="button" class="btn btn-sm btn-outline-info py-0"
                         title="Put the telescope on her to sharpen the fix" @onclick="() => TrackShipFromMenu(dossierId)">📡 sharpen fix</button>
                 <button type="button" class="btn btn-sm btn-outline-light py-0"
-                        title="Take this target to the war room" @onclick="() => SwitchDesk(ShipDesk.WarRoom)">⚔ war room</button>
+                        title="Take this target to the war room" @onclick="() => SwitchDeskFromClick(ShipDesk.WarRoom)">⚔ war room</button>
             </div>
         </div>
     }
@@ -2104,7 +2104,7 @@
                 Opportunities="_courseOpportunities" OnSetInterest="SetInterestTarget"
                 OnZoomMap="ZoomSensorsBackdrop" OnCenterShip="CenterShipOnMap"
                 OnAreaScanCompleted="OnAreaScanCovered"
-                OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                OnClose="() => SwitchDeskFromClick(ShipDesk.Nav)" />
         </div>
     </div>
     @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Galley or ShipDesk.Captain)
@@ -2120,7 +2120,7 @@
                     <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget"
                         FireAimOffsetSeconds="_fireAimOffsetSeconds" MaxAimOffsetSeconds="MaxFireAimOffsetSeconds" MaxMuzzleSpeedMps="MaxMuzzleSpeed" InterestDistanceMeters="InterestDistanceNow()" FireKind="_fireKind" FireSolution="_fireSolution" FireBlockedBy="@_fireBlockedBy" RoundsInFlight="LiveRounds()" PlannedImpactInSeconds="PlannedImpactEta()" StraightWindowText="@StraightWindowText()" WeaponsAuthorized="WeaponsAuthorized" FireAtWill="_fireAtWill" SlugAmmo="_slugAmmo" MissileAmmo="_missileAmmo" Docked="_docked" CanWarnInterest="CanWarnInterest()" OnBuyAmmo="BuyAmmo" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
                         OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution" OnScanWindows="ScanFiringWindows" OnAutoAim="AutoAim" OnArmFire="ArmFire"
-                        OnClose="() => SwitchDesk(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
+                        OnClose="() => SwitchDeskFromClick(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
                 }
                 else if (_activeDesk == ShipDesk.Trade)
                 {
@@ -2526,7 +2526,7 @@
                 else if (_activeDesk == ShipDesk.Captain)
                 {
                     <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
-                                                              StatusChips="AllStationChips()" OnGoToDesk="SwitchDesk"
+                                                              StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
@@ -2548,7 +2548,7 @@
        captain's corners are the excursion's own instruments (SANITY + motion tracker), nothing else. *@
     @if (_surface is null)
     {
-        <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDesk" />
+        <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDeskFromClick" />
     }
 
     @* #185: the completion fanfare. A finished contract is a CELEBRATION — who paid us, what for,
