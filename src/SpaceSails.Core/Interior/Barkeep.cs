@@ -101,6 +101,19 @@ public static class Barkeeps
                 "“Tip the ring back at the end. Bad luck to leave it, out here.”",
             ]),
 
+        // The Earthrise Bar — Selene Gate, in orbit off Luna. The oldest port in the system (#352, owner
+        // playtest 2026-07-18: "there is nothing here to walk to"). Customs that have seen everything; an
+        // old-timer keep who pours something pale as Earthlight and remembers every face that came through.
+        new("selene-gate", "Marisol “Mare” Okonkwo", "THE EARTHRISE BAR",
+            "the Earthshine",
+            "Pale gin gone silver under the bar light, poured slow as the Earth turns in the window. The oldest recipe on the oldest port — smooth going down, and it remembers everything.",
+            7, 45,
+            [
+                "“Oldest gate in the system, this. Customs has stamped worse than you and smiled doing it.”",
+                "“Half of Earth's traffic pauses here before the long fall out-system. You'd be amazed what they leave on the bar.”",
+                "“Look up — that's home in the window. Everyone drinks a little slower once they've seen it.”",
+            ]),
+
         // The Tilt Bar — out at Uranus, where everything's sideways.
         new("the-tilt", "Halden Frost", "THE TILT BAR",
             "the Sideways Blue",

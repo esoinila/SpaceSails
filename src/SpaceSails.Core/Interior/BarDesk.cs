@@ -68,6 +68,13 @@ public static class BarDesks
         // Saturn framed dead-centre-right; the working length reads left-of-centre, mid-depth.
         new("ringside-exchange", 0.260f, 0.615f, 4.5f),
 
+        // THE EARTHRISE BAR — Selene Gate / Luna (art/selene-gate-bar.jpg, #352). Bottle shelves and the
+        // long metal counter run down the LEFT, the keep bent to his rag mid-counter; the Earthrise window
+        // (home over the mare) fills the upper-RIGHT with patron tables under it. The service stretch reads
+        // a touch more central than the inner-system bars — the counter angles out further — but still well
+        // left of centre and clear of the window. Eyeballed off this frame; pinned in BarkeepTests.
+        new("selene-gate", 0.300f, 0.585f, 4.5f),
+
         // THE TILT BAR — Uranus (art/the-tilt-bar.jpg). Lit niche shelves and a long counter down the
         // LEFT (a little further forward here), the big Uranus window to the right and a small dim port
         // mid-frame — the keep sits left of both, on the counter.

@@ -10,9 +10,10 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public class BarkeepTests
 {
-    // The station ids HavenInterior builds bars for; the-space-bar is the Rusty Roadstead's berth.
+    // The station ids HavenInterior builds bars for; the-space-bar is the Rusty Roadstead's berth,
+    // selene-gate the oldest port off Luna (#352).
     private static readonly string[] WalkableStations =
-        ["the-space-bar", "cinder-roost", "ringside-exchange", "the-tilt"];
+        ["the-space-bar", "cinder-roost", "ringside-exchange", "the-tilt", "selene-gate"];
 
     [Fact]
     public void EveryWalkableStation_HasANamedBarkeepWithAHouseSpecial()
@@ -126,6 +127,7 @@ public class BarkeepTests
         AssertDesk("cinder-roost", 0.260f, 0.600f);
         AssertDesk("ringside-exchange", 0.260f, 0.615f);
         AssertDesk("the-tilt", 0.250f, 0.580f);
+        AssertDesk("selene-gate", 0.300f, 0.585f); // #352 — counter down the LEFT, Earthrise window upper-right
     }
 
     private static void AssertDesk(string id, float u, float v)

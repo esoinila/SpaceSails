@@ -181,4 +181,83 @@ public class ContactDrinkTests
         Assert.False(ContactHistory.New("stranger", "Stranger").HasHistory);
         Assert.True(default(ContactHistory).KnownTells.IsEmpty); // default-safe accessor never throws
     }
+
+    // ── #347 The OFFER, resolved before a credit moves: the contact may refuse ──
+
+    [Fact]
+    public void OfferDrink_IsFullyDeterministic_ForTheSameInputs()
+    {
+        ulong seed = DiceRule.Seed("drink-offer:MADAM COIL", 8080);
+        DrinkOfferResult a = ContactDrink.OfferDrink(seed, currentGoodwill: 2, holdingSecret: true);
+        DrinkOfferResult b = ContactDrink.OfferDrink(seed, currentGoodwill: 2, holdingSecret: true);
+
+        Assert.Equal(a.Face1, b.Face1);
+        Assert.Equal(a.Face2, b.Face2);
+        Assert.Equal(a.Total, b.Total);
+        Assert.Equal(a.Accepted, b.Accepted);
+    }
+
+    [Fact]
+    public void OfferDrink_Faces_AreAlwaysTwoHonestD6()
+    {
+        for (ulong s = 0; s < 1000; s++)
+        {
+            DrinkOfferResult o = ContactDrink.OfferDrink(s, currentGoodwill: 0, holdingSecret: false);
+            Assert.InRange(o.Face1, 1, 6);
+            Assert.InRange(o.Face2, 1, 6);
+            Assert.InRange(o.Pips, 2, 12);
+        }
+    }
+
+    [Theory]
+    [InlineData(ContactDrink.AcceptThreshold - 1, false)] // just under: waved off
+    [InlineData(ContactDrink.AcceptThreshold, true)]      // on the line: taken
+    [InlineData(12, true)]
+    [InlineData(2, false)]
+    public void Accepts_IsTheSharedBoundary(int total, bool expected) =>
+        Assert.Equal(expected, ContactDrink.Accepts(total));
+
+    [Fact]
+    public void OfferResult_AcceptedAlways_AgreesWithItsTotalAgainstTheThreshold()
+    {
+        for (ulong s = 0; s < 2000; s++)
+        {
+            DrinkOfferResult o = ContactDrink.OfferDrink(s, currentGoodwill: 1, holdingSecret: false);
+            Assert.Equal(ContactDrink.Accepts(o.Total), o.Accepted);
+        }
+    }
+
+    [Fact]
+    public void KnownContact_TakesTheGlassEasier_AndAShiftyReadMakesThemWary()
+    {
+        // Same dice, three reads of the captain. Warmth lifts the total (+2), a secret drops it (−2), so
+        // the SAME faces can be a refusal when you're heated and an accept when a warm contact trusts you.
+        ulong seed = DiceRule.Seed("drink-offer:ONE-EYE SILAS", 55);
+        DrinkOfferResult cold = ContactDrink.OfferDrink(seed, ContactDrink.WarmThreshold - 1, holdingSecret: false);
+        DrinkOfferResult warm = ContactDrink.OfferDrink(seed, ContactDrink.WarmThreshold, holdingSecret: false);
+        DrinkOfferResult shifty = ContactDrink.OfferDrink(seed, ContactDrink.WarmThreshold - 1, holdingSecret: true);
+
+        Assert.Equal(cold.Pips, warm.Pips); // same faces throughout
+        Assert.Equal(cold.Pips + 2, warm.Total);
+        Assert.Contains(warm.Modifiers, m => m.Label == "they know you" && m.Value == +2);
+        Assert.DoesNotContain(cold.Modifiers, m => m.Label == "they know you");
+
+        Assert.Equal(cold.Pips - 2, shifty.Total);
+        Assert.Contains(shifty.Modifiers, m => m.Label == "you read as shifty" && m.Value == -2);
+
+        // Acceptance never falls as the contact warms and never rises as you turn shifty.
+        Assert.True(warm.Total >= cold.Total && cold.Total >= shifty.Total);
+    }
+
+    [Fact]
+    public void OfferDescribe_ShowsTheDice_AndTheVerdict()
+    {
+        ulong seed = DiceRule.Seed("drink-offer:THE FIXER", 3);
+        DrinkOfferResult o = ContactDrink.OfferDrink(seed, currentGoodwill: 0, holdingSecret: true);
+
+        string line = o.Describe();
+        Assert.StartsWith("2d6:", line);
+        Assert.Contains("you read as shifty", line);
+        Assert.Contains(o.Accepted ? "take the glass" : "wave it off", line);
+    }
 }
