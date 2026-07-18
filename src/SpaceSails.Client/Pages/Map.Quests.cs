@@ -500,13 +500,7 @@ public partial class Map
             return;
         }
 
-        Quest? offer = giver switch
-        {
-            _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
-            _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
-            _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver) ?? MakeFetchCacheOffer(giver) ?? MakeCrackOffer(giver),
-            _ => MakeHuntOffer(giver),
-        };
+        Quest? offer = MakeContactOffer(giver);
         if (offer is null)
         {
             ShowPulseMessage("The stranger swirls their drink. “Nothing worth your time right now. Check back.”");
@@ -667,6 +661,211 @@ public partial class Map
         _barNotice = rumor;
         ShowPulseMessage($"🍺 {keep.Name}: {rumor}");
     }
+
+    // --- #306 The drink as a two-edged trust maneuver -------------------------------------------------
+    // Owner ruling (2026-07-18): "having a drink at a bar with somebody is a sign of trust and should
+    // open up new business opportunities, or give access to information. Of course we might slip
+    // information… Keeping two realities in one's mind at the same time [is] a lot." So when a KNOWN
+    // contact (ContactLedger history) is drinking in this room, the bar menu grows a "buy <name> a
+    // drink" row: a stronger trust play than a round for the house. The salted-2D6 (ContactDrink,
+    // rolled on the ONE shared DiceRule) decides which edge cuts — they open up to you, or you slip a
+    // tell to them. Refusing their glass has a price too. The whole thing round-trips through the Vault.
+
+    // The known contacts actually drinking here right now — a BarPatron console whose giver we have
+    // ContactLedger history with (a job done, coin in the air, a round stood, a tell already slipped).
+    // Empty when the room holds only strangers, so the drink rows never show without a real
+    // relationship to deepen. Mirrors the BuyRoundForRoom scan (incl. the roaming Magpie's rota gate).
+    private IReadOnlyList<(string Giver, string Display)> PresentBarContacts()
+    {
+        if (!_deckMode || _barMenu is null)
+        {
+            return [];
+        }
+        bool backOpen = _dockedHavenId is { } st
+            && UnlockedHatchesFor(st).Any(h => HavenInterior.HatchGrowsWing(st, h));
+        var found = new List<(string, string)>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (DeckPlan.ConsoleSpot c in _deckPlan.Consoles)
+        {
+            if (c.Kind != DeckPlan.ConsoleKind.BarPatron)
+            {
+                continue;
+            }
+            string giver = c.Label.Replace("◈", "").Trim();
+            if (!seen.Add(giver))
+            {
+                continue; // one contact can hold two consoles (the roaming Magpie) — list them once
+            }
+            if (giver.Contains("MAGPIE", StringComparison.OrdinalIgnoreCase)
+                && !HavenInterior.ResolveMagpie(SimTime, backOpen).Present)
+            {
+                continue; // the Magpie only drinks with the room when their rota has them in it
+            }
+            if (!_contacts.For(giver).HasHistory)
+            {
+                continue; // #306: only KNOWN contacts — a stranger has no relationship to deepen yet
+            }
+            found.Add((giver, GiverDisplay(giver)));
+        }
+
+        return found;
+    }
+
+    // Buy a known contact drinking here a glass. Costs one house-special (you stand them a drink);
+    // goodwill rises MORE than a round's per-head nudge (ContactDrink.GoodwillPerDrink), and the
+    // salted-2D6 decides the edge: they open up (concrete intel, or business once trust runs deep), or
+    // YOU slip a tell that lands on their book. You drink too — the shared glass is sanity relief and
+    // rides the one wobble law via PourRum. The roll is shown on the receipt (#306 item 5; the shared
+    // dice tray is TODO(#305)). All state moves through the Vault (RequestVaultSave).
+    private void BuyContactDrink(string giver)
+    {
+        if (_barMenu is not { } keep)
+        {
+            return;
+        }
+        if (!PresentBarContacts().Any(c => c.Giver.Equals(giver, StringComparison.OrdinalIgnoreCase)))
+        {
+            return; // not present, or not a known contact, just now — no effect
+        }
+
+        string display = GiverDisplay(giver);
+        if (_credits < keep.DrinkPrice)
+        {
+            _barNotice = $"“{keep.DrinkName}'s {keep.DrinkPrice} cr — you're a little short to stand {display} one.”";
+            ShowPulseMessage(_barNotice);
+            return;
+        }
+
+        _credits -= keep.DrinkPrice;
+
+        int goodwillBefore = _contacts.For(giver).Goodwill;
+        bool holdingSecret = _heat.Level > 0 || HotHoldUnits() > 0; // the second reality to keep steady
+        ulong seed = DiceRule.Seed($"drink:{giver}", (long)SimTime);
+        DrinkParley parley = ContactDrink.Roll(seed, goodwillBefore, holdingSecret);
+
+        _contacts.AddGoodwill(giver, giver, parley.GoodwillDelta);
+
+        // SANITY-RELIEF SEAM (#226): a shared drink is sanity relief; PourRum's tot/pulse line stands in
+        // until #226 deposits the meter's relief value here. You clink glasses — your own legs feel it.
+        PourRum($"{keep.DrinkName} with {display} — {keep.DrinkFlavor}");
+
+        string line;
+        switch (parley.Outcome)
+        {
+            case DrinkOutcome.Slip:
+                string tell = SlipTell();
+                _contacts.RecordKnownTell(giver, giver, tell);
+                // Priced through the ledger today (the honest minimum — the contact now KNOWS this).
+                // The heat / false-colors / contract seams can later read KnownTells to make a leaked
+                // hot-cargo or heat tell actually bite (#306 kin: heat/contract consequence systems).
+                line = $"🍷 You drank with {display}, and the glass loosened your guard — they clocked {tell}. {display} files it away behind a smile.";
+                break;
+
+            case DrinkOutcome.OpensUp:
+                line = $"🍷 {display} warms and leans in: {OpenIntelLine(giver)}";
+                break;
+
+            case DrinkOutcome.BusinessUnlock:
+                Quest? offer = MakeContactOffer(giver);
+                if (offer is not null)
+                {
+                    _pendingOffer = offer;
+                    CloseBarkeep();
+                    ShowPulseMessage($"🍷 A drink with {display} opens a door (🎲 {parley.Describe()}). They slide a proposition across the table. (−{keep.DrinkPrice:N0} cr)");
+                    RequestVaultSave();
+                    return;
+                }
+                line = $"🍷 {display} trusts you now — but has no work to hand just yet. “Next time, friend.”";
+                break;
+
+            default: // Warm
+                line = $"🍷 A good glass with {display}. Nothing said that matters — but the ice is thinner between you now.";
+                break;
+        }
+
+        _barNotice = $"{line}  🎲 {parley.Describe()}";
+        ShowPulseMessage($"{_barNotice} (−{keep.DrinkPrice:N0} cr)");
+        RequestVaultSave(); // #225: the purse moved, goodwill/tells were booked
+    }
+
+    // #306 item 3: refusing has a price. A known contact reads a waved-off glass as suspicion — a small
+    // goodwill debit and an in-voice line. Never free, never fatal.
+    private void DeclineContactDrink(string giver)
+    {
+        if (_barMenu is null
+            || !PresentBarContacts().Any(c => c.Giver.Equals(giver, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+        _contacts.AddGoodwill(giver, giver, -ContactDrink.RefusalDebit);
+        string display = GiverDisplay(giver);
+        _barNotice = $"✋ You wave off the round. {display} studies your unwet glass, and something cools between you.";
+        ShowPulseMessage(_barNotice);
+        RequestVaultSave(); // #225: goodwill moved
+    }
+
+    // The concrete thing you let slip on a bad roll, chosen deterministically from what you are ACTUALLY
+    // carrying: a hot-cargo hold first (the costliest tell), then live heat, then your current plan,
+    // then — with nothing to hide — a harmless read of your purse. Always a real fact they could use.
+    private string SlipTell()
+    {
+        string? hot = _cargoByClass
+            .Where(kv => kv.Value > 0 && IsHotClass(kv.Key))
+            .OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key, StringComparer.Ordinal)
+            .Select(kv => kv.Key).FirstOrDefault();
+        if (hot is not null)
+        {
+            return $"the hot {hot} in your hold";
+        }
+        if (_heat.Level > 0)
+        {
+            return $"that you're running heat (level {_heat.Level})";
+        }
+        Quest? plan = _quests.FirstOrDefault(q => q.State is QuestState.Active or QuestState.PickedUp);
+        if (plan is { } p)
+        {
+            string where = BodyById(p.DestBodyId)?.Name ?? p.TargetCallsign;
+            if (!string.IsNullOrWhiteSpace(where))
+            {
+                return $"where you're really bound — {where}";
+            }
+        }
+
+        return "how thin your purse really runs";
+    }
+
+    // The concrete intel a contact hands you when they open up — a rumor made real. Prefer a live
+    // off-books ship the public board wouldn't show (name + route), the actionable kind; fall back to a
+    // solid heat or price tip. Deterministic per sim-second + berth (OfferIndex), so it never flickers.
+    private string OpenIntelLine(string giver)
+    {
+        List<NpcState> ghosts = _npcStates
+            .Where(n => n.Active && !n.Arrived && !n.Boarded && !n.Ship.IsPod && !n.Ship.PublishesTimetable)
+            .OrderBy(n => n.Ship.Id, StringComparer.Ordinal)
+            .ToList();
+        if (ghosts.Count > 0)
+        {
+            NpcShip g = ghosts[OfferIndex(ghosts.Count)].Ship;
+            return $"“{g.Callsign} runs dark, {RouteLabel(g)} — carrying, light on guns. Worth more than the drink cost you. You didn't hear it from me.”";
+        }
+        if (_heat.Level > 0)
+        {
+            return "“Word on the wire has your face on it — the collectors are asking after you. Lie low a watch before you run anything hot through here.”";
+        }
+
+        return "“Prices at the next berth run soft on ice, hard on ore this cycle. Trade accordingly, friend.”";
+    }
+
+    // The standing offer a contact would make you across the table, by who they are — the same switch
+    // TalkToStranger runs after its special cases. Extracted (#306) so a trust-unlocked drink opens the
+    // same door a walk-up would, one truth for both. Null when they've nothing to hand right now.
+    private Quest? MakeContactOffer(string giver) => giver switch
+    {
+        _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
+        _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
+        _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver) ?? MakeFetchCacheOffer(giver) ?? MakeCrackOffer(giver),
+        _ => MakeHuntOffer(giver),
+    };
 
     // Pick a live target for a hunt contract — prefer off-books ships (the kind you couldn't just read
     // off the public traffic board, so the stranger's tip is actually worth something). Chosen from

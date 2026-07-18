@@ -121,6 +121,8 @@ public sealed record ContactRecord
     public long CreditBalance { get; init; }
     /// <summary>#247 — goodwill stood at the bar (a round for the room). Non-transactional; defaults 0.</summary>
     public int Goodwill { get; init; }
+    /// <summary>#306 — tells this contact now knows about us (slipped over a drink). Defaults empty.</summary>
+    public IReadOnlyList<string> KnownTells { get; init; } = [];
     public IReadOnlyList<CreditTxnRecord> Transactions { get; init; } = [];
 }
 
