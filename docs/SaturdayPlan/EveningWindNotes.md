@@ -1,0 +1,98 @@
+# Evening wind — the Miranda surface: treasure, tide & tools (2026-07-18)
+
+*Provenance: owner rulings streamed live during the Saturday-evening localhost playtest (release build,
+`710e530`), worked into a spec draft by Fable. The playtest ran the full bury loop end-to-end:
+board with a loaded chest → maze walk → channeled dig under a 3-Reever turnout → nerves shot →
+sprint → lift-off → map card → ledger. **The bury→ledger path works**; everything below is what
+the ground should become next.*
+
+## The one law (owner, verbatim intent)
+
+> "The idea is that even with bots there is only so long time to stay there."
+
+**The tide owns the ground; bots rent minutes.** No loadout makes a surface stay safe — only
+longer. Every mechanic below serves that clock.
+
+## What the owner asked for (this stream)
+
+### The tide (Reever spawning)
+1. Reevers come **from the bottom of the screen** (the deep edge) — **no cap**, at **random
+   intervals**. Replaces the fixed roll-plus-linger-ticks pack.
+2. They should paint on the **motion tracker long before** they reach the visible map — contacts
+   born beyond the viewport, heard before seen.
+3. **More than 2 Reevers total** in the world; their job is *loitering prevention*, not ambush.
+4. Reevers **don't venture too far** (toward the landing band) — they have a home range; the
+   corollary is that bots can't protect the deep field, only the middle ground.
+
+### Treasure hunting (the beach-comber kit)
+5. **Bury anywhere** (or at least choose among several spots) — not one fixed ⛏ field.
+6. Bringing a **shovel + metal detector** = minesweeper-like play: probe **any square** of the
+   surface for shallow-buried treasure. A **per-visit grid** marks the squares already checked.
+7. A **D100 throw** decides whether any spot holds treasure. Unlucky to find anything — but never
+   impossible. Some ground is **too hard to dig**; the die handles that too.
+8. Burying stores the location **onto the map and into the ledger** *(confirmed working today —
+   the map card files under 🗺 Treasure maps)*.
+
+### The ground itself
+9. The walk area should feel like a **planet — big and round**, not a fenced square. **Natural
+   barriers** (crater rims, crevasses, boulder fields) instead of box-maze walls.
+
+### Bots (the sentry crew)
+10. Bots **auto-exit the shuttle** on landing and *offer their services* — no memorized key.
+    The **T key is too hard** for new players; guard positions should be a **mouse click**.
+11. **Burst-fire sound** when they engage — *like in the Aliens movie*.
+12. Bots **report in** as their magazine drops **below 50**.
+
+### The instrument column
+13. **Advertise the dig and bot actions in text under the motion tracker** — the left column
+    teaches the ground game.
+14. Reever blips on the tracker: **red**, **smaller**, **pulsing like a heartbeat**.
+
+### The bar-keep's post (haven interiors)
+15. Every bar whose art shows a **bar desk** must put the barkeep **service position** — the
+    console you press E at to get a drink — **at that desk in the picture**, never in the middle
+    of the empty floor. The counter overlay sits **on top of the bar in the image**, never over a
+    window. Table positions are low-priority; we don't sweat those.
+16. **Audit ALL bars per image** (Roadstead/Mars, Cinder Roost, Ringside, The Tilt). The #247 fix
+    assumed one shared geometry ("all four arts draw the counter down the left",
+    `HavenInterior.cs`) — that assumption yields to per-image coordinates wherever it's wrong.
+    Runs as its **own Opus branch**: check every bar, reposition each.
+
+## Implementation queue (owner: "let's get coding", 2026-07-18)
+
+- **Lane 1 — the tide + the instrument column** (#1–#4, #13–#14): endless deep-edge spawner,
+  home range, red heartbeat blips, column captions. Opus branch.
+- **Lane 2 — the bar-keep audit** (#15–#16): per-image service positions across all four bars.
+  Separate Opus branch.
+- Later lanes (beach-comber kit #5–#8, the round ground #9, bot crew #10–#12) queue behind these.
+- **Miranda is the prototype ground** (owner: "main focus on Miranda and shuttle treasure
+  fixings … let's prototype on Miranda, because those reevers :-D"). More shuttle destinations
+  come AFTER the loop sings here — one haunted moon teaches us faster than five quiet ones.
+
+## What the code already gives us
+
+- `MotionTracker.Sweep` has **no range cap** — it already paints movers "well beyond the visible
+  grid edge." A spawner past the viewport gets ask #2 for free; only the blip styling (#14) and
+  the caption text (#13) are client work in `DeckView`/`Map.Surface`.
+- The tide replaces `ReeverRaid.Roll` at dig start + `WakesOnLingerTick`/`MaxSurfaceReevers`
+  (`Map.Surface.cs`). The "pinned by sentry → velocity zero" behavior (bots grinding a Reever
+  still) already embodies "bots buy time, not safety" — keep it; the tide just guarantees the
+  magazine runs out before the ground does.
+- `MoonSurface.DigFieldX/Y` is the single fixed bury spot (#313's commitment walk). Free-form
+  burying retires it; the D100 + hardness throw slots into the existing channeled-dig
+  (`BeginDig`/`CompleteDig`) and dice idioms (2D6 turnout roll rides the same seam).
+- `MoonSurface.CachePosition` scatters the ✗ by hash instead of recording the dug spot — fine
+  while the dig field was fixed; free-form burying must store the REAL spot (see bugs, below).
+
+## Bugs & rough edges from the playtest (separate from the design lanes)
+
+1. **Empty-sling excursion is a silent dead end** — with nothing to bury the ⛏ site never spawns
+   and nothing on the ground says why; the boarding chooser still advertises "find a spot to
+   dig." This caused a false "the ledger lost my map" report today.
+2. **`logged 0d 16h 13m`** on just-created ledger entries — reads as an age, shows a timestamp.
+3. **Keyboard focus loss** after closing the map card (and after some clicks): desk hotkeys 0–7
+   and E go dead until a click refocuses the map div.
+4. **Main-thread stalls**: scenario boot ~25–30 s; shuttle transitions still freeze long enough
+   for "page unresponsive" flickers (#333 reduced, not eliminated).
+5. **The ✗ renders at a hashed position, not where you dug** — by design today, but it reads as
+   a bug on the ground; free-form burying (#5 above) forces the real fix.
