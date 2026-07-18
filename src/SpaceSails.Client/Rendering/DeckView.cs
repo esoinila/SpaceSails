@@ -25,6 +25,7 @@ public sealed class DeckView
     private static readonly RgbaColor CrateColor = new(200, 160, 90, 220);
     private static readonly RgbaColor ShuttleColor = new(150, 210, 255, 220);
     private static readonly RgbaColor DroidColor = new(150, 160, 180);
+    private static readonly RgbaColor ReeverColor = new(230, 80, 70);   // #295: watchdog red
     private static readonly RgbaColor TextDim = new(140, 160, 180, 170);
     private static readonly RgbaColor DoorShut = new(255, 180, 90, 220);   // amber airlock door, closed
     private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
@@ -111,25 +112,25 @@ public sealed class DeckView
 
         if (isShip)
         {
-            // Cargo crates: one per unit aboard.
+            // Cargo crates: one per unit aboard (in the top-port hold now — #295).
             for (int i = 0; i < Math.Min(state.CargoUnits, 12); i++)
             {
-                (float cx, float cy) = P(-10 + (i % 4) * 1.9, -5 - (i / 4) * 1.6);
+                (float cx, float cy) = P(-10 + (i % 4) * 1.9, 5 + (i / 4) * 1.6);
                 DrawBox(cx, cy, 0.65f * scale, CrateColor);
             }
 
-            // Shuttle in its cradle — or away doing piracy.
+            // Shuttle in its cradle (bottom-port bay now — #295) — or away doing piracy.
             if (!state.ShuttleAway)
             {
-                DrawShuttle(P(-6.5, 6.5), scale, simTime);
+                DrawShuttle(P(-6.5, -6.5), scale, simTime);
             }
             else
             {
-                (float bx, float by) = P(-6.5, 6.5);
+                (float bx, float by) = P(-6.5, -6.5);
                 _renderer.DrawText(bx, by, "— AWAY —", new RgbaColor(255, 170, 80, 200), "bold 11px monospace", TextAlign.Center);
                 if (Math.Sin(simTime * 0.005) > 0)
                 {
-                    DrawSeg(P(-11, 9.9), P(-2, 9.9), new RgbaColor(255, 120, 80, 220), 3f);
+                    DrawSeg(P(-9, -9.9), P(-5, -9.9), new RgbaColor(255, 120, 80, 220), 3f);
                 }
             }
 
@@ -160,11 +161,14 @@ public sealed class DeckView
         {
             DeckPlan.Droid droid = _droids[di];
             (float dx, float dy) = P(droid.X, droid.Y);
-            _renderer.DrawCircle(dx, dy, 0.5f * scale, DroidColor, DroidColor);
+            // #295: the Reevers read hostile — a red mark, not the crew's grey.
+            bool reever = droid.Name == "Reever";
+            RgbaColor mark = reever ? ReeverColor : DroidColor;
+            _renderer.DrawCircle(dx, dy, (reever ? 0.6f : 0.5f) * scale, mark, mark);
             float fx = dx + (float)Math.Cos(droid.FacingRad) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(droid.FacingRad) * scale * 0.8f;
-            DrawSeg((dx, dy), (fx, fy), DroidColor, 1.5f);
-            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name, TextDim, "8px monospace", TextAlign.Center);
+            DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
+            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name, reever ? ReeverColor : TextDim, "8px monospace", TextAlign.Center);
         }
 
         // Consoles.

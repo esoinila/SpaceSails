@@ -152,6 +152,10 @@ public sealed record CacheRecord
     public double BuriedSimTime { get; init; }
     public string Owner { get; init; } = "";
     public bool PlayerOwned { get; init; }
+
+    /// <summary>The stash's standing Reever presence (#295), 0..3. Defaults to 0 so a pre-#295 vault
+    /// file (no field) loads as an unhaunted chest — a lossless round-trip.</summary>
+    public int ReeverLevel { get; init; }
 }
 
 public sealed record CacheCargoRecord(string CargoClass, int Units, bool Hot);

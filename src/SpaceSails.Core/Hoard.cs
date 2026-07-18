@@ -60,13 +60,13 @@ public static class CacheMint
     /// no clock read (the caller passes the burial time).</summary>
     public static TreasureCache Bury(
         string id, string bodyId, int mintIndex, int coin, IReadOnlyList<CacheCargo> cargo,
-        double buriedSimTime, string owner, bool playerOwned)
+        double buriedSimTime, string owner, bool playerOwned, int reeverLevel = 0)
     {
         Landmark site = Landmarks.For(bodyId);
         string seed = SeedKey(bodyId, owner, buriedSimTime, mintIndex);
         return new TreasureCache(
             id, bodyId, site.Name, Bearing(seed), Paces(seed),
-            coin, cargo ?? [], buriedSimTime, owner, playerOwned);
+            coin, cargo ?? [], buriedSimTime, owner, playerOwned, reeverLevel);
     }
 }
 
@@ -90,6 +90,18 @@ public static class DiscoveryRule
     /// well-placed chest is likely to survive many days, but a big undivided hoard is a standing bet.</summary>
     public const int DiscoveryChancePercent = 4;
 
+    /// <summary>The floor the watchdog discount can never breach (#295): even a fully Reever-haunted
+    /// stash carries a whisper of discovery risk, so a hoard is never truly immortal.</summary>
+    public const int MinDiscoveryChancePercent = 1;
+
+    /// <summary>The effective discovery chance for a stash with a standing Reever presence (#295): each
+    /// watchdog level shaves a point off the base chance (a rival's search faces the same pack that
+    /// haunts our return), floored at <see cref="MinDiscoveryChancePercent"/>. Level 0 is the plain
+    /// <see cref="DiscoveryChancePercent"/>; a full pack (3) drives it to the floor — the best vault in
+    /// the system, guarded by the most dangerous key.</summary>
+    public static int DiscoveryChanceFor(int reeverLevel) =>
+        Math.Max(MinDiscoveryChancePercent, DiscoveryChancePercent - Math.Max(0, reeverLevel));
+
     /// <summary>The discovery period index containing a sim time (whole days since epoch).</summary>
     public static long PeriodIndex(double simTime) => (long)Math.Floor(simTime / PeriodSeconds);
 
@@ -98,20 +110,21 @@ public static class DiscoveryRule
     public static int Roll(string cacheId, long periodIndex) =>
         1 + (int)(StableHash.Of(cacheId, periodIndex) % 100UL);
 
-    /// <summary>True when a cache is found in a given period.</summary>
-    public static bool IsDiscovered(string cacheId, long periodIndex) =>
-        Roll(cacheId, periodIndex) <= DiscoveryChancePercent;
+    /// <summary>True when a cache is found in a given period. <paramref name="reeverLevel"/> is the
+    /// stash's standing watchdog presence, which hardens it against discovery (#295).</summary>
+    public static bool IsDiscovered(string cacheId, long periodIndex, int reeverLevel = 0) =>
+        Roll(cacheId, periodIndex) <= DiscoveryChanceFor(reeverLevel);
 
     /// <summary>Whether a cache buried at <paramref name="buriedSimTime"/> gets discovered somewhere
     /// in the span (<paramref name="lastCheckedPeriod"/>, nowPeriod] — the client passes the last
     /// period it already resolved so a warp jump that skips days can't skip a roll. Returns the
     /// discovering period (so the caller can stamp WHEN) or null if it survived the span.</summary>
-    public static long? DiscoveredWithin(string cacheId, long lastCheckedPeriod, double nowSimTime)
+    public static long? DiscoveredWithin(string cacheId, long lastCheckedPeriod, double nowSimTime, int reeverLevel = 0)
     {
         long nowPeriod = PeriodIndex(nowSimTime);
         for (long p = lastCheckedPeriod + 1; p <= nowPeriod; p++)
         {
-            if (IsDiscovered(cacheId, p))
+            if (IsDiscovered(cacheId, p, reeverLevel))
             {
                 return p;
             }

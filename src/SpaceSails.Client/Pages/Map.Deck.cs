@@ -285,7 +285,20 @@ public partial class Map
                 }
                 break;
             case DeckPlan.ConsoleKind.ShuttleAirlock:
-                OpenShuttleBayDoor();
+                if (_surface is not null)
+                {
+                    LiftOffFromSurface(); // back aboard mid-excursion: the airlock is the ride home
+                }
+                else
+                {
+                    OpenShuttleBayDoor();
+                }
+                break;
+            case DeckPlan.ConsoleKind.DigSite:
+                DigSiteInteract();
+                break;
+            case DeckPlan.ConsoleKind.SurfaceAirlock:
+                LiftOffFromSurface();
                 break;
             case DeckPlan.ConsoleKind.CommsSeat:
                 SwitchDesk(ShipDesk.Comms);

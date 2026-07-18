@@ -341,90 +341,14 @@ public partial class Map
 
     private void SetBuryCoin(int amount) => _buryCoin = Math.Clamp(amount, 0, _credits);
 
-    // Fly the shuttle down and bury the chest: take the loot OFF the ship, advance the clock by the
-    // crossing, mint the cache + its map, and show the map card. Nothing here touches confiscation —
-    // buried is invisible by construction.
-    private void ConfirmBury(ShuttleStop stop)
-    {
-        if (_ephemeris is null)
-        {
-            return;
-        }
-        int coin = Math.Clamp(_buryCoin, 0, _credits);
-        // The whole hold goes in (it's small): snapshot the manifest into cache lines, hot-flagged.
-        var cargo = _cargoByClass
-            .Where(kv => kv.Value > 0)
-            .Select(kv => new CacheCargo(kv.Key, kv.Value, IsHotClass(kv.Key)))
-            .ToList();
-        if (coin <= 0 && cargo.Count == 0)
-        {
-            _buryTarget = null;
-            return;
-        }
+    // The chooser is confirmed: the chest is packed. Fly the shuttle down and open the WALKED surface
+    // scene (#295) — the actual burial happens out at the dig site, on foot. Retired the old
+    // fire-and-forget mint here; LandToBury / the dig-site [E] tell the story now (see Map.Surface).
+    private void ConfirmBury(ShuttleStop stop) => LandToBury(stop);
 
-        // The trip costs the clock (heat bleeds, traffic drifts) — the mothership loiters in place.
-        AdvanceShuttleClock(stop.TravelSeconds);
-
-        // Loot leaves the ship's books.
-        _credits -= coin;
-        _cargoUnits = 0;
-        _cargoValue = 0;
-        _cargoByClass.Clear();
-
-        TreasureCache cache = _caches.Bury(stop.Body.Id, coin, cargo, SimTime, "you", playerOwned: true);
-        SeedDiscoveryWatch();
-
-        _buryTarget = null;
-        _treasureMapCard = cache;
-        RendererInterop.PlayCue("reveal");
-        ShowPulseMessage($"⛏ Chest buried on {stop.Body.Name} — {cache.ContentsLine()} off the books. Map filed (🗺).");
-        RequestVaultSave(); // #225: the hoard changed — persist coin/cargo/cache moves
-    }
-
-    // Fly the shuttle down and dig at the X: lift EVERY cache we know of at this body back onto the
-    // ship (coin to the purse, cargo to the hold up to capacity), advance the clock by the crossing.
-    private void DigAt(ShuttleStop stop)
-    {
-        if (_ephemeris is null || !_caches.HasCacheAt(stop.Body.Id))
-        {
-            return;
-        }
-        AdvanceShuttleClock(stop.TravelSeconds);
-
-        var lifted = _caches.CachesAt(stop.Body.Id).ToList();
-        int coinBack = 0, unitsBack = 0, unitsLost = 0;
-        foreach (TreasureCache known in lifted)
-        {
-            TreasureCache? dug = _caches.Dig(known.Id);
-            if (dug is not { } c)
-            {
-                continue;
-            }
-            _credits += c.Coin;
-            coinBack += c.Coin;
-            foreach (CacheCargo line in c.Cargo)
-            {
-                int room = CargoCapacity - _cargoUnits;
-                int take = Math.Min(room, line.Units);
-                if (take > 0)
-                {
-                    _cargoUnits += take;
-                    _cargoValue += take * CargoMarket.UnitValue(line.CargoClass);
-                    _cargoByClass[line.CargoClass] = _cargoByClass.GetValueOrDefault(line.CargoClass) + take;
-                    unitsBack += take;
-                }
-                unitsLost += line.Units - take; // no room in the hold — left in the dust
-            }
-            // A recovered chest can close a fetch-a-cache job that pointed at it (#223).
-            CompleteFetchCacheFor(c);
-        }
-
-        RendererInterop.PlayCue("board");
-        string lost = unitsLost > 0 ? $" ({unitsLost}u left — hold full)" : "";
-        ShowPulseMessage($"🗺 Dug up {coinBack:N0} cr + {unitsBack} units on {stop.Body.Name}{lost}. X marked the spot.");
-        PayCompletedQuests();
-        RequestVaultSave(); // #225: a dig moves coin/cargo/caches — persist it
-    }
+    // Dig at the X is a walk too now (#295): land on the surface and lift the chest at the dig site,
+    // which re-rolls the same 2D6 watchdogs. See Map.Surface.LandToDig / LiftChestsHere.
+    private void DigAt(ShuttleStop stop) => LandToDig(stop);
 
     private void DismissMapCard() => _treasureMapCard = null;
 
@@ -468,7 +392,8 @@ public partial class Map
             // Never roll a cache for days before it was in the ground: start its scan at the later of
             // the global last-check and its own burial day.
             long from = Math.Max(_lastCacheCheckPeriod, DiscoveryRule.PeriodIndex(c.BuriedSimTime));
-            if (DiscoveryRule.DiscoveredWithin(c.Id, from, SimTime) is not null)
+            // #295: a Reever-haunted stash is harder for rivals to work — the watchdogs guard it too.
+            if (DiscoveryRule.DiscoveredWithin(c.Id, from, SimTime, c.ReeverLevel) is not null)
             {
                 _caches.Remove(c.Id);
                 RendererInterop.PlayCue("alarm");
