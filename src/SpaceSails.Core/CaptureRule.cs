@@ -115,8 +115,12 @@ public static class CargoMarket
 {
     public static int UnitValue(string cargoClass) => cargoClass switch
     {
-        "He3" => 1200,
+        "He3" => 1200,              // the prize — scooped at the giants, fought over in the Hormuz corridors
+        "Deuterium slush" => 900,   // the giants' other fusion draught, refined at the ring stations (#291)
+        "Reactor mass" => 800,      // fuel & shielding for the outpost fusion plants (#291)
+        "Mining rigs" => 550,       // capital gear inbound to the new extraction setups (#291)
         "Compute cores" => 400,
+        "Habitat structurals" => 350, // fabricated hab sections for the Europa mega-works (#291)
         "Alloys" => 300,
         "Machinery" => 250,
         "Ice" => 100,
