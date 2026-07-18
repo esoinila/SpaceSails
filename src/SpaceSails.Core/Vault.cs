@@ -51,6 +51,7 @@ public sealed class Vault
     public InsuranceSection? Insurance { get; init; }
     public UpgradesSection? Upgrades { get; init; }
     public DiceItemsSection? DiceItems { get; init; }
+    public ProgressSection? Progress { get; init; }
     public ResumeSection? Resume { get; init; }
 
     /// <summary>Set true by <see cref="VaultSerializer.Load"/> when the stored checksum did not match
@@ -212,6 +213,19 @@ public sealed record DiceItemsSection(IReadOnlyList<DiceItemRecord> Items)
 }
 
 public sealed record DiceItemRecord(string ItemId, string Label, int Value);
+
+// ── Player progression flags (#292): onboarding state that gates the nav-screen greeting. ──
+
+/// <summary>Durable player-progression flags. Today it carries just one bit — whether the
+/// new-player tutorial has been engaged or completed (#292) — so a loaded save never re-greets a
+/// captain who is no longer truly new. Its own section (independently optional, self-described) so
+/// future progression flags can join without touching any other part of the vault.</summary>
+public sealed record ProgressSection
+{
+    /// <summary>True once the captain has started or finished a tutorial lesson. Gates the fresh-start
+    /// nav-screen promotion: an Earth start greets only a captain for whom this is still false.</summary>
+    public bool TutorialPlayed { get; init; }
+}
 
 // ── The resume berth (owner's law): where the pirate wakes, always docked. ──
 

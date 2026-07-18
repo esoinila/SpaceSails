@@ -107,6 +107,7 @@ public partial class Map
                 TelescopeLevel = _telescopeLevel,
             },
             DiceItems = BuildDiceItemsSection(),
+            Progress = new ProgressSection { TutorialPlayed = _tutorialPlayed }, // #292
             Resume = BuildResumeSection(),
         };
     }
@@ -187,6 +188,10 @@ public partial class Map
             _resumeAvailable = true;
             _resumeTampered = vault.Tampered;
             _resumeHavenName = vault.Resume?.HavenName;
+            // #292: honor "tutorial played" even for a fresh Earth start this session — a returning
+            // captain who finished the lessons last run should not be re-greeted just because they
+            // pick a fresh Earth start over Continue. (Continue/Import overwrite this via ApplyVault.)
+            _tutorialPlayed = vault.Progress?.TutorialPlayed ?? false;
         }
         catch
         {
@@ -255,7 +260,17 @@ public partial class Map
         _insurance = VaultMapper.ToInsurance(vault.Insurance);
         ApplyObligationsAndQuests(vault.Quests);
         ApplyDiceItems(vault.DiceItems);
+
+        // #292: a saved life is never a fresh captain. Restore the "played" flag (a missing section —
+        // an old save from before this flag — defaults to false, which is harmless: the greeting is
+        // still suppressed below because a LOAD is not a fresh Earth start), then keep the nav clear.
+        _tutorialPlayed = vault.Progress?.TutorialPlayed ?? _tutorialPlayed;
+
         ApplyResumeBerth(vault.Resume, vault.SavedSimTime);
+
+        // Loading a saved game shows NONE of the tutorial promotions (owner, 2026-07-18) — set last so
+        // even the no-berth ApplyStart("earth") fallback above can't leave the greeting raised.
+        _showTutorial = false;
     }
 
     private void ApplyCargo(CargoSection? cargo)

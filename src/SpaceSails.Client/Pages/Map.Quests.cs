@@ -65,8 +65,16 @@ public partial class Map
     private ShipMission _mission = ShipMission.Default;
     private MissionOptions _missionOptions = new([], [], [], [], []);
 
-    private bool _showTutorial = true;
+    // #292: the nav screen is not a billboard. The checklist no longer defaults ON — it is raised only
+    // by the fresh-Earth greeting (ApplyStart, gated by TutorialPromotion), a deliberate desk-picked
+    // lesson (StartTutorial), or the captain's own 🏴 toggle. A loaded save never raises it.
+    private bool _showTutorial;
     private int _tutorialStep;                         // 0..N-1 = current task, N = complete
+
+    // #292: whether the captain has ever started or finished a lesson. Persisted through the vault's
+    // ProgressSection so a loaded save — or a later fresh Earth start — never re-greets a captain who
+    // is no longer truly new. Loaded at boot from the peeked vault (PeekSavedVault) and on every resume.
+    private bool _tutorialPlayed;
 
     // Two hunts: the first teaches the soft catch (a compliant pod you just board); the second
     // teaches the gun (a stubborn He3 freighter that won't stop — the only way to take her is to
@@ -202,6 +210,7 @@ public partial class Map
 
         _tutorialStep = TutorialTracks[trackIndex].Start;
         _showTutorial = true;
+        MarkTutorialPlayed(); // #292: a desk-picked lesson means this captain is no longer "truly new"
         switch (trackIndex)
         {
             case 0: SeedFirstHuntTarget(); break;
@@ -281,11 +290,31 @@ public partial class Map
 
     private void ToggleTutorial() => _showTutorial = !_showTutorial;
 
+    // #292: a lesson engaged (started or run to its end) means this captain is no longer truly new —
+    // the fresh-Earth greeting must never raise itself again, this run or any future one. Persisted
+    // through the vault's ProgressSection so it survives a reload. Idempotent; saves only on the edge.
+    private void MarkTutorialPlayed()
+    {
+        if (_tutorialPlayed)
+        {
+            return;
+        }
+
+        _tutorialPlayed = true;
+        RequestVaultSave();
+    }
+
     private void AdvanceTutorial(int completedStep)
     {
         if (_tutorialStep == completedStep)
         {
             _tutorialStep++;
+            // #292: following the auto-shown first lesson all the way through counts as having played it,
+            // even for a captain who never opened the Tutorials tab — so a later fresh start stays quiet.
+            if (_tutorialStep >= TutorialSteps.Length)
+            {
+                MarkTutorialPlayed();
+            }
         }
     }
 

@@ -459,7 +459,9 @@
     [Parameter] public IReadOnlyList<TutorialItem> Tutorials { get; set; } = [];
     [Parameter] public int ActiveTutorial { get; set; } = -1; // index of the in-progress lesson, -1 = none
     [Parameter] public EventCallback<int> OnStartTutorial { get; set; }
-    // Set by the Nav "New here? Learn the ropes" banner so the desk opens straight on the lessons.
+    // A one-shot request to open this desk straight on the lessons. (The Nav "New here? Learn the
+    // ropes" banner that used to raise it was removed in #195; the hook is kept dormant for a future
+    // tutorial mission to drive — see Map.Quests.cs _openCaptainToTutorials.)
     [Parameter] public bool OpenToTutorials { get; set; }
 
     // #124/#125 playtest: the desk component is re-created on every desk switch (see the note by
