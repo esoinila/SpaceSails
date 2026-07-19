@@ -45,6 +45,105 @@ public static class MotionTracker
     /// <summary>True if this contact is moving fast enough for the tracker to see it.</summary>
     public static bool IsMoving(double vx, double vy) => (vx * vx) + (vy * vy) > StillSpeed * StillSpeed;
 
+    // ── #338 "The long ear": the tracker hears them long before you see them. ──────────────────────
+    // Owner design intent (2026-07-18): "the tracker warns us long before we see any Reevers on the map …
+    // the tracker range in the movie was like 100-200 meters … the silent horror is there as Reevers come
+    // to see what landed." The instrument's whole purpose is the dread-gap: signal FIRST, sight much later.
+
+    /// <summary>#338 law 1: the tracker's detection reach as a MULTIPLE of the eye's reach — the owner
+    /// asked for order 3-5× the viewport half-extent, so a blip at the fan's edge is a long shamble away
+    /// from ever cresting into view. Owner-tunable; the single knob that widens or narrows the dread-gap.
+    /// (At the shamble of <c>Map.ReeverSpeed</c> a larger multiple is more seconds of warning — nudge it
+    /// up if the owner wants the fuller "30-60 seconds out" the movie sells.)</summary>
+    public const double VisualRangeMultiple = 4.0;
+
+    /// <summary>The tracker's outer detection radius (deck units) for a viewport whose visible half-extent
+    /// toward the horizon is <paramref name="visualHalfExtentDu"/>: that half-extent ×
+    /// <see cref="VisualRangeMultiple"/>. A contact at this range sits on the fan's rim and is nowhere near
+    /// visible on the grid yet (#338 law 1); it is also the range the client maps to the ring edge.</summary>
+    public static double DetectionRange(double visualHalfExtentDu) =>
+        System.Math.Max(1.0, visualHalfExtentDu) * VisualRangeMultiple;
+
+    /// <summary>The faintest a far blip ever paints, as a fraction of a point-blank one — a contact out on
+    /// the rim is a whisper, never nothing (#338: "blips at extreme range render faint/small").</summary>
+    public const double FaintFloor = 0.18;
+
+    /// <summary>#338 law 1 ("blips at extreme range render faint/small, firming as they close — the fan
+    /// itself tells distance"). A 0..1 firmness for a contact at <paramref name="range"/> within a
+    /// <paramref name="detectionRange"/>: 1 point-blank, easing linearly toward <see cref="FaintFloor"/> at
+    /// the rim and holding that floor beyond it. The client scales the blip's size and alpha by this so the
+    /// sweep grades from a distant murmur to an insistent near dot — distance read straight off the fan.</summary>
+    public static double BlipIntensity(double range, double detectionRange)
+    {
+        if (detectionRange <= 0)
+        {
+            return 1.0;
+        }
+        double t = System.Math.Clamp(range / detectionRange, 0.0, 1.0); // 0 = point-blank, 1 = on the rim
+        return FaintFloor + ((1.0 - FaintFloor) * (1.0 - t));
+    }
+
+    /// <summary>#338: how many of <paramref name="entities"/> are MOVING and inside
+    /// <paramref name="detectionRange"/> of the origin — the count the tracker actually HEARS (a mover
+    /// still off the far end of the long ear does not count). Drives the first-contact chirp edge.</summary>
+    public static int DetectedMovingCount(double originX, double originY,
+        System.Collections.Generic.IEnumerable<Entity> entities, double detectionRange)
+    {
+        System.ArgumentNullException.ThrowIfNull(entities);
+        double r2 = detectionRange * detectionRange;
+        int n = 0;
+        foreach (Entity e in entities)
+        {
+            if (!IsMoving(e.Vx, e.Vy))
+            {
+                continue;
+            }
+            double dx = e.X - originX, dy = e.Y - originY;
+            if ((dx * dx) + (dy * dy) <= r2)
+            {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    // ── #338 addendum (owner, 2026-07-18 — THE GAME'S FIRST SOUND): the first-contact chirp. "Some kind of
+    // sound on the first detected Reever … even if the device is slung the sound would tell that something
+    // is up." Edge-triggered on the 0→N transition, re-arming only after the fan has been genuinely clear
+    // for a while (no re-chirp spam as one contact flickers at extreme range). The Core edge/hysteresis is
+    // pure and pinned here; the actual tone is the client's Web Audio layer (manual to verify). ─────────
+
+    /// <summary>How long the fan must be genuinely clear of movers before the first-contact chirp re-arms
+    /// (seconds) — the hysteresis that keeps a single contact jittering at extreme range from re-chirping.
+    /// Owner: "re-arms only after the fan has been genuinely clear for a while."</summary>
+    public const double ChirpReArmSeconds = 4.0;
+
+    /// <summary>The first-contact chirp's edge state. <see cref="Armed"/> = a fresh contact would chirp;
+    /// <see cref="ClearSeconds"/> = how long the fan has been empty of movers. Pure so the 0→N edge and the
+    /// re-arm hysteresis pin in a test — the tone itself is client-side.</summary>
+    public readonly record struct ChirpState(bool Armed, double ClearSeconds)
+    {
+        /// <summary>The excursion's opening state: armed and long-clear, so the very first mover chirps.</summary>
+        public static ChirpState Fresh => new(Armed: true, ClearSeconds: ChirpReArmSeconds);
+    }
+
+    /// <summary>Advance the chirp edge one frame. <paramref name="movingContacts"/> is how many movers the
+    /// tracker currently hears (see <see cref="DetectedMovingCount"/>), <paramref name="dtSeconds"/> the
+    /// frame time. Returns the next state and whether the chirp fires THIS frame — true only on the 0→N
+    /// transition while armed. Firing disarms until the fan has been clear for
+    /// <see cref="ChirpReArmSeconds"/>; a contact that lingers never re-chirps.</summary>
+    public static (ChirpState Next, bool Chirp) StepChirp(ChirpState prev, int movingContacts, double dtSeconds)
+    {
+        if (movingContacts > 0)
+        {
+            bool chirp = prev.Armed;
+            return (new ChirpState(Armed: false, ClearSeconds: 0.0), chirp);
+        }
+        double clear = prev.ClearSeconds + System.Math.Max(0.0, dtSeconds);
+        bool armed = prev.Armed || clear >= ChirpReArmSeconds;
+        return (new ChirpState(armed, clear), false);
+    }
+
     /// <summary>Read one entity relative to the captain at (<paramref name="originX"/>,
     /// <paramref name="originY"/>): a <see cref="Blip"/> if it is moving, else null (still → invisible).</summary>
     public static Blip? Read(double originX, double originY, in Entity e)

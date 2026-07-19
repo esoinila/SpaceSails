@@ -110,4 +110,89 @@ public class MotionTrackerTests
         Assert.True(small < big, "a small viewport must shrink the disc");
         Assert.True(small >= 44, "but never collapse below the readable floor");
     }
+
+    // ── #338 "The long ear": the tracker hears them long before you see them. ──
+
+    [Fact]
+    public void DetectionRange_IsAMultipleOfTheVisibleHalfExtent()
+    {
+        // The long ear reaches several times farther than the eye — the dread-gap made law.
+        Assert.Equal(32.0 * MotionTracker.VisualRangeMultiple, MotionTracker.DetectionRange(32.0), 6);
+        double mult = MotionTracker.VisualRangeMultiple;
+        Assert.True(mult >= 3.0 && mult <= 5.0, "owner asked for order 3-5× the viewport half-extent");
+        // A degenerate/zero viewport never yields a zero (or negative) reach.
+        Assert.True(MotionTracker.DetectionRange(0) > 0);
+    }
+
+    [Fact]
+    public void BlipIntensity_FirmsAsTheContactCloses()
+    {
+        const double det = 100.0;
+        double near = MotionTracker.BlipIntensity(0, det);
+        double mid = MotionTracker.BlipIntensity(50, det);
+        double rim = MotionTracker.BlipIntensity(100, det);
+        double beyond = MotionTracker.BlipIntensity(400, det);
+
+        Assert.Equal(1.0, near, 6);                       // point-blank reads full-firm
+        Assert.True(near > mid && mid > rim, "the fan must firm as a contact closes");
+        Assert.Equal(MotionTracker.FaintFloor, rim, 6);   // on the rim it's the faint floor
+        Assert.Equal(MotionTracker.FaintFloor, beyond, 6);// beyond the rim it holds the floor — never nothing
+        Assert.True(MotionTracker.FaintFloor > 0, "an extreme contact still paints, only faint");
+    }
+
+    [Fact]
+    public void DetectedMovingCount_CountsOnlyMoversWithinReach()
+    {
+        var entities = new[]
+        {
+            new MotionTracker.Entity(10, 0, -0.5, 0),   // near mover — heard
+            new MotionTracker.Entity(90, 0, -0.5, 0),   // far mover, still inside 100 — heard
+            new MotionTracker.Entity(200, 0, -0.5, 0),  // mover past the reach — NOT heard
+            new MotionTracker.Entity(5, 0, 0, 0),       // point-blank but STILL — not a contact
+        };
+
+        Assert.Equal(2, MotionTracker.DetectedMovingCount(0, 0, entities, detectionRange: 100));
+        Assert.Equal(0, MotionTracker.DetectedMovingCount(0, 0, entities, detectionRange: 1));
+    }
+
+    // ── #338 addendum · the first-contact chirp: edge-triggered on the 0→N transition, re-arming only
+    //    after the fan has been genuinely clear for a while. ──
+
+    [Fact]
+    public void Chirp_FiresOnlyOnTheZeroToContactEdge()
+    {
+        MotionTracker.ChirpState s = MotionTracker.ChirpState.Fresh;
+
+        // First contact of the excursion → chirp, then disarmed.
+        (s, bool first) = MotionTracker.StepChirp(s, movingContacts: 1, dtSeconds: 0.1);
+        Assert.True(first);
+        Assert.False(s.Armed);
+
+        // A lingering contact never re-chirps, no matter how many frames pass.
+        for (int i = 0; i < 20; i++)
+        {
+            (s, bool again) = MotionTracker.StepChirp(s, movingContacts: 3, dtSeconds: 0.1);
+            Assert.False(again);
+        }
+    }
+
+    [Fact]
+    public void Chirp_ReArmsOnlyAfterTheFanHasBeenClearForAWhile()
+    {
+        // Start disarmed, fan just went empty.
+        var s = new MotionTracker.ChirpState(Armed: false, ClearSeconds: 0);
+
+        // A brief blip of clear time (a contact flickering at extreme range) must NOT re-arm.
+        (s, _) = MotionTracker.StepChirp(s, movingContacts: 0, dtSeconds: 1.0);
+        (s, bool tooSoon) = MotionTracker.StepChirp(s, movingContacts: 2, dtSeconds: 0.1);
+        Assert.False(tooSoon); // still within the hysteresis window — no re-chirp spam
+        Assert.False(s.Armed);
+
+        // Now let the fan stay genuinely clear past the re-arm window, then a fresh contact chirps again.
+        s = new MotionTracker.ChirpState(Armed: false, ClearSeconds: 0);
+        (s, _) = MotionTracker.StepChirp(s, movingContacts: 0, dtSeconds: MotionTracker.ChirpReArmSeconds + 0.5);
+        Assert.True(s.Armed);
+        (s, bool rearmed) = MotionTracker.StepChirp(s, movingContacts: 1, dtSeconds: 0.1);
+        Assert.True(rearmed);
+    }
 }

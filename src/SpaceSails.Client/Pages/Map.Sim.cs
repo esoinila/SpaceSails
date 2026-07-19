@@ -1436,8 +1436,33 @@ public partial class Map
         return false;
     }
 
+    // #338 addendum · THE GAME'S FIRST SOUND — the master audio switch (default ON, remembered browser-side
+    // in JS). _audioArmed also does double duty as item-4's gesture unlock: the first keypress of the
+    // session both arms the WebAudio context (so a chirp fired later from the rAF loop can sound) and syncs
+    // our on/off label from the remembered pref.
+    private bool _audioEnabled = true;
+    private bool _audioArmed;
+
+    private void ToggleAudio()
+    {
+        _audioEnabled = !_audioEnabled;
+        RendererInterop.SetAudioEnabled(_audioEnabled);
+        ShowPulseMessage(_audioEnabled
+            ? "🔊 Sound on — the tracker will chirp on first contact."
+            : "🔇 Sound muted. (Press M to bring it back.)");
+    }
+
     private void OnKeyDown(KeyboardEventArgs e)
     {
+        // #338 addendum item 4: unlock audio on the first keypress and adopt the remembered mute pref, so a
+        // chirp fired later from the render loop isn't silently blocked.
+        if (!_audioArmed)
+        {
+            _audioArmed = true;
+            RendererInterop.ArmAudio();
+            _audioEnabled = RendererInterop.GetAudioEnabled();
+        }
+
         if (_shuttleRun is not null)
         {
             switch (e.Key)
@@ -1511,6 +1536,14 @@ public partial class Map
         if (e.Key is "`" or "~")
         {
             TogglePeekMap();
+            return;
+        }
+
+        // #338 addendum: M mutes/unmutes all sound (the first-contact chirp and every cue). Global — the
+        // audio switch is not a surface-only affordance.
+        if (e.Key is "m" or "M")
+        {
+            ToggleAudio();
             return;
         }
 

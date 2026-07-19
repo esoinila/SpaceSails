@@ -281,6 +281,33 @@ function rgba(r, g, b, a) {
 
 let audioCtx = null;
 
+// ─── #338 addendum (owner, 2026-07-18 — THE GAME'S FIRST SOUND): the audio switch. "An audio toggle
+// (default ON, remembered) so streamers and the noise-averse can mute; all future sounds hang off the
+// same switch." Kept as a browser-local pref (localStorage, NOT the game vault/save) so a mute survives a
+// reload without touching persistence. Every cue below early-returns when it is off. ───
+const AUDIO_PREF_KEY = 'spaceSails.audioEnabled';
+let audioEnabled = true;
+try { audioEnabled = window.localStorage.getItem(AUDIO_PREF_KEY) !== '0'; } catch { /* default on */ }
+
+/** The current audio-on state (so C# can sync its toggle label). */
+export function getAudioEnabled() { return audioEnabled; }
+
+/** Flip the master audio switch and remember it browser-locally. All cues + the chirp hang off this. */
+export function setAudioEnabled(on) {
+    audioEnabled = !!on;
+    try { window.localStorage.setItem(AUDIO_PREF_KEY, audioEnabled ? '1' : '0'); } catch { /* pref is a nicety */ }
+}
+
+/** #338 addendum item 4 — WebAudio needs a user gesture before it will play, so unlock the context on the
+ *  first click/keypress of the session. Then a cue fired later from the rAF loop (the first-contact chirp,
+ *  which is not itself a gesture) can sound instead of being silently blocked. */
+export function armAudio() {
+    try {
+        audioCtx ??= new AudioContext();
+        if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+    } catch { /* audio is decoration */ }
+}
+
 const CUES = {
     rum: { type: 'triangle', freq: 392, to: 587, duration: 0.35, gain: 0.09 }, // a jaunty rising swagger for the rum locker
     pulse: { freq: 220, to: 440, duration: 0.09, gain: 0.06, type: 'square' },   // engine thump
@@ -295,6 +322,9 @@ const CUES = {
 };
 
 export function playCue(kind) {
+    if (!audioEnabled) {
+        return;
+    }
     const cue = CUES[kind];
     if (!cue) {
         return;
@@ -319,6 +349,41 @@ export function playCue(kind) {
         osc.stop(t + cue.duration);
     } catch {
         // Audio is decoration: autoplay policies or missing WebAudio must never break the game.
+    }
+}
+
+/** #338 addendum — THE GAME'S FIRST SOUND: the motion tracker's first-contact chirp. Two short, quiet
+ *  rising tones, radar-flavoured, no assets — the "device chirps in the holster" moment fired on the 0→N
+ *  tracker edge (Core-gated in MotionTracker.StepChirp). Respects the master audio switch and the
+ *  gesture-armed context, exactly like every other cue. */
+export function playChirp() {
+    if (!audioEnabled) {
+        return;
+    }
+    try {
+        audioCtx ??= new AudioContext();
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        const t0 = audioCtx.currentTime;
+        // Two quick blips, the second a step higher — a little "ping-ping" that reads as "contact".
+        for (let i = 0; i < 2; i++) {
+            const t = t0 + (i * 0.12);
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const f = i === 0 ? 660 : 880;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, t);
+            osc.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.08);
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(0.05, t + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.10);
+            osc.connect(gain).connect(audioCtx.destination);
+            osc.start(t);
+            osc.stop(t + 0.11);
+        }
+    } catch {
+        // Audio is decoration: a blocked chirp must never break the sweep.
     }
 }
 

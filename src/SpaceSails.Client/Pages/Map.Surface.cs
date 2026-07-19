@@ -64,6 +64,17 @@ public partial class Map
     private double _lastReeverCatchMs;
     private double? _lastNearestReeverRange; // for the tracker's closing/drifting read
 
+    // #338 addendum · the first-contact chirp's edge state (owner: "some kind of sound on the first
+    // detected Reever … even if the device is slung the sound would tell that something is up"). The 0→N
+    // transition + re-arm hysteresis live in MotionTracker.StepChirp; this is just the carried state,
+    // re-armed fresh at every touchdown so the first mover of a new excursion always chirps.
+    private MotionTracker.ChirpState _chirp = MotionTracker.ChirpState.Fresh;
+
+    // #338 law 1: the tracker HEARS several times farther than the eye sees. The surface camera shows a
+    // 64-du-wide field, so the visible half-width is ~32 du; the long ear reaches that × the tunable
+    // multiple. Used to gate the first-contact chirp on a contact the tracker can actually hear.
+    private const double SurfaceVisualHalfWidthDu = 32.0;
+
     // #327 the ship calls home: the mothership's station-keeping hold (sim-seconds) at the moment the
     // captain boarded DOWN — the reference the escalating ladder measures against (OrbitHold). Positive
     // = boarded with a real kept-orbit hold; 0 = boarded onto an orbit no one is keeping (a standing red
@@ -267,6 +278,7 @@ public partial class Map
         _surface = excursion;
         _reevers.Clear();
         _lastNearestReeverRange = null;
+        _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
 
         // #327: snapshot the mothership's hold at the moment of boarding DOWN — the reference the surface
         // ladder erodes against. A kept orbit quotes pulses ÷ Lab-25 trim rate; an unkept one is 0 (the
@@ -731,7 +743,29 @@ public partial class Map
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
         StepTide(dtRealSeconds);
+        StepFirstContactChirp(dtRealSeconds);
         TryRecoverDroppedChest();
+    }
+
+    // #338 addendum · THE GAME'S FIRST SOUND: chirp on the tracker's first-contact edge. Counts the movers
+    // the long ear actually HEARS this frame (within detection range), advances the pure edge/hysteresis in
+    // MotionTracker.StepChirp, and plays the two-tone radar ping on the 0→N transition. Sound only — the
+    // fan and the existing tide/raise notices carry the words; this is the "device chirps in the holster"
+    // that makes you look even when the device is slung. Muting is a JS-side master switch (respected there).
+    private void StepFirstContactChirp(double dtRealSeconds)
+    {
+        if (_surface is null)
+        {
+            return;
+        }
+        double detection = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
+        var entities = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+        int heard = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, entities, detection);
+        (_chirp, bool chirp) = MotionTracker.StepChirp(_chirp, heard, dtRealSeconds);
+        if (chirp)
+        {
+            RendererInterop.PlayChirp();
+        }
     }
 
     // ── #317 The nerve gauge: the regolith frays it, the ship's safety eases it, the monolith gores it. ──
@@ -1301,6 +1335,7 @@ public partial class Map
             parts.Add("G — drop the chest & sprint");
         }
         parts.Add("F — first person");
+        parts.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute"); // #338: the first-sound switch, always spelled out
         return string.Join(" ∙ ", parts);
     }
 

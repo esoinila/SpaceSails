@@ -46,6 +46,24 @@ internal static partial class RendererInterop
     [JSImport("playCue", ModuleName)]
     internal static partial void PlayCue(string kind);
 
+    /// <summary>#338 addendum — THE GAME'S FIRST SOUND: the motion tracker's first-contact chirp (two short
+    /// rising tones). Fired on the Core-gated 0→N tracker edge; respects the master audio switch JS-side.</summary>
+    [JSImport("playChirp", ModuleName)]
+    internal static partial void PlayChirp();
+
+    /// <summary>#338 addendum item 4 — unlock the WebAudio context on a user gesture so a cue fired later
+    /// from the rAF loop (the chirp) can actually sound. Safe to call on every keydown; JS is idempotent.</summary>
+    [JSImport("armAudio", ModuleName)]
+    internal static partial void ArmAudio();
+
+    /// <summary>#338 addendum — flip the master audio switch (default ON). Remembered browser-locally.</summary>
+    [JSImport("setAudioEnabled", ModuleName)]
+    internal static partial void SetAudioEnabled(bool on);
+
+    /// <summary>#338 addendum — the remembered audio-on state, so C# can label its toggle in step.</summary>
+    [JSImport("getAudioEnabled", ModuleName)]
+    internal static partial bool GetAudioEnabled();
+
     /// <summary>
     /// Flushes the whole batched command buffer for one frame in a single call. <paramref name="buffer"/>
     /// is handed to JS as a <see cref="JSType.MemoryView"/> (a short-lived view over the WASM linear
