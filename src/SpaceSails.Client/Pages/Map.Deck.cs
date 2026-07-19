@@ -279,10 +279,13 @@ public partial class Map
                 ShowPulseMessage("Cantina: galley's this way");
                 break;
             case DeckPlan.ConsoleKind.Head:
-                ShowPulseMessage(HeadQuip());
+                ShowPulseMessage(VisitHead());
                 break;
             case DeckPlan.ConsoleKind.MedKit:
                 ShowPulseMessage(TakePill());
+                break;
+            case DeckPlan.ConsoleKind.Bunk:
+                ShowPulseMessage(SleepInBunk());
                 break;
             case DeckPlan.ConsoleKind.Vent:
                 VentCharge();
@@ -554,19 +557,71 @@ public partial class Map
         return $"MED KIT: a calming pill, dry-swallowed. {tail} — {steadying}";
     }
 
-    // ---- The HEAD 🚽 (3D-reno Phase 3): a gag fixture in the starboard berths. Pure flavor —
-    //      pressing E by the space-toilet returns a deterministic one-liner, no state, no Core. ----
-    private static readonly string[] HeadLines =
-    [
-        "The space-toilet gurgles, thinks better of it, and settles down. 🚽",
-        "Zero-g plumbing: brace, aim, and commit. No do-overs.",
-        "The vacuum flush could de-orbit a small moon. You use it sparingly.",
-        "V-1K has zip-tied an 'OUT OF ORDER' sign over it. You do not trust V-1K.",
-        "'Recycled water,' the placard insists. You elect not to ask from what.",
-        "Somewhere a pipe knocks three times, like it wants to talk. 🚽",
-    ];
+    // ---- The HEAD 🚽 (owner's live playtest, 2026-07-19: "I tested the toilet :-D … randomized comments
+    //      on visiting the toilet … toilet visit could also restore sanity … with rare exceptions of you're
+    //      scared of what came out :-D"). The flavour + the seeded usual-vs-scare band live pure in Core
+    //      (CabinComforts.VisitToilet — seeded per visit off the sim second, so each press differs yet
+    //      replays exactly). A visit USUALLY returns a small dab of nerve (smaller than a drink); ~1-in-12
+    //      it's the scare that costs a dab instead. Docked at a bar, one line swears you off the local
+    //      house special (Barkeeps knows the names); undocked, only the generic lines are drawn. ----
+    private string VisitHead()
+    {
+        (string? special, string? bar) = DockedBarNames();
+        CabinComforts.ToiletVisit visit = CabinComforts.VisitToilet(SimTime, special, bar);
 
-    private string HeadQuip() => HeadLines[(int)((SimTime / 60) % HeadLines.Length)];
+        double beforeNerve = _nerve;
+        _nerve = NerveModel.Clamp(_nerve + visit.NerveDelta); // a tiny nerve nudge, not a drink — clamped, not the drink seam
+        if (_nerve != beforeNerve)
+        {
+            RequestVaultSave(); // the nerve moved — persist the steadier (or shakier) hands
+        }
+
+        return visit.Line;
+    }
+
+    // The docked bar's house-special + bar names for the toilet's local-riff line, or (null, null) when
+    // we're not tied up somewhere with a bar. Barkeeps.For owns the names the drink menu already shows.
+    private (string? Special, string? Bar) DockedBarNames() =>
+        _dockedHavenId is { } id && Barkeeps.For(id) is { } keep
+            ? (keep.DrinkName, keep.BarName)
+            : (null, null);
+
+    // ---- The BUNK 🛏 (owner's live ruling, 2026-07-19: "Let's have a sanity restoring sleep action in one
+    //      of the cabins" — the REST half of Evening-wind #21). CABIN 1's bunk. [E] turns in for a night:
+    //      a solid flat chunk of nerve through the SAME #339 relief seam the drink and pill ride
+    //      (NerveModel.DrinkKind.Sleep), and a modest sim-clock cost. Free and unlimited-ish, but HONEST —
+    //      a short WELL-RESTED satiety (CabinComforts) means you can't lie down twice in a row to grind
+    //      steady hands; you have to actually be tired. CabinComforts owns the law; this is the wiring. ----
+    private double _lastSleepSimTime = double.NegativeInfinity; // never slept yet → the first bunk always lands
+
+    private string SleepInBunk()
+    {
+        double sinceSleep = SimTime - _lastSleepSimTime;
+        CabinComforts.SleepResult result = CabinComforts.Sleep(_nerve, sinceSleep, SimTime);
+
+        if (result.WasRested)
+        {
+            return result.Line; // still well-rested — no restore, no clock cost, just the honest refusal
+        }
+
+        _nerve = result.Nerve;
+
+        // A night's rest advances the sim clock a modest, fixed amount — re-stamp the loitering ship at the
+        // new time and re-pin to any dock (mirrors AdvanceShuttleClock's clock-cost idiom, minus the shuttle
+        // cache watch). Not a cinematic — the clock simply moves on while you sleep.
+        double newT = SimTime + CabinComforts.SleepSimSeconds;
+        _ship = _ship with { SimTime = newT };
+        SimTime = newT;
+        _lastSleepSimTime = newT; // well-rested from the moment you wake
+        if (_dockedHavenId is not null)
+        {
+            HoldAtDock(); // stay pinned to the station's drift across the sleep
+        }
+
+        RendererInterop.PlayCue("rum"); // a soft chime to mark the rest (reuses the galley's gentle cue)
+        RequestVaultSave();             // the nerve moved and time passed — persist it
+        return result.Line;
+    }
 
     /// <summary>Flip between the top-down deck plan and first-person walk (the F key and the on-screen
     /// deck-view-toggle button both land here). Clears held movement keys so a key isn't "stuck down"

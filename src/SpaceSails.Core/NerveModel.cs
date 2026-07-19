@@ -146,6 +146,15 @@ public static class NerveModel
         /// parallelled. A pill rides no rum spree and never makes the deck tilty; its finite shipboard
         /// stock is the only limiter, so the client doses it as a single, un-diminished round (tot 1).</summary>
         CalmingPill,
+
+        /// <summary>A good night's sleep in a cabin bunk (owner's live ruling 2026-07-19: "Let's have a
+        /// sanity restoring sleep action in one of the cabins" — the REST half of Evening-wind #21). Not a
+        /// drink either, but rest reaches the nerve through THIS same relief seam — reused, not parallelled.
+        /// The biggest single restore there is (a whole night), flat and level-independent because real rest
+        /// steadies the hands at any level; it rides no rum spree and never makes the deck tilty (tot 1). Its
+        /// only limiter is honest tiredness — the WELL-RESTED satiety window <see cref="CabinComforts"/>
+        /// owns, not drunkenness.</summary>
+        Sleep,
     }
 
     /// <summary>Full restore of a lone galley tot at steady hands, before the level-curve and diminishing
@@ -165,6 +174,13 @@ public static class NerveModel
     /// lone galley tot (10) and on a par with the bar's best pour, but flat rather than curved. Its finite
     /// shipboard stock, not drunkenness, bounds its use (FLAGGED for tuning).</summary>
     public const double CalmingPillRestore = 20.0;
+
+    /// <summary>A night's sleep restore (owner 2026-07-19) — flat and level-independent like a shared drink
+    /// or a pill, because real rest steadies the hands even when nerves are shot. The BIGGEST single restore
+    /// there is — a whole night's bunk beats the bar's best pour (18) and the shared glass (24) — but honest:
+    /// it does NOT full-heal a shot captain (0 → 40), and its WELL-RESTED satiety (CabinComforts) stops it
+    /// being the grind. FLAGGED for the owner's tuning.</summary>
+    public const double SleepRestore = 40.0;
 
     /// <summary>The single point a lone drink can still manage at the shot floor — you cannot drink your
     /// way back from the edge alone; you need a face across the table (owner: "moves the needle by one").</summary>
@@ -200,6 +216,7 @@ public static class NerveModel
     {
         DrinkKind.SharedWithContact => SharedDrinkRestore,
         DrinkKind.CalmingPill => CalmingPillRestore, // flat, level-independent — medicine, not a mood
+        DrinkKind.Sleep => SleepRestore,             // flat, level-independent — a whole night's rest
         DrinkKind.BarSpecial => SoloCurve(BarSpecialBaseRestore, nerve),
         DrinkKind.GalleyTot => SoloCurve(GalleyTotBaseRestore, nerve),
         _ => 0.0,
@@ -229,6 +246,14 @@ public static class NerveModel
             return restored < 2.0
                 ? "the nerves were already steady — the pill barely registers"
                 : "the calming pill takes hold — the pulse slows, the hands go still";
+        }
+        if (kind == DrinkKind.Sleep)
+        {
+            // Rest's own voice (owner 2026-07-19) — no drunk state, no rum spree; CabinComforts usually
+            // supplies the fuller bunk line, but this keeps the note voice-true wherever it's read.
+            return restored < 2.0
+                ? "you were already steady — the bunk barely changes a thing"
+                : "a full bunk — you wake with the shakes gone and your hands your own again";
         }
         if (DrunkAt(totNumber))
         {

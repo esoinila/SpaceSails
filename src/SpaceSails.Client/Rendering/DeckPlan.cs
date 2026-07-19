@@ -19,7 +19,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -305,6 +305,13 @@ public sealed class DeckPlan
             // there takes one calming pill (see InteractAtConsole's MedKit case). The [E] hint is drawn
             // automatically when the captain is near, so the label stays clean.
             new(ConsoleKind.MedKit, 5.75f, -6.5f, "MED KIT 💊"),
+
+            // BUNK 🛏 (owner's live ruling, 2026-07-19: "Let's have a sanity restoring sleep action in one of
+            // the cabins" — the REST half of Evening-wind #21). CABIN 1 [x 11..14.5], the tidy berth, keeps
+            // its bunk; its console sits mid-berth (mirrors the HEAD's and MED KIT's y), and [E] there turns
+            // in for a night's sleep (see InteractAtConsole's Bunk case → Sleep). Free but honest — a short
+            // WELL-RESTED satiety stops it being the steady-hands grind (CabinComforts owns that law).
+            new(ConsoleKind.Bunk, 12.75f, -6.5f, "BUNK 🛏"),
 
             // The gangway to a docked haven (go-ashore, 2026-07-07; moved to the airlock vestibule
             // 2026-07-08). In the docked complex you walk the tube; on the bare ship, pressing E here
