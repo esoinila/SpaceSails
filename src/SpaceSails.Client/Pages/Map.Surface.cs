@@ -64,6 +64,24 @@ public partial class Map
     private double _lastReeverCatchMs;
     private double? _lastNearestReeverRange; // for the tracker's closing/drifting read
 
+    // #371 Phase 1 (perf) · reusable HUD buffers. BuildSurfaceHud runs EVERY surface frame and used to
+    // allocate ~7 fresh LINQ Lists each time; these instance buffers are cleared-and-refilled instead. Safe
+    // because the SurfaceHud that borrows them is consumed synchronously inside the same DrawWalkFrame call
+    // (the previous frame's HUD is dead before the next refill), so nothing outlives a buffer's contents.
+    private readonly List<MotionTracker.Entity> _hudEntities = [];
+    private readonly List<(double Bearing, double Range)> _hudBlips = [];
+    private readonly List<(double X, double Y, bool Haunted)> _hudMarks = [];
+    private readonly List<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)> _hudBots = [];
+    private readonly List<(double X, double Y)> _hudHusks = [];
+    private readonly List<(double X, double Y, bool Hard)> _hudSwept = [];
+
+    // #371 Phase 1 (perf) · the swept-grid draw is bounded. The per-visit probed squares grow toward the
+    // whole field's worth of marks if a captain digs the ground out; this caps how many are handed to the
+    // renderer each frame. Set far above any realistic visit (tens of probes), so it never trims a mark in
+    // normal play — it only stops a pathologically over-probed field from painting an unbounded mark cloud
+    // every frame. At that density the omitted squares are visually redundant, so no visible behaviour change.
+    private const int MaxSweptDrawn = 256;
+
     // #338 addendum · the first-contact chirp's edge state (owner: "some kind of sound on the first
     // detected Reever … even if the device is slung the sound would tell that something is up"). The 0→N
     // transition + re-arm hysteresis live in MotionTracker.StepChirp; this is just the carried state,
@@ -1267,50 +1285,89 @@ public partial class Map
         {
             return null;
         }
-        var entities = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
-        IReadOnlyList<MotionTracker.Blip> blips = MotionTracker.Sweep(_avatarX, _avatarY, entities);
+        // #371 Phase 1 (perf): fill the reused entity buffer instead of a lazy Select — one iterator fewer
+        // per frame, and MotionTracker.Sweep reads it as an IEnumerable exactly as before.
+        _hudEntities.Clear();
+        foreach (Reever r in _reevers)
+        {
+            _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+        }
+        IReadOnlyList<MotionTracker.Blip> blips = MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities);
         double? nearest = blips.Count > 0 ? blips[0].Range : null;
         bool closing = nearest is { } n && _lastNearestReeverRange is { } prev && n < prev - 0.01;
         _lastNearestReeverRange = nearest;
 
-        var marks = OwnCachePositionsAt(ex.Stop.Body.Id)
-            .Select(c => (c.X, c.Y, c.ReeverLevel > 0)).ToList();
+        _hudBlips.Clear();
+        foreach (MotionTracker.Blip b in blips)
+        {
+            _hudBlips.Add((b.Bearing, b.Range));
+        }
+
+        // The own caches' ✗ marks (with the DigX/DigY-or-hash-scatter fallback, same as OwnCachePositionsAt)
+        // straight into the reused buffer — no intermediate list + Select allocation.
+        string bodyId = ex.Stop.Body.Id;
+        _hudMarks.Clear();
+        foreach (TreasureCache c in _caches.CachesAt(bodyId))
+        {
+            if (!c.PlayerOwned)
+            {
+                continue;
+            }
+            (double mx, double my) = c is { DigX: { } dx, DigY: { } dy }
+                ? (dx, dy)
+                : MoonSurface.CachePosition(c.Id);
+            _hudMarks.Add((mx, my, c.ReeverLevel > 0));
+        }
 
         double nowMs = _lastTimestampMs ?? 0;
-        var bots = ex.Bots
-            .Where(b => b.Deployed)
-            .Select(b => (b.X, b.Y, SentryBot.Readout(b.Rounds), b.Rounds <= 0, b.FiringUntilMs > nowMs, b.AimX, b.AimY))
-            .ToList();
-        var husks = ex.Husks.Select(h => (h.X, h.Y)).ToList();
-
-        // The per-visit swept grid: every beach-comber square probed this excursion, at its centre, with
-        // a hard-ground flag so the deck-plan paints a bedrock mark distinct from a plain checked square.
-        var swept = ex.Swept
-            .Select(kv =>
+        _hudBots.Clear();
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (!b.Deployed)
             {
-                (double cx, double cy) = BeachComber.SquareCenter(kv.Key.X, kv.Key.Y);
-                return (cx, cy, kv.Value == BeachComber.Outcome.TooHard);
-            })
-            .ToList();
+                continue;
+            }
+            _hudBots.Add((b.X, b.Y, SentryBot.Readout(b.Rounds), b.Rounds <= 0, b.FiringUntilMs > nowMs, b.AimX, b.AimY));
+        }
+
+        _hudHusks.Clear();
+        foreach ((double hx, double hy) in ex.Husks)
+        {
+            _hudHusks.Add((hx, hy));
+        }
+
+        // The per-visit swept grid: every beach-comber square probed this excursion, at its centre, with a
+        // hard-ground flag so the deck-plan paints a bedrock mark distinct from a plain checked square. The
+        // draw is BOUNDED (MaxSweptDrawn) so a fully-probed field can't paint an unbounded mark cloud.
+        _hudSwept.Clear();
+        foreach (KeyValuePair<(int X, int Y), BeachComber.Outcome> kv in ex.Swept)
+        {
+            if (_hudSwept.Count >= MaxSweptDrawn)
+            {
+                break;
+            }
+            (double cx, double cy) = BeachComber.SquareCenter(kv.Key.X, kv.Key.Y);
+            _hudSwept.Add((cx, cy, kv.Value == BeachComber.Outcome.TooHard));
+        }
 
         (string Line, int Severity)? orbit = SurfaceOrbitComms(); // #327: the ship calling home
 
         return new DeckView.SurfaceHud(
-            TrackerCaptions: BuildTrackerCaptions(ex, marks.Count),
+            TrackerCaptions: BuildTrackerCaptions(ex, _hudMarks.Count),
             DigProgress: ex.Channel?.Progress ?? -1,
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
-            Blips: blips.Select(b => (b.Bearing, b.Range)).ToList(),
+            Blips: _hudBlips,
             Cadence: (int)MotionTracker.CadenceFor(nearest),
             Readout: MotionTracker.Readout(nearest, closing),
-            CacheMarks: marks,
+            CacheMarks: _hudMarks,
             Nerve: _nerve,
             NerveReadout: NerveModel.Readout(_nerve),
-            Bots: bots,
-            Husks: husks,
+            Bots: _hudBots,
+            Husks: _hudHusks,
             KeyHints: BuildSurfaceKeyHints(ex),
             OrbitComms: orbit?.Line,          // #327: the ship's calling-home line, never buried
             OrbitSeverity: orbit?.Severity ?? 0,
-            SweptSquares: swept);
+            SweptSquares: _hudSwept);
     }
 
     // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
