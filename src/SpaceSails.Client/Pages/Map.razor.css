@@ -2058,6 +2058,20 @@
     color: #cfe0f5;
 }
 
+/* #348: the Grok kit thumbnail (art/gear-beachcomber-kit.jpg) rides at the left of the gear line.
+   Capped small — object-fit cover + a modest max-height — so it never grows the boarding dialog or
+   pushes the Board button off small screens. Sits inside the flex .bury-row, so text flows beside it. */
+.bury-gear .gear-thumb {
+    flex: 0 0 auto;
+    width: 3.4rem;
+    max-height: 2.4rem;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    margin-right: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    align-self: center;
+}
+
 /* #348: the empty-sling "are you certain?" line — a fishing-expedition nudge, not a scold, so it wraps
    full width above its confirm buttons. */
 .bury-empty-confirm {
@@ -2163,6 +2177,20 @@
     letter-spacing: 0.04em;
     font-size: 1.1rem;
     margin-bottom: 0.35rem;
+}
+
+/* PR-BUSTED art (docs/art-manifest-busted.md item 3): busted-collector-hail.jpg backs ONLY the Demand
+   header. A left-weighted dark scrim keeps the callsign legible while the repo captain reads from the
+   right of the cockpit; the gradient sits ABOVE the url so a missing asset still leaves dark, readable
+   chrome. Text-only readability is preserved — the image is decoration behind the scrim. */
+.busted-collector-hail {
+    padding: 0.6rem 0.7rem;
+    border-radius: 0.5rem;
+    background:
+        linear-gradient(90deg, rgba(12, 6, 4, 0.9) 0%, rgba(12, 6, 4, 0.72) 45%, rgba(12, 6, 4, 0.4) 100%),
+        url('art/busted-collector-hail.jpg') right center / cover no-repeat;
+    text-shadow: 0 0.08rem 0.3rem rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 138, 138, 0.28);
 }
 
 .busted-heat {
@@ -2275,6 +2303,23 @@
     height: 6rem;
     background: radial-gradient(circle at 50% 50%, rgba(255, 180, 90, 0.95), rgba(120, 40, 10, 0.5) 50%, rgba(15, 8, 4, 0.95));
     filter: sepia(0.3) contrast(1.2);
+}
+
+/* PR-BUSTED art (docs/art-manifest-busted.md): the delivered JPGs cover the freeze/explosion boxes,
+   sitting on TOP of the placeholder gradient (which stays as the load/404 fallback). The art is already
+   painterly-sepia, so has-art drops the box's tinting filter and lets the baked frame read as authored.
+   The box keeps overflow:hidden + border-radius, so the image is clipped to the same slot shape. */
+.busted-freeze-art .bf-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+
+.busted-freeze-art.has-art {
+    filter: none;
 }
 
 .busted-freeze-caption {
