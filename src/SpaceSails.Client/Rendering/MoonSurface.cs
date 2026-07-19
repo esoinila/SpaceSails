@@ -127,6 +127,58 @@ public static class MoonSurface
     {
         ArgumentNullException.ThrowIfNull(fillDroids);
         ownCaches ??= [];
+
+        // #371 Phase 1 (perf study, owner-approved 2026-07-19: "Let's go phase one for now"): MEMOIZE the
+        // deterministic layout. The study cites SurfaceLayout.For — and with it the whole wall/console/
+        // label build — as a pure function of (bodyId, display name, own-cache set). A revisit to a moon
+        // with the same buried ✗ set therefore skips the entire ~100-op rebuild and reuses the built
+        // arrays. Only the DELEGATE-FREE layout is cached: the droid buffer size and the live fill-droids
+        // delegate (bound to the calling game component, and stale across sessions) are re-bound FRESH on
+        // every build below, so the cache can never hand back a plan wired to a disposed ship — the one
+        // way a shared surface deck could go quietly wrong. Invalidation is honest by construction: any
+        // bury / lift / drop that changes the own-cache set changes the key (SurfaceDeckKey), so the ✗
+        // marks are never stale.
+        SurfaceDeckKey key = SurfaceDeckKey.For(bodyId, bodyDisplayName, ownCaches);
+        Layout layout;
+        if (!_layoutCache.TryGetValue(key, out layout))
+        {
+            layout = BuildLayout(bodyId, bodyDisplayName, ownCaches);
+            // Cheap unbounded-growth guard: each distinct (body, cache-set) leaves one small entry, and a
+            // long game of bury/lift cycles could accumulate stale sets nobody revisits. A generous cap
+            // that never trips in normal play keeps the cache from creeping; on overflow we simply start
+            // fresh (the next builds re-warm the live grounds).
+            if (_layoutCache.Count >= LayoutCacheCap)
+            {
+                _layoutCache.Clear();
+            }
+            _layoutCache[key] = layout;
+        }
+
+        return new DeckPlan(
+            layout.Walls, layout.Consoles, layout.Labels, layout.Backdrops,
+            spawnX: SpawnX, spawnY: SpawnY,
+            droidCount: droidCount, fillDroids: fillDroids,
+            location: layout.Location,
+            doors: null, shipFixtures: true, followCam: true, tables: DeckPlan.Ship.Tables);
+    }
+
+    // #371 Phase 1 · the memoized, delegate-free layout: everything in a surface deck that is a pure
+    // function of the SurfaceDeckKey inputs. The droids (buffer size + fill delegate) are NOT here — they
+    // are re-bound on every SurfaceDeck call so a cached layout never captures a component reference.
+    private readonly record struct Layout(
+        DeckPlan.Wall[] Walls, DeckPlan.ConsoleSpot[] Consoles,
+        (float X, float Y, string Text)[] Labels, DeckPlan.Backdrop[] Backdrops,
+        Func<double, double, string> Location);
+
+    // WASM is single-threaded, so a plain dictionary is safe. Bounded (see the growth guard above).
+    private const int LayoutCacheCap = 64;
+    private static readonly Dictionary<SurfaceDeckKey, Layout> _layoutCache = new();
+
+    private static Layout BuildLayout(
+        string bodyId,
+        string bodyDisplayName,
+        IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches)
+    {
         DeckPlan ship = DeckPlan.Ship;
 
         // Start from the ship, minus the sealed bottom-hull hatch (the surface opens it) — the same move
@@ -192,16 +244,17 @@ public static class MoonSurface
 
         var backdrops = new List<DeckPlan.Backdrop>(ship.Backdrops);
 
-        return new DeckPlan(
-            walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
-            spawnX: SpawnX, spawnY: SpawnY,
-            droidCount: droidCount, fillDroids: fillDroids,
-            location: (x, y) => y > DeckPlan.ShuttleHatchY ? ship.Location(x, y)
-                              : y > SurfaceTopY ? "DOWN-TUBE (the shuttle ride)"
-                              : y > LandingBandY - 2 ? "LANDING AREA"
-                              : y < MonolithY + 8 && Math.Abs(x - MonolithX) < 16 ? layout.Scheme
-                              : $"{bodyDisplayName.ToUpperInvariant()} SURFACE",
-            doors: null, shipFixtures: true, followCam: true, tables: ship.Tables);
+        // The location line is a pure function of (position, bodyDisplayName, layout.Scheme, ship) — all
+        // deterministic per body id, none of it component-bound — so the closure is safe to cache.
+        Func<double, double, string> location =
+            (x, y) => y > DeckPlan.ShuttleHatchY ? ship.Location(x, y)
+                    : y > SurfaceTopY ? "DOWN-TUBE (the shuttle ride)"
+                    : y > LandingBandY - 2 ? "LANDING AREA"
+                    : y < MonolithY + 8 && Math.Abs(x - MonolithX) < 16 ? layout.Scheme
+                    : $"{bodyDisplayName.ToUpperInvariant()} SURFACE";
+
+        return new Layout(
+            walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location);
     }
 
     // The ship carries one amber shuttle-airlock door across the (bottom) hatch; drop it so the tube's

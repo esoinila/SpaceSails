@@ -427,6 +427,38 @@
                 <button type="button" class="btn btn-sm btn-warning" title="Take the stranger's offer — it lands in your logbook" @onclick="AcceptOffer">@(_pendingOffer?.Kind == QuestKind.Intel ? "Take the tip" : "Take the job")</button>
                 <button type="button" class="btn btn-sm btn-outline-light" title="Wave the offer off — no hard feelings" @onclick="DeclineOffer">Pass</button>
             </div>
+            @* #355 — the drink offer belongs IN the conversation: while a KNOWN face's contract is on the
+               table, the same offer-a-drink flow the counter card hosts sits right here too. A stranger's
+               first contract has no ledger history yet, so PresentBarContacts stays empty and this is quiet. *@
+            @if (CurrentKeep is { } offerKeep && PresentBarContacts().Any(c => c.Giver.Equals(offer.Giver, StringComparison.OrdinalIgnoreCase)))
+            {
+                @ContactDrinkOffer(offer.Giver, GiverDisplay(offer.Giver), offerKeep)
+            }
+        </div>
+    }
+
+    @* #355 — the patron's OWN-TABLE drink card (doorway two). Press E at a known face drinking here and,
+       when they've no fresh contract to slide across, their table opens with the SAME offer-a-drink flow
+       the barkeep's counter hosts — the owner's ask: offer a drink IN the conversation with the person.
+       Same overlay family as the deck-offer-card; the one shared state machine keeps both doorways in sync. *@
+    @if (_deckMode && _patronDrink is { } patron && CurrentKeep is { } patronKeep)
+    {
+        string patronDisplay = GiverDisplay(patron);
+        <div class="deck-offer-card">
+            <div class="deck-offer-giver">◈ @patronDisplay</div>
+            @if (_patronDrinkBlurb is { } patronLine)
+            {
+                <div class="deck-offer-blurb">@patronLine</div>
+            }
+            @if (_barNotice is { } patronNote)
+            {
+                <div class="deck-bank-notice small">@patronNote</div>
+            }
+            <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr · @patronKeep.BarName</div>
+            @ContactDrinkOffer(patron, patronDisplay, patronKeep)
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-outline-light" title="Sit back — leave the table" @onclick="ClosePatronTable">Done</button>
+            </div>
         </div>
     }
 
@@ -539,46 +571,8 @@
                available, never demanded. *@
             @foreach ((string giver, string display) in PresentBarContacts())
             {
-                Core.Drink? knownFav = KnownFavoriteDrink(giver);
-                bool poursUsual = BarPoursFavorite(giver);
-                @if (_pendingContactDrink == giver)
-                {
-                    <div class="deck-offer-actions">
-                        <span class="bar-offer-moment small">Offer @display a drink? They'll choose their own pour.</span>
-                        <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
-                                title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — they pick their own pour; only if they take it is it poured, and the 2D6 decides if they open up or you slip a tell")"
-                                @onclick="@(() => BuyContactDrink(giver))">🥃 Offer it · @keep.DrinkPrice cr</button>
-                        @if (poursUsual && knownFav is { } fav)
-                        {
-                            <button type="button" class="btn btn-sm btn-success" disabled="@(_credits < keep.DrinkPrice)"
-                                    title="@($"Stand {display} the {fav.Name} — their usual. A small honest edge (+1) to the offer, and a warmer glass.")"
-                                    @onclick="@(() => BuyContactDrink(giver, true))">🥃 Their usual — @fav.Name · @keep.DrinkPrice cr</button>
-                        }
-                        <button type="button" class="btn btn-sm btn-outline-secondary"
-                                title="Changed your mind — no harm done" @onclick="CancelContactDrinkOffer">Cancel</button>
-                    </div>
-                }
-                else if (_roundThisVisit)
-                {
-                    <div class="deck-offer-actions">
-                        <span class="bar-toasted small">🍻 @display toasted you with the room@(knownFav is { } kf ? $" · drinks {kf.Name}" : "")</span>
-                        <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.DrinkPrice)"
-                                title="@($"Offer {display} a personal glass on top of the round — they may still refuse; extra warmth, never demanded")"
-                                @onclick="@(() => OfferContactDrink(giver))">🥃 Offer another · @keep.DrinkPrice cr</button>
-                    </div>
-                }
-                else
-                {
-                    <div class="deck-offer-actions">
-                        <button type="button" class="btn btn-sm btn-warning"
-                                title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — a sign of trust they may accept or refuse; if taken, the 2D6 decides if they open up or you slip a tell")"
-                                @onclick="@(() => OfferContactDrink(giver))">🥃 Offer @display a drink · @keep.DrinkPrice cr</button>
-                        @if (knownFav is { } kf2)
-                        {
-                            <span class="bar-favorite small" title="You've learned what they drink">❤ @kf2.Name</span>
-                        }
-                    </div>
-                }
+                @* #355 — the SAME block the patron's table card renders; one state machine, two doorways. *@
+                @ContactDrinkOffer(giver, display, keep)
             }
             @* Overheard here (#119 receipt idiom): the tips/rumors you've heard at this counter, kept where
                a round-loosened tongue's words can be re-read — they may not hide and may not auto-vanish. *@
@@ -2908,6 +2902,55 @@
 </div>
 
 @code {
+
+    @* #355 — the offer-a-drink affordance for ONE bar contact, rendered IDENTICALLY from both doorways:
+       the barkeep's counter card and the patron's own table. It reads the one shared state machine
+       (_pendingContactDrink / _roundThisVisit), so a moment opened at the table shows the same confirm at
+       the counter and vice versa. keep gives the price/pour, resolved the same way at either doorway. *@
+    private RenderFragment ContactDrinkOffer(string giver, string display, Core.Interior.Barkeep keep) => @<text>
+        @{
+            Core.Drink? knownFav = KnownFavoriteDrink(giver);
+            bool poursUsual = BarPoursFavorite(giver);
+        }
+        @if (_pendingContactDrink == giver)
+        {
+            <div class="deck-offer-actions">
+                <span class="bar-offer-moment small">Offer @display a drink? They'll choose their own pour.</span>
+                <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
+                        title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — they pick their own pour; only if they take it is it poured, and the 2D6 decides if they open up or you slip a tell")"
+                        @onclick="@(() => BuyContactDrink(giver))">🥃 Offer it · @keep.DrinkPrice cr</button>
+                @if (poursUsual && knownFav is { } fav)
+                {
+                    <button type="button" class="btn btn-sm btn-success" disabled="@(_credits < keep.DrinkPrice)"
+                            title="@($"Stand {display} the {fav.Name} — their usual. A small honest edge (+1) to the offer, and a warmer glass.")"
+                            @onclick="@(() => BuyContactDrink(giver, true))">🥃 Their usual — @fav.Name · @keep.DrinkPrice cr</button>
+                }
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        title="Changed your mind — no harm done" @onclick="CancelContactDrinkOffer">Cancel</button>
+            </div>
+        }
+        else if (_roundThisVisit)
+        {
+            <div class="deck-offer-actions">
+                <span class="bar-toasted small">🍻 @display toasted you with the room@(knownFav is { } kf ? $" · drinks {kf.Name}" : "")</span>
+                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.DrinkPrice)"
+                        title="@($"Offer {display} a personal glass on top of the round — they may still refuse; extra warmth, never demanded")"
+                        @onclick="@(() => OfferContactDrink(giver))">🥃 Offer another · @keep.DrinkPrice cr</button>
+            </div>
+        }
+        else
+        {
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-warning"
+                        title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — a sign of trust they may accept or refuse; if taken, the 2D6 decides if they open up or you slip a tell")"
+                        @onclick="@(() => OfferContactDrink(giver))">🥃 Offer @display a drink · @keep.DrinkPrice cr</button>
+            @if (knownFav is { } kf2)
+            {
+                <span class="bar-favorite small" title="You've learned what they drink">❤ @kf2.Name</span>
+            }
+            </div>
+        }
+    </text>;
 
     private void DrawPyramids()
     {

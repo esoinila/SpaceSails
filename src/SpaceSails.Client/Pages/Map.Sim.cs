@@ -135,6 +135,7 @@ public partial class Map
     private bool _wasArcing;                             // rising-edge detector for the thunder cue
     private const double VentCooldownSeconds = 1.0;     // separate budget from the thrust pulse cooldown
     private double _lastVentSimTime = -VentCooldownSeconds; // so the very first vent isn't rejected
+    private int _ventLineSeed;                           // #369: rotates the static-charge flavor pool, one step per vent
     private float[] _streamScratch = new float[4];      // reused endpoints buffer for stream polylines
     private static readonly RgbaColor StreamColor = new(80, 200, 220, 36);
     private static readonly RgbaColor ArcHaloColor = new(255, 240, 120, 150);
@@ -492,6 +493,12 @@ public partial class Map
         _shuttleView = new ShuttleFlightView(_renderer!);
         RendererInterop.StartLoop(CanvasId);
 
+        // #371 Phase 1 (perf) · PRE-DECODE the deck/surface backdrop art at boot. RegisterImage fires the
+        // JS decode fire-and-forget and caches by id; doing it now means the first deck or surface paint
+        // never stalls waiting on an image decode (the study's cheap pre-warm). The surface plan reuses the
+        // ship's backdrop set, so warming the ship's covers both.
+        PredecodeDeckArt();
+
         _worldReady = true;
 
         // Start point: an explicit /map?start=<id> jumps straight there (the renderer is live now, so
@@ -587,6 +594,80 @@ public partial class Map
 
         StateHasChanged();
         await _focusableDiv.FocusAsync();
+
+        // #371 Phase 1 (perf) · warm the cold surface DRAW path once, idle-time, now that the map is
+        // interactive. Fire-and-forget and yield-fronted so it never lengthens the perceived boot stall;
+        // see WarmSurfaceDrawPathAtBootAsync for the never-flash guard.
+        _ = WarmSurfaceDrawPathAtBootAsync();
+    }
+
+    // #371 Phase 1 (perf) · register (decode) the ship's room-backdrop art up front. Idempotent and cheap
+    // (RegisterImage just fires the JS decode and caches by id), so this only ever moves the decode earlier.
+    private void PredecodeDeckArt()
+    {
+        if (_renderer is null)
+        {
+            return;
+        }
+        try
+        {
+            foreach (DeckPlan.Backdrop bd in DeckPlan.Ship.Backdrops)
+            {
+                _renderer.RegisterImage(bd.Url);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"backdrop pre-decode skipped: {ex}");
+        }
+    }
+
+    // #371 Phase 1 (perf) · pay the first, cold-interpreted surface DRAW once at boot, invisibly, so the
+    // live rAF loop never has to (the same #358/#348 idiom the descent uses, pointed at game start). We
+    // build a THROWAWAY surface plan (Miranda's) into a local — never assigned to _deckPlan, never touching
+    // _surface/_avatar/game state — and, only while the start-picker backdrop covers the canvas, paint it
+    // ONCE to tier up DeckView.Draw + its text JSON. The picker cover is the never-flash guard: if a start
+    // cheat skipped the picker (the canvas is live), we skip the paint and let the build alone warm the
+    // heavy SurfaceLayout.For / array paths. Yield-fronted and try/caught — a warm-up is a nicety that can
+    // only help; if anything is not ready, the live loop simply pays the frame as before.
+    private async Task WarmSurfaceDrawPathAtBootAsync()
+    {
+        // Idle-time: let the boot settle and the first real frames land before we do throwaway work.
+        await Task.Yield();
+        await Task.Delay(250);
+
+        if (_deckView is null || _renderer is null)
+        {
+            return;
+        }
+        try
+        {
+            // Throwaway plan — Miranda's ground, an empty own-cache set, a no-op droid fill. The memoized
+            // layout it builds also warms the (now shared) SurfaceDeck cache for a first landing on Miranda.
+            DeckPlan warm = MoonSurface.SurfaceDeck(
+                "miranda", "Miranda",
+                System.Array.Empty<(string, double, double, int)>(),
+                DeckPlan.Ship.DroidCount, static (_, _) => { });
+
+            if (_showStartPicker && _viewportWidth > 0 && _viewportHeight > 0)
+            {
+                var hud = new DeckView.SurfaceHud(
+                    DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
+                    Blips: System.Array.Empty<(double, double)>(), Cadence: 0, Readout: "",
+                    CacheMarks: System.Array.Empty<(double, double, bool)>(),
+                    Nerve: NerveModel.Steady, NerveReadout: "");
+                _deckView.Draw(
+                    warm, _viewportWidth, _viewportHeight, SimTime,
+                    new DeckView.State(
+                        MoonSurface.SpawnX, MoonSurface.SpawnY, 0, 0, 0,
+                        ShuttleAway: false, ElectricUniverse: false),
+                    0, 0, hud);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"boot surface warm-up skipped: {ex}");
+        }
     }
 
     private ShipState InitializeShipState()
@@ -971,6 +1052,7 @@ public partial class Map
 
         UpdateDockStatus();
         UpdateDockAffordance(); // #212/#211/#213: recompute the one-truth ⚓ affordance (runs paused too)
+        UpdateLandableInRange(); // #339-follow: cache which landable grounds the shuttle can reach now (map 🛬 bright state)
         UpdateOrbitedBody();
         UpdateCapture(dtRealSeconds);
         UpdateEncounters();
@@ -1424,6 +1506,7 @@ public partial class Map
     private bool TryDismissTopOverlay()
     {
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
+        if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
         if (_bankSession is not null) { CloseBank(); return true; }
         if (_barMenu is not null) { CloseBarkeep(); return true; }
@@ -1660,7 +1743,9 @@ public partial class Map
 
         _lastVentSimTime = _ship.SimTime;
         _ship = _ship with { Charge = _ship.Charge * 0.5 };
-        ShowPulseMessage("Venting charge");
+        // #369: the vent is automatic here, so each discharge reads a rotating flavor quip
+        // (house voice) rather than a bare status line. Deterministic per vent via the counter.
+        ShowPulseMessage(StaticCharge.LineFor(_ventLineSeed++));
         RendererInterop.PlayCue("vent");
     }
 
