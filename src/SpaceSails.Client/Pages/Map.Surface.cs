@@ -272,6 +272,7 @@ public partial class Map
         public int ExpeditionBonus { get; set; }
         public int ExpeditionScientistsLost { get; set; }
         public bool ExpeditionStrandingFired { get; set; } // the one-time "the window closed" toll has rolled
+        public bool ExpeditionRevealFired { get; set; }    // #370: the bigger picture has surfaced (darkens the table, earns the truth bonus)
 
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)

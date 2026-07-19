@@ -843,6 +843,43 @@
         </div>
     }
 
+    @* #370: THE RESEARCH BRIEF — the charter service's shamelessly optimistic pitch (a gen-AI image +
+       sugar-coated copy). Shown on accept and re-viewable during the gig. The fine-print hedge words ARE
+       the joke; the reveal will later contradict every word of it. Reuses the treasure-map card idiom. *@
+    @if (_expeditionBriefCard is { } brief)
+    {
+        <div class="mission-celebration-backdrop" @onclick="DismissExpeditionBrief">
+            <div class="expedition-brief-card" @onclick:stopPropagation="true">
+                <div class="eb-art" style="background-image: @ExpeditionBriefArtCss(brief.Kind);">
+                    <div class="eb-stamp">FULLY BENIGN<span>(pending)</span></div>
+                </div>
+                <div class="eb-title">📋 @brief.Title</div>
+                <div class="eb-site">Site: @brief.SiteName</div>
+                <div class="eb-body">@brief.Body</div>
+                <div class="eb-flavor">Brought to you by the charter service. Terms apply. Sanity not included.</div>
+                <button type="button" class="btn btn-success btn-sm mt-2" title="File the brief and take the gig" @onclick="DismissExpeditionBrief">Sounds lovely — file it 📋</button>
+            </div>
+        </div>
+    }
+
+    @* #370: THE REVEAL — the bigger picture, in the site's OWN voice, that contradicts the brief. A major
+       sanity-throw moment (a big nerve shock, the dice shown on the tray). The card is the horror beat. *@
+    @if (_expeditionRevealCard is { } reveal)
+    {
+        <div class="mission-celebration-backdrop expedition-reveal-backdrop" @onclick="DismissExpeditionReveal">
+            <div class="expedition-reveal-card" @onclick:stopPropagation="true">
+                <div class="er-art" style="background-image: @ExpeditionBriefArtCss(reveal.Kind);">
+                    <div class="er-scrim"></div>
+                    <div class="er-stamp">THE BRIEF WAS A LIE</div>
+                </div>
+                <div class="er-headline">@reveal.Headline</div>
+                <div class="er-site">@reveal.SiteName</div>
+                <div class="er-body">@reveal.Body</div>
+                <button type="button" class="btn btn-danger btn-sm mt-2" title="There is no unseeing it" @onclick="DismissExpeditionReveal">Hold the line 🫥</button>
+            </div>
+        </div>
+    }
+
     @* The chooser (owner: "if many objects under click we let the user choose what they
        meant"): candidates ranked contacts → depots → bodies, lane and sky scan last. *@
     @if (_pickMenu is { Count: > 0 } pickList)

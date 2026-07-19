@@ -44,14 +44,20 @@ public static class AwayExpeditionEvents
     /// Roll one on-site episode for <paramref name="ordinal"/>, seeded by <paramref name="seed"/>, coloured
     /// by <paramref name="flavor"/>. The 2D6 total picks the band; a mining survey carries a small "the
     /// crew reads the rock warily" penalty so it skews toward the scares (never OP — the small-integer
-    /// house guardrail). Pure and deterministic.
+    /// house guardrail). Once the gig's REVEAL has landed (<paramref name="revealed"/>, #370 the bigger
+    /// picture), the table DARKENS by a bounded −1 — the ground is worse now that the team knows what it is.
+    /// Pure and deterministic.
     /// </summary>
-    public static ExpeditionEpisode Roll(ulong seed, ExpeditionFlavor flavor, int ordinal)
+    public static ExpeditionEpisode Roll(ulong seed, ExpeditionFlavor flavor, int ordinal, bool revealed = false)
     {
         List<DiceModifier> mods = [];
         if (flavor == ExpeditionFlavor.MiningSurvey)
         {
             mods.Add(new DiceModifier("the crew reads the rock warily", -1));
+        }
+        if (revealed)
+        {
+            mods.Add(new DiceModifier("the bigger picture presses in", -1));
         }
 
         DicePool pool = DiceRule.RollPool(seed, count: 2, sides: 6, mods);

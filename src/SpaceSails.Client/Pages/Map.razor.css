@@ -2349,6 +2349,161 @@
 
 .treasure-map-card .btn {
     margin-bottom: 1rem;
+}
+
+/* #370 · THE RESEARCH BRIEF card — the charter service's sugar-coated pitch. Treasure-map card family
+   (big image slot over sales copy), in reassuring corporate green. */
+.expedition-brief-card {
+    max-width: min(34rem, 92vw);
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+    color: #e7f3e9;
+    background: linear-gradient(180deg, #12241a, #0a140e);
+    border: 1px solid rgba(120, 220, 150, 0.55);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.75), 0 0 1.6rem rgba(90, 210, 130, 0.22);
+}
+
+.eb-art {
+    position: relative;
+    height: 12rem;
+    background-size: cover;
+    background-position: center;
+    border-bottom: 1px solid rgba(120, 220, 150, 0.3);
+}
+
+/* The reassuring "FULLY BENIGN (pending)" rubber stamp, corner-slapped over the hero image. */
+.eb-stamp {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.7rem;
+    transform: rotate(7deg);
+    padding: 0.2rem 0.5rem;
+    font-weight: 900;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    color: #8affb0;
+    border: 2px solid #8affb0;
+    border-radius: 0.3rem;
+    background: rgba(4, 12, 8, 0.45);
+    text-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.8);
+}
+
+.eb-stamp span {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 700;
+    opacity: 0.85;
+}
+
+.eb-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    color: #8affb0;
+    margin: 0.7rem 1rem 0.15rem;
+}
+
+.eb-site {
+    color: #bfe6cc;
+    font-size: 0.9rem;
+    margin: 0 1rem 0.35rem;
+}
+
+.eb-body {
+    color: #e2f0e6;
+    line-height: 1.4;
+    margin: 0.15rem 1.1rem 0.4rem;
+}
+
+.eb-flavor {
+    font-size: 0.75rem;
+    font-style: italic;
+    color: #8fae99;
+    margin: 0.2rem 1rem;
+}
+
+.expedition-brief-card .btn {
+    margin-bottom: 1rem;
+}
+
+/* #370 · THE REVEAL card — the bigger picture, the site's own voice contradicting the brief. The horror
+   counterpart: the same image slot gone dark under a red scrim, the copy in dread reds. */
+.expedition-reveal-backdrop {
+    background: rgba(2, 3, 6, 0.82);
+    z-index: calc(var(--z-modal) + 45); /* above the brief and treasure card — the reveal interrupts */
+}
+
+.expedition-reveal-card {
+    max-width: min(34rem, 92vw);
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+    color: #f4dede;
+    background: linear-gradient(180deg, #240f0f, #120707);
+    border: 1px solid rgba(230, 90, 90, 0.6);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.85), 0 0 1.8rem rgba(220, 60, 60, 0.3);
+}
+
+.er-art {
+    position: relative;
+    height: 12rem;
+    background-size: cover;
+    background-position: center;
+    border-bottom: 1px solid rgba(230, 90, 90, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The reveal drowns the once-cheerful image in dread. */
+.er-scrim {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 40%, rgba(120, 0, 0, 0.35), rgba(4, 0, 0, 0.8) 80%);
+    mix-blend-mode: multiply;
+}
+
+.er-stamp {
+    position: relative;
+    transform: rotate(-6deg);
+    padding: 0.25rem 0.7rem;
+    font-weight: 900;
+    font-size: 1.05rem;
+    letter-spacing: 0.06em;
+    color: #ff6b6b;
+    border: 3px solid #ff6b6b;
+    border-radius: 0.3rem;
+    background: rgba(10, 0, 0, 0.5);
+    text-shadow: 0 0 0.4rem rgba(0, 0, 0, 0.9);
+}
+
+.er-headline {
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    color: #ff8080;
+    margin: 0.7rem 1rem 0.15rem;
+}
+
+.er-site {
+    color: #d9a9a9;
+    font-size: 0.85rem;
+    font-style: italic;
+    margin: 0 1rem 0.35rem;
+}
+
+.er-body {
+    color: #f0dede;
+    line-height: 1.45;
+    margin: 0.15rem 1.1rem 0.4rem;
+}
+
+.expedition-reveal-card .btn {
+    margin-bottom: 1rem;
+}
 
 /* PR-BUSTED — the catch pop-up (owner ruling §5). Reuses the celebration modal's backdrop grammar,
    in the collector's harder colours; the freeze-frame goes full-bleed sepia. */
