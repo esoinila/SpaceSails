@@ -378,7 +378,7 @@ public partial class Map
             return;
         }
         _deckPlan = MoonSurface.SurfaceDeck(
-            ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
+            ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
             3 + ReeverEngineCeiling, FillSurfaceDroids);
     }
 
