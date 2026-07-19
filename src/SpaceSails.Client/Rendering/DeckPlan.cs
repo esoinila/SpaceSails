@@ -297,6 +297,15 @@ public sealed class DeckPlan
             // console (−10, −6.5) so [E] doesn't grab the wrong one. Drawn as the amber airlock door.
             new(ConsoleKind.ShuttleAirlock, -6.5f, -8.7f, "🚀 SHUTTLE AIRLOCK"),
             new(ConsoleKind.Vent, -20, -4.5f, "VENT PANEL"),
+
+            // The ship's BUILDER'S PLATE — bolted to the engine-room bulkhead by the keel, where a
+            // builder's plate belongs (owner's cruise ruling, 2026-07-19, photographing their ship's Aker
+            // Finnyards plate: "We could gen-AI the ships and docks some space-dock plaques … add some
+            // depth to the world"). Walk up and [E] pops the plate + her service history (Koski &
+            // Daughters, Hull No. 77; the Victoria-I "she used to be something" beat). Kept clear of the
+            // VENT PANEL (−20, −4.5) so E never grabs the wrong console. Text/art from Core Plaques.Ship.
+            new(ConsoleKind.ViewObject, -20, 4, Core.Interior.Plaques.Ship.ConsoleLabel,
+                Core.Interior.Plaques.Ship.ArtUrl, Core.Interior.Plaques.Ship.Lore),
             new(ConsoleKind.Head, 16.25f, -6.5f, "HEAD 🚽"), // the space toilet (3D-reno Phase 3)
 
             // MED BAY (owner's Evening-wind ruling, 2026-07-18: "change one cabin into med bay where

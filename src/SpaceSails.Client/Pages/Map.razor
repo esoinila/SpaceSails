@@ -369,7 +369,14 @@
         <div class="view-object-backdrop" @onclick="CloseViewObject">
             <div class="view-object" @onclick:stopPropagation="true">
                 <div class="view-object-title">@vo.Label</div>
-                <img class="view-object-img" src="@vo.ImageUrl" alt="@vo.Label" />
+                @* A card with no wired art at all (the lifeboat muster) shows caption-only; a card whose
+                   art is wired but not yet painted (the text-only dedication plaques) renders the img and
+                   lets onerror hide it — the same fallback idiom the captain portraits use (art/captain-N.jpg
+                   → hidden if absent), so both degrade cleanly to just the caption. *@
+                @if (vo.ImageUrl is { Length: > 0 } voImg)
+                {
+                    <img class="view-object-img" src="@voImg" alt="@vo.Label" onerror="this.style.display='none'" />
+                }
                 @if (vo.Caption is { Length: > 0 } cap)
                 {
                     <div class="view-object-caption">@cap</div>
