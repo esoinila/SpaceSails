@@ -445,7 +445,7 @@ public partial class Map
 
     private void TalkToStranger()
     {
-        if (_pendingOffer is not null)
+        if (_pendingOffer is not null || _patronDrink is not null)
         {
             return; // the card's already on the table
         }
@@ -483,20 +483,28 @@ public partial class Map
             return;
         }
 
+        // Quest-status lines. A known face drinking here still gets their own-table card (#355 doorway
+        // two), so the captain can stand them a glass while a job's in the air; the status is the blurb.
         Quest? open = _quests.FirstOrDefault(q => q.Giver == giver && q.State != QuestState.TurnedIn);
         if (open is { State: QuestState.Active })
         {
-            ShowPulseMessage($"“Still waiting on {open.TargetCallsign}. Finish the job, then we'll talk.”");
+            string line = $"“Still waiting on {open.TargetCallsign}. Finish the job, then we'll talk.”";
+            if (OpenPatronTable(giver, line)) { return; }
+            ShowPulseMessage(line);
             return;
         }
         if (open is { Kind: QuestKind.Fetch, State: QuestState.PickedUp })
         {
-            ShowPulseMessage($"“You've got the goods — don't flash them here. Get them to my associate at {open.TargetCallsign}.”");
+            string line = $"“You've got the goods — don't flash them here. Get them to my associate at {open.TargetCallsign}.”";
+            if (OpenPatronTable(giver, line)) { return; }
+            ShowPulseMessage(line);
             return;
         }
         if (open is { State: QuestState.Complete })
         {
-            ShowPulseMessage($"“{open.TargetCallsign} — done. Collect at any berth; the coin's waiting.”");
+            string line = $"“{open.TargetCallsign} — done. Collect at any berth; the coin's waiting.”";
+            if (OpenPatronTable(giver, line)) { return; }
+            ShowPulseMessage(line);
             return;
         }
 
@@ -509,12 +517,19 @@ public partial class Map
         }
 
         Quest? offer = MakeContactOffer(giver);
-        if (offer is null)
+        if (offer is not null)
         {
-            ShowPulseMessage("The stranger swirls their drink. “Nothing worth your time right now. Check back.”");
+            _pendingOffer = offer; // the contract slides across — the card also lets you stand them a glass
             return;
         }
-        _pendingOffer = offer;
+
+        // No work to hand. A face you KNOW, drinking here, still earns their own-table card so you can
+        // buy them one (#355 doorway two); a true stranger with no ledger history just gets the brush-off.
+        if (OpenPatronTable(giver))
+        {
+            return;
+        }
+        ShowPulseMessage("The stranger swirls their drink. “Nothing worth your time right now. Check back.”");
     }
 
     // The Magpie, a fence's runner who won't sit still (PR-F). Their position is a pure function of
@@ -551,6 +566,11 @@ public partial class Map
                 => "“The lockup's the easy part — crack V-06 and there's a parcel with nobody's name on it. I'll be around. Somewhere.”",
             _ => "“Bonded Stores — V-06 — holds a parcel that never made a manifest. The Fixer sets the price; I just know where things are. And I don't linger.”",
         };
+        // The Magpie roams, but while they're at this booth and we KNOW them, the table card lets you
+        // stand them a glass too (#355 doorway two); their line rides atop it as the blurb. If they're a
+        // stranger still, fall back to the plain quip.
+        string mgiver = spot.Label.Replace("◈", "").Trim();
+        if (OpenPatronTable(mgiver, line)) { return; }
         ShowPulseMessage(line);
     }
 
@@ -563,6 +583,15 @@ public partial class Map
     private Core.Interior.Barkeep? _barMenu;   // the open barkeep card (null = shut)
     private string? _barNotice;                 // the last thing the keep said, shown on the card
     private bool _showBarMenu;                   // #4: the full drinks menu (with Larry flavour) is open on the card
+
+    // #355 doorway two — the keep of the bar we're docked at, resolved the SAME way the counter card is
+    // (Barkeeps.For the berth). The offer-a-drink flow leans on this instead of _barMenu, so it works
+    // when opened at a patron's own table (counter shut) as well as from the counter itself.
+    private Core.Interior.Barkeep? CurrentKeep =>
+        _dockedHavenId is { } id ? Barkeeps.For(id) : null;
+
+    private string? _patronDrink;       // the bar patron whose OWN-TABLE drink card is open (null = shut)
+    private string? _patronDrinkBlurb;  // an optional line the patron just said, shown atop that table card
 
     private void ToggleBarMenu() => _showBarMenu = !_showBarMenu;
 
@@ -588,6 +617,8 @@ public partial class Map
             _barVisitStation = _dockedHavenId;
             _roundThisVisit = false;
             _pendingContactDrink = null;
+            _patronDrink = null;
+            _patronDrinkBlurb = null;
         }
     }
 
@@ -603,6 +634,10 @@ public partial class Map
             return;
         }
         EnsureBarVisit();
+        if (_patronDrink is not null)
+        {
+            ClosePatronTable(); // the counter and a patron's table are one flow, two doorways — never both open
+        }
         _barMenu = keep;
         _barNotice = keep.Greeting;
     }
@@ -702,7 +737,7 @@ public partial class Map
     // Does THIS bar pour the contact's known favourite? Gates the "stand them their usual" edge row —
     // you can only hand them their usual where it's on the menu.
     private bool BarPoursFavorite(string giver) =>
-        _barMenu is { } keep && KnownFavoriteDrink(giver) is { } fav
+        CurrentKeep is { } keep && KnownFavoriteDrink(giver) is { } fav
         && Core.DrinkMenu.For(keep).Any(d => d.Id == fav.Id);
 
     // Buy a round for the whole room — a bigger spend that WARMS the regulars actually drinking here
@@ -832,9 +867,9 @@ public partial class Map
     // relationship to deepen. Mirrors the BuyRoundForRoom scan (incl. the roaming Magpie's rota gate).
     private IReadOnlyList<(string Giver, string Display)> PresentBarContacts()
     {
-        if (!_deckMode || _barMenu is null)
+        if (!_deckMode || CurrentKeep is null)
         {
-            return [];
+            return []; // #355: keyed to the docked bar's keep, not the counter card — the table card reads it too
         }
         bool backOpen = _dockedHavenId is { } st
             && UnlockedHatchesFor(st).Any(h => HavenInterior.HatchGrowsWing(st, h));
@@ -877,7 +912,7 @@ public partial class Map
     // tray is TODO(#305)). All state moves through the Vault (RequestVaultSave).
     private void BuyContactDrink(string giver, bool offeringUsual = false)
     {
-        if (_barMenu is not { } keep)
+        if (CurrentKeep is not { } keep)
         {
             return;
         }
@@ -968,8 +1003,9 @@ public partial class Map
                 Quest? offer = MakeContactOffer(giver);
                 if (offer is not null)
                 {
-                    _pendingOffer = offer;
                     CloseBarkeep();
+                    ClosePatronTable();  // the drink's door swings the contract card up in place of the table card
+                    _pendingOffer = offer; // set AFTER the closers, which never touch _pendingOffer, so the card shows
                     ShowPulseMessage($"🍷 {chose} A drink with {display} opens a door (🎲 {parley.Describe()}). They slide a proposition across the table.{learn} (−{keep.DrinkPrice:N0} cr)");
                     RequestVaultSave();
                     return;
@@ -993,12 +1029,43 @@ public partial class Map
     // Confirming (BuyContactDrink) is where the CONTACT then decides accept/refuse (#347).
     private void OfferContactDrink(string giver)
     {
-        if (_barMenu is null
+        if (CurrentKeep is null
             || !PresentBarContacts().Any(c => c.Giver.Equals(giver, StringComparison.OrdinalIgnoreCase)))
         {
             return;
         }
         _pendingContactDrink = giver;
+    }
+
+    // #355 doorway two — open a bar patron's OWN-TABLE drink card. Same offer flow the counter card hosts,
+    // but keyed to the one contact you're sitting with. Returns false for a stranger with no ledger history
+    // (or no keep on this berth), so callers fall back to the plain quip — you cannot deepen a bond that
+    // isn't there yet, exactly as the counter card's PresentBarContacts gate already decides.
+    private bool OpenPatronTable(string giver, string? blurb = null)
+    {
+        if (CurrentKeep is null
+            || !PresentBarContacts().Any(c => c.Giver.Equals(giver, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+        // One doorway open at a time: the counter card and the table card are two faces of the same offer
+        // flow, so opening the table shuts the counter (the BusinessUnlock path sets the same precedent).
+        if (_barMenu is not null)
+        {
+            CloseBarkeep();
+        }
+        _patronDrink = giver;
+        _patronDrinkBlurb = blurb;
+        return true;
+    }
+
+    // Close the patron's table card. Leaves _pendingOffer untouched (a contract may be opening in its
+    // place) but clears any half-open offer moment, which does not survive stepping away from the table.
+    private void ClosePatronTable()
+    {
+        _patronDrink = null;
+        _patronDrinkBlurb = null;
+        _pendingContactDrink = null;
     }
 
     // Back out of your OWN offer — a plain CANCEL. No debit, no "unwet glass" line: punishing someone for
@@ -1092,7 +1159,7 @@ public partial class Map
         if (channel == Core.TellChannel.LocalRumor)
         {
             // The house's own pour loosens the house's own gossip — the barkeep's neighbourhood word.
-            return _barMenu is { } keep ? $"“{keep.RumorAt(SimTime).Trim('“', '”')}”" : SmallTalkFact();
+            return CurrentKeep is { } keep ? $"“{keep.RumorAt(SimTime).Trim('“', '”')}”" : SmallTalkFact();
         }
         if (channel == Core.TellChannel.SmallTalk)
         {
