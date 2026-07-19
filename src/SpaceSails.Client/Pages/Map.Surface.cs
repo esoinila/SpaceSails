@@ -290,6 +290,7 @@ public partial class Map
         public int ExpeditionBonus { get; set; }
         public int ExpeditionScientistsLost { get; set; }
         public bool ExpeditionStrandingFired { get; set; } // the one-time "the window closed" toll has rolled
+        public bool ExpeditionRevealFired { get; set; }    // #370: the bigger picture has surfaced (darkens the table, earns the truth bonus)
 
         // #371 Phase 3 · THE DOOR-OPEN DREAM. The forced-door channel and the appended-region state — live
         // ONLY on an expedition excursion. OpenedDoors are every sealed door (outer + nested) forced this

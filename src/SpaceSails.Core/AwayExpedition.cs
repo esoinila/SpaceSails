@@ -299,16 +299,23 @@ public static class ExpeditionReward
     /// risked it; the sponsor pays this much for the attempt.</summary>
     public const int Floor = 1000;
 
+    /// <summary>#370 · "the truth is worth more": the bonus a gig earns for coming home HAVING WITNESSED the
+    /// reveal (<see cref="ExpeditionBrief"/>). The sponsor sold a sugar-coated lie and pays extra for what
+    /// the team actually found out there — surviving past the bigger picture is the richest part of the
+    /// story. OWNER-TUNABLE.</summary>
+    public const int TruthBonus = 2000;
+
     /// <summary>The full expedition payout: the fat base carried through the haul-distance floor
     /// (<see cref="HaulReward.WithFloor"/> over the two heliocentric radii — ≈ the base for a local rock,
-    /// more for a survey dragged out), plus every diced discovery bonus, minus the per-scientist penalty
-    /// for those lost, floored at <see cref="Floor"/>. Order-free and clamped.</summary>
+    /// more for a survey dragged out), plus every diced discovery bonus, plus the "truth is worth more"
+    /// <paramref name="truthBonus"/> if the reveal was witnessed and survived, minus the per-scientist
+    /// penalty for those lost, floored at <see cref="Floor"/>. Order-free and clamped.</summary>
     public static int Total(
         int baseFee, double fromRadiusMeters, double toRadiusMeters,
-        int discoveryBonus, int scientistsLost)
+        int discoveryBonus, int scientistsLost, int truthBonus = 0)
     {
         int distanced = HaulReward.WithFloor(baseFee, fromRadiusMeters, toRadiusMeters);
-        int gross = distanced + System.Math.Max(0, discoveryBonus)
+        int gross = distanced + System.Math.Max(0, discoveryBonus) + System.Math.Max(0, truthBonus)
             - (System.Math.Max(0, scientistsLost) * PerScientistLostPenalty);
         return System.Math.Max(Floor, gross);
     }
