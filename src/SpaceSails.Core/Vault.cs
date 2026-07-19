@@ -130,6 +130,8 @@ public sealed record ContactRecord
     public int Goodwill { get; init; }
     /// <summary>#306 — tells this contact now knows about us (slipped over a drink). Defaults empty.</summary>
     public IReadOnlyList<string> KnownTells { get; init; } = [];
+    /// <summary>#5 SundayMorningWind — the favourite drink id we've learned for this contact. Empty until known.</summary>
+    public string KnownFavorite { get; init; } = "";
     public IReadOnlyList<CreditTxnRecord> Transactions { get; init; } = [];
 }
 

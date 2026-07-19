@@ -68,7 +68,10 @@ public static class ContactDrink
     /// bonus and whether a good roll can reach business.</param>
     /// <param name="holdingSecret">True when you are carrying something to hide (heat, hot cargo): the
     /// second reality that makes a slip more likely.</param>
-    public static DrinkParley Roll(ulong seed, int currentGoodwill, bool holdingSecret)
+    /// <param name="offeringFavorite">True when you offered the contact the very drink you KNOW is their
+    /// favourite (#5 SundayMorningWind). A small honest edge — a warmer glass, +1 "their usual" — so
+    /// learning what a contact drinks is progress you can spend.</param>
+    public static DrinkParley Roll(ulong seed, int currentGoodwill, bool holdingSecret, bool offeringFavorite = false)
     {
         // Two d6 off the ONE shared rule, salted apart so the pair never correlate on a shared seed
         // (the #295/#303 ReeverRaid 2D6 pattern — mimicked here, not depended on, so this lands
@@ -80,6 +83,11 @@ public static class ContactDrink
         if (currentGoodwill >= WarmThreshold)
         {
             modifiers.Add(new DiceModifier("old friends", +1));
+        }
+
+        if (offeringFavorite)
+        {
+            modifiers.Add(new DiceModifier("their usual", +1));
         }
 
         if (holdingSecret)
@@ -128,7 +136,11 @@ public static class ContactDrink
     /// takes the glass readily.</param>
     /// <param name="holdingSecret">True when you're carrying heat or hot cargo — you read as shifty, and a
     /// wary contact is likelier to wave the glass off.</param>
-    public static DrinkOfferResult OfferDrink(ulong seed, int currentGoodwill, bool holdingSecret)
+    /// <param name="offeringFavorite">True when you offered the exact drink you KNOW is their favourite
+    /// (#5 SundayMorningWind) — a +1 "their usual" nudge to accept, the small honest edge that knowing
+    /// what a contact drinks buys you.</param>
+    public static DrinkOfferResult OfferDrink(
+        ulong seed, int currentGoodwill, bool holdingSecret, bool offeringFavorite = false)
     {
         int face1 = DiceRule.Roll(DiceRule.Seed(seed, "drink-offer-a"), Faces).Face;
         int face2 = DiceRule.Roll(DiceRule.Seed(seed, "drink-offer-b"), Faces).Face;
@@ -137,6 +149,11 @@ public static class ContactDrink
         if (currentGoodwill >= WarmThreshold)
         {
             modifiers.Add(new DiceModifier("they know you", +2));
+        }
+
+        if (offeringFavorite)
+        {
+            modifiers.Add(new DiceModifier("their usual", +1));
         }
 
         if (holdingSecret)

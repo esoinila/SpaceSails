@@ -92,6 +92,12 @@ public readonly record struct ContactHistory(
         init => _knownTells = value;
     }
 
+    /// <summary>#5 SundayMorningWind — the contact's FAVOURITE drink id, once we've LEARNED it (they
+    /// chose it when we offered). Empty until known; the first shared glass records it. A future/known
+    /// favourite gives a small honest edge when offered directly (<see cref="ContactDrink.OfferDrink"/>'s
+    /// "their usual" +1). SAVED, additive — defaults empty on every pre-existing construction.</summary>
+    public string KnownFavorite { get; init; } = string.Empty;
+
     /// <summary>A blank slate for a contact we've not yet done business with.</summary>
     public static ContactHistory New(string contactId, string displayName) =>
         new(contactId, displayName, 0, 0, double.NegativeInfinity);
@@ -133,9 +139,21 @@ public readonly record struct ContactHistory(
             ? this
             : this with { KnownTells = KnownTells.Add(tell) };
 
+    /// <summary>#5 SundayMorningWind — record that we now KNOW this contact's favourite drink (they
+    /// reached for it when we offered). Idempotent: learning the same favourite again returns an
+    /// unchanged history. The first time it lands is the "progress" the owner wants a drink to give.</summary>
+    public ContactHistory WithKnownFavorite(string drinkId) =>
+        string.IsNullOrWhiteSpace(drinkId) || KnownFavorite == drinkId
+            ? this
+            : this with { KnownFavorite = drinkId };
+
+    /// <summary>True once we've learned what this contact drinks.</summary>
+    public bool FavoriteKnown => !string.IsNullOrEmpty(KnownFavorite);
+
     /// <summary>True once there is any history to read — an honest job done, a hull we robbed, coin
-    /// in the air (banked with them or owed to them), or a round stood them (goodwill).</summary>
-    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0;
+    /// in the air (banked with them or owed to them), a round stood them (goodwill), a tell slipped, or
+    /// their favourite learned.</summary>
+    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0 || FavoriteKnown;
 }
 
 /// <summary>
@@ -223,6 +241,19 @@ public sealed class ContactLedger
             ? existing with { DisplayName = displayName }
             : ContactHistory.New(contactId, displayName);
         ContactHistory updated = current.WithKnownTell(tell);
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>#5 SundayMorningWind — record that we've learned a contact's favourite drink (they chose
+    /// it when we offered), creating their record on first dealing. Idempotent per favourite. Returns the
+    /// updated history so the caller can narrate "you know what {name} drinks now."</summary>
+    public ContactHistory RecordKnownFavorite(string contactId, string displayName, string drinkId)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+        ContactHistory updated = current.WithKnownFavorite(drinkId);
         _byId[contactId] = updated;
         return updated;
     }

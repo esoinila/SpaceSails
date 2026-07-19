@@ -562,6 +562,9 @@ public partial class Map
     // poured drink routes through the very PourRum the Galley calls (one tot count, one wobble).
     private Core.Interior.Barkeep? _barMenu;   // the open barkeep card (null = shut)
     private string? _barNotice;                 // the last thing the keep said, shown on the card
+    private bool _showBarMenu;                   // #4: the full drinks menu (with Larry flavour) is open on the card
+
+    private void ToggleBarMenu() => _showBarMenu = !_showBarMenu;
 
     // ── The bar VISIT (owner 2026-07-18): a round satisfies the room for THIS stay, and loosens tongues
     // once. Kept as light session state keyed to the docked bar — no new persistence (the coordinator's
@@ -608,6 +611,7 @@ public partial class Map
     {
         _barMenu = null;
         _barNotice = null;
+        _showBarMenu = false;
         _pendingContactDrink = null; // a half-open offer moment does not survive stepping back from the bar
     }
 
@@ -664,6 +668,42 @@ public partial class Map
         ShowPulseMessage($"{receipt} (−{tab.Cost:N0} cr)");
         RequestVaultSave(); // #225: the purse moved (and PourRum saved the nerve)
     }
+
+    // #4 SundayMorningWind — the menu now pours more than one type. Buy any drink on THIS bar's menu for
+    // yourself (the Larry-coloured staples + the house special), all at the bar's going rate. Same one
+    // wobble/tot law via PourRum, same #119 receipt naming the pour and the spend.
+    private void BuyDrink(Core.Drink drink)
+    {
+        if (_barMenu is not { } keep)
+        {
+            return;
+        }
+        if (_credits < keep.DrinkPrice)
+        {
+            _barNotice = $"“{drink.Name}'s {keep.DrinkPrice} cr — come back when the purse can cover it, spacer.”";
+            ShowPulseMessage(_barNotice);
+            return;
+        }
+        _credits -= keep.DrinkPrice;
+        string receipt = PourRum($"{drink.Name} — {drink.Flavor}", NerveModel.DrinkKind.BarSpecial);
+        _barNotice = receipt;
+        ShowPulseMessage($"{receipt} (−{keep.DrinkPrice:N0} cr)");
+        RequestVaultSave(); // #225: the purse moved (and PourRum saved the nerve)
+    }
+
+    // The favourite drink we've LEARNED for a contact (#5), or null if we've never watched them choose.
+    // The card shows it on a known contact and offers to stand them "their usual" for the +1 edge.
+    private Core.Drink? KnownFavoriteDrink(string giver)
+    {
+        ContactHistory h = _contacts.For(giver);
+        return h.FavoriteKnown ? Core.DrinkMenu.ById(h.KnownFavorite) : null;
+    }
+
+    // Does THIS bar pour the contact's known favourite? Gates the "stand them their usual" edge row —
+    // you can only hand them their usual where it's on the menu.
+    private bool BarPoursFavorite(string giver) =>
+        _barMenu is { } keep && KnownFavoriteDrink(giver) is { } fav
+        && Core.DrinkMenu.For(keep).Any(d => d.Id == fav.Id);
 
     // Buy a round for the whole room — a bigger spend that WARMS the regulars actually drinking here
     // (#247 kin #224: the cheap way to thaw a cold contact). Goodwill is booked on the ContactLedger,
@@ -835,7 +875,7 @@ public partial class Map
     // runs deep), or YOU slip a tell that lands on their book. You drink too — the shared glass is sanity
     // relief and rides the one wobble law via PourRum. Both rolls are shown (#306 item 5; the shared dice
     // tray is TODO(#305)). All state moves through the Vault (RequestVaultSave).
-    private void BuyContactDrink(string giver)
+    private void BuyContactDrink(string giver, bool offeringUsual = false)
     {
         if (_barMenu is not { } keep)
         {
@@ -855,13 +895,24 @@ public partial class Map
             return;
         }
 
+        // #5 SundayMorningWind — THE CHOICE IS THE TELL. When we offer generically, the contact reaches
+        // for a pour off THIS bar's menu (usually their favourite); when we specifically stand them their
+        // usual (an option that only shows once we KNOW it and the bar pours it), we hand them that glass.
+        // What lands in their hand colours what they let slip (DrinkTell.ChannelFor).
+        IReadOnlyList<Core.Drink> menu = Core.DrinkMenu.For(keep);
+        Core.Drink favorite = Core.DrinkFavorites.FavoriteFor(giver);
+        bool favoriteOnMenu = menu.Any(d => d.Id == favorite.Id);
+        bool offeringFavorite = offeringUsual && favoriteOnMenu;
+        Core.Drink chosen = offeringFavorite ? favorite : Core.DrinkChoice.ChoosesDrink(giver, menu);
+
         int goodwillBefore = _contacts.For(giver).Goodwill;
         bool holdingSecret = _heat.Level > 0 || HotHoldUnits() > 0; // the second reality to keep steady
 
         // OFFER FIRST: the contact may wave the glass off before anything is bought. A warm contact takes
-        // it gladly; a wary one (you're running heat / hot cargo) may pass. Nothing debited on a refusal.
+        // it gladly; a wary one (you're running heat / hot cargo) may pass. Standing them their usual is a
+        // small honest edge (+1 "their usual"). Nothing debited on a refusal.
         ulong offerSeed = DiceRule.Seed($"drink-offer:{giver}", (long)SimTime);
-        DrinkOfferResult offered = ContactDrink.OfferDrink(offerSeed, goodwillBefore, holdingSecret);
+        DrinkOfferResult offered = ContactDrink.OfferDrink(offerSeed, goodwillBefore, holdingSecret, offeringFavorite);
         if (!offered.Accepted)
         {
             _barNotice = $"🚫 {RefusalLine(display, holdingSecret)}  🎲 {offered.Describe()}";
@@ -871,15 +922,29 @@ public partial class Map
 
         _credits -= keep.DrinkPrice;
 
+        // The contact's choice reveals their taste — we LEARN their favourite the first time we watch them
+        // reach for it (progress the owner wants a drink to give). Recorded on the saved ledger, so an
+        // "offer their usual" edge is available next time. The favourite they'd truly reach for is the tell,
+        // even if this bar can't pour it — you now know what to bring.
+        bool firstLearn = !_contacts.For(giver).FavoriteKnown;
+        _contacts.RecordKnownFavorite(giver, giver, favorite.Id);
+
         ulong seed = DiceRule.Seed($"drink:{giver}", (long)SimTime);
-        DrinkParley parley = ContactDrink.Roll(seed, goodwillBefore, holdingSecret);
+        DrinkParley parley = ContactDrink.Roll(seed, goodwillBefore, holdingSecret, offeringFavorite);
 
         _contacts.AddGoodwill(giver, giver, parley.GoodwillDelta);
 
         // SANITY-RELIEF SEAM (#226), WIRED: a shared drink is the real medicine — conversation AND the
         // glass. NerveModel restores it at ANY nerve level (owner's ruling), the whole point of company
         // over a lone drink. Still rides the one wobble/tot law via PourRum.
-        PourRum($"{keep.DrinkName} with {display} — {keep.DrinkFlavor}", NerveModel.DrinkKind.SharedWithContact);
+        PourRum($"{chosen.Name} with {display} — {chosen.Flavor}", NerveModel.DrinkKind.SharedWithContact);
+
+        // The little channel of info: the pour the contact chose decides WHICH kind of tell opens.
+        Core.TellChannel channel = Core.DrinkTell.ChannelFor(chosen);
+        string learn = firstLearn
+            ? $" You know what {display} drinks now — the {favorite.Name}."
+            : string.Empty;
+        string chose = $"{display} takes the {chosen.Name}.";
 
         string line;
         switch (parley.Outcome)
@@ -890,11 +955,12 @@ public partial class Map
                 // Priced through the ledger today (the honest minimum — the contact now KNOWS this).
                 // The heat / false-colors / contract seams can later read KnownTells to make a leaked
                 // hot-cargo or heat tell actually bite (#306 kin: heat/contract consequence systems).
-                line = $"🍷 You drank with {display}, and the glass loosened your guard — they clocked {tell}. {display} files it away behind a smile.";
+                line = $"🍷 {chose} The glass loosened YOUR guard — they clocked {tell}. {display} files it away behind a smile.{learn}";
                 break;
 
             case DrinkOutcome.OpensUp:
-                line = $"🍷 {display} warms and leans in: {OpenIntelLine(giver)}";
+                // LeadFor already names the drink they took, so no separate "takes the …" here.
+                line = $"🍷 {Core.DrinkTell.LeadFor(chosen, display)} {OpenIntelLine(giver, channel)}{learn}";
                 Overhear(line, giver); // durable — intel you paid for doesn't auto-vanish (#212, owner)
                 break;
 
@@ -904,21 +970,21 @@ public partial class Map
                 {
                     _pendingOffer = offer;
                     CloseBarkeep();
-                    ShowPulseMessage($"🍷 A drink with {display} opens a door (🎲 {parley.Describe()}). They slide a proposition across the table. (−{keep.DrinkPrice:N0} cr)");
+                    ShowPulseMessage($"🍷 {chose} A drink with {display} opens a door (🎲 {parley.Describe()}). They slide a proposition across the table.{learn} (−{keep.DrinkPrice:N0} cr)");
                     RequestVaultSave();
                     return;
                 }
-                line = $"🍷 {display} trusts you now — but has no work to hand just yet. “Next time, friend.”";
+                line = $"🍷 {chose} {display} trusts you now — but has no work to hand just yet. “Next time, friend.”{learn}";
                 break;
 
             default: // Warm
-                line = $"🍷 A good glass with {display}. Nothing said that matters — but the ice is thinner between you now.";
+                line = $"🍷 A good glass with {display} — they took the {chosen.Name}. Nothing said that matters, but the ice is thinner between you now.{learn}";
                 break;
         }
 
         _barNotice = $"{line}  🎲 {parley.Describe()}";
         ShowPulseMessage($"{_barNotice} (−{keep.DrinkPrice:N0} cr)");
-        RequestVaultSave(); // #225: the purse moved, goodwill/tells were booked
+        RequestVaultSave(); // #225: the purse moved, goodwill/tells/favourite were booked
     }
 
     // Open the "offer <name> a drink" OFFER MOMENT — a small confirm (offer it / cancel) on the card.
@@ -1015,8 +1081,25 @@ public partial class Map
     // The concrete intel a contact hands you when they open up — a rumor made real. Prefer a live
     // off-books ship the public board wouldn't show (name + route), the actionable kind; fall back to a
     // solid heat or price tip. Deterministic per sim-second + berth (OfferIndex), so it never flickers.
-    private string OpenIntelLine(string giver)
+    private string OpenIntelLine(string giver) => OpenIntelLine(giver, Core.TellChannel.Business);
+
+    // #5 SundayMorningWind — the tell rides the channel the CHOSEN drink opened. A gin/the hard stuff
+    // (Business) hands the sharp, actionable tip — an off-books ghost, a heat warning. A beer (SmallTalk)
+    // names one plain trading fact. The local specialty (LocalRumor) loosens the neighbourhood's own
+    // gossip, the keep's kind of word. Same live game state, three depths of tell.
+    private string OpenIntelLine(string giver, Core.TellChannel channel)
     {
+        if (channel == Core.TellChannel.LocalRumor)
+        {
+            // The house's own pour loosens the house's own gossip — the barkeep's neighbourhood word.
+            return _barMenu is { } keep ? $"“{keep.RumorAt(SimTime).Trim('“', '”')}”" : SmallTalkFact();
+        }
+        if (channel == Core.TellChannel.SmallTalk)
+        {
+            return SmallTalkFact(); // a beer names one plain fact, no more.
+        }
+
+        // Business (a gin / the hard stuff): the sharp, actionable tell.
         List<NpcState> ghosts = _npcStates
             .Where(n => n.Active && !n.Arrived && !n.Boarded && !n.Ship.IsPod && !n.Ship.PublishesTimetable)
             .OrderBy(n => n.Ship.Id, StringComparer.Ordinal)
@@ -1033,6 +1116,12 @@ public partial class Map
 
         return "“Prices at the next berth run soft on ice, hard on ore this cycle. Trade accordingly, friend.”";
     }
+
+    // A single plain trading fact — the small-talk tell a beer hands you (a fact, never a proposition).
+    private string SmallTalkFact() =>
+        _heat.Level > 0
+            ? "“Heard the docks are jumpy this cycle — extra eyes at the gate. Just so you know, friend.”"
+            : "“Prices at the next berth run soft on ice, hard on ore this cycle. That much I'll say over a beer.”";
 
     // The standing offer a contact would make you across the table, by who they are — the same switch
     // TalkToStranger runs after its special cases. Extracted (#306) so a trust-unlocked drink opens the

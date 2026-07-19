@@ -512,13 +512,21 @@
                available, never demanded. *@
             @foreach ((string giver, string display) in PresentBarContacts())
             {
+                Core.Drink? knownFav = KnownFavoriteDrink(giver);
+                bool poursUsual = BarPoursFavorite(giver);
                 @if (_pendingContactDrink == giver)
                 {
                     <div class="deck-offer-actions">
-                        <span class="bar-offer-moment small">Offer @display a drink?</span>
+                        <span class="bar-offer-moment small">Offer @display a drink? They'll choose their own pour.</span>
                         <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
-                                title="@($"Offer {display} a {keep.DrinkName} ({keep.DrinkPrice} cr) — they may accept or refuse; only if they take it is it poured, and the 2D6 decides if they open up or you slip a tell")"
+                                title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — they pick their own pour; only if they take it is it poured, and the 2D6 decides if they open up or you slip a tell")"
                                 @onclick="@(() => BuyContactDrink(giver))">🥃 Offer it · @keep.DrinkPrice cr</button>
+                        @if (poursUsual && knownFav is { } fav)
+                        {
+                            <button type="button" class="btn btn-sm btn-success" disabled="@(_credits < keep.DrinkPrice)"
+                                    title="@($"Stand {display} the {fav.Name} — their usual. A small honest edge (+1) to the offer, and a warmer glass.")"
+                                    @onclick="@(() => BuyContactDrink(giver, true))">🥃 Their usual — @fav.Name · @keep.DrinkPrice cr</button>
+                        }
                         <button type="button" class="btn btn-sm btn-outline-secondary"
                                 title="Changed your mind — no harm done" @onclick="CancelContactDrinkOffer">Cancel</button>
                     </div>
@@ -526,7 +534,7 @@
                 else if (_roundThisVisit)
                 {
                     <div class="deck-offer-actions">
-                        <span class="bar-toasted small">🍻 @display toasted you with the room</span>
+                        <span class="bar-toasted small">🍻 @display toasted you with the room@(knownFav is { } kf ? $" · drinks {kf.Name}" : "")</span>
                         <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.DrinkPrice)"
                                 title="@($"Offer {display} a personal glass on top of the round — they may still refuse; extra warmth, never demanded")"
                                 @onclick="@(() => OfferContactDrink(giver))">🥃 Offer another · @keep.DrinkPrice cr</button>
@@ -538,6 +546,10 @@
                         <button type="button" class="btn btn-sm btn-warning"
                                 title="@($"Offer {display} a drink ({keep.DrinkPrice} cr) — a sign of trust they may accept or refuse; if taken, the 2D6 decides if they open up or you slip a tell")"
                                 @onclick="@(() => OfferContactDrink(giver))">🥃 Offer @display a drink · @keep.DrinkPrice cr</button>
+                        @if (knownFav is { } kf2)
+                        {
+                            <span class="bar-favorite small" title="You've learned what they drink">❤ @kf2.Name</span>
+                        }
                     </div>
                 }
             }
@@ -556,14 +568,33 @@
                     }
                 </div>
             }
+            @* #4 SundayMorningWind — the talking drinks menu: more than one type (Space Gin, Space Beer,
+               Rocket Fuel + the house special), each with its colourful Leisure-Suit-Larry-style flavour.
+               This is where the Larry colour lives. Buy any of them for yourself; all at the going rate. *@
             <div class="deck-offer-actions">
                 <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < keep.DrinkPrice)"
                         title="@($"Buy the house special — {keep.DrinkPrice} cr")" @onclick="BuyHouseSpecial">🍹 @keep.DrinkName · @keep.DrinkPrice cr</button>
+                <button type="button" class="btn btn-sm btn-outline-light" title="See the full drinks menu" @onclick="ToggleBarMenu">📜 @(_showBarMenu ? "Hide the menu" : "See the menu")</button>
                 <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
                         title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
                 <button type="button" class="btn btn-sm btn-outline-info" title="Ask the barkeep what they've heard lately" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
                 <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="CloseBarkeep">Done</button>
             </div>
+            @if (_showBarMenu)
+            {
+                <div class="bar-menu small">
+                    <div class="bar-menu-head">🍸 THE MENU — @keep.DrinkPrice cr a glass</div>
+                    @foreach (Core.Drink drink in Core.DrinkMenu.For(keep))
+                    {
+                        Core.Drink d = drink;
+                        <div class="bar-menu-item">
+                            <button type="button" class="btn btn-sm btn-outline-warning bar-menu-buy" disabled="@(_credits < keep.DrinkPrice)"
+                                    title="@($"Pour yourself a {d.Name} — {keep.DrinkPrice} cr")" @onclick="@(() => BuyDrink(d))">🥃 @d.Name</button>
+                            <span class="bar-menu-flavor">@d.Flavor</span>
+                        </div>
+                    }
+                </div>
+            }
         </div>
     }
 
