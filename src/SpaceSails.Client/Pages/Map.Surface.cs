@@ -119,6 +119,14 @@ public partial class Map
             return null; // not on a surface — nothing to report
         }
 
+        // #370: on the away-team gig the HUD's ship-line becomes the AWAY CLOCK — time left in shuttle range
+        // (owner: "a mission clock at the away site that ticks down the window"). It supersedes the ordinary
+        // hold/docked line while the team is on the gig's site.
+        if (_surface is { Expedition: true } && ExpeditionComms() is { } away)
+        {
+            return away;
+        }
+
         if (_dockedHavenId is not null)
         {
             // Owner ruling (#331 follow-up): docked at a station, its mass holds the orbit for us — no
@@ -243,6 +251,17 @@ public partial class Map
         // landing starts empty, exactly like the Reever positions (never saved).
         public Dictionary<(int X, int Y), BeachComber.Outcome> Swept { get; } = [];
         public int Catches { get; set; }
+        // #370 · the away-expedition state, live only when this landing is on the gig's site. Expedition
+        // gates OFF the endless tide and arms the diced on-site beats (AwayExpeditionEvents). The accruals
+        // are settled into the payout on liftoff (ExpeditionReward): the ground-time clock, the last beat
+        // ordinal fired, banked discovery bonus, and scientists lost to the dark.
+        public bool Expedition { get; init; }
+        public double ExpeditionOnSiteSeconds { get; set; }
+        public int ExpeditionLastOrdinal { get; set; } = -1;
+        public int ExpeditionBonus { get; set; }
+        public int ExpeditionScientistsLost { get; set; }
+        public bool ExpeditionStrandingFired { get; set; } // the one-time "the window closed" toll has rolled
+
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
@@ -281,6 +300,10 @@ public partial class Map
         await DescentPhaseAsync("clearing the bay…");
         AdvanceShuttleClock(stop.TravelSeconds); // the flight down (abstracted by the tube) costs the clock
 
+        // #370: is this landing the away-team's gig site? If so the excursion arms the expedition (no tide,
+        // diced beats, the away clock) instead of a normal surface visit.
+        bool isExpeditionSite = _expedition is { } plan && plan.SiteBodyId == stop.Body.Id;
+
         var excursion = new SurfaceExcursion
         {
             Stop = stop,
@@ -288,6 +311,7 @@ public partial class Map
             PendingCoin = chest.Coin,
             PendingCargo = [.. chest.Cargo],
             ThreatSeed = ReeverSeed(stop.Body.Id),
+            Expedition = isExpeditionSite,
         };
 
         // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet
@@ -347,7 +371,15 @@ public partial class Map
         string bots = take > 0
             ? $" {take} sentry bot{(take == 1 ? "" : "s")} in the sling — press T on the surface to set one down."
             : "";
-        ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
+        if (isExpeditionSite && _expedition is { } gig)
+        {
+            string who = gig.Flavor == ExpeditionFlavor.Science ? "science team" : "survey crew";
+            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. The {who} scrambles down the tube and fans out across the site. The ship holds the course-match above — watch the away clock. Walk them through it.");
+        }
+        else
+        {
+            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
+        }
         _descentPhase = null;
     }
 
@@ -768,7 +800,16 @@ public partial class Map
         StepDigChannel(dtRealSeconds);
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
-        StepTide(dtRealSeconds);
+        // #370: an away-expedition site runs NO endless tide (owner: "not a continuous endless stream like
+        // on Miranda"). Its own diced beats may rouse a LIMITED pack instead; the tracker stays live.
+        if (_surface is { Expedition: true })
+        {
+            StepExpedition(dtRealSeconds);
+        }
+        else
+        {
+            StepTide(dtRealSeconds);
+        }
         StepFirstContactChirp(dtRealSeconds);
         TryRecoverDroppedChest();
     }
@@ -1235,6 +1276,10 @@ public partial class Map
             }
         }
 
+        // #370: an away-team gig settles its payout on the ride home — the fat base plus banked discoveries,
+        // docked for any scientist lost to the dark (ExpeditionReward). Narrated, then the gig is closed.
+        bool settledExpedition = ex.Expedition && SettleExpedition(ex);
+
         _surface = null;
         _reevers.Clear();
         _lastNearestReeverRange = null;
@@ -1255,7 +1300,7 @@ public partial class Map
                 : "";
             ShowPulseMessage($"🛸 Lifted off {ex.Stop.Body.Name}. Map filed (🗺).{tail}{botTail}");
         }
-        else
+        else if (!settledExpedition) // an expedition settle already spoke its payout line
         {
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
             ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}");

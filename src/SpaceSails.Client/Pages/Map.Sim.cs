@@ -49,6 +49,31 @@ public partial class Map
         Kind = "planet",
     };
 
+    // #370: the away-expedition site as a runtime BodyDefinition, appended before the ephemeris is built
+    // (the ellipse-cheat idiom — the body list is immutable after). It co-orbits the berth <paramref
+    // name="berthId"/> at a fixed small radius comfortably inside one shuttle hop, so a docked ship always
+    // reads it as an in-range LANDABLE surface (a Moon-kind body with a parent). Its id carries the site
+    // KIND, so the surface routes straight to the authored ground. The passing-asteroid flavor is narrated.
+    private static BodyDefinition ExpeditionSiteBody(SiteSpawn spawn, string berthId) => new()
+    {
+        Id = spawn.BodyId,
+        Name = spawn.DisplayName,
+        ParentId = berthId,
+        Mu = 0,
+        BodyRadiusM = spawn.BodyRadiusMeters,
+        OrbitRadiusM = ExpeditionSite.SpawnFraction * ShuttleRange.RangeMeters * 0.6, // ~1.5e8 m: well inside one 5e8 m hop
+        OrbitPeriodS = 1.0e9,       // effectively a static co-orbiting offset — the rock just hangs alongside
+        InitialPhaseRad = 0.0,
+        Kind = "moon",
+    };
+
+    // A fixed, reproducible seed per flavor so the cheat always spawns the same rock (same kind + name).
+    private static ulong ExpeditionCheatSeed(ExpeditionFlavor flavor) => flavor == ExpeditionFlavor.MiningSurvey ? 3702UL : 3701UL;
+
+    // #370: the cheat's resolved gig spec, stashed at build time (the site body is appended pre-ephemeris)
+    // and consumed by InjectExpeditionCheat AFTER the berth clamp, so the accepted plan lands on a live world.
+    private (ExpeditionFlavor Flavor, ExpeditionSiteKind Kind, string SiteBodyId, string SiteName)? _pendingExpeditionCheat;
+
     private readonly Camera _camera = new();
     private CanvasRenderer? _renderer;
     private ICelestialEphemeris? _ephemeris;
@@ -214,6 +239,7 @@ public partial class Map
         string? backroomCheat = null;
         double? simHoursCheat = null;
         bool ellipseCheat = false; // /map?ellipse=1 injects a visibly eccentric demo body (Kepler rails, PR-B)
+        string? expeditionCheat = null; // #370 /map?expedition=1|mining: spawn an away-team gig accepted + its site in shuttle range at the berth
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -372,6 +398,18 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["ellipse=".Length..]).ToLowerInvariant();
                 ellipseCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("expedition=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #370 dev cheat: /map?expedition=1 (scientists) or /map?expedition=mining (survey crew)
+                // spawns an away-team gig ALREADY ACCEPTED, with its passing-rock site parked in shuttle
+                // range at the berth, so the test loop is: spawn → shuttle door → take the team down → see
+                // the away clock → come back. Documented in the PR body.
+                string candidate = Uri.UnescapeDataString(pair["expedition=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes" or "science" or "mining")
+                {
+                    expeditionCheat = candidate;
+                }
+            }
         }
 
         // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
@@ -388,6 +426,25 @@ public partial class Map
         if (ellipseCheat)
         {
             scenario = scenario with { Bodies = [.. scenario.Bodies, KeplerDemoBody()] };
+        }
+        if (expeditionCheat is not null)
+        {
+            // #370: the site is a mission-spawned body, and the ephemeris is immutable once built — so the
+            // ONLY clean way to a runtime LANDABLE rock is to append it to the scenario BEFORE FromScenario
+            // (the ellipse-cheat idiom). Park it co-orbiting the berth we'll clamp onto, a fixed small hop
+            // off, so it is always in shuttle range. Default the berth to Selene Gate when none was asked.
+            string berthKey = dockCheat ?? "selene-gate";
+            string berthId = DockedStarts.TryGetValue(berthKey, out string? mappedBerth) ? mappedBerth : berthKey;
+            if (scenario.Bodies.Any(b => b.Id == berthId))
+            {
+                ExpeditionFlavor flavor = expeditionCheat == "mining" ? ExpeditionFlavor.MiningSurvey : ExpeditionFlavor.Science;
+                // Position/velocity are unused here (the rock rides real orbit rails); Spawn only fixes the
+                // seeded KIND + display name deterministically.
+                SiteSpawn spawn = ExpeditionSite.Spawn(ExpeditionCheatSeed(flavor), Vector2d.Zero, Vector2d.Zero, flavor);
+                scenario = scenario with { Bodies = [.. scenario.Bodies, ExpeditionSiteBody(spawn, berthId)] };
+                _pendingExpeditionCheat = (flavor, spawn.Kind, spawn.BodyId, spawn.DisplayName);
+                dockCheat = berthId; // clamp onto the berth the rock co-orbits, so it's in reach at spawn
+            }
         }
         _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
@@ -516,6 +573,11 @@ public partial class Map
         {
             PeekSavedVault(); // #225: surface a "Continue — docked at <haven>" lead if a vault exists.
             _showStartPicker = true;
+        }
+
+        if (_pendingExpeditionCheat is not null)
+        {
+            InjectExpeditionCheat(); // #370: after the clamp — the accepted gig lands on a live, docked world
         }
 
         if (fetchCheat is not null)
