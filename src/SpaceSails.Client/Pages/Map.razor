@@ -57,12 +57,12 @@
         // with-current (in-game, manual), Clear. Empty: Bank this moment (in-game). Any slot: Import a file
         // INTO this berth — banks it here WITHOUT boarding, distinct from the top-level board-it Import.
         // Row 1 (the newest save, the same one Continue resumes) wears a '← latest' badge.
-        RenderFragment<(string Id, SaveSlotMeta? Meta, bool InGame, bool IsLatest)> SlotRow = ctx =>
+        RenderFragment<(string ThreadId, string Id, SaveSlotMeta? Meta, bool InGame, bool IsLatest)> SlotRow = ctx =>
     @<div class="slot-row @(ctx.Id == SaveSlotBook.AutoSlotId ? "slot-row-auto" : "") @(ctx.Meta is null ? "slot-row-empty" : "")">
         @if (ctx.Meta is { } m)
         {
             <button type="button" class="slot-load" title="Load this voyage — BOARDS it: replaces the current run with this saved life (purse, cargo, contacts, hoard, heat)"
-                    @onclick="() => LoadSlot(ctx.Id)">
+                    @onclick="() => LoadThreadSlot(ctx.ThreadId, ctx.Id)">
                 <span class="slot-icon">@(ctx.Id == SaveSlotBook.AutoSlotId ? "💾" : "📼")</span>
                 <span class="slot-text">
                     <span class="slot-where">@(m.WasDocked ? "⚓ " : "🛰 ")@m.Where@(m.Tampered ? " 📛" : "")@(ctx.IsLatest ? " " : "")@if (ctx.IsLatest){<span class="slot-latest">← latest</span>}</span>
@@ -71,18 +71,18 @@
                 </span>
             </button>
             <button type="button" class="slot-mini" title="Export THIS berth's saved voyage to a .json file, named for the place and day it holds"
-                    @onclick="() => ExportSlot(ctx.Id)">⬇</button>
+                    @onclick="() => ExportThreadSlot(ctx.ThreadId, ctx.Id)">⬇</button>
             @if (ctx.InGame && ctx.Id != SaveSlotBook.AutoSlotId)
             {
                 <button type="button" class="slot-mini" title="Overwrite this berth with THIS moment (the live game right now)"
                         @onclick="() => SaveToSlot(ctx.Id)">⤓ bank here</button>
             }
             <button type="button" class="slot-mini" title="Import a file INTO this berth — banks it here WITHOUT boarding; the running voyage keeps flying. Load it later to board it."
-                    @onclick="() => ImportIntoSlot(ctx.Id)">📥 file</button>
+                    @onclick="() => ImportIntoThreadSlot(ctx.ThreadId, ctx.Id)">📥 file</button>
             @if (ctx.Id != SaveSlotBook.AutoSlotId)
             {
                 <button type="button" class="slot-mini slot-mini-danger" title="Clear this berth — forgets its saved voyage"
-                        @onclick="() => DeleteSlot(ctx.Id)">🗑</button>
+                        @onclick="() => DeleteThreadSlot(ctx.ThreadId, ctx.Id)">🗑</button>
             }
         }
         else
@@ -97,7 +97,7 @@
                         @onclick="() => SaveToSlot(ctx.Id)">⤓ bank here</button>
             }
             <button type="button" class="slot-mini" title="Import a file INTO this berth — banks it here WITHOUT boarding. This is how you shelve a rescued Downloads save into a named berth."
-                    @onclick="() => ImportIntoSlot(ctx.Id)">📥 file</button>
+                    @onclick="() => ImportIntoThreadSlot(ctx.ThreadId, ctx.Id)">📥 file</button>
         }
     </div>;
 
@@ -134,29 +134,6 @@
                 </button>
             }
 
-            @* feat/game-threads — the OTHER universes: every game thread that isn't the one Continue leads
-               with, each a one-click door back into that parallel run. A minimal load-a-game path (the full
-               ten-savegame picker is #310's lane) so a migrated campaign is never hidden behind a newer one. *@
-            @if (!inGame && _threadList.Any(t => t.Id != _activeThreadId))
-            {
-                <div class="save-slots-label">Other voyages</div>
-                <div class="save-slots-list save-threads-list">
-                    @foreach (GameThreadInfo t in _threadList.Where(t => t.Id != _activeThreadId))
-                    {
-                        GameThreadInfo thread = t;
-                        <button type="button" class="start-picker-option start-picker-otherthread"
-                                title="Continue this separate voyage — its own universe, saved apart from the others"
-                                @onclick="() => ContinueThread(thread.Id)">
-                            <span class="start-picker-icon">🧭</span>
-                            <span class="start-picker-text">
-                                <span class="start-picker-label">Continue — @(string.IsNullOrWhiteSpace(thread.Where) ? "a saved voyage" : thread.Where)</span>
-                                <span class="start-picker-blurb">A separate voyage · day @thread.SimDay.</span>
-                            </span>
-                        </button>
-                    }
-                </div>
-            }
-
             @if (!inGame)
             {
                 @* Docked-starts rework (owner ruling, 2026-07-18 playtest): "All starting points should be
@@ -186,24 +163,74 @@
                 </div>
             }
 
-            @* #312 — the WHOLE rack, always: all ten slots (rolling autosave + nine manual berths). Occupied
-               berths NEWEST FIRST (the same order Continue reads — row 1 is the latest), then empty berths
-               sink to the bottom as '— empty berth —', each still a target you can file a save into. *@
-            <div class="save-slots-label">@(_slotList.Count == 0 ? "No saved voyages yet — file a save into a berth below, or start a new voyage." : "Saved voyages — newest first")</div>
-            <div class="save-slots-list">
-                @{
-                    string? latestId = _slotList.Count > 0 ? _slotList[0].Id : null;
-                }
-                @foreach (SaveSlotMeta meta in _slotList)
-                {
-                    @SlotRow((meta.Id, meta, inGame, meta.Id == latestId))
-                }
-                @* Empty berths at the bottom, in fixed rack order (autosave, then 1..9). *@
-                @foreach (string id in AllSlotIds.Where(id => _slotList.All(s => s.Id != id)))
-                {
-                    @SlotRow((id, (SaveSlotMeta?)null, inGame, false))
-                }
-            </div>
+            @if (!inGame)
+            {
+                @* THE CAPTAINS' ROSTER (owner 2026-07-19: "a list of captains in the start with gen-ai
+                   profile images … then under those are their slots"). The saved voyages, grouped by
+                   universe: one captain CARD per game thread — a seeded name and a portrait from the roster
+                   (art/captain-N.jpg, a seeded-colour monogram disc if the image is missing) — with that
+                   captain's save rows beneath it. The active captain heads the list, marked "at the helm";
+                   the rest follow newest-universe-first. This is what tells two adjacent voyages apart. The
+                   active captain's card also carries the whole rack's empty berths (file a rescued save in);
+                   an idle captain shows only their occupied slots. Grouping is the pure Core GameThreads
+                   .GroupSlots; the identity is Core Captains (seeded off the thread GUID). *@
+                <div class="save-slots-label">@(_voyageGroups.Count == 0 ? "No saved voyages yet — begin a new one above." : "Saved voyages — a captain per universe")</div>
+                <div class="save-captain-roster">
+                    @foreach (GameThreadGroup g in _voyageGroups)
+                    {
+                        GameThreadGroup group = g;
+                        (string CaptainName, int AvatarIndex) cap = SpaceSails.Core.Captains.For(group.Thread);
+                        string? groupLatestId = group.IsActive && group.Slots.Count > 0 ? group.Slots[0].Id : null;
+                        <div class="captain-card @(group.IsActive ? "captain-card-active" : "")">
+                            <div class="captain-avatar" style="--mono-color:@CaptainMonoColor(group.Thread.Id)">
+                                <span class="captain-mono">@CaptainInitial(cap.CaptainName)</span>
+                                <img class="captain-portrait" src="art/captain-@(cap.AvatarIndex).jpg" alt="" aria-hidden="true"
+                                     onerror="this.style.display='none'" />
+                            </div>
+                            <div class="captain-ident">
+                                <span class="captain-name">@cap.CaptainName@if (group.IsActive){<span class="captain-helm">⚓ at the helm</span>}</span>
+                                <span class="captain-where">@CaptainWhen(group.Thread)</span>
+                            </div>
+                        </div>
+                        <div class="save-slots-list captain-slots">
+                            @foreach (SaveSlotMeta meta in group.Slots)
+                            {
+                                @SlotRow((group.Thread.Id, meta.Id, meta, inGame, meta.Id == groupLatestId))
+                            }
+                            @* The active captain also shows the empty berths of the ten-slot rack, so a
+                               rescued Downloads save can still be filed into a named berth from the door. *@
+                            @if (group.IsActive)
+                            {
+                                @foreach (string id in AllSlotIds.Where(id => group.Slots.All(s => s.Id != id)))
+                                {
+                                    @SlotRow((group.Thread.Id, id, (SaveSlotMeta?)null, inGame, false))
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                @* #312 — the in-game logbook: the WHOLE rack for the CURRENT universe only (one captain, the
+                   one you are flying), all ten slots. Occupied berths NEWEST FIRST (row 1 is the latest, the
+                   same order Continue reads), then empty berths sink to the bottom as '— empty berth —'. *@
+                <div class="save-slots-label">@(_slotList.Count == 0 ? "No saved voyages yet — file a save into a berth below, or start a new voyage." : "Saved voyages — newest first")</div>
+                <div class="save-slots-list">
+                    @{
+                        string? latestId = _slotList.Count > 0 ? _slotList[0].Id : null;
+                    }
+                    @foreach (SaveSlotMeta meta in _slotList)
+                    {
+                        @SlotRow((_activeThreadId ?? "", meta.Id, meta, inGame, meta.Id == latestId))
+                    }
+                    @* Empty berths at the bottom, in fixed rack order (autosave, then 1..9). *@
+                    @foreach (string id in AllSlotIds.Where(id => _slotList.All(s => s.Id != id)))
+                    {
+                        @SlotRow((_activeThreadId ?? "", id, (SaveSlotMeta?)null, inGame, false))
+                    }
+                </div>
+            }
 
             <div class="save-surface-foot">
                 @if (inGame)
@@ -848,6 +875,24 @@
                 @onclick="ToggleFirstPerson">
             @(_fpMode ? "🗺 Deck plan (F)" : "🧍 First person (F)")
         </button>
+    }
+
+    @* THE CAPTAIN CHIP (owner 2026-07-19: "the current captain profile pic could also be at some corner of
+       the screen while playing, so you can immediately check who you are"). A small identity-glance disc —
+       the active captain's portrait (art/captain-N.jpg), a seeded-colour monogram if it's missing — quietly
+       in the bottom-left corner while ABOARD. The hover title carries the captain's name (owner: "the hint
+       text could show that on hover"). Kept below the deck/dock cards in the z-band so it never covers a
+       control (it yields to any card that opens over the corner); hidden on a surface excursion, where the
+       SANITY gauge and the first-person toggle own the left column (#324). *@
+    @if (_worldReady && _surface is null && !_showStartPicker && !_showSaveDrawer && ActiveThreadInfo is { } capThread)
+    {
+        (string CaptainName, int AvatarIndex) chipCap = SpaceSails.Core.Captains.For(capThread);
+        <div class="captain-chip" title="@chipCap.CaptainName — the captain at your helm"
+             style="--mono-color:@CaptainMonoColor(capThread.Id)">
+            <span class="captain-mono">@CaptainInitial(chipCap.CaptainName)</span>
+            <img class="captain-portrait" src="art/captain-@(chipCap.AvatarIndex).jpg" alt="" aria-hidden="true"
+                 onerror="this.style.display='none'" />
+        </div>
     }
 
     @* M24: planet click menu — set the body as THE destination so orbit assist tracks it.
