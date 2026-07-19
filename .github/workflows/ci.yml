@@ -31,3 +31,57 @@ jobs:
         with:
           name: test-results
           path: TestResults
+
+  # Lab 34 / issue #293 — the headless UI-verification gate.
+  #
+  # The owner asked for this while planning to approve PRs from a phone on a two-day cruise
+  # (2026-07-19): "there would have to be more testing done here." Every PR now has to prove the
+  # game BOOTS in a real headless Chromium and that its critical controls are PRESENT and
+  # CLICKABLE — so a red check on his phone means the game genuinely won't stand up, not that a
+  # unit assertion drifted. This runs in the SAME workflow as the Core suite, so a red gate is a
+  # red check; on failure it uploads a screenshot + console/step logs so the cause is visible from
+  # a phone without re-running anything.
+  #
+  # It complements — does not replace — Lab 34's browser-free geometry law
+  # (SpaceSails.Core.RescueLifeline, approach (b)): that reasons about the rescue pill's z-band in
+  # xUnit; THIS is approach (d), the browser telling the truth about the boot path those laws assume.
+  ui-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build the UI gate
+        run: dotnet build tests/SpaceSails.UiGate/SpaceSails.UiGate.csproj -c Release
+
+      # Publish the shipping artifact once; the gate hosts THIS wwwroot (the same one Pages serves)
+      # rather than re-publishing inside the test, so the ~5-minute budget is never spent twice.
+      - name: Publish the client (the artifact under test)
+        run: dotnet publish src/SpaceSails.Client -c Release -o publish
+
+      # Playwright's own Chromium + the Linux system libs it needs (--with-deps uses sudo, allowed
+      # on ubuntu-latest). The generated playwright.ps1 sits beside the built test assembly.
+      - name: Install headless Chromium
+        run: pwsh tests/SpaceSails.UiGate/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run the UI gate
+        env:
+          SPACESAILS_PUBLISH_DIR: ${{ github.workspace }}/publish
+          SPACESAILS_UIGATE_ARTIFACTS: ${{ github.workspace }}/ui-gate-artifacts
+        run: dotnet test tests/SpaceSails.UiGate/SpaceSails.UiGate.csproj --no-build -c Release --logger "trx" --results-directory TestResults
+
+      # On red, the owner sees WHY from his phone: the failure screenshot + console + step log.
+      - name: Upload UI-gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-gate-artifacts
+          path: |
+            ui-gate-artifacts
+            TestResults
+          if-no-files-found: ignore

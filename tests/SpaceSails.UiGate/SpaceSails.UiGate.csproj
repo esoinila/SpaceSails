@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Lab 34 / issue #293 — the headless UI-verification gate.
+       The owner (2026-07-19) is approving PRs from a phone on a two-day cruise: "there would
+       have to be more testing done here." This project is the confidence layer he asked for — a
+       real headless Chromium boots the published game and proves its critical controls are
+       PRESENT and CLICKABLE, so a red check on his phone means the game genuinely won't boot,
+       not that a unit assertion drifted. It complements Lab 34's pure-geometry gate (approach
+       (b), SpaceSails.Core.RescueLifeline): that law reasons about the rescue pill's z-band
+       without a browser; THIS is approach (d) — the browser telling the truth about the boot
+       path and the desks a stranded captain has to reach through. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- This is a browser-driving smoke gate, not a data-parallel unit suite; the one test boots
+         a WASM app once and drives it in sequence. Keep xUnit from parallelising it against
+         itself. -->
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Kestrel + UseBlazorFrameworkFiles let the fixture host the PUBLISHED wwwroot the same way
+         GitHub Pages will serve it — the artifact under test is the shipping artifact. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.55.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
