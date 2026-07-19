@@ -36,7 +36,7 @@ jobs:
         run: dotnet workload install wasm-tools
 
       - name: Publish client
-        run: dotnet publish src/SpaceSails.Client -c Release -o publish
+        run: dotnet publish src/SpaceSails.Client -c Release -o publish -p:SpaceSailsPublishAot=true
 
       - name: Prepare static site (base href, cache-bust CSS, SPA 404, .nojekyll, README)
         run: |

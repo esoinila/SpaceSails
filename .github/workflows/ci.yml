@@ -76,7 +76,7 @@ jobs:
       # publish now AOT-compiles (issue #371 Phase 2) — this is the long pole of the job (~7+ min),
       # and it is intentional: the gate must canary the exact AOT build the live site runs.
       - name: Publish the client (the artifact under test)
-        run: dotnet publish src/SpaceSails.Client -c Release -o publish
+        run: dotnet publish src/SpaceSails.Client -c Release -o publish -p:SpaceSailsPublishAot=true
 
       # Playwright's own Chromium + the Linux system libs it needs (--with-deps uses sudo, allowed
       # on ubuntu-latest). The generated playwright.ps1 sits beside the built test assembly.
