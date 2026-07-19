@@ -676,9 +676,11 @@
                    PICKAXE MECHANIC HOOK: if the pick later earns a mechanic (a bedrock re-roll, or digging
                    THROUGH the beach-comber D100's "too hard" result), wire it in SurfaceGroundInteract /
                    BeachComber — do NOT build it here, this line just puts the tool in the captain's hands.
-                   GEN-AI GEAR ART: a natural spot for a later Grok kit illustration sits beside this line
-                   (leave it text-only for now — no placeholder image). *@
+                   GEN-AI GEAR ART (#348, Grok-generated art/gear-beachcomber-kit.jpg): the kit
+                   illustration rides beside this line as a small capped thumbnail — object-fit cover, a
+                   modest max-height so the dialog stays compact and the Board button never leaves screen. *@
                 <div class="bury-row bury-gear">
+                    <img class="gear-thumb" src="art/gear-beachcomber-kit.jpg" alt="" aria-hidden="true" />
                     <span>🧰 Beach-comber kit — standard issue</span>
                     <span class="bury-cargo">a shovel, a metal detector & a pickaxe, aboard every trip</span>
                 </div>
@@ -2624,7 +2626,10 @@
                 @switch (bust.Phase)
                 {
                     case BustedEncounter.Stage.Demand:
-                        <div class="busted-hail">⛓ CAUGHT — @bust.HunterCallsign has you grappled</div>
+                        @* PR-BUSTED art (docs/art-manifest-busted.md item 3): busted-collector-hail.jpg —
+                           the hard-eyed repo captain backs ONLY the Demand header (modifier class), with a
+                           dark scrim so the callsign stays readable. Other panels' .busted-hail is untouched. *@
+                        <div class="busted-hail busted-collector-hail">⛓ CAUGHT — @bust.HunterCallsign has you grappled</div>
                         <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
                         <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
                         int _hotUnits = _hotCargo.TotalHotUnits;
@@ -2728,8 +2733,11 @@
                            backdrop, one held beat) and hands off to the SAME brain-backup resurrection —
                            no collector, no dice; "impact coming" finally arrives. *@
                         <div class="busted-freeze">
-                            <div class="busted-freeze-art busted-explosion" title="art: the ship folding into the surface at periapsis — the kerosene-explosion budget">
-                                <span class="bf-flash">💥</span>
+                            @* PR-BUSTED art (docs/art-manifest-busted.md item 2): busted-ship-explosion.jpg
+                               backs this .busted-explosion slot too — same "kerosene-explosion budget"
+                               hero fireball as the Resurrected panel. Gradient stays as the load fallback. *@
+                            <div class="busted-freeze-art busted-explosion has-art" title="art: the ship folding into the surface at periapsis — the kerosene-explosion budget">
+                                <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-freeze-caption">"…the periapsis said 'under the surface'. It wasn't bluffing."</div>
                             <div class="busted-quote">The hull meets @bust.ImpactBodyName at speed. No corridor, no atmosphere to catch you — just rock. The freeze-frame holds.</div>
@@ -2739,9 +2747,11 @@
 
                     case BustedEncounter.Stage.FreezeFrame:
                         <div class="busted-freeze">
-                            <div class="busted-freeze-art" title="art: two silhouetted rogues charging into blinding muzzle-flash light — homage, sepia freeze">
-                                <span class="bf-silhouettes">🏴‍☠️🔫</span>
-                                <span class="bf-flash">✷</span>
+                            @* PR-BUSTED art (docs/art-manifest-busted.md item 1): busted-freeze-frame.jpg —
+                               the sepia last-charge still. Held, not animated (the freeze holds). The
+                               deterministic gradient stays under it as the load fallback. *@
+                            <div class="busted-freeze-art has-art" title="art: two silhouetted rogues charging into blinding muzzle-flash light — homage, sepia freeze">
+                                <img class="bf-art" src="art/busted-freeze-frame.jpg" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-freeze-caption">"…and here we thought this was the easy money."</div>
                             <div class="busted-quote">One massive volley. The freeze-frame holds. Sepia.</div>
@@ -2751,8 +2761,10 @@
 
                     case BustedEncounter.Stage.Resurrected:
                         <div class="busted-hail">🧠 BRAIN-BACKUP RESTORED</div>
-                        <div class="busted-freeze-art busted-explosion" title="art: the old ship blowing up — the kerosene-explosion budget">
-                            <span class="bf-flash">💥</span>
+                        @* PR-BUSTED art (docs/art-manifest-busted.md item 2): busted-ship-explosion.jpg —
+                           the old hull erupting, one clean hero fireball. Gradient stays as the fallback. *@
+                        <div class="busted-freeze-art busted-explosion has-art" title="art: the old ship blowing up — the kerosene-explosion budget">
+                            <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
                         </div>
                         <div class="busted-quote">
                             You wake at @bust.ClinicName's clinic in @bust.HullDescription. The old ship and

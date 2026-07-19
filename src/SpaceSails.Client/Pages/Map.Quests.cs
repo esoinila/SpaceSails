@@ -347,14 +347,27 @@ public partial class Map
         await RefocusMap();
     }
 
-    // A per-body placeholder art fill for the map card's big image slot until the grok image lane fills
-    // the manifest (docs/FridaySecondPlan/hoard-image-manifest.md). Deterministic tint per body so
-    // Phobos always reads the same. A real asset would be art/treasure-<bodyId>.jpg dropped in behind this.
+    // The bodies whose treasure-map card art the grok image lane has delivered
+    // (docs/FridaySecondPlan/hoard-image-manifest.md). Copied verbatim to art/treasure-<bodyId>.jpg.
+    // Bodies absent from this set (e.g. miranda) still fall back to the deterministic gradient below.
+    private static readonly HashSet<string> _treasureMapArtBodies = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "phobos", "luna", "europa", "ganymede", "callisto", "titan", "enceladus",
+    };
+
+    // The map card's big image slot (Map.razor → .tm-art, behind the red .tm-x). When the grok image
+    // lane has delivered a per-body asset (docs/FridaySecondPlan/hoard-image-manifest.md) we point at
+    // art/treasure-<bodyId>.jpg; the deterministic per-body gradient stays layered UNDER it as the
+    // fallback (so a missing/404 asset — or any body without art yet — still reads as a tinted card,
+    // Phobos always the same tint). background-size: cover lives in .tm-art and applies to both layers.
     private static string TreasureMapArtCss(string bodyId)
     {
         int h = Math.Abs(bodyId.GetHashCode());
         int hue = h % 360;
-        return $"radial-gradient(circle at 38% 32%, hsl({hue}, 40%, 34%), hsl({(hue + 28) % 360}, 45%, 12%) 70%)";
+        string gradient = $"radial-gradient(circle at 38% 32%, hsl({hue}, 40%, 34%), hsl({(hue + 28) % 360}, 45%, 12%) 70%)";
+        return _treasureMapArtBodies.Contains(bodyId)
+            ? $"url('art/treasure-{bodyId.ToLowerInvariant()}.jpg'), {gradient}"
+            : gradient;
     }
 
     // ---- The discovery watch (ruling 4): rivals find our hoards on a slow roll ----
