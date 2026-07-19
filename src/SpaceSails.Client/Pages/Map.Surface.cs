@@ -88,6 +88,13 @@ public partial class Map
     // re-armed fresh at every touchdown so the first mover of a new excursion always chirps.
     private MotionTracker.ChirpState _chirp = MotionTracker.ChirpState.Fresh;
 
+    // #379 (owner, Ganymede playtest + Evening wind #18): the per-spell SIGHTING tally. A fresh contact
+    // cresting the long ear is a discrete, diminishing jolt (first full, each subsequent within the spell a
+    // fraction), resetting after the fan has been quiet a while. Re-armed fresh at every touchdown so the
+    // first fright of a new excursion always lands full. The math is NerveModel.AdvanceSightings; this is the
+    // carried state, threaded through StepNerve alongside the continuous drain.
+    private NerveModel.SightingSpell _sightings = NerveModel.SightingSpell.Fresh;
+
     // #338 law 1: the tracker HEARS several times farther than the eye sees. The surface camera shows a
     // 64-du-wide field, so the visible half-width is ~32 du; the long ear reaches that × the tunable
     // multiple. Used to gate the first-contact chirp on a contact the tracker can actually hear.
@@ -297,6 +304,7 @@ public partial class Map
         _reevers.Clear();
         _lastNearestReeverRange = null;
         _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
+        _sightings = NerveModel.SightingSpell.Fresh; // #379: a fresh watch — the first fright of it lands full
 
         // #327: snapshot the mothership's hold at the moment of boarding DOWN — the reference the surface
         // ladder erodes against. A kept orbit quotes pulses ÷ Lab-25 trim rate; an unkept one is 0 (the
@@ -811,6 +819,25 @@ public partial class Map
         _nerve = step.Nerve;
         _monolithSeen = step.MonolithSeen;
 
+        // #379 · the per-spell diminishing sightings (Evening wind #18). Only the regolith frays you — a
+        // mover seen from the airlock's safety costs nothing (same law as the drain), so off the regolith we
+        // feed the tally zero movers, which also winds the spell down toward its quiet reset. The fresh
+        // contacts that crest THIS frame land a diminishing, S-curve-shaped jolt.
+        int heardMovers = 0;
+        if (onRegolith && _surface is not null)
+        {
+            double detection = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
+            var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+            heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
+        }
+        (NerveModel.SightingSpell nextSpell, int freshSightings) =
+            NerveModel.AdvanceSightings(_sightings, heardMovers, dtRealSeconds);
+        if (onRegolith && freshSightings > 0)
+        {
+            _nerve = NerveModel.SightingDrain(_nerve, _sightings.Seen, freshSightings);
+        }
+        _sightings = nextSpell;
+
         if (step.MonolithHitFired)
         {
             RendererInterop.PlayCue("alarm");
@@ -1169,6 +1196,11 @@ public partial class Map
             ex.Catches++;
         }
         _heat = EncounterRule.RaiseHeat(_heat, 1, SimTime);
+        // #379 · Evening wind #19: "if they get to skin, that is a different thing." A hand on you is not a
+        // sighting — a big, FLAT nerve lump that bypasses the diminishing-sighting rule and the S-curve, so
+        // touch always hurts noticeably. Debounced by the same catch cadence above, so a brush is not a
+        // stunlock. (The gauge only shows on-excursion, but the nerve carries — a mauling follows you aboard.)
+        _nerve = NerveModel.Shock(_nerve, NerveModel.TouchShock);
         RendererInterop.PlayCue("alarm");
         ShowPulseMessage("🩸 An Old One lays hands on you — it wants no loot, only you. Tear free and RUN!");
         RequestVaultSave();

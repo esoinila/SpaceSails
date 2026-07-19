@@ -26,12 +26,18 @@ public class NerveModelTests
     }
 
     [Fact]
-    public void MovingContacts_DrainProportionally()
+    public void MovingContacts_NoLongerAddAContinuousRate_SightingsOwnThemNow()
     {
+        // #379 / Evening wind #18 re-tune: "seeing one reever after already seeing one more does not make
+        // you that much faster more nuts." The moving-contact stress is no longer a LINEAR per-second drain
+        // (that linear stack is exactly why the gauge bottomed out too easily at Ganymede). It is priced now
+        // as discrete, per-spell DIMINISHING sighting jolts (AdvanceSightings / SightingSeriesCost). So the
+        // continuous drain rate is INDEPENDENT of the moving-contact count — a wall of movers, on its own,
+        // adds no continuous rate at all.
         var one = new NerveModel.Stressors(1, false, false, false);
-        var three = new NerveModel.Stressors(3, false, false, false);
-        Assert.Equal(NerveModel.MovingContactDrainPerSecond, NerveModel.DrainRatePerSecond(in one), 6);
-        Assert.Equal(3 * NerveModel.MovingContactDrainPerSecond, NerveModel.DrainRatePerSecond(in three), 6);
+        var many = new NerveModel.Stressors(9, false, false, false);
+        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(in one), 6);
+        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(in many), 6);
     }
 
     [Fact]
@@ -50,10 +56,12 @@ public class NerveModelTests
     [Fact]
     public void Cornered_AddsTheSharpestRoutineDrain()
     {
+        // #379 re-tune: the continuous rate is the SUSTAINED situation only — chase + dig-under-threat +
+        // cornered. The moving-contact count no longer adds a term of its own (sightings own it, #18); the
+        // two movers here only serve to keep the dig "under threat" (something inbound).
         var full = new NerveModel.Stressors(2, ChaseActive: true, Digging: true, Cornered: true);
         double expected =
-            (2 * NerveModel.MovingContactDrainPerSecond)
-            + NerveModel.ChaseDrainPerSecond
+            NerveModel.ChaseDrainPerSecond
             + NerveModel.DigUnderThreatDrainPerSecond
             + NerveModel.CorneredDrainPerSecond;
         Assert.Equal(expected, NerveModel.DrainRatePerSecond(in full), 6);
@@ -67,8 +75,9 @@ public class NerveModelTests
         double b = NerveModel.Drain(80.0, in s, 2.0);
         Assert.Equal(a, b, 12); // same nerve + same stressors + same dt → identical result, every time
 
+        // #379: the raw rate is now shaped by the S-curve at the CURRENT level before it bites.
         double rate = NerveModel.DrainRatePerSecond(in s);
-        Assert.Equal(80.0 - rate * 2.0, a, 9);
+        Assert.Equal(80.0 - (rate * NerveModel.RateScale(80.0) * 2.0), a, 9);
     }
 
     [Fact]
@@ -81,6 +90,9 @@ public class NerveModelTests
     [Fact]
     public void Recover_EasesBackTowardSteady_AndClampsAtFull()
     {
+        // #379: at MID-gauge (n=50) the S-curve scale is exactly 1.0 — the peak — so the pre-#379 mid-range
+        // feel is preserved unchanged: recovery here is the flat per-second rate.
+        Assert.Equal(1.0, NerveModel.RateScale(50.0), 9);
         double eased = NerveModel.Recover(50.0, dtSeconds: 4.0);
         Assert.Equal(50.0 + NerveModel.AboardRecoveryPerSecond * 4.0, eased, 6);
 
@@ -159,12 +171,14 @@ public class NerveModelTests
         var regolith = new NerveModel.Frame(true, OnRegolith: true, false, ChasePressure, 1.0);
         NerveModel.Step drained = NerveModel.Advance(70.0, monolithSeen: true, in regolith);
         Assert.True(drained.Nerve < 70.0);
-        Assert.Equal(70.0 - NerveModel.DrainRatePerSecond(in ChasePressure), drained.Nerve, 6);
+        // #379: the drain is the sustained rate shaped by the S-curve at the current level (70).
+        Assert.Equal(70.0 - (NerveModel.DrainRatePerSecond(in ChasePressure) * NerveModel.RateScale(70.0)), drained.Nerve, 6);
 
-        // Stood back up through the airlock (same excursion, no longer on the regolith) → it eases back.
+        // Stood back up through the airlock (same excursion, no longer on the regolith) → it eases back,
+        // also shaped by the S-curve at the current level.
         var airlock = new NerveModel.Frame(true, OnRegolith: false, false, default, 1.0);
         NerveModel.Step eased = NerveModel.Advance(70.0, monolithSeen: true, in airlock);
-        Assert.Equal(70.0 + NerveModel.AboardRecoveryPerSecond, eased.Nerve, 6);
+        Assert.Equal(70.0 + (NerveModel.AboardRecoveryPerSecond * NerveModel.RateScale(70.0)), eased.Nerve, 6);
     }
 
     [Fact]
@@ -172,7 +186,8 @@ public class NerveModelTests
     {
         var flying = new NerveModel.Frame(OnExcursion: false, OnRegolith: false, false, default, 2.0);
         NerveModel.Step step = NerveModel.Advance(40.0, monolithSeen: true, in flying);
-        Assert.Equal(40.0 + NerveModel.AboardRecoveryPerSecond * 2.0, step.Nerve, 6);
+        // #379: recovery shaped by the S-curve at the current level (40).
+        Assert.Equal(40.0 + (NerveModel.AboardRecoveryPerSecond * NerveModel.RateScale(40.0) * 2.0), step.Nerve, 6);
         Assert.False(step.GaugeVisible);
     }
 
@@ -351,5 +366,170 @@ public class NerveModelTests
             NerveModel.SteadyingNote(NerveModel.DrinkKind.CalmingPill, totNumber: 1, NerveModel.CalmingPillRestore));
         Assert.Contains("already steady",
             NerveModel.SteadyingNote(NerveModel.DrinkKind.CalmingPill, totNumber: 1, restored: 0.0));
+    }
+
+    // ── #379 · The S-curve rate law (owner, Ganymede 2026-07-19: "logarithmic … S-curve … slow at ends but
+    //    quite fast in middle"). Continuous drain, recovery, and each sighting jolt ride RateScale(nerve). ──
+
+    [Fact]
+    public void RateScale_IsSlowAtBothEnds_FastestInTheMiddle()
+    {
+        // The shape the owner asked for: a floored parabola, peaking at exactly 1.0 at mid-gauge and tapering
+        // to the floor at both ends. Slowest near full and near empty, fastest through the middle.
+        Assert.Equal(1.0, NerveModel.RateScale(50.0), 9);                    // mid-gauge peak
+        Assert.Equal(NerveModel.RateFloor, NerveModel.RateScale(0.0), 9);    // empty floor
+        Assert.Equal(NerveModel.RateFloor, NerveModel.RateScale(100.0), 9);  // full floor
+
+        // Strictly rising from the floor up to the mid peak, and symmetric across it.
+        Assert.True(NerveModel.RateScale(10.0) < NerveModel.RateScale(30.0));
+        Assert.True(NerveModel.RateScale(30.0) < NerveModel.RateScale(50.0));
+        Assert.Equal(NerveModel.RateScale(30.0), NerveModel.RateScale(70.0), 9); // symmetry about mid
+        Assert.Equal(NerveModel.RateScale(10.0), NerveModel.RateScale(90.0), 9);
+
+        // Never below the floor, never above 1.0 — a bounded scale.
+        foreach (double n in new[] { 0.0, 5.0, 12.5, 25.0, 40.0, 50.0, 60.0, 75.0, 88.0, 100.0 })
+        {
+            double r = NerveModel.RateScale(n);
+            Assert.InRange(r, NerveModel.RateFloor, 1.0);
+        }
+    }
+
+    [Fact]
+    public void SCurveDrain_TapersHardAtBothEnds_ButNeverFreezes()
+    {
+        // Same brutal pressure and dt at a near-full, mid, and near-empty gauge: the mid drops the MOST, the
+        // ends taper — yet each still moves (the floor keeps "slow" from becoming "frozen", so a captain can
+        // still bottom out).
+        var pressure = new NerveModel.Stressors(0, ChaseActive: true, Digging: true, Cornered: true);
+        double dropNearFull = 95.0 - NerveModel.Drain(95.0, in pressure, 0.5);
+        double dropMid = 50.0 - NerveModel.Drain(50.0, in pressure, 0.5);
+        double dropNearEmpty = 5.0 - NerveModel.Drain(5.0, in pressure, 0.5);
+        Assert.True(dropMid > dropNearFull, "the middle of the gauge slides fastest");
+        Assert.True(dropMid > dropNearEmpty, "a near-shot captain frays slower than mid-gauge");
+        Assert.True(dropNearFull > 0.0 && dropNearEmpty > 0.0, "the ends are slow, never frozen");
+    }
+
+    [Fact]
+    public void ShatteredCaptain_RecoversSlowly_ThenFasterThroughTheMiddle()
+    {
+        // "A shattered one is slow to mend." From the floor, the first steps back are the smallest; the same
+        // aboard easing over the same dt lifts a mid-gauge captain far more than a shot one.
+        double liftFromFloor = NerveModel.Recover(2.0, 1.0) - 2.0;
+        double liftFromMid = NerveModel.Recover(50.0, 1.0) - 50.0;
+        double liftNearFull = NerveModel.Recover(96.0, 1.0) - 96.0;
+        Assert.True(liftFromFloor < liftFromMid, "a shattered captain mends slower than a mid-gauge one");
+        Assert.True(liftNearFull < liftFromMid, "and settles gently as it nears steady again");
+        Assert.True(liftFromFloor > 0.0, "but a shattered captain does still mend — the floor is not a wall");
+
+        // A shattered captain climbing out never overshoots the clamp, and the trajectory is monotonic up.
+        double n = 0.0, prev = -1.0;
+        for (int i = 0; i < 400; i++)
+        {
+            double next = NerveModel.Recover(n, 1.0);
+            Assert.True(next >= n, "recovery is monotonic — never a dip");
+            Assert.InRange(next, NerveModel.Min, NerveModel.Max); // no overshoot past the clamp
+            prev = n;
+            n = next;
+        }
+        Assert.Equal(NerveModel.Max, n, 6); // it does, eventually, reach steady hands again
+        Assert.True(prev <= NerveModel.Max);
+    }
+
+    // ── #379 · Diminishing SIGHTINGS (Evening wind #18): first fresh contact full, subsequent within the
+    //    spell a fraction, resetting after the tracker is quiet a while. ──
+
+    [Fact]
+    public void SightingSeriesCost_FirstFrightFull_EachRepeatDecays()
+    {
+        // The first fresh sighting of a fresh spell costs the full shock; the second a decay-fraction of it;
+        // the third that again — a geometric run.
+        Assert.Equal(NerveModel.SightingShock, NerveModel.SightingSeriesCost(priorSeen: 0, freshCount: 1), 6);
+        Assert.Equal(NerveModel.SightingShock * NerveModel.SightingDecay,
+            NerveModel.SightingSeriesCost(priorSeen: 1, freshCount: 1), 6);
+        Assert.Equal(NerveModel.SightingShock * NerveModel.SightingDecay * NerveModel.SightingDecay,
+            NerveModel.SightingSeriesCost(priorSeen: 2, freshCount: 1), 6);
+
+        // A batch of fresh contacts is the SUM of that run — and three-at-once equals three-in-a-row.
+        double batchOfThree = NerveModel.SightingSeriesCost(0, 3);
+        double oneByOne =
+            NerveModel.SightingSeriesCost(0, 1)
+            + NerveModel.SightingSeriesCost(1, 1)
+            + NerveModel.SightingSeriesCost(2, 1);
+        Assert.Equal(oneByOne, batchOfThree, 6);
+
+        // The whole spell's jolts are bounded — a swarm can never flood the gauge (owner #18).
+        double wholeSpellCap = NerveModel.SightingShock / (1.0 - NerveModel.SightingDecay);
+        Assert.True(NerveModel.SightingSeriesCost(0, 999) <= wholeSpellCap + 1e-9);
+        Assert.Equal(0.0, NerveModel.SightingSeriesCost(0, 0), 6); // no fresh contacts → no cost
+    }
+
+    [Fact]
+    public void AdvanceSightings_CountsRises_AndResetsAfterSustainedQuiet()
+    {
+        var spell = NerveModel.SightingSpell.Fresh;
+
+        // First frame with one mover heard: a fresh contact crests.
+        (spell, int fresh1) = NerveModel.AdvanceSightings(spell, movingContacts: 1, dtSeconds: 0.1);
+        Assert.Equal(1, fresh1);
+        Assert.Equal(1, spell.Seen);
+
+        // The same lone mover still there next frame: no NEW contact, no fresh jolt.
+        (spell, int freshHold) = NerveModel.AdvanceSightings(spell, movingContacts: 1, dtSeconds: 0.1);
+        Assert.Equal(0, freshHold);
+        Assert.Equal(1, spell.Seen);
+
+        // Two more crest at once: two fresh contacts, the tally climbs to three.
+        (spell, int fresh2) = NerveModel.AdvanceSightings(spell, movingContacts: 3, dtSeconds: 0.1);
+        Assert.Equal(2, fresh2);
+        Assert.Equal(3, spell.Seen);
+
+        // A brief lull (shorter than the reset window) does NOT wipe the watch's habituation.
+        (spell, _) = NerveModel.AdvanceSightings(spell, movingContacts: 0, dtSeconds: NerveModel.SightingQuietResetSeconds / 2.0);
+        Assert.Equal(3, spell.Seen);
+
+        // Sustained quiet past the window ends the spell — the tally resets to a fresh fright.
+        (spell, _) = NerveModel.AdvanceSightings(spell, movingContacts: 0, dtSeconds: NerveModel.SightingQuietResetSeconds);
+        Assert.Equal(0, spell.Seen);
+
+        // And now the next mover is a FULL fright again.
+        (spell, int freshAfterReset) = NerveModel.AdvanceSightings(spell, movingContacts: 1, dtSeconds: 0.1);
+        Assert.Equal(1, freshAfterReset);
+        Assert.Equal(NerveModel.SightingShock, NerveModel.SightingSeriesCost(0, freshAfterReset), 6);
+    }
+
+    [Fact]
+    public void SightingDrain_RidesTheSCurve_AndDiminishesAcrossASpell()
+    {
+        // The same fresh sighting hurts LESS at the steady end than mid-gauge (the S-curve), and a later
+        // fright in the spell hurts less than the first (the diminishing) — both laws stacked.
+        double firstAtMid = 50.0 - NerveModel.SightingDrain(50.0, priorSeen: 0, freshCount: 1);
+        double firstNearFull = 95.0 - NerveModel.SightingDrain(95.0, priorSeen: 0, freshCount: 1);
+        double laterAtMid = 50.0 - NerveModel.SightingDrain(50.0, priorSeen: 3, freshCount: 1);
+        Assert.True(firstNearFull < firstAtMid, "a steady captain shrugs off the first fright");
+        Assert.True(laterAtMid < firstAtMid, "a later fright of the spell hurts less than the first");
+        Assert.InRange(NerveModel.SightingDrain(0.0, 0, 5), NerveModel.Min, NerveModel.Max); // clamps, no overshoot
+    }
+
+    // ── #379 · TOUCH (Evening wind #19: "if they get to skin, that is a different thing"). ──
+
+    [Fact]
+    public void Touch_IsABigFlatLump_ThatBypassesTheDiminishAndTheSCurve()
+    {
+        // Touch is not a sighting: it does not diminish, and it does not ride the S-curve. The same grab
+        // costs the SAME flat lump whether the captain is steady or shattered — it always hurts.
+        double fromSteady = 100.0 - NerveModel.Shock(100.0, NerveModel.TouchShock);
+        double fromMid = 50.0 - NerveModel.Shock(50.0, NerveModel.TouchShock);
+        Assert.Equal(NerveModel.TouchShock, fromSteady, 6);
+        Assert.Equal(NerveModel.TouchShock, fromMid, 6);
+
+        // A touch bites harder than a whole spell's worth of diminishing sightings — skin is a different thing.
+        double wholeSpellOfSightings = NerveModel.SightingSeriesCost(0, 999);
+        Assert.True(NerveModel.TouchShock > wholeSpellOfSightings,
+            "a hand on you outweighs any run of mere sightings");
+
+        // Repeated touches keep costing the same — habituation never dulls being grabbed (no decay).
+        double after = NerveModel.Shock(60.0, NerveModel.TouchShock);
+        Assert.Equal(60.0 - NerveModel.TouchShock, after, 6);
+        Assert.Equal(after - NerveModel.TouchShock, NerveModel.Shock(after, NerveModel.TouchShock), 6);
     }
 }
