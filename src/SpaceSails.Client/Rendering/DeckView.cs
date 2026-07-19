@@ -53,7 +53,13 @@ public sealed class DeckView
         // the checked squares on that visit"): the per-visit swept grid — each probed square at its centre,
         // Hard = the shovel rang off bedrock. Drawn as a subtle dug/checked glyph ON the regolith, under
         // the movers. Optional so earlier callers still compile.
-        System.Collections.Generic.IReadOnlyList<(double X, double Y, bool Hard)>? SweptSquares = null);
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, bool Hard)>? SweptSquares = null,
+        // #371 Phase 3 · EXPEDITION FOG OF WAR. DarkRegions = each forced chamber's axis-aligned bounds and
+        // its visibility state (0 unseen — a hatched void, walls/consoles hidden; 1 explored — drawn dim;
+        // 2 visible — drawn lit). Echoes = fading "movement was here" ripples a contact left when it slipped
+        // behind cover. Both empty/absent off an expedition site (open terrain draws exactly as before).
+        System.Collections.Generic.IReadOnlyList<(double X0, double Y0, double X1, double Y1, int State)>? DarkRegions = null,
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, double Alpha)>? Echoes = null);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -88,6 +94,16 @@ public sealed class DeckView
     private static readonly RgbaColor MedBayText = new(240, 250, 255, 252);       // clean-room white, faint cool cast
     private static readonly RgbaColor MedBayPlate = new(16, 26, 32, 165);         // a cleaner, cooler plate than the bunks
     private static readonly RgbaColor MedBayKeyline = new(150, 222, 236, 155);    // the tidy edge — a thin cyan-white keyline
+    // #371 Phase 3 · expedition fog-of-war palette. An UNSEEN forced chamber is a dark hatched void (unknown
+    // ground behind a freshly-forced door); an EXPLORED one (seen, now out of sight) draws in a cold dim
+    // slate; a VISIBLE one draws normally. Echoes ripple in the tracker's own green — "movement was here".
+    private static readonly RgbaColor VoidFill = new(4, 7, 12, 214);
+    private static readonly RgbaColor VoidHatch = new(34, 46, 62, 90);
+    private static readonly RgbaColor VoidText = new(90, 110, 135, 150);
+    private static readonly RgbaColor ExploredWall = new(74, 90, 112, 140);
+    private static readonly RgbaColor ExploredText = new(120, 140, 162, 120);
+    private static readonly RgbaColor EchoColor = new(120, 200, 150, 255);
+
     private static readonly RgbaColor DoorShut = new(255, 180, 90, 220);   // amber airlock door, closed
     private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
     private static readonly RgbaColor DoorLocked = new(120, 140, 170, 210);// another berth's sealed hatch
@@ -126,6 +142,26 @@ public sealed class DeckView
         float oy = plan.FollowCam ? heightPx / 2f + (float)state.AvatarY * scale + (float)panY : heightPx / 2f + (float)panY;
         (float X, float Y) P(double dx, double dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
 
+        // #371 Phase 3 fog: the visibility state of a point against the forced-chamber overlay — -1 = not in
+        // any chamber (draw as normal), 0 = unseen (hidden under the void), 1 = explored (dim), 2 = visible.
+        var darkRegions = surface?.DarkRegions;
+        int DarkState(double x, double y)
+        {
+            if (darkRegions is null)
+            {
+                return -1;
+            }
+            int best = -1;
+            foreach ((double x0, double y0, double x1, double y1, int st) in darkRegions)
+            {
+                if (x >= x0 && x <= x1 && y >= y0 && y <= y1 && st > best)
+                {
+                    best = st; // a point in overlapping rects takes the most-revealed state
+                }
+            }
+            return best;
+        }
+
         // Ship-only dressing (cargo crates, shuttle cradle, reactor, cantina tables) is hardcoded to
         // the ship's geometry — a bare haven room has none of it, but a docked complex still contains
         // the ship. Everything else (backdrops, walls, doors, labels, consoles, droids, the avatar) is
@@ -146,9 +182,38 @@ public sealed class DeckView
             DrawSeg(P(gx, -9.6), P(gx, 9.6), new RgbaColor(255, 255, 255, 10), 1f);
         }
 
+        // #371 Phase 3 fog: paint the still-UNSEEN forced chambers as dark hatched voids — unknown ground
+        // behind a freshly-forced door — over the floor/grid, under everything that follows (the walls and
+        // consoles inside are skipped, so nothing pokes through). Explored/visible chambers get no void.
+        if (darkRegions is { Count: > 0 })
+        {
+            foreach ((double x0, double y0, double x1, double y1, int st) in darkRegions)
+            {
+                if (st != 0)
+                {
+                    continue;
+                }
+                (float vx0, float vy0) = P(x0, y1); // deck +y is up on screen → y1 is the top edge
+                float vw = (float)(x1 - x0) * scale, vh = (float)(y1 - y0) * scale;
+                FillRect(vx0, vy0, vw, vh, VoidFill);
+                for (float vhy = vy0 + 6f; vhy < vy0 + vh; vhy += 7f) // crude hatch
+                {
+                    DrawSeg((vx0, vhy), (vx0 + vw, vhy), VoidHatch, 1f);
+                }
+                _renderer.DrawText(vx0 + vw / 2f, vy0 + vh / 2f, "· ? ·", VoidText, "10px monospace", TextAlign.Center);
+            }
+        }
+
         foreach (DeckPlan.Wall w in plan.Walls)
         {
-            RgbaColor color = w.IsWindow ? WindowLine : w.IsHull ? HullLine : InnerLine;
+            // #371 Phase 3 fog: a wall inside a still-unseen forced chamber is hidden (the room is unknown
+            // until the captain looks in); one in an explored-but-out-of-sight chamber draws dim.
+            int ws = DarkState((w.X1 + w.X2) / 2.0, (w.Y1 + w.Y2) / 2.0);
+            if (ws == 0)
+            {
+                continue;
+            }
+            RgbaColor color = ws == 1 ? ExploredWall : w.IsWindow ? WindowLine : w.IsHull ? HullLine : InnerLine;
             DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull ? 2.5f : 1.5f);
         }
 
@@ -181,8 +246,20 @@ public sealed class DeckView
         // MED BAY drawn as the clean-room exception (see the RoomLabel* colours above).
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
         {
+            int ls = DarkState(lx, ly); // #371 Phase 3 fog: hide an unseen chamber's label, dim an explored one
+            if (ls == 0)
+            {
+                continue;
+            }
             (float lxp, float lyp) = P(lx, ly);
-            DrawRoomLabel(lxp, lyp, text, medBay: text == "MED BAY");
+            if (ls == 1)
+            {
+                _renderer.DrawText(lxp, lyp, text, ExploredText, "10px monospace", TextAlign.Center);
+            }
+            else
+            {
+                DrawRoomLabel(lxp, lyp, text, medBay: text == "MED BAY");
+            }
         }
 
         // #313 surface ground overlays: own caches' ✗ marks and a panic-dropped chest (drawn under the
@@ -232,6 +309,20 @@ public sealed class DeckView
                     (float sx, float sy) = P(hkx, hky);
                     _renderer.DrawCircle(sx, sy, 0.55f * scale, HuskColor, HuskColor);
                     _renderer.DrawText(sx, sy + 3, "×", new RgbaColor(90, 60, 60, 220), "bold 11px monospace", TextAlign.Center);
+                }
+            }
+            // #371 Phase 3: movement echoes — where a contact was last seen before it slipped behind cover.
+            // A dim tracker-green ripple that fades over its life; "here was movement before" (owner's ask),
+            // making the motion tracker's through-wall blips all the more exciting to chase.
+            if (hud.Echoes is { } echoes)
+            {
+                foreach ((double ex2, double ey2, double alpha) in echoes)
+                {
+                    (float sx, float sy) = P(ex2, ey2);
+                    byte a = (byte)Math.Clamp(alpha * 180.0, 0, 180);
+                    var ring = new RgbaColor(EchoColor.R, EchoColor.G, EchoColor.B, a);
+                    _renderer.DrawCircle(sx, sy, (0.35f + 0.5f * (float)alpha) * scale, null, ring, 1.2f);
+                    _renderer.DrawText(sx, sy + 3, "·", ring, "10px monospace", TextAlign.Center);
                 }
             }
         }
@@ -361,6 +452,12 @@ public sealed class DeckView
         // Consoles.
         foreach (DeckPlan.ConsoleSpot console in plan.Consoles)
         {
+            // #371 Phase 3 fog: a console inside an unseen chamber is unknown (hidden); an explored one is
+            // dimmed. A still-sealed door's console sits OUTSIDE any chamber rect, so it always shows.
+            if (DarkState(console.X, console.Y) == 0)
+            {
+                continue;
+            }
             (float sx, float sy) = P(console.X, console.Y);
             bool near = Math.Sqrt((state.AvatarX - console.X) * (state.AvatarX - console.X)
                                 + (state.AvatarY - console.Y) * (state.AvatarY - console.Y)) <= DeckPlan.InteractRadius;
