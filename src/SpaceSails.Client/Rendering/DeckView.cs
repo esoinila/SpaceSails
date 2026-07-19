@@ -457,15 +457,24 @@ public sealed class DeckView
         byte beatAlpha = (byte)(120 + (135 * beat));
         float beatScale = 0.72f + (0.5f * (float)beat);
 
-        const double maxRange = 60.0; // du mapped to the ring's edge; farther clamps to the rim
+        // #338 "The long ear": the range that reaches the ring edge is no longer a magic 60 — it is a
+        // MULTIPLE of what the eye actually sees here (the surface camera shows 64×28 du, so this viewport's
+        // visible half-width in du is widthPx/scale/2), so the fan hears several times farther than the grid
+        // shows. A blip's DISTANCE is read straight off the fan: faint + small on the rim, firming to an
+        // insistent near dot as it closes (MotionTracker.BlipIntensity) — the dread-gap made visible.
+        float surfScale = Math.Min(widthPx / 64f, heightPx / 28f);
+        double visualHalfWidthDu = (widthPx / Math.Max(surfScale, 0.001f)) / 2.0;
+        double detectionRange = MotionTracker.DetectionRange(visualHalfWidthDu);
         foreach ((double bearing, double range) in hud.Blips)
         {
-            double rr = Math.Min(range / maxRange, 1.0) * (r - 6);
+            double rr = Math.Min(range / detectionRange, 1.0) * (r - 6);
             // World bearing: +x = right, +y = port (up on screen) → screen y flips.
             float bx = cx + (float)(Math.Cos(bearing) * rr);
             float by = cy - (float)(Math.Sin(bearing) * rr);
-            float sz = (range > maxRange ? blipFar : blipNear) * beatScale;
-            var col = new RgbaColor(235, 70, 60, beatAlpha); // watchdog red, pulsing
+            double firm = MotionTracker.BlipIntensity(range, detectionRange); // 1 near … FaintFloor on the rim
+            float sz = (float)(blipFar + ((blipNear - blipFar) * firm)) * beatScale;
+            byte alpha = (byte)Math.Clamp(beatAlpha * (0.35 + (0.65 * firm)), 30, 255);
+            var col = new RgbaColor(235, 70, 60, alpha); // watchdog red, pulsing — dimmer the farther out
             _renderer.DrawCircle(bx, by, sz, col, col);
         }
 
