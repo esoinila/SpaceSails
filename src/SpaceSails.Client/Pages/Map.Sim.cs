@@ -971,6 +971,7 @@ public partial class Map
 
         UpdateDockStatus();
         UpdateDockAffordance(); // #212/#211/#213: recompute the one-truth ⚓ affordance (runs paused too)
+        UpdateLandableInRange(); // #339-follow: cache which landable grounds the shuttle can reach now (map 🛬 bright state)
         UpdateOrbitedBody();
         UpdateCapture(dtRealSeconds);
         UpdateEncounters();

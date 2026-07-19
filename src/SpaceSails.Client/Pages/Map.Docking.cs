@@ -358,6 +358,27 @@ public partial class Map
         return stops;
     }
 
+    // #339-follow (owner, 2026-07-19 playtest): the Nav-map 🛬 landable glyph's bright state — the body ids
+    // of the shuttle-landable grounds within reach of the ship RIGHT NOW. It is exactly the landable
+    // subset of the shuttle-bay board (ShuttleDestinationsInRange), so the map mark and the board can
+    // never disagree and the range math lives in ONE place (ShuttleExcursion / ShuttleRange). Refreshed
+    // once per tick on the same cadence the dock affordance uses, so the per-frame draw reads a cache
+    // rather than re-running the range sweep every frame.
+    private HashSet<string> _landableInRangeIds = new();
+
+    private void UpdateLandableInRange()
+    {
+        var ids = new HashSet<string>();
+        foreach (ShuttleStop stop in ShuttleDestinationsInRange())
+        {
+            if (stop.IsLandable)
+            {
+                ids.Add(stop.Body.Id);
+            }
+        }
+        _landableInRangeIds = ids;
+    }
+
     private void OpenShuttleBayDoor() => _shuttleBayStops = ShuttleDestinationsInRange();
 
     private void CloseShuttleBayDoor() => _shuttleBayStops = null;

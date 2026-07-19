@@ -574,6 +574,15 @@ public partial class Map
                     // #208: a moon haven (parked-in, no ⚓ dock) carries its walk-in phrase too, so the
                     // picker's port entries all read their kind at a glance.
                     (string flavor, string icon) = body.IsHaven ? ("haven — lie low in orbit", "🏴") : ("body", "🪐");
+                    // #339-follow: a shuttle-landable ground (a moon) names its 🛬 mark and its live reach —
+                    // "shuttle range" when the map glyph is bright, "out of shuttle reach" when it's dim — so
+                    // the click hint says the same thing the glyph shows (the #195 all-controls-hinted law).
+                    if (ShuttleExcursion.IsLandableSurface(body.Kind))
+                    {
+                        flavor += _landableInRangeIds.Contains(body.Id)
+                            ? " · 🛬 landable — shuttle range"
+                            : " · 🛬 landable — out of shuttle reach";
+                    }
                     found.Add((new PickCandidate('B', body.Id, $"{body.Name} · {flavor}", icon), d2, 2));
                 }
             }
