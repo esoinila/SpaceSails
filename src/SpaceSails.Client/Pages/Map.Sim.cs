@@ -135,6 +135,7 @@ public partial class Map
     private bool _wasArcing;                             // rising-edge detector for the thunder cue
     private const double VentCooldownSeconds = 1.0;     // separate budget from the thrust pulse cooldown
     private double _lastVentSimTime = -VentCooldownSeconds; // so the very first vent isn't rejected
+    private int _ventLineSeed;                           // #369: rotates the static-charge flavor pool, one step per vent
     private float[] _streamScratch = new float[4];      // reused endpoints buffer for stream polylines
     private static readonly RgbaColor StreamColor = new(80, 200, 220, 36);
     private static readonly RgbaColor ArcHaloColor = new(255, 240, 120, 150);
@@ -1662,7 +1663,9 @@ public partial class Map
 
         _lastVentSimTime = _ship.SimTime;
         _ship = _ship with { Charge = _ship.Charge * 0.5 };
-        ShowPulseMessage("Venting charge");
+        // #369: the vent is automatic here, so each discharge reads a rotating flavor quip
+        // (house voice) rather than a bare status line. Deterministic per vent via the counter.
+        ShowPulseMessage(StaticCharge.LineFor(_ventLineSeed++));
         RendererInterop.PlayCue("vent");
     }
 
