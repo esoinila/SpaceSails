@@ -34,6 +34,21 @@ public sealed record GameThreadInfo
 
     /// <summary>Monotonic real-time tick when the thread was minted (its "born on" stamp).</summary>
     public long CreatedTicks { get; init; }
+
+    // ── The captain's roster (owner 2026-07-19: "a list of captains ... then under those are their slots").
+    //    Each thread (universe) IS a captain — a seeded NAME and an AVATAR picked from a fixed roster of
+    //    profile images. Both are DATA (not hardcoded), seeded off the thread GUID so they are stable across
+    //    reloads, yet re-assignable later (Evening wind #20: insurance issues a new captain). Added additively
+    //    (registry JSON is versioned/tolerant): a thread saved before this field reads them back at their
+    //    defaults and the client re-derives a stable identity from the id via <see cref="Captains"/>. ──
+
+    /// <summary>The captain's display name for this universe, seeded from <see cref="Id"/> at creation. Empty
+    /// on a pre-roster thread — the client re-derives a stable name from the id (<see cref="Captains.For"/>).</summary>
+    public string CaptainName { get; init; } = "";
+
+    /// <summary>Which avatar (1..<see cref="Captains.AvatarCount"/>) fronts this captain — the <c>art/captain-N.jpg</c>
+    /// index, seeded from <see cref="Id"/>. Zero means unset (a pre-roster thread); the client derives one.</summary>
+    public int AvatarIndex { get; init; }
 }
 
 /// <summary>
@@ -119,6 +134,10 @@ public sealed class GameThreadRegistry
         Index idx = ReadIndex();
         GameThreadInfo? existing = idx.Threads.FirstOrDefault(t => t.Id == id);
         long created = existing?.CreatedTicks ?? ticks;
+        // The captain identity is minted once and preserved across every touch (like CreatedTicks) — a
+        // re-assignable pick (Evening wind #20) survives autosaves. A fresh thread seeds both from its GUID.
+        string captain = existing?.CaptainName is { Length: > 0 } name ? name : Captains.Name(id);
+        int avatar = existing is { AvatarIndex: > 0 } ? existing.AvatarIndex : Captains.AvatarIndex(id);
         idx.Threads.RemoveAll(t => t.Id == id);
         idx.Threads.Add(new GameThreadInfo
         {
@@ -127,6 +146,8 @@ public sealed class GameThreadRegistry
             SimDay = simDay,
             LastActiveTicks = ticks,
             CreatedTicks = created,
+            CaptainName = captain,
+            AvatarIndex = avatar,
         });
         idx.ActiveId = id;
         WriteIndex(idx);
@@ -187,5 +208,63 @@ public sealed class GameThreadRegistry
         public int Version { get; set; } = 1;
         public string? ActiveId { get; set; }
         public List<GameThreadInfo> Threads { get; set; } = [];
+    }
+}
+
+/// <summary>One captain's card in the roster: the thread (universe) they helm, whether they are the active
+/// captain ("at the helm"), and their save slots newest-first. The unit a per-captain header groups (owner
+/// 2026-07-19: "a list of captains ... then under those are their slots").</summary>
+public sealed record GameThreadGroup
+{
+    public GameThreadInfo Thread { get; init; } = new();
+    public bool IsActive { get; init; }
+    public IReadOnlyList<SaveSlotMeta> Slots { get; init; } = [];
+}
+
+/// <summary>Pure grouping over the thread index — the roster the front-door picker renders (no clock, no
+/// browser: the caller hands each thread's slots).</summary>
+public static class GameThreads
+{
+    /// <summary>Group saved slots by their game thread (captain) for the roster: the ACTIVE captain first
+    /// (marked), then the rest NEWEST-THREAD-FIRST (by <see cref="GameThreadInfo.LastActiveTicks"/> desc, ties
+    /// by id ordinal); within each captain the slots stay NEWEST-FIRST (<see cref="SaveSlotMeta.SavedRealTicks"/>
+    /// desc, the autosave winning ties — the same order <see cref="SaveSlotBook.List"/> and Continue use).
+    /// Threads with no saved slot are dropped: an empty captain has nothing to show (and this is exactly how a
+    /// truly-unmigrated pre-thread key stays out of the roster). Pure: <paramref name="slotsFor"/> supplies the
+    /// slots per thread id.</summary>
+    public static IReadOnlyList<GameThreadGroup> GroupSlots(
+        IReadOnlyList<GameThreadInfo> threads,
+        string? activeId,
+        Func<string, IReadOnlyList<SaveSlotMeta>> slotsFor)
+    {
+        ArgumentNullException.ThrowIfNull(threads);
+        ArgumentNullException.ThrowIfNull(slotsFor);
+
+        var groups = new List<GameThreadGroup>();
+        foreach (GameThreadInfo t in threads)
+        {
+            IReadOnlyList<SaveSlotMeta> slots = slotsFor(t.Id) ?? [];
+            if (slots.Count == 0)
+            {
+                continue; // an empty universe has no card to draw
+            }
+
+            List<SaveSlotMeta> ordered = [.. slots
+                .OrderByDescending(s => s.SavedRealTicks)
+                .ThenBy(s => s.Kind == SaveSlotKind.Autosave ? 0 : 1)
+                .ThenBy(s => s.Id, StringComparer.Ordinal)];
+
+            groups.Add(new GameThreadGroup
+            {
+                Thread = t,
+                IsActive = !string.IsNullOrEmpty(activeId) && t.Id == activeId,
+                Slots = ordered,
+            });
+        }
+
+        return [.. groups
+            .OrderByDescending(g => g.IsActive)               // the active captain heads the roster
+            .ThenByDescending(g => g.Thread.LastActiveTicks)  // then newest universe first
+            .ThenBy(g => g.Thread.Id, StringComparer.Ordinal)];
     }
 }

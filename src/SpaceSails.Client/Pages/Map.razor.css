@@ -1775,6 +1775,150 @@
     max-height: 30vh;
 }
 
+/* ── The captains' roster (owner 2026-07-19): the front-door saved voyages grouped by universe. One
+   captain CARD per game thread — a portrait + seeded name — with that captain's save rows beneath it.
+   The card is the graphical separator that tells two adjacent voyages apart. ── */
+.save-captain-roster {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.captain-card {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.7rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.55rem;
+    background: rgba(255, 255, 255, 0.035);
+    /* a subtle rule line so each captain's band reads as its own separator */
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.captain-card:first-child {
+    margin-top: 0.2rem;
+}
+
+/* the active captain — "at the helm" — glows apart from the parked universes */
+.captain-card-active {
+    background: rgba(120, 230, 160, 0.08);
+    border-top-color: rgba(120, 230, 160, 0.5);
+    box-shadow: inset 0 0 0 1px rgba(120, 230, 160, 0.22);
+}
+
+.captain-avatar {
+    position: relative;
+    flex: 0 0 auto;
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: var(--mono-color, #35506a);
+}
+
+.captain-card-active .captain-avatar {
+    border-color: rgba(120, 230, 160, 0.75);
+}
+
+/* the seeded-colour monogram disc — the fallback that shows through when the portrait is missing
+   (the portrait sits on top and hides itself onerror, revealing this). */
+.captain-mono {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.captain-portrait {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.captain-ident {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.captain-name {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #eef3fa;
+}
+
+.captain-helm {
+    padding: 0 0.4rem;
+    border-radius: 0.35rem;
+    background: rgba(120, 230, 160, 0.18);
+    border: 1px solid rgba(120, 230, 160, 0.5);
+    color: #9fe9bd;
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.captain-where {
+    color: rgba(224, 228, 236, 0.62);
+    font-size: 0.77rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* a captain's slots are inset a touch so they read as belonging under that captain's card */
+.captain-slots {
+    max-height: none;
+    overflow: visible;
+    margin-left: 0.6rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.captain-card-active + .captain-slots {
+    border-left-color: rgba(120, 230, 160, 0.3);
+}
+
+/* The in-play captain chip (owner 2026-07-19): a small identity-glance disc, bottom-left, while aboard.
+   Icon-scale (~34px), quiet. Sits ABOVE the map canvas but BELOW the deck/dock pop-ups, so it never covers
+   a control — any card that opens over the corner wins. Reuses .captain-mono / .captain-portrait layering. */
+.captain-chip {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: var(--mono-color, #35506a);
+    box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.55);
+    z-index: calc(var(--z-map-chrome) + 5);
+    pointer-events: auto;
+}
+
+.captain-chip .captain-mono {
+    font-size: 0.95rem;
+}
+
 /* #312 — the import consent's label, read from the FILE's contents (never the filename). */
 .import-preview {
     display: flex;
