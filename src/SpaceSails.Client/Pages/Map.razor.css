@@ -315,6 +315,26 @@
     white-space: nowrap;
 }
 
+/* #368: the beyond-reach tail — the nearest ground the shuttle can't cross yet. A quiet heading and
+   dimmed, button-less rows so it reads as information (watch the gap), never as a place to board. */
+.deck-shuttle-farhead {
+    color: #8f9bb0;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    margin: 0.15rem 0 0.4rem;
+}
+
+.deck-shuttle-row-far {
+    background: rgba(255, 255, 255, 0.02);
+    opacity: 0.68;
+    cursor: default;
+}
+
+.deck-shuttle-row-far .deck-shuttle-name {
+    font-weight: 500;
+    color: #b7c0cf;
+}
+
 .deck-shuttle-actions {
     display: flex;
     justify-content: center;

@@ -130,4 +130,99 @@ public static class ShuttleExcursion
         int clamped = System.Math.Clamp(coin, 0, System.Math.Max(0, credits));
         return new ChestLoad(clamped, hold ?? []);
     }
+
+    // ── #368: the honest board — the nearest ground JUST BEYOND shuttle reach ──
+    // Owner (live playtest 2026-07-19, The Red Eye's empty shuttle board, verbatim): "Maybe we should
+    // list the nearest landing sites here at shuttle door with their ranges?" … "Like sorry too far, the
+    // nearest ones are and then comparisons of their range to shuttle range." A fresh Red Eye / Ringside
+    // start has NOTHING in shuttle reach, so the board sat empty with no explanation. Below the boardable
+    // (in-range) rows we now name the nearest few landable surfaces the shuttle CAN'T reach yet, each with
+    // its current separation, the shuttle's reach for contrast, and whether the gap is closing or opening
+    // right now — informational, never boardable.
+
+    /// <summary>Whether the range gap to an out-of-reach body is shrinking or growing right now, from a
+    /// two-sample compare of the live separation against a next-epoch separation. No new physics — the
+    /// caller re-uses the same ephemeris propagation the board already runs.</summary>
+    public enum RangeTrend
+    {
+        /// <summary>The gap held steady between the two samples (relative drift below the noise floor).</summary>
+        Steady = 0,
+        /// <summary>The gap is shrinking — the ground is drifting toward shuttle reach.</summary>
+        Closing = 1,
+        /// <summary>The gap is widening — the ground is drifting further out of reach.</summary>
+        Opening = 2,
+    }
+
+    /// <summary>One out-of-reach candidate for the "nearest ground" list, sampled at two epochs so the
+    /// trend is derivable without inventing physics: its kind and orbit context (same gates as
+    /// <see cref="Destinations"/>), how far it floats <paramref name="DistanceMeters"/> right now, how far
+    /// it will float one propagation step later (<paramref name="DistanceMetersNext"/>), and its physical
+    /// radius (so "basically on it" is excluded, same as the boardable board).</summary>
+    public readonly record struct RangeSample(
+        string BodyId, BodyKind Kind, string? ParentId,
+        double DistanceMeters, double DistanceMetersNext, double BodyRadiusMeters);
+
+    /// <summary>One row on the "nearest ground beyond reach" list: the body, its current separation, the
+    /// shuttle's max reach for contrast, and whether the gap is closing or opening now. Informational —
+    /// there is no berth to board here yet.</summary>
+    public readonly record struct NearbyLandable(
+        string BodyId, double DistanceMeters, double RangeMeters, RangeTrend Trend)
+    {
+        /// <summary>How many multiples of the shuttle's reach this separation is (e.g. 1.4× of range).
+        /// A humanized "×N of reach" phrasing for the house voice; 0 when reach is non-positive.</summary>
+        public double TimesRange => RangeMeters > 0 ? DistanceMeters / RangeMeters : 0.0;
+    }
+
+    /// <summary>The nearest few LANDABLE surfaces the shuttle can NOT reach right now, nearest-first, each
+    /// tagged with its live closing/opening trend. Same orbit-context gates as <see cref="Destinations"/>
+    /// (skip the sun / gas giants / the berth we're clamped to / anything we're basically sitting on), but
+    /// this is the mirror set: only walkable surfaces (a berth-only station is not "ground"), and only
+    /// those OUTSIDE shuttle range (the in-range ones are already boardable above). <paramref name="limit"/>
+    /// caps the list (2-3 for the board); a negative limit keeps them all.</summary>
+    public static IReadOnlyList<NearbyLandable> NearestOutOfReach(
+        System.Collections.Generic.IEnumerable<RangeSample> samples, string? dockedBodyId, int limit)
+    {
+        System.ArgumentNullException.ThrowIfNull(samples);
+        var list = new System.Collections.Generic.List<NearbyLandable>();
+        foreach (RangeSample s in samples)
+        {
+            if (s.ParentId is null || s.Kind == BodyKind.Planet || s.BodyId == dockedBodyId)
+            {
+                continue; // the sun / a gas giant / the berth we're already at
+            }
+            if (!IsLandableSurface(s.Kind))
+            {
+                continue; // only ground you could walk belongs on this list — not a berth-only station
+            }
+            if (s.DistanceMeters <= s.BodyRadiusMeters || ShuttleRange.InRange(s.DistanceMeters))
+            {
+                continue; // basically on it, or already in reach (boardable above, not "beyond reach")
+            }
+            list.Add(new NearbyLandable(s.BodyId, s.DistanceMeters, ShuttleRange.RangeMeters, TrendOf(s)));
+        }
+        list.Sort((a, b) => a.DistanceMeters.CompareTo(b.DistanceMeters));
+        if (limit >= 0 && list.Count > limit)
+        {
+            list.RemoveRange(limit, list.Count - limit);
+        }
+        return list;
+    }
+
+    /// <summary>The closing/opening sign from the two-epoch separation samples, with a small relative noise
+    /// floor so an unmoving gap reads <see cref="RangeTrend.Steady"/> rather than flickering.</summary>
+    private static RangeTrend TrendOf(RangeSample s)
+    {
+        double delta = s.DistanceMetersNext - s.DistanceMeters;
+        double eps = System.Math.Max(1.0, System.Math.Abs(s.DistanceMeters) * 1e-9);
+        if (delta < -eps)
+        {
+            return RangeTrend.Closing;
+        }
+        return delta > eps ? RangeTrend.Opening : RangeTrend.Steady;
+    }
+
+    /// <summary>Whether the board must explain itself with the apologetic "nothing within reach" headline:
+    /// true exactly when no destination is boardable (the in-range list is empty). The one condition the
+    /// empty-board copy keys off, pinned so the headline can't drift from the list it heads.</summary>
+    public static bool ExplainsEmptyBoard(int inRangeCount) => inRangeCount <= 0;
 }
