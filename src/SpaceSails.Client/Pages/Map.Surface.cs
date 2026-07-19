@@ -189,6 +189,16 @@ public partial class Map
         // choke. Duck behind a wall and it loses your live position — the maze becomes a real instrument.
         public double LastSeenX, LastSeenY;
         public bool EverSeen;
+
+        // Thermal motion (owner, cruise 2026-07-19: "the reevers could be more active, like little thermal
+        // motion so they don't just stay still"). A STILL Old One — pinned by a sentry, held at its tide
+        // leash, or idling on a stalled chase — shivers around a FIXED anchor instead of standing statue.
+        // Idle latches the still state and captures the anchor exactly once, so the mean-zero shuffle
+        // (ReeverIdle.JitterAt) never creeps the resting spot; JitterSeed fixes this contact's phase so no
+        // two shiver in lockstep. Cleared the frame it makes real progress again (back to a live chase).
+        public bool Idle;
+        public double AnchorX, AnchorY;
+        public ulong JitterSeed;
     }
 
     // #314: a sentry on the surface — carried in the sling or deployed and holding the line, with its
@@ -790,7 +800,13 @@ public partial class Map
             double frac = count > 1 ? i / (double)(count - 1) : 0.5;
             double x = -40 + frac * 70 + (i % 2 == 0 ? -3 : 3);
             double y = baseY - (i % 3) * 4;
-            _reevers.Add(new Reever { X = x, Y = Math.Min(y, MoonSurface.ReeverBarrierY - 1), Facing = Math.PI / 2 });
+            _reevers.Add(new Reever
+            {
+                X = x, Y = Math.Min(y, MoonSurface.ReeverBarrierY - 1), Facing = Math.PI / 2,
+                // Seed the thermal shuffle off the excursion threat seed + the spawn ordinal so each pack
+                // member shivers on its own phase (client-only, like the position itself — never saved).
+                JitterSeed = ((_surface?.ThreatSeed ?? 0UL) * 0x9E3779B97F4A7C15UL) + (ulong)i + 1UL,
+            });
         }
     }
 
@@ -1096,6 +1112,11 @@ public partial class Map
         double step = ReeverSpeed * dt;
         bool onSurface = !MoonSurface.IsSafeAboard(_avatarY);
         bool caught = false;
+        double now = SimTime; // the thermal shuffle's time base (sim-seconds; the surface runs at 1×)
+        // A Reever that advances less than this in a frame made effectively NO progress — it's at its leash,
+        // wedged on a wall, or already on target. Tied to the tracker's own motion floor: sub-floor motion
+        // this frame is "still" by the same law the fan reads, so we hold it and let it shiver in place.
+        double idleProgress = MotionTracker.StillSpeed * dt;
         // #324: the maze is law for the many too — the Reevers bump-and-slide on the SAME wall segments
         // the captain does, and can only see the captain when no wall stands between.
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionSegments;
@@ -1107,9 +1128,20 @@ public partial class Map
             // reads 00 the gun goes quiet and the shamble resumes. This is "bots buy time, never safety".
             if (PinnedBySentry(r))
             {
+                // The pin is law: the Old One is held where it stands while it's ground down. It is NOT a
+                // statue, though (owner, cruise 2026-07-19) — it shivers in place. Capture the anchor once
+                // so the mean-zero shuffle never creeps the pinned spot, and keep the tracker-facing
+                // velocity a hard 0 so a pinned contact still reads honestly STILL on the fan (option a).
+                if (!r.Idle)
+                {
+                    r.Idle = true;
+                    r.AnchorX = r.X;
+                    r.AnchorY = r.Y;
+                }
                 r.Vx = 0;
                 r.Vy = 0;
-                r.Facing = Math.Atan2(_avatarY - r.Y, _avatarX - r.X);
+                ApplyIdleShiver(r, walls, reeverRadius, now,
+                    Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX));
                 if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
                 {
                     caught = true;
@@ -1134,19 +1166,48 @@ public partial class Map
             // instead of trailing single-file — the cornering loss-condition becomes real geometry.
             double aimX = tgtX + (MoonSurface.SpawnX - tgtX) * EncircleBias;
             double aimY = tgtY + (MoonSurface.SurfaceTopY - tgtY) * EncircleBias;
-            double ox = r.X, oy = r.Y;
             // Lane-1: two leashes. A dig-roll PACK member chases to the very crew-only door
             // (ReeverBarrierY); a TIDE Reever holds the deep and turns back at its home range — owner
             // 2026-07-18: they "will stop venturing too far" toward the landing. The barrier IS the leash
             // (ReeverChase caps y at it), so bots can pin a deep spot but never protect the whole field.
             double barrier = r.Tide ? MoonSurface.ReeverTideHomeRangeY : MoonSurface.ReeverBarrierY;
-            (double nx, double ny) = ReeverChase.Step(r.X, r.Y, aimX, aimY, step, barrier, walls, reeverRadius);
-            r.Vx = dt > 0 ? (nx - ox) / dt : 0;
-            r.Vy = dt > 0 ? (ny - oy) / dt : 0;
-            r.X = nx;
-            r.Y = ny;
-            r.Facing = Math.Atan2(_avatarY - ny, _avatarX - nx);
-            if (onSurface && ReeverChase.Caught(nx, ny, _avatarX, _avatarY))
+
+            // Chase from the CANONICAL spot: while idle, r.X/r.Y carry the cosmetic shiver, so we step from
+            // the fixed anchor instead (else the shuffle would feed itself and the anchor would drift). A
+            // moving Reever's anchor is unset, so this is just its live position.
+            double baseX = r.Idle ? r.AnchorX : r.X;
+            double baseY = r.Idle ? r.AnchorY : r.Y;
+            (double nx, double ny) = ReeverChase.Step(baseX, baseY, aimX, aimY, step, barrier, walls, reeverRadius);
+            double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
+
+            if (progressed < idleProgress)
+            {
+                // No real progress — it's at its home-range leash, wedged on a wall, or already on the
+                // captain: hold it and let it shiver (owner, cruise 2026-07-19). Anchor the resting spot
+                // once; keep the tracker-facing velocity 0 so a held contact reads honestly still (option a).
+                if (!r.Idle)
+                {
+                    r.Idle = true;
+                    r.AnchorX = nx;
+                    r.AnchorY = ny;
+                }
+                r.Vx = 0;
+                r.Vy = 0;
+                ApplyIdleShiver(r, walls, reeverRadius, now,
+                    Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX));
+            }
+            else
+            {
+                // A live shamble — measured from the canonical base so a Reever breaking out of its idle
+                // hold reports honest velocity from its true resting spot, not from the shivered position.
+                r.Idle = false;
+                r.Vx = dt > 0 ? (nx - baseX) / dt : 0;
+                r.Vy = dt > 0 ? (ny - baseY) / dt : 0;
+                r.X = nx;
+                r.Y = ny;
+                r.Facing = Math.Atan2(_avatarY - ny, _avatarX - nx);
+            }
+            if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
             {
                 caught = true;
             }
@@ -1155,6 +1216,20 @@ public partial class Map
         {
             ReeverCatch();
         }
+    }
+
+    // Thermal motion (owner, cruise 2026-07-19: "the reevers could be more active, like little thermal
+    // motion so they don't just stay still"). Shiver a STILL Old One around its fixed anchor: a tiny,
+    // seeded, mean-zero positional shuffle (ReeverIdle.JitterAt) plus a slow facing twitch. The shuffle is
+    // wall-slid from the anchor with the SAME bump-and-slide the shamble uses, so it can never wedge the
+    // body through stone even a hair. Velocity is the caller's to zero (option a keeps the fan honest);
+    // this only moves the cosmetic position and facing, never the anchor.
+    private void ApplyIdleShiver(Reever r, IReadOnlyList<SurfaceCollision.Segment> walls, double radius,
+        double t, double baseFacing)
+    {
+        (double jx, double jy) = ReeverIdle.JitterAt(r.JitterSeed, t);
+        (r.X, r.Y) = SurfaceCollision.Slide(r.AnchorX, r.AnchorY, jx, jy, radius, walls);
+        r.Facing = baseFacing + ReeverIdle.FacingTwitchAt(r.JitterSeed, t);
     }
 
     // True if any deployed, non-dry sentry has this Old One inside its firing arc — the pin that holds it.
@@ -1227,7 +1302,13 @@ public partial class Map
     private void SpawnTideReever(SurfaceExcursion ex)
     {
         (double x, double y) = MoonSurface.TideSpawnPoint(ex.ThreatSeed, ex.TideSpawnIndex);
-        _reevers.Add(new Reever { X = x, Y = y, Facing = Math.PI / 2, Tide = true });
+        _reevers.Add(new Reever
+        {
+            X = x, Y = y, Facing = Math.PI / 2, Tide = true,
+            // A distinct phase per tide contact (the spawn index, salted apart from the pack stream) so a
+            // deep field of leash-held Old Ones all shiver independently at their home range.
+            JitterSeed = (ex.ThreatSeed * 0xD1B54A32D192ED03UL) + (ulong)ex.TideSpawnIndex + 1UL,
+        });
         if (!ex.TideAnnounced)
         {
             ex.TideAnnounced = true;
