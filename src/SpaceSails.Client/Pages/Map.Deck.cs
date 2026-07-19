@@ -323,6 +323,12 @@ public partial class Map
             case DeckPlan.ConsoleKind.DigSite:
                 DigSiteInteract();
                 break;
+            case DeckPlan.ConsoleKind.SealedDoor:
+                SealedDoorInteract(); // #371 Phase 3: force the door open — the channel that appends a region
+                break;
+            case DeckPlan.ConsoleKind.DiscoveryCache:
+                DiscoveryCacheInteract(); // #371 Phase 3: claim a forced chamber's cache
+                break;
             case DeckPlan.ConsoleKind.Kiosk:
                 VisitKiosk();
                 break;

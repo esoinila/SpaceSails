@@ -199,6 +199,13 @@ public partial class Map
         public bool Idle;
         public double AnchorX, AnchorY;
         public ulong JitterSeed;
+
+        // #371 Phase 3 (expedition fog of war): is this Old One drawn on the walked MAP right now? True on
+        // open ground the ship overwatches; false behind cover (a wall between it and the captain) on an
+        // expedition site — the motion tracker still HEARS it (untouched), so a wall-hidden mover reads only
+        // as a blip and, when it slips from sight while moving, leaves a fading echo. Always true off an
+        // expedition site (no fog there). Client-only, like the position itself.
+        public bool VisibleOnMap = true;
     }
 
     // #314: a sentry on the surface — carried in the sling or deployed and holding the line, with its
@@ -229,6 +236,17 @@ public partial class Map
         public int SquareX, SquareY;  // the probe's beach-comber square (unused for bury/lift)
         public ReeverRoll Roll;       // rolled at channel START so the threat can interrupt the bar
         public bool Rolled;           // reevers spawned for this channel
+    }
+
+    // #371 Phase 3 · the forced-door channel (owner's "progress bar of forcing a door to open"). Parallel to
+    // DigChannel but its own act: several real seconds of shoulder-to-the-door, abortable by stepping away
+    // from the door, watched while the away clock ticks (no fresh Reever roll — the site's own diced beats
+    // are the threat). On completion the door's REGION APPENDS to the live map.
+    private sealed class DoorChannel
+    {
+        public double Progress;         // 0..1
+        public required string DoorId;  // the sealed door being forced (outer or nested)
+        public double AnchorX, AnchorY; // the door console — stepping away from HERE aborts
     }
 
     private sealed class SurfaceExcursion
@@ -274,6 +292,24 @@ public partial class Map
         public bool ExpeditionStrandingFired { get; set; } // the one-time "the window closed" toll has rolled
         public bool ExpeditionRevealFired { get; set; }    // #370: the bigger picture has surfaced (darkens the table, earns the truth bonus)
 
+        // #371 Phase 3 · THE DOOR-OPEN DREAM. The forced-door channel and the appended-region state — live
+        // ONLY on an expedition excursion. OpenedDoors are every sealed door (outer + nested) forced this
+        // visit; LootedCaches every discovery cache claimed. Both key the region compose on a RebuildSurfaceDeck
+        // (bury/lift/drop) so a full rebuild replays exactly what the incremental appends grew. Session-only,
+        // never saved — a fresh landing starts sealed (same law as the Reever positions).
+        public DoorChannel? DoorChannel { get; set; }
+        public HashSet<string> OpenedDoors { get; } = [];
+        public HashSet<string> LootedCaches { get; } = [];
+
+        // #371 Phase 3 · fog-of-war state (expedition sites only). SeenRegions = every appended region the
+        // captain's line of sight has ever reached (stays "explored", drawn dim); VisibleRegions = those in
+        // sight right now (drawn lit). Echoes = the fading "movement was here" ripples a contact leaves when it
+        // slips behind cover while moving. LastFogCell throttles the region recompute to captain-cell moves.
+        public HashSet<string> SeenRegions { get; } = [];
+        public HashSet<string> VisibleRegions { get; } = [];
+        public List<(double X, double Y, double Born)> Echoes { get; } = [];
+        public (int Cx, int Cy)? LastFogCell { get; set; }
+
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
@@ -281,6 +317,8 @@ public partial class Map
         // A chest is in hand right now: something was loaded, not yet buried, not dropped.
         public bool Carrying => (PendingCoin > 0 || PendingCargo.Count > 0) && !Buried && !ChestDropped;
         public bool Channeling => Channel is not null;
+        // #371 Phase 3: any channel underway (a dig OR a door-force) — the two are mutually exclusive.
+        public bool AnyChannel => Channel is not null || DoorChannel is not null;
     }
 
     // ── Boarding: pick a surface, optionally load a chest, and grow the tube IN PLACE. ──
@@ -450,6 +488,15 @@ public partial class Map
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
             3 + ReeverEngineCeiling, FillSurfaceDroids);
+
+        // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
+        // forced open this visit onto the freshly-built base — so a bury/lift/drop rebuild grows back exactly
+        // what the incremental door-force appends had. The base build is memoized (Phase 1), so this is one
+        // cheap append on top, never a regeneration.
+        if (ex.Expedition)
+        {
+            ComposeExpeditionSite(ex);
+        }
     }
 
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
@@ -485,9 +532,9 @@ public partial class Map
         {
             return;
         }
-        if (ex.Channeling)
+        if (ex.AnyChannel)
         {
-            return; // already digging — stepping away aborts, [E] doesn't re-trigger
+            return; // already channeling (dig or door-force) — stepping away aborts, [E] doesn't re-trigger
         }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.DigSite } spot)
         {
@@ -510,7 +557,7 @@ public partial class Map
     // console is in reach (Map.Deck); a no-op off the surface.
     private void SurfaceGroundInteract()
     {
-        if (_surface is not { } ex || ex.Channeling)
+        if (_surface is not { } ex || ex.AnyChannel)
         {
             return;
         }
@@ -819,8 +866,10 @@ public partial class Map
             return;
         }
         StepDigChannel(dtRealSeconds);
+        StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
+        StepExpeditionFog(dtRealSeconds); // #371 Phase 3: born-dark regions + behind-cover contacts + echoes
         // #370: an away-expedition site runs NO endless tide (owner: "not a continuous endless stream like
         // on Miranda"). Its own diced beats may rouse a LIMITED pack instead; the tracker stays live.
         if (_surface is { Expedition: true })
@@ -1458,7 +1507,11 @@ public partial class Map
         for (int i = 0; i < ReeverEngineCeiling; i++)
         {
             int slot = 3 + i;
-            if (i < _reevers.Count)
+            // #371 Phase 3 (expedition fog): a behind-cover Old One is NOT drawn on the walked map — parked
+            // off-screen exactly like an empty slot. VisibleOnMap is always true off an expedition site, so
+            // Miranda and the moons draw every contact as before. The motion tracker (which reads _reevers
+            // directly, not this buffer) still hears it through the wall — untouched.
+            if (i < _reevers.Count && _reevers[i].VisibleOnMap)
             {
                 Reever r = _reevers[i];
                 buffer[slot] = new DeckPlan.Droid(r.X, r.Y, r.Facing, "Reever");
@@ -1548,7 +1601,8 @@ public partial class Map
 
         return new DeckView.SurfaceHud(
             TrackerCaptions: BuildTrackerCaptions(ex, _hudMarks.Count),
-            DigProgress: ex.Channel?.Progress ?? -1,
+            // #371 Phase 3: the one progress bar serves both channels — a dig OR a forced door.
+            DigProgress: ex.Channel?.Progress ?? ex.DoorChannel?.Progress ?? -1,
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
             Blips: _hudBlips,
             Cadence: (int)MotionTracker.CadenceFor(nearest),
@@ -1561,7 +1615,9 @@ public partial class Map
             KeyHints: BuildSurfaceKeyHints(ex),
             OrbitComms: orbit?.Line,          // #327: the ship's calling-home line, never buried
             OrbitSeverity: orbit?.Severity ?? 0,
-            SweptSquares: _hudSwept);
+            SweptSquares: _hudSwept,
+            DarkRegions: BuildDarkRegions(ex),   // #371 Phase 3: born-dark / explored appended chambers
+            Echoes: BuildEchoes(ex));            // #371 Phase 3: fading "movement was here" ripples
     }
 
     // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides

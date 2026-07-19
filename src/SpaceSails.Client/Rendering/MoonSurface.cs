@@ -80,6 +80,13 @@ public static class MoonSurface
     /// crew-only-door law. The sprint is won here.</summary>
     public static bool IsSafeAboard(double avatarY) => avatarY > SurfaceTopY;
 
+    /// <summary>#371 Phase 3 · the shared field envelope the surface geography (and now the appended
+    /// expedition regions + fog) are laid inside — the same one <see cref="BuildLayout"/> hands to
+    /// <see cref="SurfaceLayout.For"/>. Exposed so <c>Map.Surface</c> can resolve expedition door/region
+    /// geometry against the identical anchor and bounds.</summary>
+    public static SurfaceLayout.Field ExpeditionField() =>
+        new(SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, MonolithX, MonolithY);
+
     /// <summary>The beach-comber kit's "reasonable surface square" test (owner, 2026-07-18: bury/probe
     /// anywhere "outside the landing band / walls"). A spot is diggable when it sits on the open regolith —
     /// deeper than the landing band (so the fused landing pad and the way home stay off-limits) and inside
