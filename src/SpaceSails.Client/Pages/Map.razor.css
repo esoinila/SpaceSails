@@ -178,6 +178,49 @@
     margin-bottom: 0.15rem;
 }
 
+/* #5 SundayMorningWind — the favourite we've learned, shown beside a known contact. */
+.bar-favorite {
+    align-self: center;
+    color: #ff9ab0;
+    margin-left: 0.35rem;
+    white-space: nowrap;
+}
+
+/* #4 SundayMorningWind — the drinks menu, where the Leisure-Suit-Larry flavour lives. */
+.bar-menu {
+    margin: 0.35rem 0 0.5rem;
+    padding: 0.45rem 0.6rem;
+    text-align: left;
+    background: rgba(30, 22, 40, 0.6);
+    border-left: 2px solid rgba(255, 212, 121, 0.55);
+    border-radius: 0.3rem;
+}
+
+.bar-menu-head {
+    color: #ffd479;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.35rem;
+}
+
+.bar-menu-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-bottom: 0.4rem;
+}
+
+.bar-menu-buy {
+    flex: 0 0 auto;
+    min-width: 8.5rem;
+}
+
+.bar-menu-flavor {
+    color: #d9cfe0;
+    line-height: 1.35;
+    font-style: italic;
+}
+
 /* #195: the top-of-flight-view status column — desk tabs, pilot banner, ship-alert strip. These were
    three independently top-anchored ABSOLUTE layers whose fixed `top`s assumed a one-row banner, so a
    2–3 row banner (#159/#184) floated OVER the Nav toolbar and hid the 'checklist'/'?' buttons (#123's
