@@ -29,6 +29,12 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # The live site is the whole point of AOT (issue #371 Phase 2): this Release publish now
+      # AOT-compiles to native wasm, so the descent hitch #371 chased is native, not cold-interpreted.
+      # AOT needs the wasm-tools workload (not in the base SDK) and adds ~7+ min to this job.
+      - name: Install wasm-tools workload (for AOT)
+        run: dotnet workload install wasm-tools
+
       - name: Publish client
         run: dotnet publish src/SpaceSails.Client -c Release -o publish
 

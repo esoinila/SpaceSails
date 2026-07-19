@@ -45,9 +45,15 @@ jobs:
   # It complements — does not replace — Lab 34's browser-free geometry law
   # (SpaceSails.Core.RescueLifeline, approach (b)): that reasons about the rescue pill's z-band in
   # xUnit; THIS is approach (d), the browser telling the truth about the boot path those laws assume.
+  # timeout-minutes was 12 before issue #371 Phase 2. The "Publish the client" step below now runs
+  # RunAOTCompilation (SpaceSails.Client.csproj, Release only), which compiles every assembly to
+  # native wasm via emscripten — measured at ~7 min on a dev box, and CI runners are slower, so the
+  # publish alone can approach the old whole-job budget. Raised to 30 to leave headroom for the
+  # AOT publish + Chromium install + the ~11 s drive. This is deliberate: the gate must exercise the
+  # SAME AOT artifact Pages ships, or it stops proving what the owner actually approves from a phone.
   ui-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -56,11 +62,19 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # AOT (issue #371 Phase 2) needs the wasm-tools workload — the emscripten/AOT toolchain is not
+      # in the base SDK, and RunAOTCompilation fails without it. Not needed by the build-and-test job
+      # (that only `dotnet build`s; AOT is a publish-time step), so it lives only on the publish paths.
+      - name: Install wasm-tools workload (for AOT)
+        run: dotnet workload install wasm-tools
+
       - name: Build the UI gate
         run: dotnet build tests/SpaceSails.UiGate/SpaceSails.UiGate.csproj -c Release
 
       # Publish the shipping artifact once; the gate hosts THIS wwwroot (the same one Pages serves)
-      # rather than re-publishing inside the test, so the ~5-minute budget is never spent twice.
+      # rather than re-publishing inside the test, so the budget is never spent twice. Release
+      # publish now AOT-compiles (issue #371 Phase 2) — this is the long pole of the job (~7+ min),
+      # and it is intentional: the gate must canary the exact AOT build the live site runs.
       - name: Publish the client (the artifact under test)
         run: dotnet publish src/SpaceSails.Client -c Release -o publish
 
