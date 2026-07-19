@@ -698,7 +698,7 @@ public partial class Map
         _credits = tab.RemainingCredits;
         // A lone drink at the counter — weak medicine (NerveModel), steadier the higher your nerve already
         // is, and just one point at the shot floor. The receipt carries the steadying note PourRum builds.
-        string receipt = PourRum($"{keep.DrinkName} — {keep.DrinkFlavor}", NerveModel.DrinkKind.BarSpecial);
+        string receipt = PourRum($"{keep.DrinkName} — {keep.DrinkFlavor}", NerveModel.DrinkKind.BarSpecial, withExcuse: true);
         _barNotice = receipt;
         ShowPulseMessage($"{receipt} (−{tab.Cost:N0} cr)");
         RequestVaultSave(); // #225: the purse moved (and PourRum saved the nerve)
@@ -720,7 +720,7 @@ public partial class Map
             return;
         }
         _credits -= keep.DrinkPrice;
-        string receipt = PourRum($"{drink.Name} — {drink.Flavor}", NerveModel.DrinkKind.BarSpecial);
+        string receipt = PourRum($"{drink.Name} — {drink.Flavor}", NerveModel.DrinkKind.BarSpecial, withExcuse: true);
         _barNotice = receipt;
         ShowPulseMessage($"{receipt} (−{keep.DrinkPrice:N0} cr)");
         RequestVaultSave(); // #225: the purse moved (and PourRum saved the nerve)
