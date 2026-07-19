@@ -173,6 +173,120 @@ public class GameThreadsTests
         Assert.True(reg.IsEmpty); // tolerant: the universes survive under their own keys; the index just resets
     }
 
+    [Fact]
+    public void Touch_MintsAStableCaptainIdentity_AndPreservesItAcrossTouches()
+    {
+        var reg = new GameThreadRegistry(new MemStore());
+        reg.Touch("thread-guid-xyz", "unknown waters", 0, ticks: 100); // minted
+
+        GameThreadInfo minted = reg.Get("thread-guid-xyz")!;
+        Assert.False(string.IsNullOrWhiteSpace(minted.CaptainName));
+        Assert.InRange(minted.AvatarIndex, 1, Captains.AvatarCount);
+        // Seeded off the id — matches the pure generator exactly.
+        Assert.Equal(Captains.Name("thread-guid-xyz"), minted.CaptainName);
+        Assert.Equal(Captains.AvatarIndex("thread-guid-xyz"), minted.AvatarIndex);
+
+        reg.Touch("thread-guid-xyz", "The Tilt", 30, ticks: 250); // first autosave — identity must survive
+        GameThreadInfo played = reg.Get("thread-guid-xyz")!;
+        Assert.Equal(minted.CaptainName, played.CaptainName);
+        Assert.Equal(minted.AvatarIndex, played.AvatarIndex);
+    }
+
+    // ── The captains' roster: seeded identity + the grouping the front-door renders ──
+
+    [Fact]
+    public void Captains_AreDeterministic_AndAvatarIsInRange()
+    {
+        Assert.Equal(Captains.Name("abc"), Captains.Name("abc"));       // stable across calls
+        Assert.NotEqual(Captains.Name("abc"), Captains.Name("xyz-999")); // different seeds → (very likely) different
+        for (int i = 0; i < 50; i++)
+        {
+            int a = Captains.AvatarIndex($"seed-{i}");
+            Assert.InRange(a, 1, Captains.AvatarCount);
+        }
+
+        Assert.StartsWith("Captain ", Captains.Name("anything"));
+        Assert.Equal("Captain Nemo", Captains.Name("")); // blank seed → a stable fallback captain
+    }
+
+    [Fact]
+    public void Captains_For_PrefersStoredIdentity_ElseDerivesFromId()
+    {
+        var stored = new GameThreadInfo { Id = "t", CaptainName = "Captain Ada Vex", AvatarIndex = 5 };
+        Assert.Equal(("Captain Ada Vex", 5), Captains.For(stored));
+
+        var thin = new GameThreadInfo { Id = "legacy-thread" }; // pre-roster: no stored identity
+        (string Name, int AvatarIndex) resolved = Captains.For(thin);
+        Assert.Equal(Captains.Name("legacy-thread"), resolved.Name);
+        Assert.Equal(Captains.AvatarIndex("legacy-thread"), resolved.AvatarIndex);
+    }
+
+    [Fact]
+    public void GroupSlots_ActiveFirst_ThenNewestThread_SlotsNewestWithinGroup()
+    {
+        var threads = new List<GameThreadInfo>
+        {
+            new() { Id = "old", Where = "The Rusty Roadstead", SimDay = 2, LastActiveTicks = 10 },
+            new() { Id = "new", Where = "The Tilt", SimDay = 40, LastActiveTicks = 30 },
+            new() { Id = "mid", Where = "Ringside Exchange", SimDay = 5, LastActiveTicks = 20 },
+            new() { Id = "empty", Where = "nowhere", SimDay = 0, LastActiveTicks = 25 }, // no slots → dropped
+        };
+
+        var slots = new Dictionary<string, IReadOnlyList<SaveSlotMeta>>
+        {
+            ["old"] = [Meta("old", SaveSlotBook.ManualSlotId(1), SaveSlotKind.Manual, 5)],
+            ["new"] = [Meta("new", SaveSlotBook.ManualSlotId(1), SaveSlotKind.Manual, 100)],
+            ["mid"] =
+            [
+                Meta("mid", SaveSlotBook.ManualSlotId(2), SaveSlotKind.Manual, 40),
+                Meta("mid", SaveSlotBook.AutoSlotId, SaveSlotKind.Autosave, 90), // newer → must lead its group
+            ],
+            ["empty"] = [],
+        };
+
+        IReadOnlyList<GameThreadGroup> groups =
+            GameThreads.GroupSlots(threads, activeId: "old", tid => slots.GetValueOrDefault(tid, []));
+
+        // The empty universe is dropped; the active captain ("old") heads the roster despite the lowest tick,
+        // then the rest newest-thread-first (new @30 before mid @20).
+        Assert.Equal(["old", "new", "mid"], groups.Select(g => g.Thread.Id));
+        Assert.True(groups[0].IsActive);
+        Assert.False(groups[1].IsActive);
+
+        // Within the "mid" group the autosave (tick 90) sorts before the manual (tick 40).
+        GameThreadGroup mid = groups.Single(g => g.Thread.Id == "mid");
+        Assert.Equal([SaveSlotBook.AutoSlotId, SaveSlotBook.ManualSlotId(2)], mid.Slots.Select(s => s.Id));
+    }
+
+    [Fact]
+    public void GroupSlots_NoActive_IsPureNewestThreadFirst()
+    {
+        var threads = new List<GameThreadInfo>
+        {
+            new() { Id = "a", LastActiveTicks = 10 },
+            new() { Id = "b", LastActiveTicks = 30 },
+        };
+        var slots = new Dictionary<string, IReadOnlyList<SaveSlotMeta>>
+        {
+            ["a"] = [Meta("a", SaveSlotBook.AutoSlotId, SaveSlotKind.Autosave, 1)],
+            ["b"] = [Meta("b", SaveSlotBook.AutoSlotId, SaveSlotKind.Autosave, 1)],
+        };
+
+        IReadOnlyList<GameThreadGroup> groups =
+            GameThreads.GroupSlots(threads, activeId: null, tid => slots[tid]);
+
+        Assert.Equal(["b", "a"], groups.Select(g => g.Thread.Id)); // newest thread first, none marked active
+        Assert.DoesNotContain(groups, g => g.IsActive);
+    }
+
+    private static SaveSlotMeta Meta(string threadHint, string slotId, SaveSlotKind kind, long ticks) => new()
+    {
+        Id = slotId,
+        Kind = kind,
+        Where = threadHint,
+        SavedRealTicks = ticks,
+    };
+
     // ── The ledger wipes a new game needs (the roadster's actual home is the client's reveal set, but the
     //    hoard and the contact book are durable and must also reset per universe) ──
 

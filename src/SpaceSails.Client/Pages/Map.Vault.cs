@@ -304,7 +304,11 @@ public partial class Map
         };
     }
 
-    private void RefreshSlotList() => _slotList = Slots.List();
+    private void RefreshSlotList()
+    {
+        _slotList = Slots.List();
+        RefreshVoyageGroups();
+    }
 
     /// <summary>Gather the whole durable life into a vault envelope. Physics (orbit/trajectory) is
     /// deliberately absent — the resume section names the berth to wake at instead.</summary>
@@ -500,20 +504,167 @@ public partial class Map
     // The registry's threads, newest-first, for the front-door "other voyages" list (a minimal load-a-game
     // door — #310's full picker builds on this keying). The active thread is the one Continue leads with.
     private IReadOnlyList<GameThreadInfo> _threadList = [];
-    private void RefreshThreadList() => _threadList = Threads.List();
+    private void RefreshThreadList()
+    {
+        _threadList = Threads.List();
+        RefreshVoyageGroups();
+    }
+
+    // The captains' roster (owner 2026-07-19): the front-door saved-voyages list grouped by universe —
+    // one captain card per game thread, its save slots beneath it, the active captain first ("at the helm").
+    // Built from the registry + each thread's own SaveSlotBook (the active one reuses the bound instance).
+    private IReadOnlyList<GameThreadGroup> _voyageGroups = [];
+    private void RefreshVoyageGroups()
+        => _voyageGroups = GameThreads.GroupSlots(
+            _threadList, _activeThreadId,
+            tid => (tid == (_activeThreadId ?? "") ? Slots : new SaveSlotBook(_slotStore, tid)).List());
+
+    // ── Captain-card display helpers (presentation over the Core-seeded identity). ──
+
+    // The active universe's registry row — its captain identity — for the in-play captain chip (owner
+    // 2026-07-19: "the current captain profile pic could also be at some corner of the screen while
+    // playing"). Prefers the cached list; falls back to a direct registry read so the chip is correct even
+    // before the first RefreshThreadList of a session. The name is EDITABLE stored data (a later lane's
+    // rename UI writes GameThreadInfo.CaptainName); the chip just reads whatever is stored (or seeded).
+    private GameThreadInfo? ActiveThreadInfo
+        => string.IsNullOrEmpty(_activeThreadId)
+            ? null
+            : _threadList.FirstOrDefault(t => t.Id == _activeThreadId) ?? Threads.Get(_activeThreadId);
+
+    // The book for a given thread id: the bound active book when it IS the active universe (so the drawer
+    // and live writes stay on one instance), else a fresh book over the same store for that other universe.
+    private SaveSlotBook BookFor(string threadId)
+        => string.IsNullOrEmpty(threadId) || threadId == (_activeThreadId ?? "")
+            ? Slots
+            : new SaveSlotBook(_slotStore, threadId);
+
+    // A captain's card subtitle: where the voyage sits and when it was last touched — the "which universe is
+    // this" line under the name. A thin (pre-#354) thread honestly reads "unknown waters" here.
+    private static string CaptainWhen(GameThreadInfo t)
+    {
+        string place = string.IsNullOrWhiteSpace(t.Where) ? "unknown waters" : t.Where;
+        string last = t.LastActiveTicks > 0
+            ? new DateTimeOffset(t.LastActiveTicks, TimeSpan.Zero).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            : "—";
+        return $"{place} · day {Math.Max(0, t.SimDay)} · last active {last}";
+    }
+
+    // The monogram initial for the fallback avatar disc (first letter of the captain's given name).
+    private static string CaptainInitial(string captainName)
+    {
+        string n = captainName.StartsWith("Captain ", StringComparison.Ordinal)
+            ? captainName["Captain ".Length..]
+            : captainName;
+        return n.Length > 0 ? n[..1].ToUpperInvariant() : "?";
+    }
+
+    // A stable seeded hue for the fallback disc, so a captain whose portrait fails to load still gets a
+    // consistent colour (and two captains rarely share one). Derived from the thread id, deterministic.
+    private static string CaptainMonoColor(string id)
+    {
+        uint h = 2166136261u;
+        foreach (char c in id)
+        {
+            h = (h ^ c) * 16777619u;
+        }
+
+        return $"hsl({h % 360} 42% 36%)";
+    }
 
     // The front door's "Continue — <where>": restore the ACTIVE thread's newest slot instead of a fresh start.
     private Task ContinueFromSave() => LoadSlot(Slots.Newest()?.Id);
 
-    // Continue a DIFFERENT universe (the other-voyages list): make it active, then resume its newest slot.
-    // A deliberate switch (SetActive, not Touch) so choosing an older thread doesn't falsely bump it newest
-    // until it actually plays and autosaves.
-    private Task ContinueThread(string threadId)
+    // ── The captains' roster row actions (owner 2026-07-19): every save row now belongs to a captain
+    //    (universe), so Load / Export / Import-into / Clear must target THAT captain's book, not the active
+    //    one. In-game the drawer only ever renders the active thread, so these fall through to it. ──
+
+    // Board a slot from any captain's card: switch the active universe to that captain (a deliberate
+    // SetActive — it doesn't bump the thread newest), then load the chosen slot from its (now active) book.
+    private Task LoadThreadSlot(string threadId, string slotId)
     {
-        Threads.SetActive(threadId);
-        _activeThreadId = threadId;
+        if (!string.IsNullOrEmpty(threadId) && threadId != _activeThreadId)
+        {
+            Threads.SetActive(threadId);
+            _activeThreadId = threadId;
+            RefreshSlotList();
+        }
+
+        return LoadSlot(slotId);
+    }
+
+    // Export a specific captain's slot to a .json (named for that slot's harbor · day · when-saved).
+    private void ExportThreadSlot(string threadId, string slotId)
+    {
+        try
+        {
+            SaveSlotBook book = BookFor(threadId);
+            if (book.ReadPayload(slotId) is not { } raw || string.IsNullOrWhiteSpace(raw) || book.Get(slotId) is not { } meta)
+            {
+                return;
+            }
+
+            string name = SaveFileNames.ForMeta(meta);
+            RendererInterop.VaultDownload(name, raw);
+            ShowPulseMessage($"⬇ Exported {meta.Where} as {name}.");
+        }
+        catch
+        {
+            ShowPulseMessage("Export failed — the browser blocked the download.");
+        }
+    }
+
+    // Clear a specific captain's slot. If that empties an OTHER captain's shelf entirely, retire that thread
+    // from the roster (front-door housekeeping — there is no live game to strand). The active universe is
+    // never auto-retired out from under a running voyage.
+    private void DeleteThreadSlot(string threadId, string slotId)
+    {
+        BookFor(threadId).Delete(slotId);
+        if (!string.IsNullOrEmpty(threadId) && threadId != _activeThreadId
+            && new SaveSlotBook(_slotStore, threadId).List().Count == 0)
+        {
+            Threads.Remove(threadId);
+        }
+
+        RefreshThreadList();
         RefreshSlotList();
-        return LoadSlot(Slots.Newest()?.Id);
+        ShowPulseMessage($"🗑 Cleared slot {slotId}.");
+    }
+
+    // Import a file into a specific captain's berth WITHOUT boarding it (shelve a rescued Downloads save).
+    private async Task ImportIntoThreadSlot(string threadId, string slotId)
+    {
+        string text;
+        try
+        {
+            text = await RendererInterop.VaultImport();
+        }
+        catch
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        try
+        {
+            Vault vault = VaultSerializer.Load(text);
+            SaveSlotKind kind = slotId == SaveSlotBook.AutoSlotId ? SaveSlotKind.Autosave : SaveSlotKind.Manual;
+            BookFor(threadId).Save(slotId, text, BuildSlotMeta(vault, kind));
+            RefreshThreadList();
+            RefreshSlotList();
+            ShowPulseMessage(vault.Tampered
+                ? $"🗄 Banked into slot {slotId} — {SaveSlotLabels.Where(vault)} 📛 (edited outside the game). Not boarded; Load it when you mean to."
+                : $"🗄 Banked into slot {slotId} — {SaveSlotLabels.Where(vault)}. Not boarded; Load it when you mean to.");
+        }
+        catch
+        {
+            ShowPulseMessage("Import refused — that file wasn't a readable save.");
+        }
+
+        StateHasChanged();
     }
 
     // Load a specific slot by id (the front-door list, the captain's-desk drawer, or Continue-newest).
@@ -779,14 +930,6 @@ public partial class Map
         }
     }
 
-    /// <summary>Empty a manual slot (the autosave slot is never offered for deletion — it re-fills itself).</summary>
-    private void DeleteSlot(string slotId)
-    {
-        Slots.Delete(slotId);
-        RefreshSlotList();
-        ShowPulseMessage($"🗑 Cleared slot {slotId}.");
-    }
-
     // Legacy single-button "Save to vault": now banks the live moment into the first free manual slot
     // (or slot 1). Kept so the captain's-desk quick-save button still works without opening the drawer.
     private void SaveVaultManually()
@@ -820,28 +963,6 @@ public partial class Map
             string name = SaveFileNames.ForMeta(BuildSlotMeta(live, SaveSlotKind.Autosave));
             RendererInterop.VaultDownload(name, VaultSerializer.Save(live));
             ShowPulseMessage($"⬇ Exported this moment as {name}.");
-        }
-        catch
-        {
-            ShowPulseMessage("Export failed — the browser blocked the download.");
-        }
-    }
-
-    // Per-slot EXPORT (#312): download a stored slot's bytes byte-for-byte, named for THAT slot's state
-    // (its label — place · day · when-saved), not the live moment. So exporting slot 3 gives you exactly
-    // the voyage banked in slot 3, in a file that names where slot 3 was.
-    private void ExportSlot(string slotId)
-    {
-        try
-        {
-            if (Slots.ReadPayload(slotId) is not { } raw || string.IsNullOrWhiteSpace(raw) || Slots.Get(slotId) is not { } meta)
-            {
-                return;
-            }
-
-            string name = SaveFileNames.ForMeta(meta);
-            RendererInterop.VaultDownload(name, raw);
-            ShowPulseMessage($"⬇ Exported {meta.Where} as {name}.");
         }
         catch
         {
@@ -889,47 +1010,6 @@ public partial class Map
         // Hold the picked file and ask before it replaces the running voyage.
         _importPendingText = text;
         _importConfirming = true;
-        StateHasChanged();
-    }
-
-    // IMPORT INTO A BERTH (#312): bank a picked file straight into a chosen slot WITHOUT boarding it — the
-    // live game keeps flying. This is the shelf: file the rescued Downloads voyages into named berths, then
-    // Load the one you mean. Distinct from the top-level Import (which becomes live after the ask): two
-    // buttons, two labelled truths (#310 semantics law). At boot there is no live state to protect; in-game
-    // this leaves the rolling autosave and the running voyage entirely untouched.
-    private async Task ImportIntoSlot(string slotId)
-    {
-        string text;
-        try
-        {
-            text = await RendererInterop.VaultImport();
-        }
-        catch
-        {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return;
-        }
-
-        try
-        {
-            Vault vault = VaultSerializer.Load(text);
-            SaveSlotKind kind = slotId == SaveSlotBook.AutoSlotId ? SaveSlotKind.Autosave : SaveSlotKind.Manual;
-            // Store the file's bytes byte-for-byte; the label is read from the file's own content.
-            Slots.Save(slotId, text, BuildSlotMeta(vault, kind));
-            RefreshSlotList();
-            ShowPulseMessage(vault.Tampered
-                ? $"🗄 Banked into slot {slotId} — {SaveSlotLabels.Where(vault)} 📛 (edited outside the game). Not boarded; Load it when you mean to."
-                : $"🗄 Banked into slot {slotId} — {SaveSlotLabels.Where(vault)}. Not boarded; Load it when you mean to.");
-        }
-        catch
-        {
-            ShowPulseMessage("Import refused — that file wasn't a readable save.");
-        }
-
         StateHasChanged();
     }
 
