@@ -1574,6 +1574,8 @@ public partial class Map
         if (_barMenu is not null) { CloseBarkeep(); return true; }
         if (_shuttleBayStops is not null) { CloseShuttleBayDoor(); return true; }
         if (_pinJob is not null) { CancelPin(); return true; }
+        if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
+        if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
         if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }

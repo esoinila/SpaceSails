@@ -45,11 +45,71 @@ public partial class Map
             TeamSize: ExpeditionTeamSize, BaseFee: ExpeditionReward.BaseFee, AcceptedSimTime: SimTime);
         _pendingExpeditionCheat = null;
 
+        // #370: the charter service hands over its shamelessly optimistic research brief on accept — the
+        // lie the reveal will later contradict. Pop it as a card (re-viewable during the gig).
+        ShowExpeditionBrief(_expedition);
+
         string who = spec.Flavor == ExpeditionFlavor.Science ? "science team" : "survey crew";
         RendererInterop.PlayCue("reveal");
         ShowPulseMessage(
             $"🧪 Test: away-expedition accepted — ferry the {who} to {spec.SiteName}. " +
             $"It's a short hop off the berth (shuttle range). Open the shuttle door and take them down.");
+    }
+
+    // ── THE BRIEF card (#370): the charter service's sugar-coated pitch — an image + optimistic copy. Shown
+    // on accept and re-viewable during the gig (the mission/ledger idiom, reusing the treasure-map card
+    // pattern). Pure Core copy (ExpeditionBrief); this holds only what the card renders.
+    private ExpeditionBriefCard? _expeditionBriefCard;
+
+    // THE REVEAL card (#370): the bigger picture, in the site's own voice, that contradicts the brief — a
+    // major sanity-throw moment. Popped once per gig at the seeded reveal beat.
+    private ExpeditionRevealCard? _expeditionRevealCard;
+
+    private readonly record struct ExpeditionBriefCard(
+        ExpeditionSiteKind Kind, string SiteName, string Title, string Body);
+
+    private readonly record struct ExpeditionRevealCard(
+        ExpeditionSiteKind Kind, string SiteName, string Headline, string Body);
+
+    private void ShowExpeditionBrief(ExpeditionPlan plan) =>
+        _expeditionBriefCard = new ExpeditionBriefCard(
+            plan.SiteKind, plan.SiteDisplayName,
+            ExpeditionBrief.Title(plan.SiteKind),
+            ExpeditionBrief.BriefFor(plan.SiteKind, plan.AcceptedSimTime, plan.SiteBodyId));
+
+    // Re-open the accepted gig's brief on demand (owner: "viewable during the gig").
+    private void ReopenExpeditionBrief()
+    {
+        if (_expedition is { } plan)
+        {
+            ShowExpeditionBrief(plan);
+        }
+    }
+
+    private async Task DismissExpeditionBrief()
+    {
+        _expeditionBriefCard = null;
+        await RefocusMap();
+    }
+
+    private async Task DismissExpeditionReveal()
+    {
+        _expeditionRevealCard = null;
+        await RefocusMap();
+    }
+
+    // The brief card's hero image slot — the Grok-delivered art layered over a deterministic per-kind
+    // gradient, so a missing/404 asset still reads as a tinted card (mirrors TreasureMapArtCss).
+    private static string ExpeditionBriefArtCss(ExpeditionSiteKind kind)
+    {
+        int hue = kind switch
+        {
+            ExpeditionSiteKind.CrashedHull => 28,   // rust
+            ExpeditionSiteKind.SealedTunnel => 268, // violet gloom
+            _ => 150,                               // henge green
+        };
+        string gradient = $"radial-gradient(circle at 40% 34%, hsl({hue}, 45%, 32%), hsl({(hue + 26) % 360}, 50%, 10%) 72%)";
+        return $"url('art/{ExpeditionBrief.ArtFile(kind)}'), {gradient}";
     }
 
     // ── The on-site beats: while the team is on the gig's ground, roll the diced table on a cadence. ──
@@ -72,7 +132,18 @@ public partial class Map
         {
             int ordinal = ++ex.ExpeditionLastOrdinal;
             fired++;
-            ResolveExpeditionBeat(ex, plan, ordinal);
+
+            // #370: at the seeded reveal beat the bigger picture surfaces — its own card/toll, not an
+            // ordinary episode. Every beat after it rolls on a table that has DARKENED.
+            if (!ex.ExpeditionRevealFired
+                && ExpeditionBrief.IsRevealBeat(plan.AcceptedSimTime, plan.SiteBodyId, ordinal))
+            {
+                ResolveExpeditionReveal(ex, plan, ordinal);
+            }
+            else
+            {
+                ResolveExpeditionBeat(ex, plan, ordinal);
+            }
         }
 
         // The window closed: the ship can't hold the course-match any longer. One diced stranding toll.
@@ -86,7 +157,7 @@ public partial class Map
     private void ResolveExpeditionBeat(SurfaceExcursion ex, ExpeditionPlan plan, int ordinal)
     {
         ulong seed = AwayExpeditionEvents.Seed(plan.AcceptedSimTime, plan.SiteBodyId, ordinal);
-        ExpeditionEpisode ep = AwayExpeditionEvents.Roll(seed, plan.Flavor, ordinal);
+        ExpeditionEpisode ep = AwayExpeditionEvents.Roll(seed, plan.Flavor, ordinal, ex.ExpeditionRevealFired);
 
         RaiseDiceEvent(ep.Event); // the cast dice, shown (the house homage)
 
@@ -114,6 +185,27 @@ public partial class Map
             _ => "board",
         });
         ShowPulseMessage($"{ep.Event.Headline} {ep.Event.Detail}");
+    }
+
+    // #370 THE REVEAL: once per gig, at the seeded beat, the bigger picture surfaces — the site's own voice
+    // contradicting the sugar-coated brief. A MAJOR sanity-throw: a big nerve shock (bigger than the horror
+    // band), the dice SHOWN per house law, and from here the on-site table darkens (ResolveExpeditionBeat
+    // passes the revealed flag). Surviving past it earns the "truth is worth more" bonus on the ride home.
+    private void ResolveExpeditionReveal(SurfaceExcursion ex, ExpeditionPlan plan, int ordinal)
+    {
+        ex.ExpeditionRevealFired = true;
+        RevealCopy copy = ExpeditionBrief.RevealFor(plan.SiteKind, plan.AcceptedSimTime, plan.SiteBodyId);
+
+        // The dice are shown even for the reveal — the house law ("the dice are the engine").
+        ulong seed = AwayExpeditionEvents.Seed(plan.AcceptedSimTime, plan.SiteBodyId, ordinal);
+        DicePool pool = DiceRule.RollPool(seed, count: 2, sides: 6);
+        RaiseDiceEvent(DiceEvent.FromPool(AwayExpeditionEvents.Source, pool, copy.Headline, copy.Body));
+
+        _nerve = NerveModel.Shock(_nerve, ExpeditionBrief.RevealShock);
+        _expeditionRevealCard = new ExpeditionRevealCard(plan.SiteKind, plan.SiteDisplayName, copy.Headline, copy.Body);
+
+        RendererInterop.PlayCue("alarm");
+        ShowPulseMessage($"{copy.Headline} {copy.Body}");
     }
 
     // The stranding toll (owner: "the scientists losing sanity and running off ... we can dice throw these
@@ -242,8 +334,11 @@ public partial class Map
 
         double fromRadius = HelioRadiusMeters(ex.RestoreHavenId);
         double toRadius = HelioRadiusMeters(plan.SiteBodyId);
+        // #370: surviving past the reveal earns the "truth is worth more" bonus — the sponsor pays extra for
+        // what the team actually found once they came home to tell it (settle only runs on liftoff/home).
+        int truth = ex.ExpeditionRevealFired ? ExpeditionReward.TruthBonus : 0;
         int pay = ExpeditionReward.Total(
-            plan.BaseFee, fromRadius, toRadius, ex.ExpeditionBonus, ex.ExpeditionScientistsLost);
+            plan.BaseFee, fromRadius, toRadius, ex.ExpeditionBonus, ex.ExpeditionScientistsLost, truth);
         _credits += pay;
 
         int brought = Math.Max(0, plan.TeamSize - ex.ExpeditionScientistsLost);
@@ -252,12 +347,15 @@ public partial class Map
             ? $" {ex.ExpeditionScientistsLost} of {who} did not come home."
             : $" All {who} came home.";
         string finds = ex.ExpeditionBonus > 0 ? $" Discoveries banked +{ex.ExpeditionBonus:N0} cr." : "";
+        string truthLine = truth > 0 ? $" The truth is worth more: +{truth:N0} cr for the bigger picture." : "";
 
         _expedition = null;
+        _expeditionBriefCard = null;
+        _expeditionRevealCard = null;
         RendererInterop.PlayCue(ex.ExpeditionScientistsLost > 0 ? "alarm" : "reveal");
         RequestVaultSave();
         ShowPulseMessage(
-            $"🛸 Away team home from {plan.SiteDisplayName} — expedition paid {pay:N0} cr ({brought}/{plan.TeamSize} back).{finds}{toll}");
+            $"🛸 Away team home from {plan.SiteDisplayName} — expedition paid {pay:N0} cr ({brought}/{plan.TeamSize} back).{finds}{truthLine}{toll}");
         return true;
     }
 
