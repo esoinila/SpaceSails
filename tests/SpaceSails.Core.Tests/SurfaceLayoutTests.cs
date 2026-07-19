@@ -102,6 +102,8 @@ public class SurfaceLayoutTests
     [InlineData("callisto")]
     [InlineData("titan")]
     [InlineData("enceladus")]
+    [InlineData("triton")]        // the retrograde landable off The Deep (berth-matrix audit)
+    [InlineData("the-clinker")]   // Cinder Roost's captured-cinder landing skerry off Venus
     [InlineData("some-future-moon")]
     public void EveryScheme_HasAClearCorridor_TubeMouthToDeepField(string bodyId)
     {
