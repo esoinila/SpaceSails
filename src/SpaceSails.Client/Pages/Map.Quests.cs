@@ -1049,16 +1049,24 @@ public partial class Map
             return null;
         }
 
-        NpcState prey = candidates[OfferIndex(candidates.Count)];
+        // The neighbourhood law (owner 2026-07-19): weight the bounty toward a prey whose run stays in
+        // the neighbourhood, so the chase a barfly hands you is usually a nearby one — the cross-system
+        // hunt is the rare saga the HaulReward chase premium (below) pays for.
+        NpcState prey = candidates[WeightedOfferIndex(candidates, n => n.Ship.DestinationId)];
         // #349: a bounty keeps its cargo-weighted floor, plus the HAUL premium for how deep into the
         // system the chase drags you — hunting a runner bound for the outer dark pays for the long chase,
         // not just her hold. Reach is the prey's destination measured from this berth.
         int reward = HaulReward.WithFloor(250 + prey.Ship.CargoUnits * 60,
             HelioRadiusMeters(_dockedHavenId), HelioRadiusMeters(prey.Ship.DestinationId));
         string route = RouteLabel(prey.Ship);
+        // The rare cross-system chase reads like the saga it is — the reward already carries the long-chase
+        // premium (HaulReward.WithFloor above), so the pitch just names the distance out loud.
+        string chaseNote = DestBand(prey.Ship.DestinationId) == MissionBand.CrossSystem
+            ? " It's a long chase into the deep — but that's why the purse is fat."
+            : "";
         string blurb = prey.Ship.PublishesTimetable
-            ? $"“See {prey.Ship.Callsign}, running {route}? She's carrying, and I want her stopped. Bring her down — {reward:N0} cr in it for you.”"
-            : $"“There's a ghost called {prey.Ship.Callsign} running dark, {route}. Won't show on any board. Hole her, board her — {reward:N0} cr, quiet-like.”";
+            ? $"“See {prey.Ship.Callsign}, running {route}? She's carrying, and I want her stopped. Bring her down — {reward:N0} cr in it for you.{chaseNote}”"
+            : $"“There's a ghost called {prey.Ship.Callsign} running dark, {route}. Won't show on any board. Hole her, board her — {reward:N0} cr, quiet-like.{chaseNote}”";
         return new Quest($"hunt-{++_questSeq}", QuestKind.Hunt, giver,
             prey.Ship.Id, prey.Ship.Callsign, $"Bring down {prey.Ship.Callsign}", blurb, reward);
     }
@@ -1077,7 +1085,9 @@ public partial class Map
             return null;
         }
 
-        CelestialBody dest = havens[OfferIndex(havens.Count)];
+        // The neighbourhood law (owner 2026-07-19): weight the pick toward nearby systems so most parcels
+        // are a local hop, a neighbour planet is the occasional stretch, and a cross-system saga is rare.
+        CelestialBody dest = havens[WeightedOfferIndex(havens, b => b.Id)];
         // #349: the purse scales with the actual HAUL — the heliocentric void from where the job is taken
         // (this berth) to the destination — not the old flat 300 that read a station's tiny local orbit and
         // paid the same to Luna as to Neptune. A cross-system parcel now pays like the long trip it is.
@@ -1085,9 +1095,14 @@ public partial class Map
         // #175: a moon haven has no ⚓ dock — you deliver by parking in its orbit — so the pitch names
         // the right last move instead of promising a "berth" that a moon never has.
         string drop = IsDockableHaven(dest) ? "Berth there and it's done." : "Park in orbit there and it's done.";
+        // When the rare cross-system saga DOES surface, the pitch acknowledges the haul in voice — the
+        // purse (HaulReward) already priced it, so the captain can see the exception is paid for (#357).
+        string haulNote = DestBand(dest.Id) == MissionBand.CrossSystem
+            ? " It's a long haul out to there — but the purse says so, look for yourself."
+            : "";
         // #349: name the destination's ADDRESS (station — PLANET system), so the captain knows what
         // planet the drop is on without zooming every moon.
-        string blurb = $"“Quiet parcel, no questions. Gets to {BodyAddress(dest.Id)} in one piece, you walk with {reward:N0} cr. {drop}”";
+        string blurb = $"“Quiet parcel, no questions. Gets to {BodyAddress(dest.Id)} in one piece, you walk with {reward:N0} cr. {drop}{haulNote}”";
         return new Quest($"run-{++_questSeq}", QuestKind.CargoRun, giver,
             "", dest.Name, $"Run a parcel to {BodyAddress(dest.Id)}", blurb, reward, DestBodyId: dest.Id);
     }
@@ -1121,7 +1136,8 @@ public partial class Map
             return null;
         }
 
-        CelestialBody dest = havens[OfferIndex(havens.Count)];
+        // The neighbourhood law (owner 2026-07-19): a called-in favor still prefers a nearby drop.
+        CelestialBody dest = havens[WeightedOfferIndex(havens, b => b.Id)];
         string drop = IsDockableHaven(dest) ? "Berth there and we're square." : "Park in orbit there and we're square.";
         // #349: name the drop's address (station — PLANET system) so the favor points at a place the
         // captain can find. (The purse is the debt principal — a favor clears what you owe, it isn't paid.)
@@ -1175,7 +1191,9 @@ public partial class Map
             return null;
         }
 
-        CelestialBody dest = dests[OfferIndex(dests.Count)];
+        // The neighbourhood law (owner 2026-07-19): prefer a nearby hand-off so the drop stays local even
+        // though the wreck itself is a fixed sunward-of-Mars saga.
+        CelestialBody dest = dests[WeightedOfferIndex(dests, b => b.Id)];
         const int reward = 4200; // a dead man's fortune, in a currency nobody can trace
         // #349: name the hand-off's address (station — PLANET system) so the captain knows where the
         // associate waits without hunting every moon.
@@ -1263,6 +1281,63 @@ public partial class Map
     // and it doesn't flicker frame to frame.
     private int OfferIndex(int count) =>
         count <= 0 ? 0 : (int)(((long)(SimTime / 1000) + (_dockedHavenId ?? "").Sum(ch => ch)) % count);
+
+    // ── The neighbourhood law (owner 2026-07-19, Sunday-morning-wind §6): "adjust the missions to prefer
+    // staying in relatively nearby places. Having 10 year flights should be an exception in mid mission,
+    // not anything casual :-D". The flat OfferIndex above treats Luna and Neptune alike; these pick a
+    // destination WEIGHTED by MissionRange bands — ~70% local system, ~25% a neighbour planet, ~5% a
+    // cross-system saga — so most work stays close and the long haul is the rare, HaulReward-priced
+    // exception (#357). Same booth-stable, per-berth, slowly-rotating seed idiom as OfferIndex, but folded
+    // through the one DiceRule so the weighted roll is deterministic per booth (same seed → same mix).
+
+    // A weighted pick over a candidate set, keyed on each candidate's destination body id. Classifies
+    // every candidate into its MissionRange band, then rolls MissionRange.PickIndex on the booth seed.
+    private int WeightedOfferIndex<T>(IReadOnlyList<T> candidates, Func<T, string?> destBodyOf)
+    {
+        if (candidates.Count <= 1)
+        {
+            return 0;
+        }
+
+        IReadOnlyList<double> planetRadii = PlanetHelioRadii();
+        string originSystem = SystemIdOf(_dockedHavenId);
+        double originRadius = HelioRadiusMeters(_dockedHavenId);
+        var bands = new MissionBand[candidates.Count];
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            string? destId = destBodyOf(candidates[i]);
+            bands[i] = MissionRange.Classify(
+                originSystem, SystemIdOf(destId),
+                originRadius, HelioRadiusMeters(destId), planetRadii);
+        }
+
+        return MissionRange.PickIndex(MissionRangeSeed(), bands);
+    }
+
+    // The band a chosen destination fell into — for the offer copy that acknowledges a cross-system saga.
+    private MissionBand DestBand(string? destBodyId) => MissionRange.Classify(
+        SystemIdOf(_dockedHavenId), SystemIdOf(destBodyId),
+        HelioRadiusMeters(_dockedHavenId), HelioRadiusMeters(destBodyId), PlanetHelioRadii());
+
+    // The seed for a booth's weighted destination roll — the OfferIndex stability idiom (slow sim-time
+    // rotation + a per-berth salt) folded through the one DiceRule, so the mix is deterministic per booth
+    // and doesn't flicker frame to frame.
+    private ulong MissionRangeSeed() =>
+        DiceRule.Seed("mission-range", (long)(SimTime / 1000), (_dockedHavenId ?? "").Sum(ch => ch));
+
+    // A body's SYSTEM id — its planet-level ancestor (the sun-orbiting planet it rides around), the same
+    // ancestor HelioRadiusMeters/BodyAddress read. Null/unknown collapses to the raw id (or "").
+    private string SystemIdOf(string? bodyId) =>
+        PlanetLevelAncestor(BodyById(bodyId))?.Id ?? bodyId ?? "";
+
+    // Every planet's heliocentric orbit radius in this scenario — the ranking set MissionRange orders the
+    // systems by. A "planet" here is a sun-orbiting body of planet kind (a heliocentric station like the
+    // derelict roadster is excluded from the ranks, but still ranks cleanly by where its radius sits).
+    private IReadOnlyList<double> PlanetHelioRadii() =>
+        (_ephemeris?.Bodies ?? [])
+            .Where(b => b.Kind == BodyKind.Planet && b.ParentId is { } pid && BodyById(pid)?.ParentId is null)
+            .Select(b => b.OrbitRadius)
+            .ToList();
 
     private void AcceptOffer()
     {
