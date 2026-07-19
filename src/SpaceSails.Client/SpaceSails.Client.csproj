@@ -10,6 +10,41 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <!-- Issue #371 Phase 2 — AOT for the shipped build only.
+       Release Blazor WASM is IL-interpreted unless RunAOTCompilation is set; the #371 study found
+       that cold-interpreted first paint (the enlarged-surface descent hitch) is the root-cause cost.
+       AOT compiles the .NET IL to native wasm — the descent (and the game generally) runs native.
+
+       Enabled by an explicit opt-in property `SpaceSailsPublishAot`, passed ONLY by the two publish jobs
+       (`.github/workflows/ci.yml` ui-gate + `pages.yml`) as `-p:SpaceSailsPublishAot=true`. It is NOT a plain
+       Configuration=Release gate, and deliberately so:
+
+         * The SDK's ImportWorkloads target raises NETSDK1147 ("install the wasm-tools workload") the
+           instant RunAOTCompilation evaluates true — at BUILD, not just publish. The CI
+           `build-and-test` job runs `dotnet build -c Release` with no workload installed, so a bare
+           Release gate turned every build red. (That was the first cut of this spike.)
+         * `_IsPublishing` looks like the natural discriminator but is a trap: `dotnet publish` sets it
+           INSIDE the Publish target, after evaluation, so ImportWorkloads/AOT never see it — gating on
+           it builds clean but silently ships an INTERPRETED payload. Verified by measurement.
+
+       A command-line `-p:SpaceSailsPublishAot=true` global IS visible at evaluation, so it is the one reliable
+       switch: plain `dotnet build`/`dotnet test`/`dotnet run` (CI and dev loop) never set it → no
+       workload requirement, interpreted-fast; the publish jobs set it → native AOT + workload, where
+       both belong. The name is deliberately project-namespaced: MSBuild property names are
+       case-INSENSITIVE, so a tidier-looking `PublishAOT` silently aliases the built-in `PublishAot`
+       (Native AOT), which errors NETSDK1203 on browser-wasm. Do not rename to any `PublishAot` casing.
+
+       WasmStripILAfterAOT is meant to drop the now-redundant IL once native code exists. Measured on
+       this project (.NET 10.0.301, Phase-2 spike): it builds clean but is a NO-OP for the payload —
+       the IL assembly .wasm files ship byte-identical to a non-AOT publish (Blazor still loads them
+       for metadata / interpreter fallback), so the download carries BOTH the full IL set AND the
+       ~18 MB native blob. Kept because it is harmless and may become effective in a later SDK; the
+       size cost in the PR numbers is therefore the honest worst case. -->
+  <PropertyGroup Condition="'$(SpaceSailsPublishAot)' == 'true'">
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <WasmStripILAfterAOT>true</WasmStripILAfterAOT>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.9" PrivateAssets="all" />
