@@ -15,7 +15,11 @@ public class EphemerisTests
         // and Selene Gate, the Luna-vicinity fuel port that closes Lab 28's stranded-at-Luna gap (#157).
         // +Phobos (#164) +Miranda (#246, the shuttle-bury moon off The Tilt) +The Red Eye (Jupiter) and
         // +The Deep (Neptune) — the outer oases that close the Jupiter/Neptune pump deserts (#289).
-        Assert.Equal(27, scenario.Bodies.Count);
+        // +Triton (retrograde) off Neptune and +The Clinker off Venus — the two landing skerries that
+        // give The Deep and Cinder Roost surfaces within shuttle reach (berth-matrix audit).
+        Assert.Equal(29, scenario.Bodies.Count);
+        Assert.Contains(scenario.Bodies, b => b.Id == "triton" && b.ParentId == "neptune" && b.Kind == "moon");
+        Assert.Contains(scenario.Bodies, b => b.Id == "the-clinker" && b.ParentId == "venus" && b.Kind == "moon");
         Assert.Contains(scenario.Bodies, b => b.Id == "saturn");
         Assert.Contains(scenario.Bodies, b => b.Id == "miranda" && b.ParentId == "uranus" && b.Kind == "moon");
         Assert.Contains(scenario.Bodies, b => b.Id == "phobos" && b.ParentId == "mars" && b.Kind == "moon");
