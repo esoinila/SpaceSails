@@ -71,6 +71,8 @@ public sealed class DeckView
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
     private static readonly RgbaColor SegLit = new(255, 90, 70);         // #314: the 99-counter, seven-segment red
     private static readonly RgbaColor SegDim = new(90, 50, 45, 200);     // #314: a frozen 00, dim glyph
+    private static readonly RgbaColor SegWarn = new(255, 185, 70);       // #314: magazine under 25 — warming amber
+    private static readonly RgbaColor SegAlarm = new(255, 45, 35);       // #314: magazine under 10 — hot alarm red
     private static readonly RgbaColor ZapColor = new(180, 255, 210, 235);// #314: the sentry's zap line
     private static readonly RgbaColor TextDim = new(140, 160, 180, 170);
 
@@ -94,6 +96,16 @@ public sealed class DeckView
     private readonly IRenderer _renderer;
     private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];
     private readonly float[] _scratch = new float[32];
+
+    // #314 magazine-counter change-emphasis (owner, live playtest 2026-07-19: "make the round-count
+    // numbers even bigger … I love to see those numbers move"). The DeckView draw is immediate-mode
+    // and stateless, so a brief pop on decrement needs somewhere to remember each bot's last counter
+    // and when it last changed. Keyed by the sentry's index in the per-frame Bots list (stable order —
+    // a spent bot stays in place, dimmed). Pure rendering; never touches gameplay.
+    private const float MagBasePx = 28f;    // the scoreboard digits — ~2× the old 15px label
+    private const double MagFlash = 0.16;   // seconds a change stays lit + swollen
+    private string[] _botCounters = System.Array.Empty<string>();
+    private double[] _botCounterChanged = System.Array.Empty<double>();
 
     public DeckView(IRenderer renderer)
     {
@@ -290,8 +302,15 @@ public sealed class DeckView
         // Drawn ON the grid, not a corner widget — the counter is meant to be read from across the map.
         if (surface is { Bots: { } sentries })
         {
-            foreach ((double bxr, double byr, string counter, bool dry, bool firing, double aimX, double aimY) in sentries)
+            // Keep the per-bot change-tracking arrays as long as the deployed list (grows only).
+            if (_botCounters.Length < sentries.Count)
             {
+                System.Array.Resize(ref _botCounters, sentries.Count);
+                System.Array.Resize(ref _botCounterChanged, sentries.Count);
+            }
+            for (int i = 0; i < sentries.Count; i++)
+            {
+                (double bxr, double byr, string counter, bool dry, bool firing, double aimX, double aimY) = sentries[i];
                 (float sx, float sy) = P(bxr, byr);
                 if (firing && !dry)
                 {
@@ -302,11 +321,40 @@ public sealed class DeckView
                 RgbaColor body = dry ? BotDim : BotColor;
                 DrawBox(sx, sy, 0.55f * scale, body);
                 _renderer.DrawCircle(sx, sy, 0.3f * scale, body, body);
-                // The readout: a dark panel with the two big digits, so it reads like a magazine counter.
-                float pw = 1.7f * scale, ph = 1.15f * scale;
-                FillRect(sx - pw / 2, sy - 2.3f * scale, pw, ph, new RgbaColor(16, 10, 10, 225));
-                _renderer.DrawText(sx, sy - 1.35f * scale, counter, dry ? SegDim : SegLit,
-                    "bold 15px monospace", TextAlign.Center);
+
+                // The number changed this frame? Stamp the moment so the pop below can key off it. (First
+                // sight of a bot counts as a change — a one-off blip as it deploys, which reads as intent.)
+                if (_botCounters[i] != counter)
+                {
+                    _botCounters[i] = counter;
+                    _botCounterChanged[i] = simTime;
+                }
+                double since = simTime - _botCounterChanged[i];
+                float pop = since >= 0 && since < MagFlash ? (float)(1.0 - since / MagFlash) : 0f;
+
+                // #314 low-ammo warning (owner, 2026-07-19): the magazine's house red is the identity down
+                // the top of the belt; it warms to amber under 25 and snaps to a hot alarm red under 10 —
+                // the small honest touch the counter never had. Non-numeric readouts keep the house red.
+                RgbaColor digit = dry ? SegDim : SegLit;
+                if (!dry && int.TryParse(counter, out int rounds))
+                {
+                    if (rounds < 10) digit = SegAlarm;
+                    else if (rounds < 25) digit = SegWarn;
+                }
+                // On a decrement the digits flash brighter and swell for a frame or two — the owner loves
+                // to watch them move, so the change gets a subtle brighten-toward-white + size pop.
+                if (!dry && pop > 0f) digit = LerpToWhite(digit, 0.7f * pop);
+                float fontPx = MagBasePx * (1f + 0.16f * pop);
+
+                // The readout: a dark scoreboard panel with the two big digits, anchored above the bot so
+                // it never covers the mark or its neighbours. Plate stays a steady size; only the number pops.
+                float pw = 3.0f * scale, ph = 2.0f * scale;
+                float plateBottom = sy - 0.8f * scale;      // clears the bot box (half 0.55·scale) with a gap
+                float plateTop = plateBottom - ph;
+                FillRect(sx - pw / 2, plateTop, pw, ph, new RgbaColor(16, 10, 10, 225));
+                float baseY = (plateTop + plateBottom) / 2f + fontPx * 0.35f; // optical centre for the fixed-px glyphs
+                _renderer.DrawText(sx, baseY, counter, digit,
+                    $"bold {fontPx:0.#}px monospace", TextAlign.Center);
             }
         }
 
@@ -384,6 +432,15 @@ public sealed class DeckView
         _renderer.DrawText(ox, heightPx - 10, bottomHint, TextDim, "11px monospace", TextAlign.Center);
 
         _renderer.EndFrame();
+    }
+
+    // #314: brighten a colour toward white by t (0..1) — the one-frame decrement flash on the magazine
+    // digits. Alpha is preserved; only the RGB warms up.
+    private static RgbaColor LerpToWhite(RgbaColor c, float t)
+    {
+        t = Math.Clamp(t, 0f, 1f);
+        static byte L(byte v, float t) => (byte)(v + (255 - v) * t);
+        return new RgbaColor(L(c.R, t), L(c.G, t), L(c.B, t), c.A);
     }
 
     private void FillRect(float x, float y, float w, float h, RgbaColor color)
