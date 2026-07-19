@@ -24,7 +24,7 @@ public partial class Map
 
     /// <summary>The Galley's "Pour a tot" button funnels through the exact same PourRum the deck
     /// cantina console uses (see InteractAtConsole's Cantina case) — one rum ledger, two doors.</summary>
-    private void PourRumFromGalley() => ShowPulseMessage(PourRum(null, NerveModel.DrinkKind.GalleyTot));
+    private void PourRumFromGalley() => ShowPulseMessage(PourRum(null, NerveModel.DrinkKind.GalleyTot, withExcuse: true));
 
     private bool RumWobbleActive => (_lastTimestampMs ?? 0) < _wobbleUntilMs;
 
@@ -491,7 +491,7 @@ public partial class Map
         "To absent friends and slow freighters. 🍹",
     ];
 
-    private string PourRum(string? overrideLine, NerveModel.DrinkKind kind = NerveModel.DrinkKind.GalleyTot)
+    private string PourRum(string? overrideLine, NerveModel.DrinkKind kind = NerveModel.DrinkKind.GalleyTot, bool withExcuse = false)
     {
         double now = _lastTimestampMs ?? 0;
         _rumTots = now - _lastRumMs < 90_000 ? _rumTots + 1 : 1;
@@ -511,6 +511,15 @@ public partial class Map
             ? "That was the third tot. The deck feels… tilty. 🍹"
             : overrideLine ?? RumLines[(int)((SimTime / 60) % RumLines.Length)];
         string line = $"{baseLine} — {steadying}";
+        // #339 kin (owner 2026-07-19: "Captain needs excuse to drink :-D") — a SELF-poured drink carries
+        // the captain's own declared justification, blustery house-voice HOMAGE (Core owns the pool).
+        // Seeded per pour, sim-time salted and tot-count varied, so the same pour speaks the same reason
+        // and successive tots don't echo. Pure flavour; shared drinks and the clinical pill get none.
+        if (withExcuse)
+        {
+            ulong excuseSeed = DiceRule.Seed("drink-excuse", (long)SimTime, _rumTots);
+            line += $" — “{DrinkExcuses.LineFor(excuseSeed)}”";
+        }
         if (_rumTots >= 3)
         {
             _wobbleUntilMs = now + 25_000;
