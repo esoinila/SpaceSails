@@ -60,6 +60,8 @@ public static class SurfaceLayout
     {
         "miranda" => Miranda(field),
         "luna" => Luna(field),
+        // #370: an away-expedition rock's id carries its kind — route straight to the authored site ground.
+        _ when ExpeditionSite.TryParseKind(bodyId, out ExpeditionSiteKind kind) => ForExpedition(kind, field),
         _ => Seeded(bodyId ?? "", field),
     };
 
@@ -198,6 +200,91 @@ public static class SurfaceLayout
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, glyph) };
 
         return new Plan("THE DEEP RUINS", walls, marks);
+    }
+
+    // ── #370 · THE AWAY-EXPEDITION SITES. The special outdoors the owner's away-team gigs park next to
+    //    (issue #370: "some dig site … mystical ruins or structures, crashlanded ships … a previously
+    //    sealed piece of tunnel"). Three AUTHORED schemes, one per <see cref="ExpeditionSiteKind"/>, each
+    //    visibly its own ground and distinct from Miranda/Luna/the seeded rubble — an homage to
+    //    Alien/Prometheus energy, never a reproduction. The client calls this instead of For() when the
+    //    excursion is an expedition; the fence/tube/tracker laws stay the caller's shared law. ──────────
+    /// <summary>Lay out an away-expedition site's ground for its <paramref name="kind"/>. Authored, pure,
+    /// and clamped inside the field's safe span exactly like every other scheme, so the way down always
+    /// exists and the edge lanes stay open.</summary>
+    public static Plan ForExpedition(ExpeditionSiteKind kind, in Field field) => kind switch
+    {
+        ExpeditionSiteKind.CrashedHull => CrashedHull(field),
+        ExpeditionSiteKind.SealedTunnel => SealedTunnel(field),
+        _ => MysticalRuins(field),
+    };
+
+    // Mystical ruins — a HENGE: a ring of standing-stone slabs around a central altar, with no box maze.
+    private static Plan MysticalRuins(in Field f)
+    {
+        double ax = f.AnchorX, ay = f.AnchorY;
+        var walls = new System.Collections.Generic.List<Wall>();
+
+        // Eight standing stones on a circle of radius ~10 du around the anchor (each a small solid slab).
+        const int stones = 8;
+        const double ring = 10.0;
+        for (int i = 0; i < stones; i++)
+        {
+            double a = (2.0 * System.Math.PI * i) / stones;
+            double sx = ax + (ring * System.Math.Cos(a));
+            double sy = ay + (ring * System.Math.Sin(a));
+            AddClampedBox(walls, f, sx - 1.1, sy - 1.1, sx + 1.1, sy + 1.1, hull: true);
+        }
+
+        // The central altar — a small freestanding hull slab at the heart.
+        AddClampedBox(walls, f, ax - 1.6, ay - 1.4, ax + 1.6, ay + 1.4, hull: true);
+
+        var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, "⟁ THE STANDING STONES") };
+        return new Plan("THE STANDING STONES", walls, marks);
+    }
+
+    // Crash-landed ship — a long TORN FUSELAGE half-buried up the field: the hull outline as an open box
+    // with the port side blown out (the tear you walk in through), plus a few internal ribs. No ring, no
+    // rails — reads as a wreck.
+    private static Plan CrashedHull(in Field f)
+    {
+        double ax = f.AnchorX, ay = f.AnchorY;
+        var walls = new System.Collections.Generic.List<Wall>();
+
+        // The fuselage: a tall open box (deep→shallow), left side torn away (gapSide 2 = left open).
+        AddOpenBox(walls, f, cx: ax, cy: ay + 8, w: 9, h: 30, gapSide: 2);
+        // The nose: a solid crumpled block at the deep end.
+        AddClampedBox(walls, f, ax - 3, ay - 8, ax + 3, ay - 4, hull: true);
+        // Internal ribs — a few short cross-spans inside the hull (bulkhead frames), open ended.
+        AddClampedSpan(walls, f, ax, ay + 2, 6, horizontal: true, hull: false);
+        AddClampedSpan(walls, f, ax, ay + 12, 6, horizontal: true, hull: false);
+        AddClampedSpan(walls, f, ax, ay + 20, 6, horizontal: true, hull: false);
+
+        var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 9, "⛢ THE CRASHED HULL") };
+        return new Plan("THE CRASHED HULL", walls, marks);
+    }
+
+    // The owner's Fate-system anecdote made ground: a charge arc holed the rock and revealed a SEALED
+    // TUNNEL of habitants ejected in a violent event, dead there. Two long parallel tunnel walls run deep
+    // from a breach at the top, cross-bulkheads rung between them, and a chamber (the tomb) at the deep end.
+    private static Plan SealedTunnel(in Field f)
+    {
+        double ax = f.AnchorX, ay = f.AnchorY;
+        var walls = new System.Collections.Generic.List<Wall>();
+
+        double tunTop = ay + 22, tunDeep = ay - 2;
+        double leftWall = ax - 4, rightWall = ax + 4;
+        // The two tunnel walls (solid hull), running deep from the breach; the breach itself is the open
+        // top (no wall closes it), so you enter from the field into the shaft.
+        AddClampedSpan(walls, f, leftWall, (tunTop + tunDeep) / 2, tunTop - tunDeep, horizontal: false, hull: true);
+        AddClampedSpan(walls, f, rightWall, (tunTop + tunDeep) / 2, tunTop - tunDeep, horizontal: false, hull: true);
+        // Cross-bulkheads (rungs) — short open spans between the walls, staggered, dead-end flavour.
+        AddClampedSpan(walls, f, ax, ay + 16, 8, horizontal: true, hull: false);
+        AddClampedSpan(walls, f, ax, ay + 6, 8, horizontal: true, hull: false);
+        // The tomb chamber at the deep end — a small open box (one side breached).
+        AddOpenBox(walls, f, cx: ax, cy: ay - 6, w: 12, h: 6, gapSide: 1);
+
+        var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 6, "⌸ THE SEALED TOMB") };
+        return new Plan("THE SEALED TUNNEL", walls, marks);
     }
 
     // ── Builders. Every span is clamped into the field's safe span so no feature ever intrudes on the

@@ -88,6 +88,13 @@ public partial class Map
     // re-armed fresh at every touchdown so the first mover of a new excursion always chirps.
     private MotionTracker.ChirpState _chirp = MotionTracker.ChirpState.Fresh;
 
+    // #379 (owner, Ganymede playtest + Evening wind #18): the per-spell SIGHTING tally. A fresh contact
+    // cresting the long ear is a discrete, diminishing jolt (first full, each subsequent within the spell a
+    // fraction), resetting after the fan has been quiet a while. Re-armed fresh at every touchdown so the
+    // first fright of a new excursion always lands full. The math is NerveModel.AdvanceSightings; this is the
+    // carried state, threaded through StepNerve alongside the continuous drain.
+    private NerveModel.SightingSpell _sightings = NerveModel.SightingSpell.Fresh;
+
     // #338 law 1: the tracker HEARS several times farther than the eye sees. The surface camera shows a
     // 64-du-wide field, so the visible half-width is ~32 du; the long ear reaches that × the tunable
     // multiple. Used to gate the first-contact chirp on a contact the tracker can actually hear.
@@ -110,6 +117,14 @@ public partial class Map
         if (_surface is null)
         {
             return null; // not on a surface — nothing to report
+        }
+
+        // #370: on the away-team gig the HUD's ship-line becomes the AWAY CLOCK — time left in shuttle range
+        // (owner: "a mission clock at the away site that ticks down the window"). It supersedes the ordinary
+        // hold/docked line while the team is on the gig's site.
+        if (_surface is { Expedition: true } && ExpeditionComms() is { } away)
+        {
+            return away;
         }
 
         if (_dockedHavenId is not null)
@@ -237,6 +252,17 @@ public partial class Map
         // landing starts empty, exactly like the Reever positions (never saved).
         public Dictionary<(int X, int Y), BeachComber.Outcome> Swept { get; } = [];
         public int Catches { get; set; }
+        // #370 · the away-expedition state, live only when this landing is on the gig's site. Expedition
+        // gates OFF the endless tide and arms the diced on-site beats (AwayExpeditionEvents). The accruals
+        // are settled into the payout on liftoff (ExpeditionReward): the ground-time clock, the last beat
+        // ordinal fired, banked discovery bonus, and scientists lost to the dark.
+        public bool Expedition { get; init; }
+        public double ExpeditionOnSiteSeconds { get; set; }
+        public int ExpeditionLastOrdinal { get; set; } = -1;
+        public int ExpeditionBonus { get; set; }
+        public int ExpeditionScientistsLost { get; set; }
+        public bool ExpeditionStrandingFired { get; set; } // the one-time "the window closed" toll has rolled
+
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
@@ -275,6 +301,10 @@ public partial class Map
         await DescentPhaseAsync("clearing the bay…");
         AdvanceShuttleClock(stop.TravelSeconds); // the flight down (abstracted by the tube) costs the clock
 
+        // #370: is this landing the away-team's gig site? If so the excursion arms the expedition (no tide,
+        // diced beats, the away clock) instead of a normal surface visit.
+        bool isExpeditionSite = _expedition is { } plan && plan.SiteBodyId == stop.Body.Id;
+
         var excursion = new SurfaceExcursion
         {
             Stop = stop,
@@ -282,6 +312,7 @@ public partial class Map
             PendingCoin = chest.Coin,
             PendingCargo = [.. chest.Cargo],
             ThreatSeed = ReeverSeed(stop.Body.Id),
+            Expedition = isExpeditionSite,
         };
 
         // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet
@@ -298,6 +329,7 @@ public partial class Map
         _reevers.Clear();
         _lastNearestReeverRange = null;
         _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
+        _sightings = NerveModel.SightingSpell.Fresh; // #379: a fresh watch — the first fright of it lands full
 
         // #327: snapshot the mothership's hold at the moment of boarding DOWN — the reference the surface
         // ladder erodes against. A kept orbit quotes pulses ÷ Lab-25 trim rate; an unkept one is 0 (the
@@ -340,7 +372,15 @@ public partial class Map
         string bots = take > 0
             ? $" {take} sentry bot{(take == 1 ? "" : "s")} in the sling — press T on the surface to set one down."
             : "";
-        ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
+        if (isExpeditionSite && _expedition is { } gig)
+        {
+            string who = gig.Flavor == ExpeditionFlavor.Science ? "science team" : "survey crew";
+            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. The {who} scrambles down the tube and fans out across the site. The ship holds the course-match above — watch the away clock. Walk them through it.");
+        }
+        else
+        {
+            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
+        }
         _descentPhase = null;
     }
 
@@ -764,7 +804,16 @@ public partial class Map
         StepDigChannel(dtRealSeconds);
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
-        StepTide(dtRealSeconds);
+        // #370: an away-expedition site runs NO endless tide (owner: "not a continuous endless stream like
+        // on Miranda"). Its own diced beats may rouse a LIMITED pack instead; the tracker stays live.
+        if (_surface is { Expedition: true })
+        {
+            StepExpedition(dtRealSeconds);
+        }
+        else
+        {
+            StepTide(dtRealSeconds);
+        }
         StepFirstContactChirp(dtRealSeconds);
         TryRecoverDroppedChest();
     }
@@ -814,6 +863,25 @@ public partial class Map
         NerveModel.Step step = NerveModel.Advance(_nerve, _monolithSeen, in frame);
         _nerve = step.Nerve;
         _monolithSeen = step.MonolithSeen;
+
+        // #379 · the per-spell diminishing sightings (Evening wind #18). Only the regolith frays you — a
+        // mover seen from the airlock's safety costs nothing (same law as the drain), so off the regolith we
+        // feed the tally zero movers, which also winds the spell down toward its quiet reset. The fresh
+        // contacts that crest THIS frame land a diminishing, S-curve-shaped jolt.
+        int heardMovers = 0;
+        if (onRegolith && _surface is not null)
+        {
+            double detection = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
+            var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+            heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
+        }
+        (NerveModel.SightingSpell nextSpell, int freshSightings) =
+            NerveModel.AdvanceSightings(_sightings, heardMovers, dtRealSeconds);
+        if (onRegolith && freshSightings > 0)
+        {
+            _nerve = NerveModel.SightingDrain(_nerve, _sightings.Seen, freshSightings);
+        }
+        _sightings = nextSpell;
 
         if (step.MonolithHitFired)
         {
@@ -1182,6 +1250,11 @@ public partial class Map
             ex.Catches++;
         }
         _heat = EncounterRule.RaiseHeat(_heat, 1, SimTime);
+        // #379 · Evening wind #19: "if they get to skin, that is a different thing." A hand on you is not a
+        // sighting — a big, FLAT nerve lump that bypasses the diminishing-sighting rule and the S-curve, so
+        // touch always hurts noticeably. Debounced by the same catch cadence above, so a brush is not a
+        // stunlock. (The gauge only shows on-excursion, but the nerve carries — a mauling follows you aboard.)
+        _nerve = NerveModel.Shock(_nerve, NerveModel.TouchShock);
         RendererInterop.PlayCue("alarm");
         ShowPulseMessage("🩸 An Old One lays hands on you — it wants no loot, only you. Tear free and RUN!");
         RequestVaultSave();
@@ -1216,6 +1289,10 @@ public partial class Map
             }
         }
 
+        // #370: an away-team gig settles its payout on the ride home — the fat base plus banked discoveries,
+        // docked for any scientist lost to the dark (ExpeditionReward). Narrated, then the gig is closed.
+        bool settledExpedition = ex.Expedition && SettleExpedition(ex);
+
         _surface = null;
         _reevers.Clear();
         _lastNearestReeverRange = null;
@@ -1236,7 +1313,7 @@ public partial class Map
                 : "";
             ShowPulseMessage($"🛸 Lifted off {ex.Stop.Body.Name}. Map filed (🗺).{tail}{botTail}");
         }
-        else
+        else if (!settledExpedition) // an expedition settle already spoke its payout line
         {
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
             ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}");
@@ -1246,9 +1323,12 @@ public partial class Map
     // ── The lonely automated kiosk (#313 amenity): a PLACE has shops. Pulse receipts (#119 style),
     //    house voice — last restocked before the war. ──
 
+    // Slot 0 is the souvenir tee — its item + gag are filled from the moon underfoot at buy time
+    // (SurfaceSouvenir), so Ganymede sells a Ganymede shirt, not Miranda's (#379). The placeholder
+    // strings below are never shown; they only hold slot 0's price and mark the seam.
     private static readonly (string Item, int Price, string Line)[] KioskStock =
     [
-        ("a MIRANDA souvenir tee", 15, "The print's cracked; the sizing is 'optimistic pre-war human'."),
+        ("the local souvenir tee", 15, "(keyed to the walked body — see VisitKiosk)"),
         ("a fridge magnet", 8, "It clamps to your suit's chestplate and refuses to let go. Value: eternal."),
         ("a vacuum-sealed hot meal", 12, "The label promises 'MEAT-ADJACENT'. The heater still works. Mostly."),
     ];
@@ -1257,8 +1337,21 @@ public partial class Map
 
     private void VisitKiosk()
     {
-        (string item, int price, string line) = KioskStock[_kioskPicks % KioskStock.Length];
+        if (_surface is not { } ex)
+        {
+            return; // the kiosk only sells on the ground it stands on
+        }
+        int slot = _kioskPicks % KioskStock.Length;
+        (string item, int price, string line) = KioskStock[slot];
         _kioskPicks++;
+        if (slot == 0)
+        {
+            // The souvenir tee, keyed to the moon actually underfoot (#379): Ganymede's kiosk prints a
+            // Ganymede shirt; Miranda keeps its canon line. Copy is generated, so any landable body works.
+            CelestialBody body = ex.Stop.Body;
+            item = SurfaceSouvenir.TeeItem(body.Name);
+            line = SurfaceSouvenir.TeeGag(body.Id, body.Name);
+        }
         if (_credits < price)
         {
             ShowPulseMessage($"🛒 {item} — {price} cr. The slot blinks INSUFFICIENT FUNDS in a dead language. Empty pockets, captain.");

@@ -29,10 +29,14 @@ public static class NerveModel
     public const double Min = 0.0;
 
     // ── Per-second drains while OUT ON THE REGOLITH (all FLAGGED for the owner's tuning) ──
-
-    /// <summary>Each moving contact on the tracker frays you this much per second. It scales with the
-    /// count — a lone shambler is a prickle; a wall of signal converging from every edge is a flood.</summary>
-    public const double MovingContactDrainPerSecond = 0.7;
+    //
+    // #379 (owner, Ganymede playtest 2026-07-19 + Evening wind #18): the moving-contact SIGHTING stress no
+    // longer lives here as a linear per-second term. "Seeing one reever after already seeing one more does
+    // not make you that much faster more nuts" — a wall of signal draining linearly is exactly why the gauge
+    // bottomed out too easily. Sightings are now DISCRETE, per-spell diminishing jolts (see the sighting
+    // seam below), so this continuous rate carries only the SUSTAINED situation: a live chase, a dig you
+    // cannot abandon under threat, a corner. The tracker's movers gate the dig-under-threat term (something
+    // is inbound) but no longer add a rate of their own.
 
     /// <summary>A pack is up and converging — a live chase in progress. Drains per second on top of the
     /// per-contact prickle: the knowledge that the ground roused, not just that something moves.</summary>
@@ -51,6 +55,13 @@ public static class NerveModel
     /// <summary>FIRST SIGHT OF THE MONOLITH (the #226 hook #313/#318 named) — the big hit, a lump not a
     /// rate. Fires exactly once in a captain's life (persisted in the vault), never again on a revisit.</summary>
     public const double MonolithSightShock = 24.0;
+
+    /// <summary>A REEVER LAYS HANDS ON YOU (owner, Evening wind #19, 2026-07-19: "if they get to skin, that
+    /// is a different thing"). Touch is NOT a sighting — it is a big, flat lump that BYPASSES the
+    /// per-spell diminishing rule entirely (habituation never dulls being grabbed) and, like the monolith,
+    /// bypasses the S-curve so it always hurts noticeably. Larger than a whole spell's worth of sighting
+    /// jolts. Debounced by the client's catch cadence so one brush is not a stunlock. FLAGGED for tuning.</summary>
+    public const double TouchShock = 12.0;
 
     // ── Ease-off: the ship is safety ──
 
@@ -73,10 +84,9 @@ public static class NerveModel
     public static double DrainRatePerSecond(in Stressors s)
     {
         double rate = 0.0;
-        if (s.MovingContacts > 0)
-        {
-            rate += MovingContactDrainPerSecond * s.MovingContacts;
-        }
+        // #379: moving contacts no longer add a linear per-second rate — their SIGHTING stress is priced as
+        // discrete, per-spell diminishing jolts (see AdvanceSightings / SightingSeriesCost). They still gate
+        // the dig-under-threat term below (a mover on the tracker means something is inbound).
         if (s.ChaseActive)
         {
             rate += ChaseDrainPerSecond;
@@ -92,18 +102,143 @@ public static class NerveModel
         return rate;
     }
 
+    // ── #379 · The S-curve rate law (owner, Ganymede playtest 2026-07-19) ────────────────────────────
+    //
+    //   "My sanity is bottoming out too easily at Ganymede … it restores too quick back on board. It should
+    //    be kind of logarithmic … S-curve … slow at ends but quite fast in middle."
+    //
+    // Every CONTINUOUS change to the nerve — the regolith's drain, the ship's ease-off, and each discrete
+    // SIGHTING jolt — is scaled by a shape keyed on the CURRENT nerve level. A steady captain shrugs off the
+    // first frights (drain slow near full); a shattered one is slow to mend (recovery slow near empty); the
+    // middle of the gauge is the slide, where change is fastest. The math is a floored parabola:
+    //
+    //   RateScale(n) = RateFloor + (1 − RateFloor) · 4·f·(1 − f),   f = n / Max
+    //
+    // 4·f·(1−f) is the classic logistic-shaped bump: 0 at both ends, exactly 1.0 at mid-gauge (f = ½). The
+    // floor lifts the ends off zero so a captain can still (slowly) bottom out and still (slowly) climb back
+    // — "slow at the ends", never frozen. Because the peak is pinned at 1.0, MID-GAUGE change is UNCHANGED
+    // from the pre-#379 tuning: the owner's current feel is preserved exactly at n = 50, and only the ends
+    // taper. Symmetric, so ONE shape serves both drain and recovery. DISCRETE reliefs (drink/pill/sleep) do
+    // NOT ride this — they keep their flat, already-tuned magnitudes.
+
+    /// <summary>How slowly the gauge moves at the very ends, as a fraction of its mid-gauge speed — the floor
+    /// that keeps "slow at the ends" from becoming "frozen at the ends" (a captain must still be able to
+    /// bottom out, and to climb back). FLAGGED for the owner's tuning.</summary>
+    public const double RateFloor = 0.15;
+
+    /// <summary>The S-curve rate multiplier for the current <paramref name="nerve"/>: a floored parabola that
+    /// is <see cref="RateFloor"/> at both ends and exactly 1.0 at mid-gauge, so continuous change is slowest
+    /// near full and near empty and fastest through the middle. Pure and in [<see cref="RateFloor"/>, 1].</summary>
+    public static double RateScale(double nerve)
+    {
+        double f = Fraction(nerve);
+        return RateFloor + ((1.0 - RateFloor) * 4.0 * f * (1.0 - f));
+    }
+
     /// <summary>Apply <paramref name="dtSeconds"/> of a situation's drain to the current nerve, clamped to
-    /// the gauge. Pure — same nerve + same stressors + same dt always yields the same result.</summary>
+    /// the gauge. The raw per-second rate is shaped by the <see cref="RateScale"/> S-curve at the current
+    /// level (slow near the ends, fast mid-gauge). Pure — same nerve + same stressors + same dt always yields
+    /// the same result.</summary>
     public static double Drain(double nerve, in Stressors s, double dtSeconds) =>
-        Clamp(nerve - DrainRatePerSecond(s) * System.Math.Max(0.0, dtSeconds));
+        Clamp(nerve - (DrainRatePerSecond(s) * RateScale(nerve) * System.Math.Max(0.0, dtSeconds)));
 
     /// <summary>The ease-off: return the nerve toward <see cref="Max"/> at <see cref="AboardRecoveryPerSecond"/>
-    /// for <paramref name="dtSeconds"/>, clamped. The safety the ship (or the airlock) provides.</summary>
+    /// for <paramref name="dtSeconds"/>, shaped by the <see cref="RateScale"/> S-curve (a shattered captain
+    /// mends slowly near the floor, a near-steady one settles gently near full), clamped. The safety the ship
+    /// (or the airlock) provides.</summary>
     public static double Recover(double nerve, double dtSeconds) =>
-        Clamp(nerve + AboardRecoveryPerSecond * System.Math.Max(0.0, dtSeconds));
+        Clamp(nerve + (AboardRecoveryPerSecond * RateScale(nerve) * System.Math.Max(0.0, dtSeconds)));
 
-    /// <summary>Deal a one-time lump shock (the monolith's first-sight hit), clamped to the gauge.</summary>
+    /// <summary>Deal a one-time lump shock (the monolith's first-sight hit, or a Reever's touch), clamped to
+    /// the gauge. FLAT — a lump, not a rate: it bypasses the <see cref="RateScale"/> S-curve so a big
+    /// one-time horror always lands at its full magnitude (owner's #19: touch "must always hurt").</summary>
     public static double Shock(double nerve, double amount) => Clamp(nerve - amount);
+
+    // ── #379 · Diminishing SIGHTINGS (owner, Evening wind #18, 2026-07-19) ───────────────────────────
+    //
+    //   "seeing one reever after already seeing one more does not make you that much faster more nuts."
+    //
+    // A fresh contact cresting onto the tracker is a JOLT — but the shocks habituate over a watch. The FIRST
+    // fresh sighting of a spell lands the full <see cref="SightingShock"/>; each subsequent fresh contact
+    // within the same spell lands a <see cref="SightingDecay"/> fraction of the one before (so the whole
+    // spell's jolts sum to at most SightingShock / (1 − SightingDecay), never a runaway flood). The tally
+    // resets after the tracker has been genuinely QUIET for a while — a fresh spell starts fresh-frightened.
+    // Each jolt still rides the <see cref="RateScale"/> S-curve, so a steady captain shrugs the first frights.
+    //
+    // This is the sighting counterpart to the tracker's first-contact chirp (MotionTracker.StepChirp): the
+    // same 0→N edge and the same "clear for a while" hysteresis, but counting EVERY fresh contact of a spell
+    // (not just the first) so the diminishing has something to count. Pure and seeded-free (a plain tally).
+
+    /// <summary>The full nerve cost of the FIRST fresh sighting of a spell, before the per-spell diminishing
+    /// and the S-curve. A discrete jolt, not a rate. FLAGGED for the owner's tuning.</summary>
+    public const double SightingShock = 4.0;
+
+    /// <summary>The per-spell diminishing factor: the Nth fresh sighting of a spell costs this fraction of the
+    /// (N−1)th (so 1.0, 0.5, 0.25, … at 0.5). Below 1 so repeats soothe toward nothing; the whole spell sums
+    /// to <see cref="SightingShock"/> / (1 − this). FLAGGED for the owner's tuning.</summary>
+    public const double SightingDecay = 0.5;
+
+    /// <summary>How long the tracker must be QUIET (no movers heard) before the sighting spell resets and the
+    /// next fresh contact is a full fright again — the habituation's memory. Kin to
+    /// <see cref="MotionTracker.ChirpReArmSeconds"/> (the chirp's re-arm), a touch longer so a brief lull does
+    /// not wipe a watch's worth of steadying. FLAGGED for the owner's tuning.</summary>
+    public const double SightingQuietResetSeconds = 6.0;
+
+    /// <summary>The running state of a sighting SPELL (one excursion-watch's worth of frights): how many
+    /// fresh contacts have been seen so far (<paramref name="Seen"/> — drives the diminishing), how many
+    /// movers the tracker heard LAST frame (<paramref name="PrevMovers"/> — so a RISE is a fresh contact),
+    /// and how long the fan has been quiet (<paramref name="QuietSeconds"/> — the reset timer). Pure.</summary>
+    public readonly record struct SightingSpell(int Seen, int PrevMovers, double QuietSeconds)
+    {
+        /// <summary>A fresh watch: nothing seen, nothing heard, so the very first mover is a full fright.</summary>
+        public static SightingSpell Fresh => new(0, 0, 0.0);
+    }
+
+    /// <summary>Advance the sighting spell one frame. <paramref name="movingContacts"/> is how many movers the
+    /// tracker HEARS this frame (the same long-ear count that drives the chirp). Returns the next spell state
+    /// and how many FRESH contacts crested THIS frame (a rise over last frame's count) — the client prices
+    /// those through <see cref="SightingSeriesCost"/>. Sustained quiet (≥ <see cref="SightingQuietResetSeconds"/>)
+    /// ends the spell, so the next fright is full again. Pure: same state + same count + same dt → same result.</summary>
+    public static (SightingSpell Next, int FreshSightings) AdvanceSightings(
+        SightingSpell prev, int movingContacts, double dtSeconds)
+    {
+        double dt = System.Math.Max(0.0, dtSeconds);
+        if (movingContacts <= 0)
+        {
+            double quiet = prev.QuietSeconds + dt;
+            // Once the fan has been clear long enough, the watch's habituation lapses — reset the tally.
+            int seen = quiet >= SightingQuietResetSeconds ? 0 : prev.Seen;
+            return (new SightingSpell(seen, 0, quiet), 0);
+        }
+
+        // Movers present: any rise over last frame's count is that many fresh contacts cresting the ear.
+        int fresh = System.Math.Max(0, movingContacts - prev.PrevMovers);
+        return (new SightingSpell(prev.Seen + fresh, movingContacts, 0.0), fresh);
+    }
+
+    /// <summary>The raw nerve cost (before the S-curve) of <paramref name="freshCount"/> fresh sightings that
+    /// crest when <paramref name="priorSeen"/> have already been seen this spell: a geometric run of
+    /// <see cref="SightingShock"/> · <see cref="SightingDecay"/>^k. The first fright of a fresh spell is full;
+    /// the more a watch has already borne, the smaller each new one. Never negative.</summary>
+    public static double SightingSeriesCost(int priorSeen, int freshCount)
+    {
+        if (freshCount <= 0 || priorSeen < 0)
+        {
+            return 0.0;
+        }
+        double first = SightingShock * System.Math.Pow(SightingDecay, priorSeen);
+        // Geometric sum first·(1 + d + … + d^(fresh-1)); the d==1 branch guards the (1−d) divide.
+        double run = SightingDecay >= 1.0
+            ? first * freshCount
+            : first * (1.0 - System.Math.Pow(SightingDecay, freshCount)) / (1.0 - SightingDecay);
+        return run;
+    }
+
+    /// <summary>Apply the fresh sightings' jolt to the current nerve: the diminishing
+    /// <see cref="SightingSeriesCost"/> shaped by the <see cref="RateScale"/> S-curve at the current level,
+    /// clamped. Pure — the discrete-jolt counterpart of <see cref="Drain"/>.</summary>
+    public static double SightingDrain(double nerve, int priorSeen, int freshCount) =>
+        Clamp(nerve - (SightingSeriesCost(priorSeen, freshCount) * RateScale(nerve)));
 
     // ── A drink steadies the nerve (#308/#321 → #226): the NAMED SANITY-RELIEF SEAM, wired. ──────────
     //
