@@ -250,6 +250,14 @@ public partial class Map
     private static readonly RgbaColor HavenLabelColor = new(232, 190, 200);
     private const double LabelZoomThresholdForStations = 5e9; // m/px
 
+    // The 🛬 landable mark (owner, 2026-07-19 playtest: "some similar meme as the anchor for places that
+    // can be landed to with the shuttle on the map"). The sibling of the ⚓ dock glyph: every landable
+    // moon carries it, in two states — dim regolith tan = landable in principle; bright + a size up =
+    // within the shuttle's reach of YOUR ship right now, so a docked captain sees at a glance where the
+    // shuttle could go this moment. The bright set is the SAME range truth the shuttle-bay board reads.
+    private static readonly RgbaColor LandableBaseColor = new(196, 180, 150, 120);
+    private static readonly RgbaColor LandableInRangeColor = new(240, 226, 190, 245);
+
     private static RgbaColor Tinted(RgbaColor c, RgbaColor accent, double amount) => new(
         (byte)Math.Clamp(c.R * (1 - amount) + accent.R * amount, 0, 255),
         (byte)Math.Clamp(c.G * (1 - amount) + accent.G * amount, 0, 255),
@@ -2120,6 +2128,19 @@ public partial class Map
                 // low (moon havens you orbit instead, so they carry the pink wash but no anchor).
                 string label = IsDockableHaven(body) ? $"⚓ {body.Name}" : body.Name;
                 _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, label, labelColor);
+
+                // The ⚓'s sibling: a 🛬 under any shuttle-landable ground (a moon, by the same pure
+                // ShuttleExcursion.IsLandableSurface the destination board uses — never a hardcoded body
+                // list, so it lights up correctly whatever the moons' phases). Bright + a size up when
+                // that ground is within the shuttle's reach of the ship right now (the _landableInRange
+                // set, the board's own range truth); dim regolith tan when landable only in principle.
+                if (ShuttleExcursion.IsLandableSurface(body.Kind))
+                {
+                    bool inReach = _landableInRangeIds.Contains(body.Id);
+                    _renderer.DrawText(sx + radiusPx + 4, sy + radiusPx + 20, "🛬",
+                        inReach ? LandableInRangeColor : LandableBaseColor,
+                        inReach ? "13px sans-serif" : "11px sans-serif", TextAlign.Left);
+                }
             }
         }
     }
