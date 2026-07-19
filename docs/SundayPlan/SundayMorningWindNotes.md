@@ -28,8 +28,16 @@ largely unplaytested — the test matrix below is the safety net.*
    over it — tells you something. Learning a contact's favorite is progress; the drink is a
    dialogue channel, not just a trust coin. (Builds on #355's offer-first flow and #347.)
 
+### Missions stay in the neighborhood
+6. **Mission generation prefers nearby destinations** (owner: "adjust the missions to prefer
+   staying in relatively nearby places. Having 10 year flights should be an exception in mid
+   mission, not anything casual :-D"). The offer mix weights local-system hops (same planet's
+   moons/stations, then neighbor planets) heavily; cross-system sagas appear RARELY — and when
+   they do, #357's HaulReward already makes them pay like the exception they are. Pay-scale and
+   offer-frequency are two halves of one law: long = rare + rich.
+
 ### The art backlog
-6. Work the outstanding Grok image queue (hoard manifest, posters, gear art hooks from #348,
+7. Work the outstanding Grok image queue (hoard manifest, posters, gear art hooks from #348,
    plus whatever the surface-variety and drinks lanes need). Grok = images only; Fable runs the
    easel.
 
