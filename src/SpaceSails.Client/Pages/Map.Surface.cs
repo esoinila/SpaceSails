@@ -240,6 +240,7 @@ public partial class Map
         public double TideNextGap { get; set; }
         public int TideSpawnIndex { get; set; }
         public bool TideAnnounced { get; set; }          // the one-time "the deep stirs" notice has fired
+        public bool SentryHintShown { get; set; }         // #380 item 7: the one-time first-deploy sentry hint has fired
 
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
@@ -655,7 +656,10 @@ public partial class Map
         ex.Cache = cache;
         RebuildSurfaceDeck(); // the chest is down; the new ✗ joins the ground where you dug
         RequestVaultSave();
-        ShowPulseMessage($"⛏ Chest buried — {cache.ContentsLine()} off the books. The ✗ marks this spot. Now get back to the shuttle.");
+        // #380 item 6 (owner ruling 2026-07-19: "new players are left mystified") — the discovery risk was
+        // taught only at the moment of loss. One line at bury time: rivals may dig it up over the coming
+        // days, and Reever-haunted ground keeps it safer.
+        ShowPulseMessage($"⛏ Chest buried — {cache.ContentsLine()} off the books. The ✗ marks this spot. Rivals may dig it up over the coming days; the more Reevers haunt this ground, the safer it stays. Now get back to the shuttle.");
     }
 
     // The beach-comber probe resolves (the fishing expedition's payoff, or its honest shrug). The D100
@@ -1070,6 +1074,15 @@ public partial class Map
         carried.X = _avatarX;
         carried.Y = _avatarY;
         RendererInterop.PlayCue("board");
+        // #380 item 7 (owner ruling 2026-07-19: "new players are left mystified") — the FIRST deploy of an
+        // excursion spells the whole doctrine out once, before the bots bite: they run dry, and a bot left
+        // behind at liftoff is a write-off. Later deploys keep the short line.
+        if (!ex.SentryHintShown)
+        {
+            ex.SentryHintShown = true;
+            ShowPulseMessage($"🤖 {carried.Unit} deployed — magazine {SentryBot.Readout(carried.Rounds)}. The bot holds the line while its magazine lasts — a siege always outlasts the ammo. Bots buy time, not safety; don't forget them at liftoff.");
+            return;
+        }
         ShowPulseMessage($"🤖 {carried.Unit} deployed — magazine {SentryBot.Readout(carried.Rounds)}. It'll hold this arc until the counter reads 00. Bots buy time, not safety.");
     }
 

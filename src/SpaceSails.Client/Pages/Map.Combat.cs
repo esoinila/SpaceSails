@@ -1345,7 +1345,11 @@ public partial class Map
         string id = $"hunter-{_hunterSeq++}";
         _hunters.Add(EncounterRule.SpawnHunter(id, callsign, origin.Id, originPosition, originVelocity, SimTime));
         PushNewsEvent(NewsWire.NewsEventKind.HunterDispatched, callsign, origin.Name);
-        ShowPulseMessage($"{callsign} is fitting out at {origin.Name} — five days, then she flies.");
+        // #380 item 5 (owner ruling 2026-07-19: "new players are left mystified") — the robbery bought
+        // this hunter, but the fit-out delay meant muscle appeared days later with no causal link. This
+        // pulse draws the chain in-voice the moment the collector is spawned; the callsign rides the news
+        // headline behind it.
+        ShowPulseMessage($"Word's out — your last job bought you a collector ({callsign}). It's fitting out at {origin.Name}; days, not weeks.");
     }
 
     private void FireWarningShot(string npcId)
@@ -1529,6 +1533,11 @@ public partial class Map
 
     // Hot units currently in the hold (what confiscation would see as evidence — until it's buried).
     private int HotHoldUnits() => _cargoByClass.Where(kv => IsHotClass(kv.Key)).Sum(kv => kv.Value);
+
+    // #380 item 9 (owner ruling 2026-07-19: "new players are left mystified") — the 🔥 hot-cargo flag
+    // rode the confiscation and rescue manifests unglossed. Hung as a hover title on the flag wherever it
+    // appears (a one-time pulse is awkward inside the manifest markup), so its first sight explains it.
+    private const string HotGlossTitle = "🔥 hot = taken under heat — collectors seize it in full, fences launder it.";
 
     // #202: the crimes' books — a loot line per completed boarding, newest first, projected into the
     // Captain's ledger alongside the honest autopilot receipts (the established tip idiom).

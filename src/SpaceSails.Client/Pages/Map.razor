@@ -2088,7 +2088,7 @@
                         <ul class="rescue-manifest">
                             @foreach (RescueOffer.FeeLine _line in _rescueLines)
                             {
-                                <li>@(_line.Hot ? "🔥" : "📦") @_line.Units @_line.CargoClass (@_line.Value.ToString("N0", CultureInfo.InvariantCulture) cr)@(_line.Hot ? " — hot" : "")</li>
+                                <li><span title="@(_line.Hot ? HotGlossTitle : null)">@(_line.Hot ? "🔥" : "📦")</span> @_line.Units @_line.CargoClass (@_line.Value.ToString("N0", CultureInfo.InvariantCulture) cr)@(_line.Hot ? " — hot" : "")</li>
                             }
                         </ul>
                     }
@@ -2766,7 +2766,7 @@
                                 }
                                 @foreach (BustedRule.CargoSeizure s in conf.Seizures)
                                 {
-                                    <div>@(s.Hot ? "🔥" : "📦") −@s.Units @s.CargoClass (@s.Value.ToString("N0") cr)@(s.Hot ? " — hot" : " — clean, minimum take")</div>
+                                    <div><span title="@(s.Hot ? HotGlossTitle : null)">@(s.Hot ? "🔥" : "📦")</span> −@s.Units @s.CargoClass (@s.Value.ToString("N0") cr)@(s.Hot ? " — hot" : " — clean, minimum take")</div>
                                 }
                                 @if (conf.CoinTaken == 0 && conf.Seizures.Count == 0)
                                 {
