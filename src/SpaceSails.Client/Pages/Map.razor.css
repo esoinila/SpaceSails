@@ -2537,6 +2537,38 @@
     margin-bottom: 0.4rem;
 }
 
+/* #380 item 1 — the WHAT HAPPENED block on the resurrection card: the cause image + a place-dependent
+   house-voice line, set off above the brain-backup copy so the fiction explains itself. The death art is
+   authored (Grok), so it drops the sepia tinting like the other has-art frames; a short one keeps the
+   card compact. A hairline rule under the block separates it from the wake receipt below. */
+.busted-whathappened {
+    text-align: center;
+    margin: 0 0 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 138, 138, 0.22);
+}
+
+.busted-death-art {
+    height: 8rem;
+    filter: none;
+    background: radial-gradient(circle at 50% 50%, rgba(60, 20, 40, 0.85), rgba(15, 8, 12, 0.95) 70%);
+}
+
+.busted-whathappened-head {
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    font-size: 0.8rem;
+    color: #ff9a9a;
+    margin: 0.1rem 0 0.25rem;
+}
+
+.busted-whathappened-line {
+    font-style: italic;
+    color: #e6d3bd;
+    font-size: 0.95rem;
+    line-height: 1.35;
+}
+
 @keyframes busted-flash {
     0% { opacity: 0.55; transform: scale(0.9); }
     50% { opacity: 0.95; transform: scale(1.05); }

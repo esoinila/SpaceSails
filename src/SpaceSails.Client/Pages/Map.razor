@@ -2863,8 +2863,19 @@
 
                     case BustedEncounter.Stage.Resurrected:
                         <div class="busted-hail">🧠 BRAIN-BACKUP RESTORED</div>
-                        @* PR-BUSTED art (docs/art-manifest-busted.md item 2): busted-ship-explosion.jpg —
-                           the old hull erupting, one clean hero fireball. Gradient stays as the fallback. *@
+                        @* #380 item 1 — WHAT HAPPENED: the resurrection fiction finally explains itself at the
+                           moment it matters. A cause-specific Grok image + one seeded, place-dependent
+                           house-voice line (DeathNarration), THEN the existing brain-backup copy below. The
+                           two live causes are Collector (BUSTED last stand) and Impact; the surface + void art
+                           is wired ready for the surface-death lane. Art is Grok-generated. *@
+                        <div class="busted-whathappened">
+                            <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent death">
+                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause)" alt="" aria-hidden="true" />
+                            </div>
+                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
+                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Seed, bust.DeathBodyName)</div>
+                        </div>
+                        @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
                         <div class="busted-freeze-art busted-explosion has-art" title="art: the old ship blowing up — the kerosene-explosion budget">
                             <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
                         </div>
