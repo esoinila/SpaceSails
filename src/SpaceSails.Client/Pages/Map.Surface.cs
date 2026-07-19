@@ -1233,9 +1233,12 @@ public partial class Map
     // ── The lonely automated kiosk (#313 amenity): a PLACE has shops. Pulse receipts (#119 style),
     //    house voice — last restocked before the war. ──
 
+    // Slot 0 is the souvenir tee — its item + gag are filled from the moon underfoot at buy time
+    // (SurfaceSouvenir), so Ganymede sells a Ganymede shirt, not Miranda's (#379). The placeholder
+    // strings below are never shown; they only hold slot 0's price and mark the seam.
     private static readonly (string Item, int Price, string Line)[] KioskStock =
     [
-        ("a MIRANDA souvenir tee", 15, "The print's cracked; the sizing is 'optimistic pre-war human'."),
+        ("the local souvenir tee", 15, "(keyed to the walked body — see VisitKiosk)"),
         ("a fridge magnet", 8, "It clamps to your suit's chestplate and refuses to let go. Value: eternal."),
         ("a vacuum-sealed hot meal", 12, "The label promises 'MEAT-ADJACENT'. The heater still works. Mostly."),
     ];
@@ -1244,8 +1247,21 @@ public partial class Map
 
     private void VisitKiosk()
     {
-        (string item, int price, string line) = KioskStock[_kioskPicks % KioskStock.Length];
+        if (_surface is not { } ex)
+        {
+            return; // the kiosk only sells on the ground it stands on
+        }
+        int slot = _kioskPicks % KioskStock.Length;
+        (string item, int price, string line) = KioskStock[slot];
         _kioskPicks++;
+        if (slot == 0)
+        {
+            // The souvenir tee, keyed to the moon actually underfoot (#379): Ganymede's kiosk prints a
+            // Ganymede shirt; Miranda keeps its canon line. Copy is generated, so any landable body works.
+            CelestialBody body = ex.Stop.Body;
+            item = SurfaceSouvenir.TeeItem(body.Name);
+            line = SurfaceSouvenir.TeeGag(body.Id, body.Name);
+        }
         if (_credits < price)
         {
             ShowPulseMessage($"🛒 {item} — {price} cr. The slot blinks INSUFFICIENT FUNDS in a dead language. Empty pockets, captain.");
