@@ -61,6 +61,10 @@ public partial class Map
     // purchasable dice helper is shipped to prove the modifier seam (owner: many small helpers later).
     private readonly HotCargoLedger _hotCargo = new();
     private int _lastAnnouncedHeat;
+    // #380 item 1 (audit's cheapest half): pre-seed the resurrection fiction one beat EARLIER. The first
+    // time heat reaches 1 in a run, a one-time pulse advertises the brain-backup / pirate-insurance premise
+    // BEFORE the death card ever needs it. One latch, run-scoped (this component is the game session).
+    private bool _heatInsuranceAdvised;
     private bool _hasNetJammer;                       // "Boarding-nets jammer" — +2 on resist initiative
     private const int NetJammerPriceCr = 350;
     private BustedEncounter? _busted;                 // the open BUSTED pop-up, null when free
@@ -1646,6 +1650,14 @@ public partial class Map
             SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(_heat.Level), force: true);
         }
 
+        // #380 item 1: the FIRST time heat reaches 1, advertise the safety net one beat before the death card
+        // would have to. Fires whatever raised the heat (a robbery, a Reever's hand), once per run.
+        if (!_heatInsuranceAdvised && _heat.Level >= 1)
+        {
+            _heatInsuranceAdvised = true;
+            ShowPulseMessage("Word of advice, captain — your brain-backup's current and the pirate-insurance stake is paid. Getting caught is expensive. Getting killed is survivable.");
+        }
+
         _lastAnnouncedHeat = _heat.Level;
 
         for (int i = _hunters.Count - 1; i >= 0; i--)
@@ -1705,6 +1717,8 @@ public partial class Map
             Heat = Math.Max(1, _heat.Level),
             Seed = seed,
             Bribe = BustedRule.BribeDemand(Math.Max(1, _heat.Level), seed),
+            Cause = DeathCause.Collector,          // #380: a catch that ends in the volley is a collector death
+            DeathBodyName = _nearestBody?.Name,    // the place the last stand happened, for the wake card
         };
 
         SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(Math.Max(1, _heat.Level)), force: true);
@@ -1745,6 +1759,8 @@ public partial class Map
             Bribe = default,                // unused on the impact path (no bribe to a planet)
             Phase = BustedEncounter.Stage.Impact,
             ImpactBodyName = hit.BodyName,
+            Cause = DeathCause.Impact,      // #380: the surface collected the ship — a place-dependent death
+            DeathBodyName = hit.BodyName,
         };
 
         string line = $"💥 IMPACT — the ship struck {hit.BodyName}. Periapsis went under the surface, and the surface won.";
@@ -2090,6 +2106,12 @@ public partial class Map
         public int ClinicBillCr { get; set; }
         public string? HullDescription { get; set; }
         public string? ImpactBodyName { get; set; } // #264: the body that collected the ship
+
+        // #380 item 1: WHAT killed the captain, and WHERE — so the resurrection card explains the death
+        // place-dependently (cause art + a seeded house-voice line) before the brain-backup copy. Defaults to
+        // the collector (the BUSTED last stand); the impact path sets Impact. Surface causes are wired ready.
+        public DeathCause Cause { get; set; } = DeathCause.Collector;
+        public string? DeathBodyName { get; set; } // the place the death is narrated off (moon / body flown into)
 
         // Bolivia progress
         public OpposedRoll? BoliviaInitiative { get; set; }

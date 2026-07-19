@@ -1237,6 +1237,12 @@ public partial class Map
 
     // A caught digger: no loot taken (the whole point) — it prices the danger in heat, the same lever the
     // law's collectors use. Debounced so one brush isn't a stunlock.
+    //
+    // #380 item 1 — NOT a death today (owner constraint: don't build the surface-death / insurance-captain
+    // mechanic here, just route what exists). A Reever's hand raises heat + shocks the nerve; the captain is
+    // told to RUN, not resurrected. When the surface-death lane lands, this is the site that would classify
+    // the death via DeathNarration.SurfaceEnd(_nerve, seed) → DeathCause.Reevers / .Joined and hand it to the
+    // shared BUSTED resurrection (Cause + DeathBodyName on the encounter); the art + lines are already wired.
     private void ReeverCatch()
     {
         double now = _lastTimestampMs ?? 0;
