@@ -408,6 +408,28 @@ public static class HavenInterior
         };
         consoles.AddRange(hatches); // the ring departments + bar back-rooms, as knockable locked hatches
 
+        // The station's DEDICATION PLAQUE (owner's cruise ruling, 2026-07-19, photographing their ship's
+        // Aker Finnyards builder's plate: "We could gen-AI the ships and docks some space-dock plaques …
+        // add some depth to the world (worldbuilding)"). One addition here seeds every port — walk off
+        // the tube, and it stands in the concourse on your port side, clear of the tube path (x 1..4), the
+        // immigration desk, and every ring hatch. [E] pops the plate + its dedication in the house voice
+        // (Core Plaques). Selene / Red Eye / Deep carry Grok plate art; the rest fall back to the text
+        // alone until their easel is painted (the souvenir onerror-hide fallback idiom).
+        if (Plaques.For(spec.BodyId) is { } plaque)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX - 6, HallCenterY - 5,
+                plaque.ConsoleLabel, plaque.ArtUrl, plaque.Lore));
+        }
+
+        // The LIFEBOAT STATION (owner worldbuilding addendum, 2026-07-19: "Safety equipment is also cool.
+        // Lifeboats at station maybe."). A battered muster point across the concourse from the plaque, on
+        // the starboard side — clear of the tube path (x 1..4), the immigration desk, the plaque, and every
+        // ring hatch. A wall label marks the muster; [E] pops the muster card (per-port stale inspection
+        // date, and an asterisk that does the work). Text-only for now — the art easel is a follow-up.
+        labels.Add((HallCenterX + 9, HallCenterY - 6.5f, Plaques.LifeboatLabel));
+        consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX + 9, HallCenterY - 5,
+            Plaques.LifeboatLabel, null, Plaques.LifeboatMuster(spec.BodyId)));
+
         // Seven tables spread across the big room — three taken by the regulars, four open (for a
         // stranger to drift over, later) — plus the ship's own cantina tables.
         var tables = new List<(float X, float Y)>(ship.Tables)
