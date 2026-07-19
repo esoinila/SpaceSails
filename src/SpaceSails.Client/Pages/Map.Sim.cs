@@ -1424,6 +1424,7 @@ public partial class Map
     private bool TryDismissTopOverlay()
     {
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
+        if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
         if (_bankSession is not null) { CloseBank(); return true; }
         if (_barMenu is not null) { CloseBarkeep(); return true; }
