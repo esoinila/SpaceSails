@@ -24,6 +24,11 @@ internal sealed class ClientHost : IAsyncDisposable
 
     public string BaseUrl { get; private set; } = "";
 
+    // The resolved wwwroot actually being served — exposed so the gate can inspect the artifact it
+    // is about to drive (e.g. read the native-wasm size to tell an AOT payload from an interpreted
+    // one, which decides which load-speed budget applies). See BootAndReachabilityTests.IsAotPayload.
+    public string WwwrootPath { get; private set; } = "";
+
     public static async Task<ClientHost> StartAsync(TextWriter log)
     {
         string wwwroot = ResolvePublishedWwwroot(log);
@@ -47,7 +52,7 @@ internal sealed class ClientHost : IAsyncDisposable
         await app.StartAsync();
 
         string url = app.Urls.First();
-        var host = new ClientHost { _app = app, BaseUrl = url };
+        var host = new ClientHost { _app = app, BaseUrl = url, WwwrootPath = wwwroot };
         log.WriteLine($"[client-host] serving {wwwroot} at {url}");
         return host;
     }
