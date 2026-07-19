@@ -608,10 +608,11 @@
             <div class="deck-shuttle-title">🛸 Board the shuttle — where to?</div>
             @if (shuttleStops.Count == 0)
             {
+                @* #368 (owner, 2026-07-19 playtest at The Red Eye's empty board): a fresh berth with nothing
+                   in reach must explain itself in the house voice — apologetic and honest, then the nearest
+                   ground below with a plain comparison to what the shuttle can actually cross. *@
                 <div class="deck-shuttle-empty">
-                    Nothing in shuttle range — no destination within
-                    @((ShuttleRange.RangeMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km.
-                    The hatch stays shut.
+                    Sorry, captain — nothing within shuttle reach from this berth. The moons drift; watch the ranges below.
                 </div>
             }
             else
@@ -650,6 +651,37 @@
                             </div>
                         </div>
                     }
+                </div>
+            }
+            @* #368 the honest tail: the nearest LANDABLE ground the shuttle can't reach yet — informational,
+               never boardable (no buttons, visibly dimmed). Each row compares its current separation to the
+               shuttle's reach and says whether the gap is closing or opening right now. When the board above
+               is empty this IS the answer ("the nearest ones are:"); when it isn't, it's context underneath. *@
+            @if (_shuttleBayFarStops.Count > 0)
+            {
+                <div class="deck-shuttle-farhead">
+                    @(shuttleStops.Count == 0 ? "The nearest ones are:" : "Just beyond reach:")
+                </div>
+                <div class="deck-shuttle-rows deck-shuttle-far">
+                    @foreach (ShuttleFarStop far in _shuttleBayFarStops)
+                    {
+                        ShuttleFarStop f = far;
+                        <div class="deck-shuttle-row deck-shuttle-row-far"
+                             title="In range of no shuttle from here — beyond the craft's @ShuttleReachText(f.RangeMeters) reach. Listed so you can watch the gap.">
+                            <div class="deck-shuttle-dest">
+                                <span class="deck-shuttle-name">🛬 @f.Body.Name@(string.IsNullOrEmpty(f.ParentName) ? "" : $" ({f.ParentName})")</span>
+                                <span class="deck-shuttle-meta">
+                                    @ShuttleSeparationText(f.DistanceMeters) · beyond shuttle reach (@ShuttleReachText(f.RangeMeters)) · @ShuttleTrendWord(f.Trend)
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (shuttleStops.Count == 0)
+            {
+                <div class="deck-shuttle-empty">
+                    No landable ground near enough to call either — the hatch stays shut for now.
                 </div>
             }
             <div class="deck-shuttle-actions">

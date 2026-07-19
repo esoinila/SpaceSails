@@ -139,4 +139,95 @@ public class ShuttleExcursionTests
 
         Assert.Equal(longPath, shortcut); // provably one path — no duplicate burial logic
     }
+
+    // ── #368: the honest board — nearest ground JUST BEYOND shuttle reach, with a closing/opening trend ──
+
+    // A landable moon sampled at two epochs: current gap, next-epoch gap (for the trend). Out of range by
+    // default (dist just past the shuttle's reach) unless the caller says otherwise.
+    private static ShuttleExcursion.RangeSample FarMoon(string id, double dist, double distNext) =>
+        new(id, BodyKind.Moon, ParentId: "jupiter",
+            DistanceMeters: dist, DistanceMetersNext: distNext, BodyRadiusMeters: 1_000_000);
+
+    [Fact]
+    public void NearestOutOfReach_OrdersBySeparation_NearestFirst()
+    {
+        double reach = ShuttleRange.RangeMeters;
+        var samples = new[]
+        {
+            FarMoon("callisto", reach * 3.0, reach * 3.0),
+            FarMoon("ganymede", reach * 1.4, reach * 1.4),
+            FarMoon("europa", reach * 2.0, reach * 2.0),
+        };
+
+        var list = ShuttleExcursion.NearestOutOfReach(samples, dockedBodyId: null, limit: 3);
+
+        Assert.Equal(new[] { "ganymede", "europa", "callisto" }, list.Select(n => n.BodyId));
+        Assert.All(list, n => Assert.Equal(reach, n.RangeMeters));
+        Assert.Equal(1.4, list[0].TimesRange, 3); // ×1.4 of reach
+    }
+
+    [Fact]
+    public void NearestOutOfReach_LimitCapsTheList()
+    {
+        double reach = ShuttleRange.RangeMeters;
+        var samples = new[]
+        {
+            FarMoon("a", reach * 1.2, reach * 1.2),
+            FarMoon("b", reach * 1.5, reach * 1.5),
+            FarMoon("c", reach * 1.8, reach * 1.8),
+            FarMoon("d", reach * 2.1, reach * 2.1),
+        };
+
+        var list = ShuttleExcursion.NearestOutOfReach(samples, dockedBodyId: null, limit: 2);
+
+        Assert.Equal(new[] { "a", "b" }, list.Select(n => n.BodyId));
+    }
+
+    [Fact]
+    public void NearestOutOfReach_ClosingWhenGapShrinks_OpeningWhenItGrows()
+    {
+        double reach = ShuttleRange.RangeMeters;
+        var samples = new[]
+        {
+            FarMoon("closer", reach * 1.5, reach * 1.4),   // next sample nearer → closing
+            FarMoon("further", reach * 1.5, reach * 1.6),  // next sample farther → opening
+            FarMoon("still", reach * 1.5, reach * 1.5),    // unchanged → steady
+        };
+
+        var byId = ShuttleExcursion.NearestOutOfReach(samples, dockedBodyId: null, limit: -1)
+            .ToDictionary(n => n.BodyId, n => n.Trend);
+
+        Assert.Equal(ShuttleExcursion.RangeTrend.Closing, byId["closer"]);
+        Assert.Equal(ShuttleExcursion.RangeTrend.Opening, byId["further"]);
+        Assert.Equal(ShuttleExcursion.RangeTrend.Steady, byId["still"]);
+    }
+
+    [Fact]
+    public void NearestOutOfReach_ExcludesInRange_StationsSunPlanetsDockedBerthAndTooClose()
+    {
+        double reach = ShuttleRange.RangeMeters;
+        var samples = new[]
+        {
+            FarMoon("in-range", reach * 0.5, reach * 0.5),                 // within reach → boardable, not here
+            FarMoon("home-berth", reach * 1.3, reach * 1.3),               // the berth we're clamped to → omitted
+            new ShuttleExcursion.RangeSample("underfoot", BodyKind.Moon, "jupiter", 500_000, 500_000, 1_000_000), // dist <= radius
+            new ShuttleExcursion.RangeSample("tilt", BodyKind.Station, "jupiter", reach * 1.3, reach * 1.3, 5_000), // a berth, not ground
+            new ShuttleExcursion.RangeSample("sun", BodyKind.Planet, null, reach * 1.3, reach * 1.3, 7e8),        // no parent / a star
+            new ShuttleExcursion.RangeSample("jupiter", BodyKind.Planet, "sun", reach * 1.3, reach * 1.3, 7e7),   // a planet
+            FarMoon("europa", reach * 1.3, reach * 1.3),                   // the one true beyond-reach ground
+        };
+
+        var list = ShuttleExcursion.NearestOutOfReach(samples, dockedBodyId: "home-berth", limit: 3);
+
+        ShuttleExcursion.NearbyLandable only = Assert.Single(list);
+        Assert.Equal("europa", only.BodyId);
+    }
+
+    [Fact]
+    public void ExplainsEmptyBoard_TrueOnlyWhenNothingIsInRange()
+    {
+        Assert.True(ShuttleExcursion.ExplainsEmptyBoard(0));
+        Assert.False(ShuttleExcursion.ExplainsEmptyBoard(1));
+        Assert.False(ShuttleExcursion.ExplainsEmptyBoard(3));
+    }
 }
