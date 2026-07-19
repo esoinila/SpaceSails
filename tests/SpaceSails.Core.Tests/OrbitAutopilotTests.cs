@@ -321,7 +321,10 @@ public class OrbitAutopilotTests
             // its own 11 km radius, so it is a "land on it / hover by it" body, NOT an orbit-insertion
             // target (the treasure island, reached by the shuttle door, never a parked orbit). It is
             // exempt from the sane-parked-orbit invariant by design, not by accident.
-            if (body.Id == "phobos") continue;
+            // The Clinker is the same kind of body: a small captured cinder off Venus (Hill barely
+            // clears its 2 km radius), a landing skerry for Cinder Roost reached by the shuttle door,
+            // never a parked orbit — exempt by the same design, not by accident (berth-matrix audit).
+            if (body.Id is "phobos" or "the-clinker") continue;
             CelestialBody parent = bodies[body.ParentId];
             double hill = OrbitRule.HillRadius(body, parent.Mu);
 
