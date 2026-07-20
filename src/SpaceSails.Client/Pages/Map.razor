@@ -190,6 +190,12 @@
                             <div class="captain-ident">
                                 <span class="captain-name">@cap.CaptainName@if (group.IsActive){<span class="captain-helm">⚓ at the helm</span>}</span>
                                 <span class="captain-where">@CaptainWhen(group.Thread)</span>
+                                @* Evening wind #20 — the roster keeps the memory: who held this license before
+                                   the piracy insurance replaced them (most recent first). *@
+                                @if (group.Thread.Retired.Count > 0)
+                                {
+                                    <span class="captain-retired">🪦 @CaptainRetiredSummary(group.Thread)</span>
+                                }
                             </div>
                         </div>
                         <div class="save-slots-list captain-slots">
@@ -2787,7 +2793,7 @@
        grammar. *@
     @if (_busted is { } bust)
     {
-        <div class="busted-backdrop @(bust.Phase is BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact ? "busted-sepia" : "")">
+        <div class="busted-backdrop @(bust.Phase is BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact or BustedEncounter.Stage.SurfaceEnd ? "busted-sepia" : "")">
             <div class="busted-card" @onclick:stopPropagation="true">
                 @switch (bust.Phase)
                 {
@@ -2911,6 +2917,24 @@
                         </div>
                         break;
 
+                    case BustedEncounter.Stage.SurfaceEnd:
+                        @* Evening wind #20 — the nerve-overdraw death on the regolith. The BUSTED freeze-beat
+                           grammar (sepia backdrop, one held beat), but the cause is place-dependent: the Old
+                           Ones took you (Reevers) or, rarely at a shattered sliver, you joined them (Joined).
+                           The cause art + the seeded house-voice line (DeathNarration) hold, then "…wake up"
+                           hands off to the SAME brain-backup resurrection the collector/impact deaths use.
+                           Art is Grok-generated. *@
+                        <div class="busted-freeze">
+                            <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent surface death">
+                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause)" alt="" aria-hidden="true" />
+                            </div>
+                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
+                            <div class="busted-freeze-caption">@(bust.Cause == DeathCause.Joined ? "\"…and the footprints only lead one way — in.\"" : "\"…the nerve was already gone. The hand was only the last of it.\"")</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Seed, bust.DeathBodyName) The freeze-frame holds.</div>
+                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                        </div>
+                        break;
+
                     case BustedEncounter.Stage.FreezeFrame:
                         <div class="busted-freeze">
                             @* PR-BUSTED art (docs/art-manifest-busted.md item 1): busted-freeze-frame.jpg —
@@ -2955,6 +2979,27 @@
                             <div>⛽ @_reactionMassPulses p — the reach-a-pump reserve</div>
                             <div>🔧 all upgrades reset to starter grade</div>
                         </div>
+                        @* Evening wind #20 — THE NEW CAPTAIN. On any death-resurrection the piracy insurance
+                           puts a new name on the license and a new face in the mirror; the roster keeps the
+                           retiree (see the captain cards). Shown only when a thread was actually succeeded
+                           (a legacy run with no indexed thread falls back to the brain-backup copy alone). *@
+                        @if (!string.IsNullOrEmpty(bust.NewCaptainName))
+                        {
+                            <div class="busted-succession">
+                                <div class="busted-succession-head">🪪 THE POLICY ISSUES A NEW CAPTAIN</div>
+                                <div class="busted-succession-line">@CaptainSuccession.PolicyPayoutLine</div>
+                                <div class="busted-succession-names">
+                                    @if (!string.IsNullOrEmpty(bust.RetiredCaptainName))
+                                    {
+                                        <span class="succ-old">@bust.RetiredCaptainName</span>
+                                        <span class="succ-arrow">→</span>
+                                    }
+                                    <img class="succ-portrait" src="art/captain-@(bust.NewCaptainAvatar).jpg" alt="" aria-hidden="true"
+                                         onerror="this.style.display='none'" />
+                                    <span class="succ-new">@bust.NewCaptainName</span>
+                                </div>
+                            </div>
+                        }
                         <button type="button" class="btn btn-light busted-close" @onclick="CloseBusted">Board the rustbucket</button>
                         break;
                 }

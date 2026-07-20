@@ -405,6 +405,16 @@ public static class HavenInterior
             new(DeckPlan.ConsoleKind.ViewObject, 6, HallTopY + 3, "👕 SOUVENIR TEE", spec.TshirtArt, spec.Gag),
             new(DeckPlan.ConsoleKind.ViewObject, 9.5f, HallTopY + 3, "🧲 FRIDGE MAGNET", spec.MagnetArt,
                 $"A little {spec.Name} to stick on the fridge back home."),
+            // The second PIRATE INSURANCE poster, in the BAR wing (#380 item 1 — the pair banked for this
+            // lane). Where a spacer nurses a drink and does the grim arithmetic, Nebula Mutual pitches the
+            // hard sell: "DIED BROKE? WALK IT OFF." On the starboard wall, clear of Coil's stool (x14, +6)
+            // and the back-room hatch. [E] pops the poster + the sales-voice caption. Grok-generated art.
+            new(DeckPlan.ConsoleKind.ViewObject, BarRight - 2.5f, HallTopY + 14, "📋 PIRATE INSURANCE",
+                "art/poster-pirate-insurance-2.jpg",
+                "“DIED BROKE? WALK IT OFF.” Nebula Mutual covers the clinic bill so the void doesn't keep "
+                + "you — one premium, and a shot nerve or a Reever's hand is just a bad night, not the last "
+                + "one. The hoards you buried outlive the hull; the policy outlives the captain. Underwritten "
+                + "by Nebula Mutual — “We Bring You Back Meaner.”"),
         };
         consoles.AddRange(hatches); // the ring departments + bar back-rooms, as knockable locked hatches
 
@@ -429,6 +439,20 @@ public static class HavenInterior
         labels.Add((HallCenterX + 9, HallCenterY - 6.5f, Plaques.LifeboatLabel));
         consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX + 9, HallCenterY - 5,
             Plaques.LifeboatLabel, null, Plaques.LifeboatMuster(spec.BodyId)));
+
+        // PIRATE INSURANCE — the Gen-AI dock poster (#380 item 1: pre-seed the brain-backup / Pirate
+        // Insurance premise with port advertising, so a new player meets the fiction BEFORE the death card,
+        // not on it; owner 2026-07-19: "we should explain Pirate insurance … advertisements about it as Gen
+        // AI at every dockable port"). One addition here seeds all eight ports (the shared hall build, the
+        // ViewObject console idiom the plaque/souvenirs use). Port-side of the concourse, above the plaque,
+        // clear of the tube path (x 1..4), the immigration desk, the plaque, the lifeboat, and every ring
+        // hatch. [E] pops the poster ("OUR RATES ARE A STEAL") + the sales-voice caption. Art is Grok-made.
+        consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX - 11, HallCenterY + 6,
+            "📋 PIRATE INSURANCE", "art/poster-pirate-insurance-1.jpg",
+            "“OUR RATES ARE A STEAL.” Pirate Insurance from Nebula Mutual: brain-backup rebirth, a rustbucket "
+            + "gassed and waiting, no awkward questions at the clinic. Die uninsured and you still wake — just "
+            + "meaner and broker. Ask your dockmaster before the collectors ask about you. Underwritten by "
+            + "Nebula Mutual — “We Bring You Back Meaner.”"));
 
         // Seven tables spread across the big room — three taken by the regulars, four open (for a
         // stranger to drift over, later) — plus the ship's own cantina tables.
