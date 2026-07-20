@@ -747,6 +747,12 @@ public partial class Map
     // a ViewObject console pops it up; E again (or the close button / clicking away) dismisses it.
     private DeckPlan.ConsoleSpot? _viewObject;
 
+    // #422 arc 2 — how many times this session the captain has stopped to READ a Nebula Mutual PIRATE
+    // INSURANCE poster. The cheerful sell is fragment #1, already in every port; reading it a SECOND time /
+    // closely reads the grey bottom line differently and assembles `fine-print` (the fragment's own fiction:
+    // "the fine print, read twice"). Run-scoped — a fresh voyage starts naive.
+    private int _insurancePosterReads;
+
     private void ViewNearbyObject()
     {
         if (_viewObject is not null)
@@ -765,6 +771,25 @@ public partial class Map
                 TryAssembleKaamos("listed-berth",
                     "❄ You read the whole plate this time, not just the dedication. " +
                     Core.KaamosLore.ById("listed-berth")!.Lore);
+            }
+
+            // #422: the PIRATE INSURANCE poster (Nebula Mutual, #380/#415). The first read is the cheerful
+            // sell; the SECOND time you stop at one you read the grey bottom line, and it reads differently
+            // now — that assembles `fine-print`. Detected by the poster's own label so this lane touches no
+            // HavenInterior code (that file is another lane's). The read count is session-scoped.
+            if (_viewObject is { Label: { } label } && label.Contains("PIRATE INSURANCE", StringComparison.Ordinal))
+            {
+                _insurancePosterReads++;
+                if (_insurancePosterReads == 1)
+                {
+                    ShowPulseMessage("📋 “We Bring You Back Meaner.” Cheerful as ever. Your eye catches the grey line at the bottom, but you're already walking. (Read it closely — come back and look again.)");
+                }
+                else if (_insurancePosterReads >= 2)
+                {
+                    TryAssembleNebula("fine-print",
+                        "📋 This time you actually read the small print, the grey line no advertising should keep. " +
+                        Core.NebulaLore.ById("fine-print")!.Lore);
+                }
             }
         }
     }

@@ -184,81 +184,8 @@ public partial class Map
         _oracleNotice = null;
     }
 
-    // ── The NEBULA MUTUAL client holder (#422): assembled per game-thread, wiped on a new voyage, round-
-    //    tripped through the vault's NebulaSection (Map.Vault). The Core spine + Vault mapper were built with
-    //    #423; the oracle is the first hand that actually gives a Nebula shard, so the client holder is born
-    //    here. Mirrors _kaamos exactly. ──
-    private readonly NebulaProgress _nebula = new();
-
-    // The one-time notice the instant the whole truth resolves — the capstone contract AND enough intel
-    // behind it (NebulaLore.KnowsTheTruth). Announced once per universe; a reload rehydrates without re-firing.
-    private const string NebulaTruthNotice =
-        "   ▓▓ THE POLICY'S TRUE TERMS RESOLVE — you know what Nebula Mutual files you under now. " +
-        "Not insured against death: filed under it. The premium buys STORAGE, and the original never leaves the dark.";
-
-    /// <summary>Assemble a NEBULA fragment, persist it, and narrate the find — the _kaamos idiom
-    /// (TryAssembleKaamos) for arc 2. Returns true only the first time a shard is held, so a caller narrates
-    /// a genuinely NEW leak and a re-perception stays quiet. The truth-resolves notice fires on the single
-    /// edge that flips KnowsTheTruth, once per universe, never on reload.</summary>
-    private bool TryAssembleNebula(string fragmentId, string foundMessage)
-    {
-        if (_nebula.Has(fragmentId))
-        {
-            return false;
-        }
-
-        bool knewBefore = _nebula.KnowsTheTruth;
-        if (!_nebula.Assemble(fragmentId))
-        {
-            return false; // not a real pool id — refused by the spine
-        }
-
-        RequestVaultSave();
-        string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaTruthNotice : "";
-        RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
-        ShowPulseMessage(foundMessage + tail);
-        return true;
-    }
-
-    // The NEBULA intel readout for the Captain's ledger — mirrors KaamosLedgerTip so a shard the oracle
-    // leaked is visible and re-readable (the assembled shard texts build the corporate-horror as you collect).
-    // Null until the first shard is in hand.
-    private Stations.Captain.LedgerTip? NebulaLedgerTip()
-    {
-        if (_nebula.Count == 0)
-        {
-            return null;
-        }
-
-        int intel = _nebula.IntelAssembled;
-        int need = NebulaLore.IntelFragments.Count();
-        bool hasKey = _nebula.Has(NebulaLore.KeyFragment.Id);
-
-        var lines = new List<string>();
-        foreach (NebulaFragment f in _nebula.Assembled)
-        {
-            lines.Add($"▓ {f.Title} — {f.Lore}");
-        }
-
-        if (_nebula.KnowsTheTruth)
-        {
-            lines.Add("▓ The policy's true terms resolve. You are not insured against death — you are filed under it.");
-        }
-        else if (_nebula.HasEnoughIntelToEarnTheContract)
-        {
-            lines.Add("▓ Enough of the small print to earn the contract. The pieces resolve into the clause the sales voice skips.");
-        }
-        else
-        {
-            lines.Add($"▓ The shape isn't clear yet — {need - intel} more shard{(need - intel == 1 ? "" : "s")} to read it. One poster line is never enough; one adjuster's drink is never enough.");
-        }
-
-        string headline = hasKey
-            ? $"▓ NEBULA MUTUAL — {intel} of {need} shards · the contract in hand"
-            : $"▓ NEBULA MUTUAL — {intel} of {need} shards assembled";
-
-        return new Stations.Captain.LedgerTip(
-            headline, lines.ToArray(), "what your resurrections really are",
-            ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null);
-    }
+    // The NEBULA MUTUAL client holder (_nebula), its assemble-and-narrate helper (TryAssembleNebula) and the
+    // ledger readout (NebulaLedgerTip) were born in this oracle lane (#425 — the oracle was the first hand to
+    // give a Nebula shard) and now live in the dedicated Map.Nebula partial (#422), which the oracle lane
+    // explicitly invited a later delivery lane to adopt. The oracle simply CALLS TryAssembleNebula above.
 }

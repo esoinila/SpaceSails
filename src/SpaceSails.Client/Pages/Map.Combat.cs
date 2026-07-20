@@ -65,6 +65,10 @@ public partial class Map
     // time heat reaches 1 in a run, a one-time pulse advertises the brain-backup / pirate-insurance premise
     // BEFORE the death card ever needs it. One latch, run-scoped (this component is the game session).
     private bool _heatInsuranceAdvised;
+    // #422 arc 2 — how many times this SESSION the captain has woken from a brain-backup. Gates the clinic's
+    // "second page" (clinic-ledger surfaces only once you've woken here before — the fragment's own fiction).
+    // Run-scoped; the durable "woken before" truth is the thread's retired-captains count, checked alongside.
+    private int _rebirthsSeen;
     private bool _hasNetJammer;                       // "Boarding-nets jammer" — +2 on resist initiative
     private const int NetJammerPriceCr = 350;
     private BustedEncounter? _busted;                 // the open BUSTED pop-up, null when free
@@ -1722,6 +1726,15 @@ public partial class Map
             DeathBodyName = _nearestBody?.Name,    // the place the last stand happened, for the wake card
         };
 
+        // #422 arc 2 — THE COLLECTOR'S WRIT. A heat/collector catch is the moment you get a look at what the
+        // repo men are really sent to recover: not the cargo, a PATTERN. The glimpse assembles the shard the
+        // first time; the writ line then rides the demand card that once, so the recontextualization lands
+        // without cluttering every later stop. They work Nebula's collateral.
+        if (AssembleNebulaSilently("collector-writ"))
+        {
+            _busted.CollectorWrit = NebulaLore.ById("collector-writ")!.Lore;
+        }
+
         SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(Math.Max(1, _heat.Level)), force: true);
         StateHasChanged();
     }
@@ -1999,6 +2012,10 @@ public partial class Map
             return;
         }
 
+        // #422 arc 2 — how many times this THREAD has woken before (durable), read BEFORE the succession adds
+        // this death's retiree, so it counts prior lives only. Gates the clinic's second page below.
+        int priorDeaths = ActiveThreadInfo?.Retired.Count ?? 0;
+
         RemoveHunter(b.HunterId);
 
         // Evening wind #20 — a surface-overdraw death happens mid-excursion, so the away gig ends here as a
@@ -2061,9 +2078,40 @@ public partial class Map
         // a differing face — and the roster keeps the retiree. The corner chip and roster re-read the change.
         IssueSuccessorCaptain(b);
 
+        // #422 arc 2 — THE GLITCH IN THE REBIRTH. You experience the Nebula thread by DYING: for one flat
+        // second the wake card reads a line it should not (a seeded flash off this death), and reading it
+        // assembles the shard. The oracle (#427) may already have leaked it; this is the first-hand vector,
+        // delivered ON the card. The flash shows every rebirth; the shard is gathered once.
+        b.RebirthGlitch = NebulaGlitchFlash(b.Seed);
+        AssembleNebulaSilently("rebirth-glitch");
+
+        // #422 — THE CLINIC'S SECOND PAGE. Surfaces only once you've woken here BEFORE (a prior death this
+        // thread or this session): the fragment's own fiction — a policy number "older than you", carrying
+        // entries you never made. Shown on the card the once it is first gathered.
+        if ((priorDeaths >= 1 || _rebirthsSeen >= 1) && AssembleNebulaSilently("clinic-ledger"))
+        {
+            b.ClinicLedger = NebulaLore.ById("clinic-ledger")!.Lore;
+        }
+
+        _rebirthsSeen++;
+
         b.Phase = BustedEncounter.Stage.Resurrected;
         StateHasChanged();
     }
+
+    // #422 arc 2 — the one-flat-second glitch the resurrection card flashes before the welcome loops clean.
+    // Seeded off the death so it varies per rebirth yet is deterministic; the "DO NOT REVIVE ORIGINAL" tell
+    // is the shard's heart. Presentation only — the canonical shard lore lives in NebulaLore.
+    private static readonly string[] NebulaGlitchFlashes =
+    [
+        "RESTORE FROM PATTERN 40 · SUBSCRIBER LUCID · DO NOT REVIVE ORIGINAL",
+        "PATTERN 40 · COPY SPUN · ORIGINAL RETAINED · DO NOT WAKE ORIGINAL",
+        "SUBSCRIBER RE-INSTANCED · SEE ARCHIVE · DO NOT REVIVE ORIGINAL",
+        "CONTINUITY: BELIEVED · ORIGINAL: FILED · DO NOT DISTURB THE DARK",
+    ];
+
+    private static string NebulaGlitchFlash(ulong seed) =>
+        NebulaGlitchFlashes[(int)(seed % (ulong)NebulaGlitchFlashes.Length)];
 
     // Issue the successor captain onto the active universe (Evening wind #20). Reads the retiring identity,
     // rolls + persists the new one through the registry (the #368 fields are editable data), and refreshes
@@ -2205,6 +2253,13 @@ public partial class Map
         public int ClinicBillCr { get; set; }
         public string? HullDescription { get; set; }
         public string? ImpactBodyName { get; set; } // #264: the body that collected the ship
+
+        // #422 arc 2 (NEBULA MUTUAL) — the fragments this death surfaces, delivered ON this card. The rebirth
+        // glitch flashes on every wake (assembled once); the collector writ is glimpsed at a collector catch;
+        // the clinic's second page surfaces on a LATER death. Blank when the beat doesn't apply this time.
+        public string? RebirthGlitch { get; set; } // the one-flat-second wake-card glitch flash
+        public string? CollectorWrit { get; set; } // the writ glimpsed off a collector at the demand
+        public string? ClinicLedger { get; set; }  // the clinic ledger's second page (woken here before)
 
         // #380 item 1: WHAT killed the captain, and WHERE — so the resurrection card explains the death
         // place-dependently (cause art + a seeded house-voice line) before the brain-backup copy. Defaults to
