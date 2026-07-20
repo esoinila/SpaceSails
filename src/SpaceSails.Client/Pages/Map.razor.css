@@ -1904,6 +1904,17 @@
     text-overflow: ellipsis;
 }
 
+/* Evening wind #20 — the roster's memory of the captains the piracy insurance replaced. Dim and small,
+   a headstone footnote under the living captain's card. */
+.captain-retired {
+    color: rgba(224, 228, 236, 0.45);
+    font-size: 0.7rem;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* a captain's slots are inset a touch so they read as belonging under that captain's card */
 .captain-slots {
     max-height: none;
@@ -2610,6 +2621,59 @@
     margin-top: 0.4rem;
     font-size: 0.75rem;
     color: #9aa6bd;
+}
+
+/* Evening wind #20 — THE NEW CAPTAIN block on the resurrection card: the policy pays out, a new name and
+   face take the license. Reads as a small notarised panel under the brain-backup receipt. */
+.busted-succession {
+    margin: 0.5rem auto 0.25rem;
+    padding: 0.6rem 0.9rem;
+    max-width: 30rem;
+    border: 1px solid rgba(120, 230, 160, 0.45);
+    border-radius: 0.6rem;
+    background: rgba(120, 230, 160, 0.08);
+}
+
+.busted-succession-head {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #9fe9bd;
+    text-transform: uppercase;
+}
+
+.busted-succession-line {
+    margin: 0.35rem 0 0.5rem;
+    font-style: italic;
+    color: #e7f4ec;
+}
+
+.busted-succession-names {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-weight: 700;
+    color: #eef3fa;
+}
+
+.busted-succession-names .succ-old {
+    color: rgba(224, 228, 236, 0.6);
+    text-decoration: line-through;
+    font-weight: 500;
+}
+
+.busted-succession-names .succ-arrow {
+    color: #9fe9bd;
+}
+
+.busted-succession-names .succ-portrait {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(120, 230, 160, 0.55);
 }
 
 .busted-roll {

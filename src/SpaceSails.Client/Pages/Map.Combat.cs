@@ -1771,6 +1771,51 @@ public partial class Map
         StateHasChanged();
     }
 
+    // Evening wind #20 (owner 2026-07-18) — THE OVERDRAW DEATH. Nerves shot past empty and a Reever's hand
+    // is the last straw: the captain goes crazy and dramatically exits the scene. Route the SURFACE causes
+    // (#380 item 1, wired-ready) live for the first time: classify place-dependently via
+    // DeathNarration.SurfaceEnd (the Old Ones TOOK you — or, rarely, you JOINED them) and hand it to the
+    // SAME BUSTED freeze-beat → brain-backup resurrection the collector/impact deaths use — the death
+    // machinery is shared, never duplicated. No collector, no dice: straight to the surface freeze-beat. The
+    // resurrection folds the excursion away as a failed gig and issues a new captain (BustedResurrect).
+    private void TriggerSurfaceOverdrawDeath(SurfaceExcursion dying)
+    {
+        if (_busted is not null)
+        {
+            return; // already mid-reckoning — one death at a time
+        }
+
+        Warp = 1;
+        _effectiveWarp = 1;
+
+        string body = dying.Stop.Body.Name;
+        ulong seed = DiceRule.Seed("overdraw", (long)SimTime);
+        DeathCause cause = DeathNarration.SurfaceEnd(_nerve, seed); // Reevers, or the rare Joined at a sliver
+
+        _busted = new BustedEncounter
+        {
+            HunterId = string.Empty,     // no collector — the ground and the mind collected
+            HunterCallsign = body,
+            Heat = 0,
+            Seed = seed,
+            Bribe = default,             // unused on a surface death (no bribe to your own nerves)
+            Phase = BustedEncounter.Stage.SurfaceEnd,
+            Cause = cause,
+            DeathBodyName = body,
+        };
+
+        RendererInterop.PlayCue("alarm");
+        RendererInterop.PlayCue("gameover");
+        string line = cause == DeathCause.Joined
+            ? $"🧠 Nerves gone past empty on {body} — the captain turns, and walks TOWARD the crowd. The insurance will need a new name."
+            : $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.";
+        LogAutopilotEvent(line);
+        ShowPulseMessage(line);
+        _shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"CAPTAIN LOST — {body}", SimTime);
+        SquawkNow(Parrot.Squawk.Impact, _lastTimestampMs ?? 0, body, force: true);
+        StateHasChanged();
+    }
+
     // The dice helpers a resist/Bolivia roll carries — the purchasable-modifier seam. One example is
     // shipped (the Boarding-nets jammer); the shop of helpers is a follow-up (owner §5.0).
     private List<DiceModifier> ResistModifiers()
@@ -1954,6 +1999,19 @@ public partial class Map
         }
 
         RemoveHunter(b.HunterId);
+
+        // Evening wind #20 — a surface-overdraw death happens mid-excursion, so the away gig ends here as a
+        // failed/aborted trip (no payout) and the surface is folded away, before the resurrection flies the
+        // brain-backup to the nearest clinic. The buried/banked hoards live off-ship and are untouched.
+        bool wasOnSurface = _surface is not null;
+        if (wasOnSurface)
+        {
+            _surface = null;
+            _reevers.Clear();
+            _lastNearestReeverRange = null;
+            LogAutopilotEvent("🛬 The expedition is written off — the away team scrubs the gig and the body path goes to backup.");
+        }
+
         int mercyFloor = MercyFloorPulses();
 
         // Consult the insurance policy at rebirth (issue #227 seam): None-tier returns the uninsured
@@ -1989,8 +2047,46 @@ public partial class Map
         // Wake at the nearest haven's clinic: reset the ship state onto that haven, riding its rails.
         string clinicName = WakeAtNearestHaven();
         b.ClinicName = clinicName;
+
+        // A surface death folded the excursion; fold the surface DECK away too, back to the bare ship deck
+        // in flight (the clinic haven the wake placed us at), so the map view resumes under the modal.
+        if (wasOnSurface)
+        {
+            SetDeckForDock(null);
+        }
+
+        // Evening wind #20 — THE NEW CAPTAIN, on ANY death-resurrection (this overdraw AND the collector /
+        // Bolivia / impact paths): the piracy insurance rolls the thread's identity — a fresh seeded name and
+        // a differing face — and the roster keeps the retiree. The corner chip and roster re-read the change.
+        IssueSuccessorCaptain(b);
+
         b.Phase = BustedEncounter.Stage.Resurrected;
         StateHasChanged();
+    }
+
+    // Issue the successor captain onto the active universe (Evening wind #20). Reads the retiring identity,
+    // rolls + persists the new one through the registry (the #368 fields are editable data), and refreshes
+    // the cached roster so the in-play chip and the saved-voyages list show the new face at once. A run with
+    // no indexed thread (a legacy save) simply keeps its current identity and the card narrates generically.
+    private void IssueSuccessorCaptain(BustedEncounter b)
+    {
+        if (string.IsNullOrEmpty(_activeThreadId))
+        {
+            return;
+        }
+
+        if (Threads.Get(_activeThreadId) is { } before)
+        {
+            b.RetiredCaptainName = SpaceSails.Core.Captains.For(before).Name;
+        }
+
+        int simDay = (int)(SimTime / 86400);
+        if (Threads.IssueSuccessor(_activeThreadId, simDay) is { } after)
+        {
+            b.NewCaptainName = after.CaptainName;
+            b.NewCaptainAvatar = after.AvatarIndex;
+            RefreshThreadList(); // the chip (ActiveThreadInfo) + the roster now read the new identity
+        }
     }
 
     // The mercy floor in pulses: the reach-a-pump reserve FuelReachability prices for where we are, so
@@ -2091,7 +2187,9 @@ public partial class Map
     {
         // Impact (#264): a body's surface collected the ship — no collector, no dice, straight to the
         // freeze-frame → clinic re-birth. Reuses this whole encounter so the death machinery is shared.
-        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected, Impact }
+        // SurfaceEnd (Evening wind #20): a nerve-overdraw death out on the regolith — no collector, no dice.
+        // Its own freeze-beat (the cause art + the place-dependent line) before the shared resurrection.
+        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected, Impact, SurfaceEnd }
 
         public required string HunterId { get; init; }
         public required string HunterCallsign { get; init; }
@@ -2112,6 +2210,13 @@ public partial class Map
         // the collector (the BUSTED last stand); the impact path sets Impact. Surface causes are wired ready.
         public DeathCause Cause { get; set; } = DeathCause.Collector;
         public string? DeathBodyName { get; set; } // the place the death is narrated off (moon / body flown into)
+
+        // Evening wind #20 — THE NEW CAPTAIN. On any death-resurrection the piracy insurance issues a fresh
+        // name + face; these carry the hand-over for the resurrection card (blank when no thread to succeed —
+        // a legacy run — so the card falls back to the plain brain-backup copy).
+        public string? RetiredCaptainName { get; set; } // the captain who just walked into the dark
+        public string? NewCaptainName { get; set; }     // the name the policy put on the license
+        public int NewCaptainAvatar { get; set; }       // the new face in the mirror (art/captain-N.jpg)
 
         // Bolivia progress
         public OpposedRoll? BoliviaInitiative { get; set; }

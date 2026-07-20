@@ -49,6 +49,22 @@ public sealed record GameThreadInfo
     /// <summary>Which avatar (1..<see cref="Captains.AvatarCount"/>) fronts this captain — the <c>art/captain-N.jpg</c>
     /// index, seeded from <see cref="Id"/>. Zero means unset (a pre-roster thread); the client derives one.</summary>
     public int AvatarIndex { get; init; }
+
+    /// <summary>The captains this universe has BURIED — the ones the piracy insurance replaced (Evening wind
+    /// #20: on a death-resurrection the license changes hands, but the roster keeps the memory). Oldest
+    /// first; appended by <see cref="CaptainSuccession.Succeed"/>. Additive registry data — a pre-succession
+    /// thread reads it back as the empty default, and it survives every <see cref="GameThreadRegistry.Touch"/>
+    /// like the born-on stamp.</summary>
+    public IReadOnlyList<RetiredCaptain> Retired { get; init; } = [];
+}
+
+/// <summary>One former captain kept in a thread's history (Evening wind #20): the name that held the
+/// license, and the sim day the insurance wrote them off. Plain, JSON-friendly data.</summary>
+public sealed record RetiredCaptain(string Name, int SimDay)
+{
+    /// <summary>Parameterless default for tolerant JSON round-trips (a garbled entry reads as blanks
+    /// rather than throwing the whole index).</summary>
+    public RetiredCaptain() : this("", 0) { }
 }
 
 /// <summary>
@@ -138,6 +154,9 @@ public sealed class GameThreadRegistry
         // re-assignable pick (Evening wind #20) survives autosaves. A fresh thread seeds both from its GUID.
         string captain = existing?.CaptainName is { Length: > 0 } name ? name : Captains.Name(id);
         int avatar = existing is { AvatarIndex: > 0 } ? existing.AvatarIndex : Captains.AvatarIndex(id);
+        // The retired-captain history is minted-once data like the born-on stamp: an autosave must never
+        // wipe the memory of who held the license before (Evening wind #20).
+        IReadOnlyList<RetiredCaptain> retired = existing?.Retired ?? [];
         idx.Threads.RemoveAll(t => t.Id == id);
         idx.Threads.Add(new GameThreadInfo
         {
@@ -148,9 +167,33 @@ public sealed class GameThreadRegistry
             CreatedTicks = created,
             CaptainName = captain,
             AvatarIndex = avatar,
+            Retired = retired,
         });
         idx.ActiveId = id;
         WriteIndex(idx);
+    }
+
+    /// <summary>Issue a NEW CAPTAIN onto a thread after a death-resurrection (Evening wind #20): roll a
+    /// fresh seeded name + a differing face and append the retiree to the thread's history, persisting both
+    /// onto the row (the identity is editable data). Returns the updated row so the caller can narrate the
+    /// hand-over, or null if the thread is unknown (e.g. a legacy/unindexed run). Keeps the thread active —
+    /// it is still the run you are in — without bumping its clocks.</summary>
+    public GameThreadInfo? IssueSuccessor(string id, int retiredSimDay)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        Index idx = ReadIndex();
+        GameThreadInfo? existing = idx.Threads.FirstOrDefault(t => t.Id == id);
+        if (existing is null)
+        {
+            return null; // no row to succeed — a legacy run narrates generically, the client guards this
+        }
+
+        GameThreadInfo successor = CaptainSuccession.Succeed(existing, retiredSimDay);
+        idx.Threads.RemoveAll(t => t.Id == id);
+        idx.Threads.Add(successor);
+        idx.ActiveId = id;
+        WriteIndex(idx);
+        return successor;
     }
 
     /// <summary>Point Continue at a thread WITHOUT touching its clocks — the picker's "load THIS universe"
