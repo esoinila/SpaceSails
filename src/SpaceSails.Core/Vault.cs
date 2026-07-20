@@ -55,6 +55,7 @@ public sealed class Vault
     public NerveSection? Nerve { get; init; }
     public OverheardSection? Overheard { get; init; }
     public KaamosSection? Kaamos { get; init; }
+    public NebulaSection? Nebula { get; init; }
     public ResumeSection? Resume { get; init; }
 
     /// <summary>Set true by <see cref="VaultSerializer.Load"/> when the stored checksum did not match
@@ -311,6 +312,28 @@ public sealed record KaamosSection
     /// <summary>The assembled fragment ids (see <see cref="KaamosLore.Fragments"/>). Order is not
     /// meaningful — assembly is a set — but the writer emits canonical order for a stable file.</summary>
     public IReadOnlyList<string> AssembledFragmentIds { get; init; } = [];
+}
+
+// ── NEBULA MUTUAL (#422): the second story arc, the truth behind the player's own deaths, per-thread. ──
+
+/// <summary>The NEBULA lore-fragments this universe's captain has assembled about what their resurrections
+/// really are (#422) — stored as the flat list of fragment ids (<see cref="NebulaProgress.AssembledIds"/>)
+/// plus the one-time convergence-reveal bit, so the fine-print logic and the text both rebuild from the pool
+/// at load rather than the save carrying prose. Its own independently-optional section: a pre-#422 file
+/// simply lacks it and defaults to nothing assembled and the convergence unseen (a captain who has died and
+/// come back and never once wondered why). Unknown-to-the-pool ids are dropped on load, so the round-trip is
+/// always re-readable against the pool that wrote it.</summary>
+public sealed record NebulaSection
+{
+    /// <summary>The assembled fragment ids (see <see cref="NebulaLore.Fragments"/>). Order is not meaningful —
+    /// assembly is a set — but the writer emits canonical order for a stable file.</summary>
+    public IReadOnlyList<string> AssembledFragmentIds { get; init; } = [];
+
+    /// <summary>True once the one-time CONVERGENCE reveal has fired for this thread
+    /// (<see cref="ArcConvergence"/>). Persisted so the biggest #391 throw plays once in a universe and never
+    /// re-fires on a reload — the analog of <see cref="NerveSection.MonolithSeen"/>. Defaults false (a pre-#422
+    /// file, or one saved before the two arcs met).</summary>
+    public bool ConvergenceSeen { get; init; }
 }
 
 // ── The resume berth (owner's law): where the pirate wakes, always docked. ──
