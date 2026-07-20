@@ -2570,6 +2570,66 @@
     color: #9aa6bd;
 }
 
+/* #320: the landing-site chooser — a body's seeded set of grounds, each a mood. A tight stack of
+   selectable rows in the boarding panel; the picked one glows the house amber. */
+.board-sites {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.4rem 0 0.55rem;
+    padding: 0.4rem 0.45rem 0.5rem;
+    border: 1px solid rgba(120, 160, 210, 0.22);
+    border-radius: 0.35rem;
+    background: rgba(20, 30, 46, 0.5);
+}
+
+.board-sites-head {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #b9c8e0;
+    letter-spacing: 0.02em;
+}
+
+.board-site-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid rgba(120, 160, 210, 0.28);
+    border-radius: 0.3rem;
+    background: rgba(14, 20, 32, 0.6);
+    color: #cfe0f5;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+}
+
+.board-site-row:hover {
+    border-color: rgba(255, 212, 121, 0.6);
+    background: rgba(30, 40, 58, 0.7);
+}
+
+.board-site-sel {
+    border-color: #ffd479;
+    background: rgba(60, 46, 18, 0.55);
+    box-shadow: 0 0 0 1px rgba(255, 212, 121, 0.35) inset;
+}
+
+.board-site-name {
+    font-weight: 700;
+    color: #ffe6a8;
+    letter-spacing: 0.02em;
+}
+
+.board-site-flavor {
+    font-size: 0.76rem;
+    font-style: italic;
+    color: #9aa6bd;
+    line-height: 1.25;
+}
+
 /* #348: the standard beach-comber kit + the flight ETA — informational body rows, set off from the
    load-out steppers by a faint rule so they read as "what always comes / what the trip costs", not
    another dial. */

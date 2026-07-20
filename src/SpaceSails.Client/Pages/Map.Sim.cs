@@ -483,6 +483,18 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["secretlab=".Length..]).ToLowerInvariant();
                 secretlabCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("site=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #320 dev cheat: /map?site=N pre-selects landing site N in the boarding panel, so a
+                // playtester can board straight onto a specific ground and compare site A vs site B → a
+                // visibly different surface deck-plan on the same body. Clamped to the body's real 2–4 set
+                // when the panel opens. Documented in docs/testing-guide.md.
+                string candidate = Uri.UnescapeDataString(pair["site=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int siteN) && siteN >= 0)
+                {
+                    _forcedSiteIndex = siteN;
+                }
+            }
             else if (pair.StartsWith("kaamos=", StringComparison.OrdinalIgnoreCase))
             {
                 // #411 dev cheat: /map?kaamos=N assembles the first N PROJEKTI KAAMOS fragments (canonical

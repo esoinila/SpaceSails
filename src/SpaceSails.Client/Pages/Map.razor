@@ -835,6 +835,27 @@
             <div class="deck-shuttle-title">🛸 Board the shuttle → @boardStop.Body.Name</div>
             <div class="bury-chooser-body">
                 <div class="bury-note">Loading cargo is optional — you are not declaring a plan. Load a chest to bury it anywhere on the regolith, or go empty and probe the ground for shallow treasure (a fishing expedition). Walk down, look around, buy a souvenir. Your call, on the ground.</div>
+                @* #320: WHERE to set down. A body is a world, not a level — pick one of its seeded landing
+                   sites and the choice is a mood: each names its character in the house voice, and the ground
+                   you get differs by site. Only shown when the body offers more than one (a gig site is a
+                   single authored ground). *@
+                @if (_boardSites.Count > 1)
+                {
+                    <div class="board-sites">
+                        <div class="board-sites-head">🛬 Set down at — choosing a site is choosing a mood:</div>
+                        @foreach (LandingSite site in _boardSites)
+                        {
+                            LandingSite s = site;
+                            <button type="button"
+                                    class="board-site-row @(s.Index == _boardSiteIndex ? "board-site-sel" : "")"
+                                    title="Set down at @s.Name — a different ground on @boardStop.Body.Name"
+                                    @onclick="() => SelectBoardSite(s.Index)">
+                                <span class="board-site-name">@(s.Index == _boardSiteIndex ? "◉" : "○") @s.Name</span>
+                                <span class="board-site-flavor">@s.Flavor</span>
+                            </button>
+                        }
+                    </div>
+                }
                 <div class="bury-row">
                     <span>Coin in the chest (optional)</span>
                     <span class="bury-coin">@_boardCoin.ToString("N0", CultureInfo.InvariantCulture) cr</span>

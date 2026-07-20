@@ -472,6 +472,26 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
+| **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
+
+### Multiple landing sites — `?site=N` (#320)
+
+A body is a world, not a level: every landable body now offers a **seeded set of 2–4 landing sites**, each
+named in the house voice with a one-line character tag (*"The Wild Plain — nobody out here will hear you"*).
+The set is deterministic per body id, so a revisit re-offers the identical board. **Site 0 is always the Wild
+Plain on the body's canon ground** (Miranda's monolith maze, Luna's mass-driver ruins, the seeded signature —
+unchanged); **sites 1+ re-seed a visibly different wing/feature layout** on the same body. The picked site
+persists for the visit and is named in the surface header (**🛬 SET DOWN AT: …**).
+
+`?site=N` pre-selects site N in the boarding panel (clamped to the body's real set), so you can board straight
+onto a chosen ground. The verify loop for "does the choice change the surface":
+
+1. `/map?dock=<berth>` (or any docked start) with a landable moon in shuttle range (e.g. Miranda).
+2. Walk to the 🛸 shuttle-bay airlock, **Board for <body>** → the boarding panel.
+3. The panel lists the body's landing sites under **🛬 Set down at**; pick one (or launch with `?site=1`).
+4. **Board** → walk down. The surface header reads **SET DOWN AT: <SITE>**, and the deep-field walls/features
+   differ between, say, site 0 and site 1 on the same body.
+5. Lift off, board again → the same seeded set is offered; re-picking the same site yields the same ground.
 
 ### The secret lab — `?secretlab=1` (#409)
 
