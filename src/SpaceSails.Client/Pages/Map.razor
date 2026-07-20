@@ -2224,6 +2224,9 @@
                         @onclick="CloseDossier"></button>
             </div>
             <div>@dossier.StatusLine</div>
+            @* The Victoria-I one-line teaser (owner ruling, 2026-07-19): a scanned hull's history in a
+               glance — "ex-AURORA QUEEN · three owners deep". The full ledger lives on her comms dossier. *@
+            <div class="text-secondary">📜 @ShipHistories.For(dossierId).Teaser</div>
             <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
                  @RelativeMotion.WordedBefore(dossier.Closing)</div>
             @if (dossier.TrackQuality is { } quality)
@@ -2650,6 +2653,23 @@
                                             <div>@commsShip.Ship.CargoClass (@commsShip.Ship.CargoUnits u) · @RouteLabel(commsShip.Ship)</div>
                                             <div>@DepartureLabel(commsShip.Ship)</div>
                                             <div class="text-secondary">last seen: @(commsShip.LastObservation is { } lastObs ? FormatSimTime(lastObs.SimTime) : "never — not yet inside sensor reach")</div>
+                                            @{ ShipHistory commsHist = ShipHistories.For(commsShip.Ship.Id); }
+                                            @* The Victoria-I history block (owner ruling, 2026-07-19): every hull carries a
+                                               past — where she was laid down, the proud names she outlived, how many owners
+                                               deep she runs, and the wear that proves the glory. *@
+                                            <div class="border-top border-secondary mt-2 pt-1">
+                                                <div class="fw-bold">📜 Service history</div>
+                                                <div class="text-secondary">@commsHist.LaidDown</div>
+                                                @if (commsHist.HasFormerNames)
+                                                {
+                                                    <div>@commsHist.FormerNamesLine</div>
+                                                }
+                                                @if (commsHist.CurrentNameLine(commsShip.Ship.Callsign, flyingFalseColors: false) is { } commsNameLine)
+                                                {
+                                                    <div class="text-secondary">@commsNameLine</div>
+                                                }
+                                                <div class="text-secondary fst-italic">@commsHist.Condition</div>
+                                            </div>
                                             @if (!commsShip.Ship.PublishesTimetable)
                                             {
                                                 <div class="text-secondary">🕸 bought intel — goes stale in @IntelStaleInDays(commsShip.Ship.Id).ToString("F0") d</div>
