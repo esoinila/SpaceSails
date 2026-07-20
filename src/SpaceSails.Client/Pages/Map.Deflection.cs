@@ -259,6 +259,9 @@ public partial class Map
         {
             MarkRingsideSaved();
             PushNewsEvent(NewsWire.NewsEventKind.AsteroidDeflected, plan.TargetName);
+            // #400 §3: "me, personally, saving Ringside" — the hero shot. A one-time nudge (guarded per-life
+            // by the album); the narration below runs exactly as before.
+            OfferSelfie(SelfieBeats.Deflection, "art/ringside-bar.jpg");
         }
         else
         {

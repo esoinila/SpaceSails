@@ -196,6 +196,26 @@
                                 {
                                     <span class="captain-retired">🪦 @CaptainRetiredSummary(group.Thread)</span>
                                 }
+                                @* THE LEGEND LEDGER (#400): this captain's selfies — "proof I was there".
+                                   Per-life (a successor inherits none). Click a thumb to throw the framed
+                                   shot back up. Thumbs fall back to the caption title if the art is unpainted. *@
+                                @if (group.Thread.Selfies.Count > 0)
+                                {
+                                    <div class="captain-selfies" title="The captain's selfies — proof they were there">
+                                        <span class="captain-selfies-label">📸 @group.Thread.Selfies.Count in the legend ledger</span>
+                                        <div class="captain-selfie-strip">
+                                            @foreach (CapturedSelfie selfie in group.Thread.Selfies)
+                                            {
+                                                CapturedSelfie s = selfie;
+                                                <button type="button" class="captain-selfie-thumb" title="@s.Caption"
+                                                        @onclick="() => ShowSelfie(s)">
+                                                    <img src="art/captain-@(s.AvatarIndex).jpg" alt="" aria-hidden="true"
+                                                         onerror="this.style.display='none'" />
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                }
                             </div>
                         </div>
                         <div class="save-slots-list captain-slots">
@@ -388,6 +408,46 @@
                     <div class="view-object-caption">@cap</div>
                 }
                 <button type="button" class="view-object-close" title="Put it back down and step away" @onclick="CloseViewObject">Close</button>
+            </div>
+        </div>
+    }
+
+    @* THE CAPTAIN'S SELFIE (#400): the framed shot — the vista backdrop with the captain's #368 portrait
+       disc composited into the corner (the "no digital trickery, the captain was HERE" homage), the
+       boastful house-voice caption, and the note it's filed in the legend ledger. Click away / Close / E
+       again dismisses it. Both the img and the portrait fall back cleanly (onerror-hide) if unpainted. *@
+    @if (_selfieShot is { } shot)
+    {
+        <div class="view-object-backdrop selfie-backdrop" @onclick="CloseSelfieShot">
+            <div class="view-object selfie-frame" @onclick:stopPropagation="true">
+                <div class="view-object-title">@shot.Title</div>
+                <div class="selfie-stage">
+                    @if (shot.VistaArt is { Length: > 0 } vista)
+                    {
+                        <img class="selfie-vista" src="@vista" alt="" onerror="this.style.display='none'" />
+                    }
+                    <img class="selfie-portrait" src="art/captain-@(shot.AvatarIndex).jpg" alt="the captain, HERE"
+                         onerror="this.style.display='none'" />
+                </div>
+                @if (shot.Caption is { Length: > 0 } selfieCap)
+                {
+                    <div class="view-object-caption selfie-caption">@selfieCap</div>
+                }
+                <div class="selfie-foot">📸 Filed in the legend ledger · day @shot.SimDay</div>
+                <button type="button" class="view-object-close" title="Put the camera away" @onclick="CloseSelfieShot">Close</button>
+            </div>
+        </div>
+    }
+
+    @* The peak-moment nudge (#400 §3): after a big beat, "grab a selfie for the record?" — one-time, small,
+       non-blocking. Take it (captures the themed shot) or wave it off for the session. *@
+    @if (_selfieOffer is { } selfieOffer)
+    {
+        <div class="selfie-offer">
+            <span class="selfie-offer-text">📸 @selfieOffer.Label — grab a selfie for the record?</span>
+            <div class="selfie-offer-actions">
+                <button type="button" class="btn btn-sm btn-info" title="Strike a pose — it goes in the legend ledger" @onclick="AcceptSelfieOffer">Take the shot</button>
+                <button type="button" class="btn btn-sm btn-outline-light" title="Not this time" @onclick="DeclineSelfieOffer">Not now</button>
             </div>
         </div>
     }

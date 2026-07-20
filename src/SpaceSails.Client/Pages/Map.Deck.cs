@@ -265,6 +265,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.ViewObject:
                 ViewNearbyObject();
                 break;
+            case DeckPlan.ConsoleKind.SelfieSpot:
+                CaptureSelfieAtSpot(); // #400: pose the captain into the vista, file it in the legend ledger
+                break;
             case DeckPlan.ConsoleKind.Helm:
                 SwitchDesk(ShipDesk.Nav);
                 ShowPulseMessage("Back at the helm");

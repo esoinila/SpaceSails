@@ -93,6 +93,9 @@ public static class CaptainSuccession
             CaptainName = newName,
             AvatarIndex = newAvatar,
             Retired = history,
+            // The legend ledger is PER-LIFE (issue #400, owner #398): a new captain inherits NONE of the
+            // retiree's selfies — the wall of fame resets while the buried-captain memory keeps growing.
+            Selfies = [],
         };
     }
 
