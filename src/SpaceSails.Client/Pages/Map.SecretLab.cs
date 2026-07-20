@@ -256,6 +256,17 @@ public partial class Map
             return;
         }
         ex.SecretLabLogsRead.Add(con.Id);
+
+        // #411: the log that gestures at the sealed ice-moon project (VantarLore.KaamosHook) is also a KAAMOS
+        // intel shard. Reading it the first time files vantar-log to the ledger; a re-read shows the log plainly.
+        if (con.LoreIndex == VantarLore.KaamosHook
+            && TryAssembleKaamos("vantar-log",
+                $"🖥 {fragment}   ❄ This is a piece of PROJEKTI KAAMOS — filed to the Captain's ledger. " +
+                KaamosLore.ById("vantar-log")!.Lore))
+        {
+            return;
+        }
+
         RendererInterop.PlayCue("board");
         ShowPulseMessage($"🖥 {fragment}");
     }

@@ -2304,6 +2304,13 @@ public partial class Map
             "standing note",
             ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
 
+        // #411: the PROJEKTI KAAMOS intel readout — lead with the ice-moon mystery whenever any shard is in
+        // hand, so it builds visibly as the player collects (the assembled shard texts stay re-readable here).
+        if (KaamosLedgerTip() is { } kaamos)
+        {
+            tips.Insert(0, kaamos);
+        }
+
         return tips.ToArray();
     }
 }

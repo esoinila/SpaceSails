@@ -165,17 +165,32 @@ code is what puts you on the board. Getting back out "is not the part they sell 
   `VaultSerializer`. A pre-#411 save simply lacks it and defaults to nothing assembled; an unknown
   saved id is dropped tolerantly. Round-trip pinned by tests.
 
-**Hook-only (documented follow-ups for sibling lanes — deliberately NOT wired, to avoid collisions):**
-- **Fragment delivery.** Each delivering system calls `progress.Assemble("<fragment-id>")` on its
-  own trigger and narrates the shard (`KaamosLore.ById(id)!.Lore`):
-  - dig lane (#346/#386): a derelict supply pod find → `Assemble("cold-pod")`;
-  - labs lane (#409): a recovered lab log → `Assemble("vantar-log")`;
-  - contacts rota (#410): a rare KAAMOS-holder at the bar → `Assemble("holders-tell")`;
-  - drink/overheard (#308/#347): a bought tip → `Assemble("bought-coordinate")`;
-  - the plaque (`listed-berth`) is already readable — a lane may assemble it when the player reads
-    Ringside's plate.
-- **Capstone surfacing.** When `HasEnoughIntelToEarnTheKey(progress)` first turns true, a lane
-  offers the way to `Assemble("berth-code")` (the pieces resolving into the string).
+**Wired now (fragment delivery — `feat/kaamos-fragments`):** each system calls
+`TryAssembleKaamos("<id>", …)` (the client's assemble-persist-narrate helper, `Map.Kaamos.cs`) on its
+own trigger and narrates the shard (`KaamosLore.ById(id)!.Lore`):
+- **`listed-berth`** — reading the Ringside dedication plate that NAMES KAAMOS (`Map.Deck.ViewNearbyObject`).
+- **`cold-pod`** — a rare seeded beach-comber probe on an outer icy moon turns up a sealed KAAMOS
+  supply pod (`KaamosFind.IsColdPodSquare`, delivered in `Map.Surface.ProbeHere`).
+- **`vantar-log`** — reading the secret-lab console whose index is `VantarLore.KaamosHook`
+  (`Map.SecretLab.LabConsoleInteract`) — the cross-link the #409 lane left as a seam.
+- **`holders-tell`** — a rare seeded KAAMOS berth-holder at a bar (`KaamosFind.HolderAtBar`), via the
+  barkeep card's "🌑 Ask about KAAMOS" seam (`Map.Kaamos.AskAboutKaamos`).
+- **`bought-coordinate`** — a round on the counter (`KaamosFind.BoughtCoordinateCredits`) buys the
+  coordinate through the same bar seam.
+- **`berth-code` (capstone)** — once `HasEnoughIntelToEarnTheKey` is true, the same bar seam lets the
+  pieces resolve into the string.
+- **Intel readout** — a Captain's-ledger tip, "PROJEKTI KAAMOS — N of 5 shards", the assembled shard
+  texts readable, leading the ledger while any shard is held (`Map.Kaamos.KaamosLedgerTip`).
+- **Reach notice** — the one-time loud "THE BERTH-CODE RESOLVES — Enceladus can be reached" line,
+  appended on the single edge that flips `CanReachEnceladus`; gates a "route pending" message only.
+- **Vault + reset** — `_kaamos` round-trips via the additive `KaamosSection` (`Map.Vault`
+  BuildVault / ApplyVault) and clears on a new voyage.
+
+**Test cheat:** `/map?kaamos=N` assembles the first N fragments in canonical order;
+`/map?kaamos=all` assembles every one (opening the reach). So the readout, its state transitions, and
+the reach notice are all reachable without a playthrough (`Map.Kaamos.SeedKaamosCheat`).
+
+**Hook-only (still deliberately NOT wired, to avoid collisions):**
 - **The route.** When `CanReachEnceladus(progress)` turns true, the eventual route/scenario lane
   turns it into a navigable **cycler window** to `IceMoonBodyId` — the only place that touches the
   shuttle/scenario code. **This lane does not.**

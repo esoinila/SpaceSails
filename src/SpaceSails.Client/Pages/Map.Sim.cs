@@ -288,6 +288,7 @@ public partial class Map
         string? expeditionCheat = null; // #370 /map?expedition=1|mining: spawn an away-team gig accepted + its site in shuttle range at the berth
         string? deflectionCheat = null; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
+        string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -481,6 +482,17 @@ public partial class Map
                 // fast path.)
                 string candidate = Uri.UnescapeDataString(pair["secretlab=".Length..]).ToLowerInvariant();
                 secretlabCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("kaamos=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #411 dev cheat: /map?kaamos=N assembles the first N PROJEKTI KAAMOS fragments (canonical
+                // order), /map?kaamos=all assembles every one — so the Captain's-ledger readout, its state
+                // transitions, and the one-time reach notice are all reachable without a full playthrough.
+                string candidate = Uri.UnescapeDataString(pair["kaamos=".Length..]).ToLowerInvariant();
+                if (candidate == "all" || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                {
+                    kaamosCheat = candidate;
+                }
             }
         }
 
@@ -718,6 +730,11 @@ public partial class Map
         if (hoardCheat is not null)
         {
             InjectHoardCheat(hoardCheat); // #223: seed a buried chest and/or a bought rumour map
+        }
+
+        if (kaamosCheat is not null)
+        {
+            SeedKaamosCheat(kaamosCheat); // #411: assemble N KAAMOS fragments so the readout + reach notice are testable
         }
 
         // Tuesday plan PR-A: ?start=wreck drops you 2 km off the roadster — you're on top of her, so
