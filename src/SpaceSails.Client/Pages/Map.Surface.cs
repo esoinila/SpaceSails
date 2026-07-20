@@ -1220,6 +1220,8 @@ public partial class Map
             // #380 item 8: name the bill the shock just dealt — the poetic beat and the NERVE gauge shake hands.
             ShowPulseMessage("👁 The monolith resolves out of the dark — too regular, too old, too patient. Something behind your eyes lurches — your nerve takes the hit.");
             RequestVaultSave();
+            // #400 §3: first human eyes on the monolith — the once-in-a-life beat offers a shot for the record.
+            OfferSelfie(SelfieBeats.FirstMonolith);
         }
 
         // #380 item 2: the one-per-excursion band-drop pulse. The first time this frame's toll drops the nerve

@@ -56,6 +56,14 @@ public sealed record GameThreadInfo
     /// thread reads it back as the empty default, and it survives every <see cref="GameThreadRegistry.Touch"/>
     /// like the born-on stamp.</summary>
     public IReadOnlyList<RetiredCaptain> Retired { get; init; } = [];
+
+    /// <summary>The captain's SELFIES — the legend ledger, the "proof I was there" they'll show everyone
+    /// (issue #400). Additive registry data (a pre-selfie thread reads it back empty) preserved across every
+    /// <see cref="GameThreadRegistry.Touch"/> like the born-on stamp — but, unlike <see cref="Retired"/>,
+    /// RESET on succession (<see cref="CaptainSuccession.Succeed"/>): a NEW captain inherits NONE, so the
+    /// wall of fame is per-life (owner #398, a quiet Fail Forward beat). Appended by
+    /// <see cref="GameThreadRegistry.AddSelfie"/>, deduped by <see cref="CapturedSelfie.SpotId"/>.</summary>
+    public IReadOnlyList<CapturedSelfie> Selfies { get; init; } = [];
 }
 
 /// <summary>One former captain kept in a thread's history (Evening wind #20): the name that held the
@@ -155,8 +163,11 @@ public sealed class GameThreadRegistry
         string captain = existing?.CaptainName is { Length: > 0 } name ? name : Captains.Name(id);
         int avatar = existing is { AvatarIndex: > 0 } ? existing.AvatarIndex : Captains.AvatarIndex(id);
         // The retired-captain history is minted-once data like the born-on stamp: an autosave must never
-        // wipe the memory of who held the license before (Evening wind #20).
+        // wipe the memory of who held the license before (Evening wind #20). The current captain's selfie
+        // album (#400) is carried the same way — an autosave never clears the legend ledger; only a
+        // succession does (CaptainSuccession.Succeed).
         IReadOnlyList<RetiredCaptain> retired = existing?.Retired ?? [];
+        IReadOnlyList<CapturedSelfie> selfies = existing?.Selfies ?? [];
         idx.Threads.RemoveAll(t => t.Id == id);
         idx.Threads.Add(new GameThreadInfo
         {
@@ -168,6 +179,7 @@ public sealed class GameThreadRegistry
             CaptainName = captain,
             AvatarIndex = avatar,
             Retired = retired,
+            Selfies = selfies,
         });
         idx.ActiveId = id;
         WriteIndex(idx);
@@ -194,6 +206,38 @@ public sealed class GameThreadRegistry
         idx.ActiveId = id;
         WriteIndex(idx);
         return successor;
+    }
+
+    /// <summary>File a captured selfie into a thread's legend ledger (issue #400): append it to the active
+    /// captain's album and persist onto the row (like the retired history — but reset on succession). DEDUPED
+    /// by <see cref="CapturedSelfie.SpotId"/>: the same spot/beat is one shot per life, so re-viewing a spot
+    /// never spams the ledger. Returns the updated row (with the selfie present), or null if the thread is
+    /// unknown (a legacy/unindexed run — the client guards this and just shows the shot). Keeps the thread
+    /// active without bumping its clocks (a photo is not a durable game event).</summary>
+    public GameThreadInfo? AddSelfie(string id, CapturedSelfie selfie)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        ArgumentNullException.ThrowIfNull(selfie);
+        Index idx = ReadIndex();
+        GameThreadInfo? existing = idx.Threads.FirstOrDefault(t => t.Id == id);
+        if (existing is null)
+        {
+            return null; // no row to file into — a legacy run just shows the shot, the client guards this
+        }
+
+        // Already in the ledger (same spot/beat) — return the row unchanged, so a re-view is idempotent.
+        if (existing.Selfies.Any(s => s.SpotId == selfie.SpotId))
+        {
+            return existing;
+        }
+
+        var album = new List<CapturedSelfie>(existing.Selfies) { selfie };
+        GameThreadInfo updated = existing with { Selfies = album };
+        idx.Threads.RemoveAll(t => t.Id == id);
+        idx.Threads.Add(updated);
+        idx.ActiveId = id;
+        WriteIndex(idx);
+        return updated;
     }
 
     /// <summary>Point Continue at a thread WITHOUT touching its clocks — the picker's "load THIS universe"

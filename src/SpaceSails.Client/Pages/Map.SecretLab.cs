@@ -296,6 +296,8 @@ public partial class Map
             ShowPulseMessage(
                 $"🖥 {coreLogText}   ▪   {dice} — you keep your head and strip the rig for the good stuff. " +
                 $"+{roll.PayCredits:N0} cr for the salvaged tech. Your hands aren't quite steady, but they're yours.");
+            // #400 §3: you looked the thing in the eye and kept your head — the record wants your face doing it.
+            OfferSelfie(SelfieBeats.RevealSurvived);
         }
         else
         {

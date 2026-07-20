@@ -501,6 +501,21 @@ public static class HavenInterior
                 + "one. The hoards you buried outlive the hull; the policy outlives the captain. Underwritten "
                 + "by Nebula Mutual — “We Bring You Back Meaner.”"),
         });
+        // 📸 THE SELFIE SPOT (issue #400, owner's cruise 2026-07-20: "the awesome-view places … should
+        // have a photo spot … the frame should place the CAPTAIN in the awesome view"). The scenic outer
+        // havens (Red Eye storm gallery, Ringside's ring-lip, Selene's Earthrise, The Deep's edge) each get
+        // a console at the bar's spinward window — walk up, press E, and the captain poses into the vista
+        // with a boastful house-voice caption, filed into the legend ledger. Reuses the ViewObject/plaque
+        // console idiom (#392); a dedicated kind routes E to the capture instead of the passive viewer.
+        // Placed at the starboard end of the big window — clear of the barkeep desk (down the left), the
+        // gift-shop consoles (x 6/9.5, +3), the STOREROOM hatch (BarRight−2, +11), and the second insurance
+        // poster (BarRight−2.5, +14) — so [E] never grabs the wrong console whichever chair the rota fills.
+        if (SpaceSails.Core.SelfieSpots.For(spec.BodyId) is { } selfieSpot)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.SelfieSpot, BarRight - 5, BarTopY - 2,
+                selfieSpot.ConsoleLabel, selfieSpot.VistaArt));
+        }
+
         consoles.AddRange(hatches); // the ring departments + bar back-rooms, as knockable locked hatches
 
         // The station's DEDICATION PLAQUE (owner's cruise ruling, 2026-07-19, photographing their ship's
