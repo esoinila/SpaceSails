@@ -269,6 +269,7 @@ public partial class Map
         public int TideSpawnIndex { get; set; }
         public bool TideAnnounced { get; set; }          // the one-time "the deep stirs" notice has fired
         public bool SentryHintShown { get; set; }         // #380 item 7: the one-time first-deploy sentry hint has fired
+        public bool NerveBandDropAnnounced { get; set; }  // #380 item 2: the one-time "nerves fraying" band-drop pulse has fired
 
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
@@ -917,6 +918,11 @@ public partial class Map
         bool onExcursion = _surface is { } ex;
         bool onRegolith = onExcursion && !MoonSurface.IsSafeAboard(_avatarY);
 
+        // #380 item 2: the band this frame opened on — so once, per excursion, we can speak the FIRST slide
+        // down a rung (naming the cause and the remedy the bare gauge never did). Recovery only ever raises
+        // the nerve, so a fall can arise solely from the regolith's toll below.
+        NerveModel.NerveBand bandBefore = NerveModel.BandFor(_nerve);
+
         var frame = new NerveModel.Frame(
             OnExcursion: onExcursion,
             OnRegolith: onRegolith,
@@ -952,8 +958,19 @@ public partial class Map
         if (step.MonolithHitFired)
         {
             RendererInterop.PlayCue("alarm");
-            ShowPulseMessage("👁 The monolith resolves out of the dark — too regular, too old, too patient. Something behind your eyes lurches, and your hands remember it.");
+            // #380 item 8: name the bill the shock just dealt — the poetic beat and the NERVE gauge shake hands.
+            ShowPulseMessage("👁 The monolith resolves out of the dark — too regular, too old, too patient. Something behind your eyes lurches — your nerve takes the hit.");
             RequestVaultSave();
+        }
+
+        // #380 item 2: the one-per-excursion band-drop pulse. The first time this frame's toll drops the nerve
+        // a whole rung (Steady→Rattled, or lower), say WHY it falls and HOW to mend it — the cause+remedy the
+        // bare gauge never showed. Latched on the excursion (a fresh landing re-arms it), the house one-time idiom.
+        if (onExcursion && _surface is { NerveBandDropAnnounced: false } dropEx
+            && NerveModel.BandFor(_nerve) > bandBefore)
+        {
+            dropEx.NerveBandDropAnnounced = true;
+            ShowPulseMessage("Nerves fraying — Reevers, digging under threat, and worse all take their toll. Get back aboard to steady them.");
         }
     }
 
@@ -1362,7 +1379,9 @@ public partial class Map
         if (!ex.TideAnnounced)
         {
             ex.TideAnnounced = true;
-            ShowPulseMessage("〜 The tracker stirs — something's moving in the deep, far below. The regolith never stays empty for long. Don't linger.");
+            // #380 item 3: the one-time tide notice is the natural slot to say what a Reever IS — the first
+            // time the deep stirs, name the Old Ones and the escape (fleeing works; they want YOU, not loot).
+            ShowPulseMessage("〜 The tracker stirs — something's moving in the deep, far below. The regolith never stays empty for long. Don't linger. Reevers — the Old Ones. They don't want your loot; they want YOU. Grab what you came for and run.");
         }
     }
 
