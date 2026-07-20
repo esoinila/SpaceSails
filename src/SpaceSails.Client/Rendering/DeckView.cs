@@ -621,10 +621,11 @@ public sealed class DeckView
     private static bool IsCrew(string name) => name != "Reever" && !IsPatron(name);
 
     // The drinking patrons — the regulars' short names (HavenInterior.ShortNameFor) + the roaming Magpie +
-    // the empty-chair fallback. They never react to the off-deck buzzer; only the staff do.
+    // the station Oracle (a ranting-drunk bar fixture, #425, not working staff) + the empty-chair fallback.
+    // They never react to the off-deck buzzer; only the staff do.
     private static bool IsPatron(string name) => name switch
     {
-        "Silas" or "Coil" or "Gilt-Eye" or "The Fixer" or "Regular" or "Magpie" => true,
+        "Silas" or "Coil" or "Gilt-Eye" or "The Fixer" or "Regular" or "Magpie" or "Oracle" => true,
         _ => false,
     };
 
