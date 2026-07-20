@@ -25,6 +25,12 @@ public static class NewsWire
         SlugMissed,
         HunterBrokeOff,
         LongHaulComplete,
+
+        // #394 — the asteroid deflection. AsteroidInbound is the LOUD emergency the gig fires on (Subject =
+        // the threatened port, Detail = the rock's read); AsteroidDeflected/AsteroidStruck are the aftermath.
+        AsteroidInbound,
+        AsteroidDeflected,
+        AsteroidStruck,
     }
 
     /// <summary>One player-triggered event, dated and named. <paramref name="Subject"/> is the
@@ -205,6 +211,12 @@ public static class NewsWire
             $"{evt.Subject} has broken off the chase — the contract, it seems, wasn't worth the hull. Someone's underwriters are furious.",
         NewsEventKind.LongHaulComplete =>
             $"A ship crossed the deep black to {evt.Subject} — weeks of void{(evt.Detail is null ? "" : $" ({evt.Detail})")}, one long silence, then a berth light on the scope.",
+        NewsEventKind.AsteroidInbound =>
+            $"⚠ COLLISION ALERT — an inbound rock is on a line for {evt.Subject}{(evt.Detail is null ? "" : $" ({evt.Detail})")}. Every hull with a drill and a death wish, the Exchange is paying.",
+        NewsEventKind.AsteroidDeflected =>
+            $"{evt.Subject} still stands: a crew rode the rock down and shoved it off the line before it arrived. The rings kept the orbit. Drinks are on the Exchange.",
+        NewsEventKind.AsteroidStruck =>
+            $"The rock reached {evt.Subject}. Heavy damage across the trade decks and the berths are a mess, but she held — the Exchange is already clearing wreckage and reopening dock by dock.",
         _ => "Static on the wire.",
     };
 }

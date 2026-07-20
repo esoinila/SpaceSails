@@ -329,6 +329,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.DiscoveryCache:
                 DiscoveryCacheInteract(); // #371 Phase 3: claim a forced chamber's cache
                 break;
+            case DeckPlan.ConsoleKind.DrillPoint:
+                DrillPointInteract(); // #394: drill the charge (a long channel), or fire it once armed
+                break;
             case DeckPlan.ConsoleKind.Kiosk:
                 VisitKiosk();
                 break;
@@ -733,7 +736,7 @@ public partial class Map
         }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.ViewObject } spot)
         {
-            _viewObject = spot;
+            _viewObject = MaybeAppendPlaqueGratitude(spot); // #394: Ringside's plaque grows a line once saved
         }
     }
 

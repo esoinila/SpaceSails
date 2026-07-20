@@ -127,6 +127,30 @@ public static class Plaques
     /// <summary>The dedication plaque for a station body, or null if that berth has no walkable haven.</summary>
     public static Plaque? For(string bodyId) => Array.Find(Stations, p => p.Id == bodyId);
 
+    // ── #394 THE ASTEROID DEFLECTION · the appended gratitude. When this universe's crew turned an inbound
+    //    rock aside from the Ringside Exchange, the port's dedication plaque gains a newer, brighter line —
+    //    stored per-universe (Vault ProgressSection.RingsideSaved) so it persists on this thread and no
+    //    other (owner: "raised again by the crew of Hull No. 77"). The base bronze stays; the crew's line is
+    //    struck below it.
+
+    /// <summary>The station id whose dedication plaque gains the deflection gratitude line.</summary>
+    public const string DeflectionGratitudeStationId = "ringside-exchange";
+
+    /// <summary>The gratitude line appended to Ringside's dedication after a save, naming
+    /// <paramref name="shipName"/> (the crew's hull). House voice, struck below the original bronze.</summary>
+    public static string DeflectionGratitudeLine(string shipName) =>
+        $" And below the old dedication, the letters newer and the bronze still bright: raised again, and " +
+        $"kept, by the crew of {shipName} — who stood on the falling stone and turned it aside before it " +
+        $"could reach the rings. The Exchange trades on. It does not forget who let it.";
+
+    /// <summary>Ringside's dedication as it should READ right now: the original lore, plus the appended
+    /// gratitude line when <paramref name="ringsideSaved"/> is set (this universe's crew turned the rock).
+    /// Any other body, or an unsaved Ringside, returns the plaque's plain <see cref="Plaque.Lore"/>.</summary>
+    public static string DedicationLore(Plaque plaque, bool ringsideSaved, string shipName) =>
+        plaque.Id == DeflectionGratitudeStationId && ringsideSaved
+            ? plaque.Lore + DeflectionGratitudeLine(shipName)
+            : plaque.Lore;
+
     /// <summary>Every haven dedication plaque — for tests and any "what's dedicated where" listing.</summary>
     public static IReadOnlyList<Plaque> AllStationPlaques => Stations;
 

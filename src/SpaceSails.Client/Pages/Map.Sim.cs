@@ -70,6 +70,36 @@ public partial class Map
     // A fixed, reproducible seed per flavor so the cheat always spawns the same rock (same kind + name).
     private static ulong ExpeditionCheatSeed(ExpeditionFlavor flavor) => flavor == ExpeditionFlavor.MiningSurvey ? 3702UL : 3701UL;
 
+    // #394: the inbound rock as a runtime BodyDefinition, appended before the ephemeris is built (the
+    // ellipse-cheat idiom). A Moon-kind body (landable surface) with the DeflectionGig collision RAIL —
+    // an eccentric orbit around <paramref name="parentId"/> whose periapsis kisses the Ringside orbit at
+    // T-impact. Its id is the DeflectionGig family id so the surface + landing route by id alone.
+    private static BodyDefinition DeflectionRockBody(DeflectionGig.RockRail rail, string parentId) => new()
+    {
+        Id = DeflectionGig.BodyId,
+        Name = "Inbound rock",
+        ParentId = parentId,
+        Mu = 0,
+        BodyRadiusM = DeflectionGig.RockBodyRadiusMeters,
+        OrbitRadiusM = rail.SemiMajorAxis,
+        OrbitPeriodS = rail.OrbitPeriod,
+        InitialPhaseRad = rail.InitialPhase,
+        Eccentricity = rail.Eccentricity,
+        ArgPeriapsisRad = rail.ArgPeriapsis,
+        Kind = "moon",
+    };
+
+    // A fixed, reproducible seed so the deflection cheat always spawns the same rock (same type + name + spin).
+    private const ulong DeflectionCheatSeed = 3940UL;
+
+    // The rock's seeded slow tumble — a spin period (30..90 s of on-site time) and a phase, so the firing
+    // window comes around on its own schedule. Pure of the given seed.
+    private static (double Period, double Phase) DeflectionSpin(ulong seed)
+    {
+        var rng = new DeterministicRandom(DiceRule.Seed(seed, "rock-spin"));
+        return (rng.NextDouble(30.0, 90.0), rng.NextDouble(0.0, Math.Tau));
+    }
+
     // #370: the cheat's resolved gig spec, stashed at build time (the site body is appended pre-ephemeris)
     // and consumed by InjectExpeditionCheat AFTER the berth clamp, so the accepted plan lands on a live world.
     private (ExpeditionFlavor Flavor, ExpeditionSiteKind Kind, string SiteBodyId, string SiteName)? _pendingExpeditionCheat;
@@ -240,6 +270,7 @@ public partial class Map
         double? simHoursCheat = null;
         bool ellipseCheat = false; // /map?ellipse=1 injects a visibly eccentric demo body (Kepler rails, PR-B)
         string? expeditionCheat = null; // #370 /map?expedition=1|mining: spawn an away-team gig accepted + its site in shuttle range at the berth
+        string? deflectionCheat = null; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -410,6 +441,19 @@ public partial class Map
                     expeditionCheat = candidate;
                 }
             }
+            else if (pair.StartsWith("deflection=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #394 dev cheat: /map?deflection=1 spawns the ASTEROID DEFLECTION gig ALREADY ACCEPTED — an
+                // inbound rock on a collision rail with the Ringside Exchange, parked in shuttle range, ship
+                // docked at Ringside. Pin the rock type with deflection=c|s|m (else seeded). The test loop is:
+                // see the red threat line → shuttle to the rock → drill the charge → FIRE → watch the rail bend
+                // off the station → home. Documented in the PR body.
+                string candidate = Uri.UnescapeDataString(pair["deflection=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes" or "c" or "s" or "m")
+                {
+                    deflectionCheat = candidate;
+                }
+            }
         }
 
         // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
@@ -445,6 +489,30 @@ public partial class Map
                 _pendingExpeditionCheat = (flavor, spawn.Kind, spawn.BodyId, spawn.DisplayName);
                 dockCheat = berthId; // clamp onto the berth the rock co-orbits, so it's in reach at spawn
             }
+        }
+        if (deflectionCheat is not null
+            && scenario.Bodies.FirstOrDefault(b => b.Id == "ringside-exchange") is { } ring
+            && scenario.Bodies.Any(b => b.Id == ring.ParentId))
+        {
+            // #394: the inbound rock is a mission-spawned body on a real COLLISION rail with the Ringside
+            // Exchange — appended before FromScenario (the immutable-ephemeris idiom), timed so it kisses the
+            // station's orbit at T-impact. Ship clamps onto Ringside (in shuttle reach of the rock at spawn).
+            RockType type = deflectionCheat switch
+            {
+                "c" => new RockType(RockComposition.CType, DeflectionGig.RollType(3941).Structure),
+                "s" => new RockType(RockComposition.SType, DeflectionGig.RollType(3941).Structure),
+                "m" => new RockType(RockComposition.MType, DeflectionGig.RollType(3941).Structure),
+                _ => DeflectionGig.RollType(DeflectionCheatSeed),
+            };
+            double impactRailTime = DeflectionGig.RailLeadSeconds; // fresh boot: accept at sim-time ≈ 0
+            DeflectionGig.RockRail rail = DeflectionGig.BuildRail(
+                ring.OrbitRadiusM, ring.OrbitPeriodS, ring.InitialPhaseRad, impactRailTime);
+            (double spinPeriod, double spinPhase) = DeflectionSpin(DeflectionCheatSeed);
+            scenario = scenario with { Bodies = [.. scenario.Bodies, DeflectionRockBody(rail, ring.ParentId!)] };
+            _pendingDeflectionCheat = (type, DeflectionGig.RockName(DeflectionCheatSeed), rail,
+                ring.Id, "Ringside Exchange", ring.OrbitRadiusM, ring.OrbitPeriodS, ring.InitialPhaseRad,
+                ring.ParentId!, impactRailTime, spinPeriod, spinPhase);
+            dockCheat = "ringside-exchange"; // clamp onto the port under threat, in reach of the rock
         }
         _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
@@ -578,6 +646,11 @@ public partial class Map
         if (_pendingExpeditionCheat is not null)
         {
             InjectExpeditionCheat(); // #370: after the clamp — the accepted gig lands on a live, docked world
+        }
+
+        if (_pendingDeflectionCheat is not null)
+        {
+            InjectDeflectionCheat(); // #394: after the clamp — rock inbound, ship docked at the threatened port
         }
 
         if (fetchCheat is not null)
@@ -1308,7 +1381,9 @@ public partial class Map
             DrawClosestPassMarker();
             DrawDestinationPassMarker();
         }
+        RetireDeflectionIfDone(); // #394: a resolved gig clears once the crew is home at the saved port
         DrawCelestialBodies();
+        DrawAsteroidThreat(); // #394: the inbound rock's rail + the ⚠ intersect + the threat line (bends on deflection)
         DrawCargoRunMarkers();
         DrawNodeMarkers();
         if (PlotMode)
