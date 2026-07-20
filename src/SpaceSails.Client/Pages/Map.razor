@@ -698,6 +698,43 @@
         </div>
     }
 
+    @* #425 — THE STATION ORACLE. Solenne "Static" Marsh, the ranting drunk in the corner whose nonsense
+       hides the truth (owner: the BSG Base Star Hybrid key). Press E at her stool: she perceives reality on
+       channels you can't (x-rays as weather, cosmic dust on the tongue, the archived dead as a chorus), so
+       most of what she says is beautiful noise — but a rare line "sounds nuts but is TRUE" and can leak a
+       real arc shard. Buy her a drink to widen the channel (a drunk oracle is more prophetic). THE TELL: when
+       the room goes quiet the line MIGHT be one of the real ones — but the hush lies sometimes, so the sifting
+       is yours. Same overlay family as the deck-offer-card. *@
+    @if (_deckMode && _oracleOpen && _oracleLine is { } oline)
+    {
+        <div class="deck-offer-card oracle-card @(oline.RoomGoesQuiet ? "oracle-quiet" : "")">
+            <div class="deck-offer-giver">🌀 @Core.OracleRant.FullName</div>
+            <div class="deck-offer-blurb oracle-backstory">@Core.OracleRant.Backstory</div>
+            @if (oline.RoomGoesQuiet)
+            {
+                <div class="oracle-hush small">…the room goes quiet. A faint chill. This one lands differently.</div>
+            }
+            <div class="oracle-line @(oline.RoomGoesQuiet ? "oracle-line-quiet" : "")">“@oline.Text”</div>
+            @if (_oracleNotice is { } onote)
+            {
+                <div class="deck-bank-notice small">@onote</div>
+            }
+            <div class="deck-offer-reward">
+                Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr@(_oracleDrinks > 0 ? $" · you've stood her {_oracleDrinks} glass{(_oracleDrinks == 1 ? "" : "es")}" : "")
+            </div>
+            <div class="deck-offer-actions">
+                <button type="button" class="btn btn-sm btn-outline-info" title="Let her keep talking — turn the dial one line on" @onclick="NextOracleLine">🌀 Keep listening</button>
+                @if (CurrentKeep is { } orKeep)
+                {
+                    <button type="button" class="btn btn-sm btn-warning" disabled="@(_credits < orKeep.DrinkPrice)"
+                            title="@($"Stand the oracle a {orKeep.DrinkName} — {orKeep.DrinkPrice} cr. A drunk oracle is more prophetic.")"
+                            @onclick="BuyOracleDrink">🥃 Buy her a drink · @orKeep.DrinkPrice cr</button>
+                }
+                <button type="button" class="btn btn-sm btn-outline-light" title="Leave her to her muttering" @onclick="CloseOracle">Done</button>
+            </div>
+        </div>
+    }
+
     @* The shuttle-bay airlock pop-up (#163, "the door you understand as a flight"): walking up to the
        bay's airlock lists the places within one shuttle hop. An interior berth is pickable — confirm and
        the crossing IS the trip, you step off ashore there; a body in range with nowhere to step off says

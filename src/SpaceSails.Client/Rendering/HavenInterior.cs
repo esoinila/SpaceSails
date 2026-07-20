@@ -193,6 +193,21 @@ public static class HavenInterior
     /// present regulars into. Exposed for tests that assert distinct, in-range seat assignment.</summary>
     public static int PatronSeatCount => PatronSeats.Length;
 
+    // --- THE STATION ORACLE (issue #425): Solenne "Static" Marsh, the ranting-drunk oracle. A bar fixture
+    // present SOME watches and a drifted-off empty stool others (OracleRant.PresentAt, the #414 patron/rota
+    // idiom), planted in the port-back corner of the bar — clear of every other console: > InteractRadius
+    // (3 du) from the nearest patron stool (−9,+16 → 3.6 du), the barkeep desk (down the left, mid-depth),
+    // the cellar hatch (−12,+11), the bar back-room door (x −14) and the spinward window (BarTopY). So E at
+    // her corner never grabs the wrong console whoever else the rota seats. She wears a BarPatron console
+    // (the client routes E on it to the oracle flow by matching OracleRant.Nickname, exactly as the Magpie
+    // is matched) and a deck droid so she reads as a hunched figure nursing a wrong-frequency drink.
+    private static readonly (float X, float Y) OracleCorner = (-11f, HallTopY + 19f);
+
+    /// <summary>Is the oracle at this bar on this docking watch? The pure Core rota (OracleRant.PresentAt);
+    /// exposed so the interaction gate and the deck build agree on whether her corner holds anyone.</summary>
+    public static bool OraclePresent(string bodyId, double simTime) =>
+        SpaceSails.Core.OracleRant.PresentAt(bodyId, simTime);
+
     /// <summary>One resolved seated regular for a bar watch: the same shout-name id the contact systems
     /// key on, whether they're at a table this watch, and — when present — the deck coords of their seat
     /// (with a per-regular seeded facing so two visits don't line up identically). Away regulars carry
@@ -473,6 +488,16 @@ public static class HavenInterior
                 consoles.Add(new(DeckPlan.ConsoleKind.BarPatron, (float)r.X, (float)r.Y, r.Label));
             }
         }
+
+        // The station oracle (issue #425), if she's tuned to this bar this watch. A BarPatron console in
+        // the port-back corner; the client's E-router matches her by name (OracleRant.Nickname) and hands
+        // off to the oracle flow, never the generic quest-giver path. Absent watches leave the stool empty.
+        bool oracleHere = OraclePresent(spec.BodyId, simTime);
+        if (oracleHere)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.BarPatron, OracleCorner.X, OracleCorner.Y,
+                SpaceSails.Core.OracleRant.ConsoleLabel));
+        }
         consoles.AddRange(new DeckPlan.ConsoleSpot[]
         {
             // The Magpie's bar stop — a roaming patron (PR-F). They aren't always here; walk up and the
@@ -595,7 +620,7 @@ public static class HavenInterior
 
         return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
-            droidCount: 10, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars),
+            droidCount: 11, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars, oracleHere),
             location: (x, y) => x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
                               : y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
@@ -611,7 +636,7 @@ public static class HavenInterior
     // at build time (fixed for the visit), so the droids sit exactly where their consoles do; only the
     // thermal jitter and the Magpie/barkeep pace read the live clock.
     private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer, bool backRoomOpen,
-        double barkeepX, double barkeepServiceY, IReadOnlyList<SeatedRegular> regulars)
+        double barkeepX, double barkeepServiceY, IReadOnlyList<SeatedRegular> regulars, bool oracleHere)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // fills [0..3)
         double sway = 0.05 * System.Math.Sin(simTime * 0.0009);
@@ -651,5 +676,21 @@ public static class HavenInterior
         // south (−π/2), across the bar toward the captain.
         double pace = 1.5 * System.Math.Sin(simTime * 0.00035);
         buffer[9] = new DeckPlan.Droid(barkeepX + pace, barkeepServiceY + 2, -System.Math.PI / 2, "Barkeep");
+
+        // #425 — the station oracle, hunched over her corner drink when the rota has her here this watch.
+        // A seeded thermal shuffle + facing twitch (ReeverIdle) so she reads alive, muttering at the wall;
+        // parked far off-frame on the watches she's drifted off (her stool simply empty, no console). Index
+        // 10, the buffer's last complex slot (droidCount 11).
+        if (oracleHere)
+        {
+            ulong oseed = RegularSeed("STATION-ORACLE", PatronRota.WatchIndex(simTime));
+            (double ojx, double ojy) = SpaceSails.Core.ReeverIdle.JitterAt(oseed, simTime);
+            double oface = -System.Math.PI / 2 + SpaceSails.Core.ReeverIdle.FacingTwitchAt(oseed, simTime);
+            buffer[10] = new DeckPlan.Droid(OracleCorner.X + ojx, OracleCorner.Y + ojy, oface, "Oracle");
+        }
+        else
+        {
+            buffer[10] = new DeckPlan.Droid(-9999, -9999, 0, "Oracle");
+        }
     }
 }
