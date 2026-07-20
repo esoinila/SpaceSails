@@ -59,7 +59,8 @@ public partial class Map
     }
 
     // Resolve the frame's enqueued labels and draw the survivors. Called once per frame AFTER every
-    // label producer (DrawCelestialBodies, DrawAsteroidThreat) has enqueued, and before EndFrame.
+    // label producer (DrawCelestialBodies, DrawAsteroidThreat, and DrawNpcs's depot names) has
+    // enqueued, and before EndFrame — so same-rank depot labels de-collide with each other too (#402).
     private void FlushNavLabels()
     {
         if (_renderer is null || _frameLabels.Count == 0)

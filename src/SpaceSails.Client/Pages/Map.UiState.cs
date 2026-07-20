@@ -493,6 +493,8 @@ public partial class Map
 
     private const double PickRadiusPx = 15;     // the forgiving direct-hit radius
     private const double PickNearRadiusPx = 28; // near-miss radius for the lane-vs-planet tiebreak
+    // #402 follow-up: the per-body pick radius (and the deflection threat rock's widened, always-one-
+    // click-away tolerance) is the pure, tested MapPick rule in Core — see the picker loops below.
 
     private void ClosePickMenu()
     {
@@ -571,14 +573,18 @@ public partial class Map
                 // Hit within the drawn disc, floored for pinprick planets and capped so a
                 // zoomed-in world doesn't swallow every camera drag on the screen.
                 double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
-                double hit = Math.Max(Math.Clamp(drawnPx, 14, 80), radiusPx);
+                // #402: the deflection inbound rock is the most click-worthy thing in a station
+                // cluster — name it as the threat (not a nameless "body") so the pick-menu answer at
+                // the Ringside knot reads "⚠ Inbound rock — deflection target" against the depots.
+                bool isDeflectionRock = _deflection is { } dgig && body.Id == dgig.RockBodyId;
+                // #402 follow-up: the threat rock gets MapPick's widened tolerance so it's always one
+                // click away — a click on the station knot lands it even when its own disc is a pinprick.
+                double hit = isDeflectionRock
+                    ? MapPick.ThreatRockHitRadiusPx(drawnPx, radiusPx)
+                    : MapPick.BodyHitRadiusPx(drawnPx, radiusPx);
                 double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
                 if (d2 <= hit * hit)
                 {
-                    // #402: the deflection inbound rock is the most click-worthy thing in a station
-                    // cluster — name it as the threat (not a nameless "body") so the pick-menu answer at
-                    // the Ringside knot reads "⚠ Inbound rock — deflection target" against the depots.
-                    bool isDeflectionRock = _deflection is { } dgig && body.Id == dgig.RockBodyId;
                     // #208: a moon haven (parked-in, no ⚓ dock) carries its walk-in phrase too, so the
                     // picker's port entries all read their kind at a glance.
                     (string flavor, string icon) = isDeflectionRock
@@ -609,7 +615,7 @@ public partial class Map
                 if (!LayerVisible("ports.havens")) continue; // 🗺 Layers (#405): Dock havens off → its ⚓ pick answers no clicks
                 (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
                 double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
-                double hit = Math.Max(Math.Clamp(drawnPx, 14, 80), radiusPx);
+                double hit = MapPick.BodyHitRadiusPx(drawnPx, radiusPx);
                 double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
                 if (d2 <= hit * hit)
                 {
@@ -627,7 +633,7 @@ public partial class Map
                 if (body.Kind != BodyKind.Station || IsDockableHaven(body)) continue;
                 (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
                 double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
-                double hit = Math.Max(Math.Clamp(drawnPx, 14, 80), radiusPx);
+                double hit = MapPick.BodyHitRadiusPx(drawnPx, radiusPx);
                 double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
                 if (d2 <= hit * hit)
                 {
