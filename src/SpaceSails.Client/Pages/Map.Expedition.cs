@@ -177,6 +177,13 @@ public partial class Map
         {
             SpawnReevers(Math.Min(ep.HostilePack, ExpeditionMaxPack));
         }
+        // COMMS-LOSS (owner: "scripted on a bad expedition beat"): a horror beat can knock the mothership's
+        // downlink out — pull a comms episode forward to now. Honest: on the gig only the ship's CONFIRM is
+        // withheld; the away clock stays live on the suit, so this never strands the team.
+        if (ep.Outcome == ExpeditionOutcome.Horror)
+        {
+            TriggerCommsEpisode();
+        }
 
         RendererInterop.PlayCue(ep.Outcome switch
         {

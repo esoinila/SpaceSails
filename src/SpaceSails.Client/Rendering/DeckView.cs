@@ -44,6 +44,11 @@ public sealed class DeckView
         // it: 0 calm teal (steady), 1 amber (slipping), 2 red (failing / lost) — the maroon, never silent.
         string? OrbitComms = null,
         int OrbitSeverity = 0,
+        // COMMS-LOSS (owner, cruise 2026-07-19): the mothership downlink phase colouring the orbit line —
+        // 0 nominal (paint live), 1 degraded (greyed, faint static), 2 blackout (dim, flickering static,
+        // the frozen last-known value). The OrbitComms string already carries the honest stale banner; this
+        // just drives the visual static/grey so the readout LOOKS lost, not merely worded so.
+        int CommsState = 0,
         // Lane-1 (owner, 2026-07-18: "advertise the dig and bot options in text under the motion
         // detector"): short contextual lines seated BENEATH the tracker readout in the left instrument
         // column — the dig-site and sentry affordances spelled out. Column chrome only, never over the
@@ -515,6 +520,17 @@ public sealed class DeckView
                 1 => new RgbaColor(255, 190, 100, 235),
                 _ => new RgbaColor(130, 225, 205, 220),
             };
+            // COMMS-LOSS: when the downlink is degraded/blacked out the orbit line is a STALE readout — drop
+            // it to a cold signal-grey and flicker its alpha like breaking static (faster + deeper on a full
+            // blackout), so the frozen last-known value LOOKS lost, not just worded so. The honesty is in the
+            // banner text (SurfaceComms); this is the matching visual.
+            if (oHud.CommsState > 0)
+            {
+                double flickerHz = oHud.CommsState >= 2 ? 11.0 : 6.0;
+                double floor = oHud.CommsState >= 2 ? 0.28 : 0.55; // blackout drops darker between flickers
+                double f = floor + (1.0 - floor) * (0.5 + 0.5 * Math.Sin(simTime * flickerHz));
+                color = new RgbaColor(170, 180, 190, (byte)(255 * Math.Clamp(f, 0.0, 1.0)));
+            }
             _renderer.DrawText(widthPx / 2f, 20, orbitLine, color, "13px monospace", TextAlign.Center);
         }
 
