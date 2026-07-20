@@ -165,6 +165,30 @@ public static class VaultMapper
         progress.Load(section?.AssembledFragmentIds);
     }
 
+    // ── NEBULA MUTUAL (#422) — the second-arc fragment assembly + the one-time convergence bit, per-thread. ──
+
+    /// <summary>Project the assembled NEBULA fragments (and whether the convergence reveal has fired) to their
+    /// flat vault section (ids in canonical order + the seen bit). Total: an empty progress becomes an
+    /// empty-list, unseen section, not null.</summary>
+    public static NebulaSection ToSection(NebulaProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        return new NebulaSection
+        {
+            AssembledFragmentIds = progress.AssembledIds,
+            ConvergenceSeen = progress.ConvergenceSeen,
+        };
+    }
+
+    /// <summary>Rehydrate assembled fragments and the convergence bit into a progress holder (via
+    /// <see cref="NebulaProgress.Load"/>, which drops any id the current pool no longer knows). A null section
+    /// is a no-op — the captain has simply never wondered why they keep waking up.</summary>
+    public static void Apply(NebulaSection? section, NebulaProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        progress.Load(section?.AssembledFragmentIds, section?.ConvergenceSeen ?? false);
+    }
+
     public static InsuranceSection ToSection(PirateInsurance policy) =>
         new((int)policy.Tier, policy.PremiumPaidThroughSimTime);
 

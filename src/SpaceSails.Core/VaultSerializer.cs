@@ -65,6 +65,7 @@ public static class VaultSerializer
     private const string SecNerve = "nerve";
     private const string SecOverheard = "overheard";
     private const string SecKaamos = "kaamos";
+    private const string SecNebula = "nebula";
     private const string SecResume = "resume";
 
     /// <summary>Serialize a vault to its on-disk JSON string (envelope + checksum). Only non-null
@@ -88,6 +89,7 @@ public static class VaultSerializer
         AddSection(sections, SecNerve, vault.Nerve);
         AddSection(sections, SecOverheard, vault.Overheard);
         AddSection(sections, SecKaamos, vault.Kaamos);
+        AddSection(sections, SecNebula, vault.Nebula);
         AddSection(sections, SecResume, vault.Resume);
 
         // Build the payload (everything the checksum protects), hash it, THEN stamp the checksum in.
@@ -161,6 +163,7 @@ public static class VaultSerializer
             Nerve = Harvest<NerveSection>(sections, SecNerve, warnings),
             Overheard = Harvest<OverheardSection>(sections, SecOverheard, warnings),
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
+            Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),
             Resume = Harvest<ResumeSection>(sections, SecResume, warnings),
         };
 
