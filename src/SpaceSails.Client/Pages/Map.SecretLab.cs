@@ -98,6 +98,12 @@ public partial class Map
             AppendSecretLabGeometry(ex, placement, walls, labels, consoles);
         }
 
+        // Nothing to add until the door is at least revealed — don't grow the plan (or its region count) on a
+        // rebuild for a lab still fully hidden.
+        if (walls.Count == 0 && consoles.Count == 0 && labels.Count == 0)
+        {
+            return;
+        }
         _deckPlan.AppendRegion(new DeckPlan.DeckRegion(
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), []));
     }
