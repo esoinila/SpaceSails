@@ -253,6 +253,12 @@ public sealed record ProgressSection
     /// carries the appended line of gratitude forever after, on this thread and no other. Defaults false
     /// (a pre-#394 file simply lacks the field), so an unsaved port shows only its original dedication.</summary>
     public bool RingsideSaved { get; init; }
+
+    /// <summary>#409 — the body ids where this thread has FOUND one of Dr. Vantar's secret labs (revealed its
+    /// hidden door). Persisted per-universe (the vault/thread idiom) so a revisit to a known body shows the
+    /// door already revealed — you remember where it is. Defaults empty (a pre-#409 file simply lacks the
+    /// field), a lossless round-trip.</summary>
+    public IReadOnlyList<string> SecretLabsFound { get; init; } = [];
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──
