@@ -571,9 +571,15 @@ public partial class Map
                 double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
                 if (d2 <= hit * hit)
                 {
+                    // #402: the deflection inbound rock is the most click-worthy thing in a station
+                    // cluster — name it as the threat (not a nameless "body") so the pick-menu answer at
+                    // the Ringside knot reads "⚠ Inbound rock — deflection target" against the depots.
+                    bool isDeflectionRock = _deflection is { } dgig && body.Id == dgig.RockBodyId;
                     // #208: a moon haven (parked-in, no ⚓ dock) carries its walk-in phrase too, so the
                     // picker's port entries all read their kind at a glance.
-                    (string flavor, string icon) = body.IsHaven ? ("haven — lie low in orbit", "🏴") : ("body", "🪐");
+                    (string flavor, string icon) = isDeflectionRock
+                        ? ("deflection target — on a collision course", "⚠")
+                        : body.IsHaven ? ("haven — lie low in orbit", "🏴") : ("body", "🪐");
                     // #339-follow: a shuttle-landable ground (a moon) names its 🛬 mark and its live reach —
                     // "shuttle range" when the map glyph is bright, "out of shuttle reach" when it's dim — so
                     // the click hint says the same thing the glyph shows (the #195 all-controls-hinted law).
@@ -583,7 +589,9 @@ public partial class Map
                             ? " · 🛬 landable — shuttle range"
                             : " · 🛬 landable — out of shuttle reach";
                     }
-                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · {flavor}", icon), d2, 2));
+                    // #402: rank the threat rock ahead of ordinary bodies/depots so it heads the
+                    // "which one?" list in a cluster (like the hunter is promoted above haulers).
+                    found.Add((new PickCandidate('B', body.Id, $"{body.Name} · {flavor}", icon), d2, isDeflectionRock ? -1 : 2));
                 }
             }
 
