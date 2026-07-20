@@ -456,6 +456,15 @@ public partial class Map
         }
         string giver = spot.Label.Replace("◈", "").Trim();
 
+        // The station oracle (#425): Solenne "Static" Marsh wears a BarPatron console but is no quest-giver —
+        // route her to the ranting-oracle flow before any give-work path. Matched by name (OracleRant.IsOracle),
+        // the same idiom the Magpie is matched by.
+        if (OracleRant.IsOracle(spot.Label))
+        {
+            TalkToOracle();
+            return;
+        }
+
         // The roaming Magpie (PR-F, "people cannot be static furniture"): interaction is gated on their
         // sim-time rota, so walking up to a chair they've left tells you they've moved on, not gives an
         // offer. Handled before the generic give-work paths, which assume a patron who stays put.
@@ -638,6 +647,7 @@ public partial class Map
         {
             ClosePatronTable(); // the counter and a patron's table are one flow, two doorways — never both open
         }
+        CloseOracleFromBar(); // #425: the counter and the oracle's corner are the same one-card-at-a-time family
         _barMenu = keep;
         _barNotice = keep.Greeting;
     }
@@ -649,6 +659,10 @@ public partial class Map
         _showBarMenu = false;
         _pendingContactDrink = null; // a half-open offer moment does not survive stepping back from the bar
     }
+
+    // The oracle's corner card is one of the same mutually-exclusive doorway family — opening the counter or a
+    // patron's table shuts her card so two cards never stack. (#425)
+    private void CloseOracleFromBar() => _oracleOpen = false;
 
     // Append a heard line to the durable "overheard at the bar" book, capped, and persist it. The receipt
     // (#119 idiom) so the words the captain paid for are revisitable, not gone with the toast.
@@ -776,6 +790,10 @@ public partial class Map
                 continue;
             }
             string giver = c.Label.Replace("◈", "").Trim();
+            if (OracleRant.IsOracle(c.Label))
+            {
+                continue; // #425: the oracle isn't a contact — she has her own corner flow, not the round
+            }
             if (!seen.Add(giver))
             {
                 continue; // one contact can hold two consoles (the roaming Magpie) — warm them once
@@ -882,6 +900,10 @@ public partial class Map
                 continue;
             }
             string giver = c.Label.Replace("◈", "").Trim();
+            if (OracleRant.IsOracle(c.Label))
+            {
+                continue; // #425: the oracle is not a ledger contact — no drink-contact row for her
+            }
             if (!seen.Add(giver))
             {
                 continue; // one contact can hold two consoles (the roaming Magpie) — list them once
@@ -1054,6 +1076,7 @@ public partial class Map
         {
             CloseBarkeep();
         }
+        CloseOracleFromBar(); // #425: only one deck card open at a time — a patron's table shuts the oracle's corner
         _patronDrink = giver;
         _patronDrinkBlurb = blurb;
         return true;
@@ -2309,6 +2332,13 @@ public partial class Map
         if (KaamosLedgerTip() is { } kaamos)
         {
             tips.Insert(0, kaamos);
+        }
+
+        // #425/#422: the NEBULA MUTUAL readout — surfaced whenever a shard is in hand (the oracle is its first
+        // delivery vector). Inserted above KAAMOS so the newest rabbit hole leads, both riding atop live tips.
+        if (NebulaLedgerTip() is { } nebula)
+        {
+            tips.Insert(0, nebula);
         }
 
         return tips.ToArray();

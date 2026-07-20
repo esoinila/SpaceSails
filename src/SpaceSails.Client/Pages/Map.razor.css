@@ -72,6 +72,50 @@
     z-index: calc(var(--z-desks-popups) + 90);
 }
 
+/* #425 — the station oracle's corner card (deck-offer-card family). A cool, off-channel violet edge marks
+   her apart from the warm bar cards; the "quiet" variant (the TELL — the room hushes) deepens the glow and
+   the line, a cue that this one MIGHT be true. Never definitive: the hush lies sometimes, the sifting is
+   the player's. OracleCard / oracle-quiet. */
+.oracle-card {
+    border-color: rgba(170, 140, 255, 0.5);
+    box-shadow: 0 0.5rem 2rem rgba(90, 60, 180, 0.2), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+}
+
+.oracle-card .deck-offer-giver {
+    color: #c9b6ff;
+}
+
+.oracle-backstory {
+    font-size: 0.85em;
+    opacity: 0.72;
+    margin-bottom: 0.5rem;
+}
+
+.oracle-line {
+    font-style: italic;
+    line-height: 1.5;
+    margin: 0.4rem 0 0.7rem;
+    color: #e8ecf4;
+}
+
+/* The TELL, rendered: when the room goes quiet the whole card cools and the line stills — a faint chill the
+   player learns to notice but can never fully trust. */
+.oracle-card.oracle-quiet {
+    border-color: rgba(150, 200, 255, 0.7);
+    box-shadow: 0 0 2.5rem rgba(120, 170, 255, 0.28), 0 0.5rem 2rem rgba(0, 0, 0, 0.6);
+}
+
+.oracle-hush {
+    color: #9fd0ff;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.3rem;
+}
+
+.oracle-line-quiet {
+    color: #eaf3ff;
+    text-shadow: 0 0 0.6rem rgba(140, 190, 255, 0.45);
+}
+
 .deck-offer-giver {
     color: #ffd479;
     font-weight: 700;

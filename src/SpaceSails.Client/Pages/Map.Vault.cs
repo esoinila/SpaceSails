@@ -171,6 +171,15 @@ public partial class Map
         // #411: a new voyage is a new universe — the KAAMOS shards this captain gathered are unknown again.
         _kaamos.Clear();
 
+        // #422/#425: likewise the NEBULA shards, and the oracle's per-visit reading state — a fresh universe
+        // has never leaned on Static's corner.
+        _nebula.Clear();
+        _oracleStation = null;
+        _oracleOpen = false;
+        _oracleLine = null;
+        _oracleDraw = 0;
+        _oracleDrinks = 0;
+
         // #394: a new universe has not saved the Ringside Exchange — its dedication plaque reads its
         // original bronze until this run's crew earns the gratitude line. Any live gig is dropped too.
         _ringsideSaved = false;
@@ -364,6 +373,7 @@ public partial class Map
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
+            Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
             Resume = BuildResumeSection(),
         };
     }
@@ -744,6 +754,7 @@ public partial class Map
         _revealedBodyIds.Clear();
         _scopeIntel.Clear();
         _kaamos.Clear(); // #411: the loaded life brings its OWN assembled shards (applied below), not the last run's
+        _nebula.Clear(); // #422/#425: same for the Nebula shards — the load re-hydrates its own set below
 
         if (vault.Purse is { } purse)
         {
@@ -786,6 +797,7 @@ public partial class Map
         VaultMapper.Apply(vault.Contacts, _contacts);
         VaultMapper.Apply(vault.Caches, _caches);
         VaultMapper.Apply(vault.Kaamos, _kaamos); // #411: rehydrate the assembled ice-moon shards (tolerant of a pre-#411 save)
+        VaultMapper.Apply(vault.Nebula, _nebula); // #422/#425: rehydrate the Nebula shards (tolerant of a pre-#422 save)
         _insurance = VaultMapper.ToInsurance(vault.Insurance);
         ApplyObligationsAndQuests(vault.Quests);
         ApplyDiceItems(vault.DiceItems);
