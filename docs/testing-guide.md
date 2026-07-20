@@ -472,6 +472,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
+| **`?bond=1`** | **Boot docked at a bar and FORCE the next ambient scare (shudder/buzzer/PA) to open a STRANGER-BOND — a co-present stranger stands you a cognac, the hero beat (#429).** |
 
 ### The secret lab — `?secretlab=1` (#409)
 
@@ -489,6 +490,26 @@ lab with the **hidden door already revealed**. The loop:
    fragments; **[E]** `🗝 VANTAR'S CACHE` for the fat one-time payout.
 5. **[E] `🖥 VANTAR — THE CORE LOG`** — the reveal: a nerve hit + a shown **d20** (≥9 salvages the tech for
    heroic pay; below, the dormant synthetics wake as a limited pack — run).
+
+### The stranger-bond — `?bond=1` (#429)
+
+The **warm twin** of the ambient-dread system (#430). The same scares that unsettle you — a hull-shudder, an
+unexplained buzzer, a caution PA — can, at a docked bar, **open a co-present stranger** to you instead of only
+chilling the room: a warm word, a whole new contact, or — the hero — a stranger who **stands you a cognac by
+name** (`OLD PERIHELION`), on the fright. `?bond=1` boots you docked at a bar (default **The Space Bar**;
+combine with `?dock=<id>` for another) and **forces the next ambient scare to bond**, guaranteeing the cognac
+beat. The loop:
+
+1. `/map?bond=1` → boot docked at The Space Bar with the regulars (strangers, no history yet) at the tables.
+2. Walk the bar and wait a few seconds — the cheat fires the first hull-shudder within ~3 s (`〰` toast).
+3. Right after the dread beat, the **stranger-bond toast** lands (`🥂 …`): a co-present stranger — “Barkeep —
+   two of the **OLD PERIHELION**, on the fright.” — stands you the cognac, your goodwill with them warms, and
+   the shared glass steadies your nerve (the #226 sanity-relief seam).
+4. The forced bond is a **one-shot** — reload `/map?bond=1` to arm the cognac beat again. Unforced, bonds fire
+   on a seeded chance (rarer, deeper when a scare runs cold) behind a cooldown, one per scare.
+
+Effects apply through the **existing** contact systems (`ContactLedger.AddGoodwill`, `PourRum`) — a bonded
+stranger becomes a **findable known contact** (they gain a drink/relationship row), never a new parallel path.
 
 Discovery **persists per game-thread**: once found, a revisit to that body shows the door already revealed.
 To exercise the *discovery* vector itself on an ordinary body, land empty-handed and **probe** (`[E]` on the
