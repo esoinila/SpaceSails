@@ -32,9 +32,9 @@ public sealed record Plaque(string Id, string ConsoleLabel, string ArtUrl, strin
 /// <summary>
 /// The commemorative plaques of the world (owner's cruise ruling, 2026-07-19). One <see cref="Ship"/>
 /// builder's plate bolted to the player's own hull, and one dedication plaque per walkable haven —
-/// keyed by the same station body ids <c>HavenInterior</c> builds interiors for. Selene Gate, The Red
-/// Eye, and The Deep carry Grok-generated plate art; the other four are wired to their easel slot and
-/// fall back to just the dedication text until the art lands (follow-up lane).
+/// keyed by the same station body ids <c>HavenInterior</c> builds interiors for. All seven havens now
+/// carry Grok-generated plate art at their easel slot; each still falls back to the dedication text
+/// alone if its image is ever missing (the souvenir onerror-hide idiom).
 /// </summary>
 public static class Plaques
 {
@@ -52,15 +52,14 @@ public static class Plaques
         "little less. She shows her age now, but the history is still in her frames. Her keel plate — " +
         "every scratch since the last owner is yours.");
 
-    // The haven dedication plaques. Selene Gate / The Red Eye / The Deep carry delivered Grok plate art;
-    // the Roadstead, Cinder Roost, Ringside and Tilt slots point at their easel path and fall back to the
-    // dedication text alone until that art is painted (the souvenir onerror-hide fallback idiom). BUILD
-    // ORIGIN is stated plainly for the locally-built ports so The Deep's towed-from-sunside exception
-    // stands out (owner addendum, 2026-07-19).
+    // The haven dedication plaques. All seven now carry delivered Grok plate art at their easel path;
+    // each still falls back to the dedication text alone if its image is missing (the souvenir
+    // onerror-hide fallback idiom). BUILD ORIGIN is stated plainly for the locally-built ports so The
+    // Deep's towed-from-sunside exception stands out (owner addendum, 2026-07-19).
     private static readonly Plaque[] Stations =
     [
         // The Rusty Roadstead — Mars, the crossroads where the long-haul crews lay over. Built locally
-        // (plain), with a layered-tech beat. (Text-only for now.)
+        // (plain), with a layered-tech beat. Grok plate art delivered.
         new("the-space-bar", "⚜ DEDICATION PLAQUE", "art/plaque-roadstead.jpg",
             "THE RUSTY ROADSTEAD — Mars orbit, the roadstead where every long-haul crew lays over and " +
             "half of them never quite leave. Raised in Mars orbit from Mars iron, plate over plate, the " +
@@ -69,7 +68,7 @@ public static class Plaques
             "stay two weeks. This plate has kept its post since the first two weeks."),
 
         // Cinder Roost — Venus cloud-mining (worldbuilding notes §Venus/He3 pantry). Built locally.
-        // (Text-only for now.)
+        // Grok plate art delivered.
         new("cinder-roost", "⚜ DEDICATION PLAQUE", "art/plaque-cinder.jpg",
             "CINDER ROOST — slung in the high acid cloud-deck of Venus, where the skimmer rigs work the " +
             "sulphur haze for what the furnace-world can be made to spare. Built in these clouds by the " +
@@ -79,7 +78,7 @@ public static class Plaques
 
         // Ringside Exchange — Saturn, the He3 clearing-house (worldbuilding notes §4). Built locally, and
         // the one place PROJEKTI KAAMOS is named — the sealed ice-moon (Enceladus) project, never
-        // explained (owner addendum, 2026-07-19). (Text-only for now.)
+        // explained (owner addendum, 2026-07-19). Grok plate art delivered.
         new("ringside-exchange", "⚜ DEDICATION PLAQUE", "art/plaque-ringside.jpg",
             "RINGSIDE EXCHANGE — hung at the lip of Saturn's rings, clearing-house for the He3 that fuels " +
             "the whole out-system trade. Forged here from ring-ice and Saturn steel, in the shadow of the " +
@@ -87,7 +86,7 @@ public static class Plaques
             "berth for it is still on the board, still listed, and nobody has filed for it in a long time. " +
             "Trade fast — the rings don't wait. Some cargoes, it seems, are content to."),
 
-        // The Tilt — Uranus, the sideways world. Built locally, with a layered-tech beat. (Text-only.)
+        // The Tilt — Uranus, the sideways world. Built locally, with a layered-tech beat. Grok plate art delivered.
         new("the-tilt", "⚜ DEDICATION PLAQUE", "art/plaque-tilt.jpg",
             "THE TILT — in orbit off Uranus, the world that fell over and kept on going. Bolted together " +
             "right here, sideways like everything else this far out, by crews who stopped noticing which " +
