@@ -1015,6 +1015,47 @@
         </div>
     }
 
+    @* #406 Nav search — type a name to find & jump to a target instead of zoom-hunting. Sits beside
+       🗺 Layers on the same map desks (Nav/Sensors/WarRoom); the results drop straight down. Reuses the
+       pick-row idiom (icon · name · kind/flavor); a row jumps by framing + centring the target (its menu
+       is one more click). / focuses it, ↑↓ move, Enter jumps, Esc closes. The input stops keydown
+       propagation so typing a name never drives the ship. *@
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom)
+    {
+        <div class="nav-search" @onclick:stopPropagation="true">
+            <input @ref="_navSearchInput" type="search" class="form-control form-control-sm nav-search-input"
+                   placeholder="🔍 find a target… ( / )" value="@_navSearchQuery" aria-label="Search the map for a target"
+                   title="Type a name to find &amp; jump to a body, depot, or contact — / focuses, ↑↓ move, Enter jumps, Esc closes"
+                   @oninput="OnNavSearchInput" @onfocus="() => _navSearchOpen = true"
+                   @onkeydown="OnNavSearchKeyDown" @onkeydown:stopPropagation="true" />
+            @if (_navSearchOpen && _navSearchRows.Count > 0)
+            {
+                <div class="nav-search-results bg-dark bg-opacity-75 rounded p-1 small shadow text-light">
+                    @for (int i = 0; i < _navSearchRows.Count; i++)
+                    {
+                        NavSearchRow row = _navSearchRows[i];
+                        bool sel = i == _navSearchIndex;
+                        <button type="button" class="btn btn-sm text-start py-0 nav-search-row @(sel ? "btn-info" : "btn-outline-info")"
+                                title="Jump here — frame the map on it and centre the camera"
+                                @onclick="() => JumpToSearchResult(row)">
+                            <span class="nav-search-name">@row.Icon @row.Name</span>
+                            <span class="text-secondary"> · @row.Flavor</span>@if (row.Hidden)
+                            {
+                                <span class="text-warning"> · hidden by your layer filter</span>
+                            }
+                        </button>
+                    }
+                </div>
+            }
+            else if (_navSearchOpen && !string.IsNullOrWhiteSpace(_navSearchQuery))
+            {
+                <div class="nav-search-results bg-dark bg-opacity-75 rounded p-1 small shadow text-secondary">
+                    nothing on the charts by that name
+                </div>
+            }
+        </div>
+    }
+
     @* #195 (owner ruling, Friday playtest): the Captain's-desk tutorial pop-up is gone. It floated over
        the Nav toolbar and, like the #169 Luna lesson, presumed onboarding it shouldn't own — the tutorial
        flow (#160) will carry that. The lessons stay reachable at the Captain's desk (0) → Tutorials. *@
