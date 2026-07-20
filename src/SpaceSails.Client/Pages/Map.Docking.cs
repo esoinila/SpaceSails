@@ -486,6 +486,17 @@ public partial class Map
     // sure?" prompt is up, replacing the normal action row in the same card.
     private bool _boardEmptyConfirm;
 
+    // #320 · the destination's seeded landing sites (2–4) and the captain's pick, live while the boarding
+    // panel is open. The picked site's LayoutSalt parameterizes the surface ground and its Name rides the
+    // header. Default is site 0 (the Wild Plain, the canon ground) — or the cheat-forced index.
+    private IReadOnlyList<LandingSite> _boardSites = [];
+    private int _boardSiteIndex;
+
+    // #320 dev cheat (/map?site=N): force the boarding panel to pre-select landing site N so a playtester
+    // can jump straight to a specific ground (site A vs B → visibly different deck-plan). Clamped to the
+    // body's real set in OpenBoardingPanel. Null = no override (default to site 0). See docs/testing-guide.md.
+    private int? _forcedSiteIndex;
+
     private void OpenBoardingPanel(ShuttleStop stop)
     {
         _boardTarget = stop;
@@ -495,8 +506,24 @@ public partial class Map
         // sentry rides down unless the captain drops one.
         _boardBots = AvailableBots;
         _boardEmptyConfirm = false;
+        // #320: the destination's seeded landing-site board. An away-expedition site or the deflection rock
+        // is a single AUTHORED ground (its gig owns the site), so it offers only site 0 — no chooser; every
+        // ordinary landable body offers its full 2–4 seeded set.
+        _boardSites = IsSpecialSiteBody(stop.Body.Id)
+            ? [LandingSites.At(stop.Body.Id, 0)]
+            : LandingSites.For(stop.Body.Id);
+        _boardSiteIndex = _forcedSiteIndex is { } forced ? Math.Clamp(forced, 0, _boardSites.Count - 1) : 0;
         _shuttleBayStops = null;      // the panel replaces the board
     }
+
+    // #320: a body whose ground is a single authored gig site (an away-expedition rock or the inbound
+    // deflection rock) — those never present the multi-site board (the gig chose the ground).
+    private bool IsSpecialSiteBody(string bodyId) =>
+        (_expedition is { } gig && gig.SiteBodyId == bodyId)
+        || (_deflection is { } dgig && dgig.RockBodyId == bodyId);
+
+    private void SelectBoardSite(int index) =>
+        _boardSiteIndex = Math.Clamp(index, 0, _boardSites.Count - 1);
 
     private void CancelBoarding()
     {
@@ -550,7 +577,11 @@ public partial class Map
             .ToList();
         ShuttleExcursion.ChestLoad chest = ShuttleExcursion.Pack(_boardCoin, _credits, hold);
         _boardEmptyConfirm = false;
-        await BeginSurfaceExcursion(stop, chest, _boardBots); // #314: bring the loaded sentries down too
+        // #320: carry the picked landing site down — its salt seeds the ground, its name the header.
+        LandingSite site = _boardSites.Count > 0
+            ? _boardSites[Math.Clamp(_boardSiteIndex, 0, _boardSites.Count - 1)]
+            : LandingSites.At(stop.Body.Id, 0);
+        await BeginSurfaceExcursion(stop, chest, _boardBots, site); // #314: bring the loaded sentries down too
     }
 
     // #327 the quote before you board DOWN: the ship states its hold honestly from the live tank — "can

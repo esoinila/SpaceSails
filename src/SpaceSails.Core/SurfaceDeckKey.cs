@@ -31,18 +31,25 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
 
     public string BodyId { get; }
     public string BodyDisplayName { get; }
+
+    /// <summary>#320 · The chosen landing site's layout salt (empty = the body's canon site 0). Part of the
+    /// key so two sites on the same body cache — and rebuild — as distinct grounds, never colliding.</summary>
+    public string SiteSalt { get; }
+
     private readonly Cache[] _caches;
     private readonly int _hash;
 
-    private SurfaceDeckKey(string bodyId, string bodyDisplayName, Cache[] caches)
+    private SurfaceDeckKey(string bodyId, string bodyDisplayName, string siteSalt, Cache[] caches)
     {
         BodyId = bodyId;
         BodyDisplayName = bodyDisplayName;
+        SiteSalt = siteSalt;
         _caches = caches;
 
         var hc = new HashCode();
         hc.Add(bodyId, StringComparer.Ordinal);
         hc.Add(bodyDisplayName, StringComparer.Ordinal);
+        hc.Add(siteSalt, StringComparer.Ordinal);
         hc.Add(caches.Length);
         foreach (Cache c in caches)
         {
@@ -56,10 +63,12 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
     /// every build, so the order is stable per body and no sort is needed for equal-input → equal-key.</summary>
     public static SurfaceDeckKey For(
         string? bodyId, string? bodyDisplayName,
-        IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)>? ownCaches)
+        IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)>? ownCaches,
+        string? siteSalt = null)
     {
         bodyId ??= "";
         bodyDisplayName ??= "";
+        siteSalt ??= "";
 
         Cache[] caches;
         if (ownCaches is null || ownCaches.Count == 0)
@@ -76,7 +85,7 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
             }
         }
 
-        return new SurfaceDeckKey(bodyId, bodyDisplayName, caches);
+        return new SurfaceDeckKey(bodyId, bodyDisplayName, siteSalt, caches);
     }
 
     public bool Equals(SurfaceDeckKey? other)
@@ -94,7 +103,8 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
             return false;
         }
         if (!string.Equals(BodyId, other.BodyId, StringComparison.Ordinal)
-            || !string.Equals(BodyDisplayName, other.BodyDisplayName, StringComparison.Ordinal))
+            || !string.Equals(BodyDisplayName, other.BodyDisplayName, StringComparison.Ordinal)
+            || !string.Equals(SiteSalt, other.SiteSalt, StringComparison.Ordinal))
         {
             return false;
         }
