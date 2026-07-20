@@ -100,9 +100,12 @@ public static class HavenInterior
     /// The docked complex for a body — ship + tube + hall + bar as one walkable plan — or null if that
     /// haven has no deck to walk. <paramref name="unlockedHatchIds"/> is the session's set of cracked
     /// hatch ids for this station (bare ids like "V-06"); any that grow a wing weld their back room on.
-    /// Built once per (station, unlock-state), lazily, and shared.
+    /// <paramref name="simTime"/> is the docking watch: the seated regulars' rota (<see cref="PatronRota"/>)
+    /// is resolved at this clock, so who's at the bar and which chair they took is baked for this visit —
+    /// re-dock a watch later and the room reads different. Built once per (station, unlock-state, watch),
+    /// lazily, and shared.
     /// </summary>
-    public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null)
+    public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
@@ -111,12 +114,14 @@ public static class HavenInterior
         IReadOnlyList<DeckWing> active = unlockedHatchIds is null
             ? []
             : DeckExpansions.ActiveWings(WingCatalog(bodyId), bodyId, unlockedHatchIds).ToList();
-        string key = active.Count == 0
+        long watch = PatronRota.WatchIndex(simTime);
+        string wingKey = active.Count == 0
             ? bodyId
             : bodyId + "|" + string.Join(",", active.Select(w => w.UnlockHatchId).OrderBy(s => s, System.StringComparer.Ordinal));
+        string key = $"{wingKey}@{watch}"; // the seated-regular rota re-rolls each watch, so it keys the cache
         if (!Cache.TryGetValue(key, out DeckPlan? deck))
         {
-            deck = BuildComplex(spec, active);
+            deck = BuildComplex(spec, active, simTime);
             Cache[key] = deck;
         }
         return deck;
@@ -164,6 +169,76 @@ public static class HavenInterior
     {
         NpcPost p = MagpieRota.Resolve(simTime);
         return p.Location == "BACK ROOM" && !backRoomOpen ? MagpieRota.PostAt(1) : p;
+    }
+
+    // --- The roving SEATED regulars (issue #410, owner 2026-07-20 "Are the contacts moving and not in
+    // same seats in same bars?"). The four regulars used to be one shared roster nailed to four fixed
+    // chairs in every bar. Now each is present at a given port only SOMETIMES (PatronRota, seeded by
+    // station + sim-time watch) and, when they are, takes a DIFFERENT seat from this pool. The pool is
+    // authored so any assignment is safe: every seat is > InteractRadius (3 du) from the barkeep counter,
+    // the Magpie's stool (8,+18), the gift-shop/poster consoles and the bar back-room hatches, and every
+    // pair of seats is > 3 du apart — so E never grabs the wrong console whichever chair fills.
+    private static readonly (float X, float Y)[] PatronSeats =
+    [
+        (-9f, HallTopY + 6f),    // 0 — near-left stool (One-Eye Silas's old perch, the barkeep-clearance case)
+        (14f, HallTopY + 6f),    // 1 — near-right
+        (2.5f, HallTopY + 11f),  // 2 — mid-room
+        (-9f, HallTopY + 16f),   // 3 — back-left corner (the confidential, off-the-books table)
+        (14f, HallTopY + 16f),   // 4 — back-right
+        (-3f, HallTopY + 18f),   // 5 — back-centre-left
+        (2.5f, HallTopY + 6f),   // 6 — front-centre
+    ];
+
+    /// <summary>The bar's seated-regular pool size (issue #410) — the number of chairs the rota seeds
+    /// present regulars into. Exposed for tests that assert distinct, in-range seat assignment.</summary>
+    public static int PatronSeatCount => PatronSeats.Length;
+
+    /// <summary>One resolved seated regular for a bar watch: the same shout-name id the contact systems
+    /// key on, whether they're at a table this watch, and — when present — the deck coords of their seat
+    /// (with a per-regular seeded facing so two visits don't line up identically). Away regulars carry
+    /// <see cref="Present"/> = false and are parked off-frame by the droid fill.</summary>
+    public readonly record struct SeatedRegular(string Id, string Label, string ShortName, bool Present, double X, double Y, double Facing, ulong Seed);
+
+    // The floating deck-label short-name per regular (the droid tag, kept as it read before #410); the
+    // full shout-name id lives on the console. Unknown ids fall back to the id itself.
+    private static string ShortNameFor(string id) => id switch
+    {
+        "ONE-EYE SILAS" => "Silas",
+        "MADAM COIL" => "Coil",
+        "GILT-EYE" => "Gilt-Eye",
+        "THE FIXER" => "The Fixer",
+        _ => id,
+    };
+
+    /// <summary>Resolve the four regulars for <paramref name="bodyId"/> at <paramref name="simTime"/> —
+    /// the pure rota (<see cref="PatronRota"/>) turned into deck seats (<see cref="PatronSeats"/>). Which
+    /// regulars are present, and which chair each took, is a deterministic function of the station and the
+    /// sim-time watch, so the console placement, the droid fill and any interaction gate all agree.</summary>
+    public static IReadOnlyList<SeatedRegular> ResolveRegulars(string bodyId, double simTime)
+    {
+        var seated = new List<SeatedRegular>(PatronRota.Roster.Count);
+        foreach (PatronSeating s in PatronRota.ResolveSeating(bodyId, simTime, PatronSeats.Length))
+        {
+            (float sx, float sy) = s.Present ? PatronSeats[s.SeatIndex] : default;
+            // A seeded base facing per (regular, watch) so a returning captain doesn't find them frozen at
+            // the identical angle each visit — small idle life on top of the per-frame thermal jitter.
+            ulong seed = RegularSeed(s.Regular, PatronRota.WatchIndex(simTime));
+            double facing = -System.Math.PI / 2 + (SpaceSails.Core.ReeverIdle.FacingTwitchAt(seed, 0) * 1.5);
+            seated.Add(new SeatedRegular(s.Regular, $"◈ {s.Regular}", ShortNameFor(s.Regular), s.Present, sx, sy, facing, seed));
+        }
+        return seated;
+    }
+
+    /// <summary>A stable per-regular jitter seed (issue #410 idle life): folds the regular's name and the
+    /// watch so their thermal shuffle differs from their neighbours' and from their own last visit.</summary>
+    public static ulong RegularSeed(string regular, long watch)
+    {
+        ulong h = 0x9E3779B97F4A7C15UL;
+        foreach (char c in regular)
+        {
+            h = (h ^ c) * 0x100000001B3UL;
+        }
+        return h ^ (ulong)watch;
     }
 
     // --- Runtime wings (Core DeckWing catalog) ------------------------------------------------------
@@ -247,7 +322,7 @@ public static class HavenInterior
 
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
-    private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings)
+    private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings, double simTime)
     {
         DeckPlan ship = DeckPlan.Ship;
         bool backRoomOpen = activeWings.Count > 0; // the Magpie's back-room stop is reachable once a wing is welded on
@@ -383,13 +458,23 @@ public static class HavenInterior
         doors.Add(new(BarRight, HallTopY + 9, BarRight, HallTopY + 13, Locked: true));
         hatches.Add(new(DeckPlan.ConsoleKind.Hatch, BarRight - 2, HallTopY + 11, $"🔒 STOREROOM · {lvl}-B2"));
 
-        // The bar's regulars, each at a table — walk up and press E. Drop the ship's ⚓ gangway.
-        var consoles = new List<DeckPlan.ConsoleSpot>(ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock))
+        // The bar's regulars (issue #410): no longer four names nailed to four fixed chairs in every bar.
+        // The rota (ResolveRegulars → PatronRota) decides, for THIS station and THIS docking watch, which
+        // of the four are drinking here and which chair each took — so a present regular gets a BarPatron
+        // console at their seeded seat, and an absent one leaves an empty chair (no console: E finds
+        // nothing, they've drifted off — opportunity/dread, not a bug). Contacts stay keyed by the ◈ label
+        // id, never by seat, so the drink/rumor/pick systems work whichever chair fills. Drop the ship's ⚓.
+        IReadOnlyList<SeatedRegular> regulars = ResolveRegulars(spec.BodyId, simTime);
+        var consoles = new List<DeckPlan.ConsoleSpot>(ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock));
+        foreach (SeatedRegular r in regulars)
         {
-            new(DeckPlan.ConsoleKind.BarPatron, -9, HallTopY + 6, "◈ ONE-EYE SILAS"),
-            new(DeckPlan.ConsoleKind.BarPatron, 14, HallTopY + 6, "◈ MADAM COIL"),
-            new(DeckPlan.ConsoleKind.BarPatron, 2.5f, HallTopY + 11, "◈ GILT-EYE"),
-            new(DeckPlan.ConsoleKind.BarPatron, -9, HallTopY + 16, "◈ THE FIXER"), // back-corner table: confidential, off-the-books work
+            if (r.Present)
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.BarPatron, (float)r.X, (float)r.Y, r.Label));
+            }
+        }
+        consoles.AddRange(new DeckPlan.ConsoleSpot[]
+        {
             // The Magpie's bar stop — a roaming patron (PR-F). They aren't always here; walk up and the
             // game reads their rota, so an empty chair means they've drifted off (bar → gone → back room).
             new(DeckPlan.ConsoleKind.BarPatron, (float)MagpieBarPost.X, (float)MagpieBarPost.Y, "◈ THE MAGPIE"),
@@ -415,7 +500,7 @@ public static class HavenInterior
                 + "you — one premium, and a shot nerve or a Reever's hand is just a bad night, not the last "
                 + "one. The hoards you buried outlive the hull; the policy outlives the captain. Underwritten "
                 + "by Nebula Mutual — “We Bring You Back Meaner.”"),
-        };
+        });
         consoles.AddRange(hatches); // the ring departments + bar back-rooms, as knockable locked hatches
 
         // The station's DEDICATION PLAQUE (owner's cruise ruling, 2026-07-19, photographing their ship's
@@ -454,8 +539,8 @@ public static class HavenInterior
             + "meaner and broker. Ask your dockmaster before the collectors ask about you. Underwritten by "
             + "Nebula Mutual — “We Bring You Back Meaner.”"));
 
-        // Seven tables spread across the big room — three taken by the regulars, four open (for a
-        // stranger to drift over, later) — plus the ship's own cantina tables.
+        // Seven tables spread across the big room — the rota seats present regulars at some of them this
+        // watch, the rest stand open (an empty chair = someone's drifted off) — plus the ship's cantina.
         var tables = new List<(float X, float Y)>(ship.Tables)
         {
             (-9, HallTopY + 6), (14, HallTopY + 6), (2.5f, HallTopY + 11),
@@ -495,7 +580,7 @@ public static class HavenInterior
 
         return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
-            droidCount: 10, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY),
+            droidCount: 10, fillDroids: (simTime, buffer) => FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars),
             location: (x, y) => x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
                               : y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
@@ -504,20 +589,38 @@ public static class HavenInterior
             doors: doors.ToArray(), shipFixtures: true, followCam: true, tables: tables.ToArray());
     }
 
-    // Ship's three droids, the immigration officer, the four seated bar patrons (three regulars + The
-    // Fixer), and — index 8 — the roaming Magpie, placed by their sim-time rota. Shared across every
-    // station (one geometry); deterministic in sim time, stateless. When the Magpie's rota puts them
-    // out of reach (gone, or the back room before it's open), they're parked far off-frame.
+    // Ship's three droids, the immigration officer, the four seated bar regulars (issue #410, roved by the
+    // rota — each at their seeded seat this watch, or parked off-frame when they've drifted off), and —
+    // index 8 — the roaming Magpie, placed by their sim-time rota. Shared across every station (one
+    // geometry); deterministic in sim time, stateless. The <paramref name="regulars"/> seating is captured
+    // at build time (fixed for the visit), so the droids sit exactly where their consoles do; only the
+    // thermal jitter and the Magpie/barkeep pace read the live clock.
     private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer, bool backRoomOpen,
-        double barkeepX, double barkeepServiceY)
+        double barkeepX, double barkeepServiceY, IReadOnlyList<SeatedRegular> regulars)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // fills [0..3)
         double sway = 0.05 * System.Math.Sin(simTime * 0.0009);
         buffer[3] = new DeckPlan.Droid(6.5, HallBottomY + 7, -System.Math.PI / 2, "Customs"); // officer beside the gate
-        buffer[4] = new DeckPlan.Droid(-9, HallTopY + 7 + sway, -System.Math.PI / 2, "Silas");
-        buffer[5] = new DeckPlan.Droid(14, HallTopY + 7 - sway, -System.Math.PI / 2, "Coil");
-        buffer[6] = new DeckPlan.Droid(2.5, HallTopY + 12 + sway, -System.Math.PI / 2, "Gilt-Eye");
-        buffer[7] = new DeckPlan.Droid(-9, HallTopY + 17 - sway, -System.Math.PI / 2, "The Fixer"); // back corner
+
+        // The four regulars sit at [4..8). A present one gets a tiny seeded thermal shuffle around their
+        // seated anchor + a look-around facing twitch (ReeverIdle, #390) so they read alive, not carved;
+        // an away one is parked far off-frame (their chair is simply empty this watch). Roster order is
+        // stable, so index 4+i is the i-th regular whether or not they're here.
+        for (int i = 0; i < 4; i++)
+        {
+            int slot = 4 + i;
+            if (i < regulars.Count && regulars[i].Present)
+            {
+                SeatedRegular r = regulars[i];
+                (double jx, double jy) = SpaceSails.Core.ReeverIdle.JitterAt(r.Seed, simTime);
+                double face = r.Facing + SpaceSails.Core.ReeverIdle.FacingTwitchAt(r.Seed, simTime);
+                buffer[slot] = new DeckPlan.Droid(r.X + jx, r.Y + jy, face, r.ShortName);
+            }
+            else
+            {
+                buffer[slot] = new DeckPlan.Droid(-9999, -9999, 0, i < regulars.Count ? regulars[i].ShortName : "Regular");
+            }
+        }
 
         NpcPost m = ResolveMagpie(simTime, backRoomOpen);
         buffer[8] = m.Present
