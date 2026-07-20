@@ -718,7 +718,19 @@ public partial class Map
                     _renderer!.DrawCircle(sx, sy, 7f, null, LocalContactRingColor, 1f);
                 }
 
-                _renderer!.DrawText(sx + 8, sy - 6, npc.Ship.Callsign, color);
+                // #402 follow-up: a DEPOT's name (a parked cargo pod) is minor clutter — route it through
+                // the frame's de-collision queue so the depot pack around a station knot stops smearing
+                // over itself and over the body/threat labels (it yields at LabelPriorityStation). A live
+                // CONTACT stays drawn straight to the canvas: the owner's rule is that a ship is never
+                // hidden, so its label is never culled.
+                if (isDepot)
+                {
+                    EnqueueNavLabel(sx + 8, sy - 6, npc.Ship.Callsign, color, LabelPriorityStation);
+                }
+                else
+                {
+                    _renderer!.DrawText(sx + 8, sy - 6, npc.Ship.Callsign, color);
+                }
             }
             else if (npc.LastObservation is { } obs)
             {
@@ -742,7 +754,16 @@ public partial class Map
                     float ringPx = (float)Math.Clamp(uncertainty / _camera.MetersPerPixel, 6, 40);
                     _renderer!.DrawCircle(sx, sy, ringPx, null, c with { A = 120 }, 1f);
                 }
-                _renderer!.DrawText(sx + 8, sy - 6, $"{npc.Ship.Callsign} · no live fix", c);
+                // #402 follow-up: a last-seen DEPOT ghost de-collides through the queue too (same rule as
+                // the live branch); a contact ghost stays drawn straight so it's never culled off the map.
+                if (isDepot)
+                {
+                    EnqueueNavLabel(sx + 8, sy - 6, $"{npc.Ship.Callsign} · no live fix", c, LabelPriorityStation);
+                }
+                else
+                {
+                    _renderer!.DrawText(sx + 8, sy - 6, $"{npc.Ship.Callsign} · no live fix", c);
+                }
             }
         }
     }

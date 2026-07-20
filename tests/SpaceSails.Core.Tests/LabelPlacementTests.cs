@@ -132,6 +132,43 @@ public class LabelPlacementTests
         }
     }
 
+    // #402 follow-up (live smoke test of the Ringside cluster): the priority cull protected labels
+    // ACROSS ranks, but the owner still saw the equal-rank DEPOT pack smear over itself. This pins the
+    // stronger invariant the fix routes the depot labels through: within a single rank, colliding
+    // labels still nudge clear or cull, so NO TWO DRAWN labels ever overlap — same rank included.
+    [Fact]
+    public void SameRankPack_NoTwoDrawnLabelsOverlap()
+    {
+        // Six same-rank depot labels heaped into one tight knot (the Enceladus/Ringside depot pack),
+        // every one wide enough to genuinely fight for the same pixels.
+        var cands = new[]
+        {
+            new Candidate(1, R(100, 100, 140), Priority: 100, LineHeight: 14),
+            new Candidate(2, R(103, 101, 140), Priority: 100, LineHeight: 14),
+            new Candidate(3, R(101, 103, 140), Priority: 100, LineHeight: 14),
+            new Candidate(4, R(104, 102, 140), Priority: 100, LineHeight: 14),
+            new Candidate(5, R(102, 104, 140), Priority: 100, LineHeight: 14),
+            new Candidate(6, R(105, 105, 140), Priority: 100, LineHeight: 14),
+        };
+
+        var result = LabelPlacement.Resolve(cands);
+
+        var drawn = System.Linq.Enumerable.ToList(
+            System.Linq.Enumerable.Where(result, p => p.Draw));
+        for (int i = 0; i < drawn.Count; i++)
+        {
+            for (int j = i + 1; j < drawn.Count; j++)
+            {
+                Assert.False(drawn[i].Rect.Overlaps(drawn[j].Rect),
+                    $"same-rank drawn labels {drawn[i].Key} and {drawn[j].Key} still overlap");
+            }
+        }
+
+        // The first-enqueued of the pack is the one kept (nearest-to-camera / first-in wins the tie) —
+        // the later colliders stack down or stand down, never the leader.
+        Assert.True(Draw(result, 1), "the first-enqueued same-rank label must survive");
+    }
+
     private static LabelPlacement.Placement Find(IReadOnlyList<LabelPlacement.Placement> r, int key) =>
         System.Linq.Enumerable.First(r, p => p.Key == key);
 

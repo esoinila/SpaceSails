@@ -1430,14 +1430,14 @@ public partial class Map
         BeginFrameLabels();       // #402: reset the frame's de-collided label queue before the producers
         DrawCelestialBodies();
         DrawAsteroidThreat(); // #394: the inbound rock's rail + the ⚠ intersect + the threat line (bends on deflection)
-        FlushNavLabels();     // #402: resolve overlapping body/threat labels — priority wins, depots yield
         DrawCargoRunMarkers();
         if (LayerVisible("routes.plan")) DrawNodeMarkers(); // #405 Routes → Flight plan & burns (the burn nodes)
         if (PlotMode)
         {
             DrawGhostShip();
         }
-        DrawNpcs();
+        DrawNpcs();           // #402 follow-up: DEPOT name labels enqueue here, so the flush must follow it
+        FlushNavLabels();     // #402: resolve overlapping body/threat/depot labels — priority wins, depots yield
         DrawHunters();
         DrawOrdnance();
         DrawPyramids();
