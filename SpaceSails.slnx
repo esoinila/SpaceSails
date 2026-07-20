@@ -35,5 +35,8 @@
     <Project Path="labs/27-the-getaway/Lab27.csproj" />
     <Project Path="labs/29-the-harbor-pattern/Lab29.csproj" />
     <Project Path="labs/34-the-unclickable-lifeline/Lab34.csproj" />
+    <Project Path="labs/35-the-push-that-isnt-a-push/Lab35.csproj" />
+    <Project Path="labs/36-the-cannonball/Lab36.csproj" />
+    <Project Path="labs/37-the-slow-hand/Lab37.csproj" />
   </Folder>
 </Solution>
