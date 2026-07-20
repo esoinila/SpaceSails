@@ -689,6 +689,9 @@ public sealed class DeckView
         // top-left gauge on its own dark plate. Full-size on the regolith where the FP toggle steps aside;
         // COMPACT aboard/ashore, tucked below the deck chrome (the top-left first-person toggle) so it
         // whispers without colliding.
+        // #380 item 2: the plate NAMES the meter — "NERVE", the diegetic name every flavor rung, band-drop,
+        // and shock pulse already speaks (the #226 sanity system's on-screen face). No name, no cause, no
+        // remedy was the mystery; the name lands here, the cause+remedy in the band-drop pulse (Map.Surface).
         float w = compact ? 150f : 210f;
         float h = compact ? 13f : 18f;
         float labelPx = compact ? 9f : 11f;
@@ -696,7 +699,7 @@ public sealed class DeckView
         float x0 = 18f + jx, y0 = baseY + jy;
 
         FillRect(x0 - 8f, y0 - 20f, w + 16f, h + 42f, new RgbaColor(6, 11, 10, 205));  // the backing plate
-        _renderer.DrawText(x0, y0 - 6, "SANITY", NerveFrame, $"bold {labelPx:0}px monospace", TextAlign.Left);
+        _renderer.DrawText(x0, y0 - 6, "NERVE", NerveFrame, $"bold {labelPx:0}px monospace", TextAlign.Left);
         FillRect(x0, y0, w, h, new RgbaColor(14, 18, 24, 220));           // the empty channel
         FillRect(x0, y0, w * (float)frac, h, fill);                       // the fill
         for (int i = 1; i < 5; i++)                                       // crude deck-plan segments
