@@ -848,7 +848,8 @@ public partial class Map
     // beacon is telling — a hollow marker flying the abandoned course.
     private void DrawBeaconGhost()
     {
-        if (_transponderMode != TransponderMode.Fake || _beaconGhost is not { } ghost)
+        if (_transponderMode != TransponderMode.Fake || _beaconGhost is not { } ghost
+            || !LayerVisible("traffic.beacons")) // 🗺 Layers (#405): Traffic → Beacons
         {
             return;
         }

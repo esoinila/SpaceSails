@@ -927,6 +927,11 @@
                             @onclick="() => OpenPickCandidate(local)">@local.Icon @local.Label</button>
                 }
             </div>
+            @* #405 (owner: "some UI hint about adding more layers when wanted… maybe to the selection
+               pop-up"): a crowded knot points straight at the filter — closes the chooser, opens Layers. *@
+            <button type="button" class="btn btn-link btn-sm p-0 mt-1 map-pick-filter-hint"
+                    title="Open the 🗺 Layers panel to filter what the map draws on this desk"
+                    @onclick="OpenLayersFromPick">🗺 crowded? filter the map</button>
         </div>
     }
 
@@ -944,15 +949,67 @@
             @if (_layersOpen)
             {
                 <div class="map-layers-panel bg-dark bg-opacity-75 rounded p-2 small shadow text-light">
-                    @foreach ((string key, string label, string icon) in MapLayerDefs)
+                    @* #405: a collapsible tree. Each parent is a ▸/▾ caret + a tri-state checkbox that
+                       cascades to its children; the children indent under it and only show when open. *@
+                    @foreach (MapLayerTree.Group group in MapLayerTree.Groups)
                     {
-                        string layerKey = key;
-                        <label class="d-block map-layers-row">
-                            <input type="checkbox" checked="@LayerVisible(layerKey)" title="Show or hide this layer on the map"
-                                   @onchange="() => ToggleLayer(layerKey)" /> @icon @label
-                        </label>
+                        MapLayerTree.Group g = group;
+                        bool collapsed = CollapsedLayerGroups.Contains(g.Key);
+                        MapLayerTree.TriState state = MapLayerTree.GroupStateOf(HiddenLayers, g);
+                        <div class="map-layers-group">
+                            <div class="map-layers-parent">
+                                <button type="button" class="map-layers-caret" title="@(collapsed ? "Expand this family" : "Collapse this family")"
+                                        @onclick="() => ToggleLayerGroupCollapsed(g.Key)">@(collapsed ? "▸" : "▾")</button>
+                                <label class="map-layers-row map-layers-parent-label">
+                                    @if (g.Pinned)
+                                    {
+                                        @* Threats is pinned — always on, never a run can hide the collision warning. *@
+                                        <input type="checkbox" checked disabled title="Pinned — a collision warning is never hidden" />
+                                    }
+                                    else
+                                    {
+                                        @* Native indeterminate is a JS-only property Blazor can't bind — so a
+                                           Mixed parent renders checked with a .mixed class that overlays the
+                                           tri-state dash in CSS. On = checked, Off = unchecked, Mixed = dash. *@
+                                        <input type="checkbox" class="@(state == MapLayerTree.TriState.Mixed ? "map-layers-tri mixed" : "map-layers-tri")"
+                                               checked="@(state != MapLayerTree.TriState.Off)"
+                                               title="Toggle this whole family on or off"
+                                               @onchange="() => ToggleLayerGroup(g)" />
+                                    }
+                                    <span class="fw-semibold">@g.Icon @g.Label</span>
+                                    @if (g.Pinned)
+                                    {
+                                        <span class="map-layers-pin" title="Pinned — always shown">📌</span>
+                                    }
+                                </label>
+                            </div>
+                            @if (!collapsed)
+                            {
+                                @foreach (MapLayerTree.Leaf leaf in g.Leaves)
+                                {
+                                    MapLayerTree.Leaf l = leaf;
+                                    <label class="map-layers-row map-layers-child">
+                                        @if (g.Pinned)
+                                        {
+                                            <input type="checkbox" checked disabled title="Pinned — this warning is never hidden" />
+                                        }
+                                        else
+                                        {
+                                            <input type="checkbox" checked="@LayerVisible(l.Key)" title="Show or hide this on the map"
+                                                   @onchange="() => ToggleLayer(l.Key)" />
+                                        }
+                                        <span>@l.Icon @l.Label</span>
+                                    </label>
+                                }
+                            }
+                        </div>
                     }
-                    <div class="text-secondary mt-1">remembered per desk</div>
+                    <div class="map-layers-foot d-flex justify-content-between align-items-center mt-1">
+                        <span class="text-secondary">remembered per desk</span>
+                        <button type="button" class="btn btn-link btn-sm p-0 map-layers-reset"
+                                title="Drop this desk's layers back to their shipped defaults"
+                                @onclick="ResetLayersToDeskDefaults">↺ reset to desk defaults</button>
+                    </div>
                 </div>
             }
         </div>
