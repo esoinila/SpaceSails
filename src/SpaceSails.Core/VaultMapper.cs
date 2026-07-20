@@ -146,6 +146,25 @@ public static class VaultMapper
 
     // ── Insurance ──
 
+    // ── PROJEKTI KAAMOS (#411) — the ice-moon fragment assembly, per-thread. ──
+
+    /// <summary>Project the assembled KAAMOS fragments to their flat vault section (ids only, canonical
+    /// order). Total: an empty progress becomes an empty-list section, not null.</summary>
+    public static KaamosSection ToSection(KaamosProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        return new KaamosSection { AssembledFragmentIds = progress.AssembledIds };
+    }
+
+    /// <summary>Rehydrate assembled fragments into a progress holder (via <see cref="KaamosProgress.Load"/>,
+    /// which drops any id the current pool no longer knows). A null section is a no-op — the captain has
+    /// simply heard nothing of the polar night.</summary>
+    public static void Apply(KaamosSection? section, KaamosProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        progress.Load(section?.AssembledFragmentIds);
+    }
+
     public static InsuranceSection ToSection(PirateInsurance policy) =>
         new((int)policy.Tier, policy.PremiumPaidThroughSimTime);
 
