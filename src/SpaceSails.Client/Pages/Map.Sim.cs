@@ -1382,8 +1382,10 @@ public partial class Map
             DrawDestinationPassMarker();
         }
         RetireDeflectionIfDone(); // #394: a resolved gig clears once the crew is home at the saved port
+        BeginFrameLabels();       // #402: reset the frame's de-collided label queue before the producers
         DrawCelestialBodies();
         DrawAsteroidThreat(); // #394: the inbound rock's rail + the ⚠ intersect + the threat line (bends on deflection)
+        FlushNavLabels();     // #402: resolve overlapping body/threat labels — priority wins, depots yield
         DrawCargoRunMarkers();
         DrawNodeMarkers();
         if (PlotMode)

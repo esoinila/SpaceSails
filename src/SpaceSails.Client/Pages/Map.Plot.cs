@@ -2130,7 +2130,18 @@ public partial class Map
                 // A ⚓ flags the mass-less grey-market docks — the havens you can clamp onto to lie
                 // low (moon havens you orbit instead, so they carry the pink wash but no anchor).
                 string label = IsDockableHaven(body) ? $"⚓ {body.Name}" : body.Name;
-                _renderer!.DrawText(sx + radiusPx + 4, sy - radiusPx, label, labelColor);
+                int labelPriority = BodyLabelPriority(body);
+                // #402: two decluttering seams. (1) MANUAL — the existing 🗺 Layers "Depots & stations"
+                // toggle (LayerVisible("depots")) now also hides MINOR station name labels (the depot
+                // clutter), but never the docked/destination/armed station the captain is working — those
+                // outrank LabelPriorityStation. (2) AUTOMATIC — surviving labels are enqueued and
+                // FlushNavLabels de-collides them by priority, so the Saturn knot reads even with all
+                // layers on (the threat rock + docked station always win).
+                bool minorStationLabel = labelPriority == LabelPriorityStation;
+                if (!minorStationLabel || LayerVisible("depots"))
+                {
+                    EnqueueNavLabel(sx + radiusPx + 4, sy - radiusPx, label, labelColor, labelPriority);
+                }
 
                 // The ⚓'s sibling: a 🛬 under any shuttle-landable ground (a moon, by the same pure
                 // ShuttleExcursion.IsLandableSurface the destination board uses — never a hardcoded body
