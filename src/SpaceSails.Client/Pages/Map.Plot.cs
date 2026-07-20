@@ -2070,7 +2070,9 @@ public partial class Map
             // #394: the inbound rock draws its own RED threat rail (DrawAsteroidThreat) that bends on
             // deflection — suppress the default grey ring so there is only one, and it tells the story.
             bool deflectionRock = _deflection is { } dgig && body.Id == dgig.RockBodyId;
-            if (!deflectionRock && body.OrbitPeriod != 0 && body.OrbitRadius > 0)
+            // #405 Routes → Orbit rails / ellipses: the grey Kepler ring. The threat rock's own RED
+            // rail is drawn by DrawAsteroidThreat and is never layer-gated (the pinned safety family).
+            if (!deflectionRock && LayerVisible("routes.rails") && body.OrbitPeriod != 0 && body.OrbitRadius > 0)
             {
                 Vector2d parentPosition = body.ParentId is null ? Vector2d.Zero : ephemeris.Position(body.ParentId, SimTime);
                 // Kepler rails (PR-B): a circular body's ring is a circle of radius OrbitRadius; an
@@ -2131,14 +2133,14 @@ public partial class Map
                 // low (moon havens you orbit instead, so they carry the pink wash but no anchor).
                 string label = IsDockableHaven(body) ? $"⚓ {body.Name}" : body.Name;
                 int labelPriority = BodyLabelPriority(body);
-                // #402: two decluttering seams. (1) MANUAL — the existing 🗺 Layers "Depots & stations"
-                // toggle (LayerVisible("depots")) now also hides MINOR station name labels (the depot
-                // clutter), but never the docked/destination/armed station the captain is working — those
-                // outrank LabelPriorityStation. (2) AUTOMATIC — surviving labels are enqueued and
-                // FlushNavLabels de-collides them by priority, so the Saturn knot reads even with all
-                // layers on (the threat rock + docked station always win).
+                // #402/#405: two decluttering seams. (1) MANUAL — the 🗺 Layers tree. A MINOR station
+                // name label (the depot clutter) rides the Labels → "Minor / depot labels" leaf; every
+                // other body name rides Labels → "Body names". The docked/destination/armed station the
+                // captain is working outranks LabelPriorityStation, so it counts as a body name, never a
+                // minor label. (2) AUTOMATIC — surviving labels are enqueued and FlushNavLabels de-collides
+                // them by priority, so the Saturn knot reads even with all layers on.
                 bool minorStationLabel = labelPriority == LabelPriorityStation;
-                if (!minorStationLabel || LayerVisible("depots"))
+                if (LayerVisible(minorStationLabel ? "labels.minor" : "labels.bodies"))
                 {
                     EnqueueNavLabel(sx + radiusPx + 4, sy - radiusPx, label, labelColor, labelPriority);
                 }
@@ -2148,7 +2150,7 @@ public partial class Map
                 // list, so it lights up correctly whatever the moons' phases). Bright + a size up when
                 // that ground is within the shuttle's reach of the ship right now (the _landableInRange
                 // set, the board's own range truth); dim regolith tan when landable only in principle.
-                if (ShuttleExcursion.IsLandableSurface(body.Kind))
+                if (ShuttleExcursion.IsLandableSurface(body.Kind) && LayerVisible("labels.landable")) // #405 Labels → Landable marks
                 {
                     bool inReach = _landableInRangeIds.Contains(body.Id);
                     _renderer.DrawText(sx + radiusPx + 4, sy + radiusPx + 20, "🛬",

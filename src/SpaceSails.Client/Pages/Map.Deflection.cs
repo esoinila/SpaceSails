@@ -428,6 +428,10 @@ public partial class Map
 
     private void DrawAsteroidThreat()
     {
+        // 🗺 Layers (#405) — SAFETY INVARIANT: the inbound rock / collision warning is PINNED. It
+        // deliberately consults NO LayerVisible gate (Threats is a pinned family, and even so the
+        // rock's leaf resolves always-visible in Core). A hidden layer must never be able to swallow
+        // the one thing that can end the run — do not add a layer check here.
         if (_deflection is not { } plan || _ephemeris is null || _renderer is null)
         {
             return;

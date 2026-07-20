@@ -667,8 +667,14 @@ public partial class Map
                 continue;
             }
 
-            // 🗺 Layers: hidden classes neither draw nor answer clicks (the picker checks too).
-            if (npc.Ship.DepotBodyId is not null ? !LayerVisible("depots") : !LayerVisible("traffic"))
+            // 🗺 Layers (#405): hidden classes neither draw nor answer clicks (the picker checks too).
+            // Depots ride ports.depots; a live contact and its last-seen ghost split traffic's leaves,
+            // matched to the observed-vs-last-seen branches below.
+            bool isDepot = npc.Ship.DepotBodyId is not null;
+            string npcLeaf = isDepot
+                ? "ports.depots"
+                : npc.Active && npc.CurrentlyObserved ? "traffic.live" : "traffic.ghosts";
+            if (!LayerVisible(npcLeaf))
             {
                 continue;
             }

@@ -512,7 +512,6 @@ public partial class Map
         {
             if (!npc.Active || npc.Arrived) continue;
             bool isDepot = npc.Ship.DepotBodyId is not null;
-            if (isDepot ? !LayerVisible("depots") : !LayerVisible("traffic")) continue;
             // PR-C (the Barnacle case): the dim last-seen marker answers clicks too — its menu
             // just offers a scan instead of live vitals. Nothing visible on the sky is mute.
             Vector2d position;
@@ -528,6 +527,11 @@ public partial class Map
             {
                 continue;
             }
+
+            // 🗺 Layers (#405): a hidden class stops answering clicks too, matched to the draw path —
+            // depots ride ports.depots; a live contact vs its last-seen ghost split traffic's leaves.
+            string trafficLeaf = isDepot ? "ports.depots" : npc.CurrentlyObserved ? "traffic.live" : "traffic.ghosts";
+            if (!LayerVisible(trafficLeaf)) continue;
 
             (float sx, float sy) = _camera.WorldToScreen(position);
             double dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
@@ -602,6 +606,7 @@ public partial class Map
             {
                 if (IsBodyHidden(body.Id)) continue; // (PR-A) — a hidden haven dock stays off the picker too
                 if (!IsDockableHaven(body)) continue;
+                if (!LayerVisible("ports.havens")) continue; // 🗺 Layers (#405): Dock havens off → its ⚓ pick answers no clicks
                 (float sx, float sy) = _camera.WorldToScreen(_ephemeris.Position(body.Id, SimTime));
                 double drawnPx = body.BodyRadius / _camera.MetersPerPixel;
                 double hit = Math.Max(Math.Clamp(drawnPx, 14, 80), radiusPx);
@@ -713,18 +718,30 @@ public partial class Map
     }
 
     // ---- Map layers (owner: "filter what is being shown… they clutter the view a lot";
-    // Gemini consult: corner checkbox panel, settings remembered per desk) ----
-
-    private static readonly (string Key, string Label, string Icon)[] MapLayerDefs =
-    [
-        ("lanes", "Trade lanes", "🛣"),
-        ("traffic", "Ships & beacons", "🛰"),
-        ("depots", "Depots & stations", "📦"),
-        ("scans", "Sensor overlays", "🔭"),
-    ];
+    // #405: rebuilt as a collapsible TREE — parent families you fold away, each a cascading
+    // tri-state over its leaf toggles. The tree shape + all the resolution logic (visibility,
+    // cascade, per-desk defaults, the threats-never-hidden invariant) is the pure, Core-tested
+    // MapLayerTree; this partial only holds the per-desk hidden set and the UI collapse state. ----
 
     private readonly Dictionary<ShipDesk, HashSet<string>> _hiddenLayersByDesk = [];
     private bool _layersOpen;
+
+    // Which parent families are folded shut in the panel. UI-only (not per desk, not gating any
+    // draw) — seeded once from the tree's DefaultCollapsed flags (Routes rides collapsed).
+    private HashSet<string>? _collapsedLayerGroups;
+
+    private HashSet<string> CollapsedLayerGroups =>
+        _collapsedLayerGroups ??= [.. MapLayerTree.Groups.Where(g => g.DefaultCollapsed).Select(g => g.Key)];
+
+    private void ToggleLayerGroupCollapsed(string groupKey)
+    {
+        if (!CollapsedLayerGroups.Remove(groupKey))
+        {
+            CollapsedLayerGroups.Add(groupKey);
+        }
+
+        StateHasChanged();
+    }
 
     private HashSet<string> HiddenLayers
     {
@@ -732,10 +749,8 @@ public partial class Map
         {
             if (!_hiddenLayersByDesk.TryGetValue(_activeDesk, out HashSet<string>? hidden))
             {
-                // Per-desk defaults: the sensors chief starts with the full working sky; every
-                // other desk starts with the lanes off (the clutter the owner flagged). After
-                // that each desk remembers its own picks.
-                hidden = _activeDesk == ShipDesk.Sensors ? [] : ["lanes"];
+                // Per-desk defaults live in Core (preserves the lanes-off default; sensors sees all).
+                hidden = MapLayerTree.DefaultHidden(_activeDesk == ShipDesk.Sensors);
                 _hiddenLayersByDesk[_activeDesk] = hidden;
             }
 
@@ -743,15 +758,37 @@ public partial class Map
         }
     }
 
-    private bool LayerVisible(string key) => !HiddenLayers.Contains(key);
+    // The single source of truth the draw path + the click-picker resolve through. A pinned leaf
+    // (Threats) is always visible no matter the hidden set — the safety invariant lives in Core.
+    private bool LayerVisible(string key) => MapLayerTree.IsVisible(HiddenLayers, key);
 
     private void ToggleLayer(string key)
     {
-        if (!HiddenLayers.Remove(key))
-        {
-            HiddenLayers.Add(key);
-        }
+        MapLayerTree.ToggleLeaf(HiddenLayers, key);
+        StateHasChanged();
+    }
 
+    // Parent checkbox: tri-state cascade to the family (On→Off, Off/Mixed→On); pinned groups inert.
+    private void ToggleLayerGroup(MapLayerTree.Group group)
+    {
+        MapLayerTree.CascadeGroup(HiddenLayers, group);
+        StateHasChanged();
+    }
+
+    // The panel's bottom line: drop this desk back to its shipped default visibility.
+    private void ResetLayersToDeskDefaults()
+    {
+        _hiddenLayersByDesk[_activeDesk] = MapLayerTree.DefaultHidden(_activeDesk == ShipDesk.Sensors);
+        StateHasChanged();
+    }
+
+    // #405 pick-menu hint (owner: "some UI hint about adding more layers when wanted… maybe to the
+    // selection pop-up"): the "Which one?" chooser's footer link closes itself and opens the Layers
+    // panel, so a crowded knot points the captain straight at the filter. Reuses existing state.
+    private void OpenLayersFromPick()
+    {
+        _pickMenu = null;
+        _layersOpen = true;
         StateHasChanged();
     }
 

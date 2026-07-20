@@ -1365,14 +1365,17 @@ public partial class Map
         }
 
         DrawStreams();
-        if (LayerVisible("lanes"))
+        if (LayerVisible("routes.lanes"))
         {
-            // SundaySecondPlan PR-B, now layer-gated: lanes default ON for the sensors chief
-            // and OFF everywhere else, and every desk can change its mind in 🗺 Layers.
+            // SundaySecondPlan PR-B, now layer-gated (#405 Routes → Trade lanes): lanes default ON
+            // for the sensors chief and OFF everywhere else, and every desk can change its mind.
             DrawTradeCorridors();
         }
         DrawShipTrajectory();
-        DrawAutopilotPlanPath();
+        // #405 Routes → Flight plan & burns: the plotted autopilot path + its burn nodes (DrawNodeMarkers,
+        // below). The ship's own live trajectory ribbon (DrawShipTrajectory, above) stays — that's the
+        // nav essential, not part of the plan overlay.
+        if (LayerVisible("routes.plan")) DrawAutopilotPlanPath();
         DrawPredictionCone();
         DrawPassEpochGhost();
         if (PlotMode)
@@ -1387,7 +1390,7 @@ public partial class Map
         DrawAsteroidThreat(); // #394: the inbound rock's rail + the ⚠ intersect + the threat line (bends on deflection)
         FlushNavLabels();     // #402: resolve overlapping body/threat labels — priority wins, depots yield
         DrawCargoRunMarkers();
-        DrawNodeMarkers();
+        if (LayerVisible("routes.plan")) DrawNodeMarkers(); // #405 Routes → Flight plan & burns (the burn nodes)
         if (PlotMode)
         {
             DrawGhostShip();
@@ -1398,11 +1401,19 @@ public partial class Map
         DrawPyramids();
         DrawShuttleRange();
         DrawBeaconGhost();
-        if (_activeDesk == ShipDesk.Sensors && LayerVisible("scans"))
+        if (_activeDesk == ShipDesk.Sensors)
         {
-            DrawScanWedge();
-            DrawLostSearchRegions();
-            DrawPassFlash();
+            // #405 Sensors family, split into two leaves: the active scan overlays (the wedge + the
+            // pass flash) ride sensors.scans; the lost-contact search regions ride sensors.corridors.
+            if (LayerVisible("sensors.scans"))
+            {
+                DrawScanWedge();
+                DrawPassFlash();
+            }
+            if (LayerVisible("sensors.corridors"))
+            {
+                DrawLostSearchRegions();
+            }
         }
         if (_activeDesk == ShipDesk.WarRoom)
         {
@@ -2093,7 +2104,7 @@ public partial class Map
         // near anything else: gather what sits within the loose radius; the lane and the
         // empty-sky scan join the chooser at the bottom.
         List<PickCandidate> near = CollectPointCandidates(e.OffsetX, e.OffsetY, PickNearRadiusPx);
-        CorridorRegion? lane = LayerVisible("lanes") ? CorridorAt(e.OffsetX, e.OffsetY) : null;
+        CorridorRegion? lane = LayerVisible("routes.lanes") ? CorridorAt(e.OffsetX, e.OffsetY) : null; // #405 Routes → Trade lanes
         if (near.Count == 0)
         {
             if (lane is { } directLane)

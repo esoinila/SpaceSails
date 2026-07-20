@@ -1804,7 +1804,8 @@ public partial class Map
         // straight into the reused buffer — no intermediate list + Select allocation.
         string bodyId = ex.Stop.Body.Id;
         _hudMarks.Clear();
-        foreach (TreasureCache c in _caches.CachesAt(bodyId))
+        // 🗺 Layers (#405) Ground finds → Treasure ✗: the buried-cache marks the excursion HUD carries.
+        foreach (TreasureCache c in LayerVisible("finds.treasure") ? _caches.CachesAt(bodyId) : [])
         {
             if (!c.PlayerOwned)
             {
@@ -1828,9 +1829,13 @@ public partial class Map
         }
 
         _hudHusks.Clear();
-        foreach ((double hx, double hy) in ex.Husks)
+        // 🗺 Layers (#405) Ground finds → Husks: the downed-Old-One marks left in the regolith (#316).
+        if (LayerVisible("finds.husks"))
         {
-            _hudHusks.Add((hx, hy));
+            foreach ((double hx, double hy) in ex.Husks)
+            {
+                _hudHusks.Add((hx, hy));
+            }
         }
 
         // The per-visit swept grid: every beach-comber square probed this excursion, at its centre, with a
