@@ -678,6 +678,12 @@
                 {
                     <button type="button" class="btn btn-sm btn-outline-info" title="Ask around about the sealed ice-moon berth — PROJEKTI KAAMOS" @onclick="AskAboutKaamos">🌑 Ask about KAAMOS</button>
                 }
+                @* #422: the NEBULA seam — only shows when this bar can advance arc 2 this watch (a rare Nebula
+                   adjuster is drinking here, or the small print's ready to resolve into the contract). *@
+                @if (NebulaBarSeamAvailable())
+                {
+                    <button type="button" class="btn btn-sm btn-outline-info" title="Ask around about the pirate-insurance fine print — NEBULA MUTUAL" @onclick="AskAboutNebula">▓ Ask about NEBULA</button>
+                }
                 <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="CloseBarkeep">Done</button>
             </div>
             @if (_showBarMenu)
@@ -3025,6 +3031,16 @@
                         <div class="busted-hail busted-collector-hail">⛓ CAUGHT — @bust.HunterCallsign has you grappled</div>
                         <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
                         <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
+                        @* #422 arc 2 — THE COLLECTOR'S WRIT. The first time a collector grapples you, you get a
+                           look at the writ they carry, and it names a policy number, not a manifest. The shard
+                           is glimpsed here; the readout below keeps it. *@
+                        @if (bust.CollectorWrit is { Length: > 0 } writ)
+                        {
+                            <div class="busted-nebula busted-writ">
+                                <div class="busted-nebula-head">▓ A GLIMPSE OF THE WRIT — NEBULA MUTUAL · RECOVERY OF INSURED ASSET</div>
+                                <div class="busted-nebula-line">@writ</div>
+                            </div>
+                        }
                         int _hotUnits = _hotCargo.TotalHotUnits;
                         int _coinShare = (int)Math.Round(_credits * BustedRule.CoinFraction(bust.Heat));
                         bool _canBribe = _credits >= bust.Bribe.Total;
@@ -3172,6 +3188,17 @@
 
                     case BustedEncounter.Stage.Resurrected:
                         <div class="busted-hail">🧠 BRAIN-BACKUP RESTORED</div>
+                        @* #422 arc 2 — THE GLITCH IN THE REBIRTH. For one flat second before the welcome loops
+                           clean, the wake card reads a line it should not — the thread you don't know you're
+                           pulling. You experience the Nebula arc by DYING. The flash shows every rebirth; the
+                           shard is gathered once (its full text lives in the Captain's ledger). *@
+                        @if (bust.RebirthGlitch is { Length: > 0 } glitch)
+                        {
+                            <div class="busted-nebula busted-glitch">
+                                <div class="busted-glitch-flash">@glitch</div>
+                                <div class="busted-nebula-line">…then it blinks back to “Welcome back, Captain.” You feel entirely yourself. That is the part they charge for.</div>
+                            </div>
+                        }
                         @* #380 item 1 — WHAT HAPPENED: the resurrection fiction finally explains itself at the
                            moment it matters. A cause-specific Grok image + one seeded, place-dependent
                            house-voice line (DeathNarration), THEN the existing brain-backup copy below. The
@@ -3200,6 +3227,16 @@
                             <div>⛽ @_reactionMassPulses p — the reach-a-pump reserve</div>
                             <div>🔧 all upgrades reset to starter grade</div>
                         </div>
+                        @* #422 arc 2 — THE CLINIC'S SECOND PAGE. Surfaces only once you've woken here before:
+                           the bill's ledger carries entries you never made, under a policy number older than
+                           you. The shard is gathered here the once; the full text lives in the ledger. *@
+                        @if (bust.ClinicLedger is { Length: > 0 } clinicLedger)
+                        {
+                            <div class="busted-nebula busted-clinic-ledger">
+                                <div class="busted-nebula-head">📄 THE CLINIC'S LEDGER HAS A SECOND PAGE</div>
+                                <div class="busted-nebula-line">@clinicLedger</div>
+                            </div>
+                        }
                         @* Evening wind #20 — THE NEW CAPTAIN. On any death-resurrection the piracy insurance
                            puts a new name on the license and a new face in the mirror; the roster keeps the
                            retiree (see the captain cards). Shown only when a thread was actually succeeded
@@ -3224,6 +3261,25 @@
                         <button type="button" class="btn btn-light busted-close" @onclick="CloseBusted">Board the rustbucket</button>
                         break;
                 }
+            </div>
+        </div>
+    }
+
+    @* #422 — THE CONVERGENCE. The marquee one-time beat: the two rabbit holes (PROJEKTI KAAMOS and NEBULA
+       MUTUAL) turn out to be one story — the Expanse moment. Fired by MaybeFireConvergence on the single edge
+       BOTH arcs cross their joint threshold; marked seen (persisted) so it never re-plays. Full staged reveal
+       card, above everything (a catch that just triggered it sits beneath). The #391 sanity throw is the
+       #226 lane's hook (ArcConvergence.ConvergenceSanityShockHook = the heaviest in the game). *@
+    @if (_convergenceRevealOpen)
+    {
+        <div class="convergence-backdrop" @onclick="CloseConvergenceReveal">
+            <div class="convergence-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">◼ ❄ THE THREADS CROSS</div>
+                <div class="convergence-head">Two mysteries. One truth.</div>
+                <div class="convergence-sub">PROJEKTI KAAMOS · NEBULA MUTUAL — the same held breath</div>
+                <div class="convergence-body">@ArcConvergence.ConvergenceReveal</div>
+                <div class="convergence-foot">Every death you have died was a withdrawal. The same forty names, the same lucid dark.</div>
+                <button type="button" class="btn btn-light convergence-close" @onclick="CloseConvergenceReveal">…sit with that</button>
             </div>
         </div>
     }
