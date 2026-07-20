@@ -1824,6 +1824,16 @@ public partial class Map
             return;
         }
 
+        // #406: `/` opens the Nav search box and hands it the keyboard — type a name to find & jump to a
+        // target instead of zoom-hunting. Only on the desks that render the solar map (where the box
+        // lives — the same Nav/Sensors/WarRoom gate). The box's own keydown stops propagation, so once
+        // it has focus the typed keys never reach this handler to drive the ship.
+        if (e.Key == "/" && _surface is null && _activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom)
+        {
+            _ = FocusNavSearch();
+            return;
+        }
+
         if (_deckMode && HandleDeckKey(e.Key))
         {
             return;

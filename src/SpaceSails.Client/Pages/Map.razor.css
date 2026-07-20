@@ -1394,6 +1394,53 @@
     z-index: calc(var(--z-map-chrome) + 30);
 }
 
+/* #406 Nav search — a compact find-and-jump box seated on the same top-left row as the 🗺 Layers
+   toggle, just to its right, so the two map controls read as a pair. The input sits at the Layers
+   BUTTON's height (above where the Layers panel drops), and its own results drop straight down. In the
+   rare case both dropdowns are open they can overlap in the 7.5–14rem band, so the search sits a layer
+   higher (chrome+40 > the panel's +30) and is never buried. */
+.nav-search {
+    position: absolute;
+    top: 3.2rem;
+    left: 7.5rem;
+    width: 15rem;
+    max-width: calc(100% - 8.25rem);
+    z-index: calc(var(--z-map-chrome) + 40);
+    pointer-events: auto;
+}
+
+.nav-search-input {
+    height: 1.9rem;
+    background-color: rgba(33, 37, 41, 0.9);
+    color: #dee2e6;
+    border-color: #495057;
+}
+
+.nav-search-input::placeholder {
+    color: #adb5bd;
+}
+
+.nav-search-results {
+    position: absolute;
+    top: 2.15rem;
+    left: 0;
+    right: 0;
+    max-height: 60vh;
+    overflow-y: auto;
+    display: grid;
+    gap: 0.15rem;
+}
+
+/* rows wrap rather than clip — a body's flavor tail ("· 🛬 landable — shuttle range") can be long */
+.nav-search-row {
+    white-space: normal;
+    line-height: 1.15;
+}
+
+.nav-search-name {
+    font-weight: 600;
+}
+
 /* (#195) The Nav-map tutorials advertisement was removed — it floated over the toolbar and presumed
    onboarding the tutorial flow (#160) should own. Its .tutorial-ad / .tutorial-ad-text rules went with it. */
 

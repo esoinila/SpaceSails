@@ -45,6 +45,11 @@ public partial class Map
     private bool _ashore;                          // true once you're past the tube, in the station room
     private string _havenName = "";               // the docked haven welded on, or ""
 
+    // The sim-time this docking began (issue #410): the seated regulars' rota (PatronRota) is resolved at
+    // THIS clock and baked for the whole visit, so a wing-unlock re-weld mid-dock doesn't jump anyone to a
+    // new chair. Re-dock later (a new watch) and the room re-rolls — different faces, different seats.
+    private double _dockVisitSimTime;
+
     // Doors that grow the world (Wednesday plan §3 PR-F): the set of station hatches cracked open this
     // session, as composite "<bodyId>:<hatchId>" keys. A hatch that grows a wing (HavenInterior.
     // HatchGrowsWing) welds its back room onto the deck plan when unlocked. Per-session only — the
@@ -75,7 +80,9 @@ public partial class Map
     // the avatar where they stand — an opened wing appears without teleporting anyone.
     private void RebuildDockedDeck()
     {
-        if (_dockedHavenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id)) is { } complex)
+        // Re-weld at the SAME watch this visit docked at, so an opened wing appears without re-rolling the
+        // seated regulars mid-dock (their rota was baked when we tied up — issue #410).
+        if (_dockedHavenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime) is { } complex)
         {
             _deckPlan = complex;
         }
@@ -696,7 +703,8 @@ public partial class Map
 
     private void SetDeckForDock(string? havenId)
     {
-        if (havenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id)) is { } complex)
+        _dockVisitSimTime = SimTime; // freeze the watch this docking sees the bar on (issue #410 rota)
+        if (havenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";
