@@ -289,6 +289,7 @@ public partial class Map
         string? deflectionCheat = null; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
         string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable
+        bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
         string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
@@ -496,6 +497,15 @@ public partial class Map
                     kaamosCheat = candidate;
                 }
             }
+            else if (pair.StartsWith("bond=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #429 dev cheat: /map?bond=1 boots docked at a bar (default The Space Bar, override with
+                // ?dock=<id>) and FORCES the next ambient scare (shudder/buzzer/PA) to open a STRANGER-BOND —
+                // a co-present stranger stands you a cognac (OLD PERIHELION), the hero beat. Documented in
+                // docs/testing-guide.md.
+                string candidate = Uri.UnescapeDataString(pair["bond=".Length..]).ToLowerInvariant();
+                bondCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("nebula=", StringComparison.OrdinalIgnoreCase))
             {
                 // #422 dev cheat: /map?nebula=N assembles the first N NEBULA MUTUAL fragments (canonical
@@ -514,6 +524,14 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["converge=".Length..]).ToLowerInvariant();
                 convergeCheat = candidate is "1" or "true" or "yes";
             }
+        }
+
+        if (bondCheat)
+        {
+            // Arm the forced bond and make sure we boot INTO a bar (a scare on the bare ship deck has no room
+            // of strangers). Default to The Space Bar; any ?dock=<id> the caller passed wins.
+            _bondForce = true;
+            dockCheat ??= "the-space-bar";
         }
 
         // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
