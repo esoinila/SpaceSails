@@ -754,6 +754,15 @@ public partial class Map
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.ViewObject } spot)
         {
             _viewObject = MaybeAppendPlaqueGratitude(spot); // #394: Ringside's plaque grows a line once saved
+
+            // #411: reading the whole dedication plate that NAMES PROJEKTI KAAMOS (Ringside's, the one place
+            // the ice-moon project is named) assembles the first shard — the listed berth nobody files for.
+            if (_viewObject is { Caption: { } caption } && caption.Contains("KAAMOS", StringComparison.Ordinal))
+            {
+                TryAssembleKaamos("listed-berth",
+                    "❄ You read the whole plate this time, not just the dedication. " +
+                    Core.KaamosLore.ById("listed-berth")!.Lore);
+            }
         }
     }
 

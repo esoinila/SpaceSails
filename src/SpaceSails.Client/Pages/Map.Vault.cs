@@ -168,6 +168,9 @@ public partial class Map
         _caches.Clear();
         _overheard = [];
 
+        // #411: a new voyage is a new universe — the KAAMOS shards this captain gathered are unknown again.
+        _kaamos.Clear();
+
         // #394: a new universe has not saved the Ringside Exchange — its dedication plaque reads its
         // original bronze until this run's crew earns the gratitude line. Any live gig is dropped too.
         _ringsideSaved = false;
@@ -360,6 +363,7 @@ public partial class Map
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
+            Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Resume = BuildResumeSection(),
         };
     }
@@ -739,6 +743,7 @@ public partial class Map
         _hotCargo.Launder();
         _revealedBodyIds.Clear();
         _scopeIntel.Clear();
+        _kaamos.Clear(); // #411: the loaded life brings its OWN assembled shards (applied below), not the last run's
 
         if (vault.Purse is { } purse)
         {
@@ -780,6 +785,7 @@ public partial class Map
 
         VaultMapper.Apply(vault.Contacts, _contacts);
         VaultMapper.Apply(vault.Caches, _caches);
+        VaultMapper.Apply(vault.Kaamos, _kaamos); // #411: rehydrate the assembled ice-moon shards (tolerant of a pre-#411 save)
         _insurance = VaultMapper.ToInsurance(vault.Insurance);
         ApplyObligationsAndQuests(vault.Quests);
         ApplyDiceItems(vault.DiceItems);

@@ -612,6 +612,12 @@
                 <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
                         title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
                 <button type="button" class="btn btn-sm btn-outline-info" title="Ask the barkeep what they've heard lately" @onclick="AskBarkeepForRumor">👂 Hear a rumor</button>
+                @* #411: the KAAMOS seam — only shows when this bar can advance the ice-moon thread this watch
+                   (a rare holder is in, a coordinate's for sale, or the pieces are ready to resolve). *@
+                @if (KaamosBarSeamAvailable())
+                {
+                    <button type="button" class="btn btn-sm btn-outline-info" title="Ask around about the sealed ice-moon berth — PROJEKTI KAAMOS" @onclick="AskAboutKaamos">🌑 Ask about KAAMOS</button>
+                }
                 <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="CloseBarkeep">Done</button>
             </div>
             @if (_showBarMenu)
