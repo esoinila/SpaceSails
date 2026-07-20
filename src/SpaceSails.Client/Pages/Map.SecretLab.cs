@@ -277,7 +277,7 @@ public partial class Map
             _credits += roll.PayCredits;
             RendererInterop.PlayCue("reveal");
             ShowPulseMessage(
-                $"🖥 {coreLogText}\n\n{dice} — you keep your head and strip the rig for the good stuff. " +
+                $"🖥 {coreLogText}   ▪   {dice} — you keep your head and strip the rig for the good stuff. " +
                 $"+{roll.PayCredits:N0} cr for the salvaged tech. Your hands aren't quite steady, but they're yours.");
         }
         else
@@ -285,7 +285,7 @@ public partial class Map
             SpawnReevers(roll.PackSize);
             RendererInterop.PlayCue("alarm");
             ShowPulseMessage(
-                $"🖥 {coreLogText}\n\n{dice} — and behind you the dormant thing's eyes come open. " +
+                $"🖥 {coreLogText}   ▪   {dice} — and behind you the dormant thing's eyes come open. " +
                 $"{roll.PackSize} of them, standing off their benches. It salvages YOU. Get to the tube — RUN.");
         }
         RequestVaultSave(); // the nerve moved (and maybe the purse) — persist it
