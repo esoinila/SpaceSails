@@ -49,6 +49,7 @@ public partial class Map
         string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosReachNotice : "";
         RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
         ShowPulseMessage(foundMessage + tail);
+        MaybeFireConvergence(); // #422: an arc-1 shard may be the edge that crosses the JOINT threshold too
         return true;
     }
 
@@ -195,5 +196,6 @@ public partial class Map
         RequestVaultSave();
         string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosReachNotice : "";
         ShowPulseMessage($"🧪 Test: assembled {_kaamos.Count} KAAMOS fragment{(_kaamos.Count == 1 ? "" : "s")} ({_kaamos.IntelAssembled} intel). See the Captain's ledger.{tail}");
+        MaybeFireConvergence(); // #422: a big ?kaamos= may itself cross the joint bar if NEBULA is already up
     }
 }
