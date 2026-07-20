@@ -491,7 +491,9 @@ public partial class Map
             _ => ("⚠", $"IMPACT — {plan.TargetName}"),
         };
         _renderer.DrawCircle(ix, iy, 5f, color, color);
-        _renderer.DrawText(ix + 8, iy - 6, $"{glyph} {text}", color, "12px sans-serif", TextAlign.Left);
+        // #402: the threat rock's ⚠/name is the deflection money-moment — it sits at the top of the
+        // label priority ladder so FlushNavLabels never lets a depot's name smear over it.
+        EnqueueNavLabel(ix + 8, iy - 6, $"{glyph} {text}", color, LabelPriorityThreatRock);
     }
 
     // ─────────────────────────────────────────────────────────────────────────────────────────────
