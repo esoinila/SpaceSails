@@ -51,6 +51,9 @@ dotnet run --project labs/30-the-mass-driver-timetable -c Release
 dotnet run --project labs/32-aerocapture-at-the-ice-giant -c Release
 dotnet run --project labs/33-aerobrake-in-the-live-loop -c Release
 dotnet run --project labs/34-the-unclickable-lifeline -c Release
+dotnet run --project labs/35-the-push-that-isnt-a-push -c Release
+dotnet run --project labs/36-the-cannonball -c Release
+dotnet run --project labs/37-the-slow-hand -c Release
 ```
 
 Each lesson folder holds:
@@ -333,6 +336,34 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     below the rescue modal), making reachability an invariant instead of a hand-tuned value. Weighs four
     CI approaches (bUnit, geometry law, CSS audit, Playwright) and graduates the geometry law — zero new
     infrastructure, runs in the existing `dotnet test`.
+
+### The deflection triptych (#395) — the three ways to move a rock
+
+35. [**The push that isn't a push**](35-the-push-that-isnt-a-push/README.md) — the lesson that CERTIFIES the
+    shipped #399/#401 ablation deflection gig (`DeflectionGig`). The drilled charge doesn't shove like a
+    rocket — it ablates a jet whose recoil lifts the rock's periapsis off Ringside's lane. Prints the
+    numbers the gig's constants encode: the `0.5·(1+cosθ)` rotation window (fire off-window, waste the
+    charge), Zubrin's C/S/M drill (9.8/14/22.4 s) and ablation efficiency (1.2/1.0/0.7), the honest geometry
+    where a periapsis raise of ΔR yields a miss of *exactly* ΔR on the real Kepler rail, and the heroic
+    payout bands (12k/6k/floor). Then the honest science the movie skips — DART proved a loose rock's ejecta
+    AMPLIFIES the push (β≈3.6), so the eager C-type over-delivers — and the game's Electric-Universe
+    impact-flash model (`ImpactArcFlash`, ⚡ flagged non-mainstream): the conductive M-type arcs hardest
+    (2.5× a pure-kinetic flash), owner's 500 A × 22 kV ≈ 11 MW arc-melter reference.
+36. [**The cannonball**](36-the-cannonball/README.md) — the kinetic impactor, priced honestly at REAL
+    city-killer sizes (the gig's on-map rock is a 4000 km camera abstraction; a real one is 50 m – 1 km).
+    Momentum Δv = β·m·u/M with the DART/Dimorphos ejecta enhancement (β 4.5/3.6/1.5 for C/S/M — looseness
+    OVER-delivers, reconciling the owner's DART note), and the along-track leverage miss = 3·Δv·t that makes
+    WARNING everything: a 200 t old hull deflects a 140 m S-type past Ringside with **~2.3 years** of lead
+    (or ~23 years for a mere 20 t cargo pod). Enables a "sacrifice a cargo pod / an old hull as the slug"
+    variant; the lesson is that the cannonball rewards early detection (3× per unit lead) far more than brute
+    mass — small rocks are cannonball food, big ones need the drilled charge.
+37. [**The slow hand**](37-the-slow-hand/README.md) — the gravity tractor: no charge, no collision, just a
+    heavy tug station-keeping a standoff off the rock while its own feeble gravity (a = G·m_ship/d², a
+    nanometre-per-second-squared) tows the orbit over as miss = 1.5·a·T². The number IS the lesson: a 100 t
+    tug needs **~11.5 years** to clear a 140 m rock (4 for a 50 m, 82 for a 1 km), and a heavier tug helps
+    only as √mass — the slow hand can't be muscled, only started early. Ties to lesson 25: the hover is
+    station-keeping (a standoff held instead of a park, priced as a few newtons sustained for years). Enables
+    a gravity-tractor variant that rewards early detection — the owner's favourite lesson, in hard numbers.
 
 ## Framing rule
 
