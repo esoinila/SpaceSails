@@ -549,6 +549,25 @@ public partial class Map
         return $"{place} · day {Math.Max(0, t.SimDay)} · last active {last}";
     }
 
+    // The captain card's "retired" line (Evening wind #20): who held this license before the piracy
+    // insurance replaced them, most recent first. Compact — the newest one or two retirees, then a "+N
+    // more" tail so a long-lived, oft-killed universe doesn't run the card off the door. Each entry reads
+    // "under Capt. <name> until day <N>" (Core CaptainSuccession.RetiredLine).
+    private static string CaptainRetiredSummary(GameThreadInfo t)
+    {
+        IReadOnlyList<RetiredCaptain> retired = t.Retired;
+        if (retired.Count == 0)
+        {
+            return "";
+        }
+
+        const int show = 2;
+        IEnumerable<RetiredCaptain> newestFirst = retired.Reverse();
+        string head = string.Join(" · ", newestFirst.Take(show).Select(CaptainSuccession.RetiredLine));
+        int more = retired.Count - show;
+        return more > 0 ? $"{head} · +{more} more" : head;
+    }
+
     // The monogram initial for the fallback avatar disc (first letter of the captain's given name).
     private static string CaptainInitial(string captainName)
     {

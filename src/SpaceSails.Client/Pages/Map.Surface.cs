@@ -1382,6 +1382,19 @@ public partial class Map
             return;
         }
         _lastReeverCatchMs = now;
+
+        // #380 item 1 / Evening wind #20 — THE OVERDRAW. Nerves already bottomed out and an Old One lays
+        // hands ANYWAY: this qualifying hit breaks the captain. Read on the nerve BEFORE the touch shock
+        // (already empty + more damage), routed place-dependently (the Old Ones took you — or, rarely, you
+        // joined them) into the shared BUSTED resurrection, where the piracy insurance issues a new captain.
+        // Fail Forward — the run continues (ledger, ship and hoards persist). Below empty is where it breaks;
+        // above it, the touch only floors the gauge and the captain is told to RUN, as before.
+        if (_surface is { } dying && _busted is null && CaptainSuccession.OverdrawQualifies(_nerve))
+        {
+            TriggerSurfaceOverdrawDeath(dying);
+            return;
+        }
+
         if (_surface is { } ex)
         {
             ex.Catches++;
