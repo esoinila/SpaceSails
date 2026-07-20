@@ -473,6 +473,8 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
 | **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
+| **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout + the one-time "true terms" notice without a playthrough (#422).** |
+| **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 
 ### Multiple landing sites — `?site=N` (#320)
 
@@ -492,6 +494,30 @@ onto a chosen ground. The verify loop for "does the choice change the surface":
 4. **Board** → walk down. The surface header reads **SET DOWN AT: <SITE>**, and the deep-field walls/features
    differ between, say, site 0 and site 1 on the same body.
 5. Lift off, board again → the same seeded set is offered; re-picking the same site yields the same ground.
+
+### NEBULA MUTUAL (arc 2) and THE CONVERGENCE — `?nebula=` / `?converge=1` (#422)
+
+Arc 2 is the truth behind your resurrections; you gather its fragments by **dying and coming back**, by
+reading the port posters twice, at a bar from a roving **Nebula adjuster**, off a **collector's writ**, and
+from the **clinic's** books. Progress shows in the Captain's ledger as **"▓ NEBULA MUTUAL — N of 5 clauses"**,
+the assembled shard texts readable beneath it (mirrors the KAAMOS readout).
+
+- **`?nebula=N`** assembles the first N fragments in canonical order; **`?nebula=all`** assembles every one
+  (5 intel shards + the capstone contract). Watch the ledger readout build, and at N ≥ 4 the one-time
+  **"▓▓ THE POLICY'S TRUE TERMS RESOLVE"** notice fire.
+- **`?converge=1`** is the marquee smoke test: it seeds exactly the joint threshold on **both** arcs
+  (3 KAAMOS intel + 3 NEBULA intel) and fires **THE CONVERGENCE** — a full staged reveal card, above
+  everything, stating that the sealed ice-moon berth and your brain-backup insurance are the same story.
+  It fires **once per universe** (the seen-bit is persisted in the vault); reload and it does not replay.
+
+**In-play delivery to verify by hand:**
+- **Die** (get caught by a collector, or fly into a body) → on the resurrection card, a green monospace
+  **glitch flash** ("…DO NOT REVIVE ORIGINAL") assembles `rebirth-glitch`. Getting caught by a **collector**
+  first also shows the **writ glimpse** (`collector-writ`). A **second** death shows the **clinic's second
+  page** (`clinic-ledger`).
+- **Read a `📋 PIRATE INSURANCE` poster twice** (any port hall/bar) → the second read assembles `fine-print`.
+- **At a bar**, when the seam offers **"▓ Ask about NEBULA"**, a roving adjuster gives `adjuster-tell`; once
+  4 intel are in hand the same seam resolves the capstone **`policy-terms`**.
 
 ### The secret lab — `?secretlab=1` (#409)
 

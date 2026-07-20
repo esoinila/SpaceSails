@@ -3242,3 +3242,115 @@
     color: #6f83a6;
     letter-spacing: 0.02em;
 }
+
+/* #422 arc 2 — NEBULA MUTUAL fragments delivered ON the BUSTED/resurrection card (the glitch flash, the
+   collector's writ, the clinic's second page). A cold, filed-under-it slab set into the warmer death card. */
+.busted-nebula {
+    margin: 0.5rem 0.9rem;
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    background: rgba(6, 10, 16, 0.72);
+    border: 1px solid rgba(120, 170, 210, 0.4);
+    border-left: 3px solid rgba(150, 190, 230, 0.85);
+    border-radius: 0.3rem;
+    color: #cdd8e6;
+}
+
+.busted-nebula-head {
+    font-weight: 800;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    color: #a9c4e0;
+    margin-bottom: 0.25rem;
+}
+
+.busted-nebula-line {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #c4d1e0;
+}
+
+/* The one-flat-second glitch: a monospace, flickering machine line that should not be there. */
+.busted-glitch-flash {
+    font-family: "Consolas", "Courier New", monospace;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #8fe6c8;
+    text-shadow: 0 0 0.4rem rgba(80, 220, 170, 0.5);
+    margin-bottom: 0.3rem;
+    animation: nebula-glitch-flicker 1.1s steps(2, end) 3;
+}
+
+@keyframes nebula-glitch-flicker {
+    0%, 100% { opacity: 1; }
+    45% { opacity: 0.35; }
+    50% { opacity: 1; }
+    55% { opacity: 0.55; }
+}
+
+/* THE CONVERGENCE — the marquee one-time reveal, above everything (a catch that just fired it sits under).
+   Ice-and-archive palette: KAAMOS's cold blue meeting NEBULA's filed grey, the two threads crossing. */
+.convergence-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 60); /* above the BUSTED card (+50) — the recognition tops even a catch */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 40%, rgba(10, 20, 34, 0.86), rgba(1, 2, 5, 0.95) 85%);
+    pointer-events: auto;
+}
+
+.convergence-card {
+    max-width: min(38rem, 93vw);
+    padding: 1.4rem 1.6rem 1.2rem;
+    text-align: center;
+    color: #dbe6f2;
+    background: linear-gradient(180deg, #0b1826 0%, #0a1220 55%, #0c0f16 100%);
+    border: 1px solid rgba(140, 190, 230, 0.55);
+    border-radius: 0.85rem;
+    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 180, 230, 0.28);
+}
+
+.convergence-stamp {
+    display: inline-block;
+    transform: rotate(-3deg);
+    padding: 0.2rem 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: #bfe0ff;
+    border: 2px solid rgba(150, 200, 240, 0.75);
+    border-radius: 0.3rem;
+    background: rgba(6, 14, 26, 0.6);
+    margin-bottom: 0.7rem;
+}
+
+.convergence-head {
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    color: #e7f1ff;
+    margin-bottom: 0.15rem;
+}
+
+.convergence-sub {
+    font-size: 0.82rem;
+    font-style: italic;
+    letter-spacing: 0.03em;
+    color: #93b2d4;
+    margin-bottom: 0.75rem;
+}
+
+.convergence-body {
+    line-height: 1.55;
+    color: #d3e0ef;
+    text-align: left;
+    margin-bottom: 0.7rem;
+}
+
+.convergence-foot {
+    font-style: italic;
+    color: #9db9d8;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
