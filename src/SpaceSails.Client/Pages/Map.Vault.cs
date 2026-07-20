@@ -352,7 +352,12 @@ public partial class Map
                 TelescopeLevel = _telescopeLevel,
             },
             DiceItems = BuildDiceItemsSection(),
-            Progress = new ProgressSection { TutorialPlayed = _tutorialPlayed, RingsideSaved = _ringsideSaved }, // #292 / #394
+            Progress = new ProgressSection // #292 / #394 / #409
+            {
+                TutorialPlayed = _tutorialPlayed,
+                RingsideSaved = _ringsideSaved,
+                SecretLabsFound = [.. _secretLabsFound],
+            },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             Resume = BuildResumeSection(),
@@ -786,6 +791,16 @@ public partial class Map
         // #394: restore whether this universe's crew turned the rock aside from Ringside — so its plaque
         // keeps the appended gratitude line across a reload (a pre-#394 save defaults false, harmless).
         _ringsideSaved = vault.Progress?.RingsideSaved ?? _ringsideSaved;
+        // #409: restore the secret labs this thread has found, so a known body's hidden door stays revealed
+        // on every future landing (a pre-#409 save simply lacks the field — an empty set, harmless).
+        if (vault.Progress?.SecretLabsFound is { } found)
+        {
+            _secretLabsFound.Clear();
+            foreach (string body in found)
+            {
+                _secretLabsFound.Add(body);
+            }
+        }
 
         // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking
         // after a reload, and the monolith's first-sight hit stays spent. A missing section defaults calm.

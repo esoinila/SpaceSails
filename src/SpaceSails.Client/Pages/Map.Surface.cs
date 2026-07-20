@@ -363,6 +363,20 @@ public partial class Map
         public double CommsLastContactSeconds { get; set; }   // the CommsSeconds of the last nominal contact
         public bool CommsFirstLossAnnounced { get; set; }     // the one-time "static — the feed drops" notice has fired
 
+        // #409 · THE SECRET LAB. Live only when this body hides one of Dr. Vantar's sealed labs. Placement is
+        // the seeded hidden-door spot; DoorRevealed once a beach-comber probe pings the right square (or a
+        // revisit to an already-found body, or the cheat); Forced once the door is wrenched open (appends the
+        // lab region); CacheLooted / LogsRead / RevealFired track the interior. The DoorChannel is the forced-
+        // door progress bar (reuses the door-force idiom). Session-only EXCEPT the "found" fact, which persists
+        // per game-thread in _secretLabsFound (the vault/thread idiom).
+        public SecretLab.Placement? Lab { get; set; }
+        public bool SecretLabDoorRevealed { get; set; }
+        public bool SecretLabForced { get; set; }
+        public bool SecretLabCacheLooted { get; set; }
+        public bool SecretLabRevealFired { get; set; }
+        public HashSet<string> SecretLabLogsRead { get; } = [];
+        public DoorChannel? SecretLabDoorChannel { get; set; }
+
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
@@ -371,7 +385,8 @@ public partial class Map
         public bool Carrying => (PendingCoin > 0 || PendingCargo.Count > 0) && !Buried && !ChestDropped;
         public bool Channeling => Channel is not null;
         // #371 Phase 3 / #394: any channel underway (a dig, a door-force, OR the drill) — mutually exclusive.
-        public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null;
+        public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null
+            || SecretLabDoorChannel is not null;
     }
 
     // ── Boarding: pick a surface, optionally load a chest, and grow the tube IN PLACE. ──
@@ -431,6 +446,7 @@ public partial class Map
         }
 
         _surface = excursion;
+        ResolveSecretLab(excursion); // #409: does this body hide one of Vantar's labs? (seed, or a known/cheat pre-reveal)
         _reevers.Clear();
         _lastNearestReeverRange = null;
         _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
@@ -558,6 +574,9 @@ public partial class Map
         {
             ComposeDeflectionSite(ex);
         }
+        // #409: on ANY body that hides a lab (expedition deep field or a rare ordinary moon), compose the
+        // revealed hidden door and — once forced — replay the appended lab region onto the freshly-built base.
+        ComposeSecretLabSite(ex);
     }
 
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
@@ -633,6 +652,14 @@ public partial class Map
 
         (int sqX, int sqY) = BeachComber.SquareOf(_avatarX, _avatarY);
 
+        // #409: the beach-comber's metal detector screams the instant it sweeps the square that hides a lab
+        // door — an INSTANT reveal (no dig), the "ping on the right seeded square". Empty-handed only (the
+        // detector is the fishing kit); consumes the E. A near-miss shrieks a proximity hint but still probes.
+        if (!ex.Carrying && TrySecretLabDetectorReveal(ex, sqX, sqY))
+        {
+            return;
+        }
+
         // The die's first job (owner: "some surfaces may be too hard to dig … the die could handle those").
         // Bedrock refuses the dig outright — no hole, no watch — but the square is now KNOWN and joins the
         // swept grid so the sweep reads it as checked.
@@ -640,10 +667,11 @@ public partial class Map
         if (probe.IsTooHard)
         {
             ex.Swept[(sqX, sqY)] = probe.Outcome;
-            RendererInterop.PlayCue("board");
-            ShowPulseMessage(ex.Carrying
+            string bedrockLabTail = ex.Carrying ? "" : SecretLabProximityTail(ex, sqX, sqY);
+            RendererInterop.PlayCue(bedrockLabTail.Length > 0 ? "reveal" : "board");
+            ShowPulseMessage((ex.Carrying
                 ? "⛏ The shovel rings off bedrock — this square won't take a chest. Try a step over."
-                : "⛏ The shovel rings off bedrock a foot down — too hard to dig here. Try another square.");
+                : "⛏ The shovel rings off bedrock a foot down — too hard to dig here. Try another square.") + bedrockLabTail);
             return;
         }
 
@@ -790,10 +818,14 @@ public partial class Map
         Probe probe = BeachComber.Roll(ex.Stop.Body.Id, squareX, squareY);
         ex.Swept[(squareX, squareY)] = probe.Outcome;
 
+        // #409: a near-miss on a hidden lab door — the detector shrieks that something big and metal is very
+        // close, keep sweeping the squares around here (tacked onto the honest probe result).
+        string labTail = SecretLabProximityTail(ex, squareX, squareY);
+
         if (!probe.IsFind)
         {
-            RendererInterop.PlayCue("board");
-            ShowPulseMessage("🕳 Nothing but regolith down there. The detector stays quiet — you mark the square and move on.");
+            RendererInterop.PlayCue(labTail.Length > 0 ? "reveal" : "board");
+            ShowPulseMessage("🕳 Nothing but regolith down there. The detector stays quiet — you mark the square and move on." + labTail);
             return;
         }
 
@@ -812,7 +844,7 @@ public partial class Map
         RendererInterop.PlayCue("reveal");
         RequestVaultSave();
         string scrapTail = scrapTaken > 0 ? $" + {scrapTaken} scrap of salvage" : "";
-        ShowPulseMessage($"✨ The detector chirps — you turn up {probe.FindCoin:N0} cr{scrapTail} a few inches down. Luck, not a fortune. Mark it and keep moving.");
+        ShowPulseMessage($"✨ The detector chirps — you turn up {probe.FindCoin:N0} cr{scrapTail} a few inches down. Luck, not a fortune. Mark it and keep moving." + labTail);
     }
 
     private void LiftChestHere(SurfaceExcursion ex, string cacheId, ReeverRoll roll)
@@ -928,6 +960,7 @@ public partial class Map
         }
         StepDigChannel(dtRealSeconds);
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
+        StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
@@ -1928,6 +1961,11 @@ public partial class Map
         if (ownMarkCount > 0)
         {
             lines.Add("🗺 E at your ✗ — dig the cache back up");
+        }
+        // #409: once the hidden lab door is revealed, advertise it until it's forced.
+        if (ex.SecretLabDoorRevealed && !ex.SecretLabForced)
+        {
+            lines.Add("⚙ E at the ⚙ HIDDEN DOOR — force the secret lab open");
         }
 
         // The sentry affordance — spell out T while it matters (a bot in the sling to set, or ones holding

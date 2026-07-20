@@ -83,7 +83,7 @@ public class VaultSerializerTests
         Insurance = new InsuranceSection((int)InsuranceTier.Premium, 200000.0),
         Upgrades = new UpgradesSection { MassLevel = 2, SensorLevel = 1, HoldLevel = 3, TelescopeLevel = 1 },
         DiceItems = new DiceItemsSection([new DiceItemRecord("boarding-nets", "Boarding nets", 2)]),
-        Progress = new ProgressSection { TutorialPlayed = true },
+        Progress = new ProgressSection { TutorialPlayed = true, SecretLabsFound = ["phobos", "the-hermits-rock"] },
         Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
         Overheard = new OverheardSection
         {
@@ -125,6 +125,7 @@ public class VaultSerializerTests
         Assert.Single(loaded.Quests.Obligations);
         Assert.Equal(3, loaded.Cargo!.Hot[0].HotUnits);
         Assert.True(loaded.Progress!.TutorialPlayed); // #292 — the onboarding bit rides the vault losslessly
+        Assert.Equal(["phobos", "the-hermits-rock"], loaded.Progress.SecretLabsFound); // #409 — found labs persist per thread
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
         Assert.True(loaded.Resume!.WasDocked);

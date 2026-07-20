@@ -468,6 +468,30 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?reveal=<bodyId>` | Chart a hidden body at boot (repeatable). |
 | `?ellipse=1` | Append a visibly eccentric demo body (Kepler rails). |
 | `?sling=<bodyId>` / `?skim=<bodyId>` | Boot onto an approach arc with a close pass / atmosphere graze. |
+| `?expedition=1\|mining` | Spawn an away-team gig ALREADY ACCEPTED, its rock parked in shuttle range (#370). |
+| `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
+| **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
+
+### The secret lab — `?secretlab=1` (#409)
+
+A hidden door in the deep field conceals **Dr. Mielos Vantar's** sealed lab — seeded, rare, and normally
+found only by sweeping the right square with the beach-comber metal detector. The cheat spawns **The
+Hermit's Rock**, a plain landable Moon-kind body co-orbiting the berth (default Selene Gate; combine with
+`?dock=<id>` to co-orbit another) comfortably inside one shuttle hop, whose surface is **forced** to hide a
+lab with the **hidden door already revealed**. The loop:
+
+1. `/map?secretlab=1` → boot docked, The Hermit's Rock alongside in shuttle range.
+2. Open the shuttle door, land on the rock, walk down the tube into the deep field.
+3. Find the **⚙ HIDDEN DOOR** console (it's already on the ground) and **[E]** to force it — a channelled
+   progress bar; step away to abort.
+4. The lab **appends** live (benches, stasis pods, a server spine). **[E]** the log screens to read Vantar's
+   fragments; **[E]** `🗝 VANTAR'S CACHE` for the fat one-time payout.
+5. **[E] `🖥 VANTAR — THE CORE LOG`** — the reveal: a nerve hit + a shown **d20** (≥9 salvages the tech for
+   heroic pay; below, the dormant synthetics wake as a limited pack — run).
+
+Discovery **persists per game-thread**: once found, a revisit to that body shows the door already revealed.
+To exercise the *discovery* vector itself on an ordinary body, land empty-handed and **probe** (`[E]` on the
+regolith) — the detector shrieks a proximity hint near the door and reveals it on the exact square.
 
 ### The dockable berths — `?dock=<id>` (#288 / #289)
 

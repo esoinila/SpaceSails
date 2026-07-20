@@ -339,6 +339,15 @@ public partial class Map
             case DeckPlan.ConsoleKind.DrillPoint:
                 DrillPointInteract(); // #394: drill the charge (a long channel), or fire it once armed
                 break;
+            case DeckPlan.ConsoleKind.SecretDoor:
+                SecretDoorInteract(); // #409: force the hidden lab door — the channel that appends the lab region
+                break;
+            case DeckPlan.ConsoleKind.LabCache:
+                LabCacheInteract(); // #409: claim Vantar's fat one-time cache
+                break;
+            case DeckPlan.ConsoleKind.LabConsole:
+                LabConsoleInteract(); // #409: read a Vantar log (the core log fires the diced reveal)
+                break;
             case DeckPlan.ConsoleKind.Kiosk:
                 VisitKiosk();
                 break;

@@ -92,6 +92,22 @@ public partial class Map
     // A fixed, reproducible seed so the deflection cheat always spawns the same rock (same type + name + spin).
     private const ulong DeflectionCheatSeed = 3940UL;
 
+    // #409: the ?secretlab=1 cheat's landable rock — a plain Moon-kind body co-orbiting the berth, well inside
+    // one shuttle hop, whose surface ResolveSecretLab forces to hide a Vantar lab with the door pre-revealed.
+    private const string SecretLabCheatBodyId = "secret-lab-site";
+    private static BodyDefinition SecretLabSiteBody(string berthId) => new()
+    {
+        Id = SecretLabCheatBodyId,
+        Name = "The Hermit's Rock",
+        ParentId = berthId,
+        Mu = 0,
+        BodyRadiusM = ExpeditionSite.BodyRadiusMeters,
+        OrbitRadiusM = ExpeditionSite.SpawnFraction * ShuttleRange.RangeMeters * 0.6, // ~1.5e8 m: well inside one 5e8 m hop
+        OrbitPeriodS = 1.0e9,       // effectively a static co-orbiting offset — the rock just hangs alongside
+        InitialPhaseRad = 1.0,      // a different bearing off the berth than the expedition rock
+        Kind = "moon",
+    };
+
     // The rock's seeded slow tumble — a spin period (30..90 s of on-site time) and a phase, so the firing
     // window comes around on its own schedule. Pure of the given seed.
     private static (double Period, double Phase) DeflectionSpin(ulong seed)
@@ -271,6 +287,7 @@ public partial class Map
         bool ellipseCheat = false; // /map?ellipse=1 injects a visibly eccentric demo body (Kepler rails, PR-B)
         string? expeditionCheat = null; // #370 /map?expedition=1|mining: spawn an away-team gig accepted + its site in shuttle range at the berth
         string? deflectionCheat = null; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
+        bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -454,6 +471,17 @@ public partial class Map
                     deflectionCheat = candidate;
                 }
             }
+            else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #409 dev cheat: /map?secretlab=1 spawns a plain LANDABLE rock parked in shuttle range at the
+                // berth whose surface is GUARANTEED to hide one of Dr. Vantar's secret labs, with the hidden
+                // door ALREADY REVEALED (a ⚙ HIDDEN DOOR console on the ground). The test loop is: shuttle
+                // door → land → walk to the door → force it → read the logs → hit the core-log reveal.
+                // Documented in the PR body. (Ordinary bodies hide labs rarely, off the seed — this is the
+                // fast path.)
+                string candidate = Uri.UnescapeDataString(pair["secretlab=".Length..]).ToLowerInvariant();
+                secretlabCheat = candidate is "1" or "true" or "yes";
+            }
         }
 
         // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
@@ -513,6 +541,20 @@ public partial class Map
                 ring.Id, "Ringside Exchange", ring.OrbitRadiusM, ring.OrbitPeriodS, ring.InitialPhaseRad,
                 ring.ParentId!, impactRailTime, spinPeriod, spinPhase);
             dockCheat = "ringside-exchange"; // clamp onto the port under threat, in reach of the rock
+        }
+        if (secretlabCheat)
+        {
+            // #409: append a plain landable Moon-kind rock co-orbiting the berth (the ellipse-cheat idiom),
+            // comfortably inside one shuttle hop. Its surface is FORCED to hide a Vantar lab and to pre-reveal
+            // the door (see ResolveSecretLab, keyed on _secretLabForceBodyId). Default the berth to Selene Gate.
+            string berthKey = dockCheat ?? "selene-gate";
+            string berthId = DockedStarts.TryGetValue(berthKey, out string? mappedBerth) ? mappedBerth : berthKey;
+            if (scenario.Bodies.Any(b => b.Id == berthId))
+            {
+                scenario = scenario with { Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId)] };
+                _secretLabForceBodyId = SecretLabCheatBodyId;
+                dockCheat = berthId; // clamp onto the berth the rock co-orbits, so it's in reach at spawn
+            }
         }
         _scenarioName = scenario.Name;
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
