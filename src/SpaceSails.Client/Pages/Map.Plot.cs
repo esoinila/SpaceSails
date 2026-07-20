@@ -2067,7 +2067,10 @@ public partial class Map
         foreach (CelestialBody body in ephemeris.Bodies)
         {
             if (IsBodyHidden(body.Id)) continue; // off the charts until an intel-fed scan finds it (PR-A)
-            if (body.OrbitPeriod != 0 && body.OrbitRadius > 0)
+            // #394: the inbound rock draws its own RED threat rail (DrawAsteroidThreat) that bends on
+            // deflection — suppress the default grey ring so there is only one, and it tells the story.
+            bool deflectionRock = _deflection is { } dgig && body.Id == dgig.RockBodyId;
+            if (!deflectionRock && body.OrbitPeriod != 0 && body.OrbitRadius > 0)
             {
                 Vector2d parentPosition = body.ParentId is null ? Vector2d.Zero : ephemeris.Position(body.ParentId, SimTime);
                 // Kepler rails (PR-B): a circular body's ring is a circle of radius OrbitRadius; an

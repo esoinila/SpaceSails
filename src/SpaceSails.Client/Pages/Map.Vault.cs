@@ -168,6 +168,14 @@ public partial class Map
         _caches.Clear();
         _overheard = [];
 
+        // #394: a new universe has not saved the Ringside Exchange — its dedication plaque reads its
+        // original bronze until this run's crew earns the gratitude line. Any live gig is dropped too.
+        _ringsideSaved = false;
+        _deflection = null;
+        _deflectionResolved = null;
+        _deflectionRaiseMeters = 0;
+        _deflectionLeftPort = false;
+
         // THE leak's home: the session-scoped "found it" sets. Clearing _revealedBodyIds re-hides every
         // scenario-hidden body (the derelict roadster among them) so a new game must re-discover it; the
         // scope-intel cards (scan fixes) go with it. _hiddenBodyIds is scenario data — left untouched.
@@ -344,7 +352,7 @@ public partial class Map
                 TelescopeLevel = _telescopeLevel,
             },
             DiceItems = BuildDiceItemsSection(),
-            Progress = new ProgressSection { TutorialPlayed = _tutorialPlayed }, // #292
+            Progress = new ProgressSection { TutorialPlayed = _tutorialPlayed, RingsideSaved = _ringsideSaved }, // #292 / #394
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             Resume = BuildResumeSection(),
@@ -775,6 +783,9 @@ public partial class Map
         // an old save from before this flag — defaults to false, which is harmless: the greeting is
         // still suppressed below because a LOAD is not a fresh Earth start), then keep the nav clear.
         _tutorialPlayed = vault.Progress?.TutorialPlayed ?? _tutorialPlayed;
+        // #394: restore whether this universe's crew turned the rock aside from Ringside — so its plaque
+        // keeps the appended gratitude line across a reload (a pre-#394 save defaults false, harmless).
+        _ringsideSaved = vault.Progress?.RingsideSaved ?? _ringsideSaved;
 
         // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking
         // after a reload, and the monolith's first-sight hit stays spent. A missing section defaults calm.

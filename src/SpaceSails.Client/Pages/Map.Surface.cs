@@ -127,6 +127,13 @@ public partial class Map
             return away;
         }
 
+        // #394: on the deflection rock the ship-line becomes the DOOM CLOCK — T-minus to impact, naming the
+        // stakes ("⏱ IMPACT — RINGSIDE EXCHANGE — T-4:32"). It supersedes the ordinary hold/docked line.
+        if (_surface is { Deflection: true } && DeflectionComms() is { } doom)
+        {
+            return doom;
+        }
+
         if (_dockedHavenId is not null)
         {
             // Owner ruling (#331 follow-up): docked at a station, its mass holds the orbit for us — no
@@ -249,6 +256,15 @@ public partial class Map
         public double AnchorX, AnchorY; // the door console — stepping away from HERE aborts
     }
 
+    // #394 · THE DRILLING. The channel that sinks the charge into the rock — parallel to the door-force
+    // channel but MUCH longer (DeflectionGig.RockProfile.DrillSeconds, per rock type) and, unlike a door,
+    // its Progress PERSISTS across re-channels: a drill-snap complication backs the progress up, and the
+    // captain sets the shoulder again from there. Abortable by stepping away from the drill point.
+    private sealed class DrillChannel
+    {
+        public double AnchorX, AnchorY; // the drill point — stepping away from HERE pauses the bore
+    }
+
     private sealed class SurfaceExcursion
     {
         public required ShuttleStop Stop { get; init; }
@@ -293,6 +309,21 @@ public partial class Map
         public bool ExpeditionStrandingFired { get; set; } // the one-time "the window closed" toll has rolled
         public bool ExpeditionRevealFired { get; set; }    // #370: the bigger picture has surfaced (darkens the table, earns the truth bonus)
 
+        // #394 · the away-DEFLECTION state, live only when this landing is on the inbound rock. Like the
+        // expedition it gates OFF the endless tide (the horror is the CLOCK, not the pack) and arms the
+        // diced complications (DeflectionGig). DrillProgress fills 0→1 as the charge is bored; ChargeArmed
+        // when it completes; BurnFired once the ablation charge fires (the rail bends). CrewLost docks the
+        // pay. Settled on liftoff (or resolved as an impact if the clock runs out).
+        public bool Deflection { get; init; }
+        public double DeflectionOnSiteSeconds { get; set; }
+        public int DeflectionLastOrdinal { get; set; } = -1;
+        public double DrillProgress { get; set; }          // 0..1 — the charge bore (persists across snaps)
+        public bool ChargeArmed { get; set; }              // the drill reached depth; the charge is set
+        public bool BurnFired { get; set; }                // the ablation charge fired (once)
+        public int DeflectionCrewLost { get; set; }
+        public bool DeflectionResolved { get; set; }       // the one-time impact/abort resolution has run
+        public DrillChannel? DrillChannel { get; set; }
+
         // #371 Phase 3 · THE DOOR-OPEN DREAM. The forced-door channel and the appended-region state — live
         // ONLY on an expedition excursion. OpenedDoors are every sealed door (outer + nested) forced this
         // visit; LootedCaches every discovery cache claimed. Both key the region compose on a RebuildSurfaceDeck
@@ -318,8 +349,8 @@ public partial class Map
         // A chest is in hand right now: something was loaded, not yet buried, not dropped.
         public bool Carrying => (PendingCoin > 0 || PendingCargo.Count > 0) && !Buried && !ChestDropped;
         public bool Channeling => Channel is not null;
-        // #371 Phase 3: any channel underway (a dig OR a door-force) — the two are mutually exclusive.
-        public bool AnyChannel => Channel is not null || DoorChannel is not null;
+        // #371 Phase 3 / #394: any channel underway (a dig, a door-force, OR the drill) — mutually exclusive.
+        public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null;
     }
 
     // ── Boarding: pick a surface, optionally load a chest, and grow the tube IN PLACE. ──
@@ -354,6 +385,8 @@ public partial class Map
         // #370: is this landing the away-team's gig site? If so the excursion arms the expedition (no tide,
         // diced beats, the away clock) instead of a normal surface visit.
         bool isExpeditionSite = _expedition is { } plan && plan.SiteBodyId == stop.Body.Id;
+        // #394: is this landing the deflection gig's inbound rock? Then the excursion arms the drilling.
+        bool isDeflectionRock = _deflection is { } dgig && dgig.RockBodyId == stop.Body.Id;
 
         var excursion = new SurfaceExcursion
         {
@@ -363,6 +396,7 @@ public partial class Map
             PendingCargo = [.. chest.Cargo],
             ThreatSeed = ReeverSeed(stop.Body.Id),
             Expedition = isExpeditionSite,
+            Deflection = isDeflectionRock,
         };
 
         // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet
@@ -497,6 +531,11 @@ public partial class Map
         if (ex.Expedition)
         {
             ComposeExpeditionSite(ex);
+        }
+        // #394: on the inbound rock, compose the marked DRILL POINT (the channeled charge-bore console).
+        if (ex.Deflection)
+        {
+            ComposeDeflectionSite(ex);
         }
     }
 
@@ -868,12 +907,18 @@ public partial class Map
         }
         StepDigChannel(dtRealSeconds);
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
+        StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
         StepExpeditionFog(dtRealSeconds); // #371 Phase 3: born-dark regions + behind-cover contacts + echoes
-        // #370: an away-expedition site runs NO endless tide (owner: "not a continuous endless stream like
-        // on Miranda"). Its own diced beats may rouse a LIMITED pack instead; the tracker stays live.
-        if (_surface is { Expedition: true })
+        // #370/#394: an away site runs NO endless tide (owner: "not a continuous endless stream like on
+        // Miranda"). The expedition's beats may rouse a LIMITED pack; the deflection rock runs the pack OFF
+        // entirely (the horror is the clock). The tracker stays live either way.
+        if (_surface is { Deflection: true })
+        {
+            StepDeflection(dtRealSeconds);
+        }
+        else if (_surface is { Expedition: true })
         {
             StepExpedition(dtRealSeconds);
         }
@@ -1461,6 +1506,9 @@ public partial class Map
         // #370: an away-team gig settles its payout on the ride home — the fat base plus banked discoveries,
         // docked for any scientist lost to the dark (ExpeditionReward). Narrated, then the gig is closed.
         bool settledExpedition = ex.Expedition && SettleExpedition(ex);
+        // #394: lifting off the deflection rock. If the charge fired it settles its heroic pay; if it never
+        // fired (an abort), the rock is left on its line — the impact resolves and the port takes it.
+        bool settledDeflection = ex.Deflection && SettleDeflection(ex);
 
         _surface = null;
         _reevers.Clear();
@@ -1482,7 +1530,7 @@ public partial class Map
                 : "";
             ShowPulseMessage($"🛸 Lifted off {ex.Stop.Body.Name}. Map filed (🗺).{tail}{botTail}");
         }
-        else if (!settledExpedition) // an expedition settle already spoke its payout line
+        else if (!settledExpedition && !settledDeflection) // an away-gig settle already spoke its payout line
         {
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
             ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}");

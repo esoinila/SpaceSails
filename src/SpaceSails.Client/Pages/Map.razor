@@ -886,6 +886,26 @@
         </div>
     }
 
+    @* #394: THE DEFLECTION STORYBOARD — the aftermath told in staged panels with delivered art (the BUSTED
+       staged idiom). A full deflection is the 4-panel money shot; a graze and an impact each get 2. Per-panel
+       gradient fallback behind the image, house-voice captions. Click / button to advance. *@
+    @if (_deflectionStory is { Count: > 0 } story && _deflectionStoryIndex < story.Count)
+    {
+        var panel = story[_deflectionStoryIndex];
+        bool last = _deflectionStoryIndex == story.Count - 1;
+        <div class="mission-celebration-backdrop" @onclick="AdvanceDeflectionStory">
+            <div class="expedition-brief-card" @onclick:stopPropagation="true">
+                <div class="eb-art" style="background-image: @DeflectionPanelArtCss(panel);"></div>
+                <div class="eb-body">@panel.Caption</div>
+                <div class="eb-flavor">Panel @(_deflectionStoryIndex + 1) of @story.Count</div>
+                <button type="button" class="btn btn-@(last ? "success" : "secondary") btn-sm mt-2"
+                        @onclick="AdvanceDeflectionStory" @onclick:stopPropagation="true">
+                    @(last ? "Close 🫡" : "Next ▸")
+                </button>
+            </div>
+        </div>
+    }
+
     @* The chooser (owner: "if many objects under click we let the user choose what they
        meant"): candidates ranked contacts → depots → bodies, lane and sky scan last. *@
     @if (_pickMenu is { Count: > 0 } pickList)

@@ -247,6 +247,12 @@ public sealed record ProgressSection
     /// <summary>True once the captain has started or finished a tutorial lesson. Gates the fresh-start
     /// nav-screen promotion: an Earth start greets only a captain for whom this is still false.</summary>
     public bool TutorialPlayed { get; init; }
+
+    /// <summary>#394 — true once this universe's crew turned an inbound rock aside from the Ringside
+    /// Exchange (a full or grazing deflection). Persisted per-universe so Ringside's dedication plaque
+    /// carries the appended line of gratitude forever after, on this thread and no other. Defaults false
+    /// (a pre-#394 file simply lacks the field), so an unsaved port shows only its original dedication.</summary>
+    public bool RingsideSaved { get; init; }
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──
