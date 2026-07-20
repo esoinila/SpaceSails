@@ -54,6 +54,7 @@ public sealed class Vault
     public ProgressSection? Progress { get; init; }
     public NerveSection? Nerve { get; init; }
     public OverheardSection? Overheard { get; init; }
+    public KaamosSection? Kaamos { get; init; }
     public ResumeSection? Resume { get; init; }
 
     /// <summary>Set true by <see cref="VaultSerializer.Load"/> when the stored checksum did not match
@@ -289,6 +290,21 @@ public sealed record OverheardSection
 {
     /// <summary>The overheard lines, oldest first. Capped by the writer (see <c>OverheardLog</c>).</summary>
     public IReadOnlyList<OverheardLine> Lines { get; init; } = [];
+}
+
+// ── PROJEKTI KAAMOS (#411): the ice-moon mystery, assembled per-thread. ──
+
+/// <summary>The KAAMOS lore-fragments this universe's captain has assembled (#411) — stored as the flat
+/// list of fragment ids, the minimal shape (<see cref="KaamosProgress.AssembledIds"/>), so the reach
+/// logic and the text both rebuild from the pool at load rather than the save carrying prose. Its own
+/// independently-optional section: a pre-#411 file simply lacks it and defaults to nothing assembled (a
+/// captain who has heard nothing of the polar night). Unknown-to-the-pool ids are dropped on load, so
+/// the round-trip is always re-readable against the pool that wrote it.</summary>
+public sealed record KaamosSection
+{
+    /// <summary>The assembled fragment ids (see <see cref="KaamosLore.Fragments"/>). Order is not
+    /// meaningful — assembly is a set — but the writer emits canonical order for a stable file.</summary>
+    public IReadOnlyList<string> AssembledFragmentIds { get; init; } = [];
 }
 
 // ── The resume berth (owner's law): where the pirate wakes, always docked. ──
