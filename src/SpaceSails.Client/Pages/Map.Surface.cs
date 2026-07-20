@@ -342,6 +342,27 @@ public partial class Map
         public List<(double X, double Y, double Born)> Echoes { get; } = [];
         public (int Cx, int Cy)? LastFogCell { get; set; }
 
+        // COMMS-LOSS (owner, cruise 2026-07-19: "loss of comms.. that also is great horror element"). The
+        // mothership's telemetry downlink can DEGRADE or DROP for a while, freezing the away HUD's ship-line
+        // at "last known" while the suit instruments run on. Pure cadence in CommsLink; these are the client's
+        // live accumulator + the active-episode shape + the last-known snapshot the freeze paints from.
+        // Client-only, per-visit, never saved (same law as the Reever positions).
+        public double CommsSeconds { get; set; }              // on-site seconds — the link's clock
+        public double CommsNextOnset { get; set; } = -1;      // CommsSeconds at which the next episode starts (-1 = unscheduled)
+        public int CommsOnsetIndex { get; set; }              // the monotonic episode ordinal (seeds the cadence)
+        public bool CommsActive { get; set; }                 // an episode is underway right now
+        public double CommsEpisodeStart { get; set; }         // its start (CommsSeconds), and…
+        public double CommsEpisodeDuration { get; set; }      // …its length, and…
+        public bool CommsEpisodeDeepens { get; set; }         // …whether it drops all the way to blackout
+        public CommsLink.Phase CommsPhase { get; set; } = CommsLink.Phase.Nominal; // the live phase this frame
+        // The last-known mothership readout, snapshotted every frame the link is NOMINAL — what the freeze
+        // paints (stale, honestly labelled) while the downlink is down. The TRUE state keeps advancing
+        // underneath in the real fields; only this DISPLAY is withheld (the honesty law, see CommsLink).
+        public string? CommsLastLine { get; set; }
+        public int CommsLastSeverity { get; set; }
+        public double CommsLastContactSeconds { get; set; }   // the CommsSeconds of the last nominal contact
+        public bool CommsFirstLossAnnounced { get; set; }     // the one-time "static — the feed drops" notice has fired
+
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
@@ -927,7 +948,156 @@ public partial class Map
             StepTide(dtRealSeconds);
         }
         StepFirstContactChirp(dtRealSeconds);
+        StepComms(dtRealSeconds); // COMMS-LOSS: advance the mothership downlink phase + snapshot the last-known feed
         TryRecoverDroppedChest();
+    }
+
+    // ── COMMS-LOSS · the mothership's telemetry downlink (owner, cruise 2026-07-19). ──────────────────
+    //
+    // THE HONESTY LAW (CommsLink): this loop advances a pure, seeded DISPLAY phase and snapshots the
+    // last-known feed. It touches NO game state a consequence rides on — the ship's real orbit hold, the
+    // reaction-mass tank, the away/doom clock and everything else keep advancing in their own fields,
+    // untouched. All that changes is what the HUD is ALLOWED to show (SurfaceComms). So a blackout can
+    // NEVER strand the captain: the truth continues underneath, liftoff stays player-initiated, and on
+    // recovery the live true state snaps back with a catch-up pulse. Withheld confirmation, never denied
+    // information — the difference between fair dread and a feels-bad bug.
+    private void StepComms(double dtRealSeconds)
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        // The link's clock, clamped like the tide's so a background-tab resume can't leap an episode.
+        ex.CommsSeconds += Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds);
+
+        ulong seed = ex.ThreatSeed;
+        // Schedule the next episode lazily off the current clock. The onset ODDS rise deep in the site /
+        // during interference (CommsOnsetBias) — owner: "more likely deep in a site".
+        if (!ex.CommsActive && ex.CommsNextOnset < 0)
+        {
+            ex.CommsNextOnset = ex.CommsSeconds + CommsLink.NextGap(seed, ex.CommsOnsetIndex, CommsOnsetBias());
+        }
+        // Cross the onset threshold → the episode begins; capture its shape once (deterministic per index).
+        if (!ex.CommsActive && ex.CommsSeconds >= ex.CommsNextOnset)
+        {
+            ex.CommsActive = true;
+            ex.CommsEpisodeStart = ex.CommsNextOnset;
+            ex.CommsEpisodeDuration = CommsLink.EpisodeDuration(seed, ex.CommsOnsetIndex);
+            ex.CommsEpisodeDeepens = CommsLink.EpisodeDeepens(seed, ex.CommsOnsetIndex);
+        }
+
+        CommsLink.Phase phase = ex.CommsActive
+            ? CommsLink.PhaseAt(ex.CommsEpisodeStart, ex.CommsEpisodeDuration, ex.CommsEpisodeDeepens, ex.CommsSeconds)
+            : CommsLink.Phase.Nominal;
+
+        // Snapshot the last-known feed while the link is clean — this is EXACTLY the truth right now, so a
+        // later freeze paints an honestly-recent value. The true line is SurfaceOrbitComms (the honest
+        // underlying feed); comms-loss never changes it, only whether we're allowed to show it live.
+        if (phase == CommsLink.Phase.Nominal)
+        {
+            if (SurfaceOrbitComms() is { } liveNow)
+            {
+                ex.CommsLastLine = liveNow.Line;
+                ex.CommsLastSeverity = liveNow.Severity;
+            }
+            ex.CommsLastContactSeconds = ex.CommsSeconds;
+        }
+
+        // First-loss teaching notice (once per excursion): the feed just dropped — the frozen readout is
+        // stale, the suit instruments still run true.
+        if (phase != CommsLink.Phase.Nominal && !ex.CommsFirstLossAnnounced)
+        {
+            ex.CommsFirstLossAnnounced = true;
+            RendererInterop.PlayCue("alarm");
+            ShowPulseMessage(CommsLink.FirstLossPulse);
+        }
+
+        // Recovery edge: the episode has ended (phase back to Nominal after being active). Fire the
+        // catch-up rush against the TRUE current severity — honest, so a hold that went bad while dark is
+        // owned out loud, not hidden.
+        if (ex.CommsActive && phase == CommsLink.Phase.Nominal)
+        {
+            ex.CommsActive = false;
+            ex.CommsOnsetIndex++;
+            ex.CommsNextOnset = -1; // reseed the next quiet gap from here
+            int trueSeverity = SurfaceOrbitComms()?.Severity ?? 0;
+            // Only speak recovery on the non-away feed (the orbit-hold ladder) — the away/doom clock never
+            // went dark (its number stayed live on the suit), so there's nothing to "catch up" there.
+            if (ex is not { Expedition: true } and not { Deflection: true })
+            {
+                RendererInterop.PlayCue("board");
+                ShowPulseMessage(CommsLink.RecoveryPulse(trueSeverity));
+            }
+        }
+
+        ex.CommsPhase = phase;
+    }
+
+    // The onset odds multiplier: the link is strong at the ship (a drop there would be silly), and drops
+    // grow likelier the deeper the captain wanders into the site (owner: "more likely deep in a site,
+    // during solar interference"). 1× at the tube mouth, up to ~2× deep by the monolith.
+    private double CommsOnsetBias()
+    {
+        if (MoonSurface.IsSafeAboard(_avatarY))
+        {
+            return 0.5; // basically at the ship — the downlink is solid
+        }
+        double top = MoonSurface.SurfaceTopY;
+        double deep = MoonSurface.MonolithY;
+        double span = top - deep;
+        double depth = span > 0 ? Math.Clamp((top - _avatarY) / span, 0.0, 1.0) : 0.0;
+        return 1.0 + depth;
+    }
+
+    // A scripted onset (a bad expedition beat, solar interference): if no episode is underway, pull the
+    // next one forward to NOW. Pure schedule nudge — it changes WHEN the display gate closes, never the
+    // ship's real state, so the honesty law holds untouched.
+    private void TriggerCommsEpisode()
+    {
+        if (_surface is { CommsActive: false } ex)
+        {
+            ex.CommsNextOnset = ex.CommsSeconds;
+        }
+    }
+
+    // COMMS-LOSS · the DISPLAY gate over the honest feed. Wraps SurfaceOrbitComms (the true, always-honest
+    // mothership line) with the live link phase, returning what the HUD is allowed to show plus the comms
+    // state for the renderer's static/greyed treatment. NEVER alters a hard deadline the captain reckons
+    // locally: on an away/deflection gig the numeric clock is the SUIT's own count (not a downlink), so it
+    // stays live and honest and is only TAGGED unconfirmed; only the orbit-hold ladder (the ship's own
+    // telemetry) freezes at last-known. Returns null off-surface, exactly like SurfaceOrbitComms.
+    private (string Line, int Severity, int CommsState)? SurfaceComms()
+    {
+        if (_surface is not { } ex)
+        {
+            return null;
+        }
+        if (SurfaceOrbitComms() is not { } live)
+        {
+            return null;
+        }
+        CommsLink.Phase phase = ex.CommsPhase;
+        if (phase == CommsLink.Phase.Nominal)
+        {
+            return (live.Line, live.Severity, 0);
+        }
+
+        // The away/doom clock is the suit's own reckoning, a hard deadline whose closing costs crew — it
+        // must NEVER be withheld (that would strand unfairly). Keep the live number, its severity AND its
+        // normal colour (CommsState 0 — an honest instrument must never LOOK lost); only append the text
+        // tag flagging that the ship can no longer confirm it. Honest by construction.
+        if (ex is { Expedition: true } or { Deflection: true })
+        {
+            return (live.Line + CommsLink.UnconfirmedTag(phase), live.Severity, 0);
+        }
+
+        // The orbit-hold ladder IS the mothership's downlink — freeze it at the last-known value, banner it
+        // as stale (how long since contact), and carry the LAST-KNOWN severity (not the true one — we can't
+        // hear the true one). The true orbit keeps eroding underneath; recovery reveals it.
+        string frozen = ex.CommsLastLine ?? live.Line;
+        int frozenSeverity = ex.CommsLastLine is null ? live.Severity : ex.CommsLastSeverity;
+        double since = Math.Max(0.0, ex.CommsSeconds - ex.CommsLastContactSeconds);
+        return (CommsLink.StaleBanner(phase, since) + frozen, frozenSeverity, (int)phase);
     }
 
     // #338 addendum · THE GAME'S FIRST SOUND: chirp on the tracker's first-contact edge. Counts the movers
@@ -1677,7 +1847,10 @@ public partial class Map
             _hudSwept.Add((cx, cy, kv.Value == BeachComber.Outcome.TooHard));
         }
 
-        (string Line, int Severity)? orbit = SurfaceOrbitComms(); // #327: the ship calling home
+        // #327 the ship calling home, now behind the COMMS-LOSS display gate: SurfaceComms wraps the honest
+        // feed with the live downlink phase, so a degraded/blacked-out link freezes the orbit line at
+        // last-known (banner + CommsState for the renderer's static). The true state is never touched.
+        (string Line, int Severity, int CommsState)? orbit = SurfaceComms();
 
         return new DeckView.SurfaceHud(
             TrackerCaptions: BuildTrackerCaptions(ex, _hudMarks.Count),
@@ -1695,6 +1868,7 @@ public partial class Map
             KeyHints: BuildSurfaceKeyHints(ex),
             OrbitComms: orbit?.Line,          // #327: the ship's calling-home line, never buried
             OrbitSeverity: orbit?.Severity ?? 0,
+            CommsState: orbit?.CommsState ?? 0, // COMMS-LOSS: 0 nominal · 1 degraded · 2 blackout — the renderer's static/grey cue
             SweptSquares: _hudSwept,
             DarkRegions: BuildDarkRegions(ex),   // #371 Phase 3: born-dark / explored appended chambers
             Echoes: BuildEchoes(ex));            // #371 Phase 3: fading "movement was here" ripples
