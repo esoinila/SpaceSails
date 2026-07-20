@@ -319,6 +319,7 @@ const CUES = {
     miss:  { freq: 440, to: 160, duration: 0.5,  gain: 0.07, type: 'sine' },     // round gone — sad fall
     reveal:{ freq: 587, to: 1175, duration: 0.45, gain: 0.08, type: 'sine' },    // a scan resolves it — bright discovery rise
     voidjump:{ freq: 196, to: 784, duration: 0.7, gain: 0.10, type: 'sawtooth' }, // #255 long-haul engage — a rising bottle-pop whoosh into the void
+    buzzer:{ freq: 175, to: 150, duration: 0.32, gain: 0.045, type: 'square' },   // #424 THE UNEXPLAINED SIGNAL — a faint, low buzzer off-deck; quiet + muffled, no one explains it
 };
 
 export function playCue(kind) {

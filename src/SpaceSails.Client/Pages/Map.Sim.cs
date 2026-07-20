@@ -1070,6 +1070,10 @@ public partial class Map
 
         FlushVaultSaveIfDirty();  // #225: one debounced autosave write per frame when a durable event fired
 
+        StepShudder(dtRealSeconds, highResTimestampMs); // #424 HULL-SHUDDER: the ambient interior-deck tremor
+        StepSignal(dtRealSeconds, highResTimestampMs);  // #424 THE UNEXPLAINED SIGNAL: the shudder's colder sibling
+        StepCaution(highResTimestampMs);                // #424 THE CAUTION ANNOUNCEMENT: the rough-passage PA
+
         UpdateNearestBody();
         CheckFetchPickup();     // coasting past the wreck grabs a fetch job's goods
         DriveSkip();            // #172: own the warp while skipping — arrive/announce, or yield to the helm
@@ -1528,6 +1532,10 @@ public partial class Map
         }
         else
         {
+            // #424 HULL-SHUDDER: a live tremor throws the whole frame a few pixels (added to the render pan,
+            // never to an entity anchor) and — on the ship / a haven — freezes every patron in a unison held
+            // breath (the frozen npc-hold time). Both are zero/null when no shudder is being felt.
+            (double sdx, double sdy) = ShudderShakeOffset();
             _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
                 _avatarX, _avatarY, _avatarHeading,
                 _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
@@ -1537,7 +1545,7 @@ public partial class Map
                 // stays gauge-free by construction.)
                 Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
                 ShowNerve: true, NerveCompact: _surface is null),
-                _deckPanX, _deckPanY, BuildSurfaceHud());
+                _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
         }
     }
 

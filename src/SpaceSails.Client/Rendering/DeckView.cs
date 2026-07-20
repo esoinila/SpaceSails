@@ -133,8 +133,19 @@ public sealed class DeckView
         _renderer = renderer;
     }
 
+    // #424 HULL-SHUDDER · the unison pause. When a shudder fires on a populated interior deck (the ship,
+    // a haven bar/hall) the client hands a FROZEN npc-hold time here for the held-breath beat: every present
+    // NPC/patron is filled at that ONE shared timestamp — so their idle thermal jitter and patrol/pace all
+    // stop together (the synchronized freeze IS the feature) — and their heads turn up as one. Null the rest
+    // of the time, when the deck fills live at simTime. The deck-shake itself rides the render pan (panX/panY),
+    // a pure transient offset that never moves an entity anchor.
+    // #424 THE UNEXPLAINED SIGNAL · the crew glance. A companion ambient event: when a faint distant buzzer
+    // sounds off-deck the STAFF (not the drinking patrons) briefly catch each other's eye — <paramref
+    // name="crewGlance"/> turns every working crew member (barkeep, customs, the ship's own droids) to face
+    // the nearest other crew member for the beat, a synchronized look. The patrons keep animating, oblivious.
     public void Draw(DeckPlan plan, int widthPx, int heightPx, double simTime, in State state,
-        double panX = 0, double panY = 0, SurfaceHud? surface = null)
+        double panX = 0, double panY = 0, SurfaceHud? surface = null, double? npcHoldTime = null,
+        bool crewGlance = false)
     {
         _renderer.BeginFrame(widthPx, heightPx, Floor);
 
@@ -378,7 +389,15 @@ public sealed class DeckView
         }
 
         // Droid pirate infantry (the ship's; a haven has none — DroidCount 0).
-        plan.FillDroids(simTime, _droids);
+        // #424 HULL-SHUDDER: during the unison pause the NPCs are filled at the FROZEN onset time (all their
+        // simTime-driven idle jitter / patrol / pace stop together — the synchronized held breath), and their
+        // heads turn up as one (facing snapped screen-up). A Reever is never a patron, so it keeps its facing.
+        bool headsUp = npcHoldTime.HasValue;
+        plan.FillDroids(npcHoldTime ?? simTime, _droids);
+        // #424 THE UNEXPLAINED SIGNAL: pre-compute each working crew member's glance — the facing toward the
+        // NEAREST other crew member — so the barkeep and the dock-hand catch each other's eye as one. Only
+        // built when a signal is glancing; a Reever or a drinking patron is never crew (StaffFacing skips them).
+        double?[]? glance = crewGlance ? BuildCrewGlance(plan.DroidCount) : null;
         for (int di = 0; di < plan.DroidCount; di++)
         {
             DeckPlan.Droid droid = _droids[di];
@@ -387,8 +406,12 @@ public sealed class DeckView
             bool reever = droid.Name == "Reever";
             RgbaColor mark = reever ? ReeverColor : DroidColor;
             _renderer.DrawCircle(dx, dy, (reever ? 0.6f : 0.5f) * scale, mark, mark);
-            float fx = dx + (float)Math.Cos(droid.FacingRad) * scale * 0.8f;
-            float fy = dy - (float)Math.Sin(droid.FacingRad) * scale * 0.8f;
+            // Heads up as one (hull-shudder pause), or the crew catch each other's eye (unexplained signal),
+            // else the droid's own facing. The shudder pause wins if both somehow overlap.
+            double facing = headsUp && !reever ? Math.PI / 2
+                : glance?[di] ?? droid.FacingRad;
+            float fx = dx + (float)Math.Cos(facing) * scale * 0.8f;
+            float fy = dy - (float)Math.Sin(facing) * scale * 0.8f;
             DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
             _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name, reever ? ReeverColor : TextDim, "8px monospace", TextAlign.Center);
         }
@@ -546,6 +569,64 @@ public sealed class DeckView
 
         _renderer.EndFrame();
     }
+
+    // #424 THE UNEXPLAINED SIGNAL · the crew glance. From the freshly-filled _droids, work out each WORKING
+    // crew member's facing toward the nearest OTHER crew member — so the barkeep and the dock-hand (and, on
+    // the bare ship, the ship's own droids) catch each other's eye as one. A drinking patron (a seated
+    // regular, the Magpie) and a Reever are never crew, so their entry stays null (they keep their own
+    // facing, oblivious to the buzzer). Returns a per-droid facing override, or null where there's no glance.
+    private double?[] BuildCrewGlance(int count)
+    {
+        var facing = new double?[count];
+        // The crew indices + their world positions this frame.
+        Span<int> crew = stackalloc int[count];
+        int n = 0;
+        for (int i = 0; i < count; i++)
+        {
+            if (IsCrew(_droids[i].Name))
+            {
+                crew[n++] = i;
+            }
+        }
+        if (n < 2)
+        {
+            return facing; // a lone crew member has no one to catch eyes with — no glance
+        }
+        for (int a = 0; a < n; a++)
+        {
+            DeckPlan.Droid da = _droids[crew[a]];
+            double bestSq = double.MaxValue;
+            int nearest = -1;
+            for (int b = 0; b < n; b++)
+            {
+                if (b == a)
+                {
+                    continue;
+                }
+                DeckPlan.Droid db = _droids[crew[b]];
+                double d = (db.X - da.X) * (db.X - da.X) + (db.Y - da.Y) * (db.Y - da.Y);
+                if (d < bestSq)
+                {
+                    (bestSq, nearest) = (d, crew[b]);
+                }
+            }
+            DeckPlan.Droid dn = _droids[nearest];
+            facing[crew[a]] = Math.Atan2(dn.Y - da.Y, dn.X - da.X); // world radians toward the caught eye
+        }
+        return facing;
+    }
+
+    // A WORKING crew member (the people who work the deck): the barkeep, the customs officer, the ship's own
+    // droids — anyone who is neither a Reever nor a drinking PATRON (a seated bar regular, or the Magpie).
+    private static bool IsCrew(string name) => name != "Reever" && !IsPatron(name);
+
+    // The drinking patrons — the regulars' short names (HavenInterior.ShortNameFor) + the roaming Magpie +
+    // the empty-chair fallback. They never react to the off-deck buzzer; only the staff do.
+    private static bool IsPatron(string name) => name switch
+    {
+        "Silas" or "Coil" or "Gilt-Eye" or "The Fixer" or "Regular" or "Magpie" => true,
+        _ => false,
+    };
 
     // #314: brighten a colour toward white by t (0..1) — the one-frame decrement flash on the magazine
     // digits. Alpha is preserved; only the RGB warms up.
