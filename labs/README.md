@@ -54,6 +54,8 @@ dotnet run --project labs/34-the-unclickable-lifeline -c Release
 dotnet run --project labs/35-the-push-that-isnt-a-push -c Release
 dotnet run --project labs/36-the-cannonball -c Release
 dotnet run --project labs/37-the-slow-hand -c Release
+dotnet run --project labs/38-the-rock-that-mines-itself -c Release
+dotnet run --project labs/39-the-long-knife -c Release
 ```
 
 Each lesson folder holds:
@@ -337,7 +339,7 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     CI approaches (bUnit, geometry law, CSS audit, Playwright) and graduates the geometry law — zero new
     infrastructure, runs in the existing `dotnet test`.
 
-### The deflection triptych (#395) — the three ways to move a rock
+### The deflection playbook (#395) — the ways to move a rock
 
 35. [**The push that isn't a push**](35-the-push-that-isnt-a-push/README.md) — the lesson that CERTIFIES the
     shipped #399/#401 ablation deflection gig (`DeflectionGig`). The drilled charge doesn't shove like a
@@ -364,6 +366,22 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     only as √mass — the slow hand can't be muscled, only started early. Ties to lesson 25: the hover is
     station-keeping (a standoff held instead of a park, priced as a few newtons sustained for years). Enables
     a gravity-tractor variant that rewards early detection — the owner's favourite lesson, in hard numbers.
+38. [**The rock that mines itself**](38-the-rock-that-mines-itself/README.md) — the mass driver ON the rock: land
+    a rig and throw the asteroid's OWN mass off the far side, the rock as both ship and fuel (the Luna
+    mass-driver canon, lesson 30, turned on the threat). The rocket equation Δv = v_ex·ln(M0/M_final) says the
+    FRACTION you must fling is a rounding error (**0.0127 %** to clear a rock with a year's warning) but the
+    absolute mass is not: **~3,900 t** for a 140 m rock, **~1.4 million t** for a 1 km one. At a 20 kg/s rig
+    that's **~2.3 days** of throwing for the 140 m rock — but the 1 km rock needs **>2 years**, longer than the
+    warning (the honest negative), and the reactor draws **62.5 MW**. Enables a "land a driver and eat the rock"
+    multi-visit engineering gig — no ammunition to haul, reusable, and (like the tractor) it rewards early
+    detection.
+39. [**The long knife**](39-the-long-knife/README.md) — laser / standoff ablation: a big laser boils the rock
+    from a distance, the vaporised jet is the thrust, nothing ever lands. Two honest limits — diffraction (spot
+    ≈ d·λ/D, intensity ∝ 1/d², so standoff is CHEAP: a 1 MW rig reaches **~1,683 km**) and momentum coupling
+    (F = C_m·P, so thrust is bought in megawatts). The headline: continuous ablation (miss = 1.5·a·T², lesson
+    37's leverage) clears a 140 m rock in **~3.5 years at 1 MW**, **~0.35 years (130 days) at 100 MW** — clear
+    time falls as 1/√P, so the technique is POWER-gated. Enables an upgrade-gated late-game "standoff laser"
+    variant: the deflection you earn by investing in a reactor, honest that thrust, not reach, is the wall.
 
 ## Framing rule
 
