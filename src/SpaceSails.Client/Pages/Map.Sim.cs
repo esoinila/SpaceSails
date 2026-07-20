@@ -499,9 +499,9 @@ public partial class Map
             // station's orbit at T-impact. Ship clamps onto Ringside (in shuttle reach of the rock at spawn).
             RockType type = deflectionCheat switch
             {
-                "c" => new RockType(RockComposition.CType, DeflectionGig.RollType(3941).Structure),
-                "s" => new RockType(RockComposition.SType, DeflectionGig.RollType(3941).Structure),
-                "m" => new RockType(RockComposition.MType, DeflectionGig.RollType(3941).Structure),
+                "c" => new RockType(RockComposition.CType),
+                "s" => new RockType(RockComposition.SType),
+                "m" => new RockType(RockComposition.MType),
                 _ => DeflectionGig.RollType(DeflectionCheatSeed),
             };
             double impactRailTime = DeflectionGig.RailLeadSeconds; // fresh boot: accept at sim-time ≈ 0

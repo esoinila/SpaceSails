@@ -114,7 +114,7 @@ public class DeflectionGigTests
     [Fact]
     public void Complication_IsDeterministicInTheSeed()
     {
-        var type = new RockType(RockComposition.SType, RockStructure.Monolith);
+        var type = new RockType(RockComposition.SType);
         ulong seed = DeflectionGig.Seed(1234.0, DeflectionGig.BodyId, ordinal: 2);
         DeflectionComplication a = DeflectionGig.Roll(seed, type, 2);
         DeflectionComplication b = DeflectionGig.Roll(seed, type, 2);
@@ -148,7 +148,7 @@ public class DeflectionGigTests
     [Fact]
     public void Complications_CoverEveryBand_OverManyRolls_AndNeverRousePack()
     {
-        var type = new RockType(RockComposition.SType, RockStructure.Monolith);
+        var type = new RockType(RockComposition.SType);
         var seen = new HashSet<DeflectionBand>();
         for (int o = 0; o < 400; o++)
         {
@@ -166,7 +166,7 @@ public class DeflectionGigTests
     public void DrillSnap_SetsBitBack_GoodBite_Gains()
     {
         // A drill snap always carries a negative progress delta; a good bite a positive one.
-        var mType = new RockType(RockComposition.MType, RockStructure.Monolith);
+        var mType = new RockType(RockComposition.MType);
         bool sawSnap = false, sawGain = false;
         for (int o = 0; o < 400 && !(sawSnap && sawGain); o++)
         {
@@ -180,51 +180,40 @@ public class DeflectionGigTests
     // ── The rock TYPE (owner 2026-07-20): honestly costed drill + ablation ──
 
     [Fact]
-    public void RollType_IsDeterministic_AndSpansAllCombinations()
+    public void RollType_IsDeterministic_AndSpansAllCompositions()
     {
         Assert.Equal(DeflectionGig.RollType(99), DeflectionGig.RollType(99));
         var comps = new HashSet<RockComposition>();
-        var structs = new HashSet<RockStructure>();
         for (ulong s = 0; s < 300; s++)
         {
-            RockType t = DeflectionGig.RollType(s);
-            comps.Add(t.Composition);
-            structs.Add(t.Structure);
+            comps.Add(DeflectionGig.RollType(s).Composition);
         }
         Assert.Equal(3, comps.Count);   // C, S and M all appear
-        Assert.Equal(2, structs.Count); // monolith and rubble pile both appear
     }
 
     [Fact]
-    public void DrillTime_HardensCtoStoM_AndRubbleIsSlower()
+    public void DrillTime_HardensCtoStoM()
     {
-        double c = DeflectionGig.RockProfile.DrillSeconds(new(RockComposition.CType, RockStructure.Monolith));
-        double s = DeflectionGig.RockProfile.DrillSeconds(new(RockComposition.SType, RockStructure.Monolith));
-        double m = DeflectionGig.RockProfile.DrillSeconds(new(RockComposition.MType, RockStructure.Monolith));
+        double c = DeflectionGig.RockProfile.DrillSeconds(new(RockComposition.CType));
+        double s = DeflectionGig.RockProfile.DrillSeconds(new(RockComposition.SType));
+        double m = DeflectionGig.RockProfile.DrillSeconds(new(RockComposition.MType));
         Assert.True(c < s && s < m, $"C {c} < S {s} < M {m}");
-
-        double sMono = DeflectionGig.RockProfile.DrillSeconds(new(RockComposition.SType, RockStructure.Monolith));
-        double sRubble = DeflectionGig.RockProfile.DrillSeconds(new(RockComposition.SType, RockStructure.RubblePile));
-        Assert.True(sRubble > sMono, "a rubble pile drills slower");
+        Assert.Equal(DeflectionGig.DrillBaseSeconds, s); // S-type is the base, unscaled
     }
 
     [Fact]
-    public void AblationEfficiency_EagerCtoResistantM_AndRubbleSmears()
+    public void AblationEfficiency_EagerCtoResistantM()
     {
-        double c = DeflectionGig.RockProfile.AblationEfficiency(new(RockComposition.CType, RockStructure.Monolith));
-        double s = DeflectionGig.RockProfile.AblationEfficiency(new(RockComposition.SType, RockStructure.Monolith));
-        double m = DeflectionGig.RockProfile.AblationEfficiency(new(RockComposition.MType, RockStructure.Monolith));
+        double c = DeflectionGig.RockProfile.AblationEfficiency(new(RockComposition.CType));
+        double s = DeflectionGig.RockProfile.AblationEfficiency(new(RockComposition.SType));
+        double m = DeflectionGig.RockProfile.AblationEfficiency(new(RockComposition.MType));
         Assert.True(c > s && s > m, $"C {c} > S {s} > M {m}");
-
-        double mMono = DeflectionGig.RockProfile.AblationEfficiency(new(RockComposition.MType, RockStructure.Monolith));
-        double mRubble = DeflectionGig.RockProfile.AblationEfficiency(new(RockComposition.MType, RockStructure.RubblePile));
-        Assert.True(mRubble < mMono, "a rubble pile smears the impulse — the hardest case");
     }
 
     [Fact]
     public void WorstRock_JustClears_OnAFlawlessRun_ButShortfallOnlyGrazes()
     {
-        var worst = new RockType(RockComposition.MType, RockStructure.RubblePile);
+        var worst = new RockType(RockComposition.MType); // M-type is now the stubborn worst case
 
         // A full charge, perfectly aligned, JUST clears the station (owner: "bring a bigger charge").
         double flawless = DeflectionGig.PeriapsisRaiseForBurn(worst, chargeFraction: 1.0, rotationAlignment: 1.0);
@@ -238,25 +227,24 @@ public class DeflectionGigTests
     [Fact]
     public void SoftRock_ClearsWithMargin()
     {
-        var soft = new RockType(RockComposition.CType, RockStructure.Monolith);
+        var soft = new RockType(RockComposition.CType);
         double raise = DeflectionGig.PeriapsisRaiseForBurn(soft, chargeFraction: 1.0, rotationAlignment: 1.0);
-        Assert.True(raise > DeflectionGig.SafeMissMeters * 1.5, "a soft C-type monolith clears wide");
+        Assert.True(raise > DeflectionGig.SafeMissMeters * 1.5, "a soft C-type clears wide");
     }
 
     [Fact]
     public void ZeroCharge_DeliversNothing()
     {
-        var t = new RockType(RockComposition.SType, RockStructure.Monolith);
+        var t = new RockType(RockComposition.SType);
         Assert.Equal(0.0, DeflectionGig.PeriapsisRaiseForBurn(t, 0.0, 1.0));
     }
 
     [Fact]
     public void RockType_LabelsAndCode()
     {
-        var t = new RockType(RockComposition.MType, RockStructure.RubblePile);
+        var t = new RockType(RockComposition.MType);
         Assert.Equal("M", t.Code);
         Assert.Contains("M-type metallic", t.Label);
-        Assert.Contains("rubble pile", t.Label);
         Assert.False(string.IsNullOrWhiteSpace(t.BriefLine));
     }
 

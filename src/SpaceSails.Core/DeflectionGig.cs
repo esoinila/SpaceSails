@@ -12,11 +12,12 @@ namespace SpaceSails.Core;
 /// our crew, our rock, no film likenesses.
 ///
 /// <para>Owner addendum (2026-07-20, on Zubrin's asteroid taxonomy): <b>"the type would definitely be a
-/// factor also 😎."</b> Every rock is a seeded <see cref="RockType"/> — the classic C/S/M composition and
-/// the monolith-vs-rubble-pile structure — and it factors HONESTLY: a carbonaceous C-type is soft to
-/// drill and ablates eagerly (volatiles flash to gas and shove); a metallic M-type is brutal to bore and
-/// resists ablation ("bring patience and a bigger charge"); a rubble pile absorbs and smears the impulse
-/// (the hardest case). One constants table, pinned by tests, named on the mission card.</para>
+/// factor also 😎."</b> Every rock is a seeded <see cref="RockType"/> — the classic C/S/M composition —
+/// and it factors HONESTLY: a carbonaceous C-type is soft to drill and ablates eagerly (volatiles flash to
+/// gas and shove); a metallic M-type is brutal to bore and resists ablation ("bring patience and a bigger
+/// charge"); a stony S-type is the firm textbook rock in between. One constants table, pinned by tests,
+/// named on the mission card. (The rubble-pile structure axis was dropped 2026-07-20 — owner: "Rubble
+/// piles is a sidequest to game… let's just not have those.")</para>
 ///
 /// <para>This is the pure, deterministic Core spine (repo law §9 — determinism is law in Core): the rock's
 /// colliding <see cref="RockRail"/> (a Kepler ellipse whose periapsis kisses the station's orbit at the
@@ -142,22 +143,23 @@ public static class DeflectionGig
 
     // ─────────────────────────────────────────────────────────────────────────────────────────────
     //  THE ROCK TYPE — Zubrin's taxonomy, honestly costed (owner 2026-07-20). Composition sets how hard
-    //  the rock is to drill and how eagerly it ablates; structure (monolith vs rubble pile) modulates
-    //  both — a rubble pile smears the impulse and shifts underfoot. One constants table.
+    //  the rock is to drill and how eagerly it ablates: C soft-and-eager, S the firm middle, M brutal. One
+    //  constants table. (The monolith-vs-rubble-pile structure axis was dropped 2026-07-20 — every rock is
+    //  now a solid body — so composition alone costs the job.)
     // ─────────────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>The base drill-channel length (real seconds) to sink the charge into a stony monolith — a
+    /// <summary>The base drill-channel length (real seconds) to sink the charge into a stony rock — a
     /// touch under the whole excursion, and far longer than forcing a sealed door (#393, 5s): this is THE
-    /// drilling. Scaled per type by <see cref="RockProfile.DrillSeconds"/>. OWNER-TUNABLE.</summary>
+    /// drilling. Scaled per composition by <see cref="RockProfile.DrillSeconds"/>. OWNER-TUNABLE.</summary>
     public const double DrillBaseSeconds = 14.0;
 
-    /// <summary>The periapsis raise (m) a FULL charge delivers into a stony monolith at perfect rotation
-    /// alignment and 100% ablation efficiency — the ceiling the type/structure/alignment factors scale down.
-    /// Tuned so even the worst rock (M-type rubble pile) can just clear the station on a flawless run, and a
-    /// soft C-type monolith clears it with wide margin. OWNER-TUNABLE.</summary>
-    public const double MaxPeriapsisRaiseMeters = 6.5e7;
+    /// <summary>The periapsis raise (m) a FULL charge delivers into a stony rock at perfect rotation
+    /// alignment and 100% ablation efficiency — the ceiling the composition/alignment factors scale down.
+    /// Tuned so even the worst rock (an M-type) can just clear the station on a flawless run, and a soft
+    /// C-type clears it with wide margin. OWNER-TUNABLE.</summary>
+    public const double MaxPeriapsisRaiseMeters = 4.5e7;
 
-    /// <summary>Composition + structure with their honestly-costed constants (owner 2026-07-20). Pure data.</summary>
+    /// <summary>Composition with its honestly-costed constants (owner 2026-07-20). Pure data.</summary>
     public static class RockProfile
     {
         // Composition drill hardness (× base): C soft, S firm, M brutal.
@@ -176,34 +178,24 @@ public static class DeflectionGig
             _ => 1.0, // S-type
         };
 
-        // Structure drill (× base): a rubble pile is loose but shifts and binds the bit — a touch slower.
-        public static double StructureDrill(RockStructure s) =>
-            s == RockStructure.RubblePile ? 1.15 : 1.0;
-
-        // Structure ablation (× efficiency): a rubble pile absorbs and smears the shove — the hardest case.
-        public static double StructureAblation(RockStructure s) =>
-            s == RockStructure.RubblePile ? 0.7 : 1.0;
-
         /// <summary>Real seconds to drill the charge into a rock of <paramref name="type"/> — base × the
-        /// composition hardness × the structure factor. C-type monolith ≈ 9.8s; M-type rubble ≈ 25.8s.</summary>
+        /// composition hardness. C-type ≈ 9.8s; S-type = 14s; M-type ≈ 22.4s.</summary>
         public static double DrillSeconds(RockType type) =>
-            DrillBaseSeconds * CompositionDrill(type.Composition) * StructureDrill(type.Structure);
+            DrillBaseSeconds * CompositionDrill(type.Composition);
 
         /// <summary>The ablation impulse efficiency [0..~1.2] of a rock of <paramref name="type"/> — the
-        /// composition eagerness × the structure smear. C-monolith ≈ 1.2 (eager); M-rubble ≈ 0.49 (worst).</summary>
+        /// composition eagerness. C ≈ 1.2 (eager); S = 1.0; M = 0.7 (the stubborn worst).</summary>
         public static double AblationEfficiency(RockType type) =>
-            CompositionAblation(type.Composition) * StructureAblation(type.Structure);
+            CompositionAblation(type.Composition);
     }
 
-    /// <summary>Seed a rock's type from the gig seed — composition and structure drawn independently so all
-    /// six combinations appear, with the classic frequencies leaning stony (S most common, M rarest). Pure.</summary>
+    /// <summary>Seed a rock's composition from the gig seed — C/S/M drawn with the classic frequencies
+    /// leaning stony (S most common, M rarest). Pure.</summary>
     public static RockType RollType(ulong seed)
     {
         int c = new DeterministicRandom(DiceRule.Seed(seed, "rock-comp")).NextInt(0, 100);
         RockComposition comp = c < 45 ? RockComposition.SType : c < 80 ? RockComposition.CType : RockComposition.MType;
-        // Rubble piles are common among small bodies — a bit over a third here.
-        bool rubble = new DeterministicRandom(DiceRule.Seed(seed, "rock-struct")).NextInt(0, 100) < 38;
-        return new RockType(comp, rubble ? RockStructure.RubblePile : RockStructure.Monolith);
+        return new RockType(comp);
     }
 
     /// <summary>A house-voice name for the rock, seeded so it reads distinct per gig — "The Hammer",
@@ -319,16 +311,11 @@ public static class DeflectionGig
         DiceRule.Seed("deflection-event", (long)acceptedSimTime, HashId(rockBodyId), ordinal);
 
     /// <summary>Roll one on-site complication for <paramref name="ordinal"/>, seeded by <paramref name="seed"/>,
-    /// coloured by the rock <paramref name="type"/> — a rubble pile shifts underfoot, so it skews a hair toward
-    /// the drill-snap and tremor bands. 2D6; pure and deterministic.</summary>
+    /// coloured by the rock <paramref name="type"/> — an M-type snaps bits harder (a deeper drill setback).
+    /// 2D6; pure and deterministic.</summary>
     public static DeflectionComplication Roll(ulong seed, RockType type, int ordinal)
     {
-        List<DiceModifier> mods = [];
-        if (type.Structure == RockStructure.RubblePile)
-        {
-            mods.Add(new DiceModifier("the rubble pile shifts underfoot", -1));
-        }
-        DicePool pool = DiceRule.RollPool(seed, count: 2, sides: 6, mods);
+        DicePool pool = DiceRule.RollPool(seed, count: 2, sides: 6);
         return pool.Total switch
         {
             <= 4 => DrillSnap(pool, type),
@@ -442,13 +429,9 @@ public static class DeflectionGig
 /// stony (the common firm rock), M metallic (brutal, resists ablation).</summary>
 public enum RockComposition { CType, SType, MType }
 
-/// <summary>The rock's structure — a solid monolith transmits the ablation shove cleanly; a rubble pile
-/// absorbs and smears it (the hardest case) and shifts underfoot.</summary>
-public enum RockStructure { Monolith, RubblePile }
-
-/// <summary>A seeded rock's type — composition + structure — with house-voice labels for the mission card
-/// and the briefing.</summary>
-public readonly record struct RockType(RockComposition Composition, RockStructure Structure)
+/// <summary>A seeded rock's type — its C/S/M composition — with house-voice labels for the mission card
+/// and the briefing. (The monolith-vs-rubble-pile structure axis was dropped 2026-07-20.)</summary>
+public readonly record struct RockType(RockComposition Composition)
 {
     /// <summary>The one-letter composition code (C/S/M) for a terse tag.</summary>
     public string Code => Composition switch
@@ -458,37 +441,23 @@ public readonly record struct RockType(RockComposition Composition, RockStructur
         _ => "S",
     };
 
-    /// <summary>The full house-voice label — "M-type metallic · rubble pile".</summary>
-    public string Label
+    /// <summary>The full house-voice label — "M-type metallic".</summary>
+    public string Label => Composition switch
     {
-        get
-        {
-            string comp = Composition switch
-            {
-                RockComposition.CType => "C-type carbonaceous",
-                RockComposition.MType => "M-type metallic",
-                _ => "S-type stony",
-            };
-            string str = Structure == RockStructure.RubblePile ? "rubble pile" : "monolith";
-            return $"{comp} · {str}";
-        }
-    }
+        RockComposition.CType => "C-type carbonaceous",
+        RockComposition.MType => "M-type metallic",
+        _ => "S-type stony",
+    };
 
     /// <summary>A one-line spectrometry read for the briefing, warning the captain what the type costs.</summary>
-    public string BriefLine => (Composition, Structure) switch
+    public string BriefLine => Composition switch
     {
-        (RockComposition.MType, RockStructure.RubblePile) =>
-            "Spectrometry reads M-type metallic, and loosely bound — the worst of both. Brutal to drill and it smears the charge. Bring patience and pray the bore holds.",
-        (RockComposition.MType, _) =>
+        RockComposition.MType =>
             "Spectrometry reads M-type metallic — dense, stubborn, brutal to drill and slow to ablate. Bring patience and a bigger charge.",
-        (RockComposition.CType, RockStructure.RubblePile) =>
-            "Spectrometry reads C-type carbonaceous, and a loose rubble pile — soft to drill and it ablates eager, but the pile drinks half the shove. A fast job with a flighty payoff.",
-        (RockComposition.CType, _) =>
+        RockComposition.CType =>
             "Spectrometry reads C-type carbonaceous — volatile-rich and soft. It drills quick and ablates eager; the charge will bite deep.",
-        (_, RockStructure.RubblePile) =>
-            "Spectrometry reads S-type stony, bound as a rubble pile — firm drilling, but the loose pile smears the charge. Watch your footing.",
         _ =>
-            "Spectrometry reads S-type stony — a firm, honest monolith. Drills clean, ablates fair. The textbook job, if there is one.",
+            "Spectrometry reads S-type stony — a firm, honest rock. Drills clean, ablates fair. The textbook job, if there is one.",
     };
 }
 
