@@ -46,20 +46,59 @@ public class SurfaceCollisionTests
     }
 
     [Fact]
-    public void Reever_AcrossAWall_CannotCloseThroughIt_ButSlidesAlong()
+    public void Reever_AcrossAWall_NeverClipsThroughIt_OnlyEverRoundsTheEnds()
     {
         // The captain is on the far (right) side of the slab; a Reever starts on the near (left) side,
-        // level with the captain so a straight run would drive it into the wall. Step it many times: it
-        // must never end up on the captain's side of the slab — the wall stops the pursuit dead.
+        // level with the captain so a straight run would drive it into the wall. Step it many times: the
+        // stone is never crossed. It may WORK ITS WAY AROUND (that is the point — the maze costs the long
+        // way round, it doesn't end the chase), so the honest law is that any moment it stands on the
+        // captain's side, it is past one of the slab's ends — never through its span.
         const double barrierY = 100; // high above, so the crew-only clamp never fires in this horizontal test
         double rx = -2, ry = 0;
         for (int i = 0; i < 500; i++)
         {
             (rx, ry) = ReeverChase.Step(rx, ry, avatarX: 3, avatarY: 0, stepDistance: 0.2, barrierY,
                 VerticalWall, Radius);
-            // It may pile up against the slab's near face, but must never reach the captain's side (x>0).
-            Assert.True(rx < 0, $"a Reever clipped through the wall to x={rx} on step {i}");
+            if (rx > 0)
+            {
+                Assert.True(System.Math.Abs(ry) > 5 - Radius,
+                    $"a Reever clipped THROUGH the slab's span at ({rx}, {ry}) on step {i}");
+            }
         }
+    }
+
+    [Fact]
+    public void Reever_DrivenStraightAtAWall_WorksAlongIt_InsteadOfPinningForever()
+    {
+        // #324 follow-up (owner, live 2026-07-26): "the reevers stopped progressing towards player as if
+        // there was a wall between… a clear bug". Head-on into the slab, the whole step lands on the
+        // blocked axis and the old slide-only chase pinned the hunter there for good. Now it takes the
+        // wall as a handrail: over a run of steps it must cover real ground along the face.
+        const double barrierY = 100;
+        double rx = -1, ry = 0;
+        for (int i = 0; i < 40; i++)
+        {
+            (rx, ry) = ReeverChase.Step(rx, ry, avatarX: 5, avatarY: 0, stepDistance: 0.2, barrierY,
+                VerticalWall, Radius);
+        }
+        Assert.True(System.Math.Abs(ry) > 1.0, $"a wall-blocked Reever barely moved (y={ry}) — it is still pinned");
+        Assert.True(rx < 0, "…and it must not have crossed the stone to get there");
+    }
+
+    [Fact]
+    public void Reever_WallFollowingHand_IsFixedPerContact_SoAPackSplitsBothWays()
+    {
+        // The hand is a stable input, not a per-step re-decision: one side works the slab up, the other
+        // down. That is what keeps a blocked hunter from dithering at the face, and sends a mixed pack
+        // around a slab from both ends.
+        const double barrierY = 100;
+        double leftY = 0, rightY = 0, lx = -1, rxx = -1;
+        for (int i = 0; i < 20; i++)
+        {
+            (lx, leftY) = ReeverChase.Step(lx, leftY, 5, 0, 0.2, barrierY, VerticalWall, Radius, wallSide: 1);
+            (rxx, rightY) = ReeverChase.Step(rxx, rightY, 5, 0, 0.2, barrierY, VerticalWall, Radius, wallSide: -1);
+        }
+        Assert.True(leftY * rightY < 0, $"both hands skirted the same way (left={leftY}, right={rightY})");
     }
 
     [Fact]
@@ -76,19 +115,26 @@ public class SurfaceCollisionTests
     }
 
     [Fact]
-    public void Reever_StoppedFlatAgainstWall_IsStationary_SoDropsOffTheMotionTracker()
+    public void Reever_TrulyBoxedIn_IsStationary_SoDropsOffTheMotionTracker()
     {
-        // A Reever jammed against the slab makes no progress two steps running — its frame-to-frame
-        // velocity is ~0, which the motion tracker reads as "not moving" (the motion-only law): the
-        // wall-stopped hunter vanishes from the fan for free.
-        const double barrierY = 100; // high, so the Reever truly pins on the wall (not the crew barrier)
-        double rx = -1, ry = 0;
+        // A hunter with stone ahead AND stone on both hands has nowhere to take its step — it holds, and
+        // its frame-to-frame velocity is ~0, which the motion tracker reads as "not moving" (the
+        // motion-only law): the boxed-in Old One vanishes from the fan for free. (Merely TOUCHING a wall
+        // no longer does this — post-#324-follow-up it works its way along the face instead of pinning.)
+        SurfaceCollision.Segment[] pocket =
+        [
+            new(0, -5, 0, 5),        // the slab it is pressed against
+            new(-3, 0.8, 0, 0.8),    // ceiling of the pocket
+            new(-3, -0.8, 0, -0.8),  // floor of the pocket
+        ];
+        const double barrierY = 100; // high, so the Reever truly pins on the walls (not the crew barrier)
+        double rx = -0.7, ry = 0;    // flat against the slab, wedged in the pocket
         (double nx, double ny) = ReeverChase.Step(rx, ry, avatarX: 5, avatarY: 0, stepDistance: 0.2, barrierY,
-            VerticalWall, Radius);
+            pocket, Radius);
         (double nx2, double ny2) = ReeverChase.Step(nx, ny, avatarX: 5, avatarY: 0, stepDistance: 0.2, barrierY,
-            VerticalWall, Radius);
+            pocket, Radius);
         double vx = nx2 - nx, vy = ny2 - ny;
-        Assert.False(MotionTracker.IsMoving(vx, vy), "a wall-pinned Reever must read as stationary");
+        Assert.False(MotionTracker.IsMoving(vx, vy), "a boxed-in Reever must read as stationary");
     }
 
     [Fact]

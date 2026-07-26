@@ -1498,8 +1498,34 @@ public partial class Map
                 r.LastSeenY = _avatarY;
                 r.EverSeen = true;
             }
-            double tgtX = r.EverSeen ? r.LastSeenX : MoonSurface.SpawnX;
-            double tgtY = r.EverSeen ? r.LastSeenY : MoonSurface.SurfaceTopY;
+
+            // Owner, 2026-07-26: "make sure reevers behind walls can be unaware of the player being there
+            // if they have not seen the player." An Old One that has NEVER laid eyes on the captain does
+            // not know there is anyone out here to hunt — so it keeps its own ground and shivers there. It
+            // no longer leans on the tube choke on spec, which read as knowing where you'd be before it had
+            // any right to. It joins the hunt the frame stone stops standing between you (and once it has
+            // seen you, losing sight only demotes it to the last-seen shamble — it does not forget).
+            if (!r.EverSeen)
+            {
+                if (!r.Idle)
+                {
+                    r.Idle = true;
+                    r.AnchorX = r.X;
+                    r.AnchorY = r.Y;
+                }
+                r.Vx = 0;
+                r.Vy = 0;
+                ApplyIdleShiver(r, walls, reeverRadius, now, r.Facing);
+                if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
+                {
+                    caught = true; // walked right into it in the dark — that counts as being found
+                }
+                continue;
+            }
+            // Past the unaware gate above, this one HAS seen the captain: it hunts the last place it laid
+            // eyes on them (their live position while the look holds).
+            double tgtX = r.LastSeenX;
+            double tgtY = r.LastSeenY;
 
             // Crude encirclement: aim a little toward the tube choke so the pack cuts the escape angle
             // instead of trailing single-file — the cornering loss-condition becomes real geometry.
@@ -1516,7 +1542,11 @@ public partial class Map
             // moving Reever's anchor is unset, so this is just its live position.
             double baseX = r.Idle ? r.AnchorX : r.X;
             double baseY = r.Idle ? r.AnchorY : r.Y;
-            (double nx, double ny) = ReeverChase.Step(baseX, baseY, aimX, aimY, step, barrier, walls, reeverRadius);
+            // #324 follow-up: which way this one skirts a wall it can't push through. Read off the shiver
+            // seed, so the hand is FIXED per contact (no dithering at the face) and a pack splits — half
+            // work a slab left, half right, and the two streams meet you around its ends.
+            int wallSide = (r.JitterSeed & 1) == 0 ? 1 : -1;
+            (double nx, double ny) = ReeverChase.Step(baseX, baseY, aimX, aimY, step, barrier, walls, reeverRadius, wallSide);
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 
             if (progressed < idleProgress)
