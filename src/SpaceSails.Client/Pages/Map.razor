@@ -163,6 +163,44 @@
                 </div>
             }
 
+            @* THE DEV START SITES (owner 2026-07-26: "We should have a developer list of these quick starts
+               in the UI also. We can later disbale it. These special palces to start should be shown in the
+               UI and marked as dev star sites"). The URL cheats, as buttons — the same entry points
+               docs/testing-guide.md tabulates and the CI smoke sweep reads, offered here so nobody has to
+               remember or type them. Marked hard as a service door so it never reads as a real voyage, and
+               gated on ONE switch (ShowDevStarts) so the whole section goes away in a line. Each is a
+               boot-time cheat, so it navigates with a full reload — the world is built from the URL once. *@
+            @if (ShowDevStarts)
+            {
+                <div class="start-picker-devstarts">
+                    <button type="button" class="start-picker-devstarts-head" @onclick="() => _showDevStarts = !_showDevStarts"
+                            title="Developer quick starts — service entrances into one thing to look at">
+                        <span class="start-picker-devstarts-title">@SpaceSails.Core.DevStarts.SectionTitle</span>
+                        <span class="start-picker-devstarts-count">@SpaceSails.Core.DevStarts.All.Count</span>
+                        <span class="start-picker-devstarts-chev">@(_showDevStarts ? "▾" : "▸")</span>
+                    </button>
+                    @if (_showDevStarts)
+                    {
+                        <div class="start-picker-devstarts-blurb">@SpaceSails.Core.DevStarts.SectionBlurb</div>
+                        <div class="save-slots-list">
+                            @foreach (SpaceSails.Core.DevStarts.Entry entry in SpaceSails.Core.DevStarts.All)
+                            {
+                                SpaceSails.Core.DevStarts.Entry e = entry;
+                                <button type="button" class="start-picker-option start-picker-devstart"
+                                        title="@e.Url" @onclick="() => GoToDevStart(e)">
+                                    <span class="start-picker-icon">@e.Icon</span>
+                                    <span class="start-picker-text">
+                                        <span class="start-picker-label">@e.Label<span class="start-picker-devtag">DEV</span></span>
+                                        <span class="start-picker-blurb">@e.Blurb</span>
+                                        <span class="start-picker-devurl">@e.Url</span>
+                                    </span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
             @if (!inGame)
             {
                 @* THE CAPTAINS' ROSTER (owner 2026-07-19: "a list of captains in the start with gen-ai

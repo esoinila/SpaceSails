@@ -1692,6 +1692,89 @@
     background: rgba(120, 230, 160, 0.18);
 }
 
+/* #439 · THE DEV START SITES — the service door. Deliberately the plainest, coldest thing on the front
+   door: hazard-amber, monospace, collapsed by default, and hard-marked DEV on every row, so nobody ever
+   mistakes a smoke-test entrance for a voyage. The whole block is gated on Map.ShowDevStarts. */
+.start-picker-devstarts {
+    margin-top: 1rem;
+    padding-top: 0.7rem;
+    border-top: 1px dashed rgba(240, 190, 110, 0.35);
+}
+
+.start-picker-devstarts-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    color: rgba(240, 190, 110, 0.9);
+    font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.start-picker-devstarts-head:hover,
+.start-picker-devstarts-head:focus-visible {
+    border-color: rgba(240, 190, 110, 0.5);
+    background: rgba(240, 190, 110, 0.08);
+    outline: none;
+}
+
+.start-picker-devstarts-count {
+    padding: 0 0.4rem;
+    border: 1px solid rgba(240, 190, 110, 0.4);
+    border-radius: 0.6rem;
+    font-size: 0.72rem;
+}
+
+.start-picker-devstarts-chev {
+    margin-left: auto;
+}
+
+.start-picker-devstarts-blurb {
+    margin: 0.1rem 0 0.55rem 0.5rem;
+    color: rgba(224, 228, 236, 0.55);
+    font-size: 0.8rem;
+}
+
+.start-picker-devstart {
+    border-style: dashed;
+    border-color: rgba(240, 190, 110, 0.3);
+    background: rgba(240, 190, 110, 0.04);
+}
+
+.start-picker-devstart:hover,
+.start-picker-devstart:focus-visible {
+    border-color: rgba(240, 190, 110, 0.8);
+    background: rgba(240, 190, 110, 0.12);
+}
+
+.start-picker-devtag {
+    margin-left: 0.5rem;
+    padding: 0 0.35rem;
+    border: 1px solid rgba(240, 190, 110, 0.55);
+    border-radius: 0.25rem;
+    color: rgba(240, 190, 110, 0.95);
+    font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    vertical-align: middle;
+}
+
+.start-picker-devurl {
+    display: block;
+    margin-top: 0.15rem;
+    color: rgba(240, 190, 110, 0.6);
+    font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+    font-size: 0.72rem;
+    word-break: break-all;
+}
+
 /* The Captain-desk vault buttons (Save / Export / Import) wrap on a narrow desk. */
 .captain-vault-actions {
     display: flex;
