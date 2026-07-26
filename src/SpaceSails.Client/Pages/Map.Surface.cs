@@ -103,6 +103,12 @@ public partial class Map
     // #327 the ship calls home: the mothership's station-keeping hold (sim-seconds) at the moment the
     // captain boarded DOWN — the reference the escalating ladder measures against (OrbitHold). Positive
     // = boarded with a real kept-orbit hold; 0 = boarded onto an orbit no one is keeping (a standing red
+    // #440 · the first-ground lesson. The bit is per captain and rides in the vault (ProgressSection), so a
+    // reload never re-teaches someone who has already walked a moon; the flag below is just whether the card
+    // is on screen right now.
+    private bool _groundLessonSeen;
+    private bool _groundLessonOpen;
+
     // on the surface). Set in BeginSurfaceExcursion, read by SurfaceOrbitComms.
     private double _orbitHoldAtBoarding;
 
@@ -513,6 +519,26 @@ public partial class Map
             ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
         }
         _descentPhase = null;
+
+        // #440 · THE FIRST GROUND (owner, 2026-07-26: "Definitely we need a landing site tutorial also for
+        // new captains"). The surface is the only place that can take everything from you in ninety seconds,
+        // and it used to explain itself in 10px of dimmed corner text. So the FIRST time a captain's boots
+        // touch regolith — after the descent door has dropped and the ground is painted behind it, never
+        // over the flying-🛸 door — the lesson goes up: three keys, four laws, nothing else. Once per
+        // captain, persisted, then never again (#292: only greet the truly new).
+        if (!_groundLessonSeen)
+        {
+            _groundLessonSeen = true;
+            _groundLessonOpen = true;
+            StateHasChanged();
+        }
+    }
+
+    // #440: the captain has read the first-ground card. The bit is already set (and saved with the vault),
+    // so this only takes the card back down — a reload never re-teaches them.
+    private void CloseGroundLesson()
+    {
+        _groundLessonOpen = false;
     }
 
     // #329 follow-up: narrate a coarse descent phase and hand the frame back to the browser so the queued
