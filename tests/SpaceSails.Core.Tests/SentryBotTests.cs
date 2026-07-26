@@ -92,6 +92,69 @@ public class SentryBotTests
         Assert.Equal(0, v.Reevers[0].HitsTaken);
     }
 
+    // #437 · A slab standing between the guns and the ground beyond it — the same segment type the captain
+    // collides with and the Old Ones sight along.
+    private static readonly SurfaceCollision.Segment[] Slab = [new SurfaceCollision.Segment(3, -6, 3, 6)];
+
+    [Fact]
+    public void Step_BehindAWall_HoldsFire_NoDrain_NoHusk()
+    {
+        // #437 (owner, live 2026-07-26: "Now the cannons shot though the walls"). In range, but the slab
+        // stands between: the bot cannot see it, so it does not shoot it — and spends nothing trying.
+        var bots = new[] { FullBotAt(0, 0) };
+        var reevers = new[] { new SentryBot.Target(6, 0, 0) };  // well inside the arc, straight through the slab
+
+        SentryBot.Volley v = SentryBot.Step(bots, reevers, Slab);
+
+        Assert.Equal(0, v.Shots);
+        Assert.Equal(SentryBot.MaxMagazine, v.Bots[0].Rounds);  // no round burned on a target it cannot see
+        Assert.Equal(0, v.Reevers[0].HitsTaken);
+        Assert.Empty(v.Husks);
+    }
+
+    [Fact]
+    public void Step_WithNoWallBetween_StillFires_TheSightCheckIsAStrictSuperset()
+    {
+        // Same pair, same slab — but both on the SAME side of it. Clear line, so the shot lands exactly as
+        // it did before the sight gate existed.
+        var bots = new[] { FullBotAt(6, 0) };
+        var reevers = new[] { new SentryBot.Target(10, 0, 0) };  // both right of the slab at x=3
+
+        SentryBot.Volley v = SentryBot.Step(bots, reevers, Slab);
+
+        Assert.Equal(1, v.Shots);
+        Assert.Equal(SentryBot.MaxMagazine - 1, v.Bots[0].Rounds);
+        Assert.Equal(1, v.Reevers[0].HitsTaken);
+    }
+
+    [Fact]
+    public void Step_SpendsItsRound_OnTheNearestItCanSee_NotTheNearerBlindOne()
+    {
+        // Two in the arc: a CLOSER one behind the slab and a farther one in the open. The gun must take the
+        // shot it actually has — "nearest" means nearest VISIBLE.
+        var bots = new[] { FullBotAt(0, 0) };
+        var reevers = new[]
+        {
+            new SentryBot.Target(4, 0, 0),    // nearer, but through the slab at x=3
+            new SentryBot.Target(0, 7, 0),    // farther, clear line straight up
+        };
+
+        SentryBot.Volley v = SentryBot.Step(bots, reevers, Slab);
+
+        Assert.Equal(1, v.Shots);
+        Assert.Equal(0, v.Reevers[0].HitsTaken);   // the blind one is untouched behind its stone
+        Assert.Equal(1, v.Reevers[1].HitsTaken);   // the one it can see took the round
+    }
+
+    [Fact]
+    public void CanEngage_NeedsBothTheArcAndTheLine()
+    {
+        Assert.True(SentryBot.CanEngage(6, 0, 10, 0, Slab));                              // in arc, clear
+        Assert.False(SentryBot.CanEngage(0, 0, 6, 0, Slab));                              // in arc, blind
+        Assert.False(SentryBot.CanEngage(0, 0, SentryBot.RangeDeckUnits + 5, 0, null));   // clear, out of arc
+        Assert.True(SentryBot.CanEngage(0, 0, 6, 0, null));                               // no walls → range alone
+    }
+
     [Fact]
     public void Step_DryBot_IsSilent_TargetUntouched()
     {
