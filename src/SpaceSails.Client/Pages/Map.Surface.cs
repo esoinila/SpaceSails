@@ -529,6 +529,11 @@ public partial class Map
         if (!_groundLessonSeen)
         {
             _groundLessonSeen = true;
+            // #448: give the card its own frame. The pulse message above has just queued a render, and
+            // raising a full-screen modal in the SAME synchronous stretch chains a second one onto it —
+            // exactly the back-to-back blocks #333 broke apart everywhere else in this descent. One yield
+            // costs a frame nobody sees and keeps the browser's clock reset between the two.
+            await Task.Delay(1);
             _groundLessonOpen = true;
             StateHasChanged();
         }
@@ -1389,7 +1394,7 @@ public partial class Map
         // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
         // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
         // "Now the cannons shot though the walls").
-        SentryBot.Volley volley = SentryBot.Step(deployed, targets, _deckPlan.CollisionSegments);
+        SentryBot.Volley volley = SentryBot.Step(deployed, targets, _deckPlan.CollisionField);
 
         // Fold the drained magazines back and flash a zap line from each bot that fired.
         double nowMs = _lastTimestampMs ?? 0;
@@ -1540,7 +1545,7 @@ public partial class Map
         double idleProgress = MotionTracker.StillSpeed * dt;
         // #324: the maze is law for the many too — the Reevers bump-and-slide on the SAME wall segments
         // the captain does, and can only see the captain when no wall stands between.
-        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionSegments;
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         const double reeverRadius = DeckPlan.AvatarRadius;
         foreach (Reever r in _reevers)
         {
@@ -1725,7 +1730,7 @@ public partial class Map
             // breaks the shot, so a Reever that rounds a corner genuinely breaks contact with the gun
             // grinding it down.
             if (b.Deployed && b.Rounds > 0
-                && SentryBot.CanEngage(b.X, b.Y, r.X, r.Y, _deckPlan.CollisionSegments))
+                && SentryBot.CanEngage(b.X, b.Y, r.X, r.Y, _deckPlan.CollisionField))
             {
                 return true;
             }

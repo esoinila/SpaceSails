@@ -227,7 +227,7 @@ public partial class Map
         {
             return;
         }
-        IReadOnlyList<SurfaceCollision.Segment> segs = _deckPlan.CollisionSegments;
+        IReadOnlyList<SurfaceCollision.Segment> segs = _deckPlan.CollisionField; // #448: the indexed twin
 
         // Contacts: per-frame LOS (they move). A mover that slips behind cover leaves a fading echo.
         foreach (Reever r in _reevers)
