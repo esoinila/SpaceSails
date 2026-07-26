@@ -39,8 +39,46 @@ public static class NerveModel
     // is inbound) but no longer add a rate of their own.
 
     /// <summary>A pack is up and converging — a live chase in progress. Drains per second on top of the
-    /// per-contact prickle: the knowledge that the ground roused, not just that something moves.</summary>
+    /// per-contact prickle: the knowledge that the ground roused, not just that something moves.
+    /// Priced at FULL only when one of them is right on top of you — see <see cref="Dread"/>.</summary>
     public const double ChaseDrainPerSecond = 2.2;
+
+    // ── #446 · DISTANCE IS THE WHOLE STORY (owner, live 2026-07-26: "The reevers should not lower sanity
+    //    unless they get REALLY close") ─────────────────────────────────────────────────────────────────
+    //
+    // The chase drain used to be a FLAT rate that fired whenever a pack existed — the client passed
+    // `ChaseActive: _reevers.Count > 0`, so a single Old One drifting on the far rim of the field cost the
+    // same 2.2/s as one breathing down your neck. On a big ground with a live tide that is a wall of drain
+    // no captain can outlast: the gauge bottomed out while the nearest hunter was still a dot.
+    //
+    // Fear is not a fact about the world, it is a fact about DISTANCE. Beyond DreadRange an Old One is
+    // scenery — you can see it, the tracker can hear it, and it costs you nothing. Inside that it ramps,
+    // and only when it is nearly on you does it cost full rate. Both numbers FLAGGED for tuning.
+
+    /// <summary>Beyond this range (deck units) an Old One is scenery: seen, heard, and free. Roughly the far
+    /// side of a landing site — a hunter you have time to walk away from.</summary>
+    public const double DreadRangeDeckUnits = 14.0;
+
+    /// <summary>Inside this range (deck units) the dread is at FULL rate — close enough that the walk back
+    /// is no longer a walk. A little over ten body-widths, well outside the catch radius.</summary>
+    public const double DreadFullRangeDeckUnits = 4.0;
+
+    /// <summary>How much a contact at <paramref name="nearestRange"/> deck units actually frightens you:
+    /// 0 beyond <see cref="DreadRangeDeckUnits"/>, ramping to 1 at <see cref="DreadFullRangeDeckUnits"/> and
+    /// staying there as it closes. A smooth ramp rather than a cliff, so walking toward a hunter feels like
+    /// mounting pressure instead of a switch. No contact at all (an infinite range) is 0.</summary>
+    public static double Dread(double nearestRange)
+    {
+        if (double.IsNaN(nearestRange) || nearestRange >= DreadRangeDeckUnits)
+        {
+            return 0.0;
+        }
+        if (nearestRange <= DreadFullRangeDeckUnits)
+        {
+            return 1.0;
+        }
+        return (DreadRangeDeckUnits - nearestRange) / (DreadRangeDeckUnits - DreadFullRangeDeckUnits);
+    }
 
     /// <summary>Digging while contacts are inbound — the shovel-work you cannot abandon with the tide
     /// closing. Only bites when something is ACTUALLY inbound (a calm dig on empty ground costs nothing).</summary>
@@ -76,7 +114,17 @@ public static class NerveModel
     /// <summary>The live excursion situation the drain is priced from: how many contacts move on the
     /// tracker, whether a pack is up, whether the captain is mid-dig, and whether they are cornered. The
     /// client reads these off the live surface each frame; Core only prices them.</summary>
-    public readonly record struct Stressors(int MovingContacts, bool ChaseActive, bool Digging, bool Cornered);
+    /// <param name="NearestContactRange">#446 · how far off the NEAREST Old One is, in deck units —
+    /// <see cref="double.PositiveInfinity"/> when the ground is empty. This is what turns a pack from a flat
+    /// tax into a distance: the chase and dig terms are priced through <see cref="Dread"/> against it, so a
+    /// hunter on the far rim costs nothing and one at your shoulder costs full.
+    /// <para>Defaults to <c>0</c> — "right on top of you", i.e. the FULL rate this model charged before the
+    /// range existed. A caller that has not been taught about distance therefore keeps the old behaviour
+    /// exactly; the alternative default (infinity) would have silently switched the dread OFF for anyone who
+    /// forgot to pass it, which is the more dangerous way to be wrong.</para></param>
+    public readonly record struct Stressors(
+        int MovingContacts, bool ChaseActive, bool Digging, bool Cornered,
+        double NearestContactRange = 0.0);
 
     /// <summary>The total nerve drain per second for a situation — the sum of every applicable stressor.
     /// Digging only counts when something is actually inbound (a chase, or a mover on the tracker), so a
@@ -87,13 +135,21 @@ public static class NerveModel
         // #379: moving contacts no longer add a linear per-second rate — their SIGHTING stress is priced as
         // discrete, per-spell diminishing jolts (see AdvanceSightings / SightingSeriesCost). They still gate
         // the dig-under-threat term below (a mover on the tracker means something is inbound).
+        //
+        // #446: and BOTH sustained terms are now priced through the distance to the nearest hunter. A pack
+        // that exists is not a pack that has you — "the reevers should not lower sanity unless they get
+        // REALLY close" (owner, 2026-07-26). At full range this multiplies to exactly zero, so a far-off
+        // tide is atmosphere and the gauge no longer bleeds out while the nearest Old One is still a dot.
+        double dread = Dread(s.NearestContactRange);
         if (s.ChaseActive)
         {
-            rate += ChaseDrainPerSecond;
+            rate += ChaseDrainPerSecond * dread;
         }
         if (s.Digging && (s.ChaseActive || s.MovingContacts > 0))
         {
-            rate += DigUnderThreatDrainPerSecond;
+            // Shovel-work you cannot abandon — but only once something is near enough to actually reach you
+            // mid-dig. A calm dig with the tide on the far rim costs nothing, same as a dig on empty ground.
+            rate += DigUnderThreatDrainPerSecond * dread;
         }
         if (s.Cornered)
         {

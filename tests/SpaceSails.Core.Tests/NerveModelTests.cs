@@ -1,4 +1,4 @@
-namespace SpaceSails.Core.Tests;
+﻿namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// PR-317 · The nerve gauge — the first slice of #226's Fail Forward sanity. These pin the deterministic
@@ -531,5 +531,86 @@ public class NerveModelTests
         double after = NerveModel.Shock(60.0, NerveModel.TouchShock);
         Assert.Equal(60.0 - NerveModel.TouchShock, after, 6);
         Assert.Equal(after - NerveModel.TouchShock, NerveModel.Shock(after, NerveModel.TouchShock), 6);
+    }
+
+    // ── #446 · Distance is the whole story ───────────────────────────────────────────────────────────
+    //
+    // Owner, live on the Miranda regolith 2026-07-26: "The reevers should not lower sanity unless they get
+    // REALLY close." Before this, the client passed `ChaseActive: _reevers.Count > 0` — a pack EXISTING was
+    // the whole condition — so one Old One drifting on the far rim of a big ground taxed the captain at the
+    // same flat 2.2/s as one at their shoulder, and the gauge emptied while the nearest hunter was a dot.
+
+    [Fact]
+    public void Dread_IsZeroBeyondRange_FullWhenNearlyOnYou_AndRampsBetween()
+    {
+        Assert.Equal(0.0, NerveModel.Dread(double.PositiveInfinity), 6);              // empty ground
+        Assert.Equal(0.0, NerveModel.Dread(NerveModel.DreadRangeDeckUnits), 6);       // exactly at the rim
+        Assert.Equal(0.0, NerveModel.Dread(NerveModel.DreadRangeDeckUnits + 20), 6);  // well beyond it
+        Assert.Equal(1.0, NerveModel.Dread(NerveModel.DreadFullRangeDeckUnits), 6);   // at the full mark
+        Assert.Equal(1.0, NerveModel.Dread(0.0), 6);                                  // right on top of you
+
+        // In between it is a ramp, not a cliff — walking toward a hunter must feel like mounting pressure.
+        double mid = (NerveModel.DreadRangeDeckUnits + NerveModel.DreadFullRangeDeckUnits) / 2.0;
+        Assert.InRange(NerveModel.Dread(mid), 0.4, 0.6);
+        Assert.True(NerveModel.Dread(mid - 1) > NerveModel.Dread(mid), "closing must always frighten more");
+    }
+
+    [Fact]
+    public void APackOnTheFarRim_CostsNothingAtAll()
+    {
+        // The bug, stated as a test: a live chase whose nearest member is beyond the dread range drains
+        // ZERO. Not less — nothing. A hunter you have time to walk away from is scenery.
+        var farOff = new NerveModel.Stressors(
+            MovingContacts: 4, ChaseActive: true, Digging: false, Cornered: false,
+            NearestContactRange: NerveModel.DreadRangeDeckUnits + 5);
+        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(farOff), 6);
+
+        // …and a full minute of it leaves the captain exactly as steady as they started.
+        Assert.Equal(NerveModel.Max, NerveModel.Drain(NerveModel.Max, farOff, 60.0), 6);
+    }
+
+    [Fact]
+    public void TheSamePack_AtYourShoulder_StillCostsFullRate()
+    {
+        // The other half of the ruling: close IS terrifying, and nothing about the fix softens that.
+        var onYou = new NerveModel.Stressors(4, ChaseActive: true, Digging: false, Cornered: false,
+            NearestContactRange: 1.0);
+        Assert.Equal(NerveModel.ChaseDrainPerSecond, NerveModel.DrainRatePerSecond(onYou), 6);
+    }
+
+    [Fact]
+    public void DiggingUnderThreat_OnlyBitesOnceSomethingIsNearEnoughToReachYou()
+    {
+        // Shovel-work you cannot abandon is only frightening if the thing can actually arrive mid-dig. With
+        // the tide on the far rim it is just digging.
+        var digFar = new NerveModel.Stressors(3, ChaseActive: true, Digging: true, Cornered: false,
+            NearestContactRange: NerveModel.DreadRangeDeckUnits + 1);
+        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(digFar), 6);
+
+        var digNear = new NerveModel.Stressors(3, ChaseActive: true, Digging: true, Cornered: false,
+            NearestContactRange: 2.0);
+        Assert.Equal(
+            NerveModel.ChaseDrainPerSecond + NerveModel.DigUnderThreatDrainPerSecond,
+            NerveModel.DrainRatePerSecond(digNear), 6);
+    }
+
+    [Fact]
+    public void BeingCornered_IsCloseByDefinition_AndIsNeverDiscountedByRange()
+    {
+        // Cornered means the net is already between you and the tube. It is not a distance term and must not
+        // be scaled away by one — otherwise the sharpest routine drain could be dodged on a technicality.
+        var cornered = new NerveModel.Stressors(0, ChaseActive: false, Digging: false, Cornered: true,
+            NearestContactRange: NerveModel.DreadRangeDeckUnits + 50);
+        Assert.Equal(NerveModel.CorneredDrainPerSecond, NerveModel.DrainRatePerSecond(cornered), 6);
+    }
+
+    [Fact]
+    public void AStressorsWithoutARange_KeepsTheOldFullRateBehaviour()
+    {
+        // The default is 0 — "right on top of you" — so a caller that has never heard of the range prices
+        // exactly what this model charged before #446. Defaulting the other way (infinity) would silently
+        // switch the dread off for anyone who forgot to pass it, which is the more dangerous way to be wrong.
+        var noRange = new NerveModel.Stressors(2, ChaseActive: true, Digging: false, Cornered: false);
+        Assert.Equal(NerveModel.ChaseDrainPerSecond, NerveModel.DrainRatePerSecond(noRange), 6);
     }
 }
