@@ -1223,8 +1223,19 @@ public partial class Map
             OnExcursion: onExcursion,
             OnRegolith: onRegolith,
             SeesMonolith: onRegolith && SeesMonolith(),
+            // #446 (owner, live 2026-07-26: "The reevers should not lower sanity unless they get REALLY
+            // close"). ChaseActive used to be the bare `_reevers.Count > 0` — a pack EXISTING anywhere on
+            // the field, so one Old One drifting on the far rim taxed the captain at the same flat rate as
+            // one at their shoulder, and the gauge bottomed out before anything ever reached them. Now we
+            // hand Core the distance to the nearest hunter and it prices the dread off that; the moving
+            // count is likewise only the ones near enough to matter, so a far-off tide is atmosphere.
             Stressors: onRegolith
-                ? new NerveModel.Stressors(CountMovingReevers(), _reevers.Count > 0, _surface!.Channeling, IsCornered())
+                ? new NerveModel.Stressors(
+                    CountMovingReeversWithin(NerveModel.DreadRangeDeckUnits),
+                    _reevers.Count > 0,
+                    _surface!.Channeling,
+                    IsCornered(),
+                    NearestReeverRange())
                 : default,
             DtSeconds: dtRealSeconds);
 
@@ -1239,7 +1250,13 @@ public partial class Map
         int heardMovers = 0;
         if (onRegolith && _surface is not null)
         {
-            double detection = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
+            // #446: the tracker's own fan still HEARS to its full detection range — that far, faint blip is
+            // the whole point of the instrument, and it is untouched. But a contact only FRIGHTENS you once
+            // it is inside the dread range (owner: "not… unless they get REALLY close"), so the sighting
+            // spell is fed the near ones only. Otherwise a rim-walking tide landed a jolt every time it
+            // crested the fan, and the two sources together emptied the gauge from a safe distance.
+            double detection = Math.Min(
+                MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), NerveModel.DreadRangeDeckUnits);
             var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
             heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
         }
@@ -1283,6 +1300,42 @@ public partial class Map
             }
         }
         return n;
+    }
+
+    // #446: the movers CLOSE ENOUGH TO FRIGHTEN — the same count, fenced to the dread range. The tracker
+    // still hears every mover on the field (its fan is untouched, and a far blip is exactly the dread the
+    // fan is for); this is only what the nerve is priced from, so a hunter you have time to walk away from
+    // costs nothing. It also feeds the sighting spell, so a dot on the far rim no longer lands a jolt.
+    private int CountMovingReeversWithin(double range)
+    {
+        double r2 = range * range;
+        int n = 0;
+        foreach (Reever r in _reevers)
+        {
+            double dx = r.X - _avatarX, dy = r.Y - _avatarY;
+            if (MotionTracker.IsMoving(r.Vx, r.Vy) && (dx * dx) + (dy * dy) <= r2)
+            {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    // #446: how far off the nearest Old One is, in deck units — infinity on an empty ground. Core prices the
+    // whole sustained dread through this one number (NerveModel.Dread).
+    private double NearestReeverRange()
+    {
+        double best = double.PositiveInfinity;
+        foreach (Reever r in _reevers)
+        {
+            double dx = r.X - _avatarX, dy = r.Y - _avatarY;
+            double d2 = (dx * dx) + (dy * dy);
+            if (d2 < best)
+            {
+                best = d2;
+            }
+        }
+        return double.IsPositiveInfinity(best) ? best : Math.Sqrt(best);
     }
 
     // A net between the captain and the tube: an Old One wedged up-field (nearer the tube mouth than the
