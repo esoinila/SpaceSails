@@ -1,0 +1,78 @@
+namespace SpaceSails.Core;
+
+/// <summary>
+/// #439 · THE DEV START SITES — the quick-start catalogue, in the game's own front door.
+///
+/// <para>Owner, 2026-07-26: <i>"We should have a developer list of these quick starts in the UI also. We can
+/// later disable it. These special places to start should be shown in the UI and marked as dev start
+/// sites."</i> The URL cheats (<c>?dock=</c>, <c>?bond=1</c>, <c>?site=N</c>, …) have always been the fastest
+/// way to stand somewhere specific, but they lived only in <c>docs/testing-guide.md</c> — you had to know
+/// them, and type them. This is that same list as DATA, so the logbook can offer it as buttons.</para>
+///
+/// <para>This is the catalogue only — one row per entry point, in the house voice, with the exact URL the
+/// cheat parser already understands. It is deliberately pure and testable: the client renders it behind a
+/// single switch (<c>Map.ShowDevStarts</c>) so the whole section can be turned off in one line when the
+/// game stops wanting a service door. Adding a cheat here is adding a button; nothing else changes.</para>
+///
+/// <para>Keep in step with <c>docs/testing-guide.md</c> — that table is the prose twin of this list.</para>
+/// </summary>
+public static class DevStarts
+{
+    /// <summary>One quick-start: the glyph, what it is, what it puts you in the middle of, and the URL that
+    /// gets you there. <paramref name="Url"/> is a boot-time cheat, so the client navigates with a FULL
+    /// reload — these are read once, while the world is built.</summary>
+    public readonly record struct Entry(string Icon, string Label, string Blurb, string Url);
+
+    /// <summary>The catalogue, grouped loosely by what you are going to look at: the grounds and the
+    /// away-team gigs first (where the walking happens), then the set pieces, then the long stories.</summary>
+    public static IReadOnlyList<Entry> All { get; } =
+    [
+        // --- The regolith: excursions, the Old Ones, and the ground itself -------------------------------
+        new("🛬", "Miranda — the monolith maze",
+            "Docked at The Tilt with Miranda in shuttle reach. Walk to the shuttle bay, board, and set down on the canon ground: the maze, the monolith, and the Old Ones under it.",
+            "/map?dock=the-tilt&site=0"),
+        new("🌑", "Miranda — the Shadowed Rille",
+            "The same moon, a different world: site 1 re-seeds the ground into a gully of permanent night. The A/B for \"a body is a world, not a level\" (#320).",
+            "/map?dock=the-tilt&site=1"),
+        new("⛏", "An away-team gig, already accepted",
+            "A mining rock parked in shuttle range with the job on the books — the shortest road to boots on the regolith (#370).",
+            "/map?expedition=mining"),
+        new("🔬", "The secret lab behind the hidden door",
+            "A landable rock in shuttle range hiding a Vantar lab, its hidden door already found — force it and read what shouldn't exist (#409).",
+            "/map?secretlab=1"),
+
+        // --- The bar, the room, and the people in it ------------------------------------------------------
+        new("🥂", "The cognac on the fright",
+            "Docked at the Roadstead bar with the next ambient scare forced to OPEN a stranger — the hero beat of the stranger-bond (#429).",
+            "/map?bond=1"),
+        new("🍸", "The Rusty Roadstead",
+            "Clamped on at the bar with the regulars at the tables — drinks, contacts, the barkeep, and the station Oracle ranting in the corner.",
+            "/map?dock=the-space-bar"),
+
+        // --- Set pieces --------------------------------------------------------------------------------
+        new("☄", "The rock that must not arrive",
+            "The asteroid-deflection gig accepted, the rock inbound, ship docked at Ringside — the whole clock running (#394).",
+            "/map?deflection=1"),
+        new("💰", "A fat purse",
+            "The Sol start with 50,000 credits in the purse, for pricing anything without grinding for it.",
+            "/map?credits=50000"),
+
+        // --- The long stories, without the playthrough ---------------------------------------------------
+        new("🌑", "PROJEKTI KAAMOS — assembled",
+            "Every fragment of the sealed ice-moon plot already gathered: the intel readout, the reach notice, the berth-code (#411).",
+            "/map?kaamos=all"),
+        new("🧠", "NEBULA MUTUAL — assembled",
+            "Arc 2 complete: the cold archive, the brain-backup's true origin, and the policy's true terms (#422).",
+            "/map?nebula=all"),
+        new("🛰", "THE CONVERGENCE",
+            "Just enough of BOTH arcs to fire the marquee one-time reveal from a single URL — the two rabbit holes crossing (#422).",
+            "/map?converge=1"),
+    ];
+
+    /// <summary>The banner the UI wears over the list, so a dev start is never mistaken for a real voyage.</summary>
+    public const string SectionTitle = "⚙ Dev start sites";
+
+    /// <summary>Why these exist, in one line, under the title.</summary>
+    public const string SectionBlurb =
+        "Service entrances — they drop you straight into one thing to look at. Not part of the game, and not a saved voyage.";
+}

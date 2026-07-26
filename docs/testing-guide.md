@@ -457,6 +457,13 @@ Owner's bench rule (2026-07-18): *"being able to start from the testable situati
 smoke-test faster."* Append these to the map URL (`/map?a=1&b=2`) to boot straight into a set-up
 instead of flying there. All are dev/test hooks — none affect a normal launch from the home page.
 
+> **You no longer have to type them.** The most-walked entry points are offered as buttons in the
+> game's own front door, under **⚙ DEV START SITES** (collapsed, below the berth list) — owner,
+> 2026-07-26: *"These special places to start should be shown in the UI and marked as dev start
+> sites."* The catalogue is `SpaceSails.Core.DevStarts` and the whole section is gated on the single
+> `Map.ShowDevStarts` switch, so it can be turned off in one line when the game stops wanting a
+> service door. Adding a row there is adding a button; keep it and this table in step.
+
 | Cheat | Effect |
 |---|---|
 | `?scenario=<name>` | Load `scenarios/<name>.json` (default `sol`; unknown → silent fall back to Sol). |

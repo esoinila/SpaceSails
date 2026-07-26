@@ -973,6 +973,19 @@ public partial class Map
 
     private bool _showStartPicker;
 
+    // --- The dev start sites (#439) -----------------------------------------------------------------
+    // Owner, 2026-07-26: "We should have a developer list of these quick starts in the UI also. We can
+    // later disbale it." THIS is that switch: flip it to false and the whole section leaves the front door
+    // (the catalogue itself lives in Core DevStarts, and docs/testing-guide.md keeps the prose twin). Left
+    // collapsed by default so the logbook still opens on saves and berths, not on the service door.
+    private const bool ShowDevStarts = true;
+    private bool _showDevStarts;
+
+    // Take a dev start. These are BOOT-TIME cheats — the world is built from the URL once, in OnInitialized
+    // — so this is a full reload, not a router hop, or the cheat would be read against an already-built Sol.
+    private void GoToDevStart(SpaceSails.Core.DevStarts.Entry entry) =>
+        Navigation.NavigateTo(entry.Url, forceLoad: true);
+
     // Arrange the just-built (or, on a picker reopen, already-running) world for a chosen start.
     // Re-entrant: steps aboard and unclamps any current berth first, so it's safe to call any time.
     private void ApplyStart(string id)
