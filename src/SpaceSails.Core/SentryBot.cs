@@ -91,6 +91,18 @@ public static class SentryBot
         return (dx * dx) + (dy * dy) <= RangeDeckUnits * RangeDeckUnits;
     }
 
+    /// <summary>#437 · Can this bot actually ENGAGE the target — in the arc AND with a clear line to it?
+    /// Owner, live 2026-07-26: "Now the cannons shot though the walls." #324 made the maze law for movers
+    /// (a Reever can neither walk through stone nor see through it); a gun that shoots through the same
+    /// stone quietly undoes it — a sentry in a walled pocket would clear ground it cannot even see, and the
+    /// captain's cornering geometry would stop mattering. Same sight primitive the Old Ones use, so there
+    /// is one source of truth. No walls passed → range alone, exactly as before.</summary>
+    public static bool CanEngage(
+        double botX, double botY, double targetX, double targetY,
+        IReadOnlyList<SurfaceCollision.Segment>? walls) =>
+        InRange(botX, botY, targetX, targetY)
+            && SurfaceCollision.HasLineOfSight(botX, botY, targetX, targetY, walls);
+
     /// <summary>A deployed sentry standing on the surface: its unit name, position, and the rounds left
     /// on its magazine. Value data — the client owns the live list and its motion.</summary>
     public readonly record struct Deployed(string Unit, double X, double Y, int Rounds)
@@ -125,8 +137,15 @@ public static class SentryBot
     /// <see cref="RoundsPerReever"/> hits goes down and leaves a <see cref="Husk"/> where it stood. Dry
     /// bots (00) and bots with nothing in the arc fire nothing. A target downed earlier in the volley is
     /// off the board for the remaining bots, so no shot is wasted on a corpse. Deterministic: nearest by
-    /// distance, ties broken by index — the client calls this once per <see cref="FireIntervalSeconds"/>.</summary>
-    public static Volley Step(IReadOnlyList<Deployed> bots, IReadOnlyList<Target> reevers)
+    /// distance, ties broken by index — the client calls this once per <see cref="FireIntervalSeconds"/>.
+    ///
+    /// <para>#437: a bot only engages what it can SEE. <paramref name="walls"/> are the same segments the
+    /// captain and the Old Ones collide and sight against — a slab between gun and target breaks the shot,
+    /// so the nearest target is the nearest VISIBLE one, and a bot with nothing it can see holds fire and
+    /// drains nothing (the no-shot/no-drain law). Pass none for the open-ground behaviour.</para></summary>
+    public static Volley Step(
+        IReadOnlyList<Deployed> bots, IReadOnlyList<Target> reevers,
+        IReadOnlyList<SurfaceCollision.Segment>? walls = null)
     {
         System.ArgumentNullException.ThrowIfNull(bots);
         System.ArgumentNullException.ThrowIfNull(reevers);
@@ -165,7 +184,8 @@ public static class SentryBot
                 }
                 double dx = reevers[j].X - bots[i].X, dy = reevers[j].Y - bots[i].Y;
                 double d2 = (dx * dx) + (dy * dy);
-                if (d2 <= RangeDeckUnits * RangeDeckUnits && d2 < bestSq)
+                if (d2 <= RangeDeckUnits * RangeDeckUnits && d2 < bestSq
+                    && SurfaceCollision.HasLineOfSight(bots[i].X, bots[i].Y, reevers[j].X, reevers[j].Y, walls))
                 {
                     bestSq = d2;
                     best = j;
@@ -173,7 +193,7 @@ public static class SentryBot
             }
             if (best < 0)
             {
-                continue; // nothing in the arc — hold fire, no drain
+                continue; // nothing it can SEE in the arc — hold fire, no drain (#437)
             }
 
             botRounds[i] = Fire(botRounds[i]);

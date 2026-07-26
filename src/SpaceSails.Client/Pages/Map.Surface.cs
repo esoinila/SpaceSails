@@ -1307,7 +1307,10 @@ public partial class Map
 
         var deployed = live.Select(b => new SentryBot.Deployed(b.Unit, b.X, b.Y, b.Rounds)).ToList();
         var targets = _reevers.Select(r => new SentryBot.Target(r.X, r.Y, r.HitsTaken)).ToList();
-        SentryBot.Volley volley = SentryBot.Step(deployed, targets);
+        // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
+        // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
+        // "Now the cannons shot though the walls").
+        SentryBot.Volley volley = SentryBot.Step(deployed, targets, _deckPlan.CollisionSegments);
 
         // Fold the drained magazines back and flash a zap line from each bot that fired.
         double nowMs = _lastTimestampMs ?? 0;
@@ -1610,7 +1613,11 @@ public partial class Map
         }
         foreach (SurfaceBot b in ex.Bots)
         {
-            if (b.Deployed && b.Rounds > 0 && SentryBot.InRange(b.X, b.Y, r.X, r.Y))
+            // #437: a bot only holds what it can SEE — stone between the two breaks the pin exactly as it
+            // breaks the shot, so a Reever that rounds a corner genuinely breaks contact with the gun
+            // grinding it down.
+            if (b.Deployed && b.Rounds > 0
+                && SentryBot.CanEngage(b.X, b.Y, r.X, r.Y, _deckPlan.CollisionSegments))
             {
                 return true;
             }
