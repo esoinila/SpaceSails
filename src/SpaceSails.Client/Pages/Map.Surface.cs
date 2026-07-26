@@ -1516,7 +1516,11 @@ public partial class Map
             // moving Reever's anchor is unset, so this is just its live position.
             double baseX = r.Idle ? r.AnchorX : r.X;
             double baseY = r.Idle ? r.AnchorY : r.Y;
-            (double nx, double ny) = ReeverChase.Step(baseX, baseY, aimX, aimY, step, barrier, walls, reeverRadius);
+            // #324 follow-up: which way this one skirts a wall it can't push through. Read off the shiver
+            // seed, so the hand is FIXED per contact (no dithering at the face) and a pack splits — half
+            // work a slab left, half right, and the two streams meet you around its ends.
+            int wallSide = (r.JitterSeed & 1) == 0 ? 1 : -1;
+            (double nx, double ny) = ReeverChase.Step(baseX, baseY, aimX, aimY, step, barrier, walls, reeverRadius, wallSide);
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 
             if (progressed < idleProgress)

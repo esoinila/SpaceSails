@@ -27,15 +27,29 @@ public static class ReeverChase
         double reeverX, double reeverY, double avatarX, double avatarY, double stepDistance, double barrierY) =>
         Step(reeverX, reeverY, avatarX, avatarY, stepDistance, barrierY, walls: null, radius: 0);
 
+    /// <summary>A step this much shorter than the one asked for counts as spent — the hunter is flat
+    /// against stone and the run must find another way round.</summary>
+    private const double StallFraction = 0.25;
+
     /// <summary>PR-324 · The wall-obeying chase. As the plain <see cref="Step(double,double,double,double,double,double)"/>,
     /// but the step is a <see cref="SurfaceCollision.Slide"/> against <paramref name="walls"/> at the given
     /// <paramref name="radius"/> — the SAME bump-and-slide the captain's own boots make — so a Reever
-    /// stops at a maze wall and grazes along it instead of clipping through. A Reever pinned flat against
-    /// a wall makes no progress, which means it is momentarily STATIONARY and drops off the motion
-    /// tracker for free (the motion-only law composes the dread). The crew-only barrier still caps Y.</summary>
+    /// stops at a maze wall and grazes along it instead of clipping through.
+    ///
+    /// <para>#324 follow-up (owner, live 2026-07-26: "the reevers stopped progressing towards player as if
+    /// there was a wall between… a clear bug"). A run driven STRAIGHT at a wall spends its whole step on the
+    /// blocked axis, so the slide alone left the hunter pinned there for good and the pursuit died at the
+    /// stone. The maze is meant to cost them the long way round, not end the chase. So when the direct step
+    /// is spent, the Reever shambles ALONG the wall — the crude try-perpendicular the issue asks for ("the
+    /// grid's own idiom; pathfinding libraries are not wanted"). <paramref name="wallSide"/> is this
+    /// contact's fixed handedness (≥ 0 = left of the run, &lt; 0 = right): a STABLE side, so it rounds the
+    /// corner instead of dithering at the face, and a pack of mixed hands flows around a slab from both
+    /// ends. Only when both hands are walled too does it truly hold — then it is stationary and drops off
+    /// the motion tracker (the motion-only law still composes the dread, now for a genuinely boxed-in
+    /// hunter). The crew-only barrier still caps Y.</para></summary>
     public static (double X, double Y) Step(
         double reeverX, double reeverY, double avatarX, double avatarY, double stepDistance, double barrierY,
-        IReadOnlyList<SurfaceCollision.Segment>? walls, double radius)
+        IReadOnlyList<SurfaceCollision.Segment>? walls, double radius, int wallSide = 1)
     {
         double dx = avatarX - reeverX;
         double dy = avatarY - reeverY;
@@ -51,6 +65,30 @@ public static class ReeverChase
         if (walls is { Count: > 0 })
         {
             (nx, ny) = SurfaceCollision.Slide(reeverX, reeverY, moveX, moveY, radius, walls);
+
+            // The direct run is spent on the stone — try the wall itself as a handrail, preferred hand
+            // first, then the other. Whichever moves, it takes; if neither does, it is boxed in and holds.
+            if (dist > 1e-9 && stepDistance > 0 && Spent(reeverX, reeverY, nx, ny, stepDistance))
+            {
+                double hand = wallSide < 0 ? -1 : 1;
+                // The perpendicular to the run, on this contact's side (rotate the unit heading a quarter turn).
+                double perpX = -dy / dist * stepDistance * hand;
+                double perpY = dx / dist * stepDistance * hand;
+
+                (double ax, double ay) = SurfaceCollision.Slide(reeverX, reeverY, perpX, perpY, radius, walls);
+                if (!Spent(reeverX, reeverY, ax, ay, stepDistance))
+                {
+                    (nx, ny) = (ax, ay);
+                }
+                else
+                {
+                    (double bx, double by) = SurfaceCollision.Slide(reeverX, reeverY, -perpX, -perpY, radius, walls);
+                    if (!Spent(reeverX, reeverY, bx, by, stepDistance))
+                    {
+                        (nx, ny) = (bx, by);
+                    }
+                }
+            }
         }
         else
         {
@@ -65,6 +103,15 @@ public static class ReeverChase
         }
 
         return (nx, ny);
+    }
+
+    /// <summary>Did this move buy the hunter anything? False once the step has been ground away by a wall
+    /// to a fraction of what was asked — the cue to try the wall as a handrail instead.</summary>
+    private static bool Spent(double fromX, double fromY, double toX, double toY, double stepDistance)
+    {
+        double mx = toX - fromX, my = toY - fromY;
+        double floor = stepDistance * StallFraction;
+        return (mx * mx) + (my * my) < floor * floor;
     }
 
     /// <summary>True when a Reever is close enough to catch the digger. Only meaningful while the digger
