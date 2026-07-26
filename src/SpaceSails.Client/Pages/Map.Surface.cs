@@ -1970,14 +1970,36 @@ public partial class Map
             CommsState: orbit?.CommsState ?? 0, // COMMS-LOSS: 0 nominal · 1 degraded · 2 blackout — the renderer's static/grey cue
             SweptSquares: _hudSwept,
             DarkRegions: BuildDarkRegions(ex),   // #371 Phase 3: born-dark / explored appended chambers
-            Echoes: BuildEchoes(ex));            // #371 Phase 3: fading "movement was here" ripples
+            Echoes: BuildEchoes(ex),             // #371 Phase 3: fading "movement was here" ripples
+            StandingPrompt: BuildStandingPrompt(ex));
+    }
+
+    // #440 · The standing prompt: ONE bright line above the keybar for the thing this excursion hangs on.
+    // Owner, 2026-07-26: "the press T to bury treasure is not advertised clearly enough on surface… It is
+    // the key to survival there" — said while misremembering the key, which is the proof. A chest in hand is
+    // the whole reason you came and the whole thing you lose, so it gets a line that does not blend into
+    // chrome and does not go away until the chest is in the ground. It also answers WHERE, because "where
+    // you stand" is the rule and nothing on screen ever said so: out on the open regolith, past the pad.
+    private string? BuildStandingPrompt(SurfaceExcursion ex)
+    {
+        if (!ex.Carrying)
+        {
+            return null; // nothing owed — the ground goes quiet again
+        }
+        return MoonSurface.IsDiggableGround(_avatarX, _avatarY)
+            ? "⛏ CARRYING THE CHEST — press E to BURY IT HERE"
+            : "⛏ CARRYING THE CHEST — walk out onto the regolith, then E to bury it";
     }
 
     // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
     // the sling it spells out [T] deploy, and a chest in hand spells [G] drop. Affordances never hide.
     private string BuildSurfaceKeyHints(SurfaceExcursion ex)
     {
-        var parts = new List<string> { "WASD — move", "E — dig / use" };
+        // #440: the bar must NAME the thing that matters. "E — dig / use" is honest but generic, and it was
+        // generic at the one moment it should shout — with the chest in your hands (owner, 2026-07-26: "the
+        // press T to bury treasure is not advertised clearly enough on surface… It is the key to survival
+        // there", having misremembered the key himself). Carrying → the bar says BURY, in the imperative.
+        var parts = new List<string> { "WASD — move", ex.Carrying ? "⛏ E — BURY THE CHEST HERE" : "E — dig / use" };
         bool carryingBot = ex.Bots.Any(b => !b.Deployed);
         bool deployedUnderfoot = ex.Bots.Any(b => b.Deployed &&
             ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
@@ -2031,15 +2053,21 @@ public partial class Map
 
         // The sentry affordance — spell out T while it matters (a bot in the sling to set, or ones holding
         // the line). The tide never stops, so the caption tells the truth: they buy time, not safety.
+        //
+        // #440 (owner, live 2026-07-26: "The T key for sentry planting is not mentioned there now on the
+        // sentry line?"). It wasn't: once the LAST bot left the sling, this fell to the "N holding" line,
+        // which names no key at all — and the keybar only says [T] while you happen to be standing on a
+        // bot. So the moment you had committed both, the key that takes them back up vanished from the
+        // screen entirely. Now T is named in EVERY state that has a bot in it, planted or slung.
         int carried = ex.Bots.Count(b => !b.Deployed);
         int deployed = ex.Bots.Count(b => b.Deployed);
         if (carried > 0)
         {
             lines.Add($"🤖 T — set a sentry ({carried} in the sling)");
         }
-        else if (deployed > 0)
+        if (deployed > 0)
         {
-            lines.Add($"🤖 {deployed} sentry holding — buys time, not safety");
+            lines.Add($"🤖 {deployed} sentry holding — T at one to lift it · buys time, not safety");
         }
 
         return lines;
