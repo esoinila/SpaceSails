@@ -369,6 +369,7 @@ public partial class Map
                 TutorialPlayed = _tutorialPlayed,
                 RingsideSaved = _ringsideSaved,
                 SecretLabsFound = [.. _secretLabsFound],
+                GroundLessonSeen = _groundLessonSeen, // #440: the first-ground card greets a captain once, ever
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -809,6 +810,10 @@ public partial class Map
         // #394: restore whether this universe's crew turned the rock aside from Ringside — so its plaque
         // keeps the appended gratitude line across a reload (a pre-#394 save defaults false, harmless).
         _ringsideSaved = vault.Progress?.RingsideSaved ?? _ringsideSaved;
+        // #440: restore whether this captain has had the first-ground lesson, so a reload never re-teaches
+        // someone who has already walked a moon (a pre-#440 save defaults false — they get it once, next
+        // trip down, and never again).
+        _groundLessonSeen = vault.Progress?.GroundLessonSeen ?? _groundLessonSeen;
         // #409: restore the secret labs this thread has found, so a known body's hidden door stays revealed
         // on every future landing (a pre-#409 save simply lacks the field — an empty set, harmless).
         if (vault.Progress?.SecretLabsFound is { } found)

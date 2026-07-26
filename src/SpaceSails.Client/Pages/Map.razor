@@ -3305,6 +3305,41 @@
         </div>
     }
 
+    @* #440 · THE FIRST GROUND. The one card a captain gets before their first excursion (owner, 2026-07-26:
+       "Definitely we need a landing site tutorial also for new captains"). Raised by BeginSurfaceExcursion
+       AFTER the descent door drops, so it lands over a painted ground rather than over the flying-🛸 door.
+       Once per captain — the seen-bit is set the moment it opens and rides in the vault, so it can never
+       greet a captain twice (#292: only the truly new). Copy lives in Core GroundLesson, pinned by tests. *@
+    @if (_groundLessonOpen)
+    {
+        <div class="convergence-backdrop" @onclick="CloseGroundLesson">
+            <div class="convergence-card ground-lesson-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">@GroundLesson.Stamp</div>
+                <div class="convergence-head">@GroundLesson.Head</div>
+                <div class="ground-lesson-levers">
+                    @foreach (GroundLesson.Lever lever in GroundLesson.Levers)
+                    {
+                        <div class="ground-lesson-lever">
+                            <span class="ground-lesson-key">@lever.Key</span>
+                            <span class="ground-lesson-lever-text">
+                                <span class="ground-lesson-lever-title">@lever.Title</span>
+                                <span class="ground-lesson-lever-what">@lever.What</span>
+                            </span>
+                        </div>
+                    }
+                </div>
+                <ul class="ground-lesson-laws">
+                    @foreach (string law in GroundLesson.Laws)
+                    {
+                        <li>@law</li>
+                    }
+                </ul>
+                <button type="button" class="btn btn-light convergence-close" @onclick="CloseGroundLesson">@GroundLesson.Dismiss</button>
+                <div class="ground-lesson-foot">@GroundLesson.Foot</div>
+            </div>
+        </div>
+    }
+
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
         @if (_parrotSquawk is not null)

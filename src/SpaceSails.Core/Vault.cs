@@ -261,6 +261,12 @@ public sealed record ProgressSection
     /// door already revealed — you remember where it is. Defaults empty (a pre-#409 file simply lacks the
     /// field), a lossless round-trip.</summary>
     public IReadOnlyList<string> SecretLabsFound { get; init; } = [];
+
+    /// <summary>#440 — true once this captain has been shown <see cref="GroundLesson"/>, the one card that
+    /// explains the surface before their first excursion. Persisted so it greets the truly new and NEVER
+    /// again (#292's ruling), even across reloads. Defaults false, so a pre-#440 file — a captain who has
+    /// already walked a dozen moons — gets it once on their next trip down and then never more.</summary>
+    public bool GroundLessonSeen { get; init; }
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──
