@@ -71,6 +71,12 @@ public partial class Map
         {
             _shudderSeed = ShudderSeed();
             _shudderNextGap = _shudderSeconds + HullShudder.NextGap(_shudderSeed, _shudderIndex);
+            // #429 dev cheat: /map?bond=1 fires the first shudder within a few seconds so the forced cognac
+            // beat is demoable at once (see TryBond + docs/testing-guide.md), not a minute of waiting.
+            if (_bondForce)
+            {
+                _shudderNextGap = Math.Min(_shudderNextGap, _shudderSeconds + 3.0);
+            }
         }
 
         if (_shudderSeconds >= _shudderNextGap)
@@ -121,6 +127,10 @@ public partial class Map
 
         RendererInterop.PlayCue("board");
         ShowPulseMessage("〰 " + line);
+
+        // #429 STRANGER-BOND — the WARM twin: the same shudder that unsettles the room can, at a docked bar,
+        // OPEN a co-present stranger to you instead (a word, a stood cognac, a new contact). A no-op off a bar.
+        TryBond(StrangerBond.Scare.Shudder, chill, nowMs);
     }
 
     // A secret lab underfoot: the door's been found/forced this excursion, or this body is a known lab.
@@ -247,6 +257,10 @@ public partial class Map
 
         RendererInterop.PlayCue("buzzer"); // a faint low buzzer off-deck (renderer.js); silent if audio is off
         ShowPulseMessage("〜 " + line);
+
+        // #429 STRANGER-BOND — a shared "what WAS that buzzer?" bonds strangers at a docked bar (rarer/deeper
+        // when the glance ran cold). A no-op off a bar.
+        TryBond(StrangerBond.Scare.Signal, _signalCold, nowMs);
     }
 
     // True while the staff are holding the shared glance — the walk view turns every working crew member to
@@ -325,5 +339,9 @@ public partial class Map
 
         RendererInterop.PlayCue("board");
         ShowPulseMessage(line);
+
+        // #429 STRANGER-BOND — even the "move deliberately" PA can bond the bar ("‘hold the rail,’ they say —
+        // drink?"). A no-op off a docked bar. Cold read at a deep/story context runs the gallows register.
+        TryBond(StrangerBond.Scare.Caution, cold, nowMs);
     }
 }
