@@ -64,7 +64,12 @@ public sealed class DeckView
         // 2 visible — drawn lit). Echoes = fading "movement was here" ripples a contact left when it slipped
         // behind cover. Both empty/absent off an expedition site (open terrain draws exactly as before).
         System.Collections.Generic.IReadOnlyList<(double X0, double Y0, double X1, double Y1, int State)>? DarkRegions = null,
-        System.Collections.Generic.IReadOnlyList<(double X, double Y, double Alpha)>? Echoes = null);
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, double Alpha)>? Echoes = null,
+        // #440 · THE STANDING PROMPT. One bright line above the keybar for the thing the whole excursion
+        // hangs on right now — today, the chest in your hands and the key that puts it in the ground. The
+        // keybar is deliberately dim chrome you stop reading; this is not chrome. It stays up until the
+        // thing is done (owner, 2026-07-26: "It is the key to survival there"). Null when nothing is owed.
+        string? StandingPrompt = null);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -567,6 +572,16 @@ public sealed class DeckView
                 : "WASD / arrows — move ∙ E — interact ∙ F — first person ∙ Q — back to the helm";
         _renderer.DrawText(ox, heightPx - 10, bottomHint, TextDim, "11px monospace", TextAlign.Center);
 
+        // #440: the standing prompt rides just ABOVE the keybar, bright and a size up — the same eyeline the
+        // player already checks for keys, but unmistakably not chrome. Gently breathing so it reads as a
+        // thing still owed rather than furniture.
+        if (surface is { StandingPrompt: { Length: > 0 } standing })
+        {
+            double breathe = 0.78 + (0.22 * Math.Sin(simTime * 0.001 * 2.2));
+            var promptColor = new RgbaColor(255, 205, 90, (byte)Math.Clamp(255 * breathe, 60, 255));
+            _renderer.DrawText(ox, heightPx - 30, standing, promptColor, "bold 14px monospace", TextAlign.Center);
+        }
+
         _renderer.EndFrame();
     }
 
@@ -737,15 +752,22 @@ public sealed class DeckView
         // clears the viewport bottom, so a short screen never buries the keybar under them.
         if (hud.TrackerCaptions is { Count: > 0 } captions)
         {
+            // #440: these were CENTRED on the tracker's centre-x. The tracker sits in the left instrument
+            // gutter, so every caption longer than about twice that inset ran off the left edge of the
+            // canvas and was sliced — the leading glyph gone, the line starting mid-word at x=0. The one
+            // place the ground explains itself was unreadable (owner: "not advertised clearly enough").
+            // Left-align them in the gutter instead, so a caption grows RIGHTWARDS into open screen and
+            // every word survives however long the line gets.
             float capPx = (float)Math.Clamp(r * 0.095, 9, 12);
             float capY = cy + r + 14 + readoutPx + 8f;
+            float capX = Math.Max(8f, cx - r);
             foreach (string caption in captions)
             {
                 if (string.IsNullOrEmpty(caption) || capY > heightPx - 16)
                 {
                     break;
                 }
-                _renderer.DrawText(cx, capY, caption, TextDim, $"{capPx:0}px monospace", TextAlign.Center);
+                _renderer.DrawText(capX, capY, caption, TextDim, $"{capPx:0}px monospace", TextAlign.Left);
                 capY += capPx + 5f;
             }
         }
