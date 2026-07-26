@@ -1663,6 +1663,35 @@ public partial class Map
                 caught = true;
             }
         }
+
+        // #441: the whole pack has stepped — now make them keep their elbows out (owner: "reevers merging
+        // into a one blob… they should not"). AFTER the chase, never instead of it, so the shove can never
+        // cancel forward progress or deadlock a queue at a corner back into #435's stall. Only the MOVING
+        // ones are shoved: an idling contact is anchored on purpose (its shiver is mean-zero around that
+        // anchor), and nudging it would creep the resting spot the anchor exists to hold still.
+        if (_reevers.Count > 1)
+        {
+            Span<(double X, double Y)> spread = stackalloc (double X, double Y)[_reevers.Count];
+            for (int i = 0; i < _reevers.Count; i++)
+            {
+                spread[i] = (_reevers[i].X, _reevers[i].Y);
+            }
+            ReeverPack.KeepApart(spread, walls, reeverRadius);
+            for (int i = 0; i < _reevers.Count; i++)
+            {
+                Reever moved = _reevers[i];
+                if (moved.Idle)
+                {
+                    continue;
+                }
+                moved.X = spread[i].X;
+                moved.Y = spread[i].Y;
+                // The tracker reads velocity, and being shoved aside IS movement — but it is not the
+                // hunter's own approach, so it never re-reports as closing. Leave Vx/Vy as the chase set
+                // them; the shove is a correction to where it ended, not a claim about where it was going.
+            }
+        }
+
         if (caught)
         {
             ReeverCatch();
