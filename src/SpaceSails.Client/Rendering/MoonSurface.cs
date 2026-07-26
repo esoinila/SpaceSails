@@ -130,10 +130,13 @@ public static class MoonSurface
         string bodyId,
         string bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
-        int droidCount, Action<double, DeckPlan.Droid[]> fillDroids)
+        int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
+        string siteSalt = "", string siteName = "")
     {
         ArgumentNullException.ThrowIfNull(fillDroids);
         ownCaches ??= [];
+        siteSalt ??= "";
+        siteName ??= "";
 
         // #371 Phase 1 (perf study, owner-approved 2026-07-19: "Let's go phase one for now"): MEMOIZE the
         // deterministic layout. The study cites SurfaceLayout.For — and with it the whole wall/console/
@@ -145,11 +148,11 @@ public static class MoonSurface
         // way a shared surface deck could go quietly wrong. Invalidation is honest by construction: any
         // bury / lift / drop that changes the own-cache set changes the key (SurfaceDeckKey), so the ✗
         // marks are never stale.
-        SurfaceDeckKey key = SurfaceDeckKey.For(bodyId, bodyDisplayName, ownCaches);
+        SurfaceDeckKey key = SurfaceDeckKey.For(bodyId, bodyDisplayName, ownCaches, siteSalt);
         Layout layout;
         if (!_layoutCache.TryGetValue(key, out layout))
         {
-            layout = BuildLayout(bodyId, bodyDisplayName, ownCaches);
+            layout = BuildLayout(bodyId, bodyDisplayName, ownCaches, siteSalt, siteName);
             // Cheap unbounded-growth guard: each distinct (body, cache-set) leaves one small entry, and a
             // long game of bury/lift cycles could accumulate stale sets nobody revisits. A generous cap
             // that never trips in normal play keeps the cache from creeping; on overflow we simply start
@@ -184,7 +187,8 @@ public static class MoonSurface
     private static Layout BuildLayout(
         string bodyId,
         string bodyDisplayName,
-        IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches)
+        IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
+        string siteSalt, string siteName)
     {
         DeckPlan ship = DeckPlan.Ship;
 
@@ -219,7 +223,9 @@ public static class MoonSurface
         //    collision law for everyone (the pure Core SurfaceLayout is where a test pins the geography). ──
         var field = new SurfaceLayout.Field(
             SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, MonolithX, MonolithY);
-        SurfaceLayout.Plan layout = SurfaceLayout.For(bodyId, field);
+        // #320: the chosen landing site parameterizes the ground — an empty salt is the canon site 0
+        // (Miranda's maze, Luna's rails, the seeded signature), a non-empty salt re-seeds a distinct wing.
+        SurfaceLayout.Plan layout = SurfaceLayout.For(bodyId, field, siteSalt);
         foreach (SurfaceLayout.Wall w in layout.Walls)
         {
             walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, w.IsHull));
@@ -243,6 +249,13 @@ public static class MoonSurface
         }
 
         labels.Add((TubeCenterX, SurfaceTopY - 3.5f, $"— {bodyDisplayName.ToUpperInvariant()} SURFACE —"));
+        // #320: the surface header names WHERE you set down — the chosen landing site, plainly, at the
+        // landing band (the crude-grid deck aesthetic: a label on the ground, no new chrome). Site 0's
+        // name still reads even though its ground is the canon signature.
+        if (siteName.Length > 0)
+        {
+            labels.Add((TubeCenterX, SurfaceTopY - 5.2f, $"🛬 SET DOWN AT: {siteName.ToUpperInvariant()}"));
+        }
         foreach (SurfaceLayout.Landmark m in layout.Landmarks)
         {
             labels.Add(((float)m.X, (float)m.Y, m.Label));

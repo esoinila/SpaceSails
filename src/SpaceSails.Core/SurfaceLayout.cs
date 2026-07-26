@@ -65,6 +65,18 @@ public static class SurfaceLayout
         _ => Seeded(bodyId ?? "", field),
     };
 
+    /// <summary>#320 · Lay out a body's ground for a chosen LANDING SITE (<see cref="LandingSites"/>). An
+    /// EMPTY salt is the body's canon site 0 — the authored/seeded signature, byte-for-byte the same ground
+    /// as <see cref="For(string, in Field)"/> (so Miranda's monolith maze and Luna's rails are preserved).
+    /// A non-empty salt is a secondary site: the ground is re-seeded off <c>(bodyId ~ salt)</c>, giving a
+    /// visibly different wing/feature layout on the SAME body — different site, different deck-plan. An
+    /// away-expedition rock keeps its authored per-kind ground regardless of salt (those gigs are single
+    /// authored sites, never a seeded board).</summary>
+    public static Plan For(string bodyId, in Field field, string? siteSalt) =>
+        string.IsNullOrEmpty(siteSalt) || ExpeditionSite.TryParseKind(bodyId, out _)
+            ? For(bodyId, field)
+            : Seeded($"{bodyId ?? ""}~{siteSalt}", field);
+
     /// <summary>A stable order-independent hash of a plan's wall set — the test's "Luna ≠ Miranda"
     /// ground-truth handle (owner: the walls of buildings must not be the same layout), and a cheap way
     /// for any caller to tell two grounds apart.</summary>

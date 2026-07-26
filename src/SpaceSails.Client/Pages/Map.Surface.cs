@@ -269,6 +269,12 @@ public partial class Map
     {
         public required ShuttleStop Stop { get; init; }
         public required string? RestoreHavenId { get; init; }
+
+        // #320 · WHERE on the body we set down — the chosen landing site (seeded set per body, picked in the
+        // boarding panel). Its LayoutSalt parameterizes the surface deck-plan (a different site grows a
+        // different ground); its Name rides the surface header. Persists for the whole visit; re-landing
+        // re-offers the same seeded set. Defaults to site 0 (the Wild Plain, the canon ground).
+        public LandingSite Site { get; init; }
         public int PendingCoin { get; set; }
         public List<CacheCargo> PendingCargo { get; init; } = [];
         public bool ChestDropped { get; set; }
@@ -395,12 +401,15 @@ public partial class Map
     // surface. The chest is optional cargo already packed by the boarding panel; boarding empty-handed
     // is a complete, valid sightseeing hop. NO teleport: the captain keeps standing at the bay and the
     // down-tube + surface weld on below, so they walk down continuously.
-    private async Task BeginSurfaceExcursion(ShuttleStop stop, ShuttleExcursion.ChestLoad chest, int botsToBring = 0)
+    private async Task BeginSurfaceExcursion(ShuttleStop stop, ShuttleExcursion.ChestLoad chest, int botsToBring = 0, LandingSite? site = null)
     {
         if (_ephemeris is null)
         {
             return;
         }
+        // #320: which of the body's seeded landing sites did the captain pick? Default to site 0 (the Wild
+        // Plain, the canon ground) when none was chosen — an empty-salt site keeps today's ground exactly.
+        LandingSite chosenSite = site ?? LandingSites.At(stop.Body.Id, 0);
         _boardTarget = null;
         _shuttleBayStops = null;
 
@@ -433,6 +442,7 @@ public partial class Map
             ThreatSeed = ReeverSeed(stop.Body.Id),
             Expedition = isExpeditionSite,
             Deflection = isDeflectionRock,
+            Site = chosenSite,
         };
 
         // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet
@@ -559,7 +569,8 @@ public partial class Map
         }
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
-            3 + ReeverEngineCeiling, FillSurfaceDroids);
+            3 + ReeverEngineCeiling, FillSurfaceDroids,
+            siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name); // #320: the picked site seeds the ground + names the header
 
         // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
         // forced open this visit onto the freshly-built base — so a bury/lift/drop rebuild grows back exactly
