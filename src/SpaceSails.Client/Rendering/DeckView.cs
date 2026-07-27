@@ -254,8 +254,31 @@ public sealed class DeckView
                 continue;
             }
             double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
-            bool open = Math.Sqrt((state.AvatarX - mx) * (state.AvatarX - mx)
-                                + (state.AvatarY - my) * (state.AvatarY - my)) <= DoorOpenRadius;
+            double toDoor = Math.Sqrt((state.AvatarX - mx) * (state.AvatarX - mx)
+                                    + (state.AvatarY - my) * (state.AvatarY - my));
+            // #462 · THE AIRLOCK INTERLOCK. Owner, 2026-07-27: "only one door in a tube is open at a time…
+            // think of airlock" — "both doors being open at the same time defeats the purpose". Doors in the
+            // same group take turns: only the one NEAREST the captain may stand open, so the far end is
+            // always drawn shut. That is the visible barrier the Old Ones stop at (they used to halt at a gap
+            // painted open, because the captain standing at the threshold held BOTH ends retracted), and it
+            // is what seals a tailgater in the tube with the built-in gun (#461) instead of letting it
+            // follow you aboard. The rule itself lives in Core Airlock so CI pins it.
+            double nearestPartner = double.PositiveInfinity;
+            if (d.Interlock != 0)
+            {
+                foreach (DeckPlan.Door other in plan.Doors)
+                {
+                    if (other.Interlock != d.Interlock || other.Locked || other.Equals(d))
+                    {
+                        continue;
+                    }
+                    double pmx = (other.X1 + other.X2) / 2.0, pmy = (other.Y1 + other.Y2) / 2.0;
+                    double toOther = Math.Sqrt((state.AvatarX - pmx) * (state.AvatarX - pmx)
+                                             + (state.AvatarY - pmy) * (state.AvatarY - pmy));
+                    nearestPartner = Math.Min(nearestPartner, toOther);
+                }
+            }
+            bool open = Airlock.MayOpen(toDoor, nearestPartner, DoorOpenRadius);
             if (open)
             {
                 // Retracted: a short leaf at each jamb (25% in from each end).
