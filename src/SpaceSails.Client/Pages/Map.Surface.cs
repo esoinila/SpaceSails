@@ -1095,6 +1095,34 @@ public partial class Map
         }
     }
 
+    // #464 · LAND ME, ALREADY. Owner, 2026-07-27: "It is not ready until it is playtested in the browser."
+    // Every surface playtest began with a two-minute walk from the boot position to the shuttle hatch, and
+    // scripted walking wedges on the bay wall often enough that the interesting states (a charge, a blow
+    // landing, five and down) were being verified by unit test instead of by eye. So: /map?land=1 rides the
+    // shuttle down the moment the world is ready — the REAL BeginSurfaceExcursion, the real descent phases,
+    // the real ground. It skips only the walk to the hatch and the boarding panel, nothing that matters.
+    private bool _landCheat;
+
+    private async Task AutoLandForCheatAsync()
+    {
+        if (!_landCheat || _surface is not null)
+        {
+            return;
+        }
+        // The same board the hatch would show, so the cheat can never reach somewhere the player could not.
+        ShuttleStop? target = ShuttleDestinationsInRange().FirstOrDefault(s => s.IsLandable);
+        if (target is null)
+        {
+            ShowPulseMessage("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
+            return;
+        }
+        LandingSite site = LandingSites.For(target.Body.Id)[
+            Math.Clamp(_forcedSiteIndex ?? 0, 0, LandingSites.For(target.Body.Id).Count - 1)];
+        // Bring the sling down loaded — a cheat that lands you empty-handed made [T] look broken
+        // (owner: "why are there no sentries to plant?" / "Button T stopped working?").
+        await BeginSurfaceExcursion(target, ShuttleExcursion.Pack(0, _credits, []), botsToBring: 2, site: site);
+    }
+
     // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off. They are
     // roused in the DEEP and come to you (#461) — never set down on the landing pad, which read as the Old
     // Ones somehow knowing where the shuttle would touch down.
@@ -1439,6 +1467,60 @@ public partial class Map
         }
     }
 
+    // #465 · A SHUT DOOR IS OPAQUE. Owner, 2026-07-27: "the gun would be behind one door and not shooting
+    // through it." Doors are not collision segments — the passage is always walkable, by law — so they never
+    // entered the sight test, and the tube's built-in gun happily shot straight through a closed airlock.
+    //
+    // Opacity and solidity are NOT the same property (this is exactly the distinction #442 is about): a shut
+    // door stops the eye and the round while never stopping the captain's boots. So sight queries get the
+    // walls PLUS whatever doors are shut this instant, and collision keeps getting the walls alone.
+    private readonly List<SurfaceCollision.Segment> _sightBlockers = [];
+
+    private IReadOnlyList<SurfaceCollision.Segment> SightBlockers()
+    {
+        _sightBlockers.Clear();
+        foreach (SurfaceCollision.Segment seg in _deckPlan.CollisionSegments)
+        {
+            _sightBlockers.Add(seg);
+        }
+        foreach (DeckPlan.Door d in _deckPlan.Doors)
+        {
+            if (!IsDoorShut(d))
+            {
+                continue; // standing open — you can see (and shoot) straight down the tube
+            }
+            _sightBlockers.Add(new SurfaceCollision.Segment(d.X1, d.Y1, d.X2, d.Y2));
+        }
+        return _sightBlockers;
+    }
+
+    // The same rule DeckView draws with (Core Airlock), so what blocks a shot is exactly what the player
+    // sees closed — one door open at a time, the far end of an interlocked tube always shut.
+    private bool IsDoorShut(DeckPlan.Door d)
+    {
+        if (d.Locked)
+        {
+            return true;
+        }
+        double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
+        double toDoor = Math.Sqrt(((_avatarX - mx) * (_avatarX - mx)) + ((_avatarY - my) * (_avatarY - my)));
+        double nearestPartner = double.PositiveInfinity;
+        if (d.Interlock != 0)
+        {
+            foreach (DeckPlan.Door other in _deckPlan.Doors)
+            {
+                if (other.Interlock != d.Interlock || other.Locked || other.Equals(d))
+                {
+                    continue;
+                }
+                double ox = (other.X1 + other.X2) / 2.0, oy = (other.Y1 + other.Y2) / 2.0;
+                nearestPartner = Math.Min(nearestPartner,
+                    Math.Sqrt(((_avatarX - ox) * (_avatarX - ox)) + ((_avatarY - oy) * (_avatarY - oy))));
+            }
+        }
+        return !Airlock.MayOpen(toDoor, nearestPartner, DeckPlan.DoorOpenRadius);
+    }
+
     // #446: the movers CLOSE ENOUGH TO FRIGHTEN — the same count, fenced to the dread range. The tracker
     // still hears every mover on the field (its fan is untouched, and a far blip is exactly the dread the
     // fan is for); this is only what the nerve is priced from, so a hunter you have time to walk away from
@@ -1526,7 +1608,7 @@ public partial class Map
         // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
         // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
         // "Now the cannons shot though the walls").
-        SentryBot.Volley volley = SentryBot.Step(deployed, targets, _deckPlan.CollisionField);
+        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers());
 
         // Fold the drained magazines back and flash a zap line from each bot that fired.
         double nowMs = _lastTimestampMs ?? 0;
@@ -1908,7 +1990,7 @@ public partial class Map
             // breaks the shot, so a Reever that rounds a corner genuinely breaks contact with the gun
             // grinding it down.
             if (b.Deployed && b.Rounds > 0
-                && SentryBot.CanEngage(b.X, b.Y, r.X, r.Y, _deckPlan.CollisionField))
+                && SentryBot.CanEngage(b.X, b.Y, r.X, r.Y, SightBlockers()))
             {
                 return true;
             }

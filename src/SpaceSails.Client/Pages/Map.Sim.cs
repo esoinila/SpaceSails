@@ -498,6 +498,16 @@ public partial class Map
                     _forcedSiteIndex = siteN;
                 }
             }
+            else if (pair.StartsWith("land=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #464 dev cheat: /map?land=1 rides the shuttle down as soon as the world is ready, onto the
+                // first landable body in reach (honouring ?site=N). The real BeginSurfaceExcursion and the
+                // real descent — it skips only the walk to the hatch and the boarding panel, so a surface
+                // playtest is one URL instead of two minutes of walking. Owner, 2026-07-27: "It is not ready
+                // until it is playtested in the browser."
+                string candidate = Uri.UnescapeDataString(pair["land=".Length..]).ToLowerInvariant();
+                _landCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("kaamos=", StringComparison.OrdinalIgnoreCase))
             {
                 // #411 dev cheat: /map?kaamos=N assembles the first N PROJEKTI KAAMOS fragments (canonical
@@ -762,6 +772,14 @@ public partial class Map
         if (_pendingExpeditionCheat is not null)
         {
             InjectExpeditionCheat(); // #370: after the clamp — the accepted gig lands on a live, docked world
+        }
+
+        if (_landCheat)
+        {
+            // #464: ride the shuttle down now that the berth is clamped and the ephemeris is live, so the
+            // in-range board is real. Fire-and-forget: BeginSurfaceExcursion narrates its own descent
+            // phases and yields between them, exactly as the hatch's own path does.
+            _ = AutoLandForCheatAsync();
         }
 
         if (_pendingDeflectionCheat is not null)

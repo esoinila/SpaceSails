@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Client.Rendering;
 
@@ -35,6 +35,11 @@ public sealed class DeckPlan
     /// That is what finally gives the Old Ones a visible thing to stop at (#462) — the outer door closing
     /// behind you as the inner opens — and it is why a tailgater ends up shut in the tube with the built-in
     /// gun (#461) rather than following you aboard. 0 = an ordinary door with no partner.</para></summary>
+    /// <summary>#465 · How near the captain must be for an auto-door to retract. Lives HERE, not in the
+    /// renderer, because the same number now decides two things that must never disagree: what is DRAWN open
+    /// and what is transparent to sight and gunfire. A door the player sees shut must stop a round.</summary>
+    public const double DoorOpenRadius = 4.0;
+
     public readonly record struct Door(
         float X1, float Y1, float X2, float Y2, bool Locked = false, int Interlock = 0);
 

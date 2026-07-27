@@ -122,7 +122,7 @@ public sealed class DeckView
     private static readonly RgbaColor DoorShut = new(255, 180, 90, 220);   // amber airlock door, closed
     private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
     private static readonly RgbaColor DoorLocked = new(120, 140, 170, 210);// another berth's sealed hatch
-    private const double DoorOpenRadius = 4.0;
+    private const double DoorOpenRadius = DeckPlan.DoorOpenRadius; // #465: one number, shared with sight
 
     private readonly IRenderer _renderer;
     private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];

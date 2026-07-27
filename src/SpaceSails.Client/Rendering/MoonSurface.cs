@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -162,7 +162,8 @@ public static class MoonSurface
             spawnX: SpawnX, spawnY: SpawnY,
             droidCount: droidCount, fillDroids: fillDroids,
             location: layout.Location,
-            doors: null, shipFixtures: true, followCam: true, tables: DeckPlan.Ship.Tables);
+            // #465: hand the tube's doors to the plan. `doors: null` here is what made the airlock invisible.
+            doors: layout.Doors, shipFixtures: true, followCam: true, tables: DeckPlan.Ship.Tables);
     }
 
     // #371 Phase 1 · the memoized, delegate-free layout: everything in a surface deck that is a pure
@@ -171,7 +172,12 @@ public static class MoonSurface
     private readonly record struct Layout(
         DeckPlan.Wall[] Walls, DeckPlan.ConsoleSpot[] Consoles,
         (float X, float Y, string Text)[] Labels, DeckPlan.Backdrop[] Backdrops,
-        Func<double, double, string> Location);
+        Func<double, double, string> Location,
+        // #465: the tube's TWO DOORS. They were built here and then dropped on the floor — the memoized
+        // layout (#371 Phase 1) never carried them and SurfaceDeck passed `doors: null`, so the tube has
+        // been drawn WIDE OPEN since the day it was written. That is the "the door that does not open for
+        // them is MISSING" report, and why the Old Ones appeared to halt at nothing.
+        DeckPlan.Door[] Doors);
 
     // WASM is single-threaded, so a plain dictionary is safe. Bounded (see the growth guard above).
     private const int LayoutCacheCap = 64;
@@ -274,7 +280,8 @@ public static class MoonSurface
                     : $"{bodyDisplayName.ToUpperInvariant()} SURFACE";
 
         return new Layout(
-            walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location);
+            walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location,
+            doors.ToArray());
     }
 
     // The ship carries one amber shuttle-airlock door across the (bottom) hatch; drop it so the tube's
