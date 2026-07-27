@@ -320,6 +320,12 @@ const CUES = {
     reveal:{ freq: 587, to: 1175, duration: 0.45, gain: 0.08, type: 'sine' },    // a scan resolves it — bright discovery rise
     voidjump:{ freq: 196, to: 784, duration: 0.7, gain: 0.10, type: 'sawtooth' }, // #255 long-haul engage — a rising bottle-pop whoosh into the void
     buzzer:{ freq: 175, to: 150, duration: 0.32, gain: 0.045, type: 'square' },   // #424 THE UNEXPLAINED SIGNAL — a faint, low buzzer off-deck; quiet + muffled, no one explains it
+    // #467 · BEING HURT MUST BE UNMISSABLE (owner, 2026-07-27: "I had no sound to alert that I was taking
+    // damage… I should know when I'm hurt"). The generic `alarm` was shared with a dozen other things, so a
+    // blow read as background in a fight. Two distinct voices instead:
+    block: { freq: 1400, to: 520, duration: 0.14, gain: 0.11, type: 'square' },   // steel turns it — a hard bright CLANG
+    wound: { freq: 150,  to: 42,  duration: 0.55, gain: 0.16, type: 'sawtooth' }, // it got in — low, wet and wrong
+    last:  { freq: 90,   to: 70,  duration: 0.9,  gain: 0.18, type: 'sawtooth' }, // one more will do it — a floor-level dread tone
 };
 
 export function playCue(kind) {

@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// #439 · THE DEV START SITES — the quick-start catalogue, in the game's own front door.
@@ -34,9 +34,12 @@ public static class DevStarts
         new("🌑", "Miranda — the Shadowed Rille",
             "The same moon, a different world: site 1 re-seeds the ground into a gully of permanent night. The A/B for \"a body is a world, not a level\" (#320).",
             "/map?dock=the-tilt&site=1"),
+        new("🪂", "Miranda — land me straight on the ground",
+            "Rides the shuttle down the instant the world is ready — the real descent, the real ground, no walk to the hatch and no boarding panel. The one-URL way to playtest anything on a surface (#464).",
+            "/map?dock=the-tilt&site=0&land=1"),
         new("🧟", "Miranda — jumped the moment you land",
             "The canon ground with FOUR Old Ones set down on top of you, already aware. The chase, the pack spacing and the exchange — block rolls, blood, the five blows — inside seconds instead of a long walk and a lucky tide (#453).",
-            "/map?dock=the-tilt&site=0&reevers=4"),
+            "/map?dock=the-tilt&site=0&land=1&reevers=4"),
         new("⛏", "An away-team gig, already accepted",
             "A mining rock parked in shuttle range with the job on the books — the shortest road to boots on the regolith (#370).",
             "/map?expedition=mining"),
