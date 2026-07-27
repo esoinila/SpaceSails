@@ -1452,6 +1452,12 @@ public partial class Map
         }
     }
 
+    // Where a bot that just fired should be DRAWN aiming. Owner, live 2026-07-27: "See it fire through wall
+    // now." #437/#438 taught the SHOT and the PIN to respect stone — but this, the third caller, still picked
+    // by bare distance, so the gun legitimately shot the nearest thing it could SEE while the zap line was
+    // drawn at the nearest thing FULL STOP. A beam painted across a monolith at a target the bot never
+    // engaged: the fire was honest, the picture was not. Same CanEngage gate as the volley, so the beam can
+    // only ever be drawn at the target the volley could actually have spent its round on.
     private (double X, double Y)? NearestReeverInArc(SurfaceBot bot)
     {
         double bestSq = SentryBot.RangeDeckUnits * SentryBot.RangeDeckUnits;
@@ -1460,7 +1466,7 @@ public partial class Map
         {
             double dx = r.X - bot.X, dy = r.Y - bot.Y;
             double d2 = (dx * dx) + (dy * dy);
-            if (d2 <= bestSq)
+            if (d2 <= bestSq && SentryBot.CanEngage(bot.X, bot.Y, r.X, r.Y, _deckPlan.CollisionField))
             {
                 bestSq = d2;
                 best = (r.X, r.Y);
