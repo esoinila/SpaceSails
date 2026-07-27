@@ -658,6 +658,12 @@ public partial class Map
         {
             return; // already channeling (dig or door-force) — stepping away aborts, [E] doesn't re-trigger
         }
+        if (DigSettling)
+        {
+            // #452: you are standing on the ✗ you just made. Lifting it is a real choice, not the next tap.
+            ShowPulseMessage("The earth's still settling. Give it a breath before you put a shovel back in.");
+            return;
+        }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.DigSite } spot)
         {
             return;
@@ -681,6 +687,13 @@ public partial class Map
     {
         if (_surface is not { } ex || ex.AnyChannel)
         {
+            return;
+        }
+        if (DigSettling)
+        {
+            // #452: the shovel just came out of this ground. A held [E] must not immediately start the next
+            // hole — one deliberate press per hole, or the chest goes in and out without you meaning it.
+            ShowPulseMessage("The earth's still settling. Give it a breath before you put a shovel back in.");
             return;
         }
         // Safe up in the tube / aboard, or up on the landing band — no digging the fused pad.
@@ -807,9 +820,21 @@ public partial class Map
         });
     }
 
+    // #452 (owner, live 2026-07-27: "it is too easy to bury and dig up by accident now by just pressing down
+    // E in sequence"). Burying mints the ✗ AT YOUR FEET, so the instant the shovel goes down you are standing
+    // on a dig site — and the very next [E] lifts straight back out what you just spent 3.6 seconds putting
+    // in. Hold the key, or tap it twice out of habit, and the ground quietly undoes itself. So a finished
+    // dig leaves the earth SETTLING: [E] will not start another one here for a beat, and says why.
+    private const double DigSettleSeconds = 2.0;
+    private double _digSettleUntilMs = double.NegativeInfinity;
+
+    // True while the last dig is still settling — the guard that makes bury-then-undo a deliberate act.
+    private bool DigSettling => (_lastTimestampMs ?? 0) < _digSettleUntilMs;
+
     private void CompleteDig(SurfaceExcursion ex, DigChannel ch)
     {
         ex.Channel = null;
+        _digSettleUntilMs = (_lastTimestampMs ?? 0) + (DigSettleSeconds * 1000.0);
         switch (ch.Kind)
         {
             case DigKind.Bury:
@@ -1600,6 +1625,11 @@ public partial class Map
             // seen you, losing sight only demotes it to the last-seen shamble — it does not forget).
             if (!r.EverSeen)
             {
+                // #446 — and the owner's ruling on it, 2026-07-27: "The unaware reevers is a feature, not a
+                // bug. As the player ventures deeper they can see the player then." An Old One that has
+                // never laid eyes on the captain KEEPS ITS GROUND, holding whatever deep it claimed. The
+                // stillness is the point: the field is quiet until you walk far enough in to be seen, and
+                // then it is not. (A wander was tried here and reverted on that ruling — do not re-add it.)
                 if (!r.Idle)
                 {
                     r.Idle = true;
@@ -1624,11 +1654,21 @@ public partial class Map
             // instead of trailing single-file — the cornering loss-condition becomes real geometry.
             double aimX = tgtX + (MoonSurface.SpawnX - tgtX) * EncircleBias;
             double aimY = tgtY + (MoonSurface.SurfaceTopY - tgtY) * EncircleBias;
-            // Lane-1: two leashes. A dig-roll PACK member chases to the very crew-only door
-            // (ReeverBarrierY); a TIDE Reever holds the deep and turns back at its home range — owner
-            // 2026-07-18: they "will stop venturing too far" toward the landing. The barrier IS the leash
-            // (ReeverChase caps y at it), so bots can pin a deep spot but never protect the whole field.
-            double barrier = r.Tide ? MoonSurface.ReeverTideHomeRangeY : MoonSurface.ReeverBarrierY;
+            // #453 · ONE LEASH, AND IT IS A DOOR — not a distance. Owner, live 2026-07-27: "Let's not have
+            // any don't venture too far set-up by y-coordinate. If you can get away with it with the help of
+            // the sentries then do it but you might get killed by the reevers (or end up joining them)."
+            //
+            // This retires the 2026-07-18 tide home-range. That invisible horizontal line was the thing he
+            // watched a charge halt on — "they were charging towards and just stopped… as if their path was
+            // blocked by static distance from the airlock… why did they stop charging just to be shot while
+            // standing still." Because ReeverChase clamped their y there, and a clamped Reever makes no
+            // progress, so the client latched it Idle at zero velocity: a free target frozen on a line the
+            // player could neither see nor shoot through.
+            //
+            // Now EVERY Old One — tide or dig-roll pack — chases to the one barrier that is real fiction: the
+            // crew-only door at the tube mouth. How deep you dare go is priced by the sentries you brought
+            // and your nerve, not by a number in the geometry.
+            double barrier = MoonSurface.ReeverBarrierY;
 
             // Chase from the CANONICAL spot: while idle, r.X/r.Y carry the cosmetic shiver, so we step from
             // the fixed anchor instead (else the shuffle would feed itself and the anchor would drift). A
@@ -1640,6 +1680,7 @@ public partial class Map
             // work a slab left, half right, and the two streams meet you around its ends.
             int wallSide = (r.JitterSeed & 1) == 0 ? 1 : -1;
             (double nx, double ny) = ReeverChase.Step(baseX, baseY, aimX, aimY, step, barrier, walls, reeverRadius, wallSide);
+
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 
             if (progressed < idleProgress)
@@ -1688,6 +1729,10 @@ public partial class Map
                 spread[i] = (_reevers[i].X, _reevers[i].Y);
             }
             ReeverPack.KeepApart(spread, walls, reeverRadius);
+            // #453: and off the captain's own dot, on the same law. Safe here because every Reever's catch
+            // test has already run this frame — reaching you still catches you; this only stops the drawn
+            // dots from merging into one once that verdict is in.
+            ReeverPack.KeepClearOfCaptain(spread, _avatarX, _avatarY, walls, reeverRadius);
             for (int i = 0; i < _reevers.Count; i++)
             {
                 Reever moved = _reevers[i];

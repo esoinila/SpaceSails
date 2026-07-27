@@ -32,13 +32,13 @@ public static class ReeverTide
     /// same-frame flood — the tide is relentless, not instantaneous.</summary>
     public const double MinGapSeconds = 2.0;
 
-    /// <summary>The tide's northern limit as a fraction of the way UP from the deep edge toward the
-    /// surface top (0 = the deep bottom rim, 1 = the tube mouth). North of this line the tide holds and
-    /// turns back — owner: they "will stop venturing too far" toward the landing. Kept low so the home
-    /// range covers the deep dig-ground but stops well short of the landing band: the consequence the
-    /// owner wanted is that bots can pin a spot but can never protect the whole deep field, so time
-    /// there is bounded regardless.</summary>
-    public const double HomeRangeFraction = 0.45;
+    // #453 · THE HOME RANGE IS GONE. Owner, live 2026-07-27: "Let's not have any don't venture too far
+    // set-up by y-coordinate. If you can get away with it with the help of the sentries then do it but you
+    // might get killed by the reevers (or end up joining them)." HomeRangeFraction / HomeRangeY lived here
+    // and turned the tide back at a fixed y — an invisible horizontal line the owner watched a charge halt
+    // on ("as if their path was blocked by static distance from the airlock"), where the Reever then stood
+    // still and was shot. Every Old One now runs to the one barrier that is real fiction: the crew-only
+    // door at the tube mouth. How deep you dare go is priced by sentries and nerve, not by geometry.
 
     // The fraction resolution: a large-faced die off the shared rule gives a smooth [0,1) sample while
     // staying every bit as platform-stable and replayable as the dice engine itself.
@@ -67,14 +67,6 @@ public static class ReeverTide
         double u = Fraction(seed, $"tide-x:{spawnIndex}");
         return leftX + (u * (rightX - leftX));
     }
-
-    /// <summary>The tide's home-range boundary in deck-units for a field that runs from
-    /// <paramref name="surfaceTopY"/> (the tube mouth, the safe north) down to
-    /// <paramref name="surfaceBottomY"/> (the deep edge). North of the returned y a tide Reever holds
-    /// and turns back — the deep floods, the landing stays clear. Pure geometry so the "will stop
-    /// venturing too far" law is pinned without any client dependency.</summary>
-    public static double HomeRangeY(double surfaceTopY, double surfaceBottomY) =>
-        surfaceBottomY + ((surfaceTopY - surfaceBottomY) * HomeRangeFraction);
 
     // A uniform [0,1) sample: one large-faced die off the shared rule, salted by the purpose tag so the
     // gap and position streams are independent.

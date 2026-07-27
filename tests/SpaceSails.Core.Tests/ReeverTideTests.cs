@@ -1,4 +1,4 @@
-namespace SpaceSails.Core.Tests;
+﻿namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// Lane-1 · The tide (owner, Saturday-evening playtest 2026-07-18): "even with bots there is only so
@@ -135,37 +135,15 @@ public class ReeverTideTests
         Assert.InRange(locked, 60, 140); // ~half by chance; neither near 0 nor near 199 (perfect (anti)lock)
     }
 
-    // ── The home range: the tide holds the deep and stops venturing toward the landing ──
-
-    [Fact]
-    public void HomeRangeY_SitsInTheDeep_WellSouthOfTheDoor()
-    {
-        // Field geometry as MoonSurface uses it: top (tube mouth / crew-only door) = -20, deep edge = -84.
-        const double top = -20, bottom = -84;
-        double home = ReeverTide.HomeRangeY(top, bottom);
-
-        // Strictly inside the field…
-        Assert.InRange(home, bottom, top);
-        // …but well SOUTH of the door (more negative), so the landing band is never in the tide's reach.
-        Assert.True(home < top - 20, "the tide must hold well short of the landing");
-        // …and north of the spawn edge, so a clawed-out Reever has field to walk before it turns back.
-        Assert.True(home > bottom, "the home range must leave room north of the deep edge");
-    }
-
-    [Fact]
-    public void HomeRange_LeashesATideReever_ItTurnsBackAndNeverReachesTheLanding()
-    {
-        // Feed the home-range y to ReeverChase as the barrier (exactly how the client leashes a tide
-        // Reever) and chase a captain standing up at the landing: the Reever may pile at the line but can
-        // never cross north of it — the "will stop venturing too far" law, composed from pure pieces.
-        const double top = -20, bottom = -84;
-        double home = ReeverTide.HomeRangeY(top, bottom);
-
-        double rx = 0, ry = bottom + 2; // clawed out at the deep edge
-        for (int i = 0; i < 2000; i++)
-        {
-            (rx, ry) = ReeverChase.Step(rx, ry, avatarX: -6, avatarY: top - 2, stepDistance: 5.6 * 0.1, barrierY: home);
-            Assert.True(ry <= home + 1e-9, $"a tide Reever reached y={ry}, north of its home range at {home}");
-        }
-    }
+    // ── The home range is GONE (owner, 2026-07-27) ──
+    //
+    // "Let's not have any don't venture too far set-up by y-coordinate. If you can get away with it with the
+    // help of the sentries then do it but you might get killed by the reevers (or end up joining them)."
+    //
+    // The tide used to turn back at a fixed y (HomeRangeFraction / HomeRangeY, both deleted with this
+    // ruling). That invisible horizontal line was what the owner watched a charge halt on — the Reevers
+    // "just stopped… as if their path was blocked by static distance from the airlock", and then stood
+    // there being shot. Every Old One now chases to the ONE barrier that is real fiction: the crew-only
+    // door at the tube mouth, pinned in SurfaceCollisionTests. How deep you dare go is priced by the
+    // sentries you brought and your nerve, not by a number in the geometry.
 }
