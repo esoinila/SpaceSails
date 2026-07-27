@@ -1049,6 +1049,21 @@ public partial class Map
                 // Seed the thermal shuffle off the excursion threat seed + the spawn ordinal so each pack
                 // member shivers on its own phase (client-only, like the position itself — never saved).
                 JitterSeed = ((_surface?.ThreatSeed ?? 0UL) * 0x9E3779B97F4A7C15UL) + (ulong)i + 1UL,
+
+                // #459 (owner, live 2026-07-27: "I did not see any reevers last time… were there any?" —
+                // "Not having any is major bug"). THIS pack is roused BY the shovel: the line the player is
+                // reading as they spawn literally says they "shamble up from the regolith, CONVERGING".
+                // After #446 they were born unaware, so they converged on nothing — they stood where they
+                // rose, and standing still they are invisible to a motion-only tracker too. The whole
+                // dig-under-threat loop silently became an empty field.
+                //
+                // They know the DIG, not the captain: LastSeen is the hole, exactly as #456's ear hands out
+                // a PLACE rather than a target. Walk away from the noise you made and they still arrive at
+                // it. #446's unaware feature is untouched — it governs the Old Ones already standing on the
+                // ground when you get there (the tide's), which is the case the owner described.
+                EverSeen = true,
+                LastSeenX = _avatarX,
+                LastSeenY = _avatarY,
             });
         }
     }
@@ -1945,6 +1960,17 @@ public partial class Map
             // deep field of leash-held Old Ones all shiver independently at their home range.
             JitterSeed = (ex.ThreatSeed * 0xD1B54A32D192ED03UL) + (ulong)ex.TideSpawnIndex + 1UL,
         });
+
+        // #459: a tide Reever claws out UNAWARE — it holds the deep it rose into until it sees or hears you
+        // (#446's feature; the deep fills up and you meet it by venturing down). But if you are digging right
+        // now, it rose into the sound of a shovel: replay the noise so anything in earshot — including the
+        // one that just arrived — learns where the hole is. Otherwise MakeNoise only ever reached the Old
+        // Ones that already existed when you started digging, and every latecomer was born deaf to it.
+        if (ex.Channel is { } digging)
+        {
+            MakeNoise(digging.AnchorX, digging.AnchorY, ReeverHearing.Noise.Digging);
+        }
+
         if (!ex.TideAnnounced)
         {
             ex.TideAnnounced = true;
