@@ -1,4 +1,4 @@
-namespace SpaceSails.Core.Tests;
+﻿namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// #453 · The exchange. Owner, live 2026-07-27: <i>"player health could be like 5 reever hits but the reever
@@ -22,8 +22,10 @@ public class CaptainConditionTests
         // The owner's rule, and it is deliberately NOT the catch radius: reaching you is one thing, putting
         // a hand on you is another. Two 0.7 bodies touch at 1.4.
         Assert.Equal(1.4, CaptainCondition.TouchDistance, 6);
-        Assert.True(CaptainCondition.TouchDistance > ReeverChase.CatchRadius,
-            "a swing must need real contact, not just proximity");
+        // #469: ONE contact law. The catch radius used to be 1.2 — tighter than the sum of the two body
+        // radii — so being "caught" required the bodies to visibly overlap while a swing landed at a true
+        // touch. Everything that keys off being reached now reads the same number.
+        Assert.Equal(ReeverChase.CatchRadius, CaptainCondition.TouchDistance, 6);
     }
 
     [Fact]

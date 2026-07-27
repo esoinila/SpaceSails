@@ -305,7 +305,12 @@ public partial class Map
         // #461 · when the shuttle mated, in surface seconds. The arrival grace is measured off this: a hull
         // setting down is not news to the Old Ones (they take it for one of their own), so nothing may notice
         // the captain until SurfaceArrival.SpotGraceSeconds have passed.
-        public double LandedAt { get; set; }
+        // #469: REAL-TIME milliseconds (_lastTimestampMs), NOT SimTime. SimTime is the ship's orbital sim
+        // clock; standing on a regolith it barely advances, so a grace measured on it never expired — and a
+        // never-expiring grace means no Old One may EVER notice the captain. They walked to whatever spot
+        // they were born knowing and froze there. The surface's own clock is the rAF one, the same one the
+        // swing cooldown, the blood fade and the dig settle already use.
+        public double LandedAtMs { get; set; }
         public bool GraceEndedAnnounced { get; set; }
         public bool SentryHintShown { get; set; }         // #380 item 7: the one-time first-deploy sentry hint has fired
         public bool NerveBandDropAnnounced { get; set; }  // #380 item 2: the one-time "nerves fraying" band-drop pulse has fired
@@ -539,7 +544,7 @@ public partial class Map
         // the door possible at all (owner: "there should always be one un-paid-for sentry at the door" — he
         // had to spend one of his own just to get clear). It is the shuttle's own fixture: never bought,
         // never counted against the sling, and left behind without a ledger complaint.
-        _surface!.LandedAt = SimTime;
+        _surface!.LandedAtMs = _lastTimestampMs ?? 0;
         _surface!.Bots.Add(new SurfaceBot
         {
             Unit = SurfaceArrival.DoorSentryUnit,
@@ -1447,7 +1452,7 @@ public partial class Map
             return;
         }
         // #461: the arrival grace covers the EAR too, or the first shovel-stroke would undo it.
-        if (!SurfaceArrival.CanBeSpotted(SimTime - ex.LandedAt))
+        if (!SurfaceArrival.CanBeSpotted(((_lastTimestampMs ?? 0) - ex.LandedAtMs) / 1000.0))
         {
             return;
         }
@@ -1814,7 +1819,7 @@ public partial class Map
             // (owner: "ship in itself does not attract them. They expect it is their ship"). It is the warm
             // body walking out that is news, and even that gets a beat: nothing may notice the captain, by
             // eye OR by ear, until the grace has run. It is what makes stepping out of the door possible.
-            if (SurfaceArrival.CanBeSpotted(now - (_surface?.LandedAt ?? 0))
+            if (SurfaceArrival.CanBeSpotted(((_lastTimestampMs ?? 0) - (_surface?.LandedAtMs ?? 0)) / 1000.0)
                 && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, walls))
             {
                 r.LastSeenX = _avatarX;
@@ -1873,7 +1878,13 @@ public partial class Map
             // Now EVERY Old One — tide or dig-roll pack — chases to the one barrier that is real fiction: the
             // crew-only door at the tube mouth. How deep you dare go is priced by the sentries you brought
             // and your nerve, not by a number in the geometry.
-            double barrier = MoonSurface.ReeverBarrierY;
+            // #468 (owner, live 2026-07-27: "see how the dead reever is in the middle of the door… the reever
+            // collision to door is just the centerpoint?"). It was. The crew-only clamp stopped their CENTRE
+            // at the threshold, so a 0.7-radius body sat half inside the doorway — husks lay across the door
+            // line, and worse, the gun's line to that centre never crossed the door segment, which is why a
+            // round appeared to go THROUGH a shut door. Stop the BODY instead: they halt a full radius short
+            // and the threshold stays clear, so what the player sees and what the geometry believes agree.
+            double barrier = MoonSurface.ReeverBarrierY - reeverRadius;
 
             // Chase from the CANONICAL spot: while idle, r.X/r.Y carry the cosmetic shiver, so we step from
             // the fixed anchor instead (else the shuffle would feed itself and the anchor would drift). A

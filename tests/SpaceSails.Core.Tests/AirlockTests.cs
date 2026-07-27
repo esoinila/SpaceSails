@@ -1,4 +1,4 @@
-namespace SpaceSails.Core.Tests;
+﻿namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// #462 · One door at a time. Owner, 2026-07-27: <i>"The idea is that only one door in a tube is open at a
@@ -67,5 +67,31 @@ public class AirlockTests
     {
         Assert.False(Airlock.MayOpen(double.NaN, 5, Radius));
         Assert.True(Airlock.MayOpen(1, double.NaN, Radius)); // an unreadable partner cannot veto the near door
+    }
+
+    [Fact]
+    public void AShutDoorStopsTheTubeGunsRound_TheGeometryTheOwnerWatchedFail()
+    {
+        // Owner, live 2026-07-27: "The reever was shot through the door here now." The exact arrangement:
+        // the built-in gun sits INSIDE the tube (SurfaceTopY + 2), the tube-mouth door lies across the
+        // mouth at SurfaceTopY spanning the tube's width, and an Old One stands on the regolith below it.
+        // With that door shut, the round must not reach.
+        const double tubeLeft = -9, tubeRight = -5, mouthY = -20;
+        SurfaceCollision.Segment[] shutDoor = [new(tubeLeft, mouthY, tubeRight, mouthY)];
+
+        // Gun above the mouth, Reever below it, straight down the tube's centre line.
+        Assert.False(SurfaceCollision.HasLineOfSight(-7, mouthY + 2, -7, mouthY - 3, shutDoor),
+            "a shut tube door must stop the built-in gun's round");
+
+        // And off-centre, at an angle — the same door, a slanted shot.
+        Assert.False(SurfaceCollision.HasLineOfSight(-8, mouthY + 2, -6, mouthY - 4, shutDoor));
+
+        // But a target on the SAME side of the door is still perfectly shootable: the door blocks the
+        // threshold, not the corridor.
+        Assert.True(SurfaceCollision.HasLineOfSight(-7, mouthY + 2, -7, mouthY + 6, shutDoor));
+
+        // …and BEYOND the door's span there is no door — a shot out past the jamb is not blocked by it,
+        // which is why the tube's side walls have to be walls (they are).
+        Assert.True(SurfaceCollision.HasLineOfSight(-2, mouthY + 2, -2, mouthY - 3, shutDoor));
     }
 }
