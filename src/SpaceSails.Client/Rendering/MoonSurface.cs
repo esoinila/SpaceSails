@@ -58,13 +58,6 @@ public static class MoonSurface
     /// can never climb it — the door won't open to them. Fed to <c>ReeverChase.Step</c>.</summary>
     public const double ReeverBarrierY = SurfaceTopY;
 
-    /// <summary>Lane-1 · The TIDE's northern limit (owner, 2026-07-18): tide Reevers hold the deep and
-    /// "will stop venturing too far" toward the landing. Well south of the absolute
-    /// <see cref="ReeverBarrierY"/> — so the deep dig-ground floods no matter how many sentries hold a
-    /// spot (time there is bounded), while a sightseer up at the landing is never reached. Derived from
-    /// the field geometry by the pure <see cref="ReeverTide.HomeRangeY"/> so the law is Core-testable.</summary>
-    public static readonly double ReeverTideHomeRangeY = ReeverTide.HomeRangeY(SurfaceTopY, SurfaceBottomY);
-
     /// <summary>Where a tide Reever claws out for spawn index — a deterministic, seed-jittered x spread
     /// across the deep edge (<see cref="ReeverTide.SpawnX"/>), just inside the bottom rim so it walks the
     /// field rather than piling against the outer wall.</summary>

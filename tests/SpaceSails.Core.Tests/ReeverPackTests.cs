@@ -1,4 +1,4 @@
-namespace SpaceSails.Core.Tests;
+﻿namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// #441 · The pack keeps its elbows out. Owner, live 2026-07-26: <i>"Reevers should not pile up"</i> …
@@ -104,5 +104,42 @@ public class ReeverPackTests
         (double X, double Y)[] one = [(3, -30)];
         ReeverPack.KeepApart(one, NoWalls, Radius);
         Assert.Equal((3.0, -30.0), one[0]);
+    }
+
+    [Fact]
+    public void TheyKeepOffTheCaptainsDotToo()
+    {
+        // Owner, 2026-07-27: "let's just make sure the reevers don't overlap the player dot as they now
+        // don't overlap each others dots." A pack closing on a standing captain must still read as a pack
+        // AND a captain — not one merged smear where the player cannot find themselves.
+        (double X, double Y)[] pack = [(0, -60), (0, -60), (0.3, -60.2)];
+        ReeverPack.KeepClearOfCaptain(pack, 0, -60, NoWalls, Radius);
+
+        foreach ((double X, double Y) r in pack)
+        {
+            Assert.True(Gap(r, (0, -60)) >= ReeverPack.PersonalSpace - 1e-6,
+                $"an Old One is standing on the captain (gap {Gap(r, (0, -60)):0.###})");
+        }
+    }
+
+    [Fact]
+    public void TheCaptainShoveNeverPushesOneIntoStone()
+    {
+        // Same law as the pack shove: crowding the captain must not squeeze a hunter through a monolith.
+        SurfaceCollision.Segment[] slab = [new(0, -70, 0, -50)];
+        (double X, double Y)[] pack = [(-0.9, -60)];
+        ReeverPack.KeepClearOfCaptain(pack, -1.2, -60, slab, Radius);
+
+        Assert.False(SurfaceCollision.Blocked(pack[0].X, pack[0].Y, Radius, slab));
+        Assert.True(pack[0].X < 0, "and never shoved through the slab");
+    }
+
+    [Fact]
+    public void ACaptainWithRoomAlready_MovesNobody()
+    {
+        (double X, double Y)[] pack = [(6, -60), (-6, -66)];
+        (double X, double Y)[] before = [.. pack];
+        ReeverPack.KeepClearOfCaptain(pack, 0, -60, NoWalls, Radius);
+        Assert.Equal(before, pack);
     }
 }

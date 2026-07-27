@@ -40,6 +40,52 @@ public static class ReeverPack
     /// <see cref="SurfaceCollision.Slide"/> against <paramref name="walls"/>, so crowding can never squeeze a
     /// hunter into stone (the #324 law survives the shove). One that is boxed in simply stays where it is —
     /// overlapping for a frame is a far smaller lie than a Reever standing inside a wall.</para></summary>
+    /// <summary>#453 · And they may not stand ON THE CAPTAIN either. Owner, 2026-07-27: <i>"let's just make
+    /// sure the reevers don't overlap the player dot as they now don't overlap each others dots."</i> Same
+    /// personal space, same shove, same wall-safety — an Old One crowds you to the edge of your own space
+    /// and no further, so the captain's dot always stays readable under a closing pack.
+    ///
+    /// <para>Call this AFTER the catch test for the frame: reaching you is what CATCHES you
+    /// (<see cref="ReeverChase.CatchRadius"/>, which is smaller than <see cref="PersonalSpace"/>), and that
+    /// verdict must be taken before anyone is nudged back out. This only stops the drawn dots from merging
+    /// once the frame's outcome is already settled.</para></summary>
+    public static void KeepClearOfCaptain(
+        System.Span<(double X, double Y)> pack, double captainX, double captainY,
+        System.Collections.Generic.IReadOnlyList<SurfaceCollision.Segment>? walls,
+        double radius)
+    {
+        for (int i = 0; i < pack.Length; i++)
+        {
+            double dx = pack[i].X - captainX;
+            double dy = pack[i].Y - captainY;
+            double distSq = (dx * dx) + (dy * dy);
+            if (distSq >= PersonalSpace * PersonalSpace)
+            {
+                continue;
+            }
+
+            double dist = System.Math.Sqrt(distSq);
+            double ux, uy;
+            if (dist > 1e-9)
+            {
+                ux = dx / dist;
+                uy = dy / dist;
+            }
+            else
+            {
+                // Standing exactly on the captain: no direction to read, so fan out on the fixed bearing.
+                double bearing = i * 2.399963229728653; // the golden angle
+                ux = System.Math.Cos(bearing);
+                uy = System.Math.Sin(bearing);
+            }
+
+            double push = PersonalSpace - dist;
+            (double nx, double ny) = SurfaceCollision.Slide(
+                pack[i].X, pack[i].Y, ux * push, uy * push, radius, walls);
+            pack[i] = (nx, ny);
+        }
+    }
+
     public static void KeepApart(
         System.Span<(double X, double Y)> pack,
         System.Collections.Generic.IReadOnlyList<SurfaceCollision.Segment>? walls,
