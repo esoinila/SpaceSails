@@ -2204,8 +2204,10 @@ public partial class Map
 
             if (CaptainCondition.Resolve(roll) == CaptainCondition.Exchange.Blocked)
             {
+                // #467: its own voice. A block RINGS — bright, hard, over in a blink — so it can never be
+                // confused with the blow that gets through (owner: "I should know when I'm hurt").
                 ShowPulseMessage($"🛡 {CaptainCondition.BlockLine(seed)}");
-                RendererInterop.PlayCue("alarm");
+                RendererInterop.PlayCue("block");
                 continue;
             }
 
@@ -2213,7 +2215,13 @@ public partial class Map
             ex.HitsTaken++;
             _bloodUntilMs = nowMs + 900;
             ShowPulseMessage($"🩸 {CaptainCondition.HitLine(seed)}");
-            RendererInterop.PlayCue("alarm");
+            // #467: low, wet and wrong — nothing else in the game sounds like this. And at one pip left the
+            // game stops being subtle about it: a floor-level dread tone on top, every single time.
+            RendererInterop.PlayCue("wound");
+            if (CaptainCondition.MaxHits - ex.HitsTaken == 1)
+            {
+                RendererInterop.PlayCue("last");
+            }
             _nerve = NerveModel.Shock(_nerve, NerveModel.TouchShock);
             RequestVaultSave();
 

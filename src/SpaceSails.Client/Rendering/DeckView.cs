@@ -538,6 +538,22 @@ public sealed class DeckView
         // #453 · BLOOD, when a blow gets past the block (owner: "Maybe a splash of blood when reever hit
         // goes through players attempt to block it. :-D"). Seeded spatter around the captain, thrown on the
         // regolith UNDER them so it reads as coming off the body. Brief — it is punctuation, not a decal.
+        // #467 · THE SCREEN REACTS. Owner: "I had no sound to alert that I was taking damage… I should know
+        // when I'm hurt." A small spatter under the boots was too easy to miss mid-fight, so a blow also
+        // washes the EDGES of the screen red on the same fade. Peripheral, never over the grid — the deck
+        // stays readable while you decide whether to run.
+        if (surface is { BloodSplash: > 0 } hurt)
+        {
+            double f = Math.Clamp(hurt.BloodSplash, 0, 1);
+            byte a = (byte)Math.Clamp(150 * f, 0, 255);
+            var edge = new RgbaColor(150, 12, 12, a);
+            float band = Math.Max(10f, heightPx * 0.055f);
+            FillRect(0, 0, widthPx, band, edge);
+            FillRect(0, heightPx - band, widthPx, band, edge);
+            FillRect(0, 0, band, heightPx, edge);
+            FillRect(widthPx - band, 0, band, heightPx, edge);
+        }
+
         if (surface is { BloodSplash: > 0 })
         {
             double fade = Math.Clamp(surface.Value.BloodSplash, 0, 1);
@@ -581,7 +597,7 @@ public sealed class DeckView
         // haven it whispers (compact, tucked below the deck chrome). Shown in every walk mode, never flight.
         if (state.ShowNerve)
         {
-            DrawNerveGauge(simTime, state.Nerve, state.NerveReadout, state.NerveCompact, state.HitsTaken);
+            DrawNerveGauge(simTime, state.Nerve, state.NerveReadout, state.NerveCompact, state.HitsTaken, surface?.BloodSplash ?? 0);
         }
 
         // #327 the ship calls home: the mothership's orbit line, painted plainly across the TOP-CENTRE —
@@ -834,7 +850,7 @@ public sealed class DeckView
     // harder the lower the nerve falls (the "tremor in the glyph" the flavor ladder names), and a house-voice
     // line reads out beneath it. Display-only — this slice never rolls, exits, or ends a run (#226 owns that).
     private static readonly RgbaColor NerveFrame = new(150, 170, 190, 175);
-    private void DrawNerveGauge(double simTime, double nerve, string readout, bool compact, int hitsTaken)
+    private void DrawNerveGauge(double simTime, double nerve, string readout, bool compact, int hitsTaken, double bloodFlash)
     {
         double frac = NerveModel.Fraction(nerve);
         NerveModel.NerveBand band = NerveModel.BandFor(nerve);
@@ -898,7 +914,15 @@ public sealed class DeckView
             for (int i = 0; i < CaptainCondition.MaxHits; i++)
             {
                 float px = x0 + (i * (pip + gap));
-                FillRect(px, py, pip, pip, i < left ? intact : spent);
+                RgbaColor fillPip = i < left ? intact : spent;
+                // #467: the pip that just went out FLASHES white-hot for a beat, so the eye is pulled to the
+                // corner exactly when it changed rather than discovering the loss later.
+                if (i == left && bloodFlash > 0)
+                {
+                    byte hot = (byte)Math.Clamp(255 * bloodFlash, 0, 255);
+                    fillPip = new RgbaColor(255, (byte)(230 * bloodFlash), (byte)(210 * bloodFlash), hot);
+                }
+                FillRect(px, py, pip, pip, fillPip);
                 DrawRectOutline(px, py, pip, pip, NerveFrame);
             }
             _renderer.DrawText(x0 + (CaptainCondition.MaxHits * (pip + gap)) + 6f, py + pip - 1f,
