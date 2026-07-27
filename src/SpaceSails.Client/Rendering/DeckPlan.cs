@@ -69,6 +69,14 @@ public sealed class DeckPlan
     /// already on the ground.</summary>
     public SurfaceCollision.Segment[] CollisionSegments { get; private set; }
 
+    /// <summary>#448 · the SAME walls, filed into a coarse grid (<see cref="SurfaceCollision.WallIndex"/>).
+    /// Reads as an ordinary segment list and answers exactly what <see cref="CollisionSegments"/> answers —
+    /// it just gets there without measuring the whole ground for every step, sightline and shot. This is
+    /// what the per-frame surface step hands the collision primitives, so the frame's cost stops scaling
+    /// with how much stone a landing site happened to seed (owner, live 2026-07-26: the shuttle ride timing
+    /// out twice). Rebuilt whenever the walls change — a fresh plan, or an <see cref="AppendRegion"/>.</summary>
+    public SurfaceCollision.WallIndex CollisionField { get; private set; }
+
     public ConsoleSpot[] Consoles { get; private set; }
     public (float X, float Y, string Text)[] RoomLabels { get; private set; }
     public Backdrop[] Backdrops { get; private set; }
@@ -111,6 +119,7 @@ public sealed class DeckPlan
         {
             CollisionSegments[i] = new SurfaceCollision.Segment(walls[i].X1, walls[i].Y1, walls[i].X2, walls[i].Y2);
         }
+        CollisionField = SurfaceCollision.WallIndex.Build(CollisionSegments);
         Consoles = consoles;
         RoomLabels = roomLabels;
         Backdrops = backdrops;
@@ -164,6 +173,7 @@ public sealed class DeckPlan
             }
             Walls = grownWalls;
             CollisionSegments = grownSegs;
+            CollisionField = SurfaceCollision.WallIndex.Build(grownSegs); // #448: the grid grows with them
         }
 
         Consoles = Concat(Consoles, region.Consoles);
@@ -234,7 +244,7 @@ public sealed class DeckPlan
 
     // PR-324 · The avatar's own collision is now the shared Core check (SurfaceCollision), the very same
     // one the surface Reevers obey — one wall law for everyone on the walked ground.
-    private bool Collides(double x, double y) => SurfaceCollision.Blocked(x, y, AvatarRadius, CollisionSegments);
+    private bool Collides(double x, double y) => SurfaceCollision.Blocked(x, y, AvatarRadius, CollisionField);
 
     public static double DistanceToSegment(double px, double py, double x1, double y1, double x2, double y2) =>
         SurfaceCollision.DistanceToSegment(px, py, x1, y1, x2, y2);
