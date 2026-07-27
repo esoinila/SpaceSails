@@ -27,6 +27,11 @@ public partial class Map
     // the pack cuts angles to corner the captain instead of trailing single-file. Cheap, no pathfinding.
     private const double EncircleBias = 0.28;
 
+    // #472: inside this range the pack stops cutting angles and simply comes for you — the bias is a way of
+    // ARRIVING, never a reason not to. Between here and EncircleFadeRange further out it eases back in.
+    private const double EncircleCloseRange = 6.0;
+    private const double EncircleFadeRange = 14.0;
+
     // Lane-1 · the ENGINE ceiling on simultaneously ACTIVE Reevers (owner, 2026-07-18). This is a perf
     // guard, NOT a gameplay cap: the tide as a rule never stops ("without any limited number"), but we
     // won't hold more than this many live contacts at once for the render/step budget. Generous by
@@ -1126,6 +1131,18 @@ public partial class Map
         // Bring the sling down loaded — a cheat that lands you empty-handed made [T] look broken
         // (owner: "why are there no sentries to plant?" / "Button T stopped working?").
         await BeginSurfaceExcursion(target, ShuttleExcursion.Pack(0, _credits, []), botsToBring: 2, site: site);
+
+        // #470: and put the boots OUT ON THE GROUND, not at the tube mouth. The cheat exists so the surface
+        // can be playtested at all; landing at the threshold still left a long walk down-field before
+        // anything could reach the captain, which is the walk the cheat was invented to remove. Drop them in
+        // the open regolith short of the deep field — far enough out that the pack can actually arrive, close
+        // enough that the way home is still a real run.
+        if (_surface is not null)
+        {
+            _avatarX = MoonSurface.SpawnX;
+            _avatarY = MoonSurface.LandingBandY - 12;
+            RebuildSurfaceDeck();
+        }
     }
 
     // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off. They are
@@ -1860,10 +1877,29 @@ public partial class Map
             double tgtX = r.LastSeenX;
             double tgtY = r.LastSeenY;
 
+            // Where this one actually stands right now (the anchor while idle) — needed to know how far the
+            // run still is, so the encirclement can fade as it closes.
+            double baseXPre = r.Idle ? r.AnchorX : r.X;
+            double baseYPre = r.Idle ? r.AnchorY : r.Y;
+
             // Crude encirclement: aim a little toward the tube choke so the pack cuts the escape angle
             // instead of trailing single-file — the cornering loss-condition becomes real geometry.
-            double aimX = tgtX + (MoonSurface.SpawnX - tgtX) * EncircleBias;
-            double aimY = tgtY + (MoonSurface.SurfaceTopY - tgtY) * EncircleBias;
+            // #472 · THE BIAS SHAPES THE APPROACH, NOT THE DESTINATION. Owner: "still the reevers seem to
+            // stop before the airlock" / "there is nothing between player and reevers still they do not
+            // close the distance?" — and playtested: the pack parks a few units off the captain and hovers.
+            //
+            // The encirclement pulled the AIM POINT a fixed 28% toward the tube choke, at every range. So a
+            // Reever standing on the captain was still steering at a spot offset up-field, arrived THERE,
+            // and stopped — for good. It could never actually reach anybody; the cornering geometry was
+            // quietly a no-contact rule.
+            //
+            // Fade the bias with distance: cut the escape angle while the run is long (which is the whole
+            // point of it), and go straight for the captain once close. Contact is never sacrificed to
+            // cleverness.
+            double toTarget = Math.Sqrt(((tgtX - baseXPre) * (tgtX - baseXPre)) + ((tgtY - baseYPre) * (tgtY - baseYPre)));
+            double bias = EncircleBias * Math.Clamp((toTarget - EncircleCloseRange) / EncircleFadeRange, 0, 1);
+            double aimX = tgtX + (MoonSurface.SpawnX - tgtX) * bias;
+            double aimY = tgtY + (MoonSurface.SurfaceTopY - tgtY) * bias;
             // #453 · ONE LEASH, AND IT IS A DOOR — not a distance. Owner, live 2026-07-27: "Let's not have
             // any don't venture too far set-up by y-coordinate. If you can get away with it with the help of
             // the sentries then do it but you might get killed by the reevers (or end up joining them)."
@@ -2161,8 +2197,14 @@ public partial class Map
     // slab is close enough to kill you through it.
     private bool CanSwingAt(Reever r, IReadOnlyList<SurfaceCollision.Segment> sight)
     {
+        // #471: contact is "at arm's length or nearer", and it must include EXACTLY arm's length. The
+        // keep-off-the-captain shove (#453) parks a crowding Old One at precisely PersonalSpace — the very
+        // same 1.4 that is the touch distance — so a strict comparison left every one of them a floating
+        // hair too far away to ever swing. Playtested: three pressed against the captain, nerve shot, and
+        // the condition still read "unmarked" because not one blow could register. A hair of tolerance.
+        const double reach = CaptainCondition.TouchDistance + 0.05;
         double dx = r.X - _avatarX, dy = r.Y - _avatarY;
-        if ((dx * dx) + (dy * dy) > CaptainCondition.TouchDistance * CaptainCondition.TouchDistance)
+        if ((dx * dx) + (dy * dy) > reach * reach)
         {
             return false;
         }
