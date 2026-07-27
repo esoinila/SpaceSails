@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -219,6 +219,11 @@ public partial class Map
         // as a blip and, when it slips from sight while moving, leaves a fading echo. Always true off an
         // expedition site (no fog there). Client-only, like the position itself.
         public bool VisibleOnMap = true;
+
+        // #453: this contact's own swing clock and swing count. Each Old One winds up separately (so a
+        // crowd is not a blender) and each swing seeds its own die, so a long fight never repeats a line.
+        public double LastSwingMs = double.NegativeInfinity;
+        public int Swings;
     }
 
     // #314: a sentry on the surface — carried in the sling or deployed and holding the line, with its
@@ -309,6 +314,10 @@ public partial class Map
         // landing starts empty, exactly like the Reever positions (never saved).
         public Dictionary<(int X, int Y), BeachComber.Outcome> Swept { get; } = [];
         public int Catches { get; set; }
+
+        // #453: blows that got PAST the block this excursion. Five and the captain is down (the piracy
+        // insurance issues the next one). Per-excursion: you come back down whole, having healed aboard.
+        public int HitsTaken { get; set; }
         // #370 · the away-expedition state, live only when this landing is on the gig's site. Expedition
         // gates OFF the endless tide and arms the diced on-site beats (AwayExpeditionEvents). The accruals
         // are settled into the payout on liftoff (ExpeditionReward): the ground-time clock, the last beat
@@ -519,6 +528,13 @@ public partial class Map
             ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
         }
         _descentPhase = null;
+
+        // #458: the ambush cheat, fired once the ground is walkable and the door is down.
+        if (_reeverAmbushCheat > 0)
+        {
+            SpawnReeversOnCaptain(_reeverAmbushCheat);
+            ShowPulseMessage($"🧪 DEV: {_reeverAmbushCheat} Old One(s) set down on top of you — they already know you're here.");
+        }
 
         // #440 · THE FIRST GROUND (owner, 2026-07-26: "Definitely we need a landing site tutorial also for
         // new captains"). The surface is the only place that can take everything from you in ninety seconds,
@@ -1033,6 +1049,37 @@ public partial class Map
                 // Seed the thermal shuffle off the excursion threat seed + the spawn ordinal so each pack
                 // member shivers on its own phase (client-only, like the position itself — never saved).
                 JitterSeed = ((_surface?.ThreatSeed ?? 0UL) * 0x9E3779B97F4A7C15UL) + (ulong)i + 1UL,
+            });
+        }
+    }
+
+    // #458 · THE DEV CHEAT THAT MAKES THE CHASE TESTABLE. Owner, 2026-07-27: "don't forget to test that they
+    // also really work" — and the honest problem is that a surface run reaches the interesting states (a
+    // charge, a swing landing, five blows and down) only by luck and a long walk. So: drop a pack RIGHT ON
+    // the captain, already aware, the moment the boots touch down. Everything downstream is the real code —
+    // the same chase, the same #441 spacing, the same #453 exchange, the same #456 ear.
+    // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off.
+    private int _reeverAmbushCheat;
+
+    private void SpawnReeversOnCaptain(int count)
+    {
+        for (int i = 0; i < count && _reevers.Count < ReeverEngineCeiling; i++)
+        {
+            // A ring just outside touching distance, so they close and swing within a second or two rather
+            // than starting inside the captain (which would resolve a blow before the first frame is drawn).
+            double angle = i * 2.399963229728653; // the golden angle — an even fan for any count
+            double reach = CaptainCondition.TouchDistance + 1.6;
+            _reevers.Add(new Reever
+            {
+                X = _avatarX + (Math.Cos(angle) * reach),
+                Y = Math.Min(_avatarY + (Math.Sin(angle) * reach), MoonSurface.ReeverBarrierY - 1),
+                Facing = Math.PI / 2,
+                JitterSeed = ((_surface?.ThreatSeed ?? 0UL) * 0x9E3779B97F4A7C15UL) + (ulong)i + 101UL,
+                // Already AWARE: the cheat is for testing the chase and the exchange, not the ear (#456) —
+                // the ear has its own tests, and waiting to be noticed is exactly what made this untestable.
+                EverSeen = true,
+                LastSeenX = _avatarX,
+                LastSeenY = _avatarY,
             });
         }
     }
@@ -1797,6 +1844,10 @@ public partial class Map
         {
             ReeverCatch();
         }
+
+        // #453: and then the swings themselves. AFTER the pack has stepped and been spaced, so "touching"
+        // is measured on where the bodies actually ended up this frame.
+        ResolveReeverSwings(_lastTimestampMs ?? 0);
     }
 
     // Thermal motion (owner, cruise 2026-07-19: "the reevers could be more active, like little thermal
@@ -1945,6 +1996,88 @@ public partial class Map
         RendererInterop.PlayCue("alarm");
         ShowPulseMessage("🩸 An Old One lays hands on you — it wants no loot, only you. Tear free and RUN!");
         RequestVaultSave();
+    }
+
+    // ── #453 · THE EXCHANGE: five blows, and a die between each one and your skin ──────────────────────
+    //
+    // Owner, 2026-07-27: "player health could be like 5 reever hits but the reever sphere must touch the
+    // player sphere when a hit is received. Player should have some melee blocking ability. Dice throw. We
+    // should narrate what happens to the player. Maybe a splash of blood when reever hit goes through
+    // players attempt to block it. :-D"
+    //
+    // A swing resolves ONLY on real contact — the two bodies touching, not merely near — and every Old One
+    // winds up on its own cadence, so being held at arm's length by the pack shove (#441) is not a blender.
+    private double _bloodUntilMs = double.NegativeInfinity;
+
+    // Blood on the regolith for a moment after a blow gets through — the surface has never had visual
+    // punctuation for being hurt, and "you are bleeding" should not be something you read in a corner.
+    private bool BloodShowing => (_lastTimestampMs ?? 0) < _bloodUntilMs;
+
+    private void ResolveReeverSwings(double nowMs)
+    {
+        if (_surface is not { } ex || _busted is not null || MoonSurface.IsSafeAboard(_avatarY))
+        {
+            return; // up the tube is safe by the crew-only-door law — nothing reaches you there
+        }
+
+        // Who has a hand on you RIGHT NOW: bodies touching, the owner's rule. Counted first, because being
+        // swarmed is itself a penalty on the block — every one past the first is another thing to watch.
+        int touching = 0;
+        foreach (Reever r in _reevers)
+        {
+            double dx = r.X - _avatarX, dy = r.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) <= CaptainCondition.TouchDistance * CaptainCondition.TouchDistance)
+            {
+                touching++;
+            }
+        }
+        if (touching == 0)
+        {
+            return;
+        }
+
+        foreach (Reever r in _reevers)
+        {
+            double dx = r.X - _avatarX, dy = r.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) > CaptainCondition.TouchDistance * CaptainCondition.TouchDistance)
+            {
+                continue;
+            }
+            if (nowMs - r.LastSwingMs < CaptainCondition.SwingCooldownSeconds * 1000.0)
+            {
+                continue; // still winding up
+            }
+            r.LastSwingMs = nowMs;
+
+            // The die, seeded off this contact and its swing count so a long fight never repeats itself.
+            r.Swings++;
+            ulong seed = DiceRule.Seed(r.JitterSeed, $"swing:{r.Swings}");
+            DiceRoll roll = CaptainCondition.BlockRoll(seed, _nerve, ex.Carrying, touching);
+
+            if (CaptainCondition.Resolve(roll) == CaptainCondition.Exchange.Blocked)
+            {
+                ShowPulseMessage($"🛡 {CaptainCondition.BlockLine(seed)}");
+                RendererInterop.PlayCue("alarm");
+                continue;
+            }
+
+            // It got through. One of the five, blood on the ground, and the old touch cost on top.
+            ex.HitsTaken++;
+            _bloodUntilMs = nowMs + 900;
+            ShowPulseMessage($"🩸 {CaptainCondition.HitLine(seed)}");
+            RendererInterop.PlayCue("alarm");
+            _nerve = NerveModel.Shock(_nerve, NerveModel.TouchShock);
+            RequestVaultSave();
+
+            if (CaptainCondition.IsDown(ex.HitsTaken))
+            {
+                // The fifth blow. Routed into the SAME staged death the overdraw uses, so the piracy
+                // insurance issues a new captain and the run continues (Fail Forward) — the ship, the
+                // ledger and every buried cache outlive you (#455's rebirth thread).
+                TriggerSurfaceOverdrawDeath(ex);
+                return;
+            }
+        }
     }
 
     // ── Liftoff: board the shuttle (player-initiated ONLY — nothing self-resolves). ──
@@ -2180,7 +2313,9 @@ public partial class Map
             SweptSquares: _hudSwept,
             DarkRegions: BuildDarkRegions(ex),   // #371 Phase 3: born-dark / explored appended chambers
             Echoes: BuildEchoes(ex),             // #371 Phase 3: fading "movement was here" ripples
-            StandingPrompt: BuildStandingPrompt(ex));
+            StandingPrompt: BuildStandingPrompt(ex),
+            // #453: the blood fades over its window, so the spatter is a beat rather than a decal.
+            BloodSplash: BloodShowing ? Math.Clamp((_bloodUntilMs - (_lastTimestampMs ?? 0)) / 900.0, 0, 1) : 0);
     }
 
     // #440 · The standing prompt: ONE bright line above the keybar for the thing this excursion hangs on.

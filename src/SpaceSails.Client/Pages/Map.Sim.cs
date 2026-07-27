@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -517,6 +517,18 @@ public partial class Map
                 // docs/testing-guide.md.
                 string candidate = Uri.UnescapeDataString(pair["bond=".Length..]).ToLowerInvariant();
                 bondCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("reevers=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #458 dev cheat: /map?reevers=N drops N Old Ones RIGHT ON the captain the moment they set
+                // down, already aware — so the chase, the #441 spacing and the #453 exchange (block roll,
+                // blood, the five blows) can be watched in seconds instead of hunted for on a long walk.
+                // Owner, 2026-07-27: "don't forget to test that they also really work."
+                string candidate = Uri.UnescapeDataString(pair["reevers=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
+                {
+                    _reeverAmbushCheat = Math.Clamp(n, 0, 8);
+                }
             }
             else if (pair.StartsWith("nebula=", StringComparison.OrdinalIgnoreCase))
             {
@@ -1617,7 +1629,10 @@ public partial class Map
                 // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
                 // stays gauge-free by construction.)
                 Nerve: _nerve, NerveReadout: NerveModel.Readout(_nerve),
-                ShowNerve: true, NerveCompact: _surface is null),
+                ShowNerve: true, NerveCompact: _surface is null,
+                // #453: the condition pips ride under the nerve bar, and only while skin is being counted —
+                // off an excursion there is nothing to count, so they leave the corner entirely.
+                HitsTaken: _surface?.HitsTaken ?? -1),
                 _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
         }
     }

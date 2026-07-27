@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Client.Rendering;
 
@@ -18,7 +18,10 @@ public sealed class DeckView
         // rides EVERY walk mode — surface, haven/bar ashore, and aboard the ship (compact, a whisper) —
         // but never flight (the map view has its own instruments and never draws a DeckView). ShowNerve
         // gates it; NerveCompact draws the subtler aboard size that must clear the deck chrome.
-        double Nerve = 0, string NerveReadout = "", bool ShowNerve = false, bool NerveCompact = false);
+        double Nerve = 0, string NerveReadout = "", bool ShowNerve = false, bool NerveCompact = false,
+        // #453: blows taken this excursion — drives the condition pips under the nerve bar. -1 = hide them
+        // (off-excursion, where skin is not being counted).
+        int HitsTaken = -1);
 
     /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
     /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan
@@ -69,7 +72,9 @@ public sealed class DeckView
         // hangs on right now — today, the chest in your hands and the key that puts it in the ground. The
         // keybar is deliberately dim chrome you stop reading; this is not chrome. It stays up until the
         // thing is done (owner, 2026-07-26: "It is the key to survival there"). Null when nothing is owed.
-        string? StandingPrompt = null);
+        string? StandingPrompt = null,
+        // #453 · 1..0 fade on the blood spatter thrown when a blow got past the block. 0 = none.
+        double BloodSplash = 0);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -506,6 +511,25 @@ public sealed class DeckView
 
         // The captain.
         (float ax, float ay) = P(state.AvatarX, state.AvatarY);
+
+        // #453 · BLOOD, when a blow gets past the block (owner: "Maybe a splash of blood when reever hit
+        // goes through players attempt to block it. :-D"). Seeded spatter around the captain, thrown on the
+        // regolith UNDER them so it reads as coming off the body. Brief — it is punctuation, not a decal.
+        if (surface is { BloodSplash: > 0 })
+        {
+            double fade = Math.Clamp(surface.Value.BloodSplash, 0, 1);
+            for (int i = 0; i < 9; i++)
+            {
+                // A fixed fan, so the spatter is stable for the moment it is up rather than crawling.
+                double a = i * 2.399963229728653;             // the golden angle again
+                double reach = scale * (0.5 + (0.16 * (i % 4)));
+                float bx = ax + (float)(Math.Cos(a) * reach);
+                float by = ay + (float)(Math.Sin(a) * reach);
+                var blood = new RgbaColor(190, 30, 30, (byte)Math.Clamp(235 * fade, 0, 255));
+                _renderer.DrawCircle(bx, by, Math.Max(1.5f, 0.16f * scale), blood, blood);
+            }
+        }
+
         _renderer.DrawCircle(ax, ay, 0.7f * scale, AvatarColor, AvatarColor);
         float hx = ax + (float)Math.Cos(state.HeadingRad) * scale * 1.1f;
         float hy = ay - (float)Math.Sin(state.HeadingRad) * scale * 1.1f;
@@ -534,7 +558,7 @@ public sealed class DeckView
         // haven it whispers (compact, tucked below the deck chrome). Shown in every walk mode, never flight.
         if (state.ShowNerve)
         {
-            DrawNerveGauge(simTime, state.Nerve, state.NerveReadout, state.NerveCompact);
+            DrawNerveGauge(simTime, state.Nerve, state.NerveReadout, state.NerveCompact, state.HitsTaken);
         }
 
         // #327 the ship calls home: the mothership's orbit line, painted plainly across the TOP-CENTRE —
@@ -787,7 +811,7 @@ public sealed class DeckView
     // harder the lower the nerve falls (the "tremor in the glyph" the flavor ladder names), and a house-voice
     // line reads out beneath it. Display-only — this slice never rolls, exits, or ends a run (#226 owns that).
     private static readonly RgbaColor NerveFrame = new(150, 170, 190, 175);
-    private void DrawNerveGauge(double simTime, double nerve, string readout, bool compact)
+    private void DrawNerveGauge(double simTime, double nerve, string readout, bool compact, int hitsTaken)
     {
         double frac = NerveModel.Fraction(nerve);
         NerveModel.NerveBand band = NerveModel.BandFor(nerve);
@@ -829,6 +853,34 @@ public sealed class DeckView
         }
         DrawRectOutline(x0, y0, w, h, NerveFrame);                        // the frame
         _renderer.DrawText(x0, y0 + h + 13, readout, fill, $"{labelPx:0}px monospace", TextAlign.Left);
+
+        // #453 · THE CONDITION MARKER, under the nerve bar exactly where the owner asked for it ("Some kind
+        // of hit condition marker below the nerves bar"). Five pips: how many blows are left in you. It is
+        // NOT a second bar — nerve is a slope you slide down, skin is a countdown you can read at a glance,
+        // and the two must never be mistaken for each other while you decide whether to run.
+        if (hitsTaken >= 0)
+        {
+            float py = y0 + h + 22f;
+            float pip = compact ? 7f : 10f;
+            float gap = pip * 0.55f;
+            int left = Math.Max(0, CaptainCondition.MaxHits - hitsTaken);
+            var spent = new RgbaColor(70, 26, 24, 220);
+            var intact = left switch
+            {
+                >= 4 => new RgbaColor(200, 90, 85, 240),
+                3 => new RgbaColor(225, 120, 70, 245),
+                2 => new RgbaColor(235, 90, 60, 250),
+                _ => new RgbaColor(255, 45, 35, 255),   // one left: the loudest thing in the corner
+            };
+            for (int i = 0; i < CaptainCondition.MaxHits; i++)
+            {
+                float px = x0 + (i * (pip + gap));
+                FillRect(px, py, pip, pip, i < left ? intact : spent);
+                DrawRectOutline(px, py, pip, pip, NerveFrame);
+            }
+            _renderer.DrawText(x0 + (CaptainCondition.MaxHits * (pip + gap)) + 6f, py + pip - 1f,
+                CaptainCondition.Readout(hitsTaken), intact, $"{labelPx:0}px monospace", TextAlign.Left);
+        }
     }
 
     private void DrawRectOutline(float x, float y, float w, float h, RgbaColor color)
