@@ -796,6 +796,11 @@ public partial class Map
             return;
         }
 
+        // #456: the shovel is the loudest thing you choose to do. Every tick of the channel calls anything
+        // within earshot to the HOLE — the signature trade of the surface, that the thing worth doing is the
+        // thing that announces you. Walls do not muffle it.
+        MakeNoise(ch.AnchorX, ch.AnchorY, ReeverHearing.Noise.Digging);
+
         ch.Progress += dtRealSeconds / DigChannelSeconds;
         if (ch.Progress >= 1.0)
         {
@@ -966,6 +971,9 @@ public partial class Map
         ex.ChestDropped = true;
         ex.DropX = _avatarX;
         ex.DropY = _avatarY;
+        // #456: a chest hitting regolith is one sharp report. You dropped it to run — and the sound tells
+        // anything close where you just were, which is exactly the cost of that trade.
+        MakeNoise(_avatarX, _avatarY, ReeverHearing.Noise.Clatter);
         if (ex.Channel is not null)
         {
             ex.Channel = null;
@@ -1332,6 +1340,37 @@ public partial class Map
         return n;
     }
 
+    // #456 · A NOISE ON THE GROUND. Owner, 2026-07-27: "they can hear digging etc loud noises, but generally
+    // they have to spot you by hearing or by seeing before they give chase… when they are initially behind
+    // obstructions except maybe one or two they do not participate in chasing you if they don't know where
+    // you are." This is that ear, and it is what keeps the un-leashed pack (#453) fair.
+    //
+    // What a Reever gets from a sound is a PLACE, not a target: it learns where the noise came from and goes
+    // to look. Hearing ignores walls on purpose — stone hides you from eyes, never from ears — so digging
+    // behind a monolith buys sight-cover and nothing else. Move after making noise and they converge on an
+    // empty hole, which is a real tactic.
+    private void MakeNoise(double x, double y, ReeverHearing.Noise noise)
+    {
+        if (_surface is null)
+        {
+            return;
+        }
+        double reachSq = ReeverHearing.RangeOf(noise) * ReeverHearing.RangeOf(noise);
+        foreach (Reever r in _reevers)
+        {
+            double dx = r.X - x, dy = r.Y - y;
+            if ((dx * dx) + (dy * dy) > reachSq)
+            {
+                continue; // too far to have heard it — it keeps its ground (#446's feature)
+            }
+            // It heard SOMETHING, and now it knows a spot worth walking to. If the captain is still there
+            // when it arrives it sees them the honest way; if not, the trail leads to a hole in the ground.
+            r.LastSeenX = x;
+            r.LastSeenY = y;
+            r.EverSeen = true;
+        }
+    }
+
     // #446: the movers CLOSE ENOUGH TO FRIGHTEN — the same count, fenced to the dread range. The tracker
     // still hears every mover on the field (its fan is untouched, and a far blip is exactly the dread the
     // fan is for); this is only what the nerve is priced from, so a hunter you have time to walk away from
@@ -1428,6 +1467,12 @@ public partial class Map
             SurfaceBot bot = live[i];
             bool fired = volley.Bots[i].Rounds < bot.Rounds;
             bot.Rounds = volley.Bots[i].Rounds;
+            if (fired)
+            {
+                // #456: your own guns are the loudest thing on the moon. A volley calls the deep to the BOT
+                // — so bringing sentries still buys time (#314), but now it is paid for by being found.
+                MakeNoise(bot.X, bot.Y, ReeverHearing.Noise.Gunfire);
+            }
             if (fired && NearestReeverInArc(bot) is { } aim)
             {
                 bot.AimX = aim.X;
