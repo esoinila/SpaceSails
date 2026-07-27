@@ -301,6 +301,12 @@ public partial class Map
         public double TideNextGap { get; set; }
         public int TideSpawnIndex { get; set; }
         public bool TideAnnounced { get; set; }          // the one-time "the deep stirs" notice has fired
+
+        // #461 · when the shuttle mated, in surface seconds. The arrival grace is measured off this: a hull
+        // setting down is not news to the Old Ones (they take it for one of their own), so nothing may notice
+        // the captain until SurfaceArrival.SpotGraceSeconds have passed.
+        public double LandedAt { get; set; }
+        public bool GraceEndedAnnounced { get; set; }
         public bool SentryHintShown { get; set; }         // #380 item 7: the one-time first-deploy sentry hint has fired
         public bool NerveBandDropAnnounced { get; set; }  // #380 item 2: the one-time "nerves fraying" band-drop pulse has fired
 
@@ -529,11 +535,32 @@ public partial class Map
         }
         _descentPhase = null;
 
-        // #458: the ambush cheat, fired once the ground is walkable and the door is down.
+        // #461 · the clock the arrival grace is measured off, and the house sentry that makes walking out of
+        // the door possible at all (owner: "there should always be one un-paid-for sentry at the door" — he
+        // had to spend one of his own just to get clear). It is the shuttle's own fixture: never bought,
+        // never counted against the sling, and left behind without a ledger complaint.
+        _surface!.LandedAt = SimTime;
+        _surface!.Bots.Add(new SurfaceBot
+        {
+            Unit = SurfaceArrival.DoorSentryUnit,
+            Rounds = SurfaceArrival.DoorSentryRounds,
+            Deployed = true,
+            // INSIDE the tube, above the mouth — owner: "inside the tube there is always an unlimited ammo
+            // sentry built in… so if a reever tailgates through the door that fixed sentry prevents reever
+            // from getting into the shuttle." It covers the threshold from the safe side, so the one that
+            // slips in behind you dies in the corridor rather than aboard.
+            X = MoonSurface.SpawnX,
+            Y = MoonSurface.SurfaceTopY + 2,
+        });
+
+        // #458: the ambush cheat. #461 (owner: "That makes no sense… how did they know the shuttle would
+        // land just there") — it no longer sets them down ON the pad, which was absurd fiction AND unplayable.
+        // They start out in the deep, aware, and COME. That still exercises the chase, the spacing and the
+        // exchange in seconds; it just does not pretend the Old Ones knew where the shuttle was going.
         if (_reeverAmbushCheat > 0)
         {
-            SpawnReeversOnCaptain(_reeverAmbushCheat);
-            ShowPulseMessage($"🧪 DEV: {_reeverAmbushCheat} Old One(s) set down on top of you — they already know you're here.");
+            SpawnReevers(_reeverAmbushCheat);
+            ShowPulseMessage($"🧪 DEV: {_reeverAmbushCheat} Old One(s) roused in the deep and inbound — walk down and meet them.");
         }
 
         // #440 · THE FIRST GROUND (owner, 2026-07-26: "Definitely we need a landing site tutorial also for
@@ -1068,36 +1095,10 @@ public partial class Map
         }
     }
 
-    // #458 · THE DEV CHEAT THAT MAKES THE CHASE TESTABLE. Owner, 2026-07-27: "don't forget to test that they
-    // also really work" — and the honest problem is that a surface run reaches the interesting states (a
-    // charge, a swing landing, five blows and down) only by luck and a long walk. So: drop a pack RIGHT ON
-    // the captain, already aware, the moment the boots touch down. Everything downstream is the real code —
-    // the same chase, the same #441 spacing, the same #453 exchange, the same #456 ear.
-    // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off.
+    // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off. They are
+    // roused in the DEEP and come to you (#461) — never set down on the landing pad, which read as the Old
+    // Ones somehow knowing where the shuttle would touch down.
     private int _reeverAmbushCheat;
-
-    private void SpawnReeversOnCaptain(int count)
-    {
-        for (int i = 0; i < count && _reevers.Count < ReeverEngineCeiling; i++)
-        {
-            // A ring just outside touching distance, so they close and swing within a second or two rather
-            // than starting inside the captain (which would resolve a blow before the first frame is drawn).
-            double angle = i * 2.399963229728653; // the golden angle — an even fan for any count
-            double reach = CaptainCondition.TouchDistance + 1.6;
-            _reevers.Add(new Reever
-            {
-                X = _avatarX + (Math.Cos(angle) * reach),
-                Y = Math.Min(_avatarY + (Math.Sin(angle) * reach), MoonSurface.ReeverBarrierY - 1),
-                Facing = Math.PI / 2,
-                JitterSeed = ((_surface?.ThreatSeed ?? 0UL) * 0x9E3779B97F4A7C15UL) + (ulong)i + 101UL,
-                // Already AWARE: the cheat is for testing the chase and the exchange, not the ear (#456) —
-                // the ear has its own tests, and waiting to be noticed is exactly what made this untestable.
-                EverSeen = true,
-                LastSeenX = _avatarX,
-                LastSeenY = _avatarY,
-            });
-        }
-    }
 
     // The surface tick: dig channel, sentries, the chase, and the ambient tide — all cheap, no pathfinding.
     private void StepSurface(double dtRealSeconds)
@@ -1413,7 +1414,12 @@ public partial class Map
     // empty hole, which is a real tactic.
     private void MakeNoise(double x, double y, ReeverHearing.Noise noise)
     {
-        if (_surface is null)
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        // #461: the arrival grace covers the EAR too, or the first shovel-stroke would undo it.
+        if (!SurfaceArrival.CanBeSpotted(SimTime - ex.LandedAt))
         {
             return;
         }
@@ -1528,7 +1534,12 @@ public partial class Map
         {
             SurfaceBot bot = live[i];
             bool fired = volley.Bots[i].Rounds < bot.Rounds;
-            bot.Rounds = volley.Bots[i].Rounds;
+            // #461: the tube's built-in gun never runs dry — it is the shuttle's fixture, not your magazine.
+            // Everything else about it is an ordinary sentry (it obeys the walls, it can only shoot what it
+            // can see), it simply never stops being able to hold the threshold.
+            bot.Rounds = SurfaceArrival.IsDoorSentry(bot.Unit)
+                ? SurfaceArrival.DoorSentryRounds
+                : volley.Bots[i].Rounds;
             if (fired)
             {
                 // #456: your own guns are the loudest thing on the moon. A volley calls the deep to the BOT
@@ -1717,7 +1728,12 @@ public partial class Map
             // (having never seen them, or arrived there) leans on the tube choke it always knows. Duck
             // behind stone and the hunter loses your live position; a stopped Reever also drops off the
             // motion tracker (motion-only law) — breaking sight in the maze is now real play.
-            if (SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, walls))
+            // #461: the arrival grace. A hull setting down is not news — they take it for one of their own
+            // (owner: "ship in itself does not attract them. They expect it is their ship"). It is the warm
+            // body walking out that is news, and even that gets a beat: nothing may notice the captain, by
+            // eye OR by ear, until the grace has run. It is what makes stepping out of the door possible.
+            if (SurfaceArrival.CanBeSpotted(now - (_surface?.LandedAt ?? 0))
+                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, walls))
             {
                 r.LastSeenX = _avatarX;
                 r.LastSeenY = _avatarY;
@@ -2124,6 +2140,10 @@ public partial class Map
         int abandoned = 0;
         foreach (SurfaceBot b in ex.Bots)
         {
+            if (SurfaceArrival.IsDoorSentry(b.Unit))
+            {
+                continue; // #461: the tube's own gun. Never yours to carry home, never a write-off.
+            }
             if (b.Deployed)
             {
                 abandoned++;
