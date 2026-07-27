@@ -197,8 +197,15 @@ public static class MoonSurface
         //    an auto-door at each end. The ship-end door is the crew-only Reever lock. ──
         walls.Add(new(TubeLeft, DeckPlan.ShuttleHatchY, TubeLeft, SurfaceTopY, false, true));
         walls.Add(new(TubeRight, DeckPlan.ShuttleHatchY, TubeRight, SurfaceTopY, false, true));
-        doors.Add(new(TubeLeft, DeckPlan.ShuttleHatchY, TubeRight, DeckPlan.ShuttleHatchY));       // ship-end: crew-only door
-        doors.Add(new(TubeLeft, SurfaceTopY, TubeRight, SurfaceTopY));                             // surface-end auto-door
+        // #462: the tube IS an airlock — its two doors share an interlock group, so only the end nearest the
+        // captain may stand open and the far end is always drawn SHUT (owner: "only one door in a tube is
+        // open at a time… think of airlock"). That is the barrier the Old Ones visibly stop at, and it is
+        // what shuts a tailgater in the tube with the built-in gun (#461) instead of letting it follow you
+        // aboard. Before this, standing at the threshold held BOTH ends retracted — so the pack piled up
+        // against a gap painted wide open.
+        const int TubeAirlock = 1;
+        doors.Add(new(TubeLeft, DeckPlan.ShuttleHatchY, TubeRight, DeckPlan.ShuttleHatchY, Interlock: TubeAirlock)); // ship-end: crew-only door
+        doors.Add(new(TubeLeft, SurfaceTopY, TubeRight, SurfaceTopY, Interlock: TubeAirlock));                       // surface-end
         // The shuttle glyph mid-tube — the map winking at its own abstraction (this corridor IS the ride).
         labels.Add((TubeCenterX, (DeckPlan.ShuttleHatchY + SurfaceTopY) / 2f, "🛸"));
 

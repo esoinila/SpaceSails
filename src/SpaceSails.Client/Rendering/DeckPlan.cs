@@ -26,8 +26,17 @@ public sealed class DeckPlan
     /// <summary>An airlock door across a passage. An automatic door slides open as the avatar nears
     /// (a top-down flourish; it never blocks — the passage is always walkable). A <c>Locked</c> door
     /// stays shut and is drawn cold — it marks another berth's sealed hatch, decoration only, and is
-    /// backed by a real wall so you can't pass.</summary>
-    public readonly record struct Door(float X1, float Y1, float X2, float Y2, bool Locked = false);
+    /// backed by a real wall so you can't pass.
+    ///
+    /// <para>#462 · <paramref name="Interlock"/> groups doors into an AIRLOCK. Owner, 2026-07-27: "The idea
+    /// is that only one door in a tube is open at a time… think of airlock" — "both doors being open at the
+    /// same time defeats the purpose (an abstraction though at this case)". Doors sharing a non-zero group
+    /// take turns: only the one nearest the captain may stand open, so the far end is ALWAYS drawn shut.
+    /// That is what finally gives the Old Ones a visible thing to stop at (#462) — the outer door closing
+    /// behind you as the inner opens — and it is why a tailgater ends up shut in the tube with the built-in
+    /// gun (#461) rather than following you aboard. 0 = an ordinary door with no partner.</para></summary>
+    public readonly record struct Door(
+        float X1, float Y1, float X2, float Y2, bool Locked = false, int Interlock = 0);
 
     /// <summary>An interaction point on the deck. A <see cref="ConsoleKind.ViewObject"/> spot also
     /// carries an <paramref name="ImageUrl"/> and <paramref name="Caption"/> — press E and the game
