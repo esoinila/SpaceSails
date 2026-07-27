@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// PR-295 · How a Reever runs you down on the surface — and where it STOPS. Reevers are watchdogs,
@@ -16,8 +16,15 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class ReeverChase
 {
-    /// <summary>How close a Reever must get to lay hands on the digger (deck units).</summary>
-    public const double CatchRadius = 1.2;
+    /// <summary>How close a Reever must get to lay hands on the digger: the two BODIES touching, in deck
+    /// units — both are <c>DeckPlan.AvatarRadius</c> (0.7), so contact is their sum.
+    ///
+    /// <para>#469 (owner, 2026-07-27: "check all reever collisions… the radius must be used in every single
+    /// one"). This was 1.2 — LESS than the sum of the radii — so a "catch" required the two bodies to
+    /// visibly OVERLAP, while a melee swing (<see cref="CaptainCondition.TouchDistance"/>) landed at a true
+    /// touch. Two different contact laws for the same event, and the tighter one needed a body to be inside
+    /// another to fire. One number now: touching is touching.</para></summary>
+    public const double CatchRadius = 1.4;
 
     /// <summary>Advance one Reever one step toward the digger, then hold it to its side of the
     /// crew-only door. It moves <paramref name="stepDistance"/> deck-units toward (<paramref name="avatarX"/>,

@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// #453 · THE CAPTAIN CAN TAKE FIVE. Owner, live 2026-07-27: <i>"player health could be like 5 reever hits
@@ -25,10 +25,12 @@ public static class CaptainCondition
     public const int MaxHits = 5;
 
     /// <summary>A blow lands only when the two BODIES actually touch — the owner's rule: "the reever sphere
-    /// must touch the player sphere". Both are <c>DeckPlan.AvatarRadius</c>, so contact is the sum. This is
-    /// deliberately wider than <see cref="ReeverChase.CatchRadius"/>: reaching you is one thing, and putting
-    /// a hand on you is another.</summary>
-    public const double TouchDistance = 1.4;
+    /// must touch the player sphere". Both are <c>DeckPlan.AvatarRadius</c>, so contact is their sum.
+    ///
+    /// <para>#469: this is now literally <see cref="ReeverChase.CatchRadius"/> rather than a second, parallel
+    /// number. There is ONE contact law on the regolith — bodies touching — and everything that keys off
+    /// being reached reads the same value.</para></summary>
+    public const double TouchDistance = ReeverChase.CatchRadius;
 
     /// <summary>Seconds an Old One takes to wind up again after a swing. Without this, a hunter held at
     /// arm's length by the pack shove (#441) would land a blow every frame.</summary>
