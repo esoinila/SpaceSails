@@ -1943,7 +1943,15 @@ public partial class Map
                 Reever moved = _reevers[i];
                 if (moved.Idle)
                 {
-                    continue;
+                    // #466 (owner: "Why did the reevers freeze into a blob there?… it's almost like blood
+                    // clotting :-D"). Idling contacts used to be SKIPPED by the shove, to protect the anchor
+                    // their mean-zero shiver orbits — but stopped is exactly when a pack piles up, so the
+                    // spacing switched itself off at the one moment it was needed and they clotted at the
+                    // door. Space them too, and carry the ANCHOR with them so the shiver stays centred on
+                    // where the body actually is instead of dragging it back into the clot.
+                    double ax = spread[i].X - moved.X, ay = spread[i].Y - moved.Y;
+                    moved.AnchorX += ax;
+                    moved.AnchorY += ay;
                 }
                 moved.X = spread[i].X;
                 moved.Y = spread[i].Y;
@@ -2137,6 +2145,19 @@ public partial class Map
     // punctuation for being hurt, and "you are bleeding" should not be something you read in a corner.
     private bool BloodShowing => (_lastTimestampMs ?? 0) < _bloodUntilMs;
 
+    // #466: a blow lands only when the two bodies TOUCH and nothing stands between them. Stone (and a shut
+    // door) stops an arm exactly as it stops a round — otherwise a Reever pressed against the far face of a
+    // slab is close enough to kill you through it.
+    private bool CanSwingAt(Reever r, IReadOnlyList<SurfaceCollision.Segment> sight)
+    {
+        double dx = r.X - _avatarX, dy = r.Y - _avatarY;
+        if ((dx * dx) + (dy * dy) > CaptainCondition.TouchDistance * CaptainCondition.TouchDistance)
+        {
+            return false;
+        }
+        return SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, sight);
+    }
+
     private void ResolveReeverSwings(double nowMs)
     {
         if (_surface is not { } ex || _busted is not null || MoonSurface.IsSafeAboard(_avatarY))
@@ -2146,11 +2167,15 @@ public partial class Map
 
         // Who has a hand on you RIGHT NOW: bodies touching, the owner's rule. Counted first, because being
         // swarmed is itself a penalty on the block — every one past the first is another thing to watch.
+        // #466 (owner, live 2026-07-27: "The reevers killed me through a wall there"). Touching is not
+        // enough — a body a hair from yours on the FAR SIDE of a thin slab is still 1.4 units away, and the
+        // swing landed through the stone. A blow needs a clear line as well as contact: the same sight law
+        // the eyes and the guns obey (#324/#438), shut doors included (#465).
+        IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
         int touching = 0;
         foreach (Reever r in _reevers)
         {
-            double dx = r.X - _avatarX, dy = r.Y - _avatarY;
-            if ((dx * dx) + (dy * dy) <= CaptainCondition.TouchDistance * CaptainCondition.TouchDistance)
+            if (CanSwingAt(r, sight))
             {
                 touching++;
             }
@@ -2162,8 +2187,7 @@ public partial class Map
 
         foreach (Reever r in _reevers)
         {
-            double dx = r.X - _avatarX, dy = r.Y - _avatarY;
-            if ((dx * dx) + (dy * dy) > CaptainCondition.TouchDistance * CaptainCondition.TouchDistance)
+            if (!CanSwingAt(r, sight))
             {
                 continue;
             }
