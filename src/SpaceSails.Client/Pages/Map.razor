@@ -3300,7 +3300,7 @@
                         @* #480 — THE NERVE LEDGER, at the moment it explains the most: this is what broke you,
                            in the captain's own last few named pips. Only shown when the nerve actually kept a
                            record, so a death with no fear in it (a clean impact) is not padded with an empty box. *@
-                        @if (NerveLedgerLines is { Count: > 0 } deathLedger)
+                        @if (DeathNerveLedgerLines is { Count: > 0 } deathLedger)
                         {
                             <div class="busted-nerve-ledger">
                                 <div class="busted-nerve-ledger-head">WHAT BROKE YOU — the last of the nerve</div>
@@ -3314,7 +3314,10 @@
                             <div>💰 @BustedRule.InsuranceCredits.ToString("N0") cr insurance stake</div>
                             <div>🏥 −@bust.ClinicBillCr.ToString("N0") cr clinic bill (the rebirth tax)</div>
                             <div>👛 @_credits.ToString("N0") cr in hand</div>
-                            <div>⛽ @_reactionMassPulses p — the reach-a-pump reserve</div>
+                            @* #477: not a "reach-a-pump reserve" any more — that WAS the bug. The floor was
+                               priced at exactly the autopilot's own reserve, so the wake handed over fuel
+                               the autopilot then refused to spend. It is a full tank now. *@
+                            <div>⛽ @_reactionMassPulses p — a full tank, same as a new voyage</div>
                             <div>🔧 all upgrades reset to starter grade</div>
                         </div>
                         @* #422 arc 2 — THE CLINIC'S SECOND PAGE. Surfaces only once you've woken here before:

@@ -1534,9 +1534,17 @@ public partial class Map
     private string? LiveNerveFlash =>
         _nerveFlash is not null && (_lastTimestampMs ?? 0) < _nerveFlashUntilMs ? _nerveFlash : null;
 
-    /// <summary>The ledger as plain lines for the corner and the death card — newest first.</summary>
+    /// <summary>The ledger as plain lines for the corner — newest first.</summary>
     private IReadOnlyList<string>? NerveLedgerLines =>
         _nerveLedger.Count == 0 ? null : _nerveLedger.Select(e => e.Line).ToList();
+
+    /// <summary>The DEAD captain's ledger, snapshotted at the rebirth seam so the death card can answer
+    /// "what broke you?" after the live one has been handed clean to the new captain.</summary>
+    private IReadOnlyList<NervePips.Event> _deathNerveLedger = [];
+
+    /// <summary>Those same events as lines, for the death card.</summary>
+    private IReadOnlyList<string>? DeathNerveLedgerLines =>
+        _deathNerveLedger.Count == 0 ? null : _deathNerveLedger.Select(e => e.Line).ToList();
 
     private int CountMovingReevers()
     {
