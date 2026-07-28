@@ -104,13 +104,40 @@ public static class NervePips
 
     // ── Costs, in whole pips (FLAGGED for the owner's tuning) ─────────────────────────────────────────
 
-    /// <summary>A hand on you: three pips — nearly a third of the captain (owner's #480 pick). Bypasses
-    /// every habituation rule; being grabbed never gets old.</summary>
-    public const int TouchPips = 3;
+    /// <summary>A hand on you: ONE pip, ONCE per encounter — and that is the ruling that closes #469.
+    ///
+    /// <para><b>Repeated strikes cost no more sanity</b> (owner, 2026-07-28: <i>"repeated strikes should
+    /// not cost more of sanity … we already take medical hit from reever"</i>). This supersedes the
+    /// Evening-wind #19 reading that habituation never dulls being grabbed. The reasoning is the one that
+    /// set the pip at one: the BLOWS already charge for a mauling (#453's five-pip condition marker).
+    /// Nerve is what being CAUGHT does to you — a novelty, spent the moment the first hand lands. While
+    /// they keep hold of you the fear is already paid; getting clear re-arms it.</para>
+    ///
+    /// <para><b>Except when you are nearly gone</b> (same ruling: <i>"but first one yes and running low on
+    /// health more"</i>). Below <see cref="LowHealthPips"/> blows remaining, every hand costs its pip again.
+    /// Fear tracks MORTAL DANGER, not novelty: the fourth grab is routine when you can take five, and it is
+    /// the end of the world when you can take one.</para>
+    ///
+    /// <para>The old cost was 12 of 100, on top of proximity dread running at full rate while they were on
+    /// you. Nerve emptied around the third or fourth blow, so the overdraw death always claimed the kill
+    /// and the five-blow condition marker (#453) was close to decorative: <i>"the nerve bar is the real
+    /// health bar"</i>. At one pip a captain can absorb ten grabs' worth of fear, so the FIVE BLOWS land
+    /// first and the marker finally decides. Two distinct deaths for two distinct failures: mauled (the
+    /// blow pips) and broken (nerve — fled, the monolith, the deep, without a hand ever landing).</para>
+    ///
+    /// <para>Owner's ruling, 2026-07-28, choosing it over the more dramatic three-pip pricing precisely
+    /// because it lets the health bar he asked for actually kill someone. FLAGGED for tuning.</para></summary>
+    public const int TouchPips = 1;
 
-    /// <summary>First sight of the monolith: the biggest one-time horror there is, and it only ever happens
-    /// once, so it is allowed to be worse than a hand on you.</summary>
-    public const int MonolithPips = 4;
+    /// <summary>At or below this many blows remaining (#453's condition marker), the captain is close
+    /// enough to death that every further hand costs its pip again — the once-per-encounter latch stops
+    /// protecting you exactly when it would matter most. FLAGGED for the owner's tuning.</summary>
+    public const int LowHealthPips = 2;
+
+    /// <summary>First sight of the monolith: the biggest single fright in the game, and it only ever
+    /// happens once in a captain's life, so it is allowed to dwarf a hand on you. Three of ten keeps it
+    /// close to the old 24-of-100 while landing as a lump you feel. FLAGGED for tuning.</summary>
+    public const int MonolithPips = 3;
 
     /// <summary>A fresh contact cresting the tracker — the first of a spell. Later contacts in the same
     /// spell are free, which is the whole-pip form of #379's diminishing series.</summary>
@@ -190,13 +217,18 @@ public static class NervePips
 
     // ── The beat clock ────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>How long each sustained pressure has been building toward its next pip. Carried by the
-    /// client across frames and advanced by <see cref="Advance"/>; a cause that stops applying has its
-    /// clock cleared, so pressure never banks silently between encounters.</summary>
-    public readonly record struct Beats(double Close, double Cornered, double Dig, double Airlock)
+    /// <summary>How long each sustained pressure has been building toward its next pip, plus the
+    /// once-per-encounter touch latch. Carried by the client across frames and advanced by
+    /// <see cref="Advance"/>; a cause that stops applying has its clock cleared, so pressure never banks
+    /// silently between encounters.</summary>
+    /// <param name="TouchSpent">Whether the shock of being caught has already been paid this encounter
+    /// (owner: <i>"repeated strikes should not cost more of sanity"</i>). Re-arms the moment the captain
+    /// is clear — safe up the tube, or with nothing close enough to frighten them.</param>
+    public readonly record struct Beats(
+        double Close, double Cornered, double Dig, double Airlock, bool TouchSpent = false)
     {
-        /// <summary>Nothing building.</summary>
-        public static Beats Fresh => new(0, 0, 0, 0);
+        /// <summary>Nothing building, and the next hand will be a fresh shock.</summary>
+        public static Beats Fresh => new(0, 0, 0, 0, false);
 
         /// <summary>This cause's accumulated seconds.</summary>
         public double For(Cause c) => c switch
@@ -277,6 +309,9 @@ public static class NervePips
     /// <param name="SeesMonolith">The monolith is in sight this frame.</param>
     /// <param name="FreshSightings">Fresh contacts cresting the tracker this frame (#379's rise).</param>
     /// <param name="Touched">A Reever landed a hand this frame (already debounced by the client's catch cadence).</param>
+    /// <param name="HealthPipsLeft">Blows the captain can still take (#453's condition marker). Drives the
+    /// low-health exception to the once-per-encounter touch latch. Defaults to <see cref="int.MaxValue"/> —
+    /// "not hurt / not known" — so a caller that has not been taught about health keeps the plain latch.</param>
     public readonly record struct Frame(
         bool OnExcursion,
         bool OnRegolith,
@@ -284,7 +319,8 @@ public static class NervePips
         NerveModel.Stressors Stressors,
         int FreshSightings,
         bool Touched,
-        double DtSeconds);
+        double DtSeconds,
+        int HealthPipsLeft = int.MaxValue);
 
     /// <summary>The result of one frame: the new (still pip-aligned) nerve, the latched monolith flag, the
     /// advanced beat clock, every named event that fired THIS frame — in the order they happened, for the
@@ -311,7 +347,7 @@ public static class NervePips
     {
         double n = Snap(nerve);
         List<Event>? events = null;
-        void Fire(Cause c, int pips)
+        void Fire(Cause c, int pips, string? label = null)
         {
             if (pips == 0)
             {
@@ -322,7 +358,7 @@ public static class NervePips
             int moved = PipsOf(before) - PipsOf(n);
             if (moved != 0)
             {
-                (events ??= []).Add(new Event(c, -moved));
+                (events ??= []).Add(new Event(c, -moved, label ?? Name(c)));
             }
         }
 
@@ -341,13 +377,26 @@ public static class NervePips
         (double digCarry, int digBeats) = Tick(Cause.DigUnderThreat, beats.Dig, digging, f.DtSeconds);
         (double airCarry, int airBeats) = Tick(Cause.Airlock, beats.Airlock, safe, f.DtSeconds);
 
+        // The touch latch re-arms the moment the captain is CLEAR — safe up the tube, or with nothing near
+        // enough to frighten them. Then the next ambush is a fresh shock again.
+        bool touchSpent = beats.TouchSpent && !safe && dread > 0.0;
+
         if (!safe)
         {
             // Lumps first — a hand on you and the monolith are the loudest things that can happen in a
             // frame, and the ledger should read in the order the captain felt them.
             if (f.Touched)
             {
-                Fire(Cause.Touch, TouchPips);
+                // Owner's rule: the FIRST hand of an encounter costs its pip; further strikes cost no more
+                // SANITY (the blow pips already charge for the mauling) — unless the captain is nearly
+                // gone, when every hand is terror again.
+                bool nearlyGone = f.HealthPipsLeft <= LowHealthPips;
+                if (!touchSpent || nearlyGone)
+                {
+                    Fire(Cause.Touch, TouchPips,
+                        nearlyGone ? "it has you and you are nearly gone" : Name(Cause.Touch));
+                }
+                touchSpent = true;
             }
             if (!monolithSeen && f.SeesMonolith)
             {
@@ -380,7 +429,7 @@ public static class NervePips
             }
         }
 
-        var clock = new Beats(closeCarry, cornerCarry, digCarry, airCarry);
+        var clock = new Beats(closeCarry, cornerCarry, digCarry, airCarry, touchSpent);
         return new Step(n, monolithSeen, clock, (IReadOnlyList<Event>?)events ?? NoEvents, f.OnExcursion);
     }
 

@@ -113,7 +113,7 @@ public class NervePipsTests
     // ── Lumps ─────────────────────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void AHandOnYouCostsThreePips_AndSaysSo()
+    public void TheFirstHandOfAnEncounterCostsItsPip_AndSaysSo()
     {
         NervePips.Step s = NervePips.Advance(
             NerveModel.Max, false, NervePips.Beats.Fresh,
@@ -124,6 +124,89 @@ public class NervePipsTests
         Assert.Equal(-NervePips.TouchPips, e.Delta);
         Assert.Equal("it laid hands on you", e.Label);
         Assert.Equal(NervePips.MaxPips - NervePips.TouchPips, NervePips.PipsOf(s.Nerve));
+        Assert.True(s.Beats.TouchSpent);
+    }
+
+    [Fact]
+    public void RepeatedStrikesCostNoMoreSanity()
+    {
+        // Owner: "repeated strikes should not cost more of sanity … we already take medical hit from
+        // reever." The blow pips charge for the mauling; nerve charges for being caught, once.
+        double nerve = NerveModel.Max;
+        var beats = NervePips.Beats.Fresh;
+        int touchEvents = 0;
+
+        for (int i = 0; i < 6; i++)
+        {
+            NervePips.Step s = NervePips.Advance(
+                nerve, false, beats, Regolith(Chased(1.0), dt: 0.0, touched: true));
+            (nerve, beats) = (s.Nerve, s.Beats);
+            touchEvents += s.Events.Count(e => e.Cause == NervePips.Cause.Touch);
+        }
+
+        Assert.Equal(1, touchEvents);
+        Assert.Equal(NervePips.MaxPips - NervePips.TouchPips, NervePips.PipsOf(nerve));
+    }
+
+    [Fact]
+    public void GettingClearReArmsTheShock_SoTheNextAmbushLandsAgain()
+    {
+        NervePips.Step grabbed = NervePips.Advance(
+            NerveModel.Max, false, NervePips.Beats.Fresh, Regolith(Chased(1.0), 0.0, touched: true));
+        Assert.True(grabbed.Beats.TouchSpent);
+
+        // Back up the tube — clear.
+        var safe = new NervePips.Frame(true, OnRegolith: false, false, default, 0, false, 0.1);
+        NervePips.Step clear = NervePips.Advance(grabbed.Nerve, false, grabbed.Beats, safe);
+        Assert.False(clear.Beats.TouchSpent);
+
+        // Out again, grabbed again: a fresh shock.
+        NervePips.Step again = NervePips.Advance(
+            clear.Nerve, false, clear.Beats, Regolith(Chased(1.0), 0.0, touched: true));
+        Assert.Contains(again.Events, e => e.Cause == NervePips.Cause.Touch);
+    }
+
+    [Fact]
+    public void NearlyDead_EveryHandIsTerrorAgain()
+    {
+        // Owner: "but first one yes and running low on health more." The latch stops protecting you
+        // exactly when it would matter most — fear tracks mortal danger, not novelty.
+        double nerve = NerveModel.Max;
+        var beats = NervePips.Beats.Fresh;
+        int touchEvents = 0;
+        string lastLabel = "";
+
+        for (int i = 0; i < 4; i++)
+        {
+            NervePips.Step s = NervePips.Advance(
+                nerve, false, beats,
+                Regolith(Chased(1.0), dt: 0.0, touched: true) with { HealthPipsLeft = 1 });
+            (nerve, beats) = (s.Nerve, s.Beats);
+            foreach (NervePips.Event e in s.Events.Where(e => e.Cause == NervePips.Cause.Touch))
+            {
+                touchEvents++;
+                lastLabel = e.Label;
+            }
+        }
+
+        Assert.Equal(4, touchEvents); // every single one, unlike the healthy case above
+        Assert.Equal("it has you and you are nearly gone", lastLabel);
+    }
+
+    [Fact]
+    public void AHealthyCaptainAndADyingOneAreChargedDifferentlyForTheSameSecondStrike()
+    {
+        var spent = NervePips.Beats.Fresh with { TouchSpent = true };
+
+        NervePips.Step healthy = NervePips.Advance(
+            NerveModel.Max, false, spent,
+            Regolith(Chased(1.0), 0.0, touched: true) with { HealthPipsLeft = NervePips.LowHealthPips + 1 });
+        NervePips.Step dying = NervePips.Advance(
+            NerveModel.Max, false, spent,
+            Regolith(Chased(1.0), 0.0, touched: true) with { HealthPipsLeft = NervePips.LowHealthPips });
+
+        Assert.Empty(healthy.Events);
+        Assert.Single(dying.Events);
     }
 
     [Fact]
