@@ -134,8 +134,13 @@ public static class WreckInterior
     // The spine's walls, broken by a doorway into each compartment.
     private static System.Collections.Generic.IEnumerable<(float X0, float X1)> SpineSegments()
     {
-        // Doorway centres, one per compartment pair.
-        float[] doors = [20f, 7f, -7f, -24f];
+        // Doorway centres, one per compartment pair — ASCENDING, because the walk below runs aft-to-bow and
+        // consumes them in order. The first cut listed them bow-to-aft: the loop then cut ONE doorway, and
+        // the trailing segment re-walled straight over it, so the spine was solid end to end and every
+        // compartment was unreachable. Widening the gap (the obvious fix) changed nothing, because the gap
+        // was never the problem — the wall was being drawn back on top of it.
+        float[] doors = [-24f, -7f, 7f, 20f];
+        System.Array.Sort(doors); // order-proof: the walk below only works aft-to-bow, so never trust the literal
         float x = AftX;
         foreach (float d in doors)
         {
