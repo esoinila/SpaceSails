@@ -392,6 +392,16 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     not fuel: even a sloppy 100 m/s launch error still buys a week. Kin to lesson 25 (keeping vs achieving) and
     lesson 37 (station-keeping as a standoff).
 
+41. [**Can you get there from here?**](41-can-you-get-there/README.md) — A* over a deck's own collision
+    geometry, so a room sealed by accident fails a TEST instead of failing a player. Written after the owner
+    boarded a derelict whose mutiny barricades spanned the full corridor and cut her in half — cargo
+    manifest, four compartments and the whole aft end unreachable, **every build green the entire time**.
+    The lesson in one line: *a wall you cannot pass has no test that fails.* The lab shows the algorithm on a
+    corridor with a barricade (**the same wall 2 du shorter and the ship works**), sweeps the grid step so
+    you can check it still resolves a doorway, prints the audit CI now runs over every wreck cause, and
+    reproduces the original bug so the guard is proved to be capable of failing. It earned its keep on its
+    first run by catching a console standing on top of a bulkhead. Wired into CI as `WreckLayoutTests`.
+
 ## Framing rule
 
 Standard physics is presented as standard; Curtis is the reference. The EU-flavored lessons

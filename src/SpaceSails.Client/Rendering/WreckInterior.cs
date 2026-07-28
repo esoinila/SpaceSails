@@ -7,47 +7,25 @@ namespace SpaceSails.Client.Rendering;
 /// regolith field (<see cref="MoonSurface"/>) nor a station concourse (<see cref="HavenInterior"/>) — it
 /// gets a dead ship: a spine corridor, compartments off it, and the airlock you came in through.
 ///
-/// <para>The layout is the same for every wreck, because a hull is a hull. What CHANGES with the cause is
-/// where the damage is and what the evidence consoles say — <see cref="Derelict.Evidence"/> is a sentence,
-/// and this file is where that sentence becomes somewhere you stand. A reactor cascade eats the aft
-/// compartment; a hull breach punches a line through the beam; a staged loss leaves the lifeboat cradles
-/// conspicuously, deliberately empty.</para>
+/// <para><b>The geometry itself lives in Core</b> (<see cref="WreckLayout"/>), the same split
+/// <see cref="SurfaceLayout"/> already uses. That is not tidiness — it is the fix for a real bug. The
+/// owner boarded the LONG SHRIFT and found her sealed in half by her own mutiny barricades, with every
+/// build green, because the layout lived here where no test could walk it. Now
+/// <c>WreckLayoutTests</c> walks every cause with A* on every CI run, and this file only dresses that
+/// geometry into a DeckPlan.</para>
 ///
-/// <para>Deterministic: the same wreck always builds the same hull, so a revisit finds the bodies where it
-/// left them.</para>
+/// <para>What CHANGES with the cause is where the damage is and what the evidence consoles say —
+/// <see cref="Derelict.Evidence"/> is a sentence, and this is where that sentence becomes somewhere you
+/// stand. Deterministic: the same wreck always builds the same hull.</para>
 /// </summary>
 public static class WreckInterior
 {
-    // The hull, in deck units. A long thin ship: bow to the right, engineering aft to the left, one spine
-    // corridor down the middle, four compartments hanging off it.
-    private const float AftX = -34f;
-    private const float BowX = 26f;
-    private const float TopY = -9f;
-    private const float BottomY = 9f;
-
-    /// <summary>Where the shuttle puts the away team down — just inside the wreck's airlock, amidships.</summary>
-    public const double SpawnX = 18.0;
+    /// <summary>Where the shuttle puts the away team down — just inside the wreck's airlock, on the spine
+    /// and standing in a doorway, so the first compartment is one step away.</summary>
+    public const double SpawnX = WreckLayout.SpawnX;
 
     /// <summary>Spawn Y — on the spine.</summary>
-    public const double SpawnY = 0.0;
-
-    /// <summary>The compartments, bow to aft. Each is a place with a name, because "you are in a room" is
-    /// most of what makes a wreck a place rather than a map.
-    ///
-    /// <para>Bounds are CONTIGUOUS on purpose — one compartment ends exactly where the next begins. The
-    /// first cut left 1 du gaps between them (…0, then 1…), and each gap was a dead slot walled on both
-    /// sides and narrower than the captain, i.e. a trap with no way in that only existed to go wrong.
-    /// Neighbours now share a bulkhead.</para></summary>
-    private static readonly (string Name, float X0, float X1, bool Top)[] Compartments =
-    [
-        ("BRIDGE", 13f, 25f, true),
-        ("CREW SPACES", 0f, 13f, true),
-        ("LIFEBOAT CRADLES", 0f, 13f, false),
-        ("DEEP HOLD", -15f, 0f, true),
-        ("NEAR HOLD", -15f, 0f, false),
-        ("ENGINEERING", -33f, -15f, true),
-        ("REACTOR SPACES", -33f, -15f, false),
-    ];
+    public const double SpawnY = WreckLayout.SpawnY;
 
     /// <summary>Build the derelict's walkable interior for a given wreck.</summary>
     public static DeckPlan WreckDeck(
@@ -64,49 +42,34 @@ public static class WreckInterior
         var consoles = new System.Collections.Generic.List<DeckPlan.ConsoleSpot>();
         var labels = new System.Collections.Generic.List<(float X, float Y, string Text)>();
 
-        // ── The hull ──────────────────────────────────────────────────────────────────────────────────
-        // Outer shell. The bow tapers; the aft is a flat transom where the drive used to be.
-        walls.Add(new DeckPlan.Wall(AftX, TopY, BowX - 6, TopY, false, true));
-        walls.Add(new DeckPlan.Wall(AftX, BottomY, BowX - 6, BottomY, false, true));
-        walls.Add(new DeckPlan.Wall(BowX - 6, TopY, BowX, -2f, false, true));   // bow taper, top
-        walls.Add(new DeckPlan.Wall(BowX - 6, BottomY, BowX, 2f, false, true)); // bow taper, bottom
-        walls.Add(new DeckPlan.Wall(BowX, -2f, BowX, 2f, true, true));          // the bridge window
-        walls.Add(new DeckPlan.Wall(AftX, TopY, AftX, BottomY, false, true));   // the transom
-
-        // The spine corridor: two long walls with gaps left as doorways into each compartment.
-        foreach ((float x0, float x1) in SpineSegments())
+        // ── The hull, the spine and the bulkheads — straight off Core's geometry, so what CI walks is
+        //    exactly what the captain walks. IsWindow/IsHull are dressing the audit does not care about,
+        //    so they are applied here by position rather than carried through Core.
+        foreach (SurfaceCollision.Segment s in WreckLayout.Walls(wreck.Cause))
         {
-            walls.Add(new DeckPlan.Wall(x0, -3f, x1, -3f, false, false));
-            walls.Add(new DeckPlan.Wall(x0, 3f, x1, 3f, false, false));
+            bool hull = IsHullEdge(s);
+            bool window = IsBridgeWindow(s) || IsBreach(s, wreck.Cause);
+            walls.Add(new DeckPlan.Wall((float)s.X1, (float)s.Y1, (float)s.X2, (float)s.Y2, window, hull));
         }
 
-        // …and DRAW the doorways. Owner, boarding her: "I seem to be blocked inside the ship from
-        // advancing." He was not blocked — he was in CREW SPACES with his back to a bulkhead, and the only
-        // way out was an unmarked gap in a dark box. A hole in a wall is not an affordance; a DOOR is. These
-        // are the same auto-doors the ship's own tube uses, so they read as passages at a glance and slide
-        // as you approach. They never block (DeckPlan doors are drawn, not solid) — they are pure legibility.
+        // ── Compartment names. "You are in a room" is most of what makes a wreck a place, not a map.
+        foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
+        {
+            labels.Add(((x0 + x1) / 2f, top ? WreckLayout.TopY + 2f : WreckLayout.BottomY - 1.5f, name));
+        }
+
+        // ── The doorways, DRAWN. A hole in a wall is not an affordance; a door is. Same auto-doors the
+        //    ship's own tube uses, off the same centre list the walls were cut from, so a doorway can never
+        //    be opened somewhere the player is not shown.
         var doors = new System.Collections.Generic.List<DeckPlan.Door>();
-        foreach (float d in DoorCentres())
+        foreach (float d in WreckLayout.DoorCentres())
         {
-            doors.Add(new DeckPlan.Door(d - DoorHalfWidth, -3f, d + DoorHalfWidth, -3f));
-            doors.Add(new DeckPlan.Door(d - DoorHalfWidth, 3f, d + DoorHalfWidth, 3f));
-        }
-
-        // Compartment dividers.
-        foreach ((string name, float x0, float x1, bool top) in Compartments)
-        {
-            float yIn = top ? -3f : 3f;
-            float yOut = top ? TopY : BottomY;
-            walls.Add(new DeckPlan.Wall(x0, yIn, x0, yOut, false, false));
-            walls.Add(new DeckPlan.Wall(x1, yIn, x1, yOut, false, false));
-            labels.Add(((x0 + x1) / 2f, top ? TopY + 2f : BottomY - 1.5f, name));
-        }
-
-        // ── The damage ────────────────────────────────────────────────────────────────────────────────
-        // What killed her is drawn INTO the hull, so the cause is legible before anyone reads a console.
-        foreach (DeckPlan.Wall w in DamageWalls(wreck.Cause))
-        {
-            walls.Add(w);
+            doors.Add(new DeckPlan.Door(
+                d - WreckLayout.DoorHalfWidth, -WreckLayout.SpineHalfHeight,
+                d + WreckLayout.DoorHalfWidth, -WreckLayout.SpineHalfHeight));
+            doors.Add(new DeckPlan.Door(
+                d - WreckLayout.DoorHalfWidth, WreckLayout.SpineHalfHeight,
+                d + WreckLayout.DoorHalfWidth, WreckLayout.SpineHalfHeight));
         }
 
         // ── The way home ──────────────────────────────────────────────────────────────────────────────
@@ -115,9 +78,8 @@ public static class WreckInterior
         labels.Add(((float)SpawnX + 4f, 5.5f, "— " + wreck.ShipName.ToUpperInvariant() + " —"));
 
         // ── The evidence ──────────────────────────────────────────────────────────────────────────────
-        // Three stations to read her by. The FIRST is always the cause's own evidence, wherever that
-        // damage is; the others are the ship's own record — the log and the manifest — which is what lets
-        // a careful captain catch a wreck that lies (Derelict.MisreadsAs).
+        // Three stations to read her by: the cause's own damage, and the ship's own record — the log and
+        // the manifest — which is what lets a careful captain catch a wreck that lies.
         foreach ((string id, float x, float y, string label) in EvidenceSpots(wreck.Cause))
         {
             bool done = examined.Contains(id);
@@ -138,127 +100,63 @@ public static class WreckInterior
             [.. walls], [.. consoles], [.. labels], [],
             spawnX: SpawnX, spawnY: SpawnY,
             droidCount: droidCount, fillDroids: fillDroids,
-            location: (x, y) => LocationName(x, y),
+            location: LocationName,
             doors: [.. doors], shipFixtures: false, followCam: true, tables: []);
     }
 
-    /// <summary>Half-width of a doorway through the spine wall. The first cut used 1.0 and the wreck was
-    /// UNWALKABLE: a 2 du gap minus the avatar's own 1.4 du diameter leaves a 0.6 du slot, and the captain
-    /// simply could not find it — every compartment was sealed by accident. Caught in the browser on the
-    /// first boarding. Keep this comfortably wider than <see cref="DeckPlan.AvatarRadius"/>.</summary>
-    private const float DoorHalfWidth = 3.0f;
+    // The outer shell reads as hull; everything inside is interior partition.
+    private static bool IsHullEdge(SurfaceCollision.Segment s) =>
+        s.Y1 == WreckLayout.TopY && s.Y2 == WreckLayout.TopY
+        || (s.Y1 == WreckLayout.BottomY && s.Y2 == WreckLayout.BottomY)
+        || (s.X1 == WreckLayout.AftX && s.X2 == WreckLayout.AftX)
+        || s.X1 >= WreckLayout.BowX - 6;
 
-    /// <summary>Where the spine opens into each compartment. ONE list, read by both the wall builder (which
-    /// leaves gaps here) and the door builder (which draws them), so a doorway can never be cut somewhere
-    /// the player is not shown — the two used to be able to disagree, and a gap nobody can see is the same
-    /// as no gap at all.
-    ///
-    /// <para>Returned ASCENDING because the wall walk runs aft-to-bow and consumes them in order. The bow
-    /// door sits at the SPAWN so the away team steps off the shuttle already standing in one; it must stay
-    /// clear of the bow end (BowX − 6), or the trailing wall segment comes out reversed and re-walls it.</para></summary>
-    private static float[] DoorCentres()
+    private static bool IsBridgeWindow(SurfaceCollision.Segment s) =>
+        s.X1 == WreckLayout.BowX && s.X2 == WreckLayout.BowX;
+
+    // The breach's two holes are drawn as windows — you can see the stars through her.
+    private static bool IsBreach(SurfaceCollision.Segment s, Derelict.WreckCause cause) =>
+        cause == Derelict.WreckCause.HullBreach && s.X1 == -2f && s.X2 == 2f;
+
+    /// <summary>The three places you read her by. The cause's station comes from Core so the audit and the
+    /// console agree on where it stands — they were separate literals once, and the audit promptly found a
+    /// station placed on top of a bulkhead.</summary>
+    private static (string Id, float X, float Y, string Label)[] EvidenceSpots(Derelict.WreckCause cause)
     {
-        float[] centres = [-24f, -7f, 7f, (float)SpawnX];
-        System.Array.Sort(centres); // order-proof: never trust the literal's order
-        return centres;
+        DeckReachability.Point at = WreckLayout.CauseStation(cause);
+        return
+        [
+            ("cause", (float)at.X, (float)at.Y, CauseLabel(cause)),
+            ("log", 20f, -6f, "🖥 THE BRIDGE LOG"),
+            ("manifest", -7f, -6f, "📦 THE CARGO MANIFEST"),
+        ];
     }
 
-    // The spine's walls, broken by a doorway into each compartment.
-    private static System.Collections.Generic.IEnumerable<(float X0, float X1)> SpineSegments()
+    private static string CauseLabel(Derelict.WreckCause cause) => cause switch
     {
-        // Doorway centres, one per compartment pair — ASCENDING, because the walk below runs aft-to-bow and
-        // consumes them in order. The first cut listed them bow-to-aft: the loop then cut ONE doorway, and
-        // the trailing segment re-walled straight over it, so the spine was solid end to end and every
-        // compartment was unreachable. Widening the gap (the obvious fix) changed nothing, because the gap
-        // was never the problem — the wall was being drawn back on top of it.
-        float[] doors = DoorCentres();
-        float x = AftX;
-        foreach (float d in doors)
-        {
-            if (d - DoorHalfWidth > x)
-            {
-                yield return (x, d - DoorHalfWidth);
-            }
-            x = System.Math.Max(x, d + DoorHalfWidth);
-        }
-
-        // …and never emit a reversed tail. A segment whose start has already passed its end is not a wall,
-        // it is a bug that reads as one.
-        if (x < BowX - 6)
-        {
-            yield return (x, BowX - 6);
-        }
-    }
-
-    // What killed her, as geometry. Drawn as hull-kind walls so the renderer treats them as structure.
-    private static System.Collections.Generic.IEnumerable<DeckPlan.Wall> DamageWalls(Derelict.WreckCause cause)
-    {
-        switch (cause)
-        {
-            case Derelict.WreckCause.ReactorCascade:
-                // The aft third is gone — the transom peeled outward.
-                yield return new DeckPlan.Wall(AftX, -6f, AftX - 5f, -9f, false, true);
-                yield return new DeckPlan.Wall(AftX, 6f, AftX - 5f, 9f, false, true);
-                yield return new DeckPlan.Wall(AftX - 5f, -9f, AftX - 5f, 9f, false, true);
-                break;
-
-            case Derelict.WreckCause.HullBreach:
-                // A line straight through the beam — you can see the stars through her.
-                yield return new DeckPlan.Wall(-2f, TopY, 2f, BottomY, true, true);
-                break;
-
-            case Derelict.WreckCause.Piracy:
-                // The near hold opened from outside, its plating cut away.
-                yield return new DeckPlan.Wall(-14f, BottomY, -2f, BottomY, true, true);
-                break;
-
-            case Derelict.WreckCause.Mutiny:
-                // Two barricades facing each other down the spine.
-                yield return new DeckPlan.Wall(-1f, -3f, -1f, 3f, false, false);
-                yield return new DeckPlan.Wall(4f, -3f, 4f, 3f, false, false);
-                break;
-
-            default:
-                // DriveFailure, LifeSupportFailure, NavigationalError, InsuranceJob — she is INTACT, which
-                // is its own kind of wrong. Nothing to draw; that IS the finding.
-                break;
-        }
-    }
-
-    // The three places you read her by. The first is the cause's own damage; the log and the manifest are
-    // always aboard, and always where a ship keeps them.
-    private static (string Id, float X, float Y, string Label)[] EvidenceSpots(Derelict.WreckCause cause) =>
-    [
-        CauseSpot(cause),
-        ("log", 20f, -6f, "🖥 THE BRIDGE LOG"),
-        ("manifest", -7f, -6f, "📦 THE CARGO MANIFEST"),
-    ];
-
-    private static (string Id, float X, float Y, string Label) CauseSpot(Derelict.WreckCause cause) => cause switch
-    {
-        Derelict.WreckCause.ReactorCascade => ("cause", -26f, -6f, "☢ THE REACTOR SPACES"),
-        Derelict.WreckCause.DriveFailure => ("cause", -26f, 6f, "🔧 THE DRIVE BELLS"),
-        Derelict.WreckCause.HullBreach => ("cause", 0f, 6f, "🕳 THE HOLE THROUGH HER"),
-        Derelict.WreckCause.LifeSupportFailure => ("cause", 7f, -6f, "🌬 THE SCRUBBER STACKS"),
-        Derelict.WreckCause.NavigationalError => ("cause", 20f, -6.5f, "🧭 THE NAV POST"),
-        Derelict.WreckCause.Mutiny => ("cause", 7f, -6f, "🔒 THE ARMS LOCKER"),
-        Derelict.WreckCause.Piracy => ("cause", -7f, 6f, "📦 THE STRIPPED HOLD"),
-        Derelict.WreckCause.InsuranceJob => ("cause", 7f, 6f, "🚀 THE LIFEBOAT CRADLES"),
-        _ => ("cause", 0f, 0f, "THE WRECK"),
+        Derelict.WreckCause.ReactorCascade => "☢ THE REACTOR SPACES",
+        Derelict.WreckCause.DriveFailure => "🔧 THE DRIVE BELLS",
+        Derelict.WreckCause.HullBreach => "🕳 THE HOLE THROUGH HER",
+        Derelict.WreckCause.LifeSupportFailure => "🌬 THE SCRUBBER STACKS",
+        Derelict.WreckCause.NavigationalError => "🧭 THE NAV POST",
+        Derelict.WreckCause.Mutiny => "🔒 THE ARMS LOCKER",
+        Derelict.WreckCause.Piracy => "📦 THE STRIPPED HOLD",
+        Derelict.WreckCause.InsuranceJob => "🚀 THE LIFEBOAT CRADLES",
+        _ => "THE WRECK",
     };
 
     /// <summary>Which compartment a point stands in — the header line the HUD reads.</summary>
     private static string LocationName(double x, double y)
     {
-        foreach ((string name, float x0, float x1, bool top) in Compartments)
+        foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
         {
             bool inX = x >= x0 && x <= x1;
-            bool inY = top ? y < -3 : y > 3;
+            bool inY = top ? y < -WreckLayout.SpineHalfHeight : y > WreckLayout.SpineHalfHeight;
             if (inX && inY)
             {
                 return name;
             }
         }
-        return System.Math.Abs(y) <= 3 ? "THE SPINE" : "THE HULL";
+        return System.Math.Abs(y) <= WreckLayout.SpineHalfHeight ? "THE SPINE" : "THE HULL";
     }
 }

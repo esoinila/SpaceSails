@@ -1,0 +1,177 @@
+namespace SpaceSails.Core.Tests;
+
+/// <summary>
+/// #488 · THE WALKABILITY AUDIT — the test the owner asked for after boarding a wreck that was sealed in
+/// half: <i>"THERE IS NO WAY TO GO TO THE BACK OF THE SHIP … we need some kind of CI test to spot similar
+/// problems."</i>
+///
+/// <para>Every build was green while the LONG SHRIFT's mutiny barricades cut her in two, because a wall
+/// you cannot pass has no test that fails. Type checks do not walk rooms. So these do: A* from the airlock
+/// to every station the player is expected to reach, for EVERY cause, on every run.</para>
+/// </summary>
+public class WreckLayoutTests
+{
+    private const double AvatarRadius = 0.7;   // DeckPlan.AvatarRadius — the captain's own half-width
+
+    private static DeckReachability.Point Spawn =>
+        new(WreckLayout.SpawnX, WreckLayout.SpawnY);
+
+    public static TheoryData<Derelict.WreckCause> EveryCause()
+    {
+        var data = new TheoryData<Derelict.WreckCause>();
+        foreach (Derelict.WreckCause c in System.Enum.GetValues<Derelict.WreckCause>())
+        {
+            data.Add(c);
+        }
+        return data;
+    }
+
+    // ── The audit ─────────────────────────────────────────────────────────────────────────────────────
+
+    [Theory]
+    [MemberData(nameof(EveryCause))]
+    public void EveryStationIsReachableFromTheAirlock(Derelict.WreckCause cause)
+    {
+        // THE regression guard. If a compartment, a console or the way home is ever walled off — by damage,
+        // by a bulkhead, by a doorway that was cut in the wrong place — this names it.
+        IReadOnlyList<string> sealedOff = DeckReachability.Unreachable(
+            Spawn,
+            WreckLayout.Stations(cause),
+            WreckLayout.Walls(cause),
+            AvatarRadius,
+            WreckLayout.Bounds);
+
+        Assert.True(
+            sealedOff.Count == 0,
+            $"{cause}: the captain cannot reach {string.Join(", ", sealedOff)} from the airlock.");
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryCause))]
+    public void TheWholeShipIsWalkableForeAndAft(Derelict.WreckCause cause)
+    {
+        // The specific thing that broke: the spine is the only way between bow and stern, so a captain who
+        // can reach the bridge must also be able to reach engineering. Two barricades spanning the corridor
+        // made the entire aft half unreachable and nothing complained.
+        var bow = new DeckReachability.Point(20, 0);
+        var stern = new DeckReachability.Point(-30, 0);
+
+        IReadOnlyList<SurfaceCollision.Segment> walls = WreckLayout.Walls(cause);
+
+        Assert.True(
+            DeckReachability.CanReach(Spawn, bow, walls, AvatarRadius, WreckLayout.Bounds),
+            $"{cause}: cannot reach the bow.");
+        Assert.True(
+            DeckReachability.CanReach(Spawn, stern, walls, AvatarRadius, WreckLayout.Bounds),
+            $"{cause}: cannot reach the stern — the ship is sealed in half.");
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryCause))]
+    public void EveryCompartmentCanBeEntered(Derelict.WreckCause cause)
+    {
+        // A named room the captain cannot get into is scenery pretending to be a place.
+        IReadOnlyList<SurfaceCollision.Segment> walls = WreckLayout.Walls(cause);
+        var unreachable = new List<string>();
+
+        foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
+        {
+            // Aim for the middle of the room, a comfortable way in from its bulkheads.
+            var middle = new DeckReachability.Point((x0 + x1) / 2.0, top ? -6.0 : 6.0);
+            if (!DeckReachability.CanReach(Spawn, middle, walls, AvatarRadius, WreckLayout.Bounds))
+            {
+                unreachable.Add(name);
+            }
+        }
+
+        Assert.True(unreachable.Count == 0, $"{cause}: sealed compartments — {string.Join(", ", unreachable)}");
+    }
+
+    [Fact]
+    public void TheSpawnIsSomewhereTheCaptainCanActuallyStand()
+    {
+        // An unwalkable spawn is worse than an unreachable room: the away team arrives inside a wall.
+        foreach (Derelict.WreckCause c in System.Enum.GetValues<Derelict.WreckCause>())
+        {
+            Assert.True(
+                DeckReachability.Standable(WreckLayout.SpawnX, WreckLayout.SpawnY, AvatarRadius, WreckLayout.Walls(c)),
+                $"{c}: the away team spawns inside a wall.");
+        }
+    }
+
+    // ── The geometry rules the audit exists to protect ────────────────────────────────────────────────
+
+    [Fact]
+    public void TheSpawnSitsInADoorway_SoTheFirstCompartmentIsOneStepAway()
+    {
+        Assert.Contains((float)WreckLayout.SpawnX, WreckLayout.DoorCentres());
+    }
+
+    [Fact]
+    public void DoorwaysAreWiderThanTheCaptain()
+    {
+        // The first cut left a 0.6 du slot and the wreck was unwalkable. A doorway must be a passage.
+        Assert.True(WreckLayout.DoorHalfWidth * 2 > AvatarRadius * 2 + 1.0);
+    }
+
+    [Fact]
+    public void TheSpineIsNeverWalledEndToEnd()
+    {
+        // The generator once listed door centres bow-to-aft while the walk ran aft-to-bow, cutting exactly
+        // one doorway and then re-walling over it with a REVERSED trailing segment. Segments must run
+        // forward, and there must be a gap for every door.
+        var runs = WreckLayout.SpineSegments().ToList();
+        Assert.All(runs, r => Assert.True(r.X1 > r.X0, $"reversed spine segment ({r.X0}, {r.X1})"));
+
+        foreach (float centre in WreckLayout.DoorCentres())
+        {
+            Assert.DoesNotContain(runs, r => centre > r.X0 && centre < r.X1);
+        }
+    }
+
+    [Fact]
+    public void CompartmentsShareBulkheads_LeavingNoDeadSlots()
+    {
+        // Gaps between neighbouring compartments were 1 du slots, walled both sides and narrower than the
+        // captain — traps with no way in that existed only to go wrong.
+        foreach (bool top in new[] { true, false })
+        {
+            var row = WreckLayout.Compartments.Where(c => c.Top == top).OrderBy(c => c.X0).ToList();
+            for (int i = 1; i < row.Count; i++)
+            {
+                Assert.Equal(row[i - 1].X1, row[i].X0);
+            }
+        }
+    }
+
+    // ── The audit can actually fail (a guard that only ever passes guards nothing) ────────────────────
+
+    [Fact]
+    public void TheAuditCatchesAShipSealedInHalf()
+    {
+        // Rebuild the ORIGINAL bug — barricades spanning the full corridor — and prove the audit sees it.
+        // Without this, a green suite might only mean the walk never says no.
+        List<SurfaceCollision.Segment> walls = [.. WreckLayout.Walls(Derelict.WreckCause.DriveFailure)];
+        walls.Add(new(-1f, -WreckLayout.SpineHalfHeight, -1f, WreckLayout.SpineHalfHeight));
+        walls.Add(new(4f, -WreckLayout.SpineHalfHeight, 4f, WreckLayout.SpineHalfHeight));
+
+        var stern = new DeckReachability.Point(-30, 0);
+
+        Assert.False(
+            DeckReachability.CanReach(Spawn, stern, walls, AvatarRadius, WreckLayout.Bounds),
+            "the audit must FAIL on a ship sealed in half, or it is guarding nothing");
+    }
+
+    [Fact]
+    public void APathIsReturnedSoAFailureIsDiagnosable()
+    {
+        // A* over a flood fill: the route is what makes a red test readable.
+        DeckReachability.Walk walk = DeckReachability.Path(
+            Spawn, new(-30, 0), WreckLayout.Walls(Derelict.WreckCause.Mutiny),
+            AvatarRadius, WreckLayout.Bounds);
+
+        Assert.True(walk.Reached);
+        Assert.True(walk.Steps > 1);
+        Assert.NotEmpty(walk.Path);
+    }
+}
