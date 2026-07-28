@@ -1161,6 +1161,22 @@ public partial class Map
         {
             return;
         }
+
+        // #472 · THE WORLD HOLDS STILL WHILE THE CARD IS UP. The first-ground lesson is a full-screen modal:
+        // the captain cannot walk, cannot dig, cannot plant. The Old Ones did not care. Landing with a pack
+        // out meant they closed, laid hands on and killed the captain BEHIND the card — the tutorial was a
+        // death sentence, and the very first thing a new captain ever reads is the last thing they read.
+        // Watched it happen live: dismissed the lesson straight onto the WHAT HAPPENED card.
+        //
+        // So the surface clock stops with the card. Nothing steps, and the arrival grace (#461) is rolled
+        // forward by the paused span so the twenty seconds the captain is owed start when they can actually
+        // use them — reading the rules must never spend the head start the rules are describing.
+        if (_groundLessonOpen)
+        {
+            _surface.LandedAtMs += dtRealSeconds * 1000.0;
+            return;
+        }
+
         StepDigChannel(dtRealSeconds);
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
