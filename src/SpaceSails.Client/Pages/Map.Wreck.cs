@@ -47,6 +47,14 @@ public sealed partial class Map
     /// <summary>The outcome card after the decision lands.</summary>
     private Derelict.SalvageOutcome? _wreckOutcome;
 
+    /// <summary>What the away team is standing and looking at — the wreck's own portrait of how she died,
+    /// raised when the cause's station is read.</summary>
+    private readonly record struct WreckLook(string Title, string Art, string Caption);
+
+    private WreckLook? _wreckLook;
+
+    private void CloseWreckLook() => _wreckLook = null;
+
     /// <summary>Is the away team currently inside a derelict (rather than on a moon)?</summary>
     private bool OnWreck =>
         _surface is { } ex && Derelict.TryParseWreckId(ex.Stop.Body.Id, out _);
@@ -75,6 +83,14 @@ public sealed partial class Map
             "manifest" => ManifestFinding(w),
             _ => "🔎 Nothing here but cold deck plate.",
         });
+
+        // The cause's own station is the one you STAND AND LOOK at, so it gets the wreck's portrait —
+        // eight ships that died eight different ways should not all read the same. The card shows the
+        // EVIDENCE, never the conclusion: naming what it means is still the captain's job.
+        if (id == "cause" && Derelict.ArtFile(w.Cause) is { Length: > 0 })
+        {
+            _wreckLook = new WreckLook(spot.Label.Replace("✔ ", ""), Derelict.ArtFile(w.Cause), Derelict.Evidence(w.Cause));
+        }
 
         if (fresh)
         {
@@ -210,6 +226,35 @@ public sealed partial class Map
     private void DismissWreckOutcome() => _wreckOutcome = null;
 
     // ── The hull ──────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>Put what got in aboard her — deep aft, around the nest, already aware.
+    ///
+    /// <para>Deliberate, not ambient: <c>StepTide</c> refuses to run on a wreck because there is no ground
+    /// for anything to claw out of, and a hull that quietly filled with Old Ones would tell a different
+    /// story than her evidence does. What is aboard a wreck gets put there ON PURPOSE — and this is the
+    /// purpose. They know the airlock, which is the only way out, so the walk back is the encounter.</para></summary>
+    private void SpawnWreckPack(int count)
+    {
+        for (int i = 0; i < count && _reevers.Count < ReeverEngineCeiling; i++)
+        {
+            // Spread along the aft spine and the deep compartments, so they come up the corridor rather
+            // than appearing on top of the away team.
+            double x = -28 + (i * 5);
+            double y = i % 2 == 0 ? 0 : (i % 4 == 1 ? -5 : 5);
+            _reevers.Add(new Reever
+            {
+                X = x,
+                Y = y,
+                Facing = 0,
+                JitterSeed = ((_surface?.ThreatSeed ?? 0UL) * 0x9E3779B97F4A7C15UL) + (ulong)i + 1UL,
+                // They know where the door is — it is the only one — so they converge on the airlock, and
+                // the captain is between them and it.
+                EverSeen = true,
+                LastSeenX = WreckLayout.SpawnX,
+                LastSeenY = WreckLayout.SpawnY,
+            });
+        }
+    }
 
     /// <summary>Rebuild the derelict's walkable interior — the ✔ marks and the vanished salvage console
     /// are state, so the deck is rebuilt whenever they change.</summary>

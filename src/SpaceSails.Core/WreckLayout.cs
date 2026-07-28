@@ -163,6 +163,14 @@ public static class WreckLayout
                 yield return new(-14f, BottomY, -2f, BottomY);
                 break;
 
+            case Derelict.WreckCause.Infested:
+                // The crew barricaded the spine from the INSIDE and it did not help. Same weave rule as a
+                // mutiny — half the corridor each, never a seal — because the retreat has to stay open.
+                // It is the fighting withdrawal that makes this wreck worth boarding.
+                yield return new(-12f, -SpineHalfHeight, -12f, 0f);
+                yield return new(-3f, 0f, -3f, SpineHalfHeight);
+                break;
+
             case Derelict.WreckCause.Mutiny:
                 // Two barricades facing each other down the spine — each covering exactly HALF the corridor,
                 // on opposite sides, so the captain weaves through. They spanned the full 6 du at first and
@@ -226,6 +234,8 @@ public static class WreckLayout
         Derelict.WreckCause.NavigationalError => new(17f, -6.5f),
         Derelict.WreckCause.Mutiny => new(7f, -6f),
         Derelict.WreckCause.Piracy => new(-7f, 6f),
+        // The nest, deep aft where it has had years to spread.
+        Derelict.WreckCause.Infested => new(-24f, 6f),
         Derelict.WreckCause.InsuranceJob => new(7f, 6f),
         _ => new(0f, 0f),
     };
@@ -240,6 +250,7 @@ public static class WreckLayout
         Derelict.WreckCause.NavigationalError => "the nav post",
         Derelict.WreckCause.Mutiny => "the arms locker",
         Derelict.WreckCause.Piracy => "the stripped hold",
+        Derelict.WreckCause.Infested => "the nest in the deep hold",
         Derelict.WreckCause.InsuranceJob => "the lifeboat cradles",
         _ => "the wreck",
     };

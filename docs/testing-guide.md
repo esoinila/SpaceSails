@@ -486,6 +486,41 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout + the one-time "true terms" notice without a playthrough (#422).** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 
+### The salvage run — `?wreck=1` / `?wreck=<cause>` (#488)
+
+A **derelict** is a boardable site that is neither a world nor a berth: a ship that died under way and has
+been coasting since. `?wreck=1&land=1` is the one-URL path aboard — she wins the landing toss over any
+moon in reach, and the away team spawns just inside her airlock, standing in a doorway.
+
+`?wreck=<cause>` boards a wreck that died **that** way on purpose, instead of re-rolling ids until the
+interesting one turns up:
+
+```
+/map?wreck=infested&land=1        ← something is still aboard; GATE-1 is live in her airlock
+/map?wreck=insurancejob&land=1    ← a staged loss, dressed as an ordinary drive failure
+/map?wreck=mutiny&land=1          ← the barricade weave down the spine
+/map?wreck=hullbreach&land=1      ← the two holes it made going through her
+```
+
+**The loop:** board → walk the spine → read the three stations (the damage, the bridge log, the cargo
+manifest) → the cargo console → file the report naming a cause, or strip her and say nothing.
+
+| What to check | What you should see |
+|---|---|
+| **She is walkable** | Every compartment enterable, bow *and* stern reachable. `WreckLayoutTests` audits this with A* on every CI run — if it is broken here it should already be red there. |
+| **The doorways are DOORS** | Drawn as auto-doors that slide as you approach. An unmarked gap in a dark box is what left the owner stuck twice. |
+| **The damage is in the hull** | A cascade peels the transom; a breach is two holes; a mutiny is two barricades you weave through. Intact causes draw nothing — that *is* the finding. |
+| **Stations mark ✔** | Reading one checks it off and rebuilds the deck. Two are needed before the report can be filed. |
+| **Some wrecks lie** | On a staged loss or an infested hull, the choice card offers a plausible WRONG cause until you have read both the log and the manifest. |
+| **Both roads quote real numbers** | The file button names the fee; the strip button names the whole value. Stripping must always pay more *today*. |
+| **Stripped cargo is HOT** | It rides home stamped `salvage` through the same ledger a plundered pod uses. |
+| **No regolith-isms** | No motion tracker, no dig/sentry keybar, no Reever tide clawing out of her deck plates. She is a ship, not a moon. |
+
+> **The infested hull is the one to playtest by hand.** Four Old Ones are already aboard, deep aft and
+> aware, and the only way out is the airlock behind you — so the walk back *is* the encounter. The
+> shuttle's own gun (`GATE-1`, never bought, never dry) sits on the spine just inboard of the airlock
+> covering that corridor. Check that it fires, and that the retreat is actually survivable.
+
 ### The quantized nerve — reading the pips and the ledger (#480)
 
 Owner's ruling, 2026-07-28: *"the sanity events should be quantized. Why and when it drops should be made

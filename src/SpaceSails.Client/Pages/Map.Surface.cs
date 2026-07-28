@@ -563,6 +563,35 @@ public partial class Map
         // had to spend one of his own just to get clear). It is the shuttle's own fixture: never bought,
         // never counted against the sling, and left behind without a ledger complaint.
         _surface!.LandedAtMs = _lastTimestampMs ?? 0;
+
+        // #488 · A DERELICT GETS THE SAME GUN, and needs it more. Owner: "there might be an infested ship
+        // where the cannons are needed also :-D … we should have a cannon in the airlock there to cover the
+        // retreat." Same fixture, same law — the shuttle's own, never bought, never dry — but placed on the
+        // wreck's spine just inboard of her airlock, so it covers the corridor you will be running back
+        // down. On an INFESTED hull that is the difference between a salvage run and a burial.
+        if (Derelict.TryParseWreckId(stop.Body.Id, out _))
+        {
+            _surface!.Bots.Add(new SurfaceBot
+            {
+                Unit = SurfaceArrival.DoorSentryUnit,
+                Rounds = SurfaceArrival.DoorSentryRounds,
+                Deployed = true,
+                X = WreckLayout.SpawnX + 2,
+                Y = WreckLayout.SpawnY,
+            });
+
+            // …and if she is infested, what got in is still aboard. Deep aft, around the nest, already
+            // aware — this is the one wreck you read on the way OUT.
+            if (_wreck is { Cause: Derelict.WreckCause.Infested })
+            {
+                SpawnWreckPack(4);
+                ShowPulseMessage(
+                    "🕷 Your lamp finds movement deep aft — she is not empty. GATE-1 is live in the airlock behind you. Read what you can and GET OUT.");
+                RendererInterop.PlayCue("alarm");
+            }
+            return;
+        }
+
         _surface!.Bots.Add(new SurfaceBot
         {
             Unit = SurfaceArrival.DoorSentryUnit,
