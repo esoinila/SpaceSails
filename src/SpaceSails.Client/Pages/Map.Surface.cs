@@ -1602,6 +1602,19 @@ public partial class Map
     // A net between the captain and the tube: an Old One wedged up-field (nearer the tube mouth than the
     // captain) and laterally close enough to block the sprint. Cheap geometry, matching the encirclement
     // the pack already leans into — the "cornered" the owner named, priced as a stressor.
+    // #475 · CORNERED HAS TO MEAN CORNERED. Core prices this as "a net wedged between the captain and the
+    // tube mouth" and charges the sharpest routine drain in the game for it — 5.0/s, more than a full-contact
+    // chase — deliberately NOT discounted by range, because being cut off is not a distance term
+    // (NerveModelTests.BeingCornered_IsCloseByDefinition_AndIsNeverDiscountedByRange pins that on purpose).
+    //
+    // The law was right; this predicate was not keeping its side of the bargain. It asked only for a contact
+    // somewhere ABOVE the captain in a lateral lane, with no bound on how far above — so a single Old One
+    // drifting forty deck units up, nowhere near anything, read as a net and billed the full 5.0/s. Three
+    // captains in a row died on that: full gauge, never touched, killed by a dot on the far rim.
+    //
+    // A hunter you can comfortably walk around is not wedged between you and anywhere. So it only counts once
+    // it is near enough to contest the escape — the same range at which Core says an Old One stops being
+    // scenery, which keeps the two halves of the owner's ruling ("not unless they get REALLY close") agreeing.
     private bool IsCornered()
     {
         foreach (Reever r in _reevers)
@@ -1609,7 +1622,11 @@ public partial class Map
             if (r.Y > _avatarY + 1.0 && r.Y <= MoonSurface.SurfaceTopY + 0.5 &&
                 Math.Abs(r.X - _avatarX) < CornerLateralRange)
             {
-                return true;
+                double dx = r.X - _avatarX, dy = r.Y - _avatarY;
+                if ((dx * dx) + (dy * dy) <= NerveModel.DreadRangeDeckUnits * NerveModel.DreadRangeDeckUnits)
+                {
+                    return true;
+                }
             }
         }
         return false;
