@@ -1415,6 +1415,12 @@ public partial class Map
             var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
             heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
         }
+        // #480: charge ONLY the first fright of a spell. AdvanceSightings reports a fresh contact on every
+        // RISE in the heard count, and with a pack weaving in and out of the dread range that rises over and
+        // over — playtested as "something crests the tracker −1" four times in eight seconds, which is a
+        // repeat-tax and exactly what the owner ruled against. `Seen == 0` is the spell's first fright; the
+        // rest of the watch is free until the tracker has been quiet long enough to re-arm it.
+        bool firstFrightOfSpell = _sightings.Seen == 0;
         (NerveModel.SightingSpell nextSpell, int freshSightings) =
             NerveModel.AdvanceSightings(_sightings, heardMovers, dtRealSeconds);
         _sightings = nextSpell;
@@ -1437,7 +1443,7 @@ public partial class Map
                     IsCornered(),
                     NearestReeverRange())
                 : default,
-            FreshSightings: onRegolith ? freshSightings : 0,
+            FreshSightings: onRegolith && firstFrightOfSpell ? freshSightings : 0,
             Touched: _touchedThisFrame,
             DtSeconds: dtRealSeconds,
             // #480 · fear tracks MORTAL DANGER: below a couple of blows left, every further hand costs its

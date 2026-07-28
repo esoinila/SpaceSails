@@ -613,7 +613,7 @@ public sealed class DeckView
         // haven it whispers (compact, tucked below the deck chrome). Shown in every walk mode, never flight.
         if (state.ShowNerve)
         {
-            DrawNerveLedger(state);
+            DrawNerveLedger(state, heightPx);
             DrawNerveGauge(simTime, state.Nerve, state.NerveReadout, state.NerveCompact, state.HitsTaken, surface?.BloodSplash ?? 0);
         }
 
@@ -960,7 +960,7 @@ public sealed class DeckView
     // the fact (the death card reads the same list). Owner: "what caused the sanity loss and what we did to
     // regain it. Now it is vague and wishy-washy." Losses read red, gains green — a recovery must be as
     // legible as a loss, or only half the ruling is honoured.
-    private void DrawNerveLedger(in State state)
+    private void DrawNerveLedger(in State state, int heightPx)
     {
         var ledger = state.NerveLedger;
         bool hasFlash = !string.IsNullOrEmpty(state.NerveFlash);
@@ -971,15 +971,20 @@ public sealed class DeckView
 
         float px = state.NerveCompact ? 9f : 11f;
         float x = 18f;
-        // Sits below the gauge plate and the condition pips — the same left column, reading downward in
-        // time order, so the corner tells one story instead of three.
-        float y = (state.NerveCompact ? 112f : 30f) + (state.NerveCompact ? 13f : 18f) + 46f;
+
+        // Anchored to the BOTTOM of the left column, growing upward. The first cut sat it directly under
+        // the gauge and it landed straight on top of the motion tracker's fan — unreadable, and it buried
+        // the one instrument you actually steer by. Down here it shares the column with nothing, and the
+        // reading order still runs newest-nearest-the-eye.
+        float lineH = px + 2f;
+        int rows = (ledger?.Count ?? 0) + (ledger is { Count: > 0 } ? 1 : 0) + (hasFlash ? 1 : 0);
+        float y = heightPx - 46f - (rows * lineH);
 
         if (hasFlash)
         {
             _renderer.DrawText(x, y, state.NerveFlash!, new RgbaColor(255, 225, 210, 250),
                 $"bold {px:0}px monospace", TextAlign.Left);
-            y += px + 6f;
+            y += lineH + 4f;
         }
 
         if (ledger is null || ledger.Count == 0)
@@ -988,7 +993,7 @@ public sealed class DeckView
         }
 
         _renderer.DrawText(x, y, "NERVE LEDGER", NerveFrame, $"bold {px - 1:0}px monospace", TextAlign.Left);
-        y += px + 3f;
+        y += lineH;
         for (int i = 0; i < ledger.Count; i++)
         {
             // Older lines fade — the newest cause is the one that matters while you are deciding to run.
@@ -996,7 +1001,7 @@ public sealed class DeckView
             bool gain = ledger[i].Contains('+');
             var c = gain ? new RgbaColor(120, 220, 170, a) : new RgbaColor(235, 140, 130, a);
             _renderer.DrawText(x, y, ledger[i], c, $"{px - 1:0}px monospace", TextAlign.Left);
-            y += px + 2f;
+            y += lineH;
         }
     }
 
