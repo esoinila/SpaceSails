@@ -2610,6 +2610,16 @@ public partial class Map
         {
             return null;
         }
+
+        // #488: a DERELICT wears none of the regolith's instruments. The motion tracker sweeps for Old Ones
+        // clawing out of ground that is not there; the key hints offer to DIG and to plant a SENTRY on a
+        // steel deck; the tracker caption talks about movement in the deep. Boarded live, all three printed
+        // over the wreck's own compartment labels and made her read like a moon with walls. She is a ship:
+        // the away team reads her, they do not sweep her.
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        {
+            return null;
+        }
         // #371 Phase 1 (perf): fill the reused entity buffer instead of a lazy Select — one iterator fewer
         // per frame, and MotionTracker.Sweep reads it as an IEnumerable exactly as before.
         _hudEntities.Clear();
@@ -2731,6 +2741,13 @@ public partial class Map
     // the sling it spells out [T] deploy, and a chest in hand spells [G] drop. Affordances never hide.
     private string BuildSurfaceKeyHints(SurfaceExcursion ex)
     {
+        // #488: aboard a derelict there is nothing to dig and nowhere to plant a sentry. The bar names what
+        // she actually offers — walking her, and reading what is bolted to her decks.
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        {
+            return "WASD — move · E — examine / take · F — first person · 🔇 M — mute";
+        }
+
         // #440: the bar must NAME the thing that matters. "E — dig / use" is honest but generic, and it was
         // generic at the one moment it should shout — with the chest in your hands (owner, 2026-07-26: "the
         // press T to bury treasure is not advertised clearly enough on surface… It is the key to survival
