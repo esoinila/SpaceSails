@@ -139,7 +139,11 @@ public static class WreckInterior
         // the trailing segment re-walled straight over it, so the spine was solid end to end and every
         // compartment was unreachable. Widening the gap (the obvious fix) changed nothing, because the gap
         // was never the problem — the wall was being drawn back on top of it.
-        float[] doors = [-24f, -7f, 7f, 20f];
+        // The bridge door sits at the SPAWN (18), so the away team steps off the shuttle already standing in
+        // a doorway and the first compartment is one step away. It must also stay clear of the bow end at
+        // BowX − 6 = 20: a door centred ON that end made the trailing segment come out BACKWARDS — (23, 20) —
+        // which drew a wall straight back across the doorway it had just cut.
+        float[] doors = [-24f, -7f, 7f, (float)SpawnX];
         System.Array.Sort(doors); // order-proof: the walk below only works aft-to-bow, so never trust the literal
         float x = AftX;
         foreach (float d in doors)
@@ -148,9 +152,15 @@ public static class WreckInterior
             {
                 yield return (x, d - DoorHalfWidth);
             }
-            x = d + DoorHalfWidth;
+            x = System.Math.Max(x, d + DoorHalfWidth);
         }
-        yield return (x, BowX - 6);
+
+        // …and never emit a reversed tail. A segment whose start has already passed its end is not a wall,
+        // it is a bug that reads as one.
+        if (x < BowX - 6)
+        {
+            yield return (x, BowX - 6);
+        }
     }
 
     // What killed her, as geometry. Drawn as hull-kind walls so the renderer treats them as structure.
