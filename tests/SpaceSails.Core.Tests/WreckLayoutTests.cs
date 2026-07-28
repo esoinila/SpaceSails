@@ -136,6 +136,18 @@ public class WreckLayoutTests
     }
 
     [Fact]
+    public void TheWayHomeIsClearOfTheSpawn_SoLeavingIsDeliberate()
+    {
+        // It sat 4 du from the spawn, inside the interact radius of the doorway the away team arrives in
+        // and must pass through to reach anything — stepping bow-ward at all bounced them off the wreck.
+        // An exit is somewhere you go on purpose, not something you fall through on your way past.
+        const double interactRadius = 3.0;   // DeckPlan.InteractRadius
+        double gap = System.Math.Abs(WreckLayout.ShuttleStation.X - WreckLayout.SpawnX);
+
+        Assert.True(gap > interactRadius + 1.0, $"the exit is only {gap:0.0} du from the spawn");
+    }
+
+    [Fact]
     public void DoorwaysAreWiderThanTheCaptain()
     {
         // The first cut left a 0.6 du slot and the wreck was unwalkable. A doorway must be a passage.

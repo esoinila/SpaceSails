@@ -198,8 +198,13 @@ public static class WreckLayout
     // Core and stayed put in the client — which is the same duplication that let a doorway be cut where the
     // player was never shown one. A station the audit walks to must be the station the captain presses E on.
 
-    /// <summary>The way home — just along the spine from the spawn.</summary>
-    public static DeckReachability.Point ShuttleStation => new(SpawnX + 4f, 0f);
+    /// <summary>The way home — up in the bow, deliberately CLEAR of the spawn.
+    ///
+    /// <para>It sat four units from the spawn, which put it inside the interact radius of the doorway the
+    /// away team arrives in and must pass through to reach anything. Playtested: stepping bow-ward at all
+    /// bounced the captain straight back to the ship. The exit should be somewhere you go ON PURPOSE, not
+    /// something you fall through on your way past.</para></summary>
+    public static DeckReachability.Point ShuttleStation => new(24f, 0f);
 
     /// <summary>The cargo, and the decision about her: amidships in the near hold, where the cargo is. You
     /// cannot decide what to do with her from the bridge — you have to go and look at what she carried.</summary>
