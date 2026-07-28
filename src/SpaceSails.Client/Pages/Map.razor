@@ -426,6 +426,21 @@
         </div>
     }
 
+    @* The ground's gift shop (#480 art pass): the 🛒 SOUVENIR KIOSK sold a tee and a magnet and showed
+       neither — every HAVEN shop has had painted merchandise since #367, the walked surface had none.
+       Same card idiom as the view-object below, same onerror fallback. *@
+    @if (_kioskCard is { } buy)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseKioskCard)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">🧾 @buy.Item</div>
+                <img class="view-object-img" src="@buy.Art" alt="@buy.Item" onerror="this.style.display='none'" />
+                <div class="view-object-caption">@buy.Line</div>
+                <button type="button" class="view-object-close" title="Stow it in the sling" @onclick="() => Dismiss(CloseKioskCard)">Stow it</button>
+            </div>
+        </div>
+    }
+
     @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
        player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
     @if (_viewObject is { } vo)
