@@ -32,16 +32,21 @@ public static class WreckInterior
     public const double SpawnY = 0.0;
 
     /// <summary>The compartments, bow to aft. Each is a place with a name, because "you are in a room" is
-    /// most of what makes a wreck a place rather than a map.</summary>
+    /// most of what makes a wreck a place rather than a map.
+    ///
+    /// <para>Bounds are CONTIGUOUS on purpose — one compartment ends exactly where the next begins. The
+    /// first cut left 1 du gaps between them (…0, then 1…), and each gap was a dead slot walled on both
+    /// sides and narrower than the captain, i.e. a trap with no way in that only existed to go wrong.
+    /// Neighbours now share a bulkhead.</para></summary>
     private static readonly (string Name, float X0, float X1, bool Top)[] Compartments =
     [
-        ("BRIDGE", 14f, 25f, true),
-        ("CREW SPACES", 1f, 13f, true),
-        ("LIFEBOAT CRADLES", 1f, 13f, false),
+        ("BRIDGE", 13f, 25f, true),
+        ("CREW SPACES", 0f, 13f, true),
+        ("LIFEBOAT CRADLES", 0f, 13f, false),
         ("DEEP HOLD", -15f, 0f, true),
         ("NEAR HOLD", -15f, 0f, false),
-        ("ENGINEERING", -33f, -16f, true),
-        ("REACTOR SPACES", -33f, -16f, false),
+        ("ENGINEERING", -33f, -15f, true),
+        ("REACTOR SPACES", -33f, -15f, false),
     ];
 
     /// <summary>Build the derelict's walkable interior for a given wreck.</summary>
@@ -73,6 +78,18 @@ public static class WreckInterior
         {
             walls.Add(new DeckPlan.Wall(x0, -3f, x1, -3f, false, false));
             walls.Add(new DeckPlan.Wall(x0, 3f, x1, 3f, false, false));
+        }
+
+        // …and DRAW the doorways. Owner, boarding her: "I seem to be blocked inside the ship from
+        // advancing." He was not blocked — he was in CREW SPACES with his back to a bulkhead, and the only
+        // way out was an unmarked gap in a dark box. A hole in a wall is not an affordance; a DOOR is. These
+        // are the same auto-doors the ship's own tube uses, so they read as passages at a glance and slide
+        // as you approach. They never block (DeckPlan doors are drawn, not solid) — they are pure legibility.
+        var doors = new System.Collections.Generic.List<DeckPlan.Door>();
+        foreach (float d in DoorCentres())
+        {
+            doors.Add(new DeckPlan.Door(d - DoorHalfWidth, -3f, d + DoorHalfWidth, -3f));
+            doors.Add(new DeckPlan.Door(d - DoorHalfWidth, 3f, d + DoorHalfWidth, 3f));
         }
 
         // Compartment dividers.
@@ -122,7 +139,7 @@ public static class WreckInterior
             spawnX: SpawnX, spawnY: SpawnY,
             droidCount: droidCount, fillDroids: fillDroids,
             location: (x, y) => LocationName(x, y),
-            doors: [], shipFixtures: false, followCam: true, tables: []);
+            doors: [.. doors], shipFixtures: false, followCam: true, tables: []);
     }
 
     /// <summary>Half-width of a doorway through the spine wall. The first cut used 1.0 and the wreck was
@@ -130,6 +147,21 @@ public static class WreckInterior
     /// simply could not find it — every compartment was sealed by accident. Caught in the browser on the
     /// first boarding. Keep this comfortably wider than <see cref="DeckPlan.AvatarRadius"/>.</summary>
     private const float DoorHalfWidth = 3.0f;
+
+    /// <summary>Where the spine opens into each compartment. ONE list, read by both the wall builder (which
+    /// leaves gaps here) and the door builder (which draws them), so a doorway can never be cut somewhere
+    /// the player is not shown — the two used to be able to disagree, and a gap nobody can see is the same
+    /// as no gap at all.
+    ///
+    /// <para>Returned ASCENDING because the wall walk runs aft-to-bow and consumes them in order. The bow
+    /// door sits at the SPAWN so the away team steps off the shuttle already standing in one; it must stay
+    /// clear of the bow end (BowX − 6), or the trailing wall segment comes out reversed and re-walls it.</para></summary>
+    private static float[] DoorCentres()
+    {
+        float[] centres = [-24f, -7f, 7f, (float)SpawnX];
+        System.Array.Sort(centres); // order-proof: never trust the literal's order
+        return centres;
+    }
 
     // The spine's walls, broken by a doorway into each compartment.
     private static System.Collections.Generic.IEnumerable<(float X0, float X1)> SpineSegments()
@@ -139,12 +171,7 @@ public static class WreckInterior
         // the trailing segment re-walled straight over it, so the spine was solid end to end and every
         // compartment was unreachable. Widening the gap (the obvious fix) changed nothing, because the gap
         // was never the problem — the wall was being drawn back on top of it.
-        // The bridge door sits at the SPAWN (18), so the away team steps off the shuttle already standing in
-        // a doorway and the first compartment is one step away. It must also stay clear of the bow end at
-        // BowX − 6 = 20: a door centred ON that end made the trailing segment come out BACKWARDS — (23, 20) —
-        // which drew a wall straight back across the doorway it had just cut.
-        float[] doors = [-24f, -7f, 7f, (float)SpawnX];
-        System.Array.Sort(doors); // order-proof: the walk below only works aft-to-bow, so never trust the literal
+        float[] doors = DoorCentres();
         float x = AftX;
         foreach (float d in doors)
         {
