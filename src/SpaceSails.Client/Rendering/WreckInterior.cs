@@ -125,19 +125,25 @@ public static class WreckInterior
             doors: [], shipFixtures: false, followCam: true, tables: []);
     }
 
+    /// <summary>Half-width of a doorway through the spine wall. The first cut used 1.0 and the wreck was
+    /// UNWALKABLE: a 2 du gap minus the avatar's own 1.4 du diameter leaves a 0.6 du slot, and the captain
+    /// simply could not find it — every compartment was sealed by accident. Caught in the browser on the
+    /// first boarding. Keep this comfortably wider than <see cref="DeckPlan.AvatarRadius"/>.</summary>
+    private const float DoorHalfWidth = 3.0f;
+
     // The spine's walls, broken by a doorway into each compartment.
     private static System.Collections.Generic.IEnumerable<(float X0, float X1)> SpineSegments()
     {
-        // Doorway centres, one per compartment pair, with 2 du openings.
+        // Doorway centres, one per compartment pair.
         float[] doors = [20f, 7f, -7f, -24f];
         float x = AftX;
         foreach (float d in doors)
         {
-            if (d - 1f > x)
+            if (d - DoorHalfWidth > x)
             {
-                yield return (x, d - 1f);
+                yield return (x, d - DoorHalfWidth);
             }
-            x = d + 1f;
+            x = d + DoorHalfWidth;
         }
         yield return (x, BowX - 6);
     }
