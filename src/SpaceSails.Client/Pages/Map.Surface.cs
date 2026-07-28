@@ -54,6 +54,19 @@ public partial class Map
     private double _nerve = NerveModel.Steady;
     private bool _monolithSeen; // the Lovecraftian first-sight hit fires once in a life (persisted)
 
+    // #480 · The nerve is QUANTIZED — ten whole pips, and nothing moves it anonymously. Owner: "what caused
+    // the sanity loss and what we did to regain it. Now it is vague and wishy-washy." NervePips owns the
+    // law; the client's job is to read the situation, carry the clocks, and SAY what happened.
+    private NervePips.Beats _nerveBeats = NervePips.Beats.Fresh;   // beat clocks + the touch latch
+    private double _nerveShockCarry;                               // sub-pip prickles bank here
+    private IReadOnlyList<NervePips.Event> _nerveLedger = [];      // newest first — the Captain desk reads it
+    private bool _touchedThisFrame;                                // set by the catch/exchange, priced by StepNerve
+    private string? _nerveFlash;                                   // the in-the-moment line by the gauge
+    private double _nerveFlashUntilMs;
+
+    /// <summary>How long a nerve event's line hangs by the gauge before fading.</summary>
+    private const double NerveFlashMs = 2600;
+
     // First sight of the monolith: within this many deck-units of it, the captain lays eyes on the thing
     // (owner's #313 maze). Reaches the maze approach (outer wall ~12 du out) with margin. FLAGGED for tuning.
     private const double MonolithSightRange = 26.0;
@@ -1390,7 +1403,23 @@ public partial class Map
         // the nerve, so a fall can arise solely from the regolith's toll below.
         NerveModel.NerveBand bandBefore = NerveModel.BandFor(_nerve);
 
-        var frame = new NerveModel.Frame(
+        // #379 · the per-spell sighting tally still lives here (the tracker's own hearing decides what counts
+        // as a fresh contact); #480 prices the result in whole pips instead of a shaped float.
+        int heardMovers = 0;
+        if (onRegolith && _surface is not null)
+        {
+            // #446: the tracker's fan still HEARS to its full detection range — that far, faint blip is the
+            // whole point of the instrument. But a contact only FRIGHTENS you inside the dread range.
+            double detection = Math.Min(
+                MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), NerveModel.DreadRangeDeckUnits);
+            var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+            heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
+        }
+        (NerveModel.SightingSpell nextSpell, int freshSightings) =
+            NerveModel.AdvanceSightings(_sightings, heardMovers, dtRealSeconds);
+        _sightings = nextSpell;
+
+        var frame = new NervePips.Frame(
             OnExcursion: onExcursion,
             OnRegolith: onRegolith,
             SeesMonolith: onRegolith && SeesMonolith(),
@@ -1408,38 +1437,29 @@ public partial class Map
                     IsCornered(),
                     NearestReeverRange())
                 : default,
-            DtSeconds: dtRealSeconds);
+            FreshSightings: onRegolith ? freshSightings : 0,
+            Touched: _touchedThisFrame,
+            DtSeconds: dtRealSeconds,
+            // #480 · fear tracks MORTAL DANGER: below a couple of blows left, every further hand costs its
+            // pip again instead of being absorbed by the once-per-encounter latch.
+            HealthPipsLeft: _surface is { } hurt ? CaptainCondition.MaxHits - hurt.HitsTaken : int.MaxValue);
 
-        NerveModel.Step step = NerveModel.Advance(_nerve, _monolithSeen, in frame);
+        NervePips.Step step = NervePips.Advance(_nerve, _monolithSeen, _nerveBeats, in frame);
+        bool monolithFired = !_monolithSeen && step.MonolithSeen;
         _nerve = step.Nerve;
         _monolithSeen = step.MonolithSeen;
+        _nerveBeats = step.Beats;
+        _touchedThisFrame = false;
 
-        // #379 · the per-spell diminishing sightings (Evening wind #18). Only the regolith frays you — a
-        // mover seen from the airlock's safety costs nothing (same law as the drain), so off the regolith we
-        // feed the tally zero movers, which also winds the spell down toward its quiet reset. The fresh
-        // contacts that crest THIS frame land a diminishing, S-curve-shaped jolt.
-        int heardMovers = 0;
-        if (onRegolith && _surface is not null)
+        // THE DELIVERABLE OF #480: every pip that moved says why — a line by the gauge in the moment, and a
+        // bounded ledger on the Captain desk that can be read back afterwards (and by the death card).
+        if (step.Events.Count > 0)
         {
-            // #446: the tracker's own fan still HEARS to its full detection range — that far, faint blip is
-            // the whole point of the instrument, and it is untouched. But a contact only FRIGHTENS you once
-            // it is inside the dread range (owner: "not… unless they get REALLY close"), so the sighting
-            // spell is fed the near ones only. Otherwise a rim-walking tide landed a jolt every time it
-            // crested the fan, and the two sources together emptied the gauge from a safe distance.
-            double detection = Math.Min(
-                MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), NerveModel.DreadRangeDeckUnits);
-            var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
-            heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
+            _nerveLedger = NervePips.Record(_nerveLedger, step.Events);
+            FlashNerve(step.Events[^1]);
         }
-        (NerveModel.SightingSpell nextSpell, int freshSightings) =
-            NerveModel.AdvanceSightings(_sightings, heardMovers, dtRealSeconds);
-        if (onRegolith && freshSightings > 0)
-        {
-            _nerve = NerveModel.SightingDrain(_nerve, _sightings.Seen, freshSightings);
-        }
-        _sightings = nextSpell;
 
-        if (step.MonolithHitFired)
+        if (monolithFired)
         {
             RendererInterop.PlayCue("alarm");
             // #380 item 8: name the bill the shock just dealt — the poetic beat and the NERVE gauge shake hands.
@@ -1459,6 +1479,54 @@ public partial class Map
             ShowPulseMessage("Nerves fraying — Reevers, digging under threat, and worse all take their toll. Get back aboard to steady them.");
         }
     }
+
+    // #480 · Say it, then keep it. The flash is the in-the-moment cause ("it laid hands on you  −1") that
+    // hangs by the gauge for a beat; the ledger is the same line kept so the Captain desk — and the death
+    // card — can answer "what broke me?" after the fact.
+    private void FlashNerve(NervePips.Event e)
+    {
+        _nerveFlash = e.Line;
+        _nerveFlashUntilMs = (_lastTimestampMs ?? 0) + NerveFlashMs;
+    }
+
+    /// <summary>The ONE way anything outside the regolith law may move the nerve (#480). Takes the old
+    /// storage-scale amount and a plain-words label, banks anything under a whole pip, and — when a pip
+    /// actually moves — flashes it and files it in the ledger. Nothing may change the gauge anonymously:
+    /// if a caller cannot name its shock in the house voice, it has no business spending the captain's nerve.
+    /// </summary>
+    private void ApplyNerveShock(double rawAmount, string label)
+    {
+        (double nerve, double carry, NervePips.Event? e) =
+            NervePips.ApplyShock(_nerve, _nerveShockCarry, rawAmount, label);
+        _nerve = nerve;
+        _nerveShockCarry = carry;
+        if (e is { } fired)
+        {
+            _nerveLedger = NervePips.Record(_nerveLedger, [fired]);
+            FlashNerve(fired);
+        }
+    }
+
+    /// <summary>The relief seam's counterpart (#308/#321 → #480): a drink, a pill, a bunk or a shared glass
+    /// gives WHOLE pips back and says so, so a recovery is exactly as legible as a loss.</summary>
+    private void ApplyNerveRelief(double rawRestore)
+    {
+        (double nerve, NervePips.Event? e) = NervePips.ApplyRelief(_nerve, rawRestore);
+        _nerve = nerve;
+        if (e is { } fired)
+        {
+            _nerveLedger = NervePips.Record(_nerveLedger, [fired]);
+            FlashNerve(fired);
+        }
+    }
+
+    /// <summary>The flash line, while it is still fresh — what the gauge writes beside the pips.</summary>
+    private string? LiveNerveFlash =>
+        _nerveFlash is not null && (_lastTimestampMs ?? 0) < _nerveFlashUntilMs ? _nerveFlash : null;
+
+    /// <summary>The ledger as plain lines for the corner and the death card — newest first.</summary>
+    private IReadOnlyList<string>? NerveLedgerLines =>
+        _nerveLedger.Count == 0 ? null : _nerveLedger.Select(e => e.Line).ToList();
 
     private int CountMovingReevers()
     {
@@ -2204,11 +2272,10 @@ public partial class Map
             ex.Catches++;
         }
         _heat = EncounterRule.RaiseHeat(_heat, 1, SimTime);
-        // #379 · Evening wind #19: "if they get to skin, that is a different thing." A hand on you is not a
-        // sighting — a big, FLAT nerve lump that bypasses the diminishing-sighting rule and the S-curve, so
-        // touch always hurts noticeably. Debounced by the same catch cadence above, so a brush is not a
-        // stunlock. (The gauge only shows on-excursion, but the nerve carries — a mauling follows you aboard.)
-        _nerve = NerveModel.Shock(_nerve, NerveModel.TouchShock);
+        // #480 · The nerve price of a hand on you is decided by NervePips, not here: ONE pip, ONCE per
+        // encounter (owner: "repeated strikes should not cost more of sanity … we already take medical hit
+        // from reever"), and again on every hand once the captain is nearly gone. We only report the event.
+        _touchedThisFrame = true;
         RendererInterop.PlayCue("alarm");
         ShowPulseMessage("🩸 An Old One lays hands on you — it wants no loot, only you. Tear free and RUN!");
         RequestVaultSave();
@@ -2312,7 +2379,9 @@ public partial class Map
             {
                 RendererInterop.PlayCue("last");
             }
-            _nerve = NerveModel.Shock(_nerve, NerveModel.TouchShock);
+            // #480: the blow already charged the body. The nerve is charged once for being CAUGHT (and
+            // again every time once you are nearly gone) — NervePips decides, we only report it.
+            _touchedThisFrame = true;
             RequestVaultSave();
 
             if (CaptainCondition.IsDown(ex.HitsTaken))

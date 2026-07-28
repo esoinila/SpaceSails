@@ -21,7 +21,12 @@ public sealed class DeckView
         double Nerve = 0, string NerveReadout = "", bool ShowNerve = false, bool NerveCompact = false,
         // #453: blows taken this excursion — drives the condition pips under the nerve bar. -1 = hide them
         // (off-excursion, where skin is not being counted).
-        int HitsTaken = -1);
+        int HitsTaken = -1,
+        // #480 · WHY the gauge moved. NerveFlash is the in-the-moment line ("it laid hands on you  −1") that
+        // hangs beside the pips for a beat; NerveLedger is the last few, newest first, so the captain can
+        // read back what broke them. Owner: "what caused the sanity loss and what we did to regain it."
+        string? NerveFlash = null,
+        System.Collections.Generic.IReadOnlyList<string>? NerveLedger = null);
 
     /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
     /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan
@@ -608,6 +613,7 @@ public sealed class DeckView
         // haven it whispers (compact, tucked below the deck chrome). Shown in every walk mode, never flight.
         if (state.ShowNerve)
         {
+            DrawNerveLedger(state);
             DrawNerveGauge(simTime, state.Nerve, state.NerveReadout, state.NerveCompact, state.HitsTaken, surface?.BloodSplash ?? 0);
         }
 
@@ -894,12 +900,20 @@ public sealed class DeckView
 
         FillRect(x0 - 8f, y0 - 20f, w + 16f, h + 42f, new RgbaColor(6, 11, 10, 205));  // the backing plate
         _renderer.DrawText(x0, y0 - 6, "NERVE", NerveFrame, $"bold {labelPx:0}px monospace", TextAlign.Left);
+
+        // #480 · TEN WHOLE PIPS, not a bar. Owner: "the sanity events should be quantized … not this float
+        // stuff we have now." A sliding fill is exactly what made a loss unreadable — you cannot tell a
+        // slide from a stop, or a big cause from a small one. Discrete pips can only ever change by a whole
+        // unit, so the eye sees COUNT, and the flash line beside them says which cause spent it. Deliberately
+        // the same pip idiom as the condition marker below, because the two meters are now comparable (#469).
         FillRect(x0, y0, w, h, new RgbaColor(14, 18, 24, 220));           // the empty channel
-        FillRect(x0, y0, w * (float)frac, h, fill);                       // the fill
-        for (int i = 1; i < 5; i++)                                       // crude deck-plan segments
+        int pipsLeft = NervePips.PipsOf(nerve);
+        float npGap = w * 0.012f;
+        float npW = (w - (npGap * (NervePips.MaxPips - 1))) / NervePips.MaxPips;
+        for (int i = 0; i < NervePips.MaxPips; i++)
         {
-            float tx = x0 + w * i / 5f;
-            DrawSeg((tx, y0), (tx, y0 + h), new RgbaColor(10, 14, 20, 160), 1f);
+            float px = x0 + (i * (npW + npGap));
+            FillRect(px, y0, npW, h, i < pipsLeft ? fill : new RgbaColor(22, 28, 34, 200));
         }
         DrawRectOutline(x0, y0, w, h, NerveFrame);                        // the frame
         _renderer.DrawText(x0, y0 + h + 13, readout, fill, $"{labelPx:0}px monospace", TextAlign.Left);
@@ -938,6 +952,51 @@ public sealed class DeckView
             }
             _renderer.DrawText(x0 + (CaptainCondition.MaxHits * (pip + gap)) + 6f, py + pip - 1f,
                 CaptainCondition.Readout(hitsTaken), intact, $"{labelPx:0}px monospace", TextAlign.Left);
+        }
+    }
+
+    // #480 · THE CAUSE, said twice. The FLASH is the line for the pip that just moved, sat right under the
+    // gauge where the eye already is; the LEDGER keeps the last few so "what broke me?" has an answer after
+    // the fact (the death card reads the same list). Owner: "what caused the sanity loss and what we did to
+    // regain it. Now it is vague and wishy-washy." Losses read red, gains green — a recovery must be as
+    // legible as a loss, or only half the ruling is honoured.
+    private void DrawNerveLedger(in State state)
+    {
+        var ledger = state.NerveLedger;
+        bool hasFlash = !string.IsNullOrEmpty(state.NerveFlash);
+        if (!hasFlash && (ledger is null || ledger.Count == 0))
+        {
+            return;
+        }
+
+        float px = state.NerveCompact ? 9f : 11f;
+        float x = 18f;
+        // Sits below the gauge plate and the condition pips — the same left column, reading downward in
+        // time order, so the corner tells one story instead of three.
+        float y = (state.NerveCompact ? 112f : 30f) + (state.NerveCompact ? 13f : 18f) + 46f;
+
+        if (hasFlash)
+        {
+            _renderer.DrawText(x, y, state.NerveFlash!, new RgbaColor(255, 225, 210, 250),
+                $"bold {px:0}px monospace", TextAlign.Left);
+            y += px + 6f;
+        }
+
+        if (ledger is null || ledger.Count == 0)
+        {
+            return;
+        }
+
+        _renderer.DrawText(x, y, "NERVE LEDGER", NerveFrame, $"bold {px - 1:0}px monospace", TextAlign.Left);
+        y += px + 3f;
+        for (int i = 0; i < ledger.Count; i++)
+        {
+            // Older lines fade — the newest cause is the one that matters while you are deciding to run.
+            byte a = (byte)Math.Clamp(215 - (i * 22), 70, 255);
+            bool gain = ledger[i].Contains('+');
+            var c = gain ? new RgbaColor(120, 220, 170, a) : new RgbaColor(235, 140, 130, a);
+            _renderer.DrawText(x, y, ledger[i], c, $"{px - 1:0}px monospace", TextAlign.Left);
+            y += px + 2f;
         }
     }
 

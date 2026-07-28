@@ -190,7 +190,7 @@ public partial class Map
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), []));
         _deckPlan.RemoveConsoleAt((float)placement.DoorX, (float)placement.DoorY, DeckPlan.ConsoleKind.SecretDoor, 0.3);
 
-        _nerve = NerveModel.Shock(_nerve, SecretLabEntryChill); // the cold breath of the place
+        ApplyNerveShock(SecretLabEntryChill, "the cold breath of the place behind the door");
         RequestVaultSave();
         RendererInterop.PlayCue("reveal");
         ShowPulseMessage(
@@ -286,7 +286,7 @@ public partial class Map
 
         SecretLab.RevealRoll roll = SecretLab.RollReveal(
             DiceRule.Seed($"secretlab:reveal:{ex.Stop.Body.Id}", (long)SimTime));
-        _nerve = NerveModel.Shock(_nerve, roll.NerveHit);
+        ApplyNerveShock(roll.NerveHit, "what the lab was built to keep");
 
         string dice = $"🎲 d20: {roll.Face} (≥{SecretLab.SalvageMinRoll} salvages)";
         if (roll.Outcome == SecretLab.RevealOutcome.SalvageTech)

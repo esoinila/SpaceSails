@@ -3277,8 +3277,24 @@
                         <div class="busted-quote">
                             You wake at @bust.ClinicName's clinic in @bust.HullDescription. The old ship and
                             everything visible aboard is gone — but nothing buried or banked was ever on it.
-                            The tank's at the mercy floor: enough to crawl to a pump, not a metre more.
+                            @* #477: the tank used to come up at a "mercy floor" that was exactly the reserve
+                               the autopilot refuses to spend, so the new captain woke unable to fly anywhere.
+                               It is a full tank now — the same fuel a new voyage starts with. *@
+                            The tank's full, at least. They always fill the tank.
                         </div>
+                        @* #480 — THE NERVE LEDGER, at the moment it explains the most: this is what broke you,
+                           in the captain's own last few named pips. Only shown when the nerve actually kept a
+                           record, so a death with no fear in it (a clean impact) is not padded with an empty box. *@
+                        @if (NerveLedgerLines is { Count: > 0 } deathLedger)
+                        {
+                            <div class="busted-nerve-ledger">
+                                <div class="busted-nerve-ledger-head">WHAT BROKE YOU — the last of the nerve</div>
+                                @foreach (string entry in deathLedger)
+                                {
+                                    <div class="busted-nerve-ledger-line">@entry</div>
+                                }
+                            </div>
+                        }
                         <div class="busted-receipt">
                             <div>💰 @BustedRule.InsuranceCredits.ToString("N0") cr insurance stake</div>
                             <div>🏥 −@bust.ClinicBillCr.ToString("N0") cr clinic bill (the rebirth tax)</div>
