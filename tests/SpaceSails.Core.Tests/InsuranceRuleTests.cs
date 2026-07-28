@@ -5,16 +5,34 @@ namespace SpaceSails.Core.Tests;
 /// all through one pure rule the catch code consults today so #227 never reopens it.</summary>
 public class InsuranceRuleTests
 {
+    /// <summary>The base tank a new voyage starts with — Map.Sim seeds _reactionMassPulses to this and
+    /// ReactionMassCapacityFor(0) returns it. The rebirth hands the same number back (#477).</summary>
+    private const int FullStarterTank = 500;
+
     [Fact]
     public void DefaultRebirth_IsTheUninsuredRustbucket_WithTheFullClinicBill()
     {
-        RebirthOutcome o = InsuranceRule.DefaultRebirth(mercyFloorPulses: 40);
+        RebirthOutcome o = InsuranceRule.DefaultRebirth(wakeTankPulses: 40);
 
         Assert.Equal(InsuranceRule.BaseClinicBillCr, o.ClinicBillCr);   // the rebirth tax
         Assert.Equal(BustedRule.InsuranceCredits, o.Kit.Credits);
         Assert.Equal(40, o.Kit.ReactionMassPulses);
         Assert.Equal(0, o.Kit.MassLevel);                                // starter grade
         Assert.Contains("rustbucket", o.HullDescription);
+    }
+
+    [Fact]
+    public void DefaultRebirth_WakesWithAFullTank_NotTheAutopilotReserve()
+    {
+        // #477: the wake tank is the same fuel a new game starts with. The old "mercy floor" was priced
+        // AT the autopilot's own reserve (0.18 × 500 = 90 p), and since the autopilot refuses any journey
+        // that eats into the reserve, the new captain woke unable to fly anywhere. Guard the gap.
+        RebirthOutcome o = InsuranceRule.DefaultRebirth(FullStarterTank);
+
+        Assert.Equal(FullStarterTank, o.Kit.ReactionMassPulses);
+        Assert.True(
+            o.Kit.ReactionMassPulses > AutopilotRehearsal.ReservePulses(FullStarterTank),
+            "the rebirth tank must leave usable fare ABOVE the reserve the autopilot will not spend");
     }
 
     [Fact]

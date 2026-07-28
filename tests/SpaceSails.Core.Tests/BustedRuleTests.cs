@@ -122,12 +122,12 @@ public class BustedRuleTests
     }
 
     [Fact]
-    public void Resurrect_IsAStarterGradeRustbucket_AtTheMercyFloor()
+    public void Resurrect_IsAStarterGradeRustbucket_WithAFullTank()
     {
-        BustedRule.ResurrectionKit kit = BustedRule.Resurrect(mercyFloorPulses: 60);
+        BustedRule.ResurrectionKit kit = BustedRule.Resurrect(wakeTankPulses: 60);
 
         Assert.Equal(BustedRule.InsuranceCredits, kit.Credits);
-        Assert.Equal(60, kit.ReactionMassPulses);       // tank at the reach-a-pump floor, not stranded
+        Assert.Equal(60, kit.ReactionMassPulses);       // the caller's full base tank, passed through (#477)
         Assert.Equal(BustedRule.StarterSlugAmmo, kit.SlugAmmo);
         Assert.Equal(0, kit.MassLevel);                  // every upgrade reset to base
         Assert.Equal(0, kit.SensorLevel);
