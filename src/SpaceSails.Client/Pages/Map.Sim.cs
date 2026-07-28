@@ -1665,7 +1665,11 @@ public partial class Map
                 ShowNerve: true, NerveCompact: _surface is null,
                 // #453: the condition pips ride under the nerve bar, and only while skin is being counted —
                 // off an excursion there is nothing to count, so they leave the corner entirely.
-                HitsTaken: _surface?.HitsTaken ?? -1),
+                HitsTaken: _surface?.HitsTaken ?? -1,
+                // #480: the gauge never moves anonymously — the flash names the pip that just went, the
+                // ledger keeps the last few so "what broke me?" has an answer after the fact.
+                NerveFlash: LiveNerveFlash,
+                NerveLedger: NerveLedgerLines),
                 _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
         }
     }

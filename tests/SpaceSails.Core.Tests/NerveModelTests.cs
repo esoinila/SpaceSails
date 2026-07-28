@@ -1,10 +1,14 @@
 ﻿namespace SpaceSails.Core.Tests;
 
 /// <summary>
-/// PR-317 · The nerve gauge — the first slice of #226's Fail Forward sanity. These pin the deterministic
-/// laws the client draws in a corner: the regolith's stressors fray the nerve at fixed per-second rates,
-/// the ship's safety eases it back, the monolith's first sight deals one big lump, the gauge stays clamped,
-/// and the house-voice flavor ladder escalates as the bar falls. Display-first — nothing here rolls or exits.
+/// PR-317 · The nerve gauge — the first slice of #226's Fail Forward sanity.
+///
+/// <para>#480 moved the per-frame LAW out of here and into <see cref="NervePips"/>: sustained pressure now
+/// beats in whole pips instead of draining at a float rate, so the drain/recover/S-curve/Advance tests that
+/// used to live here are gone with the code they pinned — <c>NervePipsTests</c> covers the same ground in
+/// the new units. What remains is what quantization did not touch: the dread RANGE (which now gates the
+/// beat), the sighting spell's bookkeeping, the relief economy, and the display ladder — whose rungs now sit
+/// on pip boundaries so a band can only ever change on a whole pip.</para>
 /// </summary>
 public class NerveModelTests
 {
@@ -17,119 +21,22 @@ public class NerveModelTests
     }
 
     [Fact]
-    public void QuietGround_DoesNotDrain()
-    {
-        // No movers, no chase, not digging, not cornered → the tracker is quiet, the nerve holds.
-        var calm = new NerveModel.Stressors(MovingContacts: 0, ChaseActive: false, Digging: false, Cornered: false);
-        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(in calm), 6);
-        Assert.Equal(90.0, NerveModel.Drain(90.0, in calm, dtSeconds: 5.0), 6);
-    }
-
-    [Fact]
-    public void MovingContacts_NoLongerAddAContinuousRate_SightingsOwnThemNow()
-    {
-        // #379 / Evening wind #18 re-tune: "seeing one reever after already seeing one more does not make
-        // you that much faster more nuts." The moving-contact stress is no longer a LINEAR per-second drain
-        // (that linear stack is exactly why the gauge bottomed out too easily at Ganymede). It is priced now
-        // as discrete, per-spell DIMINISHING sighting jolts (AdvanceSightings / SightingSeriesCost). So the
-        // continuous drain rate is INDEPENDENT of the moving-contact count — a wall of movers, on its own,
-        // adds no continuous rate at all.
-        var one = new NerveModel.Stressors(1, false, false, false);
-        var many = new NerveModel.Stressors(9, false, false, false);
-        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(in one), 6);
-        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(in many), 6);
-    }
-
-    [Fact]
-    public void DigUnderThreat_OnlyBitesWhenSomethingIsInbound()
-    {
-        // A calm dig on empty ground costs nothing beyond the (absent) contacts.
-        var calmDig = new NerveModel.Stressors(0, ChaseActive: false, Digging: true, Cornered: false);
-        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(in calmDig), 6);
-
-        // With a pack up, the same dig now frays: the chase rate PLUS the dig-under-threat rate.
-        var threatDig = new NerveModel.Stressors(0, ChaseActive: true, Digging: true, Cornered: false);
-        Assert.Equal(NerveModel.ChaseDrainPerSecond + NerveModel.DigUnderThreatDrainPerSecond,
-            NerveModel.DrainRatePerSecond(in threatDig), 6);
-    }
-
-    [Fact]
-    public void Cornered_AddsTheSharpestRoutineDrain()
-    {
-        // #379 re-tune: the continuous rate is the SUSTAINED situation only — chase + dig-under-threat +
-        // cornered. The moving-contact count no longer adds a term of its own (sightings own it, #18); the
-        // two movers here only serve to keep the dig "under threat" (something inbound).
-        var full = new NerveModel.Stressors(2, ChaseActive: true, Digging: true, Cornered: true);
-        double expected =
-            NerveModel.ChaseDrainPerSecond
-            + NerveModel.DigUnderThreatDrainPerSecond
-            + NerveModel.CorneredDrainPerSecond;
-        Assert.Equal(expected, NerveModel.DrainRatePerSecond(in full), 6);
-    }
-
-    [Fact]
-    public void Drain_IsDeterministic_ForFixedInputsAndDt()
-    {
-        var s = new NerveModel.Stressors(1, true, false, false);
-        double a = NerveModel.Drain(80.0, in s, 2.0);
-        double b = NerveModel.Drain(80.0, in s, 2.0);
-        Assert.Equal(a, b, 12); // same nerve + same stressors + same dt → identical result, every time
-
-        // #379: the raw rate is now shaped by the S-curve at the CURRENT level before it bites.
-        double rate = NerveModel.DrainRatePerSecond(in s);
-        Assert.Equal(80.0 - (rate * NerveModel.RateScale(80.0) * 2.0), a, 9);
-    }
-
-    [Fact]
     public void MonolithShock_IsOneBigLump()
     {
         double after = NerveModel.Shock(100.0, NerveModel.MonolithSightShock);
         Assert.Equal(100.0 - NerveModel.MonolithSightShock, after, 6);
     }
 
-    [Fact]
-    public void Recover_EasesBackTowardSteady_AndClampsAtFull()
-    {
-        // #379: at MID-gauge (n=50) the S-curve scale is exactly 1.0 — the peak — so the pre-#379 mid-range
-        // feel is preserved unchanged: recovery here is the flat per-second rate.
-        Assert.Equal(1.0, NerveModel.RateScale(50.0), 9);
-        double eased = NerveModel.Recover(50.0, dtSeconds: 4.0);
-        Assert.Equal(50.0 + NerveModel.AboardRecoveryPerSecond * 4.0, eased, 6);
-
-        // The ease-off never overshoots a full gauge.
-        Assert.Equal(NerveModel.Max, NerveModel.Recover(99.0, dtSeconds: 100.0), 6);
-    }
-
-    [Fact]
-    public void Gauge_ClampsAtBothEnds()
-    {
-        // A brutal drain bottoms out at 0, never below (the bar "bottoming out" is a real floor).
-        var brutal = new NerveModel.Stressors(6, true, true, true);
-        Assert.Equal(NerveModel.Min, NerveModel.Drain(5.0, in brutal, dtSeconds: 100.0), 6);
-
-        Assert.Equal(NerveModel.Min, NerveModel.Shock(2.0, 999.0), 6);
-        Assert.Equal(NerveModel.Max, NerveModel.Clamp(9999.0), 6);
-        Assert.Equal(NerveModel.Min, NerveModel.Clamp(-9999.0), 6);
-    }
-
-    [Fact]
-    public void NegativeDt_IsANoOp_NotAGain()
-    {
-        var s = new NerveModel.Stressors(3, true, true, true);
-        Assert.Equal(60.0, NerveModel.Drain(60.0, in s, dtSeconds: -1.0), 6); // a rewound clock never restores nerve
-        Assert.Equal(60.0, NerveModel.Recover(60.0, dtSeconds: -1.0), 6);     // nor drains it
-    }
-
     [Theory]
-    [InlineData(100.0, NerveModel.NerveBand.Steady)]
-    [InlineData(75.0, NerveModel.NerveBand.Steady)]
-    [InlineData(74.9, NerveModel.NerveBand.Rattled)]
-    [InlineData(50.0, NerveModel.NerveBand.Rattled)]
-    [InlineData(49.9, NerveModel.NerveBand.Shaken)]
-    [InlineData(25.0, NerveModel.NerveBand.Shaken)]
-    [InlineData(24.9, NerveModel.NerveBand.Fraying)]
-    [InlineData(10.0, NerveModel.NerveBand.Fraying)]
-    [InlineData(9.9, NerveModel.NerveBand.Shot)]
+    [InlineData(100.0, NerveModel.NerveBand.Steady)]   // 10 pips
+    [InlineData(80.0, NerveModel.NerveBand.Steady)]    // 8
+    [InlineData(70.0, NerveModel.NerveBand.Rattled)]   // 7
+    [InlineData(60.0, NerveModel.NerveBand.Rattled)]   // 6
+    [InlineData(50.0, NerveModel.NerveBand.Shaken)]    // 5
+    [InlineData(40.0, NerveModel.NerveBand.Shaken)]    // 4
+    [InlineData(30.0, NerveModel.NerveBand.Fraying)]   // 3
+    [InlineData(20.0, NerveModel.NerveBand.Fraying)]   // 2
+    [InlineData(10.0, NerveModel.NerveBand.Shot)]      // 1 — one pip left is already shot
     [InlineData(0.0, NerveModel.NerveBand.Shot)]
     public void FlavorLadder_EscalatesAsTheBarFalls(double nerve, NerveModel.NerveBand expected)
     {
@@ -146,83 +53,9 @@ public class NerveModelTests
         Assert.Contains("aboard", NerveModel.Readout(0.0), System.StringComparison.OrdinalIgnoreCase);
     }
 
-    // ── The one-per-frame Advance: the on-planet law, the airlock ease-off, the monolith-once hit. ──
-
-    private static readonly NerveModel.Stressors ChasePressure = new(2, ChaseActive: true, Digging: false, Cornered: false);
-
-    [Fact]
-    public void Advance_OnPlanetOnly_GaugeVisibleDuringExcursion_HiddenAboardShip()
-    {
-        // Off-excursion (flying the ship / docked): the gauge is hidden.
-        var offPlanet = new NerveModel.Frame(OnExcursion: false, OnRegolith: false, SeesMonolith: false, default, 0.5);
-        Assert.False(NerveModel.Advance(100.0, false, in offPlanet).GaugeVisible);
-
-        // On an excursion — whether out on the regolith or stood in the airlock — the gauge shows.
-        var onRegolith = new NerveModel.Frame(true, OnRegolith: true, false, ChasePressure, 0.5);
-        var inAirlock = new NerveModel.Frame(true, OnRegolith: false, false, default, 0.5);
-        Assert.True(NerveModel.Advance(100.0, false, in onRegolith).GaugeVisible);
-        Assert.True(NerveModel.Advance(100.0, false, in inAirlock).GaugeVisible);
-    }
-
-    [Fact]
-    public void Advance_OnRegolith_Drains_WhileTheAirlockEasesOff()
-    {
-        // Out on the regolith under pressure → the nerve falls.
-        var regolith = new NerveModel.Frame(true, OnRegolith: true, false, ChasePressure, 1.0);
-        NerveModel.Step drained = NerveModel.Advance(70.0, monolithSeen: true, in regolith);
-        Assert.True(drained.Nerve < 70.0);
-        // #379: the drain is the sustained rate shaped by the S-curve at the current level (70).
-        Assert.Equal(70.0 - (NerveModel.DrainRatePerSecond(in ChasePressure) * NerveModel.RateScale(70.0)), drained.Nerve, 6);
-
-        // Stood back up through the airlock (same excursion, no longer on the regolith) → it eases back,
-        // also shaped by the S-curve at the current level.
-        var airlock = new NerveModel.Frame(true, OnRegolith: false, false, default, 1.0);
-        NerveModel.Step eased = NerveModel.Advance(70.0, monolithSeen: true, in airlock);
-        Assert.Equal(70.0 + (NerveModel.AboardRecoveryPerSecond * NerveModel.RateScale(70.0)), eased.Nerve, 6);
-    }
-
-    [Fact]
-    public void Advance_OffPlanet_EasesTheNerveBackTowardSteady()
-    {
-        var flying = new NerveModel.Frame(OnExcursion: false, OnRegolith: false, false, default, 2.0);
-        NerveModel.Step step = NerveModel.Advance(40.0, monolithSeen: true, in flying);
-        // #379: recovery shaped by the S-curve at the current level (40).
-        Assert.Equal(40.0 + (NerveModel.AboardRecoveryPerSecond * NerveModel.RateScale(40.0) * 2.0), step.Nerve, 6);
-        Assert.False(step.GaugeVisible);
-    }
-
-    [Fact]
-    public void Advance_MonolithFirstSight_FiresExactlyOnce()
-    {
-        var seeing = new NerveModel.Frame(true, OnRegolith: true, SeesMonolith: true, default, 0.5);
-
-        // Frame 1 — first sight: the flag latches, the hit fires, the big lump lands.
-        NerveModel.Step first = NerveModel.Advance(100.0, monolithSeen: false, in seeing);
-        Assert.True(first.MonolithHitFired);
-        Assert.True(first.MonolithSeen);
-        Assert.Equal(100.0 - NerveModel.MonolithSightShock, first.Nerve, 6);
-
-        // Frame 2 — still staring at it, but already seen: NO second hit (only the routine drain, here 0).
-        NerveModel.Step second = NerveModel.Advance(first.Nerve, first.MonolithSeen, in seeing);
-        Assert.False(second.MonolithHitFired);
-        Assert.True(second.MonolithSeen);
-        Assert.Equal(first.Nerve, second.Nerve, 6); // no movers/chase in this frame → no further drain
-    }
-
-    [Fact]
-    public void Advance_MonolithHit_NeverFires_WhenAboard()
-    {
-        // The monolith can't gore you from the airlock — the hit only lands out on the regolith.
-        var aboardSeeing = new NerveModel.Frame(OnExcursion: true, OnRegolith: false, SeesMonolith: true, default, 0.5);
-        NerveModel.Step step = NerveModel.Advance(100.0, monolithSeen: false, in aboardSeeing);
-        Assert.False(step.MonolithHitFired);
-        Assert.False(step.MonolithSeen);
-    }
-
-    // ── A drink restores nerve (#308/#321 → #226): the sanity-relief seam, wired. ──────────────────
-    // Owner ruling 2026-07-18: a shared drink (conversation + company) restores at any level; a lone
-    // drink is weak medicine that fades to a single point at the shot floor; diminishing repeat and the
-    // tilty-legs drunk gate ride on top. NUMBERS ARE FLAGGED FOR TUNING — these pin the SHAPE, not gospel.
+    // ── The relief economy (#308/#321): shared drinks are flat and level-independent, a lone drink is weak
+    //    medicine that fades to a single point at the floor; diminishing repeat and the drunk gate ride on
+    //    top. #480 rounds whatever this prices onto the pip lattice at the point of use. ──
 
     [Fact]
     public void FirstSharedDrink_RestoresTheFlatLump_AtSteady()
@@ -368,76 +201,6 @@ public class NerveModelTests
             NerveModel.SteadyingNote(NerveModel.DrinkKind.CalmingPill, totNumber: 1, restored: 0.0));
     }
 
-    // ── #379 · The S-curve rate law (owner, Ganymede 2026-07-19: "logarithmic … S-curve … slow at ends but
-    //    quite fast in middle"). Continuous drain, recovery, and each sighting jolt ride RateScale(nerve). ──
-
-    [Fact]
-    public void RateScale_IsSlowAtBothEnds_FastestInTheMiddle()
-    {
-        // The shape the owner asked for: a floored parabola, peaking at exactly 1.0 at mid-gauge and tapering
-        // to the floor at both ends. Slowest near full and near empty, fastest through the middle.
-        Assert.Equal(1.0, NerveModel.RateScale(50.0), 9);                    // mid-gauge peak
-        Assert.Equal(NerveModel.RateFloor, NerveModel.RateScale(0.0), 9);    // empty floor
-        Assert.Equal(NerveModel.RateFloor, NerveModel.RateScale(100.0), 9);  // full floor
-
-        // Strictly rising from the floor up to the mid peak, and symmetric across it.
-        Assert.True(NerveModel.RateScale(10.0) < NerveModel.RateScale(30.0));
-        Assert.True(NerveModel.RateScale(30.0) < NerveModel.RateScale(50.0));
-        Assert.Equal(NerveModel.RateScale(30.0), NerveModel.RateScale(70.0), 9); // symmetry about mid
-        Assert.Equal(NerveModel.RateScale(10.0), NerveModel.RateScale(90.0), 9);
-
-        // Never below the floor, never above 1.0 — a bounded scale.
-        foreach (double n in new[] { 0.0, 5.0, 12.5, 25.0, 40.0, 50.0, 60.0, 75.0, 88.0, 100.0 })
-        {
-            double r = NerveModel.RateScale(n);
-            Assert.InRange(r, NerveModel.RateFloor, 1.0);
-        }
-    }
-
-    [Fact]
-    public void SCurveDrain_TapersHardAtBothEnds_ButNeverFreezes()
-    {
-        // Same brutal pressure and dt at a near-full, mid, and near-empty gauge: the mid drops the MOST, the
-        // ends taper — yet each still moves (the floor keeps "slow" from becoming "frozen", so a captain can
-        // still bottom out).
-        var pressure = new NerveModel.Stressors(0, ChaseActive: true, Digging: true, Cornered: true);
-        double dropNearFull = 95.0 - NerveModel.Drain(95.0, in pressure, 0.5);
-        double dropMid = 50.0 - NerveModel.Drain(50.0, in pressure, 0.5);
-        double dropNearEmpty = 5.0 - NerveModel.Drain(5.0, in pressure, 0.5);
-        Assert.True(dropMid > dropNearFull, "the middle of the gauge slides fastest");
-        Assert.True(dropMid > dropNearEmpty, "a near-shot captain frays slower than mid-gauge");
-        Assert.True(dropNearFull > 0.0 && dropNearEmpty > 0.0, "the ends are slow, never frozen");
-    }
-
-    [Fact]
-    public void ShatteredCaptain_RecoversSlowly_ThenFasterThroughTheMiddle()
-    {
-        // "A shattered one is slow to mend." From the floor, the first steps back are the smallest; the same
-        // aboard easing over the same dt lifts a mid-gauge captain far more than a shot one.
-        double liftFromFloor = NerveModel.Recover(2.0, 1.0) - 2.0;
-        double liftFromMid = NerveModel.Recover(50.0, 1.0) - 50.0;
-        double liftNearFull = NerveModel.Recover(96.0, 1.0) - 96.0;
-        Assert.True(liftFromFloor < liftFromMid, "a shattered captain mends slower than a mid-gauge one");
-        Assert.True(liftNearFull < liftFromMid, "and settles gently as it nears steady again");
-        Assert.True(liftFromFloor > 0.0, "but a shattered captain does still mend — the floor is not a wall");
-
-        // A shattered captain climbing out never overshoots the clamp, and the trajectory is monotonic up.
-        double n = 0.0, prev = -1.0;
-        for (int i = 0; i < 400; i++)
-        {
-            double next = NerveModel.Recover(n, 1.0);
-            Assert.True(next >= n, "recovery is monotonic — never a dip");
-            Assert.InRange(next, NerveModel.Min, NerveModel.Max); // no overshoot past the clamp
-            prev = n;
-            n = next;
-        }
-        Assert.Equal(NerveModel.Max, n, 6); // it does, eventually, reach steady hands again
-        Assert.True(prev <= NerveModel.Max);
-    }
-
-    // ── #379 · Diminishing SIGHTINGS (Evening wind #18): first fresh contact full, subsequent within the
-    //    spell a fraction, resetting after the tracker is quiet a while. ──
-
     [Fact]
     public void SightingSeriesCost_FirstFrightFull_EachRepeatDecays()
     {
@@ -497,48 +260,8 @@ public class NerveModelTests
         Assert.Equal(NerveModel.SightingShock, NerveModel.SightingSeriesCost(0, freshAfterReset), 6);
     }
 
-    [Fact]
-    public void SightingDrain_RidesTheSCurve_AndDiminishesAcrossASpell()
-    {
-        // The same fresh sighting hurts LESS at the steady end than mid-gauge (the S-curve), and a later
-        // fright in the spell hurts less than the first (the diminishing) — both laws stacked.
-        double firstAtMid = 50.0 - NerveModel.SightingDrain(50.0, priorSeen: 0, freshCount: 1);
-        double firstNearFull = 95.0 - NerveModel.SightingDrain(95.0, priorSeen: 0, freshCount: 1);
-        double laterAtMid = 50.0 - NerveModel.SightingDrain(50.0, priorSeen: 3, freshCount: 1);
-        Assert.True(firstNearFull < firstAtMid, "a steady captain shrugs off the first fright");
-        Assert.True(laterAtMid < firstAtMid, "a later fright of the spell hurts less than the first");
-        Assert.InRange(NerveModel.SightingDrain(0.0, 0, 5), NerveModel.Min, NerveModel.Max); // clamps, no overshoot
-    }
-
-    // ── #379 · TOUCH (Evening wind #19: "if they get to skin, that is a different thing"). ──
-
-    [Fact]
-    public void Touch_IsABigFlatLump_ThatBypassesTheDiminishAndTheSCurve()
-    {
-        // Touch is not a sighting: it does not diminish, and it does not ride the S-curve. The same grab
-        // costs the SAME flat lump whether the captain is steady or shattered — it always hurts.
-        double fromSteady = 100.0 - NerveModel.Shock(100.0, NerveModel.TouchShock);
-        double fromMid = 50.0 - NerveModel.Shock(50.0, NerveModel.TouchShock);
-        Assert.Equal(NerveModel.TouchShock, fromSteady, 6);
-        Assert.Equal(NerveModel.TouchShock, fromMid, 6);
-
-        // A touch bites harder than a whole spell's worth of diminishing sightings — skin is a different thing.
-        double wholeSpellOfSightings = NerveModel.SightingSeriesCost(0, 999);
-        Assert.True(NerveModel.TouchShock > wholeSpellOfSightings,
-            "a hand on you outweighs any run of mere sightings");
-
-        // Repeated touches keep costing the same — habituation never dulls being grabbed (no decay).
-        double after = NerveModel.Shock(60.0, NerveModel.TouchShock);
-        Assert.Equal(60.0 - NerveModel.TouchShock, after, 6);
-        Assert.Equal(after - NerveModel.TouchShock, NerveModel.Shock(after, NerveModel.TouchShock), 6);
-    }
-
-    // ── #446 · Distance is the whole story ───────────────────────────────────────────────────────────
-    //
-    // Owner, live on the Miranda regolith 2026-07-26: "The reevers should not lower sanity unless they get
-    // REALLY close." Before this, the client passed `ChaseActive: _reevers.Count > 0` — a pack EXISTING was
-    // the whole condition — so one Old One drifting on the far rim of a big ground taxed the captain at the
-    // same flat 2.2/s as one at their shoulder, and the gauge emptied while the nearest hunter was a dot.
+    // ── #446 · Distance is the whole story. Survives #480 unchanged in meaning, but now it GATES the beat
+    //    rather than scaling an amount: beyond the range an Old One is scenery and the clock never runs. ──
 
     [Fact]
     public void Dread_IsZeroBeyondRange_FullWhenNearlyOnYou_AndRampsBetween()
@@ -553,64 +276,5 @@ public class NerveModelTests
         double mid = (NerveModel.DreadRangeDeckUnits + NerveModel.DreadFullRangeDeckUnits) / 2.0;
         Assert.InRange(NerveModel.Dread(mid), 0.4, 0.6);
         Assert.True(NerveModel.Dread(mid - 1) > NerveModel.Dread(mid), "closing must always frighten more");
-    }
-
-    [Fact]
-    public void APackOnTheFarRim_CostsNothingAtAll()
-    {
-        // The bug, stated as a test: a live chase whose nearest member is beyond the dread range drains
-        // ZERO. Not less — nothing. A hunter you have time to walk away from is scenery.
-        var farOff = new NerveModel.Stressors(
-            MovingContacts: 4, ChaseActive: true, Digging: false, Cornered: false,
-            NearestContactRange: NerveModel.DreadRangeDeckUnits + 5);
-        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(farOff), 6);
-
-        // …and a full minute of it leaves the captain exactly as steady as they started.
-        Assert.Equal(NerveModel.Max, NerveModel.Drain(NerveModel.Max, farOff, 60.0), 6);
-    }
-
-    [Fact]
-    public void TheSamePack_AtYourShoulder_StillCostsFullRate()
-    {
-        // The other half of the ruling: close IS terrifying, and nothing about the fix softens that.
-        var onYou = new NerveModel.Stressors(4, ChaseActive: true, Digging: false, Cornered: false,
-            NearestContactRange: 1.0);
-        Assert.Equal(NerveModel.ChaseDrainPerSecond, NerveModel.DrainRatePerSecond(onYou), 6);
-    }
-
-    [Fact]
-    public void DiggingUnderThreat_OnlyBitesOnceSomethingIsNearEnoughToReachYou()
-    {
-        // Shovel-work you cannot abandon is only frightening if the thing can actually arrive mid-dig. With
-        // the tide on the far rim it is just digging.
-        var digFar = new NerveModel.Stressors(3, ChaseActive: true, Digging: true, Cornered: false,
-            NearestContactRange: NerveModel.DreadRangeDeckUnits + 1);
-        Assert.Equal(0.0, NerveModel.DrainRatePerSecond(digFar), 6);
-
-        var digNear = new NerveModel.Stressors(3, ChaseActive: true, Digging: true, Cornered: false,
-            NearestContactRange: 2.0);
-        Assert.Equal(
-            NerveModel.ChaseDrainPerSecond + NerveModel.DigUnderThreatDrainPerSecond,
-            NerveModel.DrainRatePerSecond(digNear), 6);
-    }
-
-    [Fact]
-    public void BeingCornered_IsCloseByDefinition_AndIsNeverDiscountedByRange()
-    {
-        // Cornered means the net is already between you and the tube. It is not a distance term and must not
-        // be scaled away by one — otherwise the sharpest routine drain could be dodged on a technicality.
-        var cornered = new NerveModel.Stressors(0, ChaseActive: false, Digging: false, Cornered: true,
-            NearestContactRange: NerveModel.DreadRangeDeckUnits + 50);
-        Assert.Equal(NerveModel.CorneredDrainPerSecond, NerveModel.DrainRatePerSecond(cornered), 6);
-    }
-
-    [Fact]
-    public void AStressorsWithoutARange_KeepsTheOldFullRateBehaviour()
-    {
-        // The default is 0 — "right on top of you" — so a caller that has never heard of the range prices
-        // exactly what this model charged before #446. Defaulting the other way (infinity) would silently
-        // switch the dread off for anyone who forgot to pass it, which is the more dangerous way to be wrong.
-        var noRange = new NerveModel.Stressors(2, ChaseActive: true, Digging: false, Cornered: false);
-        Assert.Equal(NerveModel.ChaseDrainPerSecond, NerveModel.DrainRatePerSecond(noRange), 6);
     }
 }

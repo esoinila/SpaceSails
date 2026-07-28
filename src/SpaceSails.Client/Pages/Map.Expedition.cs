@@ -163,7 +163,7 @@ public partial class Map
 
         if (ep.NerveHit > 0)
         {
-            _nerve = NerveModel.Shock(_nerve, ep.NerveHit);
+            ApplyNerveShock(ep.NerveHit, "the away gig turns bad");
         }
         if (ep.BonusCredits > 0)
         {
@@ -208,7 +208,7 @@ public partial class Map
         DicePool pool = DiceRule.RollPool(seed, count: 2, sides: 6);
         RaiseDiceEvent(DiceEvent.FromPool(AwayExpeditionEvents.Source, pool, copy.Headline, copy.Body));
 
-        _nerve = NerveModel.Shock(_nerve, ExpeditionBrief.RevealShock);
+        ApplyNerveShock(ExpeditionBrief.RevealShock, "the brief was not the whole truth");
         _expeditionRevealCard = new ExpeditionRevealCard(plan.SiteKind, plan.SiteDisplayName, copy.Headline, copy.Body);
 
         RendererInterop.PlayCue("alarm");

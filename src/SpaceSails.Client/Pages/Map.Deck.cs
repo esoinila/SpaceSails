@@ -530,8 +530,11 @@ public partial class Map
         // count that tilts the deck also diminishes the relief and, once drunk, stops it (NerveModel owns
         // the law; drunk ⇒ zero). Shared drinks work at any level; a lone tot is weak medicine. Rest and
         // the full R&R economy stay #226. The nerve rides the vault, so a steadier captain persists.
+        // #480 · the relief seam gives back WHOLE pips and names them, so a recovery reads exactly like a
+        // loss. The relief still prices its own magnitude (level curve, diminishing repeat, drunk ⇒ zero);
+        // ApplyNerveRelief only rounds that onto the pip lattice and files the event.
         double beforeNerve = _nerve;
-        _nerve = NerveModel.DrinkRestore(_nerve, kind, _rumTots);
+        ApplyNerveRelief(NerveModel.RestoreAmount(kind, _nerve, _rumTots));
         double restored = _nerve - beforeNerve;
         string steadying = NerveModel.SteadyingNote(kind, _rumTots, restored);
 
@@ -582,7 +585,7 @@ public partial class Map
         // "drunk"); its finite stock is the only limiter. The nerve rides the vault, so a steadier
         // captain persists across sessions — same as the galley path (see PourRum).
         double beforeNerve = _nerve;
-        _nerve = NerveModel.DrinkRestore(_nerve, NerveModel.DrinkKind.CalmingPill, totNumber: 1);
+        ApplyNerveRelief(NerveModel.RestoreAmount(NerveModel.DrinkKind.CalmingPill, _nerve, totNumber: 1));
         double restored = _nerve - beforeNerve;
         string steadying = NerveModel.SteadyingNote(NerveModel.DrinkKind.CalmingPill, totNumber: 1, restored);
         if (restored > 0)
@@ -606,8 +609,17 @@ public partial class Map
         (string? special, string? bar) = DockedBarNames();
         CabinComforts.ToiletVisit visit = CabinComforts.VisitToilet(SimTime, special, bar);
 
+        // A tiny nerve nudge, not a drink. #480: far under a whole pip either way, so it goes through the
+        // named seams and BANKS until it owes one, instead of nudging the gauge invisibly.
         double beforeNerve = _nerve;
-        _nerve = NerveModel.Clamp(_nerve + visit.NerveDelta); // a tiny nerve nudge, not a drink — clamped, not the drink seam
+        if (visit.NerveDelta >= 0)
+        {
+            ApplyNerveRelief(visit.NerveDelta);
+        }
+        else
+        {
+            ApplyNerveShock(-visit.NerveDelta, "some things cannot be unseen in a ship's head");
+        }
         if (_nerve != beforeNerve)
         {
             RequestVaultSave(); // the nerve moved — persist the steadier (or shakier) hands
@@ -641,7 +653,8 @@ public partial class Map
             return result.Line; // still well-rested — no restore, no clock cost, just the honest refusal
         }
 
-        _nerve = result.Nerve;
+        // #480: a night's bunk gives WHOLE pips back and says so, like every other relief.
+        ApplyNerveRelief(result.Nerve - _nerve);
 
         // A night's rest advances the sim clock a modest, fixed amount — re-stamp the loitering ship at the
         // new time and re-pin to any dock (mirrors AdvanceShuttleClock's clock-cost idiom, minus the shuttle

@@ -90,6 +90,42 @@ public class NervePipsTests
     }
 
     [Fact]
+    public void DiggingOnlyBitesOnceSomethingIsNearEnoughToReachYou()
+    {
+        // A calm dig on empty ground, or with the tide on the far rim, costs nothing — the shovel is only
+        // frightening when you cannot afford to finish it.
+        var farDig = new NerveModel.Stressors(
+            MovingContacts: 1, ChaseActive: true, Digging: true, Cornered: false,
+            NearestContactRange: NerveModel.DreadRangeDeckUnits + 1);
+
+        NervePips.Step far = NervePips.Advance(
+            NerveModel.Max, false, NervePips.Beats.Fresh, Regolith(farDig, dt: 60.0));
+        Assert.Empty(far.Events);
+
+        NervePips.Step near = NervePips.Advance(
+            NerveModel.Max, false, NervePips.Beats.Fresh,
+            Regolith(Chased(2.0, digging: true), NervePips.DigBeatSeconds));
+        Assert.Contains(near.Events, e => e.Cause == NervePips.Cause.DigUnderThreat);
+    }
+
+    [Fact]
+    public void BeingCorneredIsCloseByDefinition_AndIsNeverDiscountedByRange()
+    {
+        // A net between you and the tube mouth is not less frightening because the nearest one is a few
+        // units out — cornered is the one pressure range must never gate away.
+        var cornered = new NerveModel.Stressors(
+            MovingContacts: 0, ChaseActive: false, Digging: false, Cornered: true,
+            NearestContactRange: NerveModel.DreadRangeDeckUnits + 5);
+
+        NervePips.Step s = NervePips.Advance(
+            NerveModel.Max, false, NervePips.Beats.Fresh,
+            Regolith(cornered, NervePips.CorneredBeatSeconds));
+
+        NervePips.Event e = Assert.Single(s.Events);
+        Assert.Equal(NervePips.Cause.Cornered, e.Cause);
+    }
+
+    [Fact]
     public void CorneredBeatsFasterThanMerelyBeingHunted()
     {
         // The pressures differ in CADENCE, not in size — one pip each, but cornered earns it sooner.

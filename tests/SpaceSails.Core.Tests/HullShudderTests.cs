@@ -289,9 +289,11 @@ public class HullShudderTests
     [Fact]
     public void ChillNerveTick_IsSmall_APrickleNotAShock()
     {
-        // Far smaller than a Reever's touch or the monolith — the dread is the pause, not damage.
+        // Far smaller than the monolith — the dread is the pause, not damage. #480 sharpens the claim: a
+        // chill is worth LESS THAN A WHOLE PIP, which is exactly why it has to bank through
+        // NervePips.ApplyShock rather than round up into a full beat of terror or vanish entirely.
         Assert.True(HullShudder.ChillNerveTick > 0);
-        Assert.True(HullShudder.ChillNerveTick < NerveModel.TouchShock);
+        Assert.True(HullShudder.ChillNerveTick < NervePips.PipUnit);
         Assert.True(HullShudder.ChillNerveTick < NerveModel.MonolithSightShock);
     }
 

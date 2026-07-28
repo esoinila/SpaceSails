@@ -105,9 +105,10 @@ public partial class Map
         string line = chill ? HullShudder.ChillLine(seed, index) : HullShudder.Line(setting, seed, index);
         if (chill)
         {
-            // A hair of real dread — a nerve prickle far smaller than a Reever's touch (NerveModel.Shock,
-            // the flat lump path). Mostly it IS nothing; this is the rare time it isn't quite.
-            _nerve = NerveModel.Shock(_nerve, HullShudder.ChillNerveTick);
+            // A hair of real dread, far smaller than a hand on you. Mostly it IS nothing; this is the rare
+            // time it isn't quite. #480: too small to buy a whole pip, so it BANKS until it owes one —
+            // neither inflated into a full beat of terror nor silently rounded out of existence.
+            ApplyNerveShock(HullShudder.ChillNerveTick, "a cold breath through the hull");
         }
 
         _shudderActive = true;
@@ -328,10 +329,16 @@ public partial class Map
         string line = HullShudder.CautionLine(cold, ShudderSeed(), _cautionIndex);
 
         // A hair of nerve nuance: the reassurance steadies the hands a touch — unless it's the cold read,
-        // where "this is routine" plainly isn't, and the words fray instead.
-        _nerve = cold
-            ? NerveModel.Shock(_nerve, HullShudder.CautionColdTick)
-            : NerveModel.Clamp(_nerve + HullShudder.CautionSteadyTick);
+        // where "this is routine" plainly isn't, and the words fray instead. #480: both are far under a
+        // whole pip, so both BANK through the named seams rather than nudging the gauge invisibly.
+        if (cold)
+        {
+            ApplyNerveShock(HullShudder.CautionColdTick, "the words fray — this is not routine");
+        }
+        else
+        {
+            ApplyNerveRelief(HullShudder.CautionSteadyTick);
+        }
 
         _cautionLastFiredMs = nowMs;
         _cautionIndex++;

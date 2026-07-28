@@ -2056,6 +2056,19 @@ public partial class Map
         _holdLevel = kit.HoldLevel;
         _telescopeLevel = kit.TelescopeLevel;
         _hasNetJammer = false;
+
+        // A NEW CAPTAIN GETS THEIR OWN NERVE. Nothing reset this before, so the brain-backup woke a fresh
+        // captain already carrying the dead one's shattered gauge — and since the commonest death IS the
+        // nerve running out, the replacement routinely woke at or near the floor, one fright from dying the
+        // same way. Found while wiring #480, which makes it plainly visible: without this the LEDGER would
+        // hand the new captain someone else's last bad minute too. The beat clocks, the banked sub-pip
+        // pressure and the ledger all go with them.
+        _nerve = NerveModel.Steady;
+        _nerveBeats = NervePips.Beats.Fresh;
+        _nerveShockCarry = 0;
+        _nerveLedger = [];
+        _nerveFlash = null;
+
         RebuildSensor();
         _heat = HeatState.None;
         _lastAnnouncedHeat = 0;

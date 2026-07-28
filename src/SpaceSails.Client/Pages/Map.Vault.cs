@@ -829,7 +829,9 @@ public partial class Map
         // after a reload, and the monolith's first-sight hit stays spent. A missing section defaults calm.
         if (vault.Nerve is { } nerve)
         {
-            _nerve = NerveModel.Clamp(nerve.Nerve);
+            // #480: a voyage saved before the nerve was quantized carries an arbitrary float. Snap it onto
+            // the pip lattice on the way in, so a legacy 63.4 reads as a clean 6 pips and never drifts again.
+            _nerve = NervePips.Snap(NerveModel.Clamp(nerve.Nerve));
             _monolithSeen = nerve.MonolithSeen;
         }
 

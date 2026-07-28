@@ -105,7 +105,7 @@ public partial class Map
             case StrangerBond.Bond.Comment:
                 // Warmth without a ledger line: the company steadies the nerve a hair against the dread the
                 // same scare dealt (NerveModel owns the law — the caution-PA steady path, reused).
-                _nerve = NerveModel.Clamp(_nerve + StrangerBond.CommentNerveSteady);
+                ApplyNerveRelief(StrangerBond.CommentNerveSteady);
                 break;
 
             case StrangerBond.Bond.Drink:

@@ -151,7 +151,7 @@ public partial class Map
 
         if (c.NerveHit > 0)
         {
-            _nerve = NerveModel.Shock(_nerve, c.NerveHit);
+            ApplyNerveShock(c.NerveHit, "the charge work goes wrong under your hands");
         }
         if (c.DrillProgressDelta != 0.0 && !ex.ChargeArmed)
         {
@@ -251,9 +251,11 @@ public partial class Map
         DeflectionOutcome outcome = DeflectionGig.Classify(miss);
         _deflectionResolved = outcome;
 
-        // A heavy shock through the seams either way — you do not stand on a falling mountain and fire a charge
-        // and feel calm. The S-curve does the rest.
-        _nerve = NerveModel.Shock(_nerve, outcome == DeflectionOutcome.FullDeflection ? 10.0 : 16.0);
+        // A heavy shock through the seams either way — you do not stand on a falling mountain and fire a
+        // charge and feel calm. #480: named, and spent in whole pips.
+        ApplyNerveShock(
+            outcome == DeflectionOutcome.FullDeflection ? 10.0 : 16.0,
+            "you fired a charge standing on a falling mountain");
 
         if (outcome != DeflectionOutcome.Impact)
         {
@@ -279,7 +281,7 @@ public partial class Map
     {
         ex.DeflectionResolved = true;
         _deflectionResolved = DeflectionOutcome.Impact;
-        _nerve = NerveModel.Shock(_nerve, NerveModel.MonolithSightShock);
+        ApplyNerveShock(NerveModel.MonolithSightShock, "you watched it strike, and could not stop it");
         PushNewsEvent(NewsWire.NewsEventKind.AsteroidStruck, plan.TargetName);
         RendererInterop.PlayCue("alarm");
         ShowDeflectionStory(DeflectionOutcome.Impact);
