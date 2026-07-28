@@ -360,6 +360,12 @@ public partial class Map
             case DeckPlan.ConsoleKind.WreckSalvage:
                 OpenWreckChoice();          // #488: file it, or strip her and say nothing
                 break;
+            case DeckPlan.ConsoleKind.WreckValves:
+                OpenVentPanel();            // #488: the damage-control mimic, aft where the machinery is
+                break;
+            case DeckPlan.ConsoleKind.WreckBridgePanel:
+                TryDeadBridgePanel();       // #488: dead, and it says where the working ones are
+                break;
             case DeckPlan.ConsoleKind.SurfaceAirlock:
                 LiftOffFromSurface();
                 break;

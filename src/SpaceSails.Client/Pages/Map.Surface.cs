@@ -580,6 +580,13 @@ public partial class Map
                 Y = WreckLayout.SpawnY,
             });
 
+            // #488: build the valve board for this hull — which rooms the thing got into, and who sealed
+            // themselves in where. Seeded off the wreck, so a reload finds the same ship.
+            if (_wreck is { } aboardWreck)
+            {
+                PrepareVenting(aboardWreck);
+            }
+
             // …and if she is infested, what got in is still aboard. Deep aft, around the nest, already
             // aware — this is the one wreck you read on the way OUT.
             if (_wreck is { Cause: Derelict.WreckCause.Infested })

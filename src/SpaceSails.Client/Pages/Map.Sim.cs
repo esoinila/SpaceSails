@@ -1914,6 +1914,7 @@ public partial class Map
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
         if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
         if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
+        if (_showVentPanel) { CloseVentPanel(); return true; }
         if (_wreckLook is not null) { CloseWreckLook(); return true; }
         if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
         if (_showWreckChoice) { CloseWreckChoice(); return true; }

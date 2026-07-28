@@ -426,6 +426,106 @@
         </div>
     }
 
+    @* #488 · THE VALVE BOARD — a damage-control mimic, the Battlestar Galactica shape. The ship drawn as
+       her own compartments, each one a switch: shut the door, read for life, blow the room. It lives aft in
+       ENGINEERING because the bridge panel is dead, so you walk toward the thing to reach the tool that
+       kills it. The sensor cannot tell a survivor from the infestation — that is the whole decision. *@
+    @if (_showVentPanel && _wreck is { } ventWreck)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseVentPanel)">
+            <div class="vent-board" @onclick:stopPropagation="true">
+                <div class="view-object-title">⚙ ATMOSPHERE CONTROL — @ventWreck.ShipName.ToUpperInvariant()</div>
+                <div class="vent-sub">
+                    Mechanical valves, local control. Shut a door before you blow the room behind it.
+                    You are in <strong>@(CaptainCompartment() ?? "THE SPINE")</strong>.
+                </div>
+
+                <div class="vent-mimic">
+                    @foreach (bool top in new[] { false, true })
+                    {
+                        <div class="vent-row">
+                            @foreach ((string name, bool _) in VentBoardRow(top))
+                            {
+                                var space = SpaceNow(name);
+                                var ready = HullVenting.Readiness(space);
+                                <div class="vent-cell @(space.Vented ? "vented" : "") @(space.CaptainInside ? "here" : "") @(_ventSelected == name ? "picked" : "")"
+                                     @onclick="() => _ventSelected = name">
+                                    <div class="vent-name">@name</div>
+                                    <div class="vent-state">
+                                        @if (space.Vented)
+                                        {
+                                            <span class="vent-vac">VACUUM</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@(space.DoorShut ? "🔒 sealed" : "🔓 open")</span>
+                                        }
+                                    </div>
+                                    @if (_ventReads.TryGetValue(name, out var read))
+                                    {
+                                        <div class="vent-read @(read.Sign == HullVenting.LifeSign.SomethingAlive ? "alive" : "")">
+                                            d20 @read.Roll.Face · @HullVenting.ReadLine(read.Sign)
+                                        </div>
+                                    }
+                                    @if (space.CaptainInside)
+                                    {
+                                        <div class="vent-read">— you are standing here —</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        @if (!top)
+                        {
+                            <div class="vent-spine">— THE SPINE —</div>
+                        }
+                    }
+                </div>
+
+                @if (_ventSelected is { } picked)
+                {
+                    var sel = SpaceNow(picked);
+                    var readiness = HullVenting.Readiness(sel);
+                    <div class="vent-actions">
+                        <div class="vent-picked">@picked</div>
+                        <button type="button" class="btn btn-outline-light btn-sm" disabled="@sel.Vented"
+                                @onclick="() => ToggleVentDoor(picked)">
+                            @(sel.DoorShut ? "🔓 Open the door" : "🔒 Shut the door")
+                        </button>
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                disabled="@(_ventReads.ContainsKey(picked) || sel.Vented)"
+                                title="One reading only — you cannot re-roll until it says something comfortable"
+                                @onclick="() => ReadLifeSigns(picked)">
+                            📡 Read for life
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm"
+                                disabled="@(readiness != HullVenting.VentReadiness.Ready)"
+                                title="@(readiness == HullVenting.VentReadiness.Ready ? "Blow it to space" : HullVenting.RefusalLine(readiness, picked))"
+                                @onclick="() => VentCompartment(picked)">
+                            💨 BLOW @picked
+                        </button>
+                        @if (sel is { HoldsSurvivor: true, Vented: false } && CaptainCompartment() == picked)
+                        {
+                            <button type="button" class="btn btn-success btn-sm" @onclick="() => RescueSurvivor(picked)">
+                                🧑‍🚀 Get them out
+                            </button>
+                        }
+                        @if (readiness != HullVenting.VentReadiness.Ready)
+                        {
+                            <div class="vent-refusal">@HullVenting.RefusalLine(readiness, picked)</div>
+                        }
+                    </div>
+                }
+
+                @if (_ventMessage is { Length: > 0 } ventMsg)
+                {
+                    <div class="vent-message">@ventMsg</div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseVentPanel)">Step away</button>
+            </div>
+        </div>
+    }
+
     @* #488 · WHAT YOU ARE LOOKING AT. The cause's own station is the one you stand in front of, so it shows
        the wreck's portrait — eight ships that died eight different ways should not read the same. The image
        is the EVIDENCE, never the conclusion; naming what it means is still the captain's job. *@
