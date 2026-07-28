@@ -1146,7 +1146,13 @@ public partial class Map
             return;
         }
         // The same board the hatch would show, so the cheat can never reach somewhere the player could not.
-        ShuttleStop? target = ShuttleDestinationsInRange().FirstOrDefault(s => s.IsLandable);
+        // #488: when a DERELICT is in reach she wins the toss — ?wreck=1&land=1 is the one-URL way onto her,
+        // the same promise ?land=1 makes for a surface. Without this the cheat lands on whatever moon happens
+        // to be nearer and the wreck is unreachable except by walking the deck to the shuttle bay.
+        List<ShuttleStop> board = [.. ShuttleDestinationsInRange()];
+        ShuttleStop? target =
+            board.FirstOrDefault(s => s.IsLandable && Derelict.TryParseWreckId(s.Body.Id, out _))
+            ?? board.FirstOrDefault(s => s.IsLandable);
         if (target is null)
         {
             ShowPulseMessage("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
@@ -1163,6 +1169,16 @@ public partial class Map
         // anything could reach the captain, which is the walk the cheat was invented to remove. Drop them in
         // the open regolith short of the deep field — far enough out that the pack can actually arrive, close
         // enough that the way home is still a real run.
+        // #488: a DERELICT has no regolith and no landing band, so the open-ground drop above is meaningless
+        // inside her — MoonSurface's coordinates would put the away team OUTSIDE the hull, standing in
+        // vacuum next to the ship they came to search. She keeps her own spawn, just inside her airlock.
+        if (_surface is { } landed && Derelict.TryParseWreckId(landed.Stop.Body.Id, out _))
+        {
+            (_avatarX, _avatarY) = (WreckInterior.SpawnX, WreckInterior.SpawnY);
+            RebuildSurfaceDeck();
+            return;
+        }
+
         if (_surface is not null)
         {
             _avatarX = MoonSurface.SpawnX;
@@ -2194,6 +2210,15 @@ public partial class Map
     private void StepTide(double dtRealSeconds)
     {
         if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        // #488: the tide is Old Ones clawing UP OUT OF THE REGOLITH. A derelict is a steel hull in vacuum —
+        // there is no ground for them to come out of, and a wreck that quietly filled with Reevers would be
+        // a different (and unearned) story than the one her evidence tells. Whatever is aboard a wreck gets
+        // put there on purpose, not by the ground's own cadence.
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
             return;
         }
