@@ -371,7 +371,84 @@ mothership makes a hard run for the pilot.
 
 
 
-## 16. The electric sky ⚡
+## 16. Going ashore — the ground, the Old Ones, and your nerve 🌑
+
+Docking is not the only way off the ship. Bodies with ground can be **landed on**: walk to
+the **SHUTTLE BAY**, board, pick a landing site, and ride down. Down there you are on foot,
+in a suit, and the ground keeps what you leave in it.
+
+- **Sites are worlds, not levels.** Every landable body offers a seeded set of 2–4 landing
+  sites, each named in the house voice. Site 0 is always the body's canon ground (Miranda's
+  monolith maze, Luna's mass-driver ruins); the others re-seed a visibly different layout.
+- **Dig with `E`.** Carrying a chest, `E` buries it *where you stand* and an ✗ marks the spot.
+  Empty-handed, `E` probes the square for what somebody else buried. A buried hoard lives off
+  the ship, so no confiscation can ever touch it.
+- **`T` sets a sentry.** A deployed bot fires until its magazine reads `00`. Bots buy time,
+  never safety. Retrieve them before you lift off or they are written off.
+- **The landing pad is fused rockcrete.** Nothing buries there — carry it out onto the
+  regolith first.
+
+### The Old Ones
+
+Dig deep, or dig where a pack is already stirring, and you rouse the **Reevers**. They are
+patient, ancient and many, and they converge from every edge of the ground.
+
+The thing to know: **they are not after your chest. They want you.** That is also the mercy
+in them — a Reever cannot be bought, warned or reasoned with, but it is slow, and it loses a
+captain it can no longer see. *Fleeing works.* Keep a lane to the tube mouth open and never
+let a net wedge you into a corner. They cannot follow you up the tube: the shuttle door opens
+to crew only.
+
+They will, however, come **all the way**. Standing beside your own ship does not stop them.
+
+### The two meters, and what each one means
+
+You carry two, and they answer different questions.
+
+| | What it counts | What runs it out |
+|---|---|---|
+| **NERVE** (ten pips) | how steady your hands are | fear — proximity, being cornered, the monolith, being caught |
+| **CONDITION** (five pips) | how many blows you can still take | an Old One's hand getting through your guard |
+
+**Nerve is ten whole pips and every single one names its cause.** When a pip goes, a line
+appears beside the gauge — *"it is right there"*, *"cornered — no lane to the tube"*, *"you
+cannot stop digging"* — and the **NERVE LEDGER** keeps the last few so you can read back what
+happened. Recoveries are written the same way, in green.
+
+The rules worth knowing:
+
+- **Distance is the whole story.** An Old One far off is scenery and costs you *nothing*.
+  Only when one is genuinely close does the pressure begin, and then it spends **one pip at a
+  time** on a beat. Cornered beats fastest.
+- **A hand on you costs one pip, once.** Being caught is a shock; being caught *again* in the
+  same scramble is not — the blows already charge your skin, and nerve will not bill you twice
+  for one mauling. **Unless** you are down to your last blows, when every hand is terror again.
+- **The monolith** is the biggest single fright in the game, and fires once in a captain's life.
+- **The airlock gives pips back**, one beat at a time, naming each. Deliberately slower than
+  the sharpest loss, so running for the tube stays a decision rather than a reset button. Rest
+  in a bunk, a calming pill from the MED BAY, a tot in the galley and a glass shared with a
+  friend all pay in whole pips too.
+
+Because the two meters are counted the same way, you can read your own situation at a glance:
+five blows will usually decide a mauling, while nerve is what breaks a captain who fled, or
+looked at something they shouldn't have, or went too deep.
+
+### Getting killed is not game over
+
+Lose the ship, or die on the ground, and your **brain-backup** wakes you at a clinic in a
+starter-grade rustbucket. The old hull and everything visible aboard is gone — but *nothing
+buried or banked was ever on it*, so a squirrelled hoard outlives the catch.
+
+You come round with a small insurance stake, a clinic bill docked from it, every upgrade reset
+to base — and **a full tank**, the same fuel a new voyage starts with. Death costs you the
+hull, the purse, the hold and your upgrades. It does not also strand you.
+
+Carry a pirate-insurance policy and the bill is eased or waived and the replacement hull is
+better.
+
+
+
+## 17. The electric sky ⚡
 
 - Near the sun the plasma halo charges your hull; the flowing ribbons between planets
 are **plasma streams** — riding one pushes you along it (charged hulls
@@ -383,7 +460,7 @@ visible, desperate, or both.
 
 
 
-## 17. The physics, honestly
+## 18. The physics, honestly
 
 - **There is no drag.** A circular orbit holds forever with zero thrust
 (measured: −0.025% radius drift over a full year).

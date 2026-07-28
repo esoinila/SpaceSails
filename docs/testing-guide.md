@@ -486,6 +486,53 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout + the one-time "true terms" notice without a playthrough (#422).** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 
+### The quantized nerve — reading the pips and the ledger (#480)
+
+Owner's ruling, 2026-07-28: *"the sanity events should be quantized. Why and when it drops should be made
+clear to the player. Not this float stuff we have now."* The nerve is no longer a sliding bar and no longer
+moves anonymously. When testing it, **read the ledger, not the gauge** — the gauge tells you how bad it is,
+the ledger tells you why, and the ledger is the thing under test.
+
+**The invariants worth breaking:**
+
+| Rule | What you should see |
+|---|---|
+| Every change is a **whole pip** | The gauge only ever steps by whole segments. A half-lit pip is a bug. |
+| Nothing moves it **anonymously** | Every step is accompanied by a named line in the flash and the ledger. A pip that moves with no line is a bug. |
+| **Distance gates the beat** | An Old One outside the dread range costs *nothing at all* — not a slow drain, nothing. Walk to the far rim of the field and watch the gauge sit still with a pack visible on the tracker. |
+| Pressure **does not bank between encounters** | Build most of a beat, walk away, come back — the part-beat must not have been saved up to fire a free pip. |
+| A hand costs **one pip, once** | Let a pack maul you at full health: exactly ONE `it laid hands on you −1`, no matter how many strikes land. The *blows* keep charging (the condition pips drop); the nerve does not. |
+| …**unless you are nearly gone** | Below two blows left, every hand costs again and reads `it has you and you are nearly gone`. |
+| Sightings charge **once per spell** | One `something crests the tracker −1` per watch. If it repeats as the pack weaves in and out of range, that is the #482 repeat-tax regressing. |
+| Recovery is **legible too** | Up the tube: `the airlock closes behind you +1`, one beat at a time, in green. Slower than the sharpest loss on purpose. |
+
+Fast rig: `/map?dock=the-tilt&site=0&land=1&reevers=4` — boots you onto Miranda's canon ground with a roused
+pack inbound. Stand still and watch the ledger fill; walk into the pack to test the touch rules; run up the
+tube to test recovery. The ledger also appears on the death card under **WHAT BROKE YOU**.
+
+> **Blazor cache gotcha (cost real time on 2026-07-28):** the published Pages build is served from a
+> service-worker cache. A plain reload can re-serve the OLD wasm and you will "verify" a fix that isn't
+> there. Clear it in the tab console — `(await caches.keys()).forEach(k => caches.delete(k))` — **and** add a
+> cache-buster query param before believing any playtest of a just-merged build. Note also that the
+> `build <sha>` line on the home page is rendered by Blazor, so `curl | grep` can never see it; check deploy
+> state with `gh run list` instead.
+
+### The rebirth wake — what a new captain is owed (#477)
+
+Die (nerve, five blows, or a hull loss) and the brain-backup issues a new captain. Check the wake state on the
+Nav desk, because two things here were wrong and are easy to regress:
+
+- **Mass pulses must read a FULL base tank** (500 / 500). The old "mercy floor" handed over exactly the
+  autopilot's own reserve (90 p), which the autopilot then refuses to spend — a stranded captain with no fare,
+  no purse and no cargo. Owner's ruling: *"give the same amount of fuel on rebirth as when starting a new game."*
+- **The nerve must read STEADY and the ledger must be EMPTY.** Nothing reset the nerve on rebirth before, so a
+  fresh captain inherited the dead one's shattered gauge — and since nerve is the commonest death, the
+  replacement woke at the floor.
+
+Still open here: **#478** — the wake also flashes `ROCKS AHEAD! — impact with The Tilt` while reading
+`clamped on` at `0.0 km/s rel`. A normally-docked ship never does this (verified against a fresh dock and a
+dock held 9 h at warp), so it is specific to the wake state.
+
 ### Multiple landing sites — `?site=N` (#320)
 
 A body is a world, not a level: every landable body now offers a **seeded set of 2–4 landing sites**, each
