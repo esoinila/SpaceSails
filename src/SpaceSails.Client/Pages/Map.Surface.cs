@@ -668,6 +668,15 @@ public partial class Map
         {
             return;
         }
+        // #488: a DERELICT is not a world. She gets a dead ship to walk — a spine, compartments, and the
+        // evidence bolted to her decks — instead of the regolith field and its tube. Routed by body id, the
+        // same trick the expedition sites use, so nothing else in the excursion has to know the difference.
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
+        {
+            _deckPlan = WreckInterior.WreckDeck(aboard, _wreckExamined, _wreckSalvaged, 3, FillSurfaceDroids);
+            return;
+        }
+
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
             3 + ReeverEngineCeiling, FillSurfaceDroids,

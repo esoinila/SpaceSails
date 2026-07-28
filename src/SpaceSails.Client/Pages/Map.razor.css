@@ -3539,3 +3539,33 @@
     color: rgba(219, 230, 242, 0.5);
     font-size: 0.78rem;
 }
+
+/* #488 — the derelict's decision card. Reuses the treasure-map card frame (same "an artifact, full
+   screen" idiom) and adds the finding picker: the causes your evidence actually supports, one of which
+   you put your name to before the report will file. */
+.wreck-choice .wreck-finding {
+    margin: 0.6rem 0 0.5rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid rgba(150, 170, 190, 0.28);
+    border-radius: 4px;
+    background: rgba(10, 14, 20, 0.55);
+}
+
+.wreck-finding-head {
+    color: #93a6bd;
+    letter-spacing: 0.05em;
+    font-size: 0.72rem;
+    margin-bottom: 0.4rem;
+}
+
+.wreck-cause {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0.3rem;
+    font-size: 0.82rem;
+}
+
+.wreck-cause.picked {
+    font-weight: 600;
+}

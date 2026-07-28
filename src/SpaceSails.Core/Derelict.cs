@@ -27,6 +27,28 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class Derelict
 {
+    /// <summary>Every wreck body's id starts with this, so the whole client — the boarding board, the deck
+    /// builder, the excursion — can route a derelict by id alone, the same trick the expedition sites and
+    /// the deflection rock use. A wreck is a boardable SITE, not a world, and this is what says so.</summary>
+    public const string BodyIdPrefix = "wreck-";
+
+    /// <summary>The body id a given wreck spawns under.</summary>
+    public static string BodyIdFor(string wreckId) => BodyIdPrefix + (wreckId ?? string.Empty);
+
+    /// <summary>Is this body a derelict, and if so which one? The single predicate the client branches on.</summary>
+    public static bool TryParseWreckId(string? bodyId, out string wreckId)
+    {
+        if (bodyId is not null && bodyId.StartsWith(BodyIdPrefix, System.StringComparison.Ordinal)
+            && bodyId.Length > BodyIdPrefix.Length)
+        {
+            wreckId = bodyId[BodyIdPrefix.Length..];
+            return true;
+        }
+
+        wreckId = string.Empty;
+        return false;
+    }
+
     /// <summary>The finder's fee for filing an honest accident report, as a fraction of the assessed cargo
     /// value (owner: <i>"say 10% of the value"</i>). FLAGGED for tuning.</summary>
     public const double ReportFeeFraction = 0.10;

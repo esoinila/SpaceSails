@@ -354,6 +354,12 @@ public partial class Map
             case DeckPlan.ConsoleKind.Kiosk:
                 VisitKiosk();
                 break;
+            case DeckPlan.ConsoleKind.WreckEvidence:
+                ExamineWreckEvidence(); // #488: read the derelict off what is bolted to her deck
+                break;
+            case DeckPlan.ConsoleKind.WreckSalvage:
+                OpenWreckChoice();          // #488: file it, or strip her and say nothing
+                break;
             case DeckPlan.ConsoleKind.SurfaceAirlock:
                 LiftOffFromSurface();
                 break;

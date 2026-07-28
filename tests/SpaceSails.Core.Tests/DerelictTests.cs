@@ -192,6 +192,29 @@ public class DerelictTests
         Assert.Contains(w.ShipName, strip);
     }
 
+    // ── Routing (the client branches on this alone) ───────────────────────────────────────────────────
+
+    [Fact]
+    public void AWreckBodyIdRoundTrips()
+    {
+        string bodyId = Derelict.BodyIdFor("kestrel-3");
+
+        Assert.True(Derelict.TryParseWreckId(bodyId, out string back));
+        Assert.Equal("kestrel-3", back);
+    }
+
+    [Theory]
+    [InlineData("miranda")]
+    [InlineData("expedition-site-ruins")]
+    [InlineData("wreck-")]      // the prefix alone names no wreck
+    [InlineData("")]
+    [InlineData(null)]
+    public void OrdinaryBodiesAreNotWrecks(string? bodyId)
+    {
+        Assert.False(Derelict.TryParseWreckId(bodyId, out string id));
+        Assert.Equal(string.Empty, id);
+    }
+
     [Fact]
     public void AWorthlessWreckNeverPaysNegative()
     {

@@ -426,6 +426,86 @@
         </div>
     }
 
+    @* #488 · THE TWO ROADS. Standing at a derelict's cargo, having read her: file the accident report for a
+       finder's fee and a contact, or strip her and say nothing for everything today. The cause you put your
+       name to is picked from what your evidence actually supports — a wreck that lies will offer you a
+       plausible wrong answer until you have corroborated it. *@
+    @if (_showWreckChoice && _wreck is { } salvageWreck)
+    {
+        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseWreckChoice)">
+            <div class="treasure-map-card wreck-choice" @onclick:stopPropagation="true">
+                <div class="view-object-title">📋 THE @salvageWreck.ShipName.ToUpperInvariant()</div>
+                <div class="tm-caption">
+                    Lost @salvageWreck.YearsAdrift.ToString("N0") years. Cargo assessed at
+                    @salvageWreck.AssessedValueCr.ToString("N0") cr, and nobody has been aboard since.
+                </div>
+
+                @if (CanFileWreckReport)
+                {
+                    <div class="wreck-finding">
+                        <div class="wreck-finding-head">YOUR FINDING — what do you put your name to?</div>
+                        @foreach (Derelict.WreckCause option in WreckCandidateCauses())
+                        {
+                            <button type="button"
+                                    class="@(_wreckReported == option ? "btn btn-warning btn-sm wreck-cause picked" : "btn btn-outline-light btn-sm wreck-cause")"
+                                    @onclick="() => _wreckReported = option">
+                                @Derelict.CauseHeadline(option)
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="wreck-finding">
+                        <div class="wreck-finding-head">
+                            You have not looked at enough of her to file anything. Read her decks first —
+                            the damage, the log, the manifest.
+                        </div>
+                    </div>
+                }
+
+                <div class="busted-options">
+                    <button type="button" class="btn btn-light btn-sm"
+                            disabled="@(!CanFileWreckReport || _wreckReported is null)"
+                            title="File the accident report"
+                            @onclick="() => ResolveWreck(Derelict.SalvageChoice.FileTheReport)">
+                        @Derelict.DescribeChoice(salvageWreck, Derelict.SalvageChoice.FileTheReport)
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" title="Strip her and say nothing"
+                            @onclick="() => ResolveWreck(Derelict.SalvageChoice.StripAndSayNothing)">
+                        @Derelict.DescribeChoice(salvageWreck, Derelict.SalvageChoice.StripAndSayNothing)
+                    </button>
+                </div>
+                <button type="button" class="view-object-close" title="Decide later"
+                        @onclick="() => Dismiss(CloseWreckChoice)">Not yet</button>
+            </div>
+        </div>
+    }
+
+    @* #488 · what the decision actually bought. *@
+    @if (_wreckOutcome is { } salvageOutcome)
+    {
+        <div class="mission-celebration-backdrop" @onclick="() => Dismiss(DismissWreckOutcome)">
+            <div class="treasure-map-card" @onclick:stopPropagation="true">
+                <div class="view-object-title">
+                    @(salvageOutcome.ContactEarned ? "📋 FILED" : salvageOutcome.CargoIsHot ? "🏴 STRIPPED" : "📋 FILED")
+                </div>
+                <div class="tm-caption">@salvageOutcome.Line</div>
+                <div class="tm-contents">💰 @salvageOutcome.CreditsNow.ToString("N0") cr</div>
+                @if (salvageOutcome.CargoIsHot)
+                {
+                    <div class="tm-bearing">🔥 It is in the hold, and it is hot. A collector will know it on sight.</div>
+                }
+                @if (salvageOutcome.ContactEarned)
+                {
+                    <div class="tm-bearing">🤝 Somebody now owes you a straight answer.</div>
+                }
+                <button type="button" class="btn btn-warning btn-sm mt-2"
+                        @onclick="() => Dismiss(DismissWreckOutcome)">Back to the shuttle</button>
+            </div>
+        </div>
+    }
+
     @* The ground's gift shop (#480 art pass): the 🛒 SOUVENIR KIOSK sold a tee and a magnet and showed
        neither — every HAVEN shop has had painted merchandise since #367, the walked surface had none.
        Same card idiom as the view-object below, same onerror fallback. *@
