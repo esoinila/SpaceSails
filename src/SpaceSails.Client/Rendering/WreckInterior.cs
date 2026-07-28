@@ -74,7 +74,7 @@ public static class WreckInterior
 
         // ── The way home ──────────────────────────────────────────────────────────────────────────────
         consoles.Add(new DeckPlan.ConsoleSpot(
-            DeckPlan.ConsoleKind.ShuttleAirlock, (float)SpawnX + 4f, 0f, "🛸 BACK TO THE SHUTTLE"));
+            DeckPlan.ConsoleKind.ShuttleAirlock, (float)WreckLayout.ShuttleStation.X, (float)WreckLayout.ShuttleStation.Y, "🛸 BACK TO THE SHUTTLE"));
         labels.Add(((float)SpawnX + 4f, 5.5f, "— " + wreck.ShipName.ToUpperInvariant() + " —"));
 
         // ── The evidence ──────────────────────────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ public static class WreckInterior
         if (!salvaged)
         {
             consoles.Add(new DeckPlan.ConsoleSpot(
-                DeckPlan.ConsoleKind.WreckSalvage, -7f, 6f, "📋 THE CARGO — AND WHAT TO DO ABOUT HER"));
+                DeckPlan.ConsoleKind.WreckSalvage, (float)WreckLayout.CargoStation.X, (float)WreckLayout.CargoStation.Y, "📋 THE CARGO — AND WHAT TO DO ABOUT HER"));
         }
 
         return new DeckPlan(
@@ -127,8 +127,8 @@ public static class WreckInterior
         return
         [
             ("cause", (float)at.X, (float)at.Y, CauseLabel(cause)),
-            ("log", 20f, -6f, "🖥 THE BRIDGE LOG"),
-            ("manifest", -7f, -6f, "📦 THE CARGO MANIFEST"),
+            ("log", (float)WreckLayout.LogStation.X, (float)WreckLayout.LogStation.Y, "🖥 THE BRIDGE LOG"),
+            ("manifest", (float)WreckLayout.ManifestStation.X, (float)WreckLayout.ManifestStation.Y, "📦 THE CARGO MANIFEST"),
         ];
     }
 

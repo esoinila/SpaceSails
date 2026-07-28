@@ -71,19 +71,32 @@ This is exactly what `WreckLayoutTests` asserts on every run.
 ```
   cause                | stations | compartments | bow | stern
   ---------------------|----------|--------------|-----|------
-  DriveFailure         | all ok   | 7 ok         | ok  | ok
-  ReactorCascade       | all ok   | 7 ok         | ok  | ok
-  HullBreach           | all ok   | 7 ok         | ok  | ok
-  LifeSupportFailure   | all ok   | 7 ok         | ok  | ok
-  NavigationalError    | all ok   | 7 ok         | ok  | ok
-  Mutiny               | all ok   | 7 ok         | ok  | ok
-  Piracy               | all ok   | 7 ok         | ok  | ok
-  InsuranceJob         | all ok   | 7 ok         | ok  | ok
+  DriveFailure         | all ok   | 8 ok         | ok  | ok
+  ReactorCascade       | all ok   | 8 ok         | ok  | ok
+  HullBreach           | all ok   | 8 ok         | ok  | ok
+  LifeSupportFailure   | all ok   | 8 ok         | ok  | ok
+  NavigationalError    | all ok   | 8 ok         | ok  | ok
+  Mutiny               | all ok   | 8 ok         | ok  | ok
+  Piracy               | all ok   | 8 ok         | ok  | ok
+  InsuranceJob         | all ok   | 8 ok         | ok  | ok
 ```
 
 It earned its keep on its **first run**: `HullBreach`'s evidence station was standing exactly on the
 bulkhead that NEAR HOLD and LIFEBOAT CRADLES share, so the one console that explains the wreck could not be
 walked to. Nobody had noticed, because that cause hadn't been rolled yet.
+
+### Passable is not the same as pleasant
+
+The owner walked the fixed ship and filed a salvage — then said *"couple walkways are a bit narrow but it
+is navigatable now."* That is a bug report, not a compliment, and the audit above was blind to it: a route
+one unit wide passes a reachability test perfectly.
+
+So there is a **second walk at half again the captain's width** (`ComfortRadius`). It named the culprit
+immediately and precisely — the mutiny barricade weave, cutting off comfortable access to the cargo
+decision and the manifest — and it stayed red until the barricades were opened from a 2 du gap to 3.
+
+> A captain who has to thread a needle is being told the geometry is a puzzle when it was never meant to
+> be one. **Encode the comfort, not just the connectivity.**
 
 ## D — the bug, reproduced
 

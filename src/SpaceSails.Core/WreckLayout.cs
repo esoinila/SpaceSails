@@ -38,15 +38,21 @@ public static class WreckLayout
     /// <summary>The compartments, bow to aft. Bounds are CONTIGUOUS on purpose — one ends exactly where the
     /// next begins. Leaving gaps between them created 1 du dead slots, walled both sides and narrower than
     /// the captain: traps with no way in that existed only to go wrong.</summary>
+    /// <para>The aft-most rooms run all the way to the transom and the bow-most stop where the hull starts
+    /// tapering — otherwise each end leaves a strip of ship walled off from everything, which is the same
+    /// dead-slot mistake as the gaps, just at the ends where it is easier to miss.</para>
     public static readonly (string Name, float X0, float X1, bool Top)[] Compartments =
     [
-        ("BRIDGE", 13f, 25f, true),
+        ("BRIDGE", 13f, BowX - 6, true),
         ("CREW SPACES", 0f, 13f, true),
+        // The bottom row had nothing at the bow — a strip of ship with no name, reachable but belonging to
+        // nothing. The audit spotted the asymmetry; she gets a room instead of a remainder.
+        ("FORWARD LOCKER", 13f, BowX - 6, false),
         ("LIFEBOAT CRADLES", 0f, 13f, false),
         ("DEEP HOLD", -15f, 0f, true),
         ("NEAR HOLD", -15f, 0f, false),
-        ("ENGINEERING", -33f, -15f, true),
-        ("REACTOR SPACES", -33f, -15f, false),
+        ("ENGINEERING", AftX, -15f, true),
+        ("REACTOR SPACES", AftX, -15f, false),
     ];
 
     /// <summary>Where the spine opens into each compartment. ONE list, read by the wall builder (which
@@ -158,12 +164,16 @@ public static class WreckLayout
                 break;
 
             case Derelict.WreckCause.Mutiny:
-                // Two barricades facing each other down the spine — each covering only PART of the corridor,
-                // on opposite sides, so the captain weaves through. They spanned the full 6 du before and
-                // sealed the ship in half. Better fiction too: a barricade nobody can get round is a wall;
-                // these are what two frightened watches actually built, and what the other side got past.
-                yield return new(-1f, -SpineHalfHeight, -1f, 1f);
-                yield return new(4f, -1f, 4f, SpineHalfHeight);
+                // Two barricades facing each other down the spine — each covering exactly HALF the corridor,
+                // on opposite sides, so the captain weaves through. They spanned the full 6 du at first and
+                // sealed the ship in half; then they left 2 du, which passed the reachability audit but the
+                // owner still had to thread it ("a couple walkways are a bit narrow"). Half the corridor
+                // each leaves a 3 du gap — room to walk it badly, which is the actual bar.
+                //
+                // Better fiction, too: a barricade nobody can get round is a wall. These are what two
+                // frightened watches actually built, and what the other side eventually got past.
+                yield return new(-1f, -SpineHalfHeight, -1f, 0f);
+                yield return new(4f, 0f, 4f, SpineHalfHeight);
                 break;
 
             default:
@@ -173,14 +183,34 @@ public static class WreckLayout
         }
     }
 
+    // ── Where things stand ────────────────────────────────────────────────────────────────────────────
+    //
+    // ONE definition per station, read by BOTH the client (which places the console) and the audit (which
+    // walks to it). They were separate literals for one commit and immediately drifted — the log moved in
+    // Core and stayed put in the client — which is the same duplication that let a doorway be cut where the
+    // player was never shown one. A station the audit walks to must be the station the captain presses E on.
+
+    /// <summary>The way home — just along the spine from the spawn.</summary>
+    public static DeckReachability.Point ShuttleStation => new(SpawnX + 4f, 0f);
+
+    /// <summary>The cargo, and the decision about her: amidships in the near hold, where the cargo is. You
+    /// cannot decide what to do with her from the bridge — you have to go and look at what she carried.</summary>
+    public static DeckReachability.Point CargoStation => new(-7f, 6f);
+
+    /// <summary>The bridge log. Clear of the BRIDGE's aft bulkhead — it sat exactly on it for a commit.</summary>
+    public static DeckReachability.Point LogStation => new(16f, -6f);
+
+    /// <summary>The cargo manifest, in the deep hold.</summary>
+    public static DeckReachability.Point ManifestStation => new(-7f, -6f);
+
     /// <summary>Every place the captain must be able to REACH: the three evidence stations, the cargo
     /// decision, and the way home. This is the list CI walks.</summary>
     public static IReadOnlyList<(string Name, DeckReachability.Point At)> Stations(Derelict.WreckCause cause) =>
     [
-        ("the way back to the shuttle", new((float)SpawnX + 4f, 0f)),
-        ("the cargo (the decision)", new(-7f, 6f)),
-        ("the bridge log", new(20f, -6f)),
-        ("the cargo manifest", new(-7f, -6f)),
+        ("the way back to the shuttle", ShuttleStation),
+        ("the cargo (the decision)", CargoStation),
+        ("the bridge log", LogStation),
+        ("the cargo manifest", ManifestStation),
         (CauseStationName(cause), CauseStation(cause)),
     ];
 
@@ -193,7 +223,7 @@ public static class WreckLayout
         // wall cannot be walked to. The audit caught this on its very first run.
         Derelict.WreckCause.HullBreach => new(-4f, 6f),
         Derelict.WreckCause.LifeSupportFailure => new(7f, -6f),
-        Derelict.WreckCause.NavigationalError => new(20f, -6.5f),
+        Derelict.WreckCause.NavigationalError => new(17f, -6.5f),
         Derelict.WreckCause.Mutiny => new(7f, -6f),
         Derelict.WreckCause.Piracy => new(-7f, 6f),
         Derelict.WreckCause.InsuranceJob => new(7f, 6f),

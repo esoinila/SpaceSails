@@ -13,6 +13,13 @@ public class WreckLayoutTests
 {
     private const double AvatarRadius = 0.7;   // DeckPlan.AvatarRadius — the captain's own half-width
 
+    /// <summary>The width the ship must be walkable at to feel comfortable, not merely to be passable.
+    /// Owner, after finally walking her end to end: <i>"Couple walkways are a bit narrow but it is
+    /// navigatable now."</i> Passable and pleasant are different tests, so this is a different test — a
+    /// captain who has to thread a needle is being told the geometry is a puzzle when it is not meant to be
+    /// one. Half again the captain's own radius: any gap they can walk should have room to walk it badly.</summary>
+    private const double ComfortRadius = AvatarRadius * 1.5;
+
     private static DeckReachability.Point Spawn =>
         new(WreckLayout.SpawnX, WreckLayout.SpawnY);
 
@@ -64,6 +71,27 @@ public class WreckLayoutTests
         Assert.True(
             DeckReachability.CanReach(Spawn, stern, walls, AvatarRadius, WreckLayout.Bounds),
             $"{cause}: cannot reach the stern — the ship is sealed in half.");
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryCause))]
+    public void TheShipIsWalkableWithROOM_NotMerelyPassable(Derelict.WreckCause cause)
+    {
+        // "A bit narrow but navigatable" is a bug report, not a compliment. Walk the whole ship again at
+        // half again the captain's width: if a route only exists for a captain threading a needle, the
+        // geometry is setting a puzzle nobody designed.
+        IReadOnlyList<SurfaceCollision.Segment> walls = WreckLayout.Walls(cause);
+
+        IReadOnlyList<string> tight = DeckReachability.Unreachable(
+            Spawn, WreckLayout.Stations(cause), walls, ComfortRadius, WreckLayout.Bounds);
+
+        Assert.True(
+            tight.Count == 0,
+            $"{cause}: only a thinner captain could reach {string.Join(", ", tight)} — the way there is too tight.");
+
+        Assert.True(
+            DeckReachability.CanReach(Spawn, new(-30, 0), walls, ComfortRadius, WreckLayout.Bounds),
+            $"{cause}: the walk aft is passable but too narrow to be comfortable.");
     }
 
     [Theory]
@@ -126,6 +154,20 @@ public class WreckLayoutTests
         foreach (float centre in WreckLayout.DoorCentres())
         {
             Assert.DoesNotContain(runs, r => centre > r.X0 && centre < r.X1);
+        }
+    }
+
+    [Fact]
+    public void TheEndsOfTheShipAreNotWalledOffStrips()
+    {
+        // Same dead-slot mistake as the gaps, but at the ends where it is easier to miss: the aft-most rooms
+        // must reach the transom and the bow-most must stop where the hull tapers, or each end leaves a
+        // sliver of ship enclosed by walls and reachable from nowhere.
+        foreach (bool top in new[] { true, false })
+        {
+            var row = WreckLayout.Compartments.Where(c => c.Top == top).OrderBy(c => c.X0).ToList();
+            Assert.Equal(WreckLayout.AftX, row[0].X0);
+            Assert.Equal(WreckLayout.BowX - 6, row[^1].X1);
         }
     }
 
