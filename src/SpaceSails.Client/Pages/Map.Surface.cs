@@ -594,6 +594,10 @@ public partial class Map
 
     // #440: the captain has read the first-ground card. The bit is already set (and saved with the vault),
     // so this only takes the card back down — a reload never re-teaches them.
+    //
+    // #470: the razor dismisses this through the Dismiss() seam, which hands the keyboard back to the map
+    // div afterwards. It matters most here of all: this card is the FIRST thing a new captain ever sees on
+    // the ground, and without the way home the tutorial that teaches three keys switched all three off.
     private void CloseGroundLesson()
     {
         _groundLessonOpen = false;

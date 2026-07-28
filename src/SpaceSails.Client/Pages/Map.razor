@@ -430,7 +430,7 @@
        player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
     @if (_viewObject is { } vo)
     {
-        <div class="view-object-backdrop" @onclick="CloseViewObject">
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseViewObject)">
             <div class="view-object" @onclick:stopPropagation="true">
                 <div class="view-object-title">@vo.Label</div>
                 @* A card with no wired art at all (the lifeboat muster) shows caption-only; a card whose
@@ -445,7 +445,7 @@
                 {
                     <div class="view-object-caption">@cap</div>
                 }
-                <button type="button" class="view-object-close" title="Put it back down and step away" @onclick="CloseViewObject">Close</button>
+                <button type="button" class="view-object-close" title="Put it back down and step away" @onclick="() => Dismiss(CloseViewObject)">Close</button>
             </div>
         </div>
     }
@@ -568,7 +568,7 @@
             <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr · @patronKeep.BarName</div>
             @ContactDrinkOffer(patron, patronDisplay, patronKeep)
             <div class="deck-offer-actions">
-                <button type="button" class="btn btn-sm btn-outline-light" title="Sit back — leave the table" @onclick="ClosePatronTable">Done</button>
+                <button type="button" class="btn btn-sm btn-outline-light" title="Sit back — leave the table" @onclick="() => Dismiss(ClosePatronTable)">Done</button>
             </div>
         </div>
     }
@@ -722,7 +722,7 @@
                 {
                     <button type="button" class="btn btn-sm btn-outline-info" title="Ask around about the pirate-insurance fine print — NEBULA MUTUAL" @onclick="AskAboutNebula">▓ Ask about NEBULA</button>
                 }
-                <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="CloseBarkeep">Done</button>
+                <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="() => Dismiss(CloseBarkeep)">Done</button>
             </div>
             @if (_showBarMenu)
             {
@@ -774,7 +774,7 @@
                             title="@($"Stand the oracle a {orKeep.DrinkName} — {orKeep.DrinkPrice} cr. A drunk oracle is more prophetic.")"
                             @onclick="BuyOracleDrink">🥃 Buy her a drink · @orKeep.DrinkPrice cr</button>
                 }
-                <button type="button" class="btn btn-sm btn-outline-light" title="Leave her to her muttering" @onclick="CloseOracle">Done</button>
+                <button type="button" class="btn btn-sm btn-outline-light" title="Leave her to her muttering" @onclick="() => Dismiss(CloseOracle)">Done</button>
             </div>
         </div>
     }
@@ -866,7 +866,7 @@
                 </div>
             }
             <div class="deck-shuttle-actions">
-                <button type="button" class="btn btn-sm btn-outline-light" @onclick="CloseShuttleBayDoor">Close hatch</button>
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => Dismiss(CloseShuttleBayDoor)">Close hatch</button>
             </div>
         </div>
     }
@@ -2513,7 +2513,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <span class="fw-bold">📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></span>
                 <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Close dossier" title="Close the target dossier"
-                        @onclick="CloseDossier"></button>
+                        @onclick="() => Dismiss(CloseDossier)"></button>
             </div>
             <div>@dossier.StatusLine</div>
             @* The Victoria-I one-line teaser (owner ruling, 2026-07-19): a scanned hull's history in a
@@ -3142,7 +3142,7 @@
                             </div>
                         }
                         <div class="busted-quote">"Debt collected. Heat's off the books — for now. Fly straight, captain."</div>
-                        <button type="button" class="btn btn-outline-light busted-close" @onclick="CloseBusted">Take the hit</button>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Take the hit</button>
                         break;
 
                     case BustedEncounter.Stage.BribedOff:
@@ -3155,7 +3155,7 @@
                             <div class="busted-roll">Collector: @rr.Defender.Describe()</div>
                         }
                         <div class="busted-quote">@bust.ResultMessage</div>
-                        <button type="button" class="btn btn-outline-light busted-close" @onclick="CloseBusted">Fly on</button>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Fly on</button>
                         break;
 
                     case BustedEncounter.Stage.ResistLost:
@@ -3317,7 +3317,7 @@
                                 </div>
                             </div>
                         }
-                        <button type="button" class="btn btn-light busted-close" @onclick="CloseBusted">Board the rustbucket</button>
+                        <button type="button" class="btn btn-light busted-close" @onclick="() => Dismiss(CloseBusted)">Board the rustbucket</button>
                         break;
                 }
             </div>
@@ -3331,14 +3331,14 @@
        #226 lane's hook (ArcConvergence.ConvergenceSanityShockHook = the heaviest in the game). *@
     @if (_convergenceRevealOpen)
     {
-        <div class="convergence-backdrop" @onclick="CloseConvergenceReveal">
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseConvergenceReveal)">
             <div class="convergence-card" @onclick:stopPropagation="true">
                 <div class="convergence-stamp">◼ ❄ THE THREADS CROSS</div>
                 <div class="convergence-head">Two mysteries. One truth.</div>
                 <div class="convergence-sub">PROJEKTI KAAMOS · NEBULA MUTUAL — the same held breath</div>
                 <div class="convergence-body">@ArcConvergence.ConvergenceReveal</div>
                 <div class="convergence-foot">Every death you have died was a withdrawal. The same forty names, the same lucid dark.</div>
-                <button type="button" class="btn btn-light convergence-close" @onclick="CloseConvergenceReveal">…sit with that</button>
+                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseConvergenceReveal)">…sit with that</button>
             </div>
         </div>
     }
@@ -3350,7 +3350,7 @@
        greet a captain twice (#292: only the truly new). Copy lives in Core GroundLesson, pinned by tests. *@
     @if (_groundLessonOpen)
     {
-        <div class="convergence-backdrop" @onclick="CloseGroundLesson">
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseGroundLesson)">
             <div class="convergence-card ground-lesson-card" @onclick:stopPropagation="true">
                 <div class="convergence-stamp">@GroundLesson.Stamp</div>
                 <div class="convergence-head">@GroundLesson.Head</div>
@@ -3372,7 +3372,7 @@
                         <li>@law</li>
                     }
                 </ul>
-                <button type="button" class="btn btn-light convergence-close" @onclick="CloseGroundLesson">@GroundLesson.Dismiss</button>
+                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseGroundLesson)">@GroundLesson.Dismiss</button>
                 <div class="ground-lesson-foot">@GroundLesson.Foot</div>
             </div>
         </div>
@@ -3389,7 +3389,7 @@
 
     @* THE DICE TRAY (#305) — the shared 2D6 reveal a dice-scripted event casts into (aerobrake episodes
        now; Reevers/BUSTED/drinks next). Any system raises one via RaiseDiceEvent(DiceEvent). *@
-    <DiceTray Event="_diceTrayEvent" OnDismiss="DismissDiceTray" />
+    <DiceTray Event="_diceTrayEvent" OnDismiss="() => Dismiss(DismissDiceTray)" />
 </div>
 
 @code {
