@@ -92,6 +92,24 @@ public partial class Map
     // A fixed, reproducible seed so the deflection cheat always spawns the same rock (same type + name + spin).
     private const ulong DeflectionCheatSeed = 3940UL;
 
+    // #488: the ?wreck=1 cheat's derelict — a boardable SITE co-orbiting the berth, well inside one shuttle
+    // hop. She is a Moon-kind body so the whole board/land rail already knows what to do with her; her id
+    // carries the wreck id (Derelict.BodyIdFor), so the deck builder and the excursion route by id alone.
+    // The ship holds on her for free while the away team is inside — see LoiterKeeping / Lab 40.
+    private const string WreckCheatId = "kestrel-3";
+    private static BodyDefinition WreckSiteBody(string berthId, in Derelict.Wreck wreck) => new()
+    {
+        Id = Derelict.BodyIdFor(wreck.Id),
+        Name = wreck.ShipName,
+        ParentId = berthId,
+        Mu = 0,
+        BodyRadiusM = ExpeditionSite.BodyRadiusMeters,
+        OrbitRadiusM = ExpeditionSite.SpawnFraction * ShuttleRange.RangeMeters * 0.6, // well inside one hop
+        OrbitPeriodS = 1.0e9,       // effectively a static co-orbiting offset — she just hangs there
+        InitialPhaseRad = 2.2,      // her own bearing off the berth, clear of the other cheat sites
+        Kind = "moon",
+    };
+
     // #409: the ?secretlab=1 cheat's landable rock — a plain Moon-kind body co-orbiting the berth, well inside
     // one shuttle hop, whose surface ResolveSecretLab forces to hide a Vantar lab with the door pre-revealed.
     private const string SecretLabCheatBodyId = "secret-lab-site";
@@ -302,6 +320,7 @@ public partial class Map
         bool ellipseCheat = false; // /map?ellipse=1 injects a visibly eccentric demo body (Kepler rails, PR-B)
         string? expeditionCheat = null; // #370 /map?expedition=1|mining: spawn an away-team gig accepted + its site in shuttle range at the berth
         string? deflectionCheat = null; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
+        bool wreckCheat = false; // #488 /map?wreck=1: spawn a derelict in shuttle range — board her, read her, then file or strip
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
         string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
@@ -490,6 +509,15 @@ public partial class Map
                     deflectionCheat = candidate;
                 }
             }
+            else if (pair.StartsWith("wreck=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #488 dev cheat: /map?wreck=1 hangs a DERELICT in shuttle range off the berth. The test
+                // loop is: shuttle door → board her → walk the spine → read the three evidence stations →
+                // the cargo console → file the report (naming the cause) or strip her and say nothing.
+                // She is seeded, so it is the same ship every time. Documented in docs/testing-guide.md.
+                string candidate = Uri.UnescapeDataString(pair["wreck=".Length..]).ToLowerInvariant();
+                wreckCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
             {
                 // #409 dev cheat: /map?secretlab=1 spawns a plain LANDABLE rock parked in shuttle range at the
@@ -653,6 +681,22 @@ public partial class Map
                 scenario = scenario with { Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId)] };
                 _secretLabForceBodyId = SecretLabCheatBodyId;
                 dockCheat = berthId; // clamp onto the berth the rock co-orbits, so it's in reach at spawn
+            }
+        }
+        if (wreckCheat)
+        {
+            // #488: append the derelict as a boardable site co-orbiting the berth — the same ellipse-cheat
+            // idiom the expedition rock and the Hermit's Rock use. She is seeded from her id, so this cheat
+            // always spawns the SAME ship with the same cause and the same cargo, which is what makes her
+            // testable. Default the berth to The Tilt.
+            string berthKey = dockCheat ?? "the-tilt";
+            string berthId = DockedStarts.TryGetValue(berthKey, out string? wreckBerth) ? wreckBerth : berthKey;
+            if (scenario.Bodies.Any(b => b.Id == berthId))
+            {
+                Derelict.Wreck w = Derelict.Seeded(WreckCheatId);
+                scenario = scenario with { Bodies = [.. scenario.Bodies, WreckSiteBody(berthId, w)] };
+                _wreck = w;
+                dockCheat = berthId; // clamp onto the berth she hangs off, so she is in reach at spawn
             }
         }
         _scenarioName = scenario.Name;
@@ -1857,6 +1901,8 @@ public partial class Map
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
         if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
         if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
+        if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
+        if (_showWreckChoice) { CloseWreckChoice(); return true; }
         if (_kioskCard is not null) { CloseKioskCard(); return true; }
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
