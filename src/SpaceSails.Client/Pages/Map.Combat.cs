@@ -2209,6 +2209,9 @@ public partial class Map
         }
     }
 
+    // #470: dismissed through the Dismiss() seam so the keyboard comes home. This is the last card of the
+    // death→rebirth chain, and the new captain takes the helm the instant it drops — without the way back
+    // they would sit at the controls with every key dead.
     private void CloseBusted()
     {
         _busted = null;

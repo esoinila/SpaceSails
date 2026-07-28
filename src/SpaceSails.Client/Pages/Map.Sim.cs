@@ -228,6 +228,21 @@ public partial class Map
     // Keyboard paths already own focus, so they never call this — this is the mouse's way back to the keys.
     private async Task RefocusMap() => await _focusableDiv.FocusAsync();
 
+    // #470 · THE MOUSE'S WAY BACK, MADE GENERAL. The idiom above was right and was applied exactly four
+    // times — to the four cards whose deafness the owner happened to hit and report. Nine others still took
+    // the keyboard away and never gave it back, and every new card inherited the same trap (the first-ground
+    // tutorial ended up switching off the three keys it had just taught).
+    //
+    // The fix is a seam rather than nine more copies. The Close*/Dismiss* methods stay plain synchronous
+    // state changes — they are also called by the Esc handler and by the one-card-at-a-time chaining, and
+    // BOTH of those are keyboard paths that already own focus. Only the mouse needs the way home, so only
+    // the mouse routes through here: @onclick="() => Dismiss(CloseDossier)".
+    private async Task Dismiss(Action close)
+    {
+        close();
+        await RefocusMap();
+    }
+
     private static string Canonical(string key) => key switch
     {
         "W" or "ArrowUp" => "w",
