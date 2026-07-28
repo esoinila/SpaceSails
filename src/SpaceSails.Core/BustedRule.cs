@@ -223,9 +223,11 @@ public static class BustedRule
 
     /// <summary>The starter-grade ship state a brain-backup wakes into (resurrection, ruling 3): the
     /// insurance rustbucket. Everything visible aboard is gone (the caller clears cargo, hot flags, and
-    /// visible coin); buried/banked survives untouched because it lives off-ship. The tank comes up at
-    /// the mercy floor — the reach-a-pump reserve the law never drains — so you wake grounded near a
-    /// pump, not stranded. Never a dead save.</summary>
+    /// visible coin); buried/banked survives untouched because it lives off-ship. The tank comes up
+    /// FULL — the same tank a new voyage starts with (owner, issue #477: <i>"we should give the same
+    /// amount of fuel on rebirth as we give when starting a new game — it is boring if you have to find
+    /// fuel every time one dies"</i>). Death already takes the hull, the purse, the hold and every
+    /// upgrade level; it does not also set a fuel puzzle. Never a dead save.</summary>
     public readonly record struct ResurrectionKit(
         int Credits,
         int ReactionMassPulses,
@@ -236,10 +238,11 @@ public static class BustedRule
         int HoldLevel,
         int TelescopeLevel);
 
-    /// <summary>Build the insurance rustbucket: insurance credits, a mercy-floor tank, starter ammo,
-    /// and every upgrade level reset to base.</summary>
-    public static ResurrectionKit Resurrect(int mercyFloorPulses) =>
-        new(InsuranceCredits, Math.Max(0, mercyFloorPulses), StarterSlugAmmo, StarterMissileAmmo,
+    /// <summary>Build the insurance rustbucket: insurance credits, a full starter tank, starter ammo,
+    /// and every upgrade level reset to base. <paramref name="wakeTankPulses"/> is the caller's base
+    /// tank capacity — see the kit summary for why it is the whole tank and not a floor (#477).</summary>
+    public static ResurrectionKit Resurrect(int wakeTankPulses) =>
+        new(InsuranceCredits, Math.Max(0, wakeTankPulses), StarterSlugAmmo, StarterMissileAmmo,
             MassLevel: 0, SensorLevel: 0, HoldLevel: 0, TelescopeLevel: 0);
 
     /// <summary>The parrot's phrasing of the current confiscation exposure, quoted at each heat

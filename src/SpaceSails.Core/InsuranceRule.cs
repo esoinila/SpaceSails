@@ -18,9 +18,12 @@ public static class InsuranceRule
     public const int BaseClinicBillCr = 500;
 
     /// <summary>The uninsured default rebirth: <see cref="BustedRule.Resurrect"/>'s rustbucket plus the
-    /// full clinic bill. The tank comes up at the caller's mercy floor.</summary>
-    public static RebirthOutcome DefaultRebirth(int mercyFloorPulses) =>
-        new(BustedRule.Resurrect(mercyFloorPulses), BaseClinicBillCr,
+    /// full clinic bill. The tank comes up FULL — <paramref name="wakeTankPulses"/> is the caller's base
+    /// tank capacity, the same fuel a new voyage starts with (owner's ruling, #477). It used to be a
+    /// "mercy floor" priced at the autopilot's own reserve, which meant the autopilot then refused every
+    /// journey and the new captain woke stranded with nothing to sell.</summary>
+    public static RebirthOutcome DefaultRebirth(int wakeTankPulses) =>
+        new(BustedRule.Resurrect(wakeTankPulses), BaseClinicBillCr,
             "an uninsured insurance rustbucket — starter-grade, everything visible aboard gone");
 
     /// <summary>

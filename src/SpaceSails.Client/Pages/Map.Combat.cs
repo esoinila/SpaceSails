@@ -2002,9 +2002,9 @@ public partial class Map
     }
 
     // THE FREEZE-FRAME → brain-backup resurrection: wake at the nearest haven's clinic in an insurance
-    // rustbucket. Everything VISIBLE aboard is gone; the tank comes up at the mercy floor (reach-a-pump
-    // reserve), so you wake grounded near a pump, not stranded. Buried/banked survives (it lives
-    // off-ship — other lanes). Never a dead save.
+    // rustbucket. Everything VISIBLE aboard is gone; the tank comes up FULL — the same fuel a new voyage
+    // starts with (#477), so the wake puts you back in the game instead of into a fuel hunt. Buried/banked
+    // survives (it lives off-ship — other lanes). Never a dead save.
     private void BustedResurrect()
     {
         if (_busted is not { } b)
@@ -2030,12 +2030,12 @@ public partial class Map
             LogAutopilotEvent("🛬 The expedition is written off — the away team scrubs the gig and the body path goes to backup.");
         }
 
-        int mercyFloor = MercyFloorPulses();
+        int wakeTank = WakeTankPulses();
 
         // Consult the insurance policy at rebirth (issue #227 seam): None-tier returns the uninsured
         // rustbucket + full clinic bill untouched; a covered tier would ease it — the pure rule decides.
         RebirthOutcome outcome = InsuranceRule.ApplyToRebirth(
-            _insurance, SimTime, InsuranceRule.DefaultRebirth(mercyFloor));
+            _insurance, SimTime, InsuranceRule.DefaultRebirth(wakeTank));
         BustedRule.ResurrectionKit kit = outcome.Kit;
 
         // The rebirth tax (issue #227): the clinic bill is booked against the stake, floored at 0 — a
@@ -2138,28 +2138,16 @@ public partial class Map
         }
     }
 
-    // The mercy floor in pulses: the reach-a-pump reserve FuelReachability prices for where we are, so
-    // the rustbucket wakes with just enough to crawl to fuel. Falls back to the flat autopilot reserve
-    // when no well reads (deep space) — never zero.
-    private int MercyFloorPulses()
-    {
-        int flat = AutopilotRehearsal.ReservePulses(ReactionMassCapacityFor(0));
-        if (_ephemeris is null || _simulator is null || CurrentWellBodyId() is not { } well)
-        {
-            return flat;
-        }
-
-        try
-        {
-            FuelReachability.Assessment a = FuelReachability.Assess(
-                _simulator, _ephemeris, _ship, ReactionMassCapacityFor(0), ReactionMassCapacityFor(0), well);
-            return a.SafeReservePulses > 0 ? a.SafeReservePulses : flat;
-        }
-        catch
-        {
-            return flat;
-        }
-    }
+    // The tank a rebirth wakes with: a FULL base tank — the same fuel a new voyage starts with
+    // (Map.Sim's _reactionMassPulses seed and ReactionMassCapacityFor(0) agree on the number).
+    //
+    // #477: this used to be a "mercy floor" priced from FuelReachability, falling back to the flat
+    // autopilot reserve — AutopilotRehearsal.ReservePulses(500) = 90 p. But the autopilot refuses any
+    // journey that would eat into its reserve, so a tank set TO the reserve is a tank with no usable
+    // fare: the new captain woke at Uranus with 90 p, 0 cr and an empty hold, and could not fly, buy
+    // or sell. Owner's ruling — give the rebirth what a new game gives. Death costs the hull, the
+    // purse, the hold and every upgrade; it does not also cost you the ability to leave.
+    private int WakeTankPulses() => ReactionMassCapacityFor(0);
 
     private int ReactionMassCapacityFor(int massLevel) => 500 + 150 * massLevel;
 
