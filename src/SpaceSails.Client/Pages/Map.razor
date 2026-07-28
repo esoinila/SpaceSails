@@ -426,6 +426,21 @@
         </div>
     }
 
+    @* #488 · WHAT YOU ARE LOOKING AT. The cause's own station is the one you stand in front of, so it shows
+       the wreck's portrait — eight ships that died eight different ways should not read the same. The image
+       is the EVIDENCE, never the conclusion; naming what it means is still the captain's job. *@
+    @if (_wreckLook is { } look)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseWreckLook)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@look.Title</div>
+                <img class="view-object-img" src="@look.Art" alt="@look.Title" onerror="this.style.display='none'" />
+                <div class="view-object-caption">@look.Caption</div>
+                <button type="button" class="view-object-close" title="Step back" @onclick="() => Dismiss(CloseWreckLook)">Step back</button>
+            </div>
+        </div>
+    }
+
     @* #488 · THE TWO ROADS. Standing at a derelict's cargo, having read her: file the accident report for a
        finder's fee and a contact, or strip her and say nothing for everything today. The cause you put your
        name to is picked from what your evidence actually supports — a wreck that lies will offer you a
@@ -435,6 +450,12 @@
         <div class="mission-celebration-backdrop" @onclick="() => Dismiss(CloseWreckChoice)">
             <div class="treasure-map-card wreck-choice" @onclick:stopPropagation="true">
                 <div class="view-object-title">📋 THE @salvageWreck.ShipName.ToUpperInvariant()</div>
+                @* Her portrait, if the away team has actually looked at what killed her. Before that the
+                   card stays text-only — you do not get the picture for free. *@
+                @if (_wreckExamined.Contains("cause") && Derelict.ArtFile(salvageWreck.Cause) is { Length: > 0 } wreckArt)
+                {
+                    <div class="tm-art" style="background-image: url('@wreckArt');"></div>
+                }
                 <div class="tm-caption">
                     Lost @salvageWreck.YearsAdrift.ToString("N0") years. Cargo assessed at
                     @salvageWreck.AssessedValueCr.ToString("N0") cr, and nobody has been aboard since.

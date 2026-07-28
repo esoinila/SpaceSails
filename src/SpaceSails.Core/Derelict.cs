@@ -108,6 +108,15 @@ public static class Derelict
         /// the valuable cargo is still in the deep hold.</summary>
         Piracy,
 
+        /// <summary>SHE IS NOT EMPTY. Owner: <i>"there might be an infested ship where the cannons are
+        /// needed also :-D … we should have a cannon in the airlock there to cover the retreat."</i>
+        ///
+        /// <para>Nothing failed aboard her — everything worked right up until something got in. The crew's
+        /// barricades were built from the INSIDE, which is exactly what a mutiny looks like from a distance
+        /// (see <see cref="MisreadsAs"/>), and that misreading is the most expensive one in the game: name
+        /// it a mutiny and you file a report that sends the next crew in unarmed.</para></summary>
+        Infested,
+
         /// <summary>She was LOST ON PURPOSE. The cargo was over-insured, the distress call was scripted, and
         /// the crew were taken off before she was set adrift. The most valuable thing aboard is the
         /// evidence (see <see cref="FraudBountyFraction"/>).</summary>
@@ -124,7 +133,31 @@ public static class Derelict
         WreckCause.NavigationalError => "the arrival burn was never coming",
         WreckCause.Mutiny => "the crew stopped flying her to settle something",
         WreckCause.Piracy => "she was boarded, stripped in a hurry, and left under way",
+        WreckCause.Infested => "she is not empty",
         WreckCause.InsuranceJob => "she was lost on purpose",
+        _ => "",
+    };
+
+    /// <summary>The wreck's portrait — a Grok canvas per cause, because eight ships that died eight
+    /// different ways should not all look the same. Shown when the away team reads the cause's own station
+    /// (you are looking at the thing) and again on the decision card (you are deciding about it).
+    ///
+    /// <para>The art shows the EVIDENCE, never the conclusion: empty lifeboat cradles, not a caption saying
+    /// "fraud". Naming what it means is still the captain's job, and a wreck that lies still lies.</para>
+    ///
+    /// <para>Every slot degrades cleanly — the client's img onerror-hides — so an unpainted cause reads as
+    /// text alone rather than a broken frame.</para></summary>
+    public static string ArtFile(WreckCause cause) => cause switch
+    {
+        WreckCause.DriveFailure => "art/wreck-drive-failure.jpg",
+        WreckCause.ReactorCascade => "art/wreck-reactor-cascade.jpg",
+        WreckCause.HullBreach => "art/wreck-hull-breach.jpg",
+        WreckCause.LifeSupportFailure => "art/wreck-life-support.jpg",
+        WreckCause.NavigationalError => "art/wreck-navigational-error.jpg",
+        WreckCause.Mutiny => "art/wreck-mutiny.jpg",
+        WreckCause.Piracy => "art/wreck-piracy.jpg",
+        WreckCause.Infested => "art/wreck-infested.jpg",
+        WreckCause.InsuranceJob => "art/wreck-insurance-job.jpg",
         _ => "",
     };
 
@@ -132,6 +165,8 @@ public static class Derelict
     /// physical: the report is written from what is bolted to the deck, not from a tooltip.</summary>
     public static string Evidence(WreckCause cause) => cause switch
     {
+        WreckCause.Infested =>
+            "every barricade aboard was built from the INSIDE, the arms lockers are open and spent, and something has been nesting in the deep hold for a very long time",
         WreckCause.DriveFailure =>
             "the drive bells are cold and clean, the fuel gauges read FULL, and the log's last hundred entries are all the same failed restart",
         WreckCause.ReactorCascade =>
@@ -162,6 +197,10 @@ public static class Derelict
         WreckCause.ReactorCascade => WreckCause.HullBreach,
         // An intact ship with a dead crew reads as a mutiny to anyone who wants a story.
         WreckCause.LifeSupportFailure => WreckCause.Mutiny,
+        // Barricades built from the INSIDE look exactly like a crew that fell out — and this is the most
+        // expensive misreading in the game. File "mutiny" on an infested hull and the next crew goes in
+        // unarmed on the strength of your report.
+        WreckCause.Infested => WreckCause.Mutiny,
         // A ship that never burned looks like a ship that could not.
         WreckCause.NavigationalError => WreckCause.DriveFailure,
         _ => null,
@@ -306,5 +345,22 @@ public static class Derelict
         double years = 3.0 + ((h / 17) % 40);
 
         return new Wreck(key, name, cause, value, years);
+    }
+
+    /// <summary>Find a seeded wreck that died a GIVEN way — the dev hook behind <c>?wreck=&lt;cause&gt;</c>,
+    /// so a playtester can board an infested hull (or a staged loss) on purpose instead of re-rolling ids
+    /// until one turns up. Walks a deterministic sequence, so the same cause always yields the same ship.
+    /// Returns null only if the cause is somehow unreachable from the seeding, which a test pins.</summary>
+    public static Wreck? SeededWithCause(WreckCause cause, int searchLimit = 400)
+    {
+        for (int i = 0; i < searchLimit; i++)
+        {
+            Wreck w = Seeded($"lost-{i}");
+            if (w.Cause == cause)
+            {
+                return w;
+            }
+        }
+        return null;
     }
 }

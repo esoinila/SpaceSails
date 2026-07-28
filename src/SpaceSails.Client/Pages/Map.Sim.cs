@@ -321,6 +321,7 @@ public partial class Map
         string? expeditionCheat = null; // #370 /map?expedition=1|mining: spawn an away-team gig accepted + its site in shuttle range at the berth
         string? deflectionCheat = null; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
         bool wreckCheat = false; // #488 /map?wreck=1: spawn a derelict in shuttle range — board her, read her, then file or strip
+        Derelict.WreckCause? wreckCauseCheat = null; // #488 /map?wreck=<cause>: board a wreck that died THAT way
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
         string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
@@ -515,8 +516,18 @@ public partial class Map
                 // loop is: shuttle door → board her → walk the spine → read the three evidence stations →
                 // the cargo console → file the report (naming the cause) or strip her and say nothing.
                 // She is seeded, so it is the same ship every time. Documented in docs/testing-guide.md.
+                // …and ?wreck=<cause> (e.g. `infested`, `insurancejob`, `mutiny`) boards a wreck that died
+                // THAT way on purpose, instead of re-rolling ids until the interesting one turns up.
                 string candidate = Uri.UnescapeDataString(pair["wreck=".Length..]).ToLowerInvariant();
                 wreckCheat = candidate is "1" or "true" or "yes";
+                foreach (Derelict.WreckCause c in Enum.GetValues<Derelict.WreckCause>())
+                {
+                    if (candidate == c.ToString().ToLowerInvariant())
+                    {
+                        wreckCheat = true;
+                        wreckCauseCheat = c;
+                    }
+                }
             }
             else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
             {
@@ -693,7 +704,9 @@ public partial class Map
             string berthId = DockedStarts.TryGetValue(berthKey, out string? wreckBerth) ? wreckBerth : berthKey;
             if (scenario.Bodies.Any(b => b.Id == berthId))
             {
-                Derelict.Wreck w = Derelict.Seeded(WreckCheatId);
+                Derelict.Wreck w = wreckCauseCheat is { } forced
+                    ? Derelict.SeededWithCause(forced) ?? Derelict.Seeded(WreckCheatId)
+                    : Derelict.Seeded(WreckCheatId);
                 scenario = scenario with { Bodies = [.. scenario.Bodies, WreckSiteBody(berthId, w)] };
                 _wreck = w;
                 dockCheat = berthId; // clamp onto the berth she hangs off, so she is in reach at spawn
@@ -1901,6 +1914,7 @@ public partial class Map
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
         if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
         if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
+        if (_wreckLook is not null) { CloseWreckLook(); return true; }
         if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
         if (_showWreckChoice) { CloseWreckChoice(); return true; }
         if (_kioskCard is not null) { CloseKioskCard(); return true; }

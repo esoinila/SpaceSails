@@ -141,6 +141,7 @@ public static class WreckInterior
         Derelict.WreckCause.NavigationalError => "🧭 THE NAV POST",
         Derelict.WreckCause.Mutiny => "🔒 THE ARMS LOCKER",
         Derelict.WreckCause.Piracy => "📦 THE STRIPPED HOLD",
+        Derelict.WreckCause.Infested => "🕷 THE NEST IN THE DEEP HOLD",
         Derelict.WreckCause.InsuranceJob => "🚀 THE LIFEBOAT CRADLES",
         _ => "THE WRECK",
     };

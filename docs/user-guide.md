@@ -448,7 +448,71 @@ better.
 
 
 
-## 17. The electric sky ⚡
+## 17. Salvage — the ships nobody came back for 🛟
+
+Not every place worth boarding is a world or a berth. Somewhere out there are **derelicts**: ships that
+died under way and have been coasting ever since, cargo still in the hold, nobody aboard to object.
+
+### Why they are still out there
+
+A ship that dies under way **does not stop**. She keeps the velocity she had when the lights went out and
+coasts, so the volume she could be hiding in grows every year since the last position anyone logged. A
+wreck lost forty years ago is a haystack forty years wide. That, and not bad luck, is why her cargo is
+still aboard.
+
+### The ship waits for you
+
+A derelict has no orbit to park in and no berth to clamp to, so the autopilot **holds station on her** —
+it shares her trajectory rather than chasing a point in space, which costs nothing at all. The quote says
+so plainly:
+
+> *Holding — free. She keeps our orbit; the ship will be here when you get back.*
+
+There is no contract clock out here the way there is on a sponsored away-gig. Salvage is your own time.
+What the mode *does* care about is the **hand-off**: match her properly before you launch the shuttle, or
+the away team comes back to empty sky.
+
+### Reading her
+
+Aboard, you walk a dead ship — a spine corridor with compartments off it, named the way a ship names
+them. **What killed her is built into the hull**: a reactor cascade has peeled the transom outward, a
+breach left holes you can see the stars through, pirates cut the near hold open from outside. Some causes
+draw nothing at all, and an intact ship with a dead crew is its own kind of wrong.
+
+Three stations tell you the rest, each where a ship actually keeps it:
+
+- **the damage itself** — the drive bells, the scrubber stacks, the arms locker, the nest
+- **the bridge log** — how long ago she stopped, and the shape of her last hours
+- **the cargo manifest** — what she was carrying and what it is assessed at
+
+You need at least two before you can file anything. **Some wrecks lie.** A staged loss is dressed as an
+ordinary drive failure, and an infested hull looks exactly like a mutiny, because the barricades were
+built from the inside. Read the log *and* the manifest and the false answer comes off the table.
+
+### The two roads
+
+At the cargo, you choose — and both buttons tell you the number before you press them.
+
+| | Pays | Costs |
+|---|---|---|
+| **File the accident report** | 10% finder's fee, more for naming the cause right, most for catching a staged loss — and a **contact** who remembers | you don't get the cargo |
+| **Strip her and say nothing** | the whole assessed value, today | all of it **hot** (it's insured cargo), no contact, and she stays lost |
+
+Stripping always pays more *today*. That is deliberate: honesty buys the clean hold and the person who
+takes your call later, not the bigger number. A wrong finding still pays the finder's fee — you did find
+her — but costs you the contact, because a bad report helps nobody.
+
+### And sometimes she is not empty
+
+One kind of wreck has something still aboard. Everything worked right up until something got in, and the
+crew's barricades were built from the *inside*.
+
+Your shuttle's own gun sits in her airlock, live and never dry, covering the corridor you will be running
+back down. Read what you can and get out — on that hull, the walk back **is** the encounter.
+
+
+
+## 18. The electric sky ⚡
 
 - Near the sun the plasma halo charges your hull; the flowing ribbons between planets
 are **plasma streams** — riding one pushes you along it (charged hulls
@@ -460,7 +524,7 @@ visible, desperate, or both.
 
 
 
-## 18. The physics, honestly
+## 19. The physics, honestly
 
 - **There is no drag.** A circular orbit holds forever with zero thrust
 (measured: −0.025% radius drift over a full year).
