@@ -1792,7 +1792,10 @@ public partial class Map
     // SAME BUSTED freeze-beat → brain-backup resurrection the collector/impact deaths use — the death
     // machinery is shared, never duplicated. No collector, no dice: straight to the surface freeze-beat. The
     // resurrection folds the excursion away as a failed gig and issues a new captain (BustedResurrect).
-    private void TriggerSurfaceOverdrawDeath(SurfaceExcursion dying)
+    /// <param name="nerveRanOut">True when the NERVE overdrew (the gauge hit the floor with a qualifying
+    /// hit); false when the FIVE BLOWS ran out and the captain was simply mauled. Drives the freeze-frame
+    /// caption — see <see cref="DeathNarration.SurfaceCaption"/>.</param>
+    private void TriggerSurfaceOverdrawDeath(SurfaceExcursion dying, bool nerveRanOut)
     {
         if (_busted is not null)
         {
@@ -1815,6 +1818,7 @@ public partial class Map
             Bribe = default,             // unused on a surface death (no bribe to your own nerves)
             Phase = BustedEncounter.Stage.SurfaceEnd,
             Cause = cause,
+            NerveRanOut = nerveRanOut,
             DeathBodyName = body,
         };
 
@@ -2197,8 +2201,28 @@ public partial class Map
         }
 
         Vector2d pos = _ephemeris.Position(nearest.Id, SimTime);
-        Vector2d vel = TransferMath.BodyVelocity(_ephemeris, nearest.Id, SimTime);
-        _ship = new ShipState(pos, vel, SimTime);
+
+        // #478 · WAKE AT A BERTH, NOT INSIDE THE STATION. This used to be
+        //     _ship = new ShipState(pos, vel, SimTime);
+        // which parked the new captain at the haven's EXACT CENTRE — distance zero. Every projected sample
+        // then sat inside the haven's body radius, ClosestApproach reported a permanent subsurface pass, and
+        // the alarm channel shouted "ROCKS AHEAD! — impact with The Tilt" at a ship reading "clamped on" at
+        // 0.0 km/s rel. It was never a predictor bug: the ship really was inside the station.
+        //
+        // A dockable haven now rides the ONE TRUE CLAMP every real arrival uses (co-moving berth offset,
+        // welded interior, pinned at dock), so the wake state is byte-for-byte an ordinary docking and the
+        // collision projection sees the same honest berth separation it sees after any other arrival.
+        if (DockableHavens.IsDockable(nearest))
+        {
+            ClampOntoHaven(nearest, pos);
+        }
+        else
+        {
+            // A haven with no berth to clamp to (a bare waypoint): still never inside it — sit off it at the
+            // shared berth offset, co-moving, rather than at its centre.
+            _ship = BerthState.CoMoving(_ephemeris, nearest.Id, SimTime, BerthState.BerthOffsetMeters);
+        }
+
         ReprojectTrajectory();
         _camera.CenterOn(_ship.Position);
         return nearest.Name;
@@ -2274,6 +2298,12 @@ public partial class Map
         // place-dependently (cause art + a seeded house-voice line) before the brain-backup copy. Defaults to
         // the collector (the BUSTED last stand); the impact path sets Impact. Surface causes are wired ready.
         public DeathCause Cause { get; set; } = DeathCause.Collector;
+        // Which meter actually ran out (#480 follow-up): true = the nerve overdrew, false = the five blows
+        // landed. Before #469 was fixed nerve was effectively the ONLY way to die out there, so the card
+        // hardcoded the nerve line; now that the condition marker really decides, the caption must not
+        // blame a steady captain's nerve for a mauling.
+        public bool NerveRanOut { get; set; }
+
         public string? DeathBodyName { get; set; } // the place the death is narrated off (moon / body flown into)
 
         // Evening wind #20 — THE NEW CAPTAIN. On any death-resurrection the piracy insurance issues a fresh

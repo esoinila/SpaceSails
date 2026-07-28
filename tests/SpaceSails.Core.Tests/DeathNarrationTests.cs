@@ -112,4 +112,43 @@ public class DeathNarrationTests
 
         Assert.True(seen.Count > 1, "the pool must offer more than one reading across seeds");
     }
+
+    // ── #480 follow-up: the caption must name the meter that actually ran out. ──
+
+    [Fact]
+    public void AMaulingDoesNotGetBlamedOnTheNerve()
+    {
+        // The five blows landed on a captain whose hands were fine. Before #469 was fixed nerve was
+        // effectively the only way to die out there, so the card hardcoded the nerve line — and kept
+        // printing it after the condition marker started deciding.
+        string mauled = DeathNarration.SurfaceCaption(DeathCause.Reevers, nerveRanOut: false);
+
+        Assert.DoesNotContain("nerve", mauled, System.StringComparison.OrdinalIgnoreCase);
+        Assert.False(string.IsNullOrWhiteSpace(mauled));
+    }
+
+    [Fact]
+    public void AnOverdrawStillNamesTheNerve()
+    {
+        string overdrawn = DeathNarration.SurfaceCaption(DeathCause.Reevers, nerveRanOut: true);
+
+        Assert.Contains("nerve", overdrawn, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void TheTwoSurfaceDeathsReadDifferently()
+    {
+        Assert.NotEqual(
+            DeathNarration.SurfaceCaption(DeathCause.Reevers, nerveRanOut: true),
+            DeathNarration.SurfaceCaption(DeathCause.Reevers, nerveRanOut: false));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void JoinedKeepsItsOwnLine_WhicheverMeterRanOut(bool nerveRanOut)
+    {
+        // Walking into the crowd is its own story and outranks the meter that emptied.
+        Assert.Contains("footprints", DeathNarration.SurfaceCaption(DeathCause.Joined, nerveRanOut));
+    }
 }
