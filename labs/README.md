@@ -382,6 +382,15 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     37's leverage) clears a 140 m rock in **~3.5 years at 1 MW**, **~0.35 years (130 days) at 100 MW** — clear
     time falls as 1/√P, so the technique is POWER-gated. Enables an upgrade-gated late-game "standoff laser"
     variant: the deflection you earn by investing in a reactor, honest that thrust, not reach, is the wall.
+40. [**The ride waits**](40-the-ride-waits/README.md) — boardable derelicts need an autopilot that holds the
+    ship at shuttle range while the away team is inside, or it leaves without them (issue #488). The lab asked
+    what that costs and **changed the feature's design**: a *fixed-offset* hold near a body is a different
+    orbit, and different orbits leave — close over Jupiter it diverges in **4.7 days** and each recovery is a
+    **33.29 km/s** burn (111 pulses of a 500 tank). Share the wreck's own orbit instead and the hold costs
+    **zero pulses per day in every regime measured** — not cheap, *free*, because co-orbital objects are not
+    fighting anything. So the quote can honestly read "free", and the real precondition is the HAND-OFF match,
+    not fuel: even a sloppy 100 m/s launch error still buys a week. Kin to lesson 25 (keeping vs achieving) and
+    lesson 37 (station-keeping as a standoff).
 
 ## Framing rule
 
