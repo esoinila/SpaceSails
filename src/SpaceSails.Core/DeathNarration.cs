@@ -77,6 +77,30 @@ public static class DeathNarration
         return seed % (ulong)JoinedChanceInN == 0 ? DeathCause.Joined : DeathCause.Reevers;
     }
 
+    /// <summary>
+    /// The freeze-frame caption for a surface death — the quoted line under the headline.
+    ///
+    /// <para>This used to be a hardcoded ternary in the razor: <c>Joined</c> got the footprints line and
+    /// EVERYTHING ELSE got <i>"…the nerve was already gone. The hand was only the last of it."</i> That was
+    /// true while nerve was the only thing that ever actually killed anyone (#469) — but #480 made the five
+    /// blows decide, so a captain can now be plainly MAULED to death with a steady gauge, and the card was
+    /// still blaming their nerve. A death must not narrate the wrong cause.</para>
+    ///
+    /// <para><paramref name="nerveRanOut"/> is the honest discriminator the trigger already knows: the
+    /// overdraw path passes true, the five-blows path passes false.</para>
+    /// </summary>
+    public static string SurfaceCaption(DeathCause cause, bool nerveRanOut)
+    {
+        if (cause == DeathCause.Joined)
+        {
+            return "\"…and the footprints only lead one way — in.\"";
+        }
+
+        return nerveRanOut
+            ? "\"…the nerve was already gone. The hand was only the last of it.\""
+            : "\"…they simply kept coming, and the guard did not hold forever.\"";
+    }
+
     /// <summary>The Grok-generated death image (under <c>art/</c>) a cause shows on the resurrection card.
     /// The two live causes reuse the existing BUSTED frames; the surface + void causes use the death-* set.</summary>
     public static string ArtFile(DeathCause cause) => cause switch

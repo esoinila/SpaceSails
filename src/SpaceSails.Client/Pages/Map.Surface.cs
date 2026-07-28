@@ -2281,7 +2281,7 @@ public partial class Map
         // above it, the touch only floors the gauge and the captain is told to RUN, as before.
         if (_surface is { } dying && _busted is null && CaptainSuccession.OverdrawQualifies(_nerve))
         {
-            TriggerSurfaceOverdrawDeath(dying);
+            TriggerSurfaceOverdrawDeath(dying, nerveRanOut: true); // the gauge broke first
             return;
         }
 
@@ -2407,7 +2407,9 @@ public partial class Map
                 // The fifth blow. Routed into the SAME staged death the overdraw uses, so the piracy
                 // insurance issues a new captain and the run continues (Fail Forward) — the ship, the
                 // ledger and every buried cache outlive you (#455's rebirth thread).
-                TriggerSurfaceOverdrawDeath(ex);
+                // The FIFTH BLOW — the condition marker decided, not the nerve. Since #480 this is the
+                // common surface death, and it must not narrate as an overdraw.
+                TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false);
                 return;
             }
         }
