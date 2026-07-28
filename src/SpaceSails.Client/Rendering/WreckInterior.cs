@@ -87,6 +87,19 @@ public static class WreckInterior
                 DeckPlan.ConsoleKind.WreckEvidence, x, y, done ? "✔ " + label : label));
         }
 
+        // ── Atmosphere control ────────────────────────────────────────────────────────────────────────
+        // The bridge panel is DEAD (owner, borrowing from Battlestar Galactica) and the working valves are
+        // aft in ENGINEERING. That placement IS the mechanic: on an infested hull you walk toward the thing
+        // to reach the tool that kills it, then back out past whatever you chose not to vent. The dead
+        // panel is a signpost, not a wall — nobody should have to guess the answer is aft.
+        if (wreck.Cause == Derelict.WreckCause.Infested)
+        {
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.WreckBridgePanel, 19f, -7.5f, "⚙ VENT PANEL (bridge)"));
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.WreckValves, -24f, -6f, "⚙ ATMOSPHERE VALVES"));
+        }
+
         // ── The decision ──────────────────────────────────────────────────────────────────────────────
         // Amidships in the near hold, where the cargo actually is. You cannot decide what to do with her
         // from the bridge — you have to go and look at what she was carrying.
