@@ -976,9 +976,12 @@ public sealed class DeckView
         // the gauge and it landed straight on top of the motion tracker's fan — unreadable, and it buried
         // the one instrument you actually steer by. Down here it shares the column with nothing, and the
         // reading order still runs newest-nearest-the-eye.
+        // The bottom margin clears the keybar AND the first-person toggle that sits in this same corner —
+        // at 46 the last ledger line printed straight through the button.
+        const float BottomClearance = 78f;
         float lineH = px + 2f;
         int rows = (ledger?.Count ?? 0) + (ledger is { Count: > 0 } ? 1 : 0) + (hasFlash ? 1 : 0);
-        float y = heightPx - 46f - (rows * lineH);
+        float y = heightPx - BottomClearance - (rows * lineH);
 
         if (hasFlash)
         {
