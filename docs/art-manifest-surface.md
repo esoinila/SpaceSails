@@ -119,11 +119,16 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 
 | # | File | Code wired | Art generated |
 |---|---|---|---|
-| 1 | `selfie-monolith.jpg` | ✅ | ⬜ |
-| 2 | `selfie-reveal-survived.jpg` | ✅ | ⬜ |
-| 3 | `treasure-miranda.jpg` | ✅ (dynamic path, gradient fallback) | ⬜ |
-| 4 | `souvenir-surface-tshirt.jpg` | ⬜ (kiosk card not built) | ⬜ |
-| 5 | `souvenir-surface-magnet.jpg` | ⬜ (kiosk card not built) | ⬜ |
+| 1 | `selfie-monolith.jpg` | ✅ | ✅ |
+| 2 | `selfie-reveal-survived.jpg` | ✅ | ✅ |
+| 3 | `treasure-miranda.jpg` | ✅ (dynamic path, gradient fallback) | ✅ |
+| 4 | `souvenir-surface-tshirt.jpg` | ✅ (kiosk card built) | ✅ |
+| 5 | `souvenir-surface-magnet.jpg` | ✅ (kiosk card built) | ✅ |
 
-1–3 drop straight in behind wiring that already ships. 4–5 need the kiosk purchase card built first — worth
-doing in the same pass so the ground has a gift shop like everywhere else does.
+**Complete.** All five generated with `grok-4.5` and shipped. The kiosk purchase card was built in the same
+pass (`_kioskCard` in `Map.Surface.cs`, rendered in `Map.razor` on the existing `view-object` idiom), so the
+walked ground finally has a gift shop that shows you what it sold you — the tee and the magnet the haven
+shops have had since #367.
+
+Every slot still `onerror`-hides, so a future body-specific override can drop in over the shared art without
+a code change.

@@ -2478,14 +2478,28 @@ public partial class Map
     // Slot 0 is the souvenir tee — its item + gag are filled from the moon underfoot at buy time
     // (SurfaceSouvenir), so Ganymede sells a Ganymede shirt, not Miranda's (#379). The placeholder
     // strings below are never shown; they only hold slot 0's price and mark the seam.
-    private static readonly (string Item, int Price, string Line)[] KioskStock =
+    // Owner, 2026-07-28: "The T-shirts etc everywhere where they are missing." Every HAVEN gift shop has
+    // painted a tee AND a magnet since #367; the GROUND kiosk sold both and showed neither — a pulse line
+    // and nothing to look at. The art column closes that: what you bought now gets held up.
+    private static readonly (string Item, int Price, string Line, string Art)[] KioskStock =
     [
-        ("the local souvenir tee", 15, "(keyed to the walked body — see VisitKiosk)"),
-        ("a fridge magnet", 8, "It clamps to your suit's chestplate and refuses to let go. Value: eternal."),
-        ("a vacuum-sealed hot meal", 12, "The label promises 'MEAT-ADJACENT'. The heater still works. Mostly."),
+        ("the local souvenir tee", 15, "(keyed to the walked body — see VisitKiosk)",
+            "art/souvenir-surface-tshirt.jpg"),
+        ("a fridge magnet", 8, "It clamps to your suit's chestplate and refuses to let go. Value: eternal.",
+            "art/souvenir-surface-magnet.jpg"),
+        ("a vacuum-sealed hot meal", 12, "The label promises 'MEAT-ADJACENT'. The heater still works. Mostly.",
+            ""), // no art — it is a ration pouch, and the joke is funnier unseen
     ];
 
     private int _kioskPicks;
+
+    /// <summary>What the kiosk just sold you, held up for a look — the ground's answer to the haven gift
+    /// shops' view-object cards. Null when nothing is being inspected.</summary>
+    private readonly record struct KioskBuy(string Item, string Line, string Art);
+
+    private KioskBuy? _kioskCard;
+
+    private void CloseKioskCard() => _kioskCard = null;
 
     private void VisitKiosk()
     {
@@ -2494,7 +2508,7 @@ public partial class Map
             return; // the kiosk only sells on the ground it stands on
         }
         int slot = _kioskPicks % KioskStock.Length;
-        (string item, int price, string line) = KioskStock[slot];
+        (string item, int price, string line, string art) = KioskStock[slot];
         _kioskPicks++;
         if (slot == 0)
         {
@@ -2512,6 +2526,11 @@ public partial class Map
         _credits -= price;
         RendererInterop.PlayCue("board");
         ShowPulseMessage($"🧾 Bought {item} for {price} cr. {line} (The kiosk was last restocked before the war.)");
+        if (art.Length > 0)
+        {
+            // Hold it up. The img onerror-hides, so an unpainted slot still degrades to the caption alone.
+            _kioskCard = new KioskBuy(item, line, art);
+        }
     }
 
     // ── The droid buffer: the ship's crew, plus the live Old Ones on the surface. ──

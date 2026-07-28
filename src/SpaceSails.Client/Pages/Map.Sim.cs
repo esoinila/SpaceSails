@@ -1857,6 +1857,7 @@ public partial class Map
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
         if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
         if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
+        if (_kioskCard is not null) { CloseKioskCard(); return true; }
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
