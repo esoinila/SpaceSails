@@ -2063,6 +2063,11 @@ public partial class Map
         // same way. Found while wiring #480, which makes it plainly visible: without this the LEDGER would
         // hand the new captain someone else's last bad minute too. The beat clocks, the banked sub-pip
         // pressure and the ledger all go with them.
+        // …but the DEAD captain's ledger is the one thing worth keeping across the seam: the card is about
+        // to ask "what broke you?", and the answer is in the last few pips they spent. Snapshot it here,
+        // THEN wipe the live one — the first cut cleared it before the card ever rendered, so the block
+        // silently never appeared (caught in the browser, not by a test).
+        _deathNerveLedger = _nerveLedger;
         _nerve = NerveModel.Steady;
         _nerveBeats = NervePips.Beats.Fresh;
         _nerveShockCarry = 0;
