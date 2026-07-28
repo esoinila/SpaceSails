@@ -509,7 +509,10 @@
                                 🧑‍🚀 Get them out
                             </button>
                         }
-                        @if (readiness != HullVenting.VentReadiness.Ready)
+                        @* Only nag while the handle is still worth pulling. After a successful vent the
+                           room reads "already open to space", which under the line that just told you the
+                           nest went out with the air is noise pretending to be a warning. *@
+                        @if (readiness != HullVenting.VentReadiness.Ready && string.IsNullOrEmpty(_ventMessage))
                         {
                             <div class="vent-refusal">@HullVenting.RefusalLine(readiness, picked)</div>
                         }

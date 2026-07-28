@@ -104,6 +104,7 @@ public sealed partial class Map
         {
             return;
         }
+        _ventMessage = null;   // a fresh action clears the last outcome, so the panel never mixes them
         _ventSpaces[name] = s with { DoorShut = !s.DoorShut };
         RendererInterop.PlayCue("board");
     }
@@ -118,6 +119,7 @@ public sealed partial class Map
             return;
         }
 
+        _ventMessage = null;
         ulong seed = DiceRule.Seed(w.Id, (long)name.GetHashCode(System.StringComparison.Ordinal));
         _ventReads[name] = HullVenting.Read(seed, SpaceNow(name));
         RendererInterop.PlayCue("reveal");
