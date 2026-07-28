@@ -438,7 +438,16 @@ public sealed class DeckView
             // #295: the Reevers read hostile — a red mark, not the crew's grey.
             bool reever = droid.Name == "Reever";
             RgbaColor mark = reever ? ReeverColor : DroidColor;
-            _renderer.DrawCircle(dx, dy, (reever ? 0.6f : 0.5f) * scale, mark, mark);
+            // #473 · AN OLD ONE'S PICTURE IS ITS BODY. The captain is drawn at exactly DeckPlan.AvatarRadius
+            // (below), but the Old Ones — who collide, catch, block and get shoved apart on that SAME radius —
+            // were drawn a tenth of a deck unit smaller. Every law that reads their body therefore fired with
+            // daylight still showing between the dots: a catch at CatchRadius = 1.4 left a 0.2du gap on
+            // screen, a pack held at PersonalSpace looked loose rather than shoulder to shoulder, and each one
+            // parked against a wall floated just off it. Owner: "check all reever collisions… the radius must
+            // be used in every single one" — the drawing is one of them. Crew stay at 0.5: nothing collides
+            // with a barkeep, so their mark is free to be a mark.
+            float bodyRadius = reever ? (float)DeckPlan.AvatarRadius : 0.5f;
+            _renderer.DrawCircle(dx, dy, bodyRadius * scale, mark, mark);
             // Heads up as one (hull-shudder pause), or the crew catch each other's eye (unexplained signal),
             // else the droid's own facing. The shudder pause wins if both somehow overlap.
             double facing = headsUp && !reever ? Math.PI / 2
@@ -569,7 +578,9 @@ public sealed class DeckView
             }
         }
 
-        _renderer.DrawCircle(ax, ay, 0.7f * scale, AvatarColor, AvatarColor);
+        // #473: the captain's mark already happened to equal AvatarRadius — say so, so the two can never
+        // drift apart again the way the Old Ones' mark had.
+        _renderer.DrawCircle(ax, ay, (float)DeckPlan.AvatarRadius * scale, AvatarColor, AvatarColor);
         float hx = ax + (float)Math.Cos(state.HeadingRad) * scale * 1.1f;
         float hy = ay - (float)Math.Sin(state.HeadingRad) * scale * 1.1f;
         DrawSeg((ax, ay), (hx, hy), AvatarColor, 2f);
