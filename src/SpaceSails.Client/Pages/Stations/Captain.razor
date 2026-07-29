@@ -33,6 +33,12 @@
             <button type="button" class="btn @(_view == CaptainView.Ledger ? "btn-info" : "btn-outline-light")"
                     title="Open the captain's ledger — every job in hand and every whisper worth keeping"
                     @onclick="() => SetView(CaptainView.Ledger)">📜 Ledger</button>
+            @* THE CREW'S OWN SHEET. Owner: "let's have a Winningtemp-like crew satisfaction report on the
+               captain's desk … it is the captain's performance as seen by the crew." It belongs HERE, at his
+               chair, because it is the one board on the ship that is about him. *@
+            <button type="button" class="btn @(_view == CaptainView.Crew ? "btn-info" : "btn-outline-light")"
+                    title="Read the crew temperature — what they said when you were not in the room"
+                    @onclick="() => SetView(CaptainView.Crew)">🌡 Crew</button>
         </div>
     </div>
 
@@ -145,6 +151,55 @@
                             </div>
                         }
                     }
+                </div>
+            </div>
+        </div>
+    }
+    else if (_view == CaptainView.Crew)
+    {
+        @* CREW TEMPERATURE. Owner: "let's have a Winningtemp-like crew satisfaction report on the captain's
+           desk … the crew satisfaction reports could guide the player into seeking the right balance for his
+           crew's greed/honesty ratio, that keeps him in the captain's seat."
+
+           Read as a survey is actually read: the standing first (what they are about to DO about it), then
+           the one line to fix this week, then every dimension with the crew's own words under it. No grade,
+           no advice — the sheet reports and the captain decides. *@
+        <div class="captain-groups">
+            <div class="captain-group">
+                <div class="captain-group-header"><span class="captain-group-icon">🌡</span> @CrewTemp.SheetTitle</div>
+                <div class="captain-group-flavor">@CrewTemp.SheetFooter</div>
+
+                <div class="crew-standing crew-standing-@CrewTemp.StandingOf(Voyage).ToString().ToLowerInvariant()">
+                    <div class="crew-standing-word">@CrewTemp.StandingOf(Voyage).ToString().ToUpperInvariant()</div>
+                    <div class="crew-standing-line">@CrewTemp.StandingLine(CrewTemp.StandingOf(Voyage))</div>
+                </div>
+
+                @* The pointer, not the grade — the lowest line is the one he can act on this week. *@
+                <div class="crew-worst">
+                    ⚑ Lowest this cycle: <strong>@CrewTemp.Heading(CrewTemp.WorstOf(Voyage).Dimension)</strong>
+                    — @CrewTemp.BandWord(CrewTemp.BandOf(CrewTemp.WorstOf(Voyage).Score))
+                </div>
+
+                @foreach (CrewTemp.Reading r in CrewTemp.Readings(Voyage))
+                {
+                    <div class="crew-line">
+                        <div class="crew-line-head">
+                            <span class="crew-dim">@CrewTemp.Heading(r.Dimension)</span>
+                            <span class="crew-band crew-band-@CrewTemp.BandOf(r.Score).ToString().ToLowerInvariant()">
+                                @CrewTemp.BandWord(CrewTemp.BandOf(r.Score))
+                            </span>
+                        </div>
+                        @* A bar rather than a number: the crew do not have an opinion to the nearest percent,
+                           the same reason the nerve gauge is pips. *@
+                        <div class="crew-bar"><div class="crew-bar-fill" style="width:@(r.Score)%"></div></div>
+                        <div class="crew-quote">“@r.Comment”</div>
+                    </div>
+                }
+
+                <div class="crew-cohesion">
+                    Cohesion: <strong>+@CrewTemp.Cohesion(Voyage)</strong> —
+                    what this crew has been through <em>with</em> you. It does not make them happier; it makes
+                    them slower to act on being unhappy.
                 </div>
             </div>
         </div>
@@ -449,6 +504,10 @@
 
     // Tutorials tab (the picker used to float on the Nav map; starting a lesson is a captain's order).
     [Parameter] public IReadOnlyList<TutorialItem> Tutorials { get; set; } = [];
+
+    /// <summary>Everything the crew have formed an opinion from. A plain aggregate of the voyage, so the
+    /// sheet is a pure function of what actually happened.</summary>
+    [Parameter] public CrewTemp.Voyage Voyage { get; set; }
     [Parameter] public int ActiveTutorial { get; set; } = -1; // index of the in-progress lesson, -1 = none
     [Parameter] public EventCallback<int> OnStartTutorial { get; set; }
     // A one-shot request to open this desk straight on the lessons. (The Nav "New here? Learn the
@@ -535,7 +594,7 @@
     /// bank" hint; <paramref name="Transactions"/> is the recent passbook, newest first.</summary>
     public sealed record AccountRow(string DisplayName, long Balance, string? Channel, IReadOnlyList<string> Transactions);
 
-    public enum CaptainView { Orders, Status, Tutorials, Ledger }
+    public enum CaptainView { Orders, Status, Tutorials, Ledger, Crew }
     private CaptainView _view;
 
     // The component is re-created each time you switch to the Captain desk. The banner's one-shot

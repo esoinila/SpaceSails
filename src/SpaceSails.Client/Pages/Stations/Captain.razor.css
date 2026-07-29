@@ -215,3 +215,90 @@
     flex: 0 0 auto;
     margin-top: -0.5rem;
 }
+
+/* ── CREW TEMPERATURE ──────────────────────────────────────────────────────────────────────────────
+   The crew's report on the captain. Styled as a sheet handed up from below decks rather than as a
+   dashboard: the standing reads like a verdict, the dimensions read like a survey, and the crew's own
+   sentences are the part the eye lands on. Deliberately no numerals — the bands and the bars carry it,
+   for the same reason the nerve gauge is pips: a crew does not have an opinion to the nearest percent. */
+
+.crew-standing {
+    border-left: 3px solid #6f7f95;
+    padding: 0.5rem 0.75rem;
+    margin: 0.5rem 0 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.crew-standing-word {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    color: #b9c8dc;
+}
+
+.crew-standing-line { font-size: 0.95rem; line-height: 1.5; color: #d8e2ee; margin-top: 0.2rem; }
+
+/* The escalation, coloured so the last two are impossible to read as routine. */
+.crew-standing-solid { border-left-color: #78dcaa; }
+.crew-standing-grumbling { border-left-color: #d8b877; }
+.crew-standing-petition { border-left-color: #e0a35a; }
+.crew-standing-ultimatum { border-left-color: #e07a4a; }
+.crew-standing-marooning { border-left-color: #d1584f; background: rgba(209, 88, 79, 0.08); }
+
+.crew-worst {
+    font-size: 0.9rem;
+    color: #e8c07a;
+    margin: 0 0 0.75rem;
+}
+
+.crew-line { margin-bottom: 0.85rem; }
+
+.crew-line-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.crew-dim {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    color: #8fa1b8;
+}
+
+.crew-band {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+}
+
+.crew-band-mutinous { color: #d1584f; }
+.crew-band-sour { color: #e07a4a; }
+.crew-band-grumbling { color: #d8b877; }
+.crew-band-content { color: #9fd8b0; }
+.crew-band-devoted { color: #78dcaa; }
+
+.crew-bar {
+    height: 0.3rem;
+    background: rgba(255, 255, 255, 0.07);
+    margin: 0.22rem 0 0.3rem;
+}
+
+.crew-bar-fill { height: 100%; background: #6f8fb0; }
+
+/* The part that matters. An anonymous sentence in the crew's voice does more than any gauge. */
+.crew-quote {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: #cddaeb;
+    font-style: italic;
+}
+
+.crew-cohesion {
+    font-size: 0.88rem;
+    color: #8fa1b8;
+    border-top: 1px solid rgba(120, 140, 165, 0.25);
+    padding-top: 0.5rem;
+    margin-top: 0.75rem;
+}

@@ -227,6 +227,22 @@ public sealed partial class Map
         _showWreckChoice = false;
         _wreckOutcome = outcome;
 
+        // THE CREW WERE WATCHING. Owner: "too honest a captain takes their winnings." This is the exact
+        // moment that opinion is formed — the one decision on the ship where doing the right thing is
+        // visibly worse paid — so the crew's sheet reads it here rather than keeping a ledger of its own.
+        //
+        // Honest means: filed, AND filed as what she actually was. Filing her under a cause you know is
+        // wrong is the profitable road wearing the paperwork's clothes, and the crew are not fooled by it
+        // even when the depot is.
+        if (choice == Derelict.SalvageChoice.FileTheReport && _wreckReported == w.Cause)
+        {
+            NoteHonestFiling();
+        }
+        else
+        {
+            NoteProfitableLie();
+        }
+
         LogAutopilotEvent(choice == Derelict.SalvageChoice.FileTheReport
             ? $"📋 Filed on the {w.ShipName} — {outcome.CreditsNow:N0} cr."
             : $"🏴 Stripped the {w.ShipName} — {outcome.CreditsNow:N0} cr, and she stays lost.");
