@@ -143,4 +143,77 @@ public class ShipLayoutTests
             Assert.Contains(r.Name, volume);
         }
     }
+
+    [Fact]
+    public void NoTwoOfHerFittingsShareADoorstep()
+    {
+        // THE THIRD TIME THIS EXACT MISTAKE HAS BEEN MADE. The scuttling panel landed on the infested
+        // hull's nest; the dead bridge panel landed on the nav post; and then I put her atmosphere valves
+        // 1.1 du from her charge dump — inside the 3 du interact radius, so one [E] prompt was fighting
+        // over two consoles and the captain got whichever won.
+        //
+        // The wreck has had a test against this since the first time. The ship had none, which is exactly
+        // why I was free to do it again. Owner, from the deck: "there two e's are too close to each others
+        // now."
+        const double interactRadius = 3.0;   // DeckPlan.InteractRadius
+
+        IReadOnlyList<(string Name, DeckReachability.Point At)> fittings = ShipLayout.Fittings;
+        for (int i = 0; i < fittings.Count; i++)
+        {
+            for (int j = i + 1; j < fittings.Count; j++)
+            {
+                double dx = fittings[i].At.X - fittings[j].At.X;
+                double dy = fittings[i].At.Y - fittings[j].At.Y;
+                double apart = Math.Sqrt((dx * dx) + (dy * dy));
+
+                Assert.True(apart >= interactRadius,
+                            $"'{fittings[i].Name}' and '{fittings[j].Name}' are {apart:0.0} du apart — " +
+                            "the captain cannot press one without the other.");
+            }
+        }
+    }
+
+    [Fact]
+    public void NoFittingStandsOnAHatchControl()
+    {
+        // Her door controls are generated, one per compartment, so a hand-placed fitting can drift onto one
+        // without anybody typing the same number twice. The corridor is where both of them live.
+        const double interactRadius = 3.0;
+
+        foreach ((string name, DeckReachability.Point at) in ShipLayout.Fittings)
+        {
+            foreach (ShipLayout.Room room in ShipLayout.Rooms)
+            {
+                DeckReachability.Point door = ShipLayout.DoorConsolePoint(room);
+                double dx = at.X - door.X, dy = at.Y - door.Y;
+                double apart = Math.Sqrt((dx * dx) + (dy * dy));
+
+                Assert.True(apart >= interactRadius,
+                            $"'{name}' is {apart:0.0} du from {room.Name}'s hatch control.");
+            }
+        }
+    }
+
+    [Fact]
+    public void NoTwoHatchControlsShareADoorstep()
+    {
+        // The cabins are 3.5 du apart, berth to berth, and their controls sit in a row along the corridor.
+        // That is the tightest run of pressable things on the ship and the one most likely to collide.
+        const double interactRadius = 3.0;
+
+        for (int i = 0; i < ShipLayout.Rooms.Length; i++)
+        {
+            for (int j = i + 1; j < ShipLayout.Rooms.Length; j++)
+            {
+                DeckReachability.Point a = ShipLayout.DoorConsolePoint(ShipLayout.Rooms[i]);
+                DeckReachability.Point b = ShipLayout.DoorConsolePoint(ShipLayout.Rooms[j]);
+                double dx = a.X - b.X, dy = a.Y - b.Y;
+                double apart = Math.Sqrt((dx * dx) + (dy * dy));
+
+                Assert.True(apart >= interactRadius,
+                            $"{ShipLayout.Rooms[i].Name} and {ShipLayout.Rooms[j].Name} hatch controls are " +
+                            $"{apart:0.0} du apart.");
+            }
+        }
+    }
 }

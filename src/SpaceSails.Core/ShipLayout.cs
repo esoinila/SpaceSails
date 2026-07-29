@@ -135,12 +135,21 @@ public static class ShipLayout
     /// door consoles on the corridor side for a reason worth repeating: the captain shutting a door is
     /// almost always the one who does NOT want to be sealed in behind it.</para>
     /// </summary>
+    /// <summary>How far a BULKHEAD door's control sits off the centreline, toward port.
+    ///
+    /// <para>Not decoration. Her bulkhead doors are on the centreline, and THE HEAD is the forwardmost
+    /// starboard room — hard against the bridge bulkhead — so the two controls landed 1.5 du apart in the
+    /// corridor, one [E] prompt over two hatches. The separation audit found it the moment it existed. Two
+    /// units to port clears the head's control and still leaves 0.8 du between the console and the cantina
+    /// wall at y = 3, which is more than the captain's own radius.</para></summary>
+    private const float BulkheadConsolePortOffset = 2.0f;
+
     public static DeckReachability.Point DoorConsolePoint(in Room r)
     {
         if (r.DoorAcrossX)
         {
             float away = r.DoorAt < (r.X0 + r.X1) / 2f ? -DoorConsoleStandoff : DoorConsoleStandoff;
-            return new(r.DoorAt + away, r.DoorCentre);
+            return new(r.DoorAt + away, r.DoorCentre + BulkheadConsolePortOffset);
         }
 
         float off = r.DoorAt < (r.Y0 + r.Y1) / 2f ? -DoorConsoleStandoff : DoorConsoleStandoff;
@@ -149,8 +158,32 @@ public static class ShipLayout
 
     /// <summary>Her damage-control board. Aft in the ENGINE ROOM, for the same reason the wreck's is aft:
     /// the valves are where the machinery is. Unlike a derelict's, hers has a live bridge repeater — which
-    /// is the whole difference between owning a ship and boarding one.</summary>
-    public static DeckReachability.Point ValveStation => new(-19f, -5f);
+    /// is the whole difference between owning a ship and boarding one.
+    ///
+    /// <para>NOT (−19, −5), which is where I first put it: 1.1 du from her charge dump, so one [E] prompt
+    /// was fighting over two consoles and the captain got whichever won. The wreck has had a test against
+    /// exactly this since the scuttling panel landed on the nest — the ship had none, which is why I was
+    /// free to make the same mistake a third time. <c>ShipLayoutTests</c> holds it now.</para></summary>
+    public static DeckReachability.Point ValveStation => new(-17f, -6f);
+
+    /// <summary>Her capacitor dump — a ship-systems control that has nothing to do with air, and everything
+    /// to do with why the atmosphere board could not be called the vent panel. In Core so it is a thing the
+    /// separation audit can SEE; it was a client literal, which is precisely how it got sat on.</summary>
+    public static DeckReachability.Point ChargeDumpStation => new(-20f, -4.5f);
+
+    /// <summary>Her builder's plate, on the engine-room bulkhead by the keel.</summary>
+    public static DeckReachability.Point BuildersPlateStation => new(-20f, 4f);
+
+    /// <summary>Everything bolted to her that the captain can press, in one list — so nothing new can be
+    /// added on top of something old without a test going red.</summary>
+    public static IReadOnlyList<(string Name, DeckReachability.Point At)> Fittings =>
+    [
+        ("the atmosphere valves", ValveStation),
+        ("the bridge repeater", BridgeRepeaterStation),
+        ("the charge dump", ChargeDumpStation),
+        ("the builder's plate", BuildersPlateStation),
+        ("the gangway placard", PlacardStation),
+    ];
 
     /// <summary>The bridge repeater — the panel a derelict has and cannot power. On her it works, so the
     /// captain can shut the ship from the helm and only has to walk aft when the bus is out.</summary>
