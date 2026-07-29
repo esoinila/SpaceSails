@@ -705,4 +705,32 @@ public class HullVentingTests
             Assert.Equal(dogged + 1, distinct.Count);
         }
     }
+
+    // ── Telling a first-timer where the controls are ─────────────────────────────────────────────────
+
+    [Fact]
+    public void ThePlacardNamesTheCompartmentTheBoardIsActuallyIn()
+    {
+        // Owner: "did we tell somewhere where to find the manual airlock controls? Just thinking about
+        // first time player of that ship, could they go directly to the right space." A sign that can drift
+        // from the thing it points at is worse than no sign, so both lines are built from the same constant
+        // — and the station itself must stand in that compartment.
+        Assert.Contains(HullVenting.ValveCompartment, HullVenting.PlacardLine, System.StringComparison.Ordinal);
+        Assert.Contains(HullVenting.ValveCompartment, HullVenting.PlacardAgainLine, System.StringComparison.Ordinal);
+        Assert.Contains(HullVenting.ValveCompartment, HullVenting.DeadBridgePanelLine, System.StringComparison.Ordinal);
+
+        Assert.Equal(HullVenting.ValveCompartment,
+                     WreckLayout.CompartmentAt(WreckLayout.ValveStation.X, WreckLayout.ValveStation.Y));
+    }
+
+    [Fact]
+    public void ThePlacardIsWhereEveryBoardingWalksPastIt()
+    {
+        // A sign nobody passes is a sign nobody reads. It sits in the spine, inboard of the shuttle lock,
+        // on the ship's side of it — the one square metre every single boarding crosses.
+        Assert.Null(WreckLayout.CompartmentAt(WreckLayout.PlacardStation.X, WreckLayout.PlacardStation.Y));
+        Assert.False(WreckLayout.PastTheLock(WreckLayout.PlacardStation.X, 0.7),
+                     "the placard belongs to the ship, not to the shuttle");
+        Assert.True(WreckLayout.PlacardStation.X > 0, "and it is at the bow end, where the lock is");
+    }
 }

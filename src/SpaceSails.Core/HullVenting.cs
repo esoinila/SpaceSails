@@ -1021,5 +1021,36 @@ public static class HullVenting
     /// Nobody should have to guess that the answer is aft.</summary>
     public const string DeadBridgePanelLine =
         "⚙ The bridge vent panel is dead — no bus, no pressure, forty years cold. Whatever she has left is " +
-        "mechanical now: the valves themselves, aft in ENGINEERING.";
+        "mechanical now: the valves themselves, aft in " + ValveCompartment + ".";
+
+    // ── The placard at the lock ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// WHERE THE CONTROLS ARE, TOLD TO SOMEBODY WHO HAS NEVER BEEN ABOARD. Owner, thinking past his own
+    /// tenth boarding: <i>"did we tell somewhere where to find the manual airlock controls? Just thinking
+    /// about first time player of that ship, could they go directly to the right space."</i>
+    ///
+    /// <para>They could not. The only signpost was the dead bridge panel, and it only speaks if the captain
+    /// walks to the BOW and presses it — so anyone who turned aft, or who never touched the bridge at all,
+    /// was told nothing. The deck carried a label reading ATMOSPHERE VALVES, which means nothing to a player
+    /// who does not yet know they want it.</para>
+    ///
+    /// <para>A ship answers this with a placard at the lock, and so does she. It names the compartment
+    /// rather than describing it, because a first-timer needs a NOUN they can go and find — and it is built
+    /// from <see cref="ValveCompartment"/> rather than typed out, so the sign cannot ever point at a room
+    /// the board is not in.</para>
+    /// </summary>
+    public const string PlacardTitle = "🪧 DAMAGE-CONTROL PLACARD";
+
+    public static string PlacardLine =>
+        $"🪧 A steel plate bolted by the lock, painted forty years ago and still perfectly legible: a plan " +
+        $"of the ship with her compartments numbered, her lifeboat cradles marked, and one box in heavier " +
+        $"type. ATMOSPHERE CONTROL — {ValveCompartment}, AFT. Under it, in the same hand, the sentence " +
+        "every ship writes and every crew stops reading: THE BRIDGE PANEL IS THE MASTER; THE VALVES ARE " +
+        "THE LAST WORD.";
+
+    /// <summary>What the placard tells you a second time, when you already know. Short, because by then it
+    /// is a reminder rather than a briefing.</summary>
+    public static string PlacardAgainLine =>
+        $"🪧 The plan of the ship, and the box in heavier type: ATMOSPHERE CONTROL — {ValveCompartment}, AFT.";
 }

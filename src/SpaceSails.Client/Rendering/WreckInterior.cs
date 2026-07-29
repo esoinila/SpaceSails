@@ -167,12 +167,26 @@ public static class WreckInterior
             (float)WreckLayout.ScuttleStation.X, (float)WreckLayout.ScuttleStation.Y,
             "☢ SCUTTLING PANEL"));
 
-        if (wreck.Cause == Derelict.WreckCause.Infested)
+        // THE HULLS WHERE HER ATMOSPHERE IS THE STORY. Infested is obvious. The ship one of her own crew
+        // opened to space is the other: she ARRIVES vented, the board is the confession, and until now she
+        // had no board at all — the state was built for her on boarding and there was nothing on the deck
+        // to reach it with. State that exists and is never drawn, again.
+        if (wreck.Cause is Derelict.WreckCause.Infested or Derelict.WreckCause.VentedByOneOfTheirOwn)
         {
             consoles.Add(new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.WreckBridgePanel, 19f, -7.5f, "⚙ VENT PANEL (bridge)"));
             consoles.Add(new DeckPlan.ConsoleSpot(
-                DeckPlan.ConsoleKind.WreckValves, -24f, -6f, "⚙ ATMOSPHERE VALVES"));
+                DeckPlan.ConsoleKind.WreckValves,
+                (float)WreckLayout.ValveStation.X, (float)WreckLayout.ValveStation.Y,
+                "⚙ ATMOSPHERE VALVES"));
+
+            // AND THE SIGN THAT SENDS THEM THERE, at the lock every boarding walks through. A first-timer
+            // should be able to go straight to the right compartment; the dead bridge panel only helps a
+            // captain who happens to turn forward first.
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.WreckPlacard,
+                (float)WreckLayout.PlacardStation.X, (float)WreckLayout.PlacardStation.Y,
+                $"🪧 ATMOSPHERE CONTROL → {HullVenting.ValveCompartment}"));
         }
 
         // ── The decision ──────────────────────────────────────────────────────────────────────────────

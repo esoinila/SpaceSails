@@ -299,6 +299,29 @@ public static class WreckLayout
     /// panel (owner: <i>"I don't see the scuttling panel here"</i>).</summary>
     public static DeckReachability.Point ScuttleStation => new(-31f, 6f);
 
+    /// <summary>The valve board itself — the mimic panel, aft with the machinery, because her bridge panel
+    /// has no bus behind it. In Core so the audit walks to it and the separation test can see it: it was a
+    /// literal in the client, which is exactly how the nest ended up two compartments from its own name.</summary>
+    /// <remarks>Not (−24, −6), where it lived as a client literal: that is two units from the reactor
+    /// cascade's own evidence AND standing in the ENGINEERING doorway. The separation test found both the
+    /// moment the station was written down somewhere a test could see it — which is the argument for
+    /// putting geometry in Core, made twice in one weekend.</remarks>
+    public static DeckReachability.Point ValveStation => new(-19f, -6f);
+
+    /// <summary>The damage-control placard, on the corridor wall just inboard of the shuttle lock — the
+    /// first thing on the ship, at the only point every boarding passes through.
+    ///
+    /// <para>Owner, thinking past his own tenth boarding: <i>"did we tell somewhere where to find the manual
+    /// airlock controls? Just thinking about first time player of that ship, could they go directly to the
+    /// right space."</i> They could not. The one signpost was the dead bridge panel, which only speaks if
+    /// you walk to the BOW and press it — so a captain who turned aft, or who never touched the bridge, was
+    /// told nothing at all. The deck said ATMOSPHERE VALVES on a label that means nothing until you already
+    /// know you want it.</para>
+    ///
+    /// <para>Every real ship answers this with a placard at the lock, which is also the safety card the
+    /// owner filed a design for. So she gets one, where you come in.</para></summary>
+    public static DeckReachability.Point PlacardStation => new(16.5f, 2.0f);
+
     /// <summary>Every place the captain must be able to REACH: the three evidence stations, the cargo
     /// decision, the scuttling panel, and the way home. This is the list CI walks — and, since
     /// <c>WreckLayoutTests</c> also checks they do not stand on top of each other, the list that keeps two
@@ -310,6 +333,8 @@ public static class WreckLayout
         ("the bridge log", LogStation),
         ("the cargo manifest", ManifestStation),
         ("the scuttling panel", ScuttleStation),
+        ("the damage-control placard", PlacardStation),
+        ("the atmosphere valves", ValveStation),
         (CauseStationName(cause), CauseStation(cause)),
     ];
 
