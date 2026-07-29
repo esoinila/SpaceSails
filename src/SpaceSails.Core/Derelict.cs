@@ -178,6 +178,36 @@ public static class Derelict
         _ => "",
     };
 
+    /// <summary>
+    /// THE SAME ROOM, AFTER THE VACUUM HAD IT. Owner: <i>"should we have a different pic after vent
+    /// cycle… one with claw marks :-D"</i>
+    ///
+    /// <para>Which is the proof the soak has never been able to offer. The counter says a number and the
+    /// instrument still refuses to name what was in there, so the only thing that ever CONFIRMED the
+    /// vacuum did its job was the absence of a fight on the way out. Standing in the room afterwards and
+    /// seeing what it left is the payoff — and it keeps the rule, because what you find is claw marks and
+    /// a collapsed nest, never the thing that made them.</para>
+    ///
+    /// <para>Empty for causes with nothing to kill: venting an ordinary hold changes the pressure, not the
+    /// story.</para>
+    /// </summary>
+    public static string ArtFileCleared(WreckCause cause) => cause switch
+    {
+        WreckCause.Infested => "art/wreck-infested-vented.jpg",
+        _ => "",
+    };
+
+    /// <summary>What the cause's own station reads once the vacuum has finished with it.</summary>
+    public static string EvidenceCleared(WreckCause cause) => cause switch
+    {
+        WreckCause.Infested =>
+            "the nest is dried, collapsed and frost-shattered, the casings are frozen where they fell — and " +
+            "the deck plating beside the sealed door is gouged with long parallel claw marks, deliberate and " +
+            "unhurried, made by something that worked at that door for a very long time and is not working " +
+            "at it now",
+        _ => "",
+    };
+
     /// <summary>What the away team actually FINDS aboard — the investigation's raw material. Deliberately
     /// physical: the report is written from what is bolted to the deck, not from a tooltip.</summary>
     public static string Evidence(WreckCause cause) => cause switch

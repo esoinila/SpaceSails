@@ -292,14 +292,24 @@ public static class WreckLayout
     /// <summary>The cargo manifest, in the deep hold.</summary>
     public static DeckReachability.Point ManifestStation => new(-7f, -6f);
 
+    /// <summary>The scuttling panel, right aft with the reactor — standing at it means standing next to the
+    /// thing you are about to overload. Its position lives HERE rather than in the client because that is
+    /// the only way a test can see it: placed by eye in the renderer it landed exactly on top of the
+    /// infested hull's nest station, and the game handed the captain the nest when they pressed E at the
+    /// panel (owner: <i>"I don't see the scuttling panel here"</i>).</summary>
+    public static DeckReachability.Point ScuttleStation => new(-31f, 6f);
+
     /// <summary>Every place the captain must be able to REACH: the three evidence stations, the cargo
-    /// decision, and the way home. This is the list CI walks.</summary>
+    /// decision, the scuttling panel, and the way home. This is the list CI walks — and, since
+    /// <c>WreckLayoutTests</c> also checks they do not stand on top of each other, the list that keeps two
+    /// consoles from sharing a doorstep.</summary>
     public static IReadOnlyList<(string Name, DeckReachability.Point At)> Stations(Derelict.WreckCause cause) =>
     [
         ("the way back to the shuttle", ShuttleStation),
         ("the cargo (the decision)", CargoStation),
         ("the bridge log", LogStation),
         ("the cargo manifest", ManifestStation),
+        ("the scuttling panel", ScuttleStation),
         (CauseStationName(cause), CauseStation(cause)),
     ];
 
@@ -310,11 +320,14 @@ public static class WreckLayout
         Derelict.WreckCause.DriveFailure => new(-26f, 6f),
         // Not x=0: that is the bulkhead NEAR HOLD and LIFEBOAT CRADLES share, and a station standing ON a
         // wall cannot be walked to. The audit caught this on its very first run.
-        Derelict.WreckCause.HullBreach => new(-4f, 6f),
+        Derelict.WreckCause.HullBreach => new(-3.5f, 5.5f),
         Derelict.WreckCause.LifeSupportFailure => new(7f, -6f),
-        Derelict.WreckCause.NavigationalError => new(17f, -6.5f),
+        Derelict.WreckCause.NavigationalError => new(18.6f, -7.7f),
         Derelict.WreckCause.Mutiny => new(7f, -6f),
-        Derelict.WreckCause.Piracy => new(-7f, 6f),
+        // Deeper into the near hold than the cargo console: the two sat on the SAME POINT for a long time,
+        // which the separation test found the day it was written. Both belong in this room — the stripped
+        // frames and the decision about what is left — they just cannot be in the same square metre.
+        Derelict.WreckCause.Piracy => new(-12f, 6f),
         // The nest, deep aft where it has had years to spread.
         Derelict.WreckCause.Infested => new(-24f, 6f),
         Derelict.WreckCause.InsuranceJob => new(7f, 6f),

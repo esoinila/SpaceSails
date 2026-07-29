@@ -37,6 +37,25 @@ reasons to go looking.
 | 3 | **The pump runs long** | 🛢 Pump down the compartment next door and the mechanical stage takes longer than that volume should need. Air is coming from somewhere the board does not list. |
 | 4 | **A cold wall where there should be hull** | The 📟 operating log of the adjacent room: a bulkhead reading colder than the hull outboard of it, because there is unheated air behind it rather than vacuum. |
 | 5 | **She sounds wrong** | Struck by hand, aboard. The cheapest tell and the most human one — the one a boarding party doing a routine cargo check would have had time for and did not do. |
+| 6 | **A return from an empty room** | ★ The motion fan hears through steel. It does not know which rooms are on the plan. |
+
+### Tell 6 is the best one, and it is already built
+
+> Owner: *"It would be a good lead for having someone hide into the walls. We see movement with the detector
+> but find an apparently empty room."*
+
+The motion tracker aboard a wreck already paints a **fuzzy return** wherever it hears movement, through bulkheads, as a region rather than a body — and it has no idea what a compartment is. So an occupant moving inside a void produces a mark the captain walks to, opens, stands in the middle of… and finds nothing.
+
+That is a contradiction the player *experiences* rather than reads, and it is perfectly ambiguous in the way the rest of this lane insists on:
+
+- the instrument is wrong, or
+- the room is wrong,
+
+and nothing on the ship will tell them which. A captain who trusts the fan starts measuring the room. A captain who trusts the room starts distrusting the fan — right up until something comes out of a wall.
+
+It also composes with the **ghost**: the tracker remembers where it last heard movement and holds that mark until it hears the same contact somewhere else. So the empty room does not merely read empty once — it keeps a return burning in it, in a compartment the captain has already searched.
+
+*No new instrument, no new tell mechanic: the void just has to produce motion, and the machinery that is already aboard does the rest.*
 
 Tells 3 and 4 are the good ones, because they are the **atmosphere system paying for itself twice**: the
 pump and the operating log were built to decide whether to kill something, and here they quietly become

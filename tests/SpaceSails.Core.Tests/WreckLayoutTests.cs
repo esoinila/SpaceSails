@@ -212,6 +212,39 @@ public class WreckLayoutTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(EveryCause))]
+    public void NoTwoStationsShareADoorstep(Derelict.WreckCause cause)
+    {
+        // TWO CONSOLES IN THE SAME PLACE IS ONE CONSOLE. The deck hands the captain whatever NearestConsole
+        // picks, so the loser is unreachable and its label draws over the winner's — and nothing anywhere
+        // complains. The scuttling panel was placed by eye in the renderer and landed exactly on the
+        // infested hull's nest station; pressing E at the panel gave you the nest (owner: "I don't see the
+        // scuttling panel here"). Writing this test then immediately found a SECOND one that had been
+        // shipped for far longer: on a piracy wreck the cargo decision and the cause station were the same
+        // point to the decimal.
+        //
+        // The bar is the interact radius: closer than that and the captain cannot choose between them.
+        const double interactRadius = 3.0;   // DeckPlan.InteractRadius
+
+        IReadOnlyList<(string Name, DeckReachability.Point At)> stations = WreckLayout.Stations(cause);
+
+        for (int i = 0; i < stations.Count; i++)
+        {
+            for (int j = i + 1; j < stations.Count; j++)
+            {
+                double dx = stations[i].At.X - stations[j].At.X;
+                double dy = stations[i].At.Y - stations[j].At.Y;
+                double gap = System.Math.Sqrt((dx * dx) + (dy * dy));
+
+                Assert.True(
+                    gap > interactRadius,
+                    $"{cause}: '{stations[i].Name}' and '{stations[j].Name}' are {gap:0.0} du apart — " +
+                    "the captain cannot press one without the other.");
+            }
+        }
+    }
+
     [Fact]
     public void TheShuttleLockSitsBetweenTheAwayTeamAndTheirRideHome()
     {

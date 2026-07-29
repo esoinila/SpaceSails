@@ -510,6 +510,35 @@
         </div>
     }
 
+    @* #488 · THE OPERATING LOG, AS A CARD. Owner: "maybe the log should open in top most popup and the
+       rest of the ui be disabled until it is closed." It is the most important sentence this mechanic
+       produces — an answer that refuses to finish itself — and as a line under the switches it read like a
+       status bar. It takes the screen; the board waits underneath. *@
+    @if (_ventReadCard is { } readRoom && _ventReads.TryGetValue(readRoom, out var readShown))
+    {
+        bool alive = readShown.Sign == HullVenting.LifeSign.SomethingAlive;
+        <div class="view-object-backdrop vent-read-backdrop" @onclick="() => Dismiss(CloseVentReadCard)">
+            <div class="vent-board vent-read-card @(alive ? "alive" : "")" @onclick:stopPropagation="true">
+                <div class="view-object-title">📟 @readRoom — OPERATING LOG</div>
+
+                <div class="vent-read-die">d20 @readShown.Roll.Face</div>
+                <div class="vent-read-line @(alive ? "alive" : "")">@HullVenting.ReadLine(readShown.Sign)</div>
+
+                @* The rule, restated where it costs the most: at the moment the captain most wants the
+                   instrument to have told them something it cannot tell them. *@
+                <div class="vent-read-foot">
+                    The compartment's own instruments, read back — thermal, movement, the last time a door
+                    cycled. It records that something in there is warm and moving. It has never been able to
+                    tell you WHAT.
+                </div>
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseVentReadCard)">
+                    @(alive ? "Back to the board" : "Close the log")
+                </button>
+            </div>
+        </div>
+    }
+
     @* #488 · THE DOOR THAT WILL NOT MOVE. Owner, after strolling into a compartment he had just blown:
        "we need some kind of door locked due to vacuum feature … maybe a gauge that says the door is shut
        due to pressure difference." One atmosphere across a door is about ten tonnes; nobody opens that by
@@ -645,13 +674,6 @@
                     <text class="vent-spine-label" x="-4" y="0.7" text-anchor="middle">THE SPINE</text>
                 </svg>
 
-                @if (_ventSelected is { } sel0 && _ventReads.TryGetValue(sel0, out var selRead))
-                {
-                    <div class="vent-readout @(selRead.Sign == HullVenting.LifeSign.SomethingAlive ? "alive" : "")">
-                        @sel0 — d20 @selRead.Roll.Face · @HullVenting.ReadLine(selRead.Sign)
-                    </div>
-                }
-
                 @if (_ventSelected is { } picked)
                 {
                     var sel = SpaceNow(picked);
@@ -735,9 +757,38 @@
                     </div>
                 }
 
-                @if (_ventMessage is { Length: > 0 } ventMsg)
+                @* A board that opens with nothing but "Step away" reads as broken (owner: "the vent panel
+                   only shows step away button in start … after I select a space from it the other buttons
+                   appear"). The switches belong to a ROOM, so until one is picked the panel says so. *@
+                @if (_ventSelected is null)
                 {
-                    <div class="vent-message">@ventMsg</div>
+                    <div class="vent-pick-hint">▲ Pick a compartment on the map — the switches belong to a room.</div>
+                }
+
+                @* THE LOG, IN ONE PLACE. The instrument reading used to render ABOVE the switches and the
+                   outcome BELOW them, so the panel's two log lines sat on opposite sides of the button row
+                   and one of them read as hidden behind the keys (owner: "there is only one line of log
+                   visible … now one line is behind keys when there should be two lines"). A board's log is
+                   one thing: what the instrument said, and what the handle did, in the order they happened. *@
+                @{
+                    bool hasRead = _ventSelected is { } lr && _ventReads.ContainsKey(lr);
+                    bool hasMsg = !string.IsNullOrEmpty(_ventMessage);
+                }
+                @* Only drawn when it has something to say — an empty bordered strip is furniture. *@
+                @if (hasRead || hasMsg)
+                {
+                    <div class="vent-log">
+                        @if (_ventSelected is { } logRoom && _ventReads.TryGetValue(logRoom, out var logRead))
+                        {
+                            <div class="vent-readout @(logRead.Sign == HullVenting.LifeSign.SomethingAlive ? "alive" : "")">
+                                📟 @logRoom — d20 @logRead.Roll.Face · @HullVenting.ReadLine(logRead.Sign)
+                            </div>
+                        }
+                        @if (_ventMessage is { Length: > 0 } ventMsg)
+                        {
+                            <div class="vent-message">@ventMsg</div>
+                        }
+                    </div>
                 }
 
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseVentPanel)">Step away</button>
@@ -1716,9 +1767,21 @@
        hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
        OUT IN THE CORRIDOR, not just from the board you walked away from. Two clocks racing each other: the
        one emptying a room, and the one on the sentry holding the lane while it does. *@
-    @if (OnWreck && _deckMode && (_pumpingRoom is not null || AnyRoomSoaking))
+    @if (OnWreck && _deckMode && (_pumpingRoom is not null || AnyRoomSoaking || _scuttleSecondsLeft is not null))
     {
         <div class="wreck-clocks">
+            @* THE OVERLOAD, LOUDEST AND FIRST. Owner, having armed it: "it should have a timer visible in
+               UI" — and he is right that this was absurd: the entire scene is walking AWAY from the panel,
+               and the clock was only readable by going back to it. Past the recall point it stops being a
+               countdown and starts being a fact. *@
+            @if (_scuttleSecondsLeft is { } burn)
+            {
+                <div class="wc-line overload @(Scuttle.CanAbort(burn) ? "" : "no-recall")">
+                    <span class="wc-tag">☢ @(Scuttle.CanAbort(burn) ? "OVERLOAD" : "NO RECALL")</span>
+                    <span class="wc-room">get off her</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(burn)</span>
+                </div>
+            }
             @if (_pumpingRoom is { } pumping)
             {
                 <div class="wc-line pump">

@@ -193,6 +193,44 @@ public class ScuttleTests
         Assert.True(Scuttle.Relief(false) > 0);
     }
 
+    // ── The PA ─────────────────────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void SheAnnouncesItHerself_AtEachMark_Once()
+    {
+        // The one system aboard still able to power a speaker is the exact thing about to fail.
+        Assert.NotNull(Scuttle.PaCall(Scuttle.OverloadSeconds, Scuttle.OverloadSeconds - 0.1));
+        Assert.NotNull(Scuttle.PaCall(61, 59));
+        Assert.NotNull(Scuttle.PaCall(31, 29));
+        Assert.NotNull(Scuttle.PaCall(11, 9));
+
+        // Not again on the same stretch, and not between marks.
+        Assert.Null(Scuttle.PaCall(59, 58));
+        Assert.Null(Scuttle.PaCall(29, 20));
+    }
+
+    [Fact]
+    public void ThePAIsAddressedToACrewThatIsNotComing()
+    {
+        string armed = Scuttle.PaCall(Scuttle.OverloadSeconds, Scuttle.OverloadSeconds - 0.1)!;
+        Assert.Contains("ALL HANDS ABANDON", armed);
+    }
+
+    [Fact]
+    public void TheCountIsWRONG_AndOnlyTheSHIPIsWrong()
+    {
+        // The Spaceballs nod, earned: a forty-year-old announcement system getting the arithmetic wrong
+        // says her systems cannot be trusted and your own clock can. The REAL timer never wavers.
+        string slip = Scuttle.PaCall(6, 4)!;
+
+        Assert.Contains("THREE SECONDS", slip);
+        Assert.Contains("skipped one", slip);
+
+        // Nothing in the countdown itself is affected: the abort window is pure arithmetic on the clock.
+        Assert.True(Scuttle.CanAbort(Scuttle.OverloadSeconds));
+        Assert.False(Scuttle.CanAbort(4));
+    }
+
     // ── The price ─────────────────────────────────────────────────────────────────────────────────────
 
     [Fact]

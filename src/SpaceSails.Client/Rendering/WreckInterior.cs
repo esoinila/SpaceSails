@@ -160,8 +160,12 @@ public static class WreckInterior
         // The scuttling panel is deliberately NOT the valve board. That board is damage control, a thing
         // every ship has; this is the other kind of panel — keyed, placarded, chained, built for one job.
         // It sits with the reactor, so standing at it means standing next to the thing you are overloading.
+        // Position comes from Core so the audit walks it and the separation test can see it. Placed by eye
+        // here, it landed on top of the infested hull's nest station and the captain got the nest instead.
         consoles.Add(new DeckPlan.ConsoleSpot(
-            DeckPlan.ConsoleKind.WreckScuttle, -24f, 6f, "☢ SCUTTLING PANEL"));
+            DeckPlan.ConsoleKind.WreckScuttle,
+            (float)WreckLayout.ScuttleStation.X, (float)WreckLayout.ScuttleStation.Y,
+            "☢ SCUTTLING PANEL"));
 
         if (wreck.Cause == Derelict.WreckCause.Infested)
         {

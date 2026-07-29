@@ -99,7 +99,18 @@ public sealed partial class Map
             return;
         }
 
+        double before = left;
         left -= dtSeconds;
+
+        // She announces it herself. The one system aboard still able to power a speaker is the exact thing
+        // that is about to fail, so a hull silent for forty years starts talking — to a crew that is not
+        // coming.
+        if (Scuttle.PaCall(before, left) is { } call)
+        {
+            ShowPulseMessage(call);
+            RendererInterop.PlayCue("alarm");
+        }
+
         if (left > 0)
         {
             _scuttleSecondsLeft = left;
