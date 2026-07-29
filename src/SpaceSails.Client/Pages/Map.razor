@@ -966,6 +966,191 @@
         </div>
     }
 
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       HER OWN ATMOSPHERE BOARD. Owner: "I think our ship should also have these controls. They are so cool
+       and it would be consistent in the universe", then "our venting must have captains ok mechanism in it,
+       like firing a shot or looting", and "there must be controls to do so on the bridge, but the bridge
+       position needs captains ok to vent".
+
+       The SAME panel as a derelict's, deliberately — one board, learned once, and the safest ship in the game
+       is the tutorial for the most dangerous one. What is different is the gate in front of the irreversible
+       half (the captain's word, by name), the fact that her board can say what is in the room, and that her
+       repeater actually has a bus behind it.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_showShipBoard)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipBoard)">
+            <div class="vent-board" @onclick:stopPropagation="true">
+                <div class="view-object-title">⚙ ATMOSPHERE CONTROL — HER OWN HULL</div>
+                <div class="vent-sub">
+                    @ShipBreathingLine()
+                    You are in <strong>@(ShipCompartment() ?? ShipLayout.SpineName)</strong>.
+                </div>
+                <div class="vent-readout">@ShipAtmosphere.ReserveLine(_shipReserve)</div>
+
+                @* Her deck, from ShipLayout's own rectangles — the same numbers her walls are built from, so a
+                   compartment on this map is where it is on the deck by construction. Y is negated because SVG
+                   y runs down and decks run up. Every number goes through Du(): a Finnish browser renders 20.5
+                   as "20,5" and SVG reads that as two coordinates — it would come apart for the owner and for
+                   nobody else. *@
+                <svg class="vent-map" viewBox="@ShipViewBox" preserveAspectRatio="xMidYMid meet"
+                     role="group" aria-label="her compartments">
+                    <polygon class="vent-hull" points="@ShipHullOutline" />
+
+                    @* THE CORRIDOR IS A PART OF THE SHIP YOU TOUCH — the wreck board's hard-won lesson (owner:
+                       "why can I not pump the spine? … oh it has its own button instead of just selecting it
+                       from map?"). It is a volume on the mimic, so it answers to the mimic. *@
+                    @{
+                        string shipCorridorCls = "vent-area spine"
+                            + (_shipSelected == ShipLayout.SpineName ? " picked" : "")
+                            + (ShipCompartment() is null ? " here" : "");
+                    }
+                    <g class="@shipCorridorCls" @onclick="() => SelectShipSpace(ShipLayout.SpineName)">
+                        <rect class="vent-spine-band"
+                              x="@Du(ShipLayout.EngineBulkheadX)" y="@Du(-ShipLayout.SpineHalfHeight)"
+                              width="@Du(ShipLayout.BridgeBulkheadX - ShipLayout.EngineBulkheadX)"
+                              height="@Du(ShipLayout.SpineHalfHeight * 2)" rx="0.4" />
+                    </g>
+
+                    @foreach (ShipLayout.Room shipRoom in ShipLayout.Rooms)
+                    {
+                        HullVenting.Space shipSpace = ShipSpaceNow(shipRoom.Name);
+                        string shipCls = "vent-area"
+                            + (shipSpace.Vented ? " vented" : "")
+                            + (shipSpace.DoorShut ? " sealed" : "")
+                            + (shipSpace.CaptainInside ? " here" : "")
+                            + (_shipSelected == shipRoom.Name ? " picked" : "");
+                        float shipCx = (shipRoom.X0 + shipRoom.X1) / 2f;
+                        float shipCy = -(shipRoom.Y0 + shipRoom.Y1) / 2f;
+                        (float dsx1, float dsy1, float dsx2, float dsy2) = ShipLayout.DoorSegment(shipRoom);
+
+                        <g class="@shipCls" @onclick="() => SelectShipSpace(shipRoom.Name)">
+                            <rect x="@Du(shipRoom.X0)" y="@Du(-shipRoom.Y1)"
+                                  width="@Du(shipRoom.X1 - shipRoom.X0)"
+                                  height="@Du(shipRoom.Y1 - shipRoom.Y0)" rx="0.4" />
+                            @((MarkupString)VentAreaLabelSvg(
+                                shipRoom.Name, shipCx, shipCy, shipRoom.X1 - shipRoom.X0,
+                                ShipAreaTag(shipRoom.Name)))
+                            @* Her hatch, at the doorway the captain actually walks through: solid when shut,
+                               broken when open. ONE definition (ShipLayout.DoorSegment), read both by the thing
+                               that draws it and the thing that walks into it. *@
+                            <line class="vent-door"
+                                  x1="@Du(dsx1)" x2="@Du(dsx2)" y1="@Du(-dsy1)" y2="@Du(-dsy2)" />
+                        </g>
+                    }
+                </svg>
+
+                @if (_shipSelected == ShipLayout.SpineName)
+                {
+                    <div class="vent-actions">
+                        <div class="vent-picked">@ShipLayout.SpineName</div>
+                        <div class="vent-readout">
+                            🌡 Her corridor, and every hatch aboard opens onto it. There is no valve here: you
+                            cannot open the volume you are standing in to space, and there is no door onto
+                            itself to dog.
+                        </div>
+                        <div class="vent-readout">@ShipLayout.VestibuleIsNotACompartment</div>
+                        <button type="button" class="btn btn-outline-warning btn-sm"
+                                title="Dog every hatch the pressure is not already holding. The reflex, for a fire or a leak."
+                                @onclick="SealHerUp">
+                            🔒 Seal her up
+                        </button>
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                title="Undog every hatch the pressure is not holding."
+                                @onclick="UnsealHer">
+                            🔓 Open her up again
+                        </button>
+                    </div>
+                }
+                else if (_shipSelected is { } shipPicked)
+                {
+                    var shipSel = ShipSpaceNow(shipPicked);
+                    var shipReadiness = HullVenting.Readiness(shipSel);
+                    var shipIntent = ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized);
+                    var shipRefill = HullVenting.RefillState(shipSel, _shipReserve);
+                    bool shipHeld = HullVenting.DoorHeldByPressure(shipSel, ShipCorridorPressurised);
+
+                    <div class="vent-actions">
+                        <div class="vent-picked">@shipPicked</div>
+
+                        @* WHAT IS IN THERE — the sentence a derelict's board cannot say. Hers can, because the
+                           crew are aboard and the manifest knows where they sleep, and that is exactly why the
+                           act needs a name attached to it. *@
+                        <div class="vent-readout">@ShipAtmosphere.WhatIsInThere(shipPicked)</div>
+
+                        @* Isolation: the everyday half, and it asks nobody. Owner: "we might want to isolate
+                           cabins to keep our disease etc." *@
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                disabled="@shipHeld"
+                                title="@(shipHeld ? HullVenting.PressureLockLine(shipPicked, shipSel.Vented)
+                                                  : ShipAtmosphere.IsolationNeedsNobody)"
+                                @onclick="() => ToggleShipDoor(shipPicked, false)">
+                            @(shipSel.DoorShut ? "🔓 Undog the hatch" : "🔒 Dog the hatch")
+                        </button>
+
+                        @* THE GATE. Not a confirmation dialogue: the word carries the room's NAME, so changing
+                           the selection revokes it — the same promise the boarding authorization makes, for the
+                           same reason (proximity is never consent). *@
+                        @if (shipReadiness == HullVenting.VentReadiness.Ready)
+                        {
+                            @if (shipIntent == ShipAuthority.VentIntent.Authorized)
+                            {
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        title="Take it back. Nothing has happened yet."
+                                        @onclick="WithdrawTheCaptainsWord">
+                                    ↩ Withdraw the word
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm"
+                                        title="@ShipAtmosphere.TheSuitsBesideTheBunks"
+                                        @onclick="() => VentShipCompartment(shipPicked)">
+                                    💨 OPEN @shipPicked TO SPACE
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                        title="@ShipAuthority.WhyItNeedsSaying"
+                                        @onclick="() => GiveTheCaptainsWord(shipPicked)">
+                                    🔑 Captain's word: @shipPicked
+                                </button>
+                            }
+                        }
+
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                disabled="@(shipRefill != HullVenting.RefillReadiness.Ready)"
+                                title="@(shipRefill == HullVenting.RefillReadiness.Ready
+                                         ? "Spend one fill from her own tanks. Whatever went out with the air stays out."
+                                         : HullVenting.RefillRefusalLine(shipRefill, shipPicked))"
+                                @onclick="() => RefillShipCompartment(shipPicked)">
+                            🫁 Put the air back (@_shipReserve)
+                        </button>
+
+                        @if (shipReadiness != HullVenting.VentReadiness.Ready
+                             && string.IsNullOrEmpty(_shipBoardMessage))
+                        {
+                            <div class="vent-refusal">@HullVenting.RefusalLine(shipReadiness, shipPicked)</div>
+                        }
+                    </div>
+                }
+
+                @* A board that opens with nothing but "Step away" reads as broken — the wreck's panel taught
+                   that (owner: "the vent panel only shows step away button in start"). The switches belong to a
+                   ROOM, so until one is picked the panel says so. *@
+                @if (_shipSelected is null)
+                {
+                    <div class="vent-pick-hint">▲ Pick a compartment on the map — the switches belong to a room.</div>
+                }
+
+                @if (_shipBoardMessage is { Length: > 0 } shipBoardMsg)
+                {
+                    <div class="vent-message">@shipBoardMsg</div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipBoard)">Step away</button>
+            </div>
+        </div>
+    }
+
     @* #488 · WHAT YOU ARE LOOKING AT. The cause's own station is the one you stand in front of, so it shows
        the wreck's portrait — eight ships that died eight different ways should not read the same. The image
        is the EVIDENCE, never the conclusion; naming what it means is still the captain's job. *@
