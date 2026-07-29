@@ -672,7 +672,7 @@
                         <rect class="vent-spine-band"
                               x="@Du(WreckLayout.AftX)" y="@Du(-WreckLayout.SpineHalfHeight)"
                               width="@Du(WreckLayout.BowX - 6 - WreckLayout.AftX)"
-                              height="@Du(WreckLayout.SpineHalfHeight * 2)" />
+                              height="@Du(WreckLayout.SpineHalfHeight * 2)" rx="0.4" />
                     </g>
 
                     @foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
@@ -747,6 +747,14 @@
                                 @onclick="SealTheShip">
                             🔒 Seal the ship
                         </button>
+                        @* And the way back out. Owner: "I want to unlock all the doors after the ship is in
+                           vacuum" — because the pump SEALS her to work, so the reward for emptying her is a
+                           maze of eight dogged hatches. At uniform vacuum nothing is holding any of them. *@
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                title="Undog every hatch the pressure is not holding. At uniform vacuum that is all of them — and it is what lets the flood reach every room."
+                                @onclick="UnsealTheShip">
+                            🔓 Open every hatch
+                        </button>
                         @* THE FLOOD. Owner: "we should be able to refill the whole ship since it is in
                            vacuum without closing doors?" — one volume, one pressure, one valve, backwards.
                            Only ever affordable out of air the PUMP banked. *@
@@ -761,7 +769,7 @@
                                 🌬 Flood the ship (@FloodCost())
                             </button>
                         }
-                        @if (_pumps.TryGetValue(HullVenting.SpineName, out var spinePump))
+                        @if (PumpOn(HullVenting.SpineName) is { } spinePump)
                         {
                             <button type="button" class="btn btn-outline-warning btn-sm"
                                     @onclick="() => StopPump(HullVenting.SpineName)">
@@ -797,10 +805,6 @@
                                 <div class="vent-readout">
                                     ⏳ The corridor is on the order — she goes on the pumps as the last hatch seals.
                                 </div>
-                            }
-                            @if (!SpinePumpable)
-                            {
-                                <div class="vent-refusal">@HullVenting.SpineNotSealedLine</div>
                             }
                         }
                     </div>
@@ -844,7 +848,7 @@
                         @* THE THRIFTY ROAD. Blowing a room throws its air away and you buy it back a breath
                            at a time; pumping it down puts that air in the tanks. The mechanical stage banks
                            the charge early, and the long tail after it only buys you a killing pressure. *@
-                        @if (_pumps.TryGetValue(picked, out var running))
+                        @if (PumpOn(picked) is { } running)
                         {
                             <button type="button" class="btn btn-outline-warning btn-sm" @onclick="() => StopPump(picked)">
                                 @(running.RoughBanked ? "🛢 Stop — take the air and go" : "🛢 Stop the pump")
@@ -929,6 +933,22 @@
                         @if (_ventMessage is { Length: > 0 } ventMsg)
                         {
                             <div class="vent-message">@ventMsg</div>
+                        }
+                        @* THE LOG SHE IS STILL KEEPING. Owner: "the operation log should get our new
+                           operational entries logged into it." The captain reads this ship's log to work
+                           out what her crew did, then does forty minutes of stranger things to her that
+                           nothing recorded. Newest at the top, because the newest is what you came to
+                           read — and because the panel could only ever show ONE line, so anything that
+                           happened while you were looking elsewhere used to be gone before you saw it. *@
+                        @if (_ventLog.Count > 0)
+                        {
+                            <div class="vent-history">
+                                <div class="vent-history-head">OPERATING LOG — THIS BOARDING</div>
+                                @for (int i = _ventLog.Count - 1; i >= 0; i--)
+                                {
+                                    <div class="vent-history-line">@_ventLog[i]</div>
+                                }
+                            </div>
                         }
                     </div>
                 }
@@ -1925,12 +1945,12 @@
                 </div>
             }
             @* Every pump gets a line, because several can run at once now. *@
-            @foreach ((string pumping, (double left, bool banked)) in _pumps.OrderBy(p => p.Value.SecondsLeft))
+            @foreach (var run in _pumps.Values.OrderBy(p => p.SecondsLeft))
             {
                 <div class="wc-line pump">
-                    <span class="wc-tag">🛢 @(banked ? "TAIL" : "PUMPING")</span>
-                    <span class="wc-room">@pumping</span>
-                    <span class="wc-time">@HullVenting.SoakLabel(left)</span>
+                    <span class="wc-tag">🛢 @(run.RoughBanked ? "TAIL" : "PUMPING")</span>
+                    <span class="wc-room">@(run.Volume.Count > 1 ? $"{run.Volume.Count} SPACES" : run.Volume[0])</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(run.SecondsLeft)</span>
                 </div>
             }
             @foreach ((string room, double secs) in RoomsSoaking)

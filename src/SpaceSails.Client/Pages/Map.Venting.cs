@@ -111,6 +111,39 @@ public sealed partial class Map
     /// past the longest soak does; this one is honest about the scale.</summary>
     private const double YearsOfVacuumSeconds = 60 * 60 * 24 * 365 * 40.0;
 
+    /// <summary>
+    /// THE SHIP'S OWN OPERATING LOG, STILL BEING WRITTEN. Owner: <i>"the operation log should get our new
+    /// operational entries logged into it."</i>
+    ///
+    /// <para>Obvious once said, and it closes a loop the whole wreck lane is built on. The captain reads
+    /// this ship's log to work out what her crew did in their last hours — and then does forty minutes of
+    /// far stranger things to her, none of which she records. She is a working ship again for as long as
+    /// somebody is aboard pulling her handles, and a damage-control board that did not keep a log would be
+    /// the only instrument on her that does not.</para>
+    ///
+    /// <para>It is also the answer to a real usability problem: the panel could only ever show ONE line at a
+    /// time, so anything that happened while the captain was looking elsewhere — a pump banking, a room
+    /// finishing its soak, a hatch that would not move — was gone before it could be read.</para>
+    /// </summary>
+    private readonly List<string> _ventLog = [];
+
+    /// <summary>The most the board keeps. Long enough to cover a whole boarding, short enough to stay a log
+    /// rather than a transcript.</summary>
+    private const int VentLogDepth = 60;
+
+    /// <summary>Every action the board takes goes here AND to the ship's event log — one call, so a new
+    /// switch cannot be added that quietly writes to only one of them.</summary>
+    private void BoardLog(string line)
+    {
+        LogAutopilotEvent(line);
+
+        _ventLog.Add(line);
+        if (_ventLog.Count > VentLogDepth)
+        {
+            _ventLog.RemoveAt(0);
+        }
+    }
+
     /// <summary>Run the vacuum clocks. Owner: <i>"there might be a counter on how long the room has been in
     /// vacuum … so it needs certain time for certain infestations."</i> A vented compartment counts up for
     /// as long as the away team is aboard, which is what turns venting from a button into a decision about
@@ -147,7 +180,7 @@ public sealed partial class Map
             {
                 _ventSpaces[name] = s with { Infested = false };
                 ClearReeversIn(name);
-                LogAutopilotEvent($"💨 {name} has been open to space long enough. Whatever was in there is finished.");
+                BoardLog($"💨 {name} has been open to space long enough. Whatever was in there is finished.");
 
                 // WHAT YOU GOT FOR THE WAIT — SHOWN WHEN YOU LOOK, NEVER BEFORE. Owner: "that should be
                 // told with GEN AI images … what did we get from venting", and then immediately: "I got
@@ -235,7 +268,7 @@ public sealed partial class Map
             VisibleOnMap = false,
         });
 
-        LogAutopilotEvent($"🕷 Something else pulls itself out of the nest in the {nest}.");
+        BoardLog($"🕷 Something else pulls itself out of the nest in the {nest}.");
     }
 
     /// <summary>How long an intact nest takes to put another one on its feet. Slow on purpose: the drip has
@@ -326,7 +359,7 @@ public sealed partial class Map
             if (r.VacuumSeconds >= lethal)
             {
                 _reevers.RemoveAt(i);
-                LogAutopilotEvent("💨 One of them stopped moving in the vacuum.");
+                BoardLog("💨 One of them stopped moving in the vacuum.");
             }
         }
     }
@@ -504,11 +537,11 @@ public sealed partial class Map
             // No credits change hands. It costs the captain, through the #480 nerve seam, and it is meant
             // to be heavy — you will never be certain what you heard on the other side of that door.
             ApplyNerveShock(HullVenting.VentedSurvivorNerveCost, "you blew the compartment with someone in it");
-            LogAutopilotEvent($"☠ Vented {name} — something alive went out with the air.");
+            BoardLog($"☠ Vented {name} — something alive went out with the air.");
         }
         else
         {
-            LogAutopilotEvent($"💨 Vented {name}.");
+            BoardLog($"💨 Vented {name}.");
         }
 
         // A compartment blowing to space is the loudest thing that has happened aboard her in forty years.
@@ -528,55 +561,86 @@ public sealed partial class Map
     /// captain is the reserve and the clock. Running four at once is a real strategy now — and a slow one,
     /// which is the whole cost of the thrifty road.</para>
     /// </summary>
-    private readonly Dictionary<string, (double SecondsLeft, bool RoughBanked)> _pumps = [];
+    private readonly Dictionary<string, PumpRun> _pumps = [];
 
-    /// <summary>Whether the corridor can go on the pumps: it still has air, it is not already running, and
-    /// every compartment is shut or already empty. Otherwise the pump is draining the whole ship through
-    /// eight open doorways.</summary>
+    /// <summary>
+    /// One pump, running on one ATMOSPHERE — however many compartments that turns out to be.
+    ///
+    /// <para>It used to be one pump per room, with a separate special case for the corridor and a refusal if
+    /// any hatch stood open. Owner, correcting all three at once: <i>"if we only want to evacuate it then the
+    /// doors to it need to be sealed … but if we evacuate multiple spaces then doors between those do not
+    /// need to be sealed. The only check we need is to make sure we don't evacuate a room by accident of
+    /// leaving its door open."</i> That is one rule where I had written three, and it is the true one: a
+    /// pump empties the volume it is plumbed into, and the volume is whatever is standing open to it.</para>
+    /// </summary>
+    /// <param name="Volume">Every space this run will empty, from <see cref="HullVenting.SharedAtmosphere"/>.</param>
+    /// <param name="Total">Its whole run in seconds — the sum of what is in it.</param>
+    /// <param name="Charges">What it banks at the rough mark, likewise summed.</param>
+    private sealed record PumpRun(
+        IReadOnlyList<string> Volume, double Total, int Charges, double SecondsLeft, bool RoughBanked);
+
+    /// <summary>The key a volume is filed under. Its members, in order — so the same atmosphere can never be
+    /// put on two pumps at once, however the captain reached it.</summary>
+    private static string VolumeKey(IReadOnlyList<string> volume) => string.Join("+", volume);
+
+    /// <summary>The run this space is part of, if any. A compartment standing open to a corridor being
+    /// pumped is BEING PUMPED, and every readout in the game asks this rather than looking up a name.</summary>
+    private PumpRun? PumpOn(string space)
+    {
+        foreach (PumpRun run in _pumps.Values)
+        {
+            if (run.Volume.Contains(space, System.StringComparer.Ordinal))
+            {
+                return run;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Every compartment as the rules see it right now, for Core's connectivity search.</summary>
+    private IReadOnlyList<HullVenting.Space> SpacesNow()
+    {
+        var all = new List<HullVenting.Space>(_ventSpaces.Count);
+        foreach (string name in _ventSpaces.Keys)
+        {
+            all.Add(SpaceNow(name));
+        }
+        return all;
+    }
+
+    /// <summary>What pressing this space would actually empty.</summary>
+    private IReadOnlyList<string> AtmosphereAt(string space) =>
+        HullVenting.SharedAtmosphere(space, SpacesNow());
+
+    /// <summary>Whether the corridor can go on the pumps. It no longer needs the ship dogged shut — it needs
+    /// only to still have air and not already be running. If hatches stand open, they are part of the volume
+    /// and they go down with it, which the board says out loud before it starts.</summary>
     private bool SpinePumpable =>
-        _spinePressurised
-        && !_pumps.ContainsKey(HullVenting.SpineName)
-        && _ventSpaces.Values.All(s => s.DoorShut || s.Vented);
+        _spinePressurised && PumpOn(HullVenting.SpineName) is null;
 
-    /// <summary>Put the corridor itself on the pumps — the end of "lock all the doors and pump them down".</summary>
+    /// <summary>Put the corridor on the pumps. Now just a pump like any other, on the volume the corridor
+    /// happens to be part of.</summary>
     private void StartSpinePump()
     {
-        if (_wreck is null || _pumps.ContainsKey(HullVenting.SpineName))
-        {
-            return;
-        }
         if (!_spinePressurised)
         {
             _ventMessage = HullVenting.SpineAlreadyEmptyLine;
             RendererInterop.PlayCue("block");
             return;
         }
-        if (!SpinePumpable)
-        {
-            _ventMessage = HullVenting.SpineNotSealedLine;
-            RendererInterop.PlayCue("block");
-            return;
-        }
 
-        _pumps[HullVenting.SpineName] =
-            (HullVenting.PumpDownSeconds * HullVenting.SpinePumpMultiplier, false);
-        _ventMessage = HullVenting.PumpRunningLine(HullVenting.SpineName,
-            HullVenting.PumpDownSeconds * HullVenting.SpinePumpMultiplier);
-        RendererInterop.PlayCue("board");
-
-        // The loudest thing yet: the whole corridor draining, from one end of her to the other.
-        MakeNoiseAboard(0, 0, LoudEarshot * 2);
+        StartPumpDown(HullVenting.SpineName);
     }
 
-    /// <summary>Every compartment that could be pumped right now: sealed, still holding air, and not
-    /// already running. What "pump all" acts on.</summary>
+    /// <summary>Every compartment that could go on a pump right now: still holding air and not already on
+    /// one. A DOGGED HATCH IS NO LONGER REQUIRED — an open one just means the pump has more to empty, and
+    /// the board says which rooms before it starts.</summary>
     private IReadOnlyList<string> PumpableRooms()
     {
         var ready = new List<string>();
         foreach ((string name, HullVenting.Space s) in _ventSpaces)
         {
-            if (!_pumps.ContainsKey(name)
-                && HullVenting.PumpReadiness(SpaceNow(name)) == HullVenting.VentReadiness.Ready)
+            if (!s.Vented && PumpOn(name) is null)
             {
                 ready.Add(s.Name);
             }
@@ -675,7 +739,7 @@ public sealed partial class Map
     /// doing now beats what it was, and the clock is never dropped.</summary>
     private (string Text, string Class) SpineTag()
     {
-        if (_pumps.TryGetValue(HullVenting.SpineName, out (double SecondsLeft, bool RoughBanked) pumping))
+        if (PumpOn(HullVenting.SpineName) is { } pumping)
         {
             return ($"PUMPING {HullVenting.SoakLabel(pumping.SecondsLeft)}",
                     pumping.RoughBanked ? "vent-spine-tag banked-tag" : "vent-spine-tag pumping-tag");
@@ -751,10 +815,51 @@ public sealed partial class Map
 
         int sealedLeftDead = _ventSpaces.Values.Count(s => s.Vented && s.DoorShut);
         _ventMessage = HullVenting.WholeShipRefillLine(rooms.Count, cost, sealedLeftDead);
-        LogAutopilotEvent($"🌬 The hull comes back to pressure — {cost} charges spent, {_refillCharges} left.");
+        BoardLog($"🌬 The hull comes back to pressure — {cost} charges spent, {_refillCharges} left.");
         RendererInterop.PlayCue("reveal");
         RebuildWreckDeck();
         RequestVaultSave();
+    }
+
+    /// <summary>The way back out: undog every hatch the pressure is not holding. On a hull at uniform
+    /// vacuum that is all of them. Owner: "I want to unlock all the doors after the ship is in vacuum."</summary>
+    private void UnsealTheShip()
+    {
+        if (_wreck is null)
+        {
+            return;
+        }
+
+        int opened = 0, held = 0;
+        foreach (string name in _ventSpaces.Keys.ToList())
+        {
+            HullVenting.Space s = SpaceNow(name);
+            if (!s.DoorShut)
+            {
+                continue;
+            }
+            if (HullVenting.DoorHeldByPressure(s, _spinePressurised))
+            {
+                held++;
+                continue;
+            }
+
+            _ventSpaces[name] = _ventSpaces[name] with { DoorShut = false };
+            opened++;
+        }
+
+        _ventMessage = HullVenting.UnsealTheShipLine(opened, held);
+        RendererInterop.PlayCue(opened > 0 ? "board" : "block");
+
+        if (opened > 0)
+        {
+            // An open doorway stops being a wall, and the walls are BUILT. Skipping this is how a door the
+            // player can see standing open goes on stopping them (and stopping bullets).
+            RebuildWreckDeck();
+            BoardLog($"🔓 {opened} hatches undogged from the board.");
+            MakeNoiseAboard(0, 0, LoudEarshot);
+            RequestVaultSave();
+        }
     }
 
     /// <summary>THE REFLEX. Dog every hatch that will move, in one press. Owner: "lock all doors would be
@@ -792,7 +897,7 @@ public sealed partial class Map
             // A dogged hatch is a WALL, and the walls are built rather than inferred. Skipping this is how
             // a shut door lets a Reever walk through it.
             RebuildWreckDeck();
-            LogAutopilotEvent($"🔒 {dogged} hatches dogged from the board.");
+            BoardLog($"🔒 {dogged} hatches dogged from the board.");
 
             // Eight doors slamming down the length of a dead ship is not a quiet thing to do.
             MakeNoiseAboard(0, 0, LoudEarshot);
@@ -804,12 +909,15 @@ public sealed partial class Map
     /// already in the tanks and all you are giving up is a pressure low enough to kill.</summary>
     private void StopPump(string name)
     {
-        if (!_pumps.TryGetValue(name, out (double SecondsLeft, bool RoughBanked) p))
+        if (PumpOn(name) is not { } p)
         {
             return;
         }
 
-        _pumps.Remove(name);
+        // Stopping a pump stops the RUN, not one room of it — the volume shares a machine as much as it
+        // shares an atmosphere.
+        _pumps.Remove(VolumeKey(p.Volume));
+        name = p.Volume.Count > 1 ? $"{p.Volume.Count}-space" : p.Volume[0];
         _ventMessage = p.RoughBanked
             ? $"You shut the {name} pump down. It keeps what little is left in it, and the rest is aboard."
             : $"You shut the {name} pump down early. It still has most of its air, and none of it is yours.";
@@ -819,33 +927,67 @@ public sealed partial class Map
     /// <summary>Start the pump. Same interlock as the handle — a shut hatch, or you are pumping the ship.</summary>
     private void StartPumpDown(string name)
     {
-        if (_wreck is null || _pumps.ContainsKey(name))
+        if (_wreck is null || PumpOn(name) is not null)
         {
             return;
         }
 
-        HullVenting.Space space = SpaceNow(name);
-        HullVenting.VentReadiness readiness = HullVenting.PumpReadiness(space);
-        if (readiness != HullVenting.VentReadiness.Ready)
+        // WHAT AM I ACTUALLY ABOUT TO EMPTY. Core's flood fill answers, across whatever doors stand open.
+        IReadOnlyList<string> volume = AtmosphereAt(name);
+
+        // Nothing left in any of it? Then there is nothing to pump, and that is the only refusal left —
+        // the door interlock is gone, because an open door is not an error, it is a bigger volume.
+        bool anythingToPump = false;
+        foreach (string member in volume)
         {
-            _ventMessage = HullVenting.RefusalLine(readiness, name);
+            bool empty = member == HullVenting.SpineName
+                ? !_spinePressurised
+                : _ventSpaces.TryGetValue(member, out HullVenting.Space m) && m.Vented;
+            if (!empty)
+            {
+                anythingToPump = true;
+                break;
+            }
+        }
+        if (!anythingToPump)
+        {
+            _ventMessage = HullVenting.RefusalLine(HullVenting.VentReadiness.AlreadyVented, name);
             RendererInterop.PlayCue("block");
             return;
         }
 
-        _pumps[name] = (HullVenting.PumpDownSeconds, false);
-        _ventMessage = CaptainCompartment() == name
-            ? HullVenting.PumpUnderfootLine(name, HullVenting.PumpDownSeconds)
-            : HullVenting.PumpRunningLine(name, HullVenting.PumpDownSeconds);
+        (double seconds, int charges) = HullVenting.PumpJob(volume);
+        _pumps[VolumeKey(volume)] = new PumpRun(volume, seconds, charges, seconds, RoughBanked: false);
+
+        // THE ONE CHECK THE OWNER ASKED FOR, AND THE ONLY ONE: "make sure we don't evacuate a room by
+        // accident of leaving its door open." It does not refuse — evacuating half a ship on purpose is a
+        // real play — it NAMES what else is going, because the accident being guarded against is a hatch
+        // left open and forgotten, never a decision.
+        string reaches = HullVenting.PumpReachesFurtherLine(name, volume);
+        _ventMessage = reaches.Length > 0
+            ? reaches
+            : CaptainCompartment() == name
+                ? HullVenting.PumpUnderfootLine(name, seconds)
+                : HullVenting.PumpRunningLine(name, seconds);
         RendererInterop.PlayCue("board");
 
+        BoardLog(volume.Count > 1
+            ? $"🛢 Pump started on {volume.Count} spaces at once: {string.Join(", ", volume)}."
+            : $"🛢 Pump started on {name}.");
+
         // A pump running in a dead ship is a heartbeat, and it runs for the best part of a minute.
-        MakeNoiseAboard(RoomCentre(name).X, RoomCentre(name).Y, LoudEarshot);
+        if (name == HullVenting.SpineName)
+        {
+            MakeNoiseAboard(0, 0, LoudEarshot * 2);
+        }
+        else
+        {
+            MakeNoiseAboard(RoomCentre(name).X, RoomCentre(name).Y, LoudEarshot);
+        }
     }
 
-    /// <summary>Run the pump. It keeps running while the captain walks away — this is a machine, not a
-    /// minigame — but the room does not reach vacuum until it finishes, so the soak clock starts LATE.
-    /// That is the price of the thrifty road, on top of the wait.</summary>
+    /// <summary>Run the pumps. Each one owns its whole volume: one clock, one rough mark, one payout, and
+    /// every space in it goes to vacuum together — because they were one atmosphere the entire time.</summary>
     private void AdvancePump(double dtSeconds)
     {
         if (_wreck is null || _pumps.Count == 0)
@@ -853,63 +995,66 @@ public sealed partial class Map
             return;
         }
 
-        foreach (string name in _pumps.Keys.ToList())
+        foreach (string key in _pumps.Keys.ToList())
         {
-            (double left, bool banked) = _pumps[name];
-            double before = left;
-            left -= dtSeconds;
+            PumpRun run = _pumps[key];
+            double before = run.SecondsLeft;
+            double left = before - dtSeconds;
 
-            // The rough mark: the mechanical stage is done and the air is home. Everything after this is
-            // the long pull to a killing pressure, and it returns nothing to the tanks.
+            // The rough mark, per RUN — the mechanical stage is done and the air is home. Everything after
+            // it is the long pull to a killing pressure, which returns nothing to the tanks.
             //
-            // PER PUMP, NOT PER FRAME. This was one variable declared outside the loop and OVERWRITTEN the
-            // moment the corridor came up in the enumeration — so every pump processed after the spine in
-            // the same frame was measured against the SPINE's rough mark (72s), which its own 50s clock
-            // never reaches. The crossing test fires on exactly one frame, so those compartments silently
-            // never banked their charge: the air went out of the room, the pump ran to the end, and nothing
-            // arrived in the tanks. Owner, stranded with an empty hull and an empty reserve: "I run out of
-            // air trying to fill the ship … I even had used the pumping on all so I should still have the
-            // air mostly plus the reserves." He should have. It was being thrown away between frames.
-            bool isSpine = name == HullVenting.SpineName;
-            double roughAt = HullVenting.PumpRoughMark(isSpine);
+            // This was once a variable declared outside the loop and overwritten whenever the corridor came
+            // up in the enumeration, so any pump processed after it measured against the SPINE's mark — one
+            // its own shorter clock starts below and can never cross. Charges silently vanished. It belongs
+            // to the run or it belongs to nobody.
+            double roughAt = run.Total - HullVenting.PumpRoughSeconds;
+            bool banked = run.RoughBanked;
+            string label = run.Volume.Count > 1
+                ? $"{run.Volume.Count} spaces"
+                : run.Volume[0];
 
             if (before > roughAt && left <= roughAt)
             {
-                _refillCharges += HullVenting.PumpYield(isSpine);
+                _refillCharges += run.Charges;
                 banked = true;
-                _ventMessage = HullVenting.PumpRoughDoneLine(name);
-                LogAutopilotEvent($"🛢 {name} roughed out — the air is in the tanks ({_refillCharges} charges).");
+                _ventMessage = HullVenting.PumpRoughDoneLine(label);
+                BoardLog($"🛢 {label} roughed out — the air is in the tanks ({_refillCharges} charges).");
                 RendererInterop.PlayCue("reveal");
             }
 
             if (left > 0)
             {
-                _pumps[name] = (left, banked);
-                if (_showVentPanel && !banked && _ventSelected == name)
+                _pumps[key] = run with { SecondsLeft = left, RoughBanked = banked };
+                if (_showVentPanel && !banked && _ventSelected is { } watching
+                    && run.Volume.Contains(watching, System.StringComparer.Ordinal))
                 {
-                    _ventMessage = HullVenting.PumpRunningLine(name, left);
+                    _ventMessage = HullVenting.PumpRunningLine(label, left);
                 }
                 continue;
             }
 
-            _pumps.Remove(name);
+            _pumps.Remove(key);
 
-            // Only NOW is it lethal. The charge was banked at the rough mark, a long time ago.
-            if (isSpine)
+            // Only NOW is any of it lethal. The charge was banked at the rough mark, a long time ago.
+            foreach (string member in run.Volume)
             {
-                // The corridor goes to vacuum — and unlike cracking a valve, the air is IN THE TANKS.
-                // Same end state, opposite economics: the patient road keeps what the impatient one throws
-                // away, and everything standing in that corridor now starts running out of time.
-                _spinePressurised = false;
-                _spineVacuumSeconds = 0.0;
-            }
-            else if (_ventSpaces.TryGetValue(name, out HullVenting.Space s))
-            {
-                _ventSpaces[name] = s with { Vented = true, VacuumSeconds = 0.0, HoldsSurvivor = false };
+                if (member == HullVenting.SpineName)
+                {
+                    // The corridor goes to vacuum — and unlike cracking a valve, the air is IN THE TANKS.
+                    // Same end state, opposite economics, and everything standing in it starts running out
+                    // of time.
+                    _spinePressurised = false;
+                    _spineVacuumSeconds = 0.0;
+                }
+                else if (_ventSpaces.TryGetValue(member, out HullVenting.Space s))
+                {
+                    _ventSpaces[member] = s with { Vented = true, VacuumSeconds = 0.0, HoldsSurvivor = false };
+                }
             }
 
-            _ventMessage = HullVenting.PumpDoneLine(name);
-            LogAutopilotEvent($"🛢 Pumped {name} down — the air is in the tanks ({_refillCharges} charges).");
+            _ventMessage = HullVenting.PumpDoneLine(label);
+            BoardLog($"🛢 Pumped {label} down — the air is in the tanks ({_refillCharges} charges).");
             RendererInterop.PlayCue("alarm");
             RebuildWreckDeck();
             RequestVaultSave();
@@ -991,7 +1136,7 @@ public sealed partial class Map
         ShowPulseMessage(
             $"🕷 The {name} hatch comes off its dogs — and it opens BOTH ways. Whatever the last crew shut " +
             "in there has been waiting on the other side of it, and it does not need a second invitation.");
-        LogAutopilotEvent($"🕷 Opened the sealed {name} — {came} came out.");
+        BoardLog($"🕷 Opened the sealed {name} — {came} came out.");
         ApplyNerveShock(NervePips.SightingPips * (int)NervePips.PipUnit, "you opened the door they sealed");
         RendererInterop.PlayCue("alarm");
     }
@@ -1102,12 +1247,12 @@ public sealed partial class Map
             extra += " And in one of those rooms, something that had been alive for a very long time was not " +
                      "behind a dogged hatch.";
             ApplyNerveShock(HullVenting.VentedSurvivorNerveCost, "you emptied the ship with someone still in it");
-            LogAutopilotEvent($"☠ Equalising took {r.SurvivorsLost} survivor(s) — their doors were open.");
+            BoardLog($"☠ Equalising took {r.SurvivorsLost} survivor(s) — their doors were open.");
         }
 
         MakeNoiseAboard(RoomCentre(name).X, RoomCentre(name).Y, LoudEarshot);   // a ship equalising is not quiet
         ShowPulseMessage(HullVenting.EqualiseLine + extra);
-        LogAutopilotEvent($"🎚 Cracked the {name} valve — {(r.SpineVented ? "the ship is vacuum now" : "pressures even")}.");
+        BoardLog($"🎚 Cracked the {name} valve — {(r.SpineVented ? "the ship is vacuum now" : "pressures even")}.");
         RendererInterop.PlayCue("alarm");
         RebuildWreckDeck();
         RequestVaultSave();
@@ -1166,11 +1311,11 @@ public sealed partial class Map
         if (outcome.SomethingSurvived)
         {
             ApplyNerveShock(HullVenting.RefilledTooSoonNerveCost, "you gave it the air back before it was finished");
-            LogAutopilotEvent($"🫁 Refilled {name} too early — it was not finished.");
+            BoardLog($"🫁 Refilled {name} too early — it was not finished.");
         }
         else
         {
-            LogAutopilotEvent($"🫁 Brought {name} back to pressure ({_refillCharges} left).");
+            BoardLog($"🫁 Brought {name} back to pressure ({_refillCharges} left).");
         }
 
         RendererInterop.PlayCue("board");
@@ -1212,7 +1357,7 @@ public sealed partial class Map
         ShowPulseMessage(
             $"🧑‍🚀 Somebody is alive behind the {name} barricade — and has been for a very long time. " +
             $"They come out on their own legs. ({HullVenting.SurvivorRescueCr:N0} cr, and a witness.)");
-        LogAutopilotEvent($"🧑‍🚀 Rescued a survivor from {name} — {HullVenting.SurvivorRescueCr:N0} cr.");
+        BoardLog($"🧑‍🚀 Rescued a survivor from {name} — {HullVenting.SurvivorRescueCr:N0} cr.");
         RendererInterop.PlayCue("reveal");
         RequestVaultSave();
     }
@@ -1295,7 +1440,7 @@ public sealed partial class Map
         // once, the board is the only place that can tell you which rooms are working and how far along
         // each one is. The room says so itself, and it counts DOWN, because unlike the soak this clock has
         // a known end.
-        if (_pumps.TryGetValue(name, out (double SecondsLeft, bool RoughBanked) pumping))
+        if (PumpOn(name) is { } pumping)
         {
             string t = HullVenting.SoakLabel(pumping.SecondsLeft);
             return (Longest(roomWidth, [$"PUMPING {t}", $"PUMP {t}", t]),
