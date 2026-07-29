@@ -115,6 +115,38 @@ public static class ShipLayout
     public static DeckReachability.Point Inside(in Room r) =>
         new((r.X0 + r.X1) / 2.0, (r.Y0 + r.Y1) / 2.0);
 
+    /// <summary>The door itself, as the segment that fills its opening when it is dogged shut. ONE
+    /// definition, read both by the thing that draws the door and by the thing that walks into it — the
+    /// wreck's hard-won lesson (a gap nobody can see is the same as no gap) applied before it can bite
+    /// here.</summary>
+    public static (float X1, float Y1, float X2, float Y2) DoorSegment(in Room r) =>
+        r.DoorAcrossX
+            ? (r.DoorAt, r.DoorCentre - r.DoorHalfWidth, r.DoorAt, r.DoorCentre + r.DoorHalfWidth)
+            : (r.DoorCentre - r.DoorHalfWidth, r.DoorAt, r.DoorCentre + r.DoorHalfWidth, r.DoorAt);
+
+    /// <summary>How far off a doorway its control sits.</summary>
+    private const float DoorConsoleStandoff = 1.5f;
+
+    /// <summary>
+    /// Where the hatch control stands: in the CORRIDOR, on the far side of the door from the room.
+    ///
+    /// <para>Derived from which way the room lies rather than listed, so it is right for a bulkhead door on
+    /// the centreline and a cabin door in a side wall without either being a special case. The wreck put its
+    /// door consoles on the corridor side for a reason worth repeating: the captain shutting a door is
+    /// almost always the one who does NOT want to be sealed in behind it.</para>
+    /// </summary>
+    public static DeckReachability.Point DoorConsolePoint(in Room r)
+    {
+        if (r.DoorAcrossX)
+        {
+            float away = r.DoorAt < (r.X0 + r.X1) / 2f ? -DoorConsoleStandoff : DoorConsoleStandoff;
+            return new(r.DoorAt + away, r.DoorCentre);
+        }
+
+        float off = r.DoorAt < (r.Y0 + r.Y1) / 2f ? -DoorConsoleStandoff : DoorConsoleStandoff;
+        return new(r.DoorCentre, r.DoorAt + off);
+    }
+
     /// <summary>Her damage-control board. Aft in the ENGINE ROOM, for the same reason the wreck's is aft:
     /// the valves are where the machinery is. Unlike a derelict's, hers has a live bridge repeater — which
     /// is the whole difference between owning a ship and boarding one.</summary>

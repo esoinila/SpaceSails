@@ -19,7 +19,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -325,11 +325,26 @@ public sealed class DeckPlan
 
     /// <summary>The player's own ship. Reference-compared by the renderers to draw ship-only
     /// dressing (cargo crates, the reactor, the shuttle cradle, cantina tables).</summary>
-    public static DeckPlan Ship { get; } = BuildShip();
+    /// <summary>Her deck with every hatch standing open — the base ship. Backdrops, droids, tables and the
+    /// location lookup all read this; only the live plan the captain walks needs door state.</summary>
+    public static DeckPlan Ship { get; } = BuildShip(null);
 
-    private static DeckPlan BuildShip()
+    /// <summary>Her deck with these hatches dogged. Rebuilt on every door change, because the walls are
+    /// built and not inferred.</summary>
+    public static DeckPlan ShipWith(IReadOnlyCollection<string> shutRooms) => BuildShip(shutRooms);
+
+    /// <summary>
+    /// HER DECK, WITH THE DOORS IN WHATEVER STATE THEY ARE IN. Owner: <i>"we don't even have the doors in
+    /// our own ship :-D"</i> — she had gaps in walls, and a gap cannot be shut.
+    ///
+    /// <para>Built rather than inferred, the same rule the wreck learned the hard way: a dogged hatch is a
+    /// WALL, and the walls are what everything else asks. Skip the rebuild and you get a door the player can
+    /// see closed that stops neither them, nor a round, nor anything that walks.</para>
+    /// </summary>
+    /// <param name="shutRooms">Compartments whose hatches are dogged. Null on the base ship.</param>
+    private static DeckPlan BuildShip(IReadOnlyCollection<string>? shutRooms)
     {
-        Wall[] walls =
+        List<Wall> walls =
         [
             // --- Hull (bow point at x=30) ---
             new(30, 0, 20, 10, IsWindow: true, IsHull: true),    // bow-port slant: bridge glass
@@ -406,7 +421,23 @@ public sealed class DeckPlan
             new(-14, -2, -14, -10, false, false),
         ];
 
-        ConsoleSpot[] consoles =
+        // A DOGGED HATCH IS A WALL. Every compartment's opening is filled in when its door is shut, from
+        // Core's own door segment — the same list that draws it, so the player can never see a door closed
+        // that does not stop them.
+        if (shutRooms is { Count: > 0 })
+        {
+            foreach (ShipLayout.Room room in ShipLayout.Rooms)
+            {
+                if (!shutRooms.Contains(room.Name))
+                {
+                    continue;
+                }
+                (float dx1, float dy1, float dx2, float dy2) = ShipLayout.DoorSegment(room);
+                walls.Add(new Wall(dx1, dy1, dx2, dy2, false, false));
+            }
+        }
+
+        List<ConsoleSpot> consoles =
         [
             new(ConsoleKind.Helm, 24, 2.5f, "HELM"),
             new(ConsoleKind.NavPost, 24, -2.5f, "NAV POST"),
@@ -420,7 +451,10 @@ public sealed class DeckPlan
             // the hinge the surface excursion grows a down-tube from. Kept clear of the SHUTTLE BAY
             // console (−10, −6.5) so [E] doesn't grab the wrong one. Drawn as the amber airlock door.
             new(ConsoleKind.ShuttleAirlock, -6.5f, -8.7f, "🚀 SHUTTLE AIRLOCK"),
-            new(ConsoleKind.Vent, -20, -4.5f, "VENT PANEL"),
+            // RENAMED, because it was never the atmosphere. This dumps the CAPACITOR — a ship-systems
+            // action that happens to share a verb with the thing the whole weekend was about. Two
+            // panels in one engine room both called VENT PANEL would be a trap of my own making.
+            new(ConsoleKind.Vent, -20, -4.5f, "⚡ CHARGE DUMP"),
 
             // The ship's BUILDER'S PLATE — bolted to the engine-room bulkhead by the keel, where a
             // builder's plate belongs (owner's cruise ruling, 2026-07-19, photographing their ship's Aker
@@ -493,15 +527,43 @@ public sealed class DeckPlan
         // sealed hatch (the hull stays closed, the raycaster never escapes) — walking through it is the
         // shuttle flight, resolved by the "places in shuttle range" pop-up. A surface excursion opens
         // the hatch and grows a down-tube through it (see MoonSurface).
-        Door[] doors =
+        List<Door> doors =
         [
             new(ShuttleHatchX1, -10, ShuttleHatchX2, -10),
         ];
 
-        return new DeckPlan(walls, consoles, roomLabels, backdrops,
+        // HER OWN HATCHES, drawn at last. One per compartment, from Core's door segment, so what is drawn
+        // and what blocks are the same list.
+        foreach (ShipLayout.Room room in ShipLayout.Rooms)
+        {
+            (float dx1, float dy1, float dx2, float dy2) = ShipLayout.DoorSegment(room);
+            doors.Add(new Door(dx1, dy1, dx2, dy2));
+
+            // And its control, standing in the CORRIDOR rather than the room — the captain shutting a door
+            // is almost never the one who wants to be sealed in behind it.
+            DeckReachability.Point at = ShipLayout.DoorConsolePoint(room);
+            bool shut = shutRooms is not null && shutRooms.Contains(room.Name);
+            consoles.Add(new ConsoleSpot(
+                ConsoleKind.ShipDoor, (float)at.X, (float)at.Y,
+                shut ? $"🔒 {room.Name}" : $"🔓 {room.Name}"));
+        }
+
+        // HER DAMAGE-CONTROL BOARD, aft with the machinery — the owner's own placement ("I like that the
+        // vent is in engineering"), and the same room the wreck keeps hers in. The difference is that this
+        // one has a live bridge repeater, which is most of what owning a ship means.
+        consoles.Add(new ConsoleSpot(
+            ConsoleKind.ShipValves,
+            (float)ShipLayout.ValveStation.X, (float)ShipLayout.ValveStation.Y,
+            "⚙ ATMOSPHERE VALVES"));
+        consoles.Add(new ConsoleSpot(
+            ConsoleKind.ShipValves,
+            (float)ShipLayout.BridgeRepeaterStation.X, (float)ShipLayout.BridgeRepeaterStation.Y,
+            "⚙ ATMOSPHERE (bridge repeater)"));
+
+        return new DeckPlan([.. walls], [.. consoles], roomLabels, backdrops,
             spawnX: 21, spawnY: 0, // on the bridge, facing the bow glass
             droidCount: 3, fillDroids: FillShipDroids, location: ShipLocation,
-            doors: doors, shipFixtures: true, tables: tables);
+            doors: [.. doors], shipFixtures: true, tables: tables);
     }
 
     // --- Droid pirate infantry 🤖🏴‍☠️ ---
