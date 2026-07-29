@@ -298,7 +298,13 @@ public partial class Map
                 ShowPulseMessage(SleepInBunk());
                 break;
             case DeckPlan.ConsoleKind.Vent:
-                VentCharge();
+                VentCharge();               // the CAPACITOR, not the air — see the console's own label
+                break;
+            case DeckPlan.ConsoleKind.ShipDoor:
+                ToggleShipDoorAtHand();     // her own hatches, dogged by hand at the door
+                break;
+            case DeckPlan.ConsoleKind.ShipValves:
+                OpenShipVentPanel();        // the board, aft with the machinery (and its bridge repeater)
                 break;
             case DeckPlan.ConsoleKind.Cargo:
                 ShowPulseMessage(_cargoUnits > 0
@@ -757,7 +763,7 @@ public partial class Map
         }
         else
         {
-            _deckPlan = DeckPlan.Ship;
+            _deckPlan = ShipDeckNow();
             _havenName = "";
             PullAvatarAboard();
         }

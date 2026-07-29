@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- THE DECK AUDIT. Owner, having been handed the same bug on two different decks — "there two e's are
+       too close to each others now", then "see the two crowded consoles at the back of our ship" — asked
+       for the thing that stops it recurring: "add a CI check to catch all such cases."
+
+       Every geometry law the ship has lived under so far was written in SpaceSails.Core.Tests, which can
+       only see what has been moved into Core. The consoles have NOT been: they are literals in
+       DeckPlan.BuildShip, HavenInterior, WreckInterior and MoonSurface. That is exactly why the collisions
+       kept happening in the client and kept passing CI.
+
+       So this project references the CLIENT and walks the real plans — the same arrays the renderer draws
+       and the same NearestConsoleSpot the [E] key dispatches through. A test that reasons about a copy of
+       the geometry proves nothing; this one asks the shipping objects. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SpaceSails.Client\SpaceSails.Client.csproj" />
+  </ItemGroup>
+
+</Project>
