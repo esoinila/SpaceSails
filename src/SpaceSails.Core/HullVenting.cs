@@ -246,6 +246,90 @@ public static class HullVenting
         "You cannot fill a corridor from a shuttle. That is not a room — it is the length of the ship, and " +
         "everything you brought out here would not raise it off zero. The air you let out of her is gone.";
 
+    // ── Putting her back: the whole ship at once ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// FLOOD THE SHIP. Owner, standing in a hull he had pumped down end to end: <i>"we should be able to
+    /// refill the whole ship since it is in vacuum without closing doors?"</i>
+    ///
+    /// <para>He is right, and it is the same physics the equalisation valve runs on, played backwards. A
+    /// vented corridor and every compartment standing open to it are ONE VOLUME with ONE PRESSURE — there
+    /// is no differential to leak across, so there is nothing to shut first. You are not filling eight
+    /// rooms; you are filling a ship.</para>
+    ///
+    /// <para>And this is where the law that was written as "the corridor can never be refilled" turns out
+    /// to have been a law about the RESERVE, not about corridors. It was true when the away team carried
+    /// two charges and had no pump. Now: YOU CAN PUT BACK EXACTLY THE AIR YOU BANKED. Air you threw out of
+    /// an equalisation valve is gone forever and no amount of standing at the board brings it home; air you
+    /// took the slow road on is sitting in the shuttle's tanks waiting for you. The asymmetry the original
+    /// rule was protecting survives intact, and it lands where it belongs — on the choice between the valve
+    /// and the pump, rather than on a flat refusal.</para>
+    ///
+    /// <para>A DOGGED HATCH STAYS DEAD, which is the whole tactic. The flood follows open doorways, so a
+    /// compartment you sealed before flooding stays at hard vacuum with whatever is soaking in it, and the
+    /// rest of the ship comes back to pressure around it.</para>
+    /// </summary>
+    /// <param name="openVentedRooms">Compartments at vacuum whose hatches stand OPEN — the ones the flood
+    /// reaches. Sealed rooms are not counted and are not filled.</param>
+    public static int WholeShipRefillCost(int openVentedRooms) =>
+        SpineRefillCharges + openVentedRooms;
+
+    /// <summary>What the corridor alone costs to bring back. The same figure the pump pays out for it, so a
+    /// captain who pumped the spine down can always afford to undo exactly that.</summary>
+    public const int SpineRefillCharges = SpinePumpYieldsCharges;
+
+    /// <summary>The flood, as it reads on the board.</summary>
+    public static string WholeShipRefillLine(int rooms, int spent, int sealedLeftDead)
+    {
+        string body =
+            $"You open the reserve wide and the whole hull comes back at once — the corridor and {rooms} " +
+            $"compartment{(rooms == 1 ? "" : "s")} standing open to it, one volume, one pressure. {spent} " +
+            "charge" + (spent == 1 ? "" : "s") + " gone out of the tanks and the gauges climb together.";
+        return sealedLeftDead > 0
+            ? body + $" {sealedLeftDead} dogged hatch{(sealedLeftDead == 1 ? "" : "es")} did not answer, and " +
+                     "whatever is soaking behind them goes on soaking."
+            : body;
+    }
+
+    /// <summary>Why the flood will not happen. The reserve is the only thing that ever says no.</summary>
+    public static string WholeShipRefillRefusal(int cost, int have) =>
+        have <= 0
+            ? "The tanks are empty. You can only put back the air you PUMPED out of her — what went through " +
+              "the equalisation valve went to space, and space does not give it back."
+            : $"She needs {cost} charges to come back and you are carrying {have}. Pump another compartment " +
+              "down, or fill her one room at a time.";
+
+    /// <summary>Nothing to fill.</summary>
+    public const string WholeShipAlreadyFullLine =
+        "She has air in her from the transom to the lock. There is nothing here to fill.";
+
+    // ── Sealing her up in one press ───────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// SEAL THE SHIP. Owner: <i>"lock all doors would be nice also :-D … for that heat of the moment feel
+    /// … a kind of rescue thing to do to contain any leaks … and oxygen from going to feed the fire."</i>
+    ///
+    /// <para>That is damage control as it is actually practised, and it is a different act from anything
+    /// else on this board: not a weapon, not a saving, a REFLEX. Every other switch here is a decision you
+    /// take your time over. This one is the thing you hit on the way past because something is wrong and
+    /// you do not yet know what — and it is right for exactly the reasons he gives. A hull broken open
+    /// somewhere loses only the compartment it happened in; a fire gets the oxygen in one room and nothing
+    /// more; and whatever is walking the corridor is suddenly walking a much shorter corridor.</para>
+    ///
+    /// <para>What it cannot do is move a hatch the pressure is holding. Those are the doors the ship has
+    /// already decided about.</para>
+    /// </summary>
+    public static string SealTheShipLine(int dogged, int held) => dogged switch
+    {
+        0 when held > 0 => "Every hatch is already dogged or held by the pressure across it. She is as shut as she gets.",
+        0 => "Every hatch is already dogged.",
+        _ => $"You put your hand down the row and {dogged} hatch{(dogged == 1 ? "" : "es")} bang shut along " +
+             "the spine, one after another, forward to aft."
+             + (held > 0
+                 ? $" {held} would not move — the pressure across them is holding them where they are."
+                 : " Whatever happens next happens in one compartment."),
+    };
+
     /// <summary>Whether somebody can be walked off this ship alive. You cannot carry a person out through a
     /// vacuum corridor, so a captain who vents the hallway has written off every survivor aboard — which
     /// the valve warned them about before they cracked it.</summary>
@@ -383,6 +467,26 @@ public static class HullVenting
     /// <summary>What a pumped-down compartment puts back in the reserve. One room, one breath — banked at
     /// the rough mark, not at the end, because that is where the air actually comes back.</summary>
     public const int PumpDownYieldsCharges = 1;
+
+    /// <summary>How long this pump runs, start to finish. The corridor is a bigger volume and takes
+    /// proportionally longer.</summary>
+    public static double PumpTotalSeconds(bool spine) =>
+        spine ? PumpDownSeconds * SpinePumpMultiplier : PumpDownSeconds;
+
+    /// <summary>
+    /// The countdown value at which the air lands in the tanks, for this pump.
+    ///
+    /// <para>PURE, AND TAKING THE ONLY THING IT DEPENDS ON. The client had this as one variable declared
+    /// outside its per-pump loop and overwritten when the corridor came up in the enumeration — so every
+    /// pump processed after the spine in the same frame was measured against the SPINE's mark, which its own
+    /// shorter clock never reaches. Since the crossing is tested on exactly one frame, those compartments
+    /// silently never banked: the room emptied, the pump finished, and nothing arrived in the tanks. A
+    /// function cannot be left holding another pump's number.</para>
+    /// </summary>
+    public static double PumpRoughMark(bool spine) => PumpTotalSeconds(spine) - PumpRoughSeconds;
+
+    /// <summary>What this pump pays into the reserve when it crosses its rough mark.</summary>
+    public static int PumpYield(bool spine) => spine ? SpinePumpYieldsCharges : PumpDownYieldsCharges;
 
     /// <summary>The line at the rough mark — the air is home, the room is not yet lethal.</summary>
     public static string PumpRoughDoneLine(string name) =>
@@ -534,10 +638,24 @@ public static class HullVenting
     /// anybody, you have only been impatient in front of something patient. FLAGGED for tuning.</summary>
     public const int RefilledTooSoonNerveCost = 12;
 
-    /// <summary>How many compartments one boarding can bring back to pressure. Small on purpose: refilling
-    /// is a real spend, not a toggle, and the number is what stops "blow everything and refill whatever
-    /// squeals" from being the dominant strategy. FLAGGED for tuning.</summary>
-    public const int RefillChargesPerBoarding = 2;
+    /// <summary>
+    /// How many compartments one boarding can bring back to pressure.
+    ///
+    /// <para>WAS TWO, AND TWO WAS PRICING THE WRONG THING. Owner: <i>"let's add a little more of those
+    /// reserves … we can't have any blow out to space fun without it. Slow vacuum pumping just does not
+    /// deliver that drama feel of blasting to space :-D"</i> — and he is right about what the small number
+    /// was actually doing. It was supposed to stop "blow everything and refill whatever squeals" from being
+    /// the dominant strategy. What it did instead was make BLOWING A ROOM AT ALL feel like a mistake: two
+    /// charges is not a budget, it is a warning light, so the correct play became to pump every compartment
+    /// and never once use the loudest, best button on the board.</para>
+    ///
+    /// <para>Five is a budget. It is enough to blow a room because blowing it is the right answer — or
+    /// because you want to see it happen — and still put her back. It is not enough to blow all eight, so
+    /// the pump keeps its whole reason for existing: the patient road is how you afford to be extravagant
+    /// somewhere else. The dominant-strategy worry is answered by the SOAK, which no amount of reserve buys
+    /// you out of, rather than by rationing the drama. FLAGGED for the owner's tuning.</para>
+    /// </summary>
+    public const int RefillChargesPerBoarding = 5;
 
     /// <summary>Can this one be filled?</summary>
     public static RefillReadiness RefillState(in Space space, int chargesLeft) =>

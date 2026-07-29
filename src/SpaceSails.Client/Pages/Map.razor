@@ -623,6 +623,26 @@
                     You are in <strong>@(CaptainCompartment() ?? "THE SPINE")</strong>.
                 </div>
 
+                @* WHAT IS HAPPENING TO YOU WHILE YOU READ THIS. Owner, after being ringed at the board:
+                   "I am not sure if I got any damage from the reevers … I was earlier surrounded by them
+                   when I was looking at panels :-D" — and he could not have known, because the condition
+                   pips are drawn on the CANVAS and this board's backdrop covers the canvas. The sim keeps
+                   running while the panel is open, so the one moment the captain is standing still with
+                   their hands full is the one moment the game stopped telling them they were being hit.
+                   The board carries its own set. *@
+                @if (_surface is { } ventCond)
+                {
+                    int pipsLeft = Math.Clamp(CaptainCondition.MaxHits - ventCond.HitsTaken, 0, CaptainCondition.MaxHits);
+                    <div class="vent-condition @(pipsLeft <= 1 ? "critical" : "")">
+                        <span class="vent-condition-label">CONDITION</span>
+                        @for (int i = 0; i < CaptainCondition.MaxHits; i++)
+                        {
+                            <span class="@(i < pipsLeft ? "cond-pip" : "cond-pip spent")"></span>
+                        }
+                        <span class="vent-condition-word">@CaptainCondition.Readout(ventCond.HitsTaken)</span>
+                    </div>
+                }
+
                 @* THE SHIP HERSELF, drawn from WreckLayout's own geometry — bow taper, transom, spine and
                    every compartment in its real place and proportion. Owner: "the vent panel should have a
                    miniature map of the ship as UI with buttons clearly showing which part of the ship
@@ -686,6 +706,9 @@
                     }
 
                     <text class="vent-spine-label" x="-4" y="0.7" text-anchor="middle">THE SPINE</text>
+                    @* And her clock, in the same place a compartment carries one. Owner: "the spine should
+                       also show the vacuum time etc." *@
+                    <text class="@SpineTag().Class" x="-4" y="2.5" text-anchor="middle">@SpineTag().Text</text>
                 </svg>
 
                 @* The corridor is a volume too. Owner: "I would like to pump the spine also" — and it is
@@ -699,6 +722,45 @@
                 {
                     <div class="vent-actions">
                         <div class="vent-picked">@HullVenting.SpineName</div>
+                        @* The corridor's own reading, spelled out the way a compartment's is. It counts UP
+                           and never says how long is enough — the same rule the rooms live under. *@
+                        <div class="vent-readout">
+                            @if (!_spinePressurised && _spineVacuumSeconds < YearsOfVacuumSeconds)
+                            {
+                                @($"🌡 Open to space for {HullVenting.SoakLabel(_spineVacuumSeconds)}. Anything walking it is on borrowed time — and so are you.")
+                            }
+                            else if (!_spinePressurised)
+                            {
+                                @("🌡 Hard vacuum, and it has been for decades. Nothing that was walking her is walking her now.")
+                            }
+                            else
+                            {
+                                @($"🌡 Pressurised — her own stale air, {_refillCharges} charge{(_refillCharges == 1 ? "" : "s")} in the shuttle's tanks.")
+                            }
+                        </div>
+                        @* THE REFLEX. Owner: "lock all doors would be nice also :-D … for that heat of the
+                           moment feel … a kind of rescue thing to do to contain any leaks … and oxygen from
+                           going to feed the fire." First in the row because that is the order you reach for
+                           them in when something has already gone wrong. *@
+                        <button type="button" class="btn btn-outline-warning btn-sm"
+                                title="Dog every hatch that will still move. Contains a leak, starves a fire, and shortens the corridor."
+                                @onclick="SealTheShip">
+                            🔒 Seal the ship
+                        </button>
+                        @* THE FLOOD. Owner: "we should be able to refill the whole ship since it is in
+                           vacuum without closing doors?" — one volume, one pressure, one valve, backwards.
+                           Only ever affordable out of air the PUMP banked. *@
+                        @if (!_spinePressurised)
+                        {
+                            <button type="button" class="btn btn-outline-success btn-sm"
+                                    disabled="@(_refillCharges < FloodCost())"
+                                    title="@(_refillCharges < FloodCost()
+                                             ? HullVenting.WholeShipRefillRefusal(FloodCost(), _refillCharges)
+                                             : "Open the reserve wide. The corridor and everything standing open to it come back together — dogged hatches stay dead.")"
+                                    @onclick="FloodTheShip">
+                                🌬 Flood the ship (@FloodCost())
+                            </button>
+                        }
                         @if (_pumps.TryGetValue(HullVenting.SpineName, out var spinePump))
                         {
                             <button type="button" class="btn btn-outline-warning btn-sm"

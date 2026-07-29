@@ -2625,6 +2625,10 @@ public partial class Map
                 // confused with the blow that gets through (owner: "I should know when I'm hurt").
                 ShowPulseMessage($"🛡 {CaptainCondition.BlockLine(seed)}");
                 RendererInterop.PlayCue("block");
+                if (_showVentPanel)
+                {
+                    _ventMessage = $"🛡 {CaptainCondition.BlockLine(seed)}";
+                }
                 continue;
             }
 
@@ -2632,6 +2636,12 @@ public partial class Map
             ex.HitsTaken++;
             _bloodUntilMs = nowMs + 900;
             ShowPulseMessage($"🩸 {CaptainCondition.HitLine(seed)}");
+            if (_showVentPanel)
+            {
+                // The pulse message lives on the canvas, and the board is standing on top of the canvas.
+                // A blow landed while reading the panel has to arrive ON the panel or it never happened.
+                _ventMessage = $"🩸 {CaptainCondition.HitLine(seed)}";
+            }
             // #467: low, wet and wrong — nothing else in the game sounds like this. And at one pip left the
             // game stops being subtle about it: a floor-level dread tone on top, every single time.
             RendererInterop.PlayCue("wound");
