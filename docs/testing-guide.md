@@ -521,6 +521,30 @@ manifest) → the cargo console → file the report naming a cause, or strip her
 > shuttle's own gun (`GATE-1`, never bought, never dry) sits on the spine just inboard of the airlock
 > covering that corridor. Check that it fires, and that the retreat is actually survivable.
 
+### The atmosphere board (#488)
+
+Aft in ENGINEERING — the bridge panel is dead and says so. Full behaviour in
+[features/atmosphere.md](features/atmosphere.md). `?wreck=ventedbyoneoftheirown&land=1` boards the hull
+that arrives already blown.
+
+| What to check | What you should see |
+|---|---|
+| **The mimic is the ship** | Compartments in their real places, drawn from `WreckLayout`. Names inside the rooms; long ones wrap and shrink rather than overrunning their neighbours (`LIFEBOAT CRADLES`, `FORWARD LOCKER`). |
+| **Venting starts a clock** | `VACUUM 00:12` and counting — on the board *and* on the HUD out in the corridor. The pack in that room dies when the clock says so, not when you pull. |
+| **The counter never says how long it needs** | Only how long it has been open. If a build ever shows the requirement, the decision is gone. |
+| **Blown rooms are walls** | Walk into one and you get the gauge card: needle hard over, *not locked — LOADED*. |
+| **Two roads through a loaded door** | Crack the valve (free, empties the corridor **and every room standing open to it**) or refill from the board (one charge, keeps the air). |
+| **A dogged hatch survives the valve** | Seal a room by hand at its door, crack a valve elsewhere, and that room keeps its air. This is the counterplay — the infestation never closes a door. |
+| **The corridor cannot be refilled** | The refusal explains why: a compartment is a room, the spine is the ship. |
+| **The pump banks early** | At ~18 s the charge lands and the button relabels to *"take the air and go"*. The remaining tail only buys the kill. |
+| **The shuttle is never vented** | Leaving reports the lock cycling — it matches the hull first. Crack every valve aboard and the boat still has her air. |
+| **Nothing crosses the lock** | Reevers stop at `ShuttleLockX` (x = 21). They can reach the door; they cannot open it. |
+| **You are never trapped or stranded** | The board refuses to vent the room you are in; every loaded door offers the valve. Both are pinned in Core, but check them by hand once. |
+
+> **The loop worth playtesting is the greedy one:** dog the hatch, start the pump, walk out and hold the
+> lane with a sentry while the rough stage banks your charge — then decide whether to stay for the tail.
+> Owner's own verdict on it: *"I love that pressure waiting in a hot spot with round counts dropping."*
+
 ### The quantized nerve — reading the pips and the ledger (#480)
 
 Owner's ruling, 2026-07-28: *"the sanity events should be quantized. Why and when it drops should be made

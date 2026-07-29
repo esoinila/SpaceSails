@@ -1252,6 +1252,8 @@ public partial class Map
         }
 
         StepDigChannel(dtRealSeconds);
+        AdvanceVacuumClocks(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the vacuum soak
+        AdvancePump(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #488: the thrifty road
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
@@ -2146,6 +2148,16 @@ public partial class Map
                 r.Y = ny;
                 r.Facing = Math.Atan2(_avatarY - ny, _avatarX - nx);
             }
+            // #488 · THE LOCK IS CREW-ONLY. Owner: "we don't want any uninvited infestations going there."
+            // The lock bulkhead has a passage in it — walls alone would let the pack walk it, the same way
+            // the captain does — so the rule that stops them is the one the ship's own tube already runs on:
+            // a hatch keyed to the crew. It can reach the door. It cannot open the door.
+            if (OnWreck && r.X > WreckLayout.ShuttleLockX - DeckPlan.AvatarRadius)
+            {
+                r.X = WreckLayout.ShuttleLockX - DeckPlan.AvatarRadius;
+                r.Vx = Math.Min(r.Vx, 0);
+            }
+
             if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
             {
                 caught = true;
