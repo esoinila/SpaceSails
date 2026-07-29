@@ -261,6 +261,12 @@ public partial class Map
         /// Not a search — it does not know there is anyone to search for.</summary>
         public double ProwlX, ProwlY, ProwlUntilMs;
 
+        /// <summary>How long THIS one has been standing in vacuum. Owner: "I pumped the near hold to vacuum
+        /// but there are still reevers in it?" — because the kill only ever fired at the instant a room's
+        /// soak completed, so anything already inside, or that walked in afterwards, was untouched and a
+        /// room at hard vacuum was scenery. Exposure is per-contact now, and it accrues wherever it stands.</summary>
+        public double VacuumSeconds;
+
         // #453: this contact's own swing clock and swing count. Each Old One winds up separately (so a
         // crowd is not a blender) and each swing seeds its own die, so a long fight never repeats a line.
         public double LastSwingMs = double.NegativeInfinity;
@@ -1291,6 +1297,9 @@ public partial class Map
         AdvanceVacuumClocks(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the vacuum soak
         AdvancePump(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #488: the thrifty road
         AdvanceScuttleClock(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the overload
+        AdvanceNests(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));        // #488: the nest is a source
+        AdvanceVacuumExposure(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: vacuum is ground
+        CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
@@ -1891,6 +1900,15 @@ public partial class Map
                 // #456: your own guns are the loudest thing on the moon. A volley calls the deep to the BOT
                 // — so bringing sentries still buys time (#314), but now it is paid for by being found.
                 MakeNoise(bot.X, bot.Y, ReeverHearing.Noise.Gunfire);
+
+                // #488 · AND ABOARD, IT WAKES THEM. Owner: "when the guns start singing the reevers nearby
+                // start to wake up." A hull that has been silent for forty years, and the first thing that
+                // happens is automatic fire in a steel corridor — nothing sleeps through that.
+                //
+                // It goes through the wreck's own noise rule, so it obeys the same hard cap as everything
+                // else the captain does: the NEAREST two, and no more. A firefight will steadily wake the
+                // ship because it keeps happening, which is the right consequence and still never a summons.
+                MakeNoiseAboard(bot.X, bot.Y, LoudEarshot);
             }
             if (fired && NearestReeverInArc(bot) is { } aim)
             {
@@ -2247,7 +2265,8 @@ public partial class Map
             // seed, so the hand is FIXED per contact (no dithering at the face) and a pack splits — half
             // work a slab left, half right, and the two streams meet you around its ends.
             int wallSide = (r.JitterSeed & 1) == 0 ? 1 : -1;
-            (double nx, double ny) = ReeverChase.Step(baseX, baseY, aimX, aimY, step, barrier, walls, reeverRadius, wallSide);
+            (double nx, double ny) = ReeverChase.Step(
+                baseX, baseY, aimX, aimY, step * VacuumDrag(r), barrier, walls, reeverRadius, wallSide);
 
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 
@@ -2809,6 +2828,32 @@ public partial class Map
     /// <summary>The fading "movement was here" marks handed to the renderer.</summary>
     private readonly List<(double X, double Y, double Fade)> _hudGhosts = [];
 
+    /// <summary>The nest's own motion, for the fan's benefit. It goes nowhere; it is never still. Anything
+    /// above <see cref="MotionTracker.StillSpeed"/> reads as a live return, which is the truth about it.</summary>
+    private const double NestChurn = 0.6;
+
+    /// <summary>How wide the nest reads. Deliberately larger than any body smudge — the captain should be
+    /// able to tell "something is in there" from "THAT is what is in there" at a glance.</summary>
+    private const double NestSmudgeRadius = 4.2;
+
+    /// <summary>Where the nest is, while it is still producing. Null once her room has been blown — a vented
+    /// nest is off the tracker and off the map, and that silence is the reward for the soak.</summary>
+    private (double X, double Y)? LiveNestPosition()
+    {
+        if (_wreck is not { Cause: Derelict.WreckCause.Infested })
+        {
+            return null;
+        }
+        if (!_ventSpaces.TryGetValue(WreckLayout.NestCompartment, out HullVenting.Space nest)
+            || nest.Vented || !nest.Infested)
+        {
+            return null;
+        }
+
+        DeckReachability.Point at = WreckLayout.CauseStation(Derelict.WreckCause.Infested);
+        return (at.X, at.Y);
+    }
+
     /// <summary>How long a fresh return takes to settle from bright to its resting glow — the phosphor
     /// cooling, not the memory expiring. FLAGGED for tuning.</summary>
     private const double GhostSettleSeconds = 5.0;
@@ -2928,6 +2973,18 @@ public partial class Map
             {
                 _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
             }
+
+            // THE NEST IS THE LOUDEST THING ABOARD. Owner: "the nest should show in the map and as movement
+            // both." It never walks anywhere, so a fan that only reports travel would call it silence — but
+            // a nest is not a still contact, it is a mass of small motion that never stops. So it goes on
+            // the tracker with a motion of its own: a return that is always there, always in the same place,
+            // and (below) far broader than a body. Once the captain has heard it they know where the ship's
+            // supply is without being told, and cutting it becomes a place they can walk to.
+            (double X, double Y)? nestAt = LiveNestPosition();
+            if (nestAt is { } nx)
+            {
+                _hudEntities.Add(new MotionTracker.Entity(nx.X, nx.Y, NestChurn, 0));
+            }
             IReadOnlyList<MotionTracker.Blip> aboardBlips = MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities);
             double? aboardNearest = aboardBlips.Count > 0 ? aboardBlips[0].Range : null;
             bool aboardClosing = aboardNearest is { } an && _lastNearestReeverRange is { } prevAboard
@@ -2967,6 +3024,14 @@ public partial class Map
                 double range = Math.Sqrt((dx * dx) + (dy * dy));
                 _hudSmudges.Add((r.X, r.Y, SmudgeBaseRadius + (range * SmudgeRangeSpread)));
                 _ghosts[r] = (r.X, r.Y, _lastTimestampMs ?? 0);
+            }
+
+            // And on the map as a smear the size of the thing itself — not a contact the captain is meant to
+            // shoot, a REGION they are meant to recognise. It is the one return that never moves and never
+            // stops, which is how you tell it from the pack the moment you see it.
+            if (nestAt is { } nm)
+            {
+                _hudSmudges.Add((nm.X, nm.Y, NestSmudgeRadius));
             }
 
             // THE GHOST OF WHERE IT WAS. Owner: "let's have the map show like a ghost of where movement was

@@ -58,7 +58,16 @@ public sealed partial class Map
         {
             // The thing spread from the deep hold aft. Forward of amidships she is still clean — which is
             // why the away team can stand in the airlock at all.
-            bool infested = wreck.Cause == Derelict.WreckCause.Infested && (x0 + x1) / 2 < 0;
+            //
+            // NEVER THE MACHINERY SPACE, and that is not a kindness — it is the only way the room works.
+            // The board refuses to blow the compartment the captain is standing in, and the board is IN
+            // ENGINEERING, so a nest there could never be vented by anyone, ever: it would brood forever,
+            // every time the captain stepped out, in the one room they have to keep coming back to. The
+            // fiction is better for it, too — the crew held their machinery space to the end, which is
+            // precisely why her valves still answer.
+            bool infested = wreck.Cause == Derelict.WreckCause.Infested
+                            && (x0 + x1) / 2 < 0
+                            && name != HullVenting.ValveCompartment;
 
             // The hull one of her own opened to space arrives with the job already done — every compartment
             // but the one they were standing in. The board is the confession.
@@ -128,9 +137,206 @@ public sealed partial class Map
                 _ventSpaces[name] = s with { Infested = false };
                 ClearReeversIn(name);
                 LogAutopilotEvent($"💨 {name} has been open to space long enough. Whatever was in there is finished.");
+
+                // WHAT YOU GOT FOR THE WAIT — SHOWN WHEN YOU LOOK, NEVER BEFORE. Owner: "that should be
+                // told with GEN AI images … what did we get from venting", and then immediately: "I got
+                // the what the vacuum left even though I had not yet gone to the room."
+                //
+                // Quite right, and it broke the rule the rest of this hull now runs on: THE MAP IS YOUR
+                // EYES. A card firing off a clock hands the captain a photograph of a compartment they have
+                // never entered — the same sin as drawing contacts through bulkheads, dressed as a reward.
+                // So the soak only ever leaves the room WORTH LOOKING AT; the looking is still the
+                // captain's to do, at the station, on their own feet.
+                _ventPayoff.Add(name);
             }
         }
     }
+
+    /// <summary>
+    /// #488 · THE NEST IS A SOURCE. Owner, after the pack walked out into the corridor: <i>"kind of a pity
+    /// there was nothing left to vent in the reactor room. How is that logical, are we now venting an empty
+    /// room or could there be a reever spawn point there :-D … all the reevers came out to the spine, none
+    /// left to vent."</i>
+    ///
+    /// <para>He is right that it read as pointless, and the honest fix is the one he proposes. A nest that
+    /// has kept something alive aboard a dead ship for forty years is not a decoration the pack happens to
+    /// stand near — it is where they come FROM. So while it is intact it keeps producing, slowly, and
+    /// venting the room is not "killing an empty compartment": it is cutting the supply.</para>
+    ///
+    /// <para>That is also what finally makes the vacuum soak worth the wait rather than a chore. Clear the
+    /// corridor and you have bought minutes. Vent the nest and you have bought the ship.</para>
+    /// </summary>
+    private void AdvanceNests(double dtSeconds)
+    {
+        if (_wreck is not { Cause: Derelict.WreckCause.Infested } || _ventSpaces.Count == 0)
+        {
+            return;
+        }
+
+        // ONE NEST. Owner, watching them come out of half the ship: "I thought there was only one nest?"
+        // There is — the deep hold, where her station stands and where every line of text has always said
+        // it was. Every aft compartment being flagged Infested is a statement about what LIVES in them and
+        // how long the vacuum needs to finish it; it was never meant to mean each one produces more.
+        string nest = WreckLayout.NestCompartment;
+        if (!_ventSpaces.TryGetValue(nest, out HullVenting.Space s) || !s.Infested || s.Vented)
+        {
+            return;   // vented, or this hull never had one: the supply is cut
+        }
+
+        // NOTHING IS EVER BORN IN THE ROOM THE CAPTAIN IS STANDING IN. Owner, ringed by six of them at the
+        // valve board with a dogged hatch and a loaded sentry: "I am surrounded by reevers though I was in
+        // a closed space?" Nothing came through anything — they were BORN there. A nest is a place you can
+        // walk away from, or vent, or decide to live with. It is not an ambush that materialises inside
+        // your personal space. It holds while you are in the room.
+        if (CaptainCompartment() == nest)
+        {
+            return;
+        }
+
+        _nestClocks.TryGetValue(nest, out double t);
+        t += dtSeconds;
+        if (t < NestBroodSeconds)
+        {
+            _nestClocks[nest] = t;
+            return;
+        }
+        _nestClocks[nest] = 0;
+
+        // The pacing law this hull is tuned to (owner: "they come one or two at a time"). A nest is a slow
+        // drip and never a wave — and it stops entirely at the ceiling, so leaving one alive costs you a
+        // steady trickle rather than an unwinnable ship.
+        if (_reevers.Count >= NestPackCeiling)
+        {
+            return;
+        }
+
+        DeckReachability.Point at = WreckLayout.CauseStation(Derelict.WreckCause.Infested);
+
+        _reevers.Add(new Reever
+        {
+            // Out of the nest itself, not out of thin air in the middle of the room.
+            X = at.X + 1.2,
+            Y = at.Y,
+            Facing = 0,
+            JitterSeed = ((_surface?.ThreatSeed ?? 0UL) * 0x9E3779B97F4A7C15UL) + (ulong)_reevers.Count + 31UL,
+            // It comes out of the nest knowing nothing — same rule as the sleepers. It has to find you.
+            EverSeen = false,
+            VisibleOnMap = false,
+        });
+
+        LogAutopilotEvent($"🕷 Something else pulls itself out of the nest in the {nest}.");
+    }
+
+    /// <summary>How long an intact nest takes to put another one on its feet. Slow on purpose: the drip has
+    /// to be survivable, and the point of it is to make VENTING urgent, not to overrun the captain.
+    /// FLAGGED for the owner's tuning.</summary>
+    private const double NestBroodSeconds = 55.0;
+
+    /// <summary>The most a nest will ever have walking at once. Past this it holds — a hull you refuse to
+    /// vent gets steadily worse, never impossible.</summary>
+    private const int NestPackCeiling = 9;
+
+    /// <summary>Per-compartment brood timers.</summary>
+    private readonly Dictionary<string, double> _nestClocks = [];
+
+    /// <summary>Rooms the vacuum has finished with, waiting for the captain to walk in and see it. The
+    /// payoff is EARNED BY LOOKING — the soak leaves something worth looking at, and nothing more.</summary>
+    private readonly HashSet<string> _ventPayoff = new(System.StringComparer.Ordinal);
+
+    /// <summary>Whether this compartment is holding a "what the vacuum left" card for whenever the captain
+    /// gets there.</summary>
+    private bool HasVentPayoff(string name) => _ventPayoff.Contains(name);
+
+    /// <summary>Called as the captain walks: the first time they set foot in a room the vacuum has finished
+    /// with, the room shows them what it left. Not a clock, not a notification — you went and looked.</summary>
+    private void CheckVentPayoffUnderfoot()
+    {
+        if (_ventPayoff.Count == 0 || _wreckLook is not null || CaptainCompartment() is not { } here)
+        {
+            return;
+        }
+        if (!_ventPayoff.Remove(here))
+        {
+            return;
+        }
+
+        _wreckLook = new WreckLook(
+            $"💨 {here} — WHAT THE VACUUM LEFT",
+            "art/vented-nest-dead.jpg",
+            "The nest is collapsed and hollow, frost-shattered off the racks, and nothing in it is intact. " +
+            "Deep parallel gouges cross the deck toward a sealed hatch and stop there. Whatever spent forty " +
+            "years working at that door is not working at it now.");
+        RendererInterop.PlayCue("reveal");
+    }
+
+    /// <summary>
+    /// #488 · VACUUM IS GROUND, NOT AN EVENT. A room that is open to space keeps being open to space, so
+    /// anything standing in it keeps dying — including whatever wanders in ten minutes later.
+    ///
+    /// <para>The old rule killed only at the instant a compartment's soak completed, which left a hull full
+    /// of hard vacuum that was mechanically scenery (owner: "I pumped the near hold to vacuum but there are
+    /// still reevers in it?"). Exposure is per-contact now: a walker takes <see cref="HullVenting.Infestation.Motile"/>
+    /// seconds of it — lungs are the fastest thing to lose — and the clock resets the moment it steps back
+    /// into air.</para>
+    ///
+    /// <para>Which turns a vented compartment into a WEAPON you can leave lying around: blow a room, back
+    /// through it, and the corridor behind you is lethal ground for anything that follows.</para>
+    /// </summary>
+    private void AdvanceVacuumExposure(double dtSeconds)
+    {
+        if (_wreck is null || _reevers.Count == 0)
+        {
+            return;
+        }
+
+        double lethal = HullVenting.SoakRequired(HullVenting.Infestation.Motile);
+
+        for (int i = _reevers.Count - 1; i >= 0; i--)
+        {
+            Reever r = _reevers[i];
+
+            // Which volume is it standing in? A compartment's own state, or the corridor's.
+            bool inVacuum = RoomAt(r.X, r.Y) is { } room
+                ? _ventSpaces.TryGetValue(room, out HullVenting.Space s) && s.Vented
+                : !_spinePressurised;
+
+            if (!inVacuum)
+            {
+                r.VacuumSeconds = 0;   // back in air: whatever it took, it is over
+                continue;
+            }
+
+            r.VacuumSeconds += dtSeconds;
+
+            // And it FAILS while it does it (owner: "yeah they really should slow down there :-D"). The
+            // drag is read off the same exposure, so the vacuum is legible long before it is fatal: a thing
+            // that charged into a blown compartment is visibly labouring halfway across it, and the captain
+            // can watch the room doing the work. See VacuumDrag.
+            if (r.VacuumSeconds >= lethal)
+            {
+                _reevers.RemoveAt(i);
+                LogAutopilotEvent("💨 One of them stopped moving in the vacuum.");
+            }
+        }
+    }
+
+    /// <summary>How much of its speed a contact still has, given how long it has been in vacuum. Full pace
+    /// on the way in, down to a crawl as it runs out — so the room's work is something the captain watches
+    /// happen rather than a body that abruptly stops.</summary>
+    private static double VacuumDrag(Reever r)
+    {
+        double lethal = HullVenting.SoakRequired(HullVenting.Infestation.Motile);
+        if (r.VacuumSeconds <= 0 || lethal <= 0)
+        {
+            return 1.0;
+        }
+        double spent = System.Math.Clamp(r.VacuumSeconds / lethal, 0, 1);
+        return 1.0 - (spent * VacuumSlowdown);
+    }
+
+    /// <summary>How much of its pace the vacuum has taken by the time it kills. Not to zero — a thing that
+    /// freezes solid before it drops reads as a bug rather than as suffocation. FLAGGED for tuning.</summary>
+    private const double VacuumSlowdown = 0.72;
 
     /// <summary>Which compartment the captain is standing in right now — the panel refuses to blow it.</summary>
     private string? CaptainCompartment()
@@ -302,37 +508,102 @@ public sealed partial class Map
         RequestVaultSave();
     }
 
-    /// <summary>The compartment currently being pumped down, and how long the pump still has to run. The
-    /// thrifty road: slower than the handle, and it banks the air instead of losing it.</summary>
-    private string? _pumpingRoom;
-    private double _pumpSecondsLeft;
+    /// <summary>
+    /// Every compartment currently being pumped down, with its own clock and its own rough mark.
+    ///
+    /// <para>This was ONE pump for the whole ship, which was an arbitrary limit I introduced and could not
+    /// defend when asked (owner: "why can I not pump down more than one room… I want to pump down
+    /// several?"). A damage-control system has valves per compartment; the only thing that should bound the
+    /// captain is the reserve and the clock. Running four at once is a real strategy now — and a slow one,
+    /// which is the whole cost of the thrifty road.</para>
+    /// </summary>
+    private readonly Dictionary<string, (double SecondsLeft, bool RoughBanked)> _pumps = [];
 
-    /// <summary>Whether this run has already passed the rough mark and banked its charge — so the readout
-    /// stops counting at the captain and starts offering them the choice.</summary>
-    private bool _pumpRoughBanked;
+    /// <summary>Whether the corridor can go on the pumps: it still has air, it is not already running, and
+    /// every compartment is shut or already empty. Otherwise the pump is draining the whole ship through
+    /// eight open doorways.</summary>
+    private bool SpinePumpable =>
+        _spinePressurised
+        && !_pumps.ContainsKey(HullVenting.SpineName)
+        && _ventSpaces.Values.All(s => s.DoorShut || s.Vented);
 
-    /// <summary>Stop the pump. Past the rough mark this is the THRIFTY finish, not an abort: the air is
-    /// already in the tanks and all you are giving up is a pressure low enough to kill.</summary>
-    private void StopPump()
+    /// <summary>Put the corridor itself on the pumps — the end of "lock all the doors and pump them down".</summary>
+    private void StartSpinePump()
     {
-        if (_pumpingRoom is not { } name)
+        if (_wreck is null || _pumps.ContainsKey(HullVenting.SpineName))
+        {
+            return;
+        }
+        if (!_spinePressurised)
+        {
+            _ventMessage = HullVenting.SpineAlreadyEmptyLine;
+            RendererInterop.PlayCue("block");
+            return;
+        }
+        if (!SpinePumpable)
+        {
+            _ventMessage = HullVenting.SpineNotSealedLine;
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
+        _pumps[HullVenting.SpineName] =
+            (HullVenting.PumpDownSeconds * HullVenting.SpinePumpMultiplier, false);
+        _ventMessage = HullVenting.PumpRunningLine(HullVenting.SpineName,
+            HullVenting.PumpDownSeconds * HullVenting.SpinePumpMultiplier);
+        RendererInterop.PlayCue("board");
+
+        // The loudest thing yet: the whole corridor draining, from one end of her to the other.
+        MakeNoiseAboard(0, 0, LoudEarshot * 2);
+    }
+
+    /// <summary>Every compartment that could be pumped right now: sealed, still holding air, and not
+    /// already running. What "pump all" acts on.</summary>
+    private IReadOnlyList<string> PumpableRooms()
+    {
+        var ready = new List<string>();
+        foreach ((string name, HullVenting.Space s) in _ventSpaces)
+        {
+            if (!_pumps.ContainsKey(name)
+                && HullVenting.PumpReadiness(SpaceNow(name)) == HullVenting.VentReadiness.Ready)
+            {
+                ready.Add(s.Name);
+            }
+        }
+        ready.Sort(System.StringComparer.Ordinal);
+        return ready;
+    }
+
+    /// <summary>Start every one of them. The owner's play, in one press: dog the hatches, get to the board,
+    /// and put the whole ship on the pumps.</summary>
+    private void PumpEverySealedRoom()
+    {
+        foreach (string name in PumpableRooms())
+        {
+            StartPumpDown(name);
+        }
+    }
+
+    /// <summary>Stop a pump. Past the rough mark this is the THRIFTY finish, not an abort: the air is
+    /// already in the tanks and all you are giving up is a pressure low enough to kill.</summary>
+    private void StopPump(string name)
+    {
+        if (!_pumps.TryGetValue(name, out (double SecondsLeft, bool RoughBanked) p))
         {
             return;
         }
 
-        _pumpingRoom = null;
-        _pumpSecondsLeft = 0;
-        _ventMessage = _pumpRoughBanked
-            ? $"You shut the pump down. {name} keeps what little is left in it, and the rest is aboard."
-            : $"You shut the pump down early. {name} still has most of her air, and none of it is yours.";
-        _pumpRoughBanked = false;
+        _pumps.Remove(name);
+        _ventMessage = p.RoughBanked
+            ? $"You shut the {name} pump down. It keeps what little is left in it, and the rest is aboard."
+            : $"You shut the {name} pump down early. It still has most of its air, and none of it is yours.";
         RendererInterop.PlayCue("block");
     }
 
     /// <summary>Start the pump. Same interlock as the handle — a shut hatch, or you are pumping the ship.</summary>
     private void StartPumpDown(string name)
     {
-        if (_wreck is null || _pumpingRoom is not null)
+        if (_wreck is null || _pumps.ContainsKey(name))
         {
             return;
         }
@@ -346,10 +617,14 @@ public sealed partial class Map
             return;
         }
 
-        _pumpingRoom = name;
-        _pumpSecondsLeft = HullVenting.PumpDownSeconds;
-        _ventMessage = HullVenting.PumpRunningLine(name, _pumpSecondsLeft);
+        _pumps[name] = (HullVenting.PumpDownSeconds, false);
+        _ventMessage = CaptainCompartment() == name
+            ? HullVenting.PumpUnderfootLine(name, HullVenting.PumpDownSeconds)
+            : HullVenting.PumpRunningLine(name, HullVenting.PumpDownSeconds);
         RendererInterop.PlayCue("board");
+
+        // A pump running in a dead ship is a heartbeat, and it runs for the best part of a minute.
+        MakeNoiseAboard(RoomCentre(name).X, RoomCentre(name).Y, LoudEarshot);
     }
 
     /// <summary>Run the pump. It keeps running while the captain walks away — this is a machine, not a
@@ -357,51 +632,70 @@ public sealed partial class Map
     /// That is the price of the thrifty road, on top of the wait.</summary>
     private void AdvancePump(double dtSeconds)
     {
-        if (_pumpingRoom is not { } name || _wreck is null)
+        if (_wreck is null || _pumps.Count == 0)
         {
             return;
         }
 
-        double before = _pumpSecondsLeft;
-        _pumpSecondsLeft -= dtSeconds;
-
-        // The rough mark: the mechanical stage is done and the air is home. Everything after this is the
-        // long pull to a killing pressure, and it returns nothing to the tanks.
         double roughAt = HullVenting.PumpDownSeconds - HullVenting.PumpRoughSeconds;
-        if (before > roughAt && _pumpSecondsLeft <= roughAt)
-        {
-            _refillCharges += HullVenting.PumpDownYieldsCharges;
-            _pumpRoughBanked = true;
-            _ventMessage = HullVenting.PumpRoughDoneLine(name);
-            LogAutopilotEvent($"🛢 {name} roughed out — the air is in the tanks ({_refillCharges} charges).");
-            RendererInterop.PlayCue("reveal");
-            return;
-        }
 
-        if (_pumpSecondsLeft > 0)
+        foreach (string name in _pumps.Keys.ToList())
         {
-            if (_showVentPanel && !_pumpRoughBanked)
+            (double left, bool banked) = _pumps[name];
+            double before = left;
+            left -= dtSeconds;
+
+            // The rough mark: the mechanical stage is done and the air is home. Everything after this is
+            // the long pull to a killing pressure, and it returns nothing to the tanks.
+            bool isSpine = name == HullVenting.SpineName;
+            if (isSpine)
             {
-                _ventMessage = HullVenting.PumpRunningLine(name, _pumpSecondsLeft);
+                roughAt = (HullVenting.PumpDownSeconds * HullVenting.SpinePumpMultiplier)
+                          - HullVenting.PumpRoughSeconds;
             }
-            return;
+
+            if (before > roughAt && left <= roughAt)
+            {
+                _refillCharges += isSpine
+                    ? HullVenting.SpinePumpYieldsCharges
+                    : HullVenting.PumpDownYieldsCharges;
+                banked = true;
+                _ventMessage = HullVenting.PumpRoughDoneLine(name);
+                LogAutopilotEvent($"🛢 {name} roughed out — the air is in the tanks ({_refillCharges} charges).");
+                RendererInterop.PlayCue("reveal");
+            }
+
+            if (left > 0)
+            {
+                _pumps[name] = (left, banked);
+                if (_showVentPanel && !banked && _ventSelected == name)
+                {
+                    _ventMessage = HullVenting.PumpRunningLine(name, left);
+                }
+                continue;
+            }
+
+            _pumps.Remove(name);
+
+            // Only NOW is it lethal. The charge was banked at the rough mark, a long time ago.
+            if (isSpine)
+            {
+                // The corridor goes to vacuum — and unlike cracking a valve, the air is IN THE TANKS.
+                // Same end state, opposite economics: the patient road keeps what the impatient one throws
+                // away, and everything standing in that corridor now starts running out of time.
+                _spinePressurised = false;
+            }
+            else if (_ventSpaces.TryGetValue(name, out HullVenting.Space s))
+            {
+                _ventSpaces[name] = s with { Vented = true, VacuumSeconds = 0.0, HoldsSurvivor = false };
+            }
+
+            _ventMessage = HullVenting.PumpDoneLine(name);
+            LogAutopilotEvent($"🛢 Pumped {name} down — the air is in the tanks ({_refillCharges} charges).");
+            RendererInterop.PlayCue("alarm");
+            RebuildWreckDeck();
+            RequestVaultSave();
         }
-
-        _pumpingRoom = null;
-        _pumpSecondsLeft = 0;
-        _pumpRoughBanked = false;
-
-        // Only NOW is the room lethal. The charge was banked at the rough mark, a long time ago.
-        if (_ventSpaces.TryGetValue(name, out HullVenting.Space s))
-        {
-            _ventSpaces[name] = s with { Vented = true, VacuumSeconds = 0.0, HoldsSurvivor = false };
-        }
-
-        _ventMessage = HullVenting.PumpDoneLine(name);
-        LogAutopilotEvent($"🛢 Pumped {name} down — the air is in the tanks ({_refillCharges} charges).");
-        RendererInterop.PlayCue("alarm");
-        RebuildWreckDeck();
-        RequestVaultSave();
     }
 
     /// <summary>Whether any room is still counting toward being certainly dead — the clock worth watching
@@ -773,6 +1067,18 @@ public sealed partial class Map
             string clock = HullVenting.SoakLabel(space.VacuumSeconds);
             return (Longest(roomWidth, [$"VACUUM {clock}", $"VAC {clock}", clock]), "vent-tag");
         }
+        // PUMPING RIGHT NOW. Owner: "we have the vacuum indicated but not the pumping on the map … should
+        // there be some kind of pumping right now indicator here." Yes — with several pumps able to run at
+        // once, the board is the only place that can tell you which rooms are working and how far along
+        // each one is. The room says so itself, and it counts DOWN, because unlike the soak this clock has
+        // a known end.
+        if (_pumps.TryGetValue(name, out (double SecondsLeft, bool RoughBanked) pumping))
+        {
+            string t = HullVenting.SoakLabel(pumping.SecondsLeft);
+            return (Longest(roomWidth, [$"PUMPING {t}", $"PUMP {t}", t]),
+                    pumping.RoughBanked ? "vent-tag banked-tag" : "vent-tag pumping-tag");
+        }
+
         if (space.CaptainInside)
         {
             return ("YOU", "vent-tag here-tag");

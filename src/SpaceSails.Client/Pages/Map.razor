@@ -674,6 +674,38 @@
                     <text class="vent-spine-label" x="-4" y="0.7" text-anchor="middle">THE SPINE</text>
                 </svg>
 
+                @* The corridor is a volume too. Owner: "I would like to pump the spine also" — and it is
+                   the end of his own play: dog every hatch, empty every room, then take the spine. Unlike
+                   cracking a valve, this puts the corridor's air in the TANKS. *@
+                <div class="vent-actions">
+                    @if (_pumps.TryGetValue(HullVenting.SpineName, out var spinePump))
+                    {
+                        <button type="button" class="btn btn-outline-warning btn-sm"
+                                @onclick="() => StopPump(HullVenting.SpineName)">
+                            🛢 Stop the corridor pump — @HullVenting.SoakLabel(spinePump.SecondsLeft)
+                        </button>
+                    }
+                    else if (!_spinePressurised)
+                    {
+                        <div class="vent-refusal">THE SPINE — hard vacuum, from the transom to the lock.</div>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                disabled="@(!SpinePumpable)"
+                                title="@(SpinePumpable
+                                         ? "Put the corridor itself on the pumps. Slower than a room, and worth more."
+                                         : HullVenting.SpineNotSealedLine)"
+                                @onclick="StartSpinePump">
+                            🛢 Pump the corridor
+                        </button>
+                        @if (!SpinePumpable)
+                        {
+                            <div class="vent-refusal">@HullVenting.SpineNotSealedLine</div>
+                        }
+                    }
+                </div>
+
                 @if (_ventSelected is { } picked)
                 {
                     var sel = SpaceNow(picked);
@@ -713,19 +745,30 @@
                         @* THE THRIFTY ROAD. Blowing a room throws its air away and you buy it back a breath
                            at a time; pumping it down puts that air in the tanks. The mechanical stage banks
                            the charge early, and the long tail after it only buys you a killing pressure. *@
-                        @if (_pumpingRoom == picked)
+                        @if (_pumps.TryGetValue(picked, out var running))
                         {
-                            <button type="button" class="btn btn-outline-warning btn-sm" @onclick="StopPump">
-                                @(_pumpRoughBanked ? "🛢 Stop — take the air and go" : "🛢 Stop the pump")
+                            <button type="button" class="btn btn-outline-warning btn-sm" @onclick="() => StopPump(picked)">
+                                @(running.RoughBanked ? "🛢 Stop — take the air and go" : "🛢 Stop the pump")
                             </button>
                         }
                         else
                         {
                             <button type="button" class="btn btn-outline-info btn-sm"
-                                    disabled="@(_pumpingRoom is not null || readiness != HullVenting.VentReadiness.Ready)"
-                                    title="Slower than the handle, and it keeps the air: the mechanical stage banks a charge, the long tail brings it down to a pressure that kills."
+                                    disabled="@(readiness != HullVenting.VentReadiness.Ready)"
+                                    title="Slower than the handle, and it keeps the air: the mechanical stage banks a charge, the long tail brings it down to a pressure that kills. Several rooms can run at once."
                                     @onclick="() => StartPumpDown(picked)">
                                 🛢 Pump down
+                            </button>
+                        }
+                        @* MULTI-SELECT, because the owner immediately found the play the moment one pump
+                           stopped blocking another: "run to the control room and lock all doors and pump
+                           them down :-D". That is the board being used as a board, so it gets one press. *@
+                        @if (PumpableRooms().Count > 1)
+                        {
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    title="Start every compartment that is sealed and still has air in it."
+                                    @onclick="PumpEverySealedRoom">
+                                🛢🛢 Pump all sealed (@PumpableRooms().Count)
                             </button>
                         }
 
@@ -1767,7 +1810,7 @@
        hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
        OUT IN THE CORRIDOR, not just from the board you walked away from. Two clocks racing each other: the
        one emptying a room, and the one on the sentry holding the lane while it does. *@
-    @if (OnWreck && _deckMode && (_pumpingRoom is not null || AnyRoomSoaking || _scuttleSecondsLeft is not null))
+    @if (OnWreck && _deckMode && (_pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null))
     {
         <div class="wreck-clocks">
             @* THE OVERLOAD, LOUDEST AND FIRST. Owner, having armed it: "it should have a timer visible in
@@ -1782,16 +1825,13 @@
                     <span class="wc-time">@HullVenting.SoakLabel(burn)</span>
                 </div>
             }
-            @if (_pumpingRoom is { } pumping)
+            @* Every pump gets a line, because several can run at once now. *@
+            @foreach ((string pumping, (double left, bool banked)) in _pumps.OrderBy(p => p.Value.SecondsLeft))
             {
                 <div class="wc-line pump">
-                    <span class="wc-tag">🛢 PUMPING</span>
+                    <span class="wc-tag">🛢 @(banked ? "TAIL" : "PUMPING")</span>
                     <span class="wc-room">@pumping</span>
-                    <span class="wc-time">@HullVenting.SoakLabel(_pumpSecondsLeft)</span>
-                    @if (_pumpRoughBanked)
-                    {
-                        <span class="wc-note">air banked — the rest is the kill</span>
-                    }
+                    <span class="wc-time">@HullVenting.SoakLabel(left)</span>
                 </div>
             }
             @foreach ((string room, double secs) in RoomsSoaking)

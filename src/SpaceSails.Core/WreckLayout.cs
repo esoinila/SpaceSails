@@ -328,11 +328,36 @@ public static class WreckLayout
         // which the separation test found the day it was written. Both belong in this room — the stripped
         // frames and the decision about what is left — they just cannot be in the same square metre.
         Derelict.WreckCause.Piracy => new(-12f, 6f),
-        // The nest, deep aft where it has had years to spread.
-        Derelict.WreckCause.Infested => new(-24f, 6f),
+        // THE NEST IN THE DEEP HOLD, and now actually in the deep hold. It sat at (-24, 6) — the reactor
+        // spaces — while every line of text about it, its own station name included, said deep hold. Owner,
+        // finding them coming out of half the ship: "I thought there was only one nest?" There is exactly
+        // one, and this is where it is.
+        Derelict.WreckCause.Infested => new(-11f, -6f),
         Derelict.WreckCause.InsuranceJob => new(7f, 6f),
         _ => new(0f, 0f),
     };
+
+    /// <summary>Which compartment a point stands in, or null out in the spine. The one place that answer is
+    /// computed, so the map, the board and the rules can never disagree about what room something is in.</summary>
+    public static string? CompartmentAt(double x, double y)
+    {
+        foreach ((string name, float x0, float x1, bool top) in Compartments)
+        {
+            if (x >= x0 && x <= x1 && (top ? y < -SpineHalfHeight : y > SpineHalfHeight))
+            {
+                return name;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>THE room the infestation comes out of — there is one, and it is wherever her station is.
+    /// Derived rather than declared, so moving the station moves the nest and nothing drifts apart.</summary>
+    public static string NestCompartment =>
+        CompartmentAt(CauseStation(Derelict.WreckCause.Infested).X,
+                      CauseStation(Derelict.WreckCause.Infested).Y)
+        ?? "DEEP HOLD";
 
     /// <summary>The cause station's name, for a readable failure.</summary>
     public static string CauseStationName(Derelict.WreckCause cause) => cause switch
