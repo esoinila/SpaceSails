@@ -42,6 +42,75 @@ Tells 3 and 4 are the good ones, because they are the **atmosphere system paying
 pump and the operating log were built to decide whether to kill something, and here they quietly become
 survey instruments. Nothing new has to be invented for either.
 
+## 2b. THE PANEL IS NOT A BULKHEAD — pressure finds it for you
+
+> Owner: *"the fake door might not be able to take the deformation pressure of the other side being pumped
+> out and open during that :-D. The map would then grow once the room is refilled and opened."*
+
+This is the best idea in the feature and it should be the **primary** discovery route, with the deliberate
+search in §3 as the alternative for a captain who suspects and wants to be sure.
+
+It is also simply true. A camouflaged door is **joinery** — a panel dressed to look like structure, good
+enough for a boarding party's eyes and a knuckle-rap. It was never a pressure bulkhead, because making it
+one would have meant fittings, welds and a survey, which is exactly the paperwork the whole thing exists to
+avoid. Put one atmosphere across it and it does what unrated panels do.
+
+> Owner, on the engineering of it: *"thin sheet metal is no pressure vessel strong bulkhead :-D"*
+
+The numbers are not close. A doorway-sized panel is on the order of two square metres, and one atmosphere
+across that is **something like twenty tonnes**. A real bulkhead carries it through a frame into the hull;
+a sheet screwed to a batten does not carry it anywhere. The failure is not marginal, and it is not quiet.
+
+**And it bows before it goes.** That is the other half of the owner's phrase — *deformation* pressure —
+and it is a free warning worth building: a captain standing in the compartment while the pump runs can
+watch a wall they have walked past three times start to **breathe**. Panel first sucking flat against its
+battens, then the seams starting, then the fasteners.
+
+Which gives the mechanic a fair out: notice the wall moving and you can stop the pump. The air is already
+banked at the rough mark, and stopping costs you nothing but the kill you were not going to get anyway.
+Miss it, and the ship decides for you.
+
+Which means **the atmosphere system finds the void without the captain ever suspecting it**, as a
+consequence of ordinary damage-control work:
+
+```
+  1  pump down / vent the compartment next to it
+  2  the void still holds air; the panel now has Δp across it
+  3  the pump RUNS LONG  ← the tell, and now it has a cause: you are pumping two rooms
+  4  something lets go, audibly, somewhere else on the ship
+  5  the void is open to the pumped compartment — and therefore to vacuum
+  6  refill or equalise, walk in, and THE MAP GROWS
+```
+
+Step 4 is the beat. You are out in the corridor watching a counter, holding a lane with a bot, and
+**something on this ship fails on its own** — a sound you did not cause and cannot place. Nothing in the
+game announces what happened. The board simply has a compartment on it that was not there before.
+
+### Why this is worth more than a search
+
+- **It is missable in the best way.** A captain who never pumps anything never finds it. A captain who
+  pumps for thrift finds it by accident and has no idea what they have done until they look.
+- **It rewards the thrifty road specifically.** Pumping is the patient, careful option; it being the thing
+  that uncovers the ship's secret is the correct payoff for patience.
+- **It gives the "pump runs long" tell a mechanism** rather than a hint. The pump is slow *because it is
+  moving more air than the board says exists*, and the number was in front of you the whole time.
+- **The map growing is the payoff of the mimic.** A board drawn from the ship's own numbers gains a room.
+  Nothing else in the game can do that.
+
+### The cost nobody sees coming
+
+If the void holds an **occupant** (§4b), this route kills them. The panel fails, their air goes into a
+compartment you are pumping to vacuum, and they are gone before you have any idea there was a room. The
+captain who did it was being *careful with air*.
+
+They will find out later, on a channel nobody was transmitting on, when they scuttle her — and never know
+which of the things they did that day was the one that mattered. That is the whole lane working as
+designed, and it costs nothing extra to build.
+
+*Wiring note:* once a void exists, the pump must count its volume (that is the tell), the equalisation
+propagation in `HullVenting.EqualiseAt` must treat a blown panel as an open door, and a vented void must
+feed `SomethingStillAliveAboard()`.
+
 ## 3. Getting in
 
 It passed a routine cargo check, so it is not a door with a handle. The idiom already exists:

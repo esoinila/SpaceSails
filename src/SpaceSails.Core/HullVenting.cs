@@ -600,8 +600,8 @@ public static class HullVenting
     /// moving. It has never been able to say what.</para></summary>
     public const string OperatingLogHint =
         "The compartment's own instruments, read back — thermal, movement, the last time a door cycled. " +
-        "ONE reading: you cannot pull it twice until it says something comfortable. It records that " +
-        "something in there is warm and moving. It has never been able to tell you WHAT.";
+        "Ask as often as you like: a record says the same thing every time until the room itself changes. " +
+        "It records that something in there is warm and moving. It has never been able to tell you WHAT.";
 
     /// <summary>The words the panel says for a reading — never more certain than the instrument is.</summary>
     public static string ReadLine(LifeSign sign) => sign switch

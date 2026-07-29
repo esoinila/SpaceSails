@@ -256,6 +256,14 @@ public sealed partial class Map
         }
     }
 
+    /// <summary>Whether the shuttle the captain is about to load is crossing to a DERELICT rather than
+    /// going down to a world. The boarding card was written for the regolith and said so in every line —
+    /// burying a chest, three seeded landing sites with names like The Quiet Basin, a shovel and a pickaxe
+    /// — all offered for a dead ship with a steel deck (owner, on the Cold Harvest: <i>"it shows me three
+    /// options on where to board … those are good for Miranda etc moons but … you know"</i>).</summary>
+    private bool BoardingAWreck =>
+        _boardTarget is { } target && Derelict.TryParseWreckId(target.Body.Id, out _);
+
     /// <summary>Rebuild the derelict's walkable interior — the ✔ marks and the vanished salvage console
     /// are state, so the deck is rebuilt whenever they change.</summary>
     private void RebuildWreckDeck()

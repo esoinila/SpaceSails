@@ -136,6 +136,26 @@ public static class WreckInterior
         // aft in ENGINEERING. That placement IS the mechanic: on an infested hull you walk toward the thing
         // to reach the tool that kills it, then back out past whatever you chose not to vent. The dead
         // panel is a signpost, not a wall — nobody should have to guess the answer is aft.
+        // ── The lifeboat cradles, ON THE WALL ─────────────────────────────────────────────────────────
+        // Owner, after walking into the compartment named for them and finding nothing: "we should somehow
+        // see this like slots that are filled or empty … on the wall." So they are drawn where a ship keeps
+        // them, and they are COUNTABLE FROM THE DOORWAY — the cheapest evidence in the game, because how
+        // many are empty is a fact about the room rather than something a console tells you.
+        int launched = Derelict.LifeboatsLaunched(wreck.Id, wreck.Cause, WreckLayout.CradleCount);
+        int cradleIndex = 0;
+        foreach ((float cx, float cy) in WreckLayout.CradleSpots())
+        {
+            // The empty ones are the ones that LEFT, counted from the forward end — so a half-empty row
+            // reads as a run of gaps rather than a random scatter, the way a boat bay actually empties.
+            bool gone = cradleIndex < launched;
+            labels.Add((cx, cy, gone ? "▫" : "▮"));
+            cradleIndex++;
+        }
+        labels.Add((
+            (float)WreckLayout.CradleSpots().Average(p => p.X),
+            WreckLayout.BottomY - 2.6f,
+            $"LIFEBOAT CRADLES  {WreckLayout.CradleCount - launched}/{WreckLayout.CradleCount}"));
+
         // ── Making sure ───────────────────────────────────────────────────────────────────────────────
         // The scuttling panel is deliberately NOT the valve board. That board is damage control, a thing
         // every ship has; this is the other kind of panel — keyed, placarded, chained, built for one job.

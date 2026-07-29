@@ -195,14 +195,29 @@ public sealed partial class Map
     /// comfortable is exactly the tension this mechanic exists to create.</summary>
     private void ReadLifeSigns(string name)
     {
-        if (_wreck is not { } w || _ventReads.ContainsKey(name))
+        if (_wreck is not { } w)
         {
             return;
         }
 
+        HullVenting.Space space = SpaceNow(name);
+
+        // THE INSTRUMENT IS A RECORD, SO IT NEVER REFUSES TO BE READ. Owner: "that button should probably
+        // never be disabled there." It used to be disabled once read and again once vented, which meant the
+        // one question the soak creates — IS IT FINISHED YET — could not be asked at all.
+        //
+        // The anti-re-roll law survives without the grey-out, and more honestly: the reading is SEEDED on
+        // the compartment's state, so asking twice about the same room in the same condition returns the
+        // same answer, every time, forever. You cannot shake a different result out of a record. What DOES
+        // earn a new reading is the room genuinely changing — opening it to space, letting the vacuum
+        // finish, putting the air back — because that is a different measurement, not a second attempt at
+        // the same one.
+        long stateKey = (space.Vented ? 1 : 0) | (HullVenting.SoakComplete(space) ? 2 : 0);
+        ulong seed = DiceRule.Seed(
+            w.Id, (long)name.GetHashCode(System.StringComparison.Ordinal), stateKey);
+
         _ventMessage = null;
-        ulong seed = DiceRule.Seed(w.Id, (long)name.GetHashCode(System.StringComparison.Ordinal));
-        _ventReads[name] = HullVenting.Read(seed, SpaceNow(name));
+        _ventReads[name] = HullVenting.Read(seed, space);
         RendererInterop.PlayCue("reveal");
     }
 

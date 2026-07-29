@@ -672,8 +672,12 @@
                            a forty-year-dead ship far better than a live scan, and it makes the result feel
                            like evidence rather than a sensor toy. The detail lives in the hover; the button
                            just names the act. *@
+                        @* Readable on a VENTED room too, and that is the point: the vacuum takes time, so
+                           "is it finished yet" is the question the instrument exists to half-answer. It was
+                           disabled here from back when the handle killed instantly. One reading per STATE —
+                           opening a compartment to space is a real change and earns a fresh look, which is
+                           not the same as re-rolling until it says something comfortable. *@
                         <button type="button" class="btn btn-outline-light btn-sm"
-                                disabled="@(_ventReads.ContainsKey(picked) || sel.Vented)"
                                 title="@HullVenting.OperatingLogHint"
                                 @onclick="() => ReadLifeSigns(picked)">
                             📟 Operating log
@@ -1306,15 +1310,45 @@
        the whole small hold). Landing empty-handed is a complete visit; the intentions live on the ground. *@
     @if (_boardTarget is { } boardStop)
     {
+        @* #488: a DERELICT is not a world. This card was written for the regolith and said so in every
+           line — "bury it anywhere on the regolith", three seeded landing sites with names like The Quiet
+           Basin ("a low bowl of settled dust"), and a beach-comber kit with a shovel and a pickaxe — all
+           offered for crossing to a dead ship with a steel deck. The away team is not landing on her; they
+           are going ABOARD, through one airlock, and what they bring is a gun and a bot. *@
         <div class="deck-shuttle-card">
-            <div class="deck-shuttle-title">🛸 Board the shuttle → @boardStop.Body.Name</div>
+            <div class="deck-shuttle-title">
+                @(BoardingAWreck ? "🛸 Take the shuttle across → " : "🛸 Board the shuttle → ")@boardStop.Body.Name
+            </div>
             <div class="bury-chooser-body">
-                <div class="bury-note">Loading cargo is optional — you are not declaring a plan. Load a chest to bury it anywhere on the regolith, or go empty and probe the ground for shallow treasure (a fishing expedition). Walk down, look around, buy a souvenir. Your call, on the ground.</div>
+                <div class="bury-note">
+                    @if (BoardingAWreck)
+                    {
+                        <text>
+                            She has one airlock and no atmosphere worth the name. Take the bots — a sentry
+                            holds a corridor while you work, and on a hull with something still aboard the
+                            walk back out is the part that goes wrong. There is nothing to bury out here and
+                            nothing to dig: what she is worth is already in her holds, and what she is is
+                            written on her decks.
+                        </text>
+                    }
+                    else
+                    {
+                        <text>
+                            Loading cargo is optional — you are not declaring a plan. Load a chest to bury it
+                            anywhere on the regolith, or go empty and probe the ground for shallow treasure (a
+                            fishing expedition). Walk down, look around, buy a souvenir. Your call, on the ground.
+                        </text>
+                    }
+                </div>
                 @* #320: WHERE to set down. A body is a world, not a level — pick one of its seeded landing
                    sites and the choice is a mood: each names its character in the house voice, and the ground
                    you get differs by site. Only shown when the body offers more than one (a gig site is a
                    single authored ground). *@
-                @if (_boardSites.Count > 1)
+                @* A wreck has ONE airlock, so she never offers a choice of ground. (When a big-hull class
+                   lands — a liner, a station — this is exactly where multiple ENTRY POINTS belong, because
+                   her sections are severed and the shuttle is the only way between them. Not this hull:
+                   she is one spine and eight rooms.) *@
+                @if (_boardSites.Count > 1 && !BoardingAWreck)
                 {
                     <div class="board-sites">
                         <div class="board-sites-head">🛬 Set down at — choosing a site is choosing a mood:</div>
@@ -1331,6 +1365,10 @@
                         }
                     </div>
                 }
+                @* You do not bury a chest on a wreck, and you do not probe her deck plating for shallow
+                   treasure. The coin dial and the hold row are regolith gear; aboard, they are noise. *@
+                @if (!BoardingAWreck)
+                {
                 <div class="bury-row">
                     <span>Coin in the chest (optional)</span>
                     <span class="bury-coin">@_boardCoin.ToString("N0", CultureInfo.InvariantCulture) cr</span>
@@ -1346,6 +1384,7 @@
                     <span>Hold loaded with it</span>
                     <span>@(_cargoUnits > 0 ? $"{_cargoUnits} units ({HotHoldUnits()} hot)" : "empty")</span>
                 </div>
+                }
                 @* #314/#324: load the ship's sentry bots as surface escorts — they hold the line against
                    the Old Ones until their 99-round magazines run dry. A margin you buy, not safety. The
                    row names the troopers in-voice (#212 affordances-never-hide) so the captain KNOWS the
@@ -1375,11 +1414,14 @@
                    GEN-AI GEAR ART (#348, Grok-generated art/gear-beachcomber-kit.jpg): the kit
                    illustration rides beside this line as a small capped thumbnail — object-fit cover, a
                    modest max-height so the dialog stays compact and the Board button never leaves screen. *@
-                <div class="bury-row bury-gear">
-                    <img class="gear-thumb" src="art/gear-beachcomber-kit.jpg" alt="" aria-hidden="true" />
-                    <span>🧰 Beach-comber kit — standard issue</span>
-                    <span class="bury-cargo">a shovel, a metal detector & a pickaxe, aboard every trip</span>
-                </div>
+                @if (!BoardingAWreck)
+                {
+                    <div class="bury-row bury-gear">
+                        <img class="gear-thumb" src="art/gear-beachcomber-kit.jpg" alt="" aria-hidden="true" />
+                        <span>🧰 Beach-comber kit — standard issue</span>
+                        <span class="bury-cargo">a shovel, a metal detector & a pickaxe, aboard every trip</span>
+                    </div>
+                }
                 @* #348: the flight time lives in the BODY now, not the button (owner: "The button looks
                    like the chest contains 5 hours of time"). The crossing costs the same with or without
                    cargo, and the destination list already shows this as ETA — so we say it plainly, once,
