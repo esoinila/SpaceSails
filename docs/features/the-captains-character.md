@@ -13,7 +13,15 @@
 >
 > — the owner, 2026-07-29, immediately after being handed a valve that opens his own crew's cabins to space
 
-**Status:** filed, not built. This is the design; the first slice is proposed at the bottom.
+**Status:** the CREW TEMPERATURE half is **built** (`CrewTemp`, Captain desk → 🌡 Crew, #519). The
+captain's-crossings ledger below is still filed-not-built. §5's onboarding cost and §4's hiring are
+untouched.
+
+**What changed after this was written:** the owner read §3 and went straight for the crew's side of it
+rather than the captain's — *"let's have a Winningtemp-like crew satisfaction report on the captain's desk …
+it is the captain's performance as seen by the crew"* — which turned out to be the right half to build
+first, because the inputs already exist in the game. The captain's ledger needs new plumbing at every
+crossing; the crew's sheet only needed to READ the decisions the salvage screen was already making. See §8.
 
 ---
 
@@ -219,3 +227,30 @@ crew model with individuals in it, and the ledger has to exist and feel right be
    that they do it slowly, or badly, or one of them is not at their post afterwards.
 3. **Is the ledger ever visible in full**, or only at moments like the death card? The nerve ledger's
    restraint is a large part of why it works.
+
+---
+
+## 8. What got built, and what it taught
+
+`CrewTemp` (Core, 13 tests) and the **🌡 Crew** tab on the Captain desk.
+
+Three things came out differently from the design above:
+
+1. **The one-marker constraint turned out to be a feature.** The owner named it himself — *"even though we
+   move as one marker everywhere"* — and an aggregate, anonymous, unsigned sheet is exactly the shape the
+   real tool has. Nobody signs the complaint that gets read out. Individual crew opinions would have been
+   *worse*, not merely harder.
+
+2. **The "no dial setting satisfies everyone" property is a test, not a hope.** A sweep over every captain
+   from wholly honest to wholly crooked asserts none of them reads devoted across all five lines. If that
+   ever passes, the balance is decorative.
+
+3. **Cohesion had to be kept out of satisfaction by force.** I leaked near-misses into WHERE WE ARE GOING,
+   which quietly made shared hardship *cheering*. The test for §3's claim caught it. Cohesion raises no
+   line; it only slows the crew down about acting on the lines they have.
+
+And one thing the compiler decided: three inputs (promises to the crew, crew lost) are **documented
+constants** because it refused them as never-assigned fields. It was right — nothing in the game makes a
+promise to the crew yet, and no crewman can die. A bar that moved for invented reasons would be worse than
+one that does not move, because the captain cannot act on a number nobody is keeping. Those are §7's real
+next slice, ahead of the crossings ledger.
