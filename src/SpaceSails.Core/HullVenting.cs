@@ -591,6 +591,18 @@ public static class HullVenting
         return (roll, anythingWarm ? LifeSign.SomethingAlive : LifeSign.Empty);
     }
 
+    /// <summary>What the captain reads on the way to pulling the reading — the whole rule of the
+    /// instrument, in the place a rule belongs: on the control, before you use it, not in a card afterwards.
+    ///
+    /// <para>The framing matters. This is not a scan the away team is running; it is <b>the compartment's
+    /// own instruments, read back</b> — which is why a ship that has been dead for forty years still has an
+    /// answer, and why the answer is a record rather than a detection. It says something is warm and
+    /// moving. It has never been able to say what.</para></summary>
+    public const string OperatingLogHint =
+        "The compartment's own instruments, read back — thermal, movement, the last time a door cycled. " +
+        "ONE reading: you cannot pull it twice until it says something comfortable. It records that " +
+        "something in there is warm and moving. It has never been able to tell you WHAT.";
+
     /// <summary>The words the panel says for a reading — never more certain than the instrument is.</summary>
     public static string ReadLine(LifeSign sign) => sign switch
     {

@@ -426,6 +426,90 @@
         </div>
     }
 
+    @* #488 · THE SCUTTLING PANEL. Owner: "we could have a self-destruct option in the ship, like reactor
+       overload … in cases where we want to be sure." The third road: it pays NOTHING, which is the only
+       reason it can mean anything. No confirmation dialog — the panel states her worth first, and the keys
+       are the confirmation. *@
+    @if (_showScuttlePanel && _wreck is { } scWreck)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttlePanel)">
+            <div class="vent-board scuttle-panel" @onclick:stopPropagation="true">
+                <div class="view-object-title">☢ SCUTTLING PANEL — @scWreck.ShipName.ToUpperInvariant()</div>
+
+                <img class="scuttle-art" src="art/scuttle-panel.jpg" alt=""
+                     onerror="this.style.display='none'" />
+
+                <div class="vent-sub">
+                    @Scuttle.PriceLine(
+                        scWreck.AssessedValueCr,
+                        Derelict.Resolve(scWreck, Derelict.SalvageChoice.FileTheReport, scWreck.Cause).CreditsNow)
+                </div>
+
+                @if (_scuttleSecondsLeft is { } armedLeft)
+                {
+                    <div class="vent-message">
+                        ☢ RUNNING — @HullVenting.SoakLabel(armedLeft). The way out is the way you came in.
+                    </div>
+                    <div class="vent-actions">
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                disabled="@(!Scuttle.CanAbort(armedLeft))"
+                                title="@(Scuttle.CanAbort(armedLeft) ? "" : Scuttle.PastRecallLine)"
+                                @onclick="AbortTheOverload">
+                            🔑 Back the keys out
+                        </button>
+                        @if (!Scuttle.CanAbort(armedLeft))
+                        {
+                            <div class="vent-refusal">@Scuttle.PastRecallLine</div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="vent-actions">
+                        @foreach (Scuttle.Method m in ScuttleMethods())
+                        {
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    title="@($"Takes {Scuttle.Speed(m)}. Nobody pays you to be sure.")"
+                                    @onclick="ArmTheOverload">
+                                ☢ Turn both keys — reactor overload
+                            </button>
+                        }
+                        @* The methods this hull cannot do, and WHY. A greyed control that does not say why
+                           is a bug wearing a tooltip's clothes. *@
+                        @foreach (Scuttle.Method m in System.Enum.GetValues<Scuttle.Method>())
+                        {
+                            @if (!ScuttleMethods().Contains(m))
+                            {
+                                <div class="vent-refusal">@Scuttle.Refusal(m, scWreck.Cause)</div>
+                            }
+                        }
+                    </div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseScuttlePanel)">Step away</button>
+            </div>
+        </div>
+    }
+
+    @* #488 · WHAT YOU HEARD ON THE WAY OUT. Owner: "some kind of pop-up with gen AI about hearing clawing
+       of horrible sounds when we went :-D … a confirmation that we did something that made a difference."
+       CONFIRMATION WITHOUT REVELATION — the instrument never once said what was in there, and neither does
+       this. You know there was something. You know it is not out here any more. That is all you get. *@
+    @if (_scuttleEpitaph is { } epitaph)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseScuttleEpitaph)">
+            <div class="vent-board scuttle-epitaph" @onclick:stopPropagation="true">
+                <div class="view-object-title">☢ SHE IS GONE</div>
+                <img class="scuttle-art" src="art/scuttle-she-goes.jpg" alt=""
+                     onerror="this.style.display='none'" />
+                <div class="scuttle-epitaph-text @(_scuttleHeardIt ? "heard" : "")">@epitaph</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseScuttleEpitaph)">
+                    @(_scuttleHeardIt ? "Sit with that" : "Log it")
+                </button>
+            </div>
+        </div>
+    }
+
     @* #488 · THE DOOR THAT WILL NOT MOVE. Owner, after strolling into a compartment he had just blown:
        "we need some kind of door locked due to vacuum feature … maybe a gauge that says the door is shut
        due to pressure difference." One atmosphere across a door is about ten tonnes; nobody opens that by
@@ -584,11 +668,15 @@
                                 @onclick="() => ToggleVentDoor(picked)">
                             @(sel.DoorShut ? "🔓 Open the door" : "🔒 Shut the door")
                         </button>
+                        @* Not a radar ping — the compartment's OWN instruments, read back. That framing fits
+                           a forty-year-dead ship far better than a live scan, and it makes the result feel
+                           like evidence rather than a sensor toy. The detail lives in the hover; the button
+                           just names the act. *@
                         <button type="button" class="btn btn-outline-light btn-sm"
                                 disabled="@(_ventReads.ContainsKey(picked) || sel.Vented)"
-                                title="One reading only — you cannot re-roll until it says something comfortable"
+                                title="@HullVenting.OperatingLogHint"
                                 @onclick="() => ReadLifeSigns(picked)">
-                            📡 Read for life
+                            📟 Operating log
                         </button>
                         <button type="button" class="btn btn-danger btn-sm"
                                 disabled="@(readiness != HullVenting.VentReadiness.Ready)"
