@@ -96,6 +96,21 @@ public static class HavenInterior
     /// <summary>Does this haven have a walkable interior (so docking should weld on a tube)?</summary>
     public static bool HasInterior(string bodyId) => System.Array.Exists(Specs, s => s.BodyId == bodyId);
 
+    /// <summary>Every haven that HAS a deck, so the deck audit can walk all of them rather than the ones
+    /// somebody remembered to list. A test can only hold what it can enumerate.</summary>
+    public static IReadOnlyList<string> InteriorBodyIds
+    {
+        get
+        {
+            var ids = new List<string>(Specs.Length);
+            foreach (StationSpec spec in Specs)
+            {
+                ids.Add(spec.BodyId);
+            }
+            return ids;
+        }
+    }
+
     /// <summary>
     /// The docked complex for a body — ship + tube + hall + bar as one walkable plan — or null if that
     /// haven has no deck to walk. <paramref name="unlockedHatchIds"/> is the session's set of cracked

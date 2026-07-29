@@ -265,20 +265,39 @@ public sealed class DeckPlan
 
     public ConsoleKind NearestConsole(double x, double y) => NearestConsoleSpot(x, y)?.Kind ?? ConsoleKind.None;
 
-    /// <summary>The nearest interactable console within reach, or null — lets a caller read the
-    /// specific spot's label (e.g. which bar patron you walked up to), not just its kind.</summary>
+    /// <summary>
+    /// The nearest interactable console within reach, or null — lets a caller read the specific spot's
+    /// label (e.g. which bar patron you walked up to), not just its kind.
+    ///
+    /// <para>IT NOW ACTUALLY MEANS NEAREST. For as long as this existed it returned the FIRST console in
+    /// array order within the interact radius, which is a different function with the same name — and the
+    /// reason the owner could not open her atmosphere board: <i>"those panels won't open there"</i>. Her
+    /// valves and her bridge repeater are APPENDED to the console list (they are built per-compartment,
+    /// after the hand-written spots), while the charge dump and the COMMS SEAT sit early in it. So every
+    /// point from which the valves were reachable also reached an earlier console, and the earlier console
+    /// took the key. Both of her boards were unpressable, on a deck where both are drawn.</para>
+    ///
+    /// <para>Array order is a build detail. It must never decide what the captain is standing at — with the
+    /// true nearest, a console is reached by walking to it, which is the only rule a player can see. Ties
+    /// keep array order so the answer stays deterministic (and <c>ConsoleCrowdingTests</c> proves no console
+    /// is left with nowhere to be reached from).</para>
+    /// </summary>
     public ConsoleSpot? NearestConsoleSpot(double x, double y)
     {
+        ConsoleSpot? best = null;
+        double bestDistance = double.MaxValue;
+
         foreach (ConsoleSpot c in Consoles)
         {
             double d = Math.Sqrt((x - c.X) * (x - c.X) + (y - c.Y) * (y - c.Y));
-            if (d <= InteractRadius)
+            if (d <= InteractRadius && d < bestDistance)
             {
-                return c;
+                bestDistance = d;
+                best = c;
             }
         }
 
-        return null;
+        return best;
     }
 
     /// <summary>
