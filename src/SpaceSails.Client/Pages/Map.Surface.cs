@@ -2152,9 +2152,9 @@ public partial class Map
             // The lock bulkhead has a passage in it — walls alone would let the pack walk it, the same way
             // the captain does — so the rule that stops them is the one the ship's own tube already runs on:
             // a hatch keyed to the crew. It can reach the door. It cannot open the door.
-            if (OnWreck && r.X > WreckLayout.ShuttleLockX - DeckPlan.AvatarRadius)
+            if (OnWreck && WreckLayout.PastTheLock(r.X, DeckPlan.AvatarRadius))
             {
-                r.X = WreckLayout.ShuttleLockX - DeckPlan.AvatarRadius;
+                r.X = WreckLayout.HeldAtLock(r.X, DeckPlan.AvatarRadius);
                 r.Vx = Math.Min(r.Vx, 0);
             }
 

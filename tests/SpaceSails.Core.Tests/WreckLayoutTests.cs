@@ -225,6 +225,48 @@ public class WreckLayoutTests
     }
 
     [Fact]
+    public void NothingUninvitedEverGetsPastTheLock()
+    {
+        // The promise: whatever is loose on that hull can reach the door and cannot open it. The bulkhead
+        // has a passage in it — it must, or the away team could not get home — so walls alone would let the
+        // pack walk it exactly as the captain does. This is the rule that stops them, and it is pinned HERE
+        // rather than in a comment inside the walk loop, because "nothing follows you home" is exactly the
+        // kind of promise a refactor breaks quietly and the owner discovers by watching it happen.
+        const double radius = AvatarRadius;
+
+        foreach (double wants in new[] { 21.5, 24.0, 26.0, 100.0 })
+        {
+            Assert.True(WreckLayout.PastTheLock(wants, radius), $"{wants} should be past the lock");
+            Assert.False(
+                WreckLayout.PastTheLock(WreckLayout.HeldAtLock(wants, radius), radius),
+                $"a contact wanting x={wants} was not held on the ship's side of the lock");
+        }
+    }
+
+    [Fact]
+    public void TheLockNeverDragsAContactFORWARD()
+    {
+        // The clamp is a ceiling, not a teleport: something shambling around amidships must be left exactly
+        // where it is. A min() written as a max() would haul the whole pack up to the shuttle door.
+        foreach (double x in new[] { -30.0, -5.0, 0.0, 12.0, 19.0 })
+        {
+            Assert.Equal(x, WreckLayout.HeldAtLock(x, AvatarRadius));
+        }
+    }
+
+    [Fact]
+    public void TheCaptainCanStandWhereTheLockHoldsThePack()
+    {
+        // The held line has to be somewhere walkable, or contacts pile into a wall and the lane in front of
+        // the lock — the one the captain retreats down — is not actually a lane.
+        double held = WreckLayout.HeldAtLock(99, AvatarRadius);
+
+        Assert.True(
+            DeckReachability.Standable(held, 0, AvatarRadius, WreckLayout.Walls(Derelict.WreckCause.Infested)),
+            "the pack is held against a position nothing can occupy");
+    }
+
+    [Fact]
     public void TheLockHasAPassageWideEnoughToWalkBadly()
     {
         // Same bar as every other doorway on this hull: passable is not the test, comfortable is.
