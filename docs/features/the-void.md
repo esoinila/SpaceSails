@@ -66,11 +66,52 @@ Not just cargo, or it is a lockbox with extra steps. The void is **where a wreck
 - **An archive node** ([the-archive-node.md](the-archive-node.md)) — the obvious place to move one you
   never invoiced. The one warm thing aboard, in the one room not on the plan.
 - **Somebody.** A void is airtight and unlisted, which makes it the best place on the ship to survive in
-  and the worst place to be forgotten in. It is also, precisely because the board does not list it, a room
-  the captain **cannot vent** — so anything in there sits out every atmosphere decision they make.
+  and the worst place to be forgotten in.
 
-That last one is the sharpest: the whole venting system silently does not apply to the one compartment you
-have not found.
+## 4b. THE OCCUPANT — the part that makes it worth building
+
+> Owner, on being told the void sits outside the venting system: *"ohhh that is scary that space could have
+> extra occupants :-D"*
+
+He is right, and it is worth being precise about *why*, because the horror here is structural rather than
+written. **A void is a room the atmosphere system does not know about**, and that has consequences that
+arrive on their own:
+
+- **You cannot vent it.** Not "it is hard to vent" — the board has no switch for a compartment that is not
+  on the plan. Blow every room aboard her, wait out every soak, watch every counter reach a number you are
+  satisfied with, walk out — and one room still has air in it.
+- **You cannot read it.** The 📟 operating log lists compartments. Something living in the space between
+  two of them never appears, warm or otherwise. The instrument that spent the whole boarding refusing to
+  tell you *what* is alive now cannot tell you *where* either.
+- **Every tell becomes worse in hindsight.** The pump ran long because something in there is breathing that
+  air. The bulkhead read cold because there is an unheated volume behind it. You noticed both, filed them
+  as curiosities, and moved on.
+- **It has been listening to all of it.** You have been standing at a board a few metres away, cycling
+  valves and dogging hatches, for the entire boarding.
+
+### The two features detonating together
+
+The best consequence is one neither feature has on its own. `Scuttle.SheGoes` asks a single question —
+*was anything the vacuum had not finished still aboard?* — and it never says what. If the void's occupant
+counts toward that answer, then:
+
+> **You can hear the clawing from a room you never found.**
+
+A captain who scuttles a hull they were *sure* they had cleared gets the card anyway. Not a jump scare, not
+a reveal — just the confirmation, exactly as always, saying there was something. They will go over the
+boarding in their head and find nothing they did wrong, because there was nothing to find. And the game
+never tells them, because the game has never once told them.
+
+*Wiring note, small but load-bearing:* the client's `SomethingStillAliveAboard()` currently counts the pack
+and unfinished infested compartments. It must count an undiscovered void's occupant too, or the sharpest
+moment the wreck lane can produce quietly does not fire.
+
+### The other half: it can also be a person
+
+Keep both. A void is the best place aboard to survive in, and a captain who **finds** one before scuttling
+can get somebody out of it — the careful road paying off in the one place nobody was looking. Which means
+the same room is either the reason you should have searched harder, or the reason you are glad you did, and
+it is seeded per wreck which one you got.
 
 ## 5. The invariant this feature breaks, and how to keep it honest
 
