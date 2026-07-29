@@ -494,4 +494,40 @@ public class HullVentingTests
         Assert.DoesNotContain("STANDING IN", fromSpine, System.StringComparison.Ordinal);
         Assert.Contains("corridor", fromSpine, System.StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void TheSpinesRoughMarkIsPastARoomsWholeRunAndThatIsWhyItMustBePerPump()
+    {
+        // The exact geometry that hid the leak: a room's pump counts down from 50 and banks at 32, while
+        // the corridor banks at 72. Measure a room against the corridor's mark and the room can never
+        // cross it — its clock starts BELOW it — so the charge is silently never paid.
+        double roomTotal = HullVenting.PumpTotalSeconds(spine: false);
+        double roomMark = HullVenting.PumpRoughMark(spine: false);
+        double spineMark = HullVenting.PumpRoughMark(spine: true);
+
+        Assert.True(roomMark < roomTotal, "a room must be able to reach its own mark");
+        Assert.True(spineMark > roomTotal,
+                    "this is the trap: the corridor's mark is past a room's entire run, so a room measured " +
+                    "against it never banks and nothing ever looks wrong");
+    }
+
+    [Fact]
+    public void EveryPumpPaysAndTheCorridorPaysMore()
+    {
+        Assert.Equal(HullVenting.PumpDownYieldsCharges, HullVenting.PumpYield(spine: false));
+        Assert.Equal(HullVenting.SpinePumpYieldsCharges, HullVenting.PumpYield(spine: true));
+        Assert.True(HullVenting.PumpYield(spine: true) > HullVenting.PumpYield(spine: false));
+    }
+
+    [Fact]
+    public void PumpingHerDownPaysForFloodingHerBack()
+    {
+        // The closed loop the whole economy rests on: air you took the slow road on is air you can put
+        // back. Pump every compartment and the corridor, and the flood is exactly affordable.
+        int rooms = WreckLayout.Compartments.Length;
+        int banked = (rooms * HullVenting.PumpYield(spine: false)) + HullVenting.PumpYield(spine: true);
+
+        Assert.True(banked >= HullVenting.WholeShipRefillCost(rooms),
+                    "a captain who pumped the whole ship down must be able to bring the whole ship back");
+    }
 }

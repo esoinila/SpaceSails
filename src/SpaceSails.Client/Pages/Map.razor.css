@@ -3687,6 +3687,43 @@
    the band underneath it — the one part of the corridor most likely to be pressed. */
 .vent-spine-label { pointer-events: none; }
 
+/* THE CAPTAIN'S OWN CONDITION, on the board. The canvas pips are behind this panel's backdrop, so while
+   the board is open they might as well not exist — and the board is exactly where a captain stands still
+   with their hands full while something walks up behind them. */
+.vent-condition {
+    display: flex;
+    align-items: center;
+    gap: 0.32rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    color: #8fa1b8;
+    margin: 0.15rem 0 0.35rem;
+}
+
+.vent-condition-label { color: #6f7f95; }
+.vent-condition-word { color: #b9c8dc; }
+
+.cond-pip {
+    width: 0.62rem;
+    height: 0.62rem;
+    background: #d1584f;
+    border: 1px solid rgba(255, 170, 160, 0.45);
+}
+
+/* A spent pip is a hollow socket, not a missing square — you should be able to count what you have LEFT
+   and what you have SPENT in the same glance. */
+.cond-pip.spent { background: transparent; border-color: rgba(140, 90, 88, 0.55); }
+
+/* One pip left stops being a readout and starts being an alarm. */
+.vent-condition.critical .cond-pip { animation: cond-pulse 900ms ease-in-out infinite; }
+.vent-condition.critical .vent-condition-word { color: #ff8a7d; }
+
+@keyframes cond-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
 /* The full reading for the selected room, spelled out under the map. */
 .vent-readout {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

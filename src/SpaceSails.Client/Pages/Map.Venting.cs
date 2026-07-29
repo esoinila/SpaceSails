@@ -53,6 +53,9 @@ public sealed partial class Map
         // The hull one of her own opened has no air anywhere — including the corridor. So none of her doors
         // fight you, except the one into the room somebody kept breathing in.
         _spinePressurised = wreck.Cause != Derelict.WreckCause.VentedByOneOfTheirOwn;
+        // Forty years, same as the compartments she arrived empty with — the clock reads VACUUM flat,
+        // because no number past the longest soak is interesting.
+        _spineVacuumSeconds = _spinePressurised ? 0.0 : YearsOfVacuumSeconds;
 
         foreach ((string name, float x0, float x1, bool _) in WreckLayout.Compartments)
         {
@@ -117,6 +120,14 @@ public sealed partial class Map
         if (_wreck is null || _ventSpaces.Count == 0)
         {
             return;
+        }
+
+        // THE CORRIDOR KEEPS TIME TOO. Owner: "the spine should also show the vacuum time etc." It was the
+        // one volume on the board with no instruments — a bare true/false — even though it is the volume the
+        // captain spends the most time standing in and the only one they cannot shut a door against.
+        if (!_spinePressurised)
+        {
+            _spineVacuumSeconds += dtSeconds;
         }
 
         foreach (string name in _ventSpaces.Keys.ToList())
@@ -656,6 +667,139 @@ public sealed partial class Map
     /// <summary>Whether the board is holding an order to take the corridor as soon as it can.</summary>
     private bool _shipPumpOrder;
 
+    /// <summary>How long the corridor has been open to space. Same clock the compartments keep, for the same
+    /// reason: it says how long it HAS been, never how long it needs.</summary>
+    private double _spineVacuumSeconds;
+
+    /// <summary>The corridor's own line on the mimic, built exactly the way a compartment's is: what it is
+    /// doing now beats what it was, and the clock is never dropped.</summary>
+    private (string Text, string Class) SpineTag()
+    {
+        if (_pumps.TryGetValue(HullVenting.SpineName, out (double SecondsLeft, bool RoughBanked) pumping))
+        {
+            return ($"PUMPING {HullVenting.SoakLabel(pumping.SecondsLeft)}",
+                    pumping.RoughBanked ? "vent-spine-tag banked-tag" : "vent-spine-tag pumping-tag");
+        }
+        if (!_spinePressurised)
+        {
+            return _spineVacuumSeconds >= YearsOfVacuumSeconds
+                ? ("VACUUM", "vent-spine-tag")
+                : ($"VACUUM {HullVenting.SoakLabel(_spineVacuumSeconds)}", "vent-spine-tag");
+        }
+        return CaptainCompartment() is null ? ("YOU", "vent-spine-tag here-tag") : ("", "vent-spine-tag");
+    }
+
+    /// <summary>Compartments the flood would reach: at vacuum, and standing open to a vented corridor. One
+    /// volume, one pressure — the equalisation valve played backwards.</summary>
+    private IReadOnlyList<string> FloodableRooms()
+    {
+        var open = new List<string>();
+        if (_spinePressurised)
+        {
+            return open;   // the corridor already has air; a room at a time is the only honest way
+        }
+
+        foreach ((string name, HullVenting.Space s) in _ventSpaces)
+        {
+            if (s.Vented && !s.DoorShut)
+            {
+                open.Add(name);
+            }
+        }
+        open.Sort(System.StringComparer.Ordinal);
+        return open;
+    }
+
+    /// <summary>What bringing her whole hull back would cost right now.</summary>
+    private int FloodCost() => HullVenting.WholeShipRefillCost(FloodableRooms().Count);
+
+    /// <summary>Open the reserve wide. Fills the corridor and every compartment standing open to it; a
+    /// dogged hatch stays dead, which is the whole tactic.</summary>
+    private void FloodTheShip()
+    {
+        if (_wreck is null)
+        {
+            return;
+        }
+        if (_spinePressurised)
+        {
+            _ventMessage = HullVenting.WholeShipAlreadyFullLine;
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
+        IReadOnlyList<string> rooms = FloodableRooms();
+        int cost = HullVenting.WholeShipRefillCost(rooms.Count);
+        if (_refillCharges < cost)
+        {
+            _ventMessage = HullVenting.WholeShipRefillRefusal(cost, _refillCharges);
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
+        _refillCharges -= cost;
+        _spinePressurised = true;
+        _spineVacuumSeconds = 0.0;
+
+        foreach (string name in rooms)
+        {
+            // AIR COMES BACK. NOBODY DOES — the law the single-room refill is built on, and the flood is
+            // not an exception to it. The soak clock resets because the room has air in it again; nothing
+            // that the vacuum finished comes back with it.
+            _ventSpaces[name] = _ventSpaces[name] with { Vented = false, VacuumSeconds = 0 };
+        }
+
+        int sealedLeftDead = _ventSpaces.Values.Count(s => s.Vented && s.DoorShut);
+        _ventMessage = HullVenting.WholeShipRefillLine(rooms.Count, cost, sealedLeftDead);
+        LogAutopilotEvent($"🌬 The hull comes back to pressure — {cost} charges spent, {_refillCharges} left.");
+        RendererInterop.PlayCue("reveal");
+        RebuildWreckDeck();
+        RequestVaultSave();
+    }
+
+    /// <summary>THE REFLEX. Dog every hatch that will move, in one press. Owner: "lock all doors would be
+    /// nice also :-D … for that heat of the moment feel."</summary>
+    private void SealTheShip()
+    {
+        if (_wreck is null)
+        {
+            return;
+        }
+
+        int dogged = 0, held = 0;
+        foreach (string name in _ventSpaces.Keys.ToList())
+        {
+            HullVenting.Space s = SpaceNow(name);
+            if (s.DoorShut)
+            {
+                continue;
+            }
+            if (HullVenting.DoorHeldByPressure(s, _spinePressurised))
+            {
+                held++;
+                continue;
+            }
+
+            _ventSpaces[name] = _ventSpaces[name] with { DoorShut = true };
+            dogged++;
+        }
+
+        _ventMessage = HullVenting.SealTheShipLine(dogged, held);
+        RendererInterop.PlayCue(dogged > 0 ? "board" : "block");
+
+        if (dogged > 0)
+        {
+            // A dogged hatch is a WALL, and the walls are built rather than inferred. Skipping this is how
+            // a shut door lets a Reever walk through it.
+            RebuildWreckDeck();
+            LogAutopilotEvent($"🔒 {dogged} hatches dogged from the board.");
+
+            // Eight doors slamming down the length of a dead ship is not a quiet thing to do.
+            MakeNoiseAboard(0, 0, LoudEarshot);
+            RequestVaultSave();
+        }
+    }
+
     /// <summary>Stop a pump. Past the rough mark this is the THRIFTY finish, not an abort: the air is
     /// already in the tanks and all you are giving up is a pressure low enough to kill.</summary>
     private void StopPump(string name)
@@ -709,8 +853,6 @@ public sealed partial class Map
             return;
         }
 
-        double roughAt = HullVenting.PumpDownSeconds - HullVenting.PumpRoughSeconds;
-
         foreach (string name in _pumps.Keys.ToList())
         {
             (double left, bool banked) = _pumps[name];
@@ -719,18 +861,21 @@ public sealed partial class Map
 
             // The rough mark: the mechanical stage is done and the air is home. Everything after this is
             // the long pull to a killing pressure, and it returns nothing to the tanks.
+            //
+            // PER PUMP, NOT PER FRAME. This was one variable declared outside the loop and OVERWRITTEN the
+            // moment the corridor came up in the enumeration — so every pump processed after the spine in
+            // the same frame was measured against the SPINE's rough mark (72s), which its own 50s clock
+            // never reaches. The crossing test fires on exactly one frame, so those compartments silently
+            // never banked their charge: the air went out of the room, the pump ran to the end, and nothing
+            // arrived in the tanks. Owner, stranded with an empty hull and an empty reserve: "I run out of
+            // air trying to fill the ship … I even had used the pumping on all so I should still have the
+            // air mostly plus the reserves." He should have. It was being thrown away between frames.
             bool isSpine = name == HullVenting.SpineName;
-            if (isSpine)
-            {
-                roughAt = (HullVenting.PumpDownSeconds * HullVenting.SpinePumpMultiplier)
-                          - HullVenting.PumpRoughSeconds;
-            }
+            double roughAt = HullVenting.PumpRoughMark(isSpine);
 
             if (before > roughAt && left <= roughAt)
             {
-                _refillCharges += isSpine
-                    ? HullVenting.SpinePumpYieldsCharges
-                    : HullVenting.PumpDownYieldsCharges;
+                _refillCharges += HullVenting.PumpYield(isSpine);
                 banked = true;
                 _ventMessage = HullVenting.PumpRoughDoneLine(name);
                 LogAutopilotEvent($"🛢 {name} roughed out — the air is in the tanks ({_refillCharges} charges).");
@@ -756,6 +901,7 @@ public sealed partial class Map
                 // Same end state, opposite economics: the patient road keeps what the impatient one throws
                 // away, and everything standing in that corridor now starts running out of time.
                 _spinePressurised = false;
+                _spineVacuumSeconds = 0.0;
             }
             else if (_ventSpaces.TryGetValue(name, out HullVenting.Space s))
             {
@@ -938,7 +1084,12 @@ public sealed partial class Map
         {
             _ventSpaces[updated.Name] = updated;
         }
+        bool spineHadAir = _spinePressurised;
         _spinePressurised = !r.SpineVented && _spinePressurised;
+        if (spineHadAir && !_spinePressurised)
+        {
+            _spineVacuumSeconds = 0.0;
+        }
 
         string extra = r.RoomsOpened > 0
             ? $" {r.RoomsOpened} compartment{(r.RoomsOpened == 1 ? "" : "s")} went with it — every one that " +
