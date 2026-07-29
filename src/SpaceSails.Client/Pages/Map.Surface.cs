@@ -2050,7 +2050,9 @@ public partial class Map
         }
         double dt = Math.Min(dtRealSeconds, 0.1);
         double step = ReeverSpeed * dt;
-        bool onSurface = !MoonSurface.IsSafeAboard(_avatarY);
+        // The other half of the same bug: being CAUGHT was gated on the moon's safe line too, so aboard a
+        // wreck nothing was ever found by anything — no blow, and no nerve either.
+        bool onSurface = !CaptainBeyondReach;
         bool caught = false;
         double now = SimTime; // the thermal shuffle's time base (sim-seconds; the surface runs at 1×)
         // A Reever that advances less than this in a frame made effectively NO progress — it's at its leash,
@@ -2575,11 +2577,34 @@ public partial class Map
         return SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, sight);
     }
 
+    /// <summary>
+    /// WHERE NOTHING CAN REACH THE CAPTAIN, on whichever thing they are standing.
+    ///
+    /// <para>Owner, standing shoulder to shoulder with an Old One aboard a wreck with a full nerve bar and
+    /// five unmarked condition pips: <i>"look I take no damage or sanity loss from reever now."</i> He was
+    /// exactly right, and it was never once possible. Both the blow and the being-caught were gated on
+    /// <c>MoonSurface.IsSafeAboard</c>, which asks whether the captain is above the regolith's top rim at
+    /// y = −20 — and a wreck's ENTIRE deck runs from −9 to +9. Every square metre of every derelict has
+    /// always been "safely up the tube at the ship".</para>
+    ///
+    /// <para>The FOURTH bug of exactly this shape this weekend (the regolith tide aboard, the moon barrier
+    /// clamping the pack outside the hull, the moon spawn point, and now this). The pattern is a MOON
+    /// CONSTANT GOVERNING A SHIP, and it hides so well because the moon's number is not absurd for a wreck
+    /// — it is merely satisfied everywhere, so the feature silently never fires and nothing ever errors.</para>
+    ///
+    /// <para>Aboard, safety is not a latitude. It is the shuttle's own lock: past that bulkhead is the away
+    /// team's side and nothing follows you there, which is the same crew-only-door law the tube obeys.</para>
+    /// </summary>
+    private bool CaptainBeyondReach =>
+        OnWreck
+            ? WreckLayout.PastTheLock(_avatarX, DeckPlan.AvatarRadius)
+            : MoonSurface.IsSafeAboard(_avatarY);
+
     private void ResolveReeverSwings(double nowMs)
     {
-        if (_surface is not { } ex || _busted is not null || MoonSurface.IsSafeAboard(_avatarY))
+        if (_surface is not { } ex || _busted is not null || CaptainBeyondReach)
         {
-            return; // up the tube is safe by the crew-only-door law — nothing reaches you there
+            return; // up the tube, or past the shuttle lock — nothing reaches you there
         }
 
         // Who has a hand on you RIGHT NOW: bodies touching, the owner's rule. Counted first, because being

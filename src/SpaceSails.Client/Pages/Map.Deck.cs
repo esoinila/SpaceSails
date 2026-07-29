@@ -381,6 +381,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.WreckScuttle:
                 OpenScuttlePanel();         // #488: making sure — the road that pays nothing
                 break;
+            case DeckPlan.ConsoleKind.WreckPlacard:
+                ReadDamageControlPlacard(); // #488: where the valves are, told at the lock
+                break;
             case DeckPlan.ConsoleKind.SurfaceAirlock:
                 LiftOffFromSurface();
                 break;

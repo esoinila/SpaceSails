@@ -48,6 +48,8 @@ public sealed partial class Map
         _ventReads.Clear();
         _ventSelected = null;
         _ventMessage = null;
+        _ventLog.Clear();       // a new ship keeps her own log, not the last one's
+        _placardRead = false;   // and a new ship is a ship you have never read the plate on
         _refillCharges = HullVenting.RefillChargesPerBoarding;
 
         // The hull one of her own opened has no air anywhere — including the corridor. So none of her doors
@@ -431,6 +433,22 @@ public sealed partial class Map
 
     /// <summary>The dead bridge panel: a signpost, not a wall. Nobody should have to guess the answer is aft.</summary>
     private void TryDeadBridgePanel() => ShowPulseMessage(HullVenting.DeadBridgePanelLine);
+
+    /// <summary>The placard at the lock — the first thing aboard, and the one that answers "where do I go".
+    /// Reads in full once and briefly after that: a briefing the first time, a reminder every time.</summary>
+    private void ReadDamageControlPlacard()
+    {
+        ShowPulseMessage(_placardRead ? HullVenting.PlacardAgainLine : HullVenting.PlacardLine);
+
+        if (!_placardRead)
+        {
+            _placardRead = true;
+            BoardLog($"🪧 Read her placard — atmosphere control is aft in {HullVenting.ValveCompartment}.");
+        }
+    }
+
+    /// <summary>Whether the captain has read the plate by the lock on this boarding.</summary>
+    private bool _placardRead;
 
     /// <summary>Throw a compartment's door switch. This is the interlock the vent handle checks.</summary>
     private void ToggleVentDoor(string name)
