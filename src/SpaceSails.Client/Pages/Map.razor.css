@@ -3592,7 +3592,8 @@
 
 .vent-refusal, .vent-message {
     flex-basis: 100%;
-    font-size: 0.76rem;
+    /* The board is read standing back from it, so the log reads at arm's length. */
+    font-size: 0.95rem;
     color: #e39089;
     margin-top: 0.3rem;
     line-height: 1.45;
@@ -3672,7 +3673,7 @@
 /* The full reading for the selected room, spelled out under the map. */
 .vent-readout {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.74rem;
+    font-size: 0.98rem;
     color: #8fa1b8;
     padding: 0.35rem 0.1rem 0;
     line-height: 1.45;
@@ -3802,3 +3803,88 @@
 
 /* When there WAS something. The paragraph about what you heard gets the weight. */
 .scuttle-epitaph-text.heard { color: #e8b45c; }
+
+/* ── The board's log ────────────────────────────────────────────────────────────────────────────────
+   Both lines together, under the switches: what the instrument said, then what the handle did. They
+   used to sit on opposite sides of the button row, which read as one line hidden behind the keys.
+   Reserves room for two lines so the panel does not jump as they appear. */
+.vent-log {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 2.6rem;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid rgba(150, 170, 190, 0.18);
+}
+
+.vent-log:empty { display: none; }
+
+/* Inside the log they are plain rows, not flex items borrowed from the action bar. */
+.vent-log .vent-message,
+.vent-log .vent-readout {
+    flex-basis: auto;
+    margin-top: 0;
+}
+
+/* ── The operating log, as a card over the board ─────────────────────────────────────────────────────
+   Sits ABOVE the valve board's own backdrop, so the board is visibly inert behind it until dismissed. */
+.vent-read-backdrop {
+    z-index: calc(var(--z-desks-popups) + 140);
+}
+
+.vent-read-card {
+    max-width: 42rem;
+    text-align: center;
+}
+
+.vent-read-die {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.95rem;
+    letter-spacing: 1.2px;
+    color: #8fa1b8;
+    margin: 0.5rem 0 0.15rem;
+}
+
+/* The sentence itself, given the size it earns. */
+.vent-read-line {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    /* It has the whole screen and it is the most important sentence the mechanic produces. */
+    font-size: clamp(1.15rem, 2.6vw, 1.7rem);
+    line-height: 1.45;
+    color: #cddaeb;
+    padding: 0.5rem 0.6rem 0.7rem;
+}
+.vent-read-line.alive { color: #e8b45c; }
+
+/* When something is warm in there the card itself takes the warning colour, so the answer registers
+   before a word of it is read. */
+.vent-read-card.alive { border-color: rgba(232, 180, 92, 0.55); }
+
+.vent-read-foot {
+    font-size: 0.98rem;
+    line-height: 1.5;
+    color: #7a8798;
+    border-top: 1px solid rgba(150, 170, 190, 0.18);
+    padding-top: 0.55rem;
+    margin-top: 0.2rem;
+}
+
+/* The overload clock: the loudest thing on the HUD, because the whole scene is walking away from the
+   panel that owns it. Past the recall point it stops counting down and starts stating a fact. */
+.wc-line.overload { color: #ff8a72; }
+.wc-line.overload .wc-time { color: #ff6b5a; font-weight: 700; }
+.wc-line.overload.no-recall { color: #ff5a45; }
+.wc-line.overload.no-recall .wc-tag { letter-spacing: 1px; }
+
+/* Until a room is picked the board has no switches to offer, so it says so rather than showing a
+   lone "Step away" and reading as broken. */
+.vent-pick-hint {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    color: #8fa1b8;
+    text-align: center;
+    padding: 0.7rem 0.2rem 0.2rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid rgba(150, 170, 190, 0.18);
+}

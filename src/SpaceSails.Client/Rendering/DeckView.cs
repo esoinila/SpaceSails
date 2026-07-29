@@ -48,6 +48,21 @@ public sealed class DeckView
         // sentries, husks, blood) belong on any deck, and suppressing the whole hud to lose the tracker
         // silently took the sentries with it.
         bool Instruments = true,
+        // #488: contacts the motion fan HEARS but the captain cannot see — drawn on the grid as a soft
+        // smudge, never a body. Owner: "the motion detector data could be shown on the map … but like fuzzy
+        // area, not precise location." A blip is a bearing and a range off a crude fan; painting it as a dot
+        // would be claiming a precision the instrument does not have, and would hand back the surprise the
+        // line-of-sight rule just bought.
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, double Radius)>? Smudges = null,
+        // #488: fading "movement was here" marks — where the fan last had a contact it no longer hears.
+        // A memory of a PLACE: it stays put and dims, and it never follows anything.
+        System.Collections.Generic.IReadOnlyList<(double X, double Y, double Fade)>? Ghosts = null,
+        // #488: an on-grid countdown, drawn in the same seven-segment idiom as a sentry's magazine — the
+        // owner's own comparison ("similar counter as the round count counting down seconds on the map").
+        // A pulse message could not carry it: by the time the overload is running the message channel is
+        // swamped with PA calls, and the one number that decides whether the captain lives was scrolling
+        // past in the noise. Anchored to the thing that is about to fail, so it recedes behind you as you run.
+        (double X, double Y, string Text)? Countdown = null,
         System.Collections.Generic.IReadOnlyList<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)>? Bots = null,
         System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Husks = null,
         // #324: the contextual surface keybar — the deploy/drop keys spelled out along the bottom while
@@ -528,6 +543,72 @@ public sealed class DeckView
                 _renderer.DrawText(sx, baseY, counter, digit,
                     $"bold {fontPx:0.#}px monospace", TextAlign.Center);
             }
+        }
+
+        // #488 · WHAT THE FAN HEARS THROUGH STEEL. A soft, edgeless bloom over roughly where the return
+        // came from — big enough that it names a REGION and not a spot. Drawn under everything else so a
+        // contact you can actually see is always the sharper mark on the deck.
+        if (surface is { Smudges: { } heard })
+        {
+            foreach ((double smx, double smy, double smr) in heard)
+            {
+                (float ssx, float ssy) = P(smx, smy);
+                float rPx = (float)(smr * scale);
+                // Three widening rings, each fainter: no hard edge anywhere, so the eye reads "somewhere
+                // about here" rather than a position.
+                // Owner: "let's show them much better on motion detector still." The first pass was so
+                // faint it read as a rendering artefact; a return you have to hunt for is not a warning.
+                // Loud enough to catch the eye, still edgeless enough that it can never be mistaken for a
+                // position — and it BREATHES, so a live return is obviously live.
+                float pulse = 0.82f + 0.18f * (float)Math.Sin(simTime * 0.004);
+                for (int ring = 4; ring >= 1; ring--)
+                {
+                    float f = ring / 4f;
+                    byte alpha = (byte)Math.Clamp(96 * (1.05f - f) * pulse, 0f, 255f);
+                    _renderer.DrawCircle(ssx, ssy, rPx * f * pulse, new RgbaColor(226, 96, 84, alpha), default);
+                }
+            }
+        }
+
+        // #488 · GHOSTS: where the fan last had something. Dimmer and colder than a live return, and drawn
+        // with a broken ring so it never reads as a contact — this is a memory, not a target.
+        if (surface is { Ghosts: { } ghosts })
+        {
+            foreach ((double gx, double gy, double fade) in ghosts)
+            {
+                (float gsx, float gsy) = P(gx, gy);
+                byte a = (byte)Math.Clamp(70 * fade, 0f, 255f);
+                float gr = (float)(2.4 * scale);
+                _renderer.DrawCircle(gsx, gsy, gr, new RgbaColor(150, 120, 160, (byte)(a / 3)), default);
+                // Four short arcs of a ring, so the eye reads "was here" rather than "is here".
+                for (int seg = 0; seg < 4; seg++)
+                {
+                    double a0 = (seg * Math.PI / 2) + 0.35;
+                    DrawSeg(
+                        (gsx + (float)(Math.Cos(a0) * gr), gsy + (float)(Math.Sin(a0) * gr)),
+                        (gsx + (float)(Math.Cos(a0 + 0.75) * gr), gsy + (float)(Math.Sin(a0 + 0.75) * gr)),
+                        new RgbaColor(170, 140, 180, a), 1.1f);
+                }
+            }
+        }
+
+        // #488 · THE OVERLOAD, ON THE GRID. Same scoreboard as a magazine, bigger and always alarm-red,
+        // anchored to the thing that is about to fail — so it recedes behind the captain as they run, and
+        // the one number that decides whether they live is never in the message channel with the PA calls.
+        if (surface is { Countdown: { } burn })
+        {
+            (float bx, float by) = P(burn.X, burn.Y);
+            float pw = 5.4f * scale, ph = 3.2f * scale;
+            float top = by - 2.4f * scale;
+
+            FillRect(bx - pw / 2, top, pw, ph, new RgbaColor(20, 6, 6, 235));
+            // A hard border so it reads as a fitted instrument rather than a floating label.
+            DrawSeg((bx - pw / 2, top), (bx + pw / 2, top), SegAlarm, 1.2f);
+            DrawSeg((bx - pw / 2, top + ph), (bx + pw / 2, top + ph), SegAlarm, 1.2f);
+
+            float px = MagBasePx * 1.5f;
+            _renderer.DrawText(bx, top + ph / 2 + px * 0.35f, burn.Text, SegAlarm,
+                $"bold {px:0.#}px monospace", TextAlign.Center);
         }
 
         // Consoles.

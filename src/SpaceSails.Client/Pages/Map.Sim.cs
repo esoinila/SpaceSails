@@ -1914,6 +1914,9 @@ public partial class Map
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
         if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
         if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
+        // #488: the operating-log card sits ON TOP of the valve board, so Esc must take it first — the
+        // board underneath is still the thing the captain came to use.
+        if (_ventReadCard is not null) { CloseVentReadCard(); return true; }
         if (_showVentPanel) { CloseVentPanel(); return true; }
         if (_wreckLook is not null) { CloseWreckLook(); return true; }
         if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }

@@ -238,6 +238,29 @@ public partial class Map
         // expedition site (no fog there). Client-only, like the position itself.
         public bool VisibleOnMap = true;
 
+        /// <summary>
+        /// #488 · HIBERNATING. Owner: <i>"could we have like slumbering reevers that are not immediately
+        /// active but begin to wake up once we board the ship … they would not show on map before they
+        /// become active … unless they are within our observed vision space … maybe they can hybernate
+        /// somehow the 40 years."</i>
+        ///
+        /// <para>It is the only honest answer to how anything is still aboard after forty years on a hull
+        /// with no air plant and nothing to eat — and it is already the reason the vacuum soak has to be
+        /// long: the ENCYSTED kind "has done this before and is in no hurry". Same animal, same trick.</para>
+        ///
+        /// <para>A dormant one does not move, so it is invisible to a MOTION tracker for free. It is not
+        /// drawn either — unless the captain can actually SEE it, which is the moment the lamp finds
+        /// something folded in a corner that has not moved in four decades and is about to.</para>
+        /// </summary>
+        public bool Dormant;
+
+        /// <summary>When this one comes round on its own. Noise aboard pulls it earlier.</summary>
+        public double WakeAtMs;
+
+        /// <summary>Where a woken-but-unaware one is currently wandering to aboard a wreck, and until when.
+        /// Not a search — it does not know there is anyone to search for.</summary>
+        public double ProwlX, ProwlY, ProwlUntilMs;
+
         // #453: this contact's own swing clock and swing count. Each Old One winds up separately (so a
         // crowd is not a blender) and each swing seeds its own die, so a long fight never repeats a line.
         public double LastSwingMs = double.NegativeInfinity;
@@ -587,11 +610,22 @@ public partial class Map
                 PrepareVenting(aboardWreck);
             }
 
+            // A fresh boarding is a fresh hull: nothing has woken, the fan has not come up, and the tracker
+            // remembers nothing about her yet.
+            _anythingHasWokenAboard = false;
+            _wreckTrackerLive = false;
+            _ghosts.Clear();
+
             // …and if she is infested, what got in is still aboard. Deep aft, around the nest, already
             // aware — this is the one wreck you read on the way OUT.
-            if (_wreck is { Cause: Derelict.WreckCause.Infested })
+            // #488: ?reevers=N works ABOARD now too. The ambush cheat lives further down this method, past
+            // the wreck's early return, so it has never once reached a derelict — and it could not have
+            // helped if it had: SpawnReevers places its pack in regolith coordinates. Routed to the wreck's
+            // own spawner instead, so the owner can dial the hull hot for the fight the airlock gun exists
+            // for ("I want to test triggering the reevers :-D").
+            if (_wreck is { Cause: Derelict.WreckCause.Infested } || _reeverAmbushCheat > 0)
             {
-                SpawnWreckPack(4);
+                SpawnWreckPack(_reeverAmbushCheat > 0 ? _reeverAmbushCheat : 4);
                 ShowPulseMessage(
                     "🕷 Your lamp finds movement deep aft — she is not empty. GATE-1 is live in the airlock behind you. Read what you can and GET OUT.");
                 RendererInterop.PlayCue("alarm");
@@ -709,7 +743,9 @@ public partial class Map
         // same trick the expedition sites use, so nothing else in the excursion has to know the difference.
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
         {
-            _deckPlan = WreckInterior.WreckDeck(aboard, _wreckExamined, _wreckSalvaged, 3, FillSurfaceDroids);
+            _deckPlan = WreckInterior.WreckDeck(
+                aboard, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling, FillSurfaceDroids,
+                HeldDoors(), BlockedDoors());
             return;
         }
 
@@ -1272,10 +1308,19 @@ public partial class Map
         {
             StepExpedition(dtRealSeconds);
         }
-        else
+        else if (!OnWreck)
         {
             StepTide(dtRealSeconds);
         }
+        // #488 · A DERELICT RUNS NO TIDE. She is not ground: nothing crawls up out of a steel deck, and
+        // SpawnReevers places its pack in REGOLITH coordinates — off the monolith line, against the moon's
+        // barrier — so every contact the tide raised aboard her materialised OUTSIDE THE HULL, in space
+        // (owner, once they were finally drawable: "now the reevers are outside the ship … they are space
+        // reevers :-D").
+        //
+        // It also matters mechanically, not just visually: her pack is AUTHORED and FINITE (SpawnWreckPack),
+        // which is the whole reason venting can clear her. An endless stream would make the vacuum soak,
+        // the pump and the airlock gun all pointless — you cannot out-wait a tide.
         StepFirstContactChirp(dtRealSeconds);
         StepComms(dtRealSeconds); // COMMS-LOSS: advance the mothership downlink phase + snapshot the last-known feed
         TryRecoverDroppedChest();
@@ -1696,6 +1741,16 @@ public partial class Map
         }
         double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
         double toDoor = Math.Sqrt(((_avatarX - mx) * (_avatarX - mx)) + ((_avatarY - my) * (_avatarY - my)));
+
+        // ONE RULE, AND IT IS THE ONE THE PLAYER CAN SEE. I briefly opened doors here for Reevers too, on
+        // the owner's "unlocked doors should open for reevers" — and it broke the invariant this method
+        // exists to hold, stated in the comment above it: the RENDERER decides a door is open from the
+        // CAPTAIN's distance and nothing else. Adding a second opener here made the sim treat a door as
+        // open while the deck drew it shut, so a gun fired through a door the player could see was closed
+        // (owner, twice: "a reever was shot through a closed door").
+        //
+        // What blocks a shot must be exactly what the player sees closed. If Reevers are ever to work
+        // doors, the RENDERER has to learn it at the same moment — one source of truth or none.
         double nearestPartner = double.PositiveInfinity;
         if (d.Interlock != 0)
         {
@@ -1987,8 +2042,59 @@ public partial class Map
         // the captain does, and can only see the captain when no wall stands between.
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         const double reeverRadius = DeckPlan.AvatarRadius;
+        // Sight for DRAWING is not the same list as sight for WALKING: a shut door stops the eye and not
+        // the shamble, so the visibility test below uses the blockers (walls + shut doors) rather than the
+        // collision field.
+        IReadOnlyList<SurfaceCollision.Segment>? sight = OnWreck ? SightBlockers() : null;
         foreach (Reever r in _reevers)
         {
+            // #488 · THE ONES THAT HAVE NOT WOKEN YET. They do not move, so they cost nothing here and the
+            // motion tracker cannot see them (it is a MOTION fan — a still contact is not a contact). What
+            // CAN see them is the captain: within lamp range and with no bulkhead in the way, a dormant one
+            // is drawn exactly as it is — folded down, not moving, and about to stop being either.
+            if (r.Dormant)
+            {
+                double lampDx = r.X - _avatarX, lampDy = r.Y - _avatarY;
+                bool inLamp = (lampDx * lampDx) + (lampDy * lampDy) <= DormantSightRange * DormantSightRange
+                              && SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, walls);
+                r.VisibleOnMap = inLamp;
+                r.Vx = 0;
+                r.Vy = 0;
+
+                // Its own clock, or the away team walking into it — whichever comes first.
+                if (now >= r.WakeAtMs || inLamp)
+                {
+                    WakeTheSleeper(r);
+                }
+                continue;
+            }
+
+            // #488 · WHAT THE CAPTAIN CAN SEE, decided BEFORE anything below can `continue` past it. It
+            // used to sit at the bottom of the loop, so an awake-but-unaware contact never reached it and
+            // kept the VisibleOnMap it woke up with — drawn through steel (owner: "but also I see the
+            // reever on map through the walls now"). Every path needs the same answer, so it is taken here.
+            if (OnWreck)
+            {
+                bool wasSeen = r.VisibleOnMap;
+                r.VisibleOnMap = SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, sight);
+
+                // THE AMBUSH JOLT. Owner: "the surprise was there … but it had zero effect on my sanity?"
+                // The #379 sighting spell charges only the first fright of a spell, which is right for a
+                // horizon and wrong for a ship made of corners: a thing arriving INSIDE arm's reach with no
+                // warning is a different event from one you watched cross a field.
+                if (!wasSeen && r.VisibleOnMap)
+                {
+                    double jx = r.X - _avatarX, jy = r.Y - _avatarY;
+                    if ((jx * jx) + (jy * jy) <= AmbushRange * AmbushRange)
+                    {
+                        ApplyNerveShock(
+                            NervePips.SightingPips * (int)NervePips.PipUnit,
+                            "it was already in the room with you");
+                        RendererInterop.PlayCue("alarm");
+                    }
+                }
+            }
+
             // #314: a live sentry pins the Old Ones on its arc — a Reever under a deployed, non-dry bot's
             // guns is held where it stands (stopped, not slowed) while it's ground down. Once the counter
             // reads 00 the gun goes quiet and the shamble resumes. This is "bots buy time, never safety".
@@ -2023,8 +2129,11 @@ public partial class Map
             // (owner: "ship in itself does not attract them. They expect it is their ship"). It is the warm
             // body walking out that is news, and even that gets a beat: nothing may notice the captain, by
             // eye OR by ear, until the grace has run. It is what makes stepping out of the door possible.
+            // #488: aboard, a SHUT DOOR breaks their look as well as a wall — otherwise a hull full of
+            // dogged hatches is no cover at all, and closing one behind you buys nothing. `sight` is walls
+            // plus shut doors; off a wreck it is null and this is the old walls-only test exactly.
             if (SurfaceArrival.CanBeSpotted(((_lastTimestampMs ?? 0) - (_surface?.LandedAtMs ?? 0)) / 1000.0)
-                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, walls))
+                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, sight ?? walls))
             {
                 r.LastSeenX = _avatarX;
                 r.LastSeenY = _avatarY;
@@ -2044,6 +2153,13 @@ public partial class Map
                 // never laid eyes on the captain KEEPS ITS GROUND, holding whatever deep it claimed. The
                 // stillness is the point: the field is quiet until you walk far enough in to be seen, and
                 // then it is not. (A wander was tried here and reverted on that ruling — do not re-add it.)
+                // #488 · AND ABOARD TOO. Owner: "I like them to be unaware… is there a problem with that in
+                // the space scenario?" — there is not, and a prowl briefly added here was the wrong answer.
+                // The only thing stillness costs a wreck is a motion fan with nothing to hear, and the fix
+                // for that is not to make THEM noisy. It is to notice that the noisy thing on a dead ship is
+                // the CAPTAIN: the pump, the handle, the valve, the hatch, the PA. See MakeNoiseAboard —
+                // the racket you make is what puts contacts on the tracker, walking to the place it came
+                // from. So the ship stays silent until you touch something, and then it does not.
                 if (!r.Idle)
                 {
                     r.Idle = true;
@@ -2085,8 +2201,13 @@ public partial class Map
             // cleverness.
             double toTarget = Math.Sqrt(((tgtX - baseXPre) * (tgtX - baseXPre)) + ((tgtY - baseYPre) * (tgtY - baseYPre)));
             double bias = EncircleBias * Math.Clamp((toTarget - EncircleCloseRange) / EncircleFadeRange, 0, 1);
-            double aimX = tgtX + (MoonSurface.SpawnX - tgtX) * bias;
-            double aimY = tgtY + (MoonSurface.SurfaceTopY - tgtY) * bias;
+            // The encircle bias aims a little toward the WAY OUT, so they cut the escape rather than merely
+            // following. Aboard a wreck the way out is her airlock, not the regolith's tube mouth — the moon
+            // constants here would have them drifting toward a doorway on another map while they chased.
+            double outX = OnWreck ? WreckLayout.SpawnX : MoonSurface.SpawnX;
+            double outY = OnWreck ? WreckLayout.SpawnY : MoonSurface.SurfaceTopY;
+            double aimX = tgtX + (outX - tgtX) * bias;
+            double aimY = tgtY + (outY - tgtY) * bias;
             // #453 · ONE LEASH, AND IT IS A DOOR — not a distance. Owner, live 2026-07-27: "Let's not have
             // any don't venture too far set-up by y-coordinate. If you can get away with it with the help of
             // the sentries then do it but you might get killed by the reevers (or end up joining them)."
@@ -2107,7 +2228,15 @@ public partial class Map
             // line, and worse, the gun's line to that centre never crossed the door segment, which is why a
             // round appeared to go THROUGH a shut door. Stop the BODY instead: they halt a full radius short
             // and the threshold stays clear, so what the player sees and what the geometry believes agree.
-            double barrier = MoonSurface.ReeverBarrierY - reeverRadius;
+            // #488 · NOT ABOARD A WRECK. ReeverBarrierY is the REGOLITH's crew-only tube line (−20), and
+            // ReeverChase caps every contact at it: `if (ny > barrierY) ny = barrierY`. A derelict's hull is
+            // y ∈ [−9, +9], so on the first frame the cap threw the whole pack down to −20.7 — eleven units
+            // below her keel, outside the ship, sitting in space at the bottom of the screen (owner, with
+            // six of them out there: "that works on Miranda but not here").
+            //
+            // She has no such line. Her barrier is the CREW-ONLY LOCK at x = 21, which is a separate clamp
+            // and already holds. Vertically the hull's own walls are the only thing that should stop them.
+            double barrier = OnWreck ? double.PositiveInfinity : MoonSurface.ReeverBarrierY - reeverRadius;
 
             // Chase from the CANONICAL spot: while idle, r.X/r.Y carry the cosmetic shiver, so we step from
             // the fixed anchor instead (else the shuffle would feed itself and the anchor would drift). A
@@ -2159,6 +2288,16 @@ public partial class Map
                 r.Vx = Math.Min(r.Vx, 0);
             }
 
+            // #488 · THE MAP IS YOUR EYES, NOT AN X-RAY. Owner: "if there is a reever behind a closed door
+            // should I see it so clearly on the map … the reevers can never surprise when opening a door
+            // now :-D" — dead right, and it was making the tracker pointless as well: why read a fan when
+            // the deck plan already draws every body through every bulkhead?
+            //
+            // So aboard a wreck a contact is DRAWN only with a clear line to it — walls and SHUT DOORS both
+            // count, which is what puts the surprise back into opening one. It stays on the motion tracker
+            // the whole time, because a motion fan hears through steel; that is the entire point of owning
+            // one. Two instruments, two jobs: the fan says something is moving over there, and your own
+            // eyes say what it is and exactly where.
             if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
             {
                 caught = true;
@@ -2653,6 +2792,87 @@ public partial class Map
     // ── The motion tracker HUD (#313): a crude corner sweep of MOVING contacts, built for the renderer.
     //    Motion only — a wall-blocked, momentarily-still Old One drops off the fan. ──
 
+    /// <summary>The fuzzy returns painted on the deck for contacts the fan hears through steel. Held here
+    /// and refilled per frame, like every other HUD buffer.</summary>
+    private readonly List<(double X, double Y, double Radius)> _hudSmudges = [];
+
+    /// <summary>How wide a return is at point-blank, in deck units — already a REGION rather than a spot,
+    /// because a crude fan never knew better than that.</summary>
+    private const double SmudgeBaseRadius = 2.6;
+
+    /// <summary>And how much wider per unit of range: the further off the contact, the vaguer the ear.</summary>
+    private const double SmudgeRangeSpread = 0.12;
+
+    /// <summary>Where the fan last heard each contact, and when — the raw material for the ghosts.</summary>
+    private readonly Dictionary<Reever, (double X, double Y, double HeardAtMs)> _ghosts = [];
+
+    /// <summary>The fading "movement was here" marks handed to the renderer.</summary>
+    private readonly List<(double X, double Y, double Fade)> _hudGhosts = [];
+
+    /// <summary>How long a fresh return takes to settle from bright to its resting glow — the phosphor
+    /// cooling, not the memory expiring. FLAGGED for tuning.</summary>
+    private const double GhostSettleSeconds = 5.0;
+
+    /// <summary>And the glow it never drops below. THE TRACKER REMEMBERS: a mark stays until the same
+    /// contact is heard somewhere else. It is only wiped by better information, never by time.</summary>
+    private const double GhostFloor = 0.45;
+
+    /// <summary>How close a contact has to appear, with no warning, to land the ambush fright. Tight on
+    /// purpose: this is "it was already in the room", not "I can see it down the corridor". FLAGGED.</summary>
+    private const double AmbushRange = 7.0;
+
+    /// <summary>
+    /// #488 · THE PROWL — how a woken Old One that has not found you yet moves about a dead ship.
+    ///
+    /// <para>Deliberately NOT the regolith behaviour: out on the ground an unaware contact keeps its own
+    /// deep and holds still, by the owner's own ruling, and that is untouched. Aboard, stillness would mean
+    /// a motion tracker that never hears anything until the moment something is on top of you — which
+    /// defeats the instrument the corridors were built around.</para>
+    ///
+    /// <para>Slow, aimless, and honest: it picks somewhere to be, walks there obeying the walls, and picks
+    /// again. It is not searching for the captain — it does not know there is one. It is just awake.</para>
+    /// </summary>
+    private void Prowl(Reever r, IReadOnlyList<SurfaceCollision.Segment> walls, double radius,
+                       double step, double now)
+    {
+        r.Idle = false;
+
+        if (now >= r.ProwlUntilMs)
+        {
+            // Somewhere else on this deck, chosen off its own seed so each one wanders its own way and the
+            // pack does not migrate as a blob.
+            ulong pick = r.JitterSeed + (ulong)(now / ProwlLegMs);
+            r.ProwlX = WreckLayout.AftX + 2 + ((pick % 53UL) / 53.0 * (WreckLayout.BowX - 8 - WreckLayout.AftX));
+            r.ProwlY = ((pick / 53UL) % 3UL) switch { 0 => -6.0, 1 => 0.0, _ => 6.0 };
+            r.ProwlUntilMs = now + ProwlLegMs;
+        }
+
+        double prowlStep = step * ProwlSpeedFraction;
+        (double nx, double ny) = ReeverChase.Step(
+            r.X, r.Y, r.ProwlX, r.ProwlY, prowlStep, double.PositiveInfinity, walls, radius,
+            (r.JitterSeed & 1) == 0 ? 1 : -1);
+
+        // Real velocity, because that is the entire point: the fan hears MOTION.
+        r.Vx = prowlStep > 0 ? (nx - r.X) / (step / ReeverSpeed) : 0;
+        r.Vy = prowlStep > 0 ? (ny - r.Y) / (step / ReeverSpeed) : 0;
+        r.X = nx;
+        r.Y = ny;
+        r.Facing = System.Math.Atan2(r.ProwlY - ny, r.ProwlX - nx);
+
+        // Wedged against something, or arrived: take a new bearing next frame rather than grinding.
+        if (System.Math.Abs(r.Vx) + System.Math.Abs(r.Vy) < 0.01)
+        {
+            r.ProwlUntilMs = 0;
+        }
+    }
+
+    /// <summary>How long a prowler holds one bearing before picking another.</summary>
+    private const double ProwlLegMs = 7_000;
+
+    /// <summary>A prowl is a wander, not a hunt — well under the chase so a contact that has actually SEEN
+    /// you is unmistakably faster. FLAGGED for tuning.</summary>
+    private const double ProwlSpeedFraction = 0.42;
+
     /// <summary>Gather the deployed sentries for the renderer. Pulled out of the full HUD build so the
     /// WRECK path can have them too: a bot on a steel deck is drawn exactly like a bot on regolith, and it
     /// was only ever invisible aboard because the whole hud was suppressed to get rid of the tracker.</summary>
@@ -2693,20 +2913,110 @@ public partial class Map
         if (onWreck)
         {
             RefreshHudBots(ex);
+
+            // THE TRACKER COMES UP WHEN THERE IS SOMETHING TO TRACK, AND THAT IS THE POINT. Owner: "we
+            // could really use the motion detector here … I think we need it activating to bring it up on
+            // hud — that could be the first sign we found something."
+            //
+            // Better than always-on, and better than my #488 call to remove it outright (which was only
+            // defensible while the pack aboard was invisible, mislocated and topped up by a regolith tide).
+            // On a hull you have been told is dead, the INSTRUMENT APPEARING is the beat: no caption, no
+            // announcement, just a fan that was not on the screen a second ago. Once it has seen anything
+            // it stays live for the rest of the boarding — an ear does not un-hear.
+            _hudEntities.Clear();
+            foreach (Reever r in _reevers)
+            {
+                _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+            }
+            IReadOnlyList<MotionTracker.Blip> aboardBlips = MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities);
+            double? aboardNearest = aboardBlips.Count > 0 ? aboardBlips[0].Range : null;
+            bool aboardClosing = aboardNearest is { } an && _lastNearestReeverRange is { } prevAboard
+                                 && an < prevAboard - 0.01;
+            _lastNearestReeverRange = aboardNearest;
+
+            _hudBlips.Clear();
+            foreach (MotionTracker.Blip b in aboardBlips)
+            {
+                _hudBlips.Add((b.Bearing, b.Range));
+            }
+            _wreckTrackerLive |= aboardBlips.Count > 0;
+
+            // A SMUDGE FOR EVERY CONTACT THE FAN HEARS AND THE CAPTAIN CANNOT SEE. Placed off the blip's
+            // OWN bearing and range — the fan's actual output — rather than off the contact's true
+            // position, and blurred by a radius that grows with range, because a crude fan is less sure
+            // about a far return. What the captain gets is a region, which is exactly what they were told.
+            _hudSmudges.Clear();
+            foreach (Reever r in _reevers)
+            {
+                if (r.VisibleOnMap)
+                {
+                    // Your own eyes are better than the fan, so what you SEE also updates what the tracker
+                    // remembers. Look away and the mark it leaves behind is where you last actually saw it.
+                    _ghosts[r] = (r.X, r.Y, _lastTimestampMs ?? 0);
+                    continue;
+                }
+                if (r.Dormant)
+                {
+                    continue;   // hibernating: nothing to hear, and nothing was ever heard
+                }
+                if (Math.Sqrt(((r.Vx * r.Vx) + (r.Vy * r.Vy))) < MotionTracker.StillSpeed)
+                {
+                    continue;   // a motion fan hears MOTION; a contact holding still is not a return
+                }
+                double dx = r.X - _avatarX, dy = r.Y - _avatarY;
+                double range = Math.Sqrt((dx * dx) + (dy * dy));
+                _hudSmudges.Add((r.X, r.Y, SmudgeBaseRadius + (range * SmudgeRangeSpread)));
+                _ghosts[r] = (r.X, r.Y, _lastTimestampMs ?? 0);
+            }
+
+            // THE GHOST OF WHERE IT WAS. Owner: "let's have the map show like a ghost of where movement was
+            // last seen." A return that stops — because the contact went still, or slipped behind a hatch —
+            // does not simply vanish, because the captain's knowledge does not. The mark stays where the
+            // fan last had it and fades out over a few seconds, which is exactly as long as that knowledge
+            // is worth anything. What it never does is follow: a ghost is a memory of a PLACE.
+            // PHOSPHOR PERSISTENCE — the Aliens tracker, and the owner's own rule for it: "it was there it
+            // last moved … it is probably still there until it moves away, when we will detect it again.
+            // Better to have a couple of ghost detections than miss a reever."
+            //
+            // So a ghost NEVER expires. It burns bright where the return came in, decays to a floor, and
+            // then sits there being the best information anyone has. If the contact moves again the mark
+            // moves with it; if it went still, the mark is telling the truth — a thing that stopped is
+            // still there. And if it slipped away without ever being heard again, the mark is a LIE the
+            // captain can walk into, which is the price of an instrument that would rather be wrong than
+            // quiet.
+            _hudGhosts.Clear();
+            double nowGhost = _lastTimestampMs ?? 0;
+            foreach ((Reever ghosted, (double gx, double gy, double heardAt)) in _ghosts)
+            {
+                if (ghosted.VisibleOnMap)
+                {
+                    continue;   // your own eyes are on it — the memory is not needed
+                }
+                double age = (nowGhost - heardAt) / 1000.0;
+                double fade = Math.Max(GhostFloor, 1.0 - (age / GhostSettleSeconds));
+                _hudGhosts.Add((gx, gy, fade));
+            }
+
             return new DeckView.SurfaceHud(
                 TrackerCaptions: null,
                 DigProgress: ex.DoorChannel?.Progress ?? -1,   // a forced door is a ship thing; digging is not
                 HasDroppedChest: false, DropX: 0, DropY: 0,
-                Blips: [],                                     // no sweep
-                Cadence: 0,
-                Readout: "",
+                Blips: _hudBlips,
+                Cadence: (int)MotionTracker.CadenceFor(aboardNearest),
+                Readout: MotionTracker.Readout(aboardNearest, aboardClosing),
                 CacheMarks: [],                                // nothing is buried on a steel deck
                 Nerve: _nerve,
                 NerveReadout: NerveModel.Readout(_nerve),
                 Bots: _hudBots,                                // ← the fix
                 Husks: _hudHusks,
                 KeyHints: BuildSurfaceKeyHints(ex),            // names [T] aboard, never DIG
-                Instruments: false,                            // no motion tracker on a ship
+                Countdown: _scuttleSecondsLeft is { } burning
+                    ? (WreckLayout.ScuttleStation.X, WreckLayout.ScuttleStation.Y,
+                       HullVenting.SoakLabel(burning))
+                    : null,
+                Instruments: _wreckTrackerLive,                // it appears when something moves. That IS the warning.
+                Smudges: _hudSmudges,                          // heard through steel: a region, never a body
+                Ghosts: _hudGhosts,                            // and where it was, fading
                 BloodSplash: BloodShowing
                     ? Math.Clamp((_bloodUntilMs - (_lastTimestampMs ?? 0)) / 900.0, 0, 1)
                     : 0);

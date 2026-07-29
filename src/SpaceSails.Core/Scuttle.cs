@@ -142,6 +142,59 @@ public static class Scuttle
     public const string PastRecallLine =
         "The panel will not take the keys back. Whatever happens now happens on its own schedule.";
 
+    // ── The ship says it herself ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// THE DEAD SHIP'S PA. Owner: <i>"it would likely talk through the ship comms."</i>
+    ///
+    /// <para>Of course it would — an overload announcement is not a courtesy, it is a safety system, and the
+    /// one thing aboard still able to power a speaker is the exact thing that is about to fail. So a hull
+    /// that has been silent for forty years starts talking, in a voice recorded by somebody long dead, to a
+    /// crew that has not been aboard since.</para>
+    ///
+    /// <para>Flat, procedural, and addressed to ALL HANDS — which is the horror in it. It is not talking to
+    /// the captain. It is doing the job it was installed to do, forty years late, for people who are not
+    /// coming.</para>
+    /// </summary>
+    public static string? PaCall(double previousSeconds, double secondsLeft)
+    {
+        // Fires once, on the crossing.
+        static bool Crossed(double from, double to, double mark) => from > mark && to <= mark;
+
+        if (Crossed(previousSeconds, secondsLeft, OverloadSeconds - 0.01))
+        {
+            return "📢 ATTENTION. CONTAINMENT WITHDRAWAL INITIATED. ALL HANDS ABANDON. — the ship says it " +
+                   "in a voice somebody recorded a long time ago, to a crew that has not been aboard since.";
+        }
+        if (Crossed(previousSeconds, secondsLeft, 60))
+        {
+            return "📢 SIXTY SECONDS. ALL HANDS ABANDON. MUSTER AT YOUR ASSIGNED BOAT. — the cradles she is " +
+                   "telling them to muster at are the ones you have already counted.";
+        }
+        if (Crossed(previousSeconds, secondsLeft, 30))
+        {
+            return "📢 THIRTY SECONDS. — the same voice, at the same volume. It has no idea how this went.";
+        }
+        if (Crossed(previousSeconds, secondsLeft, 10))
+        {
+            return "📢 TEN SECONDS. CLEAR THE HULL. — you are the only thing aboard her that can.";
+        }
+        // THE COUNT IS WRONG. Owner: "like in the movie Spaceballs where it counted down and skipped one
+        // number as a joke :-D" — an affectionate nod (Spaceballs, 1987, Mel Brooks / MGM), and nothing of
+        // theirs is used: this is our ship, our failure, our line.
+        //
+        // It earns its place because it is not only a joke. A forty-year-old announcement system getting
+        // the arithmetic wrong is the last thing a captain wants to hear while running, and it says
+        // something true about the hull: HER SYSTEMS CANNOT BE TRUSTED, and the clock on your own suit
+        // can. The real timer never wavers — only she does.
+        if (Crossed(previousSeconds, secondsLeft, 5))
+        {
+            return "📢 THREE SECONDS. — she skipped one. Forty years cold and the count is wrong, and for " +
+                   "half a step you believe her instead of your own clock.";
+        }
+        return null;
+    }
+
     // ── What you hear ─────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>

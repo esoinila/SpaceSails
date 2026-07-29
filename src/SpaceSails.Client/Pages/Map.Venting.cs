@@ -64,9 +64,27 @@ public sealed partial class Map
             // but the one they were standing in. The board is the confession.
             bool preVented = HullVenting.StartsVented(wreck.Cause, name);
 
+            // ONE ROOM THE CREW SEALED BEFORE THE END. Owner: "maybe a room has been sealed off from the
+            // panel :-D" — which is the whole mechanic standing in a single compartment. The hatch is
+            // dogged, so it is a wall; the operating log reads that something in there is warm and moving;
+            // and the instrument will not say what. Leave it shut and never know. Vent it and never know.
+            // Open it and find out.
+            //
+            // Never ENGINEERING — the valve board is in there, and a captain locked out of the board has
+            // been handed a puzzle with no pieces. Everything else is fair, because with air on both sides
+            // there is no differential and the hatch can be undogged by hand at the door.
+            bool crewSealedIt = wreck.Cause == Derelict.WreckCause.Infested
+                                && infested
+                                && name != HullVenting.ValveCompartment
+                                && HullVenting.HidesSurvivor(wreck.Id, name, wreck.Cause) == false
+                                && DiceRule.Roll(
+                                       DiceRule.Seed("sealed-room", (long)wreck.Id.GetHashCode(System.StringComparison.Ordinal),
+                                                     name.GetHashCode(System.StringComparison.Ordinal)),
+                                       3).Face == 1;
+
             _ventSpaces[name] = new HullVenting.Space(
                 Name: name,
-                DoorShut: preVented,
+                DoorShut: preVented || crewSealedIt,
                 Vented: preVented,
                 Infested: infested,
                 HoldsSurvivor: HullVenting.HidesSurvivor(wreck.Id, name, wreck.Cause),
@@ -186,6 +204,10 @@ public sealed partial class Map
 
         _ventMessage = null;   // a fresh action clears the last outcome, so the panel never mixes them
         _ventSpaces[name] = s with { DoorShut = !s.DoorShut };
+        if (s.DoorShut)
+        {
+            ReleaseWhatWasSealedIn(name);   // thrown from the board: a door you are not standing at
+        }
         RebuildWreckDeck();    // a dogged hatch is a wall; an undogged one is a doorway
         RendererInterop.PlayCue("board");
     }
@@ -218,8 +240,20 @@ public sealed partial class Map
 
         _ventMessage = null;
         _ventReads[name] = HullVenting.Read(seed, space);
+
+        // OWNER: "maybe the log should open in top most popup and the rest of the ui be disabled until it
+        // is closed." Right — this is the most important sentence the mechanic produces, and as a small
+        // line tucked under the switches it read like a status bar. It is not a status: it is the moment
+        // the captain is handed an answer that refuses to finish itself, and everything they do next is
+        // decided by it. So it takes the screen, and the board waits.
+        _ventReadCard = name;
         RendererInterop.PlayCue("reveal");
     }
+
+    /// <summary>The compartment whose operating-log card is currently up, over the valve board.</summary>
+    private string? _ventReadCard;
+
+    private void CloseVentReadCard() => _ventReadCard = null;
 
     /// <summary>Pull the handle.</summary>
     private void VentCompartment(string name)
@@ -259,6 +293,9 @@ public sealed partial class Map
         {
             LogAutopilotEvent($"💨 Vented {name}.");
         }
+
+        // A compartment blowing to space is the loudest thing that has happened aboard her in forty years.
+        MakeNoiseAboard(RoomCentre(name).X, RoomCentre(name).Y, LoudEarshot);
 
         RendererInterop.PlayCue("alarm");
         RebuildWreckDeck();   // vacuum that side, air this side: the doorway is now ten tonnes in a frame
@@ -392,6 +429,61 @@ public sealed partial class Map
             .OrderByDescending(s => s.VacuumSeconds)
             .Select(s => (s.Name, s.VacuumSeconds));
 
+    /// <summary>Rooms whose sealed door has already been opened once — so what was in there comes out ONCE,
+    /// not every time a hatch swings.</summary>
+    private readonly HashSet<string> _released = new(System.StringComparer.Ordinal);
+
+    /// <summary>
+    /// UNDOGGING A HATCH OPENS IT BOTH WAYS. Owner: <i>"and once unlocked the door starts to open also for
+    /// the reevers :-D"</i>
+    ///
+    /// <para>Which is the entire reason the crew dogged it. A sealed room is a decision with teeth: the
+    /// operating log says something in there is warm and moving and will never say what, so the captain
+    /// chooses between never knowing and finding out — and finding out is not free. Whatever was shut in
+    /// comes out into the corridor, aware, between the away team and nothing at all.</para>
+    ///
+    /// <para>It fires from the BOARD as readily as from the door, which is worse and correct: throw that
+    /// switch from aft in ENGINEERING and you have opened a door you are not standing at.</para>
+    /// </summary>
+    private void ReleaseWhatWasSealedIn(string name)
+    {
+        if (_wreck is null
+            || !_ventSpaces.TryGetValue(name, out HullVenting.Space s)
+            || !s.Infested
+            || s.Vented
+            || !_released.Add(name))
+        {
+            return;
+        }
+
+        (string _, float x0, float x1, bool top) = System.Array.Find(
+            WreckLayout.Compartments, c => c.Name == name);
+
+        int came = 1 + DiceRule.Roll(
+            DiceRule.Seed("sealed-count", (long)_wreck.Value.Id.GetHashCode(System.StringComparison.Ordinal),
+                          name.GetHashCode(System.StringComparison.Ordinal)), 2).Face - 1;
+        for (int i = 0; i < came && _reevers.Count < ReeverEngineCeiling; i++)
+        {
+            _reevers.Add(new Reever
+            {
+                X = ((x0 + x1) / 2.0) + (i * 2.0) - 1.0,
+                Y = top ? -6.0 : 6.0,
+                Facing = 0,
+                JitterSeed = ((_surface?.ThreatSeed ?? 0UL) * 0x9E3779B97F4A7C15UL) + (ulong)i + 7UL,
+                EverSeen = true,
+                LastSeenX = _avatarX,
+                LastSeenY = _avatarY,
+            });
+        }
+
+        ShowPulseMessage(
+            $"🕷 The {name} hatch comes off its dogs — and it opens BOTH ways. Whatever the last crew shut " +
+            "in there has been waiting on the other side of it, and it does not need a second invitation.");
+        LogAutopilotEvent($"🕷 Opened the sealed {name} — {came} came out.");
+        ApplyNerveShock(NervePips.SightingPips * (int)NervePips.PipUnit, "you opened the door they sealed");
+        RendererInterop.PlayCue("alarm");
+    }
+
     /// <summary>Every compartment whose doorway is currently ten tonnes of atmosphere in a frame. The deck
     /// walls this set, so a room you blew is a room you cannot walk into.</summary>
     private HashSet<string> HeldDoors()
@@ -496,6 +588,7 @@ public sealed partial class Map
             LogAutopilotEvent($"☠ Equalising took {r.SurvivorsLost} survivor(s) — their doors were open.");
         }
 
+        MakeNoiseAboard(RoomCentre(name).X, RoomCentre(name).Y, LoudEarshot);   // a ship equalising is not quiet
         ShowPulseMessage(HullVenting.EqualiseLine + extra);
         LogAutopilotEvent($"🎚 Cracked the {name} valve — {(r.SpineVented ? "the ship is vacuum now" : "pressures even")}.");
         RendererInterop.PlayCue("alarm");
@@ -518,6 +611,11 @@ public sealed partial class Map
         _ventSpaces[name] = s with { DoorShut = sealing };
 
         ShowPulseMessage(sealing ? HullVenting.SealLine(name) : HullVenting.UnsealLine(name));
+        MakeNoiseAboard(RoomCentre(name).X, RoomCentre(name).Y, QuietEarshot);   // six dogs, by hand
+        if (!sealing)
+        {
+            ReleaseWhatWasSealedIn(name);   // at the door, and it opens both ways
+        }
         RendererInterop.PlayCue("board");
         RebuildWreckDeck();
     }
