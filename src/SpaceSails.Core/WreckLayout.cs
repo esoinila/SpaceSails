@@ -82,6 +82,26 @@ public static class WreckLayout
     /// </summary>
     public const float ShuttleLockX = 21f;
 
+    /// <summary>
+    /// THE CREW-ONLY RULE, as a function rather than a line buried in the walk loop. Given where something
+    /// that is not the away team wants to be, return where it is actually allowed to be.
+    ///
+    /// <para>The lock bulkhead has a passage cut in it — it has to, or the captain could not get home — so
+    /// walls alone would let the pack walk it exactly the way the captain does. What stops them is the same
+    /// rule the ship's own tube runs on: a hatch keyed to the crew. It can reach the door. It cannot open
+    /// the door.</para>
+    ///
+    /// <para>This lives in Core so the invariant is PINNED BY A TEST instead of by a comment. "Nothing
+    /// uninvited reaches the shuttle" is the kind of promise that is quietly broken by a refactor three
+    /// months from now, and the owner would find out by watching something follow him home.</para>
+    /// </summary>
+    public static double HeldAtLock(double x, double radius) =>
+        System.Math.Min(x, ShuttleLockX - radius);
+
+    /// <summary>Whether this position is on the shuttle's side of the lock — where only the away team
+    /// ever gets to stand.</summary>
+    public static bool PastTheLock(double x, double radius) => x > ShuttleLockX - radius;
+
     /// <summary>Half-height of the gap through the lock bulkhead. Three units of passage — wider than the
     /// captain with room to walk it badly, which is the bar <c>WreckLayoutTests</c> holds every doorway to.</summary>
     public const float ShuttleLockGapHalf = 1.5f;
