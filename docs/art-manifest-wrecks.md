@@ -1,5 +1,9 @@
 # Image manifest — the wrecks (#488)
 
+> **A tenth cause has since landed** — `VentedByOneOfTheirOwn`, the ship one of her own opened to space.
+> Her canvas lives in [art-manifest-visions.md](art-manifest-visions.md) with the archive-node visions,
+> because she is that feature's wreck. Same rules as this set.
+
 Nine ships that died nine different ways. Owner: *"we should have some GEN AI art to really tell the story
 of each ship."* Each cause gets its own canvas, shown twice — when the away team reads the **cause's own
 station** (you are standing and looking at the thing) and again on the **decision card** (you are deciding

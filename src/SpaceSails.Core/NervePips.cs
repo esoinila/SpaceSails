@@ -83,6 +83,12 @@ public static class NervePips
         /// <summary>First sight of the monolith. Once in a captain's life.</summary>
         Monolith,
 
+        /// <summary>Standing inside the field of an archive node — the one warm thing on a dead ship.
+        /// Beats while it holds, and NOTHING about it is announced: no prompt, no dialog, just the pip row
+        /// ticking while the captain decides whether they are finished in this compartment. The salvage is
+        /// deliberately in the same room, so the dose is the player's own to set.</summary>
+        Archive,
+
         /// <summary>Back aboard through the airlock — or flying, or docked. The ship is safety, and it gives
         /// pips back one beat at a time so the recovery is as legible as the loss.</summary>
         Airlock,
@@ -100,7 +106,7 @@ public static class NervePips
     /// <summary>Whether a cause is sustained pressure (spends a pip per beat while it holds) rather than a
     /// one-off lump. Only these consult the beat clock.</summary>
     public static bool IsSustained(Cause c) =>
-        c is Cause.Close or Cause.Cornered or Cause.DigUnderThreat or Cause.Airlock;
+        c is Cause.Close or Cause.Cornered or Cause.DigUnderThreat or Cause.Airlock or Cause.Archive;
 
     // ── Costs, in whole pips (FLAGGED for the owner's tuning) ─────────────────────────────────────────
 
@@ -154,7 +160,7 @@ public static class NervePips
         Cause.Touch => TouchPips,
         Cause.Monolith => MonolithPips,
         Cause.Sighting => SightingPips,
-        Cause.Close or Cause.Cornered or Cause.DigUnderThreat => BeatPips,
+        Cause.Close or Cause.Cornered or Cause.DigUnderThreat or Cause.Archive => BeatPips,
         Cause.Airlock => -BeatPips, // gives one back
         _ => 0,
     };
@@ -174,10 +180,17 @@ public static class NervePips
     /// running for the tube is a real decision and not a reset button.</summary>
     public const double AirlockBeatSeconds = 2.5;
 
+    /// <summary>The archive node's field, and the SLOWEST beat in the game on purpose. It has to be slow
+    /// enough that crossing the compartment is genuinely free and working in it is genuinely not — if it
+    /// bit as fast as being cornered, the room would just be a wall and there would be no decision in it.
+    /// FLAGGED for the owner's tuning.</summary>
+    public const double ArchiveBeatSeconds = 6.0;
+
     /// <summary>The beat length for a sustained cause.</summary>
     public static double BeatSeconds(Cause c) => c switch
     {
         Cause.Cornered => CorneredBeatSeconds,
+        Cause.Archive => ArchiveBeatSeconds,
         Cause.DigUnderThreat => DigBeatSeconds,
         Cause.Airlock => AirlockBeatSeconds,
         _ => CloseBeatSeconds,
@@ -193,6 +206,7 @@ public static class NervePips
         Cause.Sighting => "something crests the tracker",
         Cause.Touch => "it laid hands on you",
         Cause.Monolith => "you have seen the monolith",
+        Cause.Archive => "you have stood too long beside the thing in the hold",
         Cause.Airlock => "the airlock closes behind you",
         Cause.Relief => "the hands remember how to be still",
         Cause.Shock => "something you will not be able to unsee",
@@ -225,10 +239,11 @@ public static class NervePips
     /// (owner: <i>"repeated strikes should not cost more of sanity"</i>). Re-arms the moment the captain
     /// is clear — safe up the tube, or with nothing close enough to frighten them.</param>
     public readonly record struct Beats(
-        double Close, double Cornered, double Dig, double Airlock, bool TouchSpent = false)
+        double Close, double Cornered, double Dig, double Airlock, bool TouchSpent = false,
+        double Archive = 0.0)
     {
         /// <summary>Nothing building, and the next hand will be a fresh shock.</summary>
-        public static Beats Fresh => new(0, 0, 0, 0, false);
+        public static Beats Fresh => new(0, 0, 0, 0, false, 0);
 
         /// <summary>This cause's accumulated seconds.</summary>
         public double For(Cause c) => c switch
@@ -236,6 +251,7 @@ public static class NervePips
             Cause.Cornered => Cornered,
             Cause.DigUnderThreat => Dig,
             Cause.Airlock => Airlock,
+            Cause.Archive => Archive,
             _ => Close,
         };
 
@@ -245,6 +261,7 @@ public static class NervePips
             Cause.Cornered => this with { Cornered = seconds },
             Cause.DigUnderThreat => this with { Dig = seconds },
             Cause.Airlock => this with { Airlock = seconds },
+            Cause.Archive => this with { Archive = seconds },
             _ => this with { Close = seconds },
         };
     }
