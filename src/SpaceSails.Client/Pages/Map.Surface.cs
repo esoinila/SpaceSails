@@ -2653,6 +2653,23 @@ public partial class Map
     // ── The motion tracker HUD (#313): a crude corner sweep of MOVING contacts, built for the renderer.
     //    Motion only — a wall-blocked, momentarily-still Old One drops off the fan. ──
 
+    /// <summary>Gather the deployed sentries for the renderer. Pulled out of the full HUD build so the
+    /// WRECK path can have them too: a bot on a steel deck is drawn exactly like a bot on regolith, and it
+    /// was only ever invisible aboard because the whole hud was suppressed to get rid of the tracker.</summary>
+    private void RefreshHudBots(SurfaceExcursion ex)
+    {
+        double nowMs = _lastTimestampMs ?? 0;
+        _hudBots.Clear();
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (!b.Deployed)
+            {
+                continue;
+            }
+            _hudBots.Add((b.X, b.Y, SentryBot.Readout(b.Rounds), b.Rounds <= 0, b.FiringUntilMs > nowMs, b.AimX, b.AimY));
+        }
+    }
+
     private DeckView.SurfaceHud? BuildSurfaceHud()
     {
         if (_surface is not { } ex)
@@ -2660,14 +2677,39 @@ public partial class Map
             return null;
         }
 
-        // #488: a DERELICT wears none of the regolith's instruments. The motion tracker sweeps for Old Ones
-        // clawing out of ground that is not there; the key hints offer to DIG and to plant a SENTRY on a
-        // steel deck; the tracker caption talks about movement in the deep. Boarded live, all three printed
-        // over the wreck's own compartment labels and made her read like a moon with walls. She is a ship:
-        // the away team reads her, they do not sweep her.
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        // #488: a DERELICT wears none of the regolith's INSTRUMENTS. The motion tracker sweeps for Old Ones
+        // clawing out of ground that is not there; the key hints offer to DIG on a steel deck; the tracker
+        // caption talks about movement in the deep. Boarded live, all three printed over the wreck's own
+        // compartment labels and made her read like a moon with walls. She is a ship: the away team reads
+        // her, they do not sweep her.
+        //
+        // THAT WAS DONE BY RETURNING NULL, AND IT TOOK THE SENTRIES WITH IT. Deployed bots are drawn from
+        // this HUD, so aboard a wreck a bot went down, held its arc, pinned Old Ones — and was invisible.
+        // (Owner, mid-playtest: "I tried to deploy K99 but the map does not show anything there.") A bot
+        // holding a corridor while the pump runs is the loop this lane is FOR, so the wreck now gets a
+        // REDUCED hud rather than none: the marks that belong on a deck, and none of the regolith's
+        // instruments.
+        bool onWreck = Derelict.TryParseWreckId(ex.Stop.Body.Id, out _);
+        if (onWreck)
         {
-            return null;
+            RefreshHudBots(ex);
+            return new DeckView.SurfaceHud(
+                TrackerCaptions: null,
+                DigProgress: ex.DoorChannel?.Progress ?? -1,   // a forced door is a ship thing; digging is not
+                HasDroppedChest: false, DropX: 0, DropY: 0,
+                Blips: [],                                     // no sweep
+                Cadence: 0,
+                Readout: "",
+                CacheMarks: [],                                // nothing is buried on a steel deck
+                Nerve: _nerve,
+                NerveReadout: NerveModel.Readout(_nerve),
+                Bots: _hudBots,                                // ← the fix
+                Husks: _hudHusks,
+                KeyHints: BuildSurfaceKeyHints(ex),            // names [T] aboard, never DIG
+                Instruments: false,                            // no motion tracker on a ship
+                BloodSplash: BloodShowing
+                    ? Math.Clamp((_bloodUntilMs - (_lastTimestampMs ?? 0)) / 900.0, 0, 1)
+                    : 0);
         }
         // #371 Phase 1 (perf): fill the reused entity buffer instead of a lazy Select — one iterator fewer
         // per frame, and MotionTracker.Sweep reads it as an IEnumerable exactly as before.
@@ -2704,16 +2746,7 @@ public partial class Map
             _hudMarks.Add((mx, my, c.ReeverLevel > 0));
         }
 
-        double nowMs = _lastTimestampMs ?? 0;
-        _hudBots.Clear();
-        foreach (SurfaceBot b in ex.Bots)
-        {
-            if (!b.Deployed)
-            {
-                continue;
-            }
-            _hudBots.Add((b.X, b.Y, SentryBot.Readout(b.Rounds), b.Rounds <= 0, b.FiringUntilMs > nowMs, b.AimX, b.AimY));
-        }
+        RefreshHudBots(ex);
 
         _hudHusks.Clear();
         // 🗺 Layers (#405) Ground finds → Husks: the downed-Old-One marks left in the regolith (#316).
@@ -2790,11 +2823,26 @@ public partial class Map
     // the sling it spells out [T] deploy, and a chest in hand spells [G] drop. Affordances never hide.
     private string BuildSurfaceKeyHints(SurfaceExcursion ex)
     {
-        // #488: aboard a derelict there is nothing to dig and nowhere to plant a sentry. The bar names what
-        // she actually offers — walking her, and reading what is bolted to her decks.
+        // #488: aboard a derelict there is nothing to DIG. There is, however, very much somewhere to plant
+        // a sentry — a bot holding a corridor while a compartment pumps down is the loop this whole lane is
+        // for — and this bar used to say otherwise and then hide the key, which is how the owner ended up
+        // pressing T at a map that showed him nothing. Affordances never hide (#212).
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
-            return "WASD — move · E — examine / take · F — first person · 🔇 M — mute";
+            var aboard = new List<string> { "WASD — move", "E — examine / take" };
+            if (ex.Bots.Any(b => !b.Deployed))
+            {
+                aboard.Add("🤖 T — deploy a sentry");
+            }
+            else if (ex.Bots.Any(b => b.Deployed &&
+                     ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
+                         <= DeckPlan.InteractRadius * DeckPlan.InteractRadius))
+            {
+                aboard.Add("🤖 T — pick up the sentry");
+            }
+            aboard.Add("F — first person");
+            aboard.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute");
+            return string.Join(" ∙ ", aboard);
         }
 
         // #440: the bar must NAME the thing that matters. "E — dig / use" is honest but generic, and it was

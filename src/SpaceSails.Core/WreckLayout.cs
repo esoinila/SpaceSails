@@ -106,6 +106,37 @@ public static class WreckLayout
     /// captain with room to walk it badly, which is the bar <c>WreckLayoutTests</c> holds every doorway to.</summary>
     public const float ShuttleLockGapHalf = 1.5f;
 
+    /// <summary>
+    /// THE LIFEBOAT CRADLES, on the outboard wall where a ship actually keeps them. Owner, on walking into
+    /// the compartment named for them and finding an empty box: <i>"Are the lifeboats there or not … we
+    /// should somehow see this like slots that are filled or empty … on the wall."</i>
+    ///
+    /// <para>Right, and it is the cheapest evidence in the game: a row of cradles you can COUNT from the
+    /// doorway. No console to read, no die to roll — how many are empty is a fact about the room, and what
+    /// it means is the captain's problem. It is also the seam the safety-card lane
+    /// (<c>docs/features/safety-card.md</c>) was filed against.</para>
+    /// </summary>
+    public const int CradleCount = 6;
+
+    /// <summary>Where each cradle sits: evenly along the LIFEBOAT CRADLES compartment's outboard wall.</summary>
+    public static IEnumerable<(float X, float Y)> CradleSpots()
+    {
+        (string _, float x0, float x1, bool _) = System.Array.Find(
+            Compartments, c => c.Name == LifeboatCompartment);
+
+        float span = x1 - x0;
+        for (int i = 0; i < CradleCount; i++)
+        {
+            // Inset half a step at each end so the row reads as spaced along the wall rather than
+            // running into the bulkheads.
+            float t = (i + 0.5f) / CradleCount;
+            yield return (x0 + (span * t), BottomY - 1.2f);
+        }
+    }
+
+    /// <summary>The compartment the cradles are in.</summary>
+    public const string LifeboatCompartment = "LIFEBOAT CRADLES";
+
     /// <summary>The playable bounds an audit sweeps — the hull with a margin.</summary>
     public static (double MinX, double MinY, double MaxX, double MaxY) Bounds =>
         (AftX - 2, TopY - 2, BowX + 2, BottomY + 2);

@@ -42,6 +42,12 @@ public sealed class DeckView
         string NerveReadout,         // to the motion tracker — the channel-law corner gauge, never on the grid
         // #314: deployed sentries (with their 99-counter readout + a firing zap line) and the husks of
         // downed Old Ones — ON-grid marks, not corner widgets. Optional so #313 callers still compile.
+        // #488: whether this excursion wears the REGOLITH'S instruments — the motion-tracker fan and its
+        // caption. False aboard a derelict, which is a ship rather than a moon: the away team reads her,
+        // they do not sweep her. It is a flag rather than a null hud because the ON-GRID marks (deployed
+        // sentries, husks, blood) belong on any deck, and suppressing the whole hud to lose the tracker
+        // silently took the sentries with it.
+        bool Instruments = true,
         System.Collections.Generic.IReadOnlyList<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)>? Bots = null,
         System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Husks = null,
         // #324: the contextual surface keybar — the deploy/drop keys spelled out along the bottom while
@@ -603,7 +609,7 @@ public sealed class DeckView
 
         // #313 the motion tracker: a crude corner fan of MOVING blips (bearing/range), including
         // contacts beyond the grid edge — the early warning. Cadence pulses the blips as they close.
-        if (surface is { } tHud)
+        if (surface is { Instruments: true } tHud)
         {
             DrawMotionTracker(widthPx, heightPx, simTime, tHud);
         }

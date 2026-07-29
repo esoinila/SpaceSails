@@ -45,6 +45,63 @@ Press `E` at the **SHUTTLE BAY** while a window is engaged to take manual contro
   it — a sloppy pass by the mothership makes for a genuinely harder shuttle flight, not just a
   cosmetic one.
 
+## The shuttle as a tool, not a lift
+
+*Design thread, 2026-07-29. Owner, on being told where the multi-site chooser actually belongs: "Love that
+shuttle use widening."*
+
+Today the shuttle is a **lift**: it takes the away team from the ship to the ground and back, and while
+they are down there it is furniture. Everything the wreck lane has grown this week quietly argues for it
+being a **tool they keep using while they are out there**.
+
+The hinge is that a co-orbital hold costs nothing (Lab 40), so repositioning along a hull is free in fuel —
+and **time is now the currency aboard a wreck.** Vacuum soaks, pump cycles, sentry magazines and an
+overload countdown are all clocks running at once, so "fly round to the other end, that will take four
+minutes" is a real price without needing a fuel line to justify it.
+
+What that unlocks, in rough order of how cheap it is to build:
+
+| | What the shuttle becomes |
+|---|---|
+| **Severed sections** | On a big hull, sections are not connected inside. You pick where to cut in, and the only road to the far half is back through the airlock and around. The multi-site chooser stops being a mood and becomes **geometry**. |
+| **A gun that moves** | GATE-1 already sits in her airlock covering the corridor you retreat down. Reposition, and it covers a different door — so where you park is a tactical choice, not a parking space. |
+| **The air supply** | Already true and worth naming: refill charges *are* the shuttle's reserve. She is the reason a compartment can be brought back to pressure at all. |
+| **Retrieval** | A launched lifeboat ([safety-card.md](safety-card.md)), a section under tow, a node nobody should be carrying. Things that are *out there* rather than aboard. |
+
+And the sharpest version: **flying between sections with the overload armed.** The clock does not care that you are in transit, and the shuttle is the only thing that can put you back inside it or take you away.
+
+Prerequisite for the first row is the same **big-hull wreck class** the safety card needs — which is now
+three features waiting on one piece of geometry, and probably means that geometry should be built next.
+
+### Getting in: her lock, or a hole you make
+
+> Owner: *"sometimes we could just use the existing airlock … that dual door animation is perfect for it"*
+> — *"sometimes we need to make our own hatch :-D"*
+
+Two ways aboard, and — because of the atmosphere system — they are **not the same choice**, which is what
+makes offering both worth building.
+
+**Her own airlock.** Free, quiet, and *already animated*: the dual-door cycle the ship's own tube uses is
+exactly what a lock does, and reusing it aboard a wreck costs nothing and says "this is a ship" in one
+gesture. Crucially it **preserves the section's atmosphere** — you cycle through, the compartment keeps
+what it has, and everything the valve board can do to it is still on the table.
+
+**A hole you cut.** For a section with no working lock, or a lock on the wrong side, or a door the
+pressure has decided is a wall. It costs time and it costs gear — and it is **permanent**:
+
+- That section is open to space from now on. It cannot be refilled, ever; there is nothing to refill it
+  *into*.
+- Which means cutting in **is** venting it. Anything alive in there dies on the vacuum's own schedule, and
+  any survivor behind a door in that section is gone before you are through the plating.
+- And the hull now has a hole in it that every future decision has to route around.
+
+So the fast way in carries the same moral weight the equalisation valve does: free, irreversible, and it
+spends something that was not yours. The careful way in is her lock, and the reason to prefer it is
+everything you can still do afterwards.
+
+*Nice consequence for a severed-section hull:* some sections **have** no usable lock. On those, cutting is
+not the impatient option — it is the only one, and the ship made that choice for you.
+
 See also: [traffic-board.md](traffic-board.md) for selecting and pinning a target,
 [plotting-desk.md](plotting-desk.md) for flying the intercept, [depots.md](depots.md) for the
 easiest possible boarding target, [dock-and-economy.md](dock-and-economy.md) for what to do with

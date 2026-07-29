@@ -205,6 +205,62 @@ public static class Derelict
         _ => "",
     };
 
+    /// <summary>
+    /// HOW MANY BOATS LEFT HER — the count you take off the wall. Gated by what killed her, because whether
+    /// anybody got off is one of the loudest facts a wreck has, and the causes already disagree about it:
+    ///
+    /// <list type="bullet">
+    /// <item><b>InsuranceJob</b> — every cradle empty, and the clamps neatly stowed rather than blown.
+    /// Nobody left in a hurry. This is already what <see cref="Evidence"/> says about her.</item>
+    /// <item><b>Infested / VentedByOneOfTheirOwn / LifeSupportFailure</b> — NONE. Nobody got off, which
+    /// means everybody aboard is still aboard, and the away team is walking through the reason.</item>
+    /// <item><b>Mutiny</b> — some. One side left; the other did not.</item>
+    /// <item><b>Everything else</b> — seeded, because "did anyone make it" should not be predictable from
+    /// the cause alone.</item>
+    /// </list>
+    ///
+    /// <para>Deterministic off the wreck id, so the same hull always reads the same from the doorway.</para>
+    /// </summary>
+    public static int LifeboatsLaunched(string wreckId, WreckCause cause, int cradles)
+    {
+        switch (cause)
+        {
+            case WreckCause.InsuranceJob:
+                return cradles;                 // all of them, and tidily
+            case WreckCause.Infested:
+            case WreckCause.VentedByOneOfTheirOwn:
+            case WreckCause.LifeSupportFailure:
+                return 0;                       // nobody got off
+            case WreckCause.Mutiny:
+                return System.Math.Max(1, cradles / 3);
+            default:
+                ulong h = StableHash.Of($"{wreckId}|cradles");
+                return (int)(h % (ulong)(cradles + 1));
+        }
+    }
+
+    /// <summary>What the row of cradles says, in the house voice: the count, never the conclusion. "Every
+    /// one of them gone" and "not one of them launched" are the same sentence structure on purpose — the
+    /// captain decides which is worse.</summary>
+    public static string CradleReading(int launched, int cradles)
+    {
+        int left = cradles - launched;
+
+        if (launched == 0)
+        {
+            return $"All {cradles} cradles are still occupied. Not one boat left this ship. Whatever " +
+                   "happened aboard her, nobody aboard decided it was worth leaving over — or nobody was " +
+                   "left who could.";
+        }
+        if (left == 0)
+        {
+            return $"All {cradles} cradles are empty, and the release clamps are stowed rather than blown. " +
+                   "Everybody got off, and they did it without hurrying.";
+        }
+        return $"{launched} of {cradles} cradles are empty; {left} boat{(left == 1 ? " is" : "s are")} still " +
+               "clamped in. Somebody left. Somebody did not.";
+    }
+
     /// <summary>Some wrecks lie. A cause the evidence can be honestly MISREAD as — the wrong answer an
     /// investigator would reach in a hurry, which is what makes reading one a skill and not a lookup.
     /// Null when the wreck is unambiguous.</summary>
