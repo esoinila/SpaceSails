@@ -391,10 +391,34 @@ public static class HullVenting
         "What is left is the long pull to a pressure that kills, which recovers nothing. You can walk away " +
         "with the air, or stand here and wait for the vacuum.";
 
-    /// <summary>Whether the pump can be run at all. It needs the same shut hatch a vent does — you cannot
-    /// pump down a room that is open to the corridor, you would just be pumping the ship — and it needs
-    /// somewhere for the air to GO, so a full reserve has nothing to offer.</summary>
-    public static VentReadiness PumpReadiness(in Space space) => Readiness(space);
+    /// <summary>
+    /// Whether the pump can be run at all. It needs the same shut hatch a vent does — you cannot pump down a
+    /// room that is open to the corridor, you would just be pumping the ship.
+    ///
+    /// <para>BUT NOT THE SAME INTERLOCK ON YOURSELF, and that difference is the point of the machine. A vent
+    /// is a valve: the air leaves in a second and takes everything loose with it, which is why the panel will
+    /// not do it to the room you are standing in. A pump is a motor that takes the best part of a minute, and
+    /// nothing about standing next to a running motor is fatal. Owner, at the board: <i>"I can not pump down
+    /// to vacuum in engineering?"</i> — and he could not, ever, because the board is IN engineering and the
+    /// vent interlock was being applied to the pump as well.</para>
+    ///
+    /// <para>So the pump will run under your feet, and the clock is the warning. Leave before it finishes and
+    /// you have emptied the room you were just in. Stay, and the vacuum finds you the same way it finds
+    /// anything else — slowly, and with the hatch held shut behind you by the pressure you just removed.
+    /// That is a decision with a timer on it, which is exactly what the rest of this panel is made of.</para>
+    /// </summary>
+    /// <remarks>Asked of the room WITHOUT the captain in it, rather than by rewriting the answer afterwards.
+    /// The first cut did the latter and swallowed an open hatch along with the feet, because CaptainInside
+    /// is reported before DoorOpen — a pump that would happily drain the whole ship through a doorway so
+    /// long as you were standing in the room. Exempt the one objection, keep every other.</remarks>
+    public static VentReadiness PumpReadiness(in Space space) =>
+        Readiness(space with { CaptainInside = false });
+
+    /// <summary>What the board says when you start a pump in the room you are standing in. It does not stop
+    /// you and it does not nag twice — it tells you how long you have.</summary>
+    public static string PumpUnderfootLine(string name, double seconds) =>
+        $"The {name} pump spins up under your feet. {(int)seconds}s until the room is dead, and the hatch " +
+        "will hold itself shut against the difference long before that. Be somewhere else.";
 
     /// <summary>The line while the pump runs. Deliberately unglamorous: this is the patient road.</summary>
     public static string PumpRunningLine(string name, double secondsLeft) =>
@@ -405,6 +429,32 @@ public static class HullVenting
         $"{name} reads hard vacuum, and it did not cost you a thing — the air is in the shuttle's tanks " +
         "instead of forty kilometres behind her. The pump winds down. The room is as dead as if you had " +
         "blown it, and you are one breath richer than if you had.";
+
+    // ── Pumping the corridor itself ───────────────────────────────────────────────────────────────────
+
+    /// <summary>The spine, as something the board can act on. Owner: <i>"I would like to pump the spine
+    /// also"</i> — and it is the natural end of his own play, <i>"run to the control room and lock all doors
+    /// and pump them down"</i>. Dog every hatch, empty every room, and then take the corridor.</summary>
+    public const string SpineName = "THE SPINE";
+
+    /// <summary>The corridor runs the length of the ship, so it takes proportionally longer than a room.
+    /// This is the same asymmetry that makes <see cref="SpineRefillRefusal"/> true: pumping a volume that
+    /// large out is merely slow, and putting it back is impossible.</summary>
+    public const double SpinePumpMultiplier = 1.8;
+
+    /// <summary>And it is worth more when it lands, because there was more of it.</summary>
+    public const int SpinePumpYieldsCharges = 2;
+
+    /// <summary>Why the corridor cannot go on the pumps yet. It needs every compartment shut or already
+    /// empty — otherwise the pump is not draining a corridor, it is draining the whole ship through eight
+    /// open doorways, and it would never finish.</summary>
+    public const string SpineNotSealedLine =
+        "The pump will not hold a vacuum on the corridor while compartments are still open to it — you " +
+        "would be pulling on the whole ship through eight doorways. Dog the hatches first, or empty the " +
+        "rooms, and then take the spine.";
+
+    /// <summary>Already done.</summary>
+    public const string SpineAlreadyEmptyLine = "The corridor is already open to space. There is nothing in it to pump.";
 
     // ── The shuttle's own lock ────────────────────────────────────────────────────────────────────────
 

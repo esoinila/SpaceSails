@@ -352,4 +352,36 @@ public class WreckLayoutTests
         Assert.True(walk.Steps > 1);
         Assert.NotEmpty(walk.Path);
     }
+
+    // ── One nest, where the text says it is ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void TheNestStandsInTheCompartmentItsOwnNameClaims()
+    {
+        // It sat in the REACTOR SPACES for the whole of #488 while calling itself "the nest in the deep
+        // hold", and the client bred from every aft compartment because none of them could agree which
+        // one it was in. Owner: "I thought there was only one nest?"
+        Assert.Equal("DEEP HOLD", WreckLayout.NestCompartment);
+        Assert.Contains("deep hold", WreckLayout.CauseStationName(Derelict.WreckCause.Infested),
+                        System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CompartmentAtAgreesWithEveryCompartmentsOwnCentre()
+    {
+        foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
+        {
+            double x = (x0 + x1) / 2.0;
+            double y = top ? -6.5 : 6.5;
+            Assert.Equal(name, WreckLayout.CompartmentAt(x, y));
+        }
+    }
+
+    [Fact]
+    public void TheSpineBelongsToNoCompartment()
+    {
+        // The corridor is not a room, and the board must never be able to blow it as one.
+        Assert.Null(WreckLayout.CompartmentAt(0, 0));
+        Assert.Null(WreckLayout.CompartmentAt(-20, 0));
+    }
 }

@@ -452,4 +452,31 @@ public class HullVentingTests
             Assert.False(string.IsNullOrWhiteSpace(HullVenting.RefillRefusalLine(r, "DEEP HOLD")));
         }
     }
+
+    [Fact]
+    public void ThePumpRunsUnderYourFeetEvenThoughTheValveWillNot()
+    {
+        // The board is IN engineering, so applying the vent interlock to the pump made one compartment
+        // permanently un-emptiable. Owner: "I can not pump down to vacuum in engineering?"
+        var here = new HullVenting.Space("ENGINEERING", DoorShut: true, Vented: false, Infested: true,
+                                         HoldsSurvivor: false, CaptainInside: true);
+
+        Assert.Equal(HullVenting.VentReadiness.CaptainInside, HullVenting.Readiness(here));
+        Assert.Equal(HullVenting.VentReadiness.Ready, HullVenting.PumpReadiness(here));
+        Assert.False(string.IsNullOrWhiteSpace(
+            HullVenting.PumpUnderfootLine("ENGINEERING", HullVenting.PumpDownSeconds)));
+    }
+
+    [Fact]
+    public void ThePumpStillNeedsAShutHatchAndSomethingLeftToPump()
+    {
+        // Everything else about the interlock is unchanged — only the captain's own feet were exempted.
+        var open = new HullVenting.Space("DEEP HOLD", DoorShut: false, Vented: false, Infested: true,
+                                         HoldsSurvivor: false, CaptainInside: true);
+        var dead = new HullVenting.Space("DEEP HOLD", DoorShut: true, Vented: true, Infested: true,
+                                         HoldsSurvivor: false, CaptainInside: true);
+
+        Assert.Equal(HullVenting.VentReadiness.DoorOpen, HullVenting.PumpReadiness(open));
+        Assert.Equal(HullVenting.VentReadiness.AlreadyVented, HullVenting.PumpReadiness(dead));
+    }
 }

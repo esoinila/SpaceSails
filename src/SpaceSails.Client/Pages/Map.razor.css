@@ -3652,6 +3652,8 @@
 .vent-map ::deep .vent-area .vent-tag { fill: #8fa1b8; font-size: 1.35px; }
 .vent-map ::deep .vent-area .alive-tag { fill: #e8b45c; }
 .vent-map ::deep .vent-area .here-tag { fill: #78dcaa; }
+.vent-map ::deep .vent-area .pumping-tag { fill: #7fd4e8; }
+.vent-map ::deep .vent-area .banked-tag { fill: #78dcaa; }
 .vent-map ::deep .vent-area.vented text { fill: #4d586d; }
 
 .vent-area:hover rect { fill: rgba(38, 50, 64, 0.95); }
@@ -3674,11 +3676,14 @@
 .vent-readout {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.98rem;
-    color: #8fa1b8;
+    /* Was a grey-blue that sat almost on top of the board's own background — the one line the captain most
+       needs to read, styled like a disclaimer. Amber on black instead (owner: "that yellow font against
+       black works great"), with the ALIVE state pushed hotter so the two never blur into one another. */
+    color: #e8c07a;
     padding: 0.35rem 0.1rem 0;
     line-height: 1.45;
 }
-.vent-readout.alive { color: #e8b45c; }
+.vent-readout.alive { color: #ff9a52; font-weight: 700; }
 
 /* ── The pressure gauge on a loaded door ────────────────────────────────────────────────────────────
    The needle sits hard over on its stop and does not move. That IS the readout: there is no nuance in
@@ -3864,7 +3869,7 @@
 .vent-read-foot {
     font-size: 0.98rem;
     line-height: 1.5;
-    color: #7a8798;
+    color: #c3d1e4;
     border-top: 1px solid rgba(150, 170, 190, 0.18);
     padding-top: 0.55rem;
     margin-top: 0.2rem;
