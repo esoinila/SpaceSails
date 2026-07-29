@@ -636,10 +636,24 @@
                 <svg class="vent-map" viewBox="@VentViewBox" preserveAspectRatio="xMidYMid meet"
                      role="group" aria-label="ship compartments">
                     <polygon class="vent-hull" points="@VentHullOutline" />
-                    <rect class="vent-spine-band"
-                          x="@Du(WreckLayout.AftX)" y="@Du(-WreckLayout.SpineHalfHeight)"
-                          width="@Du(WreckLayout.BowX - 6 - WreckLayout.AftX)"
-                          height="@Du(WreckLayout.SpineHalfHeight * 2)" />
+                    @* THE CORRIDOR IS A PART OF THE SHIP YOU TOUCH. Owner, looking for it: "why can I not
+                       pump the spine? … oh it has its own button instead of just selecting it from map?"
+                       Exactly — and that was the whole complaint. Every compartment on this board is
+                       chosen by putting a finger on it, and the corridor alone had a switch bolted to the
+                       side of the panel, which is why it read as unavailable rather than unselected. It is
+                       a volume on the mimic; it answers to the mimic. *@
+                    @{
+                        string spineCls = "vent-area spine"
+                            + (_ventSelected == HullVenting.SpineName ? " picked" : "")
+                            + (_spinePressurised ? "" : " vented")
+                            + (CaptainCompartment() is null ? " here" : "");
+                    }
+                    <g class="@spineCls" @onclick="() => SelectVentSpace(HullVenting.SpineName)">
+                        <rect class="vent-spine-band"
+                              x="@Du(WreckLayout.AftX)" y="@Du(-WreckLayout.SpineHalfHeight)"
+                              width="@Du(WreckLayout.BowX - 6 - WreckLayout.AftX)"
+                              height="@Du(WreckLayout.SpineHalfHeight * 2)" />
+                    </g>
 
                     @foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
                     {
@@ -676,37 +690,60 @@
 
                 @* The corridor is a volume too. Owner: "I would like to pump the spine also" — and it is
                    the end of his own play: dog every hatch, empty every room, then take the spine. Unlike
-                   cracking a valve, this puts the corridor's air in the TANKS. *@
-                <div class="vent-actions">
-                    @if (_pumps.TryGetValue(HullVenting.SpineName, out var spinePump))
-                    {
-                        <button type="button" class="btn btn-outline-warning btn-sm"
-                                @onclick="() => StopPump(HullVenting.SpineName)">
-                            🛢 Stop the corridor pump — @HullVenting.SoakLabel(spinePump.SecondsLeft)
-                        </button>
-                    }
-                    else if (!_spinePressurised)
-                    {
-                        <div class="vent-refusal">THE SPINE — hard vacuum, from the transom to the lock.</div>
-                    }
-                    else
-                    {
-                        <button type="button" class="btn btn-outline-info btn-sm"
-                                disabled="@(!SpinePumpable)"
-                                title="@(SpinePumpable
-                                         ? "Put the corridor itself on the pumps. Slower than a room, and worth more."
-                                         : HullVenting.SpineNotSealedLine)"
-                                @onclick="StartSpinePump">
-                            🛢 Pump the corridor
-                        </button>
-                        @if (!SpinePumpable)
-                        {
-                            <div class="vent-refusal">@HullVenting.SpineNotSealedLine</div>
-                        }
-                    }
-                </div>
+                   cracking a valve, this puts the corridor's air in the TANKS.
 
-                @if (_ventSelected is { } picked)
+                   Its switches live in the SAME sub-panel the rooms use, under the same heading, because
+                   it is the same kind of thing. There is no valve here: you cannot blow a corridor to
+                   space from inside it, and there is no door onto itself to dog. What it has is a pump. *@
+                @if (_ventSelected == HullVenting.SpineName)
+                {
+                    <div class="vent-actions">
+                        <div class="vent-picked">@HullVenting.SpineName</div>
+                        @if (_pumps.TryGetValue(HullVenting.SpineName, out var spinePump))
+                        {
+                            <button type="button" class="btn btn-outline-warning btn-sm"
+                                    @onclick="() => StopPump(HullVenting.SpineName)">
+                                🛢 Stop the corridor pump — @HullVenting.SoakLabel(spinePump.SecondsLeft)
+                            </button>
+                        }
+                        else if (!_spinePressurised)
+                        {
+                            <div class="vent-refusal">Hard vacuum, from the transom to the lock.</div>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(!SpinePumpable)"
+                                    title="@(SpinePumpable
+                                             ? "Put the corridor itself on the pumps. Slower than a room, and worth more."
+                                             : HullVenting.SpineNotSealedLine)"
+                                    @onclick="StartSpinePump">
+                                🛢 Pump the corridor
+                            </button>
+                            @* THE WHOLE SHIP, AS ONE ORDER. Owner: "there could be a pump the whole ship
+                               button though :-D" — and it is more than the other two pressed in turn,
+                               because the corridor cannot go on the pumps until every hatch is dogged.
+                               This dogs them, starts them, and holds the order for the spine. *@
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(PumpableRooms().Count == 0 && !SpinePumpable)"
+                                    title="Dog every hatch, put every compartment on the pumps, and take the corridor as soon as the last one seals."
+                                    @onclick="OrderWholeShipPumped">
+                                🛢🛢🛢 Pump the whole ship
+                            </button>
+                            @if (_shipPumpOrder)
+                            {
+                                <div class="vent-readout">
+                                    ⏳ The corridor is on the order — she goes on the pumps as the last hatch seals.
+                                </div>
+                            }
+                            @if (!SpinePumpable)
+                            {
+                                <div class="vent-refusal">@HullVenting.SpineNotSealedLine</div>
+                            }
+                        }
+                    </div>
+                }
+                else if (_ventSelected is { } picked)
                 {
                     var sel = SpaceNow(picked);
                     var readiness = HullVenting.Readiness(sel);
