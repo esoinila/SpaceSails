@@ -105,14 +105,31 @@ scratchpad, eyeball each one, then copy into `wwwroot/art/`.
 
 | # | Cause | File | Code wired | Art |
 |---|---|---|---|---|
-| 1 | DriveFailure | `wreck-drive-failure.jpg` | ✅ | ⬜ |
-| 2 | ReactorCascade | `wreck-reactor-cascade.jpg` | ✅ | ⬜ |
-| 3 | HullBreach | `wreck-hull-breach.jpg` | ✅ | ⬜ |
-| 4 | LifeSupportFailure | `wreck-life-support.jpg` | ✅ | ⬜ |
-| 5 | NavigationalError | `wreck-navigational-error.jpg` | ✅ | ⬜ |
-| 6 | Mutiny | `wreck-mutiny.jpg` | ✅ | ⬜ |
-| 7 | Piracy | `wreck-piracy.jpg` | ✅ | ⬜ |
-| 8 | Infested | `wreck-infested.jpg` | ✅ | ⬜ |
-| 9 | InsuranceJob | `wreck-insurance-job.jpg` | ✅ | ⬜ |
+| 1 | DriveFailure | `wreck-drive-failure.jpg` | ✅ | ✅ |
+| 2 | ReactorCascade | `wreck-reactor-cascade.jpg` | ✅ | ✅ |
+| 3 | HullBreach | `wreck-hull-breach.jpg` | ✅ | ✅ |
+| 4 | LifeSupportFailure | `wreck-life-support.jpg` | ✅ | ✅ |
+| 5 | NavigationalError | `wreck-navigational-error.jpg` | ✅ | ✅ |
+| 6 | Mutiny | `wreck-mutiny.jpg` | ✅ | ✅ (3rd pass) |
+| 7 | Piracy | `wreck-piracy.jpg` | ✅ | ✅ |
+| 8 | Infested | `wreck-infested.jpg` | ✅ | ✅ |
+| 9 | InsuranceJob | `wreck-insurance-job.jpg` | ✅ | ✅ |
 
-All nine slots ship wired and degrade cleanly; they are waiting on an authenticated `grok login`.
+**All nine painted and shipped, 2026-07-29.**
+
+### What the set taught us
+
+- **Never say "torch."** The mutiny prompt asked for an arms locker *"opened with a cutting torch"* and got, twice,
+  a **burning torch** mounted on the wall of a ship that has been cold and airless for decades — the one thing
+  that contradicts every other canvas in the set. Third pass said *"forced open with a plasma cutter long ago,
+  its cut edges cold and blackened"* plus an explicit *"no fire, no flame, no burning, no torches, no candles,
+  no glowing embers, no working lights"* and came back right. Reject-for-continuity is worth the extra pass:
+  the wrecks share a world, and one lit flame breaks all nine.
+- **Ask for evidence and the model finds its own.** Nobody asked for the abandoned chess game in the
+  life-support berth, or the second workings circled in a different hand on the navigation plan. The prompts
+  that describe a *situation* rather than a *composition* come back with details worth keeping.
+- The nine went in one batch of five plus four earlier, no retries except mutiny.
+
+> Sidelight: `wreck-insurance-job.jpg` is a lifeboat bay with every cradle empty and the clamps neatly stowed
+> — which is exactly the scene the owner described the same morning as a whole feature. See
+> [features/safety-card.md](features/safety-card.md).

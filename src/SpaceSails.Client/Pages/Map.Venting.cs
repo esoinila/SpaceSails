@@ -94,6 +94,14 @@ public sealed partial class Map
 
     private void CloseVentPanel() => _showVentPanel = false;
 
+    /// <summary>Pick a compartment off the map. Clears the last outcome so the board never shows a result
+    /// from one room next to the switches for another.</summary>
+    private void SelectVentSpace(string name)
+    {
+        _ventSelected = name;
+        _ventMessage = null;
+    }
+
     /// <summary>The dead bridge panel: a signpost, not a wall. Nobody should have to guess the answer is aft.</summary>
     private void TryDeadBridgePanel() => ShowPulseMessage(HullVenting.DeadBridgePanelLine);
 
@@ -205,6 +213,103 @@ public sealed partial class Map
         LogAutopilotEvent($"🧑‍🚀 Rescued a survivor from {name} — {HullVenting.SurvivorRescueCr:N0} cr.");
         RendererInterop.PlayCue("reveal");
         RequestVaultSave();
+    }
+
+    // ── The mimic's geometry, taken from the ship's own numbers ───────────────────────────────────────
+
+    /// <summary>A deck unit as an SVG coordinate: ALWAYS invariant. Blazor renders a float attribute in the
+    /// current culture, so on a Finnish browser 20.5 becomes "20,5" — which SVG reads as two numbers and the
+    /// map comes apart. It would have broken for the owner and for nobody else.</summary>
+    private static string Du(double v) =>
+        v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>The mimic's frame — the audit's own playable bounds, so the map shows exactly the ship the
+    /// A* walks.</summary>
+    private static string VentViewBox
+    {
+        get
+        {
+            (double minX, double minY, double maxX, double maxY) = WreckLayout.Bounds;
+            return $"{Du(minX)} {Du(minY)} {Du(maxX - minX)} {Du(maxY - minY)}";
+        }
+    }
+
+    /// <summary>The hull outline, built from <see cref="WreckLayout"/>'s constants rather than drawn by
+    /// hand: flat transom aft, tapering bow forward. If the ship's shape ever changes, the mimic changes
+    /// with it. (Symmetric about the spine, so negating Y for SVG leaves it unchanged.)</summary>
+    private static string VentHullOutline
+    {
+        get
+        {
+            float taper = WreckLayout.BowX - 6;
+            return string.Join(' ',
+                $"{Du(WreckLayout.AftX)},{Du(WreckLayout.BottomY)}",
+                $"{Du(taper)},{Du(WreckLayout.BottomY)}",
+                $"{Du(WreckLayout.BowX)},2",
+                $"{Du(WreckLayout.BowX)},-2",
+                $"{Du(taper)},{Du(WreckLayout.TopY)}",
+                $"{Du(WreckLayout.AftX)},{Du(WreckLayout.TopY)}");
+        }
+    }
+
+    /// <summary>Where THIS compartment's doorway onto the spine actually is. The spine has four openings,
+    /// not eight — each one serves the room above it and the room below it — so a door drawn at every
+    /// compartment's midpoint would be showing the captain a way through that is not there.</summary>
+    private static float VentDoorX(float x0, float x1)
+    {
+        foreach (float centre in WreckLayout.DoorCentres())
+        {
+            if (centre > x0 && centre < x1)
+            {
+                return centre;
+            }
+        }
+        return (x0 + x1) / 2f;
+    }
+
+    /// <summary>The one word a compartment wears on the mimic, and the class that colours it. Empty when the
+    /// room has nothing to say yet — an unread compartment should look unread.</summary>
+    private (string Text, string Class) VentAreaTag(string name, HullVenting.Space space)
+    {
+        if (space.Vented)
+        {
+            return ("VACUUM", "vent-tag");
+        }
+        if (space.CaptainInside)
+        {
+            return ("YOU", "vent-tag here-tag");
+        }
+        if (_ventReads.TryGetValue(name, out (DiceRoll Roll, HullVenting.LifeSign Sign) rd))
+        {
+            return rd.Sign switch
+            {
+                HullVenting.LifeSign.SomethingAlive => ("ALIVE?", "vent-tag alive-tag"),
+                HullVenting.LifeSign.Empty => ("cold", "vent-tag"),
+                _ => ("??", "vent-tag"),
+            };
+        }
+        return ("", "vent-tag");
+    }
+
+    /// <summary>The compartment's name (and its one-word state) as SVG. Razor reserves <c>&lt;text&gt;</c>
+    /// for its own control flow, so the labels are built here and injected as markup. Names are drawn INSIDE
+    /// the room they belong to — owner: <i>"a map with named sections so if you don't remember the name of
+    /// the room you still know to vent the right place."</i></summary>
+    private static string VentAreaLabelSvg(string label, float cx, float cy, (string Text, string Class) tag)
+    {
+        System.Globalization.CultureInfo inv = System.Globalization.CultureInfo.InvariantCulture;
+        string x = cx.ToString("0.##", inv);
+        string name = System.Net.WebUtility.HtmlEncode(label);
+
+        string svg = $"""<text x="{x}" y="{cy.ToString("0.##", inv)}" text-anchor="middle">{name}</text>""";
+
+        if (tag.Text.Length > 0)
+        {
+            string ty = (cy + 2.1f).ToString("0.##", inv);
+            svg += $"""<text class="{tag.Class}" x="{x}" y="{ty}" text-anchor="middle">{tag.Text}</text>""";
+        }
+
+        return svg;
     }
 
     /// <summary>The compartments the board lists, aft to bow so the mimic reads like the ship does.</summary>

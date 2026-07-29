@@ -198,6 +198,20 @@ public class WreckLayoutTests
         }
     }
 
+    [Fact]
+    public void EveryCompartmentHasExactlyOneDoorwayOntoTheSpine()
+    {
+        // Four openings serve eight rooms — each one is the way into the compartment above it AND the one
+        // below. The valve board draws its doors from this, so a room with two door centres in its span
+        // would be drawn with a way through that the walls do not have, and a room with none would be shown
+        // sealed shut while the captain walks straight in.
+        foreach ((string name, float x0, float x1, bool _) in WreckLayout.Compartments)
+        {
+            int doors = WreckLayout.DoorCentres().Count(d => d > x0 && d < x1);
+            Assert.True(doors == 1, $"{name} has {doors} doorways onto the spine, not 1");
+        }
+    }
+
     // ── The audit can actually fail (a guard that only ever passes guards nothing) ────────────────────
 
     [Fact]

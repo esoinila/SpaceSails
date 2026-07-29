@@ -440,46 +440,63 @@
                     You are in <strong>@(CaptainCompartment() ?? "THE SPINE")</strong>.
                 </div>
 
-                <div class="vent-mimic">
-                    @foreach (bool top in new[] { false, true })
+                @* THE SHIP HERSELF, drawn from WreckLayout's own geometry — bow taper, transom, spine and
+                   every compartment in its real place and proportion. Owner: "the vent panel should have a
+                   miniature map of the ship as UI with buttons clearly showing which part of the ship
+                   (visually) they correspond to … so if you don't remember the name of the room you still
+                   know to vent the right place." You point at the PLACE; the name is written in it.
+                   Coordinates are deck units with Y negated (SVG y runs down, decks run up), so a
+                   compartment on this map is where it is on the deck by construction. *@
+                @* Every number here goes through Du(): Blazor renders a float attribute in the CURRENT
+                   culture, and on a Finnish browser "20.5" becomes "20,5" — which an SVG coordinate reads as
+                   two numbers. The map would come apart for the owner and nobody else. *@
+                <svg class="vent-map" viewBox="@VentViewBox" preserveAspectRatio="xMidYMid meet"
+                     role="group" aria-label="ship compartments">
+                    <polygon class="vent-hull" points="@VentHullOutline" />
+                    <rect class="vent-spine-band"
+                          x="@Du(WreckLayout.AftX)" y="@Du(-WreckLayout.SpineHalfHeight)"
+                          width="@Du(WreckLayout.BowX - 6 - WreckLayout.AftX)"
+                          height="@Du(WreckLayout.SpineHalfHeight * 2)" />
+
+                    @foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
                     {
-                        <div class="vent-row">
-                            @foreach ((string name, bool _) in VentBoardRow(top))
-                            {
-                                var space = SpaceNow(name);
-                                var ready = HullVenting.Readiness(space);
-                                <div class="vent-cell @(space.Vented ? "vented" : "") @(space.CaptainInside ? "here" : "") @(_ventSelected == name ? "picked" : "")"
-                                     @onclick="() => _ventSelected = name">
-                                    <div class="vent-name">@name</div>
-                                    <div class="vent-state">
-                                        @if (space.Vented)
-                                        {
-                                            <span class="vent-vac">VACUUM</span>
-                                        }
-                                        else
-                                        {
-                                            <span>@(space.DoorShut ? "🔒 sealed" : "🔓 open")</span>
-                                        }
-                                    </div>
-                                    @if (_ventReads.TryGetValue(name, out var read))
-                                    {
-                                        <div class="vent-read @(read.Sign == HullVenting.LifeSign.SomethingAlive ? "alive" : "")">
-                                            d20 @read.Roll.Face · @HullVenting.ReadLine(read.Sign)
-                                        </div>
-                                    }
-                                    @if (space.CaptainInside)
-                                    {
-                                        <div class="vent-read">— you are standing here —</div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                        @if (!top)
-                        {
-                            <div class="vent-spine">— THE SPINE —</div>
-                        }
+                        HullVenting.Space space = SpaceNow(name);
+                        string cls = "vent-area"
+                            + (space.Vented ? " vented" : "")
+                            + (space.DoorShut ? " sealed" : "")
+                            + (space.CaptainInside ? " here" : "")
+                            + (_ventSelected == name ? " picked" : "");
+                        @* A TOP compartment sits at deck y −9…−3; SVG y runs down, so it draws at +3…+9.
+                           The row you see above the spine on the deck is the row above it here. *@
+                        float y = top ? WreckLayout.SpineHalfHeight : -WreckLayout.BottomY;
+                        float cx = (x0 + x1) / 2f;
+                        float cy = top ? 6.2f : -5.8f;
+
+                        @* Razor reserves <text> as a control-flow tag, so the SVG labels are emitted as
+                           markup. Everything else stays real elements. *@
+                        <g class="@cls" @onclick="() => SelectVentSpace(name)">
+                            <rect x="@Du(x0)" y="@Du(y)" width="@Du(x1 - x0)"
+                                  height="@Du(WreckLayout.BottomY - WreckLayout.SpineHalfHeight)" rx="0.4" />
+                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, VentAreaTag(name, space)))
+                            @* The door onto the spine, at the doorway the captain actually walks through:
+                               solid when sealed, broken when open. *@
+                            <line class="vent-door"
+                                  x1="@Du(VentDoorX(x0, x1) - WreckLayout.DoorHalfWidth)"
+                                  x2="@Du(VentDoorX(x0, x1) + WreckLayout.DoorHalfWidth)"
+                                  y1="@Du(top ? WreckLayout.SpineHalfHeight : -WreckLayout.SpineHalfHeight)"
+                                  y2="@Du(top ? WreckLayout.SpineHalfHeight : -WreckLayout.SpineHalfHeight)" />
+                        </g>
                     }
-                </div>
+
+                    <text class="vent-spine-label" x="-4" y="0.7" text-anchor="middle">THE SPINE</text>
+                </svg>
+
+                @if (_ventSelected is { } sel0 && _ventReads.TryGetValue(sel0, out var selRead))
+                {
+                    <div class="vent-readout @(selRead.Sign == HullVenting.LifeSign.SomethingAlive ? "alive" : "")">
+                        @sel0 — d20 @selRead.Roll.Face · @HullVenting.ReadLine(selRead.Sign)
+                    </div>
+                }
 
                 @if (_ventSelected is { } picked)
                 {
