@@ -163,13 +163,20 @@ public static class ShipLayout
     /// <para>NOT (−19, −5), which is where I first put it: 1.1 du from her charge dump, so one [E] prompt
     /// was fighting over two consoles and the captain got whichever won. The wreck has had a test against
     /// exactly this since the scuttling panel landed on the nest — the ship had none, which is why I was
-    /// free to make the same mistake a third time. <c>ShipLayoutTests</c> holds it now.</para></summary>
-    public static DeckReachability.Point ValveStation => new(-17f, -6f);
+    /// free to make the same mistake a third time. <c>ShipLayoutTests</c> holds it now.</para>
+    ///
+    /// <para>Then (−17, −6), which the audit passed and the owner still rejected on sight: <i>"see the two
+    /// crowded consoles at the back of our ship"</i>. 3.35 du clears the 3 du interact radius by a whisker,
+    /// so the captain got the console they aimed at — but BOTH still drew an [E], because the renderer lit
+    /// every console in range while the key only ever answered the nearest. The honest fix was in
+    /// <c>DeckView</c> (one prompt, and it is the true one); this is the belt to that braces — the engine
+    /// room is 10 × 20 du and there was never a reason to crowd her valves against her capacitor.</para></summary>
+    public static DeckReachability.Point ValveStation => new(-16f, -7f);
 
     /// <summary>Her capacitor dump — a ship-systems control that has nothing to do with air, and everything
     /// to do with why the atmosphere board could not be called the vent panel. In Core so it is a thing the
     /// separation audit can SEE; it was a client literal, which is precisely how it got sat on.</summary>
-    public static DeckReachability.Point ChargeDumpStation => new(-20f, -4.5f);
+    public static DeckReachability.Point ChargeDumpStation => new(-21f, -3f);
 
     /// <summary>Her builder's plate, on the engine-room bulkhead by the keel.</summary>
     public static DeckReachability.Point BuildersPlateStation => new(-20f, 4f);
@@ -186,8 +193,16 @@ public static class ShipLayout
     ];
 
     /// <summary>The bridge repeater — the panel a derelict has and cannot power. On her it works, so the
-    /// captain can shut the ship from the helm and only has to walk aft when the bus is out.</summary>
-    public static DeckReachability.Point BridgeRepeaterStation => new(21f, -6f);
+    /// captain can shut the ship from the helm and only has to walk aft when the bus is out.
+    ///
+    /// <para>NOT (21, −6), where it landed the night it was built: 1.41 du from the COMMS SEAT console and
+    /// 6.3 du off the captain's own spawn point. Two labels drawn on top of each other, and the fourth
+    /// instance of the same mistake — which is why the audit stopped being a ship-only test and became one
+    /// that walks every deck in the game (<c>ConsoleCrowdingTests</c>).</para>
+    ///
+    /// <para>(23, −6) is starboard-aft on the bridge: 3.2 du off the nav post, 3.2 off the comms seat, 1 du
+    /// inside the bow-starboard glass, and well clear of where the captain wakes up standing.</para></summary>
+    public static DeckReachability.Point BridgeRepeaterStation => new(23f, -6f);
 
     /// <summary>The placard by her airlock, the same plate every ship in the fleet carries. Consistency in
     /// the universe was the owner's own reason for all of this.</summary>

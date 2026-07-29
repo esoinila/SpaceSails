@@ -454,7 +454,13 @@ public sealed class DeckPlan
             // RENAMED, because it was never the atmosphere. This dumps the CAPACITOR — a ship-systems
             // action that happens to share a verb with the thing the whole weekend was about. Two
             // panels in one engine room both called VENT PANEL would be a trap of my own making.
-            new(ConsoleKind.Vent, -20, -4.5f, "⚡ CHARGE DUMP"),
+            //
+            // POSITION READ FROM CORE, not typed here. It was a literal in this list AND a constant in
+            // ShipLayout at the same time — two numbers for one console, which is the exact shape of every
+            // console collision this ship has had. One of them has to be the truth; a test can only walk
+            // the one in Core.
+            new(ConsoleKind.Vent, (float)ShipLayout.ChargeDumpStation.X, (float)ShipLayout.ChargeDumpStation.Y,
+                "⚡ CHARGE DUMP"),
 
             // The ship's BUILDER'S PLATE — bolted to the engine-room bulkhead by the keel, where a
             // builder's plate belongs (owner's cruise ruling, 2026-07-19, photographing their ship's Aker
@@ -462,7 +468,9 @@ public sealed class DeckPlan
             // depth to the world"). Walk up and [E] pops the plate + her service history (Koski &
             // Daughters, Hull No. 77; the Victoria-I "she used to be something" beat). Kept clear of the
             // VENT PANEL (−20, −4.5) so E never grabs the wrong console. Text/art from Core Plaques.Ship.
-            new(ConsoleKind.ViewObject, -20, 4, Core.Interior.Plaques.Ship.ConsoleLabel,
+            new(ConsoleKind.ViewObject,
+                (float)ShipLayout.BuildersPlateStation.X, (float)ShipLayout.BuildersPlateStation.Y,
+                Core.Interior.Plaques.Ship.ConsoleLabel,
                 Core.Interior.Plaques.Ship.ArtUrl, Core.Interior.Plaques.Ship.Lore),
             new(ConsoleKind.Head, 16.25f, -6.5f, "HEAD 🚽"), // the space toilet (3D-reno Phase 3)
 
@@ -483,7 +491,8 @@ public sealed class DeckPlan
             // The gangway to a docked haven (go-ashore, 2026-07-07; moved to the airlock vestibule
             // 2026-07-08). In the docked complex you walk the tube; on the bare ship, pressing E here
             // just teaches "clamp on first" (see InteractAtConsole's Airlock case).
-            new(ConsoleKind.Airlock, 2.5f, 11.5f, "⚓ GANGWAY"),
+            new(ConsoleKind.Airlock, (float)ShipLayout.PlacardStation.X, (float)ShipLayout.PlacardStation.Y,
+                "⚓ GANGWAY"),
 
             // --- Bridge seats (PR-14, StationDesks.md #14): pressing E opens the matching desk
             // without leaving the ship's own deck plan — three free spots on the bridge (x > 18),

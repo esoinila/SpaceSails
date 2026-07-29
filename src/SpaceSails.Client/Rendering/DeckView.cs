@@ -612,6 +612,20 @@ public sealed class DeckView
         }
 
         // Consoles.
+        //
+        // ONE PROMPT, AND IT IS THE TRUE ONE. Owner, twice, on two different decks: "there two e's are too
+        // close to each others now" and then "see the two crowded consoles at the back of our ship". Both
+        // times I moved a console — and both times the real fault was here: this drew an [E] over EVERY
+        // console inside the interact radius, while the key itself only ever answers the NEAREST one
+        // (InteractAtConsole → NearestConsoleSpot). So a captain standing between two fittings saw two
+        // offers, and one of them was a lie.
+        //
+        // Geometry could never fix that. A bridge is dense on purpose — helm, nav post, scope and three
+        // desks inside a few du — so "keep every pair 6 du apart" is not a ship anyone would want to walk.
+        // Asking the same function the key asks is the fix, it is one line, and it is right on every deck in
+        // the game at once: her own, a derelict's, a station's, the regolith.
+        DeckPlan.ConsoleSpot? answering = plan.NearestConsoleSpot(state.AvatarX, state.AvatarY);
+
         foreach (DeckPlan.ConsoleSpot console in plan.Consoles)
         {
             // #371 Phase 3 fog: a console inside an unseen chamber is unknown (hidden); an explored one is
@@ -621,8 +635,11 @@ public sealed class DeckView
                 continue;
             }
             (float sx, float sy) = P(console.X, console.Y);
-            bool near = Math.Sqrt((state.AvatarX - console.X) * (state.AvatarX - console.X)
-                                + (state.AvatarY - console.Y) * (state.AvatarY - console.Y)) <= DeckPlan.InteractRadius;
+
+            // Lit only when [E] would actually reach THIS console. The radius check is still the gate —
+            // NearestConsoleSpot applies it — so nothing lights up across the ship; what changed is that a
+            // second console in range no longer claims a key it will not get.
+            bool near = answering == console;
             RgbaColor c = near ? ConsoleNear : ConsoleGlow;
             _renderer.DrawCircle(sx, sy, near ? 5f : 3.5f, c, c);
             _renderer.DrawText(sx, sy - 10, console.Label, near ? ConsoleNear : TextDim,
