@@ -3672,6 +3672,21 @@
 .vent-area.here rect { stroke: rgba(120, 220, 170, 0.85); stroke-width: 0.34; }
 .vent-area.picked rect { stroke: #e0b25a; stroke-width: 0.42; }
 
+/* THE CORRIDOR, now selectable like everything else on the board. It answers to the same states — hover,
+   picked, standing in it, blown — but it must never read as a ninth room, so it keeps its own recessed
+   fill and gains only the outline. A corridor is the space BETWEEN the rooms, and the board should still
+   say so at a glance. */
+.vent-area.spine rect.vent-spine-band { fill: rgba(20, 27, 36, 0.75); stroke: none; }
+.vent-area.spine:hover rect.vent-spine-band { fill: rgba(31, 41, 53, 0.9); }
+.vent-area.spine.vented rect.vent-spine-band { fill: rgba(4, 6, 9, 0.98); }
+.vent-area.spine.picked rect.vent-spine-band { stroke: #e0b25a; stroke-width: 0.42; }
+.vent-area.spine.here rect.vent-spine-band { stroke: rgba(120, 220, 170, 0.85); stroke-width: 0.34; }
+.vent-area.spine.here.picked rect.vent-spine-band { stroke: #e0b25a; stroke-width: 0.42; }
+
+/* The label is a real element rather than injected markup, so it would otherwise eat the clicks aimed at
+   the band underneath it — the one part of the corridor most likely to be pressed. */
+.vent-spine-label { pointer-events: none; }
+
 /* The full reading for the selected room, spelled out under the map. */
 .vent-readout {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

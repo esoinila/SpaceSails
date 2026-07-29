@@ -420,6 +420,21 @@ public static class HullVenting
         $"The {name} pump spins up under your feet. {(int)seconds}s until the room is dead, and the hatch " +
         "will hold itself shut against the difference long before that. Be somewhere else.";
 
+    /// <summary>The whole-ship order, read back. It names the count, and — if the captain is standing in one
+    /// of them — it names that too, because an order that quietly excluded their own compartment would be a
+    /// board deciding what they meant.</summary>
+    public static string WholeShipOrderLine(int rooms, string? captainIn)
+    {
+        string head = rooms == 1
+            ? "Every hatch is dogged and one compartment is on the pumps"
+            : $"Every hatch is dogged and {rooms} compartments are on the pumps";
+        string spine = ", and the corridor goes on them the moment the last one is sealed";
+        string feet = captainIn is null
+            ? ". Stay out of the rooms."
+            : $". THAT INCLUDES {captainIn}, WHICH YOU ARE STANDING IN.";
+        return head + spine + feet;
+    }
+
     /// <summary>The line while the pump runs. Deliberately unglamorous: this is the patient road.</summary>
     public static string PumpRunningLine(string name, double secondsLeft) =>
         $"Pumping {name} down — {System.Math.Max(0, (int)secondsLeft)}s. The reserve is filling as the room " +

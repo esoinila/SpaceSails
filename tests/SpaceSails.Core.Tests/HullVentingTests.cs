@@ -479,4 +479,19 @@ public class HullVentingTests
         Assert.Equal(HullVenting.VentReadiness.DoorOpen, HullVenting.PumpReadiness(open));
         Assert.Equal(HullVenting.VentReadiness.AlreadyVented, HullVenting.PumpReadiness(dead));
     }
+
+    [Fact]
+    public void TheWholeShipOrderNamesTheRoomTheCaptainIsStandingIn()
+    {
+        // An order that quietly excluded their own compartment would be a board deciding what they meant —
+        // and would leave the corridor permanently un-pumpable with no way to find out why.
+        string underfoot = HullVenting.WholeShipOrderLine(8, "ENGINEERING");
+        Assert.Contains("ENGINEERING", underfoot, System.StringComparison.Ordinal);
+        Assert.Contains("STANDING IN", underfoot, System.StringComparison.Ordinal);
+
+        // Out in the spine there is no room to warn about, so it does not invent one.
+        string fromSpine = HullVenting.WholeShipOrderLine(8, null);
+        Assert.DoesNotContain("STANDING IN", fromSpine, System.StringComparison.Ordinal);
+        Assert.Contains("corridor", fromSpine, System.StringComparison.Ordinal);
+    }
 }

@@ -584,6 +584,78 @@ public sealed partial class Map
         }
     }
 
+    /// <summary>
+    /// THE WHOLE SHIP, AS ONE ORDER. Owner, having found "pump all sealed": <i>"there could be a pump the
+    /// whole ship button though :-D"</i> — and there is a real difference between that and pressing the
+    /// other two in turn. The corridor cannot go on the pumps until every hatch is shut, so a captain doing
+    /// this by hand has to dog eight doors, start eight pumps, and then remember to come back for the spine.
+    ///
+    /// <para>This is that whole sequence as a standing order: dog what can be dogged, start what can be
+    /// started, and take the corridor the moment it becomes possible. The board keeps the order in its head
+    /// so the captain does not have to — which is exactly what a damage-control board is for.</para>
+    ///
+    /// <para>It does NOT spare the room the captain is standing in, and it says so. Sparing it silently
+    /// would leave one compartment full of air and the corridor permanently un-pumpable, and the captain
+    /// would never learn why. The pump is slow and the hatch is not held until the pressure actually
+    /// differs — so this is a countdown to be somewhere else, not a trap.</para>
+    /// </summary>
+    private void OrderWholeShipPumped()
+    {
+        if (_wreck is null)
+        {
+            return;
+        }
+
+        // Dog every hatch the pressure is not already holding. This is the half of the owner's own play
+        // ("lock all doors and pump them down") that the board could always do and never offered.
+        foreach (string name in _ventSpaces.Keys.ToList())
+        {
+            HullVenting.Space s = SpaceNow(name);
+            if (!s.DoorShut && !HullVenting.DoorHeldByPressure(s, _spinePressurised))
+            {
+                _ventSpaces[name] = _ventSpaces[name] with { DoorShut = true };
+            }
+        }
+
+        RebuildWreckDeck();   // a dogged hatch is a wall, and the walls are built, not inferred
+
+        int started = PumpableRooms().Count;
+        PumpEverySealedRoom();
+
+        // The corridor goes on the pumps as soon as it can — now, if every hatch answered; otherwise the
+        // order stands and ServeStandingPumpOrder takes it the moment the last one does.
+        _shipPumpOrder = true;
+        ServeStandingPumpOrder();
+
+        _ventMessage = HullVenting.WholeShipOrderLine(started, CaptainCompartment());
+        RendererInterop.PlayCue("board");
+    }
+
+    /// <summary>The standing order, served once a frame: the corridor is taken the moment it becomes
+    /// takeable, and the order clears itself the moment there is nothing left to take.</summary>
+    private void ServeStandingPumpOrder()
+    {
+        if (!_shipPumpOrder || _wreck is null)
+        {
+            return;
+        }
+
+        if (!_spinePressurised)
+        {
+            _shipPumpOrder = false;   // done, or somebody cracked a valve and did it the wasteful way
+            return;
+        }
+
+        if (SpinePumpable)
+        {
+            StartSpinePump();
+            _shipPumpOrder = false;
+        }
+    }
+
+    /// <summary>Whether the board is holding an order to take the corridor as soon as it can.</summary>
+    private bool _shipPumpOrder;
+
     /// <summary>Stop a pump. Past the rough mark this is the THRIFTY finish, not an abort: the air is
     /// already in the tanks and all you are giving up is a pressure low enough to kill.</summary>
     private void StopPump(string name)
