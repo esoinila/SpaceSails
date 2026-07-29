@@ -105,6 +105,13 @@ public sealed partial class Map
         // rebuild that did not check would swap a whole station for the bare ship because a cabin door moved.
         // The door controls only exist on her own deck, so this can only fire from there — but "can only" is
         // exactly the reasoning that put a moon constant in charge of a wreck four times this weekend.
+        //
+        // KNOWN GAP, stated rather than hidden: her consoles DO travel into the docked complex
+        // (HavenInterior seeds itself from DeckPlan.Ship.Consoles), so the board can be opened and her
+        // hatches dogged while clamped on — and this guard means the walls of the docked plan will not
+        // change to match. The state is real and the map is stale until she casts off. Closing it properly
+        // means teaching HavenInterior.DockedDeck about her door state (it takes a station and an unlock
+        // set today, and caches on both), which is a bigger change than the board it would serve.
         if (!OnWreck && _deckMode && string.IsNullOrEmpty(_havenName))
         {
             _deckPlan = ShipDeckNow();
