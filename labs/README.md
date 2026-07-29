@@ -402,6 +402,19 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     reproduces the original bug so the guard is proved to be capable of failing. It earned its keep on its
     first run by catching a console standing on top of a bulkhead. Wired into CI as `WreckLayoutTests`.
 
+42. [**One atmosphere, however many rooms it's in**](42-one-atmosphere/README.md) — a breadth-first flood
+    across open doors, so a pump prices what it will ACTUALLY empty. Written after the owner read my pump
+    rules back to me and they were wrong: I had a per-room interlock, a special case for the corridor and a
+    refusal if any hatch stood open, and *"the only check we need is to make sure we don't evacuate a room
+    by accident of leaving its door open."* Three rules wearing different clothes. The lab shows the graph on
+    two rooms and a corridor, prices the same press three ways as one hatch opens (**50s → 140s → 240s**),
+    and then EXHAUSTS the ship: eight hatches is 256 configurations, so partition, symmetry and isolation
+    are not sampled but proved — with the volume count falling out **binomial**, C(8,k), which is the model
+    checking its own arithmetic. Also draws the trap that hid a real charge leak all evening: a room's whole
+    50s run starts *below* the corridor's 72s rough mark, so measuring one against the other never throws —
+    it silently never fires. The lesson: *a rule written as its answer stops being true the day the geometry
+    moves.* Wired into CI as `HullVentingTests`.
+
 ## Framing rule
 
 Standard physics is presented as standard; Curtis is the reference. The EU-flavored lessons

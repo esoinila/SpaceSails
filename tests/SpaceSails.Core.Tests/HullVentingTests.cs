@@ -625,4 +625,84 @@ public class HullVentingTests
                      HullVenting.PumpReachesFurtherLine("DEEP HOLD",
                          HullVenting.SharedAtmosphere("DEEP HOLD", ship)));
     }
+
+    [Fact]
+    public void EveryShipHerHatchesCanMakeObeysThePartitionSymmetryAndIsolationLaws()
+    {
+        // LAB 42 · the 256-ship sweep, held in CI. Eight compartments with one hatch each is 2^8 ships —
+        // small enough that these three properties are not sampled, they are EXHAUSTED.
+        //
+        //   PARTITION  every space is in the volume it names, so a pump can never empty a room twice nor
+        //              leave one unaccounted for while the charge arithmetic quietly drifts.
+        //   SYMMETRY   press any member and the same atmosphere answers. This is the property that makes it
+        //              a VOLUME rather than a direction, and the first one a hand-written pair of ifs breaks.
+        //   ISOLATION  a dogged hatch is alone, whatever the rest of her is doing.
+        string[] names = new string[WreckLayout.Compartments.Length];
+        for (int i = 0; i < names.Length; i++)
+        {
+            names[i] = WreckLayout.Compartments[i].Name;
+        }
+
+        for (int mask = 0; mask < 1 << names.Length; mask++)
+        {
+            var ship = new List<HullVenting.Space>(names.Length);
+            for (int i = 0; i < names.Length; i++)
+            {
+                ship.Add(new HullVenting.Space(names[i], DoorShut: (mask & (1 << i)) != 0, Vented: false,
+                                               Infested: false, HoldsSurvivor: false));
+            }
+
+            var everySpace = new List<string>(names) { HullVenting.SpineName };
+            foreach (string space in everySpace)
+            {
+                IReadOnlyList<string> volume = HullVenting.SharedAtmosphere(space, ship);
+
+                Assert.Contains(space, volume);
+                foreach (string member in volume)
+                {
+                    Assert.Equal(volume, HullVenting.SharedAtmosphere(member, ship));
+                }
+            }
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                if ((mask & (1 << i)) != 0)
+                {
+                    Assert.Single(HullVenting.SharedAtmosphere(names[i], ship));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void TheNumberOfAtmospheresIsExactlyOnePerDoggedHatchPlusWhateverStillBreathesWithTheCorridor()
+    {
+        // The binomial that falls out of the sweep — C(8,k) ships have k+1 volumes — is the model checking
+        // its own arithmetic. If this ever drifts, the door graph has grown an edge nobody meant to add.
+        string[] names = new string[WreckLayout.Compartments.Length];
+        for (int i = 0; i < names.Length; i++)
+        {
+            names[i] = WreckLayout.Compartments[i].Name;
+        }
+
+        for (int mask = 0; mask < 1 << names.Length; mask++)
+        {
+            var ship = new List<HullVenting.Space>(names.Length);
+            for (int i = 0; i < names.Length; i++)
+            {
+                ship.Add(new HullVenting.Space(names[i], DoorShut: (mask & (1 << i)) != 0, Vented: false,
+                                               Infested: false, HoldsSurvivor: false));
+            }
+
+            var distinct = new HashSet<string>(System.StringComparer.Ordinal);
+            var everySpace = new List<string>(names) { HullVenting.SpineName };
+            foreach (string space in everySpace)
+            {
+                distinct.Add(string.Join("+", HullVenting.SharedAtmosphere(space, ship)));
+            }
+
+            int dogged = System.Numerics.BitOperations.PopCount((uint)mask);
+            Assert.Equal(dogged + 1, distinct.Count);
+        }
+    }
 }
