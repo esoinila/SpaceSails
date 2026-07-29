@@ -323,6 +323,12 @@ public partial class Map
             case DeckPlan.ConsoleKind.ShuttleAirlock:
                 if (_surface is not null)
                 {
+                    // #488: leaving a wreck, the boat's own lock CYCLES rather than opening — it matches
+                    // whatever the hull is reading first, so the shuttle's air is never once exposed to it.
+                    if (OnWreck)
+                    {
+                        ShowPulseMessage(HullVenting.ShuttleLockLine(_spinePressurised));
+                    }
                     LiftOffFromSurface(); // back aboard mid-excursion: the airlock is the ride home
                 }
                 else
@@ -365,6 +371,9 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.WreckBridgePanel:
                 TryDeadBridgePanel();       // #488: dead, and it says where the working ones are
+                break;
+            case DeckPlan.ConsoleKind.WreckPressureDoor:
+                OpenPressureDoorCard();     // #488: ten tonnes of atmosphere in a frame
                 break;
             case DeckPlan.ConsoleKind.SurfaceAirlock:
                 LiftOffFromSurface();

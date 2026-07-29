@@ -426,6 +426,76 @@
         </div>
     }
 
+    @* #488 · THE DOOR THAT WILL NOT MOVE. Owner, after strolling into a compartment he had just blown:
+       "we need some kind of door locked due to vacuum feature … maybe a gauge that says the door is shut
+       due to pressure difference." One atmosphere across a door is about ten tonnes; nobody opens that by
+       hand. Two roads through it, priced differently — crack the valve and lose the ship's air for free,
+       or spend a charge off the shuttle and keep it. *@
+    @if (_pressureDoor is { } pdName && _ventSpaces.TryGetValue(pdName, out var pdSpace))
+    {
+        var pdVacuumSide = pdSpace.Vented;
+        var pdLoaded = HullVenting.DoorHeldByPressure(pdSpace, _spinePressurised);
+        <div class="view-object-backdrop" @onclick="() => Dismiss(ClosePressureDoorCard)">
+            <div class="vent-board pressure-door" @onclick:stopPropagation="true">
+                <div class="view-object-title">
+                    @(pdLoaded ? $"⛔ {pdName} — THE DOOR IS LOADED" : $"🚪 {pdName} — HATCH")
+                </div>
+
+                @* The gauge. A needle hard over on its stop, which is the whole message — and slack in the
+                   middle of its travel when there is nothing across the door at all. *@
+                <div class="pd-gauge" role="img" aria-label="pressure differential">
+                    <div class="pd-face">
+                        <div class="pd-needle @(pdLoaded ? "hard-over" : "slack")"></div>
+                        <div class="pd-scale"><span>0</span><span>Δp</span><span class="hot">MAX</span></div>
+                    </div>
+                    <div class="pd-sides">
+                        <span class="@(pdVacuumSide ? "vac" : "air")">@(pdVacuumSide ? "VACUUM" : "AIR") — that side</span>
+                        <span class="@(_spinePressurised ? "air" : "vac")">@(_spinePressurised ? "AIR" : "VACUUM") — this side</span>
+                    </div>
+                </div>
+
+                @if (pdLoaded)
+                {
+                    <div class="vent-message">@HullVenting.PressureLockLine(pdName, pdVacuumSide)</div>
+                    <div class="vent-actions">
+                        <button type="button" class="btn btn-warning btn-sm"
+                                title="@HullVenting.EqualiseWarnsLine"
+                                @onclick="() => { EqualiseAtDoor(pdName); ClosePressureDoorCard(); }">
+                            🎚 Crack the equalisation valve
+                        </button>
+                        <div class="vent-refusal">@HullVenting.EqualiseWarnsLine</div>
+                        <div class="vent-refusal">
+                            One valve empties the corridor and every room standing open to it. What survives is
+                            whatever somebody dogged a hatch on.
+                        </div>
+                        <div class="vent-refusal">
+                            Or keep the ship's air: bring @pdName back to pressure at the valve board aft
+                            (@_refillCharges of the shuttle's breaths left).
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @* The hand-dogs. The counterplay to somebody cracking a valve two compartments away —
+                       and the infestation will never use it, because it has not read the manual. *@
+                    <div class="vent-actions">
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                @onclick="() => { ToggleSealAtHand(pdName); ClosePressureDoorCard(); }">
+                            @(pdSpace.DoorShut ? $"🔓 Undog the {pdName} hatch" : $"🔒 Dog the {pdName} hatch down")
+                        </button>
+                        <div class="vent-refusal">
+                            @(pdSpace.DoorShut
+                                ? "Sealed. Whatever happens to the pressure in the rest of this ship happens without it — and you are not walking through it either."
+                                : "Standing open. It shares the corridor's air, which means it shares whatever happens to the corridor's air.")
+                        </div>
+                    </div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(ClosePressureDoorCard)">Step away</button>
+            </div>
+        </div>
+    }
+
     @* #488 · THE VALVE BOARD — a damage-control mimic, the Battlestar Galactica shape. The ship drawn as
        her own compartments, each one a switch: shut the door, read for life, blow the room. It lives aft in
        ENGINEERING because the bridge panel is dead, so you walk toward the thing to reach the tool that
@@ -477,7 +547,7 @@
                         <g class="@cls" @onclick="() => SelectVentSpace(name)">
                             <rect x="@Du(x0)" y="@Du(y)" width="@Du(x1 - x0)"
                                   height="@Du(WreckLayout.BottomY - WreckLayout.SpineHalfHeight)" rx="0.4" />
-                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, VentAreaTag(name, space)))
+                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, x1 - x0, VentAreaTag(name, space, x1 - x0)))
                             @* The door onto the spine, at the doorway the captain actually walks through:
                                solid when sealed, broken when open. *@
                             <line class="vent-door"
@@ -504,7 +574,13 @@
                     var readiness = HullVenting.Readiness(sel);
                     <div class="vent-actions">
                         <div class="vent-picked">@picked</div>
-                        <button type="button" class="btn btn-outline-light btn-sm" disabled="@sel.Vented"
+                        @* A door moves unless the PRESSURE is holding it. It used to refuse on any vented
+                           compartment, which made a blown room impossible to refill — refilling needs the
+                           hatch dogged, and the hatch could never be dogged again. *@
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                disabled="@HullVenting.DoorHeldByPressure(sel, _spinePressurised)"
+                                title="@(HullVenting.DoorHeldByPressure(sel, _spinePressurised)
+                                         ? HullVenting.PressureLockLine(picked, sel.Vented) : "")"
                                 @onclick="() => ToggleVentDoor(picked)">
                             @(sel.DoorShut ? "🔓 Open the door" : "🔒 Shut the door")
                         </button>
@@ -519,6 +595,37 @@
                                 title="@(readiness == HullVenting.VentReadiness.Ready ? "Blow it to space" : HullVenting.RefusalLine(readiness, picked))"
                                 @onclick="() => VentCompartment(picked)">
                             💨 BLOW @picked
+                        </button>
+                        @* THE THRIFTY ROAD. Blowing a room throws its air away and you buy it back a breath
+                           at a time; pumping it down puts that air in the tanks. The mechanical stage banks
+                           the charge early, and the long tail after it only buys you a killing pressure. *@
+                        @if (_pumpingRoom == picked)
+                        {
+                            <button type="button" class="btn btn-outline-warning btn-sm" @onclick="StopPump">
+                                @(_pumpRoughBanked ? "🛢 Stop — take the air and go" : "🛢 Stop the pump")
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(_pumpingRoom is not null || readiness != HullVenting.VentReadiness.Ready)"
+                                    title="Slower than the handle, and it keeps the air: the mechanical stage banks a charge, the long tail brings it down to a pressure that kills."
+                                    @onclick="() => StartPumpDown(picked)">
+                                🛢 Pump down
+                            </button>
+                        }
+
+                        @* The other half of the board. Air comes back; nothing that went out with it does. *@
+                        @{
+                            var refill = HullVenting.RefillState(sel, _refillCharges);
+                        }
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                disabled="@(refill != HullVenting.RefillReadiness.Ready)"
+                                title="@(refill == HullVenting.RefillReadiness.Ready
+                                         ? "Spend one of the shuttle's breaths on this compartment. Whatever went out with the air stays out."
+                                         : HullVenting.RefillRefusalLine(refill, picked))"
+                                @onclick="() => RefillCompartment(picked)">
+                            🫁 Refill (@_refillCharges)
                         </button>
                         @if (sel is { HoldsSurvivor: true, Vented: false } && CaptainCompartment() == picked)
                         {
@@ -1473,6 +1580,36 @@
                 @onclick="ToggleFirstPerson">
             @(_fpMode ? "🗺 Deck plan (F)" : "🧍 First person (F)")
         </button>
+    }
+
+    @* #488 · THE CLOCKS, WHERE YOU CAN SEE THEM WHILE YOU FIGHT. Owner: "I love that pressure waiting in a
+       hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
+       OUT IN THE CORRIDOR, not just from the board you walked away from. Two clocks racing each other: the
+       one emptying a room, and the one on the sentry holding the lane while it does. *@
+    @if (OnWreck && _deckMode && (_pumpingRoom is not null || AnyRoomSoaking))
+    {
+        <div class="wreck-clocks">
+            @if (_pumpingRoom is { } pumping)
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">🛢 PUMPING</span>
+                    <span class="wc-room">@pumping</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(_pumpSecondsLeft)</span>
+                    @if (_pumpRoughBanked)
+                    {
+                        <span class="wc-note">air banked — the rest is the kill</span>
+                    }
+                </div>
+            }
+            @foreach ((string room, double secs) in RoomsSoaking)
+            {
+                <div class="wc-line">
+                    <span class="wc-tag">💨 VACUUM</span>
+                    <span class="wc-room">@room</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(secs)</span>
+                </div>
+            }
+        </div>
     }
 
     @* THE CAPTAIN CHIP (owner 2026-07-19: "the current captain profile pic could also be at some corner of

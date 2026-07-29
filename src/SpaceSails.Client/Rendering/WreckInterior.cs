@@ -28,12 +28,32 @@ public static class WreckInterior
     public const double SpawnY = WreckLayout.SpawnY;
 
     /// <summary>Build the derelict's walkable interior for a given wreck.</summary>
+    /// <summary>Which compartment's doorway a door centre belongs to. The spine has four openings serving
+    /// eight rooms — one above, one below — so this is the same lookup the valve board's mimic uses.</summary>
+    private static float DoorCentreFor(float x0, float x1)
+    {
+        foreach (float centre in WreckLayout.DoorCentres())
+        {
+            if (centre > x0 && centre < x1)
+            {
+                return centre;
+            }
+        }
+        return (x0 + x1) / 2f;
+    }
+
+    /// <param name="heldDoors">Compartments whose door is held by a pressure differential — vacuum on one
+    /// side, air on the other. These read Δp and offer the equalisation valve.</param>
+    /// <param name="blockedDoors">Compartments the captain cannot walk into: held by pressure OR dogged
+    /// shut by hand. A superset of <paramref name="heldDoors"/>.</param>
     public static DeckPlan WreckDeck(
         in Derelict.Wreck wreck,
         System.Collections.Generic.IReadOnlySet<string> examined,
         bool salvaged,
         int droidCount,
-        System.Action<double, DeckPlan.Droid[]> fillDroids)
+        System.Action<double, DeckPlan.Droid[]> fillDroids,
+        System.Collections.Generic.IReadOnlySet<string>? heldDoors = null,
+        System.Collections.Generic.IReadOnlySet<string>? blockedDoors = null)
     {
         System.ArgumentNullException.ThrowIfNull(fillDroids);
         examined ??= new System.Collections.Generic.HashSet<string>();
@@ -61,15 +81,39 @@ public static class WreckInterior
         // ── The doorways, DRAWN. A hole in a wall is not an affordance; a door is. Same auto-doors the
         //    ship's own tube uses, off the same centre list the walls were cut from, so a doorway can never
         //    be opened somewhere the player is not shown.
+        // A door with a pressure differential across it is NOT an affordance — it is ten tonnes of
+        // atmosphere in a frame, and the captain walks into a wall. `heldDoors` names the compartments
+        // whose doorway is currently loaded; everything else opens as before.
         var doors = new System.Collections.Generic.List<DeckPlan.Door>();
-        foreach (float d in WreckLayout.DoorCentres())
+        foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
         {
-            doors.Add(new DeckPlan.Door(
-                d - WreckLayout.DoorHalfWidth, -WreckLayout.SpineHalfHeight,
-                d + WreckLayout.DoorHalfWidth, -WreckLayout.SpineHalfHeight));
-            doors.Add(new DeckPlan.Door(
-                d - WreckLayout.DoorHalfWidth, WreckLayout.SpineHalfHeight,
-                d + WreckLayout.DoorHalfWidth, WreckLayout.SpineHalfHeight));
+            float centre = DoorCentreFor(x0, x1);
+            float y = top ? -WreckLayout.SpineHalfHeight : WreckLayout.SpineHalfHeight;
+            float left = centre - WreckLayout.DoorHalfWidth;
+            float right = centre + WreckLayout.DoorHalfWidth;
+
+            bool blocked = blockedDoors is not null && blockedDoors.Contains(name);
+            bool loaded = heldDoors is not null && heldDoors.Contains(name);
+
+            if (blocked)
+            {
+                // Shut by physics or dogged by hand — either way the gap the spine wall was cut for is
+                // filled, and the captain walks into a door rather than through one.
+                walls.Add(new DeckPlan.Wall(left, y, right, y, false, false));
+            }
+            else
+            {
+                doors.Add(new DeckPlan.Door(left, y, right, y));
+            }
+
+            // EVERY doorway is a control, open or not: the gauge and the equalisation valve when it is
+            // loaded, and the hand-dogs either way. Sealing a room is the only counterplay to somebody
+            // cracking a valve two compartments away, so it has to be operable where you are standing.
+            // ON THE CORRIDOR SIDE. The captain approaches a shut door from the spine, so a control placed
+            // inside the compartment would only be reachable from the room they cannot get into.
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.WreckPressureDoor, centre, y + (top ? 1.6f : -1.6f),
+                loaded ? $"⛔ {name} — Δp" : blocked ? $"🚪 {name} — sealed" : $"🚪 {name}"));
         }
 
         // ── The way home ──────────────────────────────────────────────────────────────────────────────

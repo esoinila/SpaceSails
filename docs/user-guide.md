@@ -510,6 +510,65 @@ crew's barricades were built from the *inside*.
 Your shuttle's own gun sits in her airlock, live and never dry, covering the corridor you will be running
 back down. Read what you can and get out — on that hull, the walk back **is** the encounter.
 
+### The atmosphere board
+
+The valves are aft, in ENGINEERING, because the bridge panel is dead. What comes up is a **mimic of the
+ship herself** — her own compartments in their own places, each one a switch. Point at the room, not at a
+name in a list.
+
+**Venting is not a kill button.** Pull the handle and the compartment opens to space and a clock starts:
+`VACUUM 01:12`, counting on the board and on your HUD out in the corridor. Vacuum does the killing, and it
+takes as long as it takes — a warm thing with lungs goes quickly, a growth over the cargo racks takes
+longer, and something that has encysted and done this before is in no hurry at all. **The instrument will
+not tell you which you are holding.** It only ever says that something is alive in there.
+
+So the counter is the decision. Blow the hold early, go and read the log and the manifest, and come back to
+a room that has been open four minutes.
+
+**Four controls, and they price each other:**
+
+| | What it costs | What you get |
+|---|---|---|
+| 💨 **BLOW** | the air, permanently | the room is open to space *now* |
+| 🛢 **PUMP DOWN** | about fifty seconds, most of it in a hot corridor | the air goes into your tanks instead of the dark — the mechanical stage banks it early, and the long tail after that only buys you a pressure low enough to kill |
+| 🫁 **REFILL** | one of the shuttle's two breaths | the room comes back to pressure. Air comes back. **Nobody does.** |
+| 🔒 **DOG THE HATCH** | nothing but the walk | that room keeps whatever it has, no matter what happens to the rest of the ship |
+
+Pumping gives you the best moment in the whole board: at the rough mark the air is already yours, and
+everything after it is you *choosing* to stand there for the kill.
+
+### The doors are held by the pressure
+
+A door with vacuum on one side and air on the other is holding back about ten tonnes. **You cannot walk
+into a room you just blew.** Walk up to it and the gauge is hard over on its stop. It is not locked, it is
+loaded.
+
+Two ways through, priced differently:
+
+- **Crack the equalisation valve** at the door. Free, instant, irreversible — and it empties the corridor
+  *and every compartment standing open to it*. One volume, one pressure, one valve. What survives is
+  exactly what somebody dogged a hatch on.
+- **Refill the room** from the board. Costs a charge, and keeps the ship's air.
+
+That first one is a real strategy, not a mistake: if the pack is between you and the valve board, you can
+still vent the whole ship from a single door, the long way round, for nothing. It costs you every breath
+aboard her — and a corridor in vacuum is a corridor nobody can be carried out through, so it writes off any
+survivor whose hatch was standing open. **The infestation has never closed a door behind itself.** Door
+discipline is a tool only you hold.
+
+You cannot refill the corridor. A compartment is a room; the spine is the length of the ship, and your
+whole reserve is two rooms' worth. Cracking a valve is free and one-way; refilling a room costs and is
+reversible. That asymmetry is the whole decision.
+
+### The shuttle's own lock
+
+Your boat's lock sits across the spine between the wreck and the shuttle, and it does two jobs.
+
+It **cycles rather than opens** — it matches whatever the hull is reading before the outer door moves, so
+the shuttle's air is never once exposed to the wreck. Crack every valve aboard her and your boat does not
+notice. And it is **crew-only**, the same rule the ship's own tube runs on: whatever is loose on that hull
+can reach the door. It cannot open the door.
+
 ### And sometimes she was already vented
 
 On one kind of wreck, the valve board is the finding.

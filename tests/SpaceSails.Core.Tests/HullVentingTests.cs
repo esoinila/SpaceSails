@@ -23,14 +23,19 @@ public class HullVentingTests
     }
 
     [Fact]
-    public void ASealedCompartmentIsReady_AndBlowingItClearsTheNest()
+    public void ASealedCompartmentIsReady_AndBlowingItOpensTheRoomButDoesNotFinishIt()
     {
+        // CHANGED by the soak (owner, mid-playtest: "there might be a counter on how long the room has been
+        // in vacuum … so it needs certain time for certain infestations"). The handle opens the room; the
+        // VACUUM does the killing, on its own clock. So the panel is no longer allowed to promise a result
+        // in the same breath as the pull — that promise was the whole reason venting felt like a button.
         HullVenting.VentOutcome o = HullVenting.Vent(Space(infested: true));
 
         Assert.True(o.Blown);
-        Assert.True(o.InfestationCleared);
+        Assert.False(o.InfestationCleared);
         Assert.False(o.SurvivorKilled);
-        Assert.Contains("nest goes with it", o.Line);
+        Assert.Contains("vacuum now", o.Line);
+        Assert.Contains("not the same as dead", o.Line);
     }
 
     [Fact]
@@ -212,5 +217,239 @@ public class HullVentingTests
         int fee = Derelict.Resolve(w, Derelict.SalvageChoice.FileTheReport, w.Cause).CreditsNow;
 
         Assert.True(HullVenting.SurvivorRescueCr > fee);
+    }
+
+    // ── The soak: vacuum kills, but not instantly ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void VacuumTakesTime_AndTheHardyOnesTakeLonger()
+    {
+        Assert.Equal(0.0, HullVenting.SoakRequired(HullVenting.Infestation.None));
+        Assert.True(HullVenting.SoakRequired(HullVenting.Infestation.Motile) > 0);
+        Assert.True(HullVenting.SoakRequired(HullVenting.Infestation.Fibrous)
+                    > HullVenting.SoakRequired(HullVenting.Infestation.Motile));
+        Assert.True(HullVenting.SoakRequired(HullVenting.Infestation.Encysted)
+                    > HullVenting.SoakRequired(HullVenting.Infestation.Fibrous));
+    }
+
+    [Fact]
+    public void TheSoakIsLongEnoughThatYouHaveToGoAndDoSomethingElse()
+    {
+        // The point of the counter is that blowing a hold and standing there watching a clock is not a
+        // game. The long soak has to outlast the patience of a captain with a log and a manifest still to
+        // read — otherwise the mechanic collapses back into a button with a delay.
+        Assert.True(HullVenting.SoakRequired(HullVenting.Infestation.Encysted) >= 120.0);
+    }
+
+    [Fact]
+    public void AnUnfinishedCompartmentIsNotClear_AndAFinishedOneIs()
+    {
+        var s = new HullVenting.Space("DEEP HOLD", DoorShut: true, Vented: true, Infested: true,
+            HoldsSurvivor: false, CaptainInside: false,
+            VacuumSeconds: 5.0, Kind: HullVenting.Infestation.Fibrous);
+
+        Assert.False(HullVenting.SoakComplete(s));
+        Assert.True(HullVenting.SoakComplete(s with { VacuumSeconds = HullVenting.FibrousSoakSeconds }));
+    }
+
+    [Fact]
+    public void ARoomWithAirInItIsNeverSoaking()
+    {
+        var s = new HullVenting.Space("BRIDGE", true, Vented: false, Infested: true, false, false,
+            VacuumSeconds: 9999, Kind: HullVenting.Infestation.Motile);
+
+        Assert.False(HullVenting.SoakComplete(s));
+    }
+
+    [Fact]
+    public void TheCounterSaysHowLongItHasBeenOpen_NeverHowLongItNeeds()
+    {
+        // The second number does not exist for the captain. That is the decision.
+        Assert.Equal("00:00", HullVenting.SoakLabel(0));
+        Assert.Equal("00:45", HullVenting.SoakLabel(45.9));
+        Assert.Equal("02:05", HullVenting.SoakLabel(125));
+        Assert.Equal("00:00", HullVenting.SoakLabel(-3));
+    }
+
+    [Fact]
+    public void WhatIsGrowingInThereIsSeeded_SoAReloadCannotRerollItIntoSomethingEasier()
+    {
+        for (int i = 0; i < 20; i++)
+        {
+            HullVenting.Infestation first = HullVenting.InfestationIn($"hull-{i}", "DEEP HOLD", true);
+            Assert.Equal(first, HullVenting.InfestationIn($"hull-{i}", "DEEP HOLD", true));
+        }
+
+        Assert.Equal(HullVenting.Infestation.None, HullVenting.InfestationIn("hull-1", "BRIDGE", false));
+    }
+
+    [Fact]
+    public void AllThreeKindsOccur_ButTheHardyOneIsTheMinority()
+    {
+        var counts = new Dictionary<HullVenting.Infestation, int>();
+        for (int i = 0; i < 300; i++)
+        {
+            HullVenting.Infestation k = HullVenting.InfestationIn($"hull-{i}", "DEEP HOLD", true);
+            counts[k] = counts.GetValueOrDefault(k) + 1;
+        }
+
+        Assert.True(counts.GetValueOrDefault(HullVenting.Infestation.Motile) > 0);
+        Assert.True(counts.GetValueOrDefault(HullVenting.Infestation.Fibrous) > 0);
+        Assert.True(counts.GetValueOrDefault(HullVenting.Infestation.Encysted) > 0);
+        Assert.True(counts[HullVenting.Infestation.Encysted] < counts[HullVenting.Infestation.Motile]);
+    }
+
+    // ── Refill: the other half of the board ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void AVentedRoomCanBeBroughtBack_ButOnlyWithTheDoorShutAndAChargeToSpend()
+    {
+        var vented = new HullVenting.Space("BRIDGE", DoorShut: true, Vented: true, Infested: false,
+            HoldsSurvivor: false);
+
+        Assert.Equal(HullVenting.RefillReadiness.Ready, HullVenting.RefillState(vented, 1));
+        Assert.Equal(HullVenting.RefillReadiness.NoReserve, HullVenting.RefillState(vented, 0));
+        Assert.Equal(HullVenting.RefillReadiness.DoorOpen,
+                     HullVenting.RefillState(vented with { DoorShut = false }, 1));
+        Assert.Equal(HullVenting.RefillReadiness.NotVented,
+                     HullVenting.RefillState(vented with { Vented = false }, 1));
+    }
+
+    [Fact]
+    public void AirComesBack_NobodyDoes()
+    {
+        // THE RULE THE WHOLE FEATURE IS BALANCED ON. A refill that undid a vent would gut the decision the
+        // panel exists for: you would blow every compartment and restore the ones that squealed.
+        var s = new HullVenting.Space("CREW SPACES", DoorShut: true, Vented: true, Infested: false,
+            HoldsSurvivor: false, CaptainInside: false, VacuumSeconds: 500);
+
+        HullVenting.RefillOutcome o = HullVenting.Refill(s, 1);
+
+        Assert.True(o.Filled);
+        Assert.False(o.SomethingSurvived);
+        Assert.Contains("Nothing that went out with the air comes back in with it", o.Line);
+    }
+
+    [Fact]
+    public void RefillingBeforeTheVacuumIsFinishedSavesTheThingYouWereKilling()
+    {
+        // The mistake the counter exists to make available. Impatience is the cost, and the captain is told
+        // plainly — this is never a silent failure.
+        var s = new HullVenting.Space("DEEP HOLD", DoorShut: true, Vented: true, Infested: true,
+            HoldsSurvivor: false, CaptainInside: false,
+            VacuumSeconds: 10, Kind: HullVenting.Infestation.Encysted);
+
+        HullVenting.RefillOutcome early = HullVenting.Refill(s, 1);
+        Assert.True(early.Filled);
+        Assert.True(early.SomethingSurvived);
+        Assert.Contains("takes the first breath", early.Line);
+
+        HullVenting.RefillOutcome patient = HullVenting.Refill(
+            s with { VacuumSeconds = HullVenting.EncystedSoakSeconds }, 1);
+        Assert.False(patient.SomethingSurvived);
+    }
+
+    [Fact]
+    public void RefillingIsScarce_SoItIsASpendAndNotAToggle()
+    {
+        Assert.True(HullVenting.RefillChargesPerBoarding > 0);
+        Assert.True(HullVenting.RefillChargesPerBoarding < WreckLayout.Compartments.Length,
+            "if you can refill every compartment, blow-everything-and-restore-the-squealers is free");
+    }
+
+    [Fact]
+    public void BeingImpatientCostsLessThanKillingSomebody()
+    {
+        // You have not killed anyone — you have been impatient in front of something patient.
+        Assert.True(HullVenting.RefilledTooSoonNerveCost > 0);
+        Assert.True(HullVenting.RefilledTooSoonNerveCost < HullVenting.VentedSurvivorNerveCost);
+    }
+
+    // ── Pressure locks ────────────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ADoorIsHeldOnlyWhenThereIsAirOnExactlyOneSideOfIt()
+    {
+        var withAir = new HullVenting.Space("BRIDGE", true, Vented: false, Infested: false, HoldsSurvivor: false);
+        var vacuum = withAir with { Vented = true };
+
+        // The case the owner hit: he blew the room and walked straight into it.
+        Assert.True(HullVenting.DoorHeldByPressure(vacuum, spinePressurised: true));
+
+        // Both sides the same — nothing to hold it either way.
+        Assert.False(HullVenting.DoorHeldByPressure(vacuum, spinePressurised: false));
+        Assert.False(HullVenting.DoorHeldByPressure(withAir, spinePressurised: true));
+
+        // And the differential the other way round: the last breathable room on a vacuum hull.
+        Assert.True(HullVenting.DoorHeldByPressure(withAir, spinePressurised: false));
+    }
+
+    [Fact]
+    public void AHullThatHasBeenOpenForDecadesHasNoLockedDoorsAtAll()
+    {
+        // Every compartment on the vented hull is vacuum and so is her spine, so nothing fights you —
+        // except the one room somebody kept air in, which is the room the valve board is in.
+        foreach ((string name, float _, float _, bool _) in WreckLayout.Compartments)
+        {
+            bool preVented = HullVenting.StartsVented(Derelict.WreckCause.VentedByOneOfTheirOwn, name);
+            var s = new HullVenting.Space(name, DoorShut: preVented, Vented: preVented,
+                Infested: false, HoldsSurvivor: false);
+
+            bool held = HullVenting.DoorHeldByPressure(s, spinePressurised: false);
+            Assert.Equal(name == HullVenting.ValveCompartment, held);
+        }
+    }
+
+    [Fact]
+    public void TheGaugeReadsHardOverExactlyWhenTheDoorIsHeld()
+    {
+        var vacuum = new HullVenting.Space("DEEP HOLD", true, true, false, false);
+
+        Assert.Equal(1.0, HullVenting.PressureGauge(vacuum, true));
+        Assert.Equal(0.0, HullVenting.PressureGauge(vacuum, false));
+    }
+
+    [Fact]
+    public void BothSidesOfTheLockGetTheirOwnExplanation()
+    {
+        Assert.Contains("ten tonnes", HullVenting.PressureLockLine("DEEP HOLD", true));
+        Assert.Contains("last breathable room", HullVenting.PressureLockLine("ENGINEERING", false));
+        Assert.NotEqual(HullVenting.PressureLockLine("X", true), HullVenting.PressureLockLine("X", false));
+    }
+
+    [Fact]
+    public void EqualisingIsAlwaysAvailable_SoAPressureLockCanNeverStrandACaptain()
+    {
+        // The reason this mechanic is allowed to wall a doorway at all: every real pressure door has an
+        // equalisation valve, it costs nothing, and it costs the ship her air. There is no state in which
+        // a captain is on the wrong side of a door with no way through it.
+        Assert.False(string.IsNullOrWhiteSpace(HullVenting.EqualiseLine));
+        Assert.Contains("both sides read nothing", HullVenting.EqualiseLine);
+        Assert.Contains("stops", HullVenting.EqualiseWarnsLine);
+    }
+
+    [Fact]
+    public void YouCanNeverBeSealedIntoTheRoomYouAreStandingIn()
+    {
+        // A pressure lock only ever forms on a VENTED compartment, and the board will not vent the room the
+        // captain is in. Those two rules together are what make the wall safe.
+        var here = new HullVenting.Space("DEEP HOLD", DoorShut: true, Vented: false, Infested: false,
+            HoldsSurvivor: false, CaptainInside: true);
+
+        Assert.Equal(HullVenting.VentReadiness.CaptainInside, HullVenting.Readiness(here));
+        Assert.False(HullVenting.DoorHeldByPressure(here, spinePressurised: true));
+    }
+
+    [Fact]
+    public void EveryRefusalSaysWhy()
+    {
+        foreach (HullVenting.RefillReadiness r in System.Enum.GetValues<HullVenting.RefillReadiness>())
+        {
+            if (r == HullVenting.RefillReadiness.Ready)
+            {
+                continue;
+            }
+            Assert.False(string.IsNullOrWhiteSpace(HullVenting.RefillRefusalLine(r, "DEEP HOLD")));
+        }
     }
 }

@@ -67,6 +67,25 @@ public static class WreckLayout
         return centres;
     }
 
+    /// <summary>
+    /// THE AWAY TEAM'S OWN LOCK, across the spine between the wreck and the shuttle. Owner: <i>"Let's keep
+    /// the shuttle door locked in such a way that we don't vent our own shuttle by accident. Also we don't
+    /// want any uninvited infestations going there."</i>
+    ///
+    /// <para>Two jobs, one bulkhead. It is the boundary the ship's atmosphere stops at — crack every valve
+    /// on this hull and the shuttle never notices — and it is a CREW-ONLY door, the same rule the ship's own
+    /// tube runs on: the away team work it, and nothing else aboard can. The pack has never operated a
+    /// hatch and is not going to start.</para>
+    ///
+    /// <para>It is deliberately AFT of <see cref="ShuttleStation"/> and FORWARD of <see cref="SpawnX"/>, so
+    /// the team lands inside the ship having already come through it.</para>
+    /// </summary>
+    public const float ShuttleLockX = 21f;
+
+    /// <summary>Half-height of the gap through the lock bulkhead. Three units of passage — wider than the
+    /// captain with room to walk it badly, which is the bar <c>WreckLayoutTests</c> holds every doorway to.</summary>
+    public const float ShuttleLockGapHalf = 1.5f;
+
     /// <summary>The playable bounds an audit sweeps — the hull with a margin.</summary>
     public static (double MinX, double MinY, double MaxX, double MaxY) Bounds =>
         (AftX - 2, TopY - 2, BowX + 2, BottomY + 2);
@@ -101,6 +120,12 @@ public static class WreckLayout
             walls.Add(new(x0, yIn, x0, yOut));
             walls.Add(new(x1, yIn, x1, yOut));
         }
+
+        // The away team's own lock across the spine: two stubs off the corridor walls with a passage
+        // between them. Present on EVERY cause, because it is the shuttle's lock and not the wreck's — the
+        // team brought it with them and dogged it behind themselves.
+        walls.Add(new(ShuttleLockX, -SpineHalfHeight, ShuttleLockX, -ShuttleLockGapHalf));
+        walls.Add(new(ShuttleLockX, ShuttleLockGapHalf, ShuttleLockX, SpineHalfHeight));
 
         walls.AddRange(DamageWalls(cause));
         return walls;

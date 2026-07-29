@@ -212,6 +212,41 @@ public class WreckLayoutTests
         }
     }
 
+    [Fact]
+    public void TheShuttleLockSitsBetweenTheAwayTeamAndTheirRideHome()
+    {
+        // The team lands INSIDE the ship having already come through their own lock, so the bulkhead has to
+        // be forward of the spawn and aft of the shuttle. Put it the wrong side of either and it is either
+        // decoration or a wall across the way home.
+        Assert.True(WreckLayout.ShuttleLockX > WreckLayout.SpawnX,
+            "the lock is aft of the spawn — the away team would have to walk backwards through it");
+        Assert.True(WreckLayout.ShuttleLockX < WreckLayout.ShuttleStation.X,
+            "the lock is forward of the shuttle — it guards nothing");
+    }
+
+    [Fact]
+    public void TheLockHasAPassageWideEnoughToWalkBadly()
+    {
+        // Same bar as every other doorway on this hull: passable is not the test, comfortable is.
+        Assert.True(WreckLayout.ShuttleLockGapHalf * 2 > ComfortRadius * 2,
+            "the lock passage is tighter than the comfort bar the rest of the ship is held to");
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryCause))]
+    public void TheLockNeverBlocksTheWayHome(Derelict.WreckCause cause)
+    {
+        // It is a bulkhead across the ONLY corridor, which is exactly the shape of the bug that started
+        // this whole audit. If the passage is ever cut wrong, the away team is sealed away from the shuttle
+        // and the wreck becomes a tomb.
+        Assert.True(
+            DeckReachability.CanReach(
+                Spawn,
+                new(WreckLayout.ShuttleStation.X, WreckLayout.ShuttleStation.Y),
+                WreckLayout.Walls(cause), ComfortRadius, WreckLayout.Bounds),
+            $"{cause}: the away team cannot get back through their own lock.");
+    }
+
     // ── The audit can actually fail (a guard that only ever passes guards nothing) ────────────────────
 
     [Fact]

@@ -48,5 +48,6 @@ Press `E` at the **SHUTTLE BAY** while a window is engaged to take manual contro
 See also: [traffic-board.md](traffic-board.md) for selecting and pinning a target,
 [plotting-desk.md](plotting-desk.md) for flying the intercept, [depots.md](depots.md) for the
 easiest possible boarding target, [dock-and-economy.md](dock-and-economy.md) for what to do with
-the loot, and [safety-card.md](safety-card.md) for the filed (unbuilt) plan to read a liner's
-muster map and her empty pod cradles as accident evidence.
+the loot, [atmosphere.md](atmosphere.md) for the valve board — the vacuum soak, the pump, the pressure
+locks and the shuttle's own airlock — and [safety-card.md](safety-card.md) for the filed (unbuilt) plan to
+read a liner's muster map and her empty pod cradles as accident evidence.

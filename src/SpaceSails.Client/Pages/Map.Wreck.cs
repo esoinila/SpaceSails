@@ -265,7 +265,7 @@ public sealed partial class Map
             return;
         }
 
-        _deckPlan = WreckInterior.WreckDeck(w, _wreckExamined, _wreckSalvaged, 3, FillSurfaceDroids);
+        _deckPlan = WreckInterior.WreckDeck(w, _wreckExamined, _wreckSalvaged, 3, FillSurfaceDroids, HeldDoors(), BlockedDoors());
     }
 
     /// <summary>The wreck's own header line, and the loiter promise under it — the reason the away team is
