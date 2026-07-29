@@ -136,6 +136,13 @@ public static class WreckInterior
         // aft in ENGINEERING. That placement IS the mechanic: on an infested hull you walk toward the thing
         // to reach the tool that kills it, then back out past whatever you chose not to vent. The dead
         // panel is a signpost, not a wall — nobody should have to guess the answer is aft.
+        // ── Making sure ───────────────────────────────────────────────────────────────────────────────
+        // The scuttling panel is deliberately NOT the valve board. That board is damage control, a thing
+        // every ship has; this is the other kind of panel — keyed, placarded, chained, built for one job.
+        // It sits with the reactor, so standing at it means standing next to the thing you are overloading.
+        consoles.Add(new DeckPlan.ConsoleSpot(
+            DeckPlan.ConsoleKind.WreckScuttle, -24f, 6f, "☢ SCUTTLING PANEL"));
+
         if (wreck.Cause == Derelict.WreckCause.Infested)
         {
             consoles.Add(new DeckPlan.ConsoleSpot(

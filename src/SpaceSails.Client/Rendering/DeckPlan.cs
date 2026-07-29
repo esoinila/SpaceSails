@@ -19,7 +19,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 

@@ -328,6 +328,9 @@ public partial class Map
                     if (OnWreck)
                     {
                         ShowPulseMessage(HullVenting.ShuttleLockLine(_spinePressurised));
+                        // #488: leaving with the keys turned. Capture what was still aboard BEFORE she is
+                        // gone — the question cannot be asked afterwards.
+                        ResolveScuttleOnDeparture();
                     }
                     LiftOffFromSurface(); // back aboard mid-excursion: the airlock is the ride home
                 }
@@ -374,6 +377,9 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.WreckPressureDoor:
                 OpenPressureDoorCard();     // #488: ten tonnes of atmosphere in a frame
+                break;
+            case DeckPlan.ConsoleKind.WreckScuttle:
+                OpenScuttlePanel();         // #488: making sure — the road that pays nothing
                 break;
             case DeckPlan.ConsoleKind.SurfaceAirlock:
                 LiftOffFromSurface();

@@ -3778,3 +3778,27 @@
 .wc-room { color: #cddaeb; }
 .wc-time { margin-left: auto; color: #e0b25a; font-variant-numeric: tabular-nums; }
 .wc-note { color: #78dcaa; font-size: 0.66rem; }
+
+/* ── Making sure ────────────────────────────────────────────────────────────────────────────────────
+   The scuttling panel and the card you read afterwards from your own cockpit. */
+.scuttle-panel, .scuttle-epitaph { max-width: 34rem; }
+
+.scuttle-art {
+    display: block;
+    width: 100%;
+    border-radius: 0.25rem;
+    margin: 0.4rem 0 0.6rem;
+    border: 1px solid rgba(170, 190, 210, 0.25);
+}
+
+.scuttle-epitaph-text {
+    white-space: pre-wrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #cddaeb;
+    padding: 0.2rem 0.2rem 0.6rem;
+}
+
+/* When there WAS something. The paragraph about what you heard gets the weight. */
+.scuttle-epitaph-text.heard { color: #e8b45c; }
