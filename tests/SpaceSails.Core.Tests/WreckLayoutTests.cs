@@ -384,4 +384,48 @@ public class WreckLayoutTests
         Assert.Null(WreckLayout.CompartmentAt(0, 0));
         Assert.Null(WreckLayout.CompartmentAt(-20, 0));
     }
+
+    // ── Absence of a tool is information ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void EveryShipCarriesTheSameFittingsAndDiffersOnlyInHerEvidence()
+    {
+        // Owner: "even without reevers we should have those tech we used here available, to not give a clue
+        // that they might not be needed."
+        //
+        // THE CONSOLE MUST NEVER BE THE SPOILER. If a fitting appears only on the hulls that need it, then
+        // finding the fitting names the cause before any evidence is read, and every misdirection the wreck
+        // is built to allow (Derelict.MisreadsAs) is undone by a panel being present. So: identical fittings
+        // everywhere, and exactly one station that is hers alone.
+        foreach (Derelict.WreckCause cause in System.Enum.GetValues<Derelict.WreckCause>())
+        {
+            IReadOnlyList<(string Name, DeckReachability.Point At)> stations = WreckLayout.Stations(cause);
+
+            Assert.Equal(WreckLayout.StandardFittings.Count + 1, stations.Count);
+
+            for (int i = 0; i < WreckLayout.StandardFittings.Count; i++)
+            {
+                Assert.Equal(WreckLayout.StandardFittings[i], stations[i]);
+            }
+
+            Assert.Equal(WreckLayout.CauseStationName(cause), stations[^1].Name);
+        }
+    }
+
+    [Fact]
+    public void TheStandardFittingsIncludeTheOnesThatUsedToGiveTheGameAway()
+    {
+        // Named explicitly rather than merely counted: these three were gated on the infested hull, so their
+        // presence WAS the answer. A future edit that quietly drops one from the standard set should have to
+        // delete this test to do it.
+        var names = new HashSet<string>(System.StringComparer.Ordinal);
+        foreach ((string name, DeckReachability.Point _) in WreckLayout.StandardFittings)
+        {
+            names.Add(name);
+        }
+
+        Assert.Contains("the atmosphere valves", names);
+        Assert.Contains("the damage-control placard", names);
+        Assert.Contains("the scuttling panel", names);
+    }
 }
