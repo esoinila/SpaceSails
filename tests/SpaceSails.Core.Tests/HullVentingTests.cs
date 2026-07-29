@@ -530,4 +530,99 @@ public class HullVentingTests
         Assert.True(banked >= HullVenting.WholeShipRefillCost(rooms),
                     "a captain who pumped the whole ship down must be able to bring the whole ship back");
     }
+
+    // ── One atmosphere, however many rooms it is standing in ─────────────────────────────────────────
+
+    private static HullVenting.Space Room(string name, bool shut, bool vented = false) =>
+        new(name, DoorShut: shut, Vented: vented, Infested: false, HoldsSurvivor: false);
+
+    [Fact]
+    public void ADoggedHatchIsItsOwnAtmosphere()
+    {
+        // Owner: "if we only want to evacuate it then the doors to it need to be sealed."
+        HullVenting.Space[] ship = [Room("DEEP HOLD", shut: true), Room("BRIDGE", shut: false)];
+
+        Assert.Equal(["DEEP HOLD"], HullVenting.SharedAtmosphere("DEEP HOLD", ship));
+    }
+
+    [Fact]
+    public void AnOpenHatchPutsARoomInOneVolumeWithTheCorridorAndEveryOtherOpenRoom()
+    {
+        // "But if we evacuate multiple spaces then doors between those do not need to be sealed."
+        HullVenting.Space[] ship =
+        [
+            Room("BRIDGE", shut: false),
+            Room("CREW SPACES", shut: false),
+            Room("DEEP HOLD", shut: true),
+        ];
+
+        IReadOnlyList<string> volume = HullVenting.SharedAtmosphere("BRIDGE", ship);
+
+        Assert.Contains("BRIDGE", volume);
+        Assert.Contains("CREW SPACES", volume);
+        Assert.Contains(HullVenting.SpineName, volume);
+        Assert.DoesNotContain("DEEP HOLD", volume);   // dogged, and therefore spared
+    }
+
+    [Fact]
+    public void ReachingIsSymmetric()
+    {
+        // Whichever end you press, the same atmosphere answers — the property that makes this a volume
+        // rather than a direction.
+        HullVenting.Space[] ship = [Room("BRIDGE", shut: false), Room("CREW SPACES", shut: false)];
+
+        Assert.Equal(HullVenting.SharedAtmosphere("BRIDGE", ship),
+                     HullVenting.SharedAtmosphere("CREW SPACES", ship));
+        Assert.Equal(HullVenting.SharedAtmosphere("BRIDGE", ship),
+                     HullVenting.SharedAtmosphere(HullVenting.SpineName, ship));
+    }
+
+    [Fact]
+    public void TheCorridorAloneIsTheCorridorWhenEveryHatchIsDogged()
+    {
+        HullVenting.Space[] ship = [Room("BRIDGE", shut: true), Room("CREW SPACES", shut: true)];
+
+        Assert.Equal([HullVenting.SpineName], HullVenting.SharedAtmosphere(HullVenting.SpineName, ship));
+    }
+
+    [Fact]
+    public void ABiggerVolumeTakesLongerAndPaysMore()
+    {
+        HullVenting.Space[] open = [Room("BRIDGE", shut: false), Room("CREW SPACES", shut: false)];
+
+        (double bigSeconds, int bigCharges) = HullVenting.PumpJob(HullVenting.SharedAtmosphere("BRIDGE", open));
+        (double oneSeconds, int oneCharges) = HullVenting.PumpJob(["BRIDGE"]);
+
+        Assert.True(bigSeconds > oneSeconds);
+        Assert.True(bigCharges > oneCharges);
+    }
+
+    [Fact]
+    public void TheBoardNamesEveryRoomAPumpWillReachBeyondTheOnePressed()
+    {
+        // The only check the owner wanted: "make sure we don't evacuate a room by accident of leaving its
+        // door open." It warns, naming names; it never refuses.
+        HullVenting.Space[] ship = [Room("BRIDGE", shut: false), Room("CREW SPACES", shut: false)];
+        IReadOnlyList<string> volume = HullVenting.SharedAtmosphere("BRIDGE", ship);
+
+        string line = HullVenting.PumpReachesFurtherLine("BRIDGE", volume);
+
+        Assert.Contains("CREW SPACES", line, System.StringComparison.Ordinal);
+        Assert.Contains(HullVenting.SpineName, line, System.StringComparison.Ordinal);
+
+        // The room you PRESSED is named once, as the thing being exceeded — never again in the list of
+        // what else is going, which is the only part the captain is being warned about.
+        string listed = line[(line.IndexOf(": ", System.StringComparison.Ordinal) + 2)..];
+        Assert.DoesNotContain("BRIDGE", listed, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ASealedRoomWarnsAboutNothingBecauseItReachesNothing()
+    {
+        HullVenting.Space[] ship = [Room("DEEP HOLD", shut: true)];
+
+        Assert.Equal(string.Empty,
+                     HullVenting.PumpReachesFurtherLine("DEEP HOLD",
+                         HullVenting.SharedAtmosphere("DEEP HOLD", ship)));
+    }
 }

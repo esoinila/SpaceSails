@@ -319,6 +319,30 @@ public static class HullVenting
     /// <para>What it cannot do is move a hatch the pressure is holding. Those are the doors the ship has
     /// already decided about.</para>
     /// </summary>
+    /// <summary>
+    /// AND THE WAY BACK OUT. Owner, standing in a hull he had just pumped end to end: <i>"I want to unlock
+    /// all the doors after the ship is in vacuum."</i>
+    ///
+    /// <para>Of course — because the pump SEALS her to work, and a captain who has just emptied every
+    /// compartment is standing in a maze of eight dogged hatches they now have to undo one at a time to walk
+    /// their own prize. And once she is uniformly at vacuum there is no differential anywhere, so every one
+    /// of those doors is free: the ship is asking to be opened.</para>
+    ///
+    /// <para>It is also the move that makes the flood reach everything — one open volume takes the reserve
+    /// all at once — so the pair of them is the whole cycle: seal to empty her, open to walk her, flood to
+    /// bring her back.</para>
+    /// </summary>
+    public static string UnsealTheShipLine(int opened, int held) => opened switch
+    {
+        0 when held > 0 => "Not one of them will move. The pressure across them is holding every hatch " +
+                           "where it is — even her out the rest of the way, or fill her, and try again.",
+        0 => "Every hatch is already standing open.",
+        _ => $"You walk the row and undog {opened} hatch{(opened == 1 ? "" : "es")}. Nothing resists — there " +
+             "is no difference across any of them worth the name — and she opens up into one long volume " +
+             "from the transom to the lock."
+             + (held > 0 ? $" {held} stayed shut: there is still air behind them." : string.Empty),
+    };
+
     public static string SealTheShipLine(int dogged, int held) => dogged switch
     {
         0 when held > 0 => "Every hatch is already dogged or held by the pressure across it. She is as shut as she gets.",
@@ -472,6 +496,119 @@ public static class HullVenting
     /// proportionally longer.</summary>
     public static double PumpTotalSeconds(bool spine) =>
         spine ? PumpDownSeconds * SpinePumpMultiplier : PumpDownSeconds;
+
+    // ── One atmosphere, however many rooms it is standing in ──────────────────────────────────────────
+
+    /// <summary>
+    /// WHAT ACTUALLY SHARES AIR WITH WHAT. Owner, correcting a rule I had written per-door instead of
+    /// per-volume: <i>"if we only want to evacuate it then the doors to it need to be sealed … but if we
+    /// evacuate multiple spaces then doors between those do not need to be sealed. The only check we need
+    /// is to make sure we don't evacuate a room by accident of leaving its door open."</i>
+    ///
+    /// <para>That is the whole interlock, correctly stated, and it is one rule instead of three. A pump does
+    /// not empty a ROOM — it empties whatever volume it is plumbed into, and that volume is however many
+    /// compartments are standing open to each other. So the question was never "is this door shut", it is
+    /// "which spaces am I about to empty, and did the captain mean all of them".</para>
+    ///
+    /// <para>Every compartment opens onto the spine and onto nothing else, so the connected set is simple:
+    /// a compartment with a dogged hatch is alone; anything with an open hatch is in one volume with the
+    /// corridor and with every other open compartment. Naming it here, once, is what stops the board and the
+    /// rules from disagreeing about what a pump is going to do.</para>
+    /// </summary>
+    /// <param name="name">Any space, compartment or <see cref="SpineName"/>.</param>
+    /// <param name="spaces">Every compartment. The spine is not among them; it is implicit.</param>
+    /// <remarks>A FLOOD FILL ACROSS OPEN DOORS, written as the search rather than as its answer. Owner: "so
+    /// the UI of pumping should use like the A* algorithm to check the doors." Same family — A* is a search
+    /// for the CHEAPEST path and this wants EVERY space reachable at all, so it is A* with the heuristic and
+    /// the cost thrown away: a breadth-first flood. On this hull the graph happens to be a star (every
+    /// compartment opens onto the corridor and onto nothing else) so the fill terminates in one hop and
+    /// could have been written as two ifs — but writing the answer instead of the search is how a rule stops
+    /// being true the day somebody cuts a hatch between two holds. This asks the doors.</remarks>
+    public static IReadOnlyList<string> SharedAtmosphere(string name, IReadOnlyList<Space> spaces)
+    {
+        var found = new HashSet<string>(System.StringComparer.Ordinal) { name };
+        var queue = new Queue<string>();
+        queue.Enqueue(name);
+
+        while (queue.Count > 0)
+        {
+            string at = queue.Dequeue();
+            foreach (string next in OpenNeighbours(at, spaces))
+            {
+                if (found.Add(next))
+                {
+                    queue.Enqueue(next);
+                }
+            }
+        }
+
+        var volume = new List<string>(found);
+        volume.Sort(System.StringComparer.Ordinal);
+        return volume;
+    }
+
+    /// <summary>Everything one space is standing open to right now. THE DOOR GRAPH, and the only place it is
+    /// written down: every compartment has one hatch and it opens onto the corridor.</summary>
+    private static IEnumerable<string> OpenNeighbours(string at, IReadOnlyList<Space> spaces)
+    {
+        if (string.Equals(at, SpineName, System.StringComparison.Ordinal))
+        {
+            foreach (Space s in spaces)
+            {
+                if (!s.DoorShut)
+                {
+                    yield return s.Name;
+                }
+            }
+            yield break;
+        }
+
+        foreach (Space s in spaces)
+        {
+            // A dogged hatch is its own little world — that is the whole point of dogging it.
+            if (string.Equals(s.Name, at, System.StringComparison.Ordinal) && !s.DoorShut)
+            {
+                yield return SpineName;
+            }
+        }
+    }
+
+    /// <summary>How long it takes to pull a whole shared volume down, and what it pays back. Both scale with
+    /// what is actually in it — three rooms and the corridor is a lot more air than one locker.</summary>
+    public static (double Seconds, int Charges) PumpJob(IReadOnlyList<string> volume)
+    {
+        double seconds = 0;
+        int charges = 0;
+        foreach (string s in volume)
+        {
+            bool spine = string.Equals(s, SpineName, System.StringComparison.Ordinal);
+            seconds += PumpTotalSeconds(spine);
+            charges += PumpYield(spine);
+        }
+        return (seconds, charges);
+    }
+
+    /// <summary>The one warning the owner asked for, and the only one: you are about to empty more than the
+    /// space you pressed. Not a refusal — a captain is allowed to evacuate half a ship on purpose — but it
+    /// says exactly which rooms are going, because the accident it guards against is a hatch left open and
+    /// forgotten, not a decision.</summary>
+    public static string PumpReachesFurtherLine(string pressed, IReadOnlyList<string> volume)
+    {
+        var others = new List<string>();
+        foreach (string s in volume)
+        {
+            if (!string.Equals(s, pressed, System.StringComparison.Ordinal))
+            {
+                others.Add(s);
+            }
+        }
+
+        return others.Count == 0
+            ? string.Empty
+            : $"That pump is plumbed into more than {pressed}: {string.Join(", ", others)} " +
+              $"{(others.Count == 1 ? "is" : "are")} standing open to it and will go down with it. Dog the " +
+              "hatches you meant to keep.";
+    }
 
     /// <summary>
     /// The countdown value at which the air lands in the tanks, for this pump.
