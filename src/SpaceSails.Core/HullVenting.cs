@@ -204,6 +204,41 @@ public static class HullVenting
     /// </summary>
     public const string ValveCompartment = "ENGINEERING";
 
+    // ── The hull that was already vented, by one of her own ───────────────────────────────────────────
+
+    /// <summary>Whether this compartment is ALREADY hard vacuum when the away team arrives — true only on
+    /// <see cref="Derelict.WreckCause.VentedByOneOfTheirOwn"/>, and true of every compartment but one.
+    ///
+    /// <para>Owner, 2026-07-29: <i>"one ship destiny might be that somebody went crazy due to an object and
+    /// vented most of the ship."</i> The exception is not chosen — it FALLS OUT of a rule the game already
+    /// enforces and the player has already been refused by. <see cref="Readiness"/> will not blow the room
+    /// you are standing in, so the one room with air in it is the room the person who did this was standing
+    /// in: <see cref="ValveCompartment"/>, at the board, with every handle pulled.</para>
+    ///
+    /// <para>Which means the mimic map does the accusing. The captain raises the valve board — the same
+    /// panel, the same eight rooms — and seven of them read VACUUM around the one they are standing in.
+    /// Nothing has to say who did it. An interlock written as a safety feature, read years later as a
+    /// confession.</para></summary>
+    public static bool StartsVented(Derelict.WreckCause cause, string compartment) =>
+        cause == Derelict.WreckCause.VentedByOneOfTheirOwn
+        && !string.Equals(compartment, ValveCompartment, System.StringComparison.Ordinal);
+
+    /// <summary>The one room with air in it, and the reason there is one.</summary>
+    public const string TheRoomTheyWereStandingIn = ValveCompartment;
+
+    /// <summary>What the log station reads on a vented hull — the SECOND madness. Owner: <i>"the survivors
+    /// also fell to some other craziness after that."</i> They did not write down what happened, because in
+    /// the log nothing did: months of watch rotations and meal counts in one immaculate administrative
+    /// hand, forty names signing on and off a ship with nobody aboard. Deliberately the same forty as the
+    /// ice moon's and the glitch card's PATTERN 40 — the third place the motif surfaces, and the first
+    /// where the captain finds it as an object instead of a rumour.</summary>
+    public const string VentedShipLogLine =
+        "The log does not stop at the venting. It runs on for eleven more months in one steady " +
+        "administrative hand: watch rotations, meal counts, stores drawn, forty names signing on and off " +
+        "watch, every entry countersigned. Nobody is ever recorded as absent. Nothing is ever recorded as " +
+        "having happened. The last page is a routine handover to the next watch, and it is signed by four " +
+        "people who were already in vacuum when it was written.";
+
     /// <summary>What the dead bridge panel says when the captain tries it first — a signpost, not a wall.
     /// Nobody should have to guess that the answer is aft.</summary>
     public const string DeadBridgePanelLine =

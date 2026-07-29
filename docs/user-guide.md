@@ -510,6 +510,20 @@ crew's barricades were built from the *inside*.
 Your shuttle's own gun sits in her airlock, live and never dry, covering the corridor you will be running
 back down. Read what you can and get out — on that hull, the walk back **is** the encounter.
 
+### And sometimes she was already vented
+
+On one kind of wreck, the valve board is the finding.
+
+You will raise the panel expecting to use it, and find every handle already pulled: seven compartments
+frosted hard vacuum, the doors thrown from the **spine** side — from outside the rooms — and exactly one
+compartment still holding air. It will not take you long to work out which room that is, because the board
+has already refused to let you blow the room *you* are standing in.
+
+Whoever was left kept the log for eleven more months after that. Watch rotations, meal counts, forty names
+signing on and off a ship with nobody aboard. In the log, nothing ever happened.
+
+It reads perfectly well as an air-plant failure, and filing it that way pays exactly the same.
+
 
 
 ## 18. The electric sky ⚡

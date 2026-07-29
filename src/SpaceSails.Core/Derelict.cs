@@ -121,6 +121,21 @@ public static class Derelict
         /// the crew were taken off before she was set adrift. The most valuable thing aboard is the
         /// evidence (see <see cref="FraudBountyFraction"/>).</summary>
         InsuranceJob,
+
+        /// <summary>SHE WAS VENTED FROM THE INSIDE, BY ONE OF HER OWN. Owner: <i>"one ship destiny might
+        /// be that somebody went crazy due to an object and vented most of the ship and the survivors also
+        /// fell to some other craziness after that."</i>
+        ///
+        /// <para>Someone aboard stood too long beside the thing in her hold, walked aft to the valve board,
+        /// and blew her compartment by compartment with her crew inside. The doors were thrown from the
+        /// SPINE side, not barricaded from within — and exactly ONE compartment was left with air in it,
+        /// because <see cref="HullVenting.Readiness"/> will not blow the room you are standing in. The
+        /// interlock the player knows from their own hands, read years later as a confession.</para>
+        ///
+        /// <para>Then the second madness: the few who lived through their own ship kept her log for months
+        /// afterwards in an immaculate administrative hand — watch rotations, meal counts, forty names
+        /// signing on and off a ship with nobody aboard. In the log, nothing ever happened.</para></summary>
+        VentedByOneOfTheirOwn,
     }
 
     /// <summary>The headline the wreck reads as once the cause is known.</summary>
@@ -135,6 +150,7 @@ public static class Derelict
         WreckCause.Piracy => "she was boarded, stripped in a hurry, and left under way",
         WreckCause.Infested => "she is not empty",
         WreckCause.InsuranceJob => "she was lost on purpose",
+        WreckCause.VentedByOneOfTheirOwn => "one of her own opened her to space, compartment by compartment",
         _ => "",
     };
 
@@ -158,6 +174,7 @@ public static class Derelict
         WreckCause.Piracy => "art/wreck-piracy.jpg",
         WreckCause.Infested => "art/wreck-infested.jpg",
         WreckCause.InsuranceJob => "art/wreck-insurance-job.jpg",
+        WreckCause.VentedByOneOfTheirOwn => "art/wreck-vented.jpg",
         _ => "",
     };
 
@@ -183,6 +200,8 @@ public static class Derelict
             "the near hold stripped to bare frames, the deep hold untouched, and the airlock cycled from outside",
         WreckCause.InsuranceJob =>
             "the lifeboat cradles are empty and their release logs predate the distress call, the manifest is countersigned twice, and the cargo seals were opened and re-set",
+        WreckCause.VentedByOneOfTheirOwn =>
+            "every door was thrown from the SPINE side and every compartment but one is frosted hard vacuum — and the log runs on for months after that, in one immaculate hand, signing forty names on and off watch",
         _ => "",
     };
 
@@ -203,6 +222,12 @@ public static class Derelict
         WreckCause.Infested => WreckCause.Mutiny,
         // A ship that never burned looks like a ship that could not.
         WreckCause.NavigationalError => WreckCause.DriveFailure,
+        // Doors shut, air gone: that reads as the air plant failing, and it reads that way easily. Unlike
+        // every other entry here, this misreading is not a mistake the WRECK makes — the evidence is plain
+        // at the valve board. It is the one the CAPTAIN is invited to make, because naming it truly means
+        // naming a dead crewmember on circumstantial evidence, while the comfortable answer pays the same
+        // and leaves the thing in her hold out of the record entirely.
+        WreckCause.VentedByOneOfTheirOwn => WreckCause.LifeSupportFailure,
         _ => null,
     };
 
