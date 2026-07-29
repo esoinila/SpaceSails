@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SpaceSails.Core.Tests/SpaceSails.Core.Tests.csproj" />
+    <Project Path="tests/SpaceSails.Client.Tests/SpaceSails.Client.Tests.csproj" />
   </Folder>
   <Folder Name="/labs/">
     <Project Path="labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj" />

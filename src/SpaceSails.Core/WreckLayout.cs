@@ -319,8 +319,23 @@ public static class WreckLayout
     /// know you want it.</para>
     ///
     /// <para>Every real ship answers this with a placard at the lock, which is also the safety card the
-    /// owner filed a design for. So she gets one, where you come in.</para></summary>
-    public static DeckReachability.Point PlacardStation => new(16.5f, 2.0f);
+    /// owner filed a design for. So she gets one, where you come in.</para>
+    ///
+    /// <para>NOT (16.5, 2), where it was first bolted: 1.62 du from the FORWARD LOCKER's hatch control, so
+    /// the first thing the captain meets on a derelict was two labels drawn on top of each other. Nothing
+    /// caught it, because <see cref="StandardFittings"/> is audited against ITSELF and the hatch controls are
+    /// generated per compartment — the same blind spot her own ship had. The deck audit walks the built plan
+    /// now, consoles and all (<c>ConsoleCrowdingTests</c>).</para>
+    ///
+    /// <para>Nor (20.5, 2), which was my first correction and traded one law for another: it is half a unit
+    /// off the shuttle-lock wall, and <c>WreckLayoutTests</c> walks to every station at half again the
+    /// captain's width — <i>"only a thinner captain could reach the damage-control placard"</i>. A plate you
+    /// have to squeeze past is not a plate anybody reads.</para>
+    ///
+    /// <para>(15, 1.7) clears every wall by 1.3 du and every other console by 3, and it is still the first
+    /// plate of the boarding: the captain comes through the lock at x 21 and walks straight past it on the
+    /// only road there is.</para></summary>
+    public static DeckReachability.Point PlacardStation => new(15f, 1.7f);
 
     /// <summary>Her dead bridge panel — the master that has no bus behind it, and therefore a signpost
     /// rather than a control.
