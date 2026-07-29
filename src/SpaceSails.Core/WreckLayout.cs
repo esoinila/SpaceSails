@@ -322,6 +322,19 @@ public static class WreckLayout
     /// owner filed a design for. So she gets one, where you come in.</para></summary>
     public static DeckReachability.Point PlacardStation => new(16.5f, 2.0f);
 
+    /// <summary>Her dead bridge panel — the master that has no bus behind it, and therefore a signpost
+    /// rather than a control.
+    ///
+    /// <para>THE LAST LITERAL. It was <c>(19f, -7.5f)</c> in the client, which put it 3.4 du from the bridge
+    /// log and, because it was not in <see cref="Stations"/>, outside everything CI walks: not reachability,
+    /// not separation. Every wreck literal moved into Core this weekend turned out to be already wrong the
+    /// moment a test could see it — the nest two compartments from its own name, the valves standing in the
+    /// ENGINEERING doorway. Two for two is not a coincidence, it is the argument.</para></summary>
+    /// <remarks>And 20.5 was my second wrong answer: the BRIDGE ends at <c>BowX − 6</c> = 20, so that put the
+    /// panel in the hull taper where nobody can stand. The walkability audit said so immediately, which is
+    /// the entire point of moving it somewhere the audit can see.</remarks>
+    public static DeckReachability.Point BridgePanelStation => new(19f, -4.2f);
+
     /// <summary>
     /// WHAT EVERY SHIP HAS, WHATEVER KILLED HER. The fittings a hull is built with rather than the ones her
     /// ending gave her: the way home, the cargo, her two sets of paperwork, the scuttling panel, the placard
@@ -348,6 +361,7 @@ public static class WreckLayout
         ("the scuttling panel", ScuttleStation),
         ("the damage-control placard", PlacardStation),
         ("the atmosphere valves", ValveStation),
+        ("the dead bridge panel", BridgePanelStation),
     ];
 
     /// <summary>Every place the captain must be able to REACH: her standard fittings plus the one station

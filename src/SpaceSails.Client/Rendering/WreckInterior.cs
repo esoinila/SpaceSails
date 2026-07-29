@@ -177,7 +177,9 @@ public static class WreckInterior
         // a fitting being present. A hull with nothing living in her still has valves; they just do not
         // help. That is what a red herring is supposed to feel like.
         consoles.Add(new DeckPlan.ConsoleSpot(
-            DeckPlan.ConsoleKind.WreckBridgePanel, 19f, -7.5f, "⚙ VENT PANEL (bridge)"));
+            DeckPlan.ConsoleKind.WreckBridgePanel,
+            (float)WreckLayout.BridgePanelStation.X, (float)WreckLayout.BridgePanelStation.Y,
+            "⚙ VENT PANEL (bridge)"));
         consoles.Add(new DeckPlan.ConsoleSpot(
             DeckPlan.ConsoleKind.WreckValves,
             (float)WreckLayout.ValveStation.X, (float)WreckLayout.ValveStation.Y,
