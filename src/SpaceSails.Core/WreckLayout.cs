@@ -322,11 +322,24 @@ public static class WreckLayout
     /// owner filed a design for. So she gets one, where you come in.</para></summary>
     public static DeckReachability.Point PlacardStation => new(16.5f, 2.0f);
 
-    /// <summary>Every place the captain must be able to REACH: the three evidence stations, the cargo
-    /// decision, the scuttling panel, and the way home. This is the list CI walks — and, since
-    /// <c>WreckLayoutTests</c> also checks they do not stand on top of each other, the list that keeps two
-    /// consoles from sharing a doorstep.</summary>
-    public static IReadOnlyList<(string Name, DeckReachability.Point At)> Stations(Derelict.WreckCause cause) =>
+    /// <summary>
+    /// WHAT EVERY SHIP HAS, WHATEVER KILLED HER. The fittings a hull is built with rather than the ones her
+    /// ending gave her: the way home, the cargo, her two sets of paperwork, the scuttling panel, the placard
+    /// at her lock and her atmosphere valves.
+    ///
+    /// <para>ABSENCE OF A TOOL IS INFORMATION, AND THAT IS THE WHOLE REASON THIS LIST EXISTS. Owner:
+    /// <i>"even without reevers we should have those tech we used here available, to not give a clue that
+    /// they might not be needed."</i> He is naming a leak the evidence system cannot survive. If a valve
+    /// board only appears on infested hulls, then FINDING a valve board tells the captain what killed her
+    /// before they have read one line of her log — and the careful business of <see cref="Derelict.WreckCause"/>
+    /// and its <c>MisreadsAs</c> misdirection is undone by a console being present.</para>
+    ///
+    /// <para>So the fittings are the same on every ship in the fleet, and a wreck is distinguished only by
+    /// her EVIDENCE. A pressurised hull with nothing living in her still has valves, and pulling them still
+    /// works; it just does not help. That is exactly the shape a red herring should have — a real tool,
+    /// available, that answers a question nobody is asking on this particular ship.</para>
+    /// </summary>
+    public static IReadOnlyList<(string Name, DeckReachability.Point At)> StandardFittings =>
     [
         ("the way back to the shuttle", ShuttleStation),
         ("the cargo (the decision)", CargoStation),
@@ -335,8 +348,13 @@ public static class WreckLayout
         ("the scuttling panel", ScuttleStation),
         ("the damage-control placard", PlacardStation),
         ("the atmosphere valves", ValveStation),
-        (CauseStationName(cause), CauseStation(cause)),
     ];
+
+    /// <summary>Every place the captain must be able to REACH: her standard fittings plus the one station
+    /// her ending put aboard. This is the list CI walks — and, since <c>WreckLayoutTests</c> also checks they
+    /// do not stand on top of each other, the list that keeps two consoles from sharing a doorstep.</summary>
+    public static IReadOnlyList<(string Name, DeckReachability.Point At)> Stations(Derelict.WreckCause cause) =>
+        [.. StandardFittings, (CauseStationName(cause), CauseStation(cause))];
 
     /// <summary>Where the cause's own evidence stands.</summary>
     public static DeckReachability.Point CauseStation(Derelict.WreckCause cause) => cause switch

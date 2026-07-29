@@ -796,9 +796,9 @@
                                This dogs them, starts them, and holds the order for the spine. *@
                             <button type="button" class="btn btn-outline-info btn-sm"
                                     disabled="@(PumpableRooms().Count == 0 && !SpinePumpable)"
-                                    title="Dog every hatch, put every compartment on the pumps, and take the corridor as soon as the last one seals."
+                                    title="The whole sequence in one press: dog every hatch that will move, put every compartment on its own pump, and take the corridor as soon as it can. Sealing first is faster — eight small pumps run at once."
                                     @onclick="OrderWholeShipPumped">
-                                🛢🛢🛢 Pump the whole ship
+                                🔒🛢 Seal her, then pump everything
                             </button>
                             @if (_shipPumpOrder)
                             {
@@ -856,11 +856,19 @@
                         }
                         else
                         {
+                            @* THE BUTTON NAMES WHAT IT WILL EMPTY. Owner, after the volume rewrite: "the
+                               button names might not be so descriptive to our latest vacuum tech :-D" — and
+                               they were not. "Pump down" was written when a pump emptied one room; it now
+                               empties an atmosphere, and the label is the last place still saying otherwise.
+                               So it counts the spaces it is plumbed into, and hovering lists them. *@
+                            var pumpVolume = AtmosphereAt(picked);
                             <button type="button" class="btn btn-outline-info btn-sm"
                                     disabled="@(readiness != HullVenting.VentReadiness.Ready)"
-                                    title="Slower than the handle, and it keeps the air: the mechanical stage banks a charge, the long tail brings it down to a pressure that kills. Several rooms can run at once."
+                                    title="@(pumpVolume.Count > 1
+                                             ? $"One atmosphere, {pumpVolume.Count} spaces: {string.Join(", ", pumpVolume)}. They are standing open to each other, so they empty together."
+                                             : "Slower than the handle, and it keeps the air: the mechanical stage banks a charge, the long tail brings it down to a pressure that kills. Several pumps can run at once.")"
                                     @onclick="() => StartPumpDown(picked)">
-                                🛢 Pump down
+                                @(pumpVolume.Count > 1 ? $"🛢 Pump this volume ({pumpVolume.Count} spaces)" : "🛢 Pump down")
                             </button>
                         }
                         @* MULTI-SELECT, because the owner immediately found the play the moment one pump
@@ -869,9 +877,9 @@
                         @if (PumpableRooms().Count > 1)
                         {
                             <button type="button" class="btn btn-outline-info btn-sm"
-                                    title="Start every compartment that is sealed and still has air in it."
+                                    title="Put every compartment that still holds air on a pump. Anything standing open to anything else empties as one volume."
                                     @onclick="PumpEverySealedRoom">
-                                🛢🛢 Pump all sealed (@PumpableRooms().Count)
+                                🛢🛢 Pump every compartment (@PumpableRooms().Count)
                             </button>
                         }
 
