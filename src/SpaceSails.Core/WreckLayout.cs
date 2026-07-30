@@ -24,6 +24,57 @@ public static class WreckLayout
     /// to +<see cref="SpineHalfHeight"/>.</summary>
     public const float SpineHalfHeight = 3f;
 
+    /// <summary>
+    /// #537 · THE SHIELDING BAND, outboard of the pressure hull the whole length of her parallel middle body.
+    ///
+    /// <para>Owner, on being shown that a hidden void had nowhere to physically BE — the compartments are
+    /// contiguous, so every square metre of her was already spoken for: <i>"I guess making outside walls thicker
+    /// (shielding etc) might offer less audited dimensions? Or having like technical plumbing space in the between
+    /// walls?"</i> That is the right answer and it is also how spacecraft are actually built: whipple layers,
+    /// radiation shielding, tankage, cable and plumbing runs all live between an inner pressure wall and an outer
+    /// skin.</para>
+    ///
+    /// <para>It solves the problem structurally rather than by fiddling with numbers. A band outboard of the
+    /// rooms has <b>no doorway to respect</b>, so a void can sit anywhere along her length — which the previous
+    /// attempt could not manage: respecting each compartment's own door left the bow rooms with NEGATIVE margin
+    /// and only the aft holds able to host anything. And it answers the owner's question directly: the room is
+    /// not smaller on the inside. The space is between the walls, where it belongs.</para>
+    ///
+    /// <para><b>Every hull has it</b>, and that is the anti-tell rule (his own, from the valve boards): if only
+    /// ships with something to hide carried a shielding band, finding a shielding band would name the ship.</para>
+    /// </summary>
+    public const float ShieldingDepth = 2.5f;
+
+    /// <summary>The outer skin — the pressure hull plus her shielding. Only along the parallel middle body; the
+    /// bow taper carries no band, because shielding runs down the sides of a ship and not around her nose.</summary>
+    public const float OuterTopY = TopY - ShieldingDepth;
+
+    /// <summary>…and the same on the other side.</summary>
+    public const float OuterBottomY = BottomY + ShieldingDepth;
+
+    /// <summary>Where the band runs forward to. Aft it runs to the transom.</summary>
+    public const float ShieldingForwardEnd = BowX - 6;
+
+    /// <summary>
+    /// #537 · AND SHE IS LONGER THAN HER ROOMS. Owner, on being told the side band was the fix: <i>"It would make
+    /// sense that the walls that can hold vacuum are not thin and all kinds of tech needs to exist on the ship
+    /// somewhere"</i>, and then the shortcut — <i>"That padding to every wall is a whole job in itself. Just make
+    /// every ship longer. 😅"</i>
+    ///
+    /// <para>He is right on both counts, and they are the same point twice: a ship is not a row of rooms with a
+    /// skin painted on. She is rooms, plus everything that makes the rooms work — plant, tankage, the drive, the
+    /// runs between them — and until now her compartments went edge to edge and the drive lived nowhere at all.
+    /// So the transom moves aft of the last bulkhead and the gap is MACHINERY SPACE: unassigned, unaudited, and
+    /// exactly where a ship's tech actually is.</para>
+    ///
+    /// <para><b>The compartments do not move.</b> <see cref="AftX"/> stays the aft edge of ENGINEERING and REACTOR
+    /// SPACES; only the shell goes further. Anything else would have re-cut eight rooms to buy one space.</para>
+    /// </summary>
+    public const float MachineryDepth = 8f;
+
+    /// <summary>The transom — aft of the last bulkhead by a machinery space, not flush with it.</summary>
+    public const float TransomX = AftX - MachineryDepth;
+
     /// <summary>Where the shuttle puts the away team down — just inside the wreck's airlock, on the spine.
     /// Deliberately AT a doorway, so the first compartment is one step away.</summary>
     public const double SpawnX = 18.0;
@@ -148,13 +199,29 @@ public static class WreckLayout
     {
         var walls = new List<SurfaceCollision.Segment>();
 
-        // Outer shell. The bow tapers; the aft is a flat transom where the drive used to be.
-        walls.Add(new(AftX, TopY, BowX - 6, TopY));
-        walls.Add(new(AftX, BottomY, BowX - 6, BottomY));
+        // Outer shell. The bow tapers; the aft is a flat transom where the drive used to be — and it now sits
+        // a MACHINERY SPACE aft of the last bulkhead rather than flush against it, because a ship is her rooms
+        // plus everything that makes the rooms work.
+        walls.Add(new(TransomX, TopY, BowX - 6, TopY));
+        walls.Add(new(TransomX, BottomY, BowX - 6, BottomY));
         walls.Add(new(BowX - 6, TopY, BowX, -2f));
         walls.Add(new(BowX - 6, BottomY, BowX, 2f));
         walls.Add(new(BowX, -2f, BowX, 2f));
+        walls.Add(new(TransomX, TopY, TransomX, BottomY));
+
+        // …and the aft bulkhead that closes the pressure hull off from it. The machinery space is OUTSIDE the
+        // part of her that ever held air, which is why nothing walks into it by accident.
         walls.Add(new(AftX, TopY, AftX, BottomY));
+
+        // #537 · THE SHIELDING BAND. Two long enclosed boxes outboard of the pressure hull, closed at both
+        // ends — normally solid ship, and on a hull with something to hide, one section of it is not. Present on
+        // EVERY cause: a band that only appeared on ships with a void would announce them.
+        walls.Add(new(TransomX, OuterTopY, ShieldingForwardEnd, OuterTopY));
+        walls.Add(new(TransomX, OuterBottomY, ShieldingForwardEnd, OuterBottomY));
+        walls.Add(new(TransomX, OuterTopY, TransomX, TopY));
+        walls.Add(new(TransomX, BottomY, TransomX, OuterBottomY));
+        walls.Add(new(ShieldingForwardEnd, OuterTopY, ShieldingForwardEnd, TopY));
+        walls.Add(new(ShieldingForwardEnd, BottomY, ShieldingForwardEnd, OuterBottomY));
 
         // The spine corridor: two long walls, broken by a doorway into each compartment.
         foreach ((float x0, float x1) in SpineSegments())

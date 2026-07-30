@@ -241,12 +241,15 @@ public sealed class HullSoundingTests
     }
 
     /// <summary>
-    /// THE MANIFEST OVERSTATES, IT NEVER UNDERSTATES — and that direction is the whole mechanic. A room booked
-    /// SHORTER than it measures hides nothing: the extra space is inside the room, where the captain is already
-    /// standing. The frames have to be claimed and not shown, so the missing ship is behind a bulkhead.
+    /// THE VOID HAS SOMEWHERE TO BE — the law the whole redesign exists for. Owner, looking at the map:
+    /// <i>"The Quiet Sister's room map did not show any extra space on the sides. Is the room smaller on the
+    /// inside than in the map?"</i> It was not, and that was the bug: her compartments are contiguous, so a void
+    /// inside one had nowhere to physically exist. His own answer became the fix — <i>"making outside walls
+    /// thicker (shielding etc) might offer less audited dimensions"</i> — so every void now sits in the shielding
+    /// band, which is real space, on every hull, outboard of the rooms.
     /// </summary>
     [Fact]
-    public void TheDeclaredLengthIsAlwaysLongerThanTheDrawnOne()
+    public void EveryVoidSitsInSpaceTheShipActuallyHas()
     {
         int seen = 0;
         foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
@@ -257,21 +260,22 @@ public sealed class HullSoundingTests
             }
 
             seen++;
-            Assert.True(hidden.DeclaredFrames > hidden.MeasuredFrames,
-                        $"{w.ShipName} books {hidden.Compartment} SHORTER than it measures, which hides nothing");
-            Assert.InRange(hidden.DeclaredFrames - hidden.MeasuredFrames, 4, 7);
+            Assert.InRange(hidden.X0, WreckLayout.TransomX, WreckLayout.ShieldingForwardEnd);
+            Assert.InRange(hidden.X1, WreckLayout.TransomX, WreckLayout.ShieldingForwardEnd);
+            Assert.True(hidden.X1 > hidden.X0, $"{w.ShipName}'s void has no length");
+            Assert.True(hidden.AreaSquareDu > 5, $"{w.ShipName}'s void is too small to hide anything in");
         }
 
         Assert.True(seen > 0, "no hull hid anything, so this law tested nothing");
     }
 
     /// <summary>
-    /// AND THE SPOT IS SOMEWHERE A CAPTAIN CAN STAND. A void whose sounding point sits inside a wall or outside
-    /// the hull is a find nobody can make — the reachability failure the deck audit exists for, in a place the
-    /// deck audit cannot see because the plate is not on the plan until it is found.
+    /// AND THE PLATE IS SOMEWHERE A CAPTAIN CAN STAND AND REACH. A false plate inside a wall, in a corner, or in
+    /// a room nobody can enter is a find nobody can make — the reachability failure the deck audit exists for, in
+    /// a place the deck audit cannot see, because the plate is not on the plan until it has been found.
     /// </summary>
     [Fact]
-    public void TheSpotToSoundIsInsideTheShipAndNamedRoom()
+    public void ThePlateIsOnAWallOfARoomWithSpaceToStandOffIt()
     {
         foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
         {
@@ -281,15 +285,33 @@ public sealed class HullSoundingTests
             }
 
             (string name, float x0, float x1, bool top) = System.Array.Find(
-                WreckLayout.Compartments, c => c.Name == hidden.Compartment);
+                WreckLayout.Compartments, c => c.Name == hidden.NearRoom);
 
-            Assert.Equal(hidden.Compartment, name);
-            Assert.InRange(hidden.X, x0, x1);
-            Assert.InRange(System.Math.Abs(hidden.Y), WreckLayout.SpineHalfHeight,
-                           System.Math.Abs(top ? WreckLayout.TopY : WreckLayout.BottomY));
+            Assert.Equal(hidden.NearRoom, name);
+            Assert.Equal(top, hidden.Top);
+            Assert.Equal(top ? WreckLayout.TopY : WreckLayout.BottomY, hidden.PlateY, 3);
+            Assert.True(hidden.PlateX > x0 + 1.5 && hidden.PlateX < x1 - 1.5,
+                        $"{w.ShipName}'s plate is jammed into a corner of {name}");
+        }
+    }
 
-            // …and on the correct side of the keel, or the sounding spot is in the wrong half of the ship.
-            Assert.Equal(top, hidden.Y < 0);
+    /// <summary>The band the clue names is the band the plate opens into — a clue that points somewhere other than
+    /// the find is the bug Lab 44 caught in the first geometry rule, wearing a new costume.</summary>
+    [Fact]
+    public void TheClueAndThePlateAgreeAboutWhereSheIsLying()
+    {
+        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
+        {
+            if (Derelict.SeededWithCause(cause) is not { } w || VoidOn(w.Id) is not { } hidden)
+            {
+                continue;
+            }
+
+            HullSounding.Discrepancy clue = HullSounding.AsDiscrepancy(hidden);
+
+            Assert.Equal(hidden.Top, clue.Top);
+            Assert.InRange(hidden.PlateX, clue.X0, clue.X1);
+            Assert.Equal(hidden.AreaSquareDu, clue.AreaSquareDu, 3);
         }
     }
 
@@ -299,12 +321,12 @@ public sealed class HullSoundingTests
     [Fact]
     public void TheManifestLieBecomesAnOrdinaryDiscrepancy()
     {
-        HullSounding.HiddenVoid hidden = new("DEEP HOLD", 19, 15, -13.5, -6, "something");
-        HullSounding.Discrepancy d = HullSounding.AsDiscrepancy(
-            hidden, WreckLayout.SpineHalfHeight, WreckLayout.TopY, WreckLayout.BottomY, top: true);
+        HullSounding.HiddenVoid hidden =
+            new("DEEP HOLD", -12, -6, true, -9, WreckLayout.TopY, "something");
+        HullSounding.Discrepancy d = HullSounding.AsDiscrepancy(hidden);
 
-        Assert.Equal(4 * 6.0, d.AreaSquareDu, 3);
-        Assert.Contains("manifest", d.Reason, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(6 * WreckLayout.ShieldingDepth, d.AreaSquareDu, 3);
+        Assert.Contains("shielding", d.Reason, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("hidden", HullSounding.ClueLine(d), StringComparison.OrdinalIgnoreCase);
     }
 
@@ -313,7 +335,8 @@ public sealed class HullSoundingTests
     [Fact]
     public void TheFindDescribesAndDoesNotValue()
     {
-        HullSounding.HiddenVoid hidden = new("DEEP HOLD", 19, 15, -13.5, -6, "A rack of code keys.");
+        HullSounding.HiddenVoid hidden =
+            new("DEEP HOLD", -12, -6, true, -9, WreckLayout.TopY, "A rack of code keys.");
         string line = HullSounding.FoundItLine(hidden);
 
         Assert.Contains("A rack of code keys.", line, StringComparison.Ordinal);
