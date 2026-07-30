@@ -396,6 +396,91 @@ public sealed class HullSoundingTests
         Assert.DoesNotContain("valuable", line, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ── Covered, so they hide something ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// EVERY NARROW RUN IS FILLED. Owner, reading the deck after the wall padding shipped: <i>"we should cover
+    /// those narrow spaces … all of them … if we can see into them from the hall then they don't hide
+    /// anything."</i>
+    ///
+    /// <para>He was right and it was a bad miss. The runs were drawn as two lines round a BLACK gap — the same
+    /// black as a room — so a captain could read every hiding place straight off the map. The clue becomes
+    /// redundant, the sounder a formality, and the noise it costs buys nothing. <b>A hidden space drawn as a
+    /// space is not hidden.</b></para>
+    ///
+    /// <para>So every place the geometry leaves a run must have a fill over it, and this counts them: two
+    /// shielding bands plus one per interior bulkhead per side. If a future bulkhead is added without a fill,
+    /// this fails rather than shipping a void a player can see.</para>
+    /// </summary>
+    [Fact]
+    public void EveryTechnicalRunIsCoveredAndNoneIsEmpty()
+    {
+        var fills = WreckLayout.StructuralFills().ToList();
+
+        int bulkheads = WreckLayout.InteriorBulkheads(true).Count()
+                      + WreckLayout.InteriorBulkheads(false).Count();
+        Assert.Equal(2 + bulkheads, fills.Count);
+
+        foreach ((float x0, float y0, float x1, float y1) in fills)
+        {
+            Assert.True(x1 > x0, "a fill with no width covers nothing");
+            Assert.True(y1 > y0, "a fill with no height covers nothing");
+        }
+    }
+
+    /// <summary>
+    /// AND THE FILLS SIT EXACTLY ON THE RUNS THE WALLS MAKE. A cover that is a hair narrower than the gap it
+    /// covers leaves a bright seam, and a seam is all a player needs to find every void on the ship without
+    /// sounding anything — which is the same bug wearing a smaller coat.
+    /// </summary>
+    [Fact]
+    public void TheCoverMatchesTheGapItCovers()
+    {
+        var fills = WreckLayout.StructuralFills().ToList();
+
+        // The shielding bands: exactly the pressure hull to the outer skin, transom to the forward end.
+        Assert.Contains(fills, f => f.X0 == WreckLayout.TransomX && f.X1 == WreckLayout.ShieldingForwardEnd
+                                    && f.Y0 == WreckLayout.OuterTopY && f.Y1 == WreckLayout.TopY);
+        Assert.Contains(fills, f => f.X0 == WreckLayout.TransomX && f.X1 == WreckLayout.ShieldingForwardEnd
+                                    && f.Y0 == WreckLayout.BottomY && f.Y1 == WreckLayout.OuterBottomY);
+
+        // …and every bulkhead run is exactly BulkheadDepth wide, centred on its own bulkhead.
+        float half = WreckLayout.BulkheadDepth / 2f;
+        foreach (bool top in new[] { true, false })
+        {
+            foreach (float x in WreckLayout.InteriorBulkheads(top))
+            {
+                Assert.Contains(fills, f => System.Math.Abs(f.X0 - (x - half)) < 0.001
+                                         && System.Math.Abs(f.X1 - (x + half)) < 0.001);
+            }
+        }
+    }
+
+    /// <summary>A void always sits inside something the fill covers — or the captain finds it by looking rather
+    /// than by knocking, and every law about clues and noise above becomes decoration.</summary>
+    [Fact]
+    public void NoVoidEverSitsSomewhereTheEyeCanReach()
+    {
+        var fills = WreckLayout.StructuralFills().ToList();
+
+        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
+        {
+            if (Derelict.SeededWithCause(cause) is not { } w || VoidOn(w.Id) is not { } hidden)
+            {
+                continue;
+            }
+
+            double vx = (hidden.X0 + hidden.X1) / 2.0;
+            bool covered = fills.Exists(f =>
+                vx >= f.X0 - 0.01 && vx <= f.X1 + 0.01
+                && (hidden.Outboard
+                        ? (hidden.Top ? f.Y1 <= WreckLayout.TopY + 0.01 : f.Y0 >= WreckLayout.BottomY - 0.01)
+                        : f.X1 - f.X0 <= WreckLayout.BulkheadDepth + 0.01));
+
+            Assert.True(covered, $"{w.ShipName}'s void sits somewhere nothing covers — it can be SEEN");
+        }
+    }
+
     // ── What is said ──────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The offer names BOTH costs before either is spent — the seconds and the fact that it will be

@@ -94,6 +94,39 @@ public static class WreckLayout
     /// </summary>
     public const float BulkheadDepth = 1.2f;
 
+    /// <summary>
+    /// #537 · WHERE HER STRUCTURE IS, as filled rectangles — the shielding band and every bulkhead's technical
+    /// run. Owner, looking at the deck after the padding shipped: <i>"we should cover those narrow spaces … all
+    /// of them … if we can see into them from the hall then they don't hide anything."</i>
+    ///
+    /// <para>He is exactly right and it was a bad miss. The runs were drawn as two lines with the gap between
+    /// them left BLACK — the same black as a room — so a captain could read every hiding place off the map
+    /// without knocking on anything. The whole search collapses: the clue is redundant, the sounder is a
+    /// formality, and the noise it costs buys nothing. A hidden space that is drawn as a space is not hidden.</para>
+    ///
+    /// <para>So the runs are FILLED, and they read as what they are: steel, tankage and pipework with a ship
+    /// built round them. A void inside one looks exactly like every other stretch of it until somebody knocks —
+    /// which is the entire mechanic, and it did not work until now.</para>
+    /// </summary>
+    public static IEnumerable<(float X0, float Y0, float X1, float Y1)> StructuralFills()
+    {
+        // The shielding band, both sides, the length of the parallel middle body.
+        yield return (TransomX, OuterTopY, ShieldingForwardEnd, TopY);
+        yield return (TransomX, BottomY, ShieldingForwardEnd, OuterBottomY);
+
+        // …and every interior bulkhead's own run.
+        float half = BulkheadDepth / 2f;
+        foreach (bool top in new[] { true, false })
+        {
+            float yIn = top ? -SpineHalfHeight : SpineHalfHeight;
+            float yOut = top ? TopY : BottomY;
+            foreach (float x in InteriorBulkheads(top))
+            {
+                yield return (x - half, System.Math.Min(yIn, yOut), x + half, System.Math.Max(yIn, yOut));
+            }
+        }
+    }
+
     /// <summary>The transverse bulkhead positions that have a room on BOTH sides — the ones with a technical run
     /// inside them. The hull's own ends are not in here: they have the machinery space and the bow behind them.</summary>
     public static IEnumerable<float> InteriorBulkheads(bool top)
