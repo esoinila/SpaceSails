@@ -121,6 +121,57 @@ public sealed class HullChargeTests
         Assert.Contains("ozone", HullCharge.InternalHintLine, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ── Lab 43's findings, pinned ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// LAB 43, FINDING 5: THE CONTACTOR LOSES INSIDE A STREAM. It out-argues the cold dark (0.001 mA), middling
+    /// space (0.034 mA) and the inner halo (1.065 mA) at ~10 mA emitted — and inside a stream 23.8 mA arrives and
+    /// the cathode cannot win. Which is the trade the lab handed the design rather than a designer inventing it:
+    /// the stream is the free push AND the one place the automatic cannot keep you quiet.
+    /// </summary>
+    [Fact]
+    public void TheAutomaticWinsEverywhereExceptInsideAStream()
+    {
+        Assert.True(HullCharge.ContactorWinsHere(0.02));   // the cold dark
+        Assert.True(HullCharge.ContactorWinsHere(0.35));   // middling space
+        Assert.True(HullCharge.ContactorWinsHere(0.75));   // the inner halo
+        Assert.False(HullCharge.ContactorWinsHere(1.0));   // the river
+
+        // Where it wins it holds her QUIET; in the stream it only takes the edge off, and she stays loud.
+        Assert.Equal(HullCharge.ContactorHoldsAt, HullCharge.ContactorHoldTarget(0.75));
+        Assert.True(HullCharge.ContactorHoldTarget(1.0) > HullCharge.ContactorHoldsAt);
+        Assert.True(HullCharge.BandOf(HullCharge.ContactorHoldTarget(1.0)) >= HullCharge.Band.Glowing,
+                    "riding the river with the cathode running should still leave her loud");
+    }
+
+    /// <summary>
+    /// LAB 43, FINDING 4: THE GLOW IS RADIO, NOT LIGHT. Her discharge is 85,514× dimmer than her own reflected
+    /// sunlight, so nobody has ever seen her glow. The factor was right and the metaphor was wrong — this pins the
+    /// corrected fiction, because it is exactly the sort of wording that drifts back.
+    /// </summary>
+    [Fact]
+    public void SheIsNotBrighterSheIsLouder()
+    {
+        string cold = HullCharge.VisibilityLine(0);
+        string wound = HullCharge.VisibilityLine(1.0);
+
+        Assert.Contains("quiet", cold, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("radio", wound, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("audible", wound, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("LOUDER", wound, StringComparison.Ordinal);
+
+        // The correction is made EXPLICITLY rather than by omission — a player who learned the old fiction has to
+        // be told it was wrong, not quietly left to notice different wording.
+        Assert.Contains("not brighter", wound, StringComparison.OrdinalIgnoreCase);
+
+        // And neither line promises light: "found"/"audible", never "seen"/"glowing".
+        foreach (string line in new[] { cold, wound })
+        {
+            Assert.DoesNotContain("glowing", line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("visible", line, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     /// <summary>The board says out loud that it cannot see the thing that will hurt you — the same admission the
     /// wreck's life-sign read makes, and the reason either instrument can be trusted at all.</summary>
     [Fact]

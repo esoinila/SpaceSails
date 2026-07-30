@@ -1292,6 +1292,12 @@
                                 @onclick="ToggleContactor">
                             @(_contactorOn ? "🜁 CONTACTOR RUNNING — click to secure" : "🜁 Run the contactor (automatic)")
                         </button>
+                        @* LAB 43: inside a stream the plasma delivers more current than the cathode can emit, so
+                           the automatic can only take the edge off. Ride the river or go unheard, never both. *@
+                        @if (_contactorOn && !HullCharge.ContactorWinsHere(ambientNow))
+                        {
+                            <span class="text-warning small">🜁 outmatched here — she will sit high while you ride the stream</span>
+                        }
 
                         @* And the switch that was the whole console: dump the hull to space. Instant, free, and
                            it does not touch what has soaked into the boards. *@

@@ -86,14 +86,27 @@ public static class HullCharge
     public static double SeenFartherFactor(double charge) =>
         1.0 + (SensorModel.ChargeGlowFactor * System.Math.Clamp(charge, 0, 1));
 
-    /// <summary>The sentence that has been owed to the player since the Electric Universe layer shipped.</summary>
+    /// <summary>
+    /// The sentence that has been owed to the player since the Electric Universe layer shipped — and it is about
+    /// RADIO, not light.
+    ///
+    /// <para>LAB 43 KILLED THE OPTICAL READING. A full discharge off this hull is 0.22 J; as visible light over
+    /// its own 2.2 ms that is about a watt, against the 86 kW her hull throws back simply by being lit by the sun
+    /// — <b>85,000× dimmer than sitting there doing nothing</b>. Nobody has ever seen her glow and nobody ever
+    /// will.</para>
+    ///
+    /// <para>What IS real is the electromagnetic noise: a charged hull in a plasma is a broadband radio source,
+    /// arcs are impulsive interference, and the sheath around her is a thing an instrument can find. So
+    /// <see cref="SensorModel.ChargeGlowFactor"/> keeps its number and loses its metaphor — she is not brighter,
+    /// she is LOUDER, and the whole point of running dark was never about photons.</para>
+    /// </summary>
     public static string VisibilityLine(double charge)
     {
         double factor = SeenFartherFactor(charge);
         return factor <= 1.05
-            ? "🔭 Cold hull: you are seen at the range anybody is seen at, and no farther."
-            : $"🔭 You are visible {factor:0.0}× farther than a cold hull. Everything with a telescope gets that " +
-              "for free, and none of it has to be pointed at you first.";
+            ? "📻 Cold hull, quiet hull: you are found at the range anybody is found at, and no farther."
+            : $"📻 You are audible {factor:0.0}× farther than a cold hull — not brighter, LOUDER. A wound hull is a " +
+              "broadband radio source, and everything with a receiver gets that for free without pointing it at you.";
     }
 
     /// <summary>What is driving it, said as a place rather than a number: a stream saturates the hull, the inner
@@ -119,6 +132,42 @@ public static class HullCharge
     /// seen, never free.</para>
     /// </summary>
     public const double ContactorHoldsAt = 0.18;
+
+    /// <summary>
+    /// WHERE THE AUTOMATIC LOSES, and Lab 43 found it rather than a designer inventing it.
+    ///
+    /// <para>The lab priced the electron current arriving on her skin against what a hollow cathode emits. In the
+    /// cold dark it is 0.001 mA, in middling space 0.034 mA, in the inner-system halo 1.07 mA — and a contactor
+    /// running at ~10 mA out-argues all of them without noticing. <b>Inside a plasma stream it is 23.8 mA, and the
+    /// cathode loses.</b></para>
+    ///
+    /// <para>Which hands the design a trade nobody had to think up: the stream is the free push (
+    /// <see cref="PlasmaEnvironment.StreamAcceleration"/> — ride the river and beat a ballistic transfer by
+    /// months), and it is also the one place the automatic cannot keep you quiet. You may go fast or you may go
+    /// unheard. That is physics, not balance.</para>
+    /// </summary>
+    public const double StreamAmbient = 0.95;
+
+    /// <summary>What the cathode can actually hold her at, given what the local plasma is throwing at her. In a
+    /// stream it can only take the edge off — a partial hold, because the arriving current beats the emitted
+    /// one.</summary>
+    public static double ContactorHoldTarget(double ambient) =>
+        ambient >= StreamAmbient
+            ? System.Math.Max(ContactorHoldsAt, ambient * StreamPartialHold)
+            : ContactorHoldsAt;
+
+    /// <summary>How much of the stream's own potential she still wears with the cathode running flat out. Read
+    /// off the current ratio the lab printed (10 mA emitted against 23.8 mA arriving), rounded to something the
+    /// board can speak about honestly.</summary>
+    public const double StreamPartialHold = 0.6;
+
+    /// <summary>Whether the automatic can hold her properly here, or is merely taking the edge off.</summary>
+    public static bool ContactorWinsHere(double ambient) => ambient < StreamAmbient;
+
+    /// <summary>What the board says when the cathode is running and losing anyway.</summary>
+    public const string ContactorOutmatchedLine =
+        "🜁 The contactor is running flat out and still losing. Inside a stream the plasma delivers more current " +
+        "than the cathode can emit — she will sit high for as long as you ride the river. That is the fare.";
 
     /// <summary>What it burns to do that, in thrust-pulses per minute of running. Expellant is expellant: the
     /// cathode spends the same reaction mass the engines do, which makes the automatic a real decision in the
