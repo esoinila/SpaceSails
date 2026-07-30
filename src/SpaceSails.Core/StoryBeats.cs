@@ -1,0 +1,203 @@
+namespace SpaceSails.Core;
+
+/// <summary>
+/// #528 · THE GAME'S BEST INSTRUMENT, MADE A RULE. Owner: <i>"Let's add some cool gen-ai to places where we tell
+/// the story in the game. I think it makes a big difference to have that pop-up style we used in the reever
+/// vented room scenario. We have a lot of events that don't have that level of service yet."</i> And then the law
+/// itself: <i>"The pattern something of importance to story telling happens we get image pop up should happen
+/// universally in the game as long as it does not block the playing too much or be too repetitive."</i>
+///
+/// <para>Which is a rule about a SYSTEM, not a list of seven cards — so this is the seam every moment registers
+/// with, and the two constraints in his sentence are the two things it enforces.</para>
+///
+/// <para><b>"Not too repetitive."</b> Every beat declares a <see cref="Cadence"/>. The first round you ever fire
+/// is a once-in-a-captain's-life card; a sail going is worth showing but not four times in one fight; a
+/// collector's grapples are rare enough to be worth every time. A card that fires whenever its condition is true
+/// is how a game teaches players to dismiss cards without reading them, and that ruins the instrument for the
+/// moments that deserve it.</para>
+///
+/// <para><b>"Does not block the playing too much."</b> Every beat declares a <see cref="Presentation"/>. The
+/// vented-room card is a MODAL and earns it — the captain walked into a room to look at something. A hit landing
+/// mid-fight must never steal the keyboard, so it gets a PLATE: the same art and the same caption, at the edge,
+/// for a few seconds, over a game that never stopped. And a modal that comes due while something is trying to
+/// kill you WAITS (<see cref="DeferrableWhileInDanger"/>) — the wreck lane learned that the expensive way, when
+/// a full-screen tutorial card let a pack of Reevers kill the captain behind it.</para>
+///
+/// <para>Art files are named here so <c>docs/art-manifest-moments.md</c> and the code cannot drift apart, and
+/// every card degrades honestly: a beat whose JPG has not been painted yet still fires, with its title and its
+/// caption, and no broken image.</para>
+/// </summary>
+public static class StoryBeats
+{
+    /// <summary>A moment worth showing the player a picture of.</summary>
+    public enum Beat
+    {
+        /// <summary>The first round this captain ever fires. A smuggler becomes a pirate exactly once.</summary>
+        FirstShotFired,
+
+        /// <summary>A hit that takes a sail and leaves a ship adrift — the consequence, not the explosion.</summary>
+        SailHoled,
+
+        /// <summary>Grapples across the frame: a collector has you.</summary>
+        CollectorHail,
+
+        /// <summary>The crew send a deputation. <i>"This is the last cheap moment."</i></summary>
+        CrewDeputation,
+
+        /// <summary>The meeting you were not asked to, and the empty chair that is obviously yours.</summary>
+        CrewMeeting,
+
+        /// <summary>An arc beat breaks on the wire — the story arriving as news rather than as a quest line.</summary>
+        ArcNewsBreaks,
+
+        /// <summary>She sheds her charge: a discharge off the antennae, filaments raking outward.</summary>
+        ChargeLetGo,
+    }
+
+    /// <summary>How often a beat is allowed to speak.</summary>
+    public enum Cadence
+    {
+        /// <summary>Once per captain, ever. The card IS the milestone.</summary>
+        OnceEver,
+
+        /// <summary>Once, then not again for <see cref="CooldownSeconds"/> — worth showing, not worth repeating.</summary>
+        Cooled,
+
+        /// <summary>Every time. Reserved for moments that are rare by their own nature.</summary>
+        EveryTime,
+    }
+
+    /// <summary>How a beat reaches the player — the owner's "does not block the playing too much", as a type.</summary>
+    public enum Presentation
+    {
+        /// <summary>A full card the player dismisses. Earned only when the moment is already a pause.</summary>
+        Card,
+
+        /// <summary>An art plate at the edge for a few seconds. Same picture, same words, no keyboard stolen and
+        /// no world stopped.</summary>
+        Plate,
+    }
+
+    /// <summary>How often this beat may speak.</summary>
+    public static Cadence CadenceOf(Beat beat) => beat switch
+    {
+        Beat.FirstShotFired => Cadence.OnceEver,
+        Beat.CrewDeputation => Cadence.OnceEver,   // the FIRST deputation is the beat; later ones are the sheet's job
+        Beat.SailHoled => Cadence.Cooled,
+        Beat.ChargeLetGo => Cadence.Cooled,
+        _ => Cadence.EveryTime,                    // a collector's grapples, a crew meeting, an arc breaking
+    };
+
+    /// <summary>How long a cooled beat holds its tongue. Tuned so a beat cannot punctuate the same fight twice
+    /// and cannot become the wallpaper of a long run. FLAGGED for the owner's tuning.</summary>
+    public static double CooldownSeconds(Beat beat) => beat switch
+    {
+        Beat.SailHoled => 6 * 60.0,
+        Beat.ChargeLetGo => 10 * 60.0,
+        _ => 0.0,
+    };
+
+    /// <summary>Card or plate. The rule of thumb: if the player was already standing still, they can have a
+    /// modal; if something is moving toward them, they get a plate.</summary>
+    public static Presentation PresentationOf(Beat beat) => beat switch
+    {
+        Beat.FirstShotFired => Presentation.Plate,   // it happens mid-fight; it must not take the keyboard
+        Beat.SailHoled => Presentation.Plate,
+        Beat.ChargeLetGo => Presentation.Plate,
+        _ => Presentation.Card,                      // the hail, the deputation, the meeting, the news
+    };
+
+    /// <summary>
+    /// Whether a card may WAIT for a safer moment rather than landing now.
+    ///
+    /// <para>The expensive lesson this exists for: a full-screen tutorial card once let a pack of Reevers kill
+    /// the captain behind it, because the world kept running under the modal. A story card must never be the
+    /// reason somebody died — so a deferrable one queues until the scene is calm, and the moments that ARE the
+    /// danger (a collector already has you) do not defer, because deferring them would be absurd.</para>
+    /// </summary>
+    public static bool DeferrableWhileInDanger(Beat beat) => beat switch
+    {
+        Beat.CollectorHail => false,   // this IS the danger; it cannot wait for a better time
+        _ => PresentationOf(beat) == Presentation.Card,
+    };
+
+    /// <summary>How long a plate stays up. Long enough to read the caption at a glance, short enough that it is
+    /// gone before it becomes furniture.</summary>
+    public const double PlateSeconds = 7.0;
+
+    // ── What each one shows and says ──────────────────────────────────────────────────────────────────
+
+    /// <summary>The painting for this beat. Named here so the manifest and the code cannot drift; a file that
+    /// has not been painted yet simply does not render, and the words carry it.</summary>
+    public static string ArtFile(Beat beat) => beat switch
+    {
+        Beat.FirstShotFired => "art/first-shot.jpg",
+        Beat.SailHoled => "art/sail-holed.jpg",
+        Beat.CollectorHail => "art/collector-hail.jpg",
+        Beat.CrewDeputation => "art/crew-deputation.jpg",
+        Beat.CrewMeeting => "art/crew-meeting.jpg",
+        Beat.ArcNewsBreaks => "art/arc-news.jpg",
+        Beat.ChargeLetGo => "art/charge-let-go.jpg",
+        _ => "",
+    };
+
+    /// <summary>The title: it names the place and the verb, never the outcome. "WHAT THE VACUUM LEFT", not
+    /// "salvage complete".</summary>
+    public static string Title(Beat beat) => beat switch
+    {
+        Beat.FirstShotFired => "🔫 THE FIRST ROUND YOU EVER FIRED",
+        Beat.SailHoled => "🎯 HER SAIL IS GONE",
+        Beat.CollectorHail => "⛓ GRAPPLES",
+        Beat.CrewDeputation => "🧑‍🔧 A DEPUTATION",
+        Beat.CrewMeeting => "🕯 THE MEETING YOU WERE NOT ASKED TO",
+        Beat.ArcNewsBreaks => "📰 THE STORY BREAKS",
+        Beat.ChargeLetGo => "⚡ SHE LETS GO",
+        _ => "",
+    };
+
+    /// <summary>
+    /// The caption: it describes what is there and STOPS. This is the hardest discipline in the whole idiom and
+    /// the reason the vented-room card works — the gouges cross the deck toward a sealed hatch and stop there,
+    /// and nobody tells you what that means.
+    /// </summary>
+    /// <param name="subject">A ship's name, a haven, a headline — whatever this instance is about. Optional; the
+    /// lines are written to read whole without it.</param>
+    public static string Caption(Beat beat, string? subject = null)
+    {
+        string it = string.IsNullOrWhiteSpace(subject) ? "her" : subject!;
+
+        return beat switch
+        {
+            Beat.FirstShotFired =>
+                "The breech is still warm and nobody on the gun deck is looking at the target — they are looking " +
+                "at each other. Whatever you were before this watch, the log now says otherwise.",
+
+            Beat.SailHoled =>
+                $"{it} is intact everywhere that does not matter. The sail is blown out mid-span, silvered film " +
+                "peeling away in the vacuum, and her windows are still lit from the inside.",
+
+            Beat.CollectorHail =>
+                $"Grapples come across the frame from somewhere you were not watching, and {it} fills the window " +
+                "with running lights the colour of a docking clamp. Nobody aboard her is in a hurry.",
+
+            Beat.CrewDeputation =>
+                "Three of them in the corridor outside your door, hats in hands, one with his knuckles up and " +
+                "not knocking yet. They have clearly agreed who is going to say it.",
+
+            Beat.CrewMeeting =>
+                "The cantina at an odd watch, lamps down, five of them round one table and a chair pulled out " +
+                "that nobody is sitting in. Not one of them looks at the door — which is how you know they heard " +
+                "you coming.",
+
+            Beat.ArcNewsBreaks =>
+                $"The concourse screen is mid-broadcast and the room has turned up to watch it. One figure walks " +
+                $"away from the screen instead of toward it, because {it} is not news to them.",
+
+            Beat.ChargeLetGo =>
+                "A blue-white core sits on the mast for a moment with filaments raking off it into the dark, and " +
+                "then there is nothing on the hull at all. Everything with a telescope just watched that happen.",
+
+            _ => "",
+        };
+    }
+}
