@@ -402,6 +402,19 @@ public partial class Map
             case DeckPlan.ConsoleKind.SecretDoor:
                 SecretDoorInteract(); // #409: force the hidden lab door — the channel that appends the lab region
                 break;
+            case DeckPlan.ConsoleKind.LabDoor:
+                // #409+ · a door in the mountain: open it, shut it, or — with Vantar's card — key it.
+                WorkTheDoor(NearestLabDoorId());
+                break;
+            case DeckPlan.ConsoleKind.LabDoorBoard:
+                OpenDoorBoard();            // the vent panel's own idiom, for doors
+                break;
+            case DeckPlan.ConsoleKind.LabAlarm:
+                OpenAlarmPanel();           // "something to try to hack"
+                break;
+            case DeckPlan.ConsoleKind.LabKeyCard:
+                TakeVantarsCard();
+                break;
             case DeckPlan.ConsoleKind.LabCache:
                 LabCacheInteract(); // #409: claim Vantar's fat one-time cache
                 break;

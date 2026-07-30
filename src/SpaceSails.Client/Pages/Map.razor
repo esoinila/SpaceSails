@@ -2502,6 +2502,79 @@
         </div>
     }
 
+    @* #409+ · THE DOOR BOARD. Owner: "Surely some control panels based on the vent panel can be added 🤠" —
+       so it is the vent board's own idiom, one row per chamber, and throwing a door here throws it on the
+       ground two rooms away. That reach is the whole reason a lock is a TOOL rather than a walk. *@
+    @if (_showDoorBoard)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseDoorBoard)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">🎛 DOOR BOARD — VANTAR LABS</div>
+                <div class="view-object-caption">
+                    Every door in the mountain, on one wall. @(_hasVantarCard
+                        ? "The card is in your hand, so they will key as well as shut."
+                        : "They will shut. Keying wants a card you are not carrying.")
+                </div>
+
+                <div class="vent-actions">
+                    @foreach (var door in _labDoors.OrderBy(d => d.Key, StringComparer.Ordinal))
+                    {
+                        string id = door.Key;
+                        <button type="button"
+                                class="btn btn-sm @(door.Value == LockedDoor.State.Locked ? "btn-warning" : "btn-outline-warning")"
+                                title="@LockedDoor.Label(door.Value, _hasVantarCard)"
+                                @onclick="() => WorkTheDoor(id)">
+                            @LockedDoor.Label(door.Value, _hasVantarCard)
+                        </button>
+                    }
+                </div>
+
+                <div class="vent-sub">@LockedDoor.WhichSideLine</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseDoorBoard)">Step back</button>
+            </div>
+        </div>
+    }
+
+    @* #409+ · THE ALARM PANEL — "something to try to hack". The die is SHOWN: target, the stack of named
+       modifiers, and the number it landed on, because a roll a captain cannot argue with is a roll they did
+       not take part in. And it states the cost of a wrong answer BEFORE they press it, so declining is a
+       real option. *@
+    @if (_showAlarmPanel)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseAlarmPanel)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@LabSecurity.PanelTitle</div>
+                <div class="view-object-caption">@LabSecurity.OfferLine(LabSecurity.HackTarget, LabHackStack)</div>
+
+                <div class="vent-readout">
+                    @foreach (var mod in LabSecurity.Modifiers(CurrentApproach()))
+                    {
+                        <div>@(mod.Value >= 0 ? "+" : "")@mod.Value — @mod.Label</div>
+                    }
+                </div>
+
+                @if (_labHackRoll is { } roll)
+                {
+                    <div class="vent-readout">
+                        🎲 @roll.Face @(roll.Total - roll.Face >= 0 ? "+" : "")@(roll.Total - roll.Face)
+                        = <strong>@roll.Total</strong> against @LabSecurity.HackTarget —
+                        @(LabSecurity.Beat(roll) ? "it lets go." : "no.")
+                    </div>
+                }
+
+                <div class="vent-actions">
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="HackTheAlarm"
+                            disabled="@(_labAlarm is LabSecurity.State.Disarmed or LabSecurity.State.LockedDown)">
+                        🔔 Have a go at it
+                    </button>
+                </div>
+
+                <div class="vent-sub">@LabSecurity.LockdownLine</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseAlarmPanel)">Leave it</button>
+            </div>
+        </div>
+    }
+
     @* #540 · ONE STRIP, EVERY CLOCK. This used to be three separate `.wreck-clocks` blocks — and since the CSS
        pins the strip at a FIXED top/right, any two of them running at once drew exactly on top of each other.
        Weapons tight plus a pump was already an unreadable pile; the boat's clocks would have made three. So they
@@ -2509,6 +2582,7 @@
        air, then the standing orders you might have forgotten. Which is also the owner's scene, in order —
        "say self destruct tics down but shuttle still warms up". *@
     @if (_deckMode && (_weaponsTight || BoatClockWorthShowing || SweepersAboard
+                       || LabAlarmSecondsLeft is not null
                        || SoundingSecondsLeft is not null || SearchBandLine is not null
                        || (OnWreck
                            ? _pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null
@@ -2546,6 +2620,17 @@
                     <span class="wc-tag">☢ @(Scuttle.CanAbort(burn) ? "OVERLOAD" : "NO RECALL")</span>
                     <span class="wc-room">@(OnWreck ? "get off her" : "her own keel")</span>
                     <span class="wc-time">@HullVenting.SoakLabel(burn)</span>
+                </div>
+            }
+
+            @* #409+ · THE MOUNTAIN COUNTING. Above the rest of the strip because it is the only clock here that
+               ends with every door in the place keyed, including the one behind you. *@
+            @if (LabAlarmSecondsLeft is { } alarm)
+            {
+                <div class="wc-line overload @(alarm <= 20 ? "no-recall" : "")">
+                    <span class="wc-tag">🔔 ALARM</span>
+                    <span class="wc-room">@(_hasVantarCard ? "you hold the card" : "the card is deeper in")</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(alarm)</span>
                 </div>
             }
 
