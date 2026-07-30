@@ -1239,6 +1239,22 @@
         </div>
     }
 
+    @* THE CASTAWAY CARD. She went; he did not. Owner's own objection, answered: "if you can not get away with
+       ship, then propably not with shuttle either" — true about speed, beside the point. The hull was the
+       asset, the bounty and the prize; a man in a small cold boat is worth the fuel to nobody. *@
+    @if (_shipEpitaph is { } castaway)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipEpitaph)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">☢ SHE IS GONE, AND YOU ARE NOT</div>
+                <div class="view-object-caption">@castaway.Went</div>
+                <div class="view-object-caption">@castaway.Survives</div>
+                <div class="view-object-caption">@castaway.Rescue</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipEpitaph)">…take the berth</button>
+            </div>
+        </div>
+    }
+
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
        HER SCUTTLING CHARGES, AND THE TWO HANDS IT TAKES. Owner: "that ship also has the scuttling charges...
        let's have a captains approval mechanic for that also on our ship. :-D ... it is the last defence against

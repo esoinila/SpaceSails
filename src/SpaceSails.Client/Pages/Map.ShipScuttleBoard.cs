@@ -213,11 +213,39 @@ public sealed partial class Map
     }
 
     /// <summary>
-    /// The clock reached zero with the captain still aboard. Through the SAME brain-backup death the collector,
-    /// the impact and the regolith all use — the death machinery is shared, never duplicated — with her own
-    /// cause, because a captain who scuttled his own ship and stayed on her did not die of anything else.
+    /// THE CLOCK REACHED ZERO. One question decides the ending — was the captain still ON her — and the two
+    /// answers are a death and a beginning (<see cref="ShipScuttle.Ending"/>), which is the owner's own
+    /// objection answered: <i>"if you can not get away with ship, then propably not with shuttle either."</i>
+    /// True about speed, and beside the point. The shuttle does not outrun anybody; the prize evaporates.
     /// </summary>
     private void SheGoes()
+    {
+        if (ShipScuttle.EndingFor(CaptainWasAboardHer()) == ShipScuttle.Ending.WentWithHer)
+        {
+            SheGoesWithHim();
+            return;
+        }
+
+        SheGoesWithoutHim();
+    }
+
+    /// <summary>
+    /// Was the captain aboard her when it happened?
+    ///
+    /// <para>Two signals say NO for certain and are the only ones this trusts: the shuttle is away with him in
+    /// it, or he is standing on a surface. Everything else — walking her own deck, or ashore in a haven's bar
+    /// while she sits at the berth — counts as aboard, because guessing generously about survival is how a
+    /// mechanic quietly stops having stakes. (Blowing her AT a station berth is its own scene, and its own
+    /// crime, and it is not this slice: see issue #525.)</para>
+    /// </summary>
+    private bool CaptainWasAboardHer() => _surface is null && _shuttleRun is null;
+
+    /// <summary>
+    /// He stayed. Through the SAME brain-backup death the collector, the impact and the regolith all use — the
+    /// death machinery is shared, never duplicated — with her own cause, because a captain who scuttled his own
+    /// ship and stood on her did not die of anything else.
+    /// </summary>
+    private void SheGoesWithHim()
     {
         if (_busted is not null)
         {
@@ -248,6 +276,92 @@ public sealed partial class Map
         ShowPulseMessage(line);
         StateHasChanged();
     }
+
+    /// <summary>
+    /// HE GOT CLEAR — the castaway ending, and the one worth having. She goes; the hold goes with her; every
+    /// pursuer's reason to care evaporates; and the captain is alive, shipless, and somebody's paperwork rather
+    /// than somebody's payday.
+    ///
+    /// <para>Reuses the loss half of the rebirth machinery and NONE of the death half: the insurance kit hands
+    /// over the hull nobody else wanted, but there is no clinic bill (he was never hurt), no successor captain
+    /// (he lived), and his nerve is not reset — it is CHARGED, because watching your own ship go is not free
+    /// whatever it bought.</para>
+    /// </summary>
+    private void SheGoesWithoutHim()
+    {
+        Warp = 1;
+        _effectiveWarp = 1;
+
+        RendererInterop.PlayCue("alarm");
+
+        // The hold went with her, and so did anything hot in it — which is one of the few honest ways to make
+        // evidence disappear, and the game should not pretend otherwise.
+        _cargoUnits = 0;
+        _cargoValue = 0;
+        _cargoByClass.Clear();
+        _hotCargo.Launder();
+
+        // The hull nobody else wanted, from the same rule that supplies a rebirth's rustbucket — no clinic
+        // bill, because nobody treated him for anything.
+        BustedRule.ResurrectionKit kit =
+            InsuranceRule.ApplyToRebirth(_insurance, SimTime, InsuranceRule.DefaultRebirth(WakeTankPulses())).Kit;
+
+        _reactionMassPulses = Math.Min(kit.ReactionMassPulses, ReactionMassCapacityFor(kit.MassLevel));
+        _slugAmmo = kit.SlugAmmo;
+        _missileAmmo = kit.MissileAmmo;
+        _massLevel = kit.MassLevel;
+        _sensorLevel = kit.SensorLevel;
+        _holdLevel = kit.HoldLevel;
+        _telescopeLevel = kit.TelescopeLevel;
+        RebuildSensor();
+
+        // The excursion, if he was on one, ends here — there is nothing overhead to go back up to.
+        bool wasOnSurface = _surface is not null;
+        if (wasOnSurface)
+        {
+            _surface = null;
+            _reevers.Clear();
+            _lastNearestReeverRange = null;
+        }
+        _shuttleRun = null;
+
+        // Picked up, and berthed on somebody's charity.
+        string haven = WakeAtNearestHaven();
+        if (wasOnSurface)
+        {
+            SetDeckForDock(null);
+        }
+
+        // Her own compartments come back with the new hull: no dogged hatches, no vacuum, full tanks.
+        _shipDoorsShut.Clear();
+        _shipVented.Clear();
+        _shipVacuumSeconds.Clear();
+        _shipPumps.Clear();
+        _shipReserve = ShipAtmosphere.ReserveFills;
+        _shipAuthorized = null;
+        _shipScuttleWordGiven = false;
+        _shipScuttleSecondKey = null;
+
+        ApplyNerveShock(ShipScuttle.CastawayNerveCost, "you watched your own ship go");
+
+        _shipEpitaph = new ShipEpitaph(
+            ShipScuttle.CastawayLine,
+            ShipScuttle.CastawaySurvivesLine,
+            ShipScuttle.RescuedAtLine(haven));
+
+        string line = $"☢ She is gone, and you are not. Picked up at {haven}, with the hull nobody else wanted.";
+        LogAutopilotEvent(line);
+        ShipBoardLog(line);
+        StateHasChanged();
+    }
+
+    /// <summary>The card a surviving captain reads once. Three lines: what happened, what is still his, and who
+    /// came for him.</summary>
+    private sealed record ShipEpitaph(string Went, string Survives, string Rescue);
+
+    private ShipEpitaph? _shipEpitaph;
+
+    private void CloseShipEpitaph() => _shipEpitaph = null;
 
     /// <summary>What the panel calls her. The ship has no name of her own in the model yet, so it uses the one
     /// thing that is always true and always the captain's: his own command.</summary>

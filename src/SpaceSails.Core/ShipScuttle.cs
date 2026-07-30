@@ -151,6 +151,58 @@ public static class ShipScuttle
         $"(worth {cargoValue:N0} cr), {credits:N0} cr in the purse, and the ship herself. The backup will " +
         "wake somebody who remembers all of it. That is not the same as having it.";
 
+    // ── What happens at zero, which is not the same question as "did she blow up" ──────────────────────
+
+    /// <summary>
+    /// HOW IT ENDS, and the owner's own objection answered. Waiting at a ferry terminal with the charges
+    /// freshly built: <i>"Suppose the crew sets the countdown 90 seconds and evacuates with shuttle. 🤔 If you
+    /// can not get away with ship, then propably not with shuttle either 🤔 … we need to think about that."</i>
+    ///
+    /// <para>The objection is right about SPEED and wrong about the point. Scuttling is not flight, it is
+    /// DENIAL: a debt collector wants the hull as an asset, a heat-hunter wants the bounty on her, a boarder
+    /// wants the hold — and all of that is aboard the ship. The moment she stops existing, chasing a lifeboat
+    /// costs fuel and time for a payout of zero. The shuttle never has to outrun anybody; it has to stop being
+    /// worth the trip.</para>
+    ///
+    /// <para>So the clock reaching zero asks one question — WAS THE CAPTAIN STILL ON HER — and the two answers
+    /// are a death and a beginning, not a win and a loss.</para>
+    /// </summary>
+    public enum Ending
+    {
+        /// <summary>He was aboard. The charges kept their end of the bargain.</summary>
+        WentWithHer,
+
+        /// <summary>He was clear — in the shuttle, on a surface, ashore. No ship, no hold, and nobody left
+        /// with a reason to chase him.</summary>
+        Castaway,
+    }
+
+    /// <summary>The whole rule, and deliberately this small: everything else about the ending is consequence.</summary>
+    public static Ending EndingFor(bool captainWasAboard) =>
+        captainWasAboard ? Ending.WentWithHer : Ending.Castaway;
+
+    /// <summary>What the card says to a captain who got clear. It is not a congratulation — he has just spent
+    /// his ship to stop somebody else having her.</summary>
+    public const string CastawayLine =
+        "She goes at a distance, and the light of it arrives before the sound would if there were any. " +
+        "Whatever was chasing her has nothing left to chase: the hull was the asset, the bounty and the prize, " +
+        "and the captain is a man in a small cold boat who is worth the fuel to nobody.";
+
+    /// <summary>And what survives — said plainly, because a player who has just lost a ship needs to know what
+    /// he still has before he can decide whether it was worth it.</summary>
+    public const string CastawaySurvivesLine =
+        "What is still yours: the purse in your pocket, every mark you buried off-ship, and the people who " +
+        "remember your name. What is not: her, and everything that was in her hold.";
+
+    /// <summary>The rescue, which is the shuttle's real problem — air and range and being found, never speed.
+    /// A lifeboat running cold is far harder to see than a charged hull, which is the one advantage it has.</summary>
+    public static string RescuedAtLine(string havenName) =>
+        $"A boat with a beacon and no cargo is somebody's paperwork rather than somebody's payday. {havenName} " +
+        "sends out for you, and the berth they give you comes with a hull nobody else wanted.";
+
+    /// <summary>Watching your own ship go is not free, whatever it bought. Nerve pips, through the #480 seam.</summary>
+    public const int CastawayNerveCost = 30;
+
     /// <summary>The last line before the clock — the one the recall window exists for.</summary>
     public const string KeysTurnedLine =
         "Both keys turn together. The note of her comes up half a tone, the PA starts counting, and every " +
