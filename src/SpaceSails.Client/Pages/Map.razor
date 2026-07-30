@@ -694,7 +694,8 @@
                         <g class="@cls" @onclick="() => SelectVentSpace(name)">
                             <rect x="@Du(x0)" y="@Du(y)" width="@Du(x1 - x0)"
                                   height="@Du(WreckLayout.BottomY - WreckLayout.SpineHalfHeight)" rx="0.4" />
-                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, x1 - x0, VentAreaTag(name, space, x1 - x0)))
+                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, x1 - x0, VentAreaTag(name, space, x1 - x0),
+                                                             WreckLayout.BottomY - WreckLayout.SpineHalfHeight))
                             @* The door onto the spine, at the doorway the captain actually walks through:
                                solid when sealed, broken when open. *@
                             <line class="vent-door"
@@ -1028,9 +1029,13 @@
                             <rect x="@Du(shipRoom.X0)" y="@Du(-shipRoom.Y1)"
                                   width="@Du(shipRoom.X1 - shipRoom.X0)"
                                   height="@Du(shipRoom.Y1 - shipRoom.Y0)" rx="0.4" />
+                            @* Her berths are 3.5 du wide and 7 tall, so their names go SIDEWAYS rather than
+                               across — the owner's own read of the first board: "the cabins map here could use
+                               font rotation to fit the texts?" The helper decides; it is handed the room's
+                               height so that it can. *@
                             @((MarkupString)VentAreaLabelSvg(
                                 shipRoom.Name, shipCx, shipCy, shipRoom.X1 - shipRoom.X0,
-                                ShipAreaTag(shipRoom.Name)))
+                                ShipAreaTag(shipRoom.Name), shipRoom.Y1 - shipRoom.Y0))
                             @* Her hatch, at the doorway the captain actually walks through: solid when shut,
                                broken when open. ONE definition (ShipLayout.DoorSegment), read both by the thing
                                that draws it and the thing that walks into it. *@
@@ -1090,30 +1095,78 @@
 
                         @* THE GATE. Not a confirmation dialogue: the word carries the room's NAME, so changing
                            the selection revokes it — the same promise the boarding authorization makes, for the
-                           same reason (proximity is never consent). *@
-                        @if (shipReadiness == HullVenting.VentReadiness.Ready)
+                           same reason (proximity is never consent).
+
+                           BOTH STEPS ARE ALWAYS DRAWN, greyed with their reason on them. The first cut hid
+                           them until the act was legal, and the owner — standing at his own bridge repeater
+                           with the hold selected — had to ask "how do I vent the cargo hold here?" There was
+                           nothing on the panel to tell him: the refusal line said "shut the door before you
+                           pull THIS" while `this` was not on screen to be pulled. A control you cannot press
+                           teaches the sequence; a control that is absent teaches nothing. *@
+                        @if (shipIntent == ShipAuthority.VentIntent.Authorized)
                         {
-                            @if (shipIntent == ShipAuthority.VentIntent.Authorized)
-                            {
-                                <button type="button" class="btn btn-outline-secondary btn-sm"
-                                        title="Take it back. Nothing has happened yet."
-                                        @onclick="WithdrawTheCaptainsWord">
-                                    ↩ Withdraw the word
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm"
-                                        title="@ShipAtmosphere.TheSuitsBesideTheBunks"
-                                        @onclick="() => VentShipCompartment(shipPicked)">
-                                    💨 OPEN @shipPicked TO SPACE
-                                </button>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-outline-danger btn-sm"
-                                        title="@ShipAuthority.WhyItNeedsSaying"
-                                        @onclick="() => GiveTheCaptainsWord(shipPicked)">
-                                    🔑 Captain's word: @shipPicked
-                                </button>
-                            }
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    title="Take it back. Nothing has happened yet."
+                                    @onclick="WithdrawTheCaptainsWord">
+                                ↩ Withdraw the word
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    disabled="@(shipReadiness != HullVenting.VentReadiness.Ready)"
+                                    title="@(shipReadiness == HullVenting.VentReadiness.Ready
+                                             ? ShipAuthority.WhyItNeedsSaying
+                                             : HullVenting.RefusalLine(shipReadiness, shipPicked))"
+                                    @onclick="() => GiveTheCaptainsWord(shipPicked)">
+                                🔑 Captain's word: @shipPicked
+                            </button>
+                        }
+                        @* TWO ROADS TO AN EMPTY ROOM, and the owner named both: "one by venting to space in an
+                           emergency hurry and another where we more slowly pump it into our stores with rough
+                           vacuum pumps and it is kept in the ship." Same word gates both, because both end in
+                           a compartment of your own ship at vacuum. *@
+                        <button type="button" class="btn btn-danger btn-sm"
+                                disabled="@(shipIntent != ShipAuthority.VentIntent.Authorized
+                                            || shipReadiness != HullVenting.VentReadiness.Ready)"
+                                title="@(shipReadiness != HullVenting.VentReadiness.Ready
+                                         ? HullVenting.RefusalLine(shipReadiness, shipPicked)
+                                         : shipIntent != ShipAuthority.VentIntent.Authorized
+                                             ? ShipAuthority.AskFor(shipPicked)
+                                             : "Instant, and the air is GONE — the emergency road. "
+                                               + ShipAtmosphere.TheSuitsBesideTheBunks)"
+                                @onclick="() => VentShipCompartment(shipPicked)">
+                            💨 OPEN @shipPicked TO SPACE
+                        </button>
+                        @if (ShipPumpOn(shipPicked) is { } shipRunning)
+                        {
+                            <button type="button" class="btn btn-outline-warning btn-sm"
+                                    title="@(shipRunning.RoughBanked
+                                             ? "The fill is already in her tanks. Stopping now leaves the room breathable."
+                                             : "Stop before the mark and the air stays in the room — none of it reaches the tanks.")"
+                                    @onclick="() => StopShipPump(shipPicked)">
+                                @(shipRunning.RoughBanked ? "🛢 Stop — take the air and go" : "🛢 Stop the pump")
+                            </button>
+                        }
+                        else
+                        {
+                            var shipVolume = HullVenting.SharedAtmosphere(
+                                shipPicked, ShipSpacesNow(), ShipLayout.SpineName);
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(shipIntent != ShipAuthority.VentIntent.Authorized
+                                                || shipReadiness != HullVenting.VentReadiness.Ready)"
+                                    title="@(shipReadiness != HullVenting.VentReadiness.Ready
+                                             ? HullVenting.RefusalLine(shipReadiness, shipPicked)
+                                             : shipIntent != ShipAuthority.VentIntent.Authorized
+                                                 ? ShipAuthority.AskFor(shipPicked)
+                                                 : shipVolume.Count > 1
+                                                     ? $"One atmosphere, {shipVolume.Count} spaces: {string.Join(", ", shipVolume)}. They stand open to each other, so they empty together."
+                                                     : "Slower than the handle, and the air is KEPT: the mechanical stage banks a fill into her tanks, the long tail brings it down to a pressure that kills.")"
+                                    @onclick="() => StartShipPump(shipPicked)">
+                                @(shipVolume.Count > 1
+                                    ? $"🛢 Pump this volume into her tanks ({shipVolume.Count} spaces)"
+                                    : "🛢 Pump it into her tanks")
+                            </button>
                         }
 
                         <button type="button" class="btn btn-outline-info btn-sm"

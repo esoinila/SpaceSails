@@ -310,6 +310,162 @@ public sealed partial class Map
         RequestVaultSave();
     }
 
+    // ── The thrifty road ──────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// HER ROUGHING PUMPS. Owner, at the board: <i>"I want to pump the air out but not lose it with vacuum
+    /// pumps. So I expect an option of vacuuming a space without losing the air"</i>, and then the whole shape
+    /// of it in one sentence — <i>"There should be 2 ways to evacuate the room air, one by venting to space in
+    /// an emergency hurry and another where we more slowly pump it into our stores with rough vacuum pumps and
+    /// it is kept in the ship."</i>
+    ///
+    /// <para>That is the derelict's economics exactly, and it was his to begin with (his own lab bench: a
+    /// roughing pump does ~95% of the work). Cracking a valve is instant and throws the air away; the pump is
+    /// slow and the air ends up in her tanks. The mechanical stage BANKS the fill early and the long tail
+    /// afterwards only buys a pressure low enough to be lethal — so stopping at the rough mark is a real
+    /// choice rather than an abort.</para>
+    ///
+    /// <para>THE GATE DOES NOT RELAX FOR BEING THRIFTY. The end state is a compartment of your own ship at
+    /// vacuum, which is precisely what the captain's word is for; a pump that skipped it would be a loophole
+    /// around the rule rather than a second road to the same place.</para>
+    /// </summary>
+    private readonly Dictionary<string, PumpRun> _shipPumps = [];
+
+    /// <summary>The run this space is part of, if any — asked by every readout, so a compartment standing open
+    /// to one that is being pumped knows it is being pumped.</summary>
+    private PumpRun? ShipPumpOn(string space)
+    {
+        foreach (PumpRun run in _shipPumps.Values)
+        {
+            if (run.Volume.Contains(space, StringComparer.Ordinal))
+            {
+                return run;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Start her pump on a compartment — and on whatever is standing open to it.</summary>
+    private void StartShipPump(string room)
+    {
+        if (ShipPumpOn(room) is not null)
+        {
+            return;
+        }
+
+        if (ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized) != ShipAuthority.VentIntent.Authorized)
+        {
+            _shipBoardMessage = ShipAuthority.AskFor(room);
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
+        HullVenting.Space space = ShipSpaceNow(room);
+        HullVenting.VentReadiness readiness = HullVenting.Readiness(space);
+        if (readiness != HullVenting.VentReadiness.Ready)
+        {
+            _shipBoardMessage = HullVenting.RefusalLine(readiness, room);
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
+        // WHAT AM I ACTUALLY ABOUT TO EMPTY. Core's flood fill answers, across whatever hatches stand open —
+        // asked with HER corridor's name, because the door graph has to know what the volume opens onto.
+        IReadOnlyList<string> volume = HullVenting.SharedAtmosphere(
+            room, ShipSpacesNow(), ShipLayout.SpineName);
+
+        (double seconds, int charges) = HullVenting.PumpJob(volume);
+        _shipPumps[string.Join("+", volume)] =
+            new PumpRun(volume, seconds, charges, seconds, RoughBanked: false);
+
+        // The word is spent by STARTING the run, exactly as it is by pulling the handle: one authorization,
+        // one act. Stopping and restarting asks again, which is right — it is the same decision twice.
+        _shipAuthorized = null;
+
+        _shipBoardMessage = HullVenting.PumpRunningLine(room, seconds);
+        LogAutopilotEvent($"🛢 Pump started on {room} — her air goes to the tanks, not to space.");
+        RendererInterop.PlayCue("board");
+    }
+
+    /// <summary>Stop it. Past the rough mark this is the THRIFTY FINISH rather than an abort: the fill is
+    /// already banked, and all you give up is a pressure low enough to kill.</summary>
+    private void StopShipPump(string room)
+    {
+        if (ShipPumpOn(room) is not { } run)
+        {
+            return;
+        }
+
+        _shipPumps.Remove(string.Join("+", run.Volume));
+        _shipBoardMessage = run.RoughBanked
+            ? $"Pump shut down. Her tanks kept what came out of {room}, and what is left in there is still " +
+              "breathable — which is what stopping at the mark means."
+            : $"Pump shut down early. Most of {room}'s air is still in {room}, and none of it is in her tanks.";
+        RendererInterop.PlayCue("block");
+    }
+
+    /// <summary>Run her pumps. One clock per VOLUME, one rough mark, one payout — the spaces on a run were one
+    /// atmosphere the whole time.</summary>
+    private void AdvanceShipPumps(double dtSeconds)
+    {
+        if (_shipPumps.Count == 0 || OnWreck)
+        {
+            return;
+        }
+
+        foreach (string key in _shipPumps.Keys.ToList())
+        {
+            PumpRun run = _shipPumps[key];
+            double before = run.SecondsLeft;
+            double left = before - dtSeconds;
+
+            // The rough mark belongs to the RUN and never to a variable outside the loop — that exact mistake
+            // cost the wreck's board a silent charge leak, a room measured against the corridor's mark that
+            // its own shorter clock could never cross.
+            double roughAt = run.Total - HullVenting.PumpRoughSeconds;
+            bool banked = run.RoughBanked;
+            string label = run.Volume.Count > 1 ? $"{run.Volume.Count} spaces" : run.Volume[0];
+
+            if (before > roughAt && left <= roughAt)
+            {
+                _shipReserve += run.Charges;
+                banked = true;
+                _shipBoardMessage = HullVenting.PumpRoughDoneLine(label);
+                LogAutopilotEvent(
+                    $"🛢 {label} roughed out — {run.Charges} fill(s) into her tanks ({_shipReserve}).");
+                RendererInterop.PlayCue("reveal");
+            }
+
+            if (left > 0)
+            {
+                _shipPumps[key] = run with { SecondsLeft = left, RoughBanked = banked };
+                if (_showShipBoard && !banked && _shipSelected is { } watching
+                    && run.Volume.Contains(watching, StringComparer.Ordinal))
+                {
+                    _shipBoardMessage = HullVenting.PumpRunningLine(label, left);
+                }
+                continue;
+            }
+
+            _shipPumps.Remove(key);
+
+            // Only NOW is any of it lethal. The fill was banked at the rough mark, a long time ago.
+            foreach (string member in run.Volume)
+            {
+                if (!string.Equals(member, ShipLayout.SpineName, StringComparison.Ordinal))
+                {
+                    _shipVented.Add(member);
+                }
+            }
+
+            _shipBoardMessage = HullVenting.PumpDoneLine(label);
+            LogAutopilotEvent($"🛢 Pumped {label} down — her tanks hold {_shipReserve} fills.");
+            RendererInterop.PlayCue("alarm");
+            RebuildShipDeck();
+            RequestVaultSave();
+        }
+    }
+
     /// <summary>Put the air back, off her own tanks. Air comes back; nobody does.</summary>
     private void RefillShipCompartment(string room)
     {
