@@ -215,6 +215,13 @@ public sealed class SceneInventoryTests
                                          "berth's Hatch or the surface's SurfaceAirlock",
         [DeckPlan.ConsoleKind.Shuttle] = "the shuttle in its cradle — present on her own deck, absent once flown",
         [DeckPlan.ConsoleKind.SelfieSpot] = "#379 selfie spots exist at four of the seven berths by design",
+        // #409+ · the mountain lab appends its own region when the hidden door is FORCED, so none of these is on
+        // a freshly built deck — which is the point of a hidden lab. This law caught all four the moment they
+        // were added, which is exactly the job it was written for.
+        [DeckPlan.ConsoleKind.LabDoor] = "the mountain lab's chamber doors, appended when the hidden door gives",
+        [DeckPlan.ConsoleKind.LabDoorBoard] = "the lab's door board, in the clean room of an appended lab",
+        [DeckPlan.ConsoleKind.LabAlarm] = "the lab's alarm panel, beside the board",
+        [DeckPlan.ConsoleKind.LabKeyCard] = "Vantar's card, in the deepest chamber of an appended lab",
     };
 
     /// <summary>

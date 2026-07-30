@@ -1597,6 +1597,7 @@ public partial class Map
         AdvanceBoatSpinUp(dtRealSeconds);
         AdvanceSweepTeam(dtRealSeconds);   // #538: somebody else's team, working the hull
         AdvanceSounding(dtRealSeconds);     // #537: the clock on a knock
+        AdvanceLabAlarm(dtRealSeconds);     // #409+: the mountain counting
 
         // #528 · retire a plate whose seconds are up, and let a held card speak once the scene is calm. Ship
         // level for the same reason: a beat can be raised in flight (a shot, a sail, a hail) and must be
