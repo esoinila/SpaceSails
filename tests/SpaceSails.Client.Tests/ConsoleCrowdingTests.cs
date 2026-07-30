@@ -42,81 +42,11 @@ public sealed class ConsoleCrowdingTests
     /// deliberate design and must stay legal — what must not happen is two dots on top of each other.</summary>
     private const double LabelClearance = 2.0;
 
-    /// <summary>Every deck the game can put the captain on, built the way the game builds it.</summary>
-    public static TheoryData<string> EveryDeck()
-    {
-        var data = new TheoryData<string>();
-        foreach (string name in DeckNames())
-        {
-            data.Add(name);
-        }
-        return data;
-    }
+    /// <summary>Every deck the game can put the captain on — now the SHARED table in <see cref="Scenes"/>, so
+    /// this audit and the inventory audit can never disagree about what "every scene" means.</summary>
+    public static TheoryData<string> EveryDeck() => Scenes.Every();
 
-    private static IEnumerable<string> DeckNames()
-    {
-        yield return "ship";
-        yield return "ship-all-hatches-dogged";
-
-        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
-        {
-            yield return $"wreck:{cause}";
-        }
-
-        foreach (string id in HavenInterior.InteriorBodyIds)
-        {
-            yield return $"haven:{id}";
-        }
-
-        foreach (string id in SurfaceBodies)
-        {
-            yield return $"surface:{id}";
-        }
-    }
-
-    /// <summary>A sample of walked ground. The surface layout is procedural per body, so a handful of real
-    /// ones is the honest cover — and any of them putting a dig site on a kiosk is the same bug.</summary>
-    private static readonly string[] SurfaceBodies = ["luna", "phobos", "titan", "enceladus"];
-
-    /// <summary>Built by name so xUnit can print WHICH deck failed instead of an object hash.</summary>
-    private static DeckPlan Build(string name)
-    {
-        if (name == "ship")
-        {
-            return DeckPlan.Ship;
-        }
-
-        if (name == "ship-all-hatches-dogged")
-        {
-            var shut = new HashSet<string>(StringComparer.Ordinal);
-            foreach (ShipLayout.Room room in ShipLayout.Rooms)
-            {
-                shut.Add(room.Name);
-            }
-            return DeckPlan.ShipWith(shut);
-        }
-
-        if (name.StartsWith("wreck:", StringComparison.Ordinal))
-        {
-            var cause = Enum.Parse<Derelict.WreckCause>(name["wreck:".Length..]);
-            var wreck = new Derelict.Wreck("audit-hull", "Audited Hull", cause, 250_000, 40.0);
-            return WreckInterior.WreckDeck(
-                wreck, new HashSet<string>(StringComparer.Ordinal), salvaged: false,
-                droidCount: 0, fillDroids: static (_, _) => { });
-        }
-
-        if (name.StartsWith("haven:", StringComparison.Ordinal))
-        {
-            string id = name["haven:".Length..];
-            DeckPlan? deck = HavenInterior.DockedDeck(id);
-            Assert.NotNull(deck);
-            return deck;
-        }
-
-        string body = name["surface:".Length..];
-        return MoonSurface.SurfaceDeck(
-            body, body, [], droidCount: 0, fillDroids: static (_, _) => { });
-    }
+    private static DeckPlan Build(string name) => Scenes.Build(name);
 
     /// <summary>
     /// LAW ONE — every console has somewhere to be pressed from.
