@@ -154,6 +154,15 @@ public partial class Map
                     ToggleWeaponsTight();
                 }
                 return true;
+            case "k" or "K":
+                // #537 · KNOCK. Owner: "a combi of detect tool that scans on timer like 5 seconds at a spot",
+                // "it might be noisy to say knock on walls etc." K starts a sounding where you stand — a clock
+                // that dies the moment you walk away, and a racket the hull hears either way.
+                if (_surface is not null && OnWreck)
+                {
+                    ToggleSounding();
+                }
+                return true;
             case "t" or "T":
                 // #314: set down a carried sentry at your feet (or pick up one you're standing on).
                 if (_surface is not null)
@@ -386,6 +395,9 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.DrillPoint:
                 DrillPointInteract(); // #394: drill the charge (a long channel), or fire it once armed
+                break;
+            case DeckPlan.ConsoleKind.SecretDoor when OnWreck:
+                OpenTheFalsePlate();    // #537: the plate a sounding found — "a tool to get at it"
                 break;
             case DeckPlan.ConsoleKind.SecretDoor:
                 SecretDoorInteract(); // #409: force the hidden lab door — the channel that appends the lab region

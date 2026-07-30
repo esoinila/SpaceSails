@@ -225,6 +225,110 @@ public static class HullSounding
         clueArea <= 0 ? double.PositiveInfinity
         : SecondsToCover(method, hullArea) / System.Math.Max(1e-9, SecondsToCover(method, clueArea));
 
+    // ── The lie is in the paperwork, not the plating ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// A SPACE ABOARD THAT IS NOT ON THE DECK PLAN.
+    ///
+    /// <para><b>Why the discrepancy lives in her DOCUMENTS rather than in her geometry.</b> The obvious build was
+    /// to shorten a compartment and let <see cref="Discrepancies"/> find it — but every wreck is drawn from ONE
+    /// shared layout, and giving a hull its own rectangles means threading a per-wreck compartment list through
+    /// the deck builder, the room lookup, the noise sources and the vent spaces. Leave any one of those on the
+    /// shared list and the map disagrees with the sim, which is this repo's most expensive bug class and not a
+    /// thing to volunteer for.</para>
+    ///
+    /// <para>So her plating is honest and her <b>manifest</b> is not: it declares a compartment longer than the
+    /// deck plan draws it, and the frames it claims and cannot show are behind that compartment's far bulkhead.
+    /// Which is better fiction as well as safer code — somebody had to write the false number down, and the
+    /// captain catches them at it by comparing a document with a wall.</para>
+    /// </summary>
+    /// <param name="Compartment">The room whose bulkhead is lying.</param>
+    /// <param name="DeclaredFrames">What her manifest claims that compartment runs.</param>
+    /// <param name="MeasuredFrames">What the deck plan actually draws.</param>
+    /// <param name="X">Where a captain has to stand to sound it — inside the room, against the wall.</param>
+    /// <param name="Y">…and how far outboard.</param>
+    /// <param name="Holds">What is in there, in the captain's own words when they get in.</param>
+    public readonly record struct HiddenVoid(
+        string Compartment,
+        double DeclaredFrames,
+        double MeasuredFrames,
+        double X,
+        double Y,
+        string Holds);
+
+    /// <summary>How many hulls carry one at all. Rare on purpose: a void on every wreck makes measuring routine,
+    /// and the whole appeal is that most ships are exactly what they look like.</summary>
+    public const int VoidOnARollOf = 4;   // d20 ≤ 4, so about one hull in five
+
+    /// <summary>
+    /// What is behind the plate. Authored rather than generated, because these are the owner's own threads:
+    /// <i>"In Expanse they found black ops code keys from the Tacchi that made the Mars military leave them alone
+    /// and delete all records of ever encountering them. That kind of keys would be very valuable for pirates"</i>
+    /// and <i>"Some ships are posing as Rocinante but under came are masked war ships."</i>
+    /// </summary>
+    private static readonly string[] WhatIsInThere =
+    [
+        "A rack of code keys in a foam cutout, and one empty slot where somebody took theirs and ran.",
+        "A gun mount, folded. Her hull plate over it is thinner than the plate around it, and cut from the inside.",
+        "Ship's papers for three different vessels, and a photograph of this one wearing another name.",
+        "A cold locker with one person in it, in a flight suit that is not this ship's.",
+    ];
+
+    /// <summary>
+    /// Whether this hull is hiding one, and where. Seeded off her id, so a given ship always is or never was —
+    /// a void that appeared on the second boarding would make the whole search a slot machine.
+    /// </summary>
+    public static HiddenVoid? VoidFor(
+        string wreckId,
+        IReadOnlyList<(string Name, float X0, float X1, bool Top)> compartments,
+        double spineHalfHeight, double topY, double bottomY)
+    {
+        ArgumentNullException.ThrowIfNull(wreckId);
+        ArgumentNullException.ThrowIfNull(compartments);
+
+        if (compartments.Count == 0)
+        {
+            return null;
+        }
+
+        ulong seed = DiceRule.Seed("hull-void", wreckId.GetHashCode(System.StringComparison.Ordinal));
+        if (DiceRule.Roll(seed).Face > VoidOnARollOf)
+        {
+            return null;   // most hulls are exactly what they look like, and that is what makes one worth finding
+        }
+
+        // Which room's paperwork lies, how many frames it claims it cannot show, and what is behind the plate —
+        // all off the same hull's seed, so a captain who comes back finds the same ship.
+        int which = DiceRule.Roll(DiceRule.Seed(seed, "room"), compartments.Count).Face - 1;
+        (string name, float x0, float x1, bool top) = compartments[which];
+
+        double missing = 3.0 + DiceRule.Roll(DiceRule.Seed(seed, "frames"), 4).Face;   // 4…7 frames
+        double measured = x1 - x0;
+
+        // The void sits behind the AFT bulkhead of that room, so the spot to sound is just inside it — and
+        // outboard, halfway between the spine and the skin, where a man would actually put his hand.
+        double depth = top ? (-spineHalfHeight + topY) / 2.0 : (bottomY + spineHalfHeight) / 2.0;
+
+        return new HiddenVoid(
+            name, measured + missing, measured,
+            x0 + 1.5, depth,
+            WhatIsInThere[DiceRule.Roll(DiceRule.Seed(seed, "holds"), WhatIsInThere.Length).Face - 1]);
+    }
+
+    /// <summary>The manifest's lie, as the same <see cref="Discrepancy"/> the geometry rule produces — one type,
+    /// two sources, so a panel that can show one can show the other without knowing which it got.</summary>
+    public static Discrepancy AsDiscrepancy(in HiddenVoid hidden, double spineHalfHeight, double topY,
+                                            double bottomY, bool top)
+    {
+        double missing = hidden.DeclaredFrames - hidden.MeasuredFrames;
+        double depth = top ? System.Math.Abs(-spineHalfHeight - topY) : System.Math.Abs(bottomY - spineHalfHeight);
+
+        return new Discrepancy(
+            $"the manifest books {hidden.Compartment} at {hidden.DeclaredFrames:0.#} frames and the deck plan " +
+            $"draws {hidden.MeasuredFrames:0.#}",
+            hidden.X - 1.5, hidden.X - 1.5 + missing, top, missing * depth);
+    }
+
     // ── What is said ──────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The prompt, naming the cost before it is spent — including the part that is not time.</summary>
@@ -259,6 +363,13 @@ public static class HullSounding
     public static string ClueLine(in Discrepancy discrepancy) =>
         $"📐 {discrepancy.Reason}. Somewhere in those {discrepancy.AreaSquareDu:0} square metres, her plans and " +
         "her plating disagree.";
+
+    /// <summary>The plate coming off, and what a captain finds. The find line NEVER says what it is worth — the
+    /// contents describe themselves and the captain draws the conclusion, which is the #533 discipline applied at
+    /// the only moment the game could get away with breaking it.</summary>
+    public static string FoundItLine(in HiddenVoid hidden) =>
+        $"🕳 The plate comes away from {hidden.Compartment}'s aft bulkhead in one piece — it was never welded, " +
+        $"only made to look it. {hidden.Holds}";
 
     /// <summary>And the honest warning, for a captain who would rather sound the whole ship than measure it.</summary>
     public static string BlindSearchLine(Method method, double hullArea) =>

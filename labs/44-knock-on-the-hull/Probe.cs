@@ -26,6 +26,7 @@ public static class Probe
         C_WhatTheHullHearsWhileYouLook(hull);
         D_TheMapAsTheClue(hull);
         E_DoesTheOddBandActuallyConverge();
+        F_WhichHullsLie();
     }
 
     // ── A · the ship, and the two ways to ask her ────────────────────────────────────────────────────
@@ -212,5 +213,44 @@ public static class Probe
         }
 
         return worst;
+    }
+
+    // ── F · which of the shipped hulls actually hide something ───────────────────────────────────────
+
+    private static void F_WhichHullsLie()
+    {
+        Console.WriteLine();
+        Console.WriteLine("F — which of the seeded hulls hide a void, and where");
+        Console.WriteLine();
+
+        int lying = 0, total = 0;
+        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
+        {
+            if (Derelict.SeededWithCause(cause) is not { } w)
+            {
+                continue;
+            }
+            total++;
+
+            HullSounding.HiddenVoid? hidden = HullSounding.VoidFor(
+                w.Id, WreckLayout.Compartments, WreckLayout.SpineHalfHeight,
+                WreckLayout.TopY, WreckLayout.BottomY);
+
+            if (hidden is not { } v)
+            {
+                Console.WriteLine($"  {cause,-24} {w.ShipName,-22} honest");
+                continue;
+            }
+
+            lying++;
+            Console.WriteLine($"  {cause,-24} {w.ShipName,-22} LIES: books {v.Compartment} at " +
+                              $"{v.DeclaredFrames:0.#} vs {v.MeasuredFrames:0.#} — sound at " +
+                              $"({v.X:0.#}, {v.Y:0.#})");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine($"  {lying} of {total} seeded hulls hide something (target: about one in five).");
+        Console.WriteLine("  A void on every wreck makes measuring routine; the appeal is that most ships are");
+        Console.WriteLine("  exactly what they look like.");
     }
 }

@@ -1589,6 +1589,7 @@ public partial class Map
         // #538 · a boat that was told to wake keeps waking whether or not the captain is watching her do it.
         AdvanceBoatSpinUp(dtRealSeconds);
         AdvanceSweepTeam(dtRealSeconds);   // #538: somebody else's team, working the hull
+        AdvanceSounding(dtRealSeconds);     // #537: the clock on a knock
 
         // #528 · retire a plate whose seconds are up, and let a held card speak once the scene is calm. Ship
         // level for the same reason: a beat can be raised in flight (a shot, a sail, a hail) and must be

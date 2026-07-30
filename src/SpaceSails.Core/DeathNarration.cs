@@ -114,6 +114,17 @@ public static class DeathNarration
             return "\"…and the footprints only lead one way — in.\"";
         }
 
+        // #538 · AND THE THIRD PIECE OF THE SAME CARD. Adding DeathCause.Inspected fixed the headline and the
+        // narration line and left THIS one still reading "…they simply kept coming, and the guard did not hold
+        // forever" — a pack quote, under a headline that says you were found aboard, after three professionals
+        // shot a captain who was standing still. Caught by booting the scene and reading the card, which is the
+        // owner's method and the reason it keeps being right: the parts were all there and one of them was
+        // pointed at the wrong death.
+        if (cause == DeathCause.Inspected)
+        {
+            return "\"…nobody raised their voice, and it was over before the echo.\"";
+        }
+
         return nerveRanOut
             ? "\"…the nerve was already gone. The hand was only the last of it.\""
             : "\"…they simply kept coming, and the guard did not hold forever.\"";
