@@ -1330,6 +1330,50 @@
         </div>
     }
 
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #528 · THE STORY CARD AND THE STORY PLATE. Owner: "The pattern something of importance to story telling
+       happens we get image pop up should happen universally in the game as long as it does not block the playing
+       too much or be too repetitive."
+
+       Two presentations of one idiom, chosen by Core (StoryBeats.PresentationOf): the CARD takes the screen when
+       the moment was already a pause, and the PLATE rides the edge for a few seconds when the game is still
+       moving. Every picture degrades honestly — an unpainted beat still delivers its title and caption.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_storyCard is { } told)
+    {
+        var toldCopy = StoryBeatCopy(told.Beat, told.Subject);
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseStoryCard)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@toldCopy.Title</div>
+                @if (toldCopy.Art is { Length: > 0 })
+                {
+                    <img class="view-object-img" src="@toldCopy.Art" alt="@toldCopy.Title"
+                         onerror="this.style.display='none'" />
+                }
+                <div class="view-object-caption">@toldCopy.Caption</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseStoryCard)">…go on</button>
+            </div>
+        </div>
+    }
+
+    @* The plate: same picture, same words, no keyboard stolen and no world stopped. It is not clickable on
+       purpose — a thing you must dismiss is a thing that blocked you. *@
+    @if (_storyPlate is { } flash)
+    {
+        var flashCopy = StoryBeatCopy(flash.Beat, flash.Subject);
+        <div class="story-plate" aria-live="polite">
+            @if (flashCopy.Art is { Length: > 0 })
+            {
+                <img class="story-plate-art" src="@flashCopy.Art" alt=""
+                     onerror="this.style.display='none'" />
+            }
+            <div class="story-plate-words">
+                <div class="story-plate-title">@flashCopy.Title</div>
+                <div class="story-plate-caption">@flashCopy.Caption</div>
+            </div>
+        </div>
+    }
+
     @* THE CASTAWAY CARD. She went; he did not. Owner's own objection, answered: "if you can not get away with
        ship, then propably not with shuttle either" — true about speed, beside the point. The hull was the
        asset, the bounty and the prize; a man in a small cold boat is worth the fuel to nobody. *@
@@ -4313,7 +4357,15 @@
                         @* PR-BUSTED art (docs/art-manifest-busted.md item 3): busted-collector-hail.jpg —
                            the hard-eyed repo captain backs ONLY the Demand header (modifier class), with a
                            dark scrim so the callsign stays readable. Other panels' .busted-hail is untouched. *@
-                        <div class="busted-hail busted-collector-hail">⛓ CAUGHT — @bust.HunterCallsign has you grappled</div>
+                        @* #528 · the slot from docs/art-manifest-busted.md item 3, PAINTED at last: grapple
+                           cables across the frame and the collector's hull filling the ports. The heading rides
+                           on the art rather than instead of it — the words are the alarm, the picture is why it
+                           is frightening. *@
+                        <div class="busted-hail busted-collector-hail">
+                            <img class="busted-hail-art" src="@StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail)"
+                                 alt="" aria-hidden="true" onerror="this.style.display='none'" />
+                            <span>⛓ CAUGHT — @bust.HunterCallsign has you grappled</span>
+                        </div>
                         <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
                         <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
                         @* #422 arc 2 — THE COLLECTOR'S WRIT. The first time a collector grapples you, you get a

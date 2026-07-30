@@ -184,6 +184,10 @@ public partial class Map
                     PushNewsEvent(NewsWire.NewsEventKind.SlugHit, npc.Ship.Callsign,
                         _nearestBody?.Name);
                     ShowPulseMessage($"🎯 DIRECT HIT — {npc.Ship.Callsign}'s sail is gone; she's ADRIFT and boardable");
+
+                    // #528 · the CONSEQUENCE, shown: her hull intact, her windows still lit, her sail in ribbons.
+                    // Cooled, so it cannot punctuate the same fight twice.
+                    RaiseStoryBeat(StoryBeats.Beat.SailHoled, npc.Ship.Callsign);
                     RendererInterop.PlayCue("hit");
                     CompleteHuntQuests(npc.Ship.Id); // holing her settles a bar hunt contract too (M-Q1)
 
@@ -713,6 +717,11 @@ public partial class Map
             _fireAtSimTime = SimTime + FireLockLeadSeconds;
             _shotAuthorized = false; // one shot per captain's word (fire-at-will stands)
             ShowPulseMessage("BARREL LOCKED — round away in 60 s (scrub to abort)");
+
+            // #528 · THE FIRST ROUND THIS CAPTAIN EVER FIRED. A smuggler becomes a pirate exactly once, and it
+            // used to be a status line that faded in a second and a half. A PLATE rather than a card, because
+            // this happens mid-fight and must not take the keyboard.
+            RaiseStoryBeat(StoryBeats.Beat.FirstShotFired);
         }
         else if (_fireBlockedBy is not null)
         {

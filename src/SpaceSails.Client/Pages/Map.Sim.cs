@@ -1575,6 +1575,11 @@ public partial class Map
         // cut of this, and it would have made the whole system a curiosity you could only see while parked.)
         AdvanceChargeSystems(dtRealSeconds);
 
+        // #528 · retire a plate whose seconds are up, and let a held card speak once the scene is calm. Ship
+        // level for the same reason: a beat can be raised in flight (a shot, a sail, a hail) and must be
+        // served there.
+        AdvanceStoryCards();
+
         if (_deckMode)
         {
             MoveAvatar(dtRealSeconds);

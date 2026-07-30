@@ -3993,3 +3993,68 @@
     margin-top: 0.5rem;
     border-top: 1px solid rgba(150, 170, 190, 0.18);
 }
+
+/* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen
+   universally … as long as it does not block the playing too much"). Bottom-left, above the deck HUD and below
+   the modals, pointer-events NONE so it can never eat a click during a fight. */
+.story-plate {
+    position: absolute;
+    left: 1rem;
+    bottom: 5.5rem;
+    z-index: calc(var(--z-desks-popups) + 40);
+    display: flex;
+    gap: 0.6rem;
+    align-items: stretch;
+    width: min(30rem, 66vw);
+    padding: 0.5rem;
+    background: rgba(8, 11, 17, 0.92);
+    border: 1px solid rgba(255, 180, 90, 0.35);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.6rem 2rem rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    animation: story-plate-in 260ms ease-out;
+}
+
+@keyframes story-plate-in {
+    from { opacity: 0; transform: translateY(0.5rem); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.story-plate-art {
+    width: 8.5rem;
+    height: 5.4rem;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    background: #05070c;
+    flex: 0 0 auto;
+}
+
+.story-plate-words { min-width: 0; }
+
+.story-plate-title {
+    color: #ffd9a0;
+    font: 600 0.82rem/1.2 monospace;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.25rem;
+}
+
+.story-plate-caption {
+    color: rgba(232, 236, 244, 0.92);
+    font-size: 0.78rem;
+    line-height: 1.3;
+}
+
+/* #528 · the collector's hail, painted. The art sits BEHIND the heading rather than replacing it. */
+.busted-collector-hail { position: relative; overflow: hidden; }
+
+.busted-hail-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.5;
+    z-index: 0;
+}
+
+.busted-collector-hail > span { position: relative; z-index: 1; }
