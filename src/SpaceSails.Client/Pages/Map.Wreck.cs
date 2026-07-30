@@ -202,7 +202,16 @@ public sealed partial class Map
             return;
         }
 
-        Derelict.SalvageOutcome outcome = Derelict.Resolve(w, choice, _wreckReported);
+        // #524 · SHE IS WORTH WHAT IS LEFT OF HER. A fire eats an equal share per compartment while the
+        // captain decides what to do about it, so the payout resolves against the burnt-down hull rather than
+        // the one the manifest remembers. Derelict.Resolve stays pure; the wreck is a record struct, so what
+        // it is handed is simply a smaller ship.
+        Derelict.Wreck burnt = w with { AssessedValueCr = SalvageValueNow(w) };
+        Derelict.SalvageOutcome outcome = Derelict.Resolve(burnt, choice, _wreckReported);
+        if (burnt.AssessedValueCr < w.AssessedValueCr)
+        {
+            LogAutopilotEvent(HullFire.CostLine(w.AssessedValueCr, burnt.AssessedValueCr));
+        }
 
         _credits += outcome.CreditsNow;
         if (outcome.HeatGained > 0)
