@@ -2042,6 +2042,47 @@ public partial class Map
         ShowPulseMessage($"🤖 {carried.Unit} deployed — magazine {SentryBot.Readout(carried.Rounds)}. It'll hold this arc until the counter reads 00. Bots buy time, not safety.");
     }
 
+    /// <summary>
+    /// FILL A CARRIED SENTRY AT THE LOCK. Owner: <i>"Carrying the autogun to our shuttle air-lock should reload
+    /// it ( might ve needed for big ship) 😎"</i>
+    ///
+    /// <para>The boat carries the belts; the bot carries only what you last gave it. So a drained sentry is a
+    /// WALK rather than a write-off — a stroll on a small hull, and a real decision on the 4× hauler of #531
+    /// with a pack somewhere behind you. Free of any other currency on purpose: the cost is time and exposure,
+    /// the same shape as the pump's.</para>
+    ///
+    /// <para>Returns true when it actually did something, so the lock can say that instead of opening the
+    /// destination list — pressing E again gets you the list, and nothing is taken away.</para>
+    /// </summary>
+    private bool TryFillCarriedSentryAtTheLock()
+    {
+        if (_surface is not { } ex)
+        {
+            return false;
+        }
+
+        SurfaceBot? carried = ex.Bots.FirstOrDefault(b => !b.Deployed);
+        if (carried is null)
+        {
+            return false;   // nothing in the sling; the lock has its usual job to do
+        }
+
+        if (!SentryBot.NeedsFilling(carried.Rounds))
+        {
+            ShowPulseMessage(SentryBot.AlreadyFullLine(carried.Unit));
+            return false;   // it said its piece, but the lock should still open
+        }
+
+        int was = carried.Rounds;
+        carried.Rounds = SentryBot.MaxMagazine;
+        ShowPulseMessage(SentryBot.FilledLine(carried.Unit, was));
+        LogAutopilotEvent($"🤖 {carried.Unit} refilled at the lock ({SentryBot.Readout(was)} → " +
+                          $"{SentryBot.Readout(SentryBot.MaxMagazine)}).");
+        RendererInterop.PlayCue("board");
+        RequestVaultSave();
+        return true;
+    }
+
     private void StepReevers(double dtRealSeconds)
     {
         if (_surface is null || _reevers.Count == 0)

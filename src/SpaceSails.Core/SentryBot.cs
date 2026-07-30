@@ -73,6 +73,32 @@ public static class SentryBot
     /// homage; the client renders them seven-segment on the grid, dimmed once <see cref="IsDry"/>.</summary>
     public static string Readout(int rounds) => System.Math.Clamp(rounds, 0, MaxMagazine).ToString("D2");
 
+    // ── Carrying one home to fill it ──────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// CARRY IT BACK TO THE LOCK AND IT FILLS. Owner, thinking about a hull too big to run home from:
+    /// <i>"Carrying the autogun to our shuttle air-lock should reload it ( might ve needed for big ship) 😎"</i>
+    ///
+    /// <para>The boat carries the belts; the bot does not. So a drained sentry is not scrap and it is not a
+    /// resource problem — it is a WALK, and the walk is the price. On a small hull that is a stroll and the
+    /// mechanic barely registers; on the 4× hauler of #531 it is a decision with a pack somewhere behind you,
+    /// which is exactly where a logistics rule earns its keep.</para>
+    ///
+    /// <para>Deliberately free of any other currency. The cost is time and exposure, the same way the pump's
+    /// cost is time rather than credits — and a captain who has already carried the thing the length of a
+    /// wreck has paid enough.</para>
+    /// </summary>
+    public static bool NeedsFilling(int rounds) => rounds < MaxMagazine;
+
+    /// <summary>What the lock says when the belts go in.</summary>
+    public static string FilledLine(string unit, int wasCarrying) =>
+        $"🤖 {unit} back on the belts at the lock — {Readout(wasCarrying)} → {Readout(MaxMagazine)}. The boat " +
+        "carries the ammunition; the bot only carries what you last gave it.";
+
+    /// <summary>…and when there was nothing to do.</summary>
+    public static string AlreadyFullLine(string unit) =>
+        $"🤖 {unit} is already full at {Readout(MaxMagazine)}. Nothing to give it.";
+
     /// <summary>A dry bot: 00 on the readout, frozen and silent (fires nothing, drains nothing).</summary>
     public static bool IsDry(int rounds) => rounds <= 0;
 
