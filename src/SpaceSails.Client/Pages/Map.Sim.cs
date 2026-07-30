@@ -2177,7 +2177,17 @@ public partial class Map
         }
 
         _lastVentSimTime = _ship.SimTime;
+        double shed = _ship.Charge * 0.5;
         _ship = _ship with { Charge = _ship.Charge * 0.5 };
+
+        // #528 / Lab 43 · light the plume at the mast, and tell the story once in a while. Both are cooled by
+        // their own rules — the flash by its 600 ms, the card by StoryBeats.CadenceOf — so a captain who dumps
+        // every minute is not narrated at every minute.
+        _lastDischargeMs = _lastTimestampMs ?? 0;
+        if (shed >= HullCharge.ContactorHoldsAt)
+        {
+            RaiseStoryBeat(StoryBeats.Beat.ChargeLetGo);
+        }
         // #369: the vent is automatic here, so each discharge reads a rotating flavor quip
         // (house voice) rather than a bare status line. Deterministic per vent via the counter.
         ShowPulseMessage(StaticCharge.LineFor(_ventLineSeed++));

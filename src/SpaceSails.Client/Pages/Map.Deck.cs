@@ -330,6 +330,14 @@ public partial class Map
                 }
                 break;
             case DeckPlan.ConsoleKind.ShuttleAirlock:
+                // #531 · THE BELTS ARE ON THE BOAT. A drained sentry carried back to the lock fills here, and
+                // that is the whole press — the destination list is one more press away, so nothing is taken
+                // from a captain who came to leave rather than to reload.
+                if (TryFillCarriedSentryAtTheLock())
+                {
+                    break;
+                }
+
                 if (_surface is not null)
                 {
                     // #488: leaving a wreck, the boat's own lock CYCLES rather than opening — it matches
