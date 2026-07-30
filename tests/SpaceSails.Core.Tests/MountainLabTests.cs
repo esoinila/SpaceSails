@@ -176,6 +176,84 @@ public sealed class MountainLabTests
                     "the card must be deeper into the rock than the panels");
     }
 
+    // ── Chambers behind the chambers ──────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// A MOUNTAIN HAS UNLIMITED UNAUDITED DEPTH, and that is why this cost almost nothing. Owner: <i>"I love
+    /// mountain labs as there is endless places for secret chambers in the outer walls."</i> A HULL had to be
+    /// given a shielding band and a machinery space across two PRs before a hidden void had anywhere to physically
+    /// be; the rock was already there. Cut a room and there is more rock behind it.
+    /// </summary>
+    [Fact]
+    public void EveryLabHidesChambersBehindItsOwnWalls()
+    {
+        SecretLab.Region region = Lab();
+        IReadOnlyList<SecretLab.WallChamber> walls = SecretLab.WallChambersOf("test-rock", region);
+
+        Assert.Equal(SecretLab.WallChambersPerLab, walls.Count);
+
+        foreach (SecretLab.WallChamber w in walls)
+        {
+            Assert.Contains(w.Chamber, SecretLab.ChamberNames);
+            Assert.InRange(w.PlateX, region.MinX, region.MaxX);
+            Assert.False(string.IsNullOrWhiteSpace(w.Holds));
+        }
+    }
+
+    /// <summary>They alternate sides, so a captain cannot learn "always the high wall" and stop looking at the
+    /// other one — which would collapse the search back into the reflex the interior padding exists to
+    /// prevent.</summary>
+    [Fact]
+    public void TheyAreNotAllOnTheSameWall()
+    {
+        IReadOnlyList<SecretLab.WallChamber> walls = SecretLab.WallChambersOf("test-rock", Lab());
+
+        Assert.True(walls.Select(w => w.PlateY).Distinct().Count() > 1,
+                    "every wall chamber on the same side teaches a reflex instead of a search");
+    }
+
+    /// <summary>Seeded off the body, like a hull's void — a secret that re-rolls on the second visit is a lottery
+    /// rather than a place.</summary>
+    [Fact]
+    public void TheRockRemembersWhereItsRoomsAre()
+    {
+        SecretLab.Region region = Lab("miranda");
+
+        IReadOnlyList<SecretLab.WallChamber> first = SecretLab.WallChambersOf("miranda", region);
+        for (int again = 0; again < 4; again++)
+        {
+            Assert.Equal(first, SecretLab.WallChambersOf("miranda", region));
+        }
+
+        Assert.NotEqual(first[0].Holds + first[0].PlateX,
+                        SecretLab.WallChambersOf("phobos", Lab("phobos"))[0].Holds
+                        + SecretLab.WallChambersOf("phobos", Lab("phobos"))[0].PlateX);
+    }
+
+    /// <summary>
+    /// AND WHAT IS IN THEM IS CHARACTERISATION, NOT LOOT. The man walled things up; what he chose to wall up is
+    /// the point. Nothing in that list is a prize, and one of them (a door that bolts from the inside) is the
+    /// whole Vantar story in one sentence.
+    /// </summary>
+    [Fact]
+    public void WhatIsWalledUpSaysSomethingAboutTheManWhoWalledIt()
+    {
+        var seen = new List<string>();
+        foreach (string body in new[] { "a", "b", "c", "d", "e", "f", "g", "h" })
+        {
+            seen.AddRange(SecretLab.WallChambersOf(body, Lab(body)).Select(w => w.Holds));
+        }
+
+        foreach (string holds in seen)
+        {
+            Assert.DoesNotContain(" cr", holds, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("worth", holds, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("valuable", holds, StringComparison.OrdinalIgnoreCase);
+        }
+
+        Assert.True(seen.Distinct().Count() > 1, "eight bodies must not all wall up the same thing");
+    }
+
     // ── The alarm, and hacking it ─────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -263,6 +341,62 @@ public sealed class MountainLabTests
 
         Assert.Contains("you can walk past it", LabSecurity.LockdownWithTheCardLine, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("where you did not go", LabSecurity.LockdownWithoutTheCardLine, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── The muscle, and what hiding from it is worth ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// WALKING IN QUIETLY IS A COMPLETE ANSWER. Owner: <i>"a place where hiding from their sweep really pays
+    /// off"</i> — which only works if the garrison genuinely stays asleep for a captain who never trips the
+    /// alarm. If they woke on a timer, or on entry, silent running would be a tax rather than a play.
+    /// </summary>
+    [Fact]
+    public void TheMuscleSleepsUntilTheAlarmSaysOtherwise()
+    {
+        Assert.False(LabSecurity.GarrisonAwake(LabSecurity.State.Dormant));
+        Assert.False(LabSecurity.GarrisonAwake(LabSecurity.State.Disarmed), "beating the panel must really beat it");
+        Assert.True(LabSecurity.GarrisonAwake(LabSecurity.State.Armed));
+        Assert.True(LabSecurity.GarrisonAwake(LabSecurity.State.LockedDown));
+
+        // …and standing up is not the same as hunting: an armed countdown still leaves a captain unseen.
+        Assert.False(LabSecurity.GarrisonHunting(LabSecurity.State.Armed));
+        Assert.True(LabSecurity.GarrisonHunting(LabSecurity.State.LockedDown));
+    }
+
+    /// <summary>
+    /// AND IT PAYS ENOUGH TO CARRY THE KIT. Going dark costs the ride, the resupply and the covering gun
+    /// (<see cref="SilentRunning"/>), and on an ordinary wreck it buys only the chance of not being noticed. This
+    /// is the site that makes those three costs worth paying — so the multiple has to be steep, and a job done
+    /// entirely unseen has to beat one that ended in a lockdown.
+    /// </summary>
+    [Fact]
+    public void HidingFromTheSweepIsWorthMoreThanSurvivingIt()
+    {
+        const int ordinary = 100_000;
+
+        int unseen = LabSecurity.Payout(ordinary, LabSecurity.State.Dormant);
+        int talkedItDown = LabSecurity.Payout(ordinary, LabSecurity.State.Disarmed);
+        int fought = LabSecurity.Payout(ordinary, LabSecurity.State.LockedDown);
+
+        Assert.True(unseen > fought, "a job nobody noticed must beat one that ended in a lockdown");
+        Assert.Equal(unseen, talkedItDown);
+        Assert.True(fought >= ordinary * 3, "even the loud version must be the best salvage in the lane");
+        Assert.True(LabSecurity.PayoffMultiple >= 3);
+    }
+
+    /// <summary>The garrison is the sweep team, not a second kind of enemy — same size, so the counter-play a
+    /// captain learned on a hull is the counter-play here.</summary>
+    [Fact]
+    public void TheGarrisonIsTheSweepTeamAndNotANewThingToLearn() =>
+        Assert.Equal(InspectionTeam.TeamSize, LabSecurity.GarrisonSize);
+
+    /// <summary>When they stand up, the line names what the captain still HAS rather than what is coming — a
+    /// threat you can still avoid is a decision, and the words have to say so.</summary>
+    [Fact]
+    public void TheWakeLineNamesTheChoiceAndNotTheThreat()
+    {
+        Assert.Contains("Nobody has seen you", LabSecurity.GarrisonWakesLine, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("as long as you are quiet", LabSecurity.GarrisonWakesLine, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>The same seed and the same approach always roll the same — determinism is law, and a hack a
