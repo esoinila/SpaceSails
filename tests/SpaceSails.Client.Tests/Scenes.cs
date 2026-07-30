@@ -34,9 +34,17 @@ public static class Scenes
             yield return $"haven:{id}";
         }
 
+        // #320 · EVERY SITE, not just site 0. Owner: "We should test those sites with direct opens to them via
+        // URL parameters to find out the usual issues." He is right that the sites were the least-booted scenes
+        // in the game — and the audit had the same blind spot as the playtesting did, walking only the canon
+        // ground of each body. A seeded site is a DIFFERENT deck plan on the same body, so a kiosk on a dig
+        // site or an unreachable tube can hide on site 2 of a moon whose site 0 is spotless.
         foreach (string id in SurfaceBodies)
         {
-            yield return $"surface:{id}";
+            for (int site = 0; site < LandingSites.Count(id); site++)
+            {
+                yield return $"surface:{id}:{site}";
+            }
         }
     }
 
@@ -85,9 +93,13 @@ public static class Scenes
             return deck;
         }
 
-        string body = name["surface:".Length..];
+        string[] parts = name["surface:".Length..].Split(':');
+        string body = parts[0];
+        LandingSite site = LandingSites.At(body, parts.Length > 1 ? int.Parse(parts[1]) : 0);
+
         return MoonSurface.SurfaceDeck(
-            body, body, [], droidCount: 0, fillDroids: static (_, _) => { });
+            body, body, [], droidCount: 0, fillDroids: static (_, _) => { },
+            siteSalt: site.LayoutSalt, siteName: site.Name);
     }
 
     /// <summary>Which family a scene belongs to — the inventory audit asks a different question of a haven than
