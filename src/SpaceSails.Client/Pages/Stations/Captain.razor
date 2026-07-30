@@ -91,6 +91,15 @@
                     <input type="checkbox" checked="@FireAtWill" title="Standing order — let the gun deck fire on hostiles without waiting on your word each time" @onchange="() => OnToggleFireAtWill.InvokeAsync()" />
                     ⚓ fire at will (standing order)
                 </label>
+                @* #538 · THE MIRROR OF FIRE AT WILL. A captain who can free the guns must be able to tie them —
+                   and hiding aboard a hull somebody else is sweeping is worthless while a deployed bot or the
+                   tube gun is still making decisions. It never disarms the captain's own trigger. *@
+                <label class="text-light captain-fire-at-will">
+                    <input type="checkbox" checked="@WeaponsTight"
+                           title="Standing order — every bot safes its magazine and the tube gun stands down. Nothing of yours fires unless YOU fire it. Tight means tight: it will not defend you either."
+                           @onchange="() => OnToggleWeaponsTight.InvokeAsync()" />
+                    🤖 weapons tight (bots hold fire)
+                </label>
             </div>
             <div class="text-secondary small">Warning shots need no word — they ARE the captain talking.</div>
             @* #205: the owner authorized the next shot and reasonably assumed the boarding was declared
@@ -544,6 +553,11 @@
     [Parameter] public bool FireAtWill { get; set; }
     [Parameter] public EventCallback OnAuthorizeShot { get; set; }
     [Parameter] public EventCallback OnToggleFireAtWill { get; set; }
+
+    /// <summary>Whether the standing WEAPONS TIGHT order is in force — bots and the tube gun stand down while
+    /// it is, and the captain's own trigger is untouched (#538).</summary>
+    [Parameter] public bool WeaponsTight { get; set; }
+    [Parameter] public EventCallback OnToggleWeaponsTight { get; set; }
 
     /// <summary>Whether damage control holds the captain's standing authority over her compartments — the
     /// owner's "fire at will" for the other set of handles.</summary>

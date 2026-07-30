@@ -267,6 +267,35 @@ public partial class Map
         StateHasChanged();
     }
 
+    /// <summary>
+    /// WEAPONS TIGHT — the mirror of fire at will, and the order #538's hiding scene cannot work without. A
+    /// deployed bot shoots what it sees and the tube gun never runs dry, so concealment is worthless while the
+    /// captain's own automation is still making decisions.
+    ///
+    /// <para>It never disarms the captain: their trigger still works. A captain deciding to shoot and a machine
+    /// deciding for them are different acts, which is the distinction the whole authority idiom rests on.</para>
+    /// </summary>
+    private bool _weaponsTight;
+
+    private void ToggleWeaponsTight()
+    {
+        _weaponsTight = !_weaponsTight;
+
+        ShowPulseMessage(_weaponsTight ? SentryBot.WeaponsTightLine : SentryBot.WeaponsFreeLine);
+        LogAutopilotEvent(_weaponsTight
+            ? "🤖 WEAPONS TIGHT ordered — bots and the tube gun stand down."
+            : "🤖 Weapons free — the bots have their arcs back.");
+
+        // Said once, on the way in: the order that hides you also stops defending you.
+        if (_weaponsTight)
+        {
+            LogAutopilotEvent(SentryBot.TightIsAlsoUndefendedLine);
+        }
+
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
     private void ToggleFireAtWill()
     {
         _fireAtWill = !_fireAtWill;

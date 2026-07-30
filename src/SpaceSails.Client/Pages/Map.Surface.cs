@@ -1883,6 +1883,14 @@ public partial class Map
         // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
         // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
         // "Now the cannons shot though the walls").
+        // #538 · WEAPONS TIGHT. While the order stands, nothing of the captain's fires — not a deployed bot,
+        // not the tube gun that never runs dry. Skipping the volley entirely is the honest implementation: no
+        // rounds leave, no magazines drain, and no noise is made, which is the whole point of the order.
+        if (!SentryBot.MayOpenFire(_weaponsTight))
+        {
+            return;
+        }
+
         SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers());
 
         // Fold the drained magazines back and flash a zap line from each bot that fired.
