@@ -110,6 +110,58 @@ public sealed class StoryBeatsTests
             everyTime);
     }
 
+    /// <summary>
+    /// #541 · ONCE PER SUBJECT, and the same whole-list discipline: adding a beat here should require editing this
+    /// test and saying why. The arrival tube is what this cadence was invented for, and the reason is worth writing
+    /// down — the beat is about a PLACE rather than about the captain. <c>OnceEver</c> would have shown one berth's
+    /// gangway and silently swallowed every other berth in the system; <c>EveryTime</c> would have made docking at
+    /// a place you live at annoying. So: each berth's establishing shot, once, for that berth.
+    /// </summary>
+    [Fact]
+    public void OnlyBeatsAboutAPlaceFireOncePerSubject()
+    {
+        StoryBeats.Beat[] perSubject =
+            [.. All.Where(b => StoryBeats.CadenceOf(b) == StoryBeats.Cadence.OncePerSubject)];
+
+        Assert.Equal(
+            [
+                StoryBeats.Beat.BerthGreatPort,
+                StoryBeats.Beat.BerthWorkingBerth,
+                StoryBeats.Beat.BerthOutpost,
+            ],
+            perSubject);
+    }
+
+    /// <summary>An arrival must never hold up a docking, so every tube is a plate — and each one carries the
+    /// tube's own words rather than a second copy of them, so the tier rule and the picture cannot disagree.</summary>
+    [Theory]
+    [InlineData(ArrivalTube.Tier.GreatPort)]
+    [InlineData(ArrivalTube.Tier.WorkingBerth)]
+    [InlineData(ArrivalTube.Tier.Outpost)]
+    public void TheArrivalTubeSpeaksThroughThisSeamAndNeverTakesTheScreen(ArrivalTube.Tier tier)
+    {
+        StoryBeats.Beat beat = ArrivalTube.BeatFor(tier);
+
+        Assert.Equal(StoryBeats.Presentation.Plate, StoryBeats.PresentationOf(beat));
+        Assert.Equal(ArrivalTube.ArtFile(tier), StoryBeats.ArtFile(beat));
+        Assert.Equal(ArrivalTube.Title(tier), StoryBeats.Title(beat));
+        Assert.Contains(ArrivalTube.WalkLine(tier), StoryBeats.Caption(beat), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// LAB 43 CORRECTED THIS CAPTION, and the law keeps it corrected. The discharge card used to end
+    /// <i>"Everything with a telescope just watched that happen"</i> — but a discharge is 85,514× dimmer than her
+    /// own reflected sunlight, so nobody watches it through anything. She is not brighter; she is LOUDER.
+    /// </summary>
+    [Fact]
+    public void TheDischargeCardSaysHeardAndNotSeen()
+    {
+        string caption = StoryBeats.Caption(StoryBeats.Beat.ChargeLetGo);
+
+        Assert.DoesNotContain("telescope", caption, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("receiver", caption, StringComparison.OrdinalIgnoreCase);
+    }
+
     // ── "Does not block the playing too much" ─────────────────────────────────────────────────────────
 
     /// <summary>

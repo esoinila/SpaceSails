@@ -55,6 +55,15 @@ public static class StoryBeats
 
         /// <summary>There is fire in a hull you are standing in — and three ways to answer it (#524).</summary>
         FireAboard,
+
+        /// <summary>#541 · The long walk in: a gangway at a place that processes people for a living.</summary>
+        BerthGreatPort,
+
+        /// <summary>#541 · One tube, no ceremony — somebody works here and nobody is selling you anything.</summary>
+        BerthWorkingBerth,
+
+        /// <summary>#541 · Collar to collar: no tube at all, and nobody who was expecting a ship.</summary>
+        BerthOutpost,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -68,6 +77,14 @@ public static class StoryBeats
 
         /// <summary>Every time. Reserved for moments that are rare by their own nature.</summary>
         EveryTime,
+
+        /// <summary>
+        /// #541 · Once per SUBJECT, ever. The arrival tube taught this one: the first time a captain walks a great
+        /// port's gangway is a moment, and so is the first time they walk a different one — but the second walk
+        /// down the same tube is furniture. <c>OnceEver</c> would have shown one berth and silently swallowed
+        /// every other place in the system; <c>EveryTime</c> would have made docking annoying.
+        /// </summary>
+        OncePerSubject,
     }
 
     /// <summary>How a beat reaches the player — the owner's "does not block the playing too much", as a type.</summary>
@@ -88,6 +105,8 @@ public static class StoryBeats
         Beat.CrewDeputation => Cadence.OnceEver,   // the FIRST deputation is the beat; later ones are the sheet's job
         Beat.SailHoled => Cadence.Cooled,
         Beat.ChargeLetGo => Cadence.Cooled,
+        // #541: one gangway per berth. Each place gets its establishing shot exactly once.
+        Beat.BerthGreatPort or Beat.BerthWorkingBerth or Beat.BerthOutpost => Cadence.OncePerSubject,
         _ => Cadence.EveryTime,                    // a collector's grapples, a crew meeting, an arc breaking
     };
 
@@ -107,6 +126,8 @@ public static class StoryBeats
         Beat.FirstShotFired => Presentation.Plate,   // it happens mid-fight; it must not take the keyboard
         Beat.SailHoled => Presentation.Plate,
         Beat.ChargeLetGo => Presentation.Plate,
+        // #541: scene-setting, never a decision — a docking must not wait for anybody to read anything.
+        Beat.BerthGreatPort or Beat.BerthWorkingBerth or Beat.BerthOutpost => Presentation.Plate,
         _ => Presentation.Card,                      // the hail, the deputation, the meeting, the news
     };
 
@@ -142,6 +163,10 @@ public static class StoryBeats
         Beat.ArcNewsBreaks => "art/arc-news.jpg",
         Beat.ChargeLetGo => "art/charge-let-go.jpg",
         Beat.FireAboard => "art/fire-aboard.jpg",
+        // #541: the tube's own canvases live with the tube, so the tier rule and the picture cannot disagree.
+        Beat.BerthGreatPort => ArrivalTube.ArtFile(ArrivalTube.Tier.GreatPort),
+        Beat.BerthWorkingBerth => ArrivalTube.ArtFile(ArrivalTube.Tier.WorkingBerth),
+        Beat.BerthOutpost => ArrivalTube.ArtFile(ArrivalTube.Tier.Outpost),
         _ => "",
     };
 
@@ -157,6 +182,9 @@ public static class StoryBeats
         Beat.ArcNewsBreaks => "📰 THE STORY BREAKS",
         Beat.ChargeLetGo => "⚡ SHE LETS GO",
         Beat.FireAboard => "🔥 THERE IS FIRE IN HER",
+        Beat.BerthGreatPort => ArrivalTube.Title(ArrivalTube.Tier.GreatPort),
+        Beat.BerthWorkingBerth => ArrivalTube.Title(ArrivalTube.Tier.WorkingBerth),
+        Beat.BerthOutpost => ArrivalTube.Title(ArrivalTube.Tier.Outpost),
         _ => "",
     };
 
@@ -198,9 +226,21 @@ public static class StoryBeats
                 $"The concourse screen is mid-broadcast and the room has turned up to watch it. One figure walks " +
                 $"away from the screen instead of toward it, because {it} is not news to them.",
 
+            // Lab 43 corrected this line's last clause. A discharge is 85,514× DIMMER than her own reflected
+            // sunlight — nobody watches it through a telescope. She is not brighter; she is LOUDER, and every
+            // receiver in the volume gets that for free without pointing anything at her.
             Beat.ChargeLetGo =>
                 "A blue-white core sits on the mast for a moment with filaments raking off it into the dark, and " +
-                "then there is nothing on the hull at all. Everything with a telescope just watched that happen.",
+                "then there is nothing on the hull at all. Nobody saw that. Everything with a receiver heard it.",
+
+            // #541: the tube's words live with the tube. The subject is the berth's name, and every line reads
+            // whole without it — the tier is what the plate is about.
+            Beat.BerthGreatPort => ArrivalTube.Caption(ArrivalTube.Tier.GreatPort) + " " +
+                                   ArrivalTube.WalkLine(ArrivalTube.Tier.GreatPort),
+            Beat.BerthWorkingBerth => ArrivalTube.Caption(ArrivalTube.Tier.WorkingBerth) + " " +
+                                      ArrivalTube.WalkLine(ArrivalTube.Tier.WorkingBerth),
+            Beat.BerthOutpost => ArrivalTube.Caption(ArrivalTube.Tier.Outpost) + " " +
+                                 ArrivalTube.WalkLine(ArrivalTube.Tier.Outpost),
 
             Beat.FireAboard =>
                 "Forty years, and a pocket of her atmosphere was still shut in with something that would burn. " +

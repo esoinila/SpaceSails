@@ -24,9 +24,16 @@ namespace SpaceSails.Client.Pages;
 /// </summary>
 public sealed partial class Map
 {
-    /// <summary>Beats this captain has already been shown, for the once-ever and cooled cadences. Keyed by beat;
-    /// the value is the sim time it last spoke.</summary>
-    private readonly Dictionary<StoryBeats.Beat, double> _beatsSpoken = [];
+    /// <summary>
+    /// Beats this captain has already been shown, for the once-ever, cooled and once-per-subject cadences. Keyed
+    /// by beat AND subject; the value is the sim time it last spoke.
+    ///
+    /// <para>#541 widened this key. A per-beat key was fine while every beat was about one thing that happens to
+    /// a captain, and wrong the moment a beat became about a PLACE: the arrival tube would have shown one berth's
+    /// gangway and then silently swallowed every other berth in the system. The cadences that do not care about
+    /// the subject file under a null one, so nothing else changed behaviour.</para>
+    /// </summary>
+    private readonly Dictionary<(StoryBeats.Beat Beat, string? Subject), double> _beatsSpoken = [];
 
     /// <summary>A card waiting for a calmer moment. One at a time on purpose: a queue that can stack is a queue
     /// that will eventually empty itself into the player's face all at once.</summary>
@@ -45,7 +52,7 @@ public sealed partial class Map
     /// <param name="subject">A ship's name, a haven, a headline. Optional; every caption reads whole without it.</param>
     private void RaiseStoryBeat(StoryBeats.Beat beat, string? subject = null)
     {
-        if (!BeatMaySpeak(beat))
+        if (!BeatMaySpeak(beat, subject))
         {
             return;
         }
@@ -64,9 +71,9 @@ public sealed partial class Map
     }
 
     /// <summary>Whether this beat is allowed to speak right now, by Core's cadence rules and nothing else.</summary>
-    private bool BeatMaySpeak(StoryBeats.Beat beat)
+    private bool BeatMaySpeak(StoryBeats.Beat beat, string? subject)
     {
-        if (!_beatsSpoken.TryGetValue(beat, out double last))
+        if (!_beatsSpoken.TryGetValue(SeenKey(beat, subject), out double last))
         {
             return true;
         }
@@ -74,15 +81,22 @@ public sealed partial class Map
         return StoryBeats.CadenceOf(beat) switch
         {
             StoryBeats.Cadence.OnceEver => false,
+            StoryBeats.Cadence.OncePerSubject => false,   // …for THIS subject; another one is a fresh moment
             StoryBeats.Cadence.Cooled => SimTime - last >= StoryBeats.CooldownSeconds(beat),
             _ => true,
         };
     }
 
+    /// <summary>How a beat files itself in the seen-set. Only <see cref="StoryBeats.Cadence.OncePerSubject"/>
+    /// remembers WHICH one it was about; everything else files under the beat alone, so a cooled beat cannot be
+    /// re-triggered simply by happening to a different ship.</summary>
+    private static (StoryBeats.Beat, string?) SeenKey(StoryBeats.Beat beat, string? subject) =>
+        StoryBeats.CadenceOf(beat) == StoryBeats.Cadence.OncePerSubject ? (beat, subject) : (beat, null);
+
     /// <summary>Put it on screen, and remember that it spoke.</summary>
     private void ShowStoryBeat(StoryBeats.Beat beat, string? subject)
     {
-        _beatsSpoken[beat] = SimTime;
+        _beatsSpoken[SeenKey(beat, subject)] = SimTime;
 
         if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Plate)
         {

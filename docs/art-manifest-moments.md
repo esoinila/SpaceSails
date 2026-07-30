@@ -125,3 +125,51 @@ Ctrl-U). It restores the session without a browser.
   pocket of her was not.
 - **Cadence note:** this is the one beat in the set with `EveryTime` cadence, and the cadence test made that
   choice justify itself in writing rather than inherit a default.
+
+---
+
+# THE ARRIVAL TUBES (#541)
+
+> *"This kind of tunnel when docking the ship could be used in gen-ai to tell how big the docked place is."*
+> — the owner, photographing a long glazed gangway while boarding at Tallinn: a queue stretching to a vanishing
+> point, the same advertising banner repeating down its whole length, a moving walkway.
+
+Every berth used to arrive the same way: a state change and a card. **The tube is the establishing shot** — its
+length, its traffic and how much money has been spent on its walls say what kind of place has just accepted you
+before a single line of UI does. The arrival version of the breadcrumb discipline (#533): the player *reads* the
+place's importance instead of being told it.
+
+**The tier is derived, never authored.** `ArrivalTube.TierFor` reads the scenario's own weighted traffic model and
+its `publishesTimetable` flag — a place served only by discreet haulers has no scheduled foot traffic, so it has no
+gangway. Which is why the set comes out saying what the owner's own worldbuilding note in `sol.json` says: the
+grand gangways are at **Ringside Exchange** and **The Red Eye**, and **Selene Gate does not get one.**
+
+## 9. `art/tube-great-port.jpg` — THE LONG WALK IN ✅ PAINTED
+- **Beat:** `BerthGreatPort` · **once per berth** · **PLATE**
+- **Fires:** `ClampOntoHaven`, when the berth's scheduled tonnage clears `ArrivalTube.GreatPortTonnage`.
+- **Composition:** a very long enclosed pressurised access tube seen down its length in one-point perspective,
+  receding to a distant vanishing point: ribbed frames, a glazed wall through which the riveted flank of a huge
+  station and black space and stars are visible, conduit overhead, grated walkway with a moving-walkway strip. Two
+  streams of foot traffic in worn coveralls with duffels, crowded, nobody looking at anybody. **Identical blank
+  advertising panels repeat down the whole wall** — the civilisation signal: somebody costed the footfall.
+- **Rule it illustrates:** anything in your pockets is in them for the whole of that walk, in a queue you cannot
+  step out of. This is the exposure window the smuggling lane (#537/#538) will charge against.
+
+## 10. `art/tube-working-berth.jpg` — ONE TUBE, NO CEREMONY ✅ PAINTED
+- **Beat:** `BerthWorkingBerth` · **once per berth** · **PLATE**
+- **Fires:** any scheduled tonnage at all, below the great-port bar.
+- **Composition:** one short rigid tube seen down its length, the far end plainly visible a few metres away: bare
+  ribbed walls, no windows, one caged worklight, welded seams, grated decking. A berth number brushed on by hand
+  **over the ghost of the one before it**. Cargo netting and battered crates at the far end, two dock workers in
+  oil-stained coveralls waiting for you to get out of the way.
+- **Why it works:** nothing decorative anywhere. Nobody here is selling you anything, which is its own welcome.
+
+## 11. `art/tube-outpost.jpg` — COLLAR TO COLLAR ✅ PAINTED
+- **Beat:** `BerthOutpost` · **once per berth** · **PLATE**
+- **Fires:** no scheduled tonnage — including berths that are genuinely busy on *unlisted* runs (The Tilt, The
+  Deep). Being busy is not the same as being expected.
+- **Composition:** interior view out through a spacecraft airlock, close and cramped. **No tube at all** — a
+  flexible ribbed soft collar pushed across from the other structure, frost blooming white on the seal ring and
+  the coaming; through the gap, scarred riveted plating an arm's reach away, unlit. One lone crew member in a
+  patched suit holding a hand lamp that throws the only real light in the frame.
+- **Rule it illustrates:** you step from your lock into theirs. There is no walk, and there is no one to run it.
