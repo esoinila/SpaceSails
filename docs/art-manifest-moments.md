@@ -75,7 +75,7 @@ Ctrl-U). It restores the session without a browser.
   radiator fins, plating — with magnetic grapple cables stretched taut across the frame and clamped to our hull.
   Red-orange running lights wash the dim bridge the colour of a docking clamp.
 
-## 4. `art/crew-deputation.jpg` — A DEPUTATION ⬜ TO PAINT
+## 4. `art/crew-deputation.jpg` — A DEPUTATION ✅ PAINTED
 - **Beat:** `CrewDeputation` · once ever · **CARD** (defers while in danger)
 - **Fires when wired:** `CrewTemp.Standing` first reaches `Petition` — *"the last cheap moment"*.
 - **Composition:** interior spaceship corridor, conduit overhead, grated floor: three crew in patched coveralls
@@ -83,7 +83,7 @@ Ctrl-U). It restores the session without a browser.
   captain's side of the door, the doorframe dark in the foreground. They have clearly agreed who will say it.
 - **Caption discipline:** it says what they want fixed and nothing about consequences.
 
-## 5. `art/crew-meeting.jpg` — THE MEETING YOU WERE NOT ASKED TO ⬜ TO PAINT
+## 5. `art/crew-meeting.jpg` — THE MEETING YOU WERE NOT ASKED TO ✅ PAINTED
 - **Beat:** `CrewMeeting` · every time · **CARD**
 - **Fires when wired:** `Ultimatum`, and the owner's *"crew considers captain changing and has secret meetings"*.
 - **Composition:** the ship's cantina at an odd watch — interior spacecraft mess, lamps down, a viewport of stars
@@ -92,7 +92,7 @@ Ctrl-U). It restores the session without a browser.
 - **Why it matters:** this is the card that makes the crew sheet frightening, and it pairs with the scuttling
   charges' second key (#522): these are the people who will or will not turn it.
 
-## 6. `art/arc-news.jpg` — THE STORY BREAKS ⬜ TO PAINT
+## 6. `art/arc-news.jpg` — THE STORY BREAKS ✅ PAINTED
 - **Beat:** `ArcNewsBreaks` · every time · **CARD**
 - **Fires when wired:** an arc beat landing on the wire (Nebula Mutual #422, KAAMOS #411).
 - **Composition:** a station concourse interior — pressurised, ribbed ceiling, a planet or ring visible through a
@@ -100,7 +100,7 @@ Ctrl-U). It restores the session without a browser.
   foreground walking **away** from the screen, because it is not news to them.
 - **Cross-ref #380** (*events must introduce their fiction one beat earlier*): this card is that beat.
 
-## 7. `art/charge-let-go.jpg` — SHE LETS GO ⬜ TO PAINT
+## 7. `art/charge-let-go.jpg` — SHE LETS GO ✅ PAINTED
 - **Beat:** `ChargeLetGo` · cooled 10 min · **PLATE**
 - **Fires when wired:** the hull discharge (#523's dump).
 - **Composition:** exterior, close on the mast and antennae of a small spacecraft against black space: a
@@ -110,3 +110,18 @@ Ctrl-U). It restores the session without a browser.
   draw it off the mast and it is both truer and better looking. The canvas version of this effect (a live
   renderer animation rather than a still) is the follow-up the owner asked for: *"could have plasma ball like
   beautifull effect if physics supports it."*
+- **The canvas obeys the lab.** It came back as a filament plume off the antenna whip's tip with the hull edge-lit
+  below — which is Lab 43's Finding 1 (the whip runs **20,000×** the hull's surface field) drawn without being
+  told twice. Nothing to regenerate.
+
+## 8. `art/fire-aboard.jpg` — THERE IS FIRE IN HER ✅ PAINTED
+- **Beat:** `FireAboard` · every time · **CARD** (defers while in danger)
+- **Fires:** `HullFire.FoundLine`, when a captain first finds one burning aboard a derelict (#524).
+- **Composition:** interior of a derelict spacecraft compartment, frost on the near bulkheads and grated deck,
+  looking through an open pressure hatch into the next compartment where a low fire is burning in the debris —
+  black smoke rolling along the deckhead and being drawn out through the hatch. Nobody in frame.
+- **Why it is a card and not a plate:** the three roads (valve / pumps / dog the hatch) are a decision, and the
+  frost in the foreground is the argument for the third one — this hull has been cold for forty years and one
+  pocket of her was not.
+- **Cadence note:** this is the one beat in the set with `EveryTime` cadence, and the cadence test made that
+  choice justify itself in writing rather than inherit a default.
