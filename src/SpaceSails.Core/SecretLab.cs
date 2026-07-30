@@ -163,6 +163,77 @@ public static class SecretLab
     public static IReadOnlyList<string> ChamberNames { get; } =
         ["THE ANTECHAMBER", "THE CLEAN ROOM", "THE HEART"];
 
+    /// <summary>
+    /// #537 + #409 · A CHAMBER CUT INTO THE ROCK BEHIND A CHAMBER. Owner: <i>"I love mountain labs as there is
+    /// endless places for secret chambers in the outer walls."</i>
+    ///
+    /// <para>He is right, and the reason it costs almost nothing to give him is that a lab in a MOUNTAIN has the
+    /// one thing a ship spent two PRs acquiring: unlimited unaudited depth. A hull had to be given a shielding
+    /// band and a machinery space before a void had anywhere to be — the rock was already there. Cut a room and
+    /// there is more rock behind it, for as far as anyone cares to dig.</para>
+    ///
+    /// <para><b>And it needs no second search mechanic.</b> The captain already knocks (<see cref="HullSounding"/>):
+    /// same two gears, same clock, same noise, same three readings. Which is the best possible outcome — a verb
+    /// built for hulls turns out to work on a mountain unchanged, and the pack hears it there too.</para>
+    /// </summary>
+    /// <param name="Chamber">Which chamber's outboard wall it is behind.</param>
+    /// <param name="PlateX">The false rock face — what you knock on and what comes away.</param>
+    /// <param name="PlateY">…on the chamber wall, so a captain stands inside and reaches it.</param>
+    /// <param name="Holds">What is in there, in the captain's own words.</param>
+    public readonly record struct WallChamber(string Chamber, double PlateX, double PlateY, string Holds);
+
+    /// <summary>How many of the lab's walls hide something. Two of three chambers on a hull that has a lab at
+    /// all — far commoner than a wreck's one-in-five, because the whole point of a mountain is that there is
+    /// always more rock, and because a captain who has got this deep has earned a reason to keep knocking.</summary>
+    public const int WallChambersPerLab = 2;
+
+    /// <summary>What Vantar kept in the walls rather than on the benches. Each is a fact about him, not a prize:
+    /// the man walled things up, and what he chose to wall up is the characterisation.</summary>
+    private static readonly string[] WallChamberContents =
+    [
+        "A second backup rig, smaller, running on its own cell. The jar is empty and the log says it was not.",
+        "Forty-one identical notebooks, hand-numbered, all of them log 44. The handwriting drifts across the run.",
+        "A cot, a lamp, a water line, and a door that bolts from the INSIDE. He was not hiding this from us.",
+        "Nine sets of restraints, sized for something with the shape of a person and not the patience of one.",
+    ];
+
+    /// <summary>
+    /// The hidden chambers behind a given lab's walls. Seeded off the body so a captain who comes back finds the
+    /// same rock — the same law the hull voids follow, and for the same reason: a secret that re-rolls is a
+    /// lottery rather than a place.
+    /// </summary>
+    public static IReadOnlyList<WallChamber> WallChambersOf(string bodyId, in Region region)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        var found = new List<WallChamber>();
+        if (region.Consoles is null || region.Consoles.Count == 0)
+        {
+            return found;
+        }
+
+        // One per chamber, at most WallChambersPerLab of them, on alternating sides so a captain cannot learn
+        // "always the high wall" and stop looking at the other one.
+        double span = region.MaxX - region.MinX;
+        for (int i = 0; i < WallChambersPerLab && i < ChamberNames.Count; i++)
+        {
+            ulong seed = DiceRule.Seed(0UL, $"lab-wall:{bodyId}:{i}");
+
+            // Placed along that chamber's own stretch of the lab, clear of its doors.
+            double t0 = (i + 0.5) / (ChamberNames.Count + 0.0);
+            double jitter = (DiceRule.Roll(DiceRule.Seed(seed, "along"), 9).Face - 5) / 40.0;
+            double plateX = region.MinX + (span * System.Math.Clamp(t0 + jitter, 0.08, 0.92));
+            double plateY = i % 2 == 0 ? region.MaxY : region.MinY;
+
+            found.Add(new WallChamber(
+                ChamberNames[i], plateX, plateY,
+                WallChamberContents[DiceRule.Roll(DiceRule.Seed(seed, "holds"),
+                                                  WallChamberContents.Length).Face - 1]));
+        }
+
+        return found;
+    }
+
     /// <summary>The seeded placement of a body's hidden door: whether the body hides a lab at all, the door's
     /// ground position, and the beach-comber square a probe must ping to reveal it. Pure of (body id, field).</summary>
     public readonly record struct Placement(

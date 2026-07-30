@@ -135,6 +135,56 @@ public static class LabSecurity
     public static double SecondsLeftAfter(double elapsed, int failures) =>
         System.Math.Max(0, ArmedSeconds - elapsed - (failures * FailureCostsSeconds));
 
+    // ── The muscle ────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// THE LAB HAS A GARRISON, AND LOCKDOWN IS WHAT WAKES IT. Owner: <i>"Mountain lab would be a place with
+    /// serious muscle for security … a place where hiding from their sweep really pays off 🧑‍🚀"</i>
+    ///
+    /// <para>Which is the composition the sweep team (#538) was waiting for. That brain was written for somebody
+    /// else's hull — a professional who sees far but only where the lamp points, hears through walls, challenges
+    /// before shooting, and drops a captain to deal with the pack. All of it applies here unchanged, and here it
+    /// has a REASON to be: a ministry programme does not leave a facility like this unattended, and forty years
+    /// of trickle current is exactly what a garrison on standby looks like.</para>
+    ///
+    /// <para><b>And it is where hiding finally pays.</b> On a wreck, going dark costs the ride, the resupply and
+    /// the covering gun, and buys you the chance that a sweep walks past. Here the same three costs buy the
+    /// largest payout in the salvage lane — because the thing this place was built to keep quiet is worth more
+    /// than the thing any freighter was carrying.</para>
+    /// </summary>
+    public const int GarrisonSize = 3;
+
+    /// <summary>Whether the muscle is up. Dormant and disarmed alarms leave them asleep; an armed countdown has
+    /// them standing; a lockdown has them working. Nothing else wakes them — walking in quietly is a real and
+    /// complete answer, which is what makes silent running worth its three costs.</summary>
+    public static bool GarrisonAwake(State state) => state is State.Armed or State.LockedDown;
+
+    /// <summary>…and whether they are actively hunting rather than merely on their feet.</summary>
+    public static bool GarrisonHunting(State state) => state == State.LockedDown;
+
+    /// <summary>
+    /// WHAT THE PLACE IS WORTH, as a multiple of an ordinary derelict. Steep on purpose: this is the payout that
+    /// makes the whole silent-running kit — weapons tight, a cold boat, a quiet gear on the sounder — worth
+    /// carrying at all. FLAGGED for the owner's tuning; he asked for it to "really pay off".
+    /// </summary>
+    public const double PayoffMultiple = 4.0;
+
+    /// <summary>And the bonus for having done it WITHOUT being seen — the thing that separates a captain who
+    /// hid from one who fought. Paid on leaving with the alarm never having reached lockdown.</summary>
+    public const double NeverSeenBonus = 0.5;
+
+    /// <summary>The whole payout, given what the alarm ended up doing. Pure so the salvage screen and the ledger
+    /// cannot disagree about what a quiet job was worth.</summary>
+    public static int Payout(int ordinaryValue, State ended) =>
+        (int)System.Math.Round(System.Math.Max(0, ordinaryValue)
+            * (PayoffMultiple + (ended is State.Dormant or State.Disarmed ? NeverSeenBonus : 0)));
+
+    /// <summary>Said once, when the muscle stands up — and it names the choice rather than the threat, because a
+    /// captain who has not yet been seen still has one.</summary>
+    public const string GarrisonWakesLine =
+        "🕶 Three sets of boots come up out of the dark at the far end, unhurried, checking their lamps. Nobody " +
+        "has seen you. That is a thing you still own, and you will only own it for as long as you are quiet.";
+
     // ── What is said ──────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The panel, before anybody touches it. States the target and the stack, because the whole point
