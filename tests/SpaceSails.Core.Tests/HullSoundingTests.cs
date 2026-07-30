@@ -189,6 +189,139 @@ public sealed class HullSoundingTests
                     "blind sounding must wake everything aboard several times over");
     }
 
+    // ── The lie in her paperwork ──────────────────────────────────────────────────────────────────────
+
+    private static HullSounding.HiddenVoid? VoidOn(string wreckId) =>
+        HullSounding.VoidFor(wreckId, WreckLayout.Compartments, WreckLayout.SpineHalfHeight,
+                             WreckLayout.TopY, WreckLayout.BottomY);
+
+    /// <summary>
+    /// A HULL IS OR NEVER WAS. Seeded off her id, so a captain who leaves and comes back finds the same ship — a
+    /// void that re-rolled on the second boarding would turn the whole search into a slot machine, and the clue
+    /// into a lie.
+    /// </summary>
+    [Fact]
+    public void WhatSheHidesIsDecidedByWhoSheIsAndNeverRerolled()
+    {
+        foreach (string id in new[] { "quiet-sister", "marbury", "ptarmigan", "long-shrift" })
+        {
+            HullSounding.HiddenVoid? first = VoidOn(id);
+            for (int again = 0; again < 5; again++)
+            {
+                Assert.Equal(first, VoidOn(id));
+            }
+        }
+    }
+
+    /// <summary>
+    /// MOST SHIPS ARE EXACTLY WHAT THEY LOOK LIKE. Lab 44 probe F: 3 of the 10 seeded hulls hide something. If
+    /// every wreck lied, measuring would be routine and finding one would be worth nothing; if none did, the
+    /// manifest would be furniture. Pinned as a band rather than a count, so the roll can be tuned.
+    /// </summary>
+    [Fact]
+    public void MostHullsAreHonestAndSomeAreNot()
+    {
+        int lying = 0, total = 0;
+        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
+        {
+            if (Derelict.SeededWithCause(cause) is not { } w)
+            {
+                continue;
+            }
+            total++;
+            if (VoidOn(w.Id) is not null)
+            {
+                lying++;
+            }
+        }
+
+        Assert.True(total >= 8, "the seeded causes must actually produce hulls to measure");
+        Assert.True(lying > 0, "if no hull ever lies, her manifest is furniture");
+        Assert.True(lying * 2 < total, "if half of them lie, measuring is routine and finding one is worth nothing");
+    }
+
+    /// <summary>
+    /// THE MANIFEST OVERSTATES, IT NEVER UNDERSTATES — and that direction is the whole mechanic. A room booked
+    /// SHORTER than it measures hides nothing: the extra space is inside the room, where the captain is already
+    /// standing. The frames have to be claimed and not shown, so the missing ship is behind a bulkhead.
+    /// </summary>
+    [Fact]
+    public void TheDeclaredLengthIsAlwaysLongerThanTheDrawnOne()
+    {
+        int seen = 0;
+        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
+        {
+            if (Derelict.SeededWithCause(cause) is not { } w || VoidOn(w.Id) is not { } hidden)
+            {
+                continue;
+            }
+
+            seen++;
+            Assert.True(hidden.DeclaredFrames > hidden.MeasuredFrames,
+                        $"{w.ShipName} books {hidden.Compartment} SHORTER than it measures, which hides nothing");
+            Assert.InRange(hidden.DeclaredFrames - hidden.MeasuredFrames, 4, 7);
+        }
+
+        Assert.True(seen > 0, "no hull hid anything, so this law tested nothing");
+    }
+
+    /// <summary>
+    /// AND THE SPOT IS SOMEWHERE A CAPTAIN CAN STAND. A void whose sounding point sits inside a wall or outside
+    /// the hull is a find nobody can make — the reachability failure the deck audit exists for, in a place the
+    /// deck audit cannot see because the plate is not on the plan until it is found.
+    /// </summary>
+    [Fact]
+    public void TheSpotToSoundIsInsideTheShipAndNamedRoom()
+    {
+        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
+        {
+            if (Derelict.SeededWithCause(cause) is not { } w || VoidOn(w.Id) is not { } hidden)
+            {
+                continue;
+            }
+
+            (string name, float x0, float x1, bool top) = System.Array.Find(
+                WreckLayout.Compartments, c => c.Name == hidden.Compartment);
+
+            Assert.Equal(hidden.Compartment, name);
+            Assert.InRange(hidden.X, x0, x1);
+            Assert.InRange(System.Math.Abs(hidden.Y), WreckLayout.SpineHalfHeight,
+                           System.Math.Abs(top ? WreckLayout.TopY : WreckLayout.BottomY));
+
+            // …and on the correct side of the keel, or the sounding spot is in the wrong half of the ship.
+            Assert.Equal(top, hidden.Y < 0);
+        }
+    }
+
+    /// <summary>The manifest's lie reads out as the same <see cref="HullSounding.Discrepancy"/> the geometry rule
+    /// produces, so one panel can show either without knowing which it got — and it still refuses to draw a
+    /// conclusion.</summary>
+    [Fact]
+    public void TheManifestLieBecomesAnOrdinaryDiscrepancy()
+    {
+        HullSounding.HiddenVoid hidden = new("DEEP HOLD", 19, 15, -13.5, -6, "something");
+        HullSounding.Discrepancy d = HullSounding.AsDiscrepancy(
+            hidden, WreckLayout.SpineHalfHeight, WreckLayout.TopY, WreckLayout.BottomY, top: true);
+
+        Assert.Equal(4 * 6.0, d.AreaSquareDu, 3);
+        Assert.Contains("manifest", d.Reason, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("hidden", HullSounding.ClueLine(d), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The find line describes the contents and never prices them — the #533 discipline at the one moment
+    /// the game could get away with breaking it.</summary>
+    [Fact]
+    public void TheFindDescribesAndDoesNotValue()
+    {
+        HullSounding.HiddenVoid hidden = new("DEEP HOLD", 19, 15, -13.5, -6, "A rack of code keys.");
+        string line = HullSounding.FoundItLine(hidden);
+
+        Assert.Contains("A rack of code keys.", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("worth", line, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(" cr", line, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("valuable", line, StringComparison.OrdinalIgnoreCase);
+    }
+
     // ── What is said ──────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The offer names BOTH costs before either is spent — the seconds and the fact that it will be

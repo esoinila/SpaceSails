@@ -270,6 +270,29 @@ public sealed class InspectionTeamTests
         }
     }
 
+    /// <summary>
+    /// …AND ALL THREE PIECES OF THE CARD AGREE. The first fix caught the headline and the narration line and
+    /// left the PULL-QUOTE still reading <i>"…they simply kept coming, and the guard did not hold forever"</i>
+    /// — a pack quote, under a headline that says you were found aboard, after three professionals shot a
+    /// captain standing still. Booting the scene found it; this stops it coming back.
+    /// </summary>
+    [Fact]
+    public void EveryPartOfTheDeathCardNarratesTheSameDeath()
+    {
+        string quote = DeathNarration.SurfaceCaption(DeathCause.Inspected, nerveRanOut: false);
+
+        Assert.DoesNotContain("kept coming", quote, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("guard", quote, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual(DeathNarration.SurfaceCaption(DeathCause.Reevers, nerveRanOut: false), quote);
+
+        // …and it does not blame the nerve either, whichever way the trigger flags it.
+        foreach (bool ranOut in new[] { true, false })
+        {
+            Assert.DoesNotContain("nerve", DeathNarration.SurfaceCaption(DeathCause.Inspected, ranOut),
+                                  StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     /// <summary>And it has a canvas, like every other cause — even a borrowed one — so the card never renders a
     /// hole where the picture goes.</summary>
     [Fact]

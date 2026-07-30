@@ -634,6 +634,10 @@ public partial class Map
             // her own fiction already says "she was LOST ON PURPOSE… the most valuable thing aboard is the
             // evidence" — so what they came to remove is exactly what the captain came to take. Nothing had to be
             // invented for the owner's "they want to keep their secrets, but the rewards could be big also".
+            // #537 · WHAT SHE IS HIDING, decided once, off her id — so a captain who comes back finds the
+            // same ship rather than a fresh roll.
+            ResolveHullVoid();
+
             if (_wreck is { Cause: Derelict.WreckCause.InsuranceJob } || _sweepTeamCheat > 0)
             {
                 SpawnSweepTeam(_sweepTeamCheat > 0 ? _sweepTeamCheat : InspectionTeam.TeamSize);
@@ -3335,6 +3339,13 @@ public partial class Map
             {
                 aboard.Add("🤖 T — pick up the sentry");
             }
+            // #537 · A VERB NOBODY IS TOLD ABOUT IS A VERB NOBODY HAS. Caught by booting the scene and reading
+            // the hint bar, which is the owner's own method: the knock was bound, the clock ran, the sweep team
+            // heard it — and the strip along the bottom never mentioned K existed.
+            aboard.Add(IsSounding
+                ? (_soundQuietly ? "✊ K — stop knocking" : "📡 K — stop sounding")
+                : (_soundQuietly ? "✊ K — knock (quiet)" : "📡 K — sound the plating (loud)"));
+
             aboard.Add("F — first person");
             aboard.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute");
             return string.Join(" ∙ ", aboard);

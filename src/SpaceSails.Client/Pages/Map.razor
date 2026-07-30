@@ -2480,6 +2480,18 @@
                             @onclick="ToggleBoatPower">
                         @SilentRunning.BoatButtonLabel(BoatState)
                     </button>
+                    @* #537 · THE THIRD SWITCH OF THE SAME FAMILY. Owner: "Sweeping could cost time… Also it
+                       might be noisy to say knock on walls etc." Quiet or quick is exactly the trade the other
+                       two buttons make, so it belongs on the same handheld and not on a console somewhere. *@
+                    @if (OnWreck)
+                    {
+                        <button type="button"
+                                class="btn btn-sm @(_soundQuietly ? "btn-warning" : "btn-outline-warning")"
+                                title="@HullSounding.OfferLine(SoundingGear)"
+                                @onclick="ToggleQuietSearch">
+                            @(_soundQuietly ? "✊ QUIET SEARCH — knuckles only" : "📡 Sounder (quick, and heard)")
+                        </button>
+                    }
                 </div>
 
                 <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
@@ -2497,6 +2509,7 @@
        air, then the standing orders you might have forgotten. Which is also the owner's scene, in order —
        "say self destruct tics down but shuttle still warms up". *@
     @if (_deckMode && (_weaponsTight || BoatClockWorthShowing || SweepersAboard
+                       || SoundingSecondsLeft is not null || SearchBandLine is not null
                        || (OnWreck
                            ? _pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null
                            : _shipPumps.Count > 0 || _shipChargesSeconds is not null)))
@@ -2533,6 +2546,26 @@
                     <span class="wc-tag">☢ @(Scuttle.CanAbort(burn) ? "OVERLOAD" : "NO RECALL")</span>
                     <span class="wc-room">@(OnWreck ? "get off her" : "her own keel")</span>
                     <span class="wc-time">@HullVenting.SoakLabel(burn)</span>
+                </div>
+            }
+
+            @* #537 · THE KNOCK, and the band it is being spent on. A sounding is seconds you are committed to,
+               exactly like a pump run, so it goes in the same column — and the band sits under it because a
+               captain who walked away from the manifest should not have to walk back for four numbers. *@
+            @if (SoundingSecondsLeft is { } knock)
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">@(_soundQuietly ? "✊ KNOCKING" : "📡 SOUNDING")</span>
+                    <span class="wc-room">stand still</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(knock)</span>
+                </div>
+            }
+            @if (SearchBandLine is { } band)
+            {
+                <div class="wc-line">
+                    <span class="wc-tag">📐 UNACCOUNTED</span>
+                    <span class="wc-room">@band</span>
+                    <span class="wc-time">K</span>
                 </div>
             }
 

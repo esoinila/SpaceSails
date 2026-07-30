@@ -140,7 +140,35 @@ public sealed partial class Map
         });
 
     // The manifest: what she was carrying and what it is worth — the number both endings are priced on.
-    private static string ManifestFinding(in Derelict.Wreck w) =>
+    /// <summary>
+    /// #537 · AND THE MANIFEST IS WHERE THE LIE IS. A hull hiding a void books one compartment longer than her own
+    /// deck plan draws it — so the clue is not a new console, it is the document that was already here, read
+    /// properly. On a clean hull the frame numbers match down the page and this is an honest dead end, which it
+    /// has to be: a document that only speaks up when there is something to find is a pointer, not a clue.
+    /// </summary>
+    private string ManifestFinding(in Derelict.Wreck w)
+    {
+        string cargo = ManifestCargoLine(w);
+        _manifestRead = true;
+
+        if (_hullVoid is not { } hidden)
+        {
+            return cargo + " The frame numbers match the deck plan all the way down the page.";
+        }
+
+        bool top = System.Array.Exists(WreckLayout.Compartments, c => c.Name == hidden.Compartment && c.Top);
+        HullSounding.Discrepancy clue = HullSounding.AsDiscrepancy(
+            hidden, WreckLayout.SpineHalfHeight, WreckLayout.TopY, WreckLayout.BottomY, top);
+
+        LogAutopilotEvent(HullSounding.ClueLine(clue));
+        LogAutopilotEvent(HullSounding.BlindSearchLine(
+            SoundingGear,
+            HullSounding.HullArea(WreckLayout.AftX, WreckLayout.BowX, WreckLayout.TopY, WreckLayout.BottomY)));
+
+        return cargo + " " + HullSounding.ClueLine(clue);
+    }
+
+    private static string ManifestCargoLine(in Derelict.Wreck w) =>
         $"📦 The manifest assesses her cargo at {w.AssessedValueCr:N0} cr" +
         (w.Cause == Derelict.WreckCause.InsuranceJob
             ? " — countersigned twice, by the same hand, and the cargo seals have been opened and re-set."
