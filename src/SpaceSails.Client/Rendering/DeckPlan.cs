@@ -61,6 +61,13 @@ public sealed class DeckPlan
     /// seals it; a surface excursion (see <c>MoonSurface</c>) carves it open and grows the tube below.
     /// The crew-only-door law lives here: Reevers may chase to this line but never cross it.</summary>
     public const float ShuttleHatchY = -10f;
+    /// <summary>
+    /// #537 · HER OWN SHIELDING, at the derelicts' spec. Owner: <i>"Our own ship should match these specs
+    /// also. 👍😎"</i> Read from <c>WreckLayout</c> rather than re-typed, so the ship you own and the ships you
+    /// rob can never drift apart on a number that is supposed to be the same number.
+    /// </summary>
+    public const float ShieldingDepth = SpaceSails.Core.WreckLayout.ShieldingDepth;
+
     public const float ShuttleHatchX1 = -9f;
     public const float ShuttleHatchX2 = -5f;
 
@@ -393,6 +400,31 @@ public sealed class DeckPlan
             new(-18, -10, ShuttleHatchX1, -10, false, true),
             new(ShuttleHatchX2, -10, 20, -10, false, true),
             new(ShuttleHatchX1, -10, ShuttleHatchX2, -10, false, true), // the hatch itself — sealed here
+
+            // --- #537 · HER SHIELDING, same specs as the derelicts ---
+            // Owner: "Our own ship should match these specs also. 👍😎" — and she should, for two reasons that
+            // are both his. The fiction one: "the walls that can hold vacuum are not thin and all kinds of tech
+            // needs to exist on the ship somewhere", which is as true of the ship you own as of the ones you rob.
+            // And the mechanical one, which matters more: the anti-tell rule. If derelicts had shielded hulls and
+            // ours did not, the thickness itself would be a salvage-only feature and the player would read it as
+            // scenery rather than as ship.
+            //
+            // Drawn along her PARALLEL SIDES only — the straight runs, broken where her airlock vestibule bumps
+            // out to port and where the shuttle hatch opens to starboard. Her bow is glass and her stern tapers;
+            // neither carries a band, for the same reason the wreck's bow taper does not.
+            new(-18, 10 + ShieldingDepth, -1, 10 + ShieldingDepth, false, true),
+            new(-18, 10, -18, 10 + ShieldingDepth, false, true),
+            new(-1, 10, -1, 10 + ShieldingDepth, false, true),
+            new(6, 10 + ShieldingDepth, 20, 10 + ShieldingDepth, false, true),
+            new(6, 10, 6, 10 + ShieldingDepth, false, true),
+            new(20, 10, 20, 10 + ShieldingDepth, false, true),
+
+            new(-18, -10 - ShieldingDepth, ShuttleHatchX1, -10 - ShieldingDepth, false, true),
+            new(-18, -10, -18, -10 - ShieldingDepth, false, true),
+            new(ShuttleHatchX1, -10, ShuttleHatchX1, -10 - ShieldingDepth, false, true),
+            new(ShuttleHatchX2, -10 - ShieldingDepth, 20, -10 - ShieldingDepth, false, true),
+            new(ShuttleHatchX2, -10, ShuttleHatchX2, -10 - ShieldingDepth, false, true),
+            new(20, -10, 20, -10 - ShieldingDepth, false, true),
 
             // --- Bridge bulkhead (x=18), door on the centerline, 4 du wide ---
             new(18, 10, 18, 2, false, false),

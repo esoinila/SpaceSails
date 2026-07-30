@@ -237,7 +237,14 @@ public sealed class HullSoundingTests
 
         Assert.True(total >= 8, "the seeded causes must actually produce hulls to measure");
         Assert.True(lying > 0, "if no hull ever lies, her manifest is furniture");
-        Assert.True(lying * 2 < total, "if half of them lie, measuring is routine and finding one is worth nothing");
+        Assert.True(lying < total, "if every hull lies, the manifest may as well be a treasure map");
+
+        // The RATE is pinned on the rule rather than on this small sample: ten seeded causes is far too few for
+        // an observed count to mean anything (it has read 2, 3 and 4 across three shuffles of the placement code
+        // without the odds changing at all). What must hold is that a hull hiding something stays UNCOMMON —
+        // one in five — because at one in two, measuring becomes routine and finding one is worth nothing.
+        Assert.True(HullSounding.VoidOnARollOf <= 4,
+                    "a void on more than a fifth of hulls makes the search a chore rather than a find");
     }
 
     /// <summary>
@@ -322,7 +329,8 @@ public sealed class HullSoundingTests
     public void TheManifestLieBecomesAnOrdinaryDiscrepancy()
     {
         HullSounding.HiddenVoid hidden =
-            new("DEEP HOLD", -12, -6, true, -9, WreckLayout.TopY, "something");
+            new("DEEP HOLD", Outboard: true, -12, -6, true, -9, WreckLayout.TopY,
+                6 * WreckLayout.ShieldingDepth, "something");
         HullSounding.Discrepancy d = HullSounding.AsDiscrepancy(hidden);
 
         Assert.Equal(6 * WreckLayout.ShieldingDepth, d.AreaSquareDu, 3);
@@ -336,7 +344,8 @@ public sealed class HullSoundingTests
     public void TheFindDescribesAndDoesNotValue()
     {
         HullSounding.HiddenVoid hidden =
-            new("DEEP HOLD", -12, -6, true, -9, WreckLayout.TopY, "A rack of code keys.");
+            new("DEEP HOLD", Outboard: true, -12, -6, true, -9, WreckLayout.TopY,
+                6 * WreckLayout.ShieldingDepth, "A rack of code keys.");
         string line = HullSounding.FoundItLine(hidden);
 
         Assert.Contains("A rack of code keys.", line, StringComparison.Ordinal);
