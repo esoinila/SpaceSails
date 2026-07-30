@@ -3291,6 +3291,14 @@ public partial class Map
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
             var aboard = new List<string> { "WASD — move", "E — examine / take" };
+
+            // #538 · the sentry remote lives on the HUD, and it never hides: an affordance you cannot see is an
+            // affordance you do not have (#212), and this is the one whose absence gets a captain shot.
+            if (ex.Bots.Count > 0)
+            {
+                aboard.Add(_weaponsTight ? "🤖 H — WEAPONS TIGHT (press to free)" : "🤖 H — weapons tight");
+            }
+
             if (ex.Bots.Any(b => !b.Deployed))
             {
                 aboard.Add("🤖 T — deploy a sentry");

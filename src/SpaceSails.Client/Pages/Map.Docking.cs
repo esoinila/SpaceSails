@@ -612,6 +612,15 @@ public partial class Map
         {
             return;
         }
+
+        // #538 · A COLD BOAT IS NOT A RIDE. Owner: "Shuttle should also power down to make it less of an
+        // anomaly" and then, on the price of it, "Warm up time is a cost there 😎" — so the warm-up is charged
+        // HERE, at the moment a captain wants to leave, rather than when they went dark. Asking a sleeping boat
+        // for a ride starts waking her, which is the only sensible reading of the request.
+        if (!BoatReadyToFly())
+        {
+            return;
+        }
         CelestialBody dest = stop.Body;
         double newT = SimTime + stop.TravelSeconds;
 
