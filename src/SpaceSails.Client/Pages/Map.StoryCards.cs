@@ -124,7 +124,10 @@ public sealed partial class Map
         _busted is not null
         || _reevers.Count > 0
         || _hunters.Exists(h => !h.BrokenOff && !h.CaughtPlayer)
-        || _shipChargesSeconds is not null;
+        || _shipChargesSeconds is not null
+        // #538: a professional with a lamp on your face is danger, and a story card over that would be the exact
+        // mistake the wreck lane already paid for once.
+        || AnySweeperOnTheCaptain;
 
     /// <summary>Serve the queue and retire the plate. Called once a frame from the sim, wherever the ship is.</summary>
     private void AdvanceStoryCards()

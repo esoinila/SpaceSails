@@ -596,6 +596,17 @@ public partial class Map
                     _reeverAmbushCheat = Math.Clamp(n, 0, 8);
                 }
             }
+            else if (pair.StartsWith("sweep=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #538 dev cheat: /map?sweep=N puts N professionals aboard whatever hull you board — the black-ops
+                // inspection team. Mirrors ?reevers=N, because the scene it makes is the same shape of thing to
+                // want to watch: "we take our guns and hide to let them pass."
+                string candidate = Uri.UnescapeDataString(pair["sweep=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int sweepers))
+                {
+                    _sweepTeamCheat = Math.Clamp(sweepers, 0, InspectionTeam.TeamSize);
+                }
+            }
             else if (pair.StartsWith("nebula=", StringComparison.OrdinalIgnoreCase))
             {
                 // #422 dev cheat: /map?nebula=N assembles the first N NEBULA MUTUAL fragments (canonical
@@ -1577,6 +1588,7 @@ public partial class Map
 
         // #538 · a boat that was told to wake keeps waking whether or not the captain is watching her do it.
         AdvanceBoatSpinUp(dtRealSeconds);
+        AdvanceSweepTeam(dtRealSeconds);   // #538: somebody else's team, working the hull
 
         // #528 · retire a plate whose seconds are up, and let a held card speak once the scene is calm. Ship
         // level for the same reason: a beat can be raised in flight (a shot, a sail, a hail) and must be

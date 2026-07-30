@@ -240,6 +240,42 @@ public sealed class InspectionTeamTests
         Assert.Contains("still making decisions", warning, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ── What the first playtest caught ────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// BEING SHOT BY A PROFESSIONAL IS NOT BEING RUN DOWN BY THE PACK. The first playtest of this scene ended
+    /// with three men with rifles shooting a captain standing in a corridor, and a death card that read
+    /// <i>"the Old Ones took you… they ran you down on Quiet Sister's regolith short of the tube"</i> — because
+    /// the only surface death that existed was the pack's, and the sweep team borrowed it.
+    ///
+    /// <para>In this codebase that is the bug and not a wording nit: the sim did one thing and the panel reported
+    /// another. So <see cref="DeathCause.Inspected"/> exists, and these are the properties that make it honest.</para>
+    /// </summary>
+    [Fact]
+    public void BeingFoundAboardNarratesAsItselfAndNotAsThePack()
+    {
+        Assert.NotEqual(DeathNarration.Headline(DeathCause.Reevers), DeathNarration.Headline(DeathCause.Inspected));
+        Assert.Contains("found aboard", DeathNarration.Headline(DeathCause.Inspected), StringComparison.OrdinalIgnoreCase);
+
+        // Three seeds, because the pool is picked by roll and every line in it has to be about the right death.
+        foreach (ulong seed in new ulong[] { 1, 7, 99 })
+        {
+            string line = DeathNarration.Line(DeathCause.Inspected, seed, "Quiet Sister");
+
+            Assert.DoesNotContain("Old One", line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Reever", line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("regolith", line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("nerve", line, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(line));
+        }
+    }
+
+    /// <summary>And it has a canvas, like every other cause — even a borrowed one — so the card never renders a
+    /// hole where the picture goes.</summary>
+    [Fact]
+    public void BeingFoundAboardStillHasSomethingToShow() =>
+        Assert.False(string.IsNullOrWhiteSpace(DeathNarration.ArtFile(DeathCause.Inspected)));
+
     /// <summary>Every sweeper has a callsign and the team is the size the file says it is.</summary>
     [Fact]
     public void TheTeamIsLegibleEnoughToHideFrom()

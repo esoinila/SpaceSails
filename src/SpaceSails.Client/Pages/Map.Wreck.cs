@@ -348,7 +348,18 @@ public sealed partial class Map
     /// </summary>
     private void MakeNoiseAboard(double x, double y, double earshot)
     {
-        if (!OnWreck || _reevers.Count == 0)
+        if (!OnWreck)
+        {
+            return;
+        }
+
+        // #538 · COLLEAGUES HEAR ABOUT IT. The sweep team is alerted FIRST and separately, because the two ears
+        // are different instruments: the pack's is capped at the nearest two and does not care who else is aboard,
+        // while three professionals share a channel — if one hears it, they all hear about it. And this must run
+        // even when the pack is empty, which the old early return quietly prevented.
+        AlertSweepersToNoise(x, y);
+
+        if (_reevers.Count == 0)
         {
             return;
         }

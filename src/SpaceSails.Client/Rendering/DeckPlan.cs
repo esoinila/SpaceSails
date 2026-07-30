@@ -69,7 +69,7 @@ public sealed class DeckPlan
     /// to 10 for the bar's barkeep pacing behind the counter (#247, index 9). Lane-1 (owner, 2026-07-18):
     /// the surface tide needs room for the 3 crew + the engine ceiling on live Reevers (24), so the
     /// buffer grows to 27 — only the surface plan ever fills that far; the ship/complex still fill ≤10.</summary>
-    public const int MaxDroids = 27;
+    public const int MaxDroids = 30;   // #538: 3 crew + 24 Old Ones + 3 sweepers
 
     public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
 
