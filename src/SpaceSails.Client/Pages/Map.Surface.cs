@@ -2082,6 +2082,16 @@ public partial class Map
             return false;   // it said its piece, but the lock should still open
         }
 
+        // #540 · A COLD BOAT ARMS NOBODY. Owner, on what makes the wait bite: "As the ammo count runs down and
+        // reload place is warming up to allow use and its gun." The belts live aboard her, behind a hatch that is
+        // dogged while she sleeps — so going dark takes away the resupply and the covering gun as well as the ride.
+        if (!SilentRunning.HatchOpen(BoatState))
+        {
+            ShowPulseMessage(SilentRunning.ReloadNeedsHerAwakeLine(BoatSecondsLeft));
+            RendererInterop.PlayCue("block");
+            return true;    // handled: an empty sling and a shut boat is not a reason to offer a ride out
+        }
+
         int was = carried.Rounds;
         carried.Rounds = SentryBot.MaxMagazine;
         ShowPulseMessage(SentryBot.FilledLine(carried.Unit, was));
@@ -2750,6 +2760,16 @@ public partial class Map
         {
             return;
         }
+
+        // #540 · AND THIS IS THE ONE THAT MATTERS. Owner: "its doors open once the warm up is complete", and then
+        // the scene it is for — "Under a swarm of reevers with slinged autoguns that wait can feel really long
+        // time 😎". Departing the SYSTEM was already gated; the ride HOME from a hull was not, which is exactly
+        // where a captain meets the clock: standing at the lock, in the open, waiting to be let in.
+        if (!BoatReadyToFly())
+        {
+            return;
+        }
+
         ex.Channel = null;
         bool escapedWithWatchdogs = _reevers.Count > 0;
         TreasureCache? buried = ex.Cache;

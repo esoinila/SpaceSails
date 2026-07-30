@@ -349,6 +349,16 @@ public partial class Map
 
                 if (_surface is not null)
                 {
+                    // #540 · ASK HER FIRST. Everything below this line is IRREVERSIBLE — the lock cycles, the
+                    // scuttle resolves against whatever was still aboard — and a boat whose hatch is dogged is
+                    // not going anywhere, so doing any of it before she answers would resolve a departure that
+                    // never happened. Asking also STARTS her warm-up, which is the honest reading of pressing E
+                    // at a lock: you tried to leave, and she has begun waking.
+                    if (!BoatReadyToFly())
+                    {
+                        break;
+                    }
+
                     // #488: leaving a wreck, the boat's own lock CYCLES rather than opening — it matches
                     // whatever the hull is reading first, so the shuttle's air is never once exposed to it.
                     if (OnWreck)
