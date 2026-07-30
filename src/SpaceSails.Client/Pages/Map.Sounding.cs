@@ -126,7 +126,7 @@ public sealed partial class Map
     private void FinishSounding(double x, double y)
     {
         HullSounding.Reading reading = _hullVoid is { } hidden && !_voidOpened
-            ? HullSounding.Read(SoundingGear, x, y, hidden.X, hidden.Y)
+            ? HullSounding.Read(SoundingGear, x, y, hidden.PlateX, hidden.PlateY)
             : HullSounding.Reading.Solid;
 
         ShowPulseMessage(HullSounding.ReadingLine(reading));
@@ -153,7 +153,8 @@ public sealed partial class Map
         _deckPlan.AppendRegion(new DeckPlan.DeckRegion(
             Walls: [],
             Consoles: [new DeckPlan.ConsoleSpot(
-                DeckPlan.ConsoleKind.SecretDoor, (float)found.X, (float)found.Y, "🕳 THE FALSE PLATE")],
+                DeckPlan.ConsoleKind.SecretDoor, (float)found.PlateX, (float)found.PlateY,
+                "🕳 THE FALSE PLATE")],
             Labels: [],
             Backdrops: []));
     }
@@ -174,7 +175,7 @@ public sealed partial class Map
         RendererInterop.PlayCue("reveal");
 
         // Loud: a plate coming off a bulkhead is not a quiet act, whichever gear found it.
-        MakeNoiseAboard(found.X, found.Y, LoudEarshot);
+        MakeNoiseAboard(found.PlateX, found.PlateY, LoudEarshot);
         RequestVaultSave();
         StateHasChanged();
     }
@@ -211,8 +212,7 @@ public sealed partial class Map
                 return null;
             }
 
-            double missing = hidden.DeclaredFrames - hidden.MeasuredFrames;
-            return $"{hidden.Compartment} — {missing:0.#} frames unaccounted";
+            return $"outboard of {hidden.NearRoom} — {hidden.X1 - hidden.X0:0.#} frames of it";
         }
     }
 

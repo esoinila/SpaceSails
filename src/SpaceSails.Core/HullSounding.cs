@@ -242,23 +242,33 @@ public static class HullSounding
     /// Which is better fiction as well as safer code — somebody had to write the false number down, and the
     /// captain catches them at it by comparing a document with a wall.</para>
     /// </summary>
-    /// <param name="Compartment">The room whose bulkhead is lying.</param>
-    /// <param name="DeclaredFrames">What her manifest claims that compartment runs.</param>
-    /// <param name="MeasuredFrames">What the deck plan actually draws.</param>
-    /// <param name="X">Where a captain has to stand to sound it — inside the room, against the wall.</param>
-    /// <param name="Y">…and how far outboard.</param>
+    /// <param name="NearRoom">The compartment a captain stands in to reach it.</param>
+    /// <param name="X0">Aft end of the section of shielding that is not shielding.</param>
+    /// <param name="X1">Forward end.</param>
+    /// <param name="Top">Which side of the keel the band is on.</param>
+    /// <param name="PlateX">The false plate in the pressure wall — what you knock on and what comes off.</param>
+    /// <param name="PlateY">…on the inner hull line, so a captain stands in the room and reaches it.</param>
     /// <param name="Holds">What is in there, in the captain's own words when they get in.</param>
     public readonly record struct HiddenVoid(
-        string Compartment,
-        double DeclaredFrames,
-        double MeasuredFrames,
-        double X,
-        double Y,
-        string Holds);
+        string NearRoom,
+        double X0,
+        double X1,
+        bool Top,
+        double PlateX,
+        double PlateY,
+        string Holds)
+    {
+        /// <summary>How much ship the section accounts for — the search, once the clue is believed.</summary>
+        public double AreaSquareDu => (X1 - X0) * WreckLayout.ShieldingDepth;
+    }
 
     /// <summary>How many hulls carry one at all. Rare on purpose: a void on every wreck makes measuring routine,
     /// and the whole appeal is that most ships are exactly what they look like.</summary>
     public const int VoidOnARollOf = 4;   // d20 ≤ 4, so about one hull in five
+
+    /// <summary>How long a section of her shielding a void takes up. Wide enough to be worth the trouble of
+    /// hiding, short enough that the sections either side of it read normal.</summary>
+    public const double VoidFrames = 6.0;
 
     /// <summary>
     /// What is behind the plate. Authored rather than generated, because these are the owner's own threads:
@@ -269,7 +279,7 @@ public static class HullSounding
     private static readonly string[] WhatIsInThere =
     [
         "A rack of code keys in a foam cutout, and one empty slot where somebody took theirs and ran.",
-        "A gun mount, folded. Her hull plate over it is thinner than the plate around it, and cut from the inside.",
+        "A gun mount, folded flat against the frames. The skin over it is thinner than the skin around it.",
         "Ship's papers for three different vessels, and a photograph of this one wearing another name.",
         "A cold locker with one person in it, in a flight suit that is not this ship's.",
     ];
@@ -277,6 +287,12 @@ public static class HullSounding
     /// <summary>
     /// Whether this hull is hiding one, and where. Seeded off her id, so a given ship always is or never was —
     /// a void that appeared on the second boarding would make the whole search a slot machine.
+    ///
+    /// <para><b>It lives in the shielding band</b>, which is the owner's own fix for the thing that killed the
+    /// first attempt: a void inside a COMPARTMENT had nowhere to be, because her rooms are contiguous and every
+    /// square metre was already spoken for. He saw it immediately — <i>"The Quiet Sister's room map did not show
+    /// any extra space on the sides. Is the room smaller on the inside than in the map?"</i> — and answered it
+    /// himself: <i>"making outside walls thicker (shielding etc) might offer less audited dimensions."</i></para>
     /// </summary>
     public static HiddenVoid? VoidFor(
         string wreckId,
@@ -297,37 +313,37 @@ public static class HullSounding
             return null;   // most hulls are exactly what they look like, and that is what makes one worth finding
         }
 
-        // Which room's paperwork lies, how many frames it claims it cannot show, and what is behind the plate —
-        // all off the same hull's seed, so a captain who comes back finds the same ship.
+        // The plate has to be reachable, so it goes on the outboard wall of a room somebody can stand in — and
+        // clear of that room's own bulkheads, or a captain would be sounding a corner.
         int which = DiceRule.Roll(DiceRule.Seed(seed, "room"), compartments.Count).Face - 1;
         (string name, float x0, float x1, bool top) = compartments[which];
 
-        double missing = 3.0 + DiceRule.Roll(DiceRule.Seed(seed, "frames"), 4).Face;   // 4…7 frames
-        double measured = x1 - x0;
+        double clear = 2.0;
+        double lo = x0 + clear, hi = x1 - clear;
+        if (hi <= lo)
+        {
+            return null;   // too narrow a room to stand off a wall in; she keeps her secret
+        }
 
-        // The void sits behind the AFT bulkhead of that room, so the spot to sound is just inside it — and
-        // outboard, halfway between the spine and the skin, where a man would actually put his hand.
-        double depth = top ? (-spineHalfHeight + topY) / 2.0 : (bottomY + spineHalfHeight) / 2.0;
+        double plateX = lo + ((hi - lo) * (DiceRule.Roll(DiceRule.Seed(seed, "where"), 20).Face - 1) / 19.0);
+        double plateY = top ? topY : bottomY;
+
+        // The section of band behind it, clipped to the band's own run so it never claims ship she does not have.
+        double half = VoidFrames / 2.0;
+        double bandLo = System.Math.Max(WreckLayout.TransomX, plateX - half);
+        double bandHi = System.Math.Min(WreckLayout.ShieldingForwardEnd, plateX + half);
 
         return new HiddenVoid(
-            name, measured + missing, measured,
-            x0 + 1.5, depth,
+            name, bandLo, bandHi, top, plateX, plateY,
             WhatIsInThere[DiceRule.Roll(DiceRule.Seed(seed, "holds"), WhatIsInThere.Length).Face - 1]);
     }
 
     /// <summary>The manifest's lie, as the same <see cref="Discrepancy"/> the geometry rule produces — one type,
     /// two sources, so a panel that can show one can show the other without knowing which it got.</summary>
-    public static Discrepancy AsDiscrepancy(in HiddenVoid hidden, double spineHalfHeight, double topY,
-                                            double bottomY, bool top)
-    {
-        double missing = hidden.DeclaredFrames - hidden.MeasuredFrames;
-        double depth = top ? System.Math.Abs(-spineHalfHeight - topY) : System.Math.Abs(bottomY - spineHalfHeight);
-
-        return new Discrepancy(
-            $"the manifest books {hidden.Compartment} at {hidden.DeclaredFrames:0.#} frames and the deck plan " +
-            $"draws {hidden.MeasuredFrames:0.#}",
-            hidden.X - 1.5, hidden.X - 1.5 + missing, top, missing * depth);
-    }
+    public static Discrepancy AsDiscrepancy(in HiddenVoid hidden) =>
+        new($"her shielding is booked by the section and the run outboard of {hidden.NearRoom} holds a third of " +
+            $"what every other section of it does",
+            hidden.X0, hidden.X1, hidden.Top, hidden.AreaSquareDu);
 
     // ── What is said ──────────────────────────────────────────────────────────────────────────────────
 
@@ -368,8 +384,9 @@ public static class HullSounding
     /// contents describe themselves and the captain draws the conclusion, which is the #533 discipline applied at
     /// the only moment the game could get away with breaking it.</summary>
     public static string FoundItLine(in HiddenVoid hidden) =>
-        $"🕳 The plate comes away from {hidden.Compartment}'s aft bulkhead in one piece — it was never welded, " +
-        $"only made to look it. {hidden.Holds}";
+        $"🕳 The plate comes away from {hidden.NearRoom}'s outboard wall in one piece — it was never welded, " +
+        $"only made to look it. Behind it the shielding simply stops, and there is a space in her nobody drew. " +
+        $"{hidden.Holds}";
 
     /// <summary>And the honest warning, for a captain who would rather sound the whole ship than measure it.</summary>
     public static string BlindSearchLine(Method method, double hullArea) =>

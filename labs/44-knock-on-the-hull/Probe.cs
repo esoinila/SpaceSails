@@ -243,9 +243,9 @@ public static class Probe
             }
 
             lying++;
-            Console.WriteLine($"  {cause,-24} {w.ShipName,-22} LIES: books {v.Compartment} at " +
-                              $"{v.DeclaredFrames:0.#} vs {v.MeasuredFrames:0.#} — sound at " +
-                              $"({v.X:0.#}, {v.Y:0.#})");
+            Console.WriteLine($"  {cause,-24} {w.ShipName,-22} LIES: {v.X1 - v.X0:0.#} frames of shielding " +
+                              $"outboard of {v.NearRoom} ({v.X0:0.#}…{v.X1:0.#}, " +
+                              $"{(v.Top ? "top" : "bottom")}) — knock at ({v.PlateX:0.#}, {v.PlateY:0.#})");
         }
 
         Console.WriteLine();

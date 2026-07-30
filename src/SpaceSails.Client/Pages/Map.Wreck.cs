@@ -153,12 +153,10 @@ public sealed partial class Map
 
         if (_hullVoid is not { } hidden)
         {
-            return cargo + " The frame numbers match the deck plan all the way down the page.";
+            return cargo + " Her shielding is booked section by section, and every section holds the same.";
         }
 
-        bool top = System.Array.Exists(WreckLayout.Compartments, c => c.Name == hidden.Compartment && c.Top);
-        HullSounding.Discrepancy clue = HullSounding.AsDiscrepancy(
-            hidden, WreckLayout.SpineHalfHeight, WreckLayout.TopY, WreckLayout.BottomY, top);
+        HullSounding.Discrepancy clue = HullSounding.AsDiscrepancy(hidden);
 
         LogAutopilotEvent(HullSounding.ClueLine(clue));
         LogAutopilotEvent(HullSounding.BlindSearchLine(
