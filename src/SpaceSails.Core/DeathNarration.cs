@@ -45,6 +45,17 @@ public enum DeathCause
     /// <summary>Lost to the void — adrift / EVA / an orbit that slipped, no body to name. (Wired ready for
     /// whatever void death lands; none routes here today.)</summary>
     Void,
+
+    /// <summary>
+    /// #538 · A PROFESSIONAL SHOT YOU. The black-ops sweep team's challenge ran out with the captain still in
+    /// the lamp — which is nothing like being run down by the pack, and used to narrate as if it were.
+    ///
+    /// <para>Added because the first playtest of the sweep scene ended with the card saying <i>"the Old Ones
+    /// took you… they ran you down on Quiet Sister's regolith short of the tube"</i> after three men with
+    /// rifles shot a captain standing in a corridor. The sim did one thing and the card reported another,
+    /// which in this codebase is the bug, not a wording nit.</para>
+    /// </summary>
+    Inspected,
 }
 
 /// <summary>
@@ -119,6 +130,9 @@ public static class DeathNarration
         DeathCause.Void => "death-void.jpg",
         // Her own charges, and the fireball the impact death already owns — one explosion, two ways to earn it.
         DeathCause.Scuttled => "busted-ship-explosion.jpg",
+        // #538: no canvas of its own yet — the freeze-frame is the right register for it (a professional
+        // outcome, calmly arrived at) and it degrades honestly until one is painted.
+        DeathCause.Inspected => "busted-freeze-frame.jpg",
         _ => "busted-ship-explosion.jpg",
     };
 
@@ -131,6 +145,7 @@ public static class DeathNarration
         DeathCause.Joined => "WHAT HAPPENED — you walked into the crowd",
         DeathCause.Void => "WHAT HAPPENED — lost to the void",
         DeathCause.Scuttled => "WHAT HAPPENED — you scuttled her, and stayed aboard",
+        DeathCause.Inspected => "WHAT HAPPENED — you were found aboard",
         _ => "WHAT HAPPENED",
     };
 
@@ -178,6 +193,16 @@ public static class DeathNarration
         "The tracker on {body} still shows you moving, some nights. You didn't run from the Old Ones at the end. You joined them.",
     ];
 
+    /// <summary>#538 · Shot by somebody who was working. Every line has to carry the thing that makes this
+    /// death different from all the others: it was ADMINISTRATIVE. Nobody was angry, nobody wanted your cargo,
+    /// and the whole exchange was over in three seconds because you were seen.</summary>
+    private static readonly string[] InspectedLines =
+    [
+        "They found you aboard {body} and did what they were sent to do. Nobody raised their voice and nobody hurried.",
+        "The lamp stopped on you {where} and three seconds later the sweep went on down the corridor. You were a line in somebody's report.",
+        "You were seen {where}, told to stand still, and did not. They were never there to negotiate — they were there to make sure she stopped existing.",
+    ];
+
     private static readonly string[] VoidLines =
     [
         "Lost to the void — no beacon, no body, just the long dark and a brain-backup that remembers the cold.",
@@ -193,6 +218,7 @@ public static class DeathNarration
         DeathCause.Reevers => ReeverLines,
         DeathCause.Joined => JoinedLines,
         DeathCause.Void => VoidLines,
+        DeathCause.Inspected => InspectedLines,
         _ => CollectorLines,
     };
 

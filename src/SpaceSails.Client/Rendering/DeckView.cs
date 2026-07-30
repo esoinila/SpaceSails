@@ -113,6 +113,11 @@ public sealed class DeckView
     private static readonly RgbaColor ShuttleColor = new(150, 210, 255, 220);
     private static readonly RgbaColor DroidColor = new(150, 160, 180);
     private static readonly RgbaColor ReeverColor = new(230, 80, 70);   // #295: watchdog red
+
+    /// <summary>#538 · A professional reads COLD — instrument white-blue, not the pack's red. Two hostile things
+    /// on one deck have to be told apart at a glance, and the colour is the only thing doing that job while a
+    /// captain is deciding which way to run.</summary>
+    private static readonly RgbaColor SweeperColor = new(150, 205, 235);
     private static readonly RgbaColor HuskColor = new(120, 70, 60, 150); // #314: a downed Old One's husk
     private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
@@ -463,7 +468,10 @@ public sealed class DeckView
             (float dx, float dy) = P(droid.X, droid.Y);
             // #295: the Reevers read hostile — a red mark, not the crew's grey.
             bool reever = droid.Name == "Reever";
-            RgbaColor mark = reever ? ReeverColor : DroidColor;
+            // #538: the sweep team, by callsign. They collide and are seen on the captain's own radius, so they
+            // are drawn on it too — the #473 lesson about daylight showing between a body and its picture.
+            bool sweeper = IsSweeper(droid.Name);
+            RgbaColor mark = reever ? ReeverColor : sweeper ? SweeperColor : DroidColor;
             // #473 · AN OLD ONE'S PICTURE IS ITS BODY. The captain is drawn at exactly DeckPlan.AvatarRadius
             // (below), but the Old Ones — who collide, catch, block and get shoved apart on that SAME radius —
             // were drawn a tenth of a deck unit smaller. Every law that reads their body therefore fired with
@@ -472,16 +480,45 @@ public sealed class DeckView
             // parked against a wall floated just off it. Owner: "check all reever collisions… the radius must
             // be used in every single one" — the drawing is one of them. Crew stay at 0.5: nothing collides
             // with a barkeep, so their mark is free to be a mark.
-            float bodyRadius = reever ? (float)DeckPlan.AvatarRadius : 0.5f;
+            float bodyRadius = reever || sweeper ? (float)DeckPlan.AvatarRadius : 0.5f;
             _renderer.DrawCircle(dx, dy, bodyRadius * scale, mark, mark);
             // Heads up as one (hull-shudder pause), or the crew catch each other's eye (unexplained signal),
             // else the droid's own facing. The shudder pause wins if both somehow overlap.
-            double facing = headsUp && !reever ? Math.PI / 2
+            double facing = headsUp && !reever && !sweeper ? Math.PI / 2
                 : glance?[di] ?? droid.FacingRad;
             float fx = dx + (float)Math.Cos(facing) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(facing) * scale * 0.8f;
             DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
-            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name, reever ? ReeverColor : TextDim, "8px monospace", TextAlign.Center);
+
+            // #538 · THE LAMP, DRAWN AT EXACTLY THE ANGLE THE RULE CHECKS. InspectionTeam.LampConeHalfAngleDegrees
+            // and LampRange are read straight from Core here rather than eyeballed, because a cone drawn wider than
+            // it is tested is a lie the player learns the expensive way — and this cone IS the counter-play, so it
+            // has to be trustworthy enough to stand three metres to the side of.
+            if (sweeper)
+            {
+                double half = SpaceSails.Core.InspectionTeam.LampConeHalfAngleDegrees * Math.PI / 180.0;
+                double range = SpaceSails.Core.InspectionTeam.LampRange;
+                RgbaColor lamp = SweeperColor with { A = 44 };
+                for (int e = -1; e <= 1; e += 2)
+                {
+                    double edge = facing + (e * half);
+                    // AND STOPPED AT THE FIRST BULKHEAD, because the RULE stops there. First pass drew both
+                    // edges to full reach through steel — cone tested right, cone drawn wrong, which is the
+                    // same lie as drawing it too wide and just as expensive to learn from: a captain would
+                    // have read light spilling into a compartment nobody could actually see into.
+                    double lit = plan.CastRay(droid.X, droid.Y, Math.Cos(edge), Math.Sin(edge),
+                                              out double hit, out _, out _, out _)
+                        ? Math.Min(range, hit)
+                        : range;
+                    float reach = (float)lit * scale;
+                    DrawSeg((dx, dy),
+                            (dx + (float)Math.Cos(edge) * reach, dy - (float)Math.Sin(edge) * reach),
+                            lamp, 1f);
+                }
+            }
+
+            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name,
+                reever ? ReeverColor : sweeper ? SweeperColor : TextDim, "8px monospace", TextAlign.Center);
         }
 
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
@@ -817,7 +854,11 @@ public sealed class DeckView
 
     // A WORKING crew member (the people who work the deck): the barkeep, the customs officer, the ship's own
     // droids — anyone who is neither a Reever nor a drinking PATRON (a seated bar regular, or the Magpie).
-    private static bool IsCrew(string name) => name != "Reever" && !IsPatron(name);
+    private static bool IsCrew(string name) => name != "Reever" && !IsSweeper(name) && !IsPatron(name);
+
+    /// <summary>#538 · A sweeper, by callsign. Never crew: nobody on that team is going to catch a barkeep's eye
+    /// during a hull shudder, and giving them the crew's grey would hide the second hostile thing on the deck.</summary>
+    private static bool IsSweeper(string name) => name.StartsWith("SWEEP-", StringComparison.Ordinal);
 
     // The drinking patrons — the regulars' short names (HavenInterior.ShortNameFor) + the roaming Magpie +
     // the station Oracle (a ranting-drunk bar fixture, #425, not working staff) + the empty-chair fallback.

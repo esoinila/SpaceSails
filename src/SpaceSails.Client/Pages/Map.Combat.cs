@@ -1940,7 +1940,8 @@ public partial class Map
     /// <param name="nerveRanOut">True when the NERVE overdrew (the gauge hit the floor with a qualifying
     /// hit); false when the FIVE BLOWS ran out and the captain was simply mauled. Drives the freeze-frame
     /// caption — see <see cref="DeathNarration.SurfaceCaption"/>.</param>
-    private void TriggerSurfaceOverdrawDeath(SurfaceExcursion dying, bool nerveRanOut)
+    private void TriggerSurfaceOverdrawDeath(SurfaceExcursion dying, bool nerveRanOut,
+                                             DeathCause? forcedCause = null)
     {
         if (_busted is not null)
         {
@@ -1952,7 +1953,12 @@ public partial class Map
 
         string body = dying.Stop.Body.Name;
         ulong seed = DiceRule.Seed("overdraw", (long)SimTime);
-        DeathCause cause = DeathNarration.SurfaceEnd(_nerve, seed); // Reevers, or the rare Joined at a sliver
+        // #538 · WHO ACTUALLY KILLED YOU. SurfaceEnd only ever answers "the pack, or the rare Joined at a
+        // sliver" — which was fine while the pack was the only thing aboard that could end a captain. The first
+        // playtest of the sweep team ended with three men with rifles shooting a captain in a corridor and a card
+        // that said "the Old Ones took you… ran you down on her regolith short of the tube". A caller that KNOWS
+        // the cause now says so, and the roll is only consulted when nobody does.
+        DeathCause cause = forcedCause ?? DeathNarration.SurfaceEnd(_nerve, seed);
 
         _busted = new BustedEncounter
         {
@@ -1969,9 +1975,16 @@ public partial class Map
 
         RendererInterop.PlayCue("alarm");
         RendererInterop.PlayCue("gameover");
-        string line = cause == DeathCause.Joined
-            ? $"🧠 Nerves gone past empty on {body} — the captain turns, and walks TOWARD the crowd. The insurance will need a new name."
-            : $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.";
+        string line = cause switch
+        {
+            DeathCause.Joined =>
+                $"🧠 Nerves gone past empty on {body} — the captain turns, and walks TOWARD the crowd. The insurance will need a new name.",
+            // Nothing about this one is about nerve, so it must not narrate as if it were.
+            DeathCause.Inspected =>
+                $"🕶 Found aboard {body}, told to stand still, and not standing still. The sweep goes on down the corridor. The insurance will need a new name.",
+            _ =>
+                $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.",
+        };
         LogAutopilotEvent(line);
         ShowPulseMessage(line);
         _shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"CAPTAIN LOST — {body}", SimTime);

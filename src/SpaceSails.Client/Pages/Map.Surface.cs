@@ -531,6 +531,7 @@ public partial class Map
         _surface = excursion;
         ResolveSecretLab(excursion); // #409: does this body hide one of Vantar's labs? (seed, or a known/cheat pre-reveal)
         _reevers.Clear();
+        _sweepers.Clear();
         _lastNearestReeverRange = null;
         _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
         _sightings = NerveModel.SightingSpell.Fresh; // #379: a fresh watch — the first fright of it lands full
@@ -629,6 +630,15 @@ public partial class Map
             // helped if it had: SpawnReevers places its pack in regolith coordinates. Routed to the wreck's
             // own spawner instead, so the owner can dial the hull hot for the fight the airlock gun exists
             // for ("I want to test triggering the reevers :-D").
+            // #538 · AND SOMEBODY ELSE MAY ALREADY BE ABOARD. The INSURANCE JOB hosts the sweep team, because
+            // her own fiction already says "she was LOST ON PURPOSE… the most valuable thing aboard is the
+            // evidence" — so what they came to remove is exactly what the captain came to take. Nothing had to be
+            // invented for the owner's "they want to keep their secrets, but the rewards could be big also".
+            if (_wreck is { Cause: Derelict.WreckCause.InsuranceJob } || _sweepTeamCheat > 0)
+            {
+                SpawnSweepTeam(_sweepTeamCheat > 0 ? _sweepTeamCheat : InspectionTeam.TeamSize);
+            }
+
             if (_wreck is { Cause: Derelict.WreckCause.Infested } || _reeverAmbushCheat > 0)
             {
                 SpawnWreckPack(_reeverAmbushCheat > 0 ? _reeverAmbushCheat : 4);
@@ -750,14 +760,14 @@ public partial class Map
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
         {
             _deckPlan = WreckInterior.WreckDeck(
-                aboard, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling, FillSurfaceDroids,
+                aboard, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling + InspectionTeam.TeamSize, FillSurfaceDroids,
                 HeldDoors(), BlockedDoors());
             return;
         }
 
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
-            3 + ReeverEngineCeiling, FillSurfaceDroids,
+            3 + ReeverEngineCeiling + InspectionTeam.TeamSize, FillSurfaceDroids,
             siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name); // #320: the picked site seeds the ground + names the header
 
         // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
@@ -1497,7 +1507,7 @@ public partial class Map
             return;
         }
         double detection = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
-        var entities = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+        var entities = EverythingThatMoves();   // #538: the pack AND the sweep team
         int heard = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, entities, detection);
         (_chirp, bool chirp) = MotionTracker.StepChirp(_chirp, heard, dtRealSeconds);
         if (chirp)
@@ -2895,6 +2905,8 @@ public partial class Map
     private void FillSurfaceDroids(double simTime, DeckPlan.Droid[] buffer)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // [0..3): the crew
+        // #538: …and the sweep team last, past the pack's slots — drawn cold rather than red, by callsign.
+        FillSweeperDroids(buffer, 3 + ReeverEngineCeiling);
         for (int i = 0; i < ReeverEngineCeiling; i++)
         {
             int slot = 3 + i;
@@ -3075,10 +3087,7 @@ public partial class Map
             // announcement, just a fan that was not on the screen a second ago. Once it has seen anything
             // it stays live for the rest of the boarding — an ear does not un-hear.
             _hudEntities.Clear();
-            foreach (Reever r in _reevers)
-            {
-                _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
-            }
+            _hudEntities.AddRange(EverythingThatMoves());   // #538: the pack AND the sweep team
 
             // THE NEST IS THE LOUDEST THING ABOARD. Owner: "the nest should show in the map and as movement
             // both." It never walks anywhere, so a fan that only reports travel would call it silence — but
@@ -3195,10 +3204,7 @@ public partial class Map
         // #371 Phase 1 (perf): fill the reused entity buffer instead of a lazy Select — one iterator fewer
         // per frame, and MotionTracker.Sweep reads it as an IEnumerable exactly as before.
         _hudEntities.Clear();
-        foreach (Reever r in _reevers)
-        {
-            _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
-        }
+        _hudEntities.AddRange(EverythingThatMoves());   // #538: the pack AND the sweep team
         IReadOnlyList<MotionTracker.Blip> blips = MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities);
         double? nearest = blips.Count > 0 ? blips[0].Range : null;
         bool closing = nearest is { } n && _lastNearestReeverRange is { } prev && n < prev - 0.01;

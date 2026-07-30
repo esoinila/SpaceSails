@@ -2496,12 +2496,33 @@
        are one list now, ordered by how much they should frighten you: the keel, then the way off her, then the
        air, then the standing orders you might have forgotten. Which is also the owner's scene, in order —
        "say self destruct tics down but shuttle still warms up". *@
-    @if (_deckMode && (_weaponsTight || BoatClockWorthShowing
+    @if (_deckMode && (_weaponsTight || BoatClockWorthShowing || SweepersAboard
                        || (OnWreck
                            ? _pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null
                            : _shipPumps.Count > 0 || _shipChargesSeconds is not null)))
     {
         <div class="wreck-clocks">
+            @* #538 · THE SWEEP, ABOVE EVERYTHING. Three professionals working the hull outrank a countdown for
+               the captain's attention, because the countdown is a number and this is a question — where are they
+               now, and do they know. It reads the WORST state anybody aboard is in, so a challenge cannot be
+               hidden behind two colleagues still ticking boxes. *@
+            @if (SweepersAboard)
+            {
+                <div class="wc-line overload @(AnySweeperOnTheCaptain ? "no-recall" : "")">
+                    <span class="wc-tag">🕶 @WorstSweeperState.ToString().ToUpperInvariant()</span>
+                    <span class="wc-room">
+                        @(WorstSweeperState switch
+                        {
+                            InspectionTeam.Awareness.Challenging => "stand still",
+                            InspectionTeam.Awareness.Hunting => "they know you are aboard",
+                            InspectionTeam.Awareness.Investigating => "somebody heard that",
+                            _ => "not looking for you yet",
+                        })
+                    </span>
+                    <span class="wc-time">@_sweepers.Count</span>
+                </div>
+            }
+
             @* THE OVERLOAD, LOUDEST AND FIRST. Owner, having armed it: "it should have a timer visible in
                UI" — and he is right that this was absurd: the entire scene is walking AWAY from the panel,
                and the clock was only readable by going back to it. Past the recall point it stops being a
