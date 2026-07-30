@@ -1239,6 +1239,91 @@
         </div>
     }
 
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #523 · THE CHARGE BOARD, aft with the machinery. Owner: "I like you make a PR about how spaceships manage
+       their electric charge build up and make us a panel about it into the rear of the ship … Now that desk is
+       kind of lame on the ship, so let's add some kind of on automatic there."
+
+       The mechanic was live and invisible: a charged hull is SEEN THREE TIMES AS FAR (SensorModel
+       .ChargeGlowFactor), and the only instrument that ever mentioned it halved the number and told you about a
+       cat. The dump stays — the joke is good and the act is real — and the board grows around it.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_showChargeBoard)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseChargeBoard)">
+            <div class="vent-board" @onclick:stopPropagation="true">
+                <div class="view-object-title">⚡ HULL CHARGE — HER OWN POTENTIAL</div>
+
+                @if (_plasma is null)
+                {
+                    <div class="vent-sub">
+                        Nothing out here charges her: this voyage runs without the plasma layer, so the board is
+                        a row of dead needles and the dump is a party trick.
+                    </div>
+                }
+                else
+                {
+                    double hullNow = HullChargeNow();
+                    double ambientNow = AmbientChargeNow();
+                    HullCharge.Band band = HullCharge.BandOf(hullNow);
+                    <div class="vent-sub">
+                        HULL: <strong>@HullCharge.BandWord(band)</strong> ·
+                        holding @((hullNow * 100).ToString("0", CultureInfo.InvariantCulture))% of what this
+                        space could put on her
+                    </div>
+                    <div class="vent-readout">@HullCharge.DrivenByLine(ambientNow)</div>
+                    <div class="vent-readout @(band >= HullCharge.Band.Glowing ? "alive" : "")">
+                        @HullCharge.VisibilityLine(hullNow)
+                    </div>
+                    @if (band == HullCharge.Band.Arcing)
+                    {
+                        <div class="vent-refusal">
+                            ⚡ She is arcing across herself. Everything with a telescope has already noticed.
+                        </div>
+                    }
+
+                    <div class="vent-actions">
+                        @* THE AUTOMATIC — the owner's ask, and a real device: a hollow-cathode plasma contactor,
+                           two of which fly on the ISS for exactly this reason. It costs expellant while it runs,
+                           which is what keeps it a decision. *@
+                        <button type="button"
+                                class="btn btn-sm @(_contactorOn ? "btn-success" : "btn-outline-success")"
+                                title="@(_contactorOn ? HullCharge.ContactorOnLine : HullCharge.ContactorOffLine)"
+                                @onclick="ToggleContactor">
+                            @(_contactorOn ? "🜁 CONTACTOR RUNNING — click to secure" : "🜁 Run the contactor (automatic)")
+                        </button>
+
+                        @* And the switch that was the whole console: dump the hull to space. Instant, free, and
+                           it does not touch what has soaked into the boards. *@
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                title="Dump the hull charge to space now — instant, free, and it will start climbing again immediately."
+                                @onclick="VentCharge">
+                            ⚡ Dump her charge
+                        </button>
+                    </div>
+
+                    <div class="vent-readout">
+                        🜁 Expellant: @_reactionMassPulses pulses ·
+                        the contactor sips @HullCharge.ContactorPulsesPerMinute.ToString("0.0", CultureInfo.InvariantCulture) per minute while it runs
+                    </div>
+
+                    @* THE ADMISSION, always shown. Deep dielectric charging buries itself in the boards over
+                       hours; the hull gauge reads fine the whole time and the contactor does not help. Same law
+                       the wreck's life-sign sensor lives by: the instrument says something is happening, never
+                       what. *@
+                    <div class="vent-sub">@HullCharge.WhatTheGaugeCannotSee</div>
+                }
+
+                @if (_chargeBoardMessage is { Length: > 0 } chargeMsg)
+                {
+                    <div class="vent-message">@chargeMsg</div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseChargeBoard)">Step away</button>
+            </div>
+        </div>
+    }
+
     @* THE CASTAWAY CARD. She went; he did not. Owner's own objection, answered: "if you can not get away with
        ship, then propably not with shuttle either" — true about speed, beside the point. The hull was the
        asset, the bounty and the prize; a man in a small cold boat is worth the fuel to nobody. *@
