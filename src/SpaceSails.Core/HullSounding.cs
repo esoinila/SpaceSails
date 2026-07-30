@@ -309,7 +309,13 @@ public static class HullSounding
             return null;
         }
 
-        ulong seed = DiceRule.Seed("hull-void", wreckId.GetHashCode(System.StringComparison.Ordinal));
+        // THE ID GOES IN AS A TAG, NOT AS A HASH CODE. The first cut folded in
+        // wreckId.GetHashCode(StringComparison.Ordinal) — and .NET RANDOMISES string hashing per process, so a
+        // hull's secret would have been re-rolled on every launch: found on Tuesday, honest on Wednesday, and the
+        // manifest clue pointing at a wall with nothing behind it. The in-process law could never see it (it
+        // re-queries the same process) and CI found it by running on a different machine. DiceRule.Seed's tag
+        // path is a stable FNV-1a, which is what "seeded off her id" was always supposed to mean.
+        ulong seed = DiceRule.Seed(0UL, "hull-void|" + wreckId);
         if (DiceRule.Roll(seed).Face > VoidOnARollOf)
         {
             return null;   // most hulls are exactly what they look like, and that is what makes one worth finding
