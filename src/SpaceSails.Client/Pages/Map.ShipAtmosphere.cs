@@ -37,6 +37,41 @@ public sealed partial class Map
     /// to serve on.</summary>
     private readonly HashSet<string> _shipVented = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// HOW LONG EACH OF HER COMPARTMENTS HAS BEEN OPEN TO SPACE. Owner, pointing at the derelict's board:
+    /// <i>"see here now how there is a clock here for pumping down and vacuum."</i>
+    ///
+    /// <para>The wreck's clock counts up because the vacuum is doing work in there — the soak is what kills
+    /// what it cannot see. On HER the number answers a different question and still matters: how long that
+    /// compartment has been dead, which is how long the fire in it has been starved and how long ago you
+    /// decided to spend the air.</para>
+    /// </summary>
+    private readonly Dictionary<string, double> _shipVacuumSeconds = [];
+
+    /// <summary>
+    /// HER BOARD KEEPS ITS OWN LOG, like a derelict's does. The wreck's board learned this the hard way: a
+    /// panel can only ever show ONE line, so anything that happened while the captain was looking elsewhere —
+    /// a pump banking, a hatch that would not move — was gone before it could be read.
+    /// </summary>
+    private readonly List<string> _shipBoardLog = [];
+
+    /// <summary>The most her board keeps. Long enough to cover an incident, short enough to stay a log rather
+    /// than a transcript.</summary>
+    private const int ShipBoardLogDepth = 14;
+
+    /// <summary>Every act her board takes goes to the ship's event log AND to the board's own — one call, so a
+    /// new switch cannot be added that quietly writes to only one of them.</summary>
+    private void ShipBoardLog(string line)
+    {
+        LogAutopilotEvent(line);
+
+        _shipBoardLog.Add(line);
+        if (_shipBoardLog.Count > ShipBoardLogDepth)
+        {
+            _shipBoardLog.RemoveAt(0);
+        }
+    }
+
     /// <summary>What is left in her tanks, in compartment-fills. Her plant makes more; not quickly.</summary>
     private int _shipReserve = ShipAtmosphere.ReserveFills;
 
@@ -296,7 +331,7 @@ public sealed partial class Map
         bool shut = _shipDoorsShut.Contains(room);
         Say(atTheDoor, shut ? ShipAuthority.IsolatedLine(room) : ShipAuthority.ReleasedLine(room));
 
-        LogAutopilotEvent(shut ? $"🔒 Dogged {room}." : $"🔓 Undogged {room}.");
+        ShipBoardLog(shut ? $"🔒 Dogged {room}." : $"🔓 Undogged {room}.");
         RendererInterop.PlayCue("board");
         RebuildShipDeck();
         RequestVaultSave();
@@ -418,6 +453,7 @@ public sealed partial class Map
         }
 
         _shipVented.Add(room);
+        _shipVacuumSeconds[room] = 0.0;   // her clock starts the moment the air leaves
 
         // AND WHATEVER ANSWERED IS SPENT, if spending is what it is for. One authorization, one act — a word
         // or a clearance that survived its own use would be a standing permission nobody granted.
@@ -427,7 +463,7 @@ public sealed partial class Map
             ? $"💨 {room} is open to space. {ShipAtmosphere.TheSuitsBesideTheBunks}"
             : $"💨 {room} is open to space. It cost you the air in it and nothing else.";
 
-        LogAutopilotEvent($"💨 Vented {room} — {ShipAuthority.UnderAuthority(authority)}.");
+        ShipBoardLog($"💨 Vented {room} — {ShipAuthority.UnderAuthority(authority)}.");
         RendererInterop.PlayCue("alarm");
         RebuildShipDeck();
         RequestVaultSave();
@@ -507,7 +543,7 @@ public sealed partial class Map
         SpendShipAuthority(authority);
 
         _shipBoardMessage = HullVenting.PumpRunningLine(room, seconds);
-        LogAutopilotEvent(
+        ShipBoardLog(
             $"🛢 Pump started on {room} — her air goes to the tanks, not to space, "
             + $"{ShipAuthority.UnderAuthority(authority)}.");
         RendererInterop.PlayCue("board");
@@ -534,7 +570,19 @@ public sealed partial class Map
     /// atmosphere the whole time.</summary>
     private void AdvanceShipPumps(double dtSeconds)
     {
-        if (_shipPumps.Count == 0 || OnWreck)
+        if (OnWreck)
+        {
+            return;
+        }
+
+        // Her vacuum clocks run whether or not a pump is going — a compartment that has been open to space
+        // for four minutes is a different fact from one opened a moment ago.
+        foreach (string vented in _shipVented)
+        {
+            _shipVacuumSeconds[vented] = _shipVacuumSeconds.GetValueOrDefault(vented) + dtSeconds;
+        }
+
+        if (_shipPumps.Count == 0)
         {
             return;
         }
@@ -581,11 +629,12 @@ public sealed partial class Map
                 if (!string.Equals(member, ShipLayout.SpineName, StringComparison.Ordinal))
                 {
                     _shipVented.Add(member);
+                    _shipVacuumSeconds[member] = 0.0;
                 }
             }
 
             _shipBoardMessage = HullVenting.PumpDoneLine(label);
-            LogAutopilotEvent($"🛢 Pumped {label} down — her tanks hold {_shipReserve} fills.");
+            ShipBoardLog($"🛢 Pumped {label} down — her tanks hold {_shipReserve} fills.");
             RendererInterop.PlayCue("alarm");
             RebuildShipDeck();
             RequestVaultSave();
@@ -607,10 +656,11 @@ public sealed partial class Map
         }
 
         _shipVented.Remove(room);
+        _shipVacuumSeconds.Remove(room);   // air in it again: the clock has nothing to count
         _shipReserve--;
 
         _shipBoardMessage = ShipAtmosphere.RefilledLine(room, _shipReserve);
-        LogAutopilotEvent($"🫁 {room} back to pressure — {_shipReserve} fills left in her tanks.");
+        ShipBoardLog($"🫁 {room} back to pressure — {_shipReserve} fills left in her tanks.");
         RendererInterop.PlayCue("reveal");
         RebuildShipDeck();
         RequestVaultSave();
@@ -645,7 +695,7 @@ public sealed partial class Map
 
         if (dogged > 0)
         {
-            LogAutopilotEvent($"🔒 {dogged} hatches dogged from the board.");
+            ShipBoardLog($"🔒 {dogged} hatches dogged from the board.");
             RebuildShipDeck();
             RequestVaultSave();
         }
@@ -677,7 +727,7 @@ public sealed partial class Map
 
         if (opened > 0)
         {
-            LogAutopilotEvent($"🔓 {opened} hatches undogged from the board.");
+            ShipBoardLog($"🔓 {opened} hatches undogged from the board.");
             RebuildShipDeck();
             RequestVaultSave();
         }
@@ -728,16 +778,33 @@ public sealed partial class Map
               + $"{spaces - corridor.Count} dogged off.";
     }
 
-    /// <summary>The one word a compartment wears on her mimic — what it is DOING beats what it is.</summary>
+    /// <summary>
+    /// The one word a compartment wears on her mimic — what it is DOING beats what it is.
+    ///
+    /// <para>PUMPING COMES FIRST, and it carries its clock. Owner, watching a pump run on her board and seeing
+    /// nothing on the map: <i>"I expect to see the pumping here now as we have on the reever infested salvage
+    /// ship."</i> Quite right — the derelict's board has shown a running pump on the compartment since the day
+    /// several could run at once, because the board is the only place that can tell you which rooms are working
+    /// and how far along each one is. A run you can only infer from a sentence is a run you will forget you
+    /// started.</para>
+    /// </summary>
     private (string Text, string Class) ShipAreaTag(string room)
     {
+        if (ShipPumpOn(room) is { } pumping)
+        {
+            // It counts DOWN, unlike the vacuum soak: this clock has a known end. Past the rough mark the
+            // colour changes, because from there on the air is already hers and the rest is just pressure.
+            return ($"PUMPING {HullVenting.SoakLabel(pumping.SecondsLeft)}",
+                    pumping.RoughBanked ? "vent-tag banked-tag" : "vent-tag pumping-tag");
+        }
         if (_shipVented.Contains(room))
         {
-            return ("VACUUM", "vent-tag");
+            double open = _shipVacuumSeconds.GetValueOrDefault(room);
+            return (open > 0 ? $"VACUUM {HullVenting.SoakLabel(open)}" : "VACUUM", "vent-tag");
         }
         if (ShipCompartment() == room)
         {
-            return ("YOU", "vent-tag");
+            return ("YOU", "vent-tag here-tag");
         }
         return _shipDoorsShut.Contains(room) ? ("DOGGED", "vent-tag") : ("", "vent-tag");
     }
@@ -753,4 +820,17 @@ public sealed partial class Map
     /// symmetric about the corridor, so the same list serves either way round.</summary>
     private static string ShipHullOutline =>
         "30,0 20,-10 -18,-10 -24,-7 -24,7 -18,10 20,10";
+
+    /// <summary>Her corridor's own tag on the mimic, built as markup because Razor reserves
+    /// <c>&lt;text&gt;</c> for control flow. It says where the captain is, the way the wreck's spine does.</summary>
+    private string ShipCorridorTagSvg()
+    {
+        if (ShipCompartment() is not null)
+        {
+            return "";
+        }
+
+        return """<text class="vent-spine-tag here-tag" x="2" y="1.2" text-anchor="middle" """
+               + """style="font-size:1.35px">YOU</text>""";
+    }
 }

@@ -1571,6 +1571,7 @@ public partial class Map
             MoveAvatar(dtRealSeconds);
             StepSurface(dtRealSeconds); // #295/#313: dig channel, the Old Ones' converging chase, linger trickle
             AdvanceShipPumps(dtRealSeconds); // her own roughing pumps — the thrifty road, on her own deck
+            AdvanceShipCharges(dtRealSeconds); // and her own overload, if the keys have turned
             DrawWalkFrame();
 
             if (_showScope && _scopeView is not null)

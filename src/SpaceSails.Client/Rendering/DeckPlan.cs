@@ -19,7 +19,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves, ShipScuttle }
 
     public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
 
@@ -587,6 +587,14 @@ public sealed class DeckPlan
             ConsoleKind.ShipValves,
             (float)ShipLayout.BridgeRepeaterStation.X, (float)ShipLayout.BridgeRepeaterStation.Y,
             "⚙ ATMOSPHERE (bridge repeater)"));
+
+        // HER SCUTTLING CHARGES, port side aft with the machinery. The derelicts have carried a scuttling
+        // panel since #488; the owner's point is that a ship is a ship — and that this one is the last
+        // argument a captain has when something is already aboard.
+        consoles.Add(new ConsoleSpot(
+            ConsoleKind.ShipScuttle,
+            (float)ShipLayout.ScuttleStation.X, (float)ShipLayout.ScuttleStation.Y,
+            "☢ SCUTTLING CHARGES"));
 
         return new DeckPlan([.. walls], [.. consoles], roomLabels, backdrops,
             spawnX: 21, spawnY: 0, // on the bridge, facing the bow glass

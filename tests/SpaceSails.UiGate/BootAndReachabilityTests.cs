@@ -250,6 +250,7 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
             Assert.Contains("HER OWN HULL", boardText, StringComparison.Ordinal);
             Assert.Contains("Reserve", boardText, StringComparison.Ordinal);
             Record("her atmosphere board opens at the bridge repeater");
+            await ProofShotAsync("her-atmosphere-board");
 
             // THE GATE, at the moment the board comes up: nothing is authorized, so no handle on the
             // panel can open a compartment to space. A button that existed here would be the whole
@@ -264,6 +265,39 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
             await shipBoard.WaitForAsync(
                 new() { State = WaitForSelectorState.Hidden, Timeout = ActionTimeoutMs });
             Record("her board closes");
+
+            // --- 10. HER SCUTTLING CHARGES, AND THE SECOND KEY. -----------------------------------
+            //
+            // Owner: "that ship also has the scuttling charges... let's have a captains approval mechanic for
+            // that also on our ship" — and the rule that makes it more than a button: the charges take TWO
+            // hands, and the second one is the CREW'S. So the gate proves the panel opens aft and that TURN
+            // BOTH KEYS is refused until both have been given. A self-destruct armable by one press is the one
+            // bug in this game nobody would get to report twice.
+            //
+            // The charges are port-side aft at ShipLayout.ScuttleStation (−17, 7) and the captain is standing
+            // at the valves (−16, −7): a straight walk up the engine room, 14 du at 9 du/s.
+            await _page.Locator(".map-page").FocusAsync();
+            await WalkAsync("w", 1600);
+            await _page.Keyboard.PressAsync("e");
+
+            ILocator charges = _page.Locator(".vent-board");
+            await charges.WaitForAsync(
+                new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+            Assert.Contains("SCUTTLING CHARGES", await charges.InnerTextAsync(), StringComparison.Ordinal);
+            Record("her scuttling-charge panel opens aft");
+            await ProofShotAsync("her-scuttling-charges");
+
+            // BOTH KEYS OR NEITHER: no word given, nobody asked, so the act is unavailable.
+            Assert.True(
+                await _page.Locator(".vent-board button", new() { HasTextString = "TURN BOTH KEYS" })
+                           .IsDisabledAsync(),
+                "her charges could be armed without the captain's word and the crew's second key");
+            Record("her charges refuse to arm on one hand");
+
+            await _page.Locator(".vent-board button", new() { HasTextString = "Step away" }).ClickAsync();
+            await charges.WaitForAsync(
+                new() { State = WaitForSelectorState.Hidden, Timeout = ActionTimeoutMs });
+            Record("her charge panel closes cold");
 
             // --- The console must be clean: no uncaught JS, no unexplained error logs. ----------
             Assert.True(_pageErrors.Count == 0,
@@ -395,6 +429,28 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
     }
 
     private void Record(string name) => _log.AppendLine($"PASS — {name}");
+
+    /// <summary>
+    /// A PROOF SHOT ON A GREEN RUN. The gate has always saved a screenshot when it FAILS; the owner reviews
+    /// this project from a phone, often at sea, and asked for screenshots to comment on — so the boards it
+    /// proves are also worth photographing when they work. Same artifacts directory CI already uploads, so a
+    /// green check now carries pictures of what green means.
+    /// </summary>
+    private async Task ProofShotAsync(string name)
+    {
+        try
+        {
+            string dir = ArtifactsDir();
+            Directory.CreateDirectory(dir);
+            await _page.ScreenshotAsync(new() { Path = Path.Combine(dir, $"proof-{name}.png") });
+            _log.AppendLine($"SHOT — proof-{name}.png");
+        }
+        catch (Exception ex)
+        {
+            // A missing photograph must never fail a green gate.
+            _log.AppendLine($"SHOT FAILED — {name}: {ex.Message}");
+        }
+    }
 
     /// <summary>Hold a deck key down for a while, the way a captain walks. The deck reads held keys and
     /// integrates real time at a fixed speed (9 du/s), so a duration is a distance.</summary>

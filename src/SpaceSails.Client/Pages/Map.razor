@@ -1007,6 +1007,7 @@
                             + (ShipCompartment() is null ? " here" : "");
                     }
                     <g class="@shipCorridorCls" @onclick="() => SelectShipSpace(ShipLayout.SpineName)">
+                        @((MarkupString)ShipCorridorTagSvg())
                         <rect class="vent-spine-band"
                               x="@Du(ShipLayout.EngineBulkheadX)" y="@Du(-ShipLayout.SpineHalfHeight)"
                               width="@Du(ShipLayout.BridgeBulkheadX - ShipLayout.EngineBulkheadX)"
@@ -1218,7 +1219,101 @@
                     <div class="vent-message">@shipBoardMsg</div>
                 }
 
+                @* HER BOARD'S OWN LOG, like a derelict's. A panel can only ever show one line, so anything that
+                   happened while the captain was looking elsewhere — a pump banking, a hatch that would not
+                   move — was gone before it could be read. Newest at the top, because the newest is what you
+                   came to read. *@
+                @if (_shipBoardLog.Count > 0)
+                {
+                    <div class="vent-history">
+                        <div class="vent-history-head">OPERATING LOG — HER OWN BOARD</div>
+                        @for (int i = _shipBoardLog.Count - 1; i >= 0; i--)
+                        {
+                            <div class="vent-history-line">@_shipBoardLog[i]</div>
+                        }
+                    </div>
+                }
+
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipBoard)">Step away</button>
+            </div>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       HER SCUTTLING CHARGES, AND THE TWO HANDS IT TAKES. Owner: "that ship also has the scuttling charges...
+       let's have a captains approval mechanic for that also on our ship. :-D ... it is the last defence against
+       the Borg in Star Trek :-D", and then the sentence that makes it a mechanic rather than an ending: "they
+       only need to activate it for the borg to back down enough."
+
+       The second key is the CREW's — "I guess we need the another opinion we just don't have a desk for that on
+       the bridge yet" — read off the sheet already on the captain's desk. No new desk required, and the crew
+       temperature stops being a report card.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_showShipScuttlePanel)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipScuttlePanel)">
+            <div class="vent-board" @onclick:stopPropagation="true">
+                <div class="view-object-title">☢ SCUTTLING CHARGES — HER OWN KEEL</div>
+
+                @if (_shipChargesSeconds is { } shipBurn)
+                {
+                    <div class="vent-sub">
+                        @(Scuttle.CanAbort(shipBurn)
+                            ? "The note of her is up half a tone. The panel will still take the keys back."
+                            : "Past recall. Whatever happens now happens on its own schedule.")
+                    </div>
+                    <div class="vent-readout">
+                        ☢ OVERLOAD — @HullVenting.SoakLabel(shipBurn) · the way out is the way you came in
+                    </div>
+                    @if (Scuttle.CanAbort(shipBurn))
+                    {
+                        <button type="button" class="btn btn-outline-warning btn-sm" @onclick="BackTheKeysOut">
+                            ↩ Back the keys out
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="vent-sub">@ShipScuttle.NeverDelegable</div>
+                    <div class="vent-readout">@ShipScuttle.PriceLine(_cargoUnits, (long)_cargoValue, _credits)</div>
+
+                    <div class="vent-actions">
+                        <button type="button"
+                                class="btn btn-sm @(_shipScuttleWordGiven ? "btn-success" : "btn-outline-danger")"
+                                title="@ShipScuttle.AskFor("this ship")"
+                                @onclick="GiveTheWordAgainstHer">
+                            @(_shipScuttleWordGiven ? "✅ THE CAPTAIN'S KEY IS TURNED — click to take it back" : "🔑 The captain's key")
+                        </button>
+
+                        @* THE SECOND OPINION. Not a rules explanation and not a dice roll the captain can
+                           re-roll: the crew answer from where they already stand with him. *@
+                        <button type="button"
+                                class="btn btn-sm @(_shipScuttleSecondKey == ShipScuttle.SecondKey.Refused ? "btn-outline-secondary" : "btn-outline-warning")"
+                                disabled="@(!_shipScuttleWordGiven)"
+                                title="Scuttling her takes two hands. Ask the crew for theirs."
+                                @onclick="AskTheCrewForTheSecondKey">
+                            🧑‍🔧 Ask the crew for the second key
+                        </button>
+
+                        <button type="button" class="btn btn-danger btn-sm"
+                                disabled="@(!_shipScuttleWordGiven
+                                            || _shipScuttleSecondKey is null
+                                            || _shipScuttleSecondKey == ShipScuttle.SecondKey.Refused)"
+                                title="@(_shipScuttleSecondKey == ShipScuttle.SecondKey.Refused
+                                         ? ShipScuttle.RefusedPointerLine
+                                         : "Both keys together. Ninety seconds, and a recall window for the first sixty.")"
+                                @onclick="TurnBothKeys">
+                            ☢ TURN BOTH KEYS
+                        </button>
+                    </div>
+                }
+
+                @if (_shipScuttleMessage is { Length: > 0 } shipScuttleMsg)
+                {
+                    <div class="vent-message">@shipScuttleMsg</div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipScuttlePanel)">Step away</button>
             </div>
         </div>
     }
@@ -2194,6 +2289,33 @@
        hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
        OUT IN THE CORRIDOR, not just from the board you walked away from. Two clocks racing each other: the
        one emptying a room, and the one on the sentry holding the lane while it does. *@
+    @* HER OWN CLOCKS, out where she can be read from the corridor. Owner, having started a pump on her board
+       and walked away: "I expect to see the pumping here now as we have on the reever infested salvage ship."
+       Same strip, same classes — a run you can only infer from a sentence on a panel is a run you will forget
+       you started, and hers take the best part of a minute. *@
+    @if (!OnWreck && _deckMode && (_shipPumps.Count > 0 || _shipChargesSeconds is not null))
+    {
+        <div class="wreck-clocks">
+            @* THE OVERLOAD, LOUDEST AND FIRST — the whole scene is walking away from the panel. *@
+            @if (_shipChargesSeconds is { } shipClock)
+            {
+                <div class="wc-line overload @(Scuttle.CanAbort(shipClock) ? "" : "no-recall")">
+                    <span class="wc-tag">☢ @(Scuttle.CanAbort(shipClock) ? "OVERLOAD" : "NO RECALL")</span>
+                    <span class="wc-room">her own keel</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(shipClock)</span>
+                </div>
+            }
+            @foreach (var shipRun in _shipPumps.Values.OrderBy(p => p.SecondsLeft))
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">🛢 @(shipRun.RoughBanked ? "TAIL" : "PUMPING")</span>
+                    <span class="wc-room">@(shipRun.Volume.Count > 1 ? $"{shipRun.Volume.Count} SPACES" : shipRun.Volume[0])</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(shipRun.SecondsLeft)</span>
+                </div>
+            }
+        </div>
+    }
+
     @if (OnWreck && _deckMode && (_pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null))
     {
         <div class="wreck-clocks">

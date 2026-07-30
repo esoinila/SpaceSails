@@ -98,6 +98,20 @@ public static class ShipAtmosphere
     public static string NoReserveLine(string room) =>
         $"Nothing left in the tanks to put back into {room}. She makes air slowly; you spent it quickly.";
 
+    /// <summary>
+    /// WHEN THE THRIFTY ROAD HAS NOWHERE TO PUT THE AIR. Her gauge read <c>"Reserve: 9 of 8 fills in her
+    /// tanks"</c> the first time a pump banked into a full ship — the pump was quietly minting capacity, which
+    /// is the sort of free lunch an economy dies of.
+    ///
+    /// <para>Overflow is real and worth saying out loud rather than clamping in silence: pumping a compartment
+    /// down into full tanks saves nothing, and the honest lesson is to put some air back (or just crack the
+    /// valve) rather than run a pump whose yield has nowhere to go.</para>
+    /// </summary>
+    public static string TanksFullLine(string label, int spilledFills) =>
+        $"🛢 {label} is roughed out — but her tanks were already full, so {spilledFills} " +
+        $"fill{(spilledFills == 1 ? "" : "s")} went overboard with the rest. Pumping into a full ship saves " +
+        "nothing: put some air back first, or crack the valve and stop calling it thrift.";
+
     /// <summary>The bridge repeater's own line. A derelict has this panel and cannot power it — the fact that
     /// hers answers is most of what owning a ship means, and the reason the owner wanted the controls in two
     /// places: <i>"there must be controls to do so on the bridge."</i>

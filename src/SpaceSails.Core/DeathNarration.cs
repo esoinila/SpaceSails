@@ -30,6 +30,13 @@ public enum DeathCause
     /// chest is still out there. (Wired ready; the surface-death lane sets it.)</summary>
     Reevers,
 
+    /// <summary>
+    /// You turned the keys yourself. Owner: <i>"that ship also has the scuttling charges... it is the last
+    /// defence against the Borg in Star Trek"</i> — and the whole point of the charges is the THREAT, so this
+    /// cause only ever fires when the threat did not work and the captain stayed aboard anyway.
+    /// </summary>
+    Scuttled,
+
     /// <summary>The eerie variant of a surface death: nerves shot to a sliver, and the last anyone saw, the
     /// captain walked TOWARD the crowd, not away — "joined them" (owner's cruise ruling). Chosen sparingly by
     /// <see cref="DeathNarration.SurfaceEnd"/> so it stays chilling. (Wired ready.)</summary>
@@ -110,6 +117,8 @@ public static class DeathNarration
         DeathCause.Reevers => "death-reevers.jpg",
         DeathCause.Joined => "death-joined.jpg",
         DeathCause.Void => "death-void.jpg",
+        // Her own charges, and the fireball the impact death already owns — one explosion, two ways to earn it.
+        DeathCause.Scuttled => "busted-ship-explosion.jpg",
         _ => "busted-ship-explosion.jpg",
     };
 
@@ -121,6 +130,7 @@ public static class DeathNarration
         DeathCause.Reevers => "WHAT HAPPENED — the Old Ones took you",
         DeathCause.Joined => "WHAT HAPPENED — you walked into the crowd",
         DeathCause.Void => "WHAT HAPPENED — lost to the void",
+        DeathCause.Scuttled => "WHAT HAPPENED — you scuttled her, and stayed aboard",
         _ => "WHAT HAPPENED",
     };
 
@@ -143,6 +153,15 @@ public static class DeathNarration
         "You put the ship into {body} at speed — the periapsis said 'under the surface', and the surface won.",
         "The hull met {body} at speed. No corridor, no atmosphere to catch you — just rock, and then nothing.",
         "You flew {body}'s periapsis under its own surface. The ground was where the orbit said it would be.",
+    ];
+
+    /// <summary>Her own charges, with the captain still standing in her. Every line has to carry the same
+    /// fact: this was a decision, taken twice, by two hands — and then not walked away from.</summary>
+    private static readonly string[] ScuttledLines =
+    [
+        "You turned the keys {where} and then did not leave. The charges kept their end of the bargain.",
+        "Both keys, ninety seconds, and a way out you had already dogged shut {where}. She went exactly as advertised.",
+        "The overload ran to zero {where} with the captain still aboard. Whatever you were threatening, you meant it.",
     ];
 
     private static readonly string[] ReeverLines =
@@ -168,6 +187,7 @@ public static class DeathNarration
 
     private static string[] PoolFor(DeathCause cause) => cause switch
     {
+        DeathCause.Scuttled => ScuttledLines,
         DeathCause.Collector => CollectorLines,
         DeathCause.Impact => ImpactLines,
         DeathCause.Reevers => ReeverLines,
