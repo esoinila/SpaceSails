@@ -298,7 +298,7 @@ public partial class Map
                 ShowPulseMessage(SleepInBunk());
                 break;
             case DeckPlan.ConsoleKind.Vent:
-                VentCharge();               // the CAPACITOR, not the air — see the console's own label
+                OpenChargeBoard();          // #523: the charge board — the dump is one switch ON it now
                 break;
             case DeckPlan.ConsoleKind.ShipDoor:
                 ToggleShipDoorAtHand();     // her own hatches, dogged by hand at the door

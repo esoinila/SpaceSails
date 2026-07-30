@@ -220,7 +220,9 @@ public partial class Map
     }
 
     // M7 additions — Electric Universe layer (only live when _plasma is not null)
-    private const double ArcChargeThreshold = 0.9;      // hull arcs (halo + system-wide visibility)
+    // #523: the threshold lives in Core now (HullCharge.ArcThreshold) so the sim and the charge board cannot
+    // disagree about when she is arcing. This alias keeps the call sites readable.
+    private const double ArcChargeThreshold = HullCharge.ArcThreshold;
     private bool _wasArcing;                             // rising-edge detector for the thunder cue
     private const double VentCooldownSeconds = 1.0;     // separate budget from the thrust pulse cooldown
     private double _lastVentSimTime = -VentCooldownSeconds; // so the very first vent isn't rejected
@@ -1565,6 +1567,13 @@ public partial class Map
                 return;
             }
         }
+
+        // #523 · HER CHARGE SYSTEMS BELONG TO THE SHIP, NOT TO A VIEW. The contactor holds the hull down and
+        // spends expellant doing it, and the charge soaking into the boards behind the panel keeps climbing,
+        // whether the captain is walking her corridor or sitting at the helm — the stealth tax is paid in
+        // FLIGHT, which is exactly where it was invisible before. (Ticking it only in deck mode was the first
+        // cut of this, and it would have made the whole system a curiosity you could only see while parked.)
+        AdvanceChargeSystems(dtRealSeconds);
 
         if (_deckMode)
         {
