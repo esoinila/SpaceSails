@@ -281,14 +281,25 @@ public partial class Map
     /// pop-up 😎"</i>, and then the better name for it — <i>"Captain's remote"</i>.</summary>
     private bool _showCaptainsRemote;
 
-    /// <summary>Whether the boat is cold. Owner: <i>"Shuttle should also power down to make it less of an
-    /// anomaly."</i> A lit shuttle clamped to a dead hull is the anomaly an inspection team notices long before
-    /// it notices a man.</summary>
-    private bool _boatPoweredDown;
+    /// <summary>The captain's standing order for the boat. Owner: <i>"Shuttle should also power down to make it
+    /// less of an anomaly."</i> A lit shuttle clamped to a dead hull is the anomaly an inspection team notices long
+    /// before it notices a man.</summary>
+    private bool _boatOrderedCold;
 
-    /// <summary>Seconds left before a cold boat will fly. Owner: <i>"Warm up time is a cost there 😎"</i> — so it
-    /// is charged when the captain wants to leave, not when they went dark.</summary>
-    private double _boatSpinUpLeft;
+    /// <summary>
+    /// Where she actually is between cold (0) and flying (1) — a dial, not a countdown, so that reversing the
+    /// order keeps the progress already made. Owner: <i>"A timer on the map about the cool down and warm up"</i>,
+    /// which only makes sense if both directions take real time.
+    /// </summary>
+    private double _boatWarmth = 1.0;
+
+    private SilentRunning.BoatState BoatState => SilentRunning.StateOf(_boatWarmth, _boatOrderedCold);
+
+    private double BoatSecondsLeft => SilentRunning.SecondsLeft(_boatWarmth, _boatOrderedCold);
+
+    /// <summary>Whether her clocks are worth a line on the map — i.e. anything other than a warm boat, which is
+    /// the boring default and would only clutter the strip.</summary>
+    private bool BoatClockWorthShowing => BoatState != SilentRunning.BoatState.Warm;
 
     private void OpenCaptainsRemote()
     {
@@ -298,42 +309,57 @@ public partial class Map
 
     private void CloseCaptainsRemote() => _showCaptainsRemote = false;
 
-    /// <summary>Put the boat to sleep, or start waking her. Going dark is instant; coming back is not, which is
-    /// the entire trade.</summary>
+    /// <summary>
+    /// Reverse the standing order for the boat, from the remote, wherever the captain is standing. Owner:
+    /// <i>"Shuttle warm up should work from remote"</i> — so this is the ONE place the boat is commanded, and the
+    /// lock merely reports what it finds.
+    /// </summary>
     private void ToggleBoatPower()
     {
-        _boatPoweredDown = !_boatPoweredDown;
+        _boatOrderedCold = !_boatOrderedCold;
 
-        if (_boatPoweredDown)
+        ShowPulseMessage(_boatOrderedCold ? SilentRunning.BoatDarkLine : SilentRunning.BoatWakingLine);
+        LogAutopilotEvent(_boatOrderedCold
+            ? $"🛸 Rigging the boat down — {SilentRunning.SecondsLeft(_boatWarmth, true):0} s to quiet."
+            : $"🛸 Bringing the boat up — {SilentRunning.SecondsLeft(_boatWarmth, false):0} s to her hatch.");
+
+        // Said once, the first time a captain orders her up while something else is already counting: this is the
+        // scene the owner sketched — "self destruct tics down but shuttle still warms up".
+        if (!_boatOrderedCold && !_twoClocksSaid && SomethingElseIsCountingDown)
         {
-            _boatSpinUpLeft = 0;   // asleep; the clock only runs when she is asked to wake
-            ShowPulseMessage(SilentRunning.BoatDarkLine);
-            LogAutopilotEvent("🛸 The boat is cold — lamps, transponder and the tube gun stood down.");
-        }
-        else
-        {
-            _boatSpinUpLeft = SilentRunning.SpinUpSeconds;
-            ShowPulseMessage(SilentRunning.BoatWakingLine);
-            LogAutopilotEvent($"🛸 Bringing the boat up — {SilentRunning.SpinUpSeconds:0} s.");
+            _twoClocksSaid = true;
+            LogAutopilotEvent(SilentRunning.TwoClocksLine);
         }
 
         RendererInterop.PlayCue("board");
         StateHasChanged();
     }
 
-    /// <summary>Run the boat's warm-up. Ticked wherever the captain is, because a captain who ordered her up and
-    /// then walked away should find her ready.</summary>
+    private bool _twoClocksSaid;
+
+    /// <summary>Whether a hull clock is already running against her warm-up — the overload on either keel.</summary>
+    private bool SomethingElseIsCountingDown => _scuttleSecondsLeft is not null || _shipChargesSeconds is not null;
+
+    /// <summary>
+    /// Run the boat's dial in whichever direction her standing order points. Ticked wherever the captain is,
+    /// because a captain who ordered her up and then went back for one more crate should find her open.
+    /// </summary>
     private void AdvanceBoatSpinUp(double dtSeconds)
     {
-        if (_boatSpinUpLeft <= 0)
+        SilentRunning.BoatState was = BoatState;
+        _boatWarmth = SilentRunning.AdvanceWarmth(_boatWarmth, _boatOrderedCold, dtSeconds);
+        SilentRunning.BoatState now = BoatState;
+
+        if (now == was)
         {
             return;
         }
 
-        _boatSpinUpLeft = Math.Max(0, _boatSpinUpLeft - dtSeconds);
-        if (_boatSpinUpLeft <= 0)
+        // Arriving at either end is worth saying out loud: one of them opens a hatch, the other closes it.
+        ShowPulseMessage(SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold));
+        if (now == SilentRunning.BoatState.Warm)
         {
-            ShowPulseMessage(SilentRunning.SpinUpLabel(0));
+            RendererInterop.PlayCue("door");
         }
     }
 
@@ -341,19 +367,19 @@ public partial class Map
     /// leave. This is where the warm-up is CHARGED, which is the owner's own framing.</summary>
     private bool BoatReadyToFly()
     {
-        if (SilentRunning.ReadyToFly(_boatPoweredDown, _boatSpinUpLeft))
+        if (SilentRunning.ReadyToFly(_boatWarmth, _boatOrderedCold))
         {
             return true;
         }
 
-        if (_boatPoweredDown)
+        if (_boatOrderedCold)
         {
-            // Asked for a ride while she sleeps: waking her IS the answer, and it starts now.
+            // Asked for a ride while she is going or gone dark: waking her IS the answer, and it starts now.
             ToggleBoatPower();
             return false;
         }
 
-        ShowPulseMessage(SilentRunning.NotARideYetLine(_boatSpinUpLeft));
+        ShowPulseMessage(SilentRunning.NotARideYetLine(BoatSecondsLeft));
         RendererInterop.PlayCue("block");
         return false;
     }

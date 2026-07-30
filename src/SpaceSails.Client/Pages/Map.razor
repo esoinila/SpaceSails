@@ -2471,15 +2471,18 @@
                         @(_weaponsTight ? "🤖 WEAPONS TIGHT — press to free" : "🤖 Weapons tight (bots hold)")
                     </button>
 
+                    @* #540 · THE WARM-UP IS ORDERED FROM HERE. Owner: "Shuttle warm up should work from remote."
+                       So this one button is the whole boat: it reverses whatever standing order she is under, and
+                       says which way she is currently travelling on the dial. *@
                     <button type="button"
-                            class="btn btn-sm @(_boatPoweredDown ? "btn-warning" : "btn-outline-warning")"
-                            title="@(_boatPoweredDown ? SilentRunning.BoatWakingLine : SilentRunning.BoatDarkLine)"
+                            class="btn btn-sm @(_boatOrderedCold ? "btn-warning" : "btn-outline-warning")"
+                            title="@(_boatOrderedCold ? SilentRunning.BoatWakingLine : SilentRunning.BoatDarkLine)"
                             @onclick="ToggleBoatPower">
-                        @(_boatPoweredDown ? "🛸 BOAT COLD — press to wake her" : "🛸 Put the boat to sleep")
+                        @SilentRunning.BoatButtonLabel(BoatState)
                     </button>
                 </div>
 
-                <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatSpinUpLeft)</div>
+                <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
                 <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
 
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseCaptainsRemote)">Pocket it</button>
@@ -2487,60 +2490,49 @@
         </div>
     }
 
-    @* #538 · WEAPONS TIGHT, ON THE HUD, FOR AS LONG AS IT STANDS. Owner: "the remote to sentries should be in
-       the mobile hud not at captains desk." The order is given on foot and its whole danger is forgetting it —
-       so it is not a checkbox somewhere else, it is a line you cannot walk past. *@
-    @if (_deckMode && _weaponsTight)
-    {
-        <div class="wreck-clocks">
-            <div class="wc-line overload no-recall">
-                <span class="wc-tag">🤖 TIGHT</span>
-                <span class="wc-room">nothing of yours fires</span>
-                <span class="wc-time">H</span>
-            </div>
-        </div>
-    }
-
-    @if (!OnWreck && _deckMode && (_shipPumps.Count > 0 || _shipChargesSeconds is not null))
-    {
-        <div class="wreck-clocks">
-            @* THE OVERLOAD, LOUDEST AND FIRST — the whole scene is walking away from the panel. *@
-            @if (_shipChargesSeconds is { } shipClock)
-            {
-                <div class="wc-line overload @(Scuttle.CanAbort(shipClock) ? "" : "no-recall")">
-                    <span class="wc-tag">☢ @(Scuttle.CanAbort(shipClock) ? "OVERLOAD" : "NO RECALL")</span>
-                    <span class="wc-room">her own keel</span>
-                    <span class="wc-time">@HullVenting.SoakLabel(shipClock)</span>
-                </div>
-            }
-            @foreach (var shipRun in _shipPumps.Values.OrderBy(p => p.SecondsLeft))
-            {
-                <div class="wc-line pump">
-                    <span class="wc-tag">🛢 @(shipRun.RoughBanked ? "TAIL" : "PUMPING")</span>
-                    <span class="wc-room">@(shipRun.Volume.Count > 1 ? $"{shipRun.Volume.Count} SPACES" : shipRun.Volume[0])</span>
-                    <span class="wc-time">@HullVenting.SoakLabel(shipRun.SecondsLeft)</span>
-                </div>
-            }
-        </div>
-    }
-
-    @if (OnWreck && _deckMode && (_pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null))
+    @* #540 · ONE STRIP, EVERY CLOCK. This used to be three separate `.wreck-clocks` blocks — and since the CSS
+       pins the strip at a FIXED top/right, any two of them running at once drew exactly on top of each other.
+       Weapons tight plus a pump was already an unreadable pile; the boat's clocks would have made three. So they
+       are one list now, ordered by how much they should frighten you: the keel, then the way off her, then the
+       air, then the standing orders you might have forgotten. Which is also the owner's scene, in order —
+       "say self destruct tics down but shuttle still warms up". *@
+    @if (_deckMode && (_weaponsTight || BoatClockWorthShowing
+                       || (OnWreck
+                           ? _pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null
+                           : _shipPumps.Count > 0 || _shipChargesSeconds is not null)))
     {
         <div class="wreck-clocks">
             @* THE OVERLOAD, LOUDEST AND FIRST. Owner, having armed it: "it should have a timer visible in
                UI" — and he is right that this was absurd: the entire scene is walking AWAY from the panel,
                and the clock was only readable by going back to it. Past the recall point it stops being a
                countdown and starts being a fact. *@
-            @if (_scuttleSecondsLeft is { } burn)
+            @if ((OnWreck ? _scuttleSecondsLeft : _shipChargesSeconds) is { } burn)
             {
                 <div class="wc-line overload @(Scuttle.CanAbort(burn) ? "" : "no-recall")">
                     <span class="wc-tag">☢ @(Scuttle.CanAbort(burn) ? "OVERLOAD" : "NO RECALL")</span>
-                    <span class="wc-room">get off her</span>
+                    <span class="wc-room">@(OnWreck ? "get off her" : "her own keel")</span>
                     <span class="wc-time">@HullVenting.SoakLabel(burn)</span>
                 </div>
             }
+
+            @* THE BOAT, SECOND. Owner: "A timer on the map about the cool down and warm up" — and the map is
+               exactly where it belongs, because a captain watching this clock is nowhere near a console. It sits
+               under the overload on purpose: those are the two numbers whose race is the whole scene. *@
+            @if (BoatClockWorthShowing)
+            {
+                <div class="wc-line @(BoatState == SilentRunning.BoatState.WarmingUp ? "overload" : "")">
+                    <span class="wc-tag">@SilentRunning.ClockTag(BoatState)</span>
+                    <span class="wc-room">@SilentRunning.ClockNote(BoatState)</span>
+                    <span class="wc-time">
+                        @(BoatState == SilentRunning.BoatState.Cold
+                            ? "—"
+                            : HullVenting.SoakLabel(BoatSecondsLeft))
+                    </span>
+                </div>
+            }
+
             @* Every pump gets a line, because several can run at once now. *@
-            @foreach (var run in _pumps.Values.OrderBy(p => p.SecondsLeft))
+            @foreach (var run in (OnWreck ? _pumps : _shipPumps).Values.OrderBy(p => p.SecondsLeft))
             {
                 <div class="wc-line pump">
                     <span class="wc-tag">🛢 @(run.RoughBanked ? "TAIL" : "PUMPING")</span>
@@ -2548,12 +2540,28 @@
                     <span class="wc-time">@HullVenting.SoakLabel(run.SecondsLeft)</span>
                 </div>
             }
-            @foreach ((string room, double secs) in RoomsSoaking)
+            @if (OnWreck)
             {
-                <div class="wc-line">
-                    <span class="wc-tag">💨 VACUUM</span>
-                    <span class="wc-room">@room</span>
-                    <span class="wc-time">@HullVenting.SoakLabel(secs)</span>
+                @foreach ((string room, double secs) in RoomsSoaking)
+                {
+                    <div class="wc-line">
+                        <span class="wc-tag">💨 VACUUM</span>
+                        <span class="wc-room">@room</span>
+                        <span class="wc-time">@HullVenting.SoakLabel(secs)</span>
+                    </div>
+                }
+            }
+
+            @* #538 · WEAPONS TIGHT, FOR AS LONG AS IT STANDS. Owner: "the remote to sentries should be in the
+               mobile hud not at captains desk." The order is given on foot and its whole danger is forgetting
+               it — so it is not a checkbox somewhere else, it is a line you cannot walk past. Last in the strip
+               because it is a standing order rather than a countdown. *@
+            @if (_weaponsTight)
+            {
+                <div class="wc-line overload no-recall">
+                    <span class="wc-tag">🤖 TIGHT</span>
+                    <span class="wc-room">nothing of yours fires</span>
+                    <span class="wc-time">H</span>
                 </div>
             }
         </div>
