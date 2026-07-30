@@ -250,6 +250,18 @@ public static class Probe
 
         Console.WriteLine();
         Console.WriteLine($"  {lying} of {total} seeded hulls hide something (target: about one in five).");
+
+        // The golden value the determinism law pins. Printed here so the law can be re-derived rather than
+        // guessed at if the placement ever changes on purpose.
+        HullSounding.HiddenVoid? g = HullSounding.VoidFor(
+            "golden-hull", WreckLayout.Compartments, WreckLayout.SpineHalfHeight,
+            WreckLayout.TopY, WreckLayout.BottomY);
+        Console.WriteLine();
+        Console.WriteLine("  GOLDEN 'golden-hull' -> " +
+                          (g is { } gv
+                              ? $"{gv.NearRoom} outboard={gv.Outboard} plate=({gv.PlateX:0.###},{gv.PlateY:0.###}) " +
+                                $"band={gv.X0:0.###}…{gv.X1:0.###} area={gv.AreaSquareDu:0.###}"
+                              : "honest"));
         Console.WriteLine("  A void on every wreck makes measuring routine; the appeal is that most ships are");
         Console.WriteLine("  exactly what they look like.");
     }

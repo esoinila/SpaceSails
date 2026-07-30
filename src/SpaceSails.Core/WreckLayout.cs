@@ -75,6 +75,48 @@ public static class WreckLayout
     /// <summary>The transom — aft of the last bulkhead by a machinery space, not flush with it.</summary>
     public const float TransomX = AftX - MachineryDepth;
 
+    /// <summary>
+    /// #537 · AND HER INTERIOR BULKHEADS ARE NOT LINES EITHER. Owner, after the shielding band shipped, giving the
+    /// reason he had wanted padding on the INSIDE walls all along: <i>"the reason I wanted padding on interior
+    /// walls was to not make finding the hidden spaces too easy. Still a room with a wall to technical space is a
+    /// good bet on large enough hiding space. 😎👍"</i>
+    ///
+    /// <para>He is right and it is the sharper half of the idea. A shielding band on the OUTSIDE ONLY is itself a
+    /// tell: a captain learns in one boarding that hidden space is always outboard, never knocks anywhere else,
+    /// and the deduction collapses into a reflex. Give every transverse bulkhead its own thin technical run and a
+    /// void can be almost anywhere — so the clue has to be read rather than guessed at.</para>
+    ///
+    /// <para><b>And the heuristic survives, which is the good bit.</b> A bulkhead run is
+    /// <see cref="BulkheadDepth"/> deep against the band's <see cref="ShieldingDepth"/>, so an outboard wall
+    /// really is the better bet for anything BIG — a folded gun mount, a cold locker with somebody in it — while a
+    /// bulkhead will take papers and a rack of keys and nothing else. Where a thing can be hidden is decided by
+    /// what it is, which is exactly "a good bet" rather than a rule.</para>
+    /// </summary>
+    public const float BulkheadDepth = 1.2f;
+
+    /// <summary>The transverse bulkhead positions that have a room on BOTH sides — the ones with a technical run
+    /// inside them. The hull's own ends are not in here: they have the machinery space and the bow behind them.</summary>
+    public static IEnumerable<float> InteriorBulkheads(bool top)
+    {
+        var seen = new HashSet<float>();
+        var ends = new HashSet<float> { AftX, BowX - 6 };
+
+        foreach ((string _, float x0, float x1, bool isTop) in Compartments)
+        {
+            if (isTop != top)
+            {
+                continue;
+            }
+            foreach (float x in new[] { x0, x1 })
+            {
+                if (!ends.Contains(x) && seen.Add(x))
+                {
+                    yield return x;
+                }
+            }
+        }
+    }
+
     /// <summary>Where the shuttle puts the away team down — just inside the wreck's airlock, on the spine.
     /// Deliberately AT a doorway, so the first compartment is one step away.</summary>
     public const double SpawnX = 18.0;
@@ -230,13 +272,37 @@ public static class WreckLayout
             walls.Add(new(x0, SpineHalfHeight, x1, SpineHalfHeight));
         }
 
-        // Compartment bulkheads.
+        // Compartment bulkheads. The hull's own ends stay single lines — there is machinery space behind one
+        // and the bow taper behind the other — but every bulkhead with a room on BOTH sides is a thin closed box
+        // with a technical run inside it, because a wall that holds an atmosphere is not a line and the ship's
+        // pipework has to go somewhere.
         foreach ((string _, float x0, float x1, bool top) in Compartments)
         {
             float yIn = top ? -SpineHalfHeight : SpineHalfHeight;
             float yOut = top ? TopY : BottomY;
-            walls.Add(new(x0, yIn, x0, yOut));
-            walls.Add(new(x1, yIn, x1, yOut));
+
+            foreach (float x in new[] { x0, x1 })
+            {
+                if (x == AftX || x == BowX - 6)
+                {
+                    walls.Add(new(x, yIn, x, yOut));
+                }
+            }
+        }
+
+        foreach (bool top in new[] { true, false })
+        {
+            float yIn = top ? -SpineHalfHeight : SpineHalfHeight;
+            float yOut = top ? TopY : BottomY;
+            float half = BulkheadDepth / 2f;
+
+            foreach (float x in InteriorBulkheads(top))
+            {
+                walls.Add(new(x - half, yIn, x - half, yOut));
+                walls.Add(new(x + half, yIn, x + half, yOut));
+                walls.Add(new(x - half, yIn, x + half, yIn));
+                walls.Add(new(x - half, yOut, x + half, yOut));
+            }
         }
 
         // The away team's own lock across the spine: two stubs off the corridor walls with a passage

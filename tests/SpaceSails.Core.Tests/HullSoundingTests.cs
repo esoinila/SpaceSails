@@ -199,7 +199,31 @@ public sealed class HullSoundingTests
     /// A HULL IS OR NEVER WAS. Seeded off her id, so a captain who leaves and comes back finds the same ship — a
     /// void that re-rolled on the second boarding would turn the whole search into a slot machine, and the clue
     /// into a lie.
+    ///
+    /// <para><b>And this law could not see the bug it was written to prevent.</b> The first cut folded
+    /// <c>wreckId.GetHashCode(StringComparison.Ordinal)</c> into the seed — and .NET randomises string hashing
+    /// PER PROCESS, so a hull was found on one launch and honest on the next, with her manifest still pointing at
+    /// a wall with nothing behind it. Re-querying inside one process agrees with itself perfectly. CI found it by
+    /// running somewhere else. Hence the golden value below, which is the only form of this law that actually
+    /// bites.</para>
     /// </summary>
+    [Fact]
+    public void TheSameShipYieldsTheSameSecretInEveryProcessThatEverRunsHer()
+    {
+        // The value was derived by labs/44-knock-on-the-hull (probe F prints it) so it can be re-derived rather
+        // than guessed at if the placement is ever changed ON PURPOSE. Under the old GetHashCode seeding this
+        // assertion fails on almost every launch, which is the whole point of writing it down.
+        HullSounding.HiddenVoid hidden = Assert.NotNull(VoidOn("golden-hull"));
+
+        Assert.Equal("BRIDGE", hidden.NearRoom);
+        Assert.False(hidden.Outboard);
+        Assert.Equal(13.6, hidden.PlateX, 3);
+        Assert.Equal(-6.0, hidden.PlateY, 3);
+        Assert.Equal(12.4, hidden.X0, 3);
+        Assert.Equal(13.6, hidden.X1, 3);
+        Assert.Equal(7.2, hidden.AreaSquareDu, 3);
+    }
+
     [Fact]
     public void WhatSheHidesIsDecidedByWhoSheIsAndNeverRerolled()
     {
@@ -237,7 +261,14 @@ public sealed class HullSoundingTests
 
         Assert.True(total >= 8, "the seeded causes must actually produce hulls to measure");
         Assert.True(lying > 0, "if no hull ever lies, her manifest is furniture");
-        Assert.True(lying * 2 < total, "if half of them lie, measuring is routine and finding one is worth nothing");
+        Assert.True(lying < total, "if every hull lies, the manifest may as well be a treasure map");
+
+        // The RATE is pinned on the rule rather than on this small sample: ten seeded causes is far too few for
+        // an observed count to mean anything (it has read 2, 3 and 4 across three shuffles of the placement code
+        // without the odds changing at all). What must hold is that a hull hiding something stays UNCOMMON —
+        // one in five — because at one in two, measuring becomes routine and finding one is worth nothing.
+        Assert.True(HullSounding.VoidOnARollOf <= 4,
+                    "a void on more than a fifth of hulls makes the search a chore rather than a find");
     }
 
     /// <summary>
@@ -289,9 +320,27 @@ public sealed class HullSoundingTests
 
             Assert.Equal(hidden.NearRoom, name);
             Assert.Equal(top, hidden.Top);
-            Assert.Equal(top ? WreckLayout.TopY : WreckLayout.BottomY, hidden.PlateY, 3);
-            Assert.True(hidden.PlateX > x0 + 1.5 && hidden.PlateX < x1 - 1.5,
-                        $"{w.ShipName}'s plate is jammed into a corner of {name}");
+
+            if (hidden.Outboard)
+            {
+                // On the room's OUTBOARD wall, clear of its corners.
+                Assert.Equal(top ? WreckLayout.TopY : WreckLayout.BottomY, hidden.PlateY, 3);
+                Assert.True(hidden.PlateX > x0 + 1.5 && hidden.PlateX < x1 - 1.5,
+                            $"{w.ShipName}'s plate is jammed into a corner of {name}");
+            }
+            else
+            {
+                // On a BULKHEAD face, which is a different wall of the same room — and the law had only ever
+                // been written for the outboard case, so adding a second kind of hiding place walked straight
+                // into it. CI caught that; the in-process run did not, because every locally seeded hull
+                // happened to come out outboard.
+                Assert.True(hidden.PlateX > x0 - 1 && hidden.PlateX < x1 + 1,
+                            $"{w.ShipName}'s plate is not on a bulkhead of {name}");
+                Assert.InRange(System.Math.Abs(hidden.PlateY),
+                               WreckLayout.SpineHalfHeight,
+                               System.Math.Abs(top ? WreckLayout.TopY : WreckLayout.BottomY));
+                Assert.Equal(top, hidden.PlateY < 0);
+            }
         }
     }
 
@@ -322,7 +371,8 @@ public sealed class HullSoundingTests
     public void TheManifestLieBecomesAnOrdinaryDiscrepancy()
     {
         HullSounding.HiddenVoid hidden =
-            new("DEEP HOLD", -12, -6, true, -9, WreckLayout.TopY, "something");
+            new("DEEP HOLD", Outboard: true, -12, -6, true, -9, WreckLayout.TopY,
+                6 * WreckLayout.ShieldingDepth, "something");
         HullSounding.Discrepancy d = HullSounding.AsDiscrepancy(hidden);
 
         Assert.Equal(6 * WreckLayout.ShieldingDepth, d.AreaSquareDu, 3);
@@ -336,7 +386,8 @@ public sealed class HullSoundingTests
     public void TheFindDescribesAndDoesNotValue()
     {
         HullSounding.HiddenVoid hidden =
-            new("DEEP HOLD", -12, -6, true, -9, WreckLayout.TopY, "A rack of code keys.");
+            new("DEEP HOLD", Outboard: true, -12, -6, true, -9, WreckLayout.TopY,
+                6 * WreckLayout.ShieldingDepth, "A rack of code keys.");
         string line = HullSounding.FoundItLine(hidden);
 
         Assert.Contains("A rack of code keys.", line, StringComparison.Ordinal);
