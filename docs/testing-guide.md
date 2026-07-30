@@ -481,6 +481,8 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
 | **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
 | **`?land=1`** | **Ride the shuttle down as soon as the world is ready, onto the first landable body in reach (honours `?site=N`) — the real descent, skipping only the walk to the hatch and the boarding panel. The one-URL way to playtest a surface (#464).** |
+| **`?land=<bodyId>`** | **Land on a NAMED body instead of whatever happens to be nearest — matched on id OR name, case-insensitively. If it is not landable from this berth it REFUSES and lists what is, because a cheat that silently lands you somewhere else means you playtest the wrong scene and then trust the result (#320).** |
+| **`?sweep=N`** | **Put N (0–3) black-ops sweepers aboard whatever hull you board — the inspection team: 20 du sight inside a 70° cone, 34 du hearing through walls, a 3 s challenge before they shoot (#538).** |
 | **`?reevers=N`** | **Set N Old Ones (0–8) down ON the captain the moment they land, already aware — the chase, the pack spacing and the #453 exchange (block roll, blood, five blows) in seconds instead of a long walk (#458).** |
 | **`?bond=1`** | **Boot docked at a bar and FORCE the next ambient scare (shudder/buzzer/PA) to open a STRANGER-BOND — a co-present stranger stands you a cognac, the hero beat (#429).** |
 | **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout + the one-time "true terms" notice without a playthrough (#422).** |
@@ -651,6 +653,84 @@ lab with the **hidden door already revealed**. The loop:
    fragments; **[E]** `🗝 VANTAR'S CACHE` for the fat one-time payout.
 5. **[E] `🖥 VANTAR — THE CORE LOG`** — the reveal: a nerve hit + a shown **d20** (≥9 salvages the tech for
    heroic pay; below, the dormant synthetics wake as a limited pack — run).
+
+### Hiding from a sweep — `?sweep=N` and the captain's remote (#538)
+
+The **black-ops inspection team**: professionals who work a route through a hull while the captain is inside it.
+They are the inverse of the pack — they see **20 du but only inside a 70° cone**, hear **34 du through walls and
+regardless of where the lamp points**, and **challenge for 3 seconds before shooting**. So the counter-play
+inverts too: you do not out-run them, you stand still somewhere the cone is not, and you do not make a sound.
+
+They ride the **INSURANCE JOB** by default — her own fiction is that the valuable thing aboard is the *evidence*,
+so what they came to remove is what you came to take. Or put them on any hull with `?sweep=N`.
+
+```
+/map?wreck=insurancejob&land=1     ← the authored scene: their boat clamps on while you are aboard
+/map?wreck=mutiny&land=1&sweep=3   ← the same team on a hull that has no reason to be guarded
+```
+
+**What to check.** The clock strip carries one line for the worst state anybody aboard is in
+(`SWEEPING → INVESTIGATING → HUNTING → CHALLENGING`). Their lamp cones are drawn at exactly the angle the rule
+checks and stop at the first bulkhead. The motion fan hears them — if it ever reads "no movement" while three of
+them walk the hull, that is the bug it read as before #545.
+
+**The captain's remote (`📻` on the deck HUD, or `H`)** is what the scene is for. Three switches, one idea —
+everything that makes you hard to find makes you slow:
+
+| switch | what it costs |
+|---|---|
+| 🤖 **weapons tight** | no bot or tube gun fires, so nothing of yours makes a noise — and nothing of yours defends you |
+| 🛸 **boat cold** | lamps, transponder and reactor down: 12 s to go quiet, **25 s to come back**, and her hatch is *shut* until she is warm |
+| ✊ **quiet search** | knuckles instead of the sounder — slower, shorter, and not heard |
+
+A cold boat is not a ride, an armoury or a way in: the belts are aboard her too. The warm-up is charged at the
+lock, when you want to leave.
+
+### Knocking on her walls — the hidden-void search (#537)
+
+Some hulls hide a space that is not on the deck plan. **Her plating is honest and her manifest is not**: a lying
+hull books one section of her shielding at a third of what every other section holds. Read the **cargo manifest**
+(a console that was always there) and the discrepancy is the clue; on a clean hull it says the frame numbers match
+all the way down the page, which it has to, or a document that only speaks up when there is something to find is
+a pointer rather than a clue.
+
+Then **`K` to knock**, standing still. Two gears, chosen on the remote:
+
+| gear | seconds | reach | heard |
+|---|---|---|---|
+| 📡 sounder | 5 | 4 du | 26 du — as loud as running a pump |
+| ✊ knuckles | 12 | 2 du | 13 du — as loud as dogging a hatch by hand |
+
+Moving abandons the reading and does **not** refund the noise. Three answers: `SOLID`, `ODD` (near, not here), and
+`HOLLOW` — which puts a **FALSE PLATE** on the deck to force.
+
+**What to check.** The clock strip shows the knock and, once the manifest is read, the band to search. About one
+hull in five hides something (Lab 44 probe F prints which of the ten seeded causes lie, and where). A void sits
+either in the **shielding band** outboard of a room or inside a **bulkhead run** between two rooms — and what is
+in it decides which: a rack of keys fits a bulkhead, a folded gun mount or a cold locker needs the band.
+
+### The mountain lab — doors that lock, a board, and an alarm to hack (#409)
+
+`?secretlab=1` still puts a lab in reach with its hidden door revealed. Since #552–#555 it is a **place** rather
+than a vault: **THE ANTECHAMBER → THE CLEAN ROOM → THE HEART**, each narrower than the last, with a door between
+each.
+
+**The loop.** Force the hidden door → the alarm starts counting (75 s) and the garrison stands up → walk in past
+doors you can shut, and with Vantar's card **key** → find the **door board** in the clean room, which throws any
+door in the mountain from one wall → beat the **alarm panel** and the muscle never wakes, or lose and every door
+keys at once with the card two rooms deeper than you are.
+
+**What to check.**
+
+- A **shut** door is a wall to the boot *and* to the eye, and the deck rebuilds when one moves.
+- The pack can **force** a shut door (25 s, and it takes two of them) but never a locked one.
+- The alarm panel **shows the die**: the target, the named modifier stack, and the number. A miss costs 25 s of
+  the countdown, so there are only a few tries in it.
+- **Beating the panel really beats it** — a disarmed alarm leaves the garrison asleep, which is the whole reason
+  silent running is a play rather than a tax.
+- The countdown sits at the TOP of the clock strip, and its second column says which side of a lockdown you are
+  on: *"you hold the card"* / *"the card is deeper in"*.
+- Two chambers are hidden **behind the lab's own walls** — knock for them exactly as you would on a hull.
 
 ### The stranger-bond — `?bond=1` (#429)
 
