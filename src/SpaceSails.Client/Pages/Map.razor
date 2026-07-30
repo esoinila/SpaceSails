@@ -1071,7 +1071,12 @@
                 {
                     var shipSel = ShipSpaceNow(shipPicked);
                     var shipReadiness = HullVenting.Readiness(shipSel);
-                    var shipIntent = ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized, _dcStandingOrder);
+                    var shipAuthority = ShipAuthorityNow();
+                    var shipIntent = shipAuthority == ShipAuthority.VentAuthority.None
+                        ? (_shipSelected is null
+                            ? ShipAuthority.VentIntent.NothingSelected
+                            : ShipAuthority.VentIntent.Opportunity)
+                        : ShipAuthority.VentIntent.Authorized;
                     var shipRefill = HullVenting.RefillState(shipSel, _shipReserve);
                     bool shipHeld = HullVenting.DoorHeldByPressure(shipSel, ShipCorridorPressurised);
 
@@ -1106,9 +1111,16 @@
                         @* Under a standing order there is no single word to withdraw — the authority was given
                            at the desk and is taken back there. Saying so beats a button that would lie about
                            what it does. (Owner's arrangement: "like we have the fire at will checkbox".) *@
-                        @if (_dcStandingOrder)
+                        @if (shipAuthority is ShipAuthority.VentAuthority.StandingOrder
+                                                or ShipAuthority.VentAuthority.NextActionCleared)
                         {
-                            <span class="text-warning small">⚓ @ShipAuthority.StandingOrderStandsLine</span>
+                            @* WHICH authority is answering, named. A delegated or pre-cleared act must never
+                               read like one the captain stood here and ordered. *@
+                            <span class="text-warning small">
+                                ⚓ Acting @ShipAuthority.UnderAuthority(shipAuthority).
+                                @(shipAuthority == ShipAuthority.VentAuthority.NextActionCleared
+                                    ? "This clearance is spent by the next act." : "")
+                            </span>
                         }
                         else if (shipIntent == ShipAuthority.VentIntent.Authorized)
                         {
@@ -1118,7 +1130,7 @@
                                 ↩ Withdraw the word
                             </button>
                         }
-                        else if (!_dcStandingOrder)
+                        else if (shipAuthority == ShipAuthority.VentAuthority.None)
                         {
                             <button type="button" class="btn btn-outline-danger btn-sm"
                                     disabled="@(shipReadiness != HullVenting.VentReadiness.Ready)"
@@ -4007,6 +4019,8 @@
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
                                                               DamageControlAuthorized="_dcStandingOrder"
                                                               OnToggleDamageControlAuthority="ToggleDamageControlAuthority"
+                                                              DamageControlNextActCleared="_dcNextActionCleared"
+                                                              OnAuthorizeNextDamageControlAct="AuthorizeNextDamageControlAct"
                                                               ArmedCompartment="@_shipAuthorized"
                                                               BridgeRepeaterAlive="ShipBridgeAlive"
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"

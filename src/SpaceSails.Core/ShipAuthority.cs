@@ -56,13 +56,91 @@ public static class ShipAuthority
     /// <para>Note what it does NOT do: it never authorizes a compartment that is not selected, so the board
     /// still cannot act on its own. And it is a standing order, not a secret — see
     /// <see cref="StandingOrderStandsLine"/>, which the board says every time it acts under it.</para></param>
+    /// <param name="nextActionCleared">Whether the captain has cleared the NEXT damage-control act from the
+    /// desk, without naming a room. Owner: <i>"we have the authorize next shot, that kind of authorize damage
+    /// control next vent action is missing, it would be usefull as limited pre-ok from captain."</i>
+    ///
+    /// <para>The middle rung, and the one the desk was missing. The named word is specific and given at the
+    /// valve; the standing order is open-ended and given once; this is a captain saying <i>"you may do the next
+    /// one"</i> from the bridge without knowing yet which compartment it will be — which is exactly the shape
+    /// of a fire. It is SPENT by the act, like a cleared shot.</para></param>
     public static VentIntent EvaluateVent(
-        string? selectedRoom, string? authorizedRoom, bool standingOrder = false) =>
-        selectedRoom is null ? VentIntent.NothingSelected
-        : standingOrder ? VentIntent.Authorized
-        : authorizedRoom is not null && string.Equals(authorizedRoom, selectedRoom, System.StringComparison.Ordinal)
-            ? VentIntent.Authorized
-            : VentIntent.Opportunity;
+        string? selectedRoom, string? authorizedRoom,
+        bool standingOrder = false, bool nextActionCleared = false) =>
+        AuthorityFor(selectedRoom, authorizedRoom, standingOrder, nextActionCleared) switch
+        {
+            VentAuthority.None => selectedRoom is null ? VentIntent.NothingSelected : VentIntent.Opportunity,
+            _ => VentIntent.Authorized,
+        };
+
+    /// <summary>Which of the captain's three authorities actually answers for this act — because the log has to
+    /// record what let it happen, and because only some of them are SPENT by it.</summary>
+    public enum VentAuthority
+    {
+        /// <summary>Nothing authorizes this. The board may offer; it may not take.</summary>
+        None,
+
+        /// <summary>The standing order to damage control. Never spent — that is what standing means.</summary>
+        StandingOrder,
+
+        /// <summary>The captain's word, naming this compartment. Spent by the act.</summary>
+        NamedWord,
+
+        /// <summary>The desk's pre-clearance for the next act, no room named. Spent by the act.</summary>
+        NextActionCleared,
+    }
+
+    /// <summary>
+    /// Which authority answers, in a deliberate order of preference.
+    ///
+    /// <para>The STANDING ORDER answers first because it costs nothing to use — a captain who has delegated
+    /// should never silently burn a limited pre-clearance. Then the NAMED WORD, because it was given for this
+    /// exact compartment and spending it is what "by name" means. Then the desk's pre-clearance, which is the
+    /// general permission and therefore the last resort.</para>
+    /// </summary>
+    public static VentAuthority AuthorityFor(
+        string? selectedRoom, string? authorizedRoom, bool standingOrder, bool nextActionCleared)
+    {
+        if (selectedRoom is null)
+        {
+            return VentAuthority.None;
+        }
+        if (standingOrder)
+        {
+            return VentAuthority.StandingOrder;
+        }
+        if (authorizedRoom is not null
+            && string.Equals(authorizedRoom, selectedRoom, System.StringComparison.Ordinal))
+        {
+            return VentAuthority.NamedWord;
+        }
+        return nextActionCleared ? VentAuthority.NextActionCleared : VentAuthority.None;
+    }
+
+    /// <summary>Whether using this authority uses it UP. A standing order stands; the other two are spent by
+    /// the act they permitted, which is the whole difference between delegating and clearing.</summary>
+    public static bool IsSpentByTheAct(VentAuthority authority) =>
+        authority is VentAuthority.NamedWord or VentAuthority.NextActionCleared;
+
+    /// <summary>What the log records about who let this happen. A delegated or pre-cleared act must never be
+    /// indistinguishable from one the captain stood there and ordered.</summary>
+    public static string UnderAuthority(VentAuthority authority) => authority switch
+    {
+        VentAuthority.StandingOrder => "under the captain's standing order to damage control",
+        VentAuthority.NamedWord => "on the captain's word, by name",
+        VentAuthority.NextActionCleared => "under the captain's clearance for the next act",
+        _ => "with no authority at all",
+    };
+
+    /// <summary>The desk's own line when the next act is cleared — no room named, because the captain does not
+    /// know yet which one it will be. That is the point of it.</summary>
+    public const string NextActionClearedLine =
+        "✍ Damage control is cleared for its NEXT act — one compartment, whichever one it turns out to be. " +
+        "Spent when they use it.";
+
+    /// <summary>…and when the captain takes it back before it is used.</summary>
+    public const string NextActionWithdrawnLine =
+        "The clearance for damage control's next act is withdrawn.";
 
     // ── Delegation, and where the authority can be exercised ──────────────────────────────────────────
 

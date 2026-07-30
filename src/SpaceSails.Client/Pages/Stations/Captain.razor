@@ -109,6 +109,21 @@
         <div class="captain-articles captain-weapons-authority">
             <div class="captain-articles-label">Damage-control authority</div>
             <div class="d-flex gap-2 align-items-center flex-wrap">
+                @* THE LIMITED PRE-OK, mirroring AUTHORIZE NEXT SHOT exactly. Owner: "we have the authorize
+                   next shot, that kind of authorize damage control next vent action is missing, it would be
+                   usefull as limited pre-ok from captain." No room is named because the captain does not know
+                   yet which compartment it will be — which is precisely the shape of a fire. *@
+                <button type="button"
+                        class="btn btn-sm @(DamageControlNextActCleared ? "btn-success" : "btn-outline-success")"
+                        disabled="@DamageControlAuthorized"
+                        title="@(DamageControlAuthorized
+                                 ? "Not needed — damage control already holds your standing authority."
+                                 : "Clears exactly one damage-control act — dog, pump or open — whichever compartment it turns out to be. Spent when they use it.")"
+                        @onclick="() => OnAuthorizeNextDamageControlAct.InvokeAsync()">
+                    @(DamageControlNextActCleared
+                        ? "✅ NEXT VENT AUTHORIZED — click to withdraw"
+                        : "✍ AUTHORIZE NEXT VENT")
+                </button>
                 <label class="text-light captain-fire-at-will">
                     <input type="checkbox" checked="@DamageControlAuthorized"
                            title="Standing order — the station aft may dog, pump and open her compartments without waiting on your word each time"
@@ -534,6 +549,11 @@
     /// owner's "fire at will" for the other set of handles.</summary>
     [Parameter] public bool DamageControlAuthorized { get; set; }
     [Parameter] public EventCallback OnToggleDamageControlAuthority { get; set; }
+
+    /// <summary>Whether the captain has cleared damage control's NEXT act — the limited pre-ok, spent by the
+    /// act it permits. The exact shape of AUTHORIZE NEXT SHOT, for the other set of handles.</summary>
+    [Parameter] public bool DamageControlNextActCleared { get; set; }
+    [Parameter] public EventCallback OnAuthorizeNextDamageControlAct { get; set; }
 
     /// <summary>The one compartment armed by name at a board right now, if any. Read-only here: the word is
     /// given where the valve is, because it names the room it was given for.</summary>

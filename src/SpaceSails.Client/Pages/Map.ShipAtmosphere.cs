@@ -76,6 +76,58 @@ public sealed partial class Map
     private bool _dcStandingOrder;
 
     /// <summary>
+    /// THE LIMITED PRE-OK. Owner: <i>"we have the authorize next shot, that kind of authorize damage control
+    /// next vent action is missing, it would be usefull as limited pre-ok from captain."</i>
+    ///
+    /// <para>The rung between the two that existed. The word at the board is specific and needs the captain to
+    /// be standing there; the standing order is open-ended and forever. This is the captain clearing the NEXT
+    /// act from the desk without knowing yet which compartment it will be — which is exactly the shape of a
+    /// fire, and exactly how a cleared shot already works (<c>_shotAuthorized</c>). Spent by the act.</para>
+    /// </summary>
+    private bool _dcNextActionCleared;
+
+    /// <summary>Which of the captain's authorities answers for the compartment on the board right now.</summary>
+    private ShipAuthority.VentAuthority ShipAuthorityNow() =>
+        ShipAuthority.AuthorityFor(_shipSelected, _shipAuthorized, _dcStandingOrder, _dcNextActionCleared);
+
+    /// <summary>Clear damage control's next act, or take the clearance back. Mirrors AUTHORIZE NEXT SHOT down
+    /// to the wording, because it is the same promise about a different set of handles.</summary>
+    private void AuthorizeNextDamageControlAct()
+    {
+        _dcNextActionCleared = !_dcNextActionCleared;
+
+        string line = _dcNextActionCleared
+            ? ShipAuthority.NextActionClearedLine
+            : ShipAuthority.NextActionWithdrawnLine;
+        ShowPulseMessage(line);
+        _shipBoardMessage = line;
+        LogAutopilotEvent(_dcNextActionCleared
+            ? "✍ Damage control cleared for its next act."
+            : "✍ Damage control's clearance withdrawn.");
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
+    /// <summary>Spend whatever authority answered, if spending is what it is for. A standing order stands; a
+    /// named word and a next-act clearance are used up by the thing they permitted.</summary>
+    private void SpendShipAuthority(ShipAuthority.VentAuthority authority)
+    {
+        if (!ShipAuthority.IsSpentByTheAct(authority))
+        {
+            return;
+        }
+
+        if (authority == ShipAuthority.VentAuthority.NamedWord)
+        {
+            _shipAuthorized = null;
+        }
+        else
+        {
+            _dcNextActionCleared = false;
+        }
+    }
+
+    /// <summary>
     /// Whether her bridge repeater has a bus behind it. Owner: <i>"So there needs to be standing authorization
     /// here when the bridge is alive. If bridge is not alive then it should be doable from the rear of the
     /// ship. Like in the reevers infested ship."</i>
@@ -348,7 +400,8 @@ public sealed partial class Map
     /// </summary>
     private void VentShipCompartment(string room)
     {
-        if (ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized, _dcStandingOrder) != ShipAuthority.VentIntent.Authorized)
+        ShipAuthority.VentAuthority authority = ShipAuthorityNow();
+        if (authority == ShipAuthority.VentAuthority.None)
         {
             _shipBoardMessage = ShipAuthority.AskFor(room);
             RendererInterop.PlayCue("block");
@@ -366,15 +419,15 @@ public sealed partial class Map
 
         _shipVented.Add(room);
 
-        // THE WORD IS SPENT. One authorization, one compartment, one act — otherwise "the captain said yes"
-        // becomes a standing permission, which is the thing this whole gate exists to refuse.
-        _shipAuthorized = null;
+        // AND WHATEVER ANSWERED IS SPENT, if spending is what it is for. One authorization, one act — a word
+        // or a clearance that survived its own use would be a standing permission nobody granted.
+        SpendShipAuthority(authority);
 
         _shipBoardMessage = ShipAtmosphere.IsBerth(room)
             ? $"💨 {room} is open to space. {ShipAtmosphere.TheSuitsBesideTheBunks}"
             : $"💨 {room} is open to space. It cost you the air in it and nothing else.";
 
-        LogAutopilotEvent($"💨 Vented {room} — on the captain's own authority, by name.");
+        LogAutopilotEvent($"💨 Vented {room} — {ShipAuthority.UnderAuthority(authority)}.");
         RendererInterop.PlayCue("alarm");
         RebuildShipDeck();
         RequestVaultSave();
@@ -423,7 +476,8 @@ public sealed partial class Map
             return;
         }
 
-        if (ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized, _dcStandingOrder) != ShipAuthority.VentIntent.Authorized)
+        ShipAuthority.VentAuthority authority = ShipAuthorityNow();
+        if (authority == ShipAuthority.VentAuthority.None)
         {
             _shipBoardMessage = ShipAuthority.AskFor(room);
             RendererInterop.PlayCue("block");
@@ -448,12 +502,14 @@ public sealed partial class Map
         _shipPumps[string.Join("+", volume)] =
             new PumpRun(volume, seconds, charges, seconds, RoughBanked: false);
 
-        // The word is spent by STARTING the run, exactly as it is by pulling the handle: one authorization,
-        // one act. Stopping and restarting asks again, which is right — it is the same decision twice.
-        _shipAuthorized = null;
+        // Spent by STARTING the run, exactly as by pulling the handle: one authorization, one act. Stopping
+        // and restarting asks again, which is right — it is the same decision twice.
+        SpendShipAuthority(authority);
 
         _shipBoardMessage = HullVenting.PumpRunningLine(room, seconds);
-        LogAutopilotEvent($"🛢 Pump started on {room} — her air goes to the tanks, not to space.");
+        LogAutopilotEvent(
+            $"🛢 Pump started on {room} — her air goes to the tanks, not to space, "
+            + $"{ShipAuthority.UnderAuthority(authority)}.");
         RendererInterop.PlayCue("board");
     }
 
