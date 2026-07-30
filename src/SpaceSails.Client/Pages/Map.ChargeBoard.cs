@@ -44,6 +44,10 @@ public sealed partial class Map
     /// to free, and a running cost that rounds to free is not a cost.</summary>
     private double _contactorOwedPulses;
 
+    /// <summary>Whether the board has already said the cathode is losing on this stretch of river, so the line
+    /// lands once per stream rather than every frame.</summary>
+    private bool _contactorOutmatchedSaid;
+
     /// <summary>The board's last word.</summary>
     private string? _chargeBoardMessage;
 
@@ -120,9 +124,26 @@ public sealed partial class Map
                     _reactionMassPulses--;
                 }
 
-                if (_ship.Charge > HullCharge.ContactorHoldsAt)
+                // WHAT IT CAN ACTUALLY HOLD HER AT, given what this space is throwing at her. Lab 43: the
+                // cathode out-argues the cold dark, middling space and the inner halo without noticing — and
+                // LOSES inside a plasma stream, where 23.8 mA arrives against the ~10 mA it emits. So the hold
+                // is a target rather than a constant, and the stream is the one place the automatic cannot keep
+                // you quiet. Ride the river or go unheard; not both.
+                double holdAt = HullCharge.ContactorHoldTarget(ambient);
+                if (_ship.Charge > holdAt)
                 {
-                    _ship = _ship with { Charge = HullCharge.ContactorHoldsAt };
+                    _ship = _ship with { Charge = holdAt };
+                }
+
+                if (!HullCharge.ContactorWinsHere(ambient) && !_contactorOutmatchedSaid)
+                {
+                    _contactorOutmatchedSaid = true;
+                    ShowPulseMessage(HullCharge.ContactorOutmatchedLine);
+                    LogAutopilotEvent(HullCharge.ContactorOutmatchedLine);
+                }
+                else if (HullCharge.ContactorWinsHere(ambient))
+                {
+                    _contactorOutmatchedSaid = false;   // she left the river; say it again next time
                 }
             }
         }
