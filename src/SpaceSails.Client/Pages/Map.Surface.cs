@@ -1299,6 +1299,7 @@ public partial class Map
         ServeStandingPumpOrder();                                                   // #488: …and the corridor last
         AdvanceScuttleClock(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the overload
         AdvanceNests(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));        // #488: the nest is a source
+        AdvanceFire(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #524: and the fire eats
         AdvanceVacuumExposure(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: vacuum is ground
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar

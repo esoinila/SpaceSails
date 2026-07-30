@@ -52,6 +52,9 @@ public static class StoryBeats
 
         /// <summary>She sheds her charge: a discharge off the antennae, filaments raking outward.</summary>
         ChargeLetGo,
+
+        /// <summary>There is fire in a hull you are standing in — and three ways to answer it (#524).</summary>
+        FireAboard,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -138,6 +141,7 @@ public static class StoryBeats
         Beat.CrewMeeting => "art/crew-meeting.jpg",
         Beat.ArcNewsBreaks => "art/arc-news.jpg",
         Beat.ChargeLetGo => "art/charge-let-go.jpg",
+        Beat.FireAboard => "art/fire-aboard.jpg",
         _ => "",
     };
 
@@ -152,6 +156,7 @@ public static class StoryBeats
         Beat.CrewMeeting => "🕯 THE MEETING YOU WERE NOT ASKED TO",
         Beat.ArcNewsBreaks => "📰 THE STORY BREAKS",
         Beat.ChargeLetGo => "⚡ SHE LETS GO",
+        Beat.FireAboard => "🔥 THERE IS FIRE IN HER",
         _ => "",
     };
 
@@ -196,6 +201,11 @@ public static class StoryBeats
             Beat.ChargeLetGo =>
                 "A blue-white core sits on the mast for a moment with filaments raking off it into the dark, and " +
                 "then there is nothing on the hull at all. Everything with a telescope just watched that happen.",
+
+            Beat.FireAboard =>
+                "Forty years, and a pocket of her atmosphere was still shut in with something that would burn. " +
+                "The light of it comes down the spine ahead of the heat, and every hatch anybody left open is a " +
+                "road it already knows.",
 
             _ => "",
         };

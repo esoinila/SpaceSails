@@ -86,15 +86,27 @@ public sealed class StoryBeatsTests
     public void TheFirstShotIsOnceInACaptainsLife() =>
         Assert.Equal(StoryBeats.Cadence.OnceEver, StoryBeats.CadenceOf(StoryBeats.Beat.FirstShotFired));
 
-    /// <summary>Only moments that are rare BY THEIR OWN NATURE may fire every time. If this list ever grows a
-    /// routine event, the instrument is being spent on wallpaper.</summary>
+    /// <summary>
+    /// Only moments that are rare BY THEIR OWN NATURE may fire every time. If this list ever grows a routine
+    /// event, the instrument is being spent on wallpaper.
+    ///
+    /// <para>The list is asserted whole rather than by property on purpose: adding a beat to it should require
+    /// editing this test and saying why. Each of these is once-in-a-run by its own physics — a collector
+    /// actually catching you, the crew meeting without you, an arc breaking, and (#524) finding a hull still
+    /// burning, which is one cause in ten and guarded to one card per boarding by the wreck itself.</para>
+    /// </summary>
     [Fact]
     public void OnlyRareMomentsFireEveryTime()
     {
         StoryBeats.Beat[] everyTime = [.. All.Where(b => StoryBeats.CadenceOf(b) == StoryBeats.Cadence.EveryTime)];
 
         Assert.Equal(
-            [StoryBeats.Beat.CollectorHail, StoryBeats.Beat.CrewMeeting, StoryBeats.Beat.ArcNewsBreaks],
+            [
+                StoryBeats.Beat.CollectorHail,
+                StoryBeats.Beat.CrewMeeting,
+                StoryBeats.Beat.ArcNewsBreaks,
+                StoryBeats.Beat.FireAboard,
+            ],
             everyTime);
     }
 
