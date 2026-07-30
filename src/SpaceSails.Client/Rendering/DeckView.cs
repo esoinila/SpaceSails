@@ -119,13 +119,23 @@ public sealed class DeckView
     /// captain is deciding which way to run.</summary>
     private static readonly RgbaColor SweeperColor = new(150, 205, 235);
 
-    /// <summary>#537 · The ship's own structure — closed-cell metal foam and everything packed into it. Dark
-    /// enough to read as hull rather than as room, light enough that the eye knows it is not empty.</summary>
-    private static readonly RgbaColor FoamFill = new(38, 44, 52, 235);
+    /// <summary>
+    /// #537 · The ship's own structure — closed-cell metal foam and everything packed into it.
+    ///
+    /// <para><b>BLACK, and that is the point.</b> Owner: <i>"the hatched line should have the line and black bg
+    /// under it … I don't want to draw attention to it :-D … so we can hide things more in it."</i> The first
+    /// version filled the runs a shade lighter than the deck, and that inverted the original bug rather than
+    /// fixing it: instead of a black gap you could see INTO, there was a bright bar announcing exactly where
+    /// every hiding place on the ship was. A structure that draws the eye is as bad as one you can see through.
+    /// So it is the deck's own black with only the hatch over it — present, structural, and utterly unremarkable
+    /// until somebody knocks on it.</para>
+    /// </summary>
+    private static readonly RgbaColor FoamFill = new(8, 11, 15, 255);
 
     /// <summary>…and the section hatch over it, barely there. Any brighter and the wall becomes a texture a
-    /// player studies, which is the opposite of what it is for.</summary>
-    private static readonly RgbaColor FoamHatch = new(78, 88, 100, 130);
+    /// player studies, which is the opposite of what it is for — the owner's whole note about this was that it
+    /// must not draw attention, because things are meant to hide in it.</summary>
+    private static readonly RgbaColor FoamHatch = new(58, 66, 76, 105);
     private static readonly RgbaColor HuskColor = new(120, 70, 60, 150); // #314: a downed Old One's husk
     private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
