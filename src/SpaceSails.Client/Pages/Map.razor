@@ -2444,6 +2444,63 @@
        and walked away: "I expect to see the pumping here now as we have on the reever infested salvage ship."
        Same strip, same classes — a run you can only infer from a sentence on a panel is a run you will forget
        you started, and hers take the best part of a minute. *@
+    @* #538 · THE CAPTAIN'S REMOTE. Owner: "Maybe small button to open the sentry settings pop-up 😎" and then the
+       better name for it — "Captain's remote". A small button on the deck HUD, because this is a handheld thing a
+       captain thumbs while crouched behind a bulkhead, not a settings menu on a console somewhere else. *@
+    @if (_deckMode && _surface is not null)
+    {
+        <button type="button" class="btn btn-sm btn-outline-warning captains-remote-btn"
+                title="@SilentRunning.PanelTitle — hold your bots, and put the boat to sleep"
+                @onclick="OpenCaptainsRemote">
+            📻 Remote
+        </button>
+    }
+
+    @if (_showCaptainsRemote)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseCaptainsRemote)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SilentRunning.PanelTitle</div>
+                <div class="view-object-caption">@SilentRunning.PanelBlurb</div>
+
+                <div class="vent-actions">
+                    <button type="button"
+                            class="btn btn-sm @(_weaponsTight ? "btn-warning" : "btn-outline-warning")"
+                            title="@(_weaponsTight ? SentryBot.WeaponsFreeLine : SentryBot.WeaponsTightLine)"
+                            @onclick="ToggleWeaponsTight">
+                        @(_weaponsTight ? "🤖 WEAPONS TIGHT — press to free" : "🤖 Weapons tight (bots hold)")
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-sm @(_boatPoweredDown ? "btn-warning" : "btn-outline-warning")"
+                            title="@(_boatPoweredDown ? SilentRunning.BoatWakingLine : SilentRunning.BoatDarkLine)"
+                            @onclick="ToggleBoatPower">
+                        @(_boatPoweredDown ? "🛸 BOAT COLD — press to wake her" : "🛸 Put the boat to sleep")
+                    </button>
+                </div>
+
+                <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatSpinUpLeft)</div>
+                <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseCaptainsRemote)">Pocket it</button>
+            </div>
+        </div>
+    }
+
+    @* #538 · WEAPONS TIGHT, ON THE HUD, FOR AS LONG AS IT STANDS. Owner: "the remote to sentries should be in
+       the mobile hud not at captains desk." The order is given on foot and its whole danger is forgetting it —
+       so it is not a checkbox somewhere else, it is a line you cannot walk past. *@
+    @if (_deckMode && _weaponsTight)
+    {
+        <div class="wreck-clocks">
+            <div class="wc-line overload no-recall">
+                <span class="wc-tag">🤖 TIGHT</span>
+                <span class="wc-room">nothing of yours fires</span>
+                <span class="wc-time">H</span>
+            </div>
+        </div>
+    }
+
     @if (!OnWreck && _deckMode && (_shipPumps.Count > 0 || _shipChargesSeconds is not null))
     {
         <div class="wreck-clocks">
@@ -4290,6 +4347,7 @@
                                                               StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
+                                                              WeaponsTight="_weaponsTight"
                                                               DamageControlAuthorized="_dcStandingOrder"
                                                               OnToggleDamageControlAuthority="ToggleDamageControlAuthority"
                                                               DamageControlNextActCleared="_dcNextActionCleared"

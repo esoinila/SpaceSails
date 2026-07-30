@@ -73,6 +73,41 @@ public static class SentryBot
     /// homage; the client renders them seven-segment on the grid, dimmed once <see cref="IsDry"/>.</summary>
     public static string Readout(int rounds) => System.Math.Clamp(rounds, 0, MaxMagazine).ToString("D2");
 
+    // ── WEAPONS TIGHT ─────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// THE ORDER THAT MAKES YOUR OWN GUNS STOP VOLUNTEERING. Owner, designing a scene where a black-ops team
+    /// sweeps a hull the captain is hiding inside (#538): <i>"where we take our guns and hide to let them pass.
+    /// One more berthed shuttle should be set to close off and don't shoot mode during that."</i>
+    ///
+    /// <para>He is naming a real hole. A deployed bot shoots what it sees, and the tube gun at the shuttle lock
+    /// <b>never runs dry and holds the threshold</b> (#461) — so the first professional through that hatch gets
+    /// shot by a machine the captain forgot they owned, and the fight that follows is not one anybody wins by
+    /// hiding. Concealment is worthless while your own automation is still making decisions.</para>
+    ///
+    /// <para>It is the exact mirror of <c>fire at will</c>, which the captain's desk has carried since the
+    /// Expanse consult, and it belongs beside it: a captain who can free the guns must be able to tie them. And
+    /// note what it does NOT do — it never disarms the captain. Their own trigger still works, because a captain
+    /// deciding to shoot is a different act from a machine deciding for them, and that distinction is the whole
+    /// authority idiom this game runs on.</para>
+    /// </summary>
+    public static bool MayOpenFire(bool weaponsTight) => !weaponsTight;
+
+    /// <summary>What the ship says when the order goes out.</summary>
+    public const string WeaponsTightLine =
+        "🤖 WEAPONS TIGHT — every bot safes its magazine and the tube gun stands down. Nothing of yours fires " +
+        "unless you fire it. Your own trigger still works; theirs does not.";
+
+    /// <summary>…and when it is lifted.</summary>
+    public const string WeaponsFreeLine =
+        "🤖 Weapons free — the bots have their arcs back, and the tube gun is holding the threshold again.";
+
+    /// <summary>The reminder worth having, because forgetting this is the mistake the order exists to prevent:
+    /// a tight gun is a gun that will not save you either.</summary>
+    public const string TightIsAlsoUndefendedLine =
+        "Tight means tight: while the order stands, nothing on your side shoots anything — including whatever " +
+        "comes down the spine behind you.";
+
     // ── Carrying one home to fill it ──────────────────────────────────────────────────────────────────
 
     /// <summary>

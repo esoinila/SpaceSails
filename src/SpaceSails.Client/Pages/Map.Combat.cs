@@ -267,6 +267,116 @@ public partial class Map
         StateHasChanged();
     }
 
+    /// <summary>
+    /// WEAPONS TIGHT — the mirror of fire at will, and the order #538's hiding scene cannot work without. A
+    /// deployed bot shoots what it sees and the tube gun never runs dry, so concealment is worthless while the
+    /// captain's own automation is still making decisions.
+    ///
+    /// <para>It never disarms the captain: their trigger still works. A captain deciding to shoot and a machine
+    /// deciding for them are different acts, which is the distinction the whole authority idiom rests on.</para>
+    /// </summary>
+    private bool _weaponsTight;
+
+    /// <summary>Whether the captain's remote is open. Owner: <i>"Maybe small button to open the sentry settings
+    /// pop-up 😎"</i>, and then the better name for it — <i>"Captain's remote"</i>.</summary>
+    private bool _showCaptainsRemote;
+
+    /// <summary>Whether the boat is cold. Owner: <i>"Shuttle should also power down to make it less of an
+    /// anomaly."</i> A lit shuttle clamped to a dead hull is the anomaly an inspection team notices long before
+    /// it notices a man.</summary>
+    private bool _boatPoweredDown;
+
+    /// <summary>Seconds left before a cold boat will fly. Owner: <i>"Warm up time is a cost there 😎"</i> — so it
+    /// is charged when the captain wants to leave, not when they went dark.</summary>
+    private double _boatSpinUpLeft;
+
+    private void OpenCaptainsRemote()
+    {
+        _showCaptainsRemote = true;
+        RendererInterop.PlayCue("board");
+    }
+
+    private void CloseCaptainsRemote() => _showCaptainsRemote = false;
+
+    /// <summary>Put the boat to sleep, or start waking her. Going dark is instant; coming back is not, which is
+    /// the entire trade.</summary>
+    private void ToggleBoatPower()
+    {
+        _boatPoweredDown = !_boatPoweredDown;
+
+        if (_boatPoweredDown)
+        {
+            _boatSpinUpLeft = 0;   // asleep; the clock only runs when she is asked to wake
+            ShowPulseMessage(SilentRunning.BoatDarkLine);
+            LogAutopilotEvent("🛸 The boat is cold — lamps, transponder and the tube gun stood down.");
+        }
+        else
+        {
+            _boatSpinUpLeft = SilentRunning.SpinUpSeconds;
+            ShowPulseMessage(SilentRunning.BoatWakingLine);
+            LogAutopilotEvent($"🛸 Bringing the boat up — {SilentRunning.SpinUpSeconds:0} s.");
+        }
+
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
+    /// <summary>Run the boat's warm-up. Ticked wherever the captain is, because a captain who ordered her up and
+    /// then walked away should find her ready.</summary>
+    private void AdvanceBoatSpinUp(double dtSeconds)
+    {
+        if (_boatSpinUpLeft <= 0)
+        {
+            return;
+        }
+
+        _boatSpinUpLeft = Math.Max(0, _boatSpinUpLeft - dtSeconds);
+        if (_boatSpinUpLeft <= 0)
+        {
+            ShowPulseMessage(SilentRunning.SpinUpLabel(0));
+        }
+    }
+
+    /// <summary>Whether the boat will take the captain anywhere right now — asked by the lock before it offers to
+    /// leave. This is where the warm-up is CHARGED, which is the owner's own framing.</summary>
+    private bool BoatReadyToFly()
+    {
+        if (SilentRunning.ReadyToFly(_boatPoweredDown, _boatSpinUpLeft))
+        {
+            return true;
+        }
+
+        if (_boatPoweredDown)
+        {
+            // Asked for a ride while she sleeps: waking her IS the answer, and it starts now.
+            ToggleBoatPower();
+            return false;
+        }
+
+        ShowPulseMessage(SilentRunning.NotARideYetLine(_boatSpinUpLeft));
+        RendererInterop.PlayCue("block");
+        return false;
+    }
+
+    private void ToggleWeaponsTight()
+    {
+        _weaponsTight = !_weaponsTight;
+
+        ShowPulseMessage(_weaponsTight ? SentryBot.WeaponsTightLine : SentryBot.WeaponsFreeLine);
+        LogAutopilotEvent(_weaponsTight
+            ? "🤖 WEAPONS TIGHT ordered — bots and the tube gun stand down."
+            : "🤖 Weapons free — the bots have their arcs back.");
+
+        // Said once, on the way in: the order that hides you also stops defending you.
+        if (_weaponsTight)
+        {
+            LogAutopilotEvent(SentryBot.TightIsAlsoUndefendedLine);
+        }
+
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
     private void ToggleFireAtWill()
     {
         _fireAtWill = !_fireAtWill;

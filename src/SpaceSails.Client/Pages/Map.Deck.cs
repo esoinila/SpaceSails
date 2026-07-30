@@ -145,6 +145,15 @@ public partial class Map
                 // #313: the panic drop — ditch the chest to sprint full speed, recover it later.
                 DropChest();
                 return true;
+            case "h" or "H":
+                // #538 · THE REMOTE IS IN YOUR HAND, NOT ON THE BRIDGE. Owner: "the remote to sentries should be
+                // in the mobile hud not at captains desk" — and of course: you give this order folded into a
+                // hole with somebody else's boots on the deck plating, nowhere near a desk. H for HOLD.
+                if (_surface is not null)
+                {
+                    ToggleWeaponsTight();
+                }
+                return true;
             case "t" or "T":
                 // #314: set down a carried sentry at your feet (or pick up one you're standing on).
                 if (_surface is not null)

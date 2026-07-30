@@ -4058,3 +4058,14 @@
 }
 
 .busted-collector-hail > span { position: relative; z-index: 1; }
+
+/* #538 · the captain's remote — a small handheld affordance on the deck HUD, opposite the first-person toggle so
+   it never crowds it. It stays visible while an excursion is live, because the order it carries is the one whose
+   absence gets a captain shot. */
+.captains-remote-btn {
+    position: absolute;
+    left: 1rem;
+    top: 3.2rem;
+    z-index: calc(var(--z-desks-popups) + 30);
+    opacity: 0.92;
+}
