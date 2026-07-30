@@ -415,6 +415,29 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     it silently never fires. The lesson: *a rule written as its answer stops being true the day the geometry
     moves.* Wired into CI as `HullVentingTests`.
 
+43. [**The sharpest point**](43-the-sharpest-point/README.md) — the owner asked for a plasma-ball effect on
+    the hull discharge and attached a condition: *"if physics supports it."* So the lab asked before anything was
+    drawn, and came back with a prettier effect than the one I was going to make, plus a correction to a fiction
+    the game had been telling since M7. Field strength is potential over radius of curvature, so a discharge
+    leaves from whatever is **sharpest**: her antenna whip runs **20,000×** the field of the hull skin, which
+    means a sphere of light around the ship would be drawing the one place it cannot start. A fully wound hull
+    holds **0.22 J** — a static shock off a door handle — so the dump gets no explosion cue. And the flash is
+    **85,514× dimmer** than her own reflected sunlight, which killed "a charged hull is SEEN" outright: she is
+    not brighter, she is **LOUDER**, a broadband radio source everything with a receiver gets for free. Also
+    derived a trade nobody designed: inside a plasma stream **23.8 mA arrives against ~10 mA emitted**, so the
+    automatic cannot win there — *you may go fast or you may go unheard.*
+
+44. [**Knock on the hull**](44-knock-on-the-hull/README.md) — the owner specified a search mechanic in two
+    sentences (*"Sweeping could cost time… like pumping vacuum does… idea is to know where to do it"* and *"it
+    might be noisy to say knock on walls etc"*) and the lab existed to answer the one question they rest on: **is
+    believing the clue actually worth anything?** It is — 22× on the sounder — but the finding that matters is
+    that **the noise is the teeth, not the clock**: a blind hull-wide search is 22 separate loud events against a
+    pack cap designed to absorb one, so the whole authored pack is up after the second spot. It also refuted me
+    twice, which is why it ran before any pixels: my clue rule named **the wrong wall on the wrong side of the
+    keel**, and the third "odd" reading I had built as a general convergence turns out to *lose* for the loud
+    gear at narrow bands — it is what makes the QUIET gear usable, and it is now sold as nothing more. Wired into
+    CI as `HullSoundingTests`.
+
 ## Framing rule
 
 Standard physics is presented as standard; Curtis is the reference. The EU-flavored lessons
