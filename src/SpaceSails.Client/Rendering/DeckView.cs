@@ -123,9 +123,9 @@ public sealed class DeckView
     /// enough to read as hull rather than as room, light enough that the eye knows it is not empty.</summary>
     private static readonly RgbaColor FoamFill = new(38, 44, 52, 235);
 
-    /// <summary>…and the cells themselves, barely there. Any brighter and the foam becomes a texture a player
-    /// studies, which is the opposite of what it is for.</summary>
-    private static readonly RgbaColor FoamCell = new(74, 84, 96, 150);
+    /// <summary>…and the section hatch over it, barely there. Any brighter and the wall becomes a texture a
+    /// player studies, which is the opposite of what it is for.</summary>
+    private static readonly RgbaColor FoamHatch = new(78, 88, 100, 130);
     private static readonly RgbaColor HuskColor = new(120, 70, 60, 150); // #314: a downed Old One's husk
     private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
@@ -297,27 +297,32 @@ public sealed class DeckView
 
             FillRect(fx0, fy0, fw, fh, FoamFill);
 
-            // Closed cells on a jittered lattice. Seeded off the rectangle's own corner so the pattern is
-            // stable frame to frame — foam that shimmered would draw the eye to exactly the thing it exists to
-            // make unremarkable.
-            float cell = 0.62f * scale;
-            if (cell < 2f)
+            // SECTION HATCH — the drawing convention for CUT MATERIAL, which is exactly what this is. Owner:
+            // "could we get like a cross-section dashed line instead of the current fill?" He is right and it is
+            // the better answer for two reasons. A deck plan IS a section drawing, so 45° hatching is the mark an
+            // engineer would already read as "you are looking at the inside of a wall" — no legend needed. And it
+            // is uniform: a stochastic scatter has clumps and sparse patches, and a player hunting for hiding
+            // places will read a sparse patch as a lead. Hatching has nothing to find in it, which is the whole
+            // job — the one stretch that is hollow must look like every other stretch until somebody knocks.
+            float step = 0.85f * scale;
+            if (step < 3f)
             {
-                continue;   // too small to read as anything but noise at this zoom
+                continue;   // finer than this is a smear at this zoom, not a hatch
             }
 
-            uint seed = (uint)(((int)s.X0 * 73856093) ^ ((int)s.Y0 * 19349663));
-            for (float cy2 = fy0 + (cell * 0.6f); cy2 < fy1 - (cell * 0.2f); cy2 += cell)
-            {
-                for (float cx2 = fx0 + (cell * 0.6f); cx2 < fx1 - (cell * 0.2f); cx2 += cell)
-                {
-                    seed = (seed * 1664525u) + 1013904223u;
-                    float jx = (((seed >> 16) & 0xFF) / 255f - 0.5f) * cell * 0.45f;
-                    seed = (seed * 1664525u) + 1013904223u;
-                    float jy = (((seed >> 16) & 0xFF) / 255f - 0.5f) * cell * 0.45f;
-                    float r = cell * (0.17f + (((seed >> 8) & 0x3F) / 63f * 0.13f));
+            float dash = step * 0.55f, gap = step * 0.35f;
 
-                    _renderer.DrawCircle(cx2 + jx, cy2 + jy, r, null, FoamCell, 1f);
+            // 45° in SCREEN space: y = x − c. Sweep c so the family covers the whole rectangle.
+            for (float c = fx0 - fh; c <= fx1; c += step)
+            {
+                // Where that diagonal enters and leaves this rectangle.
+                float tFrom = Math.Max(fx0, c + fy0);
+                float tTo = Math.Min(fx1, c + fy1);
+
+                for (float td = tFrom; td < tTo; td += dash + gap)
+                {
+                    float tEnd = Math.Min(td + dash, tTo);
+                    DrawSeg((td, td - c), (tEnd, tEnd - c), FoamHatch, 1f);
                 }
             }
         }

@@ -4059,13 +4059,22 @@
 
 .busted-collector-hail > span { position: relative; z-index: 1; }
 
-/* #538 · the captain's remote — a small handheld affordance on the deck HUD, opposite the first-person toggle so
-   it never crowds it. It stays visible while an excursion is live, because the order it carries is the one whose
-   absence gets a captain shot. */
+/* #538 · the captain's remote — a small handheld affordance on the deck HUD. It stays visible while an excursion
+   is live, because the order it carries is the one whose absence gets a captain shot.
+
+   IT SITS BOTTOM-LEFT, ABOVE THE FIRST-PERSON TOGGLE, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it:
+   "look at the sanity and health meters now overlap" — and they did, because I put this at top 3.2rem, which is
+   directly on the nerve readout AND on the five condition pips beneath it. Both meters, buried by a button.
+
+   The rule was already written down forty lines up, for the first-person toggle: "on a surface excursion the
+   enlarged SANITY gauge owns the top-left corner … nothing buries the gauge, and the toggle stays plainly
+   pressable (#212 affordances-never-hide)". The toggle steps down and to the right for exactly this reason. I
+   added a control to that corner without reading the rule that corner already had — so this now follows the
+   same precedent it should have followed first time: same column as the toggle, one row above it. */
 .captains-remote-btn {
     position: absolute;
-    left: 1rem;
-    top: 3.2rem;
+    left: 0.75rem;
+    bottom: 5.2rem;
     z-index: calc(var(--z-desks-popups) + 30);
     opacity: 0.92;
 }
