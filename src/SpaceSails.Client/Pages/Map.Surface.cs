@@ -1231,6 +1231,10 @@ public partial class Map
     // the real ground. It skips only the walk to the hatch and the boarding panel, nothing that matters.
     private bool _landCheat;
 
+    /// <summary>Which body <c>?land=&lt;bodyId&gt;</c> asked for, or null for "the first one in reach". Matched on
+    /// id OR name, case-insensitively, because a playtester types what they see on the map.</summary>
+    private string? _landBodyCheat;
+
     private async Task AutoLandForCheatAsync()
     {
         if (!_landCheat || _surface is not null)
@@ -1242,6 +1246,30 @@ public partial class Map
         // the same promise ?land=1 makes for a surface. Without this the cheat lands on whatever moon happens
         // to be nearer and the wreck is unreachable except by walking the deck to the shuttle bay.
         List<ShuttleStop> board = [.. ShuttleDestinationsInRange()];
+
+        // A NAMED body wins over everything, and says so plainly when it is not in reach — a cheat that
+        // silently lands you somewhere else is worse than one that refuses, because you playtest the wrong
+        // scene and trust the result.
+        if (_landBodyCheat is { } wanted)
+        {
+            ShuttleStop? named = board.FirstOrDefault(
+                s => s.IsLandable
+                     && (string.Equals(s.Body.Id, wanted, StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(s.Body.Name, wanted, StringComparison.OrdinalIgnoreCase)));
+
+            if (named is null)
+            {
+                string inReach = string.Join(", ", board.Where(s => s.IsLandable).Select(s => s.Body.Id));
+                ShowPulseMessage($"🧪 DEV ?land={wanted}: not landable from this berth. In reach: " +
+                                 (inReach.Length > 0 ? inReach : "nothing"));
+                _landCheat = false;
+                return;
+            }
+
+            await RideTheShuttleDownForCheatAsync(named);
+            return;
+        }
+
         ShuttleStop? target =
             board.FirstOrDefault(s => s.IsLandable && Derelict.TryParseWreckId(s.Body.Id, out _))
             ?? board.FirstOrDefault(s => s.IsLandable);
@@ -1250,6 +1278,17 @@ public partial class Map
             ShowPulseMessage("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
             return;
         }
+
+        await RideTheShuttleDownForCheatAsync(target);
+    }
+
+    /// <summary>
+    /// The descent both <c>?land=1</c> and <c>?land=&lt;bodyId&gt;</c> ride. One method on purpose: two copies of
+    /// "land, then put the boots somewhere sensible" would drift, and the drift would be invisible until a
+    /// playtester landed by name and found themselves standing in vacuum.
+    /// </summary>
+    private async Task RideTheShuttleDownForCheatAsync(ShuttleStop target)
+    {
         LandingSite site = LandingSites.For(target.Body.Id)[
             Math.Clamp(_forcedSiteIndex ?? 0, 0, LandingSites.For(target.Body.Id).Count - 1)];
         // Bring the sling down loaded — a cheat that lands you empty-handed made [T] look broken

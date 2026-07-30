@@ -561,8 +561,15 @@ public partial class Map
                 // real descent — it skips only the walk to the hatch and the boarding panel, so a surface
                 // playtest is one URL instead of two minutes of walking. Owner, 2026-07-27: "It is not ready
                 // until it is playtested in the browser."
+                // …and ?land=<bodyId> lands on a NAMED body instead of whatever happens to be nearest.
+                // Owner: "We should test those sites with direct opens to them via URL parameters to find out
+                // the usual issues." He is right that this was the gap: ?land=1 takes the first landable thing
+                // in reach, so aiming at a particular ground meant re-rolling berths until it came up — which
+                // is exactly the friction that stops scenes being booted, and booting scenes is how the bugs
+                // in this repo actually get found.
                 string candidate = Uri.UnescapeDataString(pair["land=".Length..]).ToLowerInvariant();
-                _landCheat = candidate is "1" or "true" or "yes";
+                _landCheat = candidate.Length > 0;
+                _landBodyCheat = candidate is "1" or "true" or "yes" ? null : candidate;
             }
             else if (pair.StartsWith("kaamos=", StringComparison.OrdinalIgnoreCase))
             {
