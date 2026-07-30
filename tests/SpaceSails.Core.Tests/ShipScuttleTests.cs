@@ -95,6 +95,40 @@ public sealed class ShipScuttleTests
         Assert.Contains("THE LEDGER'S OWN", ShipScuttle.DeterrentLine("THE LEDGER'S OWN"), StringComparison.Ordinal);
     }
 
+    // ── How it ends ───────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// THE OWNER'S OBJECTION, ANSWERED AS A RULE. <i>"Suppose the crew sets the countdown 90 seconds and
+    /// evacuates with shuttle. If you can not get away with ship, then propably not with shuttle either."</i>
+    ///
+    /// <para>Right about speed, beside the point: scuttling is denial, not flight. So zero asks exactly one
+    /// question — was he aboard — and the answers are a death and a beginning, never a win and a loss.</para>
+    /// </summary>
+    [Fact]
+    public void ZeroAsksOneQuestionAndOnlyOne()
+    {
+        Assert.Equal(ShipScuttle.Ending.WentWithHer, ShipScuttle.EndingFor(captainWasAboard: true));
+        Assert.Equal(ShipScuttle.Ending.Castaway, ShipScuttle.EndingFor(captainWasAboard: false));
+    }
+
+    /// <summary>A castaway needs to know what he still has before he can decide whether it was worth it — and
+    /// the hoards he buried are off-ship, which is the best argument that system has ever had.</summary>
+    [Fact]
+    public void TheCastawayCardSaysWhatSurvivedHer()
+    {
+        Assert.Contains("buried", ShipScuttle.CastawaySurvivesLine, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("hold", ShipScuttle.CastawaySurvivesLine, StringComparison.OrdinalIgnoreCase);
+
+        // And the rescue is about being FOUND rather than being fast: a boat with no cargo is paperwork.
+        Assert.Contains("beacon", ShipScuttle.RescuedAtLine("Selene Gate"), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Selene Gate", ShipScuttle.RescuedAtLine("Selene Gate"), StringComparison.Ordinal);
+    }
+
+    /// <summary>Watching your own ship go is not free, whatever it bought.</summary>
+    [Fact]
+    public void SurvivingHerStillCostsTheCaptainSomething() =>
+        Assert.True(ShipScuttle.CastawayNerveCost > 0);
+
     /// <summary>The timing is the derelict's, unchanged — one law for both ships, so ninety seconds feels the
     /// same wherever the captain learned it. If these ever diverge, the transfer of skill this whole lane is
     /// built on quietly stops being true.</summary>
