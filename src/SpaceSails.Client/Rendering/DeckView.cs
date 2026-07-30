@@ -118,6 +118,14 @@ public sealed class DeckView
     /// on one deck have to be told apart at a glance, and the colour is the only thing doing that job while a
     /// captain is deciding which way to run.</summary>
     private static readonly RgbaColor SweeperColor = new(150, 205, 235);
+
+    /// <summary>#537 · The ship's own structure — closed-cell metal foam and everything packed into it. Dark
+    /// enough to read as hull rather than as room, light enough that the eye knows it is not empty.</summary>
+    private static readonly RgbaColor FoamFill = new(38, 44, 52, 235);
+
+    /// <summary>…and the cells themselves, barely there. Any brighter and the foam becomes a texture a player
+    /// studies, which is the opposite of what it is for.</summary>
+    private static readonly RgbaColor FoamCell = new(74, 84, 96, 150);
     private static readonly RgbaColor HuskColor = new(120, 70, 60, 150); // #314: a downed Old One's husk
     private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
@@ -258,6 +266,59 @@ public sealed class DeckView
                     DrawSeg((vx0, vhy), (vx0 + vw, vhy), VoidHatch, 1f);
                 }
                 _renderer.DrawText(vx0 + vw / 2f, vy0 + vh / 2f, "· ? ·", VoidText, "10px monospace", TextAlign.Center);
+            }
+        }
+
+        // ── #537 · STRUCTURE, FILLED. Owner, reading the deck after the wall padding shipped: "we should cover
+        //    those narrow spaces … all of them … if we can see into them from the hall then they don't hide
+        //    anything", then how it should look — "some kind of fill there would make it look like the space is
+        //    filled with stuff" — and then what it IS: "I like to think it is structurally optimal metal foam
+        //    and technology of the ship :-D  metal foam :-D"
+        //
+        //    He is right about the bug and right about the material. A run drawn as two lines round a black gap
+        //    reads as a SPACE, and a hiding place drawn as a space is not hidden — a captain could read every
+        //    void off the map without knocking on anything, which made the clue redundant and the sounder a
+        //    formality. And metal foam is the honest answer to why the walls are thick at all: closed-cell
+        //    metallic foam is stiff for its mass, which is exactly what you fill a whipple layer with. The
+        //    thickness is engineering, not an excuse for a hiding place.
+        //
+        //    So it is drawn as CELLS rather than as hatching: a stochastic scatter that reads as foam packed
+        //    with kit, and — the part that matters — reads identically along its whole length, so the one
+        //    stretch of it that is hollow looks like all the rest until somebody sounds it.
+        foreach (DeckPlan.Structure s in plan.Structures)
+        {
+            (float fx0, float fy0) = P(Math.Min(s.X0, s.X1), Math.Max(s.Y0, s.Y1));
+            (float fx1, float fy1) = P(Math.Max(s.X0, s.X1), Math.Min(s.Y0, s.Y1));
+            float fw = fx1 - fx0, fh = fy1 - fy0;
+            if (fw <= 0 || fh <= 0)
+            {
+                continue;
+            }
+
+            FillRect(fx0, fy0, fw, fh, FoamFill);
+
+            // Closed cells on a jittered lattice. Seeded off the rectangle's own corner so the pattern is
+            // stable frame to frame — foam that shimmered would draw the eye to exactly the thing it exists to
+            // make unremarkable.
+            float cell = 0.62f * scale;
+            if (cell < 2f)
+            {
+                continue;   // too small to read as anything but noise at this zoom
+            }
+
+            uint seed = (uint)(((int)s.X0 * 73856093) ^ ((int)s.Y0 * 19349663));
+            for (float cy2 = fy0 + (cell * 0.6f); cy2 < fy1 - (cell * 0.2f); cy2 += cell)
+            {
+                for (float cx2 = fx0 + (cell * 0.6f); cx2 < fx1 - (cell * 0.2f); cx2 += cell)
+                {
+                    seed = (seed * 1664525u) + 1013904223u;
+                    float jx = (((seed >> 16) & 0xFF) / 255f - 0.5f) * cell * 0.45f;
+                    seed = (seed * 1664525u) + 1013904223u;
+                    float jy = (((seed >> 16) & 0xFF) / 255f - 0.5f) * cell * 0.45f;
+                    float r = cell * (0.17f + (((seed >> 8) & 0x3F) / 63f * 0.13f));
+
+                    _renderer.DrawCircle(cx2 + jx, cy2 + jy, r, null, FoamCell, 1f);
+                }
             }
         }
 

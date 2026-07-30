@@ -53,6 +53,16 @@ public sealed class DeckPlan
     /// under the vector overlay. The top-down renderer walks these; first-person textures walls.</summary>
     public readonly record struct Backdrop(string Url, float X, float Y, float W, float H, float Alpha);
 
+    /// <summary>
+    /// #537 · A RECTANGLE OF SOLID SHIP. Shielding bands, bulkhead runs, machinery spaces — anything that is
+    /// STRUCTURE rather than room, drawn filled so it cannot be mistaken for somewhere you could be.
+    ///
+    /// <para>Owner: <i>"if we can see into them from the hall then they don't hide anything."</i> A narrow gap
+    /// left black reads as a space, and a hiding place drawn as a space is not a hiding place — the whole
+    /// knock-on-the-walls search was readable off the map until these were filled.</para>
+    /// </summary>
+    public readonly record struct Structure(float X0, float Y0, float X1, float Y1);
+
     public const double InteractRadius = 3.0;
     public const double AvatarRadius = 0.7;
 
@@ -101,6 +111,10 @@ public sealed class DeckPlan
     public ConsoleSpot[] Consoles { get; private set; }
     public (float X, float Y, string Text)[] RoomLabels { get; private set; }
     public Backdrop[] Backdrops { get; private set; }
+
+    /// <summary>Filled structure — see <see cref="Structure"/>. Drawn under everything else, because it is what
+    /// the ship is made of rather than something in her.</summary>
+    public Structure[] Structures { get; private set; }
     public Door[] Doors { get; }
 
     /// <summary>#371 Phase 3 · how many regions have been appended to this live plan (0 on a freshly-built
@@ -132,8 +146,9 @@ public sealed class DeckPlan
         Backdrop[] backdrops, double spawnX, double spawnY,
         int droidCount, Action<double, Droid[]> fillDroids, Func<double, double, string> location,
         Door[]? doors = null, bool shipFixtures = false, bool followCam = false,
-        (float X, float Y)[]? tables = null)
+        (float X, float Y)[]? tables = null, Structure[]? structures = null)
     {
+        Structures = structures ?? [];
         Walls = walls;
         CollisionSegments = new SurfaceCollision.Segment[walls.Length];
         for (int i = 0; i < walls.Length; i++)
@@ -170,7 +185,8 @@ public sealed class DeckPlan
     /// interactable consoles, room labels, and any backdrops. Any array may be empty.</summary>
     public readonly record struct DeckRegion(
         Wall[] Walls, ConsoleSpot[] Consoles,
-        (float X, float Y, string Text)[] Labels, Backdrop[] Backdrops);
+        (float X, float Y, string Text)[] Labels, Backdrop[] Backdrops,
+        Structure[]? Structures = null);
 
     /// <summary>Grow this plan by one region. The walls (and ONLY the new walls) get fresh collision
     /// segments appended after the existing ones; consoles, labels and backdrops concatenate. Existing
@@ -200,6 +216,7 @@ public sealed class DeckPlan
         Consoles = Concat(Consoles, region.Consoles);
         RoomLabels = Concat(RoomLabels, region.Labels);
         Backdrops = Concat(Backdrops, region.Backdrops);
+        Structures = Concat(Structures, region.Structures);
         AppendedRegionCount++;
     }
 
@@ -628,10 +645,23 @@ public sealed class DeckPlan
             (float)ShipLayout.ScuttleStation.X, (float)ShipLayout.ScuttleStation.Y,
             "☢ SCUTTLING CHARGES"));
 
+        // #537 · AND HER OWN SHIELDING IS FILLED TOO. Owner: "we should cover those narrow spaces … all of
+        // them." All of them means hers as well — and on the ship it matters for a second reason: she is the
+        // deck a player reads most, so a narrow black strip down her sides teaches them what a hiding place
+        // looks like before they ever board a wreck.
+        Structure[] shipStructures =
+        [
+            new(-18, 10, -1, 10 + ShieldingDepth),
+            new(6, 10, 20, 10 + ShieldingDepth),
+            new(-18, -10 - ShieldingDepth, ShuttleHatchX1, -10),
+            new(ShuttleHatchX2, -10 - ShieldingDepth, 20, -10),
+        ];
+
         return new DeckPlan([.. walls], [.. consoles], roomLabels, backdrops,
             spawnX: 21, spawnY: 0, // on the bridge, facing the bow glass
             droidCount: 3, fillDroids: FillShipDroids, location: ShipLocation,
-            doors: [.. doors], shipFixtures: true, tables: tables);
+            doors: [.. doors], shipFixtures: true, tables: tables,
+            structures: shipStructures);
     }
 
     // --- Droid pirate infantry 🤖🏴‍☠️ ---
