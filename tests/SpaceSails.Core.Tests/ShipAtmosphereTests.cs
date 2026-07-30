@@ -130,6 +130,63 @@ public sealed class ShipAtmosphereTests
             ShipAuthority.EvaluateVent(null, "CABIN 1"));
     }
 
+    // ── Delegation: the standing order to damage control ──────────────────────────────────────────────
+
+    /// <summary>
+    /// THE OWNER'S OWN ARRANGEMENT, and the reason it stays safe. <i>"Let's add separate option to captains
+    /// desk to authorize the back of the ship repair station … (even while the bridge still works) … like we
+    /// have the fire at will checkbox."</i>
+    ///
+    /// <para>A standing order authorizes the SELECTED compartment without the per-room word — and it still
+    /// cannot authorize nothing. The board can never act on its own, whatever the captain has delegated.</para>
+    /// </summary>
+    [Fact]
+    public void AStandingOrderAuthorisesTheSelectedCompartment()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.Authorized,
+            ShipAuthority.EvaluateVent("CARGO HOLD", authorizedRoom: null, standingOrder: true));
+    }
+
+    [Fact]
+    public void AStandingOrderStillCannotAuthoriseNothing()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.NothingSelected,
+            ShipAuthority.EvaluateVent(null, authorizedRoom: null, standingOrder: true));
+    }
+
+    /// <summary>Delegation is a decision, so it has to be visible: the board says whose authority it acts
+    /// under, every time. A delegated act must never read like an unauthorized one.</summary>
+    [Fact]
+    public void TheBoardSaysWhoseAuthorityItIsActingUnder()
+    {
+        Assert.Contains("standing order", ShipAuthority.StandingOrderStandsLine,
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("damage control", ShipAuthority.StandingOrderGivenLine,
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("your word", ShipAuthority.StandingOrderWithdrawnLine,
+                        StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// NEITHER STATION LOCKS THE OTHER OUT. Owner: <i>"At Star Trek Enterprise in the Next Gen they also had
+    /// that kind of Engineering / Bridge duplication, so it makes sense to not lock the engineering station to
+    /// uselessness while the bridge works."</i>
+    ///
+    /// <para>So a dead repeater is a SIGNPOST, not the system refusing: it points aft, where the valves are
+    /// mechanical and answer regardless — the same sentence a derelict's dead bridge panel has always said,
+    /// arrived at from the other direction.</para>
+    /// </summary>
+    [Fact]
+    public void ADeadRepeaterPointsAftRatherThanRefusing()
+    {
+        string line = ShipAuthority.DeadRepeaterLine(ShipLayout.ValveCompartment);
+
+        Assert.Contains(ShipLayout.ValveCompartment, line, StringComparison.Ordinal);
+        Assert.Contains("mechanical", line, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>The gate is on the ACT, not on the console — which is what lets her have a working bridge
     /// repeater without it becoming a way around the captain's word. Same inputs, same answer, wherever the
     /// captain is standing.</summary>

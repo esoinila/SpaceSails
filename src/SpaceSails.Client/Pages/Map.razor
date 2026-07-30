@@ -1071,7 +1071,7 @@
                 {
                     var shipSel = ShipSpaceNow(shipPicked);
                     var shipReadiness = HullVenting.Readiness(shipSel);
-                    var shipIntent = ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized);
+                    var shipIntent = ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized, _dcStandingOrder);
                     var shipRefill = HullVenting.RefillState(shipSel, _shipReserve);
                     bool shipHeld = HullVenting.DoorHeldByPressure(shipSel, ShipCorridorPressurised);
 
@@ -1103,7 +1103,14 @@
                            nothing on the panel to tell him: the refusal line said "shut the door before you
                            pull THIS" while `this` was not on screen to be pulled. A control you cannot press
                            teaches the sequence; a control that is absent teaches nothing. *@
-                        @if (shipIntent == ShipAuthority.VentIntent.Authorized)
+                        @* Under a standing order there is no single word to withdraw — the authority was given
+                           at the desk and is taken back there. Saying so beats a button that would lie about
+                           what it does. (Owner's arrangement: "like we have the fire at will checkbox".) *@
+                        @if (_dcStandingOrder)
+                        {
+                            <span class="text-warning small">⚓ @ShipAuthority.StandingOrderStandsLine</span>
+                        }
+                        else if (shipIntent == ShipAuthority.VentIntent.Authorized)
                         {
                             <button type="button" class="btn btn-outline-secondary btn-sm"
                                     title="Take it back. Nothing has happened yet."
@@ -1111,7 +1118,7 @@
                                 ↩ Withdraw the word
                             </button>
                         }
-                        else
+                        else if (!_dcStandingOrder)
                         {
                             <button type="button" class="btn btn-outline-danger btn-sm"
                                     disabled="@(shipReadiness != HullVenting.VentReadiness.Ready)"
@@ -3998,6 +4005,10 @@
                                                               StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
+                                                              DamageControlAuthorized="_dcStandingOrder"
+                                                              OnToggleDamageControlAuthority="ToggleDamageControlAuthority"
+                                                              ArmedCompartment="@_shipAuthorized"
+                                                              BridgeRepeaterAlive="ShipBridgeAlive"
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"

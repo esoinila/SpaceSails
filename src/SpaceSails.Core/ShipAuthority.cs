@@ -43,11 +43,57 @@ public static class ShipAuthority
     /// of selecting, hovering, standing near or pressing quickly can ever return
     /// <see cref="VentIntent.Authorized"/> on its own.</para>
     /// </summary>
-    public static VentIntent EvaluateVent(string? selectedRoom, string? authorizedRoom) =>
+    /// <param name="standingOrder">Whether the captain has DELEGATED damage control to the station aft — the
+    /// owner's own arrangement: <i>"Let's add separate option to captains desk to authorize the back of the
+    /// ship repair station"</i>, and, pointedly, <i>"(even while the bridge still works)"</i>.
+    ///
+    /// <para>It is the same shape as <c>fire at will</c>, which the gun deck has had since the Expanse consult,
+    /// and it exists for the same reason: a captain who has to be asked about every hatch during a fire is a
+    /// captain who will be asked at the worst possible moment. Delegation is a decision the captain makes
+    /// ONCE, in the calm, from the desk — and the log carries who was holding the authority when the valve
+    /// opened.</para>
+    ///
+    /// <para>Note what it does NOT do: it never authorizes a compartment that is not selected, so the board
+    /// still cannot act on its own. And it is a standing order, not a secret — see
+    /// <see cref="StandingOrderStandsLine"/>, which the board says every time it acts under it.</para></param>
+    public static VentIntent EvaluateVent(
+        string? selectedRoom, string? authorizedRoom, bool standingOrder = false) =>
         selectedRoom is null ? VentIntent.NothingSelected
+        : standingOrder ? VentIntent.Authorized
         : authorizedRoom is not null && string.Equals(authorizedRoom, selectedRoom, System.StringComparison.Ordinal)
             ? VentIntent.Authorized
             : VentIntent.Opportunity;
+
+    // ── Delegation, and where the authority can be exercised ──────────────────────────────────────────
+
+    /// <summary>What the captain's desk says when damage control has been handed the authority.</summary>
+    public const string StandingOrderGivenLine =
+        "⚓ Damage control has your authority. The station aft may dog, pump and open compartments without " +
+        "asking — and the log records that you gave it, not that they took it.";
+
+    /// <summary>…and when it is taken back.</summary>
+    public const string StandingOrderWithdrawnLine =
+        "Damage control's standing authority is withdrawn. Every compartment needs your word again, by name.";
+
+    /// <summary>What the BOARD says while acting under the standing order, every time, so a delegated act
+    /// never looks like an unauthorized one.</summary>
+    public const string StandingOrderStandsLine =
+        "Acting under the captain's standing order to damage control.";
+
+    /// <summary>
+    /// HER BRIDGE REPEATER, WHEN THERE IS NOTHING BEHIND IT. The derelict's whole layout argument
+    /// (<see cref="HullVenting.DeadBridgePanelLine"/>) is that a dead bridge panel sends you aft to the
+    /// valves; the owner's ruling is that HER ship works the same way round —
+    /// <i>"So there needs to be standing authorization here when the bridge is alive. If bridge is not alive
+    /// then it should be doable from the rear of the ship. Like in the reevers infested ship."</i>
+    ///
+    /// <para>On her the state is reachable rather than a forty-year-old fact: open her own bridge to space and
+    /// the repeater on it stops answering, exactly as a derelict's does. What is left is mechanical, aft, in
+    /// the machinery space — and any standing order given while the bridge still worked stands there.</para>
+    /// </summary>
+    public static string DeadRepeaterLine(string valveCompartment) =>
+        $"⚙ The bridge repeater is dead — no bus behind it. Whatever she has left is mechanical now: the " +
+        $"valves themselves, aft in {valveCompartment}.";
 
     /// <summary>What the board asks for, naming the room so the answer cannot drift onto another one.</summary>
     public static string AskFor(string room) =>

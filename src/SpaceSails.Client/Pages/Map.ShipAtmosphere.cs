@@ -63,6 +63,66 @@ public sealed partial class Map
     private string? _shipBoardMessage;
 
     /// <summary>
+    /// THE STANDING ORDER TO DAMAGE CONTROL. Owner: <i>"Let's add separate option to captains desk to
+    /// authorize the back of the ship repair station"</i>, <i>"(even while the bridge still works)"</i>,
+    /// <i>"like we have the fire at will checkbox"</i>.
+    ///
+    /// <para>So it is that checkbox, for the other set of handles. A captain who must be asked about every
+    /// hatch during a fire is a captain who gets asked at the worst possible moment; delegation is a decision
+    /// made once, in the calm, from the desk. The board says so out loud every time it acts under it
+    /// (<see cref="ShipAuthority.StandingOrderStandsLine"/>) — a delegated act must never read like an
+    /// unauthorized one.</para>
+    /// </summary>
+    private bool _dcStandingOrder;
+
+    /// <summary>
+    /// Whether her bridge repeater has a bus behind it. Owner: <i>"So there needs to be standing authorization
+    /// here when the bridge is alive. If bridge is not alive then it should be doable from the rear of the
+    /// ship. Like in the reevers infested ship."</i>
+    ///
+    /// <para>On a derelict that is a forty-year-old fact. On her it is REACHABLE, which is better: open your
+    /// own bridge to space and the panel standing in it stops answering, so the ship you learned the board on
+    /// becomes the ship the board was designed for. What is left is mechanical, aft — and a standing order
+    /// given while the bridge still worked stands there.</para>
+    /// </summary>
+    private bool ShipBridgeAlive => !_shipVented.Contains("BRIDGE");
+
+    /// <summary>Hand damage control the captain's authority, or take it back. Called from the captain's desk,
+    /// beside the weapons authority, because that is where a captain's standing orders live.</summary>
+    private void ToggleDamageControlAuthority()
+    {
+        _dcStandingOrder = !_dcStandingOrder;
+
+        // A standing order supersedes any single-compartment word — leaving one armed underneath it would
+        // mean withdrawing the order silently re-armed a room the captain named an hour ago.
+        _shipAuthorized = null;
+
+        string line = _dcStandingOrder
+            ? ShipAuthority.StandingOrderGivenLine
+            : ShipAuthority.StandingOrderWithdrawnLine;
+        ShowPulseMessage(line);
+        _shipBoardMessage = line;
+        LogAutopilotEvent(_dcStandingOrder
+            ? "⚓ Damage control given standing authority over her compartments."
+            : "⚓ Damage control's standing authority withdrawn.");
+        RendererInterop.PlayCue("board");
+        RequestVaultSave();
+    }
+
+    /// <summary>Which of her two boards the captain is standing at — the aft valves, or the bridge repeater.
+    /// Decided by WHERE THEY ARE rather than by a label, the same rule the wreck's pressure doors use: a name
+    /// parsed back out of display text is a bug waiting for a rename.</summary>
+    private bool AtTheBridgeRepeater()
+    {
+        double dxRepeater = ShipLayout.BridgeRepeaterStation.X - _avatarX;
+        double dyRepeater = ShipLayout.BridgeRepeaterStation.Y - _avatarY;
+        double dxValves = ShipLayout.ValveStation.X - _avatarX;
+        double dyValves = ShipLayout.ValveStation.Y - _avatarY;
+        return (dxRepeater * dxRepeater) + (dyRepeater * dyRepeater)
+               < (dxValves * dxValves) + (dyValves * dyValves);
+    }
+
+    /// <summary>
     /// Whether her corridor still holds air. It always does: there is no handle on her board that empties the
     /// volume the captain is standing in, and a corridor pump is the one piece of the derelict's board she has
     /// not been given yet.
@@ -211,8 +271,18 @@ public sealed partial class Map
     /// of the few things that separates owning a hull from boarding one.</summary>
     private void OpenShipVentPanel()
     {
+        // THE REPEATER IS ONLY A REPEATER. Press it with her bridge open to space and it has nothing behind
+        // it — the derelict's own arrangement, arrived at from the other direction, and the reason her aft
+        // board is not redundant. The valves aft are mechanical and answer regardless.
+        if (AtTheBridgeRepeater() && !ShipBridgeAlive)
+        {
+            ShowPulseMessage(ShipAuthority.DeadRepeaterLine(ShipLayout.ValveCompartment));
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
         _showShipBoard = true;
-        _shipBoardMessage = null;
+        _shipBoardMessage = _dcStandingOrder ? ShipAuthority.StandingOrderStandsLine : null;
         RendererInterop.PlayCue("board");
     }
 
@@ -278,7 +348,7 @@ public sealed partial class Map
     /// </summary>
     private void VentShipCompartment(string room)
     {
-        if (ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized) != ShipAuthority.VentIntent.Authorized)
+        if (ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized, _dcStandingOrder) != ShipAuthority.VentIntent.Authorized)
         {
             _shipBoardMessage = ShipAuthority.AskFor(room);
             RendererInterop.PlayCue("block");
@@ -353,7 +423,7 @@ public sealed partial class Map
             return;
         }
 
-        if (ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized) != ShipAuthority.VentIntent.Authorized)
+        if (ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized, _dcStandingOrder) != ShipAuthority.VentIntent.Authorized)
         {
             _shipBoardMessage = ShipAuthority.AskFor(room);
             RendererInterop.PlayCue("block");
