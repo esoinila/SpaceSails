@@ -694,7 +694,8 @@
                         <g class="@cls" @onclick="() => SelectVentSpace(name)">
                             <rect x="@Du(x0)" y="@Du(y)" width="@Du(x1 - x0)"
                                   height="@Du(WreckLayout.BottomY - WreckLayout.SpineHalfHeight)" rx="0.4" />
-                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, x1 - x0, VentAreaTag(name, space, x1 - x0)))
+                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, x1 - x0, VentAreaTag(name, space, x1 - x0),
+                                                             WreckLayout.BottomY - WreckLayout.SpineHalfHeight))
                             @* The door onto the spine, at the doorway the captain actually walks through:
                                solid when sealed, broken when open. *@
                             <line class="vent-door"
@@ -1006,6 +1007,7 @@
                             + (ShipCompartment() is null ? " here" : "");
                     }
                     <g class="@shipCorridorCls" @onclick="() => SelectShipSpace(ShipLayout.SpineName)">
+                        @((MarkupString)ShipCorridorTagSvg())
                         <rect class="vent-spine-band"
                               x="@Du(ShipLayout.EngineBulkheadX)" y="@Du(-ShipLayout.SpineHalfHeight)"
                               width="@Du(ShipLayout.BridgeBulkheadX - ShipLayout.EngineBulkheadX)"
@@ -1028,9 +1030,13 @@
                             <rect x="@Du(shipRoom.X0)" y="@Du(-shipRoom.Y1)"
                                   width="@Du(shipRoom.X1 - shipRoom.X0)"
                                   height="@Du(shipRoom.Y1 - shipRoom.Y0)" rx="0.4" />
+                            @* Her berths are 3.5 du wide and 7 tall, so their names go SIDEWAYS rather than
+                               across — the owner's own read of the first board: "the cabins map here could use
+                               font rotation to fit the texts?" The helper decides; it is handed the room's
+                               height so that it can. *@
                             @((MarkupString)VentAreaLabelSvg(
                                 shipRoom.Name, shipCx, shipCy, shipRoom.X1 - shipRoom.X0,
-                                ShipAreaTag(shipRoom.Name)))
+                                ShipAreaTag(shipRoom.Name), shipRoom.Y1 - shipRoom.Y0))
                             @* Her hatch, at the doorway the captain actually walks through: solid when shut,
                                broken when open. ONE definition (ShipLayout.DoorSegment), read both by the thing
                                that draws it and the thing that walks into it. *@
@@ -1066,7 +1072,12 @@
                 {
                     var shipSel = ShipSpaceNow(shipPicked);
                     var shipReadiness = HullVenting.Readiness(shipSel);
-                    var shipIntent = ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized);
+                    var shipAuthority = ShipAuthorityNow();
+                    var shipIntent = shipAuthority == ShipAuthority.VentAuthority.None
+                        ? (_shipSelected is null
+                            ? ShipAuthority.VentIntent.NothingSelected
+                            : ShipAuthority.VentIntent.Opportunity)
+                        : ShipAuthority.VentIntent.Authorized;
                     var shipRefill = HullVenting.RefillState(shipSel, _shipReserve);
                     bool shipHeld = HullVenting.DoorHeldByPressure(shipSel, ShipCorridorPressurised);
 
@@ -1090,30 +1101,92 @@
 
                         @* THE GATE. Not a confirmation dialogue: the word carries the room's NAME, so changing
                            the selection revokes it — the same promise the boarding authorization makes, for the
-                           same reason (proximity is never consent). *@
-                        @if (shipReadiness == HullVenting.VentReadiness.Ready)
+                           same reason (proximity is never consent).
+
+                           BOTH STEPS ARE ALWAYS DRAWN, greyed with their reason on them. The first cut hid
+                           them until the act was legal, and the owner — standing at his own bridge repeater
+                           with the hold selected — had to ask "how do I vent the cargo hold here?" There was
+                           nothing on the panel to tell him: the refusal line said "shut the door before you
+                           pull THIS" while `this` was not on screen to be pulled. A control you cannot press
+                           teaches the sequence; a control that is absent teaches nothing. *@
+                        @* Under a standing order there is no single word to withdraw — the authority was given
+                           at the desk and is taken back there. Saying so beats a button that would lie about
+                           what it does. (Owner's arrangement: "like we have the fire at will checkbox".) *@
+                        @if (shipAuthority is ShipAuthority.VentAuthority.StandingOrder
+                                                or ShipAuthority.VentAuthority.NextActionCleared)
                         {
-                            @if (shipIntent == ShipAuthority.VentIntent.Authorized)
-                            {
-                                <button type="button" class="btn btn-outline-secondary btn-sm"
-                                        title="Take it back. Nothing has happened yet."
-                                        @onclick="WithdrawTheCaptainsWord">
-                                    ↩ Withdraw the word
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm"
-                                        title="@ShipAtmosphere.TheSuitsBesideTheBunks"
-                                        @onclick="() => VentShipCompartment(shipPicked)">
-                                    💨 OPEN @shipPicked TO SPACE
-                                </button>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-outline-danger btn-sm"
-                                        title="@ShipAuthority.WhyItNeedsSaying"
-                                        @onclick="() => GiveTheCaptainsWord(shipPicked)">
-                                    🔑 Captain's word: @shipPicked
-                                </button>
-                            }
+                            @* WHICH authority is answering, named. A delegated or pre-cleared act must never
+                               read like one the captain stood here and ordered. *@
+                            <span class="text-warning small">
+                                ⚓ Acting @ShipAuthority.UnderAuthority(shipAuthority).
+                                @(shipAuthority == ShipAuthority.VentAuthority.NextActionCleared
+                                    ? "This clearance is spent by the next act." : "")
+                            </span>
+                        }
+                        else if (shipIntent == ShipAuthority.VentIntent.Authorized)
+                        {
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    title="Take it back. Nothing has happened yet."
+                                    @onclick="WithdrawTheCaptainsWord">
+                                ↩ Withdraw the word
+                            </button>
+                        }
+                        else if (shipAuthority == ShipAuthority.VentAuthority.None)
+                        {
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    disabled="@(shipReadiness != HullVenting.VentReadiness.Ready)"
+                                    title="@(shipReadiness == HullVenting.VentReadiness.Ready
+                                             ? ShipAuthority.WhyItNeedsSaying
+                                             : HullVenting.RefusalLine(shipReadiness, shipPicked))"
+                                    @onclick="() => GiveTheCaptainsWord(shipPicked)">
+                                🔑 Captain's word: @shipPicked
+                            </button>
+                        }
+                        @* TWO ROADS TO AN EMPTY ROOM, and the owner named both: "one by venting to space in an
+                           emergency hurry and another where we more slowly pump it into our stores with rough
+                           vacuum pumps and it is kept in the ship." Same word gates both, because both end in
+                           a compartment of your own ship at vacuum. *@
+                        <button type="button" class="btn btn-danger btn-sm"
+                                disabled="@(shipIntent != ShipAuthority.VentIntent.Authorized
+                                            || shipReadiness != HullVenting.VentReadiness.Ready)"
+                                title="@(shipReadiness != HullVenting.VentReadiness.Ready
+                                         ? HullVenting.RefusalLine(shipReadiness, shipPicked)
+                                         : shipIntent != ShipAuthority.VentIntent.Authorized
+                                             ? ShipAuthority.AskFor(shipPicked)
+                                             : "Instant, and the air is GONE — the emergency road. "
+                                               + ShipAtmosphere.TheSuitsBesideTheBunks)"
+                                @onclick="() => VentShipCompartment(shipPicked)">
+                            💨 OPEN @shipPicked TO SPACE
+                        </button>
+                        @if (ShipPumpOn(shipPicked) is { } shipRunning)
+                        {
+                            <button type="button" class="btn btn-outline-warning btn-sm"
+                                    title="@(shipRunning.RoughBanked
+                                             ? "The fill is already in her tanks. Stopping now leaves the room breathable."
+                                             : "Stop before the mark and the air stays in the room — none of it reaches the tanks.")"
+                                    @onclick="() => StopShipPump(shipPicked)">
+                                @(shipRunning.RoughBanked ? "🛢 Stop — take the air and go" : "🛢 Stop the pump")
+                            </button>
+                        }
+                        else
+                        {
+                            var shipVolume = HullVenting.SharedAtmosphere(
+                                shipPicked, ShipSpacesNow(), ShipLayout.SpineName);
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(shipIntent != ShipAuthority.VentIntent.Authorized
+                                                || shipReadiness != HullVenting.VentReadiness.Ready)"
+                                    title="@(shipReadiness != HullVenting.VentReadiness.Ready
+                                             ? HullVenting.RefusalLine(shipReadiness, shipPicked)
+                                             : shipIntent != ShipAuthority.VentIntent.Authorized
+                                                 ? ShipAuthority.AskFor(shipPicked)
+                                                 : shipVolume.Count > 1
+                                                     ? $"One atmosphere, {shipVolume.Count} spaces: {string.Join(", ", shipVolume)}. They stand open to each other, so they empty together."
+                                                     : "Slower than the handle, and the air is KEPT: the mechanical stage banks a fill into her tanks, the long tail brings it down to a pressure that kills.")"
+                                    @onclick="() => StartShipPump(shipPicked)">
+                                @(shipVolume.Count > 1
+                                    ? $"🛢 Pump this volume into her tanks ({shipVolume.Count} spaces)"
+                                    : "🛢 Pump it into her tanks")
+                            </button>
                         }
 
                         <button type="button" class="btn btn-outline-info btn-sm"
@@ -1146,7 +1219,101 @@
                     <div class="vent-message">@shipBoardMsg</div>
                 }
 
+                @* HER BOARD'S OWN LOG, like a derelict's. A panel can only ever show one line, so anything that
+                   happened while the captain was looking elsewhere — a pump banking, a hatch that would not
+                   move — was gone before it could be read. Newest at the top, because the newest is what you
+                   came to read. *@
+                @if (_shipBoardLog.Count > 0)
+                {
+                    <div class="vent-history">
+                        <div class="vent-history-head">OPERATING LOG — HER OWN BOARD</div>
+                        @for (int i = _shipBoardLog.Count - 1; i >= 0; i--)
+                        {
+                            <div class="vent-history-line">@_shipBoardLog[i]</div>
+                        }
+                    </div>
+                }
+
                 <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipBoard)">Step away</button>
+            </div>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       HER SCUTTLING CHARGES, AND THE TWO HANDS IT TAKES. Owner: "that ship also has the scuttling charges...
+       let's have a captains approval mechanic for that also on our ship. :-D ... it is the last defence against
+       the Borg in Star Trek :-D", and then the sentence that makes it a mechanic rather than an ending: "they
+       only need to activate it for the borg to back down enough."
+
+       The second key is the CREW's — "I guess we need the another opinion we just don't have a desk for that on
+       the bridge yet" — read off the sheet already on the captain's desk. No new desk required, and the crew
+       temperature stops being a report card.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_showShipScuttlePanel)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipScuttlePanel)">
+            <div class="vent-board" @onclick:stopPropagation="true">
+                <div class="view-object-title">☢ SCUTTLING CHARGES — HER OWN KEEL</div>
+
+                @if (_shipChargesSeconds is { } shipBurn)
+                {
+                    <div class="vent-sub">
+                        @(Scuttle.CanAbort(shipBurn)
+                            ? "The note of her is up half a tone. The panel will still take the keys back."
+                            : "Past recall. Whatever happens now happens on its own schedule.")
+                    </div>
+                    <div class="vent-readout">
+                        ☢ OVERLOAD — @HullVenting.SoakLabel(shipBurn) · the way out is the way you came in
+                    </div>
+                    @if (Scuttle.CanAbort(shipBurn))
+                    {
+                        <button type="button" class="btn btn-outline-warning btn-sm" @onclick="BackTheKeysOut">
+                            ↩ Back the keys out
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="vent-sub">@ShipScuttle.NeverDelegable</div>
+                    <div class="vent-readout">@ShipScuttle.PriceLine(_cargoUnits, (long)_cargoValue, _credits)</div>
+
+                    <div class="vent-actions">
+                        <button type="button"
+                                class="btn btn-sm @(_shipScuttleWordGiven ? "btn-success" : "btn-outline-danger")"
+                                title="@ShipScuttle.AskFor("this ship")"
+                                @onclick="GiveTheWordAgainstHer">
+                            @(_shipScuttleWordGiven ? "✅ THE CAPTAIN'S KEY IS TURNED — click to take it back" : "🔑 The captain's key")
+                        </button>
+
+                        @* THE SECOND OPINION. Not a rules explanation and not a dice roll the captain can
+                           re-roll: the crew answer from where they already stand with him. *@
+                        <button type="button"
+                                class="btn btn-sm @(_shipScuttleSecondKey == ShipScuttle.SecondKey.Refused ? "btn-outline-secondary" : "btn-outline-warning")"
+                                disabled="@(!_shipScuttleWordGiven)"
+                                title="Scuttling her takes two hands. Ask the crew for theirs."
+                                @onclick="AskTheCrewForTheSecondKey">
+                            🧑‍🔧 Ask the crew for the second key
+                        </button>
+
+                        <button type="button" class="btn btn-danger btn-sm"
+                                disabled="@(!_shipScuttleWordGiven
+                                            || _shipScuttleSecondKey is null
+                                            || _shipScuttleSecondKey == ShipScuttle.SecondKey.Refused)"
+                                title="@(_shipScuttleSecondKey == ShipScuttle.SecondKey.Refused
+                                         ? ShipScuttle.RefusedPointerLine
+                                         : "Both keys together. Ninety seconds, and a recall window for the first sixty.")"
+                                @onclick="TurnBothKeys">
+                            ☢ TURN BOTH KEYS
+                        </button>
+                    </div>
+                }
+
+                @if (_shipScuttleMessage is { Length: > 0 } shipScuttleMsg)
+                {
+                    <div class="vent-message">@shipScuttleMsg</div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipScuttlePanel)">Step away</button>
             </div>
         </div>
     }
@@ -2122,6 +2289,33 @@
        hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
        OUT IN THE CORRIDOR, not just from the board you walked away from. Two clocks racing each other: the
        one emptying a room, and the one on the sentry holding the lane while it does. *@
+    @* HER OWN CLOCKS, out where she can be read from the corridor. Owner, having started a pump on her board
+       and walked away: "I expect to see the pumping here now as we have on the reever infested salvage ship."
+       Same strip, same classes — a run you can only infer from a sentence on a panel is a run you will forget
+       you started, and hers take the best part of a minute. *@
+    @if (!OnWreck && _deckMode && (_shipPumps.Count > 0 || _shipChargesSeconds is not null))
+    {
+        <div class="wreck-clocks">
+            @* THE OVERLOAD, LOUDEST AND FIRST — the whole scene is walking away from the panel. *@
+            @if (_shipChargesSeconds is { } shipClock)
+            {
+                <div class="wc-line overload @(Scuttle.CanAbort(shipClock) ? "" : "no-recall")">
+                    <span class="wc-tag">☢ @(Scuttle.CanAbort(shipClock) ? "OVERLOAD" : "NO RECALL")</span>
+                    <span class="wc-room">her own keel</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(shipClock)</span>
+                </div>
+            }
+            @foreach (var shipRun in _shipPumps.Values.OrderBy(p => p.SecondsLeft))
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">🛢 @(shipRun.RoughBanked ? "TAIL" : "PUMPING")</span>
+                    <span class="wc-room">@(shipRun.Volume.Count > 1 ? $"{shipRun.Volume.Count} SPACES" : shipRun.Volume[0])</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(shipRun.SecondsLeft)</span>
+                </div>
+            }
+        </div>
+    }
+
     @if (OnWreck && _deckMode && (_pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null))
     {
         <div class="wreck-clocks">
@@ -3945,6 +4139,12 @@
                                                               StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
+                                                              DamageControlAuthorized="_dcStandingOrder"
+                                                              OnToggleDamageControlAuthority="ToggleDamageControlAuthority"
+                                                              DamageControlNextActCleared="_dcNextActionCleared"
+                                                              OnAuthorizeNextDamageControlAct="AuthorizeNextDamageControlAct"
+                                                              ArmedCompartment="@_shipAuthorized"
+                                                              BridgeRepeaterAlive="ShipBridgeAlive"
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"

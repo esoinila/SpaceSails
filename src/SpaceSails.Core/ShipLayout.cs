@@ -178,6 +178,18 @@ public static class ShipLayout
     /// separation audit can SEE; it was a client literal, which is precisely how it got sat on.</summary>
     public static DeckReachability.Point ChargeDumpStation => new(-21f, -3f);
 
+    /// <summary>
+    /// HER SCUTTLING CHARGES. Owner: <i>"that ship also has the scuttling charges... let's have a captains
+    /// approval mechanic for that also on our ship. :-D ... it is the last defence against the Borg in Star
+    /// Trek :-D"</i>
+    ///
+    /// <para>Port side aft, in the machinery space — the same room a derelict keeps hers in, and the same room
+    /// the atmosphere valves are in, because damage control and the last resort are one station's business.
+    /// Well clear of the valves (14 du) and the charge dump, so nobody reaches for the wrong handle in a
+    /// hurry: <c>ConsoleCrowdingTests</c> holds that, and the whole reason this is a Core constant rather than
+    /// a client literal is that four collisions have already shipped from literals.</para></summary>
+    public static DeckReachability.Point ScuttleStation => new(-17f, 7f);
+
     /// <summary>Her builder's plate, on the engine-room bulkhead by the keel.</summary>
     public static DeckReachability.Point BuildersPlateStation => new(-20f, 4f);
 
@@ -189,6 +201,7 @@ public static class ShipLayout
         ("the bridge repeater", BridgeRepeaterStation),
         ("the charge dump", ChargeDumpStation),
         ("the builder's plate", BuildersPlateStation),
+        ("the scuttling charges", ScuttleStation),
         ("the gangway placard", PlacardStation),
     ];
 

@@ -37,6 +37,41 @@ public sealed partial class Map
     /// to serve on.</summary>
     private readonly HashSet<string> _shipVented = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// HOW LONG EACH OF HER COMPARTMENTS HAS BEEN OPEN TO SPACE. Owner, pointing at the derelict's board:
+    /// <i>"see here now how there is a clock here for pumping down and vacuum."</i>
+    ///
+    /// <para>The wreck's clock counts up because the vacuum is doing work in there — the soak is what kills
+    /// what it cannot see. On HER the number answers a different question and still matters: how long that
+    /// compartment has been dead, which is how long the fire in it has been starved and how long ago you
+    /// decided to spend the air.</para>
+    /// </summary>
+    private readonly Dictionary<string, double> _shipVacuumSeconds = [];
+
+    /// <summary>
+    /// HER BOARD KEEPS ITS OWN LOG, like a derelict's does. The wreck's board learned this the hard way: a
+    /// panel can only ever show ONE line, so anything that happened while the captain was looking elsewhere —
+    /// a pump banking, a hatch that would not move — was gone before it could be read.
+    /// </summary>
+    private readonly List<string> _shipBoardLog = [];
+
+    /// <summary>The most her board keeps. Long enough to cover an incident, short enough to stay a log rather
+    /// than a transcript.</summary>
+    private const int ShipBoardLogDepth = 14;
+
+    /// <summary>Every act her board takes goes to the ship's event log AND to the board's own — one call, so a
+    /// new switch cannot be added that quietly writes to only one of them.</summary>
+    private void ShipBoardLog(string line)
+    {
+        LogAutopilotEvent(line);
+
+        _shipBoardLog.Add(line);
+        if (_shipBoardLog.Count > ShipBoardLogDepth)
+        {
+            _shipBoardLog.RemoveAt(0);
+        }
+    }
+
     /// <summary>What is left in her tanks, in compartment-fills. Her plant makes more; not quickly.</summary>
     private int _shipReserve = ShipAtmosphere.ReserveFills;
 
@@ -61,6 +96,118 @@ public sealed partial class Map
 
     /// <summary>The board's last word — an outcome, a refusal, or the authority it is holding.</summary>
     private string? _shipBoardMessage;
+
+    /// <summary>
+    /// THE STANDING ORDER TO DAMAGE CONTROL. Owner: <i>"Let's add separate option to captains desk to
+    /// authorize the back of the ship repair station"</i>, <i>"(even while the bridge still works)"</i>,
+    /// <i>"like we have the fire at will checkbox"</i>.
+    ///
+    /// <para>So it is that checkbox, for the other set of handles. A captain who must be asked about every
+    /// hatch during a fire is a captain who gets asked at the worst possible moment; delegation is a decision
+    /// made once, in the calm, from the desk. The board says so out loud every time it acts under it
+    /// (<see cref="ShipAuthority.StandingOrderStandsLine"/>) — a delegated act must never read like an
+    /// unauthorized one.</para>
+    /// </summary>
+    private bool _dcStandingOrder;
+
+    /// <summary>
+    /// THE LIMITED PRE-OK. Owner: <i>"we have the authorize next shot, that kind of authorize damage control
+    /// next vent action is missing, it would be usefull as limited pre-ok from captain."</i>
+    ///
+    /// <para>The rung between the two that existed. The word at the board is specific and needs the captain to
+    /// be standing there; the standing order is open-ended and forever. This is the captain clearing the NEXT
+    /// act from the desk without knowing yet which compartment it will be — which is exactly the shape of a
+    /// fire, and exactly how a cleared shot already works (<c>_shotAuthorized</c>). Spent by the act.</para>
+    /// </summary>
+    private bool _dcNextActionCleared;
+
+    /// <summary>Which of the captain's authorities answers for the compartment on the board right now.</summary>
+    private ShipAuthority.VentAuthority ShipAuthorityNow() =>
+        ShipAuthority.AuthorityFor(_shipSelected, _shipAuthorized, _dcStandingOrder, _dcNextActionCleared);
+
+    /// <summary>Clear damage control's next act, or take the clearance back. Mirrors AUTHORIZE NEXT SHOT down
+    /// to the wording, because it is the same promise about a different set of handles.</summary>
+    private void AuthorizeNextDamageControlAct()
+    {
+        _dcNextActionCleared = !_dcNextActionCleared;
+
+        string line = _dcNextActionCleared
+            ? ShipAuthority.NextActionClearedLine
+            : ShipAuthority.NextActionWithdrawnLine;
+        ShowPulseMessage(line);
+        _shipBoardMessage = line;
+        LogAutopilotEvent(_dcNextActionCleared
+            ? "✍ Damage control cleared for its next act."
+            : "✍ Damage control's clearance withdrawn.");
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
+    /// <summary>Spend whatever authority answered, if spending is what it is for. A standing order stands; a
+    /// named word and a next-act clearance are used up by the thing they permitted.</summary>
+    private void SpendShipAuthority(ShipAuthority.VentAuthority authority)
+    {
+        if (!ShipAuthority.IsSpentByTheAct(authority))
+        {
+            return;
+        }
+
+        if (authority == ShipAuthority.VentAuthority.NamedWord)
+        {
+            _shipAuthorized = null;
+        }
+        else
+        {
+            _dcNextActionCleared = false;
+        }
+    }
+
+    /// <summary>
+    /// Whether her bridge repeater has a bus behind it. Owner: <i>"So there needs to be standing authorization
+    /// here when the bridge is alive. If bridge is not alive then it should be doable from the rear of the
+    /// ship. Like in the reevers infested ship."</i>
+    ///
+    /// <para>On a derelict that is a forty-year-old fact. On her it is REACHABLE, which is better: open your
+    /// own bridge to space and the panel standing in it stops answering, so the ship you learned the board on
+    /// becomes the ship the board was designed for. What is left is mechanical, aft — and a standing order
+    /// given while the bridge still worked stands there.</para>
+    /// </summary>
+    private bool ShipBridgeAlive => !_shipVented.Contains("BRIDGE");
+
+    /// <summary>Hand damage control the captain's authority, or take it back. Called from the captain's desk,
+    /// beside the weapons authority, because that is where a captain's standing orders live.</summary>
+    private void ToggleDamageControlAuthority()
+    {
+        _dcStandingOrder = !_dcStandingOrder;
+
+        // A standing order supersedes any single-compartment word — leaving one armed underneath it would
+        // mean withdrawing the order silently re-armed a room the captain named an hour ago.
+        _shipAuthorized = null;
+
+        string line = _dcStandingOrder
+            ? ShipAuthority.StandingOrderGivenLine
+            : ShipAuthority.StandingOrderWithdrawnLine;
+        ShowPulseMessage(line);
+        _shipBoardMessage = line;
+        LogAutopilotEvent(_dcStandingOrder
+            ? "⚓ Damage control given standing authority over her compartments."
+            : "⚓ Damage control's standing authority withdrawn.");
+        RendererInterop.PlayCue("board");
+        RequestVaultSave();
+    }
+
+    /// <summary>Which of her two boards the captain is standing at — the aft valves, or the bridge repeater.
+    /// Decided by WHERE THEY ARE rather than by a label, the same rule the wreck's pressure doors use: a name
+    /// parsed back out of display text is a bug waiting for a rename.</summary>
+    private bool AtTheBridgeRepeater()
+    {
+        double dxRepeater = ShipLayout.BridgeRepeaterStation.X - _avatarX;
+        double dyRepeater = ShipLayout.BridgeRepeaterStation.Y - _avatarY;
+        double dxValves = ShipLayout.ValveStation.X - _avatarX;
+        double dyValves = ShipLayout.ValveStation.Y - _avatarY;
+        return (dxRepeater * dxRepeater) + (dyRepeater * dyRepeater)
+               < (dxValves * dxValves) + (dyValves * dyValves);
+    }
 
     /// <summary>
     /// Whether her corridor still holds air. It always does: there is no handle on her board that empties the
@@ -184,7 +331,7 @@ public sealed partial class Map
         bool shut = _shipDoorsShut.Contains(room);
         Say(atTheDoor, shut ? ShipAuthority.IsolatedLine(room) : ShipAuthority.ReleasedLine(room));
 
-        LogAutopilotEvent(shut ? $"🔒 Dogged {room}." : $"🔓 Undogged {room}.");
+        ShipBoardLog(shut ? $"🔒 Dogged {room}." : $"🔓 Undogged {room}.");
         RendererInterop.PlayCue("board");
         RebuildShipDeck();
         RequestVaultSave();
@@ -211,8 +358,18 @@ public sealed partial class Map
     /// of the few things that separates owning a hull from boarding one.</summary>
     private void OpenShipVentPanel()
     {
+        // THE REPEATER IS ONLY A REPEATER. Press it with her bridge open to space and it has nothing behind
+        // it — the derelict's own arrangement, arrived at from the other direction, and the reason her aft
+        // board is not redundant. The valves aft are mechanical and answer regardless.
+        if (AtTheBridgeRepeater() && !ShipBridgeAlive)
+        {
+            ShowPulseMessage(ShipAuthority.DeadRepeaterLine(ShipLayout.ValveCompartment));
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
         _showShipBoard = true;
-        _shipBoardMessage = null;
+        _shipBoardMessage = _dcStandingOrder ? ShipAuthority.StandingOrderStandsLine : null;
         RendererInterop.PlayCue("board");
     }
 
@@ -278,7 +435,8 @@ public sealed partial class Map
     /// </summary>
     private void VentShipCompartment(string room)
     {
-        if (ShipAuthority.EvaluateVent(_shipSelected, _shipAuthorized) != ShipAuthority.VentIntent.Authorized)
+        ShipAuthority.VentAuthority authority = ShipAuthorityNow();
+        if (authority == ShipAuthority.VentAuthority.None)
         {
             _shipBoardMessage = ShipAuthority.AskFor(room);
             RendererInterop.PlayCue("block");
@@ -295,19 +453,192 @@ public sealed partial class Map
         }
 
         _shipVented.Add(room);
+        _shipVacuumSeconds[room] = 0.0;   // her clock starts the moment the air leaves
 
-        // THE WORD IS SPENT. One authorization, one compartment, one act — otherwise "the captain said yes"
-        // becomes a standing permission, which is the thing this whole gate exists to refuse.
-        _shipAuthorized = null;
+        // AND WHATEVER ANSWERED IS SPENT, if spending is what it is for. One authorization, one act — a word
+        // or a clearance that survived its own use would be a standing permission nobody granted.
+        SpendShipAuthority(authority);
 
         _shipBoardMessage = ShipAtmosphere.IsBerth(room)
             ? $"💨 {room} is open to space. {ShipAtmosphere.TheSuitsBesideTheBunks}"
             : $"💨 {room} is open to space. It cost you the air in it and nothing else.";
 
-        LogAutopilotEvent($"💨 Vented {room} — on the captain's own authority, by name.");
+        ShipBoardLog($"💨 Vented {room} — {ShipAuthority.UnderAuthority(authority)}.");
         RendererInterop.PlayCue("alarm");
         RebuildShipDeck();
         RequestVaultSave();
+    }
+
+    // ── The thrifty road ──────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// HER ROUGHING PUMPS. Owner, at the board: <i>"I want to pump the air out but not lose it with vacuum
+    /// pumps. So I expect an option of vacuuming a space without losing the air"</i>, and then the whole shape
+    /// of it in one sentence — <i>"There should be 2 ways to evacuate the room air, one by venting to space in
+    /// an emergency hurry and another where we more slowly pump it into our stores with rough vacuum pumps and
+    /// it is kept in the ship."</i>
+    ///
+    /// <para>That is the derelict's economics exactly, and it was his to begin with (his own lab bench: a
+    /// roughing pump does ~95% of the work). Cracking a valve is instant and throws the air away; the pump is
+    /// slow and the air ends up in her tanks. The mechanical stage BANKS the fill early and the long tail
+    /// afterwards only buys a pressure low enough to be lethal — so stopping at the rough mark is a real
+    /// choice rather than an abort.</para>
+    ///
+    /// <para>THE GATE DOES NOT RELAX FOR BEING THRIFTY. The end state is a compartment of your own ship at
+    /// vacuum, which is precisely what the captain's word is for; a pump that skipped it would be a loophole
+    /// around the rule rather than a second road to the same place.</para>
+    /// </summary>
+    private readonly Dictionary<string, PumpRun> _shipPumps = [];
+
+    /// <summary>The run this space is part of, if any — asked by every readout, so a compartment standing open
+    /// to one that is being pumped knows it is being pumped.</summary>
+    private PumpRun? ShipPumpOn(string space)
+    {
+        foreach (PumpRun run in _shipPumps.Values)
+        {
+            if (run.Volume.Contains(space, StringComparer.Ordinal))
+            {
+                return run;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Start her pump on a compartment — and on whatever is standing open to it.</summary>
+    private void StartShipPump(string room)
+    {
+        if (ShipPumpOn(room) is not null)
+        {
+            return;
+        }
+
+        ShipAuthority.VentAuthority authority = ShipAuthorityNow();
+        if (authority == ShipAuthority.VentAuthority.None)
+        {
+            _shipBoardMessage = ShipAuthority.AskFor(room);
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
+        HullVenting.Space space = ShipSpaceNow(room);
+        HullVenting.VentReadiness readiness = HullVenting.Readiness(space);
+        if (readiness != HullVenting.VentReadiness.Ready)
+        {
+            _shipBoardMessage = HullVenting.RefusalLine(readiness, room);
+            RendererInterop.PlayCue("block");
+            return;
+        }
+
+        // WHAT AM I ACTUALLY ABOUT TO EMPTY. Core's flood fill answers, across whatever hatches stand open —
+        // asked with HER corridor's name, because the door graph has to know what the volume opens onto.
+        IReadOnlyList<string> volume = HullVenting.SharedAtmosphere(
+            room, ShipSpacesNow(), ShipLayout.SpineName);
+
+        (double seconds, int charges) = HullVenting.PumpJob(volume);
+        _shipPumps[string.Join("+", volume)] =
+            new PumpRun(volume, seconds, charges, seconds, RoughBanked: false);
+
+        // Spent by STARTING the run, exactly as by pulling the handle: one authorization, one act. Stopping
+        // and restarting asks again, which is right — it is the same decision twice.
+        SpendShipAuthority(authority);
+
+        _shipBoardMessage = HullVenting.PumpRunningLine(room, seconds);
+        ShipBoardLog(
+            $"🛢 Pump started on {room} — her air goes to the tanks, not to space, "
+            + $"{ShipAuthority.UnderAuthority(authority)}.");
+        RendererInterop.PlayCue("board");
+    }
+
+    /// <summary>Stop it. Past the rough mark this is the THRIFTY FINISH rather than an abort: the fill is
+    /// already banked, and all you give up is a pressure low enough to kill.</summary>
+    private void StopShipPump(string room)
+    {
+        if (ShipPumpOn(room) is not { } run)
+        {
+            return;
+        }
+
+        _shipPumps.Remove(string.Join("+", run.Volume));
+        _shipBoardMessage = run.RoughBanked
+            ? $"Pump shut down. Her tanks kept what came out of {room}, and what is left in there is still " +
+              "breathable — which is what stopping at the mark means."
+            : $"Pump shut down early. Most of {room}'s air is still in {room}, and none of it is in her tanks.";
+        RendererInterop.PlayCue("block");
+    }
+
+    /// <summary>Run her pumps. One clock per VOLUME, one rough mark, one payout — the spaces on a run were one
+    /// atmosphere the whole time.</summary>
+    private void AdvanceShipPumps(double dtSeconds)
+    {
+        if (OnWreck)
+        {
+            return;
+        }
+
+        // Her vacuum clocks run whether or not a pump is going — a compartment that has been open to space
+        // for four minutes is a different fact from one opened a moment ago.
+        foreach (string vented in _shipVented)
+        {
+            _shipVacuumSeconds[vented] = _shipVacuumSeconds.GetValueOrDefault(vented) + dtSeconds;
+        }
+
+        if (_shipPumps.Count == 0)
+        {
+            return;
+        }
+
+        foreach (string key in _shipPumps.Keys.ToList())
+        {
+            PumpRun run = _shipPumps[key];
+            double before = run.SecondsLeft;
+            double left = before - dtSeconds;
+
+            // The rough mark belongs to the RUN and never to a variable outside the loop — that exact mistake
+            // cost the wreck's board a silent charge leak, a room measured against the corridor's mark that
+            // its own shorter clock could never cross.
+            double roughAt = run.Total - HullVenting.PumpRoughSeconds;
+            bool banked = run.RoughBanked;
+            string label = run.Volume.Count > 1 ? $"{run.Volume.Count} spaces" : run.Volume[0];
+
+            if (before > roughAt && left <= roughAt)
+            {
+                _shipReserve += run.Charges;
+                banked = true;
+                _shipBoardMessage = HullVenting.PumpRoughDoneLine(label);
+                LogAutopilotEvent(
+                    $"🛢 {label} roughed out — {run.Charges} fill(s) into her tanks ({_shipReserve}).");
+                RendererInterop.PlayCue("reveal");
+            }
+
+            if (left > 0)
+            {
+                _shipPumps[key] = run with { SecondsLeft = left, RoughBanked = banked };
+                if (_showShipBoard && !banked && _shipSelected is { } watching
+                    && run.Volume.Contains(watching, StringComparer.Ordinal))
+                {
+                    _shipBoardMessage = HullVenting.PumpRunningLine(label, left);
+                }
+                continue;
+            }
+
+            _shipPumps.Remove(key);
+
+            // Only NOW is any of it lethal. The fill was banked at the rough mark, a long time ago.
+            foreach (string member in run.Volume)
+            {
+                if (!string.Equals(member, ShipLayout.SpineName, StringComparison.Ordinal))
+                {
+                    _shipVented.Add(member);
+                    _shipVacuumSeconds[member] = 0.0;
+                }
+            }
+
+            _shipBoardMessage = HullVenting.PumpDoneLine(label);
+            ShipBoardLog($"🛢 Pumped {label} down — her tanks hold {_shipReserve} fills.");
+            RendererInterop.PlayCue("alarm");
+            RebuildShipDeck();
+            RequestVaultSave();
+        }
     }
 
     /// <summary>Put the air back, off her own tanks. Air comes back; nobody does.</summary>
@@ -325,10 +656,11 @@ public sealed partial class Map
         }
 
         _shipVented.Remove(room);
+        _shipVacuumSeconds.Remove(room);   // air in it again: the clock has nothing to count
         _shipReserve--;
 
         _shipBoardMessage = ShipAtmosphere.RefilledLine(room, _shipReserve);
-        LogAutopilotEvent($"🫁 {room} back to pressure — {_shipReserve} fills left in her tanks.");
+        ShipBoardLog($"🫁 {room} back to pressure — {_shipReserve} fills left in her tanks.");
         RendererInterop.PlayCue("reveal");
         RebuildShipDeck();
         RequestVaultSave();
@@ -363,7 +695,7 @@ public sealed partial class Map
 
         if (dogged > 0)
         {
-            LogAutopilotEvent($"🔒 {dogged} hatches dogged from the board.");
+            ShipBoardLog($"🔒 {dogged} hatches dogged from the board.");
             RebuildShipDeck();
             RequestVaultSave();
         }
@@ -395,7 +727,7 @@ public sealed partial class Map
 
         if (opened > 0)
         {
-            LogAutopilotEvent($"🔓 {opened} hatches undogged from the board.");
+            ShipBoardLog($"🔓 {opened} hatches undogged from the board.");
             RebuildShipDeck();
             RequestVaultSave();
         }
@@ -446,16 +778,33 @@ public sealed partial class Map
               + $"{spaces - corridor.Count} dogged off.";
     }
 
-    /// <summary>The one word a compartment wears on her mimic — what it is DOING beats what it is.</summary>
+    /// <summary>
+    /// The one word a compartment wears on her mimic — what it is DOING beats what it is.
+    ///
+    /// <para>PUMPING COMES FIRST, and it carries its clock. Owner, watching a pump run on her board and seeing
+    /// nothing on the map: <i>"I expect to see the pumping here now as we have on the reever infested salvage
+    /// ship."</i> Quite right — the derelict's board has shown a running pump on the compartment since the day
+    /// several could run at once, because the board is the only place that can tell you which rooms are working
+    /// and how far along each one is. A run you can only infer from a sentence is a run you will forget you
+    /// started.</para>
+    /// </summary>
     private (string Text, string Class) ShipAreaTag(string room)
     {
+        if (ShipPumpOn(room) is { } pumping)
+        {
+            // It counts DOWN, unlike the vacuum soak: this clock has a known end. Past the rough mark the
+            // colour changes, because from there on the air is already hers and the rest is just pressure.
+            return ($"PUMPING {HullVenting.SoakLabel(pumping.SecondsLeft)}",
+                    pumping.RoughBanked ? "vent-tag banked-tag" : "vent-tag pumping-tag");
+        }
         if (_shipVented.Contains(room))
         {
-            return ("VACUUM", "vent-tag");
+            double open = _shipVacuumSeconds.GetValueOrDefault(room);
+            return (open > 0 ? $"VACUUM {HullVenting.SoakLabel(open)}" : "VACUUM", "vent-tag");
         }
         if (ShipCompartment() == room)
         {
-            return ("YOU", "vent-tag");
+            return ("YOU", "vent-tag here-tag");
         }
         return _shipDoorsShut.Contains(room) ? ("DOGGED", "vent-tag") : ("", "vent-tag");
     }
@@ -471,4 +820,17 @@ public sealed partial class Map
     /// symmetric about the corridor, so the same list serves either way round.</summary>
     private static string ShipHullOutline =>
         "30,0 20,-10 -18,-10 -24,-7 -24,7 -18,10 20,10";
+
+    /// <summary>Her corridor's own tag on the mimic, built as markup because Razor reserves
+    /// <c>&lt;text&gt;</c> for control flow. It says where the captain is, the way the wreck's spine does.</summary>
+    private string ShipCorridorTagSvg()
+    {
+        if (ShipCompartment() is not null)
+        {
+            return "";
+        }
+
+        return """<text class="vent-spine-tag here-tag" x="2" y="1.2" text-anchor="middle" """
+               + """style="font-size:1.35px">YOU</text>""";
+    }
 }

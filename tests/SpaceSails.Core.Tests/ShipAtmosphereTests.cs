@@ -130,6 +130,134 @@ public sealed class ShipAtmosphereTests
             ShipAuthority.EvaluateVent(null, "CABIN 1"));
     }
 
+    // ── Delegation: the standing order to damage control ──────────────────────────────────────────────
+
+    /// <summary>
+    /// THE OWNER'S OWN ARRANGEMENT, and the reason it stays safe. <i>"Let's add separate option to captains
+    /// desk to authorize the back of the ship repair station … (even while the bridge still works) … like we
+    /// have the fire at will checkbox."</i>
+    ///
+    /// <para>A standing order authorizes the SELECTED compartment without the per-room word — and it still
+    /// cannot authorize nothing. The board can never act on its own, whatever the captain has delegated.</para>
+    /// </summary>
+    [Fact]
+    public void AStandingOrderAuthorisesTheSelectedCompartment()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.Authorized,
+            ShipAuthority.EvaluateVent("CARGO HOLD", authorizedRoom: null, standingOrder: true));
+    }
+
+    [Fact]
+    public void AStandingOrderStillCannotAuthoriseNothing()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.NothingSelected,
+            ShipAuthority.EvaluateVent(null, authorizedRoom: null, standingOrder: true));
+    }
+
+    /// <summary>Delegation is a decision, so it has to be visible: the board says whose authority it acts
+    /// under, every time. A delegated act must never read like an unauthorized one.</summary>
+    [Fact]
+    public void TheBoardSaysWhoseAuthorityItIsActingUnder()
+    {
+        Assert.Contains("standing order", ShipAuthority.StandingOrderStandsLine,
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("damage control", ShipAuthority.StandingOrderGivenLine,
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("your word", ShipAuthority.StandingOrderWithdrawnLine,
+                        StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// NEITHER STATION LOCKS THE OTHER OUT. Owner: <i>"At Star Trek Enterprise in the Next Gen they also had
+    /// that kind of Engineering / Bridge duplication, so it makes sense to not lock the engineering station to
+    /// uselessness while the bridge works."</i>
+    ///
+    /// <para>So a dead repeater is a SIGNPOST, not the system refusing: it points aft, where the valves are
+    /// mechanical and answer regardless — the same sentence a derelict's dead bridge panel has always said,
+    /// arrived at from the other direction.</para>
+    /// </summary>
+    [Fact]
+    public void ADeadRepeaterPointsAftRatherThanRefusing()
+    {
+        string line = ShipAuthority.DeadRepeaterLine(ShipLayout.ValveCompartment);
+
+        Assert.Contains(ShipLayout.ValveCompartment, line, StringComparison.Ordinal);
+        Assert.Contains("mechanical", line, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── The limited pre-ok: one act, no room named ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// THE RUNG THE DESK WAS MISSING. Owner: <i>"we have the authorize next shot, that kind of authorize damage
+    /// control next vent action is missing, it would be usefull as limited pre-ok from captain."</i>
+    ///
+    /// <para>The word at the board is specific and needs the captain standing at the valve; the standing order
+    /// is open-ended and forever. This is a captain clearing the NEXT act without knowing which compartment it
+    /// will be — the shape of a fire — and it is spent by the act, exactly as a cleared shot is.</para>
+    /// </summary>
+    [Fact]
+    public void AClearedNextActAuthorisesWhicheverCompartmentItTurnsOutToBe()
+    {
+        Assert.Equal(
+            ShipAuthority.VentAuthority.NextActionCleared,
+            ShipAuthority.AuthorityFor("SHUTTLE BAY", authorizedRoom: null,
+                                       standingOrder: false, nextActionCleared: true));
+
+        // …and it is one of the two that get used up.
+        Assert.True(ShipAuthority.IsSpentByTheAct(ShipAuthority.VentAuthority.NextActionCleared));
+        Assert.True(ShipAuthority.IsSpentByTheAct(ShipAuthority.VentAuthority.NamedWord));
+        Assert.False(ShipAuthority.IsSpentByTheAct(ShipAuthority.VentAuthority.StandingOrder));
+    }
+
+    /// <summary>
+    /// A STANDING ORDER MUST NEVER BURN A LIMITED CLEARANCE. If the captain has delegated, the delegation
+    /// answers — otherwise handing damage control standing authority would quietly eat every pre-ok the captain
+    /// had also given, and the desk's button would lie about what it still holds.
+    /// </summary>
+    [Fact]
+    public void TheFreeAuthorityAnswersBeforeTheOnesThatAreSpent()
+    {
+        Assert.Equal(
+            ShipAuthority.VentAuthority.StandingOrder,
+            ShipAuthority.AuthorityFor("CABIN 1", authorizedRoom: "CABIN 1",
+                                       standingOrder: true, nextActionCleared: true));
+
+        // With no standing order, the NAMED word goes before the general clearance: it was given for this
+        // exact compartment, and spending it is what "by name" means.
+        Assert.Equal(
+            ShipAuthority.VentAuthority.NamedWord,
+            ShipAuthority.AuthorityFor("CABIN 1", authorizedRoom: "CABIN 1",
+                                       standingOrder: false, nextActionCleared: true));
+    }
+
+    /// <summary>Even a cleared act cannot authorize nothing — the board still cannot act on its own.</summary>
+    [Fact]
+    public void AClearedNextActStillCannotAuthoriseNothing()
+    {
+        Assert.Equal(
+            ShipAuthority.VentAuthority.None,
+            ShipAuthority.AuthorityFor(null, authorizedRoom: null,
+                                       standingOrder: false, nextActionCleared: true));
+    }
+
+    /// <summary>The log has to record WHICH authority let it happen — a pre-cleared act must not be
+    /// indistinguishable from one the captain stood there and ordered.</summary>
+    [Fact]
+    public void TheLogNamesTheAuthorityThatAnswered()
+    {
+        Assert.Contains("standing order",
+                        ShipAuthority.UnderAuthority(ShipAuthority.VentAuthority.StandingOrder),
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("by name",
+                        ShipAuthority.UnderAuthority(ShipAuthority.VentAuthority.NamedWord),
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("next act",
+                        ShipAuthority.UnderAuthority(ShipAuthority.VentAuthority.NextActionCleared),
+                        StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>The gate is on the ACT, not on the console — which is what lets her have a working bridge
     /// repeater without it becoming a way around the captain's word. Same inputs, same answer, wherever the
     /// captain is standing.</summary>

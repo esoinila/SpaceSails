@@ -306,6 +306,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.ShipValves:
                 OpenShipVentPanel();        // the board, aft with the machinery (and its bridge repeater)
                 break;
+            case DeckPlan.ConsoleKind.ShipScuttle:
+                OpenShipScuttlePanel();     // her own charges — two keys, and one of them is the crew's
+                break;
             case DeckPlan.ConsoleKind.Cargo:
                 ShowPulseMessage(_cargoUnits > 0
                     ? $"Hold: {_cargoUnits} units (worth {_cargoValue:N0} cr)"

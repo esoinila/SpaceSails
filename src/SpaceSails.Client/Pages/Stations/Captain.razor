@@ -97,6 +97,56 @@
                too. It isn't — guns and shuttles are separate consents. Say so, right where the shot is cleared. *@
             <div class="text-secondary small">Guns cleared ≠ boarding authorized — a boarding is a separate word (the 🏴 window prompt, or the ship-wide alert on any desk).</div>
         </div>
+
+        @* DAMAGE-CONTROL AUTHORITY. Owner, reading this desk: "I see authorize shot but no authorize repair
+           station etc here?", then "Let's add separate option to captains desk to authorize the back of the
+           ship repair station … (even while the bridge still works) … like we have the fire at will checkbox."
+
+           So: the same checkbox, for the other set of handles. A captain who has to be asked about every hatch
+           during a fire gets asked at the worst possible moment — and the fire is exactly what the board is
+           for ("if a room is on fire then pumping air out of it or venting it to space is a good way to stop
+           the fire"). The single-compartment word stays available at the board itself; this delegates. *@
+        <div class="captain-articles captain-weapons-authority">
+            <div class="captain-articles-label">Damage-control authority</div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                @* THE LIMITED PRE-OK, mirroring AUTHORIZE NEXT SHOT exactly. Owner: "we have the authorize
+                   next shot, that kind of authorize damage control next vent action is missing, it would be
+                   usefull as limited pre-ok from captain." No room is named because the captain does not know
+                   yet which compartment it will be — which is precisely the shape of a fire. *@
+                <button type="button"
+                        class="btn btn-sm @(DamageControlNextActCleared ? "btn-success" : "btn-outline-success")"
+                        disabled="@DamageControlAuthorized"
+                        title="@(DamageControlAuthorized
+                                 ? "Not needed — damage control already holds your standing authority."
+                                 : "Clears exactly one damage-control act — dog, pump or open — whichever compartment it turns out to be. Spent when they use it.")"
+                        @onclick="() => OnAuthorizeNextDamageControlAct.InvokeAsync()">
+                    @(DamageControlNextActCleared
+                        ? "✅ NEXT VENT AUTHORIZED — click to withdraw"
+                        : "✍ AUTHORIZE NEXT VENT")
+                </button>
+                <label class="text-light captain-fire-at-will">
+                    <input type="checkbox" checked="@DamageControlAuthorized"
+                           title="Standing order — the station aft may dog, pump and open her compartments without waiting on your word each time"
+                           @onchange="() => OnToggleDamageControlAuthority.InvokeAsync()" />
+                    ⚓ damage control may act (standing order)
+                </label>
+                @if (ArmedCompartment is { Length: > 0 } armed)
+                {
+                    <span class="text-warning small">🔑 @armed armed at the board</span>
+                }
+            </div>
+            <div class="text-secondary small">
+                Dogging a hatch never needs a word — quarantine and fire containment are seamanship. Opening a
+                compartment to space, or pumping it down to vacuum, is the part that carries your name.
+            </div>
+            @if (!BridgeRepeaterAlive)
+            {
+                <div class="text-warning small">
+                    ⚙ Her bridge repeater is dead — the valves aft are mechanical and still answer. Any standing
+                    order you gave stands there.
+                </div>
+            }
+        </div>
     }
 
     @if (_view == CaptainView.Status)
@@ -494,6 +544,25 @@
     [Parameter] public bool FireAtWill { get; set; }
     [Parameter] public EventCallback OnAuthorizeShot { get; set; }
     [Parameter] public EventCallback OnToggleFireAtWill { get; set; }
+
+    /// <summary>Whether damage control holds the captain's standing authority over her compartments — the
+    /// owner's "fire at will" for the other set of handles.</summary>
+    [Parameter] public bool DamageControlAuthorized { get; set; }
+    [Parameter] public EventCallback OnToggleDamageControlAuthority { get; set; }
+
+    /// <summary>Whether the captain has cleared damage control's NEXT act — the limited pre-ok, spent by the
+    /// act it permits. The exact shape of AUTHORIZE NEXT SHOT, for the other set of handles.</summary>
+    [Parameter] public bool DamageControlNextActCleared { get; set; }
+    [Parameter] public EventCallback OnAuthorizeNextDamageControlAct { get; set; }
+
+    /// <summary>The one compartment armed by name at a board right now, if any. Read-only here: the word is
+    /// given where the valve is, because it names the room it was given for.</summary>
+    [Parameter] public string? ArmedCompartment { get; set; }
+
+    /// <summary>Whether her bridge repeater still has a bus behind it. Star Trek's engineering/bridge
+    /// duplication is the arrangement (the owner's own reference): NEITHER station locks the other out — the
+    /// valves aft are mechanical and always answer, and the repeater answers while the bridge lives.</summary>
+    [Parameter] public bool BridgeRepeaterAlive { get; set; } = true;
     // Reopens Map's start-point picker (playtest / "begin elsewhere" jump). Optional — the button
     // only shows when Map wires it.
     [Parameter] public EventCallback OnReopenStartPicker { get; set; }
