@@ -73,6 +73,23 @@ public static class MoonSurface
     /// crew-only-door law. The sprint is won here.</summary>
     public static bool IsSafeAboard(double avatarY) => avatarY > SurfaceTopY;
 
+    /// <summary>#562 · Standing INSIDE the down-tube itself — past the surface-end door, not yet through
+    /// the ship-end one. The umbilical between the regolith and the shuttle bay, three deck units wide.
+    ///
+    /// <para>This is where the ship rearms you. Owner, playtesting: <i>"I expect them to be reloaded at
+    /// that tube I was at."</i> It is the right place for it, and not only because he said so: the tube is
+    /// already an airlock where only one door stands open at a time, already the barrier the Old Ones
+    /// visibly stop at, and already covered by the shuttle's own built-in gun. Resupplying in the one spot
+    /// that is genuinely safe is the whole shape of a retreat.</para>
+    ///
+    /// <para>Note this is the SHIP-TO-SURFACE tube, which exists on every excursion — not the station
+    /// gangway in <c>HavenInterior</c>, which only exists while clamped onto a haven. That distinction is
+    /// what makes the supply line universal: a rock you flew to yourself has an anchor exactly as much as a
+    /// moon you shuttled to from a berth.</para></summary>
+    public static bool IsInDownTube(double avatarX, double avatarY) =>
+        avatarY > SurfaceTopY && avatarY <= DeckPlan.ShuttleHatchY
+        && avatarX > TubeLeft && avatarX < TubeRight;
+
     /// <summary>#371 Phase 3 · the shared field envelope the surface geography (and now the appended
     /// expedition regions + fog) are laid inside — the same one <see cref="BuildLayout"/> hands to
     /// <see cref="SurfaceLayout.For"/>. Exposed so <c>Map.Surface</c> can resolve expedition door/region

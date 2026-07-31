@@ -274,6 +274,12 @@ public sealed record ProgressSection
     /// the toast says everything a card would. Defaults false, so a captain who has already forced a door
     /// before this existed gets the explanation once on their next one.</summary>
     public bool GroundGrewSeen { get; init; }
+
+    /// <summary>#562 — true once this captain has been shown <see cref="TubeRearm"/>, the card that fires
+    /// the first time the ship racks a sentry magazine in her down-tube. Same law again: it teaches the
+    /// shape of an excursion (the tube is the one place your sentries get fed, so every trip is a loop with
+    /// one anchor) and then never speaks again, because the receipt line says the rest.</summary>
+    public bool TubeRearmSeen { get; init; }
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──

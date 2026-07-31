@@ -3498,7 +3498,11 @@
                                                 }
                                             </div>
                                             <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2"
-                                                    disabled="@(_sentryMissing <= 0 || _credits < 2)"
+                                                    @* #562: the affordability gate reads the CONSTANT, not a
+                                                       literal. A hard-coded 2 here silently shadowed
+                                                       RestockPricePerRound and went wrong the moment the
+                                                       ammo was re-priced — which is now. *@
+                                                    disabled="@(_sentryMissing <= 0 || _credits < SentryBot.RestockPricePerRound)"
                                                     title="@($"Rack {_sentryMissing} rounds across the roster at {SentryBot.RestockPricePerRound} cr each")"
                                                     @onclick="RestockSentries">
                                                 @(_sentryMissing <= 0 ? "Magazines full" : $"🔫 Rearm sentries — {_sentryMissing} rounds · {_sentryCost:N0} cr")
@@ -4156,6 +4160,31 @@
                 </ul>
                 <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseGroundGrew)">@GroundGrows.Dismiss</button>
                 <div class="ground-lesson-foot">@GroundGrows.Foot</div>
+            </div>
+        </div>
+    }
+
+    @* #562 · THE TUBE FEEDS YOU — first time the ship racks a magazine while the captain stands in her
+       down-tube. Owner: "We need to communicate the reload to user also… maybe a gen AI image about it the
+       first time." Its real job is teaching the SHAPE of an excursion: the tube is the only place sentries
+       get fed, so every trip is a loop with one anchor, and the route out needs the route home in it.
+       GEN-AI ART (art/tube-rearm.jpg). Once per captain; the receipt line carries it thereafter. *@
+    @if (_tubeRearmOpen)
+    {
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTubeRearm)">
+            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">@TubeRearm.Stamp</div>
+                <img class="ground-grows-art" src="@TubeRearm.ArtFile" alt=""
+                     onerror="this.style.display='none'" />
+                <div class="convergence-head">@TubeRearm.Head</div>
+                <ul class="ground-grows-beats">
+                    @foreach (string beat in TubeRearm.Beats)
+                    {
+                        <li>@beat</li>
+                    }
+                </ul>
+                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseTubeRearm)">@TubeRearm.Dismiss</button>
+                <div class="ground-lesson-foot">@TubeRearm.Foot</div>
             </div>
         </div>
     }
