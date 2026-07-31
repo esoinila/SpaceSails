@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -362,6 +362,15 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.LabCache:
                 LabCacheInteract(); // #409: claim Vantar's fat one-time cache
+                break;
+            case DeckPlan.ConsoleKind.OutpostDoor:
+                OutpostDoorInteract(); // #563: force the hut's dogged hatch — the channel that appends the room
+                break;
+            case DeckPlan.ConsoleKind.OutpostCache:
+                OutpostCacheInteract(); // #563: their ammunition locker, spread across your sentries
+                break;
+            case DeckPlan.ConsoleKind.OutpostEffects:
+                OutpostEffectsInteract(); // #563: somebody's wallet, and the only story the place tells
                 break;
             case DeckPlan.ConsoleKind.LabConsole:
                 LabConsoleInteract(); // #409: read a Vantar log (the core log fires the diced reveal)

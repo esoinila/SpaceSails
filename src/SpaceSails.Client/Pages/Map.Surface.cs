@@ -468,6 +468,16 @@ public partial class Map
         public HashSet<string> SecretLabLogsRead { get; } = [];
         public DoorChannel? SecretLabDoorChannel { get; set; }
 
+        // #563 · The outpost hut on this site, if it has one: where it stands, whether the hatch has been
+        // forced this visit, whether its locker and its effects have been taken/read, and the force channel
+        // while it is running. Session state — a hut re-seals between excursions, which is honest enough:
+        // nobody out here is maintaining a door you levered off its dogs.
+        public SurfaceOutpost.Placement? Outpost { get; set; }
+        public bool OutpostForced { get; set; }
+        public bool OutpostLooted { get; set; }
+        public bool OutpostEffectsRead { get; set; }
+        public DoorChannel? OutpostDoorChannel { get; set; }
+
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
 
         // #562 · The tube rearm in progress: which shouldered bot is being racked, and how far along (0..1).
@@ -484,7 +494,7 @@ public partial class Map
         public bool Channeling => Channel is not null;
         // #371 Phase 3 / #394: any channel underway (a dig, a door-force, OR the drill) — mutually exclusive.
         public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null
-            || SecretLabDoorChannel is not null;
+            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null;
     }
 
     // ── Boarding: pick a surface, optionally load a chest, and grow the tube IN PLACE. ──
@@ -549,6 +559,7 @@ public partial class Map
 
         _surface = excursion;
         ResolveSecretLab(excursion); // #409: does this body hide one of Vantar's labs? (seed, or a known/cheat pre-reveal)
+        ResolveOutpost(excursion);   // #563: does this SITE carry an outpost hut? (three in four do)
         _reevers.Clear();
         _lastNearestReeverRange = null;
         _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
@@ -959,6 +970,7 @@ public partial class Map
         // #409: on ANY body that hides a lab (expedition deep field or a rare ordinary moon), compose the
         // revealed hidden door and — once forced — replay the appended lab region onto the freshly-built base.
         ComposeSecretLabSite(ex);
+        ComposeOutpost(ex);          // #563: the hut — its dogged hatch, or the room once it is forced
     }
 
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
@@ -1494,6 +1506,7 @@ public partial class Map
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
+        StepOutpostDoorChannel(dtRealSeconds);   // #563: the outpost hatch's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);

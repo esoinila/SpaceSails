@@ -63,6 +63,17 @@ public class SurfaceReachabilityTests
 
         SurfaceLayout.Plan plan = SurfaceLayout.For(body, Env, salt);
         walls.AddRange(plan.Walls.Select(w => new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2)));
+
+        // #563 · The outpost hut, FORCED — the worst case for the field's connectivity, because a hut that
+        // is still shut is only a console and has no walls at all. It is built into the far edge lane, the
+        // one strip SurfaceLayout.EdgeMargin promises no generated feature intrudes on, so the question this
+        // answers is whether what remains of that lane is still wide enough to walk. `forcePresent` puts one
+        // on EVERY site rather than the seeded three-in-four: the audit should hold for the sites that have
+        // one, and asking it of all of them is strictly harder.
+        SurfaceOutpost.Placement hut = SurfaceOutpost.For(body, salt, Env, forcePresent: true);
+        SurfaceOutpost.Region room = SurfaceOutpost.Build(body, salt, hut);
+        walls.AddRange(room.Walls.Select(w => new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2)));
+
         return walls;
     }
 
