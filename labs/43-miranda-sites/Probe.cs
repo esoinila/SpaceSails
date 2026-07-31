@@ -10,6 +10,12 @@
 //   3. CAN a landing site ever expand here? (The append-a-region machinery exists — SecretLab and
 //      ExpeditionRegions — so the question is only whether Miranda can ever roll into it.)
 using SpaceSails.Core;
+using SpaceSails.Labs.Lab43;
+
+// --svg writes one picture per site under labviz/ — the only way to LOOK at a landing site without the
+// game, since a descent will not render in an automated browser tab (rAF is throttled when the tab counts
+// as hidden, so ?land=1 hangs mid-descent).
+bool wantSvg = Array.IndexOf(args, "--svg") >= 0;
 
 // The field the client hands SurfaceLayout, verbatim from MoonSurface's constants.
 var field = new SurfaceLayout.Field(
@@ -48,6 +54,14 @@ foreach (string body in new[] { "miranda", "luna", "phobos", "europa", "titan" }
         int hull = 0;
         foreach (SurfaceLayout.Wall w in plan.Walls) { if (w.IsHull) { hull++; } }
         Console.WriteLine($"           {hull} of them flagged IsHull (drawn as pressure hull)");
+
+        if (wantSvg)
+        {
+            Directory.CreateDirectory("labviz");
+            string path = Path.Combine("labviz", $"site-{body}-{site.Index}.svg");
+            File.WriteAllText(path, SiteSvg.Draw(body, site, field, plan, tubeLeft: -9, tubeRight: -5));
+            Console.WriteLine($"           [svg] {path}");
+        }
     }
 
     // Can this body's ground EVER grow? Two gates, both seeded and both pure.
