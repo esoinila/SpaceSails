@@ -283,14 +283,35 @@ public class SentryBotTests
     [Fact]
     public void QuoteRestock_BuysOnlyWhatThePurseAffords()
     {
-        // 10 credits, 2 cr/round → 5 rounds only; the first bot gets them, the second stays as-is.
+        // A purse that cannot cover one full magazine: the rounds go into the FIRST bot until the money is
+        // gone, and the second stays exactly as it was. Filling one bot beats half-filling two — a magazine
+        // is a timer, and two short timers are worth less than one whole one.
+        //
+        // Derived from the constant rather than hard-coded, so re-pricing the ammo (#562 halved it to 1 cr
+        // to keep exploration cheap) does not silently invert what this test is checking.
+        int budget = (SentryBot.MaxMagazine - 5) * SentryBot.RestockPricePerRound;
         var mags = new[] { 0, 0 };
-        SentryBot.RestockQuote q = SentryBot.QuoteRestock(mags, credits: 10);
+        SentryBot.RestockQuote q = SentryBot.QuoteRestock(mags, credits: budget);
 
-        Assert.Equal(5, q.RoundsBought);
-        Assert.Equal(10, q.Cost);
-        Assert.Equal(5, q.Magazines[0]);
+        Assert.Equal(SentryBot.MaxMagazine - 5, q.RoundsBought);
+        Assert.Equal(budget, q.Cost);
+        Assert.Equal(SentryBot.MaxMagazine - 5, q.Magazines[0]);
         Assert.Equal(0, q.Magazines[1]);
+    }
+
+    [Fact]
+    public void TheAmmoIsCheapEnoughThatNobodyRationsIt()
+    {
+        // #562, owner: "let's keep the ammo cheap … we want to encourage exploration and that takes ammo."
+        // The cost of going deep must be the walk back and the rounds themselves, never a purse decision.
+        // A hard fight — one six-pack of Old Ones, RoundsPerReever each — against the 1,500 cr a captain
+        // starts with: if clearing a pack ever costs a tenth of the opening purse, this has gone wrong.
+        int aHardFight = SentryBot.RoundsForPack(ReeverRaid.MaxReevers) * SentryBot.RestockPricePerRound;
+        Assert.True(aHardFight <= 150, $"a six-pack costs {aHardFight} cr to replace — captains will ration.");
+
+        // And a full two-bot refill from empty stays a chore you pay without thinking, not a shopping trip.
+        int fromEmpty = SentryBot.MaxMagazine * SentryBot.RosterCap * SentryBot.RestockPricePerRound;
+        Assert.True(fromEmpty <= 250, $"a full refill costs {fromEmpty} cr — that is a decision, not a chore.");
     }
 
     [Fact]

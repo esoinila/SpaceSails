@@ -134,6 +134,11 @@ public partial class Map
     private bool _groundGrewSeen;
     private bool _groundGrewOpen;
 
+    // #562 · the tube-feeds-you card, same shape again. Fires the first time the ship racks a magazine while
+    // the captain stands in her down-tube — the card that teaches the supply line, not the feature.
+    private bool _tubeRearmSeen;
+    private bool _tubeRearmOpen;
+
     // on the surface). Set in BeginSurfaceExcursion, read by SurfaceOrbitComms.
     private double _orbitHoldAtBoarding;
 
@@ -464,6 +469,13 @@ public partial class Map
         public DoorChannel? SecretLabDoorChannel { get; set; }
 
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
+
+        // #562 · The tube rearm in progress: which shouldered bot is being racked, and how far along (0..1).
+        // Null whenever nobody is being fed — which is most of the time, including the instant the captain
+        // steps out of the tube. Session state only: walking out abandons it, and the rounds already bought
+        // are already in the magazine, so there is nothing half-finished to persist.
+        public int? RearmBotIndex { get; set; }
+        public double RearmProgress { get; set; }
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
 
@@ -699,6 +711,118 @@ public partial class Map
         _groundLessonOpen = false;
     }
 
+    // ── #562 · THE TUBE REARMS YOU. ────────────────────────────────────────────────────────────────────
+    //
+    // Owner, playtesting Miranda with both sentries shouldered and dry: "The gun reload at airlock is not
+    // working here now… I carry both guns but they are not being reloaded." He was right twice over.
+    //
+    // The bug: boarding the shuttle REMOVES the bots from _shipBots and puts them in ex.Bots, and they only
+    // come back on liftoff. So for the whole excursion the roster is empty, and every rearm affordance — all
+    // of which read _shipBots — reported "No bots aboard… they're deployed on a surface, or written off."
+    // That is false in the one state it matters: the captain is carrying both of them, shouldered, in his own
+    // airlock. Worse, it was a trap. A dry bot could not be fed until liftoff, and the reason you walked back
+    // was that it went dry.
+    //
+    // The fix he asked for: "I expect them to be reloaded at that tube I was at." So the down-tube feeds
+    // them — automatically, cheaply, one magazine at a time, with a bar you can watch and a receipt that
+    // says what it cost.
+    //
+    // WHY A PLACE AND NOT A BUTTON — this is the design, in his words: "the reload forces the player to plan
+    // their routes … and keep their supply line safe for retreat to reload", and the tube is therefore "the
+    // invisible tether to players distance". Every excursion becomes a loop with a known anchor, and the
+    // interesting question is how far out you dare go before the walk back costs more than the rounds would.
+    // The retreat is the price; the credits deliberately are not (SentryBot.RestockPricePerRound, halved).
+    private void StepTubeRearm(double dtRealSeconds)
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        // Standing anywhere but inside the tube ends it. No penalty and nothing lost: rounds already racked
+        // are already in the magazine, and the bar simply starts over next time you come back.
+        if (!MoonSurface.IsInDownTube(_avatarX, _avatarY))
+        {
+            ex.RearmBotIndex = null;
+            ex.RearmProgress = 0;
+            return;
+        }
+
+        // Nothing to feed, or nothing to feed it with. Both are quiet — a captain walks through this tube on
+        // every single trip, and a tube that nags on the way out would be worse than one that never spoke.
+        if (ex.RearmBotIndex is not { } idx)
+        {
+            idx = NextBotWantingRounds(ex);
+            if (idx < 0 || _credits < SentryBot.RestockPricePerRound)
+            {
+                return;
+            }
+            ex.RearmBotIndex = idx;
+            ex.RearmProgress = 0;
+        }
+
+        // The bot may have been planted (or the list rebuilt) since the clock started.
+        if (idx >= ex.Bots.Count || ex.Bots[idx].Deployed)
+        {
+            ex.RearmBotIndex = null;
+            ex.RearmProgress = 0;
+            return;
+        }
+
+        ex.RearmProgress += dtRealSeconds / SentryBot.RearmSecondsPerMagazine;
+        if (ex.RearmProgress < 1.0)
+        {
+            return;
+        }
+
+        RackOneMagazine(ex, idx);
+        ex.RearmBotIndex = null;
+        ex.RearmProgress = 0;
+    }
+
+    /// <summary>The first SHOULDERED bot that is short of a full magazine, or -1. Deployed bots are skipped
+    /// on purpose: one standing out on the regolith is not in the tube being handed rounds, and pretending
+    /// otherwise would be exactly the sim-says-one-thing-sentence-says-another bug this whole lane fixes.
+    /// Fills in roster order, one at a time — a magazine is a timer, and one whole timer beats two short.</summary>
+    private static int NextBotWantingRounds(SurfaceExcursion ex)
+    {
+        for (int i = 0; i < ex.Bots.Count; i++)
+        {
+            if (!ex.Bots[i].Deployed && ex.Bots[i].Rounds < SentryBot.MaxMagazine)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>Rack one magazine as full as the purse allows, spend the credits, and say so. The quote is
+    /// the same pure Core law the haven armory uses (<see cref="SentryBot.QuoteRestock"/>) over a one-bot
+    /// list — the same price seen from another door, never a second economy.</summary>
+    private void RackOneMagazine(SurfaceExcursion ex, int idx)
+    {
+        SurfaceBot bot = ex.Bots[idx];
+        SentryBot.RestockQuote quote = SentryBot.QuoteRestock([bot.Rounds], _credits);
+        if (quote.RoundsBought <= 0)
+        {
+            return; // the purse ran dry between starting the clock and finishing it
+        }
+
+        bot.Rounds = quote.Magazines[0];
+        _credits -= quote.Cost;
+        RendererInterop.PlayCue("board");
+        RequestVaultSave();   // rounds and purse both moved — durable before the next thing happens
+
+        // The first time this ever happens to a captain, the card explains the tether. After that the
+        // receipt is the right register: you know where the ammo comes from now.
+        if (!ShowTubeRearmCardOnce())
+        {
+            ShowPulseMessage(
+                $"🔫 {bot.Unit} racked to {SentryBot.Readout(bot.Rounds)} — {quote.Cost:N0} cr. " +
+                (NextBotWantingRounds(ex) >= 0 ? "Feeding the next one." : "Both full. Back out you go."));
+        }
+    }
+
     // #563 · The world grew and the captain has read why. Same seam as CloseGroundLesson — Dismiss() hands
     // the keyboard back to the map div, which matters doubly here: this card can open mid-excursion with a
     // pack already walking toward you, and a swallowed keypress would be a death.
@@ -722,6 +846,30 @@ public partial class Map
         }
         _groundGrewSeen = true;
         _groundGrewOpen = true;
+        RequestVaultSave();
+        StateHasChanged();
+        return true;
+    }
+
+    // #562 · The captain has read what the tube does. Same Dismiss() seam — the keyboard goes back to the
+    // map div, which matters here because the card fires INSIDE the tube, i.e. the moment before a captain
+    // means to walk back out into whatever they retreated from.
+    private void CloseTubeRearm()
+    {
+        _tubeRearmOpen = false;
+    }
+
+    /// <summary>#562 · Raise the tube-feeds-you card, once per captain ever. Returns true when it went up,
+    /// so the caller keeps its receipt line for every later racking. The card teaches the shape of an
+    /// excursion — one anchor, plan the route home — and the receipt is right for a captain who knows.</summary>
+    private bool ShowTubeRearmCardOnce()
+    {
+        if (_tubeRearmSeen)
+        {
+            return false;
+        }
+        _tubeRearmSeen = true;
+        _tubeRearmOpen = true;
         RequestVaultSave();
         StateHasChanged();
         return true;
@@ -1326,12 +1474,16 @@ public partial class Map
         // lesson at least fires on arrival, inside the #461 grace, while this one fires the instant a door
         // gives — deep in a site, after a five-second channel that anything nearby has had time to walk
         // toward. Reading why the map grew must not be what gets you killed.
-        if (_groundLessonOpen || _groundGrewOpen)
+        // #562 · The tube-rearm card holds it too. The tube is the safest square on the moon, so this is
+        // belt-and-braces rather than a rescue — but a modal that leaves the world running is a bug waiting
+        // for the one player who opens it with something already in the tube mouth.
+        if (_groundLessonOpen || _groundGrewOpen || _tubeRearmOpen)
         {
             _surface.LandedAtMs += dtRealSeconds * 1000.0;
             return;
         }
 
+        StepTubeRearm(dtRealSeconds);   // #562: the ship feeds your sentries while you stand in her tube
         StepDigChannel(dtRealSeconds);
         AdvanceVacuumClocks(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the vacuum soak
         AdvancePump(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #488: the thrifty road
@@ -3229,8 +3381,16 @@ public partial class Map
 
         return new DeckView.SurfaceHud(
             TrackerCaptions: BuildTrackerCaptions(ex, _hudMarks.Count),
-            // #371 Phase 3: the one progress bar serves both channels — a dig OR a forced door.
-            DigProgress: ex.Channel?.Progress ?? ex.DoorChannel?.Progress ?? -1,
+            // #371 Phase 3 / #562: the one progress bar serves every slow thing — a dig, a forced door, or
+            // the tube racking a magazine. The rearm is last because it is the only one that can be running
+            // while the captain is somewhere the others cannot happen (inside the tube), so it can never
+            // actually contend; ordering it here just keeps the two hands-on channels reading first.
+            DigProgress: ex.Channel?.Progress ?? ex.DoorChannel?.Progress
+                ?? (ex.RearmBotIndex is not null ? ex.RearmProgress : -1),
+            // #562: and it says which. A shovel over a magazine being racked would be exactly the class of
+            // lie this lane exists to fix; the rearm is the ship HELPING you, so it reads cold-green.
+            ChannelGlyph: ex.RearmBotIndex is not null && ex.Channel is null && ex.DoorChannel is null ? "🔫" : "⛏",
+            ChannelIsAid: ex.RearmBotIndex is not null && ex.Channel is null && ex.DoorChannel is null,
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
             Blips: _hudBlips,
             Cadence: (int)MotionTracker.CadenceFor(nearest),

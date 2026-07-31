@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -163,6 +163,7 @@ public partial class Map
         // one and silently never got the first-ground card. Both bits reset here now.
         _groundLessonSeen = false;
         _groundGrewSeen = false;
+        _tubeRearmSeen = false;
 
         // The mission/contract slate and every relationship, wiped: a new universe owes nobody and knows
         // nobody (owner: mission statuses reset with the new game). New quest ids mint from zero again.
@@ -378,6 +379,7 @@ public partial class Map
                 SecretLabsFound = [.. _secretLabsFound],
                 GroundLessonSeen = _groundLessonSeen, // #440: the first-ground card greets a captain once, ever
                 GroundGrewSeen = _groundGrewSeen,     // #563: so does the map-just-grew card
+                TubeRearmSeen = _tubeRearmSeen,       // #562: and the tube-feeds-you card
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -825,6 +827,9 @@ public partial class Map
         // #563: same for the map-just-grew card — a captain who has already forced a door open is not told
         // again what forcing one does (a pre-#563 save defaults false: they get it once, on their next).
         _groundGrewSeen = vault.Progress?.GroundGrewSeen ?? _groundGrewSeen;
+        // #562: same for the tube-feeds-you card — a captain who has already been racked in the tube is not
+        // taught the supply line again (a pre-#562 save defaults false: they get it once, on their next).
+        _tubeRearmSeen = vault.Progress?.TubeRearmSeen ?? _tubeRearmSeen;
         // #409: restore the secret labs this thread has found, so a known body's hidden door stays revealed
         // on every future landing (a pre-#409 save simply lacks the field — an empty set, harmless).
         if (vault.Progress?.SecretLabsFound is { } found)

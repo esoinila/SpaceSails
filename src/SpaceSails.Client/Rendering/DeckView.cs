@@ -100,7 +100,14 @@ public sealed class DeckView
         // thing is done (owner, 2026-07-26: "It is the key to survival there"). Null when nothing is owed.
         string? StandingPrompt = null,
         // #453 · 1..0 fade on the blood spatter thrown when a blow got past the block. 0 = none.
-        double BloodSplash = 0);
+        double BloodSplash = 0,
+        // #562 · The glyph over the channel bar, so the one bar can say WHICH slow thing you are doing. It
+        // was always a shovel, which was fine while digging was the only channel; the tube rearm is not a
+        // shovel and reading one there would be the sim saying one thing while a picture says another.
+        string ChannelGlyph = "⛏",
+        // #562 · The tint of the channel bar's fill. The rearm is the ship helping you, not you exposing
+        // yourself, so it reads cold-green rather than the dig's warning amber.
+        bool ChannelIsAid = false);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -706,11 +713,19 @@ public sealed class DeckView
         // vulnerability window, drawn ON the grid so the player watches the tracker while it fills.
         if (surface is { DigProgress: >= 0 } dig)
         {
-            _renderer.DrawText(ax, ay - 1.6f * scale, "⛏", new RgbaColor(255, 230, 140, 240), "bold 15px monospace", TextAlign.Center);
+            // #562: the glyph and the tint say WHICH slow thing this is. A shovel over a magazine being
+            // racked would be the same class of lie this project keeps paying for.
+            RgbaColor glyphInk = dig.ChannelIsAid
+                ? new RgbaColor(150, 235, 200, 245)
+                : new RgbaColor(255, 230, 140, 240);
+            RgbaColor fillInk = dig.ChannelIsAid
+                ? new RgbaColor(120, 215, 175, 240)
+                : new RgbaColor(255, 200, 90, 240);
+            _renderer.DrawText(ax, ay - 1.6f * scale, dig.ChannelGlyph, glyphInk, "bold 15px monospace", TextAlign.Center);
             float bw = 3.2f * scale, bh = 0.45f * scale;
             float bx0 = ax - bw / 2, by0 = ay + 1.1f * scale;
             FillRect(bx0, by0, bw, bh, new RgbaColor(20, 24, 30, 220));
-            FillRect(bx0, by0, bw * (float)Math.Clamp(dig.DigProgress, 0, 1), bh, new RgbaColor(255, 200, 90, 240));
+            FillRect(bx0, by0, bw * (float)Math.Clamp(dig.DigProgress, 0, 1), bh, fillInk);
         }
 
         // #313 the motion tracker: a crude corner fan of MOVING blips (bearing/range), including

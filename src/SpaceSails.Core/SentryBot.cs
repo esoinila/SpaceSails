@@ -44,9 +44,22 @@ public static class SentryBot
     /// class. The captain brings 0..this many down at boarding.</summary>
     public const int RosterCap = 2;
 
-    /// <summary>One honest price: credits per round to rearm/recharge at a haven's service line. A full
-    /// two-bot refill from empty is ~396 cr — a purchasable margin, cheap against a cache but never free.</summary>
-    public const int RestockPricePerRound = 2;
+    /// <summary>One honest price: credits per round to rearm a magazine, wherever the racking happens — a
+    /// haven's service line or the ship's own down-tube (#562). A full two-bot refill from empty is ~198 cr.
+    ///
+    /// <para>#562 · Halved from 2 cr on the owner's ruling: <i>"let's keep the ammo cheap"</i>, because
+    /// <i>"we want to encourage exploration and that takes ammo."</i> The cost of going deep is meant to be
+    /// the WALK BACK and the rounds you spend getting there — the supply line, which he called <i>"the
+    /// invisible tether to players distance"</i> — never a purse decision made at a desk. A six-pack of Old
+    /// Ones costs 84 rounds to clear (<see cref="RoundsPerReever"/> = 14), so a hard fight is ~84 cr against
+    /// a 1,500 cr starting purse: a chore you pay without thinking. If this price ever makes a captain
+    /// ration rounds and stay aboard, it has broken the thing it exists to serve.</para></summary>
+    public const int RestockPricePerRound = 1;
+
+    /// <summary>#562 · How long one magazine takes to rack, in seconds. Owner's pick: <i>"a couple of
+    /// seconds each"</i>, one bot after the other, each with its own progress bar — long enough to feel the
+    /// ship working, short enough never to become a chore between runs.</summary>
+    public const double RearmSecondsPerMagazine = 2.0;
 
     /// <summary>The ship's real armed units (the shuttle-bay boarding troopers, <c>DeckPlan.FillShipDroids</c>).
     /// These are the escorts the captain loads — the roster, not an invention.</summary>
