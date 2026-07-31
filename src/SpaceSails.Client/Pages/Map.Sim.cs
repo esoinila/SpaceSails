@@ -529,6 +529,15 @@ public partial class Map
                     }
                 }
             }
+            else if (pair.StartsWith("outpost=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #563 dev cheat: /map?outpost=1 guarantees the OUTPOST HUT on whatever site the excursion
+                // lands on, so the lane can be playtested without hunting for a site that seeded one. Three
+                // sites in four carry a hut anyway; this just removes the hunt. Combine with dock/site/land,
+                // e.g. /map?dock=the-tilt&site=0&land=1&outpost=1 puts you on the regolith with one out there.
+                string candidate = Uri.UnescapeDataString(pair["outpost=".Length..]).ToLowerInvariant();
+                _outpostCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
             {
                 // #409 dev cheat: /map?secretlab=1 spawns a plain LANDABLE rock parked in shuttle range at the

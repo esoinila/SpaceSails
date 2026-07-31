@@ -78,6 +78,32 @@ internal static class SiteSvg
             Line(s, PX(wall.X1), PY(wall.Y1), PX(wall.X2), PY(wall.Y2), ink);
         }
 
+        // #563 · The outpost hut, drawn as it stands once forced — walls, landmark, and its two
+        // interactables. A hut that is still shut is only a console on the plan, so this is the state worth
+        // looking at: it is the one that can bottle the edge lane.
+        SurfaceOutpost.Placement hut = SurfaceOutpost.For(body, site.LayoutSalt, env);
+        if (hut.HasOutpost)
+        {
+            SurfaceOutpost.Region room = SurfaceOutpost.Build(body, site.LayoutSalt, hut);
+            foreach (SurfaceLayout.Wall wall in room.Walls)
+            {
+                Line(s, PX(wall.X1), PY(wall.Y1), PX(wall.X2), PY(wall.Y2), hull);
+            }
+            foreach (SurfaceOutpost.OutpostConsole c in room.Consoles)
+            {
+                s.Append(CultureInfo.InvariantCulture,
+                    $"<circle cx=\"{N(PX(c.X))}\" cy=\"{N(PY(c.Y))}\" r=\"3\" fill=\"#7fd8c8\"/>");
+            }
+            foreach (SurfaceLayout.Landmark m in room.Landmarks)
+            {
+                Text(s, PX(m.X), PY(m.Y) - 4, "#8fd0b8", 9, Escape(m.Label));
+            }
+            // The hatch, on the open-ground side.
+            Text(s, PX(hut.DoorX - (hut.ExtendDir * 2.5)), PY(hut.DoorY), "#e0b070", 9,
+                Escape(SurfaceOutpost.DoorLabel(SurfaceOutpost.CoverFor(body, site.LayoutSalt))),
+                hut.ExtendDir < 0 ? "start" : "end");
+        }
+
         foreach (SurfaceLayout.Landmark m in plan.Landmarks)
         {
             Text(s, PX(m.X), PY(m.Y) - 4, "#d8c58a", 11, Escape(m.Label));
