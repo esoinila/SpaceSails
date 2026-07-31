@@ -215,12 +215,24 @@ public static class MoonSurface
         // The shuttle glyph mid-tube — the map winking at its own abstraction (this corridor IS the ride).
         labels.Add((TubeCenterX, (DeckPlan.ShuttleHatchY + SurfaceTopY) / 2f, "🛸"));
 
-        // ── The wide barren field: a fenced rim of hull lines with the tube mouth open at the top. ──
+        // ── The wide barren field. #563 · TWO DIFFERENT KINDS OF EDGE, and they must not be drawn alike.
+        //
+        //    The TOP rim is the ship's own underside — the hull you just walked out of, a made thing with a
+        //    real outside. Owner, 2026-07-31: "The space ships come with outside borders but the landing
+        //    site out-doors should not." So this one keeps its hull ink; it is honest.
         walls.Add(new(SurfaceLeftX, SurfaceTopY, TubeLeft, SurfaceTopY, false, true));   // top rim, port of the tube
         walls.Add(new(TubeRight, SurfaceTopY, SurfaceRightX, SurfaceTopY, false, true)); // top rim, starboard of the tube
-        walls.Add(new(SurfaceLeftX, SurfaceTopY, SurfaceLeftX, SurfaceBottomY, false, true));
-        walls.Add(new(SurfaceRightX, SurfaceTopY, SurfaceRightX, SurfaceBottomY, false, true));
-        walls.Add(new(SurfaceLeftX, SurfaceBottomY, SurfaceRightX, SurfaceBottomY, false, true));
+
+        //    The other three are the FIELD ENVELOPE — a technical limit on how far the ground is generated,
+        //    with no object in the world to be. Drawn as bright hull lines they made a square fence around a
+        //    moon ("it seems artificial on a Moon… it spoils the site feeling"), and worse, they announced a
+        //    boundary that is not the real one: the honest edge of a landing site is where the magazine and
+        //    the pack behind you say turn around — "the reevers and supply line are kind of the invisible
+        //    tether to players distance" — the #453 law that depth is priced by sentries and nerve, never by
+        //    geometry. So they collide exactly as before and are never drawn. Nothing advertises the limit.
+        walls.Add(new(SurfaceLeftX, SurfaceTopY, SurfaceLeftX, SurfaceBottomY, false, false, Unseen: true));
+        walls.Add(new(SurfaceRightX, SurfaceTopY, SurfaceRightX, SurfaceBottomY, false, false, Unseen: true));
+        walls.Add(new(SurfaceLeftX, SurfaceBottomY, SurfaceRightX, SurfaceBottomY, false, false, Unseen: true));
 
         // ── The PER-BODY geography (Sunday-morning wind #1–#2): the deep-field ruin/maze walls and the
         //    landmark vary by body — Miranda keeps THE MONOLITH maze (canon), Luna gets the mass-driver

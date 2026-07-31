@@ -163,7 +163,16 @@ public partial class Map
         }
 
         RendererInterop.PlayCue("reveal");
-        ShowPulseMessage("⚙ The door gives — cold air that hasn't moved in ten thousand years. New ground on the plan. Step through and look.");
+
+        // #563 · The FIRST time this ever happens to a captain, the world stops and says what it just did.
+        // Owner: "The expanding site, how we tell that story to user clearly (do we have pop-up with image)
+        // is of great interest." It did not — the most distinctive thing this game does was announced by a
+        // toast that faded, while a scuttled ship got a full card with art. After the first showing the
+        // toast IS the right register: you know the rule now, and a card on every door would be a nag.
+        if (!ShowGroundGrewCardOnce())
+        {
+            ShowPulseMessage("⚙ The door gives — cold air that hasn't moved in ten thousand years. New ground on the plan. Step through and look.");
+        }
     }
 
     // ── Claiming a discovery cache [E]: bank its bonus to the gig (composed into the payout). ──

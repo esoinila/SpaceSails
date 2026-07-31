@@ -127,6 +127,13 @@ public partial class Map
     private bool _groundLessonSeen;
     private bool _groundLessonOpen;
 
+    // #563 · the map-just-grew card, same shape: the SEEN bit is per captain and rides in the vault, the
+    // OPEN bit is only whether the card is on screen this instant. Fires the first time forcing something
+    // open appends real ground to the live plan — the one mechanic in this game nobody would guess exists,
+    // and which until now was announced by a toast that faded.
+    private bool _groundGrewSeen;
+    private bool _groundGrewOpen;
+
     // on the surface). Set in BeginSurfaceExcursion, read by SurfaceOrbitComms.
     private double _orbitHoldAtBoarding;
 
@@ -690,6 +697,34 @@ public partial class Map
     private void CloseGroundLesson()
     {
         _groundLessonOpen = false;
+    }
+
+    // #563 · The world grew and the captain has read why. Same seam as CloseGroundLesson — Dismiss() hands
+    // the keyboard back to the map div, which matters doubly here: this card can open mid-excursion with a
+    // pack already walking toward you, and a swallowed keypress would be a death.
+    private void CloseGroundGrew()
+    {
+        _groundGrewOpen = false;
+    }
+
+    /// <summary>#563 · Raise the map-just-grew card, but only ever once per captain. Called from every path
+    /// that appends real ground to the live plan (a forced expedition door, Vantar's concealed lab door).
+    ///
+    /// <para>Returns true when the card went up, so the caller can keep its toast for every later time —
+    /// the card explains the rule to someone who has never seen it, and the toast is exactly right for
+    /// someone who has. Saving immediately is deliberate: the one-time bit must be durable the instant it
+    /// is spent, the same habit the convergence reveal uses.</para></summary>
+    private bool ShowGroundGrewCardOnce()
+    {
+        if (_groundGrewSeen)
+        {
+            return false;
+        }
+        _groundGrewSeen = true;
+        _groundGrewOpen = true;
+        RequestVaultSave();
+        StateHasChanged();
+        return true;
     }
 
     // #329 follow-up: narrate a coarse descent phase and hand the frame back to the browser so the queued
@@ -1287,7 +1322,11 @@ public partial class Map
         // So the surface clock stops with the card. Nothing steps, and the arrival grace (#461) is rolled
         // forward by the paused span so the twenty seconds the captain is owed start when they can actually
         // use them — reading the rules must never spend the head start the rules are describing.
-        if (_groundLessonOpen)
+        // #563 · The map-just-grew card holds the world for exactly the same reason, and needs it MORE: the
+        // lesson at least fires on arrival, inside the #461 grace, while this one fires the instant a door
+        // gives — deep in a site, after a five-second channel that anything nearby has had time to walk
+        // toward. Reading why the map grew must not be what gets you killed.
+        if (_groundLessonOpen || _groundGrewOpen)
         {
             _surface.LandedAtMs += dtRealSeconds * 1000.0;
             return;

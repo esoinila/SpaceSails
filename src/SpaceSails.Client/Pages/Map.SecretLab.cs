@@ -196,6 +196,12 @@ public partial class Map
         ShowPulseMessage(
             "⚙ The seal cracks — stale, chemical air, decades unbreathed. Benches. Stasis pods. A spine of dead " +
             "servers. Someone LIVED down here, working. Read the logs ([E] the screens) — and mind the core log.");
+
+        // #563 · Unlike the expedition door, this toast is kept ALWAYS — it is a story beat about what is in
+        // the room, and the card is a mechanics lesson about the map growing. Different jobs, so the card
+        // rides on top the first time rather than replacing anything. (It may well be a captain's first
+        // expansion ever: the lab is the ONLY way an ordinary moon can grow at all today.)
+        ShowGroundGrewCardOnce();
     }
 
     /// <summary>The small nerve chill of crossing into the lab (owner: "entering the lab … is a nerve hit").

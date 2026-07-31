@@ -4134,6 +4134,32 @@
         </div>
     }
 
+    @* #563 · THE MAP JUST GOT BIGGER — the card that fires the first time a captain forces something open
+       and real ground joins the plan. Owner: "The expanding site, how we tell that story to user clearly
+       (do we have pop-up with image) is of great interest." Before this it was a toast that faded, while a
+       scuttled ship got a full card with art. Once per captain, then the toast takes over for good.
+       GEN-AI ART (art/ground-grows.jpg): the forced way standing open onto ground that was not on the plan
+       a moment ago. Degrades to no image via the house onerror rule — never a broken frame. *@
+    @if (_groundGrewOpen)
+    {
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseGroundGrew)">
+            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">@GroundGrows.Stamp</div>
+                <img class="ground-grows-art" src="@GroundGrows.ArtFile" alt=""
+                     onerror="this.style.display='none'" />
+                <div class="convergence-head">@GroundGrows.Head</div>
+                <ul class="ground-grows-beats">
+                    @foreach (string beat in GroundGrows.Beats)
+                    {
+                        <li>@beat</li>
+                    }
+                </ul>
+                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseGroundGrew)">@GroundGrows.Dismiss</button>
+                <div class="ground-lesson-foot">@GroundGrows.Foot</div>
+            </div>
+        </div>
+    }
+
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
         @if (_parrotSquawk is not null)
