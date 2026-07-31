@@ -72,6 +72,28 @@ foreach (string body in new[] { "miranda", "luna", "phobos", "europa", "titan" }
     Console.WriteLine();
 }
 
+// #531 · The dead stations. Print each one's damage and, with --svg, draw her.
+Console.WriteLine("=== DEAD STATIONS (#531) — which parts of her you can walk to ===");
+foreach (string stationId in new[] { "station-wreck-1", "station-wreck-2", "kepler-transfer", "the-orchard" })
+{
+    var severed = StationWreck.SeveredTubes(stationId);
+    Console.WriteLine($"  {stationId,-18} {StationWreck.WalkGroups(stationId).Count} walk-groups · " +
+        $"severed: {string.Join(", ", severed)}");
+    foreach (StationWreck.Access a in StationWreck.Accesses(stationId))
+    {
+        string how = a.Kind == StationWreck.AccessKind.ServiceableLock ? "lock cycles" : "CUT YOUR WAY IN";
+        Console.WriteLine($"       {a.Name,-34} {how}");
+    }
+    if (wantSvg)
+    {
+        Directory.CreateDirectory("labviz");
+        string path = Path.Combine("labviz", $"station-{stationId}.svg");
+        File.WriteAllText(path, StationSvg.Draw(stationId));
+        Console.WriteLine($"       [svg] {path}");
+    }
+}
+Console.WriteLine();
+
 // The three authored expedition rocks, for contrast — the only places the owner COULD have seen growth.
 Console.WriteLine("=== EXPEDITION ROCKS (the only grounds with sealed doors today) ===");
 foreach (string id in new[] { "expedition-site-ruins", "expedition-site-wreck", "expedition-site-tunnel" })
