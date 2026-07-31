@@ -258,6 +258,14 @@ public sealed class DeckView
 
         foreach (DeckPlan.Wall w in plan.Walls)
         {
+            // #563 · An UNSEEN wall is never drawn — the open field's envelope, which collides but has no
+            // object in the world to be. It is checked before the fog so it stays invisible in every
+            // lighting state, including the lit deck where the fog test passes everything.
+            if (w.Unseen)
+            {
+                continue;
+            }
+
             // #371 Phase 3 fog: a wall inside a still-unseen forced chamber is hidden (the room is unknown
             // until the captain looks in); one in an explored-but-out-of-sight chamber draws dim.
             int ws = DarkState((w.X1 + w.X2) / 2.0, (w.Y1 + w.Y2) / 2.0);

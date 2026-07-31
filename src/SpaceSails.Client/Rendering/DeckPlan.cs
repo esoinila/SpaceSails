@@ -21,7 +21,25 @@ public sealed class DeckPlan
 {
     public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves }
 
-    public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
+    /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
+    /// the readable boundary of a made thing; anything else draws as a dimmer inner line.
+    ///
+    /// <para>#563 · <paramref name="Unseen"/> is a wall the eye NEVER sees: it collides exactly like every
+    /// other wall, but nothing is drawn for it. Owner, 2026-07-31: <i>"The space ships come with outside
+    /// borders but the landing site out-doors should not... at least not obviously so with square area"</i>,
+    /// and <i>"if our space has limits for some technical reasons then let's not advertise it, more like
+    /// hide that fact."</i> A hull IS a real boundary and drawing it as one is right — that treatment stays
+    /// on ships. The open regolith has no such object, so the field's envelope must not borrow the ship's
+    /// ink. An airless moon has no atmosphere to scatter light: ground the lamp never reaches is simply
+    /// black, and the field does not END so much as stop being visible.</para>
+    ///
+    /// <para>The deeper reason to hide it (owner, same session): <i>"the reevers and supply line are kind
+    /// of the invisible tether to players distance"</i>. The real edge of a landing site is the point where
+    /// the magazine and the pack behind you say turn around — the #453 law that how deep you dare go is
+    /// priced by sentries and nerve, NOT by geometry. A drawn rectangle competes with that tether and wins,
+    /// announcing the wrong limit before the honest one can be felt.</para></summary>
+    public readonly record struct Wall(
+        float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull, bool Unseen = false);
 
     /// <summary>An airlock door across a passage. An automatic door slides open as the avatar nears
     /// (a top-down flourish; it never blocks — the passage is always walkable). A <c>Locked</c> door

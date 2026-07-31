@@ -1,0 +1,66 @@
+// Lab 43 · What is actually ON Miranda's landing sites?
+//
+// The owner, playtesting 2026-07-31: "the map is kind of boring... no door or enclosed places",
+// "I have never seen the landing site area expand yet... we should test it", "There should be huts
+// . i.e lockable spaces there not just U shapes."
+//
+// This probe answers all three from Core, deterministically, with no browser in the loop:
+//   1. Which sites does Miranda offer, and what ground does each one generate?
+//   2. How many features, of what shape, and how much of the field do they occupy?
+//   3. CAN a landing site ever expand here? (The append-a-region machinery exists — SecretLab and
+//      ExpeditionRegions — so the question is only whether Miranda can ever roll into it.)
+using SpaceSails.Core;
+
+// The field the client hands SurfaceLayout, verbatim from MoonSurface's constants.
+var field = new SurfaceLayout.Field(
+    LeftX: -44, RightX: 34, TopY: -20, BottomY: -84,
+    LandingBandY: -27, AnchorX: -6, AnchorY: -70);
+
+double fieldW = field.RightX - field.LeftX;      // 78 du
+double fieldH = field.TopY - field.BottomY;      // 64 du
+
+Console.WriteLine($"FIELD  {fieldW} x {fieldH} du  ({fieldW * fieldH:N0} du^2)");
+Console.WriteLine();
+
+foreach (string body in new[] { "miranda", "luna", "phobos", "europa", "titan" })
+{
+    Console.WriteLine($"=== {body.ToUpperInvariant()} — {LandingSites.Count(body)} sites ===");
+
+    foreach (LandingSite site in LandingSites.For(body))
+    {
+        SurfaceLayout.Plan plan = SurfaceLayout.For(body, field, site.LayoutSalt);
+
+        // The bounding box of everything the generator actually placed.
+        double x0 = double.MaxValue, x1 = double.MinValue, y0 = double.MaxValue, y1 = double.MinValue;
+        foreach (SurfaceLayout.Wall w in plan.Walls)
+        {
+            x0 = Math.Min(x0, Math.Min(w.X1, w.X2)); x1 = Math.Max(x1, Math.Max(w.X1, w.X2));
+            y0 = Math.Min(y0, Math.Min(w.Y1, w.Y2)); y1 = Math.Max(y1, Math.Max(w.Y1, w.Y2));
+        }
+        string extent = plan.Walls.Count == 0
+            ? "(nothing placed)"
+            : $"{x1 - x0:F0} x {y1 - y0:F0} du = {(x1 - x0) * (y1 - y0) / (fieldW * fieldH) * 100:F0}% of the field";
+
+        Console.WriteLine($"  site {site.Index}  {site.Name,-22} salt='{site.LayoutSalt}'  scheme={plan.Scheme}");
+        Console.WriteLine($"           {plan.Walls.Count,3} wall segments · {plan.Landmarks.Count} landmark(s) · {extent}");
+
+        // How many of those segments are HULL-flagged — i.e. drawn in spaceship ink on a moon.
+        int hull = 0;
+        foreach (SurfaceLayout.Wall w in plan.Walls) { if (w.IsHull) { hull++; } }
+        Console.WriteLine($"           {hull} of them flagged IsHull (drawn as pressure hull)");
+    }
+
+    // Can this body's ground EVER grow? Two gates, both seeded and both pure.
+    bool lab = SecretLab.Present(body);
+    Console.WriteLine($"  secret lab present? {(lab ? "YES" : "no")}   (1 in {SecretLab.OrdinaryOneInN} on an ordinary moon)");
+    Console.WriteLine($"  expedition regions? no — those need an 'expedition-site-*' body id");
+    Console.WriteLine($"  => the ground here can expand: {(lab ? "YES (via the lab's concealed door)" : "NEVER")}");
+    Console.WriteLine();
+}
+
+// The three authored expedition rocks, for contrast — the only places the owner COULD have seen growth.
+Console.WriteLine("=== EXPEDITION ROCKS (the only grounds with sealed doors today) ===");
+foreach (string id in new[] { "expedition-site-ruins", "expedition-site-wreck", "expedition-site-tunnel" })
+{
+    Console.WriteLine($"  {id,-26} secret lab: {(SecretLab.Present(id) ? "YES" : "no")}");
+}
