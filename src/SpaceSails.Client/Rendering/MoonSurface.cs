@@ -180,7 +180,8 @@ public static class MoonSurface
             droidCount: droidCount, fillDroids: fillDroids,
             location: layout.Location,
             // #465: hand the tube's doors to the plan. `doors: null` here is what made the airlock invisible.
-            doors: layout.Doors, shipFixtures: true, followCam: true, tables: DeckPlan.Ship.Tables);
+            doors: layout.Doors, shipFixtures: true, followCam: true, tables: DeckPlan.Ship.Tables,
+            scenery: layout.Scenery);
     }
 
     // #371 Phase 1 · the memoized, delegate-free layout: everything in a surface deck that is a pure
@@ -194,7 +195,10 @@ public static class MoonSurface
         // layout (#371 Phase 1) never carried them and SurfaceDeck passed `doors: null`, so the tube has
         // been drawn WIDE OPEN since the day it was written. That is the "the door that does not open for
         // them is MISSING" report, and why the Old Ones appeared to halt at nothing.
-        DeckPlan.Door[] Doors);
+        DeckPlan.Door[] Doors,
+        // #563: the terrain layer — drawn, never collided. Memoised alongside the walls because it is a
+        // pure function of the same key, and regenerating a dozen craters per frame would be silly.
+        SurfaceScenery.Mark[] Scenery);
 
     // WASM is single-threaded, so a plain dictionary is safe. Bounded (see the growth guard above).
     private const int LayoutCacheCap = 64;
@@ -240,30 +244,48 @@ public static class MoonSurface
         walls.Add(new(SurfaceLeftX, SurfaceTopY, TubeLeft, SurfaceTopY, false, true));   // top rim, port of the tube
         walls.Add(new(TubeRight, SurfaceTopY, SurfaceRightX, SurfaceTopY, false, true)); // top rim, starboard of the tube
 
-        //    The other three are the FIELD ENVELOPE — a technical limit on how far the ground is generated,
-        //    with no object in the world to be. Drawn as bright hull lines they made a square fence around a
-        //    moon ("it seems artificial on a Moon… it spoils the site feeling"), and worse, they announced a
-        //    boundary that is not the real one: the honest edge of a landing site is where the magazine and
-        //    the pack behind you say turn around — "the reevers and supply line are kind of the invisible
-        //    tether to players distance" — the #453 law that depth is priced by sentries and nerve, never by
-        //    geometry. So they collide exactly as before and are never drawn. Nothing advertises the limit.
-        walls.Add(new(SurfaceLeftX, SurfaceTopY, SurfaceLeftX, SurfaceBottomY, false, false, Unseen: true));
-        walls.Add(new(SurfaceRightX, SurfaceTopY, SurfaceRightX, SurfaceBottomY, false, false, Unseen: true));
-        walls.Add(new(SurfaceLeftX, SurfaceBottomY, SurfaceRightX, SurfaceBottomY, false, false, Unseen: true));
+        //    The other three sides are the FIELD ENVELOPE — a technical limit on how far the ground is
+        //    generated, with no object in the world to be. Drawn as bright hull lines they made a square
+        //    fence around a moon ("it seems artificial on a Moon… it spoils the site feeling"), and worse,
+        //    they announced a boundary that is not the real one: the honest edge of a landing site is where
+        //    the magazine and the pack behind you say turn around — "the reevers and supply line are kind of
+        //    the invisible tether to players distance" — the #453 law that depth is priced by sentries and
+        //    nerve, never by geometry. So they are UNSEEN: they collide, and nothing is ever drawn for them.
+        //
+        //    That first pass hid the fence and left the SHAPE alone, which the owner went straight to:
+        //    "But the limit to movement is still a box here?" It was. So the bound is no longer three
+        //    straight walls but a wandering chain (SurfaceEdge), seeded per site — the limit to movement is
+        //    not a rectangle in the collision either, not merely in the picture.
+        //
+        //    It only ever bulges OUTWARD from the nominal rectangle, which is what makes it safe to lay
+        //    under a game already generating near the edge: the outpost huts (#563) are built INTO the far
+        //    edge lane, and a boundary free to wander inward would eventually eat one. Outward can only add
+        //    bare regolith. The bulge tapers to nothing at every corner, so the chain closes exactly and
+        //    there is no gap for a captain to walk out of the world through.
+        var field = new SurfaceLayout.Field(
+            SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, MonolithX, MonolithY);
+        foreach ((double x1, double y1, double x2, double y2) in SurfaceEdge.Bound(bodyId, siteSalt, field))
+        {
+            walls.Add(new((float)x1, (float)y1, (float)x2, (float)y2, false, false, Unseen: true));
+        }
 
         // ── The PER-BODY geography (Sunday-morning wind #1–#2): the deep-field ruin/maze walls and the
         //    landmark vary by body — Miranda keeps THE MONOLITH maze (canon), Luna gets the mass-driver
         //    ruins, every other landable body a seeded signature — so no two grounds are the same. The
         //    field envelope above is the shared LAW; only what's inside it is the body's own. Walls are
         //    collision law for everyone (the pure Core SurfaceLayout is where a test pins the geography). ──
-        var field = new SurfaceLayout.Field(
-            SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, MonolithX, MonolithY);
         // #320: the chosen landing site parameterizes the ground — an empty salt is the canon site 0
         // (Miranda's maze, Luna's rails, the seeded signature), a non-empty salt re-seeds a distinct wing.
         SurfaceLayout.Plan layout = SurfaceLayout.For(bodyId, field, siteSalt);
         foreach (SurfaceLayout.Wall w in layout.Walls)
         {
-            walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, w.IsHull));
+            // #563 · A body's own geography is ROCK, never pressure hull. SurfaceLayout's IsHull flag means
+            // "solid mass" — the monolith, Luna's mass-driver muzzle, a seeded plinth or ancient spur — as
+            // opposed to a fallen span, and that distinction is worth keeping. What was wrong was the ink:
+            // it drew in the ship's cold blue-white hull stroke, so 16 of the Ridge Camp's 25 segments were
+            // painted as spaceship. Same flag, translated to stone.
+            walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, false,
+                IsStone: w.IsHull));
         }
 
         var consoles = new List<DeckPlan.ConsoleSpot>(
@@ -308,9 +330,15 @@ public static class MoonSurface
                     : y < MonolithY + 8 && Math.Abs(x - MonolithX) < 16 ? layout.Scheme
                     : $"{bodyDisplayName.ToUpperInvariant()} SURFACE";
 
+        // #563 · The terrain. Owner: "put something more interesting in the landscape." Crater rims, scree
+        // fans, scarps and rilles, seeded per site and spread across the WHOLE field — including the flanks,
+        // which are kept clear of WALLS so a walk-around always exists and were therefore the emptiest and
+        // most walkable third of every site. Scenery cannot obstruct, so it is free to go exactly there.
+        SurfaceScenery.Mark[] scenery = [.. SurfaceScenery.For(bodyId, siteSalt, field)];
+
         return new Layout(
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location,
-            doors.ToArray());
+            doors.ToArray(), scenery);
     }
 
     // The ship carries one amber shuttle-airlock door across the (bottom) hatch; drop it so the tube's

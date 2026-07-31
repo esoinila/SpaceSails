@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
 using Xunit;
@@ -40,8 +40,17 @@ public class SurfaceReachabilityTests
     // Where the captain actually arrives: just below the tube mouth, on the landing band.
     private static DeckReachability.Point Spawn => new(TubeCenterX, Env.TopY - 2.0);
 
+    // Wide enough to contain the bound's outward wander, so the flood actually SEES the ground the bulge
+    // adds. Auditing only the nominal rectangle would silently skip every cell the new shape gained.
+    // MaxBulge PLUS slack. The bound can reach exactly MaxBulge, so a grid sized to precisely that lets a
+    // headland touch the grid's own edge and pinch the outside void into disconnected slivers — which the
+    // audit then dutifully reported as sealed pockets on half the moons in the game. The slack keeps the
+    // void one connected region so the "exactly two regions, in and out" argument holds.
+    private const double GridSlackDu = 6.0;
+
     private static (double MinX, double MinY, double MaxX, double MaxY) Bounds =>
-        (Env.LeftX, Env.BottomY, Env.RightX, Env.TopY);
+        (Env.LeftX - SurfaceEdge.MaxBulgeDu - GridSlackDu, Env.BottomY - SurfaceEdge.MaxBulgeDu - GridSlackDu,
+         Env.RightX + SurfaceEdge.MaxBulgeDu + GridSlackDu, Env.TopY);
 
     /// <summary>The collidable ground for one site: the field's own envelope (which is unseen but still
     /// solid — #563), the down-tube's two walls, and everything the body's geography generated.</summary>
@@ -55,11 +64,14 @@ public class SurfaceReachabilityTests
             // The top rim, port and starboard of the tube mouth (the ship's own underside).
             new(Env.LeftX, Env.TopY, TubeLeft, Env.TopY),
             new(TubeRight, Env.TopY, Env.RightX, Env.TopY),
-            // The three unseen envelope edges. Invisible since #563, but they still stop you.
-            new(Env.LeftX, Env.TopY, Env.LeftX, Env.BottomY),
-            new(Env.RightX, Env.TopY, Env.RightX, Env.BottomY),
-            new(Env.LeftX, Env.BottomY, Env.RightX, Env.BottomY),
         };
+
+        // The field's outer bound — invisible since #563, and since the owner's "But the limit to movement
+        // is still a box here?" no longer a rectangle either. The REAL chain is audited, not the nominal
+        // one: a wandering bound is the thing that actually ships, and auditing a tidier stand-in would be
+        // the drawing-lies-about-the-sim failure wearing a lab coat.
+        walls.AddRange(SurfaceEdge.Bound(body, salt, Env)
+            .Select(e => new SurfaceCollision.Segment(e.X1, e.Y1, e.X2, e.Y2)));
 
         SurfaceLayout.Plan plan = SurfaceLayout.For(body, Env, salt);
         walls.AddRange(plan.Walls.Select(w => new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2)));
@@ -138,11 +150,12 @@ public class SurfaceReachabilityTests
         IReadOnlyList<SurfaceCollision.Segment> walls)
     {
         const double step = DeckReachability.DefaultStep;
-        int cols = (int)((Env.RightX - Env.LeftX) / step) + 1;
-        int rows = (int)((Env.TopY - Env.BottomY) / step) + 1;
+        (double bMinX, double bMinY, double bMaxX, double bMaxY) = Bounds;
+        int cols = (int)((bMaxX - bMinX) / step) + 1;
+        int rows = (int)((bMaxY - bMinY) / step) + 1;
 
-        double X(int c) => Env.LeftX + (c * step);
-        double Y(int r) => Env.BottomY + (r * step);
+        double X(int c) => bMinX + (c * step);
+        double Y(int r) => bMinY + (r * step);
 
         var standable = new bool[cols, rows];
         int standableCount = 0;
@@ -160,8 +173,8 @@ public class SurfaceReachabilityTests
 
         // Start from the standable cell nearest the spawn — the mouth itself may sit a hair inside the
         // tube walls' clearance, and that is not what this test is about.
-        int sc = (int)System.Math.Round((Spawn.X - Env.LeftX) / step);
-        int sr = (int)System.Math.Round((Spawn.Y - Env.BottomY) / step);
+        int sc = (int)System.Math.Round((Spawn.X - bMinX) / step);
+        int sr = (int)System.Math.Round((Spawn.Y - bMinY) / step);
         Assert.True(
             sc >= 0 && sc < cols && sr >= 0 && sr < rows && standable[sc, sr],
             "The tube mouth is not standable — the flood has nowhere to start.");
@@ -169,7 +182,21 @@ public class SurfaceReachabilityTests
         var seen = new bool[cols, rows];
         Flood(sc, sr, standable, seen, cols, rows);
 
-        // Whatever the flood missed forms its own islands. Measure the biggest.
+        // #563 · AND flood from OUTSIDE the world. The grid is deliberately wider than the field so it
+        // contains the bound's outward wander, which means its corners are open space BEYOND the bound —
+        // standable, unreachable, and entirely correct. Without this the audit reported the void itself as
+        // a 1,300 du² sealed pocket on half the moons in the game.
+        //
+        // Flooding it separately is better than shrinking the grid back to the nominal rectangle: it proves
+        // the bound is a genuine SEPARATOR (exactly two regions, in and out) rather than merely testing a
+        // subset of the ground and hoping.
+        var outside = new bool[cols, rows];
+        if (standable[0, 0])
+        {
+            Flood(0, 0, standable, outside, cols, rows);
+        }
+
+        // Whatever NEITHER flood reached forms its own islands. Measure the biggest.
         var counted = new bool[cols, rows];
         int biggest = 0;
         (double X, double Y)? at = null;
@@ -178,7 +205,7 @@ public class SurfaceReachabilityTests
         {
             for (int r = 0; r < rows; r++)
             {
-                if (!standable[c, r] || seen[c, r] || counted[c, r])
+                if (!standable[c, r] || seen[c, r] || outside[c, r] || counted[c, r])
                 {
                     continue;
                 }
