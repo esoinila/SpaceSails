@@ -52,12 +52,24 @@ internal static class SiteSvg
         s.Append("<rect width=\"100%\" height=\"100%\" fill=\"#0a0e16\"/>");
         s.Append("<g font-family=\"monospace\">");
 
-        // The field envelope — ghosted, because since #563 the player never sees these three edges. Drawn
-        // here only so the picture shows where the ground stops being generated.
-        string envEdge = "stroke=\"#243044\" stroke-width=\"1\" stroke-dasharray=\"3 5\"";
-        Line(s, PX(leftX), PY(topY), PX(leftX), PY(bottomY), envEdge);
-        Line(s, PX(rightX), PY(topY), PX(rightX), PY(bottomY), envEdge);
-        Line(s, PX(leftX), PY(bottomY), PX(rightX), PY(bottomY), envEdge);
+        // #563 · TERRAIN — crater rims, scree, scarps and rilles. Drawn, never collided.
+        foreach (SurfaceScenery.Mark m in SurfaceScenery.For(body, site.LayoutSalt, env))
+        {
+            Line(s, PX(m.X1), PY(m.Y1), PX(m.X2), PY(m.Y2),
+                "stroke=\"#4a463f\" stroke-width=\"1.3\"");
+        }
+
+        // #563 · THE ACTUAL BOUND — read from SurfaceEdge, the same function the collision walls are built
+        // from, NOT a copy of it. An earlier version of this file re-implemented the shape here so it could
+        // be pictured; that is precisely the "the drawing says one thing and the sim does another" failure
+        // this project keeps paying for, and an invisible bound is the worst place to have it. In game these
+        // segments are UNSEEN — they stop you and are never drawn — so they are ghosted here, and this is
+        // the only place the shape can be looked at.
+        foreach ((double bx1, double by1, double bx2, double by2) in SurfaceEdge.Bound(body, site.LayoutSalt, env))
+        {
+            Line(s, PX(bx1), PY(by1), PX(bx2), PY(by2),
+                "stroke=\"#2b3a4e\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\"");
+        }
 
         // The ship's underside, port and starboard of the tube mouth — real hull, drawn as hull.
         string hull = "stroke=\"#aab9cd\" stroke-width=\"2.5\" stroke-linecap=\"square\"";

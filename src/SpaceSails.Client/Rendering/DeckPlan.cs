@@ -41,8 +41,18 @@ public sealed class DeckPlan
     /// the magazine and the pack behind you say turn around — the #453 law that how deep you dare go is
     /// priced by sentries and nerve, NOT by geometry. A drawn rectangle competes with that tether and wins,
     /// announcing the wrong limit before the honest one can be felt.</para></summary>
+    /// <param name="IsStone">#563 · Solid mass that is NOT a made pressure boundary — a monolith, a
+    /// plinth, a mass-driver muzzle, an ancient spur. It draws heavy like hull, because it IS solid, but in
+    /// rock rather than metal.
+    ///
+    /// <para>Owner's complaint was that a landing site looks artificial, and removing the rim fence only got
+    /// half of it: the body's own geography flags its solid objects with <c>IsHull</c>, and on Miranda's
+    /// Ridge Camp that is 16 of 25 segments drawn in the ship's cold pressure-hull stroke. The flag was
+    /// never wrong — a monolith IS solid and a fallen span is not — it was the INK that was wrong. Same
+    /// distinction, different material.</para></param>
     public readonly record struct Wall(
-        float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull, bool Unseen = false);
+        float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull, bool Unseen = false,
+        bool IsStone = false);
 
     /// <summary>An airlock door across a passage. An automatic door slides open as the avatar nears
     /// (a top-down flourish; it never blocks — the passage is always walkable). A <c>Locked</c> door
@@ -117,6 +127,13 @@ public sealed class DeckPlan
     public Backdrop[] Backdrops { get; private set; }
     public Door[] Doors { get; }
 
+    /// <summary>#563 · TERRAIN — drawn, never collided. Kept in its own array rather than as a flag on
+    /// <see cref="Wall"/> ON PURPOSE: <see cref="CollisionSegments"/> is derived from <c>Walls</c> in the
+    /// constructor, so a decorative "wall" would obstruct the captain the moment any caller forgot to
+    /// filter it. Scenery cannot be given substance by an oversight, because the movement code is never
+    /// handed it at all.</summary>
+    public SpaceSails.Core.SurfaceScenery.Mark[] Scenery { get; private set; }
+
     /// <summary>#371 Phase 3 · how many regions have been appended to this live plan (0 on a freshly-built
     /// plan). A cheap handle for the perf test — "segment count grows only by the region's walls" — and for
     /// any caller that wants to know the world has grown.</summary>
@@ -146,7 +163,8 @@ public sealed class DeckPlan
         Backdrop[] backdrops, double spawnX, double spawnY,
         int droidCount, Action<double, Droid[]> fillDroids, Func<double, double, string> location,
         Door[]? doors = null, bool shipFixtures = false, bool followCam = false,
-        (float X, float Y)[]? tables = null)
+        (float X, float Y)[]? tables = null,
+        SpaceSails.Core.SurfaceScenery.Mark[]? scenery = null)
     {
         Walls = walls;
         CollisionSegments = new SurfaceCollision.Segment[walls.Length];
@@ -160,6 +178,7 @@ public sealed class DeckPlan
         Backdrops = backdrops;
         Doors = doors ?? [];
         Tables = tables ?? [];
+        Scenery = scenery ?? [];
         SpawnX = spawnX;
         SpawnY = spawnY;
         DroidCount = droidCount;

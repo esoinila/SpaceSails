@@ -112,6 +112,11 @@ public sealed class DeckView
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
     private static readonly RgbaColor InnerLine = new(110, 125, 145, 200);
+
+    // #563 · Solid ROCK, as opposed to a made pressure boundary. Same weight as hull because it is just as
+    // solid, but warm and dusty rather than cold blue-white — the difference between a monolith and a
+    // bulkhead, which is the difference between standing on a moon and standing in a ship.
+    private static readonly RgbaColor StoneLine = new(166, 150, 130);
     private static readonly RgbaColor WindowLine = new(80, 220, 210, 220);
     private static readonly RgbaColor ConsoleGlow = new(120, 220, 200);
     private static readonly RgbaColor ConsoleNear = new(190, 255, 220);
@@ -241,6 +246,40 @@ public sealed class DeckView
             DrawSeg(P(gx, -9.6), P(gx, 9.6), new RgbaColor(255, 255, 255, 10), 1f);
         }
 
+        // #563 · THE FIELD FALLS INTO THE DARK. An UNSEEN wall stops the captain and draws nothing, which
+        // fixed the owner's "square border … it seems artificial on a Moon" and immediately created the
+        // other half of the problem: an invisible wall you walk into with no warning is worse than a fence,
+        // not better. So the ground darkens over the last several deck units before any unseen bound.
+        //
+        // It is honest rather than decorative. An airless moon has no atmosphere to scatter light, so
+        // regolith the lamp never reaches is simply black — the field does not END, it stops being visible,
+        // and you read "there is nothing out that way" BEFORE you touch anything.
+        //
+        // THE FALLOFF DEPTH WOBBLES, and that is the whole point of doing it this way. Fading on the same
+        // axis-aligned bounds would have drawn the identical rectangle in a softer pencil and left the
+        // complaint untouched ("at least not obviously so with square area"). The wobble is keyed to world
+        // position, not to time or camera, so the dark edge is a fact about the place and holds still while
+        // you walk along it.
+        //
+        // Hung off the unseen walls themselves, so it appears exactly where a hidden bound is and nowhere
+        // else — a ship's plan has none and is untouched.
+        // #563 · TERRAIN, under the falloff so ground near the bound fades into the dark with everything
+        // else. Owner: "put something more interesting in the landscape." These are drawn and never
+        // collided — they live in their own array precisely so no oversight can give them substance.
+        foreach (SpaceSails.Core.SurfaceScenery.Mark m in plan.Scenery)
+        {
+            (RgbaColor ink, float wide) = m.Of switch
+            {
+                SpaceSails.Core.SurfaceScenery.Kind.CraterRim => (new RgbaColor(74, 70, 64, 190), 1.4f),
+                SpaceSails.Core.SurfaceScenery.Kind.Scree => (new RgbaColor(62, 58, 54, 150), 1f),
+                SpaceSails.Core.SurfaceScenery.Kind.Ridge => (new RgbaColor(84, 78, 70, 200), 1.7f),
+                _ => (new RgbaColor(58, 60, 66, 175), 1.3f),
+            };
+            DrawSeg(P(m.X1, m.Y1), P(m.X2, m.Y2), ink, wide);
+        }
+
+        DrawUnseenFalloff(plan, scale, ox, oy);
+
         // #371 Phase 3 fog: paint the still-UNSEEN forced chambers as dark hatched voids — unknown ground
         // behind a freshly-forced door — over the floor/grid, under everything that follows (the walls and
         // consoles inside are skipped, so nothing pokes through). Explored/visible chambers get no void.
@@ -280,8 +319,14 @@ public sealed class DeckView
             {
                 continue;
             }
-            RgbaColor color = ws == 1 ? ExploredWall : w.IsWindow ? WindowLine : w.IsHull ? HullLine : InnerLine;
-            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull ? 2.5f : 1.5f);
+            RgbaColor color = ws == 1 ? ExploredWall
+                : w.IsWindow ? WindowLine
+                : w.IsStone ? StoneLine
+                : w.IsHull ? HullLine
+                : InnerLine;
+            // Stone is drawn as heavy as hull: it is just as solid, and a monolith you could mistake for
+            // rubble is a monolith that stops being the centrepiece of the moon it stands on.
+            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull || w.IsStone ? 2.5f : 1.5f);
         }
 
         // Automatic airlock doors (the docking tube): shut across the passage until you near them,
@@ -858,6 +903,83 @@ public sealed class DeckView
         t = Math.Clamp(t, 0f, 1f);
         static byte L(byte v, float t) => (byte)(v + (255 - v) * t);
         return new RgbaColor(L(c.R, t), L(c.G, t), L(c.B, t), c.A);
+    }
+
+    // #563 · How deep the dark reaches in from an unseen bound, in deck units, and how far that depth
+    // wanders along it. A straight falloff is just the rectangle again; these two numbers are what stop the
+    // eye finding a corner.
+    private const double FalloffBaseDu = 7.0;
+    private const double FalloffWanderDu = 5.0;
+
+    /// <summary>Darken the ground approaching every <see cref="DeckPlan.Wall.Unseen"/> bound, with an
+    /// irregular inner edge. No-op on any plan without unseen walls — i.e. every ship and station.</summary>
+    private void DrawUnseenFalloff(DeckPlan plan, float scale, float ox, float oy)
+    {
+        // The bounds of the unseen set tell us which side of the field each one is, and therefore which way
+        // "inward" points — a vertical wall at the smallest x faces right, and so on.
+        float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+        int unseen = 0;
+        foreach (DeckPlan.Wall w in plan.Walls)
+        {
+            if (!w.Unseen) { continue; }
+            unseen++;
+            minX = Math.Min(minX, Math.Min(w.X1, w.X2)); maxX = Math.Max(maxX, Math.Max(w.X1, w.X2));
+            minY = Math.Min(minY, Math.Min(w.Y1, w.Y2)); maxY = Math.Max(maxY, Math.Max(w.Y1, w.Y2));
+        }
+        if (unseen == 0)
+        {
+            return;
+        }
+
+        const int Bands = 4;
+        foreach (DeckPlan.Wall w in plan.Walls)
+        {
+            if (!w.Unseen) { continue; }
+
+            bool vertical = Math.Abs(w.X1 - w.X2) < 0.001f;
+            double inward = vertical
+                ? (Math.Abs(w.X1 - minX) < Math.Abs(w.X1 - maxX) ? 1.0 : -1.0)
+                : (Math.Abs(w.Y1 - minY) < Math.Abs(w.Y1 - maxY) ? 1.0 : -1.0);
+
+            double a0 = vertical ? Math.Min(w.Y1, w.Y2) : Math.Min(w.X1, w.X2);
+            double a1 = vertical ? Math.Max(w.Y1, w.Y2) : Math.Max(w.X1, w.X2);
+            const double step = 2.0;
+
+            for (double a = a0; a < a1; a += step)
+            {
+                double span = Math.Min(step, a1 - a);
+                double depth = FalloffBaseDu + (FalloffWanderDu * Wander(a, vertical ? w.X1 : w.Y1));
+
+                for (int k = 0; k < Bands; k++)
+                {
+                    // Darkest against the bound, thinning inward. Near-black keyed to the floor's own blue
+                    // so the dark reads as unlit ground rather than as a painted shape.
+                    var ink = new RgbaColor(4, 6, 10, (byte)(205 - (k * 48)));
+                    double d0 = depth * k / Bands, d1 = depth * (k + 1) / Bands;
+                    double c0 = vertical ? w.X1 + (inward * d0) : w.Y1 + (inward * d0);
+                    double c1 = vertical ? w.X1 + (inward * d1) : w.Y1 + (inward * d1);
+
+                    (double bx0, double by0, double bx1, double by1) = vertical
+                        ? (Math.Min(c0, c1), a, Math.Max(c0, c1), a + span)
+                        : (a, Math.Min(c0, c1), a + span, Math.Max(c0, c1));
+
+                    float sx0 = ox + ((float)bx0 * scale), sy0 = oy - ((float)by1 * scale);
+                    float sx1 = ox + ((float)bx1 * scale), sy1 = oy - ((float)by0 * scale);
+                    FillRect(sx0, sy0, sx1 - sx0, sy1 - sy0, ink);
+                }
+            }
+        }
+    }
+
+    /// <summary>A stable 0..1 wander keyed to a world position — deterministic, so the dark edge is a fact
+    /// about the place and does not shimmer as the camera moves or the frame ticks.</summary>
+    private static double Wander(double along, double which)
+    {
+        // Low frequency ON PURPOSE. A high-frequency hash makes adjacent steps uncorrelated and the
+        // dark edge reads as a jagged comb — obviously generated. This undulates over tens of deck
+        // units, so the boundary wanders the way a shadow line does and no straight run is legible.
+        double s = Math.Sin((along * 0.11) + (which * 0.037)) * 0.5;
+        return s + 0.5;   // 0..1
     }
 
     private void FillRect(float x, float y, float w, float h, RgbaColor color)

@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// Sunday-morning wind · #1–#2 (owner, 2026-07-19, verbatim): <b>"Earth Moon and Miranda out-doors were
@@ -179,6 +179,39 @@ public static class SurfaceLayout
         double minY = f.BottomY + 4, maxY = f.LandingBandY - 6;
 
         int features = 5 + Face(bodyId, "count", 5); // 5..9 ruins
+
+        // #563 · FEATURES MAY NOT BE LAID ON TOP OF ONE ANOTHER. Harmless while every shape was an open
+        // span or a U — two overlapping rubble walls are just messier rubble. The moment buildings arrived
+        // it stopped being harmless: a second feature's wall laid across a doorway SEALS the room behind
+        // it, and the reachability flood caught exactly that on four sites (21-29 du^2 of interior nobody
+        // could reach). So each placement claims a footprint with a little elbow room, and anything that
+        // would land on a claim is skipped rather than squeezed — a slightly emptier field beats a building
+        // you can see into and never enter.
+        // Elbow room is a GAP between footprints, not a exclusion zone: 3 du rejected so much that the
+        // Ridge Camp fell from 25 segments to 10 and the "more interesting landscape" came out emptier than
+        // before. 1.5 is enough to keep one feature's wall off another's doorway.
+        var claimed = new System.Collections.Generic.List<(double X0, double Y0, double X1, double Y1)>();
+        const double Elbow = 1.5;
+
+        bool Claim(double cx, double cy, double halfW, double halfH)
+        {
+            (double x0, double y0, double x1, double y1) =
+                (cx - halfW - Elbow, cy - halfH - Elbow, cx + halfW + Elbow, cy + halfH + Elbow);
+            foreach ((double ax0, double ay0, double ax1, double ay1) in claimed)
+            {
+                if (x0 < ax1 && x1 > ax0 && y0 < ay1 && y1 > ay0)
+                {
+                    return false;
+                }
+            }
+            claimed.Add((x0, y0, x1, y1));
+            return true;
+        }
+
+        // The deep landmark's own fixture is laid AFTER this loop but stands on real ground. Claim it first,
+        // or a building can be seeded around the anchor and then have the fixture dropped across its door.
+        Claim(ax, ay, 2, 2);
+
         for (int i = 0; i < features; i++)
         {
             double cx = Lerp(minX, maxX, Frac(bodyId, $"x:{i}"));
@@ -186,6 +219,23 @@ public static class SurfaceLayout
             double len = 5 + (7 * Frac(bodyId, $"len:{i}")); // 5..12 du
             int shape = Face(bodyId, $"shape:{i}", 4);        // 0..3
             bool horizontal = Frac(bodyId, $"rot:{i}") < 0.5;
+
+            // Try a few seeded spots before abandoning a feature. Skipping on the first clash threw most of
+            // the field away; a handful of retries keeps the ground full while still never overlapping.
+            // Buildings are bigger than `len` (SurfaceStructure clamps them up to a workable size) and
+            // carry thick walls, so they claim a footprint sized like the thing that will actually be laid.
+            double claimHalf = shape == 2 ? 13.0 : len / 2;
+            bool placed = Claim(cx, cy, claimHalf, claimHalf);
+            for (int attempt = 1; attempt < 5 && !placed; attempt++)
+            {
+                cx = Lerp(minX, maxX, Frac(bodyId, $"x:{i}:{attempt}"));
+                cy = Lerp(minY, maxY, Frac(bodyId, $"y:{i}:{attempt}"));
+                placed = Claim(cx, cy, claimHalf, claimHalf);
+            }
+            if (!placed)
+            {
+                continue;
+            }
 
             switch (shape)
             {
@@ -196,8 +246,8 @@ public static class SurfaceLayout
                     AddClampedSpan(walls, f, cx, cy, len, horizontal, hull: false);
                     AddClampedSpan(walls, f, cx, cy, len * 0.7, !horizontal, hull: false);
                     break;
-                case 2: // an open box missing one side (a shattered outpost)
-                    AddOpenBox(walls, f, cx, cy, len, len * 0.7, gapSide: Face(bodyId, $"gap:{i}", 4));
+                case 2: // a real BUILDING — thick walls, a doorway through the mass, seeded shape and angle
+                    AddStructure(walls, f, cx, cy, len, bodyId, $"bld:{i}");
                     break;
                 default: // a small solid slab (an ancient spur / a plinth)
                     AddClampedBox(walls, f, cx - 1.4, cy - 1.4, cx + 1.4, cy + 1.4, hull: true);
@@ -356,6 +406,148 @@ public static class SurfaceLayout
             walls.Add(new(cx, y1, cx, y2, hull));
         }
     }
+
+    /// <summary>#563 · Place one of <see cref="SurfaceStructure"/>'s buildings on the ground: seeded shape,
+    /// angle, door count and wall thickness, clamped so the whole footprint stays inside the safe span (a
+    /// building clipped by the edge lane would lose the face its doorway was on and become a solid block).
+    ///
+    /// <para>Thickness is seeded 1.2..2.4 du — the owner's Greenland longhouse: on a cold world you build
+    /// out of what is under your boots, and if the wall is also holding an atmosphere you build it fat.</para></summary>
+    private static void AddStructure(System.Collections.Generic.List<Wall> walls, in Field f,
+        double cx, double cy, double size, string bodyId, string tag)
+    {
+        // 1.6..3.0 du of piled regolith — the owner's Greenland longhouse, and comfortably above the
+        // captain's own 1.4 du width so the hatching never emits a segment shorter than a body.
+        double thickness = 1.6 + (1.4 * Frac(bodyId, $"{tag}:thick"));
+        double w = System.Math.Clamp(size * 1.4, 12, 20);
+        double h = System.Math.Clamp(size * 1.1, 10, 16);
+
+        // Keep the whole thing (walls included) off the edge lanes.
+        double halfW = (w / 2) + thickness, halfH = (h / 2) + thickness;
+        cx = System.Math.Clamp(cx, f.LeftX + EdgeMargin + halfW, f.RightX - EdgeMargin - halfW);
+        cy = System.Math.Clamp(cy, f.BottomY + 2 + halfH, f.LandingBandY - 2 - halfH);
+
+        var spec = new SurfaceStructure.Spec(
+            cx, cy, w, h,
+            AngleRad: Frac(bodyId, $"{tag}:angle") * System.Math.Tau,
+            Doors: 1 + Face(bodyId, $"{tag}:doors", 2),
+            WallThickness: thickness,
+            Shape: (SurfaceStructure.Footprint)Face(bodyId, $"{tag}:shape", 3));
+
+        walls.AddRange(SurfaceStructure.Build(spec).Walls);
+    }
+
+    /// <summary>
+    /// #563 · A SMALL BUILDING — four walls, a doorway you walk through, and usually a room inside it.
+    ///
+    /// <para>Owner, 2026-08-01: <i>"as for content there needs to be more than silly U shapes... more stuff
+    /// like small buildings with actual walls and doors."</i> He is right, and the U was the weakest thing
+    /// the generator made: a rectangle with one side left off is not a ruin, it is a rectangle somebody
+    /// forgot to finish. It has no inside, so there is nothing to enter and nothing to find.</para>
+    ///
+    /// <para>A building has a real threshold. You walk THROUGH something to be inside it, and inside there
+    /// is a partition with its own doorway, so even a small footprint gives two spaces and a reason to walk
+    /// the second one. That is what turns a shape on the ground into a place.</para>
+    ///
+    /// <para>Every opening is <see cref="DoorwayHalf"/> × 2 wide — comfortably more than the captain's
+    /// diameter — and the partition's doorway is deliberately offset from the outer one so the two are
+    /// never in line. A straight shot from the street to the back wall makes the interior read as a corridor
+    /// rather than as rooms, and it also means one glance from outside tells you everything.</para>
+    ///
+    /// <para>These are ruins, so the openings are OPENINGS — no hinges, nothing to force. The lockable
+    /// version is the outpost hut (<see cref="SurfaceOutpost"/>), which is a different thing on purpose: one
+    /// is scenery you can step into, the other is a decision with a locker behind it.</para>
+    /// </summary>
+    private static void AddBuilding(System.Collections.Generic.List<Wall> walls, in Field f,
+        double cx, double cy, double w, double h, string bodyId, string tag)
+    {
+        // Keep the whole footprint inside the safe span; a building clipped by the edge lane would have its
+        // doorway cut off and become a solid block.
+        double halfW = System.Math.Min(w, 14) / 2, halfH = System.Math.Min(h, 12) / 2;
+        double x0 = System.Math.Max(f.LeftX + EdgeMargin, cx - halfW);
+        double x1 = System.Math.Min(f.RightX - EdgeMargin, cx + halfW);
+        double y0 = System.Math.Max(f.BottomY + 2, cy - halfH);
+        double y1 = System.Math.Min(f.LandingBandY - 2, cy + halfH);
+
+        // Too small to hold a doorway and a room? Then it is rubble, and rubble is what it should look like.
+        //
+        // Emphatically NOT a closed box: that was the first thing written here, and a footprint clipped by
+        // the edge lane can still be large, so "too small for a door" was quietly producing big SEALED
+        // interiors — precisely the failure the doorway exists to avoid. Two walls that meet at a corner
+        // enclose nothing, whatever size they are.
+        if (x1 - x0 < MinDooredFace + 2 || y1 - y0 < MinDooredFace + 2)
+        {
+            walls.Add(new(x0, y0, x1, y0, false));
+            walls.Add(new(x0, y0, x0, y1, false));
+            return;
+        }
+
+        int doorWall = Face(bodyId, $"{tag}:door", 4);   // which face carries the way in
+        double doorAlong = Lerp(0.3, 0.7, Frac(bodyId, $"{tag}:doorat"));
+
+        // Bottom, top, left, right — each solid unless it is the one with the doorway in it.
+        AddFace(walls, x0, y0, x1, y0, horizontal: true, gapAt: doorWall == 0 ? Lerp(x0, x1, doorAlong) : null);
+        AddFace(walls, x0, y1, x1, y1, horizontal: true, gapAt: doorWall == 1 ? Lerp(x0, x1, doorAlong) : null);
+        AddFace(walls, x0, y0, x0, y1, horizontal: false, gapAt: doorWall == 2 ? Lerp(y0, y1, doorAlong) : null);
+        AddFace(walls, x1, y0, x1, y1, horizontal: false, gapAt: doorWall == 3 ? Lerp(y0, y1, doorAlong) : null);
+
+        // One interior partition, across the building's SHORT axis so both rooms stay usably wide, with its
+        // own doorway pushed to the far side from the outer door.
+        bool splitVertically = (x1 - x0) >= (y1 - y0);
+        double innerDoor = Lerp(0.25, 0.75, 1.0 - doorAlong);
+        if (splitVertically)
+        {
+            double px = Lerp(x0, x1, Lerp(0.4, 0.6, Frac(bodyId, $"{tag}:split")));
+            AddFace(walls, px, y0, px, y1, horizontal: false, gapAt: Lerp(y0, y1, innerDoor));
+        }
+        else
+        {
+            double py = Lerp(y0, y1, Lerp(0.4, 0.6, Frac(bodyId, $"{tag}:split")));
+            AddFace(walls, x0, py, x1, py, horizontal: true, gapAt: Lerp(x0, x1, innerDoor));
+        }
+    }
+
+    /// <summary>One wall face, solid or split around a doorway at <paramref name="gapAt"/>. The gap is
+    /// clamped so it can never run off the end of the face and quietly delete a whole wall.</summary>
+    private static void AddFace(System.Collections.Generic.List<Wall> walls,
+        double x0, double y0, double x1, double y1, bool horizontal, double? gapAt)
+    {
+        if (gapAt is not { } g)
+        {
+            walls.Add(new(x0, y0, x1, y1, false));
+            return;
+        }
+
+        // MinStub, not 0.5. A doorway clamped hard against the end of a face leaves a stub shorter than the
+        // captain is wide, and DegenerateWallScan is right to call that an invisible wall: you cannot see it,
+        // you cannot walk through it, and it reads as the game cheating. Either a face has room for a door
+        // with real jambs either side, or it does not get the door.
+        if (horizontal)
+        {
+            if (x1 - x0 < MinDooredFace) { walls.Add(new(x0, y0, x1, y1, false)); return; }
+            g = System.Math.Clamp(g, x0 + DoorwayHalf + MinStub, x1 - DoorwayHalf - MinStub);
+            walls.Add(new(x0, y0, g - DoorwayHalf, y0, false));
+            walls.Add(new(g + DoorwayHalf, y1, x1, y1, false));
+        }
+        else
+        {
+            if (y1 - y0 < MinDooredFace) { walls.Add(new(x0, y0, x1, y1, false)); return; }
+            g = System.Math.Clamp(g, y0 + DoorwayHalf + MinStub, y1 - DoorwayHalf - MinStub);
+            walls.Add(new(x0, y0, x0, g - DoorwayHalf, false));
+            walls.Add(new(x1, g + DoorwayHalf, x1, y1, false));
+        }
+    }
+
+    /// <summary>Half a doorway's width. The captain is 1.4 du across; this leaves room to walk it badly,
+    /// which is the bar every doorway in this game is held to (#498's "a bit narrow but navigatable").</summary>
+    private const double DoorwayHalf = 1.6;
+
+    /// <summary>The shortest jamb a doorway may leave beside it. Anything less is a stub nobody can see and
+    /// nobody can pass — an invisible wall, which DegenerateWallScan exists to refuse.</summary>
+    private const double MinStub = 1.6;
+
+    /// <summary>The shortest face that can carry a doorway at all: the opening plus a real jamb each side.</summary>
+    private const double MinDooredFace = (DoorwayHalf + MinStub) * 2;
 
     private static void AddOpenBox(System.Collections.Generic.List<Wall> walls, in Field f,
         double cx, double cy, double w, double h, int gapSide)
