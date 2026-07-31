@@ -222,12 +222,15 @@ public static class SurfaceLayout
 
             // Try a few seeded spots before abandoning a feature. Skipping on the first clash threw most of
             // the field away; a handful of retries keeps the ground full while still never overlapping.
-            bool placed = Claim(cx, cy, len / 2, len / 2);
+            // Buildings are bigger than `len` (SurfaceStructure clamps them up to a workable size) and
+            // carry thick walls, so they claim a footprint sized like the thing that will actually be laid.
+            double claimHalf = shape == 2 ? 13.0 : len / 2;
+            bool placed = Claim(cx, cy, claimHalf, claimHalf);
             for (int attempt = 1; attempt < 5 && !placed; attempt++)
             {
                 cx = Lerp(minX, maxX, Frac(bodyId, $"x:{i}:{attempt}"));
                 cy = Lerp(minY, maxY, Frac(bodyId, $"y:{i}:{attempt}"));
-                placed = Claim(cx, cy, len / 2, len / 2);
+                placed = Claim(cx, cy, claimHalf, claimHalf);
             }
             if (!placed)
             {
@@ -243,8 +246,8 @@ public static class SurfaceLayout
                     AddClampedSpan(walls, f, cx, cy, len, horizontal, hull: false);
                     AddClampedSpan(walls, f, cx, cy, len * 0.7, !horizontal, hull: false);
                     break;
-                case 2: // a small BUILDING — four walls, a doorway you walk through, and rooms inside
-                    AddBuilding(walls, f, cx, cy, len, len * 0.8, bodyId, $"bld:{i}");
+                case 2: // a real BUILDING — thick walls, a doorway through the mass, seeded shape and angle
+                    AddStructure(walls, f, cx, cy, len, bodyId, $"bld:{i}");
                     break;
                 default: // a small solid slab (an ancient spur / a plinth)
                     AddClampedBox(walls, f, cx - 1.4, cy - 1.4, cx + 1.4, cy + 1.4, hull: true);
@@ -402,6 +405,36 @@ public static class SurfaceLayout
             double y2 = System.Math.Min(f.LandingBandY - 2, cy + len / 2);
             walls.Add(new(cx, y1, cx, y2, hull));
         }
+    }
+
+    /// <summary>#563 · Place one of <see cref="SurfaceStructure"/>'s buildings on the ground: seeded shape,
+    /// angle, door count and wall thickness, clamped so the whole footprint stays inside the safe span (a
+    /// building clipped by the edge lane would lose the face its doorway was on and become a solid block).
+    ///
+    /// <para>Thickness is seeded 1.2..2.4 du — the owner's Greenland longhouse: on a cold world you build
+    /// out of what is under your boots, and if the wall is also holding an atmosphere you build it fat.</para></summary>
+    private static void AddStructure(System.Collections.Generic.List<Wall> walls, in Field f,
+        double cx, double cy, double size, string bodyId, string tag)
+    {
+        // 1.6..3.0 du of piled regolith — the owner's Greenland longhouse, and comfortably above the
+        // captain's own 1.4 du width so the hatching never emits a segment shorter than a body.
+        double thickness = 1.6 + (1.4 * Frac(bodyId, $"{tag}:thick"));
+        double w = System.Math.Clamp(size * 1.4, 12, 20);
+        double h = System.Math.Clamp(size * 1.1, 10, 16);
+
+        // Keep the whole thing (walls included) off the edge lanes.
+        double halfW = (w / 2) + thickness, halfH = (h / 2) + thickness;
+        cx = System.Math.Clamp(cx, f.LeftX + EdgeMargin + halfW, f.RightX - EdgeMargin - halfW);
+        cy = System.Math.Clamp(cy, f.BottomY + 2 + halfH, f.LandingBandY - 2 - halfH);
+
+        var spec = new SurfaceStructure.Spec(
+            cx, cy, w, h,
+            AngleRad: Frac(bodyId, $"{tag}:angle") * System.Math.Tau,
+            Doors: 1 + Face(bodyId, $"{tag}:doors", 2),
+            WallThickness: thickness,
+            Shape: (SurfaceStructure.Footprint)Face(bodyId, $"{tag}:shape", 3));
+
+        walls.AddRange(SurfaceStructure.Build(spec).Walls);
     }
 
     /// <summary>
