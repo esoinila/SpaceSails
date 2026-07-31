@@ -3540,6 +3540,36 @@
     font-size: 0.78rem;
 }
 
+/* #563 — the map-just-grew card. Same frame as the first-ground lesson (they are siblings: the two things
+   a captain is told once and never again), but keyed cold-green rather than amber, because this one is not
+   a warning — it is the game handing you a bigger world than you thought you had. */
+.ground-grows-card {
+    max-width: min(40rem, 94vw);
+    border-color: rgba(120, 210, 180, 0.5);
+    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 210, 180, 0.18);
+}
+
+.ground-grows-art {
+    display: block;
+    width: 100%;
+    border-radius: 0.25rem;
+    margin: 0.5rem 0 0.7rem;
+    border: 1px solid rgba(120, 210, 180, 0.28);
+}
+
+.ground-grows-beats {
+    margin: 0.9rem 0 0.2rem;
+    padding-left: 1.1rem;
+    text-align: left;
+    color: rgba(226, 238, 250, 0.88);
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+.ground-grows-beats li + li {
+    margin-top: 0.55rem;
+}
+
 /* #488 — the derelict's decision card. Reuses the treasure-map card frame (same "an artifact, full
    screen" idiom) and adds the finding picker: the causes your evidence actually supports, one of which
    you put your name to before the report will file. */

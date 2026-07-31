@@ -267,6 +267,13 @@ public sealed record ProgressSection
     /// again (#292's ruling), even across reloads. Defaults false, so a pre-#440 file — a captain who has
     /// already walked a dozen moons — gets it once on their next trip down and then never more.</summary>
     public bool GroundLessonSeen { get; init; }
+
+    /// <summary>#563 — true once this captain has been shown <see cref="GroundGrows"/>, the card that fires
+    /// the first time forcing something open makes the map itself bigger. Same law as
+    /// <see cref="GroundLessonSeen"/>: it greets the truly new and never again, because after one showing
+    /// the toast says everything a card would. Defaults false, so a captain who has already forced a door
+    /// before this existed gets the explanation once on their next one.</summary>
+    public bool GroundGrewSeen { get; init; }
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──
