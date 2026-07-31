@@ -140,7 +140,11 @@ public class SurfaceReachabilityTests
     /// <para>50 du² is comfortably above the largest fixture and far below anything anyone would call a
     /// room, so this catches the failure that matters — a seeded feature walling off a piece of the FIELD —
     /// without failing on every slab in the solar system.</para></summary>
-    private const int MaxFixtureInteriorCells = 200;
+    /// <para>TIGHTENED when buildings arrived. 200 was sized against fixture interiors alone, the largest
+    /// of which is ~52 cells — but a small building room is around 100, so a genuinely sealed room would
+    /// have slipped under the old bar and the audit would have shrugged at exactly the new failure mode.
+    /// 80 sits above every fixture and below the smallest room worth calling one.</para>
+    private const int MaxFixtureInteriorCells = 80;
 
     /// <summary>Flood the field from the spawn over the same grid the A* audit uses, then measure what the
     /// flood could not touch: the largest connected pocket of standable-but-unreachable ground, and a point
