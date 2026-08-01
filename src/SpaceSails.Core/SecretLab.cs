@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace SpaceSails.Core;
 
@@ -161,6 +161,29 @@ public static class SecretLab
     /// <summary>Whether a probe of (<paramref name="squareX"/>, <paramref name="squareY"/>) is close enough to
     /// the hidden door to shriek a PROXIMITY hint (the detector "very close") — the door's own square, or any
     /// of the eight around it. The exact-square case (a reveal) is <see cref="IsDoorSquare"/>.</summary>
+    /// <summary>#585 · The ground the hidden chamber will occupy once it is forced open — centre and a
+    /// rotation-proof radius, in the shape every other placer on this ground speaks.
+    ///
+    /// <para>The lab is APPENDED at runtime, from the door outward toward the field's centre. Nothing that
+    /// lays buildings knew that, so once the grounds gained real structures a hut could be standing exactly
+    /// where the chamber grows — and the lab would open into somebody else's wall. That is the identical
+    /// failure the away-expedition rooms hit, reported by their guard as "a region wall crosses the base
+    /// geography"; this is the same fix, applied before the owner goes looking for a lab rather than after
+    /// he finds one wedged inside a ruin.</para>
+    ///
+    /// <para>Reserved on EVERY body, whether or not this one hides a lab: the door spot is seeded the same
+    /// way regardless, so keeping that patch of deep field clear costs one building's worth of ground and
+    /// removes the whole class.</para></summary>
+    public static (double X, double Y, double R) ChamberFootprint(string bodyId, in SurfaceLayout.Field field)
+    {
+        Placement p = For(bodyId, field, forcePresent: true);
+        double midX = (field.LeftX + field.RightX) / 2.0;
+        double dir = p.DoorX <= midX ? 1.0 : -1.0;
+        double cx = p.DoorX + (dir * (RoomDepth / 2.0));
+        double radius = Math.Sqrt(((RoomDepth / 2.0) * (RoomDepth / 2.0)) + ((RoomWidth / 2.0) * (RoomWidth / 2.0)));
+        return (cx, p.DoorY, radius);
+    }
+
     public static bool IsProximitySquare(in Placement p, int squareX, int squareY) =>
         System.Math.Abs(squareX - p.DoorSquareX) <= 1 && System.Math.Abs(squareY - p.DoorSquareY) <= 1;
 

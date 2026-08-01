@@ -60,6 +60,26 @@ public partial class Map
     /// the tab bar, chip clicks and bridge-seat E-interactions (future PR-14) all funnel here.</summary>
     private void SwitchDesk(ShipDesk desk)
     {
+        // #585 · THE SHIP'S DESKS ARE ON THE SHIP. Owner, on the regolith: "no more quick buttons when on
+        // surface ... we don't just jump to nav of the ship from there", and the rule that follows from it —
+        // "we have to go back with shuttle from the shuttle or with other shuttle".
+        //
+        // He is right and it is the same law as everything else fixed today: the captain is in a suit on a
+        // moon and the hull is docked and empty somewhere above. Nav, sensors, the war room, the captain's
+        // desk — none of them have a person sitting at them, and a number key that teleports you to the helm
+        // makes the excursion a menu you can leave at any time. The walk back to the tube is the ONLY exit,
+        // which is what gives the air, the pack and the long way home any weight at all.
+        //
+        // Gated HERE because this method is documented as the one place a desk switch happens: number keys,
+        // the tab bar, the chips and the seat interactions all funnel through it. Nothing new can leak past
+        // by forgetting to ask.
+        if (_surface is not null && desk != ShipDesk.Deck)
+        {
+            ShowPulseMessage(
+                "🚫 That console is aboard the ship, and you are not. The way back is the shuttle.");
+            return;
+        }
+
         if (desk == ShipDesk.Deck)
         {
             if (!_deckMode)

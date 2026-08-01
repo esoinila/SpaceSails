@@ -19,7 +19,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves,
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, ShelterDoor, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves,
         // #563 · The outpost hut: its dogged hatch (force it, the room appends), the ammunition locker
         // inside, and whoever's effects are still on the floor.
         OutpostDoor, OutpostCache, OutpostEffects,
@@ -101,8 +101,10 @@ public sealed class DeckPlan
     /// for the docked complex's roaming NPC (PR-F: a station patron on a sim-time rota, index 8), then
     /// to 10 for the bar's barkeep pacing behind the counter (#247, index 9). Lane-1 (owner, 2026-07-18):
     /// the surface tide needs room for the 3 crew + the engine ceiling on live Reevers (24), so the
-    /// buffer grows to 27 — only the surface plan ever fills that far; the ship/complex still fill ≤10.</summary>
-    public const int MaxDroids = 27;
+    /// buffer grows to 27 — only the surface plan ever fills that far; the ship/complex still fill ≤10.
+    /// #583: and four more for a repo crew that lands on the same ground (CollectorLanding.PartySize is
+    /// clamped to 4), which is a DIFFERENT kind of figure sharing the same buffer — 31.</summary>
+    public const int MaxDroids = 31;
 
     public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
 

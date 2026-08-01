@@ -46,6 +46,15 @@ public partial class Map
     // the point-of-no-return warning can be reached in a short walk rather than a six-minute one.
     private double? _airCheatSeconds;
 
+    // #585 dev cheat (?body=ID): which body ?land=1 should put the shuttle on, regardless of what happens to
+    // be nearest. Without it only the berth's closest moon was ever reachable by URL.
+    private string? _forcedLandingBodyId;
+
+    // #583 dev cheat (?collectors=N): force a repo boat down N seconds into the excursion, whatever the heat
+    // gauge says. The scene is deliberately rare and mid-mission, which makes it near-impossible to reach on
+    // purpose — and a scene nobody can reach on demand is a scene that ships broken.
+    private double? _collectorCheatSeconds;
+
     /// <summary>Compose the hut onto the surface deck: the dogged hatch while it stands, the whole room once
     /// it has been forced. Called from <c>RebuildSurfaceDeck</c>, so it survives every rebuild (a dig, a
     /// lifted cache) exactly like the lab does.</summary>

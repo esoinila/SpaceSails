@@ -57,7 +57,13 @@ public static class SurfaceLayout
         // #573 · The middle of each building this ground laid, in the same order they were built — so a
         // caller can put something INSIDE one. Without this the client knew a ruin's walls and had no idea
         // where its floor was.
-        IReadOnlyList<(double X, double Y)>? BuildingCentres = null);
+        IReadOnlyList<(double X, double Y)>? BuildingCentres = null,
+        // #585 · How much ground each building actually occupies (centre + rotation-proof radius), in the
+        // same order. Owner, on a site whose structures had merged: "check this structure out... it
+        // functions but is kind of funny". Publishing the real footprint is what lets a guard ask the plan
+        // whether anything is standing inside anything else, instead of the guard GUESSING a radius — which
+        // is just the same two-sources-of-truth bug wearing a test's clothes.
+        IReadOnlyList<(double X, double Y, double R)>? BuildingFootprints = null);
 
     /// <summary>An opening through a building's wall, given as the segment across it so a caller can hang a
     /// real door on it rather than guessing which way the passage runs.</summary>
@@ -83,14 +89,34 @@ public static class SurfaceLayout
 
     /// <summary>Lay out one landable body's ground. Miranda and Luna are authored; everything else is
     /// seeded deterministically from its id, so no two grounds are the same by construction.</summary>
-    public static Plan For(string bodyId, in Field field) => (bodyId ?? "") switch
+    public static Plan For(string bodyId, in Field field) => For(bodyId, field, null);
+
+    /// <summary>#585 · WHERE THE SHELTERS ALREADY STAND, so nothing else is laid on top of one.
+    ///
+    /// <para>Owner, on a site where the buildings had grown together: <i>"check this structure out... it
+    /// functions but is kind of funny"</i>. It was funny because THREE placers wrote into this one field and
+    /// none could see the others — the seeded features kept a claim ledger, the outlying buildings kept a
+    /// separate and much weaker one, and <see cref="SurfaceShelter"/> kept none at all, so a life-critical
+    /// pressure drum could be dropped straight through somebody's hut.</para>
+    ///
+    /// <para>The shelters are claimed FIRST and are never yielded, because a shelter is the answer to the
+    /// air mechanic: a hut that has to move is a cosmetic loss, a shelter that has to move is a captain who
+    /// dies looking for it. Everything else places around them.</para></summary>
+    private static System.Collections.Generic.List<(double X, double Y, double R)> ShelterKeepOuts(
+        string bodyId, string? siteSalt, in Field field)
     {
-        "miranda" => Miranda(field),
-        "luna" => Luna(field),
-        // #370: an away-expedition rock's id carries its kind — route straight to the authored site ground.
-        _ when ExpeditionSite.TryParseKind(bodyId, out ExpeditionSiteKind kind) => ForExpedition(kind, field),
-        _ => Seeded(bodyId ?? "", field),
-    };
+        var list = new System.Collections.Generic.List<(double X, double Y, double R)>();
+        foreach (SurfaceStructure.Spec spec in SurfaceShelter.SpecsFor(bodyId ?? "", siteSalt ?? "", field))
+        {
+            list.Add((spec.CentreX, spec.CentreY, SurfaceStructure.KeepOutRadius(spec)));
+        }
+
+        // #585 · And the hidden lab's chamber, which is appended at runtime from a seeded door. Reserved on
+        // every body whether or not this one hides one — the door spot is seeded the same way regardless, so
+        // it costs a building's worth of ground and means a lab can never open into somebody's wall.
+        list.Add(SecretLab.ChamberFootprint(bodyId ?? "", field));
+        return list;
+    }
 
     /// <summary>#320 · Lay out a body's ground for a chosen LANDING SITE (<see cref="LandingSites"/>). An
     /// EMPTY salt is the body's canon site 0 — the authored/seeded signature, byte-for-byte the same ground
@@ -99,10 +125,42 @@ public static class SurfaceLayout
     /// visibly different wing/feature layout on the SAME body — different site, different deck-plan. An
     /// away-expedition rock keeps its authored per-kind ground regardless of salt (those gigs are single
     /// authored sites, never a seeded board).</summary>
-    public static Plan For(string bodyId, in Field field, string? siteSalt) =>
-        string.IsNullOrEmpty(siteSalt) || ExpeditionSite.TryParseKind(bodyId, out _)
-            ? For(bodyId, field)
-            : Seeded($"{bodyId ?? ""}~{siteSalt}", field);
+    public static Plan For(string bodyId, in Field field, string? siteSalt)
+    {
+        // #585: the shelters for THIS body and THIS site — computed from the real (bodyId, siteSalt) pair,
+        // never from the combined seeded key, because that pair is what SurfaceShelter itself is keyed on.
+        // Getting this wrong would keep the ground clear of shelters that are somewhere else entirely.
+        // #585 · An away gig is a SINGLE authored site — "ExpeditionSite_IgnoresSalt" is a standing law — so
+        // its keep-outs are taken with an EMPTY salt too. Handing the real salt in would have made the ground
+        // move with it, quietly breaking that law the moment these grounds gained buildings. The guard caught
+        // it; this is what it was guarding.
+        // #585 · ONE EXPEDITION GROUND, ONE ANSWER. This briefly handed shelter keep-outs down here, and the
+        // standing guards caught it immediately: the PUBLIC ForExpedition(kind, field) — which tests, the
+        // region builder and the labs all call — takes no keep-outs, so the routed path was building a
+        // DIFFERENT ground from the one everything else measured. Two sources of truth for one ground, which
+        // is the exact failure this whole week has been about, introduced while fixing it.
+        //
+        // An away gig is a single authored site keyed on its KIND, and a kind cannot name a body, so it
+        // cannot know where that body's shelters stand. So it reserves what it CAN know — the rooms its own
+        // sealed doors will open (see WithRoomsToCome) — and nothing else. The shelter overlap on these
+        // grounds is covered by the audit instead.
+        if (ExpeditionSite.TryParseKind(bodyId, out ExpeditionSiteKind kind))
+        {
+            return ForExpedition(kind, field);
+        }
+
+        var keepOut = ShelterKeepOuts(bodyId ?? "", siteSalt, field);
+        if (string.IsNullOrEmpty(siteSalt))
+        {
+            return (bodyId ?? "") switch
+            {
+                "miranda" => Miranda(field, keepOut),
+                "luna" => Luna(field, keepOut),
+                _ => Seeded(bodyId ?? "", field, keepOut),
+            };
+        }
+        return Seeded($"{bodyId ?? ""}~{siteSalt}", field, keepOut);
+    }
 
     /// <summary>A stable order-independent hash of a plan's wall set — the test's "Luna ≠ Miranda"
     /// ground-truth handle (owner: the walls of buildings must not be the same layout), and a cheap way
@@ -132,13 +190,14 @@ public static class SurfaceLayout
     // ── Miranda — THE MONOLITH maze (canon, owner's #313). Reproduced exactly from the original
     //    hand-built geometry: concentric gapped corridor rows the Old Ones exploit to corner a dawdler,
     //    two spurs, and the freestanding slab at the heart. This is the ground that must NOT change. ──
-    private static Plan Miranda(in Field f)
+    private static Plan Miranda(in Field f, System.Collections.Generic.List<(double X, double Y, double R)> keepOut)
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         double left = ax - 18, right = ax + 18;
         var walls = new System.Collections.Generic.List<Wall>();
         var doorways = new System.Collections.Generic.List<Doorway>();
         var centres = new System.Collections.Generic.List<(double X, double Y)>();
+        var footprints = new System.Collections.Generic.List<(double X, double Y, double R)>();
 
         AddGappedRow(walls, left, right, ay + 12, ax + 10, 3);
         AddGappedRow(walls, left, right, ay + 6, ax - 11, 3);
@@ -156,10 +215,10 @@ public static class SurfaceLayout
         //
         // The maze itself is untouched — it is canon and stays exactly as authored. These stand OUT in the
         // empty flanks and shallows the maze never occupied, which is most of the field.
-        AddOutlyingStructures(walls, doorways, centres, f, "miranda", ax, ay);
+        AddOutlyingStructures(walls, doorways, centres, f, "miranda", ax, ay, keepOut, footprints);
 
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, "▮ THE MONOLITH") };
-        return new Plan("THE MONOLITH MAZE", walls, marks, doorways, centres);
+        return new Plan("THE MONOLITH MAZE", walls, marks, doorways, centres, footprints);
     }
 
     // ── Luna — the MASS-DRIVER RUINS (worldbuilding §1: the lunar mass drivers). A visibly different
@@ -169,12 +228,13 @@ public static class SurfaceLayout
     //    block at the deep head, and a scatter of rectangular STRIP FOUNDATIONS (the factory footings)
     //    that read as strips, not cells. The rails sit in the central band; the field's flanks stay open
     //    regolith, so combing the ruins is a very different walk from Miranda's concentric maze. ──
-    private static Plan Luna(in Field f)
+    private static Plan Luna(in Field f, System.Collections.Generic.List<(double X, double Y, double R)> keepOut)
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         var walls = new System.Collections.Generic.List<Wall>();
         var doorways = new System.Collections.Generic.List<Doorway>();
         var centres = new System.Collections.Generic.List<(double X, double Y)>();
+        var footprints = new System.Collections.Generic.List<(double X, double Y, double R)>();
 
         // The twin launch rail: two parallel lines running up-field from the deep head, each broken into
         // three segments with OFFSET gaps so the lanes cross-connect (a walker weaves through the breaks).
@@ -197,14 +257,14 @@ public static class SurfaceLayout
         AddStrip(walls, f, cx: ax + 14, cy: ay + 14, len: 10, gap: 3);
         AddStrip(walls, f, cx: ax - 13, cy: ay + 20, len: 9, gap: 2.5);
 
-        AddOutlyingStructures(walls, doorways, centres, f, "luna", ax, ay);   // #563: the authored ground gets buildings too
+        AddOutlyingStructures(walls, doorways, centres, f, "luna", ax, ay, keepOut, footprints);   // #563: the authored ground gets buildings too
 
         var marks = new System.Collections.Generic.List<Landmark>
         {
             new(ax - 4, ay - 9, "⛓ MASS-DRIVER MUZZLE"),
             new(ax + 14, ay + 17, "▭ STRIP FOUNDATIONS"),
         };
-        return new Plan("THE MASS-DRIVER RUINS", walls, marks, doorways, centres);
+        return new Plan("THE MASS-DRIVER RUINS", walls, marks, doorways, centres, footprints);
     }
 
     // ── Every other landable body — a SEEDED signature. A deterministic scatter of ruin blocks and
@@ -212,12 +272,13 @@ public static class SurfaceLayout
     //    outdoors differs by construction while always leaving the flanks open (pathability by design).
     //    Miranda and Luna never reach here; this serves phobos, europa, ganymede, callisto, titan,
     //    enceladus and any future landable body. ──
-    private static Plan Seeded(string bodyId, in Field f)
+    private static Plan Seeded(string bodyId, in Field f, System.Collections.Generic.List<(double X, double Y, double R)> keepOut)
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         var walls = new System.Collections.Generic.List<Wall>();
         var doorways = new System.Collections.Generic.List<Doorway>();
         var centres = new System.Collections.Generic.List<(double X, double Y)>();
+        var footprints = new System.Collections.Generic.List<(double X, double Y, double R)>();
 
         // The safe span features may occupy — inside the kept-open edge lanes.
         double minX = f.LeftX + EdgeMargin, maxX = f.RightX - EdgeMargin;
@@ -257,9 +318,33 @@ public static class SurfaceLayout
             return true;
         }
 
+        // #585 · RECORDING IS NOT ASKING. Reserve puts a footprint in the ledger unconditionally, for things
+        // that are ALREADY STANDING and are not up for negotiation.
+        //
+        // The distinction cost a site. The shelters were pre-claimed through Claim() above — which REJECTS on
+        // overlap — so two shelters that are legally placed (52 du apart, their own rule) but whose square
+        // claim boxes happened to touch knocked each other out: the second Claim returned false and never
+        // recorded, leaving that shelter invisible to the ledger and the ground under it free for a building.
+        // The audit caught exactly that on luna/The Shadowed Rille, where a hut ended up 21.5 du from a
+        // shelter needing 31.3.
+        //
+        // Claim() asks "may I build here?". Reserve() says "something is here." Using the asking one for the
+        // saying job is the same category error as sharing a console kind between two different doors.
+        void Reserve(double cx, double cy, double halfW, double halfH) =>
+            claimed.Add((cx - halfW - Elbow, cy - halfH - Elbow, cx + halfW + Elbow, cy + halfH + Elbow));
+
         // The deep landmark's own fixture is laid AFTER this loop but stands on real ground. Claim it first,
         // or a building can be seeded around the anchor and then have the fixture dropped across its door.
         Claim(ax, ay, 2, 2);
+
+        // #585 · AND THE SHELTERS, which are laid by SurfaceShelter on a completely separate pass and were
+        // therefore invisible to this ledger — so a seeded feature could be dropped straight through a
+        // pressure drum. They are claimed first and never yielded: a hut that has to move costs nothing, a
+        // shelter that has to move costs a captain who walked to where the beacon said it was.
+        foreach ((double sx, double sy, double sr) in keepOut ?? [])
+        {
+            Reserve(sx, sy, sr, sr);
+        }
 
         for (int i = 0; i < features; i++)
         {
@@ -273,13 +358,31 @@ public static class SurfaceLayout
             // the field away; a handful of retries keeps the ground full while still never overlapping.
             // Buildings are bigger than `len` (SurfaceStructure clamps them up to a workable size) and
             // carry thick walls, so they claim a footprint sized like the thing that will actually be laid.
-            double claimHalf = shape == 2 ? 13.0 : len / 2;
-            bool placed = Claim(cx, cy, claimHalf, claimHalf);
-            for (int attempt = 1; attempt < 5 && !placed; attempt++)
+            // #585: a BUILDING claims the footprint it will really stand on — the clamped centre and the
+            // rotation-proof radius — instead of a flat 13 taken on trust. Rubble keeps its own span.
+            bool placed;
+            if (shape == 2)
             {
-                cx = Lerp(minX, maxX, Frac(bodyId, $"x:{i}:{attempt}"));
-                cy = Lerp(minY, maxY, Frac(bodyId, $"y:{i}:{attempt}"));
+                (double bx, double by, double br) = StructureFootprint(f, cx, cy, len, bodyId, $"bld:{i}");
+                placed = Claim(bx, by, br, br);
+                for (int attempt = 1; attempt < 5 && !placed; attempt++)
+                {
+                    cx = Lerp(minX, maxX, Frac(bodyId, $"x:{i}:{attempt}"));
+                    cy = Lerp(minY, maxY, Frac(bodyId, $"y:{i}:{attempt}"));
+                    (bx, by, br) = StructureFootprint(f, cx, cy, len, bodyId, $"bld:{i}");
+                    placed = Claim(bx, by, br, br);
+                }
+            }
+            else
+            {
+                double claimHalf = len / 2;
                 placed = Claim(cx, cy, claimHalf, claimHalf);
+                for (int attempt = 1; attempt < 5 && !placed; attempt++)
+                {
+                    cx = Lerp(minX, maxX, Frac(bodyId, $"x:{i}:{attempt}"));
+                    cy = Lerp(minY, maxY, Frac(bodyId, $"y:{i}:{attempt}"));
+                    placed = Claim(cx, cy, claimHalf, claimHalf);
+                }
             }
             if (!placed)
             {
@@ -296,7 +399,7 @@ public static class SurfaceLayout
                     AddClampedSpan(walls, f, cx, cy, len * 0.7, !horizontal, hull: false);
                     break;
                 case 2: // a real BUILDING — thick walls, a doorway through the mass, seeded shape and angle
-                    AddStructure(walls, doorways, centres, f, cx, cy, len, bodyId, $"bld:{i}");
+                    AddStructure(walls, doorways, centres, f, cx, cy, len, bodyId, $"bld:{i}", footprints);
                     break;
                 default: // a small solid slab (an ancient spur / a plinth)
                     AddClampedBox(walls, f, cx - 1.4, cy - 1.4, cx + 1.4, cy + 1.4, hull: true);
@@ -310,7 +413,7 @@ public static class SurfaceLayout
         AddClampedBox(walls, f, ax - 2, ay - 2, ax + 2, ay + 2, hull: true); // the fixture's own footprint
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, glyph) };
 
-        return new Plan("THE DEEP RUINS", walls, marks, doorways, centres);
+        return new Plan("THE DEEP RUINS", walls, marks, doorways, centres, footprints);
     }
 
     // ── #370 · THE AWAY-EXPEDITION SITES. The special outdoors the owner's away-team gigs park next to
@@ -322,18 +425,80 @@ public static class SurfaceLayout
     /// <summary>Lay out an away-expedition site's ground for its <paramref name="kind"/>. Authored, pure,
     /// and clamped inside the field's safe span exactly like every other scheme, so the way down always
     /// exists and the edge lanes stay open.</summary>
+    /// <summary>#585 · The away-expedition grounds. Owner, after the Miranda rebuild: <i>"we should take
+    /// these upgrades to all our outside scenes now. The biggest is the real spaces with doors... that is
+    /// the place to find stuff. And clues."</i>
+    ///
+    /// <para>These three were exactly where Miranda was two days ago: walls and a landmark, no doorways, no
+    /// buildings, nothing to walk INTO. They are authored grounds, which is precisely why they were missed —
+    /// the same trap as canon site 0, which bypassed the generator and so never received a single one of the
+    /// improvements everything else got (<i>"no real buildings and one-thick walls still"</i>).</para>
+    ///
+    /// <para>Each authored signature is untouched — the henge, the hull, the tomb are canon. The buildings go
+    /// in the empty flanks around them, through the SAME shared ledger, so they cannot grow into the
+    /// signature, into each other, or into a shelter.</para></summary>
     public static Plan ForExpedition(ExpeditionSiteKind kind, in Field field) => kind switch
     {
-        ExpeditionSiteKind.CrashedHull => CrashedHull(field),
-        ExpeditionSiteKind.SealedTunnel => SealedTunnel(field),
-        _ => MysticalRuins(field),
+        ExpeditionSiteKind.CrashedHull => CrashedHull(field, AwayKeepOuts(kind, field)),
+        ExpeditionSiteKind.SealedTunnel => SealedTunnel(field, AwayKeepOuts(kind, field)),
+        _ => MysticalRuins(field, AwayKeepOuts(kind, field)),
     };
 
+    /// <summary>#585 · Everything already spoken for on an away ground, worked out from the KIND alone.
+    ///
+    /// <para>This started as a parameter and the standing guards killed it in one run: the public
+    /// <see cref="ForExpedition"/> is called directly by the tests, the region builder and the labs, so a
+    /// keep-out list handed in only by the routed path meant two callers building two different grounds —
+    /// the very failure this week has been about, committed while fixing it.</para>
+    ///
+    /// <para>The way out is that a kind DOES name its body: an away rock's id is
+    /// <see cref="ExpeditionSite.BodyIdFor"/>, a pure function of the kind. So the ground can look up its own
+    /// shelters and its own hidden chamber without being told, and every caller gets the identical ground.
+    /// One function, one answer, no parameter to forget.</para></summary>
+    private static System.Collections.Generic.List<(double X, double Y, double R)> AwayKeepOuts(
+        ExpeditionSiteKind kind, in Field field)
+    {
+        string rock = ExpeditionSite.BodyIdFor(kind);
+        var all = ShelterKeepOuts(rock, "", field);
+        return WithRoomsToCome(kind, field, all);
+    }
+
+    /// <summary>#585 · The ground an away site's SEALED ROOMS will occupy once they are forced open.
+    ///
+    /// <para>An expedition ground is not finished when this layout returns it: <see cref="ExpeditionRegions"/>
+    /// appends a room behind each sealed door as the captain opens it. Those rooms are laid at fixed places,
+    /// and the moment these grounds gained buildings a building could be standing exactly there — which the
+    /// standing guard reports as <i>"a region wall crosses the base geography"</i>, i.e. a room opening into
+    /// somebody's wall.</para>
+    ///
+    /// <para>So the rooms are reserved BEFORE anything is placed, exactly like the shelters. Same rule as
+    /// everywhere else on this ground: something that will be there is something that is there.</para></summary>
+    private static System.Collections.Generic.List<(double X, double Y, double R)> WithRoomsToCome(
+        ExpeditionSiteKind kind, in Field field,
+        System.Collections.Generic.List<(double X, double Y, double R)>? keepOut)
+    {
+        var all = new System.Collections.Generic.List<(double X, double Y, double R)>(keepOut ?? []);
+        foreach (ExpeditionRegions.SealedDoor door in ExpeditionRegions.AllDoors(kind, field))
+        {
+            ExpeditionRegions.Region room = ExpeditionRegions.ForceOpen(kind, door.Id, field);
+            double cx = (room.MinX + room.MaxX) / 2, cy = (room.MinY + room.MaxY) / 2;
+            double halfW = (room.MaxX - room.MinX) / 2, halfH = (room.MaxY - room.MinY) / 2;
+            all.Add((cx, cy, System.Math.Sqrt((halfW * halfW) + (halfH * halfH))));
+
+            // And the door itself, so nothing is built across the way IN to the room.
+            all.Add((door.X, door.Y, 6.0));
+        }
+        return all;
+    }
+
     // Mystical ruins — a HENGE: a ring of standing-stone slabs around a central altar, with no box maze.
-    private static Plan MysticalRuins(in Field f)
+    private static Plan MysticalRuins(in Field f, System.Collections.Generic.List<(double X, double Y, double R)>? keepOut = null)
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         var walls = new System.Collections.Generic.List<Wall>();
+        var doorways = new System.Collections.Generic.List<Doorway>();
+        var centres = new System.Collections.Generic.List<(double X, double Y)>();
+        var footprints = new System.Collections.Generic.List<(double X, double Y, double R)>();
 
         // Eight standing stones on a circle of radius ~10 du around the anchor (each a small solid slab).
         const int stones = 8;
@@ -350,16 +515,24 @@ public static class SurfaceLayout
         AddClampedBox(walls, f, ax - 1.6, ay - 1.4, ax + 1.6, ay + 1.4, hull: true);
 
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, "⟁ THE STANDING STONES") };
-        return new Plan("THE STANDING STONES", walls, marks);
+        // #585 · REAL SPACES WITH DOORS, out in the flanks the henge never occupied. Owner:
+        // "The biggest is the real spaces with doors... that is the place to find stuff. And clues." An
+        // authored signature is something to LOOK at; a room with a threshold is somewhere to go.
+        AddOutlyingStructures(walls, doorways, centres, f, "expedition:henge", ax, ay, keepOut, footprints);
+
+        return new Plan("THE STANDING STONES", walls, marks, doorways, centres, footprints);
     }
 
     // Crash-landed ship — a long TORN FUSELAGE half-buried up the field: the hull outline as an open box
     // with the port side blown out (the tear you walk in through), plus a few internal ribs. No ring, no
     // rails — reads as a wreck.
-    private static Plan CrashedHull(in Field f)
+    private static Plan CrashedHull(in Field f, System.Collections.Generic.List<(double X, double Y, double R)>? keepOut = null)
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         var walls = new System.Collections.Generic.List<Wall>();
+        var doorways = new System.Collections.Generic.List<Doorway>();
+        var centres = new System.Collections.Generic.List<(double X, double Y)>();
+        var footprints = new System.Collections.Generic.List<(double X, double Y, double R)>();
 
         // The fuselage: a tall open box (deep→shallow), left side torn away (gapSide 2 = left open).
         AddOpenBox(walls, f, cx: ax, cy: ay + 8, w: 9, h: 30, gapSide: 2);
@@ -371,16 +544,24 @@ public static class SurfaceLayout
         AddClampedSpan(walls, f, ax, ay + 20, 6, horizontal: true, hull: false);
 
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 9, "⛢ THE CRASHED HULL") };
-        return new Plan("THE CRASHED HULL", walls, marks);
+        // #585 · REAL SPACES WITH DOORS, out in the flanks the wreck never occupied. Owner:
+        // "The biggest is the real spaces with doors... that is the place to find stuff. And clues." An
+        // authored signature is something to LOOK at; a room with a threshold is somewhere to go.
+        AddOutlyingStructures(walls, doorways, centres, f, "expedition:hull", ax, ay, keepOut, footprints);
+
+        return new Plan("THE CRASHED HULL", walls, marks, doorways, centres, footprints);
     }
 
     // The owner's Fate-system anecdote made ground: a charge arc holed the rock and revealed a SEALED
     // TUNNEL of habitants ejected in a violent event, dead there. Two long parallel tunnel walls run deep
     // from a breach at the top, cross-bulkheads rung between them, and a chamber (the tomb) at the deep end.
-    private static Plan SealedTunnel(in Field f)
+    private static Plan SealedTunnel(in Field f, System.Collections.Generic.List<(double X, double Y, double R)>? keepOut = null)
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         var walls = new System.Collections.Generic.List<Wall>();
+        var doorways = new System.Collections.Generic.List<Doorway>();
+        var centres = new System.Collections.Generic.List<(double X, double Y)>();
+        var footprints = new System.Collections.Generic.List<(double X, double Y, double R)>();
 
         double tunTop = ay + 22, tunDeep = ay - 2;
         double leftWall = ax - 4, rightWall = ax + 4;
@@ -395,7 +576,12 @@ public static class SurfaceLayout
         AddOpenBox(walls, f, cx: ax, cy: ay - 6, w: 12, h: 6, gapSide: 1);
 
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 6, "⌸ THE SEALED TOMB") };
-        return new Plan("THE SEALED TUNNEL", walls, marks);
+        // #585 · REAL SPACES WITH DOORS, out in the flanks the tomb mouth never occupied. Owner:
+        // "The biggest is the real spaces with doors... that is the place to find stuff. And clues." An
+        // authored signature is something to LOOK at; a room with a threshold is somewhere to go.
+        AddOutlyingStructures(walls, doorways, centres, f, "expedition:tomb", ax, ay, keepOut, footprints);
+
+        return new Plan("THE SEALED TUNNEL", walls, marks, doorways, centres, footprints);
     }
 
     // ── Builders. Every span is clamped into the field's safe span so no feature ever intrudes on the
@@ -467,38 +653,56 @@ public static class SurfaceLayout
         System.Collections.Generic.List<Wall> walls,
         System.Collections.Generic.List<Doorway> doorways,
         System.Collections.Generic.List<(double X, double Y)> centres,
-        in Field f, string bodyId, double anchorX, double anchorY)
+        in Field f, string bodyId, double anchorX, double anchorY,
+        System.Collections.Generic.List<(double X, double Y, double R)>? keepOut = null,
+        System.Collections.Generic.List<(double X, double Y, double R)>? footprints = null)
     {
         double minX = f.LeftX + EdgeMargin, maxX = f.RightX - EdgeMargin;
         double minY = f.BottomY + 4, maxY = f.LandingBandY - 6;
         const double ClearOfSignature = 26.0;
 
-        var claimed = new System.Collections.Generic.List<(double X, double Y)>();
+        // #585 · THE LEDGER THAT KNOWS ABOUT EVERYTHING. Owner, on a Miranda site: "check this structure
+        // out... it functions but is kind of funny" — a shelter drum, an outlying hut and a maze fixture had
+        // grown into one accidental mega-complex, with doorways opening onto another building's solid mass.
+        //
+        // Two mistakes, both here. This kept its OWN claim list, so it could not see the shelters at all.
+        // And it tested a bare 30 du between CENTRES, which is only honest for a circle: AddStructure lays a
+        // freely-rotated box up to 20 x 16 with walls up to 3 du thick, which sweeps a radius near 16 — so
+        // two buildings 30 du apart genuinely overlap, and the generator was doing what it was told.
+        //
+        // Now it claims real radii (SurfaceStructure.KeepOutRadius, right at every angle) in a ledger that
+        // starts with the shelters already in it, plus a little elbow so a wall never lands on a doorway.
+        const double Elbow = 1.5;
+        var claimed = new System.Collections.Generic.List<(double X, double Y, double R)>(keepOut ?? []);
         int placed = 0;
 
-        for (int i = 0; i < 14 && placed < 4; i++)
+        for (int i = 0; i < 24 && placed < 4; i++)
         {
             double cx = Lerp(minX, maxX, Frac(bodyId, $"outly:x:{i}"));
             double cy = Lerp(minY, maxY, Frac(bodyId, $"outly:y:{i}"));
+            double size = 8 + (4 * Frac(bodyId, $"outly:size:{i}"));
 
-            // Never near the signature, and never on top of another building.
+            // The spot and radius this building will ACTUALLY occupy, edge clamp included.
+            (cx, cy, double radius) = StructureFootprint(f, cx, cy, size, bodyId, $"outly:{i}");
+
+            // Never near the signature, and never on top of ANYTHING already standing.
             if (System.Math.Sqrt(((cx - anchorX) * (cx - anchorX)) + ((cy - anchorY) * (cy - anchorY))) < ClearOfSignature)
             {
                 continue;
             }
             bool clash = false;
-            foreach ((double px, double py) in claimed)
+            foreach ((double px, double py, double pr) in claimed)
             {
-                clash |= System.Math.Sqrt(((cx - px) * (cx - px)) + ((cy - py) * (cy - py))) < 30.0;
+                double gap = System.Math.Sqrt(((cx - px) * (cx - px)) + ((cy - py) * (cy - py)));
+                clash |= gap < radius + pr + Elbow;
             }
             if (clash)
             {
                 continue;
             }
 
-            claimed.Add((cx, cy));
-            AddStructure(walls, doorways, centres, f, cx, cy,
-                8 + (4 * Frac(bodyId, $"outly:size:{i}")), bodyId, $"outly:{i}");
+            claimed.Add((cx, cy, radius));
+            AddStructure(walls, doorways, centres, f, cx, cy, size, bodyId, $"outly:{i}", footprints);
             placed++;
         }
     }
@@ -509,11 +713,34 @@ public static class SurfaceLayout
     ///
     /// <para>Thickness is seeded 1.2..2.4 du — the owner's Greenland longhouse: on a cold world you build
     /// out of what is under your boots, and if the wall is also holding an atmosphere you build it fat.</para></summary>
+    /// <summary>#585 · Where a structure of this size will ACTUALLY end up, and how much room it will take.
+    ///
+    /// <para>The last hiding place of the same bug. <see cref="AddStructure"/> clamps its centre inward so
+    /// the walls stay off the edge lanes — and it did that AFTER the caller had already claimed the
+    /// unclamped spot. So a building seeded near the rim was claimed in one place and built in another, and
+    /// the ledger that was supposed to keep buildings apart was recording a position nothing stood at.</para>
+    ///
+    /// <para>Both placers now claim what this returns, so the ledger and the ground agree.</para></summary>
+    private static (double X, double Y, double R) StructureFootprint(
+        in Field f, double cx, double cy, double size, string bodyId, string tag)
+    {
+        double thickness = 1.6 + (1.4 * Frac(bodyId, $"{tag}:thick"));
+        double w = System.Math.Clamp(size * 1.4, 12, 20);
+        double h = System.Math.Clamp(size * 1.1, 10, 16);
+        double halfW = (w / 2) + thickness, halfH = (h / 2) + thickness;
+
+        double x = System.Math.Clamp(cx, f.LeftX + EdgeMargin + halfW, f.RightX - EdgeMargin - halfW);
+        double y = System.Math.Clamp(cy, f.BottomY + 2 + halfH, f.LandingBandY - 2 - halfH);
+        double radius = System.Math.Sqrt(((w / 2) * (w / 2)) + ((h / 2) * (h / 2))) + thickness;
+        return (x, y, radius);
+    }
+
     private static void AddStructure(
         System.Collections.Generic.List<Wall> walls,
         System.Collections.Generic.List<Doorway> doorways,
         System.Collections.Generic.List<(double X, double Y)> centres,
-        in Field f, double cx, double cy, double size, string bodyId, string tag)
+        in Field f, double cx, double cy, double size, string bodyId, string tag,
+        System.Collections.Generic.List<(double X, double Y, double R)>? footprints = null)
     {
         // 1.6..3.0 du of piled regolith — the owner's Greenland longhouse, and comfortably above the
         // captain's own 1.4 du width so the hatching never emits a segment shorter than a body.
@@ -535,6 +762,7 @@ public static class SurfaceLayout
 
         SurfaceStructure.Built built = SurfaceStructure.Build(spec);
         centres.Add((spec.CentreX, spec.CentreY));
+        footprints?.Add((spec.CentreX, spec.CentreY, SurfaceStructure.KeepOutRadius(spec)));
         walls.AddRange(built.Walls);
         foreach (SurfaceStructure.Doorway d in built.Doorways)
         {

@@ -408,6 +408,11 @@ public partial class Map
             case DeckPlan.ConsoleKind.WreckPlacard:
                 ReadDamageControlPlacard(); // #488: where the valves are, told at the lock
                 break;
+            case DeckPlan.ConsoleKind.ShelterDoor:
+                // #585: a shelter door is a door, not a ride home. It has already cycled for you (proximity
+                // opens it, the same as the ship's); pressing [E] on it says so and does nothing else.
+                ShowPulseMessage(SurfaceShelter.DoorPressLine);
+                break;
             case DeckPlan.ConsoleKind.SurfaceAirlock:
                 LiftOffFromSurface();
                 break;
