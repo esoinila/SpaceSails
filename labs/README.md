@@ -415,6 +415,23 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     it silently never fires. The lesson: *a rule written as its answer stops being true the day the geometry
     moves.* Wired into CI as `HullVentingTests`.
 
+43. [**What is actually on a landing site?**](43-miranda-sites/README.md) — measures the ground a moon
+    generates, and draws it, because a descent will not render in an automated browser tab. Written when the
+    owner found Miranda's canon site to be the *thinnest* ground on the moon.
+
+44. [**A lab about the lab**](44-a-lab-about-the-lab/README.md) — renders one underground floor of the Hive
+    and washes it with everywhere the captain can actually stand, so a sealed room is an unwashed island with
+    a red cross in it. Written after #587: a handful of rooms drawn, offering a console, and unenterable on 35
+    of the 94 floors. The A\* audit **found** it the day the Hive shipped and could not **explain** it — it
+    prints coordinates, and a coordinate does not tell you which wall put it there, so the evening that
+    followed was one build at a time. The cause was one wall lying across two mouths on the spine's top face,
+    which this lab shows at a glance: on the pre-fix generator luna B1 renders with **0** wash runs inside the
+    right-hand rib against **88** after, and the lift alcove **0** against **8**. Reads the shipping objects
+    only — Core's generator and the CLIENT's own collision field, because #587 was precisely a mismatch
+    between the walls that are drawn and the walls that are walked. The lesson: *an audit that names a
+    coordinate tells you where to start looking; one that draws the floor tells you what to fix* — detection
+    and diagnosis are two different tools, and a project with only one keeps paying for the other.
+
 ## Framing rule
 
 Standard physics is presented as standard; Curtis is the reference. The EU-flavored lessons
