@@ -377,31 +377,40 @@ public static class MoonSurface
         // The door is an actual DeckPlan.Door hung on the opening SurfaceStructure hands back — which is why
         // that returns the doorway as a segment rather than a midpoint: a point cannot say which way a
         // passage runs, and a door needs to know.
-        SurfaceStructure.Spec shelter = SurfaceShelter.SpecFor(bodyId, siteSalt, field);
-        SurfaceStructure.Built built = SurfaceStructure.Build(shelter);
-        foreach (SurfaceLayout.Wall w in built.Walls)
+        // #573 · EVERY shelter, not just the first. THE MAP LIED, and this was why: SurfaceShelter grew
+        // from one shelter to several (SpecsFor), the tracker beacons were switched to show all of them, and
+        // THIS — the code that actually builds them — was left calling SpecFor and laying exactly one. So
+        // two to four rings on the fan pointed at buildings that had never been built, including one the
+        // owner was standing directly on top of.
+        //
+        // Same shape as the field-envelope drift earlier today: two places that had to agree, only one of
+        // them updated. The fix here is that there is now ONE loop, and the beacons read the same list.
+        foreach (SurfaceStructure.Spec shelter in SurfaceShelter.SpecsFor(bodyId, siteSalt, field))
         {
-            walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, false, IsStone: true));
+            SurfaceStructure.Built built = SurfaceStructure.Build(shelter);
+            foreach (SurfaceLayout.Wall w in built.Walls)
+            {
+                walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, false, IsStone: true));
+            }
+            foreach (SurfaceStructure.Doorway d in built.Doorways)
+            {
+                doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2));
+                consoles.Add(new(DeckPlan.ConsoleKind.SurfaceAirlock,
+                    (float)d.CentreX, (float)d.CentreY, SurfaceShelter.DoorLabel));
+            }
+            consoles.Add(new(DeckPlan.ConsoleKind.ShelterTank,
+                (float)shelter.CentreX, (float)shelter.CentreY, SurfaceShelter.TankLabel));
+            consoles.Add(new(DeckPlan.ConsoleKind.ShelterLocker,
+                (float)shelter.CentreX, (float)(shelter.CentreY - 5.5), SurfaceShelter.LockerLabel));
+            labels.Add(((float)shelter.CentreX, (float)(shelter.CentreY - 7), "⛺ SHELTER"));
         }
-        foreach (SurfaceStructure.Doorway d in built.Doorways)
-        {
-            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2));
-            consoles.Add(new(DeckPlan.ConsoleKind.SurfaceAirlock,
-                (float)d.CentreX, (float)d.CentreY, SurfaceShelter.DoorLabel));
-        }
+
         foreach ((int index, float sx, float sy) in salvageSpots)
         {
             consoles.Add(new(DeckPlan.ConsoleKind.RuinSalvage, sx, sy,
                 SurfaceSalvage.LabelFor(SurfaceSalvage.WhatIsInside(bodyId, siteSalt, index))));
         }
 
-        consoles.Add(new(DeckPlan.ConsoleKind.ShelterTank,
-            (float)shelter.CentreX, (float)shelter.CentreY, SurfaceShelter.TankLabel));
-        // Andy Weir's bubble shelters carry survival kit, not just air (owner). Set well off the rack so
-        // each is reachable as the ANSWERING console — the #520 law.
-        consoles.Add(new(DeckPlan.ConsoleKind.ShelterLocker,
-            (float)shelter.CentreX, (float)(shelter.CentreY - 5.5), SurfaceShelter.LockerLabel));
-        labels.Add(((float)shelter.CentreX, (float)(shelter.CentreY - 7), "⛺ SHELTER"));
 
         return new Layout(
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location,
