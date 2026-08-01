@@ -486,9 +486,20 @@ public partial class Map
         // nothing. Both are one-shot per walk.
         public bool AirLowWarned { get; set; }
 
+        // #573 · Whether the secondary pack's cut-in has been announced. One-shot, re-armed by a refill.
+        public bool ReserveNoted { get; set; }
+
+        // #573 · Whether "you can hear yourself in the helmet" has been said at the current level of
+        // distress. Re-arms once the captain calms down, so it marks a CHANGE rather than nagging.
+        public bool HardBreathingNoted { get; set; }
+
         // #573 · The deep shelter's charging rack: one charge per excursion, then it is dry.
         public bool ShelterTankSpent { get; set; }
         public bool ShelterLockerSpent { get; set; }
+
+        // #573 · Whether the "you are breathing shelter air" line has been said for this visit inside. Reset
+        // on stepping out, so coming back in says it again — arriving in a refuge is worth noticing twice.
+        public bool ShelterBreathNoted { get; set; }
 
         public SurfaceOutpost.Placement? Outpost { get; set; }
         public bool OutpostForced { get; set; }
@@ -760,6 +771,30 @@ public partial class Map
             return;
         }
 
+        // #573 · INSIDE THE SHELTER, NOTHING IS SPENT. Owner, twice and unambiguously: "it should not be
+        // possible to run out of air inside the emergency shelter" / "air should not be expended while in it
+        // at all". Its sign has read PRESSURISED since the day it was built, and a suit standing in an
+        // atmosphere is not drawing on its tank.
+        //
+        // Checked BEFORE the drain and returning outright, so there is no ordering by which a captain
+        // sitting in a refuge can suffocate in it. The tank does not tick up either — the rack does that,
+        // deliberately and with a ceiling; simply standing here is safety, not resupply.
+        if (StandingInTheShelter(ex))
+        {
+            if (!ex.ShelterBreathNoted)
+            {
+                ex.ShelterBreathNoted = true;
+                ShowPulseMessage(SurfaceShelter.BreathingLine);
+                string story = SurfaceShelter.PartialLine(ShelterChargeNow(ex));
+                if (story.Length > 0)
+                {
+                    ShowPulseMessage(story);
+                }
+            }
+            return;
+        }
+        ex.ShelterBreathNoted = false;
+
         // Inside the ship or in her tube you are breathing hers, and the tank tops up. This is the ONLY
         // place it refills (bar a cache found out in the world), which is what makes the tube the anchor
         // the whole supply line hangs from (#562).
@@ -768,10 +803,36 @@ public partial class Map
             ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, dtRealSeconds * TubeRefillRate);
             ex.AirWarned = false;   // re-arm the warnings: the next walk out gets told again
             ex.AirLowWarned = false;
+            ex.ReserveNoted = false;
             return;
         }
 
-        ex.AirSeconds = SuitAir.Drain(ex.AirSeconds, dtRealSeconds);
+        // #573 · BREATHING RATE. What you are doing, how frightened you are, and how hurt — the owner's
+        // diving rule ("keep calm so the O2 does not run out"), which makes holding your nerve an actual
+        // move rather than a mood.
+        double moved = Math.Sqrt(((_avatarX - _airLastX) * (_avatarX - _airLastX))
+            + ((_avatarY - _airLastY) * (_avatarY - _airLastY)));
+        (_airLastX, _airLastY) = (_avatarX, _avatarY);
+
+        double speed = dtRealSeconds > 0 ? moved / dtRealSeconds : 0;
+        double exertion = speed < 0.5 ? SuitAir.Breathing.Still
+            : speed > 7.0 ? SuitAir.Breathing.Running
+            : SuitAir.Breathing.Walking;
+
+        double rate = SuitAir.Breathing.Rate(exertion, _nerve, ex.HitsTaken, CaptainCondition.MaxHits);
+        ex.AirSeconds = SuitAir.Drain(ex.AirSeconds, dtRealSeconds * rate);
+
+        // Say it once when the breathing itself becomes the problem. Not a nag — a diagnosis, and a hint
+        // that standing still is a move.
+        if (!ex.HardBreathingNoted && rate >= SuitAir.Breathing.WorthMentioning)
+        {
+            ex.HardBreathingNoted = true;
+            ShowPulseMessage(SuitAir.Breathing.HardBreathingLine);
+        }
+        else if (rate < SuitAir.Breathing.WorthMentioning * 0.8)
+        {
+            ex.HardBreathingNoted = false;   // re-arm once they have calmed down
+        }
 
         double home = DistanceToTheTube();
 
@@ -783,11 +844,20 @@ public partial class Map
             ShowPulseMessage(SuitAir.CrossingWarning);
         }
 
+        // #573 · THE SECONDARY PACK CUTS IN. The EMU's real half-hour reserve, and unlike everything else
+        // here it is NOT distance-gated: the primary being gone is worth saying wherever you are standing.
+        if (!ex.ReserveNoted && SuitAir.OnTheReserve(ex.AirSeconds))
+        {
+            ex.ReserveNoted = true;
+            RendererInterop.PlayCue("alarm");
+            ShowPulseMessage(SuitAir.ReserveEngagedLine);
+        }
+
         // #573 · AND the absolute low mark, which is the one that can actually fire in a field this size.
         // Without it a captain dies flat, having been warned about nothing — the silent timer the whole
         // mechanic forbids. It also raises the CARD, once per captain, because running out of air ends the
         // run and the owner is right that it deserves more than a toast that scrolls past.
-        if (!ex.AirLowWarned && SuitAir.RunningLow(ex.AirSeconds))
+        if (!ex.AirLowWarned && SuitAir.RunningLow(ex.AirSeconds, home))
         {
             ex.AirLowWarned = true;
             RendererInterop.PlayCue("alarm");
@@ -815,6 +885,12 @@ public partial class Map
         double dy = _avatarY - MoonSurface.SpawnY;
         return Math.Sqrt((dx * dx) + (dy * dy));
     }
+
+    // #573 · Last frame's position, for working out whether the captain is standing, walking or running.
+    // Speed is not otherwise tracked on the surface, and the difference between a stroll and a sprint is the
+    // whole of the owner's "keep calm" rule.
+    private double _airLastX;
+    private double _airLastY;
 
     /// <summary>How fast her tube refills a suit — several times real time, because standing in an airlock
     /// watching a gauge is not the game. Getting home is the achievement; the top-up is a formality.</summary>
@@ -988,19 +1064,31 @@ public partial class Map
         {
             return;
         }
-        if (ex.ShelterTankSpent)
+        double charge = ShelterChargeNow(ex);
+        if (charge <= 0)
         {
             ShowPulseMessage(SurfaceShelter.EmptyLine);
             return;
         }
 
+        // THE REFUSAL. Owner: "it refuses to give more so there is something left for next needy person
+        // also." It fills to two thirds and stops itself — and hands over nothing at all to a captain who is
+        // already above that line, which is the same courtesy pointing the other way.
+        double give = SurfaceShelter.Quote(ex.AirSeconds, charge, SuitAir.TankSeconds);
+        if (give <= 0)
+        {
+            ShowPulseMessage(SurfaceShelter.AlreadyFullEnoughLine);
+            return;
+        }
+
         double before = ex.AirSeconds;
-        ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, SurfaceShelter.RefillSeconds);
+        ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, give);
         ex.ShelterTankSpent = true;
 
-        // Re-arm both warnings: the tank is no longer low, so saying so again next time is honest.
+        // Re-arm the warnings: the suit is no longer where it was, so saying so again next time is honest.
         ex.AirLowWarned = false;
         ex.AirWarned = false;
+        ex.ReserveNoted = false;
 
         RendererInterop.PlayCue("board");
         ShowPulseMessage(SurfaceShelter.RefillLine(ex.AirSeconds - before));
@@ -1077,6 +1165,31 @@ public partial class Map
         Add(shelter.CentreX, shelter.CentreY, home: false);
 
         return list;
+    }
+
+    /// <summary>#573 · Is the captain standing in the shelter's atmosphere? Pure Core geometry
+    /// (<see cref="SurfaceShelter.Contains"/>) against this site's own shelter.</summary>
+    private bool StandingInTheShelter(SurfaceExcursion ex)
+    {
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        {
+            return false;
+        }
+        SurfaceStructure.Spec spec = SurfaceShelter.SpecFor(
+            ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
+        return SurfaceShelter.Contains(spec, _avatarX, _avatarY);
+    }
+
+    /// <summary>This shelter's charge right now — full unless somebody has drawn on it, and climbing back
+    /// on its own. A rack that is short of full is a fact about who else has been out here.</summary>
+    private double ShelterChargeNow(SurfaceExcursion ex)
+    {
+        if (ex.ShelterTankSpent)
+        {
+            return 0;
+        }
+        // Nobody in THIS run has touched it, so the only thing that can have is somebody else.
+        return SurfaceShelter.SomebodyWasHere(ex.Stop.Body.Id, ex.Site.LayoutSalt) ? 0.42 : 1.0;
     }
 
     /// <summary>#573 · Your own buried caches, as marks on the fan — but ONLY once they are inside its
@@ -3703,7 +3816,7 @@ public partial class Map
             // seven-segment idiom the reactor overload uses, which is the owner's own comparison
             // ("similar counter as the round count counting down seconds on the map"). A bar in the corner
             // is for glancing at; this is for when glancing is no longer enough.
-            Countdown: SuitAir.RunningLow(ex.AirSeconds)
+            Countdown: SuitAir.RunningLow(ex.AirSeconds, DistanceToTheTube()) || SuitAir.OnTheReserve(ex.AirSeconds)
                 ? (_avatarX, _avatarY + 2.6, $"O2 {(int)(ex.AirSeconds / 60)}:{(int)(ex.AirSeconds % 60):00}")
                 : null,
             Bots: _hudBots,
