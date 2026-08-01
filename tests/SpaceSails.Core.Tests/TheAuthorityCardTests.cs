@@ -28,7 +28,7 @@ public sealed class TheAuthorityCardTests
         // shaft is always somewhere in the band you are standing in. Work the floors and you get deeper.
         foreach (string body in Bodies)
         {
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 UndergroundComplex.AuthorityCard? card = UndergroundComplex.CardInRoom(body, level);
                 if (card is null)
@@ -50,12 +50,17 @@ public sealed class TheAuthorityCardTests
     {
         // There is nothing under the last band to authorise. Handing out a card there would be the same
         // broken promise this issue exists to close, one level further down.
+        //
+        // #592 · "The last band" means the last band that EXISTS, which on a rare site is the one nobody
+        // listed. So a Key found on the last floor the building admits to still issues a card — for the band
+        // the building denies having — and only the true bottom issues nothing. That composition is how a
+        // captain gets into the unlisted band at all.
         foreach (string body in Bodies)
         {
-            int bottom = UndergroundComplex.DepthOf(body);
-            int lastBand = UndergroundComplex.BandOf(bottom);
+            int trueBottom = UndergroundComplex.TrueDepthOf(body);
+            int lastBand = UndergroundComplex.BandOf(trueBottom);
 
-            for (int level = -1; level >= bottom; level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 bool inLastBand = UndergroundComplex.BandOf(level) == lastBand;
                 UndergroundComplex.AuthorityCard? card = UndergroundComplex.CardInRoom(body, level);
@@ -71,7 +76,7 @@ public sealed class TheAuthorityCardTests
         // every session, or a save that carries the id would be carrying a lie.
         foreach (string body in Bodies)
         {
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 Assert.Equal(UndergroundComplex.CardInRoom(body, level), UndergroundComplex.CardInRoom(body, level));
                 Assert.Equal(UndergroundComplex.KeyLine(body, level), UndergroundComplex.KeyLine(body, level));
@@ -137,7 +142,7 @@ public sealed class TheAuthorityCardTests
         var cardWords = new List<string>();
         foreach (string body in new[] { "luna", "miranda", "titan" })
         {
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 cardWords.Add(UndergroundComplex.KeyLine(body, level));
             }
@@ -205,7 +210,7 @@ public sealed class TheAuthorityCardTests
         var text = new List<string>();
         foreach (string body in Bodies)
         {
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 text.Add(UndergroundComplex.KeyLine(body, level));
             }
@@ -236,7 +241,7 @@ public sealed class TheAuthorityCardTests
         foreach (string body in Bodies)
         {
             var issued = new HashSet<int>();
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 if (UndergroundComplex.CardInRoom(body, level) is { } card)
                 {
@@ -246,7 +251,7 @@ public sealed class TheAuthorityCardTests
 
             // The bands a captain could actually be standing at the bottom of, wanting the next one.
             var wanted = new HashSet<int>();
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 if (UndergroundComplex.IsBandBottom(body, level))
                 {

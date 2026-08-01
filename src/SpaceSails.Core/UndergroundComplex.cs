@@ -76,6 +76,31 @@ public static class UndergroundComplex
         return (Kind)(DiceRule.Roll(DiceRule.Seed($"hive:kind:{bodyId}"), 5).Face - 1);
     }
 
+    /// <summary>#592 · What kind of place THIS FLOOR is. The same as the site's own kind everywhere the
+    /// building admits to, and something else entirely on the band nobody listed.
+    ///
+    /// <para>This is where the feature does its storytelling and it costs nothing but a different word list.
+    /// A records annex whose bottom floor is a clinic tells you what the records were <i>of</i> without one
+    /// line of narration — and, crucially, without ever saying it. The doors read MORTUARY and CONSENT FILES
+    /// under twelve floors of RETENTION 40 YR and DESTRUCTION QUEUE, and the captain does the arithmetic
+    /// themselves, or does not.</para>
+    ///
+    /// <para>Guaranteed DIFFERENT from the floors above: a hidden clinic under a clinic is a bigger clinic,
+    /// which is the one outcome that makes the whole thing pointless.</para></summary>
+    public static Kind KindOn(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        Kind above = KindFor(bodyId);
+        if (!IsUnlisted(bodyId, level))
+        {
+            return above;
+        }
+
+        int kinds = Enum.GetValues<Kind>().Length;
+        int step = DiceRule.Roll(DiceRule.Seed($"hive:unlisted-kind:{bodyId}"), kinds - 1).Face;
+        return (Kind)(((int)above + step) % kinds);   // step is 1..kinds-1, so never `above`
+    }
+
     /// <summary>What the place calls itself, if it calls itself anything.</summary>
     public static string TitleOf(Kind kind) => kind switch
     {
@@ -102,8 +127,13 @@ public static class UndergroundComplex
     /// thousand floors. Nothing should ever read it as "how deep the game goes".</para></summary>
     public const int DeepestPossibleFloor = -24;
 
-    /// <summary>How far down THIS site goes. Seeded per body, weighted so most are modest and a rare one is a
-    /// hole in the world worth telling people about.</summary>
+    /// <summary>How far down this site ADMITS to going. Seeded per body, weighted so most are modest and a
+    /// rare one is a hole in the world worth telling people about.
+    ///
+    /// <para>#592: read this as the building's own account of itself — the bottom of the lift directory, the
+    /// last floor on the plan in the lobby. On a rare site it is not the bottom of the hole. Anything asking
+    /// "how far down can a captain actually walk" wants <see cref="TrueDepthOf"/>; anything asking "what does
+    /// this place say about itself" wants this one, and the gap between them is the feature.</para></summary>
     public static int DepthOf(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
@@ -117,6 +147,127 @@ public static class UndergroundComplex
         return -Math.Min(floors, -DeepestPossibleFloor);
     }
 
+    // ── #592 · A SECRET LAB'S OWN SECRET LAB ────────────────────────────────────────────────────────────
+    //
+    // Owner: "we could even have a secret lab lab :-D"
+    //
+    // The joke is good and the mechanic under it is better. A facility whose BOTTOM BAND IS NOT ON ITS OWN
+    // PLAN: a shaft not in the directory, a floor the panel does not list. Everything above it is a real,
+    // expensive, thoroughly documented clandestine operation — and underneath THAT is the thing the
+    // clandestine operation was hiding from its own staff.
+    //
+    // It costs almost nothing to build because three things were already right:
+    //
+    //   * depth is free — a floor reuses the surface's own envelope, so a hidden band takes no space;
+    //   * bands already gate descent, and a hidden band is that mechanism with the next shaft simply not
+    //     advertised;
+    //   * Kind already varies the building, so the deepest band can be a DIFFERENT KIND from the floors
+    //     above it — a records annex whose bottom is a clinic tells a story nobody has to narrate.
+    //
+    // THE BUILDING LIES BY OMISSION, which is exactly in register with everything else down here. The panel
+    // on the floor above says what it has always said: there is no button below this one. It does not hedge,
+    // it does not hint, and it is not lying about a door — the button really is not there. The way down is a
+    // card somebody left in a room (#590), which is a piece of paper telling the truth about a building that
+    // is not.
+    //
+    // Canon holds hardest here, because this is the single most tempting place in the game to explain the
+    // Old Ones. It does not. The deepest floor of the deepest facility may be full of evidence of an
+    // enormous, well-funded, decades-long operation, and may never once name what the operation produced.
+
+    /// <summary>How many sites in this many have something under the floor they admit to. Rare on purpose:
+    /// the moment it is common it stops being a secret and becomes a level.</summary>
+    public const int UnlistedOneInN = 4;
+
+    /// <summary>Does this site have a band nobody listed? Seeded off its own id, so it is a fact about the
+    /// world and not about the visit.</summary>
+    public static bool HasUnlistedBand(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        // Only somewhere that already had room to hide something. A three-floor annex with a secret basement
+        // is a bungalow with a dungeon; the lie needs a building big enough to keep a secret from its staff.
+        int listed = DepthOf(bodyId);
+        if (listed > -FloorsPerShaft)
+        {
+            return false;
+        }
+
+        // And only where the hidden band's own shaft head still fits inside the performance guard. That
+        // bound is a guard and not a design bottom (#585), but a band that would be clamped to nothing is
+        // not a band.
+        if (BandTop(BandOf(listed) + 1) <= DeepestPossibleFloor)
+        {
+            return false;
+        }
+
+        return DiceRule.Roll(DiceRule.Seed($"hive:unlisted:{bodyId}"), UnlistedOneInN).Face == 1;
+    }
+
+    /// <summary>How far down a captain can ACTUALLY walk — the listed depth, plus the band nobody listed.
+    ///
+    /// <para>Every audit, every renderer and every lab wants this one: an unlisted floor is still a floor,
+    /// and a topology nothing walks is a topology nobody has checked. Only the things that speak FOR the
+    /// building — the lift panel, the directory — get to use <see cref="DepthOf"/>.</para></summary>
+    public static int TrueDepthOf(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return HasUnlistedBand(bodyId) ? BandBottom(UnlistedBandOf(bodyId)) : DepthOf(bodyId);
+    }
+
+    /// <summary>#592 · WHICH band is the one nobody listed.
+    ///
+    /// <para>It is the next WHOLE band under the one the listed bottom falls in — not "four floors below the
+    /// listed bottom", which sounds the same and is not. Bands are fixed slices of four counted from the
+    /// surface, because that is what a shaft is; a hidden band that started at an arbitrary depth would
+    /// share a car with the floors above it and the secret would be reachable by pressing DOWN. There is a
+    /// GAP between the two, and nothing is generated in it: the listed building stops where it stops, and
+    /// the unlisted one starts at its own shaft head.</para></summary>
+    public static int UnlistedBandOf(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return BandOf(DepthOf(bodyId)) + 1;
+    }
+
+    /// <summary>The top floor a shaft band serves — where its car opens.</summary>
+    public static int BandTop(int band) => -(band * FloorsPerShaft) - 1;
+
+    /// <summary>The deepest floor a shaft band could serve if nothing stopped it.</summary>
+    private static int BandBottom(int band) =>
+        Math.Max(DeepestPossibleFloor, -((band + 1) * FloorsPerShaft));
+
+    /// <summary>Is this floor one of the ones the building does not admit to?</summary>
+    public static bool IsUnlisted(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return HasUnlistedBand(bodyId) && level < 0 && BandOf(level) == UnlistedBandOf(bodyId);
+    }
+
+    /// <summary>#592 · EVERY FLOOR THIS SITE ACTUALLY HAS, top to bottom — the listed ones, then the gap
+    /// where nothing was dug, then the band nobody listed.
+    ///
+    /// <para>The one place that knows the shape. Audits, the renderer and the labs all walk this rather
+    /// than counting from a depth, because with a gap in the middle "−1 down to the bottom" is no longer
+    /// the floor list — and a phantom floor generated by an audit is a topology nobody ships being checked
+    /// instead of the one they do.</para></summary>
+    public static IEnumerable<int> FloorsOf(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        for (int level = -1; level >= DepthOf(bodyId); level--)
+        {
+            yield return level;
+        }
+
+        if (!HasUnlistedBand(bodyId))
+        {
+            yield break;
+        }
+        int band = UnlistedBandOf(bodyId);
+        for (int level = BandTop(band); level >= BandBottom(band); level--)
+        {
+            yield return level;
+        }
+    }
+
     /// <summary>#585 · THE SHAFTS ARE THE LIMIT — the owner's own observation, turned into the mechanic.
     ///
     /// <para>A single lift never serves a whole facility: it serves a BAND. Reach the bottom of a band and the
@@ -128,13 +279,25 @@ public static class UndergroundComplex
     /// <summary>Which shaft band a floor belongs to. Band 0 is the one the surface lift head serves.</summary>
     public static int BandOf(int level) => (-level - 1) / FloorsPerShaft;
 
-    /// <summary>The deepest floor a shaft band reaches, never past the site's own bottom.</summary>
-    public static int BandFloor(string bodyId, int band) =>
-        Math.Max(DepthOf(bodyId), -((band + 1) * FloorsPerShaft));
+    /// <summary>The deepest floor a shaft band reaches, never past the bottom of the building that band
+    /// belongs to.
+    ///
+    /// <para>#592 · Two buildings, so two bottoms. Every band the site admits to stops at the LISTED depth —
+    /// that is what makes the last listed floor feel like the bottom, because for that shaft it is. The
+    /// band nobody listed is a whole band of its own, below a GAP where nothing was dug, and it stops at
+    /// its own.</para></summary>
+    public static int BandFloor(string bodyId, int band)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int listed = DepthOf(bodyId);
+        return band > BandOf(listed)
+            ? BandBottom(band)                          // the unlisted band, on its own shaft
+            : Math.Max(listed, BandBottom(band));       // everything the directory knows about
+    }
 
     /// <summary>Is this the floor where the car stops and you go looking for the next shaft?</summary>
     public static bool IsBandBottom(string bodyId, int level) =>
-        level == BandFloor(bodyId, BandOf(level)) && level > DepthOf(bodyId);
+        level == BandFloor(bodyId, BandOf(level)) && level > TrueDepthOf(bodyId);
 
     /// <summary>Which floors still hold atmosphere.
     ///
@@ -160,6 +323,18 @@ public static class UndergroundComplex
             "ARCHIVE", "ISOLATION", "DEEP STORAGE", "UNMARKED",
         ];
         return $"B{-level} · {departments[(-level - 1) % departments.Length]}";
+    }
+
+    /// <summary>#592 · What the level is called, given which building it is in. A floor the directory never
+    /// listed has no department, because a department is a thing you write on a plan — and the whole point
+    /// of these floors is that nobody wrote them anywhere.
+    ///
+    /// <para>It is not a hint: you can only read this once you are standing on the floor, and by then the
+    /// building has stopped keeping the secret from you and is only keeping it from everybody else.</para></summary>
+    public static string NameOf(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return IsUnlisted(bodyId, level) ? $"B{-level} · NO PLATE" : NameOf(level);
     }
 
     /// <summary>The lift shaft's spot — the SAME (x, y) on every floor, so going down is legible and coming
@@ -319,7 +494,7 @@ public static class UndergroundComplex
         // BOTH ends shut. The missing right-hand cap is the "open end" itself.
         walls.Add(new(left, shaftY - CorridorHalf, left, shaftY + CorridorHalf, true));
         walls.Add(new(right, shaftY - CorridorHalf, right, shaftY + CorridorHalf, true));
-        labels.Add(new(shaftX - 26, shaftY + 1.4, NameOf(level)));
+        labels.Add(new(shaftX - 26, shaftY + 1.4, NameOf(bodyId, level)));
 
         // ── THE SHAFT. Same spot on every floor.
         walls.Add(new(shaftX - ShaftHalf, shaftY + CorridorHalf, shaftX - ShaftHalf, shaftY + CorridorHalf + 5, true));
@@ -367,7 +542,7 @@ public static class UndergroundComplex
             AddRoomsAlong(walls, doorways, locked, rooms, claimed, bodyId, level, i, x, mouth, far, down);
         }
 
-        return new FloorPlan(level, NameOf(level), HoldsPressure(level),
+        return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(level),
             walls, doorways, locked, labels, rooms, ribList);
     }
 
@@ -475,7 +650,7 @@ public static class UndergroundComplex
 
                 if (Frac(bodyId, tag + ":locked") < 0.5)
                 {
-                    locked.Add(new(faceX, cy - DoorHalf, faceX, cy + DoorHalf, SignFor(bodyId, tag)));
+                    locked.Add(new(faceX, cy - DoorHalf, faceX, cy + DoorHalf, SignFor(bodyId, level, tag)));
                 }
                 else
                 {
@@ -488,10 +663,15 @@ public static class UndergroundComplex
 
     /// <summary>What is painted on a door. Institutional, expensive, and never explanatory — the register of
     /// a place with serious funding and nothing to say for itself.</summary>
-    public static string SignFor(string bodyId, string tag)
+    public static string SignFor(string bodyId, string tag) => SignFor(bodyId, 0, tag);
+
+    /// <summary>#592 · The same, on a named floor — so the band nobody listed gets ITS OWN vocabulary. This
+    /// overload is the one <see cref="Build"/> calls; the level-less form is kept for callers that only want
+    /// the site's own register.</summary>
+    public static string SignFor(string bodyId, int level, string tag)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        string[] signs = SignsFor(KindFor(bodyId));
+        string[] signs = SignsFor(KindOn(bodyId, level));
         ulong seed = DiceRule.Seed($"hive-sign:{bodyId}:{tag}");
         return signs[(int)(seed % (ulong)signs.Length)];
     }
@@ -542,6 +722,27 @@ public static class UndergroundComplex
     //
     // It is left entirely open whether the captain USES it. That is the whole point of leverage.
 
+    /// <summary>#592 · Which room is GUARANTEED to hold the way down, on a site that has something to hide.
+    ///
+    /// <para>Null on an ordinary site: there is nothing under it, so nothing has to be findable and every
+    /// Key stays a roll. On a site with an unlisted band it is a room on the last floor the building admits
+    /// to — the floor a captain is standing on when the panel goes quiet, which is exactly where somebody
+    /// would have been carrying one.</para>
+    ///
+    /// <para><b>Room 0, not a seeded index.</b> This function is pure of the field, so it cannot know how
+    /// many rooms that floor actually has — and the count varies: the four-room floor law is asserted for
+    /// the scenario's own bodies, and a generated site can produce a floor with three. A seeded 0..3 index
+    /// therefore misses sometimes, which puts the guarantee back exactly where it started. Room 0 always
+    /// exists on any floor worth riding to.</para>
+    ///
+    /// <para>Nobody can see the index, so nothing is lost by it being fixed — a player finds a room, not a
+    /// number — and the alternative costs a floor plan on every haul lookup.</para></summary>
+    public static (int Level, int RoomIndex)? KeyRoomFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return HasUnlistedBand(bodyId) ? (DepthOf(bodyId), 0) : null;
+    }
+
     /// <summary>What a room in one of these places holds.</summary>
     public enum Haul
     {
@@ -562,7 +763,46 @@ public static class UndergroundComplex
     public static Haul InRoom(string bodyId, int level, int roomIndex)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return DiceRule.Roll(DiceRule.Seed($"hive:haul:{bodyId}:{level}:{roomIndex}"), 9).Face switch
+
+        // #592 · THE ONE ROOM THAT IS NOT A ROLL.
+        //
+        // The way into the band nobody listed is a card, and a card comes out of a Key room on the last
+        // floor the building admits to. Key is one face in nine, and a last band holds thirty-odd rooms, so
+        // about one site in thirty would roll no Key at all — and because the rolls are seeded, that site's
+        // hidden band would be unreachable NOT for that visit but FOREVER.
+        //
+        // Nothing on screen would ever say so, which is the only reason this is not the "map lies" bug; it
+        // is the quieter one where a feature is silently dead on some worlds and every test still passes.
+        // So one room on the last listed floor is designated, deterministically, and holds the way down.
+        if (KeyRoomFor(bodyId) is { } wayDown && level == wayDown.Level && roomIndex == wayDown.RoomIndex)
+        {
+            return Haul.Key;
+        }
+
+        int face = DiceRule.Roll(DiceRule.Seed($"hive:haul:{bodyId}:{level}:{roomIndex}"), 9).Face;
+
+        // #592 · THE PAYOFF FOR REACHING THE FLOOR NOBODY LISTED IS INFORMATION, NOT A BIGGER NUMBER.
+        //
+        // The issue is explicit about this and it is the right call: a crate of credits is a number going
+        // up, and this game already has the better currency. Down here the rooms are heavy with paper —
+        // FILES ON PEOPLE, and the operational record of what was moved and how often — because that is the
+        // shape of a secret worth digging a shaft nobody wrote down for.
+        //
+        // Deliberately NOT more Equipment. If the hidden floor paid in hardware it would be a loot room with
+        // a story painted on it, and every captain would end up describing it as "the good level".
+        if (IsUnlisted(bodyId, level))
+        {
+            return face switch
+            {
+                1 or 2 => Haul.Nothing,       // still stripped. Somebody cleared this too, and in a hurry.
+                3 => Haul.Equipment,
+                4 or 5 => Haul.Records,
+                6 => Haul.Key,
+                _ => Haul.Dirt,               // a third of the floor is a file on somebody
+            };
+        }
+
+        return face switch
         {
             1 or 2 or 3 => Haul.Nothing,
             4 or 5 => Haul.Equipment,
@@ -685,9 +925,15 @@ public static class UndergroundComplex
     }
 
     /// <summary>Does this site have a shaft band that deep at all? Band 0 is the one the surface lift head
-    /// serves; a band exists when its top floor is still inside the site's own depth.</summary>
+    /// serves; a band exists when its top floor is still inside the site's own depth.
+    ///
+    /// <para>#592: measured against <see cref="TrueDepthOf"/>, not the listed depth — so a Key found on the
+    /// last floor the building admits to issues the card for the band it does not. That composition IS the
+    /// way in: the panel never mentions the shaft, and a piece of paper somebody left in a room does.</para></summary>
     public static bool SiteHasBand(string bodyId, int band) =>
-        band >= 0 && -((band * FloorsPerShaft) + 1) >= DepthOf(bodyId);
+        band >= 0
+        && (BandTop(band) >= DepthOf(bodyId)
+            || (HasUnlistedBand(bodyId) && band == UnlistedBandOf(bodyId)));
 
     /// <summary>#590 · WHICH card a Key room holds: the one for the shaft band immediately below the floor
     /// you found it on. Not a roll — a fact about the building, and the most legible possible rule, because
@@ -736,11 +982,16 @@ public static class UndergroundComplex
     }
 
     /// <summary>What the gate says when the card works. Said once, at the moment the car goes deeper than
-    /// this shaft was ever dug to.</summary>
+    /// this shaft was ever dug to.
+    ///
+    /// <para>#592: worded so it is true of BOTH shafts it can open. It used to say "where the plan said a
+    /// shaft would be" — right about the listed building, and a lie about the band the plan denies having.
+    /// A card that announces the secret is a card that has given it away.</para></summary>
     public static string CardAcceptedLine(AuthorityCard card) =>
-        $"🎫 You find the other shaft where the plan said a shaft would be, and its gate reads the " +
-        $"card without hesitating — {CardTitle(card)}, countersigned by an office that stopped answering " +
-        "its own post decades ago and never once revoked a thing. The car below is colder than the one above.";
+        $"🎫 You find the other shaft. It is not marked and it is not beside the first one, and its gate " +
+        $"reads the card without hesitating — {CardTitle(card)}, countersigned by an office that stopped " +
+        "answering its own post decades ago and never once revoked a thing. The car below is colder than " +
+        "the one above.";
 
     /// <summary>What the gate says when you are carrying authorities and none of them is this one. The
     /// failure has to name what is wrong with it — silence here would read as a bug.</summary>
@@ -786,6 +1037,29 @@ public static class UndergroundComplex
     public const string DescendingLine =
         "🛗 The car takes a moment to decide you are allowed, and then it drops. It keeps dropping. Whatever " +
         "this was, nobody dug it in an afternoon and nobody paid for it out of pocket.";
+
+    /// <summary>#592 · Said ONCE, on stepping out onto the first floor the building never admitted to.
+    ///
+    /// <para>The whole beat of the feature, and the hardest place in the game to hold the canon line. It may
+    /// say that the operation upstairs was enormous, funded, staffed and inspected, and that this was under
+    /// it, and that the people who worked upstairs did not know. It may not say what it was for. The captain
+    /// gets the arithmetic and never the answer — and if they want one, the files are in the rooms and the
+    /// files are about PEOPLE.</para></summary>
+    public static string UnlistedArrivalLine(int floorsAbove, Kind above, Kind here) =>
+        $"🕳 The doors part on a floor that is not on the plan in the lobby.\n\n" +
+        $"{floorsAbove} storeys of {TitleOf(above).TrimStart('▣', ' ').ToLowerInvariant()} over your head — " +
+        "surveyed, funded, staffed, inspected, invoiced. Every one of those floors had a number and a " +
+        "department and a plate beside the lift. This one has a lift and no plate.\n\n" +
+        $"And the doors down here do not read like the doors up there. They read like " +
+        $"{TitleOf(here).TrimStart('▣', ' ').ToLowerInvariant()}.\n\n" +
+        "Somebody dug a second shaft, off the directory, to serve four floors that the people working " +
+        "upstairs went home every night without knowing were under them. That is not secrecy from an enemy. " +
+        "That is secrecy from your own staff, and it costs more.";
+
+    /// <summary>What a floor with no plate calls itself when the captain looks for a name.</summary>
+    public const string UnlistedFloorLine =
+        "🕳 No plate by the lift, no department, no number painted anywhere. The building has floors it " +
+        "does not count, and you are standing on one.";
 
     /// <summary>Said on stepping out on the top floor — the lie that makes the rest work.</summary>
     public const string PressurisedLine =

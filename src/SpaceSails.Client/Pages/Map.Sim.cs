@@ -113,10 +113,22 @@ public partial class Map
     // #409: the ?secretlab=1 cheat's landable rock — a plain Moon-kind body co-orbiting the berth, well inside
     // one shuttle hop, whose surface ResolveSecretLab forces to hide a Vantar lab with the door pre-revealed.
     private const string SecretLabCheatBodyId = "secret-lab-site";
-    private static BodyDefinition SecretLabSiteBody(string berthId) => new()
+
+    /// <summary>#592 · The ?secretlab=deep rock. A site's whole shape — how deep it goes, what kind of place
+    /// it is, and whether it has a band nobody listed — is seeded off its BODY ID, so reaching the unlisted
+    /// band from a URL is a matter of parking a rock with the right name rather than of overriding a Core
+    /// fact from the client.
+    ///
+    /// <para>This one is a 20-floor clinic with an unlisted LABORATORY under it, down to the generator's own
+    /// performance guard — which makes it the deepest, most awkward site the game can produce and therefore
+    /// the right one to test on. Pinned by <c>TheUnlistedBandTests</c>: if a change to the seeding ever
+    /// stopped it having a hidden band, the cheat would quietly stop reaching the feature it exists for.</para></summary>
+    private const string SecretLabDeepCheatBodyId = "secret-lab-site-unlisted";
+
+    private static BodyDefinition SecretLabSiteBody(string berthId, bool deep) => new()
     {
-        Id = SecretLabCheatBodyId,
-        Name = "The Hermit's Rock",
+        Id = deep ? SecretLabDeepCheatBodyId : SecretLabCheatBodyId,
+        Name = deep ? "The Deep Hermit's Rock" : "The Hermit's Rock",
         ParentId = berthId,
         Mu = 0,
         BodyRadiusM = ExpeditionSite.BodyRadiusMeters,
@@ -322,6 +334,7 @@ public partial class Map
         string? deflectionCheat = null; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
         bool wreckCheat = false; // #488 /map?wreck=1: spawn a derelict in shuttle range — board her, read her, then file or strip
         Derelict.WreckCause? wreckCauseCheat = null; // #488 /map?wreck=<cause>: board a wreck that died THAT way
+        bool secretlabDeep = false;  // #592 /map?secretlab=deep: the rock whose site hides a band
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
         string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
@@ -592,7 +605,13 @@ public partial class Map
                 // Documented in the PR body. (Ordinary bodies hide labs rarely, off the seed — this is the
                 // fast path.)
                 string candidate = Uri.UnescapeDataString(pair["secretlab=".Length..]).ToLowerInvariant();
-                secretlabCheat = candidate is "1" or "true" or "yes";
+                secretlabCheat = candidate is "1" or "true" or "yes" or "deep";
+
+                // #592 · ?secretlab=deep parks a rock whose site HAS a band nobody listed. The ordinary
+                // cheat rock's site is seeded like any other and happens to be four floors of records annex
+                // with nothing under it, so #592 could not be reached from a URL at all — which is the exact
+                // tax these cheats exist to remove.
+                secretlabDeep = candidate is "deep";
             }
             else if (pair.StartsWith("body=", StringComparison.OrdinalIgnoreCase))
             {
@@ -758,8 +777,8 @@ public partial class Map
             string berthId = DockedStarts.TryGetValue(berthKey, out string? mappedBerth) ? mappedBerth : berthKey;
             if (scenario.Bodies.Any(b => b.Id == berthId))
             {
-                scenario = scenario with { Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId)] };
-                _secretLabForceBodyId = SecretLabCheatBodyId;
+                scenario = scenario with { Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId, secretlabDeep)] };
+                _secretLabForceBodyId = secretlabDeep ? SecretLabDeepCheatBodyId : SecretLabCheatBodyId;
                 dockCheat = berthId; // clamp onto the berth the rock co-orbits, so it's in reach at spawn
             }
         }

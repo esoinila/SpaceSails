@@ -810,7 +810,29 @@ Owner, after an evening of walking a 310 × 260 field to reach the one thing und
 | `/map?secretlab=1&land=1&floor=4` | on **B4**, dead air, tank running |
 | `/map?secretlab=1&land=1&floor=20` | as deep as that site goes (clamped to its real depth) |
 
-`?floor=` takes a **positive** number read as a depth: `floor=3` means B3. It is clamped to the site's own bottom (`UndergroundComplex.DepthOf`), so a shallow facility cannot be asked for a floor it does not have.
+`?floor=` takes a **positive** number read as a depth: `floor=3` means B3. It is clamped to the site's own
+bottom, so a shallow facility cannot be asked for a floor it does not have.
+
+**#592 — it clamps to `TrueDepthOf`, not `DepthOf`.** A rare site has a band nobody listed under the
+floors it admits to, and the point of these cheats is that the feature under test is one URL away — a
+hidden floor you could only reach by first finding a card would be exactly the tax they were invented to
+remove. Ask for a floor below the listed bottom and you land on the unlisted band's own shaft head
+(there is a GAP between the two buildings with nothing dug in it, so the number is snapped past it).
+
+**`/map?secretlab=deep&land=1&floor=24` is the one to use.** The ordinary cheat rock's site is seeded
+like any other and happens to be four floors of records annex with nothing under it, so `?secretlab=1`
+cannot reach #592 at all. `?secretlab=deep` parks a different rock — a 20-floor clinic with an
+unlisted LABORATORY under it, down to the generator's own performance guard, which makes it the
+deepest and most awkward site the game can produce and therefore the right one to test on. The cheat
+is a body id and nothing else; the site is seeded from its name like every other site, and
+`TheUnlistedBandTests` pins that it still hides something.
+
+To find other sites that have one, run the lab — it prints `+ an UNLISTED band to Bn` in each site's
+header:
+
+```bash
+dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release
+```
 
 Both only fire under `?secretlab=1`. An ordinary landing still drops you on the open regolith at the landing band, so this can never quietly become how the game plays.
 

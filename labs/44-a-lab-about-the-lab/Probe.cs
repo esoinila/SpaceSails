@@ -54,25 +54,30 @@ var complaints = new List<string>();
 
 foreach (string body in bodies)
 {
-    int bottom = UndergroundComplex.DepthOf(body);
+    int bottom = UndergroundComplex.TrueDepthOf(body);
     UndergroundComplex.Kind kind = UndergroundComplex.KindFor(body);
+    // #592 · The header says what the site ADMITS to and, when the two differ, what is actually under it.
+    // A lab that printed only the listed depth would be repeating the building's own lie back to us.
+    string hidden = UndergroundComplex.HasUnlistedBand(body)
+        ? $" + an UNLISTED band to B{-bottom} ({UndergroundComplex.TitleOf(UndergroundComplex.KindOn(body, bottom))})"
+        : "";
     Console.WriteLine(
-        $"=== {body.ToUpperInvariant()} — {UndergroundComplex.TitleOf(kind)}, {-bottom} floors ===");
+        $"=== {body.ToUpperInvariant()} — {UndergroundComplex.TitleOf(kind)}, " +
+        $"{-UndergroundComplex.DepthOf(body)} floors listed{hidden} ===");
 
     // `--floor N` is read the way the game's own dev cheat reads it: a positive number is a DEPTH, so
     // `--floor 4` is B4. A negative level is accepted too, because that is what Core speaks.
     IEnumerable<int> levels;
     if (allFloors)
     {
-        var all = new List<int>();
-        for (int level = -1; level >= bottom; level--)
-        {
-            all.Add(level);
-        }
-        levels = all;
+        // #592 · The site's REAL floor list, gap and all — a site with an unlisted band is not "−1 down to
+        // the depth", and a lab that drew four floors nobody dug would be drawing a building the game does
+        // not have.
+        levels = [.. UndergroundComplex.FloorsOf(body)];
     }
     else
     {
+        // Clamped to the site's TRUE bottom, so `--floor 20` can reach the band nobody listed.
         int asked = int.Parse(Option("--floor")!, System.Globalization.CultureInfo.InvariantCulture);
         levels = [Math.Max(bottom, -Math.Abs(asked))];
     }
@@ -107,7 +112,8 @@ foreach (string body in bodies)
         Console.WriteLine(
             $"  {floor.Name,-24} {floor.Walls.Count,4} segs · {floor.Ribs.Count} ribs · " +
             $"{floor.Locked.Count,2} sealed doors · rooms {report.RoomsReached}/{report.Rooms,-2} · " +
-            $"{(floor.Pressurised ? "air " : "dead")} · {verdict}");
+            $"{(floor.Pressurised ? "air " : "dead")} · " +
+            $"{(UndergroundComplex.IsUnlisted(body, level) ? "UNLISTED · " : "")}{verdict}");
 
         if (wantSvg)
         {

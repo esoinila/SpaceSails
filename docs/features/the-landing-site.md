@@ -426,7 +426,44 @@ used a flat 32 du half-width, so on any window that was not exactly 64:28 the bl
 not the blip the chirp had *heard*. That drift was harmless while both were "far"; it stops being harmless
 the moment one of them shortens. The hud carries the number now.
 
-13.7 **Nothing down here explains what the Old Ones are.** A facility may be enormous, expensive and
+13.7 **A rare site has a band nobody listed** (#592). Owner: *"we could even have a secret lab lab :-D"*.
+Everything above it is a real, expensive, thoroughly documented clandestine operation; underneath *that* is
+the thing the clandestine operation was hiding from its own staff.
+
+The whole feature lives in the gap between two numbers, and every caller has to know which one it is asking
+for:
+
+| ask | function |
+| --- | --- |
+| what the building says about itself — the lift panel, the directory | `DepthOf` |
+| how far a captain can actually walk — audits, renderers, labs, the cars | `TrueDepthOf` |
+| which floors exist at all | `FloorsOf` |
+
+- **It is a whole BAND on its own shaft**, the next one below the band the listed bottom falls in — not "four
+  floors below the listed bottom", which sounds the same and is not. Bands are fixed slices counted from the
+  surface because that is what a shaft *is*; a hidden band starting at an arbitrary depth would share a car
+  with the floors above it and the secret would be reachable by pressing DOWN. Where the listed depth stops
+  mid-band there is a **gap** under it with nothing dug in it — hence `FloorsOf`, because "−1 down to the
+  depth" is no longer the shape of a building.
+- **Its `Kind` always differs from the floors above.** A records annex whose bottom is a clinic tells you
+  what the records were *of* with no narration at all. A hidden clinic under a clinic is a bigger clinic.
+- **Nothing above it announces it.** On the last listed floor the panel behaves exactly as it does at the
+  true bottom of an ordinary site: silence, and the car goes up. Not the #590 refusal (it names a shaft), not
+  `EndOfTheLineLine` (it promises one is down there somewhere). The button really is not there. The way down
+  is a card somebody left in a room — a piece of paper telling the truth about a building that is not.
+- **It pays in information, not a bigger number.** A third of its rooms hold a file on somebody, and it pays
+  *worse* in hardware than the floors above. If it paid in kit it would be a loot room with a story painted
+  on it.
+- **Canon holds hardest here.** It is the most tempting place in the game to explain the Old Ones. It does
+  not.
+
+*(Enforced: `TheUnlistedBandTests` — rare and seeded, never under a shallow site, invisible where absent, a
+whole band on its own shaft, nothing dug in the gap, always a different Kind (checked over 400 generated
+sites), its own door vocabulary, no department on the plate, the #590 card exists for it and nothing past it,
+the haul weighting measured over 600 rooms rather than one floor's dice, the canon grep, and every unlisted
+floor held to the same facility standard as a listed one. The client A\* audit walks them for real.)*
+
+13.8 **Nothing down here explains what the Old Ones are.** A facility may be enormous, expensive and
 obviously state-backed, and may never say what it was for. *(Enforced: the prose is grepped.)*
 
 ## Working method
