@@ -529,6 +529,16 @@ public partial class Map
         public HashSet<int> HiveRoomsEmptied { get; } = [];
         public HashSet<int> HiveFloorsSeen { get; } = [];
 
+        // #590 · Which shaft bands this excursion has already talked its way into. Only gates the once-per-
+        // shaft beat when a card is accepted; the CARD itself is durable and lives in the vault, because a
+        // possession that evaporated when the shuttle lifted would not be a possession.
+        public HashSet<int> HiveShaftsOpened { get; } = [];
+
+        // And which have already refused you once. The refusal is said EVERY time — a gate that goes quiet
+        // on the second press reads as a broken button — but it is only FILED once, because pressing one
+        // gate eleven times is not eleven findings.
+        public HashSet<int> HiveShaftsRefused { get; } = [];
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -1523,11 +1533,51 @@ public partial class Map
             return;
         }
 
-        // At the bottom of the band: the car goes back up. Going deeper is somebody else's shaft.
+        // ── #590 · THE BOTTOM OF THE BAND, AND THE CARD THAT GETS PAST IT ──
+        //
+        // Owner: "could there be like a keycode etc that allows us access to the lab". This is where the
+        // Haul.Key card stopped being a promise. The car itself still will not go lower — that stays true,
+        // and it is why the building has more than one lift — but the NEXT shaft is on this floor, and its
+        // gate reads an authority. So depth below the first band is no longer a number the seed hands you:
+        // it is something you earn by working the floors you are standing on until the card turns up.
+        //
+        // The refusal always says why, and says whether what you ARE carrying is the wrong card, because a
+        // gate that just sits there is indistinguishable from a bug.
         if (ex.Floor > bottom)
         {
-            ShowPulseMessage(UndergroundComplex.EndOfTheLineLine(-ex.Floor));
+            int nextBand = UndergroundComplex.BandOf(ex.Floor) + 1;
+            var wanted = new UndergroundComplex.AuthorityCard(body, nextBand);
+
+            if (_authorityCards.Contains(wanted.Id))
+            {
+                if (ex.HiveShaftsOpened.Add(nextBand))
+                {
+                    ShowAndFile(UndergroundComplex.CardAcceptedLine(wanted), "🎫");
+                    ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
+                }
+                RideTheLiftTo(ex, ex.Floor - 1);
+                return;
+            }
+
+            // Said every time — a refusal that goes quiet on the second press is a refusal that reads as a
+            // broken button. FILED only once per shaft, because the field book is a record of what was
+            // found, and pressing the same gate eleven times is not eleven findings.
+            string refusal = UndergroundComplex.WrongCardLine(-ex.Floor, HeldAuthorities());
+            if (ex.HiveShaftsRefused.Add(nextBand))
+            {
+                ShowAndFile(refusal, "🔒");
+            }
+            else
+            {
+                ShowPulseMessage(refusal);
+            }
+            RideTheLiftTo(ex, 0);
+            return;
         }
+
+        // The true bottom of the site. Nothing is under this, no card would help, and the panel says nothing
+        // it does not know — the only thing left to do here is go up, which the car does. (EndOfTheLineLine
+        // is deliberately NOT said here: it promises a shaft somewhere below, and below this there is none.)
         RideTheLiftTo(ex, 0);
     }
 
@@ -1647,6 +1697,25 @@ public partial class Map
         if (haul is UndergroundComplex.Haul.Records or UndergroundComplex.Haul.Dirt)
         {
             GrantLabLead(DiceRule.Seed($"lead:hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
+        }
+
+        // #590 · THE CARD IS NOW A THING YOU HOLD. It runs the shaft below the band it was found in, so the
+        // way deeper into a facility is earned by working the floors you are on — and it is durable, so the
+        // gate still reads it a month and a moon later.
+        //
+        // On the bottom band there is no shaft below to authorise, and rather than hand out an authority for
+        // a hole nobody dug, that Key names another moon: the same payoff Records and Dirt give, which keeps
+        // the deepest floor of a site pointing outward instead of at itself.
+        if (haul == UndergroundComplex.Haul.Key)
+        {
+            if (UndergroundComplex.CardInRoom(ex.Stop.Body.Id, ex.Floor) is { } card)
+            {
+                _authorityCards.Add(card.Id);
+            }
+            else
+            {
+                GrantLabLead(DiceRule.Seed($"lead:hive-key:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
+            }
         }
 
         RebuildSurfaceDeck();
@@ -1823,6 +1892,30 @@ public partial class Map
     // specialist's family names a MOON; landing on a named moon wakes the detector and the tracker's vague
     // wash. Without it the search was a lottery with four thousand tickets.
     private readonly HashSet<string> _labLeads = [];
+
+    // #590 · THE AUTHORITIES THE CAPTAIN IS CARRYING, by
+    // <see cref="Core.UndergroundComplex.AuthorityCard.Id"/>. A card is a durable possession, not a state of
+    // one excursion: you find it eleven floors under a moon, fly home, come back a month later and the gate
+    // still reads it. So it lives on the page beside the leads and rides in the vault, not on the
+    // SurfaceExcursion (which is thrown away the moment the shuttle lifts).
+    private readonly HashSet<string> _authorityCards = [];
+
+    /// <summary>#590 · Every card the captain holds, parsed back into what it authorises. Unreadable entries
+    /// from an edited or future save are simply dropped rather than thrown over — the vault is tolerant
+    /// everywhere else and a mystery key is not worth crashing a load for.</summary>
+    private List<Core.UndergroundComplex.AuthorityCard> HeldAuthorities()
+    {
+        var held = new List<Core.UndergroundComplex.AuthorityCard>();
+        foreach (string id in _authorityCards)
+        {
+            if (Core.UndergroundComplex.AuthorityCard.TryParse(id, out Core.UndergroundComplex.AuthorityCard c))
+            {
+                held.Add(c);
+            }
+        }
+        held.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));   // stable order in the refusal line
+        return held;
+    }
 
     /// <summary>Say it AND keep it. Every durable find on a surface goes through here rather than through
     /// ShowPulseMessage directly, so there is one place that can never be forgotten about — the pulse is the

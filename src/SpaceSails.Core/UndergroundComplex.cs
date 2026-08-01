@@ -614,9 +614,7 @@ public static class UndergroundComplex
         Haul.Records =>
             "📋 Operational paper: rosters, routes, a shipping schedule with a column nobody has labelled. It " +
             "does not say what was moved. It says exactly how often, and to where.",
-        Haul.Key =>
-            "🎫 An authority card, countersigned twice and still active — this building never got the news " +
-            "that its owners stopped paying. Something down here will open for this.",
+        Haul.Key => KeyLine(bodyId, level),
         Haul.Dirt => DirtOn(bodyId, level, roomIndex),
         _ =>
             "🚪 Stripped to the fittings. Whoever cleared this room did it carefully and did it in a hurry, " +
@@ -630,6 +628,140 @@ public static class UndergroundComplex
         $"🛗 The panel has no button below B{floorsDown}. This car was dug to serve the top of the building " +
         "and nothing else — whatever is under you was reached another way, by somebody with their own shaft " +
         "and their own reasons. It is down here somewhere.";
+
+    // ── #590 · THE AUTHORITY CARD, WHICH NOW OPENS SOMETHING ────────────────────────────────────────────
+    //
+    // Owner: "could there be like a keycode etc that allows us access to the lab" — and, earlier the same
+    // session, "Coordinates / instructions about places and sights, pin codes to doors etc."
+    //
+    // Haul.Key already existed and already said "Something down here will open for this." It opened nothing,
+    // which is worse than not offering it at all (the #212 law: an affordance you can see and cannot use is
+    // worse than none). This is that promise kept.
+    //
+    // THREE CALLS, each overrulable in one line:
+    //
+    // 1. IT AUTHORISES THE NEXT SHAFT BAND, and nothing else. #590 offered three candidate shapes and this
+    //    is the load-bearing one: the car already serves a BAND and stops, and the way down is already "a
+    //    different shaft, somewhere on this floor, which you have to find". A card turns that from a wall
+    //    into a thing you EARN by working the band you are on. Depth stops being a number and becomes a
+    //    reward.
+    //
+    // 2. THE SEALED SECTOR DOORS STAY SEALED. #590's option (2) is explicitly declined. Those doors exist to
+    //    be walls with a world behind them, and LockedLine deliberately never teases; the moment one of them
+    //    can open, every one of them becomes a puzzle and the illusion of scale turns into a lock hunt.
+    //    A card never opens a SECTOR door, and TheAuthorityCardTests pins that.
+    //
+    // 3. NEVER A CODE THE PLAYER TYPES. You have the card or you do not. A keypad minigame would be out of
+    //    register with everything around it, and the owner's own phrasing — "allows us access" — is about
+    //    possession, not about a puzzle.
+    //
+    // Canon holds: a card may be countersigned by an office that denies existing. It never says what the
+    // building was for.
+
+    /// <summary>Which shaft band this card runs. The identity is the fact — a card is for one band of one
+    /// facility, decided by the world rather than by the moment it is used.</summary>
+    public readonly record struct AuthorityCard(string BodyId, int Band)
+    {
+        /// <summary>The stable string a save file and a carried-cards set hold.</summary>
+        public string Id => $"{BodyId}#{Band}";
+
+        /// <summary>Read one back off a save. Returns false on anything that is not a card we wrote.</summary>
+        public static bool TryParse(string? id, out AuthorityCard card)
+        {
+            card = default;
+            if (id is null)
+            {
+                return false;
+            }
+            int cut = id.LastIndexOf('#');
+            if (cut <= 0 || !int.TryParse(id.AsSpan(cut + 1), System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out int band) || band < 0)
+            {
+                return false;
+            }
+            card = new AuthorityCard(id[..cut], band);
+            return true;
+        }
+    }
+
+    /// <summary>Does this site have a shaft band that deep at all? Band 0 is the one the surface lift head
+    /// serves; a band exists when its top floor is still inside the site's own depth.</summary>
+    public static bool SiteHasBand(string bodyId, int band) =>
+        band >= 0 && -((band * FloorsPerShaft) + 1) >= DepthOf(bodyId);
+
+    /// <summary>#590 · WHICH card a Key room holds: the one for the shaft band immediately below the floor
+    /// you found it on. Not a roll — a fact about the building, and the most legible possible rule, because
+    /// it means the card you need for the next shaft is always somewhere in the band you are standing in.
+    ///
+    /// <para>Returns null at the bottom band, where there is no shaft below to authorise. That Key is not
+    /// wasted: the client turns it into a lead naming another moon, which is the same payoff Records and
+    /// Dirt already give and keeps the deepest floor from handing out a card for a hole nobody dug.</para></summary>
+    public static AuthorityCard? CardInRoom(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int next = BandOf(level) + 1;
+        return SiteHasBand(bodyId, next) ? new AuthorityCard(bodyId, next) : null;
+    }
+
+    /// <summary>What is printed on the card. Institutional, expensive, and explains nothing — the register
+    /// of an office that will not admit to being one.</summary>
+    public static string CardTitle(AuthorityCard card)
+    {
+        string[] offices =
+        [
+            "OFFICE OF WORKS · SUB-REGISTRY",
+            "MINISTRY LIAISON · UNNUMBERED",
+            "ESTATES · SPECIAL PROJECTS",
+            "PROCUREMENT · SCHEDULE C",
+            "INSPECTORATE · NO STANDING",
+        ];
+        ulong seed = DiceRule.Seed($"hive:card:{card.BodyId}:{card.Band}");
+        return $"🎫 SHAFT {card.Band + 1} · {offices[(int)(seed % (ulong)offices.Length)]}";
+    }
+
+    /// <summary>The Key haul, said out loud. It now names the shaft it runs, because a card whose purpose is
+    /// a mystery is a keypad by another route.</summary>
+    public static string KeyLine(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        if (CardInRoom(bodyId, level) is not { } card)
+        {
+            return "🎫 An authority card, countersigned twice and still active — and issued for a " +
+                "shaft in a building that is not this one. Whoever carried it worked somewhere else, and came " +
+                "here, and did not leave.";
+        }
+        return $"🎫 An authority card, countersigned twice and still active: {CardTitle(card)}. This " +
+            "building never got the news that its owners stopped paying, and neither did its gates. The " +
+            "second shaft is somewhere on these floors, and this runs it.";
+    }
+
+    /// <summary>What the gate says when the card works. Said once, at the moment the car goes deeper than
+    /// this shaft was ever dug to.</summary>
+    public static string CardAcceptedLine(AuthorityCard card) =>
+        $"🎫 You find the other shaft where the plan said a shaft would be, and its gate reads the " +
+        $"card without hesitating — {CardTitle(card)}, countersigned by an office that stopped answering " +
+        "its own post decades ago and never once revoked a thing. The car below is colder than the one above.";
+
+    /// <summary>What the gate says when you are carrying authorities and none of them is this one. The
+    /// failure has to name what is wrong with it — silence here would read as a bug.</summary>
+    public static string WrongCardLine(int floorsDown, IEnumerable<AuthorityCard> held)
+    {
+        ArgumentNullException.ThrowIfNull(held);
+        var names = new List<string>();
+        foreach (AuthorityCard c in held)
+        {
+            names.Add(CardTitle(c));
+        }
+        if (names.Count == 0)
+        {
+            return $"🔒 The second shaft is here, below B{floorsDown}, and its gate wants an " +
+                "authority this building has not issued in a long time. Somebody who worked these floors was " +
+                "carrying one. They did not take it with them.";
+        }
+        return $"🔒 The second shaft's gate reads what you are carrying, and declines it. " +
+            $"{string.Join("; ", names)} — every one of them countersigned, current, and for another " +
+            "shaft. The card that runs THIS one is on these floors somewhere.";
+    }
 
     /// <summary>#585 · The card the first descent earns. Owner: "I think we need to gen AI pop-up about
     /// finding the elevator" — and he is right that it is the beat of the whole feature: the moment a moon

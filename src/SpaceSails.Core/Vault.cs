@@ -58,6 +58,10 @@ public sealed class Vault
     /// <summary>#587 · The captain's FIELD BOOK — what they found on the ground. Its own independently
     /// optional section; a pre-#587 file simply lacks it and defaults to an empty book.</summary>
     public FieldNotesSection? FieldNotes { get; init; }
+
+    /// <summary>#590 · The authority cards the captain is carrying. Its own independently optional section;
+    /// a pre-#590 file simply lacks it and defaults to an empty wallet.</summary>
+    public AuthoritiesSection? Authorities { get; init; }
     public KaamosSection? Kaamos { get; init; }
     public NebulaSection? Nebula { get; init; }
     public ResumeSection? Resume { get; init; }
@@ -334,6 +338,23 @@ public sealed record FieldNotesSection
 {
     /// <summary>The notes, oldest first. Capped by the writer (see <c>FieldNotes</c>).</summary>
     public IReadOnlyList<FieldNote> Notes { get; init; } = [];
+}
+
+/// <summary>#590 · WHAT THE CAPTAIN IS CARRYING THAT OPENS SOMETHING. Owner: <i>"could there be like a
+/// keycode etc that allows us access to the lab"</i>.
+///
+/// <para>Stored as the flat list of card ids (<c>UndergroundComplex.AuthorityCard.Id</c>) and nothing else,
+/// so the save carries the FACT and the prose is rebuilt from the generator at read time — the same shape
+/// KAAMOS uses, and for the same reason: a card's title is a seeded property of the world, and a file that
+/// carried the words would go stale the day the words changed. Ids the current build cannot parse are
+/// dropped on load rather than thrown over.</para>
+///
+/// <para>These are durable on purpose. A card is found eleven floors under a moon and must still be in the
+/// captain's pocket a month and a world later, or it is not a possession — it is a mood.</para></summary>
+public sealed record AuthoritiesSection
+{
+    /// <summary>Card ids, in whatever order they were written.</summary>
+    public IReadOnlyList<string> Cards { get; init; } = [];
 }
 
 // ── PROJEKTI KAAMOS (#411): the ice-moon mystery, assembled per-thread. ──
