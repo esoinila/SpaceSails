@@ -40,54 +40,139 @@ public static class SurfaceShelter
     ///
     /// <para>The consequence is the good bit and it is free: if they refill on their own, then <b>finding
     /// one that is NOT full means somebody was there</b> — a fact about the world told by state rather than
-    /// by a card, which is the register this game keeps reaching for.</para></summary>
-    public const double RechargeSeconds = 6.0 * 60.0 * 60.0;
+    /// by a card, which is the register this game keeps reaching for.</para>
+    ///
+    /// <para><b>TWO MINUTES, not the six hours this first shipped as.</b> Owner, sitting in one with a spent
+    /// rack: <i>"the rack should replenish way faster now I am stranded here."</i> He is right, and it was a
+    /// design error rather than a number: a recharge measured in hours means STRANDED EQUALS DEAD, and the
+    /// building stops being a refuge at the exact moment it is needed as one. At two minutes, waiting it out
+    /// is a real option - grim, boring, entirely valid, with the pack still walking toward you throughout.
+    /// That is a scene. Six hours was a loading screen you could not skip.</para>
+    ///
+    /// <para>It does not become a hiding place: the drain stops inside, but nothing is GAINED by sitting
+    /// there, the rack still refuses past <see cref="FillToFraction"/>, and the Old Ones do not get bored.</para></summary>
+    public const double RechargeSeconds = 120.0;
 
-    /// <summary>How much air a shelter hands over at full charge, in seconds — the ceiling on a single
-    /// draw before <see cref="FillToFraction"/> is applied.</summary>
-    public const double RefillSeconds = 150.0;
+    /// <summary>How much air a rack can hold in its reservoir, in suit-seconds.</summary>
+    public const double ReservoirSeconds = 150.0;
+
+    /// <summary>How fast the rack MAKES air, in suit-seconds per real second. Slow, and always running.
+    ///
+    /// <para>Owner: <i>"it should always give some more air... like a steady production rate... we could
+    /// just note that it is not full ... so somebody has used it. The time it takes to pump air is good
+    /// incentive to not take too much."</i></para>
+    ///
+    /// <para>This replaced a one-shot draw that could be SPENT, which had a nasty failure the owner walked
+    /// straight into: a captain stranded beside an empty rack had nothing to do but die. A cracker that
+    /// always produces cannot strand anybody — and the pumping TIME does the balancing the empty state was
+    /// badly trying to do. Topping right up means standing in a shed while the Old Ones keep walking, so
+    /// taking "enough" and leaving is a decision the player makes, every time, rather than a rule.</para></summary>
+    public const double ProductionPerSecond = 2.0;
+
+    /// <summary>How fast a full reservoir transfers into a suit, in suit-seconds per real second. Quick, so
+    /// arriving at an untouched rack is a relief rather than an errand; once it is drained you are down to
+    /// <see cref="ProductionPerSecond"/> and the clock is the price.</summary>
+    public const double TransferPerSecond = 26.0;
 
     /// <summary>How long the charge takes to transfer. Long enough that a captain standing in a shelter with
     /// something walking toward it has a real decision, short enough that it is never a chore.</summary>
     public const double RefillSecondsToTransfer = 4.0;
 
-    /// <summary>Where the shelter stands: deep, and off to one side so it is a WALK rather than a straight
-    /// line down from the tube. Seeded per site, so two grounds on the same moon put it in different places.
+    /// <summary>How many shelters a site carries. Owner, walking the enlarged field: <i>"we should have
+    /// more emergency shelters here."</i>
     ///
-    /// <para>Kept clear of the deep anchor — the monolith is what you go out there to SEE, and a building
-    /// leaning on it would spoil both.</para></summary>
-    public static (double X, double Y) PlaceOn(string bodyId, string siteSalt, in SurfaceLayout.Field field)
+    /// <para>One was right for a 78 x 64 du field and thin for a 310 x 260 one — and thematically wrong too:
+    /// Andy Weir's are scattered across the surface precisely BECAUSE a single refuge is not a safety net.
+    /// Scaled to the field's area so this holds if the ground is ever resized again.</para>
+    ///
+    /// <para>It does not dissolve the tether, and the reason is the refusal: <see cref="FillToFraction"/>
+    /// means no shelter ever tops a suit off, so however many you string together you are always working
+    /// down from two thirds and must eventually go home. More shelters buy RANGE, never independence.</para></summary>
+    public static int CountFor(in SurfaceLayout.Field field)
+    {
+        double area = (field.RightX - field.LeftX) * (field.LandingBandY - field.BottomY);
+        return Math.Clamp((int)Math.Round(area / 20_000.0), 1, 6);
+    }
+
+    /// <summary>How far apart shelters must stand. Close enough to chain in an emergency, far enough that
+    /// finding one is still finding something.</summary>
+    public const double MinSeparationDu = 70.0;
+
+    /// <summary>Every shelter on this site, in a stable order. Seeded per site, spaced, and kept off the
+    /// deep anchor — the monolith is what you walk out there to SEE, and a building leaning on it would
+    /// spoil both.</summary>
+    public static IReadOnlyList<(double X, double Y)> PlacesOn(
+        string bodyId, string siteSalt, in SurfaceLayout.Field field)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(siteSalt);
 
         double margin = SurfaceLayout.EdgeMargin + 24;
-        double x = Lerp(field.LeftX + margin, field.RightX - margin, Frac(bodyId, siteSalt, "x"));
-        double y = Lerp(field.BottomY + 24, field.BottomY + ((field.LandingBandY - field.BottomY) * 0.45),
-            Frac(bodyId, siteSalt, "y"));
+        double loX = field.LeftX + margin, hiX = field.RightX - margin;
+        double loY = field.BottomY + 24, hiY = field.LandingBandY - 30;
+        double anchorX = field.AnchorX, anchorY = field.AnchorY;
 
-        // Never on the monolith's toes.
-        if (Math.Abs(x - field.AnchorX) < 40 && Math.Abs(y - field.AnchorY) < 30)
+        int want = CountFor(field);
+        var placed = new List<(double X, double Y)>();
+
+        for (int attempt = 0; attempt < want * 12 && placed.Count < want; attempt++)
         {
-            x = x < field.AnchorX ? field.AnchorX - 55 : field.AnchorX + 55;
-            x = Math.Clamp(x, field.LeftX + margin, field.RightX - margin);
+            double x = Lerp(loX, hiX, Frac(bodyId, siteSalt, $"x:{attempt}"));
+            double y = Lerp(loY, hiY, Frac(bodyId, siteSalt, $"y:{attempt}"));
+
+            if (Math.Abs(x - anchorX) < 40 && Math.Abs(y - anchorY) < 30)
+            {
+                continue;   // never on the monolith's toes
+            }
+
+            bool crowded = false;
+            foreach ((double px, double py) in placed)
+            {
+                crowded |= Math.Sqrt(((x - px) * (x - px)) + ((y - py) * (y - py))) < MinSeparationDu;
+            }
+            if (!crowded)
+            {
+                placed.Add((x, y));
+            }
         }
-        return (x, y);
+
+        // A site ALWAYS has at least one, whatever the seeding did — it is the answer to the air mechanic,
+        // and a ground without one is a ground where that mechanic has nothing to say.
+        if (placed.Count == 0)
+        {
+            placed.Add((Lerp(loX, hiX, 0.5), Lerp(loY, hiY, 0.35)));
+        }
+        return placed;
     }
+
+    /// <summary>The first shelter — kept for callers that only want somewhere to point.</summary>
+    public static (double X, double Y) PlaceOn(string bodyId, string siteSalt, in SurfaceLayout.Field field) =>
+        PlacesOn(bodyId, siteSalt, field)[0];
 
     /// <summary>The shelter's shape. A drum — because on a cold world with in-situ materials, a wall that is
     /// also a pressure vessel would rather not have corners (the owner's Greenland longhouse reasoning), and
     /// because it should read as different from the rubble around it at a glance.</summary>
-    public static SurfaceStructure.Spec SpecFor(string bodyId, string siteSalt, in SurfaceLayout.Field field)
+    public static SurfaceStructure.Spec SpecFor(string bodyId, string siteSalt, in SurfaceLayout.Field field) =>
+        SpecsFor(bodyId, siteSalt, field)[0];
+
+    /// <summary>Every shelter on this site as a buildable spec, in the same stable order as
+    /// <see cref="PlacesOn"/> — so an index means the same building everywhere it is used.</summary>
+    public static IReadOnlyList<SurfaceStructure.Spec> SpecsFor(
+        string bodyId, string siteSalt, in SurfaceLayout.Field field)
     {
-        (double x, double y) = PlaceOn(bodyId, siteSalt, field);
-        return new SurfaceStructure.Spec(
-            CentreX: x, CentreY: y,
-            Width: 26, Height: 21,
-            AngleRad: Frac(bodyId, siteSalt, "angle") * Math.Tau,
-            Doors: 1,
-            WallThickness: 2.6,
-            Shape: SurfaceStructure.Footprint.Rounded);
+        var specs = new List<SurfaceStructure.Spec>();
+        IReadOnlyList<(double X, double Y)> places = PlacesOn(bodyId, siteSalt, field);
+        for (int i = 0; i < places.Count; i++)
+        {
+            specs.Add(new SurfaceStructure.Spec(
+                CentreX: places[i].X, CentreY: places[i].Y,
+                Width: 26, Height: 21,
+                AngleRad: Frac(bodyId, siteSalt, $"angle:{i}") * Math.Tau,
+                Doors: 1,
+                WallThickness: 2.6,
+                Shape: SurfaceStructure.Footprint.Rounded));
+        }
+        return specs;
     }
 
     /// <summary>What the sign outside says. It is a survival shelter and it says so — this is the one thing
@@ -170,33 +255,43 @@ public static class SurfaceShelter
     /// <para>This is what makes "finding one not full means somebody was there" land on FIRST contact
     /// instead of only after your own second visit. Roughly one shelter in three has been used by a
     /// stranger recently enough to still show it.</para></summary>
-    public static bool SomebodyWasHere(string bodyId, string siteSalt)
+    public static bool SomebodyWasHere(string bodyId, string siteSalt, int index = 0)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(siteSalt);
-        return DiceRule.Roll(DiceRule.Seed($"shelter:{bodyId}:{siteSalt}:used"), 3).Face == 1;
+        return DiceRule.Roll(DiceRule.Seed($"shelter:{bodyId}:{siteSalt}:used:{index}"), 3).Face == 1;
     }
 
-    /// <summary>How much air this rack will actually put into a suit right now: capped by its own charge,
-    /// and hard-stopped at <see cref="FillToFraction"/> of a tank so there is something left for the next
-    /// person. Returns 0 when the suit is already at or above the line — the rack does not top up a captain
-    /// who does not need it, which is the same courtesy pointing the other way.</summary>
-    public static double Quote(double airLeftSeconds, double charge, double tankSeconds)
+    /// <summary>How much air moves from a rack into a suit over <paramref name="dt"/> real seconds, given
+    /// what the reservoir is holding. Limited by the transfer rate, by what the reservoir actually has, and
+    /// hard-stopped at <see cref="FillToFraction"/> of a tank so there is always something left for the next
+    /// person. Zero when the suit is already at or above the line — the rack does not top up a captain who
+    /// does not need it, which is the same courtesy pointing the other way.</summary>
+    public static double Transfer(double airLeftSeconds, double reservoirSeconds, double tankSeconds, double dt)
     {
         double ceiling = tankSeconds * FillToFraction;
-        if (airLeftSeconds >= ceiling)
+        if (airLeftSeconds >= ceiling || reservoirSeconds <= 0 || dt <= 0)
         {
             return 0;
         }
-        double available = RefillSeconds * Math.Clamp(charge, 0, 1);
-        return Math.Max(0, Math.Min(ceiling - airLeftSeconds, available));
+        double wanted = Math.Min(TransferPerSecond * dt, ceiling - airLeftSeconds);
+        return Math.Max(0, Math.Min(wanted, reservoirSeconds));
     }
 
-    /// <summary>The receipt for a charge.</summary>
-    public static string RefillLine(double seconds) =>
-        $"🫁 The rack gives you {(int)(seconds / 60)}:{(int)(seconds % 60):00} and then stops itself, well " +
-        "short of a full tank. Whoever set that regulator meant the next person through that door to find " +
-        "something in it too.";
+    /// <summary>The reservoir after <paramref name="dt"/> seconds of production, never past its capacity.</summary>
+    public static double Produce(double reservoirSeconds, double dt) =>
+        Math.Clamp(reservoirSeconds + (ProductionPerSecond * Math.Max(0, dt)), 0, ReservoirSeconds);
+
+    /// <summary>Said once as the rack starts feeding a suit.</summary>
+    public const string PumpingLine =
+        "🫁 The rack finds your fitting and starts pumping. It is not fast, and it will stop itself well " +
+        "short of a full tank — whoever set that regulator meant the next person through the door to find " +
+        "something in it too. Stay as long as you dare.";
+
+    /// <summary>Said once when the rack reaches the line it refuses to pass.</summary>
+    public const string PumpDoneLine =
+        "🫁 The rack clicks off at two thirds and will not be argued with. That is your lot; the rest is " +
+        "for whoever comes next.";
 
     /// <summary>What the rack says when the suit is already past the line it will fill to.</summary>
     public const string AlreadyFullEnoughLine =
@@ -211,9 +306,10 @@ public static class SurfaceShelter
         _ => "",
     };
 
-    /// <summary>When the rack has nothing to give at all.</summary>
-    public const string EmptyLine =
-        "🫁 The rack is dry and slowly refilling itself. Come back to it, or find another.";
+    /// <summary>When the reservoir is drained and the captain is down to the trickle it makes.</summary>
+    public const string TrickleLine =
+        "🫁 The reservoir is down to what the cracker can make. It is still giving — just slowly now, a " +
+        "breath at a time, for as long as you are willing to stand here.";
 
     private const int Resolution = 4096;
 

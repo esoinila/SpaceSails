@@ -494,8 +494,14 @@ public partial class Map
         public bool HardBreathingNoted { get; set; }
 
         // #573 · The deep shelter's charging rack: one charge per excursion, then it is dry.
-        public bool ShelterTankSpent { get; set; }
-        public bool ShelterLockerSpent { get; set; }
+        // #573 · Per-shelter state, keyed by index into SurfaceShelter.SpecsFor - a site carries several
+        // now. The rack records WHEN it was drawn so it can climb back on its own; the locker is simply
+        // spent, because nobody is out here restocking ammunition.
+        // #573 · Each rack's reservoir, in suit-seconds. Absent = never visited, so it is full (or partly
+        // drawn by somebody else — see SurfaceShelter.SomebodyWasHere). Always producing, never "spent".
+        public Dictionary<int, double> ShelterReservoir { get; } = [];
+        public HashSet<int> ShelterPumpNoted { get; } = [];
+        public HashSet<int> ShelterLockersSpent { get; } = [];
 
         // #573 · Whether the "you are breathing shelter air" line has been said for this visit inside. Reset
         // on stepping out, so coming back in says it again — arriving in a refuge is worth noticing twice.
@@ -779,17 +785,46 @@ public partial class Map
         // Checked BEFORE the drain and returning outright, so there is no ordering by which a captain
         // sitting in a refuge can suffocate in it. The tank does not tick up either — the rack does that,
         // deliberately and with a ceiling; simply standing here is safety, not resupply.
-        if (StandingInTheShelter(ex))
+        int inside = ShelterUnderfoot(ex);
+        if (inside >= 0)
         {
             if (!ex.ShelterBreathNoted)
             {
                 ex.ShelterBreathNoted = true;
                 ShowPulseMessage(SurfaceShelter.BreathingLine);
-                string story = SurfaceShelter.PartialLine(ShelterChargeNow(ex));
+                string story = SurfaceShelter.PartialLine(
+                    ShelterReservoirNow(ex, inside) / SurfaceShelter.ReservoirSeconds);
                 if (story.Length > 0)
                 {
                     ShowPulseMessage(story);
                 }
+            }
+
+            // #573 · THE RACK ALWAYS GIVES, and the PUMPING TIME is the cost. Owner: "it should always give
+            // some more air... like a steady production rate... The time it takes to pump air is good
+            // incentive to not take too much." It replaced a one-shot draw that could be SPENT, which had a
+            // nasty failure he walked into: stranded beside an empty rack with nothing to do but die. A
+            // cracker that always produces cannot strand anybody, and standing in a shed while the Old Ones
+            // keep walking prices the top-up far better than an empty state ever did.
+            double held = SurfaceShelter.Produce(ShelterReservoirNow(ex, inside), dtRealSeconds);
+            double pumped = SurfaceShelter.Transfer(
+                ex.AirSeconds, held, SuitAir.TankSeconds, dtRealSeconds);
+
+            ex.ShelterReservoir[inside] = held - pumped;
+            if (pumped > 0)
+            {
+                ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, pumped);
+                ex.AirLowWarned = false;
+                ex.AirWarned = false;
+                ex.ReserveNoted = false;
+                if (ex.ShelterPumpNoted.Add(inside))
+                {
+                    ShowPulseMessage(SurfaceShelter.PumpingLine);
+                }
+            }
+            else if (ex.ShelterPumpNoted.Contains(inside) && ex.ShelterPumpNoted.Add(-inside - 1))
+            {
+                ShowPulseMessage(SurfaceShelter.PumpDoneLine);
             }
             return;
         }
@@ -1054,61 +1089,132 @@ public partial class Map
 
     // ── #573 · THE SHELTER'S CHARGING RACK [E]. The only place outside her tube that refills a suit, and
     //    therefore the only reason the deep field is worth crossing rather than merely looking at. ──
-    private void ShelterTankInteract()
+    /// <summary>#573 · The fixed places the fan should point at: the way home, and every shelter. Bearings
+    /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.</summary>
+    private List<(double Bearing, double Range, bool IsHome)> BuildBeacons(SurfaceExcursion ex)
+    {
+        var list = new List<(double, double, bool)>();
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        {
+            return list;   // a hull has neither a tube mouth nor a shelter
+        }
+
+        void Add(double x, double y, bool home)
+        {
+            double dx = x - _avatarX, dy = y - _avatarY;
+            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home));
+        }
+
+        Add(MoonSurface.SpawnX, MoonSurface.SpawnY, home: true);
+        foreach (SurfaceStructure.Spec shelter in SheltersOn(ex))
+        {
+            Add(shelter.CentreX, shelter.CentreY, home: false);
+        }
+        return list;
+    }
+
+    /// <summary>#573 · Your own buried caches, as marks on the fan — but ONLY once they are inside its
+    /// reach. The range gate is the entire design: a field this size made finding your own ✗ a real task,
+    /// and an instrument that always knew where it was would take that task straight back off you.</summary>
+    private List<(double Bearing, double Range)> BuildCacheBeacons()
+    {
+        var list = new List<(double, double)>();
+        foreach ((double mx, double my, bool _) in _hudMarks)
+        {
+            double dx = mx - _avatarX, dy = my - _avatarY;
+            double range = Math.Sqrt((dx * dx) + (dy * dy));
+            if (range <= CacheDetectRangeDu)
+            {
+                list.Add((Math.Atan2(dy, dx), range));
+            }
+        }
+        return list;
+    }
+
+    /// <summary>How close a buried cache has to be before the fan admits to it.</summary>
+    private const double CacheDetectRangeDu = 55.0;
+
+    /// <summary>#573 · What the captain has been TOLD, as opposed to what they can see — a wide, soft wash
+    /// rather than a mark. A tip narrows a search; it does not end one, and a dot would claim a precision
+    /// the information does not have.</summary>
+    private List<(double Bearing, double Range, double Spread)> BuildRumours(SurfaceExcursion ex)
+    {
+        var list = new List<(double, double, double)>();
+        if (ex.Lab is not { HasLab: true } lab || ex.SecretLabDoorRevealed)
+        {
+            return list;
+        }
+        if (!_secretLabsFound.Contains(ex.Stop.Body.Id))
+        {
+            return list;   // nobody has tipped you about this one; there is nothing to be vague about
+        }
+
+        double dx = lab.DoorX - _avatarX, dy = lab.DoorY - _avatarY;
+        list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), RumourSpreadDu));
+        return list;
+    }
+
+    /// <summary>How wide a rumour reads on the fan, in deck units. Big — it is a tip, not a fix.</summary>
+    private const double RumourSpreadDu = 45.0;
+
+    /// <summary>Every shelter on this site, in the stable order everything else indexes by.</summary>
+    private IReadOnlyList<SurfaceStructure.Spec> SheltersOn(SurfaceExcursion ex) =>
+        Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
+            ? []
+            : SurfaceShelter.SpecsFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
+
+    /// <summary>Which shelter the captain is standing inside, or -1.</summary>
+    private int ShelterUnderfoot(SurfaceExcursion ex)
+    {
+        IReadOnlyList<SurfaceStructure.Spec> all = SheltersOn(ex);
+        for (int i = 0; i < all.Count; i++)
+        {
+            if (SurfaceShelter.Contains(all[i], _avatarX, _avatarY))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private bool StandingInTheShelter(SurfaceExcursion ex) => ShelterUnderfoot(ex) >= 0;
+
+    /// <summary>A rack's reservoir right now, in suit-seconds. A rack nobody in this run has touched is full
+    /// — unless somebody ELSE drew on it, which is the whole "finding one not full means somebody was here"
+    /// story, told by state rather than by a card.</summary>
+    private double ShelterReservoirNow(SurfaceExcursion ex, int index)
+    {
+        if (index < 0)
+        {
+            return 0;
+        }
+        if (ex.ShelterReservoir.TryGetValue(index, out double held))
+        {
+            return held;
+        }
+        double start = SurfaceShelter.SomebodyWasHere(ex.Stop.Body.Id, ex.Site.LayoutSalt, index)
+            ? SurfaceShelter.ReservoirSeconds * 0.42
+            : SurfaceShelter.ReservoirSeconds;
+        ex.ShelterReservoir[index] = start;
+        return start;
+    }
+
+    // ── #573 · THE SHELTER'S EMERGENCY LOCKER [E]. Owner, on Andy Weir's bubble shelters: they "should also
+    //    contain reload to guns". A shelter stocked with air and nothing else is a tap, not a refuge. ──
+    private void ShelterLockerInteract()
     {
         if (_surface is not { } ex)
         {
             return;
         }
-        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.ShelterTank })
-        {
-            return;
-        }
-        double charge = ShelterChargeNow(ex);
-        if (charge <= 0)
-        {
-            ShowPulseMessage(SurfaceShelter.EmptyLine);
-            return;
-        }
-
-        // THE REFUSAL. Owner: "it refuses to give more so there is something left for next needy person
-        // also." It fills to two thirds and stops itself — and hands over nothing at all to a captain who is
-        // already above that line, which is the same courtesy pointing the other way.
-        double give = SurfaceShelter.Quote(ex.AirSeconds, charge, SuitAir.TankSeconds);
-        if (give <= 0)
-        {
-            ShowPulseMessage(SurfaceShelter.AlreadyFullEnoughLine);
-            return;
-        }
-
-        double before = ex.AirSeconds;
-        ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, give);
-        ex.ShelterTankSpent = true;
-
-        // Re-arm the warnings: the suit is no longer where it was, so saying so again next time is honest.
-        ex.AirLowWarned = false;
-        ex.AirWarned = false;
-        ex.ReserveNoted = false;
-
-        RendererInterop.PlayCue("board");
-        ShowPulseMessage(SurfaceShelter.RefillLine(ex.AirSeconds - before));
-        RequestVaultSave();
-    }
-
-    // ── #573 · THE SHELTER'S EMERGENCY LOCKER [E]. Owner, on Andy Weir's bubble shelters: they "should
-    //    also contain reload to guns". A shelter stocked with air and nothing else is a tap, not a refuge. ──
-    private void ShelterLockerInteract()
-    {
-        if (_surface is not { } ex || ex.ShelterLockerSpent)
-        {
-            if (_surface is not null)
-            {
-                ShowPulseMessage(SurfaceShelter.LockerEmptyLine);
-            }
-            return;
-        }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.ShelterLocker })
         {
+            return;
+        }
+        int whichLocker = ShelterUnderfoot(ex);
+        if (whichLocker < 0 || ex.ShelterLockersSpent.Contains(whichLocker))
+        {
+            ShowPulseMessage(SurfaceShelter.LockerEmptyLine);
             return;
         }
 
@@ -1132,120 +1238,43 @@ public partial class Map
             }
         }
 
-        ex.ShelterLockerSpent = true;
+        ex.ShelterLockersSpent.Add(whichLocker);
         RendererInterop.PlayCue("board");
         ShowPulseMessage(SurfaceShelter.LockerLine(SurfaceShelter.LockerRounds - left));
         RequestVaultSave();
     }
 
-    /// <summary>#573 · The fixed places the fan should point at: the way home, and the shelter. Bearings
-    /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.
-    ///
-    /// <para>The field is sixteen times the size it was and a shelter deep in it is otherwise a needle —
-    /// "where is the sanctum for air?" is a fair question to have to ask twice, and a fan that already
-    /// tells you where things ARE can tell you where places are too.</para></summary>
-    private List<(double Bearing, double Range, bool IsHome)> BuildBeacons(SurfaceExcursion ex)
+    private void ShelterTankInteract()
     {
-        var list = new List<(double, double, bool)>();
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        if (_surface is not { } ex)
         {
-            return list;   // a hull has neither a tube mouth nor a shelter
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.ShelterTank })
+        {
+            return;
         }
 
-        void Add(double x, double y, bool home)
+        // #573 · The rack is not a button any more — it pumps on its own for as long as a captain stands in
+        // the shelter (StepSuitAir), because the owner is right that the PUMPING TIME is the honest cost:
+        // "the time it takes to pump air is good incentive to not take too much". So [E] reads the gauge
+        // rather than working a lever. An affordance that did nothing would be worse than none (#212), so it
+        // tells you what the machine is doing and lets you decide how long to stand there.
+        int which = ShelterUnderfoot(ex);
+        if (which < 0)
         {
-            double dx = x - _avatarX, dy = y - _avatarY;
-            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home));
+            ShowPulseMessage("🫁 The rack's fitting is inside. Step in out of the vacuum.");
+            return;
         }
 
-        Add(MoonSurface.SpawnX, MoonSurface.SpawnY, home: true);
-
-        SurfaceStructure.Spec shelter = SurfaceShelter.SpecFor(
-            ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
-        Add(shelter.CentreX, shelter.CentreY, home: false);
-
-        return list;
+        double held = ShelterReservoirNow(ex, which);
+        double ceiling = SuitAir.TankSeconds * SurfaceShelter.FillToFraction;
+        ShowPulseMessage(ex.AirSeconds >= ceiling
+            ? SurfaceShelter.PumpDoneLine
+            : held > SurfaceShelter.ReservoirSeconds * 0.1
+                ? SurfaceShelter.PumpingLine
+                : SurfaceShelter.TrickleLine);
     }
-
-    /// <summary>#573 · Is the captain standing in the shelter's atmosphere? Pure Core geometry
-    /// (<see cref="SurfaceShelter.Contains"/>) against this site's own shelter.</summary>
-    private bool StandingInTheShelter(SurfaceExcursion ex)
-    {
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
-        {
-            return false;
-        }
-        SurfaceStructure.Spec spec = SurfaceShelter.SpecFor(
-            ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
-        return SurfaceShelter.Contains(spec, _avatarX, _avatarY);
-    }
-
-    /// <summary>This shelter's charge right now — full unless somebody has drawn on it, and climbing back
-    /// on its own. A rack that is short of full is a fact about who else has been out here.</summary>
-    private double ShelterChargeNow(SurfaceExcursion ex)
-    {
-        if (ex.ShelterTankSpent)
-        {
-            return 0;
-        }
-        // Nobody in THIS run has touched it, so the only thing that can have is somebody else.
-        return SurfaceShelter.SomebodyWasHere(ex.Stop.Body.Id, ex.Site.LayoutSalt) ? 0.42 : 1.0;
-    }
-
-    /// <summary>#573 · Your own buried caches, as marks on the fan — but ONLY once they are inside its
-    /// reach. Owner: <i>"we would like our own caches onto the detector also.... since now finding them is a
-    /// real task :-D (only if in range though)"</i>.
-    ///
-    /// <para>The range gate is the entire design. A field sixteen times the size made finding your own ✗ a
-    /// genuine task, which is good; an instrument that always knew where it was would take that task straight
-    /// back off you. It tells you when you are WARM, not where to dig.</para></summary>
-    private List<(double Bearing, double Range)> BuildCacheBeacons()
-    {
-        var list = new List<(double, double)>();
-        foreach ((double mx, double my, bool _) in _hudMarks)
-        {
-            double dx = mx - _avatarX, dy = my - _avatarY;
-            double range = Math.Sqrt((dx * dx) + (dy * dy));
-            if (range <= CacheDetectRangeDu)
-            {
-                list.Add((Math.Atan2(dy, dx), range));
-            }
-        }
-        return list;
-    }
-
-    /// <summary>How close a buried cache has to be before the fan admits to it. Generous enough to end a
-    /// hopeless sweep of a huge field, tight enough that you still have to be in the right part of it.</summary>
-    private const double CacheDetectRangeDu = 55.0;
-
-    /// <summary>#573 · What the captain has been TOLD, as opposed to what they can see. A wide, soft, low
-    /// wash on the fan rather than a mark.
-    ///
-    /// <para>Owner: <i>"the intel of the site gives a vague large blob"</i> — and that is the honest shape
-    /// for it. A tip narrows a search; it does not end one. Painting a dot would claim a precision the
-    /// information does not have, which is the same lie as a death card naming a killer nobody saw.</para>
-    ///
-    /// <para>Today the one real tip is a KNOWN secret lab whose door this visit has not turned up yet
-    /// (#409 remembers which bodies hide one). You know it is here; you do not know where.</para></summary>
-    private List<(double Bearing, double Range, double Spread)> BuildRumours(SurfaceExcursion ex)
-    {
-        var list = new List<(double, double, double)>();
-        if (ex.Lab is not { HasLab: true } lab || ex.SecretLabDoorRevealed)
-        {
-            return list;
-        }
-        if (!_secretLabsFound.Contains(ex.Stop.Body.Id))
-        {
-            return list;   // nobody has tipped you about this one; there is nothing to be vague about
-        }
-
-        double dx = lab.DoorX - _avatarX, dy = lab.DoorY - _avatarY;
-        list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), RumourSpreadDu));
-        return list;
-    }
-
-    /// <summary>How wide a rumour reads on the fan, in deck units. Big — it is a tip, not a fix.</summary>
-    private const double RumourSpreadDu = 45.0;
 
     /// <summary>#573 · Raise the tank-is-low card, once per captain ever. Returns true when it went up, so
     /// the caller keeps its pulse line for every later trip.</summary>

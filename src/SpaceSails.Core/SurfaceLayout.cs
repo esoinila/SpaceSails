@@ -48,7 +48,16 @@ public static class SurfaceLayout
     /// interior walls, and the deep landmark(s). The fence, tube, doors, kiosk and the way home are the
     /// caller's shared law — this is only what makes the body's geography its own.</summary>
     public readonly record struct Plan(
-        string Scheme, IReadOnlyList<Wall> Walls, IReadOnlyList<Landmark> Landmarks);
+        string Scheme, IReadOnlyList<Wall> Walls, IReadOnlyList<Landmark> Landmarks,
+        // #573 · Every opening the ground's buildings carry, as the SEGMENT across it. Owner, walking past
+        // them: "there seemed to be shelter like spaces that were just missing the services and the doors."
+        // They had openings all along — the generator simply threw them away, so MoonSurface had nothing to
+        // hang a door on and a building read as an unfinished shelter rather than a ruin somebody left.
+        IReadOnlyList<Doorway>? Doorways = null);
+
+    /// <summary>An opening through a building's wall, given as the segment across it so a caller can hang a
+    /// real door on it rather than guessing which way the passage runs.</summary>
+    public readonly record struct Doorway(double X1, double Y1, double X2, double Y2);
 
     /// <summary>#573 · THE FIELD ENVELOPE, in Core, as the single source of truth.
     ///
@@ -124,6 +133,7 @@ public static class SurfaceLayout
         double ax = f.AnchorX, ay = f.AnchorY;
         double left = ax - 18, right = ax + 18;
         var walls = new System.Collections.Generic.List<Wall>();
+        var doorways = new System.Collections.Generic.List<Doorway>();
 
         AddGappedRow(walls, left, right, ay + 12, ax + 10, 3);
         AddGappedRow(walls, left, right, ay + 6, ax - 11, 3);
@@ -141,10 +151,10 @@ public static class SurfaceLayout
         //
         // The maze itself is untouched — it is canon and stays exactly as authored. These stand OUT in the
         // empty flanks and shallows the maze never occupied, which is most of the field.
-        AddOutlyingStructures(walls, f, "miranda", ax, ay);
+        AddOutlyingStructures(walls, doorways, f, "miranda", ax, ay);
 
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, "▮ THE MONOLITH") };
-        return new Plan("THE MONOLITH MAZE", walls, marks);
+        return new Plan("THE MONOLITH MAZE", walls, marks, doorways);
     }
 
     // ── Luna — the MASS-DRIVER RUINS (worldbuilding §1: the lunar mass drivers). A visibly different
@@ -158,6 +168,7 @@ public static class SurfaceLayout
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         var walls = new System.Collections.Generic.List<Wall>();
+        var doorways = new System.Collections.Generic.List<Doorway>();
 
         // The twin launch rail: two parallel lines running up-field from the deep head, each broken into
         // three segments with OFFSET gaps so the lanes cross-connect (a walker weaves through the breaks).
@@ -180,14 +191,14 @@ public static class SurfaceLayout
         AddStrip(walls, f, cx: ax + 14, cy: ay + 14, len: 10, gap: 3);
         AddStrip(walls, f, cx: ax - 13, cy: ay + 20, len: 9, gap: 2.5);
 
-        AddOutlyingStructures(walls, f, "luna", ax, ay);   // #563: the authored ground gets buildings too
+        AddOutlyingStructures(walls, doorways, f, "luna", ax, ay);   // #563: the authored ground gets buildings too
 
         var marks = new System.Collections.Generic.List<Landmark>
         {
             new(ax - 4, ay - 9, "⛓ MASS-DRIVER MUZZLE"),
             new(ax + 14, ay + 17, "▭ STRIP FOUNDATIONS"),
         };
-        return new Plan("THE MASS-DRIVER RUINS", walls, marks);
+        return new Plan("THE MASS-DRIVER RUINS", walls, marks, doorways);
     }
 
     // ── Every other landable body — a SEEDED signature. A deterministic scatter of ruin blocks and
@@ -199,6 +210,7 @@ public static class SurfaceLayout
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         var walls = new System.Collections.Generic.List<Wall>();
+        var doorways = new System.Collections.Generic.List<Doorway>();
 
         // The safe span features may occupy — inside the kept-open edge lanes.
         double minX = f.LeftX + EdgeMargin, maxX = f.RightX - EdgeMargin;
@@ -277,7 +289,7 @@ public static class SurfaceLayout
                     AddClampedSpan(walls, f, cx, cy, len * 0.7, !horizontal, hull: false);
                     break;
                 case 2: // a real BUILDING — thick walls, a doorway through the mass, seeded shape and angle
-                    AddStructure(walls, f, cx, cy, len, bodyId, $"bld:{i}");
+                    AddStructure(walls, doorways, f, cx, cy, len, bodyId, $"bld:{i}");
                     break;
                 default: // a small solid slab (an ancient spur / a plinth)
                     AddClampedBox(walls, f, cx - 1.4, cy - 1.4, cx + 1.4, cy + 1.4, hull: true);
@@ -291,7 +303,7 @@ public static class SurfaceLayout
         AddClampedBox(walls, f, ax - 2, ay - 2, ax + 2, ay + 2, hull: true); // the fixture's own footprint
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, glyph) };
 
-        return new Plan("THE DEEP RUINS", walls, marks);
+        return new Plan("THE DEEP RUINS", walls, marks, doorways);
     }
 
     // ── #370 · THE AWAY-EXPEDITION SITES. The special outdoors the owner's away-team gigs park next to
@@ -445,7 +457,9 @@ public static class SurfaceLayout
     /// structure can never crowd the monolith or the mass-driver muzzle — the thing you walked out there to
     /// see must stay the thing you see.</para></summary>
     private static void AddOutlyingStructures(
-        System.Collections.Generic.List<Wall> walls, in Field f, string bodyId, double anchorX, double anchorY)
+        System.Collections.Generic.List<Wall> walls,
+        System.Collections.Generic.List<Doorway> doorways,
+        in Field f, string bodyId, double anchorX, double anchorY)
     {
         double minX = f.LeftX + EdgeMargin, maxX = f.RightX - EdgeMargin;
         double minY = f.BottomY + 4, maxY = f.LandingBandY - 6;
@@ -475,7 +489,7 @@ public static class SurfaceLayout
             }
 
             claimed.Add((cx, cy));
-            AddStructure(walls, f, cx, cy, 8 + (4 * Frac(bodyId, $"outly:size:{i}")), bodyId, $"outly:{i}");
+            AddStructure(walls, doorways, f, cx, cy, 8 + (4 * Frac(bodyId, $"outly:size:{i}")), bodyId, $"outly:{i}");
             placed++;
         }
     }
@@ -486,8 +500,10 @@ public static class SurfaceLayout
     ///
     /// <para>Thickness is seeded 1.2..2.4 du — the owner's Greenland longhouse: on a cold world you build
     /// out of what is under your boots, and if the wall is also holding an atmosphere you build it fat.</para></summary>
-    private static void AddStructure(System.Collections.Generic.List<Wall> walls, in Field f,
-        double cx, double cy, double size, string bodyId, string tag)
+    private static void AddStructure(
+        System.Collections.Generic.List<Wall> walls,
+        System.Collections.Generic.List<Doorway> doorways,
+        in Field f, double cx, double cy, double size, string bodyId, string tag)
     {
         // 1.6..3.0 du of piled regolith — the owner's Greenland longhouse, and comfortably above the
         // captain's own 1.4 du width so the hatching never emits a segment shorter than a body.
@@ -507,7 +523,12 @@ public static class SurfaceLayout
             WallThickness: thickness,
             Shape: (SurfaceStructure.Footprint)Face(bodyId, $"{tag}:shape", 3));
 
-        walls.AddRange(SurfaceStructure.Build(spec).Walls);
+        SurfaceStructure.Built built = SurfaceStructure.Build(spec);
+        walls.AddRange(built.Walls);
+        foreach (SurfaceStructure.Doorway d in built.Doorways)
+        {
+            doorways.Add(new Doorway(d.X1, d.Y1, d.X2, d.Y2));
+        }
     }
 
     /// <summary>
