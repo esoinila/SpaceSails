@@ -348,9 +348,13 @@ public sealed class DeckView
             {
                 continue;
             }
+            // #589 · A body's stone is drawn in a body's colour. Falls back to the old warm grey-brown
+            // when a plan carries no ink (the ship, the stations, anything made of steel), so nothing that
+            // is not a world changes at all.
+            RgbaColor stone = plan.StoneInk is { } ink ? new RgbaColor(ink.R, ink.G, ink.B) : StoneLine;
             RgbaColor color = ws == 1 ? ExploredWall
                 : w.IsWindow ? WindowLine
-                : w.IsStone ? StoneLine
+                : w.IsStone ? stone
                 : w.IsHull ? HullLine
                 : InnerLine;
             // Stone is drawn as heavy as hull: it is just as solid, and a monolith you could mistake for
@@ -393,16 +397,29 @@ public sealed class DeckView
                     nearestPartner = Math.Min(nearestPartner, toOther);
                 }
             }
+            // #592 · A door is made of the hill it is set in — unless somebody paid to ship it here. The
+            // ship and the stations keep the old amber (StoneInk is null there): they ARE steel, and nothing
+            // about a bulkhead should start depending on which moon is outside.
+            RgbaColor shut = DoorShut, leaf = DoorOpen;
+            if (plan.DoorInk is { } local)
+            {
+                SpaceSails.Core.BodyPalette.Ink di = d.Imported
+                    ? SpaceSails.Core.BodyPalette.Imported
+                    : local;
+                shut = new RgbaColor(di.R, di.G, di.B, 230);
+                leaf = new RgbaColor(di.R, di.G, di.B, 95);
+            }
+
             bool open = Airlock.MayOpen(toDoor, nearestPartner, DoorOpenRadius);
             if (open)
             {
                 // Retracted: a short leaf at each jamb (25% in from each end).
-                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), DoorOpen, 3f);
-                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), DoorOpen, 3f);
+                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), leaf, 3f);
+                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), leaf, 3f);
             }
             else
             {
-                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorShut, 3.5f);
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), shut, 3.5f);
             }
         }
 

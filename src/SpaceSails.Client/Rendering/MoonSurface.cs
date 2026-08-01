@@ -149,7 +149,7 @@ public static class MoonSurface
         string bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
-        string siteSalt = "", string siteName = "")
+        string siteSalt = "", string siteName = "", long monolithEpoch = 0)
     {
         ArgumentNullException.ThrowIfNull(fillDroids);
         ownCaches ??= [];
@@ -166,11 +166,11 @@ public static class MoonSurface
         // way a shared surface deck could go quietly wrong. Invalidation is honest by construction: any
         // bury / lift / drop that changes the own-cache set changes the key (SurfaceDeckKey), so the ✗
         // marks are never stale.
-        SurfaceDeckKey key = SurfaceDeckKey.For(bodyId, bodyDisplayName, ownCaches, siteSalt);
+        SurfaceDeckKey key = SurfaceDeckKey.For(bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch);
         Layout layout;
         if (!_layoutCache.TryGetValue(key, out layout))
         {
-            layout = BuildLayout(bodyId, bodyDisplayName, ownCaches, siteSalt, siteName);
+            layout = BuildLayout(bodyId, bodyDisplayName, ownCaches, siteSalt, siteName, monolithEpoch);
             // Cheap unbounded-growth guard: each distinct (body, cache-set) leaves one small entry, and a
             // long game of bury/lift cycles could accumulate stale sets nobody revisits. A generous cap
             // that never trips in normal play keeps the cache from creeping; on overflow we simply start
@@ -189,7 +189,11 @@ public static class MoonSurface
             location: layout.Location,
             // #465: hand the tube's doors to the plan. `doors: null` here is what made the airlock invisible.
             doors: layout.Doors, shipFixtures: true, followCam: true, tables: DeckPlan.Ship.Tables,
-            scenery: layout.Scenery);
+            scenery: layout.Scenery,
+            // #589: this world's own stone, so a glance at the walls says which moon this is.
+            stoneInk: BodyPalette.For(bodyId),
+            // #592: and its doors, so an IMPORTED one stands out as the sentence it is.
+            doorInk: BodyPalette.DoorInk(bodyId));
     }
 
     // #371 Phase 1 · the memoized, delegate-free layout: everything in a surface deck that is a pure
@@ -225,7 +229,7 @@ public static class MoonSurface
         string bodyId,
         string bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
-        string siteSalt, string siteName)
+        string siteSalt, string siteName, long monolithEpoch)
     {
         DeckPlan ship = DeckPlan.Ship;
 
@@ -313,9 +317,20 @@ public static class MoonSurface
         // just missing the services and the doors.... let's fix those." They had openings the whole time —
         // the generator was discarding them — so a thick-walled ruin read as an unfinished shelter instead
         // of somewhere people used to live. An auto-door on each one makes it a building you enter.
+        // #592 · AND ONE OF THEM COST SOMEBODY MONEY. Owner: "some special color not distinctive to the site
+        // could then used to draw our attention to a place (like expensive door made with far away imported
+        // materials)."
+        //
+        // Every ordinary hatch is drawn in the local stone, so an off-palette one is a SENTENCE — somebody
+        // shipped materials across the system to seal this room, and nobody does that for a store cupboard.
+        // Rare on purpose (one in seven): a signal that fires on every ruin is wallpaper. It is seeded per
+        // doorway, so the room worth breaking into is a fact about the site rather than a fresh die.
+        int doorwayIndex = 0;
         foreach (SurfaceLayout.Doorway d in layout.Doorways ?? [])
         {
-            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2));
+            bool imported = DiceRule.Roll(
+                DiceRule.Seed($"imported-door:{bodyId}:{siteSalt}:{doorwayIndex++}"), 7).Face == 1;
+            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: imported));
         }
 
         // #573 · AND SOMETHING INSIDE ABOUT HALF OF THEM — the "services" half of the same report. A
@@ -381,7 +396,53 @@ public static class MoonSurface
         // fans, scarps and rilles, seeded per site and spread across the WHOLE field — including the flanks,
         // which are kept clear of WALLS so a walk-around always exists and were therefore the emptiest and
         // most walkable third of every site. Scenery cannot obstruct, so it is free to go exactly there.
-        SurfaceScenery.Mark[] scenery = [.. SurfaceScenery.For(bodyId, siteSalt, field)];
+        var sceneryList = new List<SurfaceScenery.Mark>(SurfaceScenery.For(bodyId, siteSalt, field));
+
+        // #586 · THE MONOLITH'S SWEPT APRON. Owner: "it is supposed to be impressive... now it looks like a
+        // box in closet." Widening the slab alone could never fix that — on a crude grid every rectangle is a
+        // rectangle, and the grid is the aesthetic, not a limitation.
+        //
+        // What DOES read at this scale is ground that is visibly cleared. A ring of swept regolith around the
+        // slab, in a field where everything else is rubble and drift, is legible from a long way off and says
+        // the one thing the stone cannot say by itself: SOMEBODY CARED ABOUT THIS SPOT. Drawn as scenery, so
+        // it can never become a fence around the landmark and turn a pilgrimage into a puzzle.
+        for (int i = 0; i < Monolith.ApronSegments; i++)
+        {
+            double a0 = i / (double)Monolith.ApronSegments * Math.Tau;
+            double a1 = (i + 1) / (double)Monolith.ApronSegments * Math.Tau;
+            sceneryList.Add(new SurfaceScenery.Mark(
+                MonolithX + (Math.Cos(a0) * Monolith.ApronRadius),
+                MonolithY + (Math.Sin(a0) * Monolith.ApronRadius),
+                MonolithX + (Math.Cos(a1) * Monolith.ApronRadius),
+                MonolithY + (Math.Sin(a1) * Monolith.ApronRadius),
+                SurfaceScenery.Kind.Ridge));
+        }
+
+        // #586 · THE PICTURE, AND WHAT IS AT ITS FOOT. Owner: "let's have gen AI image at the monolith and
+        // some items appearing there now and then ... it is supposed to be impressive."
+        //
+        // Miranda's canon slab only. Every body dresses this same deep anchor differently — Luna's
+        // mass-driver muzzle, a seeded plinth elsewhere — and putting THE MONOLITH's card on a launch head
+        // would be the borrowed-prose bug (#574) wearing a landmark.
+        if (bodyId == "miranda")
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject,
+                MonolithX, MonolithY - (float)Monolith.HalfHeight - 2f,
+                Monolith.ConsoleLabel, Monolith.ArtUrl, Monolith.Lore));
+
+            // And whatever somebody left, if this window has anything. NOT a console that is always there
+            // with an empty payload — a marker pointing at nothing is the map lying, which is the one thing
+            // this ground is not allowed to do.
+            Monolith.Offering left = Monolith.AtTheFoot(bodyId, siteSalt, monolithEpoch);
+            if (left != Monolith.Offering.Nothing)
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.MonolithFoot,
+                    MonolithX + (float)Monolith.HalfWidth + 2.5f, MonolithY,
+                    Monolith.FootLabel(left)));
+            }
+        }
+
+        SurfaceScenery.Mark[] scenery = [.. sceneryList];
 
         // #573 · THE SHELTER, deep in the field: one guaranteed building with a REAL door and air inside.
         // Owner: "just make one building into the middle there with working door" → "or lets put that near
@@ -407,7 +468,11 @@ public static class MoonSurface
             }
             foreach (SurfaceStructure.Doorway d in built.Doorways)
             {
-                doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2));
+                // #592 · A shelter's door is ALWAYS imported, and that is not a hint — it is the truth about
+                // the building. Nobody swages a pressure door out of regolith; somebody flew this out here
+                // for strangers to find. It also means the one door on the field that will definitely save
+                // your life is the one that reads differently from every wall around it.
+                doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: true));
                 // #585 · ITS OWN KIND, NOT THE SHIP'S HATCH. Owner, mid-excursion: "how did I just go to ship
                 // from a shelter ... what happened" / "I was at surface shelter and now at ship shuttle bay
                 // ... how". Because this console was laid as SurfaceAirlock — the SAME kind as the down

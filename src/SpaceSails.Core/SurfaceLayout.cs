@@ -204,8 +204,28 @@ public static class SurfaceLayout
         AddGappedRow(walls, left, right, ay - 4, ax + 9, 3);
         walls.Add(new(ax - 6, ay + 12, ax - 6, ay + 6, false));
         walls.Add(new(ax + 4, ay + 6, ax + 4, ay - 4, false));
-        // The monolith itself: a short freestanding slab (a tiny box) at the heart.
-        AddBox(walls, ax - 1.2, ay - 2.5, ax + 1.2, ay + 2.5, hull: true);
+        // #586 · THE MONOLITH ITSELF. Owner: "it is supposed to be impressive... now it looks like a box in
+        // closet." It was 2.4 x 5 du — the captain is 1.4 across, so the ancient artefact at the heart of the
+        // canon ground was two captains tall in a field of 310 x 260.
+        //
+        // Widened to a SLAB (Monolith.HalfWidth/HalfHeight), still inside the cell the canon maze rows leave
+        // for it — the maze is canon and every row above stays exactly where it was authored. The rest of the
+        // impression is not geometry: it is the swept apron and the approach stubs laid in MoonSurface, the
+        // picture on [E], and the fact that things are LEFT here between visits.
+        AddSolidMass(walls, ax - Monolith.HalfWidth, ay - Monolith.HalfHeight,
+            ax + Monolith.HalfWidth, ay + Monolith.HalfHeight, hull: true);
+
+        // The four approach stubs, just inside the apron: the remains of something that was walked to on
+        // purpose. Small, solid, and unmistakably PLACED — the difference between a rock and a ruin.
+        foreach ((double mx, double my) in new[]
+        {
+            (ax, ay + Monolith.MarkerRing), (ax, ay - Monolith.MarkerRing),
+            (ax - Monolith.MarkerRing, ay), (ax + Monolith.MarkerRing, ay),
+        })
+        {
+            AddSolidMass(walls, mx - Monolith.MarkerHalf, my - Monolith.MarkerHalf,
+                mx + Monolith.MarkerHalf, my + Monolith.MarkerHalf, hull: true);
+        }
 
         // #563 · THE CANON GROUND GETS BUILDINGS TOO. Owner, standing on it: "no real buildings and
         // one-thick walls still" — because site 0 is AUTHORED and routes here, bypassing the seeded
@@ -335,7 +355,11 @@ public static class SurfaceLayout
 
         // The deep landmark's own fixture is laid AFTER this loop but stands on real ground. Claim it first,
         // or a building can be seeded around the anchor and then have the fixture dropped across its door.
-        Claim(ax, ay, 2, 2);
+        //
+        // #586: claimed at the APRON's radius, not the slab's. The monolith is not just the stone any more —
+        // it is a swept platform with approach stubs on it, and the whole of that is the landmark. A building
+        // seeded on the apron would put somebody's hut in the middle of the one ceremonial space on the moon.
+        Reserve(ax, ay, Monolith.ApronRadius, Monolith.ApronRadius);
 
         // #585 · AND THE SHELTERS, which are laid by SurfaceShelter on a completely separate pass and were
         // therefore invisible to this ledger — so a seeded feature could be dropped straight through a
@@ -603,6 +627,32 @@ public static class SurfaceLayout
         {
             walls.Add(new(x, y1, x, gapAt - gapHalf, false));
             walls.Add(new(x, gapAt + gapHalf, x, y2, false));
+        }
+    }
+
+    /// <summary>#586 · A box that is SOLID MASS, not a room with walls round it.
+    ///
+    /// <para>The monolith is a slab of stone. Drawn as four lines it has an INTERIOR, and on a crude grid an
+    /// interior is somewhere a captain could stand if only they could get in — which the reachability audit
+    /// correctly reports as sealed ground. At 2.4 x 5 du that cavity was under the guard's threshold and
+    /// nobody noticed; widening the slab to something worth walking to made it 99 cells and the guard spoke
+    /// up immediately, which is exactly what it is for.</para>
+    ///
+    /// <para>So a solid is hatched through, at closer than a captain's own width — the same trick
+    /// <see cref="SurfaceStructure"/> already uses to make metres of piled regolith read as mass rather than
+    /// as a suspiciously thick room. Nothing about the outline changes; the inside simply stops being a
+    /// place.</para></summary>
+    private static void AddSolidMass(System.Collections.Generic.List<Wall> walls,
+        double x1, double y1, double x2, double y2, bool hull)
+    {
+        AddBox(walls, x1, y1, x2, y2, hull);
+
+        // Closer than the captain's 1.4 du diameter, so no gap between hatches can ever hold a body.
+        const double hatch = 1.1;
+        double lo = System.Math.Min(x1, x2), hi = System.Math.Max(x1, x2);
+        for (double x = lo + hatch; x < hi - 1e-9; x += hatch)
+        {
+            walls.Add(new(x, y1, x, y2, hull));
         }
     }
 

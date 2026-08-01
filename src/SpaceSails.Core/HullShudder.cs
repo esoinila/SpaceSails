@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// HULL-SHUDDER · the ambient-dread mood-setter (owner, at sea in rough weather 2026-07-20): <b>"The ship
@@ -33,8 +33,12 @@ public static class HullShudder
         Haven = 0,
         /// <summary>Aboard the ship's own deck — the old girl talking to herself, thermal creaks.</summary>
         Ship = 1,
-        /// <summary>A lab / secret-lab / surface site — colder, unexplained: is it a wave, or something below?</summary>
+        /// <summary>A lab / secret-lab / sealed deep site — colder, unexplained: a wave, or something below?
+        /// There is still a hull, a room, and other people in it.</summary>
         DeepSite = 2,
+        /// <summary>#590 · Out on open regolith in a suit. No hull, no room, and nobody to decide it was
+        /// nothing with — the unison beat has nobody to be in unison with, which is the better version.</summary>
+        Regolith = 3,
     }
 
     // ── Onset cadence (rare-ish): how long the calm holds between shudders. ───────────────────────────
@@ -130,6 +134,17 @@ public static class HullShudder
     ];
 
     // The chill pool (deep-site escalation): the same shape, but the together-decide never quite lands.
+    // #590 · OUT ON THE GROUND, ALONE. No hull, no room, nobody to decide it was nothing with. The tell of
+    // every line here is that the captain has to do the deciding by themselves, and the pool never once
+    // says "together" — because there is no together.
+    private static readonly string[] RegolithLines =
+    [
+        "The ground moves. Not a tremor you hear — there is nothing out here to carry a sound — one you feel come up through your boots and stop. You hold still, waiting for it to happen again, and it does not. You decide it was nothing. There is nobody to agree with you.",
+        "Dust lifts off the regolith in a long slow sheet, hangs, and settles back in the same shape. Something under you moved to do that. You stand there working out how far you are from the tube, and then you make yourself stop working it out.",
+        "Your boots find the ground briefly unwilling to hold still. In vacuum it is entirely silent, which is worse: your own breathing is the only thing in your ears and it has changed pace without asking you. You wait. Nothing follows. You go on.",
+        "A shiver runs out through the dust from somewhere ahead of you, and every loose stone within your lamp shifts a hand's width. You look for a witness out of pure reflex — the flat black horizon, your own long shadow — and there is nobody, and you keep walking.",
+    ];
+
     private static readonly string[] ChillLines =
     [
         "The deck flexes with a groan that goes on a half-second too long. Heads come up as one — and this time nobody quite lets the breath back out. It didn't sound like settling. Nobody says so.",
@@ -144,6 +159,7 @@ public static class HullShudder
     {
         Setting.Haven => HavenLines,
         Setting.Ship => ShipLines,
+        Setting.Regolith => RegolithLines,
         _ => DeepSiteLines,
     };
 
@@ -171,6 +187,25 @@ public static class HullShudder
     /// ship's own deck. Pure, so the selection pins in a test.</summary>
     public static Setting SettingFor(bool deepSite, bool haven) =>
         deepSite ? Setting.DeepSite : haven ? Setting.Haven : Setting.Ship;
+
+    /// <summary>#590 · The four-way version, which exists because the three-way one was quietly wrong.
+    ///
+    /// <para>Owner, standing on a moon: <i>"the hull flexing feeling buildings should not come when on
+    /// planet / moon ... we should have place specific ones for the sites, not generic ones of the ship
+    /// playing on site."</i></para>
+    ///
+    /// <para>The flag was right — a surface excursion already selected <see cref="Setting.DeepSite"/> — and
+    /// the WORDS were wrong, which is a harder bug to see. Every deep-site line names a hull, a room, and
+    /// other people: <i>"the steel laid over it"</i>, <i>"the whole room freezes"</i>, <i>"every head in the
+    /// place comes up"</i>. Those were written for a sealed site with a crew in it, and read as the ship's
+    /// voice because they ARE an interior's voice.</para>
+    ///
+    /// <para>On open regolith there is no hull, no room, and — the part that matters — <b>nobody else to
+    /// look up with you</b>. The unison beat, which is the whole shape of this mechanic, has no one to be in
+    /// unison with. That is not a reason to drop the beat out here; it is the best thing that could happen
+    /// to it.</para></summary>
+    public static Setting SettingOutside(bool onRegolith, bool deepSite, bool haven) =>
+        onRegolith ? Setting.Regolith : SettingFor(deepSite, haven);
 
     // ── Line selection. ───────────────────────────────────────────────────────────────────────────────
 

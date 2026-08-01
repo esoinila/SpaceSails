@@ -385,6 +385,8 @@ public partial class Map
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
+            // #587 · the field book: what was found on the ground, kept so it can be re-read.
+            FieldNotes = _fieldNotes.Count > 0 ? new FieldNotesSection { Notes = _fieldNotes } : null,
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
             Resume = BuildResumeSection(),
@@ -857,6 +859,7 @@ public partial class Map
         // The "overheard at the bar" book (owner 2026-07-18): the tips/rumors a player was handed are
         // durable and revisitable — they survive the reload rather than living-and-vanishing in a toast.
         _overheard = vault.Overheard is { } book ? [.. book.Lines] : [];
+        _fieldNotes = vault.FieldNotes is { } field ? [.. field.Notes] : [];   // #587
 
         ApplyResumeBerth(vault.Resume, vault.SavedSimTime);
 

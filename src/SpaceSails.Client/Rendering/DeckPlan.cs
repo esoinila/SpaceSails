@@ -24,7 +24,9 @@ public sealed class DeckPlan
         // inside, and whoever's effects are still on the floor.
         OutpostDoor, OutpostCache, OutpostEffects,
         // #573 · The deep shelter's charging rack — the only place outside her tube that refills a suit.
-        ShelterTank, ShelterLocker, RuinSalvage }
+        ShelterTank, ShelterLocker, RuinSalvage,
+        // #586 · Whatever somebody left at the foot of the monolith this visit-window.
+        MonolithFoot }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.
@@ -73,8 +75,14 @@ public sealed class DeckPlan
     /// and what is transparent to sight and gunfire. A door the player sees shut must stop a round.</summary>
     public const double DoorOpenRadius = 4.0;
 
+    /// <param name="Imported">#592 · This door was not made here. Owner: <i>"some special color not
+    /// distinctive to the site could then used to draw our attention to a place (like expensive door made
+    /// with far away imported materials)."</i> Every ordinary hatch is drawn in its world's own stone, so the
+    /// one that is not becomes a sentence — somebody shipped materials across the system to seal this, and
+    /// nobody does that for a store cupboard.</param>
     public readonly record struct Door(
-        float X1, float Y1, float X2, float Y2, bool Locked = false, int Interlock = 0);
+        float X1, float Y1, float X2, float Y2, bool Locked = false, int Interlock = 0,
+        bool Imported = false);
 
     /// <summary>An interaction point on the deck. A <see cref="ConsoleKind.ViewObject"/> spot also
     /// carries an <paramref name="ImageUrl"/> and <paramref name="Caption"/> — press E and the game
@@ -138,6 +146,19 @@ public sealed class DeckPlan
     /// handed it at all.</summary>
     public SpaceSails.Core.SurfaceScenery.Mark[] Scenery { get; private set; }
 
+    /// <summary>#589 · The ink this ground's in-situ stonework is drawn in. Owner, touring the rebuilt
+    /// sites: <i>"the in-situ construction materials of the walls might be planet specific ... red for mars
+    /// etc theming"</i> / <i>"gray for Moon"</i> / <i>"something to spot where we are visually"</i>.
+    ///
+    /// <para>It is the plan's property rather than the renderer's constant because it is a fact about a
+    /// WORLD — you build out of what is under your boots — and the renderer only happens to draw it. Null
+    /// on the ship and the stations, which are made of steel like everything else in the fleet.</para></summary>
+    public SpaceSails.Core.BodyPalette.Ink? StoneInk { get; private set; }
+
+    /// <summary>#592 · The ink an ORDINARY door is drawn in on this ground — the local stone, brightened.
+    /// Null on the ship and the stations, which are steel and keep the amber airlock look.</summary>
+    public SpaceSails.Core.BodyPalette.Ink? DoorInk { get; private set; }
+
     /// <summary>#371 Phase 3 · how many regions have been appended to this live plan (0 on a freshly-built
     /// plan). A cheap handle for the perf test — "segment count grows only by the region's walls" — and for
     /// any caller that wants to know the world has grown.</summary>
@@ -168,7 +189,9 @@ public sealed class DeckPlan
         int droidCount, Action<double, Droid[]> fillDroids, Func<double, double, string> location,
         Door[]? doors = null, bool shipFixtures = false, bool followCam = false,
         (float X, float Y)[]? tables = null,
-        SpaceSails.Core.SurfaceScenery.Mark[]? scenery = null)
+        SpaceSails.Core.SurfaceScenery.Mark[]? scenery = null,
+        SpaceSails.Core.BodyPalette.Ink? stoneInk = null,
+        SpaceSails.Core.BodyPalette.Ink? doorInk = null)
     {
         Walls = walls;
         CollisionSegments = new SurfaceCollision.Segment[walls.Length];
@@ -183,6 +206,8 @@ public sealed class DeckPlan
         Doors = doors ?? [];
         Tables = tables ?? [];
         Scenery = scenery ?? [];
+        StoneInk = stoneInk;
+        DoorInk = doorInk;
         SpawnX = spawnX;
         SpawnY = spawnY;
         DroidCount = droidCount;

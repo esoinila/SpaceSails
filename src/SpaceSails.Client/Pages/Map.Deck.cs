@@ -363,6 +363,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.LabCache:
                 LabCacheInteract(); // #409: claim Vantar's fat one-time cache
                 break;
+            case DeckPlan.ConsoleKind.MonolithFoot:
+                MonolithFootInteract(); // #586: whatever somebody left at the foot this window
+                break;
             case DeckPlan.ConsoleKind.RuinSalvage:
                 RuinSalvageInteract(); // #573: turn over a ruin — about half hold something
                 break;
