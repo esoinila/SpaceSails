@@ -118,6 +118,23 @@ public partial class Map
     // multiple. Used to gate the first-contact chirp on a contact the tracker can actually hear.
     private const double SurfaceVisualHalfWidthDu = 32.0;
 
+    /// <summary>#591 · HOW FAR THE FAN HEARS FROM WHERE THE CAPTAIN IS STANDING — the ONE number, read by
+    /// the chirp, by the nerve, by the sweep and by the draw.
+    ///
+    /// <para>Owner: <i>"the motion tracker should be in underground visibility mode when we are deeeeeeeep
+    /// under surface"</i>. Underground the reach degrades with depth, which gives depth a third cost after
+    /// air and time — and the one the player can name.</para>
+    ///
+    /// <para>It is a method rather than four call sites because those four call sites were already drifting.
+    /// <c>DeckView.DrawMotionTracker</c> computed its own reach from the viewport while the sim used a flat
+    /// 32 du half-width, so on any window not exactly 64:28 the blip a captain SAW at the rim was not the
+    /// blip the chirp had HEARD. That is the sim-says-one-thing-the-drawing-says-another failure this
+    /// project keeps paying for, and shortening one of them without the other would have made it load-
+    /// bearing. The hud now carries this number and the renderer draws to it.</para></summary>
+    private double FanReach() =>
+        MotionTracker.UndergroundRange(
+            MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), _surface?.Floor ?? 0);
+
     // #327 the ship calls home: the mothership's station-keeping hold (sim-seconds) at the moment the
     // captain boarded DOWN — the reference the escalating ladder measures against (OrbitHold). Positive
     // = boarded with a real kept-orbit hold; 0 = boarded onto an orbit no one is keeping (a standing red
@@ -2977,7 +2994,7 @@ public partial class Map
         {
             return;
         }
-        double detection = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
+        double detection = FanReach();   // #591: shorter with every floor down
         // #583: the chirp counts the collectors too — the holster device does not know or care whose
         // boots they are, and a boat crew walking up on you is exactly the thing it exists to make you
         // look at.
@@ -3031,8 +3048,7 @@ public partial class Map
         {
             // #446: the tracker's fan still HEARS to its full detection range — that far, faint blip is the
             // whole point of the instrument. But a contact only FRIGHTENS you inside the dread range.
-            double detection = Math.Min(
-                MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), NerveModel.DreadRangeDeckUnits);
+            double detection = Math.Min(FanReach(), NerveModel.DreadRangeDeckUnits);
             var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy))
                 .Concat(_collectors.Select(c => new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy)));
             heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
@@ -4846,7 +4862,11 @@ public partial class Map
         {
             _hudEntities.Add(new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy));
         }
-        IReadOnlyList<MotionTracker.Blip> blips = MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities);
+        // #591 · The sweep is cut to what the fan can hear from this floor. On the regolith that is
+        // unbounded and nothing changes; eleven floors down it is the reason the corridor is quiet.
+        double fanReach = FanReach();
+        IReadOnlyList<MotionTracker.Blip> blips =
+            MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities, fanReach);
         double? nearest = blips.Count > 0 ? blips[0].Range : null;
         bool closing = nearest is { } n && _lastNearestReeverRange is { } prev && n < prev - 0.01;
         _lastNearestReeverRange = nearest;
@@ -4855,6 +4875,38 @@ public partial class Map
         foreach (MotionTracker.Blip b in blips)
         {
             _hudBlips.Add((b.Bearing, b.Range));
+        }
+
+        // ── #591 · A CONTACT BEHIND A WALL IS A SMUDGE, NOT A CLEAN BLIP ──
+        //
+        // Open regolith is open: a return out there is a return, and the fan's report is as good as it gets.
+        // Inside a poured facility it is not — a fan that reads a body through two bulkheads with the same
+        // confidence it reads one down an open corridor is claiming a precision it does not have.
+        //
+        // No new mechanism: this is the same fog #371 built for wrecks (SightBlockers → a blurred region
+        // whose radius grows with range, because a crude fan is less sure about a far return), pointed
+        // underground. The buffer is cleared unconditionally so a floor with nothing on it cannot inherit
+        // the smears of the last derelict the captain walked.
+        //
+        // Nothing walks these corridors yet — the Old Ones are a regolith tide and are cleared on descent
+        // (owner: "I don't think there should be reevers down here"). So today this smudges an empty floor.
+        // That is the correct order of work and the issue says so: make the instrument honest first, and
+        // whatever eventually comes down here inherits a tracker that already behaves like it is
+        // underground rather than one that has to be taught afterwards.
+        _hudSmudges.Clear();
+        if (ex.Floor < 0)
+        {
+            IReadOnlyList<SurfaceCollision.Segment> walls = SightBlockers();
+            foreach (MotionTracker.Blip b in blips)
+            {
+                double bx = _avatarX + (Math.Cos(b.Bearing) * b.Range);
+                double by = _avatarY + (Math.Sin(b.Bearing) * b.Range);
+                if (SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, bx, by, walls))
+                {
+                    continue;   // you can see it. Your own eyes beat the fan, exactly as they do aboard.
+                }
+                _hudSmudges.Add((bx, by, SmudgeBaseRadius + (b.Range * SmudgeRangeSpread)));
+            }
         }
 
         // The own caches' ✗ marks (with the DigX/DigY-or-hash-scatter fallback, same as OwnCachePositionsAt)
@@ -4950,7 +5002,17 @@ public partial class Map
             Echoes: BuildEchoes(ex),             // #371 Phase 3: fading "movement was here" ripples
             StandingPrompt: BuildStandingPrompt(ex),
             // #453: the blood fades over its window, so the spatter is a beat rather than a decal.
-            BloodSplash: BloodShowing ? Math.Clamp((_bloodUntilMs - (_lastTimestampMs ?? 0)) / 900.0, 0, 1) : 0);
+            BloodSplash: BloodShowing ? Math.Clamp((_bloodUntilMs - (_lastTimestampMs ?? 0)) / 900.0, 0, 1) : 0,
+            // #591 · The fan's real reach, so the ring the captain reads is the ring the chirp heard, and
+            // where they are, so depth is on the instrument rather than on the plan behind them.
+            FanReach: fanReach,
+            TrackerPlace: ex.Floor < 0 ? UndergroundComplex.NameOf(ex.Floor) : null,
+            // #591 · Contacts heard through a wall are a REGION, never a body. Nothing walks these corridors
+            // yet (the Old Ones are a regolith tide and are cleared on descent, by the owner's ruling), so
+            // today this smudges an empty floor — which is the correct order of work: make the instrument
+            // honest first, and whatever eventually comes down here inherits a tracker that already behaves
+            // like it is underground instead of one that has to be taught after the fact.
+            Smudges: _hudSmudges);
     }
 
     // #440 · The standing prompt: ONE bright line above the keybar for the thing this excursion hangs on.
