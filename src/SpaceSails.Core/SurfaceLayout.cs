@@ -119,6 +119,16 @@ public static class SurfaceLayout
         // The monolith itself: a short freestanding slab (a tiny box) at the heart.
         AddBox(walls, ax - 1.2, ay - 2.5, ax + 1.2, ay + 2.5, hull: true);
 
+        // #563 · THE CANON GROUND GETS BUILDINGS TOO. Owner, standing on it: "no real buildings and
+        // one-thick walls still" — because site 0 is AUTHORED and routes here, bypassing the seeded
+        // generator where the structures live. So the flagship ground, the one carrying the story and the
+        // one every captain lands on by default, was the only one that never got the new content: Lab 43
+        // measured it at 12 wall segments over 12% of the field, the emptiest site on the moon.
+        //
+        // The maze itself is untouched — it is canon and stays exactly as authored. These stand OUT in the
+        // empty flanks and shallows the maze never occupied, which is most of the field.
+        AddOutlyingStructures(walls, f, "miranda", ax, ay);
+
         var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, "▮ THE MONOLITH") };
         return new Plan("THE MONOLITH MAZE", walls, marks);
     }
@@ -156,6 +166,8 @@ public static class SurfaceLayout
         AddStrip(walls, f, cx: ax + 14, cy: ay + 14, len: 10, gap: 3);
         AddStrip(walls, f, cx: ax - 13, cy: ay + 20, len: 9, gap: 2.5);
 
+        AddOutlyingStructures(walls, f, "luna", ax, ay);   // #563: the authored ground gets buildings too
+
         var marks = new System.Collections.Generic.List<Landmark>
         {
             new(ax - 4, ay - 9, "⛓ MASS-DRIVER MUZZLE"),
@@ -178,7 +190,11 @@ public static class SurfaceLayout
         double minX = f.LeftX + EdgeMargin, maxX = f.RightX - EdgeMargin;
         double minY = f.BottomY + 4, maxY = f.LandingBandY - 6;
 
-        int features = 5 + Face(bodyId, "count", 5); // 5..9 ruins
+        // #573 · SCALED TO THE FIELD. This was a flat 5..9, sized for a 78 x 64 du field; dropping the same
+        // handful into a field sixteen times the area would have made "more explorable space" read as a
+        // bigger emptiness. One feature per ~700 du^2, so density holds however the field is sized.
+        double area = (maxX - minX) * (maxY - minY);
+        int features = System.Math.Clamp(5 + (int)(area / 700.0), 5, 90) + Face(bodyId, "count", 5);
 
         // #563 · FEATURES MAY NOT BE LAID ON TOP OF ONE ANOTHER. Harmless while every shape was an open
         // span or a U — two overlapping rubble walls are just messier rubble. The moment buildings arrived
@@ -404,6 +420,49 @@ public static class SurfaceLayout
             double y1 = System.Math.Max(f.BottomY + 2, cy - len / 2);
             double y2 = System.Math.Min(f.LandingBandY - 2, cy + len / 2);
             walls.Add(new(cx, y1, cx, y2, hull));
+        }
+    }
+
+    /// <summary>#563 · Scatter a few real buildings across an AUTHORED ground's empty parts, well clear of
+    /// its signature. Miranda's maze and Luna's rails are canon and are not touched; what gets filled is the
+    /// open regolith around them, which on Miranda is some 88% of the field.
+    ///
+    /// <para>Kept away from the deep anchor by <paramref name="anchorX"/>/<paramref name="anchorY"/>, so a
+    /// structure can never crowd the monolith or the mass-driver muzzle — the thing you walked out there to
+    /// see must stay the thing you see.</para></summary>
+    private static void AddOutlyingStructures(
+        System.Collections.Generic.List<Wall> walls, in Field f, string bodyId, double anchorX, double anchorY)
+    {
+        double minX = f.LeftX + EdgeMargin, maxX = f.RightX - EdgeMargin;
+        double minY = f.BottomY + 4, maxY = f.LandingBandY - 6;
+        const double ClearOfSignature = 26.0;
+
+        var claimed = new System.Collections.Generic.List<(double X, double Y)>();
+        int placed = 0;
+
+        for (int i = 0; i < 14 && placed < 4; i++)
+        {
+            double cx = Lerp(minX, maxX, Frac(bodyId, $"outly:x:{i}"));
+            double cy = Lerp(minY, maxY, Frac(bodyId, $"outly:y:{i}"));
+
+            // Never near the signature, and never on top of another building.
+            if (System.Math.Sqrt(((cx - anchorX) * (cx - anchorX)) + ((cy - anchorY) * (cy - anchorY))) < ClearOfSignature)
+            {
+                continue;
+            }
+            bool clash = false;
+            foreach ((double px, double py) in claimed)
+            {
+                clash |= System.Math.Sqrt(((cx - px) * (cx - px)) + ((cy - py) * (cy - py))) < 30.0;
+            }
+            if (clash)
+            {
+                continue;
+            }
+
+            claimed.Add((cx, cy));
+            AddStructure(walls, f, cx, cy, 8 + (4 * Frac(bodyId, $"outly:size:{i}")), bodyId, $"outly:{i}");
+            placed++;
         }
     }
 

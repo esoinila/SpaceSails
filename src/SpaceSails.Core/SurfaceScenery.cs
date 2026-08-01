@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SpaceSails.Core;
@@ -65,7 +65,12 @@ public static class SurfaceScenery
         double bottomY = field.BottomY, bandY = field.LandingBandY;
 
         var marks = new List<Mark>();
-        int count = MinFeatures + Face(bodyId, siteSalt, "count", MaxFeatures - MinFeatures + 1);
+
+        // #573 · Terrain scales with the field for the same reason the ruins do — a fixed dozen craters in a
+        // field sixteen times the size is not weather, it is decoration nobody will walk past.
+        double area = (rightX - leftX) * (bandY - bottomY);
+        int scaled = System.Math.Clamp((int)(area / 260.0), MinFeatures, 260);
+        int count = scaled + Face(bodyId, siteSalt, "count", MaxFeatures - MinFeatures + 1);
 
         for (int i = 0; i < count; i++)
         {

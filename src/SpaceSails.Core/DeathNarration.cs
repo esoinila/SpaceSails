@@ -50,6 +50,32 @@ public enum DeathCause
 }
 
 /// <summary>
+/// #574 · WHERE a captain died, which turns out to matter as much as what killed them.
+///
+/// <para>Owner: <i>"let's make sure that landed death reasons and on ship death reasons are dealt correctly
+/// also. Like they are two separate categories. Maybe even 3 ... salvage ship, own ship, and landing
+/// party."</i> He was right, and there was a live bug under it: <c>TriggerSurfaceOverdrawDeath</c> serves
+/// BOTH a regolith death and a death aboard a derelict (the scuttle, the fifth blow, the nerve running out),
+/// while the ground prose says things like <i>"they ran you down on {body}'s REGOLITH short of the tube"</i>.
+/// Die on a steel hull in space and the game described the dust you were not standing in.</para>
+///
+/// <para>The same class of failure as #572's collector card, one level up: the words were not wrong about
+/// the CAUSE, they were wrong about the PLACE.</para>
+/// </summary>
+public enum DeathPlace
+{
+    /// <summary>Aboard the captain's own ship, or in open space with her under them.</summary>
+    OwnShip,
+
+    /// <summary>Inside somebody else's hull — a salvage run on a derelict. Steel, vacuum, no sky and no
+    /// dust; the way out is a lock, not a tube up to a shuttle.</summary>
+    Derelict,
+
+    /// <summary>An away team on a surface. Regolith, a suit, and a long walk back to the tube.</summary>
+    LandingParty,
+}
+
+/// <summary>
 /// The pure narration seam for <see cref="DeathCause"/>: the art file each cause shows, the seeded
 /// house-voice line pool that explains the death place-dependently, the WHAT-HAPPENED headline, and the
 /// "joined them" trigger rule. All deterministic — a test pins an exact line for an exact seed — because
@@ -106,6 +132,11 @@ public static class DeathNarration
     /// </summary>
     public static string SurfaceCaption(DeathCause cause, bool nerveRanOut)
     {
+        if (cause == DeathCause.Suffocated)
+        {
+            return "\"…the gauge had been honest the whole way out.\"";
+        }
+
         if (cause == DeathCause.Joined)
         {
             return "\"…and the footprints only lead one way — in.\"";
@@ -118,6 +149,16 @@ public static class DeathNarration
 
     /// <summary>The Grok-generated death image (under <c>art/</c>) a cause shows on the resurrection card.
     /// The two live causes reuse the existing BUSTED frames; the surface + void causes use the death-* set.</summary>
+    /// <summary>#574 · The art, told for the place. A landing party dies in a suit on a surface and gets its
+    /// own frame — the owner asked for the joke and it is the right one: <i>"We could have the gen AI image
+    /// on landing party show that I was wearing the red shirt :-D"</i>. Star Trek's away-team red shirt is
+    /// exactly the register the away-team death should have, and this game has always been willing to be
+    /// funny about death (the parrot, the insurance, "there are worse epitaphs").</summary>
+    public static string ArtFile(DeathCause cause, DeathPlace place) =>
+        place == DeathPlace.LandingParty && cause is DeathCause.Reevers or DeathCause.Suffocated
+            ? "death-landing-party.jpg"
+            : ArtFile(cause);
+
     public static string ArtFile(DeathCause cause) => cause switch
     {
         DeathCause.Collector => "busted-freeze-frame.jpg",
@@ -125,6 +166,7 @@ public static class DeathNarration
         DeathCause.Reevers => "death-reevers.jpg",
         DeathCause.Joined => "death-joined.jpg",
         DeathCause.Void => "death-void.jpg",
+        DeathCause.Suffocated => "death-suffocated.jpg",
         _ => "busted-ship-explosion.jpg",
     };
 
@@ -136,6 +178,7 @@ public static class DeathNarration
         DeathCause.Reevers => "WHAT HAPPENED — the Old Ones took you",
         DeathCause.Joined => "WHAT HAPPENED — you walked into the crowd",
         DeathCause.Void => "WHAT HAPPENED — lost to the void",
+        DeathCause.Suffocated => "WHAT HAPPENED — the air ran out",
         _ => "WHAT HAPPENED",
     };
 
@@ -181,6 +224,44 @@ public static class DeathNarration
         "You went adrift past every well and the dark closed over the transponder. The backup is all that came home.",
     ];
 
+    private static readonly string[] SuffocationLines =
+    [
+        "The tank went dry on {body}, a long way from the tube. The suit had told you where the line was, " +
+        "and you had walked past it with your eyes open.",
+        "You ran out of air on {body} with the way home still ahead of you. Nothing hunted you down; " +
+        "you simply spent more than you were carrying.",
+        "On {body} the gauge reached nothing. It had been counting honestly the entire walk out — the last " +
+        "thing you heard was your own suit stop pretending.",
+    ];
+
+    // ── #574 · The same causes, told for the place they happened in. A derelict has no regolith, no tube
+    //    and no sky; a landing party has all three. Sharing one pool made the game confidently describe the
+    //    wrong world.
+    private static readonly string[] ReeverLinesAboardAWreck =
+    [
+        "They took you deep in {body}'s hull, a long way from the lock. Nothing out there heard it.",
+        "An Old One had you against a bulkhead aboard {body}. No dust to leave a mark in — just a corridor, " +
+        "and then not you.",
+        "You died in somebody else's ship. {body} kept her cargo and took you as well.",
+    ];
+
+    private static readonly string[] JoinedLinesAboardAWreck =
+    [
+        "The away team's beacons show you stopped moving deep inside {body}, and then moving again, wrong.",
+        "Aboard {body} your nerve gave out in the dark, and you went further IN rather than back toward the " +
+        "lock. Nobody followed to see why.",
+        "They never recovered you from {body}. The hull is still logged as empty, which is the part that " +
+        "should worry somebody.",
+    ];
+
+    private static readonly string[] SuffocationLinesAboardAWreck =
+    [
+        "The tank went dry inside {body}, in vacuum she has held for years. Her air went out a long time " +
+        "before yours did.",
+        "You ran out of air aboard {body} with the lock still ahead of you. A dead ship is patient about it.",
+        "On {body} the gauge reached nothing between one bulkhead and the next. She had nothing to give you.",
+    ];
+
     private static string[] PoolFor(DeathCause cause) => cause switch
     {
         DeathCause.Collector => CollectorLines,
@@ -188,6 +269,7 @@ public static class DeathNarration
         DeathCause.Reevers => ReeverLines,
         DeathCause.Joined => JoinedLines,
         DeathCause.Void => VoidLines,
+        DeathCause.Suffocated => SuffocationLines,
         _ => CollectorLines,
     };
 
@@ -195,6 +277,60 @@ public static class DeathNarration
     /// resurrection card reads before the existing brain-backup copy. <paramref name="bodyName"/> names the
     /// place (the moon, the body flown into); null/blank reads with a generic place so the line is whole.
     /// Pure: same cause + same seed + same body → same line.</summary>
+    /// <summary>#574 · The line for a death, told for WHERE it happened. A derelict's dead have no regolith
+    /// to lie in and no tube to have been short of.</summary>
+    /// <summary>#574 · Can this cause honestly happen in this place? Owner: <i>"the debt collector deaths
+    /// should also only happen in those situations never in any other :-D"</i>.
+    ///
+    /// <para>A collector is a PERSON who came for you — a heat-hunter with a ship and a boarding volley.
+    /// There is nobody aboard a dead hull and nobody on an empty moon, so that death cannot occur there, and
+    /// a card claiming it would be inventing a character. Likewise an impact is the ship meeting a world at
+    /// speed, which cannot happen to somebody standing on one.</para>
+    ///
+    /// <para>Stated here rather than trusted to callers, so it can be TESTED and so any future death lane
+    /// has one place to check itself against.</para></summary>
+    public static bool CanHappen(DeathCause cause, DeathPlace place) => cause switch
+    {
+        // Somebody has to be there to collect you, and to fly a ship into something.
+        DeathCause.Collector or DeathCause.Impact => place == DeathPlace.OwnShip,
+        // The Old Ones and the tank reach you anywhere you are out of the ship.
+        DeathCause.Reevers or DeathCause.Joined or DeathCause.Suffocated => place != DeathPlace.OwnShip,
+        _ => true,
+    };
+
+    /// <summary>#574 · The closing beat of a death card. <i>"The freeze-frame holds"</i> was hard-appended in
+    /// the markup to EVERY death — it is BUSTED's own language, about a collector's gun-camera still, and it
+    /// was being read out over a captain who suffocated alone on a moon with nobody watching. Same failure
+    /// as the borrowed prose, one line further down the card.</summary>
+    public static string Tail(DeathCause cause, DeathPlace place) => (cause, place) switch
+    {
+        (DeathCause.Collector, _) => " The freeze-frame holds.",
+        (_, DeathPlace.Derelict) => " Her log will not mention it.",
+        (DeathCause.Suffocated, _) => " The gauge is still counting down in the dark.",
+        (_, DeathPlace.LandingParty) => " The ground keeps what it is given.",
+        _ => "",
+    };
+
+    public static string Line(DeathCause cause, DeathPlace place, ulong seed, string? bodyName)
+    {
+        if (place == DeathPlace.Derelict)
+        {
+            string[]? aboard = cause switch
+            {
+                DeathCause.Reevers => ReeverLinesAboardAWreck,
+                DeathCause.Joined => JoinedLinesAboardAWreck,
+                DeathCause.Suffocated => SuffocationLinesAboardAWreck,
+                _ => null,
+            };
+            if (aboard is not null)
+            {
+                string t = aboard[(int)(seed % (ulong)aboard.Length)];
+                return t.Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that hull" : bodyName!);
+            }
+        }
+        return Line(cause, seed, bodyName);
+    }
+
     public static string Line(DeathCause cause, ulong seed, string? bodyName)
     {
         string[] pool = PoolFor(cause);

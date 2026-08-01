@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace SpaceSails.Core;
 
@@ -137,6 +137,32 @@ public static class SuitAir
             _ => $"AIR {clock} · {RemainingReachDu(airLeftSeconds, distanceHomeDu):F0} du further and still home dry",
         };
     }
+
+    /// <summary>#573 · The absolute low-air mark, as a fraction of a full tank. A SECOND warning that does
+    /// not depend on distance at all.
+    ///
+    /// <para>The point-of-no-return line is the good one and it is useless in the world that exists. It
+    /// fires when the air left drops under the cost of walking home — which on a 45-second tank needs the
+    /// captain to be ~352 du from the tube, and on a full one ~1507 du. <b>The field is 78 x 64 du.</b> From
+    /// anywhere in it the walk home is under ten seconds, so the line is unreachable at any tank size and
+    /// the owner simply ran out, flat, having been warned about nothing — the exact silent timer this whole
+    /// mechanic forbids.</para>
+    ///
+    /// <para>So: the tank getting low is worth saying ON ITS OWN, in any size of world. The distance line
+    /// stays and starts mattering when the ground stops being a rectangle (#563).</para></summary>
+    public const double LowAirFraction = 0.35;
+
+    /// <summary>Is the tank low enough to say so regardless of where the captain is standing?</summary>
+    public static bool RunningLow(double airLeftSeconds) =>
+        airLeftSeconds > 0 && airLeftSeconds <= TankSeconds * LowAirFraction;
+
+    /// <summary>The low-air line. Says the number, says what it buys, and does NOT pretend to know whether
+    /// the captain is in trouble — that is what the point-of-no-return line is for.</summary>
+    public static string LowAirWarning(double airLeftSeconds, double distanceHomeDu) =>
+        $"🫁 AIR LOW — {(int)(airLeftSeconds / 60)}:{(int)(airLeftSeconds % 60):00} left in the tank. " +
+        (PastPointOfNoReturn(airLeftSeconds, distanceHomeDu)
+            ? "And the walk back already costs more than that."
+            : $"Enough for about {RemainingReachDu(airLeftSeconds, distanceHomeDu):F0} du further out, then home.");
 
     /// <summary>THE ONE-TIME CROSSING LINE — said on the single step where a captain goes from being able to
     /// get home to not. This is the whole mechanic: not a number that ran out, a line that was crossed, and

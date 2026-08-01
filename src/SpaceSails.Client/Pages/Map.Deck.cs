@@ -363,6 +363,12 @@ public partial class Map
             case DeckPlan.ConsoleKind.LabCache:
                 LabCacheInteract(); // #409: claim Vantar's fat one-time cache
                 break;
+            case DeckPlan.ConsoleKind.ShelterLocker:
+                ShelterLockerInteract(); // #573: the shelter's emergency rounds
+                break;
+            case DeckPlan.ConsoleKind.ShelterTank:
+                ShelterTankInteract(); // #573: charge the suit at the deep shelter
+                break;
             case DeckPlan.ConsoleKind.OutpostDoor:
                 OutpostDoorInteract(); // #563: force the hut's dogged hatch — the channel that appends the room
                 break;

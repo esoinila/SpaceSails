@@ -57,11 +57,19 @@ public static class SurfaceStructure
         double WallThickness,
         Footprint Shape);
 
-    /// <summary>What came out: the collidable walls, and where each doorway's middle is (so a caller can
-    /// hang a door, a console or a landmark on it).</summary>
+    /// <summary>An opening in the wall, given as the SEGMENT across it rather than a midpoint — because a
+    /// caller that wants to hang a real door needs to know which way the passage runs, and a point cannot
+    /// say. Taken at mid-thickness, so a door drawn on it sits inside the mass rather than on its face.</summary>
+    public readonly record struct Doorway(double X1, double Y1, double X2, double Y2)
+    {
+        public double CentreX => (X1 + X2) / 2;
+        public double CentreY => (Y1 + Y2) / 2;
+    }
+
+    /// <summary>What came out: the collidable walls, and every opening through them.</summary>
     public readonly record struct Built(
         IReadOnlyList<SurfaceLayout.Wall> Walls,
-        IReadOnlyList<(double X, double Y)> Doorways);
+        IReadOnlyList<Doorway> Doorways);
 
     /// <summary>Half a doorway. The captain is 1.4 du across; this leaves room to walk it badly.</summary>
     public const double DoorwayHalf = 1.6;
@@ -92,7 +100,7 @@ public static class SurfaceStructure
         double halfH = Math.Max(spec.Height, MinDooredFace + thickness * 2) / 2;
 
         var walls = new List<SurfaceLayout.Wall>();
-        var doorways = new List<(double X, double Y)>();
+        var doorways = new List<Doorway>();
 
         // The outer face as a closed loop of points, in local (unrotated) space around the origin.
         // SIDE COUNT IS DERIVED, NOT PICKED. A fixed twelve-sided drum on a 14 du footprint gives faces
@@ -131,7 +139,7 @@ public static class SurfaceStructure
     /// so the space inside the wall can never be stood in, and — when this face carries the way in — a
     /// doorway cut through BOTH faces with its own two reveals lining the passage.</summary>
     private static void AddThickFace(
-        List<SurfaceLayout.Wall> walls, List<(double X, double Y)> doorways,
+        List<SurfaceLayout.Wall> walls, List<Doorway> doorways,
         in Spec spec, double thickness,
         double ax, double ay, double bx, double by, bool doored)
     {
@@ -159,9 +167,12 @@ public static class SurfaceStructure
             double centre = len / 2;
             g0 = centre - DoorwayHalf;
             g1 = centre + DoorwayHalf;
-            (double doorX, double doorY) = Local(spec, ax + (ux * centre) + (nx * thickness / 2),
-                                                       ay + (uy * centre) + (ny * thickness / 2));
-            doorways.Add((doorX, doorY));
+            // The opening as a SPAN across the passage, at mid-thickness — what a real door is hung on.
+            (double jx0, double jy0) = Local(spec, ax + (ux * g0) + (nx * thickness / 2),
+                                                   ay + (uy * g0) + (ny * thickness / 2));
+            (double jx1, double jy1) = Local(spec, ax + (ux * g1) + (nx * thickness / 2),
+                                                   ay + (uy * g1) + (ny * thickness / 2));
+            doorways.Add(new Doorway(jx0, jy0, jx1, jy1));
         }
 
         // The two faces, each split around the doorway if there is one.

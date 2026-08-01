@@ -33,9 +33,14 @@ public static class MoonSurface
     /// <summary>The deep edge — the far bottom rim of the field. Lane-1 (owner, 2026-07-18): the tide of
     /// Reevers claws out of the regolith here, "coming from bottom of screen … at random intervals", far
     /// below the followed camera so each contact paints on the tracker long before it crests into view.</summary>
-    public const float SurfaceBottomY = -84f;
-    private const float SurfaceLeftX = -44f;
-    private const float SurfaceRightX = 34f;
+    // #573 · THE FIELD GREW, roughly four times in each direction and sixteen in area. Owner, walking it:
+    // "the site cannot just run out so soon... there needs to be explorable space around that building we
+    // go to refill." He was right, and it was worse than aesthetics: at 78 x 64 du the walk home from
+    // ANYWHERE was under ten seconds, so the suit's point-of-no-return could never fire at any tank size
+    // and air was a pure countdown (#573). A tether needs room to pull against.
+    public const float SurfaceBottomY = -280f;
+    private const float SurfaceLeftX = -160f;
+    private const float SurfaceRightX = 150f;
 
     /// <summary>The landing area's safe band just under the tube mouth — tube, kiosk and the way home
     /// cluster here; everything worth digging for is a long walk deeper.</summary>
@@ -47,7 +52,7 @@ public static class MoonSurface
     /// fixed so the nerve/sight and pack-spawn math is one thing across bodies. Named for Miranda's canon
     /// monolith, which still sits exactly here. TODO(#226): the #318 first-sight sanity hook keys off it.</summary>
     public const float MonolithX = -6f;
-    public const float MonolithY = -70f;
+    public const float MonolithY = -232f;   // #573: still the deep heart, now a real walk away
 
     // #313's single fixed ⛏ DIG HERE field (DigFieldX/DigFieldY, deep by the monolith) is RETIRED by the
     // beach-comber kit (owner, Evening wind 2026-07-18: "bury anywhere"). Burying and probing now happen
@@ -335,6 +340,33 @@ public static class MoonSurface
         // which are kept clear of WALLS so a walk-around always exists and were therefore the emptiest and
         // most walkable third of every site. Scenery cannot obstruct, so it is free to go exactly there.
         SurfaceScenery.Mark[] scenery = [.. SurfaceScenery.For(bodyId, siteSalt, field)];
+
+        // #573 · THE SHELTER, deep in the field: one guaranteed building with a REAL door and air inside.
+        // Owner: "just make one building into the middle there with working door" → "or lets put that near
+        // the bottom there" → "there needs to be explorable space around that building we go to refill."
+        //
+        // The door is an actual DeckPlan.Door hung on the opening SurfaceStructure hands back — which is why
+        // that returns the doorway as a segment rather than a midpoint: a point cannot say which way a
+        // passage runs, and a door needs to know.
+        SurfaceStructure.Spec shelter = SurfaceShelter.SpecFor(bodyId, siteSalt, field);
+        SurfaceStructure.Built built = SurfaceStructure.Build(shelter);
+        foreach (SurfaceLayout.Wall w in built.Walls)
+        {
+            walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, false, IsStone: true));
+        }
+        foreach (SurfaceStructure.Doorway d in built.Doorways)
+        {
+            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2));
+            consoles.Add(new(DeckPlan.ConsoleKind.SurfaceAirlock,
+                (float)d.CentreX, (float)d.CentreY, SurfaceShelter.DoorLabel));
+        }
+        consoles.Add(new(DeckPlan.ConsoleKind.ShelterTank,
+            (float)shelter.CentreX, (float)shelter.CentreY, SurfaceShelter.TankLabel));
+        // Andy Weir's bubble shelters carry survival kit, not just air (owner). Set well off the rack so
+        // each is reachable as the ANSWERING console — the #520 law.
+        consoles.Add(new(DeckPlan.ConsoleKind.ShelterLocker,
+            (float)shelter.CentreX, (float)(shelter.CentreY - 5.5), SurfaceShelter.LockerLabel));
+        labels.Add(((float)shelter.CentreX, (float)(shelter.CentreY - 7), "⛺ SHELTER"));
 
         return new Layout(
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location,

@@ -139,6 +139,10 @@ public partial class Map
     private bool _tubeRearmSeen;
     private bool _tubeRearmOpen;
 
+    // #573 · the tank-is-low card. Same shape again: a persisted seen-bit, a transient open-bit.
+    private bool _airCardSeen;
+    private bool _airCardOpen;
+
     // on the surface). Set in BeginSurfaceExcursion, read by SurfaceOrbitComms.
     private double _orbitHoldAtBoarding;
 
@@ -477,6 +481,15 @@ public partial class Map
         public double AirSeconds { get; set; } = SuitAir.TankSeconds;
         public bool AirWarned { get; set; }
 
+        // #573 · The low-air mark is a SEPARATE warning from the point-of-no-return, because in a bounded
+        // field the point-of-no-return can never fire at all and the captain would die having been told
+        // nothing. Both are one-shot per walk.
+        public bool AirLowWarned { get; set; }
+
+        // #573 · The deep shelter's charging rack: one charge per excursion, then it is dry.
+        public bool ShelterTankSpent { get; set; }
+        public bool ShelterLockerSpent { get; set; }
+
         public SurfaceOutpost.Placement? Outpost { get; set; }
         public bool OutpostForced { get; set; }
         public bool OutpostLooted { get; set; }
@@ -753,7 +766,8 @@ public partial class Map
         if (MoonSurface.IsSafeAboard(_avatarY))
         {
             ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, dtRealSeconds * TubeRefillRate);
-            ex.AirWarned = false;   // re-arm the warning: the next walk out gets told again
+            ex.AirWarned = false;   // re-arm the warnings: the next walk out gets told again
+            ex.AirLowWarned = false;
             return;
         }
 
@@ -767,6 +781,20 @@ public partial class Map
             ex.AirWarned = true;
             RendererInterop.PlayCue("alarm");
             ShowPulseMessage(SuitAir.CrossingWarning);
+        }
+
+        // #573 · AND the absolute low mark, which is the one that can actually fire in a field this size.
+        // Without it a captain dies flat, having been warned about nothing — the silent timer the whole
+        // mechanic forbids. It also raises the CARD, once per captain, because running out of air ends the
+        // run and the owner is right that it deserves more than a toast that scrolls past.
+        if (!ex.AirLowWarned && SuitAir.RunningLow(ex.AirSeconds))
+        {
+            ex.AirLowWarned = true;
+            RendererInterop.PlayCue("alarm");
+            if (!ShowAirCardOnce())
+            {
+                ShowPulseMessage(SuitAir.LowAirWarning(ex.AirSeconds, home));
+            }
         }
 
         if (ex.AirSeconds <= 0)
@@ -938,6 +966,103 @@ public partial class Map
     private void CloseTubeRearm()
     {
         _tubeRearmOpen = false;
+    }
+
+    // #573 · The captain has read what the tank is doing. Dismiss() hands the keyboard back — and here that
+    // matters more than anywhere: this card opens while the air is already going, so a swallowed keypress
+    // is spent air.
+    private void CloseAirCard()
+    {
+        _airCardOpen = false;
+    }
+
+    // ── #573 · THE SHELTER'S CHARGING RACK [E]. The only place outside her tube that refills a suit, and
+    //    therefore the only reason the deep field is worth crossing rather than merely looking at. ──
+    private void ShelterTankInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.ShelterTank })
+        {
+            return;
+        }
+        if (ex.ShelterTankSpent)
+        {
+            ShowPulseMessage(SurfaceShelter.EmptyLine);
+            return;
+        }
+
+        double before = ex.AirSeconds;
+        ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, SurfaceShelter.RefillSeconds);
+        ex.ShelterTankSpent = true;
+
+        // Re-arm both warnings: the tank is no longer low, so saying so again next time is honest.
+        ex.AirLowWarned = false;
+        ex.AirWarned = false;
+
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage(SurfaceShelter.RefillLine(ex.AirSeconds - before));
+        RequestVaultSave();
+    }
+
+    // ── #573 · THE SHELTER'S EMERGENCY LOCKER [E]. Owner, on Andy Weir's bubble shelters: they "should
+    //    also contain reload to guns". A shelter stocked with air and nothing else is a tap, not a refuge. ──
+    private void ShelterLockerInteract()
+    {
+        if (_surface is not { } ex || ex.ShelterLockerSpent)
+        {
+            if (_surface is not null)
+            {
+                ShowPulseMessage(SurfaceShelter.LockerEmptyLine);
+            }
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.ShelterLocker })
+        {
+            return;
+        }
+
+        var takers = ex.Bots.Where(b => b.Rounds < SentryBot.MaxMagazine).ToList();
+        if (takers.Count == 0)
+        {
+            ShowPulseMessage("🔫 Rounds you have no use for — every magazine you carry already reads full.");
+            return;
+        }
+
+        int left = SurfaceShelter.LockerRounds;
+        foreach (SurfaceBot bot in takers)
+        {
+            int take = Math.Min(SentryBot.MaxMagazine - bot.Rounds, (left / takers.Count) + 1);
+            take = Math.Min(take, left);
+            bot.Rounds += take;
+            left -= take;
+            if (left <= 0)
+            {
+                break;
+            }
+        }
+
+        ex.ShelterLockerSpent = true;
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage(SurfaceShelter.LockerLine(SurfaceShelter.LockerRounds - left));
+        RequestVaultSave();
+    }
+
+    /// <summary>#573 · Raise the tank-is-low card, once per captain ever. Returns true when it went up, so
+    /// the caller keeps its pulse line for every later trip.</summary>
+    private bool ShowAirCardOnce()
+    {
+        if (_airCardSeen)
+        {
+            return false;
+        }
+        _airCardSeen = true;
+        _airCardOpen = true;
+        RequestVaultSave();
+        StateHasChanged();
+        return true;
     }
 
     /// <summary>#562 · Raise the tube-feeds-you card, once per captain ever. Returns true when it went up,
@@ -1559,7 +1684,7 @@ public partial class Map
         // #562 · The tube-rearm card holds it too. The tube is the safest square on the moon, so this is
         // belt-and-braces rather than a rescue — but a modal that leaves the world running is a bug waiting
         // for the one player who opens it with something already in the tube mouth.
-        if (_groundLessonOpen || _groundGrewOpen || _tubeRearmOpen)
+        if (_groundLessonOpen || _groundGrewOpen || _tubeRearmOpen || _airCardOpen)
         {
             _surface.LandedAtMs += dtRealSeconds * 1000.0;
             return;
@@ -3482,6 +3607,16 @@ public partial class Map
             CacheMarks: _hudMarks,
             Nerve: _nerve,
             NerveReadout: NerveModel.Readout(_nerve),
+            // #564: the tank, drawn as a bar under the tracker.
+            AirSeconds: ex.AirSeconds,
+            AirDistanceHome: DistanceToTheTube(),
+            // #573 · AND, once it is low, a BIG on-grid counter anchored to the captain — the same
+            // seven-segment idiom the reactor overload uses, which is the owner's own comparison
+            // ("similar counter as the round count counting down seconds on the map"). A bar in the corner
+            // is for glancing at; this is for when glancing is no longer enough.
+            Countdown: SuitAir.RunningLow(ex.AirSeconds)
+                ? (_avatarX, _avatarY + 2.6, $"O2 {(int)(ex.AirSeconds / 60)}:{(int)(ex.AirSeconds % 60):00}")
+                : null,
             Bots: _hudBots,
             Husks: _hudHusks,
             KeyHints: BuildSurfaceKeyHints(ex),
@@ -3574,11 +3709,10 @@ public partial class Map
     {
         var lines = new List<string>();
 
-        // #564 · THE TANK, first in the column and always shown. It leads because it is the only thing on
-        // the surface that kills you without touching you, and because the readout's job is to be glanced
-        // at rather than calculated: it says how much FURTHER you may go, not merely how much is left. A
-        // bare countdown would be exactly the silent timer this mechanic must not be.
-        lines.Add(SuitAir.Readout(ex.AirSeconds, DistanceToTheTube()));
+        // #564 · The tank used to be the top line HERE, and the owner went looking for a meter under the
+        // tracker and found nothing — because a line of dim 10px text among the key hints is a footnote, not
+        // a gauge. It is a drawn BAR now (DeckView, fed by SurfaceHud.AirSeconds); this list is back to
+        // being what it always was, the affordances.
 
         // The dig affordance, honest to the sling (playtest bug #1 / owner ruling #9: the ground must SAY
         // what's possible). Carrying → bury anywhere you stand; empty → the beach-comber probe, a real
