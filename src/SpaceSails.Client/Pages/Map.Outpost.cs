@@ -44,6 +44,14 @@ public partial class Map
 
     // #564 dev cheat (/map?air=N): start an excursion with N seconds in the tank instead of a full one, so
     // the point-of-no-return warning can be reached in a short walk rather than a six-minute one.
+    /// <summary>#588 · The outpost hut's own slot in the "whose kit was this" tally. Negative so it can
+    /// never collide with a ruin's room index — the hut is one room per site, the ruins are many.</summary>
+    private const int OutpostKitIndex = -101;
+
+    // #585 dev cheat (?floor=N): ride straight down to BN on landing, so a floor can be inspected without
+    // finding the shed and working the lift. Clamped to the site's real depth.
+    private int? _startingFloorCheat;
+
     private double? _airCheatSeconds;
 
     // #585 dev cheat (?body=ID): which body ?land=1 should put the shuttle on, regardless of what happens to
@@ -250,7 +258,17 @@ public partial class Map
         SurfaceOutpost.OutpostCover cover = SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt);
         ex.OutpostEffectsRead = true;
         RebuildSurfaceDeck();
-        ShowPulseMessage(SurfaceOutpost.EffectsLine(cover));
+
+        // #588 · FILED, AND IT COUNTS AS A PIECE OF SOMEBODY'S KIT. Owner, finding the hut mid-playtest: "now
+        // I found something?" — and it was the one console in the game most obviously ABOUT a person that
+        // neither survived being read nor contributed to working out who they were.
+        //
+        // It was still on the transient pulse, so the last effects of somebody who died out here faded in
+        // eight seconds; and the dossier only counted ruin papers, so the literal PERSONAL EFFECTS were the
+        // one kit in the game that assembled nobody. Both were oversights of mine from an hour ago, and this
+        // is the console that makes the omission obvious.
+        ShowAndFile(SurfaceOutpost.EffectsLine(cover), "🚹");
+        AssembleSomebody(ex, ex.Stop.Body.Id, ex.Site.LayoutSalt, OutpostKitIndex);
 
         // Reading somebody's last effects on a floor they did not walk off costs a little nerve. Small: the
         // place is long cold, and the captain is a pirate. It is the recognition that stings, not the fright.

@@ -522,6 +522,13 @@ public partial class Map
         public Dictionary<int, double> ShelterReservoir { get; } = [];
         public HashSet<int> ShelterPumpNoted { get; } = [];
 
+        // ── #585 · THE HIVE. Which floor the captain is on (0 = the surface), and which rooms down there
+        //    have already been turned over. Persisted with the excursion, so stepping back into the lift
+        //    finds the facility exactly as you left it.
+        public int Floor { get; set; }
+        public HashSet<int> HiveRoomsEmptied { get; } = [];
+        public HashSet<int> HiveFloorsSeen { get; } = [];
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -860,6 +867,21 @@ public partial class Map
         // Checked BEFORE the drain and returning outright, so there is no ordering by which a captain
         // sitting in a refuge can suffocate in it. The tank does not tick up either — the rack does that,
         // deliberately and with a ceiling; simply standing here is safety, not resupply.
+        // #585 · UNDERGROUND, THE FLOOR DECIDES. Owner's biggest open question, answered with a beat in it:
+        // B1 still holds pressure, so it is a refuge exactly like a shelter - the tank stops and the nerve
+        // steadies. Everything below is dead, so depth is paid for in air and every stair down is a decision
+        // about getting back up. Checked before the drain, like the shelter branch, so no ordering can
+        // suffocate a captain standing in a pressurised corridor.
+        if (ex.Floor < 0)
+        {
+            if (UndergroundComplex.HoldsPressure(ex.Floor))
+            {
+                return;
+            }
+            // A dead floor drains exactly like open regolith: this is the price of going deeper, and it is
+            // the only thing stopping the facility from being somewhere to live.
+        }
+
         int inside = ShelterUnderfoot(ex);
         if (inside >= 0)
         {
@@ -1168,18 +1190,18 @@ public partial class Map
     //    therefore the only reason the deep field is worth crossing rather than merely looking at. ──
     /// <summary>#573 · The fixed places the fan should point at: the way home, and every shelter. Bearings
     /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.</summary>
-    private List<(double Bearing, double Range, bool IsHome)> BuildBeacons(SurfaceExcursion ex)
+    private List<(double Bearing, double Range, bool IsHome, bool IsLab)> BuildBeacons(SurfaceExcursion ex)
     {
-        var list = new List<(double, double, bool)>();
+        var list = new List<(double, double, bool, bool)>();
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
             return list;   // a hull has neither a tube mouth nor a shelter
         }
 
-        void Add(double x, double y, bool home)
+        void Add(double x, double y, bool home, bool lab = false)
         {
             double dx = x - _avatarX, dy = y - _avatarY;
-            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home));
+            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home, lab));
         }
 
         Add(MoonSurface.SpawnX, MoonSurface.SpawnY, home: true);
@@ -1187,6 +1209,27 @@ public partial class Map
         {
             Add(shelter.CentreX, shelter.CentreY, home: false);
         }
+
+        // #585/#584 · AND THE LIFT HEAD, once the door is known. Owner, standing in a ruin that happened to
+        // have a violet door: "it should be this space? but how do I get in this has purple door and is not
+        // emergency shelter?"
+        //
+        // Two failures behind that one sentence. First, the HUD has been saying "E at the ⊙ HIDDEN DOOR —
+        // force the secret lab open" while nothing anywhere says WHERE it is (#584, filed before he hit it and
+        // then hit anyway). A prompt you cannot act on is worse than silence.
+        //
+        // Second, mine and worse: I gave imported violet to shelters (always), to about one ruin door in
+        // seven, AND to the lift head — so a colour that was supposed to mean "somebody shipped this here"
+        // now means "some doors", and the one door it most needed to distinguish was lost among them. A
+        // signal that fires on three unrelated things is not a signal.
+        //
+        // The beacon is the honest fix: the ground can carry as many violet doors as the fiction wants, and
+        // the INSTRUMENT says which one is the way down.
+        if (ex.SecretLabDoorRevealed && ex.Lab is { HasLab: true } lab)
+        {
+            Add(lab.DoorX, lab.DoorY, home: false, lab: true);
+        }
+
         return list;
     }
 
@@ -1221,7 +1264,10 @@ public partial class Map
         {
             return list;
         }
-        if (!_secretLabsFound.Contains(ex.Stop.Body.Id))
+        // #593: a tip you were GIVEN counts, not only a place you have already been. This used to read only
+        // _secretLabsFound, so the wash helped on a return visit and did nothing on the first — the one visit
+        // where a captain actually needs help. The clue chain had no way into the instrument at all.
+        if (!_labLeads.Contains(ex.Stop.Body.Id) && !_secretLabsFound.Contains(ex.Stop.Body.Id))
         {
             return list;   // nobody has tipped you about this one; there is nothing to be vague about
         }
@@ -1312,6 +1358,13 @@ public partial class Map
                 ShowAndFile(SurfaceSalvage.PapersLine(body, salt, which), "📄");
                 ApplyNerveShock(2.0, "somebody else's paperwork, still where they left it");
                 AssembleSomebody(ex, body, salt, which);   // #588: a person, out of the pieces
+
+                // #593 · AND SOMETIMES A PLACE NAME. This is the thread that makes the labs findable at all:
+                // a docket in a ruin, read carefully, names a moon somebody was running something on.
+                if (DiceRule.Roll(DiceRule.Seed($"lead:papers:{body}:{salt}:{which}"), 3).Face == 1)
+                {
+                    GrantLabLead(DiceRule.Seed($"lead:pick:{body}:{salt}:{which}"));
+                }
                 break;
 
             default:
@@ -1347,6 +1400,33 @@ public partial class Map
             : SurfaceShelter.SpecsFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
         ex.ShelterSpecs = specs;
         return specs;
+    }
+
+    /// <summary>#594 · Walk a body out of solid mass it has ended up inside — a wall that was built around
+    /// it rather than one it walked into. Tries short steps outward on a ring of bearings and takes the first
+    /// that is open ground; gives up rather than loop, because a contact stuck in stone is a curiosity and a
+    /// frame that never ends is a crash.</summary>
+    private static (double X, double Y) ExtricateFromStone(
+        double x, double y, IReadOnlyList<SurfaceCollision.Segment> walls, double radius)
+    {
+        if (!SurfaceCollision.Blocked(x, y, radius, walls))
+        {
+            return (x, y);
+        }
+
+        for (double reach = 1.5; reach <= 18.0; reach += 1.5)
+        {
+            for (int i = 0; i < 12; i++)
+            {
+                double a = i / 12.0 * Math.Tau;
+                double tx = x + (Math.Cos(a) * reach), ty = y + (Math.Sin(a) * reach);
+                if (!SurfaceCollision.Blocked(tx, ty, radius, walls))
+                {
+                    return (tx, ty);
+                }
+            }
+        }
+        return (x, y);
     }
 
     /// <summary>#585 · Push a body back out of any shelter it has ended up inside. The door reads a suit;
@@ -1401,6 +1481,190 @@ public partial class Map
         return start;
     }
 
+    // ── #585 · THE HIVE: down the shaft, and back up ───────────────────────────────
+    //
+    // Owner: "I just don't want the secret lab to be puny 2 door apartment, but look like it could facilitate
+    // a large operation with serious funding."
+    //
+    // Three calls were made on his behalf when he said "go forward" (all pinned by TheHiveTests, so each is a
+    // one-line overrule): you find it by LOOKING (the lift head's door is the one imported thing on the moon),
+    // it goes three floors and the bottom is not a bottom, and B1 still holds pressure while everything below
+    // it does not. That last one is the whole feel of the place - the top floor lulls you and the rest costs
+    // you air.
+    private void HiveLiftInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveLift or DeckPlan.ConsoleKind.HiveHead })
+        {
+            return;
+        }
+
+        // #585 · THE CAR SERVES A BAND, NOT A BUILDING. Owner's own architectural note: "the lift shafts are
+        // the limiting factor, but besides those we have space." So depth is unbounded and the SHAFT is what
+        // rations it — reach the bottom of this car's band and it will not go further, and the way down is
+        // another shaft on this floor that you have to find.
+        string body = ex.Stop.Body.Id;
+        int bottom = UndergroundComplex.DepthOf(body);
+        int bandFloor = UndergroundComplex.BandFloor(body, UndergroundComplex.BandOf(Math.Min(ex.Floor, -1)));
+
+        if (ex.Floor == 0)
+        {
+            RideTheLiftTo(ex, -1);
+            return;
+        }
+
+        if (ex.Floor > bandFloor)
+        {
+            RideTheLiftTo(ex, ex.Floor - 1);
+            return;
+        }
+
+        // At the bottom of the band: the car goes back up. Going deeper is somebody else's shaft.
+        if (ex.Floor > bottom)
+        {
+            ShowPulseMessage(UndergroundComplex.EndOfTheLineLine(-ex.Floor));
+        }
+        RideTheLiftTo(ex, 0);
+    }
+
+    private void RideTheLiftTo(SurfaceExcursion ex, int level)
+    {
+        bool wasUnderground = ex.Floor < 0;
+        ex.Floor = level;
+
+        if (level == 0)
+        {
+            // Back out on the regolith, at the lift head where the car came up.
+            (double hx, double hy) = SecretLabHeadSpot(ex);
+            (_avatarX, _avatarY) = (hx, hy - 3);
+            RebuildSurfaceDeck();
+            ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
+                "maintenance shed. The moon is exactly as indifferent as you left it.");
+            RequestVaultSave();
+            return;
+        }
+
+        (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
+        (_avatarX, _avatarY) = (sx, sy);
+        RebuildSurfaceDeck();
+        RendererInterop.PlayCue("board");
+
+        if (!wasUnderground)
+        {
+            ShowAndFile(UndergroundComplex.DescendingLine, "\ud83d\udec3");
+
+            // #595 \u00b7 THE CARD, on the first descent only. Owner: "I think we need to gen AI pop-up about
+            // finding the elevator." It is the beat the whole feature turns on \u2014 the moment a moon stops
+            // being a field with things scattered on it and becomes a LID.
+            if (ex.HiveFloorsSeen.Count == 0)
+            {
+                _viewObject = new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                    UndergroundComplex.DescentCardLabel,
+                    UndergroundComplex.DescentArtUrl, UndergroundComplex.DescentCard);
+            }
+        }
+
+        // The floor announces which KIND of floor it is, in those words, so the captain is never guessing
+        // whether their tank is running.
+        if (ex.HiveFloorsSeen.Add(level))
+        {
+            ShowAndFile(UndergroundComplex.HoldsPressure(level)
+                ? UndergroundComplex.PressurisedLine
+                : UndergroundComplex.DeadAirLine, "\ud83e\udec1");
+        }
+
+        ApplyNerveShock(UndergroundComplex.HoldsPressure(level) ? 2.0 : 5.0,
+            "a building this expensive, this far down, and this empty");
+        RequestVaultSave();
+    }
+
+    /// <summary>#585 - Where the camouflaged lift head stands. Reuses the seeded secret-lab door spot, so the
+    /// ground already kept clear for the old chamber is exactly the ground the shed stands on - one seeded
+    /// fact, two uses, nothing to keep in sync.</summary>
+    private (double X, double Y) SecretLabHeadSpot(SurfaceExcursion ex)
+    {
+        SecretLab.Placement p = SecretLab.For(
+            ex.Stop.Body.Id, MoonSurface.ExpeditionField(), forcePresent: true);
+        return (p.DoorX, p.DoorY);
+    }
+
+    /// <summary>#585 - Turning over one room of the facility. About a third are stripped; the rarest thing in
+    /// the building is a FILE ON SOMEBODY, because it is the only haul you spend on a person.</summary>
+    private void HiveHaulInteract()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveHaul } spot)
+        {
+            return;
+        }
+
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        int which = -1;
+        for (int i = 0; i < floor.RoomCentres.Count; i++)
+        {
+            if (Math.Abs(floor.RoomCentres[i].X - spot.X) < 0.5
+                && Math.Abs(floor.RoomCentres[i].Y - spot.Y) < 0.5)
+            {
+                which = i;
+                break;
+            }
+        }
+        if (which < 0 || !ex.HiveRoomsEmptied.Add(HiveInterior.RoomKey(ex.Floor, which)))
+        {
+            return;
+        }
+
+        UndergroundComplex.Haul haul = UndergroundComplex.InRoom(ex.Stop.Body.Id, ex.Floor, which);
+        if (haul == UndergroundComplex.Haul.Equipment)
+        {
+            _credits += 900;
+            RendererInterop.PlayCue("board");
+        }
+
+        // Everything found down here is FILED (#587) - this is the place in the game most worth being able to
+        // re-read, and a file on a harbourmaster that faded after eight seconds would be a joke.
+        ShowAndFile(UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which),
+            haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
+
+        if (haul == UndergroundComplex.Haul.Dirt)
+        {
+            ApplyNerveShock(4.0, "reading somebody's file in a building that should not exist");
+        }
+
+        // #593 · A facility keeps records of the OTHER facilities. Operational paper and files are the
+        // strongest leads in the game, which is the right shape: the deeper into one of these you go, the
+        // more of the map opens up.
+        if (haul is UndergroundComplex.Haul.Records or UndergroundComplex.Haul.Dirt)
+        {
+            GrantLabLead(DiceRule.Seed($"lead:hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
+        }
+
+        RebuildSurfaceDeck();
+        RequestVaultSave();
+    }
+
+    /// <summary>#585 - A door that never opens, read out loud. It is a WALL with a world behind it, and the
+    /// game never once pretends otherwise - a door that teases would turn scale into a puzzle.</summary>
+    private void HiveSignInteract()
+    {
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveSign } spot)
+        {
+            return;
+        }
+        ShowPulseMessage(UndergroundComplex.LockedLine(spot.Label.Replace("\ud83d\udd12 ", "")));
+    }
+
     // ── #588 · A PERSON, OUT OF THE PIECES ─────────────────────────────────────────────────────────────
     //
     // Owner: "when we find somebody's kit maybe we get gen ai compilation of what we discover about them...
@@ -1441,6 +1705,11 @@ public partial class Map
         if (FieldDossier.KinKnowsSomething(body, salt, roomIndex))
         {
             ShowAndFile(FieldDossier.LeadHint(body, salt, roomIndex), "🔎");
+
+            // #593: and what they know is a PLACE. This is the owner's own chain closing — "if we know what
+            // happened to someone we get contacts easily by contacting their loved ones, in some cases that
+            // might lead our gum-shoe-efforts forward" — arriving, eventually, at a moon on the tracker.
+            GrantLabLead(DiceRule.Seed($"lead:kin:{body}:{salt}:{roomIndex}"));
         }
 
         // And the lighter one the owner asked for by name: a phrase that opens a door somewhere else.
@@ -1452,6 +1721,85 @@ public partial class Map
         }
 
         ApplyNerveShock(4.0, "a stranger's whole life, laid out on a rock");
+    }
+
+    // ── #593 · THE DETECTOR, SWEEPING ─────────────────────────────────────────────────────────────────
+    //
+    // Owner: "the detector should also give detecting readings near it."
+    //
+    // The probe was all-or-nothing — the exact square pings, its eight neighbours shriek, and the other four
+    // thousand squares say nothing — so finding a lab was a lottery rather than a search. This is the
+    // hot-and-cold every treasure hunt has run on forever: a reading that climbs as you close and falls away
+    // as you drift, so a captain can pick a bearing, walk it, and TURN when it cools.
+    //
+    // It only wakes on a moon somebody has named (#593's leads). A detector that hummed everywhere would hand
+    // over every lab in the system for free and make the whole clue chain pointless.
+    private SecretLab.Reading _lastDetectorReading = SecretLab.Reading.Silent;
+
+    private void StepSecretLabDetector()
+    {
+        if (_surface is not { } ex
+            || ex.Lab is not { HasLab: true } lab
+            || ex.SecretLabDoorRevealed
+            || !_labLeads.Contains(ex.Stop.Body.Id))
+        {
+            _lastDetectorReading = SecretLab.Reading.Silent;
+            return;
+        }
+
+        double dx = lab.DoorX - _avatarX, dy = lab.DoorY - _avatarY;
+        SecretLab.Reading now = SecretLab.ReadingAt(Math.Sqrt((dx * dx) + (dy * dy)));
+        if (now == _lastDetectorReading)
+        {
+            return;   // speak on the CHANGE only; a needle that narrates every frame is noise
+        }
+
+        bool warmer = now > _lastDetectorReading;
+        _lastDetectorReading = now;
+
+        string line = SecretLab.ReadingLine(now, warmer);
+        if (line.Length > 0)
+        {
+            ShowPulseMessage(line);
+            if (warmer && now >= SecretLab.Reading.Strong)
+            {
+                RendererInterop.PlayCue("pulse");
+            }
+        }
+    }
+
+    /// <summary>#593 · A clue names a moon. Called from every find in the gumshoe chain — a file in a
+    /// facility, papers in a ruin, what a dead specialist's family turns out to know.</summary>
+    private void GrantLabLead(ulong seed)
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        var candidates = new List<string>();
+        foreach (ShuttleStop stop in ShuttleDestinationsInRange())
+        {
+            if (stop.IsLandable && !Derelict.TryParseWreckId(stop.Body.Id, out _))
+            {
+                candidates.Add(stop.Body.Id);
+            }
+        }
+        if (!candidates.Contains(ex.Stop.Body.Id))
+        {
+            candidates.Add(ex.Stop.Body.Id);
+        }
+
+        string? named = SecretLab.MoonWorthLookingAt(candidates, seed);
+        if (named is null || !_labLeads.Add(named))
+        {
+            return;
+        }
+
+        string display = ShuttleDestinationsInRange()
+            .FirstOrDefault(s => s.Body.Id == named)?.Body.Name ?? named;
+        ShowAndFile(SecretLab.LeadLine(display), "🔎");
+        RequestVaultSave();
     }
 
     // ── #587 · THE FIELD BOOK ──────────────────────────────────────────────────────────────────────────
@@ -1466,6 +1814,15 @@ public partial class Map
     // captain's ledger grouped by PLACE. On the ground the thing you want back is not who told you, it is
     // where you were standing.
     private List<Core.FieldNote> _fieldNotes = [];
+
+    // #593 · MOONS SOMEBODY HAS NAMED. Owner: "We will be needing some kind of clue in the plot arc to the
+    // radar to really find it in reasonable time in the game :-D ... now we kind of found it by just knowing
+    // it is here somewhere."
+    //
+    // This is the missing link in the whole gumshoe chain. A clue found in a facility, a ruin or a dead
+    // specialist's family names a MOON; landing on a named moon wakes the detector and the tracker's vague
+    // wash. Without it the search was a lottery with four thousand tickets.
+    private readonly HashSet<string> _labLeads = [];
 
     /// <summary>Say it AND keep it. Every durable find on a surface goes through here rather than through
     /// ShowPulseMessage directly, so there is one place that can never be forgotten about — the pulse is the
@@ -1684,6 +2041,17 @@ public partial class Map
         // #488: a DERELICT is not a world. She gets a dead ship to walk — a spine, compartments, and the
         // evidence bolted to her decks — instead of the regolith field and its tube. Routed by body id, the
         // same trick the expedition sites use, so nothing else in the excursion has to know the difference.
+        // #585 · UNDERGROUND. A floor of the Hive is laid inside the SURFACE'S OWN envelope, so the whole
+        // facility costs no new coordinate space - the owner's insight, and the reason "down" beat "wider".
+        // Routed here, the same way a derelict is, so nothing else in the excursion has to know.
+        if (ex.Floor < 0)
+        {
+            _deckPlan = HiveInterior.FloorDeck(
+                ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
+                3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied);
+            return;
+        }
+
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
         {
             _deckPlan = WreckInterior.WreckDeck(
@@ -1699,7 +2067,10 @@ public partial class Map
             // #586: which visit-window the monolith's foot is showing. Bucketed off sim time so it holds
             // still for a whole excursion (a captain who comes back the same afternoon finds what they left —
             // his object-persistence law) and has moved on by the time it is worth walking out there again.
-            monolithEpoch: Monolith.EpochAt(SimTime));
+            monolithEpoch: Monolith.EpochAt(SimTime),
+            // #585: whether this ground carries a clandestine site is ALREADY decided (ResolveSecretLab, which
+            // honours ?secretlab=1). The renderer is told; it never rolls again.
+            hasSecretSite: ex.Lab is { HasLab: true });
 
         // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
         // forced open this visit onto the freshly-built base — so a bury/lift/drop rebuild grows back exactly
@@ -2214,12 +2585,48 @@ public partial class Map
             return;
         }
 
-        if (_surface is not null)
+        if (_surface is not { } landedOn)
         {
-            _avatarX = MoonSurface.SpawnX;
-            _avatarY = MoonSurface.LandingBandY - 12;
-            RebuildSurfaceDeck();
+            return;
         }
+
+        // #585 · ?secretlab=1&land=1 PUTS YOU AT THE SHAFT. Owner, after an evening of walking a 310 x 260
+        // field to reach the one thing being tested: "instruct to put the debug cheat start next to the lab
+        // so that it can be really tested without playing to find it" — "I mean next to the elevator shaft".
+        //
+        // The hunt is the GAME (the clue, the wash, the detector gradient), and it is exactly what must not
+        // stand between a developer and the feature under test. Every one of the open Hive issues — the
+        // sealed rooms, the visualiser, the card, the tracker, the unlisted band — needs the captain standing
+        // at the lift head within seconds, repeatedly.
+        //
+        // Only under the secret-lab cheat: an ordinary landing still drops you on the open regolith, so this
+        // can never quietly become how the game plays.
+        if (_secretLabForceBodyId == landedOn.Stop.Body.Id && landedOn.Lab is { HasLab: true })
+        {
+            (double hx, double hy) = SecretLab.HeadSpot(
+                landedOn.Stop.Body.Id, landedOn.Site.LayoutSalt, MoonSurface.ExpeditionField());
+
+            // A pace outside the shed's door, facing it — not inside, so the walk in is still walked and the
+            // door, the label and the console are all exercised the way a player meets them.
+            _avatarX = hx;
+            _avatarY = hy - 7.5;
+            RebuildSurfaceDeck();
+            ShowPulseMessage(
+                "🧪 DEV ?secretlab=1: set down at the lift head. The shed is in front of you.");
+
+            // ...and ?floor=N goes the rest of the way down, because half the open work on this feature is
+            // about what a FLOOR looks like rather than about finding the way in.
+            if (_startingFloorCheat is { } askedFor)
+            {
+                int floor = Math.Max(askedFor, UndergroundComplex.DepthOf(landedOn.Stop.Body.Id));
+                RideTheLiftTo(landedOn, floor);
+            }
+            return;
+        }
+
+        _avatarX = MoonSurface.SpawnX;
+        _avatarY = MoonSurface.LandingBandY - 12;
+        RebuildSurfaceDeck();
     }
 
     // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off. They are
@@ -2269,9 +2676,23 @@ public partial class Map
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
+        StepSecretLabDetector();                 // #593: the needle climbs as you close on a named moon
         StepOutpostDoorChannel(dtRealSeconds);   // #563: the outpost hatch's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
         StepSentries(dtRealSeconds);
+        // #595 · NOTHING SHAMBLES DOWN HERE. Owner, stepping out of the car: "I don't think there should be
+        // reevers down here", then "now the reevers are on surface right, so they should not be visible here
+        // on screen now?" — both correct, and the second is the sharper point: they are still up there, and
+        // a captain underground should neither see them nor hear them on the fan.
+        //
+        // Same law a derelict already runs under: the tide claws up out of REGOLITH, and a poured, sealed,
+        // still-powered facility is not regolith. Clearing the live pack means a chase that followed you
+        // across the field is simply over — and the pack you meet coming back up is a fresh one, which is a
+        // better scene than one that rode down in the lift with you.
+        if (_surface is { Floor: < 0 })
+        {
+            _reevers.Clear();
+        }
         StepReevers(dtRealSeconds);
         StepCollectors(dtRealSeconds); // #583: the repo boat, and the people who got out of it
         StepExpeditionFog(dtRealSeconds); // #371 Phase 3: born-dark regions + behind-cover contacts + echoes
@@ -2498,7 +2919,11 @@ public partial class Map
         // It also completes the building's argument. It gives you air, it reloads you, it keeps the Old Ones
         // at the threshold — and until now you sat in it watching the one gauge that measures whether you can
         // keep doing this go on falling.
-        bool inShelter = onExcursion && _surface is { } shelterEx && ShelterUnderfoot(shelterEx) >= 0;
+        // #585: a pressurised floor of the Hive steadies you for the same reason a shelter does - it is warm,
+        // it is lit, and nothing outside can work its doors. A DEAD floor does not, which is most of them.
+        bool inShelter = onExcursion && _surface is { } shelterEx
+            && (ShelterUnderfoot(shelterEx) >= 0
+                || (shelterEx.Floor < 0 && UndergroundComplex.HoldsPressure(shelterEx.Floor)));
         bool onRegolith = onExcursion && !MoonSurface.IsSafeAboard(_avatarY) && !inShelter;
 
         // #380 item 2: the band this frame opened on — so once, per excursion, we can speak the FIRST slide
@@ -3266,6 +3691,19 @@ public partial class Map
             // Same fiction that already pens them off the shuttle: the door reads a SUIT. They may crowd the
             // threshold and wait there — which is its own good scene — and they may not come in.
             (nx, ny) = HoldOutsideShelters(nx, ny);
+
+            // #594 · AND OUT OF ANYTHING ELSE THEY ENDED UP INSIDE. Owner, playing: "I think we landed a
+            // building on top of two reevers here :-D".
+            //
+            // He did. The pack is spawned in regolith coordinates and the ground is BUILT around them — the
+            // lift head, the outpost hut and the seeded structures all appear on a deck the Old Ones are
+            // already standing on. Bump-and-slide keeps a body out of a wall it walks into; it has nothing to
+            // say about a wall that arrives around a body already there, so they were sealed in, shuffling
+            // inside somebody's masonry.
+            //
+            // So: if a contact is standing IN stone, walk it out along the shortest way. Cheap — the test is
+            // one collision query that says "no" for every Old One on an ordinary frame.
+            (nx, ny) = ExtricateFromStone(nx, ny, walls, reeverRadius);
 
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 

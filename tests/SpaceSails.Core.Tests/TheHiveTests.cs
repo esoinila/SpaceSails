@@ -19,7 +19,7 @@ public sealed class TheHiveTests
 
     private static IEnumerable<int> Floors()
     {
-        for (int level = -1; level >= UndergroundComplex.DeepestFloor; level--)
+        for (int level = -1; level >= UndergroundComplex.DepthOf("miranda"); level--)
         {
             yield return level;
         }
@@ -102,6 +102,19 @@ public sealed class TheHiveTests
         Assert.True(UndergroundComplex.HoldsPressure(-1));
         Assert.False(UndergroundComplex.HoldsPressure(-2));
         Assert.False(UndergroundComplex.HoldsPressure(-3));
+        Assert.False(UndergroundComplex.HoldsPressure(-4));
+
+        // Generalised for unbounded depth: it is the TOP OF EVERY SHAFT BAND that still has power, because
+        // that is where a facility puts its lobbies. A captain who finds the next shaft gets exactly one
+        // floor of relief before the dark again, and relief is always the minority of a deep building.
+        Assert.True(UndergroundComplex.HoldsPressure(-1 - UndergroundComplex.FloorsPerShaft));
+
+        int powered = 0;
+        for (int level = -1; level >= -20; level--)
+        {
+            if (UndergroundComplex.HoldsPressure(level)) { powered++; }
+        }
+        Assert.True(powered * 3 < 20, "too much of the building is a refuge.");
 
         // And the lines say so, in those words, so the player is never guessing which kind of floor they are on.
         Assert.Contains("stops drawing", UndergroundComplex.PressurisedLine, StringComparison.OrdinalIgnoreCase);

@@ -363,6 +363,16 @@ public partial class Map
             case DeckPlan.ConsoleKind.LabCache:
                 LabCacheInteract(); // #409: claim Vantar's fat one-time cache
                 break;
+            case DeckPlan.ConsoleKind.HiveLift:
+            case DeckPlan.ConsoleKind.HiveHead:
+                HiveLiftInteract();   // #585: down the shaft, or back up out of it
+                break;
+            case DeckPlan.ConsoleKind.HiveHaul:
+                HiveHaulInteract();   // #585: turn over one room of the facility
+                break;
+            case DeckPlan.ConsoleKind.HiveSign:
+                HiveSignInteract();   // #585: read a door that will not open
+                break;
             case DeckPlan.ConsoleKind.MonolithFoot:
                 MonolithFootInteract(); // #586: whatever somebody left at the foot this window
                 break;

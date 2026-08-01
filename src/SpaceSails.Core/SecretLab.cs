@@ -174,15 +174,192 @@ public static class SecretLab
     /// <para>Reserved on EVERY body, whether or not this one hides a lab: the door spot is seeded the same
     /// way regardless, so keeping that patch of deep field clear costs one building's worth of ground and
     /// removes the whole class.</para></summary>
-    public static (double X, double Y, double R) ChamberFootprint(string bodyId, in SurfaceLayout.Field field)
+    public static (double X, double Y, double R) ChamberFootprint(
+        string bodyId, in SurfaceLayout.Field field, string? siteSalt = null)
     {
-        Placement p = For(bodyId, field, forcePresent: true);
+        // #585: reserved around the RESOLVED entrance (HeadSpot), not the raw seed — otherwise the ledger
+        // keeps a patch of ground clear that the shed has already been nudged away from, and leaves the
+        // ground it actually stands on unprotected. That is how the maintenance shed ended up inside an
+        // outpost hut.
+        (double hx, double hy) = HeadSpot(bodyId, siteSalt, field);
         double midX = (field.LeftX + field.RightX) / 2.0;
-        double dir = p.DoorX <= midX ? 1.0 : -1.0;
-        double cx = p.DoorX + (dir * (RoomDepth / 2.0));
-        double radius = Math.Sqrt(((RoomDepth / 2.0) * (RoomDepth / 2.0)) + ((RoomWidth / 2.0) * (RoomWidth / 2.0)));
-        return (cx, p.DoorY, radius);
+        double dir = hx <= midX ? 1.0 : -1.0;
+        double cx = hx + (dir * (RoomDepth / 2.0));
+
+        // Wide enough to cover the shed at the door AND the chamber that grows away from it — and NO wider.
+        //
+        // #596: this was RoomDepth + RoomWidth/2 (23 du), which was generous to the point of being a bug. On
+        // top of nine shelter reservations it rejected so many seeded features that different bodies started
+        // producing the same sparse ground: SeededBodies_AllDifferFromEachOther went from 8 distinct wall
+        // hashes to 5, and SiteSalt_ParameterizesTheGround found two salts generating an identical field.
+        // A keep-out is a claim on ground, and an over-claim quietly costs the whole world its variety.
+        //
+        // The honest number: from the reservation's centre (half the chamber's depth out from the door) it
+        // has to reach the far side of the shed one way and the end of the chamber the other. That is
+        // RoomDepth/2 plus the shed's own half-diagonal.
+        double radius = (RoomDepth / 2.0) + 6.5;
+        return (cx, hy, radius);
     }
+
+    /// <summary>#585 · WHERE THE LIFT HEAD ACTUALLY STANDS, once everything else on this site has had its say.
+    ///
+    /// <para>Owner, looking at a screen with the maintenance shed buried inside an outpost hut which was
+    /// itself overlapping a shelter drum: <i>"is it this that I cannot get into?"</i> He could not, and it was
+    /// not his fault.</para>
+    ///
+    /// <para>The cause is the oldest one in this file's neighbourhood, with a new twist: <b>the lab is seeded
+    /// PER BODY and everything it collides with is seeded PER SITE.</b> <see cref="For"/> cannot see the
+    /// shelters or the hut, they cannot see it, and the shared claim ledger only ever protected the CHAMBER
+    /// (which is offset from the door) and never the shed standing on the door itself. Three placers, three
+    /// answers, one patch of ground.</para>
+    ///
+    /// <para>So the entrance is resolved HERE, against this site's real furniture, and everything downstream —
+    /// the shed, the tracker beacon, the hidden-door console, the chamber's own reservation — reads this one
+    /// function. Seeded nudges, so it is still the same spot every visit.</para></summary>
+    public static (double X, double Y) HeadSpot(string bodyId, string? siteSalt, in SurfaceLayout.Field field)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        string salt = siteSalt ?? "";
+
+        Placement seeded = For(bodyId, field, forcePresent: true);
+        double x = seeded.DoorX, y = seeded.DoorY;
+
+        // Everything on this site that a shed must not be inside. The hut is built into an edge lane, so it
+        // is the likeliest collision by a distance.
+        var taken = new List<(double X, double Y, double R)>();
+        foreach (SurfaceStructure.Spec shelter in SurfaceShelter.SpecsFor(bodyId, salt, field))
+        {
+            taken.Add((shelter.CentreX, shelter.CentreY, SurfaceStructure.KeepOutRadius(shelter) + HeadClearance));
+        }
+
+        SurfaceOutpost.Placement hut = SurfaceOutpost.For(bodyId, salt, field, forcePresent: true);
+        taken.Add((hut.DoorX, hut.DoorY, OutpostClearance));
+
+        // A handful of seeded retries along the deep field, then give up and take the last one rather than
+        // loop: a shed slightly close to a hut is a cosmetic problem, and no shed at all is a dead feature.
+        for (int attempt = 0; attempt < 24 && Clashes(x, y, taken); attempt++)
+        {
+            double loX = field.LeftX + SurfaceLayout.EdgeMargin + RoomDepth;
+            double hiX = field.RightX - SurfaceLayout.EdgeMargin - RoomDepth;
+            double loY = field.BottomY + (RoomWidth / 2.0) + 2.0;
+            double hiY = field.AnchorY + 12.0;
+
+            x = Lerp(loX, hiX, Frac(bodyId, $"head-x:{salt}:{attempt}"));
+            y = Lerp(loY, hiY, Frac(bodyId, $"head-y:{salt}:{attempt}"));
+        }
+
+        return (x, y);
+    }
+
+    /// <summary>How much room the shed wants around it, beyond the neighbour's own footprint.</summary>
+    private const double HeadClearance = 12.0;
+
+    /// <summary>The hut is a room appended from its hatch, so it needs a generous berth from a bare point.</summary>
+    private const double OutpostClearance = 30.0;
+
+    private static bool Clashes(double x, double y, List<(double X, double Y, double R)> taken)
+    {
+        foreach ((double tx, double ty, double r) in taken)
+        {
+            double dx = x - tx, dy = y - ty;
+            if (Math.Sqrt((dx * dx) + (dy * dy)) < r)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>#593 · THE DETECTOR GETS WARMER. Owner: <i>"the detector should also give detecting readings
+    /// near it."</i>
+    ///
+    /// <para>The probe was all-or-nothing: stand on the exact beach-comber square and it PINGS, stand on one
+    /// of the eight around it and it shrieks, stand anywhere else on a 310 x 260 field and it says nothing at
+    /// all. That is not a search, it is a lottery with 4 000 tickets — which is why the owner could only find
+    /// a lab by already knowing it was there.</para>
+    ///
+    /// <para>A real detector is a gradient. This is the hot-and-cold every treasure hunt has run on since
+    /// they were invented, and it turns a field into something you can WORK: pick a bearing, walk it, watch
+    /// the reading, turn when it cools. The exact square still pings — that is still the moment — but now
+    /// there is a way to steer toward it.</para>
+    ///
+    /// <para>It only wakes on a moon you have a reason to search (see <see cref="MoonWorthLookingAt"/>),
+    /// because a detector that hums on every world would hand the player every lab in the system for free and
+    /// make the clue chain pointless.</para></summary>
+    public enum Reading { Silent, Faint, Steady, Strong, Screaming }
+
+    /// <summary>How far out the detector says anything at all.</summary>
+    public const double DetectorRange = 62.0;
+
+    /// <summary>What the needle is doing at this distance from the hidden door.</summary>
+    public static Reading ReadingAt(double distance) => distance switch
+    {
+        <= 7.0 => Reading.Screaming,
+        <= 18.0 => Reading.Strong,
+        <= 34.0 => Reading.Steady,
+        <= DetectorRange => Reading.Faint,
+        _ => Reading.Silent,
+    };
+
+    /// <summary>What the captain hears. Written so the DIRECTION of change is the information — "it climbs",
+    /// "it falls away" — because a number would be a map and this is meant to be a search.</summary>
+    public static string ReadingLine(Reading reading, bool warmer) => reading switch
+    {
+        Reading.Faint => warmer
+            ? "📻 The detector finds something to say — one slow tick, then another. Not nothing. Not yet anything."
+            : "📻 The ticking thins out and stops. Whatever it was, it is behind you now.",
+        Reading.Steady => warmer
+            ? "📻 A steady return under your boots — metal, buried, and far too regular to be ore. It gets no quieter as you walk."
+            : "📻 The return drops back to a tick. You have walked past the shoulder of it.",
+        Reading.Strong => warmer
+            ? "📻 The needle stops pretending. Something big and made is under this ground, and it is close."
+            : "📻 The needle eases off. Close, still — but not as close as you were.",
+        Reading.Screaming => warmer
+            ? "📻 The detector screams and will not stop. You are standing on it. Sweep the squares here and probe."
+            : "📻 It screams on, quieter by a hair. Do not wander — it is within a few paces of your boots.",
+        _ => "",
+    };
+
+    /// <summary>#593 · WHICH MOON A CLUE NAMES. Owner, having found a lab only because he knew it was there:
+    /// <i>"We will be needing some kind of clue in the plot arc to the radar to really find it in reasonable
+    /// time in the game :-D ... now we kind of found it by just knowing it is here somewhere :-D"</i>
+    ///
+    /// <para>He is right, and the loop was half-built: the tracker already draws a wide vague wash for a lab
+    /// (a tip narrows a search, it never ends one) — but that wash was gated on having ALREADY found the
+    /// place, so it helped on a return visit and did nothing on the first. The clue had no way in.</para>
+    ///
+    /// <para>This closes it. A clue found anywhere in the gumshoe chain — a file in a facility, a docket in a
+    /// ruin, something a dead specialist's family knows — names a MOON THAT ACTUALLY HAS ONE. Never a moon
+    /// that does not: a game that sends you three days out on a false lead is not being mysterious, it is
+    /// wasting your evening.</para></summary>
+    public static string? MoonWorthLookingAt(IReadOnlyList<string> candidates, ulong seed)
+    {
+        if (candidates is null || candidates.Count == 0)
+        {
+            return null;
+        }
+
+        var withLabs = new List<string>();
+        foreach (string body in candidates)
+        {
+            if (Present(body))
+            {
+                withLabs.Add(body);
+            }
+        }
+        if (withLabs.Count == 0)
+        {
+            return null;
+        }
+        return withLabs[(int)(seed % (ulong)withLabs.Count)];
+    }
+
+    /// <summary>How a clue reads when it finally names somewhere. It gives a MOON, never a spot — the walk is
+    /// still yours, and the tracker will only ever wash the general area.</summary>
+    public static string LeadLine(string moonName) =>
+        $"🔎 A place name, in among the rest of it, in a context that makes no sense unless somebody was " +
+        $"running something there: {moonName}. Written the way people write a thing they are not supposed " +
+        "to have written down. Your tracker will know roughly where to wash when you are standing on it.";
 
     public static bool IsProximitySquare(in Placement p, int squareX, int squareY) =>
         System.Math.Abs(squareX - p.DoorSquareX) <= 1 && System.Math.Abs(squareY - p.DoorSquareY) <= 1;
