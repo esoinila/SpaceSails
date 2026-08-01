@@ -139,9 +139,14 @@ internal static class FloorSvg
 
         // ── THE CAPTION — the same numbers the stdout table prints, so a picture pulled out of labviz/ in
         //    six months still says what it is.
-        UndergroundComplex.Kind kind = UndergroundComplex.KindFor(body);
+        // #592 · The FLOOR's kind, not the site's. Caught by this lab's own picture: an unlisted floor was
+        // rendering with the title of the building above it — a caption saying one thing while the doors in
+        // the same picture read another, which is the exact failure this lab exists to make visible.
+        UndergroundComplex.Kind kind = UndergroundComplex.KindOn(body, level);
+        string unlisted = UndergroundComplex.IsUnlisted(body, level) ? "  🕳 UNLISTED" : "";
         Text(s, 10, 18, "#e6edf5", 13,
-            $"{Escape(body.ToUpperInvariant())} {Escape(floor.Name)} — {Escape(UndergroundComplex.TitleOf(kind))}",
+            $"{Escape(body.ToUpperInvariant())} {Escape(floor.Name)} — {Escape(UndergroundComplex.TitleOf(kind))}" +
+            $"{Escape(unlisted)}",
             "start");
         Text(s, 10, 34, report.AllReached ? "#7f8ea3" : "#ff6b6b", 11,
             $"{report.RoomsReached}/{report.Rooms} rooms reachable · lift {(report.LiftReached ? "reachable" : "SEALED")} · " +
