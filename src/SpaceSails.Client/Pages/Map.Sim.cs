@@ -1693,10 +1693,27 @@ public partial class Map
             _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
         }
 
-        UpdateParrot(highResTimestampMs);
-        UpdateShipAlerts(highResTimestampMs);
-        EvaluateLongCoastAdvert(highResTimestampMs); // #172: refresh the next-event cache + long-coast squawk
-        UpdateArrivalBrakeGate(highResTimestampMs);  // #304: raise the arrival-brake ask while the window is open
+        // #580 · THE SHIP'S VOICE DOES NOT REACH A CAPTAIN WHO IS NOT ABOARD HER. Owner, walking Miranda:
+        // "in miranda here... why does the parrot talk about debt collectors now" / "we do not want any ship
+        // type warnings received here on the surface ... that mechanic should not be active here" / "where
+        // the player is not on empty ship".
+        //
+        // Right — the bird is on a perch on a ship that is docked and empty, and the captain is in a suit on
+        // a moon. Everything below this line is the SHIP's channel: her alarm strip, her parrot, the long-
+        // coast advert, the arrival-brake ask. None of it has a listener during an excursion, and squawking
+        // it anyway does real damage: it drags the space fiction down onto the ground and buries the one
+        // channel that IS live down there (air, tracker, nerve) under noise about somebody else's problem.
+        //
+        // Skipped wholesale rather than filtered, so nothing new added to the ship's side can leak down here
+        // by forgetting to ask. On coming back aboard the detectors re-evaluate against live state, so a
+        // condition that is still true announces itself then — which is when it can be acted on.
+        if (_surface is null)
+        {
+            UpdateParrot(highResTimestampMs);
+            UpdateShipAlerts(highResTimestampMs);
+            EvaluateLongCoastAdvert(highResTimestampMs); // #172: next-event cache + long-coast squawk
+            UpdateArrivalBrakeGate(highResTimestampMs);  // #304: the arrival-brake ask while the window is open
+        }
 
         // M28: the CALCULATING FIRING SOLUTION reveal — one Newton iteration per beat.
         if (_fireSolution is { } fireSolution && _revealedIterations < fireSolution.Trace.Count

@@ -189,17 +189,33 @@ public static class SurfaceShelter
     /// something in it to defend the place with.</summary>
     public const string LockerLabel = "🔫 EMERGENCY LOCKER";
 
-    /// <summary>Rounds in the shelter's locker. Partial, like every cache out here (#563): it buys one more
-    /// fight, never independence, or the tube stops being the anchor.</summary>
+    /// <summary>#580 · THE LOCKER IS NOT A CACHE. IT IS A SUPPLY POINT.
+    ///
+    /// <para>Owner, stranded in a shelter with a bare locker: <i>"why can I not reload ammo here more?"</i>,
+    /// and then, when a slow restocking press was offered: <i>"we want in practise unlimited reloads of
+    /// rounds at the shelters not like couple mags"</i>. Ruled, and rightly — this was a ONE-SHOT drawer that
+    /// paid out forty-five rounds once and was bare forever after, which is the exact dead end the air rack
+    /// was already fixed out of and the locker beside it was left holding.</para>
+    ///
+    /// <para>So: <b>a shelter reloads you, fully, every time you ask.</b> Nothing to ration, nothing to time,
+    /// no drawer to count. The scarcity in this game does not live at the refuge — it lives in the WALK, and
+    /// it is paid in air. A shelter that haggles over ammunition adds no tension, only a chore; a shelter
+    /// that fills your magazines makes reaching one worth the crossing, which is the whole point of putting
+    /// them out there. Cheap ammo was his standing rule from the start (<i>"let's keep the ammo cheap … we
+    /// want to encourage exploration and that takes ammo"</i>) and this is that rule reaching the surface.</para>
+    ///
+    /// <para>Kept as a named constant purely so the receipt can say a number.</para></summary>
     public const int LockerRounds = 45;
 
-    /// <summary>The receipt for the locker.</summary>
+    /// <summary>The receipt for the locker. Reports what actually went into the magazines.</summary>
     public static string LockerLine(int rounds) =>
-        $"🔫 An emergency locker, sealed and dated by somebody long gone: {rounds} rounds, the standard " +
-        "calibre. Whoever stocked this place expected the people using it to need them.";
+        $"🔫 A wall press older than anyone who ever sheltered here, still swaging the standard calibre out " +
+        $"of scrap and regolith: {rounds} rounds into your magazines, and it keeps working. Whoever built " +
+        "these decided that a person who reaches one should never leave it short.";
 
-    /// <summary>When the locker has been emptied.</summary>
-    public const string LockerEmptyLine = "🔫 The locker is bare. You emptied it yourself.";
+    /// <summary>What the locker says to a captain who needs nothing.</summary>
+    public const string LockerFullLine =
+        "🔫 The press reads your magazines, finds them full, and goes back to sleep. It will be here.";
 
     /// <summary>What the ground says as the door gives way to proximity.</summary>
     public const string ArrivalLine =

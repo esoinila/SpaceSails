@@ -501,7 +501,10 @@ public partial class Map
         // drawn by somebody else — see SurfaceShelter.SomebodyWasHere). Always producing, never "spent".
         public Dictionary<int, double> ShelterReservoir { get; } = [];
         public HashSet<int> ShelterPumpNoted { get; } = [];
-        public HashSet<int> ShelterLockersSpent { get; } = [];
+
+        // #580 · There is deliberately NO locker state here any more. The old HashSet of spent lockers is
+        // what stranded the owner beside an empty one; a shelter now reloads whoever reaches it, every time,
+        // so there is nothing left to remember. See SurfaceShelter.LockerRounds for the ruling.
 
         // #573 · Which ruins have been turned over this visit. A room stays entered once emptied — the walls
         // and the door remain, so it still reads as a place you have been.
@@ -597,6 +600,12 @@ public partial class Map
         }
 
         _surface = excursion;
+
+        // #580 · The bird stops mid-sentence as the hatch closes. Anything it was saying was about the ship,
+        // and the captain has just stopped being aboard her — leaving the bubble hanging over a moon is the
+        // stale half of the same bug. (Everything that would ADD one is gated in SquawkNow.)
+        _parrotSquawk = null;
+
         ResolveSecretLab(excursion); // #409: does this body hide one of Vantar's labs? (seed, or a known/cheat pre-reveal)
         ResolveOutpost(excursion);   // #563: does this SITE carry an outpost hut? (three in four do)
         if (_airCheatSeconds is { } startingAir)
@@ -1304,35 +1313,31 @@ public partial class Map
             return;
         }
         int whichLocker = ShelterUnderfoot(ex);
-        if (whichLocker < 0 || ex.ShelterLockersSpent.Contains(whichLocker))
+        if (whichLocker < 0)
         {
-            ShowPulseMessage(SurfaceShelter.LockerEmptyLine);
             return;
         }
 
         var takers = ex.Bots.Where(b => b.Rounds < SentryBot.MaxMagazine).ToList();
         if (takers.Count == 0)
         {
-            ShowPulseMessage("🔫 Rounds you have no use for — every magazine you carry already reads full.");
+            ShowPulseMessage(SurfaceShelter.LockerFullLine);
             return;
         }
 
-        int left = SurfaceShelter.LockerRounds;
+        // #580 · EVERY MAGAZINE, EVERY TIME, FOR AS LONG AS YOU CARE TO STAND HERE. Owner: "we want in
+        // practise unlimited reloads of rounds at the shelters not like couple mags". No drawer, no
+        // reservoir, no cooldown — the press is the point of the building. What this costs is the walk here
+        // and the air it took, which is where the pressure in an excursion is supposed to live.
+        int loaded = 0;
         foreach (SurfaceBot bot in takers)
         {
-            int take = Math.Min(SentryBot.MaxMagazine - bot.Rounds, (left / takers.Count) + 1);
-            take = Math.Min(take, left);
-            bot.Rounds += take;
-            left -= take;
-            if (left <= 0)
-            {
-                break;
-            }
+            loaded += SentryBot.MaxMagazine - bot.Rounds;
+            bot.Rounds = SentryBot.MaxMagazine;
         }
 
-        ex.ShelterLockersSpent.Add(whichLocker);
         RendererInterop.PlayCue("board");
-        ShowPulseMessage(SurfaceShelter.LockerLine(SurfaceShelter.LockerRounds - left));
+        ShowPulseMessage(SurfaceShelter.LockerLine(loaded));
         RequestVaultSave();
     }
 
@@ -3251,7 +3256,19 @@ public partial class Map
         {
             ex.Catches++;
         }
-        _heat = EncounterRule.RaiseHeat(_heat, 1, SimTime);
+        // #580 · NO SHIP HEAT FROM A HAND ON YOUR SUIT. This used to raise _heat by one per catch, and that
+        // was wrong twice over. Owner: "moving on the planet should NOT cause HEAT" / "any heat should happen
+        // on the surface or site, not in space" / "we don't want to be guarding our parking lot ... that is
+        // not good game play :-D".
+        //
+        // He is right on the fiction and on the play. HEAT is what the collectors and the law hold against
+        // your SHIP, earned by robbery and piracy and hot cargo — an Old One grabbing a suit on Miranda tells
+        // nobody anything, and there is no ledger out here to be entered in. On the play side the coupling
+        // was worse than untidy: it turned every excursion into a slow tax on the parked ship, so a good long
+        // walk came home to wolves. The site's own pressure is ex.Catches, above, and that stays local.
+        //
+        // Same class as the Debt Collector deaths he caught earlier: a space-side consequence reaching down
+        // onto a moon where it has no business being.
         // #480 · The nerve price of a hand on you is decided by NervePips, not here: ONE pip, ONCE per
         // encounter (owner: "repeated strikes should not cost more of sanity … we already take medical hit
         // from reever"), and again on every hand once the captain is nearly gone. We only report the event.

@@ -1665,9 +1665,22 @@ public partial class Map
 
         _lastAnnouncedHeat = _heat.Level;
 
+        // #580 · NOBODY IS AT THE CONTROLS. While the captain is walking a moon, the ship is a docked hull
+        // with the lights on and no one aboard — so the wolves hold station instead of closing, and cannot
+        // catch her. See EncounterRule.HoldStation for the owner's ruling; the short of it is that heat is
+        // the CAPTAIN's, and a game where a good long excursion means coming home to a boarding party is a
+        // game about guarding a parking lot.
+        bool captainIsAboard = _surface is null;
+
         for (int i = _hunters.Count - 1; i >= 0; i--)
         {
             HunterState hunter = _hunters[i];
+            if (!captainIsAboard)
+            {
+                _hunters[i] = EncounterRule.HoldStation(hunter, SimTime);
+                continue;
+            }
+
             while (hunter.State.SimTime < SimTime && !hunter.CaughtPlayer && !hunter.BrokenOff)
             {
                 double stepTime = Math.Min(SimTime, hunter.State.SimTime + EncounterRule.HunterStepSeconds);

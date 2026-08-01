@@ -252,6 +252,16 @@ public partial class Map
 
     private void SquawkNow(Parrot.Squawk kind, double nowMs, string? subject = null, bool force = false)
     {
+        // #580 · THE BIRD IS ON THE SHIP. Owner, on a moon: "why does the parrot talk about debt collectors
+        // now" / "we do not want any ship type warnings received here on the surface". The perch is aboard a
+        // docked hull and the captain is in a suit somewhere else; a squawk has no way to reach them and no
+        // business trying. Gated HERE as well as at the tick, because `force: true` callers (the Busted
+        // crossing was the one he caught) bypass every other brake this method has.
+        if (_surface is not null)
+        {
+            return;
+        }
+
         if (!force && nowMs < _parrotCooldownUntilMs)
         {
             return; // one squawk at a time; the bird sulks between

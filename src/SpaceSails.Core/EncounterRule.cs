@@ -251,6 +251,25 @@ public static class EncounterRule
         return best;
     }
 
+    /// <summary>#580 · THE CHASE HOLDS ITS BREATH WHILE THE CAPTAIN IS OFF THE SHIP.
+    ///
+    /// <para>Owner, walking Miranda with his ship docked and empty behind him: <i>"zero heat against empty
+    /// ship (we don't have any playing there, clearly there is some lights on keeper on ship but we do not
+    /// play that)"</i>, <i>"the heat must follow the captain, not the ship"</i>, and the play argument that
+    /// settles it — <i>"we don't want to be guarding our parking lot ... that is not good game play :-D"</i>.</para>
+    ///
+    /// <para>He is right, and the bug was live: the pursuit loop kept running through an excursion, so a
+    /// hunter could reach and CATCH a hull with nobody aboard it, opening a boarding demand at a captain
+    /// standing in a suit on a moon. Whatever the collectors want, they want it from the person, and the
+    /// person is not there.</para>
+    ///
+    /// <para>Holding is not the same as freezing. The hunter's clock is carried forward to
+    /// <paramref name="simTime"/> so that coming back aboard resumes the chase from where it stood, rather
+    /// than letting the pursuit integrate the whole excursion in one burst and land on the captain the
+    /// instant they climb the ladder. Position and velocity are untouched: the wolf waited.</para></summary>
+    public static HunterState HoldStation(HunterState hunter, double simTime) =>
+        hunter with { State = hunter.State with { SimTime = simTime } };
+
     /// <summary>Dumb, relentless pursuit: thrust-limited acceleration toward the player's CURRENT
     /// position, integrated over whatever <paramref name="simTime"/> delta the caller advances by
     /// (Map.razor calls this in <see cref="HunterStepSeconds"/> quanta to match the NPC cadence).
