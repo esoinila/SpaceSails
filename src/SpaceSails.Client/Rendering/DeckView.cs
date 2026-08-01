@@ -370,7 +370,7 @@ public sealed class DeckView
             {
                 // Another berth's sealed hatch — always shut, drawn cold (steel-blue), a real wall behind.
                 //
-                // #595 · Owner, in the Hive: "the doors should be different color than the walls and say
+                // #585 · Owner, in the Hive: "the doors should be different color than the walls and say
                 // locked on approach." The cold steel-blue already differs from every wall ink in the game;
                 // what it lacked was WEIGHT — at 3.5px against hull-bright walls it read as just another
                 // line. A door that will never open is the most informative object in a facility, so it is
@@ -1180,7 +1180,7 @@ public sealed class DeckView
                 // The way home is warmer than a shelter, because they are not the same promise: one is your
                 // ship, the other is somebody else's roof.
                 //
-                // #593 · And a LIFT HEAD is neither, so it gets the imported violet the door itself wears
+                // #585 · And a LIFT HEAD is neither, so it gets the imported violet the door itself wears
                 // (#592). With nine shelter rings on the fan, one more ring in the same ink is not a signal —
                 // the owner had a tracker full of identical circles and no way to tell which one was the way
                 // down. A beacon that cannot be told apart from its neighbours is decoration.

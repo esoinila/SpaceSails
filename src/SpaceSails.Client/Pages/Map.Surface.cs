@@ -1264,7 +1264,7 @@ public partial class Map
         {
             return list;
         }
-        // #593: a tip you were GIVEN counts, not only a place you have already been. This used to read only
+        // #585: a tip you were GIVEN counts, not only a place you have already been. This used to read only
         // _secretLabsFound, so the wash helped on a return visit and did nothing on the first — the one visit
         // where a captain actually needs help. The clue chain had no way into the instrument at all.
         if (!_labLeads.Contains(ex.Stop.Body.Id) && !_secretLabsFound.Contains(ex.Stop.Body.Id))
@@ -1359,7 +1359,7 @@ public partial class Map
                 ApplyNerveShock(2.0, "somebody else's paperwork, still where they left it");
                 AssembleSomebody(ex, body, salt, which);   // #588: a person, out of the pieces
 
-                // #593 · AND SOMETIMES A PLACE NAME. This is the thread that makes the labs findable at all:
+                // #585 · AND SOMETIMES A PLACE NAME. This is the thread that makes the labs findable at all:
                 // a docket in a ruin, read carefully, names a moon somebody was running something on.
                 if (DiceRule.Roll(DiceRule.Seed($"lead:papers:{body}:{salt}:{which}"), 3).Face == 1)
                 {
@@ -1402,7 +1402,7 @@ public partial class Map
         return specs;
     }
 
-    /// <summary>#594 · Walk a body out of solid mass it has ended up inside — a wall that was built around
+    /// <summary>#585 · Walk a body out of solid mass it has ended up inside — a wall that was built around
     /// it rather than one it walked into. Tries short steps outward on a ring of bearings and takes the first
     /// that is open ground; gives up rather than loop, because a contact stuck in stone is a curiosity and a
     /// frame that never ends is a crash.</summary>
@@ -1557,7 +1557,7 @@ public partial class Map
         {
             ShowAndFile(UndergroundComplex.DescendingLine, "\ud83d\udec3");
 
-            // #595 \u00b7 THE CARD, on the first descent only. Owner: "I think we need to gen AI pop-up about
+            // #585 \u00b7 THE CARD, on the first descent only. Owner: "I think we need to gen AI pop-up about
             // finding the elevator." It is the beat the whole feature turns on \u2014 the moment a moon stops
             // being a field with things scattered on it and becomes a LID.
             if (ex.HiveFloorsSeen.Count == 0)
@@ -1641,7 +1641,7 @@ public partial class Map
             ApplyNerveShock(4.0, "reading somebody's file in a building that should not exist");
         }
 
-        // #593 · A facility keeps records of the OTHER facilities. Operational paper and files are the
+        // #585 · A facility keeps records of the OTHER facilities. Operational paper and files are the
         // strongest leads in the game, which is the right shape: the deeper into one of these you go, the
         // more of the map opens up.
         if (haul is UndergroundComplex.Haul.Records or UndergroundComplex.Haul.Dirt)
@@ -1706,7 +1706,7 @@ public partial class Map
         {
             ShowAndFile(FieldDossier.LeadHint(body, salt, roomIndex), "🔎");
 
-            // #593: and what they know is a PLACE. This is the owner's own chain closing — "if we know what
+            // #585: and what they know is a PLACE. This is the owner's own chain closing — "if we know what
             // happened to someone we get contacts easily by contacting their loved ones, in some cases that
             // might lead our gum-shoe-efforts forward" — arriving, eventually, at a moon on the tracker.
             GrantLabLead(DiceRule.Seed($"lead:kin:{body}:{salt}:{roomIndex}"));
@@ -1723,7 +1723,7 @@ public partial class Map
         ApplyNerveShock(4.0, "a stranger's whole life, laid out on a rock");
     }
 
-    // ── #593 · THE DETECTOR, SWEEPING ─────────────────────────────────────────────────────────────────
+    // ── #585 · THE DETECTOR, SWEEPING ─────────────────────────────────────────────────────────────────
     //
     // Owner: "the detector should also give detecting readings near it."
     //
@@ -1732,7 +1732,7 @@ public partial class Map
     // hot-and-cold every treasure hunt has run on forever: a reading that climbs as you close and falls away
     // as you drift, so a captain can pick a bearing, walk it, and TURN when it cools.
     //
-    // It only wakes on a moon somebody has named (#593's leads). A detector that hummed everywhere would hand
+    // It only wakes on a moon somebody has named (#585's leads). A detector that hummed everywhere would hand
     // over every lab in the system for free and make the whole clue chain pointless.
     private SecretLab.Reading _lastDetectorReading = SecretLab.Reading.Silent;
 
@@ -1768,7 +1768,7 @@ public partial class Map
         }
     }
 
-    /// <summary>#593 · A clue names a moon. Called from every find in the gumshoe chain — a file in a
+    /// <summary>#585 · A clue names a moon. Called from every find in the gumshoe chain — a file in a
     /// facility, papers in a ruin, what a dead specialist's family turns out to know.</summary>
     private void GrantLabLead(ulong seed)
     {
@@ -1815,7 +1815,7 @@ public partial class Map
     // where you were standing.
     private List<Core.FieldNote> _fieldNotes = [];
 
-    // #593 · MOONS SOMEBODY HAS NAMED. Owner: "We will be needing some kind of clue in the plot arc to the
+    // #585 · MOONS SOMEBODY HAS NAMED. Owner: "We will be needing some kind of clue in the plot arc to the
     // radar to really find it in reasonable time in the game :-D ... now we kind of found it by just knowing
     // it is here somewhere."
     //
@@ -2676,11 +2676,11 @@ public partial class Map
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
-        StepSecretLabDetector();                 // #593: the needle climbs as you close on a named moon
+        StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon
         StepOutpostDoorChannel(dtRealSeconds);   // #563: the outpost hatch's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
         StepSentries(dtRealSeconds);
-        // #595 · NOTHING SHAMBLES DOWN HERE. Owner, stepping out of the car: "I don't think there should be
+        // #585 · NOTHING SHAMBLES DOWN HERE. Owner, stepping out of the car: "I don't think there should be
         // reevers down here", then "now the reevers are on surface right, so they should not be visible here
         // on screen now?" — both correct, and the second is the sharper point: they are still up there, and
         // a captain underground should neither see them nor hear them on the fan.
@@ -3692,7 +3692,7 @@ public partial class Map
             // threshold and wait there — which is its own good scene — and they may not come in.
             (nx, ny) = HoldOutsideShelters(nx, ny);
 
-            // #594 · AND OUT OF ANYTHING ELSE THEY ENDED UP INSIDE. Owner, playing: "I think we landed a
+            // #585 · AND OUT OF ANYTHING ELSE THEY ENDED UP INSIDE. Owner, playing: "I think we landed a
             // building on top of two reevers here :-D".
             //
             // He did. The pack is spawned in regolith coordinates and the ground is BUILT around them — the

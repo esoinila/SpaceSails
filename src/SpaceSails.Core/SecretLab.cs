@@ -188,7 +188,7 @@ public static class SecretLab
 
         // Wide enough to cover the shed at the door AND the chamber that grows away from it — and NO wider.
         //
-        // #596: this was RoomDepth + RoomWidth/2 (23 du), which was generous to the point of being a bug. On
+        // #587: this was RoomDepth + RoomWidth/2 (23 du), which was generous to the point of being a bug. On
         // top of nine shelter reservations it rejected so many seeded features that different bodies started
         // producing the same sparse ground: SeededBodies_AllDifferFromEachOther went from 8 distinct wall
         // hashes to 5, and SiteSalt_ParameterizesTheGround found two salts generating an identical field.
@@ -270,7 +270,7 @@ public static class SecretLab
         return false;
     }
 
-    /// <summary>#593 · THE DETECTOR GETS WARMER. Owner: <i>"the detector should also give detecting readings
+    /// <summary>#585 · THE DETECTOR GETS WARMER. Owner: <i>"the detector should also give detecting readings
     /// near it."</i>
     ///
     /// <para>The probe was all-or-nothing: stand on the exact beach-comber square and it PINGS, stand on one
@@ -320,7 +320,7 @@ public static class SecretLab
         _ => "",
     };
 
-    /// <summary>#593 · WHICH MOON A CLUE NAMES. Owner, having found a lab only because he knew it was there:
+    /// <summary>#585 · WHICH MOON A CLUE NAMES. Owner, having found a lab only because he knew it was there:
     /// <i>"We will be needing some kind of clue in the plot arc to the radar to really find it in reasonable
     /// time in the game :-D ... now we kind of found it by just knowing it is here somewhere :-D"</i>
     ///

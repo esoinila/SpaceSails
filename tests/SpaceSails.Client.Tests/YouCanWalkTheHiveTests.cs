@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -95,7 +95,7 @@ public sealed class YouCanWalkTheHiveTests
                 }
             }
 
-            // #596 · THE LIFT IS A HARD LAW; the rooms are a RATIO, for now.
+            // #587 · THE LIFT IS A HARD LAW; the rooms are a RATIO, for now.
             //
             // A captain who cannot reach the lift is trapped in a building on a dead floor, which is a death:
             // that can never be allowed and is asserted absolutely. A room that is drawn and sealed is a real
@@ -103,16 +103,16 @@ public sealed class YouCanWalkTheHiveTests
             // on about a third of floors, and shipping this guard RED would train everyone to ignore it,
             // which is the one thing worse than not having it (see the flaky-audit lesson in the spec).
             //
-            // So it fails on a catastrophe and reports the tail. #596 has the details and the reproduction.
+            // So it fails on a catastrophe and reports the tail. #587 has the details and the reproduction.
             bool liftStranded = stranded.Count == targets.Count;
             if (liftStranded)
             {
                 return $"NOTHING on this floor can be reached from the lift.";
             }
-            // The tail — a handful of rooms sealed on some floors — is a REAL defect and is filed as #596
+            // The tail — a handful of rooms sealed on some floors — is a REAL defect and is filed as #587
             // with the exact coordinates this audit prints. It is not asserted yet because I could not find
             // the cause inside the owner's playtest, and a guard that ships red is a guard everybody learns
-            // to scroll past. The moment #596 lands, this returns to "any stranded room is a failure" and the
+            // to scroll past. The moment #587 lands, this returns to "any stranded room is a failure" and the
             // ratio disappears.
             return null;
         }, "spec — every room is walkable from the lift");
@@ -190,11 +190,11 @@ public sealed class YouCanWalkTheHiveTests
                 spawn, new DeckReachability.Point(c.X, c.Y),
                 deck.CollisionField, DeckPlan.AvatarRadius, bounds));
 
-            // Same ratio law as above (#596): a deep floor must hold together as well as a shallow one, which
+            // Same ratio law as above (#587): a deep floor must hold together as well as a shallow one, which
             // is what "depth is free" has to mean — but the handful of sealed rooms the generator still leaves
             // is a known, filed defect rather than a reason to keep this guard permanently red.
             // Deep floors must hold together as well as shallow ones — that is what "depth is free" means.
-            // Pinned at "most of them" until #596 closes the tail; the point of the assertion is that a deep
+            // Pinned at "most of them" until #587 closes the tail; the point of the assertion is that a deep
             // floor is never WORSE than a shallow one, which it currently is not.
             Assert.True(reached * 2 > rooms.Count,
                 $"B{-level}: only {reached} of {rooms.Count} rooms reachable — deep floors are not free after all.");

@@ -47,7 +47,7 @@ public static class HiveInterior
         // just left a world built out of what was under your boots and walked into something imported whole.
         foreach (SurfaceLayout.Wall w in floor.Walls)
         {
-            // #595 · EVERY wall down here is hull-bright, not just the spine. Owner, standing in a corridor:
+            // #585 · EVERY wall down here is hull-bright, not just the spine. Owner, standing in a corridor:
             // "this looks weird now... I am like outside the structure?" / "like in the regolith."
             //
             // He was reading the INK, and the ink was lying. Only the spine carried IsHull, so the ribs and

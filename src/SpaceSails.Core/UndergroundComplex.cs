@@ -204,7 +204,7 @@ public static class UndergroundComplex
         var labels = new List<SurfaceLayout.Landmark>();
         var rooms = new List<(double X, double Y)>();
 
-        // #595 · A CLAIM LEDGER, DOWN HERE TOO. The A* audit found rooms that were drawn and could not be
+        // #585 · A CLAIM LEDGER, DOWN HERE TOO. The A* audit found rooms that were drawn and could not be
         // entered, and the cause is the one this project keeps paying for: two rooms (or a room and the
         // spine) laid on the same ground, each sealing the other's doorway with its own wall. Every placer
         // that writes into one space needs to see what is already in it.
@@ -215,7 +215,7 @@ public static class UndergroundComplex
         (double shaftX, double shaftY) = ShaftAt(field);
         claimed.Add((left - 1, shaftY - CorridorHalf - 1, right + 1, shaftY + CorridorHalf + 1));
 
-        // ── #595 · THE SPINE, CLOSED AT BOTH ENDS AND OPEN WHERE IT SHOULD BE.
+        // ── #585 · THE SPINE, CLOSED AT BOTH ENDS AND OPEN WHERE IT SHOULD BE.
         //
         // Owner, walking it: "see this empty tube end here... it is like I walk into the ground here" and
         // then, exactly: "this open end is a bug of topology."
@@ -260,7 +260,7 @@ public static class UndergroundComplex
             walls.Add(new(cursor, y, right, y, true));
         }
 
-        // #595 · The lift alcove hangs off the TOP face, so that face needs a mouth for it too — otherwise
+        // #585 · The lift alcove hangs off the TOP face, so that face needs a mouth for it too — otherwise
         // the car opens into a sealed box and the captain cannot reach their own way out. The A* audit
         // reported this as "the lift cannot be reached from the lift", which is as clear as a guard gets.
         SpineFace(shaftY + CorridorHalf, (rx, down) => !down || Math.Abs(rx - shaftX) < 0.001);
@@ -291,7 +291,7 @@ public static class UndergroundComplex
 
             double mouth = down ? shaftY - CorridorHalf : shaftY + CorridorHalf;
 
-            // #595 · THE RIB'S OWN WALLS ARE CUT WHERE ROOMS OPEN OFF THEM. Owner: "a door is missing here
+            // #585 · THE RIB'S OWN WALLS ARE CUT WHERE ROOMS OPEN OFF THEM. Owner: "a door is missing here
             // towards down", and his A* suggestion found it everywhere at once — 94 floors, not one room
             // reachable.
             //
@@ -303,7 +303,7 @@ public static class UndergroundComplex
             RibFace(walls, x - CorridorHalf, mouth, far, bodyId, level, i, -1, down);
             RibFace(walls, x + CorridorHalf, mouth, far, bodyId, level, i, +1, down);
 
-            // The rib's far end. #595: it is ALWAYS closed — by a sealed door with a distance on it, or by a
+            // The rib's far end. #585: it is ALWAYS closed — by a sealed door with a distance on it, or by a
             // plain wall. It was 40/60 before, and a corridor that simply stops in mid-air is the same
             // topology bug one level down ("a door is missing here towards down").
             if (Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.55)
@@ -324,7 +324,7 @@ public static class UndergroundComplex
     /// <summary>Rooms down both sides of a rib. About half are locked — the owner's illusion of scale — and a
     /// locked one still gets its sign, because a door that says what is behind it and will not open is doing
     /// far more work than a blank one.</summary>
-    /// <summary>#595 · Where the rooms sit along a rib. ONE function, called by the wall builder and by the
+    /// <summary>#585 · Where the rooms sit along a rib. ONE function, called by the wall builder and by the
     /// room builder, because the doorway a room cuts and the gap its corridor leaves must be the same gap.
     /// They were computed twice and agreed about nothing.</summary>
     private static List<double> RoomCentresAlong(double mouth, double far, bool down)
@@ -373,7 +373,7 @@ public static class UndergroundComplex
     /// <summary>Half a doorway. Comfortably wider than the captain, and the ONE number both the room's own
     /// face and its corridor's wall are cut to.
     ///
-    /// <para>#595: widened from 2.0. A 4 du gap is four captain-diameters and looked ample on paper, but the
+    /// <para>#585: widened from 2.0. A 4 du gap is four captain-diameters and looked ample on paper, but the
     /// reachability flood walks a GRID — a gap narrower than a couple of grid steps can fail to be sampled at
     /// all, so a door that is open in the geometry is shut to anything that pathfinds. A facility corridor
     /// would have wide doors anyway; this is one of the happy cases where the honest fiction and the robust
@@ -400,7 +400,7 @@ public static class UndergroundComplex
                 double x1 = cx - (roomW / 2), x2 = cx + (roomW / 2);
                 double y1 = cy - (roomH / 2), y2 = cy + (roomH / 2);
 
-                // #595: if this room would sit on something already standing, it is not built at all. An
+                // #585: if this room would sit on something already standing, it is not built at all. An
                 // empty patch of corridor is a facility with a gap in it; a room you can see and cannot enter
                 // is a lie, and the audit reports it as one.
                 bool clash = false;
@@ -581,7 +581,7 @@ public static class UndergroundComplex
         "and nothing else — whatever is under you was reached another way, by somebody with their own shaft " +
         "and their own reasons. It is down here somewhere.";
 
-    /// <summary>#595 · The card the first descent earns. Owner: "I think we need to gen AI pop-up about
+    /// <summary>#585 · The card the first descent earns. Owner: "I think we need to gen AI pop-up about
     /// finding the elevator" — and he is right that it is the beat of the whole feature: the moment a moon
     /// stops being a field with things on it and becomes a lid.</summary>
     public const string DescentArtUrl = "art/the-descent.jpg";
