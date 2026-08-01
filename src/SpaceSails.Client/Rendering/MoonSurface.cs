@@ -296,6 +296,15 @@ public static class MoonSurface
                 IsStone: w.IsHull));
         }
 
+        // #573 · EVERY BUILDING GETS A REAL DOOR. Owner: "there seemed to be shelter like spaces that were
+        // just missing the services and the doors.... let's fix those." They had openings the whole time —
+        // the generator was discarding them — so a thick-walled ruin read as an unfinished shelter instead
+        // of somewhere people used to live. An auto-door on each one makes it a building you enter.
+        foreach (SurfaceLayout.Doorway d in layout.Doorways ?? [])
+        {
+            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2));
+        }
+
         var consoles = new List<DeckPlan.ConsoleSpot>(
             ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock))
         {
