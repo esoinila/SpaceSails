@@ -197,4 +197,47 @@ public class SurfaceStructureTests
         Assert.True(b.Walls.Count > 30,
             $"only {b.Walls.Count} segments — the wall came out as lines, not mass.");
     }
+
+    [Fact]
+    public void NoStructure_IsEverSEALED_AtAnySizeTheGeneratorCanEmit()
+    {
+        // THE ONE THAT SHOULD HAVE EXISTED FIRST. The owner found "a walled in area with e-interactables
+        // that was totally cut off ... the wall was an O-shape with stuff in the middle ... and no door."
+        //
+        // Cause: door faces were picked by INDEX and then dropped if too short to hold a doorway, with
+        // nothing taking over. A ring's faces are much shorter than its width, so a drum whose chosen face
+        // fell a fraction under the minimum came out as a sealed O with consoles inside.
+        //
+        // Every other test here used ONE hand-picked 14 x 11 spec, which comfortably cleared the bar and
+        // therefore never met the bug. This sweeps the whole range SurfaceLayout and SurfaceShelter can
+        // actually ask for — the sizes that ship.
+        foreach (SurfaceStructure.Footprint shape in Enum.GetValues<SurfaceStructure.Footprint>())
+        {
+            // Stepped rather than exhaustive: the fine sweep took six minutes of CI to re-prove a property
+            // that varies smoothly, and a guard nobody wants to run is a guard that gets disabled. These
+            // steps still straddle the boundary the bug lived on (a ring's faces just under the minimum).
+            for (double w = 8; w <= 28; w += 4)
+            {
+                for (double h = 8; h <= 22; h += 4)
+                {
+                    foreach (double thick in new[] { 1.2, 2.2, 3.0 })
+                    {
+                        foreach (double angle in new[] { 0.0, 0.9 })
+                        {
+                            var spec = new SurfaceStructure.Spec(0, 0, w, h, angle, 1, thick, shape);
+                            SurfaceStructure.Built b = SurfaceStructure.Build(spec);
+
+                            Assert.True(b.Doorways.Count > 0,
+                                $"{shape} {w}x{h} t{thick} @{angle:F1}: built with NO doorway — a sealed O.");
+
+                            Assert.True(
+                                DeckReachability.CanReach(
+                                    new(-34, -34), new(0, 0), Segments(b), AvatarRadius, (-40, -40, 40, 40)),
+                                $"{shape} {w}x{h} t{thick} @{angle:F1}: has a doorway and is still not enterable.");
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

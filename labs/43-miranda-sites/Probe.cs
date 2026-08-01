@@ -1,4 +1,4 @@
-// Lab 43 · What is actually ON Miranda's landing sites?
+﻿// Lab 43 · What is actually ON Miranda's landing sites?
 //
 // The owner, playtesting 2026-07-31: "the map is kind of boring... no door or enclosed places",
 // "I have never seen the landing site area expand yet... we should test it", "There should be huts
@@ -18,9 +18,9 @@ using SpaceSails.Labs.Lab43;
 bool wantSvg = Array.IndexOf(args, "--svg") >= 0;
 
 // The field the client hands SurfaceLayout, verbatim from MoonSurface's constants.
-var field = new SurfaceLayout.Field(
-    LeftX: -44, RightX: 34, TopY: -20, BottomY: -84,
-    LandingBandY: -27, AnchorX: -6, AnchorY: -70);
+// #573 · Read from Core. This lab used to hand-copy the client's constants and therefore printed
+// confident measurements of a field the game had stopped shipping.
+SurfaceLayout.Field field = SurfaceLayout.DefaultField;
 
 double fieldW = field.RightX - field.LeftX;      // 78 du
 double fieldH = field.TopY - field.BottomY;      // 64 du
@@ -54,6 +54,9 @@ foreach (string body in new[] { "miranda", "luna", "phobos", "europa", "titan" }
         int hull = 0;
         foreach (SurfaceLayout.Wall w in plan.Walls) { if (w.IsHull) { hull++; } }
         Console.WriteLine($"           {hull} of them flagged IsHull (drawn as pressure hull)");
+
+        (double shx, double shy) = SurfaceShelter.PlaceOn(body, site.LayoutSalt, field);
+        Console.WriteLine($"           SHELTER at ({shx:F0}, {shy:F0})  [tube mouth is (-7, -20)]");
 
         if (wantSvg)
         {

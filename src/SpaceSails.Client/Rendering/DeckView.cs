@@ -101,6 +101,24 @@ public sealed class DeckView
         string? StandingPrompt = null,
         // #453 · 1..0 fade on the blood spatter thrown when a blow got past the block. 0 = none.
         double BloodSplash = 0,
+        // #573 · BEACONS on the motion fan: fixed PLACES worth walking to — the way home, and the shelter.
+        // Owner: "could we show those as nearby beacons in the motion meter?... maybe some different colour
+        // there something soothing :-D". Soothing is exactly right and it is not only taste: the fan has
+        // meant ONE thing since it was built — something is moving and it wants you — so anything else
+        // painted on it has to be unmistakably not that. Red things move; blue rings are places, and places
+        // do not come to you.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool IsHome)>? Beacons = null,
+        // #573 · Your OWN caches, once they are inside the fan's reach. Owner: "we would like our own caches
+        // onto the detector also.... since now finding them is a real task :-D (only if in range though)".
+        // The range gate is the whole point — a map that always knows where your treasure is has taken the
+        // task back off you.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range)>? CacheBeacons = null,
+        // #573 · A TIP, not a fix. Owner: "some kind of we were tipped about sites could be marked there
+        // vaguely also to narrow down search... like the intel of the site gives a vague large blob."
+        // Deliberately the same idiom as the fan's contact smudges — his own earlier ruling that uncertain
+        // knowledge must be painted as an AREA, because drawing a dot would claim a precision the
+        // information does not have and hand back the search it was only meant to narrow.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, double Spread)>? Rumours = null,
         // #564 · THE TANK. Seconds left and how far home is, so the gauge can be DRAWN rather than written
         // as prose. It shipped first as the top line of the caption list and the owner went looking for a
         // meter under the tracker and found nothing — because a footnote in 10px dim monospace, sitting in a
@@ -1078,6 +1096,61 @@ public sealed class DeckView
             byte alpha = (byte)Math.Clamp(beatAlpha * (0.35 + (0.65 * firm)), 30, 255);
             var col = new RgbaColor(235, 70, 60, alpha); // watchdog red, pulsing — dimmer the farther out
             _renderer.DrawCircle(bx, by, sz, col, col);
+        }
+
+        // #573 · A RUMOUR: a soft, wide, low-contrast wash. It is under everything else on purpose — it is
+        // the least certain thing on the instrument and must never compete with a contact.
+        if (hud.Rumours is { Count: > 0 } rumours)
+        {
+            foreach ((double bearing, double range, double spread) in rumours)
+            {
+                double rr = Math.Min(range / detectionRange, 1.0) * (r - 5);
+                float bx = cx + (float)(Math.Cos(bearing) * rr);
+                float by = cy - (float)(Math.Sin(bearing) * rr);
+                float wide = (float)Math.Max(9.0, spread / detectionRange * r);
+                for (int ring = 3; ring >= 1; ring--)
+                {
+                    _renderer.DrawCircle(bx, by, wide * ring / 3f, null,
+                        new RgbaColor(120, 170, 210, (byte)(30 + (10 * (3 - ring)))), 1f);
+                }
+            }
+        }
+
+        // #573 · Own caches, once they are close enough for the fan to have any business knowing.
+        if (hud.CacheBeacons is { Count: > 0 } caches)
+        {
+            foreach ((double bearing, double range) in caches)
+            {
+                double rr = Math.Min(range / detectionRange, 1.0) * (r - 5);
+                float bx = cx + (float)(Math.Cos(bearing) * rr);
+                float by = cy - (float)(Math.Sin(bearing) * rr);
+                var gold = new RgbaColor(235, 205, 120, 220);
+                DrawSeg((bx - 3.5f, by - 3.5f), (bx + 3.5f, by + 3.5f), gold, 1.6f);
+                DrawSeg((bx + 3.5f, by - 3.5f), (bx - 3.5f, by + 3.5f), gold, 1.6f);
+            }
+        }
+
+        // #573 · The beacons, drawn UNDER nothing and OVER the rings: hollow, calm, and slowly breathing,
+        // so they never read as contacts. A place clamps to the rim when it is beyond the fan's reach, the
+        // same way a distant mover does — you always know which way it is, never how far once it is far.
+        if (hud.Beacons is { Count: > 0 } beacons)
+        {
+            double breathe = 0.85 + (0.15 * Math.Sin(simTime * 0.0016));
+            foreach ((double bearing, double range, bool isHome) in beacons)
+            {
+                double rr = Math.Min(range / detectionRange, 1.0) * (r - 5);
+                float bx = cx + (float)(Math.Cos(bearing) * rr);
+                float by = cy - (float)(Math.Sin(bearing) * rr);
+
+                // The way home is warmer than a shelter, because they are not the same promise: one is your
+                // ship, the other is somebody else's roof.
+                var ink = isHome
+                    ? new RgbaColor(150, 215, 255, (byte)(210 * breathe))
+                    : new RgbaColor(130, 235, 215, (byte)(195 * breathe));
+
+                _renderer.DrawCircle(bx, by, (float)(5.5 * breathe), null, ink, 1.8f);
+                _renderer.DrawCircle(bx, by, 1.6f, ink, ink);
+            }
         }
 
         _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, $"{readoutPx:0}px monospace", TextAlign.Center);

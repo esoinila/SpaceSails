@@ -38,9 +38,12 @@ public static class MoonSurface
     // go to refill." He was right, and it was worse than aesthetics: at 78 x 64 du the walk home from
     // ANYWHERE was under ten seconds, so the suit's point-of-no-return could never fire at any tank size
     // and air was a pure countdown (#573). A tether needs room to pull against.
-    public const float SurfaceBottomY = -280f;
-    private const float SurfaceLeftX = -160f;
-    private const float SurfaceRightX = 150f;
+    // #573 · Read from Core's SurfaceLayout.DefaultField, NOT declared here. These used to be the master
+    // copy, with the tests and labs each keeping a hand-made duplicate — so growing the field shipped a new
+    // world while the audits went on checking the old one, and passing.
+    public static readonly float SurfaceBottomY = (float)SurfaceLayout.DefaultField.BottomY;
+    private static readonly float SurfaceLeftX = (float)SurfaceLayout.DefaultField.LeftX;
+    private static readonly float SurfaceRightX = (float)SurfaceLayout.DefaultField.RightX;
 
     /// <summary>The landing area's safe band just under the tube mouth — tube, kiosk and the way home
     /// cluster here; everything worth digging for is a long walk deeper.</summary>
@@ -51,8 +54,8 @@ public static class MoonSurface
     /// muzzle, a seeded fixture elsewhere — see <see cref="SurfaceLayout"/>), but the anchor itself is
     /// fixed so the nerve/sight and pack-spawn math is one thing across bodies. Named for Miranda's canon
     /// monolith, which still sits exactly here. TODO(#226): the #318 first-sight sanity hook keys off it.</summary>
-    public const float MonolithX = -6f;
-    public const float MonolithY = -232f;   // #573: still the deep heart, now a real walk away
+    public static readonly float MonolithX = (float)SurfaceLayout.DefaultField.AnchorX;
+    public static readonly float MonolithY = (float)SurfaceLayout.DefaultField.AnchorY;
 
     // #313's single fixed ⛏ DIG HERE field (DigFieldX/DigFieldY, deep by the monolith) is RETIRED by the
     // beach-comber kit (owner, Evening wind 2026-07-18: "bury anywhere"). Burying and probing now happen

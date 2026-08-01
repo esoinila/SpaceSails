@@ -50,6 +50,20 @@ public static class SurfaceLayout
     public readonly record struct Plan(
         string Scheme, IReadOnlyList<Wall> Walls, IReadOnlyList<Landmark> Landmarks);
 
+    /// <summary>#573 · THE FIELD ENVELOPE, in Core, as the single source of truth.
+    ///
+    /// <para>It lived as constants in the client's <c>MoonSurface</c>, and every test and lab that needed it
+    /// kept its own hand-copied duplicate. So when the field grew sixteenfold, the client shipped a
+    /// 310 x 260 du world while <c>SurfaceReachabilityTests</c> and Lab 43 went on auditing and drawing the
+    /// old 78 x 64 one — and passed, and printed confident numbers about a world that no longer existed.</para>
+    ///
+    /// <para>That is the same drift this project keeps paying for, one level up from geometry: a test that
+    /// MIRRORS a constant instead of READING it is not testing the thing that ships. One copy now; the
+    /// client reads it too.</para></summary>
+    public static Field DefaultField { get; } = new(
+        LeftX: -160, RightX: 150, TopY: -20, BottomY: -280,
+        LandingBandY: -27, AnchorX: -6, AnchorY: -232);
+
     /// <summary>The safe half-lane kept open at each far edge of the field — no generated feature ever
     /// intrudes here, so a walk-around always exists and the deep is always reachable from the top.</summary>
     public const double EdgeMargin = 10.0;
