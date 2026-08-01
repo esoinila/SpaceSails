@@ -93,6 +93,7 @@ public class VaultSerializerTests
                 new OverheardLine("“A ghost runs dark past the rings this watch.”", 12360.5, "THE MAGPIE", "THE RINGSIDE BAR"),
             ],
         },
+        Authorities = new AuthoritiesSection { Cards = ["luna#1", "titan#3"] },   // #590
         Resume = new ResumeSection { HavenId = "ringside", HavenName = "Ringside", WasDocked = true },
     };
 
@@ -128,6 +129,7 @@ public class VaultSerializerTests
         Assert.Equal(["phobos", "the-hermits-rock"], loaded.Progress.SecretLabsFound); // #409 — found labs persist per thread
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
+        Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);   // #590 — the wallet
         Assert.True(loaded.Resume!.WasDocked);
     }
 
@@ -183,6 +185,7 @@ public class VaultSerializerTests
     [InlineData("progress")]
     [InlineData("nerve")]
     [InlineData("overheard")]
+    [InlineData("authorities")]
     [InlineData("resume")]
     public void EachSection_RoundTrips_Independently(string section)
     {
@@ -198,6 +201,7 @@ public class VaultSerializerTests
             "caches" => new Vault { Caches = full.Caches },
             "quests" => new Vault { Quests = full.Quests },
             "insurance" => new Vault { Insurance = full.Insurance },
+            "authorities" => new Vault { Authorities = full.Authorities },
             "upgrades" => new Vault { Upgrades = full.Upgrades },
             "diceItems" => new Vault { DiceItems = full.DiceItems },
             "progress" => new Vault { Progress = full.Progress },
@@ -257,6 +261,40 @@ public class VaultSerializerTests
         Assert.Equal("CASS", loaded.Overheard.Lines[0].Source);
         Assert.Equal("THE RINGSIDE BAR", loaded.Overheard.Lines[0].BarName);
         Assert.Equal(999.0, loaded.Overheard.Lines[0].SimTime, 6);
+    }
+
+    [Fact]
+    public void Authorities_SurviveTheVaultRoundTrip_ACardIsAPossessionNotAMood()
+    {
+        // #590 · A card is found eleven floors under a moon. It has to still be in the pocket a month and a
+        // world later, or the gate that reads it is a mood rather than a mechanic. The save carries the ID
+        // and nothing else, so this round trip IS the persistence contract.
+        var wallet = new AuthoritiesSection
+        {
+            Cards =
+            [
+                new UndergroundComplex.AuthorityCard("luna", 1).Id,
+                new UndergroundComplex.AuthorityCard("titan", 3).Id,
+            ],
+        };
+
+        Vault loaded = VaultSerializer.Load(VaultSerializer.Save(new Vault { Authorities = wallet }));
+        Assert.NotNull(loaded.Authorities);
+        Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);
+
+        // And it reads back as the thing it authorises, not as a string somebody has to interpret.
+        Assert.True(UndergroundComplex.AuthorityCard.TryParse(
+            loaded.Authorities.Cards[1], out UndergroundComplex.AuthorityCard back));
+        Assert.Equal(new UndergroundComplex.AuthorityCard("titan", 3), back);
+    }
+
+    [Fact]
+    public void Authorities_MissingSection_DefaultsToAnEmptyWallet()
+    {
+        // A pre-#590 save simply lacks the section, and a captain who has never been down a shaft is a
+        // captain carrying nothing. It must never be a load failure.
+        Assert.Empty(new AuthoritiesSection().Cards);
+        Assert.Null(VaultSerializer.Load(VaultSerializer.Save(new Vault())).Authorities);
     }
 
     [Fact]

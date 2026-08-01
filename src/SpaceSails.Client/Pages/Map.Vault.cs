@@ -387,6 +387,11 @@ public partial class Map
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             // #587 · the field book: what was found on the ground, kept so it can be re-read.
             FieldNotes = _fieldNotes.Count > 0 ? new FieldNotesSection { Notes = _fieldNotes } : null,
+            // #590 · the authority cards the captain is carrying — durable, because a card found
+            // eleven floors under a moon has to still be in the pocket a month and a world later.
+            Authorities = _authorityCards.Count > 0
+                ? new AuthoritiesSection { Cards = [.. _authorityCards] }
+                : null,
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
             Resume = BuildResumeSection(),
@@ -860,6 +865,19 @@ public partial class Map
         // durable and revisitable — they survive the reload rather than living-and-vanishing in a toast.
         _overheard = vault.Overheard is { } book ? [.. book.Lines] : [];
         _fieldNotes = vault.FieldNotes is { } field ? [.. field.Notes] : [];   // #587
+
+        // #590 · The wallet. A pre-#590 file simply has no section and loads as an empty one.
+        _authorityCards.Clear();
+        if (vault.Authorities is { } wallet)
+        {
+            foreach (string id in wallet.Cards)
+            {
+                if (UndergroundComplex.AuthorityCard.TryParse(id, out _))
+                {
+                    _authorityCards.Add(id);
+                }
+            }
+        }
 
         ApplyResumeBerth(vault.Resume, vault.SavedSimTime);
 

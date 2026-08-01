@@ -383,7 +383,26 @@ on a dead floor, and on an unpressurised floor that is a death. The lift console
 a wall — that is what makes them honest — so hanging one on an enterable room's only face would strand it
 while the map went on offering it. *(Enforced: `NothingIsOBSTRUCTEDByTheDoorsThatWillNeverOpen`.)*
 
-13.5 **Nothing down here explains what the Old Ones are.** A facility may be enormous, expensive and
+13.5 **A card opens exactly one class of thing: the next shaft band.** `Haul.Key` shipped saying *"Something
+down here will open for this"* and opening nothing — an affordance you can see and cannot use, which is worse
+than none. It now runs the shaft below the band it was found in, so depth past the first band is **earned by
+working the floors you are standing on** rather than handed out by the seed. Three calls, each overrulable in
+one line (#590):
+
+- **The sealed `SECTOR n · 2.4 km` doors stay sealed.** The moment one of them can open, every one of them
+  becomes a puzzle and the illusion of scale turns into a lock hunt. *(Enforced: the card prose never says
+  SECTOR, and `LockedLine` never says card, authority, shaft, code or pass.)*
+- **Never a code the player types.** You have the card or you do not. A keypad would be out of register with
+  everything around it.
+- **The refusal always says why**, and names what you *are* carrying if it is the wrong card. A gate that
+  just sits there is indistinguishable from a bug — this ground has shipped that mistake before.
+
+A card is a **possession**, so it rides in the vault (`AuthoritiesSection`), not on the excursion: found
+eleven floors under a moon, still in the pocket a month and a world later. The save carries the id and
+nothing else — the title is a seeded property of the world, rebuilt at read time, so a file can never go
+stale against the words.
+
+13.6 **Nothing down here explains what the Old Ones are.** A facility may be enormous, expensive and
 obviously state-backed, and may never say what it was for. *(Enforced: the prose is grepped.)*
 
 ## Working method
