@@ -70,6 +70,12 @@ public sealed class YouCanWalkTheHiveTests
         // THE question about a building made of corridors. A room that exists on screen and cannot be reached
         // is the same bug class as a beacon over nothing — the map showing you something the ground will not
         // honour — and in a facility of twenty floors it would be invisible to reasoning forever.
+        //
+        // #587 · ABSOLUTE AGAIN. This shipped for a day as "the lift is a law, the rooms are a ratio", because
+        // the generator was sealing a handful of rooms on 35 floors and nobody could say why, and a guard that
+        // ships red is a guard everybody learns to scroll past. The cause is found and fixed (an unsorted
+        // cursor in UndergroundComplex.SpineFace), so the ratio is gone: ONE sealed room anywhere in any
+        // clandestine site on any body is a failure, and the message names the coordinates.
         AuditEveryFloor((body, level, deck) =>
         {
             (double sx, double sy) = HiveInterior.SpawnOn(Field);
@@ -95,26 +101,9 @@ public sealed class YouCanWalkTheHiveTests
                 }
             }
 
-            // #587 · THE LIFT IS A HARD LAW; the rooms are a RATIO, for now.
-            //
-            // A captain who cannot reach the lift is trapped in a building on a dead floor, which is a death:
-            // that can never be allowed and is asserted absolutely. A room that is drawn and sealed is a real
-            // bug of the same family as "the map lies" — but the generator currently leaves a handful of them
-            // on about a third of floors, and shipping this guard RED would train everyone to ignore it,
-            // which is the one thing worse than not having it (see the flaky-audit lesson in the spec).
-            //
-            // So it fails on a catastrophe and reports the tail. #587 has the details and the reproduction.
-            bool liftStranded = stranded.Count == targets.Count;
-            if (liftStranded)
-            {
-                return $"NOTHING on this floor can be reached from the lift.";
-            }
-            // The tail — a handful of rooms sealed on some floors — is a REAL defect and is filed as #587
-            // with the exact coordinates this audit prints. It is not asserted yet because I could not find
-            // the cause inside the owner's playtest, and a guard that ships red is a guard everybody learns
-            // to scroll past. The moment #587 lands, this returns to "any stranded room is a failure" and the
-            // ratio disappears.
-            return null;
+            return stranded.Count == 0 ? null
+                : $"{stranded.Count} of {targets.Count} places cannot be reached from the lift: "
+                    + string.Join(", ", stranded.Take(4));
         }, "spec — every room is walkable from the lift");
     }
 
@@ -190,13 +179,11 @@ public sealed class YouCanWalkTheHiveTests
                 spawn, new DeckReachability.Point(c.X, c.Y),
                 deck.CollisionField, DeckPlan.AvatarRadius, bounds));
 
-            // Same ratio law as above (#587): a deep floor must hold together as well as a shallow one, which
-            // is what "depth is free" has to mean — but the handful of sealed rooms the generator still leaves
-            // is a known, filed defect rather than a reason to keep this guard permanently red.
-            // Deep floors must hold together as well as shallow ones — that is what "depth is free" means.
-            // Pinned at "most of them" until #587 closes the tail; the point of the assertion is that a deep
-            // floor is never WORSE than a shallow one, which it currently is not.
-            Assert.True(reached * 2 > rooms.Count,
+            // #587 · ALL of them, not most of them. This was pinned at "more than half" while the sealed-room
+            // tail was open; with that closed, "depth is free" gets to mean what it says — floor twenty-four
+            // is exactly as walkable as floor one, and any drift shows up here first because this is the
+            // worst case the generator can ever be asked for.
+            Assert.True(reached == rooms.Count,
                 $"B{-level}: only {reached} of {rooms.Count} rooms reachable — deep floors are not free after all.");
         }
     }

@@ -184,7 +184,20 @@ public static class UndergroundComplex
         IReadOnlyList<SurfaceLayout.Doorway> Doorways,
         IReadOnlyList<LockedDoor> Locked,
         IReadOnlyList<SurfaceLayout.Landmark> Labels,
-        IReadOnlyList<(double X, double Y)> RoomCentres);
+        IReadOnlyList<(double X, double Y)> RoomCentres,
+        IReadOnlyList<Rib> Ribs);
+
+    /// <summary>#587 · A CROSS CORRIDOR, PUBLISHED RATHER THAN INFERRED.
+    ///
+    /// <para>The ribs used to be a local of <see cref="Build"/>, so the only thing outside this file that
+    /// could say where one was, was arithmetic that copied the placement — which is the mirrored-constant
+    /// bug this ground keeps paying for. #587 was a mouth that had been cut and then walled over again, and
+    /// no guard could state that in Core because no guard could name the mouth. Now it can.</para>
+    ///
+    /// <para><b>Down</b> means the rib runs toward the deep field, away from the landing band, and therefore
+    /// opens off the spine's LOWER face; an up rib opens off the upper one. That flag is the whole reason
+    /// #587 only ever struck some floors.</para></summary>
+    public readonly record struct Rib(double X, bool Down);
 
     /// <summary>A door that never opens. The cheapest illusion of scale there is, and the owner asked for it
     /// by name — <i>"we can again use the locked doors to give the illusion of much larger space"</i>. Each
@@ -241,21 +254,58 @@ public static class UndergroundComplex
             ribXs.Add((rx, Frac(bodyId, $"hive:{level}:rib-dir:{i}") < 0.62));
         }
 
-        // The lift alcove, as a mouth in the top face at the shaft.
+        // #587 · The ribs, exactly as built, published on the plan. Taken HERE — before the lift alcove is
+        // appended — because the alcove is a mouth in a wall, not a corridor anybody walks down.
+        var ribList = new List<Rib>(ribXs.Count);
+        foreach ((double rx, bool rdown) in ribXs)
+        {
+            ribList.Add(new Rib(rx, rdown));
+        }
+
+        // The lift alcove, as a mouth in the top face at the shaft. It is APPENDED, so it is the one entry in
+        // this list that is not in x order — which is the whole of #587. See SpineFace.
         ribXs.Add((shaftX, false));
 
         // One face of the spine, built as segments that stop either side of every mouth cut into it.
         void SpineFace(double y, Func<double, bool, bool> cutHere)
         {
-            double cursor = left;
+            // #587 · A CURSOR THAT WALKS A LINE MUST BE GIVEN THE LINE IN ORDER.
+            //
+            // This is the third bug on this wall and the first one that was invisible from the plan: the
+            // geometry was right, the mouths were right, and the WALLS BETWEEN THEM were built by a cursor
+            // sweeping left to right over a list that was not sorted left to right. `ribXs` holds the ribs in
+            // ascending x (they are Lerped in order) and then the lift alcove APPENDED at the end, at the
+            // shaft's own x — which on this field sits left of the right-most rib.
+            //
+            // So the sweep ran out to the far rib, advanced the cursor past it, then met the alcove behind it
+            // and emitted a segment from cursor BACK to the alcove's near edge: one long wall lying across
+            // everything between the two, re-sealing both mouths it had just been asked to open. The A*
+            // audit reported it as the two room columns beside the right-most rib plus the lift itself —
+            // and it only ever happened when that rib pointed UP, because the alcove is only cut into the
+            // top face, which is exactly the pattern #587 recorded and could not explain.
+            //
+            // RibFace already sorts its cuts for precisely this reason. Both faces sort now, and the cursor
+            // can only ever move forward — so an overlapping pair of mouths degrades to one wide mouth
+            // rather than to a wall.
+            var mouths = new List<double>();
             foreach ((double rx, bool down) in ribXs)
             {
-                if (!cutHere(rx, down))
+                if (cutHere(rx, down))
                 {
-                    continue;
+                    mouths.Add(rx);
                 }
-                walls.Add(new(cursor, y, rx - CorridorHalf, y, true));
-                cursor = rx + CorridorHalf;
+            }
+            mouths.Sort();
+
+            double cursor = left;
+            foreach (double rx in mouths)
+            {
+                double near = Math.Max(cursor, rx - CorridorHalf);
+                if (near > cursor)
+                {
+                    walls.Add(new(cursor, y, near, y, true));
+                }
+                cursor = Math.Max(cursor, rx + CorridorHalf);
             }
             walls.Add(new(cursor, y, right, y, true));
         }
@@ -318,7 +368,7 @@ public static class UndergroundComplex
         }
 
         return new FloorPlan(level, NameOf(level), HoldsPressure(level),
-            walls, doorways, locked, labels, rooms);
+            walls, doorways, locked, labels, rooms, ribList);
     }
 
     /// <summary>Rooms down both sides of a rib. About half are locked — the owner's illusion of scale — and a
