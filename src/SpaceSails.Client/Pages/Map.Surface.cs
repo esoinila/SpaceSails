@@ -472,6 +472,11 @@ public partial class Map
         // forced this visit, whether its locker and its effects have been taken/read, and the force channel
         // while it is running. Session state — a hut re-seals between excursions, which is honest enough:
         // nobody out here is maintaining a door you levered off its dogs.
+        // #564 · THE TANK. Seconds of suit air left, and whether the captain has already been told they
+        // crossed the point of no return (the warning is a LINE you cross, said once — not a nag).
+        public double AirSeconds { get; set; } = SuitAir.TankSeconds;
+        public bool AirWarned { get; set; }
+
         public SurfaceOutpost.Placement? Outpost { get; set; }
         public bool OutpostForced { get; set; }
         public bool OutpostLooted { get; set; }
@@ -560,6 +565,10 @@ public partial class Map
         _surface = excursion;
         ResolveSecretLab(excursion); // #409: does this body hide one of Vantar's labs? (seed, or a known/cheat pre-reveal)
         ResolveOutpost(excursion);   // #563: does this SITE carry an outpost hut? (three in four do)
+        if (_airCheatSeconds is { } startingAir)
+        {
+            excursion.AirSeconds = startingAir;   // #564 ?air=N — a short tank, for testing the line
+        }
         _reevers.Clear();
         _lastNearestReeverRange = null;
         _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
@@ -721,6 +730,67 @@ public partial class Map
     {
         _groundLessonOpen = false;
     }
+
+    // ── #564 · THE TANK. ────────────────────────────────────────────────────────────────────────────────
+    //
+    // GroundLesson has told every new captain "The walk back is half the tank" since #440, about a resource
+    // that did not exist. This is the resource.
+    //
+    // The rule it is built under: AIR MUST NEVER BE A SILENT TIMER THAT KILLS YOU. So there are three
+    // things and not one — a readout that says how much FURTHER you may go (not merely how much is left), a
+    // one-time line on the step where you cross the point of no return, and a death that says plainly what
+    // happened. A countdown that quietly runs out is the same design failure as an invisible wall.
+    private void StepSuitAir(double dtRealSeconds)
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        // Inside the ship or in her tube you are breathing hers, and the tank tops up. This is the ONLY
+        // place it refills (bar a cache found out in the world), which is what makes the tube the anchor
+        // the whole supply line hangs from (#562).
+        if (MoonSurface.IsSafeAboard(_avatarY))
+        {
+            ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, dtRealSeconds * TubeRefillRate);
+            ex.AirWarned = false;   // re-arm the warning: the next walk out gets told again
+            return;
+        }
+
+        ex.AirSeconds = SuitAir.Drain(ex.AirSeconds, dtRealSeconds);
+
+        double home = DistanceToTheTube();
+
+        // THE LINE. Once, on the step it is crossed, while there is still a decision in it.
+        if (!ex.AirWarned && SuitAir.PastPointOfNoReturn(ex.AirSeconds, home))
+        {
+            ex.AirWarned = true;
+            RendererInterop.PlayCue("alarm");
+            ShowPulseMessage(SuitAir.CrossingWarning);
+        }
+
+        if (ex.AirSeconds <= 0)
+        {
+            ShowPulseMessage(SuitAir.SuffocationLine);
+            // The cause is PASSED, not rolled — see TriggerSurfaceOverdrawDeath. A suffocation narrated as
+            // an Old One's hand would be the sim doing one thing and a sentence reporting another.
+            TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false, known: DeathCause.Suffocated);
+        }
+    }
+
+    /// <summary>How far the captain is from the tube mouth — the way home, and the only distance the suit
+    /// has any opinion about. A DISTANCE and never a coordinate, so a captain 400 du sideways and one 400 du
+    /// deep are priced identically (#453: depth is not a danger gradient).</summary>
+    private double DistanceToTheTube()
+    {
+        double dx = _avatarX - MoonSurface.SpawnX;
+        double dy = _avatarY - MoonSurface.SpawnY;
+        return Math.Sqrt((dx * dx) + (dy * dy));
+    }
+
+    /// <summary>How fast her tube refills a suit — several times real time, because standing in an airlock
+    /// watching a gauge is not the game. Getting home is the achievement; the top-up is a formality.</summary>
+    private const double TubeRefillRate = 12.0;
 
     // ── #562 · THE TUBE REARMS YOU. ────────────────────────────────────────────────────────────────────
     //
@@ -1495,6 +1565,7 @@ public partial class Map
             return;
         }
 
+        StepSuitAir(dtRealSeconds);     // #564: the tank, the line, and the walk home
         StepTubeRearm(dtRealSeconds);   // #562: the ship feeds your sentries while you stand in her tube
         StepDigChannel(dtRealSeconds);
         AdvanceVacuumClocks(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the vacuum soak
@@ -3502,6 +3573,12 @@ public partial class Map
     private List<string> BuildTrackerCaptions(SurfaceExcursion ex, int ownMarkCount)
     {
         var lines = new List<string>();
+
+        // #564 · THE TANK, first in the column and always shown. It leads because it is the only thing on
+        // the surface that kills you without touching you, and because the readout's job is to be glanced
+        // at rather than calculated: it says how much FURTHER you may go, not merely how much is left. A
+        // bare countdown would be exactly the silent timer this mechanic must not be.
+        lines.Add(SuitAir.Readout(ex.AirSeconds, DistanceToTheTube()));
 
         // The dig affordance, honest to the sling (playtest bug #1 / owner ruling #9: the ground must SAY
         // what's possible). Carrying → bury anywhere you stand; empty → the beach-comber probe, a real

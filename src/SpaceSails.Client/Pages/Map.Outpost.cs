@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -41,6 +41,10 @@ public partial class Map
     // #563 dev cheat (/map?outpost=1): force a hut onto whatever site this excursion lands on, so the lane
     // can be playtested without hunting for a site that seeded one. Documented in docs/testing-guide.md.
     private bool _outpostCheat;
+
+    // #564 dev cheat (/map?air=N): start an excursion with N seconds in the tank instead of a full one, so
+    // the point-of-no-return warning can be reached in a short walk rather than a six-minute one.
+    private double? _airCheatSeconds;
 
     /// <summary>Compose the hut onto the surface deck: the dogged hatch while it stands, the whole room once
     /// it has been forced. Called from <c>RebuildSurfaceDeck</c>, so it survives every rebuild (a dig, a
