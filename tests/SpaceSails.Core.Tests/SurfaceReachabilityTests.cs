@@ -25,8 +25,10 @@ public class SurfaceReachabilityTests
 {
     // The shared field envelope MoonSurface hands in — mirrors its constants, the same way
     // SurfaceLayoutTests.Env does, so the test lays exactly the ground the client lays.
-    private static readonly SurfaceLayout.Field Env = new(
-        LeftX: -44, RightX: 34, TopY: -20, BottomY: -84, LandingBandY: -27, AnchorX: -6, AnchorY: -70);
+    // #573 · READ, never copied. This was a hand-made duplicate of the client's constants, so when the
+    // field grew sixteenfold the game shipped a 310 x 260 du world while this audit went on flooding the old
+    // 78 x 64 one — and passing. A sealed building with consoles in it shipped straight past it.
+    private static readonly SurfaceLayout.Field Env = SurfaceLayout.DefaultField;
 
     private const double AvatarRadius = 0.7;   // DeckPlan.AvatarRadius — the captain's own body
     private const double TubeCenterX = -7.0;   // MoonSurface.TubeCenterX / SpawnX

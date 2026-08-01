@@ -1050,6 +1050,90 @@ public partial class Map
         RequestVaultSave();
     }
 
+    /// <summary>#573 · The fixed places the fan should point at: the way home, and the shelter. Bearings
+    /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.
+    ///
+    /// <para>The field is sixteen times the size it was and a shelter deep in it is otherwise a needle —
+    /// "where is the sanctum for air?" is a fair question to have to ask twice, and a fan that already
+    /// tells you where things ARE can tell you where places are too.</para></summary>
+    private List<(double Bearing, double Range, bool IsHome)> BuildBeacons(SurfaceExcursion ex)
+    {
+        var list = new List<(double, double, bool)>();
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        {
+            return list;   // a hull has neither a tube mouth nor a shelter
+        }
+
+        void Add(double x, double y, bool home)
+        {
+            double dx = x - _avatarX, dy = y - _avatarY;
+            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home));
+        }
+
+        Add(MoonSurface.SpawnX, MoonSurface.SpawnY, home: true);
+
+        SurfaceStructure.Spec shelter = SurfaceShelter.SpecFor(
+            ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
+        Add(shelter.CentreX, shelter.CentreY, home: false);
+
+        return list;
+    }
+
+    /// <summary>#573 · Your own buried caches, as marks on the fan — but ONLY once they are inside its
+    /// reach. Owner: <i>"we would like our own caches onto the detector also.... since now finding them is a
+    /// real task :-D (only if in range though)"</i>.
+    ///
+    /// <para>The range gate is the entire design. A field sixteen times the size made finding your own ✗ a
+    /// genuine task, which is good; an instrument that always knew where it was would take that task straight
+    /// back off you. It tells you when you are WARM, not where to dig.</para></summary>
+    private List<(double Bearing, double Range)> BuildCacheBeacons()
+    {
+        var list = new List<(double, double)>();
+        foreach ((double mx, double my, bool _) in _hudMarks)
+        {
+            double dx = mx - _avatarX, dy = my - _avatarY;
+            double range = Math.Sqrt((dx * dx) + (dy * dy));
+            if (range <= CacheDetectRangeDu)
+            {
+                list.Add((Math.Atan2(dy, dx), range));
+            }
+        }
+        return list;
+    }
+
+    /// <summary>How close a buried cache has to be before the fan admits to it. Generous enough to end a
+    /// hopeless sweep of a huge field, tight enough that you still have to be in the right part of it.</summary>
+    private const double CacheDetectRangeDu = 55.0;
+
+    /// <summary>#573 · What the captain has been TOLD, as opposed to what they can see. A wide, soft, low
+    /// wash on the fan rather than a mark.
+    ///
+    /// <para>Owner: <i>"the intel of the site gives a vague large blob"</i> — and that is the honest shape
+    /// for it. A tip narrows a search; it does not end one. Painting a dot would claim a precision the
+    /// information does not have, which is the same lie as a death card naming a killer nobody saw.</para>
+    ///
+    /// <para>Today the one real tip is a KNOWN secret lab whose door this visit has not turned up yet
+    /// (#409 remembers which bodies hide one). You know it is here; you do not know where.</para></summary>
+    private List<(double Bearing, double Range, double Spread)> BuildRumours(SurfaceExcursion ex)
+    {
+        var list = new List<(double, double, double)>();
+        if (ex.Lab is not { HasLab: true } lab || ex.SecretLabDoorRevealed)
+        {
+            return list;
+        }
+        if (!_secretLabsFound.Contains(ex.Stop.Body.Id))
+        {
+            return list;   // nobody has tipped you about this one; there is nothing to be vague about
+        }
+
+        double dx = lab.DoorX - _avatarX, dy = lab.DoorY - _avatarY;
+        list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), RumourSpreadDu));
+        return list;
+    }
+
+    /// <summary>How wide a rumour reads on the fan, in deck units. Big — it is a tip, not a fix.</summary>
+    private const double RumourSpreadDu = 45.0;
+
     /// <summary>#573 · Raise the tank-is-low card, once per captain ever. Returns true when it went up, so
     /// the caller keeps its pulse line for every later trip.</summary>
     private bool ShowAirCardOnce()
@@ -3607,6 +3691,11 @@ public partial class Map
             CacheMarks: _hudMarks,
             Nerve: _nerve,
             NerveReadout: NerveModel.Readout(_nerve),
+            // #573: the places worth walking to, as calm rings on the fan — plus your own caches once they
+            // are in reach, and any rumour you are working from as a wide soft wash.
+            Beacons: BuildBeacons(ex),
+            CacheBeacons: BuildCacheBeacons(),
+            Rumours: BuildRumours(ex),
             // #564: the tank, drawn as a bar under the tracker.
             AirSeconds: ex.AirSeconds,
             AirDistanceHome: DistanceToTheTube(),

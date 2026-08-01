@@ -96,8 +96,11 @@ public static class SurfaceStructure
     public static Built Build(in Spec spec)
     {
         double thickness = Math.Max(MinThickness, spec.WallThickness);
-        double halfW = Math.Max(spec.Width, MinDooredFace + thickness * 2) / 2;
-        double halfH = Math.Max(spec.Height, MinDooredFace + thickness * 2) / 2;
+        // The floor is generous on purpose: a ring's faces are much shorter than its width, so a footprint
+        // merely wide enough for a doorway can still produce faces that are not. Sized so even the smallest
+        // ring this can emit has faces that clear MinDooredFace.
+        double halfW = Math.Max(spec.Width, (MinDooredFace * 2.2) + (thickness * 2)) / 2;
+        double halfH = Math.Max(spec.Height, (MinDooredFace * 1.9) + (thickness * 2)) / 2;
 
         var walls = new List<SurfaceLayout.Wall>();
         var doorways = new List<Doorway>();
@@ -113,23 +116,49 @@ public static class SurfaceStructure
             _ => [(-halfW, -halfH), (halfW, -halfH), (halfW, halfH), (-halfW, halfH)],
         };
 
-        // Doors go on the LONGEST faces, spread around the loop, so a building never puts every entrance on
-        // the same side and never puts one on a face too short to hold it.
+        // Face lengths first, because doors must be chosen from what can actually HOLD one.
+        var lengths = new double[outer.Count];
+        for (int i = 0; i < outer.Count; i++)
+        {
+            (double ax, double ay) = outer[i];
+            (double bx, double by) = outer[(i + 1) % outer.Count];
+            lengths[i] = Math.Sqrt(((bx - ax) * (bx - ax)) + ((by - ay) * (by - ay)));
+        }
+
+        // #573 · DOORS GO ON THE LONGEST FACES, and a structure ALWAYS gets at least one.
+        //
+        // This used to pick faces by INDEX, spread evenly round the loop, and then drop any that turned out
+        // too short to hold a doorway — with nothing taking over. On a drum whose faces sit just under the
+        // minimum (a five-sided ring on a 12 x 10 footprint is within a fraction of it), the chosen face was
+        // rejected and no other compensated, so the building came out SEALED: an O-shape with consoles
+        // inside and no way in. The owner found one. The reachability flood should have caught it and did
+        // not, because it was auditing a stale copy of the field envelope.
+        //
+        // Ranking by length makes "too short" impossible to hit while a longer face exists, and the floor of
+        // one door means a structure can never be a sealed ring.
+        var byLength = new int[outer.Count];
+        for (int i = 0; i < byLength.Length; i++) { byLength[i] = i; }
+        Array.Sort(byLength, (a, b) => lengths[b].CompareTo(lengths[a]));
+
         int doors = Math.Clamp(spec.Doors, 1, outer.Count);
         var doorFaces = new HashSet<int>();
-        for (int d = 0; d < doors; d++)
+        foreach (int face in byLength)
         {
-            doorFaces.Add((int)Math.Round(d * outer.Count / (double)doors) % outer.Count);
+            if (doorFaces.Count >= doors)
+            {
+                break;
+            }
+            if (lengths[face] >= MinDooredFace || doorFaces.Count == 0)
+            {
+                doorFaces.Add(face);
+            }
         }
 
         for (int i = 0; i < outer.Count; i++)
         {
             (double ax, double ay) = outer[i];
             (double bx, double by) = outer[(i + 1) % outer.Count];
-            double faceLen = Math.Sqrt(((bx - ax) * (bx - ax)) + ((by - ay) * (by - ay)));
-            bool doored = doorFaces.Contains(i) && faceLen >= MinDooredFace;
-
-            AddThickFace(walls, doorways, spec, thickness, ax, ay, bx, by, doored);
+            AddThickFace(walls, doorways, spec, thickness, ax, ay, bx, by, doorFaces.Contains(i));
         }
 
         return new Built(walls, doorways);

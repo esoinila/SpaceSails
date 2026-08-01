@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -11,8 +11,8 @@ namespace SpaceSails.Core.Tests;
 /// be reached as the answering console (the #520 failure that shipped four times on the wreck lane).</summary>
 public class SurfaceOutpostTests
 {
-    private static readonly SurfaceLayout.Field Env = new(
-        LeftX: -44, RightX: 34, TopY: -20, BottomY: -84, LandingBandY: -27, AnchorX: -6, AnchorY: -70);
+    // #573 · Read from Core, never hand-copied — see SurfaceReachabilityTests for what copying cost.
+    private static readonly SurfaceLayout.Field Env = SurfaceLayout.DefaultField;
 
     private const double AvatarRadius = 0.7;
 
