@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- #589 · A LAB ABOUT THE LAB. Owner: "The underground layer checking in CI might be a case for lab in
+       itself (lab about lab)" 😄
+
+       This one references the CLIENT, not just Core, and that is the whole point. The bug it was built for
+       (#587) was a mismatch between the walls Core DRAWS and the collision field the captain WALKS, and a
+       picture of Core's own geometry would have shown a perfectly good building. The deck this renders is
+       HiveInterior.FloorDeck — the same object the renderer draws and the same DeckPlan.CollisionField the
+       boots collide with. Same reason tests/SpaceSails.Client.Tests references the client. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>SpaceSails.Labs.Lab44</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SpaceSails.Client\SpaceSails.Client.csproj" />
+  </ItemGroup>
+
+</Project>
