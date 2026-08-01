@@ -56,8 +56,10 @@ public sealed class TheChaseIsForTheCaptainTests
         // same wolf allowed to chase, which is the behaviour that reached and caught an empty hull.
         ShipState parked = new(new Vector2d(4e8, 0), new Vector2d(0, 0), 0);
 
-        HunterState held = Wolf(0);
-        HunterState chasing = Wolf(0);
+        // Both already fitted out and under way — a wolf still on the pad at its origin coasts and proves
+        // nothing about pursuit either way.
+        HunterState held = Wolf(0) with { ActivationSimTime = 0 };
+        HunterState chasing = Wolf(0) with { ActivationSimTime = 0 };
         for (double t = 0; t <= 3_000; t += EncounterRule.HunterStepSeconds)
         {
             held = EncounterRule.HoldStation(held, t);
