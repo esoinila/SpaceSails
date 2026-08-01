@@ -339,6 +339,53 @@ public sealed class TheUnlistedBandTests
     }
 
     [Fact]
+    public void TheWayDownIsALWAYSInAROOMSomebodyCanActuallyFind()
+    {
+        // The quiet failure this closes. The way into the unlisted band is a card, and a card comes out of a
+        // Key room on the last floor the building admits to. Key is one face in nine and a last band holds
+        // thirty-odd rooms, so about one site in thirty would roll NO Key at all — and because the rolls are
+        // seeded, that site's hidden band would be unreachable not for that visit but forever.
+        //
+        // Nothing on screen would ever say so, which is the only reason it is not the "map lies" bug. It is
+        // the quieter one: a feature silently dead on some worlds, with every test still green.
+        //
+        // Checked over 400 generated sites, not the ten in the scenario, because one-in-thirty is exactly
+        // the rate a ten-site sample tells you nothing about.
+        int checkedSites = 0;
+        for (int i = 0; i < 400; i++)
+        {
+            string body = $"probe-moon-{i}";
+            if (!UndergroundComplex.HasUnlistedBand(body))
+            {
+                Assert.Null(UndergroundComplex.KeyRoomFor(body));   // nothing to hide, nothing to guarantee
+                continue;
+            }
+
+            checkedSites++;
+            (int level, int roomIndex) = UndergroundComplex.KeyRoomFor(body)!.Value;
+
+            // It is on the floor the captain is standing on when the panel goes quiet.
+            Assert.Equal(UndergroundComplex.DepthOf(body), level);
+
+            // The room exists. This is the assertion that caught the first cut of this fix: a seeded 0..3
+            // index looked safe because the four-room floor law is asserted for the scenario's own bodies,
+            // and a generated site duly produced a floor with three — putting the guarantee straight back
+            // where it started. Room 0 is on any floor worth riding to.
+            UndergroundComplex.FloorPlan floor =
+                UndergroundComplex.Build(body, level, SurfaceLayout.DefaultField);
+            Assert.InRange(roomIndex, 0, floor.RoomCentres.Count - 1);
+
+            // It holds a Key, and that Key is the card for the band nobody listed.
+            Assert.Equal(UndergroundComplex.Haul.Key, UndergroundComplex.InRoom(body, level, roomIndex));
+            Assert.Equal(
+                UndergroundComplex.UnlistedBandOf(body),
+                UndergroundComplex.CardInRoom(body, level)!.Value.Band);
+        }
+
+        Assert.True(checkedSites > 40, $"only {checkedSites} sites had anything to hide — this proved little.");
+    }
+
+    [Fact]
     public void TheDeepCHEATRockStillHasSomethingUnderIt()
     {
         // #592 · `/map?secretlab=deep` parks a rock whose site hides a band, because the ORDINARY cheat

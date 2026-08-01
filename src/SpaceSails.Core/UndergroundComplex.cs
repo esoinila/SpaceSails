@@ -722,6 +722,27 @@ public static class UndergroundComplex
     //
     // It is left entirely open whether the captain USES it. That is the whole point of leverage.
 
+    /// <summary>#592 · Which room is GUARANTEED to hold the way down, on a site that has something to hide.
+    ///
+    /// <para>Null on an ordinary site: there is nothing under it, so nothing has to be findable and every
+    /// Key stays a roll. On a site with an unlisted band it is a room on the last floor the building admits
+    /// to — the floor a captain is standing on when the panel goes quiet, which is exactly where somebody
+    /// would have been carrying one.</para>
+    ///
+    /// <para><b>Room 0, not a seeded index.</b> This function is pure of the field, so it cannot know how
+    /// many rooms that floor actually has — and the count varies: the four-room floor law is asserted for
+    /// the scenario's own bodies, and a generated site can produce a floor with three. A seeded 0..3 index
+    /// therefore misses sometimes, which puts the guarantee back exactly where it started. Room 0 always
+    /// exists on any floor worth riding to.</para>
+    ///
+    /// <para>Nobody can see the index, so nothing is lost by it being fixed — a player finds a room, not a
+    /// number — and the alternative costs a floor plan on every haul lookup.</para></summary>
+    public static (int Level, int RoomIndex)? KeyRoomFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return HasUnlistedBand(bodyId) ? (DepthOf(bodyId), 0) : null;
+    }
+
     /// <summary>What a room in one of these places holds.</summary>
     public enum Haul
     {
@@ -742,6 +763,22 @@ public static class UndergroundComplex
     public static Haul InRoom(string bodyId, int level, int roomIndex)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
+
+        // #592 · THE ONE ROOM THAT IS NOT A ROLL.
+        //
+        // The way into the band nobody listed is a card, and a card comes out of a Key room on the last
+        // floor the building admits to. Key is one face in nine, and a last band holds thirty-odd rooms, so
+        // about one site in thirty would roll no Key at all — and because the rolls are seeded, that site's
+        // hidden band would be unreachable NOT for that visit but FOREVER.
+        //
+        // Nothing on screen would ever say so, which is the only reason this is not the "map lies" bug; it
+        // is the quieter one where a feature is silently dead on some worlds and every test still passes.
+        // So one room on the last listed floor is designated, deterministically, and holds the way down.
+        if (KeyRoomFor(bodyId) is { } wayDown && level == wayDown.Level && roomIndex == wayDown.RoomIndex)
+        {
+            return Haul.Key;
+        }
+
         int face = DiceRule.Roll(DiceRule.Seed($"hive:haul:{bodyId}:{level}:{roomIndex}"), 9).Face;
 
         // #592 · THE PAYOFF FOR REACHING THE FLOOR NOBODY LISTED IS INFORMATION, NOT A BIGGER NUMBER.
