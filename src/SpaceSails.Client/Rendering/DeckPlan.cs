@@ -24,7 +24,7 @@ public sealed class DeckPlan
         // inside, and whoever's effects are still on the floor.
         OutpostDoor, OutpostCache, OutpostEffects,
         // #573 · The deep shelter's charging rack — the only place outside her tube that refills a suit.
-        ShelterTank, ShelterLocker }
+        ShelterTank, ShelterLocker, RuinSalvage }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.

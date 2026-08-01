@@ -305,6 +305,23 @@ public static class MoonSurface
             doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2));
         }
 
+        // #573 · AND SOMETHING INSIDE ABOUT HALF OF THEM — the "services" half of the same report. A
+        // thick-walled room you can enter and find nothing in is worse than no room at all, because the walk
+        // in cost air and taught you not to bother next time. But if EVERY building paid out, entering them
+        // would stop being a decision and become a chore performed on all of them, so the empty ones are
+        // load-bearing: they are what make the others worth the suit-air.
+        var salvageSpots = new List<(int Index, float X, float Y)>();
+        IReadOnlyList<(double X, double Y)> centres = layout.BuildingCentres ?? [];
+        for (int i = 0; i < centres.Count; i++)
+        {
+            SurfaceSalvage.Find find = SurfaceSalvage.WhatIsInside(bodyId, siteSalt, i);
+            if (find == SurfaceSalvage.Find.Nothing)
+            {
+                continue;
+            }
+            salvageSpots.Add((i, (float)centres[i].X, (float)centres[i].Y));
+        }
+
         var consoles = new List<DeckPlan.ConsoleSpot>(
             ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock))
         {
@@ -372,6 +389,12 @@ public static class MoonSurface
             consoles.Add(new(DeckPlan.ConsoleKind.SurfaceAirlock,
                 (float)d.CentreX, (float)d.CentreY, SurfaceShelter.DoorLabel));
         }
+        foreach ((int index, float sx, float sy) in salvageSpots)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.RuinSalvage, sx, sy,
+                SurfaceSalvage.LabelFor(SurfaceSalvage.WhatIsInside(bodyId, siteSalt, index))));
+        }
+
         consoles.Add(new(DeckPlan.ConsoleKind.ShelterTank,
             (float)shelter.CentreX, (float)shelter.CentreY, SurfaceShelter.TankLabel));
         // Andy Weir's bubble shelters carry survival kit, not just air (owner). Set well off the rack so
