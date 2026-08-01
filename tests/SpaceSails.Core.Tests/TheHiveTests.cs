@@ -78,6 +78,68 @@ public sealed class TheHiveTests
     }
 
     [Fact]
+    public void EveryMouthCutInTheSpineIsSTILLOpenWhenTheWallIsFinished()
+    {
+        // #587 · THE DEFECT, STATED IN CORE, IN MILLISECONDS.
+        //
+        // Each spine face is built as segments by a cursor sweeping left to right, laying wall between one
+        // mouth and the next. That only works if the mouths arrive in x order, and one of them did not: the
+        // lift alcove is APPENDED to the rib list after the ribs, at the shaft's own x, which sits left of
+        // the right-most rib. The sweep ran out past that rib, met the alcove behind it, and emitted a
+        // segment running BACKWARDS across everything between the two — one long wall lying over the two
+        // mouths it had just been asked to open.
+        //
+        // The plan was right, the mouths were right, and the collision field was a wall. Nothing but an A*
+        // flood over the CLIENT's real deck could see it: 35 floors of drawn, unenterable rooms, found in a
+        // playtest and chased for an evening. This states it where it happens — a mouth that was cut must
+        // still be a hole once the rest of the face is built.
+        //
+        // Note it is a SEMANTIC guard, not a shape one. "No wall runs backwards" looks like the same law and
+        // is not: clamping the cursor forward stops the reversed segment and leaves the mouth just as sealed.
+        // The only thing worth asserting is whether you can walk through the gap.
+        (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(Field);
+        double half = UndergroundComplex.CorridorHalf;
+
+        foreach (string body in new[] { "miranda", "luna", "phobos", "europa", "titan", "callisto" })
+        {
+            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            {
+                UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
+
+                // Every rib opens off the face it points away from; the lift alcove always off the top one.
+                var mouths = new List<(double X, double Y, string What)>
+                {
+                    (shaftX, shaftY + half, "the lift alcove"),
+                };
+                foreach (UndergroundComplex.Rib r in floor.Ribs)
+                {
+                    mouths.Add((r.X, r.Down ? shaftY - half : shaftY + half, $"the rib at x={r.X:F0}"));
+                }
+
+                foreach ((double mx, double my, string what) in mouths)
+                {
+                    foreach (SurfaceLayout.Wall w in floor.Walls)
+                    {
+                        // Only the spine's own long faces can seal a spine mouth: horizontal, on that face's y.
+                        if (Math.Abs(w.Y1 - w.Y2) > 0.001 || Math.Abs(w.Y1 - my) > 0.001)
+                        {
+                            continue;
+                        }
+
+                        double lo = Math.Min(w.X1, w.X2), hi = Math.Max(w.X1, w.X2);
+
+                        // A doorway is only a doorway if the captain fits. Anything intruding past the mouth's
+                        // own edges is narrowing it, and narrowing is how this failed the first two times.
+                        Assert.False(lo < mx + half - 0.001 && hi > mx - half + 0.001,
+                            $"{body} {floor.Name}: a wall from x={lo:F1} to x={hi:F1} lies across {what} " +
+                            $"at x={mx:F0} — the mouth was cut and then walled over again (#587).");
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void NoRibIsRunThroughTheLiftShaft()
     {
         // A cross corridor driven through the one thing you need to find again would be quietly cruel.
