@@ -503,6 +503,10 @@ public partial class Map
         public HashSet<int> ShelterPumpNoted { get; } = [];
         public HashSet<int> ShelterLockersSpent { get; } = [];
 
+        // #573 · Which ruins have been turned over this visit. A room stays entered once emptied — the walls
+        // and the door remain, so it still reads as a place you have been.
+        public HashSet<string> RuinsSearched { get; } = [];
+
         // #573 · Whether the "you are breathing shelter air" line has been said for this visit inside. Reset
         // on stepping out, so coming back in says it again — arriving in a refuge is worth noticing twice.
         public bool ShelterBreathNoted { get; set; }
@@ -1156,6 +1160,94 @@ public partial class Map
 
     /// <summary>How wide a rumour reads on the fan, in deck units. Big — it is a tip, not a fix.</summary>
     private const double RumourSpreadDu = 45.0;
+
+    // ── #573 · TURNING OVER A RUIN [E]. About half of them hold something; the rest are somebody's empty
+    //    house, and finding those is what makes the others worth the air it cost to walk in. ──
+    private void RuinSalvageInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.RuinSalvage } spot)
+        {
+            return;
+        }
+
+        // Identify WHICH ruin by its position — the console sits at the building's centre, which is the
+        // stable key SurfaceLayout hands out.
+        string body = ex.Stop.Body.Id, salt = ex.Site.LayoutSalt;
+        SurfaceLayout.Plan plan = SurfaceLayout.For(body, MoonSurface.ExpeditionField(), salt);
+        IReadOnlyList<(double X, double Y)> centres = plan.BuildingCentres ?? [];
+
+        int which = -1;
+        for (int i = 0; i < centres.Count; i++)
+        {
+            if (Math.Abs(centres[i].X - spot.X) < 0.5 && Math.Abs(centres[i].Y - spot.Y) < 0.5)
+            {
+                which = i;
+                break;
+            }
+        }
+        if (which < 0)
+        {
+            return;
+        }
+
+        string key = $"{which}";
+        if (!ex.RuinsSearched.Add(key))
+        {
+            ShowPulseMessage("You have already been through this one.");
+            return;
+        }
+
+        switch (SurfaceSalvage.WhatIsInside(body, salt, which))
+        {
+            case SurfaceSalvage.Find.Rounds:
+            {
+                int rounds = SurfaceSalvage.RoundsIn(body, salt, which);
+                var takers = ex.Bots.Where(b => b.Rounds < SentryBot.MaxMagazine).ToList();
+                int left = rounds;
+                foreach (SurfaceBot bot in takers)
+                {
+                    int take = Math.Min(SentryBot.MaxMagazine - bot.Rounds, left);
+                    bot.Rounds += take;
+                    left -= take;
+                    if (left <= 0)
+                    {
+                        break;
+                    }
+                }
+                RendererInterop.PlayCue("board");
+                ShowPulseMessage(SurfaceSalvage.RoundsLine(rounds - left));
+                break;
+            }
+
+            case SurfaceSalvage.Find.Goods:
+            {
+                int credits = SurfaceSalvage.GoodsIn(body, salt, which);
+                _credits += credits;
+                RendererInterop.PlayCue("board");
+                ShowPulseMessage(SurfaceSalvage.GoodsLine(credits));
+                break;
+            }
+
+            case SurfaceSalvage.Find.Papers:
+                // Texture, never testimony (#563): a roster, a docket, a note in a locker. Nothing here
+                // explains what is outside, and nothing ever will.
+                ShowPulseMessage(SurfaceSalvage.PapersLine(body, salt, which));
+                ApplyNerveShock(2.0, "somebody else's paperwork, still where they left it");
+                break;
+
+            default:
+                ShowPulseMessage(SurfaceSalvage.EmptyRoomLine(body, salt, which));
+                break;
+        }
+
+        RebuildSurfaceDeck();
+        RequestVaultSave();
+    }
 
     /// <summary>Every shelter on this site, in the stable order everything else indexes by.</summary>
     private IReadOnlyList<SurfaceStructure.Spec> SheltersOn(SurfaceExcursion ex) =>
