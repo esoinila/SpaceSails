@@ -945,11 +945,16 @@ public static class UndergroundComplex
     }
 
     /// <summary>What the gate says when the card works. Said once, at the moment the car goes deeper than
-    /// this shaft was ever dug to.</summary>
+    /// this shaft was ever dug to.
+    ///
+    /// <para>#592: worded so it is true of BOTH shafts it can open. It used to say "where the plan said a
+    /// shaft would be" — right about the listed building, and a lie about the band the plan denies having.
+    /// A card that announces the secret is a card that has given it away.</para></summary>
     public static string CardAcceptedLine(AuthorityCard card) =>
-        $"🎫 You find the other shaft where the plan said a shaft would be, and its gate reads the " +
-        $"card without hesitating — {CardTitle(card)}, countersigned by an office that stopped answering " +
-        "its own post decades ago and never once revoked a thing. The car below is colder than the one above.";
+        $"🎫 You find the other shaft. It is not marked and it is not beside the first one, and its gate " +
+        $"reads the card without hesitating — {CardTitle(card)}, countersigned by an office that stopped " +
+        "answering its own post decades ago and never once revoked a thing. The car below is colder than " +
+        "the one above.";
 
     /// <summary>What the gate says when you are carrying authorities and none of them is this one. The
     /// failure has to name what is wrong with it — silence here would read as a bug.</summary>
