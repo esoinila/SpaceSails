@@ -131,7 +131,18 @@ public sealed class DeckView
         string ChannelGlyph = "⛏",
         // #562 · The tint of the channel bar's fill. The rearm is the ship helping you, not you exposing
         // yourself, so it reads cold-green rather than the dig's warning amber.
-        bool ChannelIsAid = false);
+        bool ChannelIsAid = false,
+        // #591 · HOW FAR THE FAN HEARS, handed down from the sim rather than re-derived here. The renderer
+        // used to work its own reach out of the viewport while the sim used a flat half-width, so on any
+        // window that was not exactly 64:28 the blip you SAW at the rim was not the blip the chirp had
+        // HEARD. Underground the reach shortens with depth and that drift would have become load-bearing.
+        // Non-positive = fall back to the viewport derivation (callers that predate this).
+        double FanReach = -1,
+        // #591 · Where the captain is, painted on the instrument itself — "B14 · ARCHIVE". Null on the
+        // regolith. How deep you are is the single most important fact about your situation down there: it
+        // is the number that decides whether you get back up on the air you have, and it was only ever
+        // available as a label lying on the floor plan behind you.
+        string? TrackerPlace = null);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -1104,6 +1115,21 @@ public sealed class DeckView
         DrawSeg((cx, cy - r), (cx, cy + r), new RgbaColor(120, 200, 150, 70), 1f);
         _renderer.DrawText(cx, cy - r - 8, "MOTION TRACKER", TrackerRing, $"bold {labelPx:0}px monospace", TextAlign.Center);
 
+        // #591 · WHERE YOU ARE, ON THE INSTRUMENT. Owner: "the motion tracker should be in underground
+        // visibility mode when we are deeeeeeeep under surface" — and depth is the single most important
+        // fact about a captain's situation down there, because it is the number that decides whether they
+        // get back up on the air they have. It was only ever readable as a label lying on the floor plan
+        // behind them, which is the wrong place: you read the plan when you are thinking and the instrument
+        // when you are worried.
+        //
+        // Drawn in the fan's own ink, above the ring beside the title, so a glance says "you are inside
+        // something" before a single word is read.
+        if (hud.TrackerPlace is { Length: > 0 } place)
+        {
+            _renderer.DrawText(cx, cy - r + 4, place, TrackerRing,
+                $"{Math.Clamp(labelPx * 0.82, 8, 11):0}px monospace", TextAlign.Center);
+        }
+
         // Lane-1 (owner, 2026-07-18): the Reever blips are red and "pulsing like a heartbeat" — the
         // creatures' pulse on the sweep. A lub-dub envelope drives the blips' size and glow, quickening
         // with the tracker cadence as the nearest closes; even a far-off tide keeps a slow, live beat.
@@ -1117,9 +1143,13 @@ public sealed class DeckView
         // visible half-width in du is widthPx/scale/2), so the fan hears several times farther than the grid
         // shows. A blip's DISTANCE is read straight off the fan: faint + small on the rim, firming to an
         // insistent near dot as it closes (MotionTracker.BlipIntensity) — the dread-gap made visible.
+        // #591: the reach is HANDED DOWN by the sim now, because the sim and this draw were deriving it
+        // separately and could disagree — and underground the sim shortens it with depth, which would have
+        // made that disagreement the difference between a blip you can hear and a blip you can only see.
+        // The viewport derivation stays as the fallback for callers from before the field existed.
         float surfScale = Math.Min(widthPx / 64f, heightPx / 28f);
         double visualHalfWidthDu = (widthPx / Math.Max(surfScale, 0.001f)) / 2.0;
-        double detectionRange = MotionTracker.DetectionRange(visualHalfWidthDu);
+        double detectionRange = hud.FanReach > 0 ? hud.FanReach : MotionTracker.DetectionRange(visualHalfWidthDu);
         foreach ((double bearing, double range) in hud.Blips)
         {
             double rr = Math.Min(range / detectionRange, 1.0) * (r - 6);

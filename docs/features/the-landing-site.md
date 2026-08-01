@@ -402,7 +402,31 @@ eleven floors under a moon, still in the pocket a month and a world later. The s
 nothing else — the title is a seeded property of the world, rebuilt at read time, so a file can never go
 stale against the words.
 
-13.6 **Nothing down here explains what the Old Ones are.** A facility may be enormous, expensive and
+13.6 **The motion tracker knows it is underground.** It is a surface instrument — its reach, its readout and
+its beacons were all written for standing on a moon under an open sky — and hundreds of metres down inside
+poured walls it used to behave exactly the same. Now (#591):
+
+- **The fan's reach degrades with depth**, on a curve rather than a table, because `DepthOf` is unbounded by
+  design. Full reach on B1 — the floor that still holds pressure and is still pretending to work; the
+  instrument tells the same lie the floor does, and the lie is what makes the dark below it land — then
+  strictly decreasing, leaning on a floor fraction it never reaches. A dead instrument is not frightening,
+  it is broken.
+- **A contact behind a wall is a smudge, not a clean blip**, through the same fog `#371` built for wrecks.
+- **The floor is on the instrument** (`B14 · ARCHIVE`), because how deep you are is the number that decides
+  whether you get back up on the air you have, and you read the plan when you are thinking and the
+  instrument when you are worried.
+
+This gives depth a **third cost** after air and time, and it is the one a player can name — without adding
+a single enemy. *(Enforced: `TheTrackerUndergroundTests` — unchanged on the regolith, full at B1, strictly
+monotonic, never zero at any depth including past the performance guard, a curve not a table, deterministic,
+and measurably quieter at the bottom.)*
+
+**One reach, read by everyone.** The renderer used to derive the fan's range from the viewport while the sim
+used a flat 32 du half-width, so on any window that was not exactly 64:28 the blip you *saw* at the rim was
+not the blip the chirp had *heard*. That drift was harmless while both were "far"; it stops being harmless
+the moment one of them shortens. The hud carries the number now.
+
+13.7 **Nothing down here explains what the Old Ones are.** A facility may be enormous, expensive and
 obviously state-backed, and may never say what it was for. *(Enforced: the prose is grepped.)*
 
 ## Working method
