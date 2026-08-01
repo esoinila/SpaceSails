@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -64,6 +64,7 @@ public static class VaultSerializer
     private const string SecProgress = "progress";
     private const string SecNerve = "nerve";
     private const string SecOverheard = "overheard";
+    private const string SecFieldNotes = "fieldnotes";   // #587 · the field book
     private const string SecKaamos = "kaamos";
     private const string SecNebula = "nebula";
     private const string SecResume = "resume";
@@ -88,6 +89,7 @@ public static class VaultSerializer
         AddSection(sections, SecProgress, vault.Progress);
         AddSection(sections, SecNerve, vault.Nerve);
         AddSection(sections, SecOverheard, vault.Overheard);
+        AddSection(sections, SecFieldNotes, vault.FieldNotes);
         AddSection(sections, SecKaamos, vault.Kaamos);
         AddSection(sections, SecNebula, vault.Nebula);
         AddSection(sections, SecResume, vault.Resume);
@@ -162,6 +164,7 @@ public static class VaultSerializer
             Progress = Harvest<ProgressSection>(sections, SecProgress, warnings),
             Nerve = Harvest<NerveSection>(sections, SecNerve, warnings),
             Overheard = Harvest<OverheardSection>(sections, SecOverheard, warnings),
+            FieldNotes = Harvest<FieldNotesSection>(sections, SecFieldNotes, warnings),
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),
             Resume = Harvest<ResumeSection>(sections, SecResume, warnings),

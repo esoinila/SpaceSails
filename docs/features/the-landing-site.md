@@ -279,8 +279,73 @@ Named so silence is not mistaken for coverage:
 - **The landable-body list** in the audits is hand-kept and must match the scenario. It held eight when the
   scenario held ten — `enceladus` and `the-clinker` were simply forgotten, so four grounds were audited by
   nobody while the file claimed to check "every site". If a moon is added, add it there.
-- **The monolith** is spec'd nowhere and currently *"looks like a box in a closet"* when it is meant to be
-  the thing you walk out there to see.
+*(The monolith was on this list and is now §10.)*
+
+## 10 · The monolith
+
+> *"it is supposed to be impressive... now it looks like a box in closet."*
+
+The canon slab was **2.4 × 5 du** — the captain is 1.4 across — at the heart of a field 310 × 260. The deep
+commitment anchor of the whole site, the thing the long walk is *for*, was about two captains tall.
+
+10.1 **The fix is not a bigger box.** The deck plan is a crude grid on purpose, and on a crude grid every
+rectangle is a rectangle. What reads at this scale is **ceremony**: a slab wide enough to be a wall rather
+than a crate (four captains, floor), a visibly **swept apron** in a field where everything else is rubble,
+four approach stubs that are unmistakably *placed*, a picture when you put your hand on it, and things left
+at its foot.
+
+10.2 **The maze is untouched.** The slab stays inside the cell the canon rows leave it. Miranda's maze is the
+one piece of ground nobody has asked to change.
+
+10.3 **Things are left there, and they change.** `Monolith.AtTheFoot(body, salt, epoch)` — seeded on the site
+*and* a slow visit-window. Roughly half of all windows are empty, which is load-bearing for the same reason
+the empty ruins are: if there were always something, the walk would be a shopping trip.
+
+10.4 **A window outlasts an excursion.** `EpochSeconds` must comfortably exceed a full tank, so the ground
+never changes under a captain standing on it — the object-persistence law. The window is part of the deck
+cache key, or the cache would serve a console saying something is there long after it is not.
+
+10.5 **Every line is somebody ELSE's visit.** The stone never moves, hums, glows or responds, and the card
+explains nothing. The Old Ones' origin is canon and is never confirmed by a card or a sensor; the monolith is
+older than the question and does not answer it. *(Enforced: `TheMonolithIsAPlaceTests` greps the prose.)*
+
+## 11 · Colour is a language
+
+11.1 **Every world's stonework is drawn in its own material** (`BodyPalette`). You build out of what is under
+your boots, so the ink is a fact about the body, not decoration — and it does the navigation for free: after
+two visits the palette alone says which moon you are on.
+
+> *"the in-situ construction materials of the walls might be planet specific ... red for mars etc theming"* ·
+> *"gray for Moon"* · *"something to spot where we are visually"*
+
+11.2 **No two worlds share an ink, and same-system neighbours are furthest apart** — Jupiter's three are the
+comparison a player actually makes. *(Enforced.)*
+
+11.3 **A door is the hill it is set in, only brighter** — so a building reads as one object.
+
+11.4 **An imported door is a sentence.** Off-palette means somebody shipped materials across the system to
+seal this, and nobody does that for a store cupboard. Rare in ruins (1 in 7); **always** on a shelter, which
+is the truth about the building — nobody swages a pressure door out of regolith.
+
+11.5 **The imported ink must be unmistakable on EVERY world.** It was a cold blue-white first and the guard
+killed it in one run: 69 from Luna's grey, closer on Enceladus — an "unmistakable" signal that vanished on
+precisely the two palest worlds. It is violet now, because no rock anywhere is violet. *(Enforced: minimum
+contrast against every body's door ink.)*
+
+## 12 · The field book
+
+12.1 **A find that is shown once is a find that is lost.** Everything discovered on a surface goes through
+one recorder and lands in a durable, capped, vault-persisted book. The pulse is the doorbell; the book is the
+record. Same ruling as the bar's overheard log (#347).
+
+12.2 **Grouped by PLACE in the ledger.** "Three papers and two caches" is an inventory; *"Miranda · The Ridge
+Camp"* with four lines under it is a memory of an afternoon.
+
+12.3 **Three pieces make a person.** One is litter, two is a coincidence. The payoff is not loot — it is
+somebody still waiting for news, and sometimes what they know.
+
+12.4 **A dossier never joins the dots.** It may show a continuity researcher shaking hands with a ministry
+delegation. It may not explain. *(Enforced: the prose is grepped.)*
 
 ## Working method
 

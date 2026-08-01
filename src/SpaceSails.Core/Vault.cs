@@ -54,6 +54,10 @@ public sealed class Vault
     public ProgressSection? Progress { get; init; }
     public NerveSection? Nerve { get; init; }
     public OverheardSection? Overheard { get; init; }
+
+    /// <summary>#587 · The captain's FIELD BOOK — what they found on the ground. Its own independently
+    /// optional section; a pre-#587 file simply lacks it and defaults to an empty book.</summary>
+    public FieldNotesSection? FieldNotes { get; init; }
     public KaamosSection? Kaamos { get; init; }
     public NebulaSection? Nebula { get; init; }
     public ResumeSection? Resume { get; init; }
@@ -321,6 +325,15 @@ public sealed record OverheardSection
 {
     /// <summary>The overheard lines, oldest first. Capped by the writer (see <c>OverheardLog</c>).</summary>
     public IReadOnlyList<OverheardLine> Lines { get; init; } = [];
+}
+
+/// <summary>#587 · The captain's field book: everything found out on a surface, kept so it can be re-read.
+/// Owner: <i>"we should maybe collect the tips to ledger if we don't show them again?"</i> — the same ruling
+/// he made for bar intel in #347, pointed at the ground. Its own independently-optional section.</summary>
+public sealed record FieldNotesSection
+{
+    /// <summary>The notes, oldest first. Capped by the writer (see <c>FieldNotes</c>).</summary>
+    public IReadOnlyList<FieldNote> Notes { get; init; } = [];
 }
 
 // ── PROJEKTI KAAMOS (#411): the ice-moon mystery, assembled per-thread. ──

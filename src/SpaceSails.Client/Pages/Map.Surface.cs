@@ -522,6 +522,10 @@ public partial class Map
         public Dictionary<int, double> ShelterReservoir { get; } = [];
         public HashSet<int> ShelterPumpNoted { get; } = [];
 
+        // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
+        public HashSet<int> KitPieces { get; } = [];
+        public bool DossierShown { get; set; }
+
         // #585 · This site's shelters, worked out once. See SheltersOn for why this is a field and not a
         // call: the threshold rule asks the question once per hunter per frame, and the answer is fixed for
         // the whole excursion.
@@ -867,7 +871,9 @@ public partial class Map
                     ShelterReservoirNow(ex, inside) / SurfaceShelter.ReservoirSeconds);
                 if (story.Length > 0)
                 {
-                    ShowPulseMessage(story);
+                    // "Somebody was here" is a fact about the world told by state rather than by a card —
+                    // exactly the kind of thing that was being lost eight seconds after it was earned.
+                    ShowAndFile(story, "⛺");
                 }
             }
 
@@ -1296,19 +1302,20 @@ public partial class Map
                 int credits = SurfaceSalvage.GoodsIn(body, salt, which);
                 _credits += credits;
                 RendererInterop.PlayCue("board");
-                ShowPulseMessage(SurfaceSalvage.GoodsLine(credits));
+                ShowAndFile(SurfaceSalvage.GoodsLine(credits), "💰");
                 break;
             }
 
             case SurfaceSalvage.Find.Papers:
                 // Texture, never testimony (#563): a roster, a docket, a note in a locker. Nothing here
                 // explains what is outside, and nothing ever will.
-                ShowPulseMessage(SurfaceSalvage.PapersLine(body, salt, which));
+                ShowAndFile(SurfaceSalvage.PapersLine(body, salt, which), "📄");
                 ApplyNerveShock(2.0, "somebody else's paperwork, still where they left it");
+                AssembleSomebody(ex, body, salt, which);   // #588: a person, out of the pieces
                 break;
 
             default:
-                ShowPulseMessage(SurfaceSalvage.EmptyRoomLine(body, salt, which));
+                ShowAndFile(SurfaceSalvage.EmptyRoomLine(body, salt, which), "🚪");
                 break;
         }
 
@@ -1392,6 +1399,130 @@ public partial class Map
             : SurfaceShelter.ReservoirSeconds;
         ex.ShelterReservoir[index] = start;
         return start;
+    }
+
+    // ── #588 · A PERSON, OUT OF THE PIECES ─────────────────────────────────────────────────────────────
+    //
+    // Owner: "when we find somebody's kit maybe we get gen ai compilation of what we discover about them...
+    // nice place for world building and dropping bread crumbs about our big plot", and then the part that
+    // makes it a MECHANIC rather than a lore drop — "if we know what happened to someone we get contacts
+    // easily by contacting their loved ones, in some cases that might lead our gum-shoe-efforts forward."
+    //
+    // Three pieces of kit make a person (one is litter, two is a coincidence). The payoff is not loot: it is
+    // an errand, and a name to drop, and — sometimes — somebody who has been waiting nine years for news and
+    // knows something nobody would ever tell a pirate.
+    private void AssembleSomebody(SurfaceExcursion ex, string body, string salt, int roomIndex)
+    {
+        ex.KitPieces.Add(roomIndex);
+        if (ex.KitPieces.Count < FieldDossier.FragmentsToAssemble || ex.DossierShown)
+        {
+            return;
+        }
+        ex.DossierShown = true;
+
+        // The stranger is keyed on the room whose papers COMPLETED the picture, so which body you are
+        // holding is a fact about where you searched — not a global roll that would have happened anyway.
+        FieldDossier.Person who = FieldDossier.Who(body, salt, roomIndex);
+        string place = Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name);
+
+        // The card, with the compiled effects. Reuses the ViewObject pop-up the builder's plate and the
+        // souvenirs already use — one image surface, not a second one to keep in step.
+        _viewObject = new DeckPlan.ConsoleSpot(
+            DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+            FieldDossier.ConsoleLabel, FieldDossier.ArtUrl, FieldDossier.Compiled(who, place));
+
+        RendererInterop.PlayCue("board");
+        ShowAndFile($"🗂 {who.Name} — a specialist in {who.Discipline}, carried out here by " +
+            $"{who.Employer}. The kit is theirs, all of it, and now you know their name.", "🗂");
+
+        // Somebody is still waiting. This is the thread, and running it is entirely the captain's choice.
+        FieldDossier.NextOfKin kin = FieldDossier.WhoIsWaiting(body, salt, roomIndex);
+        ShowAndFile(FieldDossier.KinLine(who, kin), "📇");
+        if (FieldDossier.KinKnowsSomething(body, salt, roomIndex))
+        {
+            ShowAndFile(FieldDossier.LeadHint(body, salt, roomIndex), "🔎");
+        }
+
+        // And the lighter one the owner asked for by name: a phrase that opens a door somewhere else.
+        // "In leisure suit larry game there was a tip to go to a door and say Ken sent me."
+        if (FieldDossier.HasIntroduction(body, salt, roomIndex))
+        {
+            ShowAndFile(FieldDossier.IntroductionLine(
+                FieldDossier.InTheKit(body, salt, roomIndex)), "🎟");
+        }
+
+        ApplyNerveShock(4.0, "a stranger's whole life, laid out on a rock");
+    }
+
+    // ── #587 · THE FIELD BOOK ──────────────────────────────────────────────────────────────────────────
+    //
+    // Owner: "we should maybe collect the tips to ledger if we don't show them again?" — and he is right,
+    // because until now they were NOT shown again. Every find out there arrived through ShowPulseMessage,
+    // which fades after at most eight seconds and is then gone: you walk twenty minutes across a vacuum for
+    // a sentence you cannot read twice.
+    //
+    // Exactly the bug he already ruled on for the bar (#347: the words a player paid for "may not hide"),
+    // so it gets exactly the same answer — a durable, capped, vault-persisted book, projected into the
+    // captain's ledger grouped by PLACE. On the ground the thing you want back is not who told you, it is
+    // where you were standing.
+    private List<Core.FieldNote> _fieldNotes = [];
+
+    /// <summary>Say it AND keep it. Every durable find on a surface goes through here rather than through
+    /// ShowPulseMessage directly, so there is one place that can never be forgotten about — the pulse is the
+    /// doorbell, the book is the record.</summary>
+    private void ShowAndFile(string text, string glyph)
+    {
+        ShowPulseMessage(text);
+        if (_surface is not { } ex || string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+        _fieldNotes = [.. Core.FieldNotes.Append(_fieldNotes, new Core.FieldNote(
+            text, SimTime, Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name), glyph))];
+    }
+
+    // ── #586 · WHAT SOMEBODY LEFT AT THE FOOT OF THE MONOLITH [E] ──────────────────────────────────────
+    //
+    // Owner: "let's have gen AI image at the monolith and some items appearing there now and then ... it is
+    // supposed to be impressive... now it looks like a box in closet."
+    //
+    // The picture is the [E] on the slab itself. THIS is the other half, and it is the half that makes the
+    // place alive: a landmark that never changes is scenery you visit once. Every line here is somebody
+    // ELSE's visit — a cutting rig laid down neatly, a scoured plate, bootprints that all face the slab and
+    // none lead away. The monolith itself never speaks, never reacts, and is never confirmed to have noticed
+    // anything, which is the whole register (see reever-origin canon: the game never explains this).
+    private void MonolithFootInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.MonolithFoot })
+        {
+            return;
+        }
+
+        long epoch = Monolith.EpochAt(SimTime);
+        Monolith.Offering left = Monolith.AtTheFoot(ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch);
+        if (left == Monolith.Offering.Nothing)
+        {
+            return;
+        }
+
+        string key = $"monolith:{epoch}";
+        if (!ex.RuinsSearched.Add(key))
+        {
+            ShowPulseMessage("You have already looked at it. It has not changed.");
+            return;
+        }
+
+        ShowAndFile(Monolith.FootLine(left, ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch), "▮");
+
+        // It costs nerve to stand here reading somebody else's last afternoon. Remains cost more.
+        ApplyNerveShock(left == Monolith.Offering.Remains ? 5.0 : 2.0,
+            "somebody else got this far, and this is what is left of their visit");
+        RequestVaultSave();
     }
 
     // ── #573 · THE SHELTER'S EMERGENCY LOCKER [E]. Owner, on Andy Weir's bubble shelters: they "should also
@@ -1564,7 +1695,11 @@ public partial class Map
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
             3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids,
-            siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name); // #320: the picked site seeds the ground + names the header
+            siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name, // #320: the picked site seeds the ground + names the header
+            // #586: which visit-window the monolith's foot is showing. Bucketed off sim time so it holds
+            // still for a whole excursion (a captain who comes back the same afternoon finds what they left —
+            // his object-persistence law) and has moved on by the time it is worth walking out there again.
+            monolithEpoch: Monolith.EpochAt(SimTime));
 
         // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
         // forced open this visit onto the freshly-built base — so a bury/lift/drop rebuild grows back exactly
@@ -2352,7 +2487,19 @@ public partial class Map
     private void StepNerve(double dtRealSeconds)
     {
         bool onExcursion = _surface is { } ex;
-        bool onRegolith = onExcursion && !MoonSurface.IsSafeAboard(_avatarY);
+        // #591 · A SHELTER STEADIES YOU. Owner: "we should restore sanity when we get to a shelter also."
+        //
+        // No new machinery was needed and that is the tell that it is the right rule: nerve already comes
+        // back one beat at a time whenever the captain is SAFE (NervePips.Cause.Airlock), and safe has always
+        // meant "aboard, or in her tube". A pressurised drum with a door nothing outside can work is safe by
+        // exactly the same definition — it is the reason the air stops there too (#573). Saying so here is
+        // the whole change.
+        //
+        // It also completes the building's argument. It gives you air, it reloads you, it keeps the Old Ones
+        // at the threshold — and until now you sat in it watching the one gauge that measures whether you can
+        // keep doing this go on falling.
+        bool inShelter = onExcursion && _surface is { } shelterEx && ShelterUnderfoot(shelterEx) >= 0;
+        bool onRegolith = onExcursion && !MoonSurface.IsSafeAboard(_avatarY) && !inShelter;
 
         // #380 item 2: the band this frame opened on — so once, per excursion, we can speak the FIRST slide
         // down a rung (naming the cause and the remedy the bare gauge never did). Recovery only ever raises

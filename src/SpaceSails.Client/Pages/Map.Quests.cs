@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -2315,6 +2315,20 @@ public partial class Map
                 $"👂 {who}",
                 rumor.Lines.Select(l => l.Text).ToArray(),
                 ProvenanceLine(who, rumor.LatestBar, rumor.LatestSimTime),
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+        }
+
+        // #587 — THE FIELD BOOK, in the ledger. Owner, on a rebuilt site: "we should maybe collect the tips
+        // to ledger if we don't show them again?" Everything found on a surface used to arrive as a pulse
+        // that faded in eight seconds and was then gone for good — a sentence you walked twenty minutes
+        // across a vacuum for and could never read twice. Same failure the bar had (#347), same fix, grouped
+        // by PLACE rather than by contact: out there the thing you want back is where you were standing.
+        foreach (Core.FieldFinding found in Core.FieldNotes.PerPlace(_fieldNotes))
+        {
+            tips.Add(new Stations.Captain.LedgerTip(
+                $"🥾 {found.Place}",
+                found.Lines.Select(l => $"{l.Glyph} {l.Text}").ToArray(),
+                $"found on the ground · day {(found.LatestSimTime / 86400).ToString("F0", CultureInfo.InvariantCulture)}",
                 ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
         }
 
