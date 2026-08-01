@@ -338,6 +338,36 @@ public sealed class TheUnlistedBandTests
         }
     }
 
+    [Fact]
+    public void TheDeepCHEATRockStillHasSomethingUnderIt()
+    {
+        // #592 · `/map?secretlab=deep` parks a rock whose site hides a band, because the ORDINARY cheat
+        // rock's site is seeded like any other and happens to be four floors of records annex with nothing
+        // under it — so the feature could not be reached from a URL at all, which is the exact tax the dev
+        // cheats exist to remove.
+        //
+        // The cheat is a BODY ID and nothing else: no Core fact is overridden from the client, the site is
+        // seeded from its name like every other site. That is the right shape, and it is also the fragile
+        // one — a change to the seeding could quietly leave the cheat pointing at an ordinary building and
+        // nobody would notice until they went looking for a floor that was not there. So it is pinned.
+        //
+        // If this ever goes red: run the lab, which prints "+ an UNLISTED band to Bn" per site, pick another
+        // id, and change both this test and Map.Sim's SecretLabDeepCheatBodyId.
+        //
+        //   dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release
+        const string CheatRock = "secret-lab-site-unlisted";
+
+        Assert.True(UndergroundComplex.HasUnlistedBand(CheatRock),
+            $"'{CheatRock}' no longer hides anything — ?secretlab=deep now lands on an ordinary facility.");
+
+        // And it is the awkward case on purpose: as deep as the generator goes, so the cheat exercises the
+        // performance guard and the band arithmetic at the same time.
+        Assert.Equal(UndergroundComplex.DeepestPossibleFloor, UndergroundComplex.TrueDepthOf(CheatRock));
+        Assert.NotEqual(
+            UndergroundComplex.KindFor(CheatRock),
+            UndergroundComplex.KindOn(CheatRock, UndergroundComplex.TrueDepthOf(CheatRock)));
+    }
+
     /// <summary>The scenario's sites that actually have something under them. If this is ever empty the
     /// tests above pass vacuously, so it is asserted rather than assumed.</summary>
     private static IEnumerable<string> Sites()

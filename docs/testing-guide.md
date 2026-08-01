@@ -819,7 +819,16 @@ hidden floor you could only reach by first finding a card would be exactly the t
 remove. Ask for a floor below the listed bottom and you land on the unlisted band's own shaft head
 (there is a GAP between the two buildings with nothing dug in it, so the number is snapped past it).
 
-To find a site that has one, run the lab — it prints `+ an UNLISTED band to Bn` in each site's header:
+**`/map?secretlab=deep&land=1&floor=24` is the one to use.** The ordinary cheat rock's site is seeded
+like any other and happens to be four floors of records annex with nothing under it, so `?secretlab=1`
+cannot reach #592 at all. `?secretlab=deep` parks a different rock — a 20-floor clinic with an
+unlisted LABORATORY under it, down to the generator's own performance guard, which makes it the
+deepest and most awkward site the game can produce and therefore the right one to test on. The cheat
+is a body id and nothing else; the site is seeded from its name like every other site, and
+`TheUnlistedBandTests` pins that it still hides something.
+
+To find other sites that have one, run the lab — it prints `+ an UNLISTED band to Bn` in each site's
+header:
 
 ```bash
 dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release
