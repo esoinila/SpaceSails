@@ -529,6 +529,19 @@ public partial class Map
                     }
                 }
             }
+            else if (pair.StartsWith("air=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #564 dev cheat: /map?air=45 starts the excursion with 45 seconds in the tank instead of a
+                // full one. A full tank is six minutes of walking by design — fine to play, useless to TEST,
+                // and the owner should not have to stroll for six minutes to see the point-of-no-return
+                // warning fire. Combine with dock/site/land:
+                //   /map?dock=the-tilt&site=0&land=1&air=45
+                string candidate = Uri.UnescapeDataString(pair["air=".Length..]);
+                if (double.TryParse(candidate, NumberStyles.Float, CultureInfo.InvariantCulture, out double secs))
+                {
+                    _airCheatSeconds = Math.Clamp(secs, 1, SuitAir.TankSeconds);
+                }
+            }
             else if (pair.StartsWith("outpost=", StringComparison.OrdinalIgnoreCase))
             {
                 // #563 dev cheat: /map?outpost=1 guarantees the OUTPOST HUT on whatever site the excursion

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -1795,7 +1795,13 @@ public partial class Map
     /// <param name="nerveRanOut">True when the NERVE overdrew (the gauge hit the floor with a qualifying
     /// hit); false when the FIVE BLOWS ran out and the captain was simply mauled. Drives the freeze-frame
     /// caption — see <see cref="DeathNarration.SurfaceCaption"/>.</param>
-    private void TriggerSurfaceOverdrawDeath(SurfaceExcursion dying, bool nerveRanOut)
+    /// <param name="known">#564 · A cause the caller already KNOWS, passed instead of rolled. The roll
+    /// below only knows the ground's two answers (the Old Ones took you, or you joined them), so anything
+    /// that kills a captain for another reason — running the tank dry — would have been narrated as a
+    /// Reever's hand. That is the same sim-says-one-thing-sentence-says-another failure #545 fixed for the
+    /// black-ops sweep, and the fix is the same: the caller passes what it knows.</param>
+    private void TriggerSurfaceOverdrawDeath(
+        SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null)
     {
         if (_busted is not null)
         {
@@ -1807,7 +1813,7 @@ public partial class Map
 
         string body = dying.Stop.Body.Name;
         ulong seed = DiceRule.Seed("overdraw", (long)SimTime);
-        DeathCause cause = DeathNarration.SurfaceEnd(_nerve, seed); // Reevers, or the rare Joined at a sliver
+        DeathCause cause = known ?? DeathNarration.SurfaceEnd(_nerve, seed); // Reevers, or the rare Joined at a sliver
 
         _busted = new BustedEncounter
         {
@@ -1824,9 +1830,14 @@ public partial class Map
 
         RendererInterop.PlayCue("alarm");
         RendererInterop.PlayCue("gameover");
-        string line = cause == DeathCause.Joined
-            ? $"🧠 Nerves gone past empty on {body} — the captain turns, and walks TOWARD the crowd. The insurance will need a new name."
-            : $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.";
+        string line = cause switch
+        {
+            DeathCause.Suffocated => DeathNarration.SuffocationHeadline(body),
+            DeathCause.Joined =>
+                $"🧠 Nerves gone past empty on {body} — the captain turns, and walks TOWARD the crowd. The insurance will need a new name.",
+            _ =>
+                $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.",
+        };
         LogAutopilotEvent(line);
         ShowPulseMessage(line);
         _shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"CAPTAIN LOST — {body}", SimTime);

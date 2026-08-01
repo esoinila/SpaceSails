@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// #380 item 1 · WHAT KILLED THE CAPTAIN — the place-dependent death classification, so the resurrection
@@ -38,6 +38,15 @@ public enum DeathCause
     /// <summary>Lost to the void — adrift / EVA / an orbit that slipped, no body to name. (Wired ready for
     /// whatever void death lands; none routes here today.)</summary>
     Void,
+
+    /// <summary>#564 · The tank ran out. Not a creature, not a fall, not nerve — the captain walked further
+    /// than their air and knew it, because the suit said so out loud when they crossed the line.
+    ///
+    /// <para>It exists as its own cause for one reason: a suffocation narrated as "an Old One's hand is the
+    /// last straw" would be the sim doing one thing while a SENTENCE reports another — the failure this
+    /// project has paid for repeatedly (#545's death card blaming Reevers for three men with rifles). The
+    /// caller PASSES this rather than rolling for it, because it is the one thing it knows for certain.</para></summary>
+    Suffocated,
 }
 
 /// <summary>
@@ -67,6 +76,12 @@ public static class DeathNarration
     /// (<see cref="DeathCause.Reevers"/>), but with the nerve shot to a sliver a seeded minority JOINED them
     /// (<see cref="DeathCause.Joined"/>). Pure and seeded so a test pins the split. This is the one law the
     /// surface-death lane calls when it lands.</summary>
+    /// <summary>#564 · What the ground says when the air runs out. Deliberately NOT a roll and NOT
+    /// place-dependent: the captain was warned, once and plainly, at the point of no return, and then went
+    /// on. There is nothing to be mysterious about.</summary>
+    public static string SuffocationHeadline(string bodyName) =>
+        $"🫁 The tank read empty on {bodyName}. The suit had said so while there was still a walk back in it.";
+
     public static DeathCause SurfaceEnd(double nerveAtDeath, ulong seed)
     {
         if (nerveAtDeath > JoinedNerveSliver)
