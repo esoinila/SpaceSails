@@ -1,4 +1,4 @@
-@page "/map"
+﻿@page "/map"
 @implements IDisposable
 @implements IHandleEvent
 @inject HttpClient Http
@@ -3960,14 +3960,14 @@
                            Art is Grok-generated. *@
                         <div class="busted-freeze">
                             <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent surface death">
-                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause)" alt="" aria-hidden="true" />
+                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
                             @* #480 follow-up: the caption names the meter that actually ran out. It used to
                                hardcode the nerve line for everything but Joined — true while nerve was the
                                only thing that ever killed you, wrong now that the five blows decide. *@
                             <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
-                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Seed, bust.DeathBodyName) The freeze-frame holds.</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
                         </div>
                         break;
@@ -4006,10 +4006,10 @@
                            is wired ready for the surface-death lane. Art is Grok-generated. *@
                         <div class="busted-whathappened">
                             <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent death">
-                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause)" alt="" aria-hidden="true" />
+                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
-                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Seed, bust.DeathBodyName)</div>
+                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)</div>
                         </div>
                         @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
                         <div class="busted-freeze-art busted-explosion has-art" title="art: the old ship blowing up — the kerosene-explosion budget">
@@ -4185,6 +4185,30 @@
                 </ul>
                 <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseTubeRearm)">@TubeRearm.Dismiss</button>
                 <div class="ground-lesson-foot">@TubeRearm.Foot</div>
+            </div>
+        </div>
+    }
+
+    @* #573 · THE TANK IS GETTING LOW — first time a captain's air passes the low mark on a surface. Owner:
+       "make the art... make a pop-up about oxygen being low... the time to hurry warning to the airlock or
+       refill". He had just died of a resource he could not see. GEN-AI ART (art/air-running-out.jpg): the
+       red-lit visor, a hand on the chest panel, and the lit hatch a long way off across the plain. *@
+    @if (_airCardOpen)
+    {
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseAirCard)">
+            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">@AirCard.Stamp</div>
+                <img class="ground-grows-art" src="@AirCard.ArtFile" alt=""
+                     onerror="this.style.display='none'" />
+                <div class="convergence-head">@AirCard.Head</div>
+                <ul class="ground-grows-beats">
+                    @foreach (string beat in AirCard.Beats)
+                    {
+                        <li>@beat</li>
+                    }
+                </ul>
+                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseAirCard)">@AirCard.Dismiss</button>
+                <div class="ground-lesson-foot">@AirCard.Foot</div>
             </div>
         </div>
     }

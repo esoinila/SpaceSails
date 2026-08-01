@@ -22,7 +22,9 @@ public sealed class DeckPlan
     public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves,
         // #563 · The outpost hut: its dogged hatch (force it, the room appends), the ammunition locker
         // inside, and whoever's effects are still on the floor.
-        OutpostDoor, OutpostCache, OutpostEffects }
+        OutpostDoor, OutpostCache, OutpostEffects,
+        // #573 · The deep shelter's charging rack — the only place outside her tube that refills a suit.
+        ShelterTank, ShelterLocker }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.

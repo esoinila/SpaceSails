@@ -164,6 +164,7 @@ public partial class Map
         _groundLessonSeen = false;
         _groundGrewSeen = false;
         _tubeRearmSeen = false;
+        _airCardSeen = false;
 
         // The mission/contract slate and every relationship, wiped: a new universe owes nobody and knows
         // nobody (owner: mission statuses reset with the new game). New quest ids mint from zero again.
@@ -380,6 +381,7 @@ public partial class Map
                 GroundLessonSeen = _groundLessonSeen, // #440: the first-ground card greets a captain once, ever
                 GroundGrewSeen = _groundGrewSeen,     // #563: so does the map-just-grew card
                 TubeRearmSeen = _tubeRearmSeen,       // #562: and the tube-feeds-you card
+                AirCardSeen = _airCardSeen,           // #573: and the tank-is-low card
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -830,6 +832,7 @@ public partial class Map
         // #562: same for the tube-feeds-you card — a captain who has already been racked in the tube is not
         // taught the supply line again (a pre-#562 save defaults false: they get it once, on their next).
         _tubeRearmSeen = vault.Progress?.TubeRearmSeen ?? _tubeRearmSeen;
+        _airCardSeen = vault.Progress?.AirCardSeen ?? _airCardSeen;   // #573
         // #409: restore the secret labs this thread has found, so a known body's hidden door stays revealed
         // on every future landing (a pre-#409 save simply lacks the field — an empty set, harmless).
         if (vault.Progress?.SecretLabsFound is { } found)

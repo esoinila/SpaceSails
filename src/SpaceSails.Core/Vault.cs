@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 // The personal vault (#225): the things of personal value — relationships, balances, caches, maps,
 // dice items, insurance, the ship's fit — persisted as versioned, field-tolerant JSON + checksum.
@@ -280,6 +280,11 @@ public sealed record ProgressSection
     /// shape of an excursion (the tube is the one place your sentries get fed, so every trip is a loop with
     /// one anchor) and then never speaks again, because the receipt line says the rest.</summary>
     public bool TubeRearmSeen { get; init; }
+
+    /// <summary>#573 — true once this captain has been shown <see cref="AirCard"/>, the card that fires the
+    /// first time their tank passes the low mark on a surface. Same law as its siblings: it teaches the
+    /// clock once and then the pulse line carries it.</summary>
+    public bool AirCardSeen { get; init; }
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──

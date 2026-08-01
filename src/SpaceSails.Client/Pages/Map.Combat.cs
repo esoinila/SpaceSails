@@ -1815,6 +1815,18 @@ public partial class Map
         ulong seed = DiceRule.Seed("overdraw", (long)SimTime);
         DeathCause cause = known ?? DeathNarration.SurfaceEnd(_nerve, seed); // Reevers, or the rare Joined at a sliver
 
+        // #574 · A death away from her deck can never be a COLLECTOR — a collector is a person who came for
+        // you, and there is nobody aboard a dead hull or out on an empty moon. Owner: "the debt collector
+        // deaths should also only happen in those situations never in any other". Coerced rather than
+        // trusted, because this method has four callers and will have more.
+        DeathPlace place = Derelict.TryParseWreckId(dying.Stop.Body.Id, out _)
+            ? DeathPlace.Derelict
+            : DeathPlace.LandingParty;
+        if (!DeathNarration.CanHappen(cause, place))
+        {
+            cause = DeathCause.Reevers;
+        }
+
         _busted = new BustedEncounter
         {
             HunterId = string.Empty,     // no collector — the ground and the mind collected
@@ -1824,6 +1836,9 @@ public partial class Map
             Bribe = default,             // unused on a surface death (no bribe to your own nerves)
             Phase = BustedEncounter.Stage.SurfaceEnd,
             Cause = cause,
+            // #574: a salvage run and an away team are not the same death. Derelict ids parse; a moon does
+            // not — so the excursion itself says which world's words the card should use.
+            Place = place,
             NerveRanOut = nerveRanOut,
             DeathBodyName = body,
         };
@@ -2309,6 +2324,11 @@ public partial class Map
         // place-dependently (cause art + a seeded house-voice line) before the brain-backup copy. Defaults to
         // the collector (the BUSTED last stand); the impact path sets Impact. Surface causes are wired ready.
         public DeathCause Cause { get; set; } = DeathCause.Collector;
+
+        /// <summary>#574 · WHERE it happened — her own deck, somebody else's hull, or a suit on a surface.
+        /// The card reads the same cause differently depending on this, because a derelict has no regolith
+        /// to be run down on and an away team is not standing on a deck.</summary>
+        public DeathPlace Place { get; set; } = DeathPlace.OwnShip;
         // Which meter actually ran out (#480 follow-up): true = the nerve overdrew, false = the five blows
         // landed. Before #469 was fixed nerve was effectively the ONLY way to die out there, so the card
         // hardcoded the nerve line; now that the condition marker really decides, the caption must not

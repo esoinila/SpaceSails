@@ -101,6 +101,12 @@ public sealed class DeckView
         string? StandingPrompt = null,
         // #453 · 1..0 fade on the blood spatter thrown when a blow got past the block. 0 = none.
         double BloodSplash = 0,
+        // #564 · THE TANK. Seconds left and how far home is, so the gauge can be DRAWN rather than written
+        // as prose. It shipped first as the top line of the caption list and the owner went looking for a
+        // meter under the tracker and found nothing — because a footnote in 10px dim monospace, sitting in a
+        // list of key hints, is not a meter. Negative = no tank (aboard, or off a surface entirely).
+        double AirSeconds = -1,
+        double AirDistanceHome = 0,
         // #562 · The glyph over the channel bar, so the one bar can say WHICH slow thing you are doing. It
         // was always a shovel, which was fine while digging was the only channel; the tube rearm is not a
         // shovel and reading one there would be the sim saying one thing while a picture says another.
@@ -1076,6 +1082,39 @@ public sealed class DeckView
 
         _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, $"{readoutPx:0}px monospace", TextAlign.Center);
 
+        // #564 · THE AIR METER, directly under the tracker where the owner looked for it. It gets a BAR
+        // rather than a line of text for the same reason NERVE does: it is one of the two things on a
+        // surface that can kill you without anything touching you, and a number buried among key hints is
+        // not something a captain glances at while a pack closes.
+        float airBottom = cy + r + 14 + readoutPx + 6f;
+        if (hud.AirSeconds >= 0)
+        {
+            float aw = r * 1.75f, ah = Math.Max(7f, r * 0.085f);
+            float ax0 = Math.Max(8f, cx - (aw / 2)), ay0 = airBottom;
+            double frac = Math.Clamp(hud.AirSeconds / SuitAir.TankSeconds, 0, 1);
+
+            // Colour is the BAND, not the fraction — because the question is never "how full is it" but
+            // "can I still get home from here", and those two part company the moment you walk anywhere.
+            SuitAir.Band band = SuitAir.BandFor(hud.AirSeconds, hud.AirDistanceHome);
+            RgbaColor fill = band switch
+            {
+                SuitAir.Band.Easy => new RgbaColor(120, 200, 235, 235),
+                SuitAir.Band.Thinking => new RgbaColor(225, 200, 95, 240),
+                SuitAir.Band.PastTheLine => new RgbaColor(240, 120, 60, 245),
+                SuitAir.Band.Critical => new RgbaColor(255, 60, 45, 250),
+                _ => new RgbaColor(90, 40, 38, 230),
+            };
+
+            FillRect(ax0 - 6f, ay0 - 13f, aw + 12f, ah + 30f, new RgbaColor(6, 11, 10, 205));
+            _renderer.DrawText(ax0, ay0 - 4f, "AIR", fill, "bold 10px monospace", TextAlign.Left);
+            FillRect(ax0, ay0, aw, ah, new RgbaColor(14, 18, 24, 220));
+            FillRect(ax0, ay0, aw * (float)frac, ah, fill);
+            DrawRectOutline(ax0, ay0, aw, ah, TrackerRing);
+            _renderer.DrawText(ax0, ay0 + ah + 11f,
+                SuitAir.Readout(hud.AirSeconds, hud.AirDistanceHome), fill, "10px monospace", TextAlign.Left);
+            airBottom = ay0 + ah + 20f;
+        }
+
         // Lane-1: the dig/sentry captions seated beneath the readout (owner: "advertise the dig and bot
         // options in text under the motion detector"). Column chrome only — and drawn only while each line
         // clears the viewport bottom, so a short screen never buries the keybar under them.
@@ -1088,7 +1127,7 @@ public sealed class DeckView
             // Left-align them in the gutter instead, so a caption grows RIGHTWARDS into open screen and
             // every word survives however long the line gets.
             float capPx = (float)Math.Clamp(r * 0.095, 9, 12);
-            float capY = cy + r + 14 + readoutPx + 8f;
+            float capY = airBottom + 6f;
             float capX = Math.Max(8f, cx - r);
             foreach (string caption in captions)
             {
