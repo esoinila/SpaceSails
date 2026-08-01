@@ -159,6 +159,15 @@ public partial class Map
         }
 
         ex.OutpostForced = true;
+
+        // #573 · THE JOB COSTS AIR. Levering a dogged hatch is not a five-second thing; the five seconds you
+        // held E is the game being polite about it. The clock jumps to the far side of the work and the
+        // suit is charged for the whole of it — which is what makes an eight-hour tank a real budget rather
+        // than a number nobody could spend.
+        ex.AirSeconds = SuitAir.Drain(ex.AirSeconds,
+            SuitAir.CostOfTask(ForcingAHatchMinutes, SuitAir.Breathing.HeavyLabour));
+        ShowPulseMessage(SuitAir.TaskCostLine("Working that hatch off its dogs took", ForcingAHatchMinutes));
+
         RebuildSurfaceDeck();   // the hatch console goes, the room arrives — one rebuild, no teleport
         RendererInterop.PlayCue("reveal");
 
@@ -243,4 +252,9 @@ public partial class Map
     /// <summary>The nerve cost of reading the effects. Deliberately a lump and not a shock — this is a cold
     /// room and an old story, and the horror is entirely in the arithmetic the captain does themselves.</summary>
     private const double OutpostEffectsChill = 4.0;
+
+    /// <summary>How long forcing a dogged hatch actually takes, in fiction-minutes — the figure the suit is
+    /// charged for. Enough to matter on a long walk, nowhere near enough to threaten a captain who came
+    /// straight out from the tube.</summary>
+    private const double ForcingAHatchMinutes = 35.0;
 }

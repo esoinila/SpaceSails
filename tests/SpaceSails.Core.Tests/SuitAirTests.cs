@@ -103,6 +103,11 @@ public class SuitAirTests
 
         Assert.False(SuitAir.PastPointOfNoReturn(air, aroundTheLandingArea));
         Assert.Equal(SuitAir.Band.Easy, SuitAir.BandFor(air, aroundTheLandingArea));
+
+        // ...and the suit says nothing at all about it, because home is right there. Owner: air must not be
+        // "an adversary scarier than the old ones", and a warning that fires when nothing is wrong is how
+        // that happens.
+        Assert.False(SuitAir.RunningLow(SuitAir.TankSeconds * 0.2, aroundTheLandingArea));
     }
 
     [Fact]
@@ -113,8 +118,10 @@ public class SuitAirTests
         string easy = SuitAir.Readout(SuitAir.TankSeconds, 20);
         Assert.Contains("du further", easy, StringComparison.Ordinal);
 
-        // ...and once the line is behind you it stops offering a distance and says so plainly.
-        string past = SuitAir.Readout(30, 900);
+        // ...and once the line is behind you it stops offering a distance and says so plainly. Chosen well
+        // ABOVE the critical band and the reserve: at 30 s the suit has more urgent things to say, and
+        // rightly — "past the line" is a routing problem, "almost gone" is an emergency.
+        string past = SuitAir.Readout(200, 3000);
         Assert.Contains("PAST THE LINE", past, StringComparison.Ordinal);
     }
 
@@ -148,8 +155,10 @@ public class SuitAirTests
     public void ARefillCanNeverHandYouMoreReachThanTheSuitHolds()
     {
         // A found cache extends a trip; it must not create a captain who can outrun the mechanic entirely.
-        Assert.Equal(SuitAir.TankSeconds, SuitAir.Refill(SuitAir.TankSeconds, 9999));
-        Assert.Equal(SuitAir.TankSeconds, SuitAir.Refill(10, 9999));
+        // FullSeconds, not TankSeconds — the EMU's secondary pack rides on top of the primary, so a suit
+        // brimmed to the stops holds both.
+        Assert.Equal(SuitAir.FullSeconds, SuitAir.Refill(SuitAir.FullSeconds, 9999));
+        Assert.Equal(SuitAir.FullSeconds, SuitAir.Refill(10, 9999));
         Assert.Equal(60.0, SuitAir.Refill(20, 40));
     }
 
@@ -169,5 +178,82 @@ public class SuitAirTests
         Assert.Equal(SuitAir.Band.Gone, SuitAir.BandFor(0, 10));
         Assert.Contains("EMPTY", SuitAir.Readout(0, 10), StringComparison.Ordinal);
         Assert.Equal(0.0, SuitAir.Drain(0, 5));
+    }
+
+    // ── #573 · BREATHING. All of it from the owner's diving: "keep calm so the O2 does not run out". ──
+
+    [Fact]
+    public void StandingStillIsCheaperThanWalking_WhichIsCheaperThanRunning()
+    {
+        // The rule that makes holding your nerve a MOVE rather than a mood. If running were ever cheaper,
+        // the correct play would be to sprint everywhere and the whole idea collapses.
+        double still = SuitAir.Breathing.Rate(SuitAir.Breathing.Still, 100, 0, 5);
+        double walk = SuitAir.Breathing.Rate(SuitAir.Breathing.Walking, 100, 0, 5);
+        double run = SuitAir.Breathing.Rate(SuitAir.Breathing.Running, 100, 0, 5);
+
+        Assert.True(still < walk);
+        Assert.True(walk < run);
+    }
+
+    [Fact]
+    public void FearAndInjuryBothCostAir_AndTheyCompound()
+    {
+        // "close encounters with reevers and running from them might consume more air", and the owner's own
+        // upset-stomach dive: a body in trouble burns more just existing.
+        double calmWhole = SuitAir.Breathing.Rate(SuitAir.Breathing.Walking, 100, 0, 5);
+        double frightened = SuitAir.Breathing.Rate(SuitAir.Breathing.Walking, 5, 0, 5);
+        double hurt = SuitAir.Breathing.Rate(SuitAir.Breathing.Walking, 100, 4, 5);
+        double both = SuitAir.Breathing.Rate(SuitAir.Breathing.Walking, 5, 4, 5);
+
+        Assert.True(frightened > calmWhole);
+        Assert.True(hurt > calmWhole);
+        Assert.True(both > frightened && both > hurt);
+    }
+
+    [Fact]
+    public void KEEPINGCALMBEATSRUNNING_WhichIsTheWholePoint()
+    {
+        // The owner's shark. A captain who holds still with their nerve intact spends far less than one who
+        // panics and runs — so "keep calm in the face of danger so you don't choke" is literally the
+        // cheapest option, not merely the brave-sounding one.
+        double calmAndStill = SuitAir.Breathing.Rate(SuitAir.Breathing.Still, 90, 0, 5);
+        double panickedFlight = SuitAir.Breathing.Rate(SuitAir.Breathing.Running, 10, 3, 5);
+
+        Assert.True(panickedFlight > calmAndStill * 2.5,
+            $"panic costs only {panickedFlight / calmAndStill:F1}x a calm halt — not enough to be a decision.");
+    }
+
+    [Fact]
+    public void TheWorstCaseIsBounded_SoAPlayerCanPlanAgainstIt()
+    {
+        // An unbounded distress spiral is a death nobody can see coming. There has to be a floor under how
+        // bad it gets.
+        double worst = SuitAir.Breathing.Rate(SuitAir.Breathing.HeavyLabour, 0, 5, 5);
+        Assert.True(worst <= SuitAir.Breathing.HeavyLabour * SuitAir.Breathing.MaxDistress + 0.001);
+    }
+
+    [Fact]
+    public void PhysicalWorkCostsMorePerMinuteThanEasyWork()
+    {
+        // "physical chores like digging a hole could cost more even though not taking as long." Effort is
+        // not measured in minutes, and a short hard job can outweigh a long easy one.
+        double diggingTenMinutes = SuitAir.CostOfTask(10, SuitAir.Breathing.HeavyLabour);
+        double loiteringTwenty = SuitAir.CostOfTask(20, SuitAir.Breathing.Still);
+
+        Assert.True(diggingTenMinutes > loiteringTwenty,
+            "ten minutes of digging is cheaper than twenty of standing about — effort is not counting.");
+    }
+
+    [Fact]
+    public void ATaskCanBeCheckedBeforeItStrandsYou()
+    {
+        // A time-skip that leaves you unable to get home is a trap, not a decision. The question has to be
+        // askable BEFORE the clock jumps.
+        // A HALF again over the bare walk home, not 5% — at a 5% cushion even a one-minute job strands you,
+        // which is the arithmetic being right and the test being unrealistic. A captain with a genuine
+        // margin can afford a short task and not a long one, which is the decision this exists to support.
+        double airForAShortWalkHome = SuitAir.NeededToGetHome(300) * 1.5;
+        Assert.False(SuitAir.TaskWouldStrandYou(airForAShortWalkHome, 1, 300));
+        Assert.True(SuitAir.TaskWouldStrandYou(airForAShortWalkHome, 240, 300));
     }
 }
