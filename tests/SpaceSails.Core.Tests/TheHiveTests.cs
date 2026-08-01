@@ -19,7 +19,9 @@ public sealed class TheHiveTests
 
     private static IEnumerable<int> Floors()
     {
-        for (int level = -1; level >= UndergroundComplex.DepthOf("miranda"); level--)
+        // #592 · The site's REAL floor list: a rare site has a band nobody listed, with a gap above
+        // it, so "−1 down to the depth" is no longer the shape of a building.
+        foreach (int level in UndergroundComplex.FloorsOf("miranda"))
         {
             yield return level;
         }
@@ -102,7 +104,7 @@ public sealed class TheHiveTests
 
         foreach (string body in new[] { "miranda", "luna", "phobos", "europa", "titan", "callisto" })
         {
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
 

@@ -35,7 +35,9 @@ public static class HiveInterior
         ArgumentNullException.ThrowIfNull(bodyId);
 
         UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(bodyId, level, field);
-        UndergroundComplex.Kind kind = UndergroundComplex.KindFor(bodyId);
+        // #592 · The FLOOR's kind, not the site's: on the band nobody listed they differ, and the
+        // title over the plan is where that lands first.
+        UndergroundComplex.Kind kind = UndergroundComplex.KindOn(bodyId, level);
 
         var walls = new List<DeckPlan.Wall>();
         var doors = new List<DeckPlan.Door>();

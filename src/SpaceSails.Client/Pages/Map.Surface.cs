@@ -556,6 +556,10 @@ public partial class Map
         // gate eleven times is not eleven findings.
         public HashSet<int> HiveShaftsRefused { get; } = [];
 
+        // #592 · Whether this excursion has already had the floor-with-no-plate beat. Once is the whole
+        // point: the second time you step out down there it is just a corridor, and it should be.
+        public bool HiveUnlistedSeen { get; set; }
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -1535,7 +1539,16 @@ public partial class Map
         // rations it — reach the bottom of this car's band and it will not go further, and the way down is
         // another shaft on this floor that you have to find.
         string body = ex.Stop.Body.Id;
-        int bottom = UndergroundComplex.DepthOf(body);
+
+        // #592 · TWO BOTTOMS, AND THE WHOLE FEATURE LIVES IN THE GAP.
+        //
+        // `listedBottom` is what the building says about itself — the last floor on the plan in the lobby.
+        // `bottom` is how far a captain can actually walk. On a rare site there is a band between them that
+        // the directory never mentioned, served by a shaft that is not where the others are.
+        //
+        // The panel is NOT allowed to know about the gap. See below.
+        int listedBottom = UndergroundComplex.DepthOf(body);
+        int bottom = UndergroundComplex.TrueDepthOf(body);
         int bandFloor = UndergroundComplex.BandFloor(body, UndergroundComplex.BandOf(Math.Min(ex.Floor, -1)));
 
         if (ex.Floor == 0)
@@ -1572,7 +1585,31 @@ public partial class Map
                     ShowAndFile(UndergroundComplex.CardAcceptedLine(wanted), "🎫");
                     ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
                 }
-                RideTheLiftTo(ex, ex.Floor - 1);
+
+                // #592 · The next band's car opens at ITS OWN head, which is not always one floor down.
+                // Where a site's listed depth stops mid-band there is a GAP under it with nothing dug in
+                // it, and the unlisted shaft starts below that. Stepping "one floor down" would walk into
+                // rock that was never generated.
+                RideTheLiftTo(ex, UndergroundComplex.BandTop(nextBand));
+                return;
+            }
+
+            // ── #592 · AND HERE THE BUILDING LIES BY OMISSION ──
+            //
+            // Standing on the last floor the directory admits to, the panel must behave EXACTLY as it does
+            // at the true bottom of an ordinary site: silence, and the car goes up.
+            //
+            // The #590 refusal names a shaft — "the second shaft is here, below B13, and its gate wants an
+            // authority" — and that is right everywhere the building is being honest about its own size. One
+            // floor lower it would announce the secret in the one sentence the secret cannot survive. So
+            // would EndOfTheLineLine, which promises that something was reached another way and is down here
+            // somewhere. Neither is said. The button really is not there, and there is nothing to hear.
+            //
+            // The way down is a card somebody left in a room: a piece of paper telling the truth about a
+            // building that is not.
+            if (ex.Floor <= listedBottom)
+            {
+                RideTheLiftTo(ex, 0);
                 return;
             }
 
@@ -1634,6 +1671,25 @@ public partial class Map
                     UndergroundComplex.DescentCardLabel,
                     UndergroundComplex.DescentArtUrl, UndergroundComplex.DescentCard);
             }
+        }
+
+        // #592 · THE FLOOR THAT IS NOT ON THE PLAN. The whole beat of the feature, said once, on the first
+        // step out onto the band nobody listed — and it is the hardest place in the game to hold the canon
+        // line. It says the operation upstairs was enormous, funded, staffed and inspected, and that this
+        // was under it, and that the people upstairs did not know. It does not say what it was for. The
+        // captain gets the arithmetic and never the answer; if they want one, the files are in the rooms
+        // and the files are about PEOPLE.
+        if (UndergroundComplex.IsUnlisted(ex.Stop.Body.Id, level)
+            && ex.HiveUnlistedSeen is false)
+        {
+            ex.HiveUnlistedSeen = true;
+            ShowAndFile(
+                UndergroundComplex.UnlistedArrivalLine(
+                    -UndergroundComplex.DepthOf(ex.Stop.Body.Id),
+                    UndergroundComplex.KindFor(ex.Stop.Body.Id),
+                    UndergroundComplex.KindOn(ex.Stop.Body.Id, level)),
+                "\U0001F573");
+            ApplyNerveShock(9.0, "a building with floors it does not count");
         }
 
         // The floor announces which KIND of floor it is, in those words, so the captain is never guessing
@@ -2728,7 +2784,19 @@ public partial class Map
             // about what a FLOOR looks like rather than about finding the way in.
             if (_startingFloorCheat is { } askedFor)
             {
-                int floor = Math.Max(askedFor, UndergroundComplex.DepthOf(landedOn.Stop.Body.Id));
+                // #592 · Clamped to the site's TRUE bottom, not its listed one, so `?floor=20` can reach the
+                // band nobody listed. The whole reason the cheats exist is that the feature under test must
+                // be one URL away, and a hidden floor you can only reach by finding a card first would be
+                // the exact tax they were invented to remove.
+                string cheatBody = landedOn.Stop.Body.Id;
+                int floor = Math.Max(askedFor, UndergroundComplex.TrueDepthOf(cheatBody));
+
+                // The gap between the two buildings has nothing dug in it; land on the unlisted band's own
+                // shaft head rather than in rock.
+                if (floor < UndergroundComplex.DepthOf(cheatBody))
+                {
+                    floor = Math.Min(floor, UndergroundComplex.BandTop(UndergroundComplex.UnlistedBandOf(cheatBody)));
+                }
                 RideTheLiftTo(landedOn, floor);
             }
             return;

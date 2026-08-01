@@ -42,7 +42,10 @@ public sealed class YouCanWalkTheHiveTests
         var bad = new List<string>();
         foreach (string body in Bodies)
         {
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            // #592 · FloorsOf, not "−1 down to the depth". A site with an unlisted band has a GAP in the
+            // middle where nothing was dug, so counting from a depth would flood four floors that do not
+            // exist and skip the four that do — an audit checking a topology nobody ships.
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 string? complaint = check(body, level, DeckFor(body, level));
                 if (complaint is not null)

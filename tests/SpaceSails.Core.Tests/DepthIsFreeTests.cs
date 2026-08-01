@@ -90,7 +90,9 @@ public sealed class DepthIsFreeTests
         // through a dead floor for a lift that was never dug.
         foreach (string body in Bodies)
         {
-            Assert.False(UndergroundComplex.IsBandBottom(body, UndergroundComplex.DepthOf(body)),
+            // #592: the site's bottom is its TRUE bottom. On a rare site the LISTED bottom is a band bottom
+            // — the car stops and there is another shaft — and that is the feature, not a violation.
+            Assert.False(UndergroundComplex.IsBandBottom(body, UndergroundComplex.TrueDepthOf(body)),
                 $"{body}: the deepest floor claims another shaft goes further down.");
         }
     }
@@ -100,7 +102,7 @@ public sealed class DepthIsFreeTests
     {
         foreach (string body in Bodies)
         {
-            for (int level = -1; level >= UndergroundComplex.DepthOf(body); level--)
+            foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 int band = UndergroundComplex.BandOf(level);
                 Assert.InRange(band, 0, 12);
