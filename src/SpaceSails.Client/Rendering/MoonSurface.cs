@@ -149,7 +149,8 @@ public static class MoonSurface
         string bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
-        string siteSalt = "", string siteName = "", long monolithEpoch = 0)
+        string siteSalt = "", string siteName = "", long monolithEpoch = 0,
+        bool hasSecretSite = false)
     {
         ArgumentNullException.ThrowIfNull(fillDroids);
         ownCaches ??= [];
@@ -166,11 +167,13 @@ public static class MoonSurface
         // way a shared surface deck could go quietly wrong. Invalidation is honest by construction: any
         // bury / lift / drop that changes the own-cache set changes the key (SurfaceDeckKey), so the ✗
         // marks are never stale.
-        SurfaceDeckKey key = SurfaceDeckKey.For(bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch);
+        SurfaceDeckKey key = SurfaceDeckKey.For(
+            bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch, hasSecretSite);
         Layout layout;
         if (!_layoutCache.TryGetValue(key, out layout))
         {
-            layout = BuildLayout(bodyId, bodyDisplayName, ownCaches, siteSalt, siteName, monolithEpoch);
+            layout = BuildLayout(
+                bodyId, bodyDisplayName, ownCaches, siteSalt, siteName, monolithEpoch, hasSecretSite);
             // Cheap unbounded-growth guard: each distinct (body, cache-set) leaves one small entry, and a
             // long game of bury/lift cycles could accumulate stale sets nobody revisits. A generous cap
             // that never trips in normal play keeps the cache from creeping; on overflow we simply start
@@ -229,7 +232,7 @@ public static class MoonSurface
         string bodyId,
         string bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)> ownCaches,
-        string siteSalt, string siteName, long monolithEpoch)
+        string siteSalt, string siteName, long monolithEpoch, bool hasSecretSite)
     {
         DeckPlan ship = DeckPlan.Ship;
 
@@ -397,6 +400,56 @@ public static class MoonSurface
         // which are kept clear of WALLS so a walk-around always exists and were therefore the emptiest and
         // most walkable third of every site. Scenery cannot obstruct, so it is free to go exactly there.
         var sceneryList = new List<SurfaceScenery.Mark>(SurfaceScenery.For(bodyId, siteSalt, field));
+
+        // ── #585 · THE CAMOUFLAGED LIFT HEAD. Owner: "on surface we would only need a camouflaged elevator.
+        //    I think there are a lot of movie references to masked elevators to underground sites (The Hive
+        //    in Resident Evil for example)."
+        //
+        // A LIFT LOBBY, not a ruin with a secret in the middle. The first attempt was both of those mistakes:
+        // it was built through SurfaceStructure — which adds an interior PARTITION, so the middle of the shed
+        // could be walled off from its own doorway — and the call button sat at the building's centre while
+        // DeckPlan.InteractRadius is 3 du and the shed was fourteen across. The owner stood in the doorway,
+        // which is exactly where a person stands at a door, and reported "it says nothing here", then
+        // "there is no console ... I tried E to dig to find anything and found nothing but regolith."
+        //
+        // So: one small room, one door, one button a pace inside it where a lobby puts it. An affordance you
+        // can see and cannot use is worse than none (#212).
+        //
+        // Drawn from hasSecretSite — the fact the EXCURSION resolved, which honours ?secretlab= — never from
+        // SecretLab.Present(bodyId), the unforced seed. That was the other half of the same report: on a
+        // cheat rock whose seed said "no lab", the head was never built and the feature was unreachable from
+        // the one URL that exists to reach it.
+        if (hasSecretSite)
+        {
+            // #585: the RESOLVED entrance, which has already been moved clear of this site's shelters and
+            // its outpost hut. The raw seed is per-BODY and the things it collides with are per-SITE, which
+            // is how a maintenance shed ended up buried inside somebody's hut.
+            (double hx, double hy) = SecretLab.HeadSpot(bodyId, siteSalt, field);
+            const double halfW = 5.0, halfH = 4.0, gap = 1.6;
+
+            walls.Add(new((float)(hx - halfW), (float)(hy + halfH), (float)(hx + halfW), (float)(hy + halfH), false, false, IsStone: true));
+            walls.Add(new((float)(hx - halfW), (float)(hy - halfH), (float)(hx - halfW), (float)(hy + halfH), false, false, IsStone: true));
+            walls.Add(new((float)(hx + halfW), (float)(hy - halfH), (float)(hx + halfW), (float)(hy + halfH), false, false, IsStone: true));
+            walls.Add(new((float)(hx - halfW), (float)(hy - halfH), (float)(hx - gap), (float)(hy - halfH), false, false, IsStone: true));
+            walls.Add(new((float)(hx + gap), (float)(hy - halfH), (float)(hx + halfW), (float)(hy - halfH), false, false, IsStone: true));
+
+            // The one imported thing on the whole moon (#592) — violet against a world of local stone.
+            doors.Add(new((float)(hx - gap), (float)(hy - halfH), (float)(hx + gap), (float)(hy - halfH), Imported: true));
+
+            consoles.Add(new(DeckPlan.ConsoleKind.HiveHead,
+                (float)hx, (float)(hy - halfH + 2.2), "🛗 CALL THE CAR"));
+
+            // #585 · NAMED, because violet alone stopped being enough. Owner, standing in a ruin that had
+            // rolled an imported door: "it should be this space? but how do I get in this has purple door and
+            // is not emergency shelter?" He was right to be confused — I had given the same colour to
+            // shelters, to one ruin door in seven, and to this, so the signal identified nothing.
+            //
+            // The shed keeps its violet door (it IS imported, and that is true), and stops relying on it: a
+            // label above and below, and a beacon on the tracker (BuildBeacons). The fiction is unharmed —
+            // a lift head with a maintenance plate on it is exactly how you would camouflage one.
+            labels.Add(((float)hx, (float)(hy + halfH + 2.0), "▤ MAINTENANCE — NO ADMITTANCE"));
+            labels.Add(((float)hx, (float)(hy - halfH - 2.5), "🛗 THE CAR IS STILL HERE"));
+        }
 
         // #586 · THE MONOLITH'S SWEPT APRON. Owner: "it is supposed to be impressive... now it looks like a
         // box in closet." Widening the slab alone could never fix that — on a crude grid every rectangle is a

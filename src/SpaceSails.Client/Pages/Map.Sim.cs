@@ -555,6 +555,25 @@ public partial class Map
                     _collectorCheatSeconds = Math.Max(0, eta);
                 }
             }
+            else if (pair.StartsWith("floor=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #585 dev cheat: /map?secretlab=1&land=1&floor=3 rides you straight down to B3.
+                //
+                // Owner: "instruct to put the debug cheat start next to the lab so that it can be really
+                // tested without playing to find it" / "I mean next to the elevator shaft". ?secretlab= now
+                // sets you down AT the shed; this goes the rest of the way, because half the open work on
+                // this feature is about what a FLOOR looks like, and riding four cars to reach B4 every time
+                // is the same tax one level down.
+                //
+                // Positive number, read as a depth: floor=3 means B3. Clamped to the site's own bottom, so a
+                // shallow facility cannot be asked for a floor it does not have.
+                string candidate = Uri.UnescapeDataString(pair["floor=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int deep)
+                    && deep > 0)
+                {
+                    _startingFloorCheat = -deep;
+                }
+            }
             else if (pair.StartsWith("outpost=", StringComparison.OrdinalIgnoreCase))
             {
                 // #563 dev cheat: /map?outpost=1 guarantees the OUTPOST HUT on whatever site the excursion

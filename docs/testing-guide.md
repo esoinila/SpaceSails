@@ -794,3 +794,36 @@ everything in the spec's "not yet enforced" list, which is exactly what a pair o
 outward toward the field's centre*, 16 du deep by 14 wide — a server spine, lab benches and stasis pods, with
 the door→console lane kept clear. As of #585 that patch of deep field is reserved on every body before
 anything is built, so the chamber can never open into somebody's wall.
+
+## The Hive — reaching an underground facility without playing for it (#585)
+
+Owner, after an evening of walking a 310 × 260 field to reach the one thing under test:
+
+> *"instruct to put the debug cheat start next to the lab so that it can be really tested without playing to find it"* · *"I mean next to the elevator shaft"*
+
+**The hunt is the game** — the clue that names a moon, the tracker's vague wash, the detector climbing from Faint to Screaming, the violet door on a shed marked `▤ MAINTENANCE`. It is also exactly what must not stand between a developer and the feature under test, twenty times an evening.
+
+| URL | Where it puts you |
+| --- | --- |
+| `/map?secretlab=1&land=1` | **at the lift head**, a pace outside its door |
+| `/map?secretlab=1&land=1&floor=1` | on **B1** — the one floor that still holds pressure |
+| `/map?secretlab=1&land=1&floor=4` | on **B4**, dead air, tank running |
+| `/map?secretlab=1&land=1&floor=20` | as deep as that site goes (clamped to its real depth) |
+
+`?floor=` takes a **positive** number read as a depth: `floor=3` means B3. It is clamped to the site's own bottom (`UndergroundComplex.DepthOf`), so a shallow facility cannot be asked for a floor it does not have.
+
+Both only fire under `?secretlab=1`. An ordinary landing still drops you on the open regolith at the landing band, so this can never quietly become how the game plays.
+
+### What each floor should be
+
+- **the top of every shaft band holds pressure** — the tank stops, the nerve steadies, and the game says so in those words
+- **everything else is dead** — the tank runs, and depth is paid for in air
+- one car serves four floors; at the bottom of a band the panel simply **has no button** below, and the way down is another shaft
+- **nothing is alive down there** — the Old Ones are a regolith tide and are cleared on descent
+
+### Useful combinations
+
+```
+/map?secretlab=1&land=1&floor=2&air=90     a dead floor with ninety seconds in the tank
+/map?secretlab=1&land=1&collectors=20      a repo boat lands while you are underground
+```

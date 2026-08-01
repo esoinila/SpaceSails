@@ -107,7 +107,7 @@ public sealed class DeckView
         // meant ONE thing since it was built — something is moving and it wants you — so anything else
         // painted on it has to be unmistakably not that. Red things move; blue rings are places, and places
         // do not come to you.
-        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool IsHome)>? Beacons = null,
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool IsHome, bool IsLab)>? Beacons = null,
         // #573 · Your OWN caches, once they are inside the fan's reach. Owner: "we would like our own caches
         // onto the detector also.... since now finding them is a real task :-D (only if in range though)".
         // The range gate is the whole point — a map that always knows where your treasure is has taken the
@@ -369,7 +369,16 @@ public sealed class DeckView
             if (d.Locked)
             {
                 // Another berth's sealed hatch — always shut, drawn cold (steel-blue), a real wall behind.
-                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorLocked, 3.5f);
+                //
+                // #585 · Owner, in the Hive: "the doors should be different color than the walls and say
+                // locked on approach." The cold steel-blue already differs from every wall ink in the game;
+                // what it lacked was WEIGHT — at 3.5px against hull-bright walls it read as just another
+                // line. A door that will never open is the most informative object in a facility, so it is
+                // drawn heaviest of all, with a second inner stroke so it looks barred rather than merely
+                // shut. (The "say locked on approach" half is the console at its midpoint, which names what
+                // is behind it as you come near.)
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorLocked, 5.5f);
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), new RgbaColor(20, 26, 38, 220), 2.0f);
                 continue;
             }
             double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
@@ -1162,7 +1171,7 @@ public sealed class DeckView
         if (hud.Beacons is { Count: > 0 } beacons)
         {
             double breathe = 0.85 + (0.15 * Math.Sin(simTime * 0.0016));
-            foreach ((double bearing, double range, bool isHome) in beacons)
+            foreach ((double bearing, double range, bool isHome, bool isLab) in beacons)
             {
                 double rr = Math.Min(range / detectionRange, 1.0) * (r - 5);
                 float bx = cx + (float)(Math.Cos(bearing) * rr);
@@ -1170,12 +1179,23 @@ public sealed class DeckView
 
                 // The way home is warmer than a shelter, because they are not the same promise: one is your
                 // ship, the other is somebody else's roof.
-                var ink = isHome
-                    ? new RgbaColor(150, 215, 255, (byte)(210 * breathe))
-                    : new RgbaColor(130, 235, 215, (byte)(195 * breathe));
+                //
+                // #585 · And a LIFT HEAD is neither, so it gets the imported violet the door itself wears
+                // (#592). With nine shelter rings on the fan, one more ring in the same ink is not a signal —
+                // the owner had a tracker full of identical circles and no way to tell which one was the way
+                // down. A beacon that cannot be told apart from its neighbours is decoration.
+                var ink = isLab
+                    ? new RgbaColor(
+                        SpaceSails.Core.BodyPalette.Imported.R,
+                        SpaceSails.Core.BodyPalette.Imported.G,
+                        SpaceSails.Core.BodyPalette.Imported.B, (byte)(235 * breathe))
+                    : isHome
+                        ? new RgbaColor(150, 215, 255, (byte)(210 * breathe))
+                        : new RgbaColor(130, 235, 215, (byte)(195 * breathe));
 
-                _renderer.DrawCircle(bx, by, (float)(5.5 * breathe), null, ink, 1.8f);
-                _renderer.DrawCircle(bx, by, 1.6f, ink, ink);
+                // The lab ring is drawn a size larger and doubled, so it reads at a glance on a busy fan.
+                _renderer.DrawCircle(bx, by, (float)((isLab ? 8.0 : 5.5) * breathe), null, ink, isLab ? 2.4f : 1.8f);
+                _renderer.DrawCircle(bx, by, isLab ? 2.4f : 1.6f, ink, ink);
             }
         }
 

@@ -114,7 +114,7 @@ public static class SurfaceLayout
         // #585 · And the hidden lab's chamber, which is appended at runtime from a seeded door. Reserved on
         // every body whether or not this one hides one — the door spot is seeded the same way regardless, so
         // it costs a building's worth of ground and means a lab can never open into somebody's wall.
-        list.Add(SecretLab.ChamberFootprint(bodyId ?? "", field));
+        list.Add(SecretLab.ChamberFootprint(bodyId ?? "", field, siteSalt));
         return list;
     }
 

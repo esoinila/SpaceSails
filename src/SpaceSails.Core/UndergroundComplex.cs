@@ -86,22 +86,81 @@ public static class UndergroundComplex
         _ => "▣ THE TRANSIT STATION",
     };
 
-    /// <summary>The deepest floor the lift will go to. Negative levels are underground; 0 is the surface.</summary>
-    public const int DeepestFloor = -3;
+    /// <summary>#585 · DEPTH IS FREE. Owner, working out the architecture himself:
+    ///
+    /// <para><i>"since every secret lab can have a depth of it's own we do not need to worry about running out
+    /// of space down there, since down there is unlimited amount of floors as far as we are concerned. So
+    /// let's architect it to keep this in mind from the start. Well ok the lift shafts are the limiting
+    /// factor, but besides those we have space."</i></para>
+    ///
+    /// <para>He is right, and it is the whole reason "down" was the correct answer. A floor costs no
+    /// coordinate space because every floor reuses the surface's own envelope, so the only real budget is how
+    /// far a captain will walk. Depth is therefore <b>a property of the site</b>, never a constant: a records
+    /// annex might be three floors and a processing depot twenty, and the difference costs nothing.</para>
+    ///
+    /// <para>The bound below is a PERFORMANCE guard, not a design one — it exists so a seed cannot ask for a
+    /// thousand floors. Nothing should ever read it as "how deep the game goes".</para></summary>
+    public const int DeepestPossibleFloor = -24;
 
-    /// <summary>Which floors still hold atmosphere. Owner's biggest open question, answered with a beat:
-    /// the top floor lulls you and the rest costs you.</summary>
-    public static bool HoldsPressure(int level) => level == -1;
-
-    /// <summary>What the level is called on the lift panel and the plan header.</summary>
-    public static string NameOf(int level) => level switch
+    /// <summary>How far down THIS site goes. Seeded per body, weighted so most are modest and a rare one is a
+    /// hole in the world worth telling people about.</summary>
+    public static int DepthOf(string bodyId)
     {
-        0 => "SURFACE",
-        -1 => "B1 · ADMINISTRATION",
-        -2 => "B2 · LABORATORIES",
-        -3 => "B3 · LONG STORAGE",
-        _ => $"B{-level}",
-    };
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int roll = DiceRule.Roll(DiceRule.Seed($"hive:depth:{bodyId}"), 12).Face;
+        int floors = roll switch
+        {
+            <= 6 => 2 + roll,      // 3–8, the common case
+            <= 10 => 6 + roll,     // 13–16, a serious operation
+            _ => 8 + roll,         // 19–20, the one you tell people about
+        };
+        return -Math.Min(floors, -DeepestPossibleFloor);
+    }
+
+    /// <summary>#585 · THE SHAFTS ARE THE LIMIT — the owner's own observation, turned into the mechanic.
+    ///
+    /// <para>A single lift never serves a whole facility: it serves a BAND. Reach the bottom of a band and the
+    /// car goes no further; the way down is a different shaft, somewhere on that floor, which you have to
+    /// find. That is what keeps unlimited depth from being an unlimited corridor — the descent is gated by
+    /// exploring rather than by a number, and it is how a building this size would really be dug.</para></summary>
+    public const int FloorsPerShaft = 4;
+
+    /// <summary>Which shaft band a floor belongs to. Band 0 is the one the surface lift head serves.</summary>
+    public static int BandOf(int level) => (-level - 1) / FloorsPerShaft;
+
+    /// <summary>The deepest floor a shaft band reaches, never past the site's own bottom.</summary>
+    public static int BandFloor(string bodyId, int band) =>
+        Math.Max(DepthOf(bodyId), -((band + 1) * FloorsPerShaft));
+
+    /// <summary>Is this the floor where the car stops and you go looking for the next shaft?</summary>
+    public static bool IsBandBottom(string bodyId, int level) =>
+        level == BandFloor(bodyId, BandOf(level)) && level > DepthOf(bodyId);
+
+    /// <summary>Which floors still hold atmosphere.
+    ///
+    /// <para>Owner's biggest open question, answered with a beat in it: a floor with power lulls you and the
+    /// rest costs you. Extended for unbounded depth by making it the TOP OF EVERY SHAFT BAND — that is where
+    /// a facility puts its lobbies — so a captain who finds the next shaft gets one floor of relief before the
+    /// dark again. It keeps a very deep site playable without ever making it safe.</para></summary>
+    public static bool HoldsPressure(int level) =>
+        level < 0 && (-level - 1) % FloorsPerShaft == 0;
+
+    /// <summary>What the level is called on the lift panel and the plan header. Named by depth band rather
+    /// than from a hand-written list, because there is no longer a fixed bottom to write down.</summary>
+    public static string NameOf(int level)
+    {
+        if (level >= 0)
+        {
+            return "SURFACE";
+        }
+
+        string[] departments =
+        [
+            "ADMINISTRATION", "LABORATORIES", "LONG STORAGE", "PLANT",
+            "ARCHIVE", "ISOLATION", "DEEP STORAGE", "UNMARKED",
+        ];
+        return $"B{-level} · {departments[(-level - 1) % departments.Length]}";
+    }
 
     /// <summary>The lift shaft's spot — the SAME (x, y) on every floor, so going down is legible and coming
     /// back up is never a search. Sits on the spine corridor at the field's heart.</summary>
@@ -145,58 +204,117 @@ public static class UndergroundComplex
         var labels = new List<SurfaceLayout.Landmark>();
         var rooms = new List<(double X, double Y)>();
 
+        // #585 · A CLAIM LEDGER, DOWN HERE TOO. The A* audit found rooms that were drawn and could not be
+        // entered, and the cause is the one this project keeps paying for: two rooms (or a room and the
+        // spine) laid on the same ground, each sealing the other's doorway with its own wall. Every placer
+        // that writes into one space needs to see what is already in it.
+        var claimed = new List<(double X0, double Y0, double X1, double Y1)>();
+
         double margin = SurfaceLayout.EdgeMargin + 6;
         double left = field.LeftX + margin, right = field.RightX - margin;
         (double shaftX, double shaftY) = ShaftAt(field);
+        claimed.Add((left - 1, shaftY - CorridorHalf - 1, right + 1, shaftY + CorridorHalf + 1));
 
-        // ── THE SPINE. One long corridor across the whole field, which is the thing a surface can never
-        //    have: a surface is a field, a facility is a PLAN, and corridors are the difference.
-        walls.Add(new(left, shaftY + CorridorHalf, right, shaftY + CorridorHalf, true));
-        walls.Add(new(left, shaftY - CorridorHalf, right, shaftY - CorridorHalf, true));
+        // ── #585 · THE SPINE, CLOSED AT BOTH ENDS AND OPEN WHERE IT SHOULD BE.
+        //
+        // Owner, walking it: "see this empty tube end here... it is like I walk into the ground here" and
+        // then, exactly: "this open end is a bug of topology."
+        //
+        // It was, and it was two bugs wearing one coat. The spine was capped on the LEFT and not on the
+        // right, so walking east you left the building through the end of the corridor into open coordinate
+        // space — which, drawn in the old dim ink, looked precisely like walking out into regolith. And the
+        // spine's long walls ran unbroken from end to end ACROSS every rib mouth, so the cross corridors did
+        // not actually open off it: the plan showed a facility and the collision said one sealed tube.
+        //
+        // A corridor is defined by where it does NOT have walls. Both faces are now built in segments with a
+        // deliberate gap at each rib, and both ends are shut.
+        var ribXs = new System.Collections.Generic.List<(double X, bool Down)>();
+        int ribs = 5;
+        for (int i = 0; i < ribs; i++)
+        {
+            double t = (i + 0.5) / ribs;
+            double rx = Lerp(left + 16, right - 16, t);
+            if (Math.Abs(rx - shaftX) < ShaftHalf + CorridorHalf + 4)
+            {
+                continue;   // never run a rib through the lift
+            }
+            ribXs.Add((rx, Frac(bodyId, $"hive:{level}:rib-dir:{i}") < 0.62));
+        }
+
+        // The lift alcove, as a mouth in the top face at the shaft.
+        ribXs.Add((shaftX, false));
+
+        // One face of the spine, built as segments that stop either side of every mouth cut into it.
+        void SpineFace(double y, Func<double, bool, bool> cutHere)
+        {
+            double cursor = left;
+            foreach ((double rx, bool down) in ribXs)
+            {
+                if (!cutHere(rx, down))
+                {
+                    continue;
+                }
+                walls.Add(new(cursor, y, rx - CorridorHalf, y, true));
+                cursor = rx + CorridorHalf;
+            }
+            walls.Add(new(cursor, y, right, y, true));
+        }
+
+        // #585 · The lift alcove hangs off the TOP face, so that face needs a mouth for it too — otherwise
+        // the car opens into a sealed box and the captain cannot reach their own way out. The A* audit
+        // reported this as "the lift cannot be reached from the lift", which is as clear as a guard gets.
+        SpineFace(shaftY + CorridorHalf, (rx, down) => !down || Math.Abs(rx - shaftX) < 0.001);
+        SpineFace(shaftY - CorridorHalf, (_, down) => down);
+
+        // BOTH ends shut. The missing right-hand cap is the "open end" itself.
         walls.Add(new(left, shaftY - CorridorHalf, left, shaftY + CorridorHalf, true));
+        walls.Add(new(right, shaftY - CorridorHalf, right, shaftY + CorridorHalf, true));
         labels.Add(new(shaftX - 26, shaftY + 1.4, NameOf(level)));
 
         // ── THE SHAFT. Same spot on every floor.
         walls.Add(new(shaftX - ShaftHalf, shaftY + CorridorHalf, shaftX - ShaftHalf, shaftY + CorridorHalf + 5, true));
         walls.Add(new(shaftX + ShaftHalf, shaftY + CorridorHalf, shaftX + ShaftHalf, shaftY + CorridorHalf + 5, true));
         walls.Add(new(shaftX - ShaftHalf, shaftY + CorridorHalf + 5, shaftX + ShaftHalf, shaftY + CorridorHalf + 5, true));
-        labels.Add(new(shaftX, shaftY + CorridorHalf + 6.5, "🛗 LIFT"));
+        labels.Add(new(shaftX, shaftY + CorridorHalf + 6.5, "\U0001F6D7 LIFT"));
 
-        // ── THE RIBS. Cross corridors off the spine, with rooms flanking them. Seeded so each floor of each
-        //    body is its own building, but structured so every floor still reads as the SAME facility.
-        int ribs = 5;
-        for (int i = 0; i < ribs; i++)
+        // ── THE RIBS. Cross corridors off the spine, with rooms flanking them.
+        for (int i = 0; i < ribXs.Count; i++)
         {
-            double t = (i + 0.5) / ribs;
-            double x = Lerp(left + 16, right - 16, t);
-            if (Math.Abs(x - shaftX) < ShaftHalf + CorridorHalf + 4)
+            (double x, bool down) = ribXs[i];
+            if (Math.Abs(x - shaftX) < 0.001)
             {
-                continue;   // never run a rib through the lift
+                continue;   // that entry is the lift alcove's mouth, not a corridor
             }
-
-            bool down = Frac(bodyId, $"hive:{level}:rib-dir:{i}") < 0.62;
             double far = down
                 ? Math.Max(field.BottomY + margin, shaftY - 52)
                 : Math.Min(field.LandingBandY - margin, shaftY + 52);
 
             double mouth = down ? shaftY - CorridorHalf : shaftY + CorridorHalf;
-            walls.Add(new(x - CorridorHalf, mouth, x - CorridorHalf, far, false));
-            walls.Add(new(x + CorridorHalf, mouth, x + CorridorHalf, far, false));
 
-            // The rib's own far end: a door that never opens, with a distance on it. This is the corridor
-            // that leads somewhere far away we dare not follow.
-            if (Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.4)
+            // #585 · THE RIB'S OWN WALLS ARE CUT WHERE ROOMS OPEN OFF THEM. Owner: "a door is missing here
+            // towards down", and his A* suggestion found it everywhere at once — 94 floors, not one room
+            // reachable.
+            //
+            // The rooms cut a doorway in their OWN corridor-facing face, at x ± CorridorHalf. The rib's side
+            // wall runs down that exact line. So every door in the building opened onto a wall: the plan drew
+            // a facility and the collision field was a set of sealed boxes beside a sealed tube. Two walls on
+            // one line, each correct on its own, and neither aware of the other — the same shape as every
+            // expensive bug on this ground.
+            RibFace(walls, x - CorridorHalf, mouth, far, bodyId, level, i, -1, down);
+            RibFace(walls, x + CorridorHalf, mouth, far, bodyId, level, i, +1, down);
+
+            // The rib's far end. #585: it is ALWAYS closed — by a sealed door with a distance on it, or by a
+            // plain wall. It was 40/60 before, and a corridor that simply stops in mid-air is the same
+            // topology bug one level down ("a door is missing here towards down").
+            if (Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.55)
             {
                 double km = 0.8 + (Frac(bodyId, $"hive:{level}:rib-km:{i}") * 3.4);
                 locked.Add(new(x - CorridorHalf, far, x + CorridorHalf, far,
-                    $"⟶ SECTOR {7 + i} · {km:F1} km"));
+                    $"\u27F6 SECTOR {7 + i} \u00b7 {km:F1} km"));
             }
-            else
-            {
-                walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, false));
-            }
+            walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
 
-            AddRoomsAlong(walls, doorways, locked, rooms, bodyId, level, i, x, mouth, far, down);
+            AddRoomsAlong(walls, doorways, locked, rooms, claimed, bodyId, level, i, x, mouth, far, down);
         }
 
         return new FloorPlan(level, NameOf(level), HoldsPressure(level),
@@ -206,19 +324,73 @@ public static class UndergroundComplex
     /// <summary>Rooms down both sides of a rib. About half are locked — the owner's illusion of scale — and a
     /// locked one still gets its sign, because a door that says what is behind it and will not open is doing
     /// far more work than a blank one.</summary>
-    private static void AddRoomsAlong(
-        List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked,
-        List<(double X, double Y)> rooms, string bodyId, int level, int rib,
-        double x, double mouth, double far, bool down)
+    /// <summary>#585 · Where the rooms sit along a rib. ONE function, called by the wall builder and by the
+    /// room builder, because the doorway a room cuts and the gap its corridor leaves must be the same gap.
+    /// They were computed twice and agreed about nothing.</summary>
+    private static List<double> RoomCentresAlong(double mouth, double far, bool down)
     {
-        const double roomW = 15.0, roomH = 12.0;
+        const double roomH = 12.0;
         double span = Math.Abs(far - mouth);
         int count = Math.Max(1, (int)(span / (roomH + 3)) - 1);
 
+        var ys = new List<double>(count);
         for (int i = 0; i < count; i++)
         {
             double along = (i + 1) * (span / (count + 1));
-            double cy = down ? mouth - along : mouth + along;
+            ys.Add(down ? mouth - along : mouth + along);
+        }
+        return ys;
+    }
+
+    /// <summary>One side of a rib corridor, built as segments with a gap at every room door.</summary>
+    private static void RibFace(
+        List<SurfaceLayout.Wall> walls, double x, double mouth, double far,
+        string bodyId, int level, int rib, int side, bool down)
+    {
+        var doors = RoomCentresAlong(mouth, far, down);
+        double lo = Math.Min(mouth, far), hi = Math.Max(mouth, far);
+
+        var cuts = new List<(double Lo, double Hi)>();
+        foreach (double cy in doors)
+        {
+            cuts.Add((cy - DoorHalf, cy + DoorHalf));
+        }
+        cuts.Sort((a, b) => a.Lo.CompareTo(b.Lo));
+
+        double cursor = lo;
+        foreach ((double clo, double chi) in cuts)
+        {
+            if (chi <= lo || clo >= hi)
+            {
+                continue;
+            }
+            walls.Add(new(x, cursor, x, Math.Max(cursor, clo), true));
+            cursor = Math.Min(hi, chi);
+        }
+        walls.Add(new(x, cursor, x, hi, true));
+    }
+
+    /// <summary>Half a doorway. Comfortably wider than the captain, and the ONE number both the room's own
+    /// face and its corridor's wall are cut to.
+    ///
+    /// <para>#585: widened from 2.0. A 4 du gap is four captain-diameters and looked ample on paper, but the
+    /// reachability flood walks a GRID — a gap narrower than a couple of grid steps can fail to be sampled at
+    /// all, so a door that is open in the geometry is shut to anything that pathfinds. A facility corridor
+    /// would have wide doors anyway; this is one of the happy cases where the honest fiction and the robust
+    /// number are the same number.</para></summary>
+    public const double DoorHalf = 3.2;
+
+    private static void AddRoomsAlong(
+        List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked,
+        List<(double X, double Y)> rooms, List<(double X0, double Y0, double X1, double Y1)> claimed,
+        string bodyId, int level, int rib, double x, double mouth, double far, bool down)
+    {
+        const double roomW = 15.0, roomH = 12.0;
+        List<double> centres = RoomCentresAlong(mouth, far, down);
+
+        for (int i = 0; i < centres.Count; i++)
+        {
+            double cy = centres[i];
 
             for (int side = -1; side <= 1; side += 2)
             {
@@ -228,22 +400,36 @@ public static class UndergroundComplex
                 double x1 = cx - (roomW / 2), x2 = cx + (roomW / 2);
                 double y1 = cy - (roomH / 2), y2 = cy + (roomH / 2);
 
+                // #585: if this room would sit on something already standing, it is not built at all. An
+                // empty patch of corridor is a facility with a gap in it; a room you can see and cannot enter
+                // is a lie, and the audit reports it as one.
+                bool clash = false;
+                foreach ((double ax0, double ay0, double ax1, double ay1) in claimed)
+                {
+                    clash |= x1 < ax1 && x2 > ax0 && y1 < ay1 && y2 > ay0;
+                }
+                if (clash)
+                {
+                    continue;
+                }
+                claimed.Add((x1 - 1.5, y1 - 1.5, x2 + 1.5, y2 + 1.5));
+
                 // Three walls and a corridor-facing face with a gap in it.
-                walls.Add(new(x1, y1, x2, y1, false));
-                walls.Add(new(x1, y2, x2, y2, false));
-                walls.Add(new(side < 0 ? x1 : x2, y1, side < 0 ? x1 : x2, y2, false));
+                walls.Add(new(x1, y1, x2, y1, true));
+                walls.Add(new(x1, y2, x2, y2, true));
+                walls.Add(new(side < 0 ? x1 : x2, y1, side < 0 ? x1 : x2, y2, true));
 
                 double faceX = side < 0 ? x2 : x1;
-                walls.Add(new(faceX, y1, faceX, cy - 2.0, false));
-                walls.Add(new(faceX, cy + 2.0, faceX, y2, false));
+                walls.Add(new(faceX, y1, faceX, cy - DoorHalf, true));
+                walls.Add(new(faceX, cy + DoorHalf, faceX, y2, true));
 
                 if (Frac(bodyId, tag + ":locked") < 0.5)
                 {
-                    locked.Add(new(faceX, cy - 2.0, faceX, cy + 2.0, SignFor(bodyId, tag)));
+                    locked.Add(new(faceX, cy - DoorHalf, faceX, cy + DoorHalf, SignFor(bodyId, tag)));
                 }
                 else
                 {
-                    doorways.Add(new SurfaceLayout.Doorway(faceX, cy - 2.0, faceX, cy + 2.0));
+                    doorways.Add(new SurfaceLayout.Doorway(faceX, cy - DoorHalf, faceX, cy + DoorHalf));
                     rooms.Add((cx, cy));
                 }
             }
@@ -386,6 +572,33 @@ public static class UndergroundComplex
             "🚪 Stripped to the fittings. Whoever cleared this room did it carefully and did it in a hurry, " +
             "which are two different things and both of them are here.",
     };
+
+    /// <summary>What the panel says when this car has gone as deep as it goes. It does not hint, it does not
+    /// unlock, and there is no button that was hiding: the building simply continues past what this shaft was
+    /// dug to reach, which is the honest reason a facility has more than one lift.</summary>
+    public static string EndOfTheLineLine(int floorsDown) =>
+        $"🛗 The panel has no button below B{floorsDown}. This car was dug to serve the top of the building " +
+        "and nothing else — whatever is under you was reached another way, by somebody with their own shaft " +
+        "and their own reasons. It is down here somewhere.";
+
+    /// <summary>#585 · The card the first descent earns. Owner: "I think we need to gen AI pop-up about
+    /// finding the elevator" — and he is right that it is the beat of the whole feature: the moment a moon
+    /// stops being a field with things on it and becomes a lid.</summary>
+    public const string DescentArtUrl = "art/the-descent.jpg";
+
+    public const string DescentCardLabel = "🛗 THE SHAFT";
+
+    /// <summary>What the card says beside the picture. Scale, and the cost of digging it — never a word about
+    /// what it was for.</summary>
+    public const string DescentCard =
+        "The gate rattles down and the car starts, and it does not stop starting.\n\n" +
+        "Service lamps go past in the wall at first, then a rhythm, and you find you have been counting " +
+        "them and have lost count. The shaft is LINED. Somebody cut this out of a moon and then finished " +
+        "it: poured walls, bolted rails, lamps on a circuit that is somehow still live.\n\n" +
+        "Nobody does this quietly. A hole this deep is surveyed, funded, staffed and inspected; it has " +
+        "invoices, and a schedule, and a name on a form somewhere. And yet the only thing above it is a " +
+        "shed with a maintenance plate, on a moon with no register entry, on nobody's chart.\n\n" +
+        "The car keeps going down. You have time to think about that, and you would rather not.";
 
     /// <summary>What the lift says as it starts down. The one beat of scale before any of the plan is drawn.</summary>
     public const string DescendingLine =

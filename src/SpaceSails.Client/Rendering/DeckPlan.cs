@@ -26,7 +26,10 @@ public sealed class DeckPlan
         // #573 · The deep shelter's charging rack — the only place outside her tube that refills a suit.
         ShelterTank, ShelterLocker, RuinSalvage,
         // #586 · Whatever somebody left at the foot of the monolith this visit-window.
-        MonolithFoot }
+        MonolithFoot,
+        // #585 · THE HIVE: the lift car, a room to search, a door that never opens, and the
+        // camouflaged lift head that is the only part of the whole facility above ground.
+        HiveLift, HiveHaul, HiveSign, HiveHead }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.
