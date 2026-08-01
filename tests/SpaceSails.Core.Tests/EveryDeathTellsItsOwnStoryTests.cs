@@ -208,12 +208,20 @@ public class EveryDeathTellsItsOwnStoryTests
     public void ACollectorDeathCanOnlyHappenWhereACollectorCouldBE()
     {
         // Owner: "the debt collector deaths should also only happen in those situations never in any other".
-        // A collector is a PERSON who came for you, with a ship and a boarding volley. There is nobody
-        // aboard a dead hull and nobody on an empty moon, so a card claiming one would be inventing a
-        // character out of nothing — which is how this whole thread started.
+        // A collector is a PERSON who came for you. The law is not "on a ship" — it is that somebody has to
+        // actually BE there, or the card invents a character out of nothing, which is how this whole thread
+        // started ("there was no collector I was on site ... how can it say anything like that").
         Assert.True(DeathNarration.CanHappen(DeathCause.Collector, DeathPlace.OwnShip));
+
+        // #583 · AND NOW ON THE GROUND, because a repo boat follows a hot captain down and a crew gets out
+        // ("FBI does not arrest cars ... they look for the driver"). What changed is the situation, not the
+        // rule: there is somebody there now. The words and the picture still differ from the deck death —
+        // see TakenOnFootTests, which pins that a ground catch never borrows the ship's boarding-volley prose.
+        Assert.True(DeathNarration.CanHappen(DeathCause.Collector, DeathPlace.LandingParty));
+
+        // Still never on a wreck: boarding a hull they are already inside is a different arrival, and it is
+        // not built (#584). A card must never claim a scene the game cannot stage.
         Assert.False(DeathNarration.CanHappen(DeathCause.Collector, DeathPlace.Derelict));
-        Assert.False(DeathNarration.CanHappen(DeathCause.Collector, DeathPlace.LandingParty));
 
         // And the mirror: an impact is the SHIP meeting a world at speed, which cannot happen to somebody
         // already standing on one.

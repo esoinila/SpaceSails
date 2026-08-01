@@ -92,6 +92,21 @@ public static class SurfaceStructure
     /// less and the "jamb" is a stub shorter than the body it blocks, which reads as an invisible wall.</summary>
     public const double MinDooredFace = (DoorwayHalf + 1.6) * 2;
 
+    /// <summary>#585 · How much ground this building actually occupies, as a radius from its centre.
+    ///
+    /// <para>Owner, looking at a Miranda site: <i>"check this structure out... it functions but is kind of
+    /// funny"</i> — and it was funny because three separate placers were dropping buildings into one field
+    /// and none of them could see the others' footprints, so a shelter drum, an outlying hut and a maze
+    /// fixture had grown together into one accidental mega-complex with doors opening onto interior mass.</para>
+    ///
+    /// <para>The placers that DID check used a bare centre-to-centre distance, which is only honest for a
+    /// circle. A <see cref="Spec"/> is a rotated box, so the ground it sweeps is its half-diagonal plus the
+    /// wall it is built out of — that is this number, and it is right at every angle. Using anything smaller
+    /// is how two buildings end up sharing a wall.</para></summary>
+    public static double KeepOutRadius(in Spec spec) =>
+        Math.Sqrt(((spec.Width / 2) * (spec.Width / 2)) + ((spec.Height / 2) * (spec.Height / 2)))
+        + spec.WallThickness;
+
     /// <summary>Build one structure. Pure: the same spec always yields the same walls.</summary>
     public static Built Build(in Spec spec)
     {

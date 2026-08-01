@@ -1,0 +1,290 @@
+# The landing site
+
+*What a moon's ground has to be before it ships. Written 2026-08-01, after two days of the owner playing
+Miranda and finding, by eye, eleven things reasoning had not.*
+
+This is a **spec, not a description**. Every numbered rule below is either enforced by a guard in
+`tests/SpaceSails.Core.Tests` / `tests/SpaceSails.Client.Tests`, or is named here as not-yet-enforced so
+nobody mistakes silence for coverage.
+
+---
+
+## Why this document exists
+
+Every expensive bug on this ground had one shape: **two sources of truth for one fact.**
+
+| What disagreed | How it showed up |
+| --- | --- |
+| The field envelope, retyped in four test files and a lab | The world grew 16×; every audit went on flooding the old dead world and passing |
+| `SpecFor` (one shelter) vs `SpecsFor` (several) | Beacons pointed at buildings that had never been built — *"the map lies"* |
+| Three placers, three claim ledgers | A shelter, a hut and a maze fixture grew into one mega-complex — *"kind of funny"* |
+| A claim taken before the builder's edge clamp | A building was claimed in one place and built in another |
+| One console kind used for two different doors | Pressing E on a shelter door **flew the captain home** |
+| A *rejecting* claim used to *record* an existing thing | Two legally-spaced shelters knocked each other out of the ledger; a hut was then built on one |
+| A keep-out list passed as a *parameter* to a public function | The routed path built a different away ground than the one tests, the region builder and the labs measured |
+| A footprint clamped by its *axis* half-extents | Rotated buildings hung their corners over the edge lane — at some angles and not others |
+| The sim vs the sentence | A suffocation narrated as a debt-collector killing |
+| A test pinning what I wrote, not what shipped | Green tests over a death card nobody could reach |
+
+So the standing rule for this ground is: **one copy, read by everyone, plus a guard that walks the real
+object.** A guard that reads the generator's inputs instead of its output is not a guard.
+
+> A corollary learned the hard way: `tests/SpaceSails.Client.Tests` was created to audit client geometry and
+> was **never added to `SpaceSails.slnx`**, so CI never once compiled it. A guard nobody executes is a
+> comment with a csproj attached. It is in the solution now.
+
+---
+
+## 1 · The ground
+
+1.1 **One field envelope.** `SurfaceLayout.DefaultField` is the only place the bounds exist.
+`MoonSurface.ExpeditionField()` reads it; nothing re-types the numbers. *(Enforced: the audits derive from
+`DefaultField`.)*
+
+1.2 **No rectangle.** The field's edge is `SurfaceEdge.Bound` — a wandering, outward-only bulge with a
+`sin(πt)` corner taper so the chain closes. Only the top rim keeps hull ink; the other three edges are
+`Unseen` walls: they collide and are never drawn.
+
+> *"the rectangular fence spoils the site feeling... if our space has limits for some technical reasons then
+> let's not advertise it, more like hide that fact."* The honest limit is the tether — your magazine, your
+> tank, and the pack behind you — not a drawn line.
+
+1.3 **The body's own geography draws as stone, not hull.** `IsStone` is heavy ink in rock; `IsHull` is the
+ship's cold pressure stroke and belongs on made pressure boundaries only.
+
+1.4 **Scenery is drawn and never collided.** Crater rims, scree, ridges, rilles live in `DeckPlan.Scenery`,
+*not* in `Walls` — `CollisionSegments` is derived from `Walls`, so a decorative rim placed as a wall would
+become an invisible fence.
+
+## 2 · Buildings
+
+2.1 **No U-shapes.** A rectangle with a side left off is not a ruin. Every structure has a real threshold you
+walk *through*, and an interior partition with its own offset doorway, so a small footprint still gives two
+spaces.
+
+2.2 **Walls have thickness.** 1.6–3.0 du of piled regolith — the owner's Greenland-longhouse reasoning: on a
+cold world you build from what is under your boots, and if the wall also holds pressure you build it fat.
+Comfortably above the captain's 1.4 du width, so hatching never emits a segment shorter than a body.
+
+2.3 **Every building has a door.** Door faces are ranked by length **with a floor of one**. A 12-sided drum
+has 3.7 du faces; picking faces by index and dropping short ones produced sealed O-shapes with treasure
+inside and no way in.
+
+2.4 **Nothing is built on top of anything else.** One claim ledger, shared by the seeded features, the
+outlying buildings and the shelters. Radii come from `SurfaceStructure.KeepOutRadius` — the **half-diagonal
+plus the wall**, honest at every angle. A centre-distance test is only honest for a circle; a rotated 20×16
+box with 3 du walls sweeps ~16 du, so two buildings 30 du apart overlap by design.
+*(Enforced: `NoBuildingGrowsIntoAnotherTests`.)*
+
+2.5 **A claim is taken on the FINAL position.** `AddStructure` clamps a centre inward to keep walls off the
+edge lane; the claim must use `StructureFootprint`, which applies that clamp first.
+
+2.6 **Recording is not asking.** `Claim()` means *"may I build here?"* and rejects on overlap. `Reserve()`
+means *"something is already here"* and never rejects. Using the asking one for the saying job cost a site:
+the shelters were pre-claimed through `Claim`, so two shelters 52 du apart (their own legal spacing) whose
+square claim boxes happened to touch knocked each other out — the loser was never recorded, and the ground
+under it was free. Caught by the audit on `luna/The Shadowed Rille`, 21.5 du where 31.3 was needed.
+
+2.7 **The plan publishes real footprints.** `Plan.BuildingFootprints` exists so a guard can ask the ground
+what it built instead of guessing a radius — a guess in a test is the same two-sources-of-truth bug wearing a
+test's clothes. *(The first version of 2.4's guard failed on a correctly-placed building for exactly that
+reason.)*
+
+2.8 **No sealed pockets.** Measured as the largest *connected* unreachable region, not as raw standable
+count. With a doorway, inside + outside are one region; a second region is a cavity.
+
+## 3 · Air, and the shelters
+
+3.1 **The tank is the tether.** `SuitAir` — a play budget of 1200 s against 8 fiction-hours plus a 30-minute
+reserve. Breathing rate scales with exertion, **nerve and injury**: calm captains last longer.
+
+> *"when I was scuba diving they said to keep calm so the O₂ does not run out... keep calm in face of danger
+> so you don't choke."*
+
+3.2 **The low-air warning is distance-gated,** never a bare percentage. It fires when the walk home costs
+more than you have — a point of no return, not a fuel light.
+
+3.3 **Every site carries shelters, and more than one or two.** ~1 per 9 000 du² of field, **never under
+four**. On the current field that is nine, and all nine must actually place — if the count asks for nine and
+the separation rule yields three, the ask and the ground have quietly disagreed, which is this project's most
+expensive habit. *(Enforced: `ShelterBeaconsTellTheTruthTests`.)*
+
+3.4 **A shelter is a refuge, not a tap.** Inside it, air is **not spent at all** — checked before the drain
+and returning outright, so no ordering can suffocate a captain sitting in one.
+
+3.5 **The rack always gives; the WAIT is the price.** Steady production, hard stop at **66 %** of a tank.
+The refusal is characterisation, not balance: somebody set that regulator to leave something for the next
+person. It also keeps the tube the anchor — you always work down from two thirds.
+
+3.6 **A shelter reloads you completely, every time, unlimited.**
+
+> *"I want ample reloads as one is dead without them on reever land"* / *"we want in practise unlimited
+> reloads of rounds at the shelters not like couple mags"*
+
+The scarcity lives in the **walk** and is paid in air. A refuge that haggles over ammunition is a chore.
+
+3.7 **Nothing else crosses the threshold.** `SurfaceShelter.HoldAtTheThreshold` pushes any hostile back onto
+the inner face. The door reads a suit; Old Ones and repo crews may crowd it and wait, and that waiting is a
+better scene than being followed in. *(Enforced: `NothingFollowsYouInsideTests`, swept across angles — an
+axis-aligned-only fix would pass a lazy test and still let a pack in through every angled door on the moon.)*
+
+3.8 **A shelter's promise must be true on the map.** Every spec the tracker points at is built at that spot,
+with walls, a door, a rack and a locker, and a centre that counts as inside.
+
+## 4 · What is out there
+
+4.1 **About half the ruins hold something.** Empty rooms are load-bearing: if every building paid out,
+entering them would stop being a decision and become a chore performed on all of them.
+
+4.2 **Papers are texture, never testimony.** A roster, a docket, a note in a locker. Nothing found on the
+ground explains the Old Ones, and nothing ever will — see `reever-origin-canon`.
+
+4.3 **Object persistence.** Dead Reevers stay where they were left; your caches stay buried where you buried
+them. *(Owner: "the long walk should walk with expected object persistence.")*
+
+## 5 · The instruments
+
+5.1 **The motion tracker is motion-only.** A still contact is not a contact. This is a feature — it is what
+makes a wall-blocked, momentarily-still Old One vanish from the fan.
+
+5.2 **Beacons: home and shelters. Cache rings: your own buried chests, range-gated. Rumours: a wide soft
+wash.** A tip narrows a search; it does not end one, and a dot would claim precision the information does not
+have.
+
+5.3 **The air bar is coloured by BAND, not fullness.**
+
+## 6 · What the ship does NOT do down here
+
+**The captain is in a suit on a moon. The hull is docked and empty somewhere above.**
+
+6.1 **No ship voice.** The parrot, the alarm strip, the long-coast advert and the arrival-brake ask are all
+skipped during an excursion — gated at the tick *and* inside `SquawkNow`, because `force: true` callers
+bypass every other brake.
+
+6.2 **No ship desks.** `SwitchDesk` refuses anything but Deck while `_surface` is live. It is documented as
+the one place a desk switch happens, so number keys, the tab bar, chips and seat interactions are all covered
+and nothing new can leak past by forgetting to ask.
+
+6.3 **The way back is the shuttle.** Nothing else returns you to the ship. A console kind is a **verb** — do
+not reuse `SurfaceAirlock` for a door that is not the ride home.
+
+6.4 **No heat from the ground.** Heat is the cost of doing piracy; nobody watches a moon. Defending yourself
+against Reevers earns none of it. *(The one carved-out exception, robbing a secret lab, is #582 and unbuilt.)*
+
+6.5 **Wolves hold station while you are away.** They cannot reach or catch an empty hull.
+`EncounterRule.HoldStation` carries their clock forward but not the chase, so coming back aboard resumes
+where it stood instead of integrating the whole excursion in one burst.
+
+> *"we don't want to be guarding our parking lot ... that is not good game play :-D"*
+
+6.6 **Heat comes to the captain instead.** A repo boat follows a hot captain down, mid-mission, and sets down
+between them and the tube. *"FBI does not arrest cars ... they look for the driver."*
+
+## 7 · Dying
+
+7.1 **A death card knows WHERE it happened.** `DeathPlace` — own ship, derelict, landing party — decides the
+picture; the cause decides the words. `CanHappen(cause, place)` is the law, and every enum value is walked by
+a guard.
+
+7.2 **No borrowed prose.** The ship's collector lines are boarding volleys and last stands at the controls;
+reading those over a captain walked down on regolith is the bug #574 was filed about.
+
+7.3 **The red shirt.** A captain who died on the ground gets `death-landing-party.jpg`, whoever's hand it
+was.
+
+---
+
+## 8 · Cost
+
+8.1 **Collision is index-backed.** `SurfaceCollision.WallIndex` files the walls into a coarse grid, and
+`Blocked` / `HasLineOfSight` / `Slide` all take the indexed path when the caller hands them one. This matters
+now more than ever: a site carries **1 400–2 200** collision segments after the rebuild, against a few
+hundred before.
+
+8.2 **Seeded placement is pure, not free.** `SurfaceShelter.SpecsFor` re-runs the whole placement — up to
+nine shelters over thirty hashed candidate spots each, with a separation check against everything placed so
+far. Calling it twice a frame to draw beacons is fine; calling it **once per Old One per frame** (which the
+threshold rule 3.7 briefly did) is twenty-four hunters × ~270 hash-and-lerp attempts, sixty times a second,
+to answer a question that cannot change for the whole excursion.
+
+> *"I think it felt a little sluggish at some points."*
+
+**Rule: anything seeded and fixed-for-the-excursion is computed once and remembered on the excursion.**
+Determinism is what makes that safe — same body, same salt, same field ⇒ same answer.
+
+8.3 **Shared caches must be safe for every caller, not just the game.** `MoonSurface`'s layout cache was a
+plain `Dictionary` — correct in single-threaded WASM, and a race the moment xUnit ran two audit classes in
+parallel. It surfaced as a guard that **passed alone and failed in the full run**, which is worse than no
+guard at all: a flaky audit teaches you to ignore audits. Now a `ConcurrentDictionary`; building a `Layout`
+is deterministic, so a racing double-build is pure waste and never a wrong answer.
+
+8.4 **Perf must not be measured from an MCP-driven tab.** Such a tab is `document.hidden`: rAF is throttled
+and timers are clamped, so any number taken from one is worthless.
+
+## Auditing the other places
+
+`EverySiteMeetsTheSpecTests` walks **every landing site on every body** — the real
+`MoonSurface.SurfaceDeck`, not the generator's inputs — and checks 1.2, 1.3, 2.1, 2.3, 2.4, 3.3, 3.8 and 6.3.
+
+It **reports the whole table and fails once**, rather than dying on the first bad site: *"which sites fall
+short"* is the actual question, and a guard that answers it one site at a time turns an audit into a queue of
+surprises.
+
+It earned its keep on the first run, finding a shelter/building overlap on a Luna site that the Core-level
+guard had passed — see 2.6.
+
+**The away grounds are audited too.** `ForExpedition`'s three — the henge, the crashed hull, the sealed tomb —
+were exactly where Miranda was two days ago: walls and a landmark, nothing to walk into. They were missed for
+the same reason canon site 0 was missed: **they are authored, so they bypass the generator where all the
+improvements live.** That is the trap the test exists to spring, because it will happen again the next time
+somebody hand-writes a ground.
+
+> *"we should take these upgrades to all our outside scenes now. The biggest is the real spaces with
+> doors... that is the place to find stuff. And clues."*
+
+Each authored signature is untouched — the henge, the hull and the tomb are canon. The buildings go in the
+empty flanks around them, through the same shared ledger, so they cannot grow into the signature, into each
+other, or into a shelter.
+
+## 9 · Away grounds and appended rooms
+
+9.1 **A ground must be one ground.** `ForExpedition(kind, field)` takes **no** keep-out parameter. It briefly
+did, handed in only by the routed path, and the standing guards killed it in a single run: the public overload
+is called directly by tests, `ExpeditionRegions` and the labs, so two callers were building two different
+grounds. The way out is that a **kind names its body** — an away rock's id is `ExpeditionSite.BodyIdFor(kind)`,
+a pure function of the kind — so the ground looks up its own shelters and its own chamber without being told.
+One function, one answer, no parameter to forget.
+
+9.2 **Something that WILL be there is something that IS there.** Rooms appended at runtime must be reserved
+before anything is placed:
+
+- the away grounds' sealed rooms (`ExpeditionRegions.ForceOpen`) and their doors
+- **the secret lab's chamber** (`SecretLab.ChamberFootprint`), reserved on *every* body whether or not that
+  body hides one — the door spot is seeded the same way regardless, so it costs one building's worth of
+  ground and removes the whole class before anybody goes looking for a lab
+
+Without this a lab or a room opens into somebody else's wall, which the region guard reports as *"a region
+wall crosses the base geography"*.
+
+9.3 **An away gig ignores the site salt.** `ExpeditionSite_IgnoresSalt` is a standing law; keep-outs taken
+with a real salt would move the ground and break it.
+
+## Not yet enforced
+
+Named so silence is not mistaken for coverage:
+
+- **Reachability** of every building interior is audited by flood fill on some sites, not all.
+- **Findability** of shelters at field scale is a judgement call, unmeasured.
+- **Scenery vs structure legibility** — whether crater rings read as buildings — is unmeasured.
+- **The landable-body list** in the audits is hand-kept and must match the scenario. It held eight when the
+  scenario held ten — `enceladus` and `the-clinker` were simply forgotten, so four grounds were audited by
+  nobody while the file claimed to check "every site". If a moon is added, add it there.
+- **The monolith** is spec'd nowhere and currently *"looks like a box in a closet"* when it is meant to be
+  the thing you walk out there to see.
+
+## Working method
+
+The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible
+to reasoning and to Core tests, and obvious on sight. When something is found by eye, the fix is not complete
+until a guard walks the real object — otherwise it comes back the next time two things have to agree and only
+one is changed.

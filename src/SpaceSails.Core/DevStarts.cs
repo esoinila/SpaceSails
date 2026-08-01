@@ -40,6 +40,26 @@ public static class DevStarts
         new("🧟", "Miranda — jumped the moment you land",
             "The canon ground with FOUR Old Ones set down on top of you, already aware. The chase, the pack spacing and the exchange — block rolls, blood, the five blows — inside seconds instead of a long walk and a lucky tide (#453).",
             "/map?dock=the-tilt&site=0&land=1&reevers=4"),
+        // #585 · THE SURFACE TOUR. Owner: "let's go over all the sites we have not yet tested with the
+        // url-arguments" — which was impossible until ?body= existed, because ?land=1 takes the first
+        // landable body in shuttle reach and from The Tilt that is always Miranda. One per system here; the
+        // full 27-site list lives in docs/testing-guide.md.
+        new("🌍", "Luna — the mass-driver ruins",
+            "Earth's moon from Selene Gate: long launch rails and strip foundations instead of a maze. The A/B against Miranda for \"a body is a world, not a level\" — and the first ground on this tour nobody has ever walked (#585).",
+            "/map?dock=selene-gate&body=luna&site=1&land=1"),
+        new("🥔", "Phobos — the Ice Fissure",
+            "Mars' potato from The Rusty Roadstead. A crack in the crust breathing old cold, now with real rooms to walk into (#585).",
+            "/map?dock=the-space-bar&body=phobos&site=1&land=1"),
+        new("🪐", "Ganymede — the Ridge Camp",
+            "Off The Red Eye: the bones of an old survey camp on a Jovian moon. Somebody left in a hurry (#585).",
+            "/map?dock=red-eye&body=ganymede&site=1&land=1"),
+        new("💍", "Titan — the Quiet Basin",
+            "From Ringside Exchange: a low bowl of settled dust. Too quiet, if you stand still long enough to notice (#585).",
+            "/map?dock=ringside-exchange&body=titan&site=1&land=1"),
+        new("🧊", "Triton — the Derelict Pad",
+            "The far end of the run, off The Deep. A landing stage gone to rust and silence — something set down here and stayed (#585).",
+            "/map?dock=the-deep&body=triton&site=2&land=1"),
+
         new("⛏", "An away-team gig, already accepted",
             "A mining rock parked in shuttle range with the job on the books — the shortest road to boots on the regolith (#370).",
             "/map?expedition=mining"),

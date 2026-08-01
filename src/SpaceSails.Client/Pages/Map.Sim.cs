@@ -542,6 +542,19 @@ public partial class Map
                     _airCheatSeconds = Math.Clamp(secs, 1, SuitAir.TankSeconds);
                 }
             }
+            else if (pair.StartsWith("collectors=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #583 dev cheat: /map?collectors=20 forces a repo boat to follow you down and puts it on the
+                // ground 20 seconds in, whatever the heat gauge reads. The scene is meant to be RARE and
+                // mid-mission — which makes it nearly impossible to playtest on purpose, and a scene nobody
+                // can reach on demand is a scene that ships broken. Combine with dock/site/land:
+                //   /map?dock=the-tilt&site=0&land=1&collectors=20
+                string candidate = Uri.UnescapeDataString(pair["collectors=".Length..]);
+                if (double.TryParse(candidate, NumberStyles.Float, CultureInfo.InvariantCulture, out double eta))
+                {
+                    _collectorCheatSeconds = Math.Max(0, eta);
+                }
+            }
             else if (pair.StartsWith("outpost=", StringComparison.OrdinalIgnoreCase))
             {
                 // #563 dev cheat: /map?outpost=1 guarantees the OUTPOST HUT on whatever site the excursion
@@ -561,6 +574,21 @@ public partial class Map
                 // fast path.)
                 string candidate = Uri.UnescapeDataString(pair["secretlab=".Length..]).ToLowerInvariant();
                 secretlabCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("body=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #585 dev cheat: /map?body=phobos&site=2&land=1 lands on THAT body's site 2, whatever is
+                // nearest the berth. Owner: "let's go over all the sites we have not yet tested with the
+                // url-arguments" — and until now that was impossible for most of them. ?land=1 takes the
+                // first landable body in shuttle reach, so from the-tilt every URL in the world reaches
+                // Miranda and nowhere else. Two thirds of the grounds we have just rebuilt had no way to be
+                // opened and looked at, which for this project is the same as having no way to be tested:
+                // "boot every scene and check all the parts are in the right place".
+                string candidate = Uri.UnescapeDataString(pair["body=".Length..]).ToLowerInvariant();
+                if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+                {
+                    _forcedLandingBodyId = candidate;
+                }
             }
             else if (pair.StartsWith("site=", StringComparison.OrdinalIgnoreCase))
             {

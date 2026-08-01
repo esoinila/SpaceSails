@@ -701,3 +701,96 @@ every gas giant from Jupiter out carries a self-sustaining fuel haven) is locked
 **Try it:** open `/map?dock=the-deep&fuel=40&credits=9000`. Confirm you boot clamped on at The Deep out
 at Neptune, the tank reads 40 pulses, the purse 9000 cr, and the Trade desk's `⛽ FILL HER UP` is live
 (you're alongside a pump). Then `/map?dock=red-eye` — same, out at Jupiter among the Galilean moons.
+
+## The surface tour — every landing site, one URL each (#585)
+
+Owner, 2026-08-01: *"let's go over all the sites we have not yet tested with the url-arguments."*
+
+Until now that was **impossible for most of them**. `?land=1` takes the first landable body in shuttle reach,
+so from The Tilt every URL in the world reached Miranda and nowhere else — two thirds of the grounds we had
+just rebuilt had no way to be opened and looked at. `?body=<id>` fixes that: it wins the toss outright,
+provided that body is genuinely on the shuttle board from your berth (the cheat may never reach somewhere the
+player could not). Pick the wrong berth and the game tells you what *is* in reach.
+
+The berth must be in the same system as the moon:
+
+| Berth (`?dock=`) | System | Landable moons |
+| --- | --- | --- |
+| `cinder-roost` | Venus | the-clinker |
+| `selene-gate` (or `satellite-factory`) | Earth | luna |
+| `the-space-bar` | Mars | phobos |
+| `red-eye` | Jupiter | europa, ganymede, callisto |
+| `ringside-exchange` | Saturn | titan, enceladus |
+| `the-tilt` | Uranus | miranda |
+| `the-deep` | Neptune | triton |
+
+**All 27 sites.** Each drops you on the open regolith with two sentries in the sling:
+
+```
+Miranda — the canon ground (3)
+  /map?dock=the-tilt&body=miranda&site=0&land=1        The Wild Plain
+  /map?dock=the-tilt&body=miranda&site=1&land=1        The Shadowed Rille
+  /map?dock=the-tilt&body=miranda&site=2&land=1        The Ridge Camp
+
+Luna — the mass-driver ruins (4)
+  /map?dock=selene-gate&body=luna&site=0&land=1        The Wild Plain
+  /map?dock=selene-gate&body=luna&site=1&land=1        The Depot Apron
+  /map?dock=selene-gate&body=luna&site=2&land=1        The Derelict Pad
+  /map?dock=selene-gate&body=luna&site=3&land=1        The Shadowed Rille
+
+Phobos (4)
+  /map?dock=the-space-bar&body=phobos&site=0&land=1    The Wild Plain
+  /map?dock=the-space-bar&body=phobos&site=1&land=1    The Ice Fissure
+  /map?dock=the-space-bar&body=phobos&site=2&land=1    The Ridge Camp
+  /map?dock=the-space-bar&body=phobos&site=3&land=1    The Crater Shelf
+
+Jupiter's moons (6)
+  /map?dock=red-eye&body=europa&site=0&land=1          The Wild Plain
+  /map?dock=red-eye&body=europa&site=1&land=1          The Ice Fissure
+  /map?dock=red-eye&body=ganymede&site=0&land=1        The Wild Plain
+  /map?dock=red-eye&body=ganymede&site=1&land=1        The Ridge Camp
+  /map?dock=red-eye&body=callisto&site=0&land=1        The Wild Plain
+  /map?dock=red-eye&body=callisto&site=1&land=1        The Ice Fissure
+
+Saturn's moons (4)
+  /map?dock=ringside-exchange&body=titan&site=0&land=1      The Wild Plain
+  /map?dock=ringside-exchange&body=titan&site=1&land=1      The Quiet Basin
+  /map?dock=ringside-exchange&body=enceladus&site=0&land=1  The Wild Plain
+  /map?dock=ringside-exchange&body=enceladus&site=1&land=1  The Derelict Pad
+
+Triton (4)
+  /map?dock=the-deep&body=triton&site=0&land=1         The Wild Plain
+  /map?dock=the-deep&body=triton&site=1&land=1         The Shadowed Rille
+  /map?dock=the-deep&body=triton&site=2&land=1         The Derelict Pad
+  /map?dock=the-deep&body=triton&site=3&land=1         The Ice Fissure
+
+The Clinker, Venus (2)
+  /map?dock=cinder-roost&body=the-clinker&site=0&land=1     The Wild Plain
+  /map?dock=cinder-roost&body=the-clinker&site=1&land=1     The Depot Apron
+```
+
+### What to look for
+
+The audit (`EverySiteMeetsTheSpecTests`) already checks the geometry on all 27. What it **cannot** check is
+everything in the spec's "not yet enforced" list, which is exactly what a pair of eyes is for:
+
+- Are the shelters **findable** at this field size, or do you die looking?
+- Do the crater rings read as scenery, or do you walk to one thinking it is a building?
+- Does roughly half the ruins paying out feel right, or does it read as "mostly empty"?
+- Does the ground look like a *place*, or like a field with objects scattered on it?
+
+### Add-ons for any of the above
+
+| Argument | What it does |
+| --- | --- |
+| `&air=45` | 45 seconds in the tank — the point-of-no-return warning without a six-minute stroll |
+| `&reevers=4` | four Old Ones on top of you, already aware |
+| `&outpost=1` | guarantee the outpost hut on this ground |
+| `&collectors=20` | a repo boat sets down 20 s in, whatever your heat reads (#583) |
+| `&secretlab=1` | a landable rock with a Vantar lab, hidden door already found (#409) |
+| `&wreck=1` | a derelict wins the toss instead of a moon |
+
+**The secret lab's new space** appears where the hidden door is: the chamber is appended *from the door
+outward toward the field's centre*, 16 du deep by 14 wide — a server spine, lab benches and stasis pods, with
+the door→console lane kept clear. As of #585 that patch of deep field is reserved on every body before
+anything is built, so the chamber can never open into somebody's wall.

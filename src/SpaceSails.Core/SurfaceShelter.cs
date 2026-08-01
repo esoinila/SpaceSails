@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace SpaceSails.Core;
 
@@ -90,13 +90,26 @@ public static class SurfaceShelter
     /// down from two thirds and must eventually go home. More shelters buy RANGE, never independence.</para></summary>
     public static int CountFor(in SurfaceLayout.Field field)
     {
+        // #585 · MORE OF THEM. Owner, stranded on Miranda with an empty gun: "I want ample reloads as one is
+        // dead without them on reever land" / "not just one or two refill / site".
+        //
+        // He is right, and the old density (one per 20 000 du^2, capped at six) was set when the shelter was
+        // an air rack and nothing else. Now it is the ONLY place on the ground that reloads you, and a field
+        // this size with three of them means a captain who empties a magazine deep is walking home defenceless
+        // through the thing that emptied it. That is not tension, it is a lost turn.
+        //
+        // The cost of a wrong answer is asymmetric: too many shelters makes the ground slightly tamer, too
+        // few kills a run that had nothing wrong with it. So: roughly one per 9 000 du^2, never under four.
         double area = (field.RightX - field.LeftX) * (field.LandingBandY - field.BottomY);
-        return Math.Clamp((int)Math.Round(area / 20_000.0), 1, 6);
+        return Math.Clamp((int)Math.Round(area / 9_000.0), 4, 10);
     }
 
     /// <summary>How far apart shelters must stand. Close enough to chain in an emergency, far enough that
     /// finding one is still finding something.</summary>
-    public const double MinSeparationDu = 70.0;
+    /// <para>#585: was 70, which at the new density (<see cref="CountFor"/>) rejected so many candidates that
+    /// a field asking for seven shelters settled for three — the ask and the ground disagreeing quietly,
+    /// which is this project's most expensive habit. 52 still leaves a long walk between them.</para>
+    public const double MinSeparationDu = 52.0;
 
     /// <summary>Every shelter on this site, in a stable order. Seeded per site, spaced, and kept off the
     /// deep anchor — the monolith is what you walk out there to SEE, and a building leaning on it would
@@ -115,7 +128,7 @@ public static class SurfaceShelter
         int want = CountFor(field);
         var placed = new List<(double X, double Y)>();
 
-        for (int attempt = 0; attempt < want * 12 && placed.Count < want; attempt++)
+        for (int attempt = 0; attempt < want * 30 && placed.Count < want; attempt++)
         {
             double x = Lerp(loX, hiX, Frac(bodyId, siteSalt, $"x:{attempt}"));
             double y = Lerp(loY, hiY, Frac(bodyId, siteSalt, $"y:{attempt}"));
@@ -178,6 +191,14 @@ public static class SurfaceShelter
     /// <summary>What the sign outside says. It is a survival shelter and it says so — this is the one thing
     /// on the ground that is NOT a mystery, because a captain who cannot find air is not being teased.</summary>
     public const string DoorLabel = "⛺ SHELTER — PRESSURISED";
+
+    /// <summary>#585 · What pressing [E] on a shelter door says — which is: nothing happened, because nothing
+    /// needed to. Owner, mid-excursion: <i>"how did I just go to ship from a shelter ... what happened"</i>.
+    /// The door had been laid as the same console kind as the tube's BOARD THE SHUTTLE hatch, so [E] on it
+    /// flew him home from the middle of the field. Two different doors were sharing one verb.</summary>
+    public const string DoorPressLine =
+        "⛺ The door already read your suit on the way in. It cycles when you approach and seals behind you; " +
+        "there is nothing here to press.";
 
     /// <summary>The console inside.</summary>
     public const string TankLabel = "🫁 CHARGING RACK";
@@ -246,6 +267,60 @@ public static class SurfaceShelter
             return false;
         }
         return ((lx * lx) / (halfW * halfW)) + ((ly * ly) / (halfH * halfH)) <= 1.0;
+    }
+
+    /// <summary>#585 · THE THRESHOLD NOTHING ELSE CROSSES.
+    ///
+    /// <para>Owner, playing: <i>"lol I saw one reever get into a shelter :-D ... not a problem, but probably
+    /// some kind of small bug"</i>. It is a small bug and a large broken promise. A shelter's own arrival line
+    /// says <b>"Nothing outside can work that door"</b>, and the building exists because he asked for
+    /// <i>"rooms with doors we can hide behind while we reload our guns safe from reevers"</i>. A refuge you
+    /// can be followed into is not a refuge; it is a smaller room to die in.</para>
+    ///
+    /// <para>The doorway is a real gap in the wall — it has to be, or the captain could not use it either —
+    /// so geometry alone was always going to let a shambling body through it. The fix is the same fiction
+    /// that already pens them off the shuttle: <b>the door reads a suit.</b> They can crowd the threshold and
+    /// wait there; they cannot come in.</para>
+    ///
+    /// <para>Given a position that has ended up inside, returns the nearest point back on the inner face, so
+    /// a hunter driven at the door piles up against it instead of teleporting or vanishing. Returns the
+    /// position untouched when it was never inside.</para></summary>
+    public static (double X, double Y) HoldAtTheThreshold(in SurfaceStructure.Spec spec, double x, double y)
+    {
+        if (!Contains(spec, x, y))
+        {
+            return (x, y);
+        }
+
+        // Into the shelter's own frame, push out to the inner ellipse, and back again.
+        double c = Math.Cos(-spec.AngleRad), s = Math.Sin(-spec.AngleRad);
+        double dx = x - spec.CentreX, dy = y - spec.CentreY;
+        double lx = (dx * c) - (dy * s), ly = (dx * s) + (dy * c);
+
+        double halfW = (spec.Width / 2) - spec.WallThickness;
+        double halfH = (spec.Height / 2) - spec.WallThickness;
+        if (halfW <= 0 || halfH <= 0)
+        {
+            return (x, y);
+        }
+
+        double t = Math.Sqrt(((lx * lx) / (halfW * halfW)) + ((ly * ly) / (halfH * halfH)));
+        if (t <= 1e-9)
+        {
+            // Dead centre: no direction to be pushed along, so pick one rather than divide by nothing.
+            lx = halfW;
+            ly = 0;
+            t = 1;
+        }
+
+        // A hair PAST the face, so the very next frame's Contains() does not read it as still inside and
+        // leave it jittering on the boundary forever.
+        double scale = (1.0 / t) * 1.02;
+        lx *= scale;
+        ly *= scale;
+
+        double bc = Math.Cos(spec.AngleRad), bs = Math.Sin(spec.AngleRad);
+        return (spec.CentreX + ((lx * bc) - (ly * bs)), spec.CentreY + ((lx * bs) + (ly * bc)));
     }
 
     /// <summary>What the shelter says as a captain steps into its air.</summary>

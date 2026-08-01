@@ -149,6 +149,11 @@ public sealed class DeckView
     private static readonly RgbaColor ShuttleColor = new(150, 210, 255, 220);
     private static readonly RgbaColor DroidColor = new(150, 160, 180);
     private static readonly RgbaColor ReeverColor = new(230, 80, 70);   // #295: watchdog red
+
+    // #583 · The repo crew. A cold institutional amber, deliberately NOT the Old Ones' red: what is walking
+    // toward you matters, and two hostiles that read identically on the map is one hostile with two names.
+    // Red is the thing that wants to eat you; amber is the thing that wants your money and has paperwork.
+    private static readonly RgbaColor CollectorColor = new(226, 170, 60);
     private static readonly RgbaColor HuskColor = new(120, 70, 60, 150); // #314: a downed Old One's husk
     private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
@@ -547,7 +552,8 @@ public sealed class DeckView
             (float dx, float dy) = P(droid.X, droid.Y);
             // #295: the Reevers read hostile — a red mark, not the crew's grey.
             bool reever = droid.Name == "Reever";
-            RgbaColor mark = reever ? ReeverColor : DroidColor;
+            bool collector = droid.Name == "Collector";   // #583: a repo crew on foot, amber not red
+            RgbaColor mark = reever ? ReeverColor : collector ? CollectorColor : DroidColor;
             // #473 · AN OLD ONE'S PICTURE IS ITS BODY. The captain is drawn at exactly DeckPlan.AvatarRadius
             // (below), but the Old Ones — who collide, catch, block and get shoved apart on that SAME radius —
             // were drawn a tenth of a deck unit smaller. Every law that reads their body therefore fired with
@@ -556,16 +562,19 @@ public sealed class DeckView
             // parked against a wall floated just off it. Owner: "check all reever collisions… the radius must
             // be used in every single one" — the drawing is one of them. Crew stay at 0.5: nothing collides
             // with a barkeep, so their mark is free to be a mark.
-            float bodyRadius = reever ? (float)DeckPlan.AvatarRadius : 0.5f;
+            // #583: a collector has a body that catches on the same radius as everyone else's, so it is
+            // drawn at that radius for the same reason an Old One is — the picture IS the law.
+            float bodyRadius = reever || collector ? (float)DeckPlan.AvatarRadius : 0.5f;
             _renderer.DrawCircle(dx, dy, bodyRadius * scale, mark, mark);
             // Heads up as one (hull-shudder pause), or the crew catch each other's eye (unexplained signal),
             // else the droid's own facing. The shudder pause wins if both somehow overlap.
-            double facing = headsUp && !reever ? Math.PI / 2
+            double facing = headsUp && !reever && !collector ? Math.PI / 2
                 : glance?[di] ?? droid.FacingRad;
             float fx = dx + (float)Math.Cos(facing) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(facing) * scale * 0.8f;
             DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
-            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name, reever ? ReeverColor : TextDim, "8px monospace", TextAlign.Center);
+            _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name,
+                reever ? ReeverColor : collector ? CollectorColor : TextDim, "8px monospace", TextAlign.Center);
         }
 
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
@@ -909,7 +918,7 @@ public sealed class DeckView
 
     // A WORKING crew member (the people who work the deck): the barkeep, the customs officer, the ship's own
     // droids — anyone who is neither a Reever nor a drinking PATRON (a seated bar regular, or the Magpie).
-    private static bool IsCrew(string name) => name != "Reever" && !IsPatron(name);
+    private static bool IsCrew(string name) => name is not ("Reever" or "Collector") && !IsPatron(name);
 
     // The drinking patrons — the regulars' short names (HavenInterior.ShortNameFor) + the roaming Magpie +
     // the station Oracle (a ranting-drunk bar fixture, #425, not working staff) + the empty-chair fallback.

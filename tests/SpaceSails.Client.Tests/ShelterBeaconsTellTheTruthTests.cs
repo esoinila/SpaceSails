@@ -29,8 +29,17 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class ShelterBeaconsTellTheTruthTests
 {
+    // #585 · EVERY LANDABLE BODY IN THE SCENARIO. The first version of this list held eight and the
+    // scenario holds TEN — enceladus and the-clinker were simply forgotten, so four grounds were audited by
+    // nobody while the file claimed to check "every site". A hand-kept mirror of data that lives somewhere
+    // else is the exact bug this whole document is about; it is written down here rather than derived only
+    // because the scenario is a wwwroot JSON the test host cannot reliably locate. If a moon is ever added,
+    // it must be added here — and the spec's "not yet enforced" list says so out loud.
     private static readonly string[] Bodies =
-        ["miranda", "luna", "phobos", "europa", "titan", "ganymede", "callisto", "triton"];
+    [
+        "luna", "phobos", "europa", "ganymede", "callisto",
+        "titan", "enceladus", "miranda", "triton", "the-clinker",
+    ];
 
     private static IEnumerable<(string Body, LandingSite Site)> EverySite() =>
         Bodies.SelectMany(b => LandingSites.For(b).Select(s => (b, s)));

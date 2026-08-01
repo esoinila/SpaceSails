@@ -221,6 +221,26 @@ public partial class Map
         public int Rounds { get; set; } = rounds;
     }
 
+    // ── #583 · A REPO CREW ON FOOT. Owner: "FBI does not arrest cars ... they look for the driver". ────
+    //
+    // They are not Old Ones and they do not behave like them: they walk, they spread out, they do not tire,
+    // and what happens if one reaches you is a WRIT, not a mauling. Client-owned position, exactly like a
+    // Reever's — never saved, rebuilt from the seeded roll on any reload.
+    private sealed class Collector
+    {
+        public double X, Y, Facing;
+        public double Vx, Vy;
+
+        // The stable handedness ReeverChase.Step wants so a wall is rounded rather than dithered at. Spread
+        // across the party so they flow around a slab from both ends instead of queueing at one corner.
+        public int WallSide = 1;
+    }
+
+    private readonly List<Collector> _collectors = [];
+
+    // The engine ceiling for the buffer arithmetic below (CollectorLanding.PartySize is clamped to 4).
+    private const int MaxCollectors = 4;
+
     private sealed class Reever
     {
         public double X, Y, Facing, Vx, Vy;
@@ -502,6 +522,26 @@ public partial class Map
         public Dictionary<int, double> ShelterReservoir { get; } = [];
         public HashSet<int> ShelterPumpNoted { get; } = [];
 
+        // #585 · This site's shelters, worked out once. See SheltersOn for why this is a field and not a
+        // call: the threshold rule asks the question once per hunter per frame, and the answer is fixed for
+        // the whole excursion.
+        public IReadOnlyList<SurfaceStructure.Spec>? ShelterSpecs { get; set; }
+
+        // ── #583 · THE REPO BOAT. Whether one is coming, when, and what is painted on it — all decided
+        //    ONCE, from the heat this captain earned, at the moment the shuttle sets down. ──
+        public bool CollectorsComing { get; set; }
+        public double CollectorsEtaSeconds { get; set; } = double.PositiveInfinity;
+        public string CollectorCallsign { get; set; } = "";
+        public bool CollectorsLanded { get; set; }
+        public bool CollectorsHailed { get; set; }
+        public bool CollectorShelterNoted { get; set; }
+        public double CollectorBoatX { get; set; }
+        public double CollectorBoatY { get; set; }
+
+        // How long this excursion has been running, in surface seconds. The boat's ETA is measured against
+        // it, so the arrival lands MID-MISSION rather than at the hatch.
+        public double SecondsOnTheGround { get; set; }
+
         // #580 · There is deliberately NO locker state here any more. The old HashSet of spent lockers is
         // what stranded the owner beside an empty one; a shelter now reloads whoever reaches it, every time,
         // so there is nothing left to remember. See SurfaceShelter.LockerRounds for the ruling.
@@ -600,6 +640,24 @@ public partial class Map
         }
 
         _surface = excursion;
+
+        // ── #583 · DOES THE HEAT FOLLOW YOU DOWN? Rolled ONCE, here, off the heat this captain earned and
+        //    this excursion's threat seed. Decided at the hatch and never re-rolled, so the answer is a fact
+        //    about this trip rather than a die thrown at the player every minute. ──
+        _collectors.Clear();
+        // Regolith only for now. The owner wants this "on land OR at a ship looting it", and he is right —
+        // but a boat cannot set down inside a derelict, so that arrival is a docking and a walk in through
+        // somebody else's airlock, which is its own build (#584). Landing a boat on a hull's deck plan would
+        // be the geometry lying about the fiction, which is the one bug this project keeps paying for.
+        excursion.CollectorsComing = !OnWreck
+            && (_collectorCheatSeconds is not null
+                || CollectorLanding.WillFollowYouDown(_heat.Level, excursion.ThreatSeed));
+        if (excursion.CollectorsComing)
+        {
+            excursion.CollectorsEtaSeconds = _collectorCheatSeconds
+                ?? CollectorLanding.ArrivesAfterSeconds(_heat.Level, excursion.ThreatSeed);
+            excursion.CollectorCallsign = CollectorLanding.CallsignFor(excursion.ThreatSeed);
+        }
 
         // #580 · The bird stops mid-sentence as the hatch closes. Anything it was saying was about the ship,
         // and the captain has just stopped being aboard her — leaving the bubble hanging over a moon is the
@@ -1259,10 +1317,46 @@ public partial class Map
     }
 
     /// <summary>Every shelter on this site, in the stable order everything else indexes by.</summary>
-    private IReadOnlyList<SurfaceStructure.Spec> SheltersOn(SurfaceExcursion ex) =>
-        Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
+    /// <summary>#585 · Every shelter on this site — computed ONCE per excursion and remembered.
+    ///
+    /// <para>Owner, after the rebuild: <i>"I think it felt a little sluggish at some points."</i> This was
+    /// the cost I had just added. <c>SurfaceShelter.SpecsFor</c> is pure but not free — it re-runs the
+    /// seeded placement, up to nine shelters over thirty hashed candidate spots each, with a separation
+    /// check against everything placed so far. That was fine when it was called twice a frame to draw
+    /// beacons. It stopped being fine the moment the threshold rule (#585) called it once PER OLD ONE PER
+    /// FRAME: twenty-four hunters × ~270 hash-and-lerp attempts, sixty times a second, to answer a question
+    /// whose answer cannot change for the whole excursion.</para>
+    ///
+    /// <para>Determinism is what makes the cache safe: same body, same salt, same field ⇒ same list, every
+    /// time. Cleared with the excursion, so a new site recomputes.</para></summary>
+    private IReadOnlyList<SurfaceStructure.Spec> SheltersOn(SurfaceExcursion ex)
+    {
+        if (ex.ShelterSpecs is { } cached)
+        {
+            return cached;
+        }
+        IReadOnlyList<SurfaceStructure.Spec> specs = Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
             ? []
             : SurfaceShelter.SpecsFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
+        ex.ShelterSpecs = specs;
+        return specs;
+    }
+
+    /// <summary>#585 · Push a body back out of any shelter it has ended up inside. The door reads a suit;
+    /// nothing else on this ground gets to be in there. Cheap: a site carries a handful of shelters and the
+    /// common case is a single Contains() that says no.</summary>
+    private (double X, double Y) HoldOutsideShelters(double x, double y)
+    {
+        if (_surface is not { } ex)
+        {
+            return (x, y);
+        }
+        foreach (SurfaceStructure.Spec spec in SheltersOn(ex))
+        {
+            (x, y) = SurfaceShelter.HoldAtTheThreshold(spec, x, y);
+        }
+        return (x, y);
+    }
 
     /// <summary>Which shelter the captain is standing inside, or -1.</summary>
     private int ShelterUnderfoot(SurfaceExcursion ex)
@@ -1462,14 +1556,14 @@ public partial class Map
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
         {
             _deckPlan = WreckInterior.WreckDeck(
-                aboard, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling, FillSurfaceDroids,
+                aboard, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids,
                 HeldDoors(), BlockedDoors());
             return;
         }
 
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
-            3 + ReeverEngineCeiling, FillSurfaceDroids,
+            3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids,
             siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name); // #320: the picked site seeds the ground + names the header
 
         // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
@@ -1941,7 +2035,22 @@ public partial class Map
         // the same promise ?land=1 makes for a surface. Without this the cheat lands on whatever moon happens
         // to be nearer and the wreck is unreachable except by walking the deck to the shuttle bay.
         List<ShuttleStop> board = [.. ShuttleDestinationsInRange()];
-        ShuttleStop? target =
+
+        // #585: ?body=ID wins the toss outright, so any ground can be opened and LOOKED at from one URL.
+        // The named body must still be on the board — the cheat may never reach somewhere the player could
+        // not — but if it is there, it is the one we land on.
+        ShuttleStop? target = _forcedLandingBodyId is { } wanted
+            ? board.FirstOrDefault(s => s.IsLandable
+                && string.Equals(s.Body.Id, wanted, StringComparison.OrdinalIgnoreCase))
+            : null;
+
+        if (target is null && _forcedLandingBodyId is { } missing)
+        {
+            string reachable = string.Join(", ", board.Where(s => s.IsLandable).Select(s => s.Body.Id));
+            ShowPulseMessage($"🧪 DEV ?body={missing}: not landable from this berth. In reach: {reachable}");
+        }
+
+        target ??=
             board.FirstOrDefault(s => s.IsLandable && Derelict.TryParseWreckId(s.Body.Id, out _))
             ?? board.FirstOrDefault(s => s.IsLandable);
         if (target is null)
@@ -2029,6 +2138,7 @@ public partial class Map
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
         StepSentries(dtRealSeconds);
         StepReevers(dtRealSeconds);
+        StepCollectors(dtRealSeconds); // #583: the repo boat, and the people who got out of it
         StepExpeditionFog(dtRealSeconds); // #371 Phase 3: born-dark regions + behind-cover contacts + echoes
         // #370/#394: an away site runs NO endless tide (owner: "not a continuous endless stream like on
         // Miranda"). The expedition's beats may rouse a LIMITED pack; the deflection rock runs the pack OFF
@@ -2219,7 +2329,11 @@ public partial class Map
             return;
         }
         double detection = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
-        var entities = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+        // #583: the chirp counts the collectors too — the holster device does not know or care whose
+        // boots they are, and a boat crew walking up on you is exactly the thing it exists to make you
+        // look at.
+        var entities = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy))
+            .Concat(_collectors.Select(c => new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy)));
         int heard = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, entities, detection);
         (_chirp, bool chirp) = MotionTracker.StepChirp(_chirp, heard, dtRealSeconds);
         if (chirp)
@@ -2254,7 +2368,8 @@ public partial class Map
             // whole point of the instrument. But a contact only FRIGHTENS you inside the dread range.
             double detection = Math.Min(
                 MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), NerveModel.DreadRangeDeckUnits);
-            var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+            var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy))
+                .Concat(_collectors.Select(c => new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy)));
             heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
         }
         // #480: charge ONLY the first fright of a spell. AdvanceSightings reports a fresh contact on every
@@ -2994,6 +3109,17 @@ public partial class Map
             (double nx, double ny) = ReeverChase.Step(
                 baseX, baseY, aimX, aimY, step * VacuumDrag(r), barrier, walls, reeverRadius, wallSide);
 
+            // #585 · AND OUT OF THE SHELTERS. Owner, playing: "lol I saw one reever get into a shelter :-D",
+            // then "3 reevers waiting in the shelter :-D". A doorway has to be a real gap or the captain
+            // could not use it either, so geometry alone was always going to let a body through — but the
+            // building's own arrival line promises "Nothing outside can work that door", and the whole
+            // reason it exists is his ask for "rooms with doors we can hide behind while we reload our guns
+            // safe from reevers". A refuge you can be followed into is just a smaller room to die in.
+            //
+            // Same fiction that already pens them off the shuttle: the door reads a SUIT. They may crowd the
+            // threshold and wait there — which is its own good scene — and they may not come in.
+            (nx, ny) = HoldOutsideShelters(nx, ny);
+
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 
             if (progressed < idleProgress)
@@ -3140,6 +3266,148 @@ public partial class Map
     // random intervals"). This supersedes the old dig-gated linger trickle: the tide runs from the moment
     // the boots hit regolith, not only after a dig, so time in the deep field is bounded on any visit. The
     // acute ReeverRaid pack (BeginDig) still turns out ON TOP of it — the tide is the ambient pressure.
+    // ── #583 · THE REPO BOAT COMES DOWN ────────────────────────────────────────────────────────────────
+    //
+    // Owner, 2026-08-01: "but the heat should not target the ship when the player is not on it but only
+    // target the captain... we could have some other shuttle land near ours on some sites ... that would be
+    // the heat when we are on land or at a ship looting it" — and, settling it, "FBI does not arrest cars ...
+    // they look for the driver".
+    //
+    // #580 stopped the wolves from catching an empty hull, which was right and left heat meaning nothing
+    // during the part of the game the captain is actually in. This is the other half: the collectors come to
+    // the person. A boat sets down between you and your ride, a crew gets out, and they walk. They cannot be
+    // out-burned out here, only outwalked — and the only door that closes on them is the tube's.
+    private void StepCollectors(double dtRealSeconds)
+    {
+        if (_surface is not { } ex || _busted is not null)
+        {
+            return;
+        }
+
+        double dt = Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds);
+        ex.SecondsOnTheGround += dt;
+
+        if (!ex.CollectorsComing)
+        {
+            return;
+        }
+
+        if (!ex.CollectorsLanded)
+        {
+            if (ex.SecondsOnTheGround < ex.CollectorsEtaSeconds)
+            {
+                return;
+            }
+            LandTheCollectors(ex);
+            return; // one beat to read the sky before they start walking
+        }
+
+        // The maze is law for them too: they bump-and-slide on the SAME segments the captain's boots do, so
+        // a building costs them the long way round exactly as it costs an Old One. Unlike an Old One there
+        // is no crew-only leash — they came in their own boat and they have their own airlock.
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+        bool reachable = !CaptainBeyondReach;
+
+        foreach (Collector c in _collectors)
+        {
+            double wasX = c.X, wasY = c.Y;
+            (c.X, c.Y) = CollectorLanding.Step(
+                c.X, c.Y, _avatarX, _avatarY, dt, walls, DeckPlan.AvatarRadius, c.WallSide);
+
+            // #585: the repo crew waits outside too — which is exactly what their own line already says they
+            // do ("they take up positions and settle in to wait"). A writ that walks through the door would
+            // make that sentence a lie, and would take the one decision out of the scene: whether to sit on
+            // your air or run for the tube.
+            (c.X, c.Y) = HoldOutsideShelters(c.X, c.Y);
+
+            c.Vx = dt > 0 ? (c.X - wasX) / dt : 0;
+            c.Vy = dt > 0 ? (c.Y - wasY) / dt : 0;
+            if (Math.Abs(c.Vx) > 1e-6 || Math.Abs(c.Vy) > 1e-6)
+            {
+                c.Facing = Math.Atan2(c.Vy, c.Vx);
+            }
+
+            // A shelter is a pressure vessel, not a sanctuary — and the game says so out loud rather than
+            // letting the player discover it by being taken inside one they thought was safe.
+            if (!ex.CollectorShelterNoted && ShelterUnderfoot(ex) >= 0
+                && CollectorLanding.HasYou(c.X, c.Y, _avatarX, _avatarY) is false
+                && Distance(c.X, c.Y, _avatarX, _avatarY) < 24)
+            {
+                ex.CollectorShelterNoted = true;
+                ShowPulseMessage(CollectorLanding.ShelterIsNotSanctuaryLine);
+            }
+
+            if (reachable && CollectorLanding.HasYou(c.X, c.Y, _avatarX, _avatarY))
+            {
+                TheWritIsServed(ex);
+                return;
+            }
+        }
+    }
+
+    private static double Distance(double ax, double ay, double bx, double by)
+    {
+        double dx = ax - bx, dy = ay - by;
+        return Math.Sqrt((dx * dx) + (dy * dy));
+    }
+
+    /// <summary>#583 · The boat touches down, off to one side of the tube — near enough to be between you
+    /// and the way home, never on top of the hatch (a boat parked on the door would end the excursion by
+    /// geometry instead of by decision).</summary>
+    private void LandTheCollectors(SurfaceExcursion ex)
+    {
+        ex.CollectorsLanded = true;
+        ex.CollectorBoatX = CollectorLanding.SetsDownX(MoonSurface.SpawnX, ex.ThreatSeed);
+        ex.CollectorBoatY = MoonSurface.ReeverBarrierY - 6;
+
+        int party = CollectorLanding.PartySize(_heat.Level);
+        _collectors.Clear();
+        for (int i = 0; i < party && i < MaxCollectors; i++)
+        {
+            _collectors.Add(new Collector
+            {
+                X = ex.CollectorBoatX + ((i - ((party - 1) / 2.0)) * 3.5),
+                Y = ex.CollectorBoatY - 2,
+                Facing = -Math.PI / 2,
+                WallSide = i % 2 == 0 ? 1 : -1,
+            });
+        }
+
+        RendererInterop.PlayCue("alarm");
+        ShowPulseMessage(CollectorLanding.ArrivalLine(ex.CollectorCallsign));
+        if (!ex.CollectorsHailed)
+        {
+            ex.CollectorsHailed = true;
+            ShowPulseMessage(CollectorLanding.HailLine);
+        }
+
+        // It is a fright, and a specific one: the ground just stopped being only about the Old Ones.
+        ApplyNerveShock(4.0, "a boat you did not call, setting down beside yours");
+        RequestVaultSave();
+    }
+
+    /// <summary>#583 · A hand on your carry loop, on foot, on somebody else's moon. It opens the SAME demand
+    /// the same people open on your own deck — submit, bribe, or resist — because it is the same writ and
+    /// they want the same thing. What is different is that you walked into it and cannot burn away.</summary>
+    private void TheWritIsServed(SurfaceExcursion ex)
+    {
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage(CollectorLanding.ContactLine(ex.CollectorCallsign));
+
+        ulong seed = DiceRule.Seed(ex.ThreatSeed, $"busted-on-foot:{(long)SimTime}");
+        _busted = new BustedEncounter
+        {
+            HunterId = $"collector-ground:{ex.Stop.Body.Id}",
+            HunterCallsign = ex.CollectorCallsign,
+            Heat = Math.Max(1, _heat.Level),
+            Seed = seed,
+            Bribe = BustedRule.BribeDemand(Math.Max(1, _heat.Level), seed),
+            Cause = DeathCause.Collector,
+            DeathBodyName = ex.Stop.Body.Name,
+        };
+        RequestVaultSave();
+    }
+
     private void StepTide(double dtRealSeconds)
     {
         if (_surface is not { } ex)
@@ -3467,9 +3735,20 @@ public partial class Map
         // fired (an abort), the rock is left on its line — the impact resolves and the port takes it.
         bool settledDeflection = ex.Deflection && SettleDeflection(ex);
 
+        // #583 · IF THEY WERE STILL COMING, YOU GOT AWAY — and the game says so, because an escape that is
+        // narrated as nothing is indistinguishable from an escape that never happened. The heat is untouched:
+        // outwalking a writ is not settling one, and they know the ship and they will know the next port.
+        bool outwalkedTheWrit = ex.CollectorsLanded && _busted is null;
+
         _surface = null;
         _reevers.Clear();
+        _collectors.Clear();
         _lastNearestReeverRange = null;
+
+        if (outwalkedTheWrit)
+        {
+            ShowPulseMessage(CollectorLanding.EscapedLine);
+        }
 
         SetDeckForDock(ex.RestoreHavenId); // rebuild the ship/complex; folds the surface away
         (_avatarX, _avatarY, _avatarHeading) = (-6, -6.5, Math.PI / 2); // step off into the bay
@@ -3576,6 +3855,17 @@ public partial class Map
             {
                 buffer[slot] = new DeckPlan.Droid(-9999, -9999, 0, "Reever");
             }
+        }
+
+        // #583 · And the repo crew, in their own slots after the Old Ones. Drawn as people, named so the
+        // renderer can give them their own ink — they are not hostiles of the same kind and should not read
+        // as more Reevers on the walked map.
+        for (int i = 0; i < MaxCollectors; i++)
+        {
+            int slot = 3 + ReeverEngineCeiling + i;
+            buffer[slot] = i < _collectors.Count
+                ? new DeckPlan.Droid(_collectors[i].X, _collectors[i].Y, _collectors[i].Facing, "Collector")
+                : new DeckPlan.Droid(-9999, -9999, 0, "Collector");
         }
     }
 
@@ -3745,6 +4035,12 @@ public partial class Map
                 _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
             }
 
+            // #583: a repo crew that boarded a wreck behind you is a contact like any other.
+            foreach (Collector c in _collectors)
+            {
+                _hudEntities.Add(new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy));
+            }
+
             // THE NEST IS THE LOUDEST THING ABOARD. Owner: "the nest should show in the map and as movement
             // both." It never walks anywhere, so a fan that only reports travel would call it silence — but
             // a nest is not a still contact, it is a mass of small motion that never stops. So it goes on
@@ -3863,6 +4159,14 @@ public partial class Map
         foreach (Reever r in _reevers)
         {
             _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+        }
+
+        // #583 · The repo crew is on the fan too. They WALK, and a motion-only ear hears walking louder
+        // than anything else on this ground — which is the whole warning the player gets that the boat that
+        // came down is now spread out and coming. Same instrument, no special case: they are contacts.
+        foreach (Collector c in _collectors)
+        {
+            _hudEntities.Add(new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy));
         }
         IReadOnlyList<MotionTracker.Blip> blips = MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities);
         double? nearest = blips.Count > 0 ? blips[0].Range : null;

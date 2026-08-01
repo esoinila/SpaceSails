@@ -210,7 +210,16 @@ public static class MoonSurface
 
     // WASM is single-threaded, so a plain dictionary is safe. Bounded (see the growth guard above).
     private const int LayoutCacheCap = 64;
-    private static readonly Dictionary<SurfaceDeckKey, Layout> _layoutCache = new();
+    // #585 · CONCURRENT, because the browser is not this cache's only caller. In WASM the game is
+    // single-threaded and a plain Dictionary was safe; the AUDITS are not — xUnit runs test classes in
+    // parallel, so two of them building surface decks at once raced on this dictionary and produced a shelter
+    // list that did not match the ground. That surfaced as a guard which passed alone and failed in the full
+    // run, which is worse than no guard at all: a flaky audit teaches you to ignore audits.
+    //
+    // Building a Layout is deterministic, so a racing double-build is pure waste and never a wrong answer —
+    // only the dictionary itself needed protecting.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<SurfaceDeckKey, Layout>
+        _layoutCache = new();
 
     private static Layout BuildLayout(
         string bodyId,
@@ -270,8 +279,12 @@ public static class MoonSurface
         //    edge lane, and a boundary free to wander inward would eventually eat one. Outward can only add
         //    bare regolith. The bulge tapers to nothing at every corner, so the chain closes exactly and
         //    there is no gap for a captain to walk out of the world through.
-        var field = new SurfaceLayout.Field(
-            SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, MonolithX, MonolithY);
+        // #585 · ONE FIELD, ONE EXPRESSION. This used to re-type the same seven constants that
+        // ExpeditionField() is built from — identical values, and a SECOND COPY of the arithmetic that the
+        // beacons, the shelter placer, the audits and the labs all read through ExpeditionField(). That is
+        // the precise shape of the bug that made the map lie (SpecFor vs SpecsFor) and of the envelope drift
+        // before it. There is nothing to keep in sync if there is only one of it.
+        SurfaceLayout.Field field = ExpeditionField();
         foreach ((double x1, double y1, double x2, double y2) in SurfaceEdge.Bound(bodyId, siteSalt, field))
         {
             walls.Add(new((float)x1, (float)y1, (float)x2, (float)y2, false, false, Unseen: true));
@@ -395,7 +408,16 @@ public static class MoonSurface
             foreach (SurfaceStructure.Doorway d in built.Doorways)
             {
                 doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2));
-                consoles.Add(new(DeckPlan.ConsoleKind.SurfaceAirlock,
+                // #585 · ITS OWN KIND, NOT THE SHIP'S HATCH. Owner, mid-excursion: "how did I just go to ship
+                // from a shelter ... what happened" / "I was at surface shelter and now at ship shuttle bay
+                // ... how". Because this console was laid as SurfaceAirlock — the SAME kind as the down
+                // tube's "BOARD THE SHUTTLE" — so [E] on a shelter door ran the boarding path and flew him
+                // home from the middle of the field, excursion and all.
+                //
+                // A console kind is a VERB, and two different doors were sharing one. Reusing it read as
+                // tidy ("they are both doors") and was the same two-things-one-name mistake as every other
+                // expensive bug on this ground.
+                consoles.Add(new(DeckPlan.ConsoleKind.ShelterDoor,
                     (float)d.CentreX, (float)d.CentreY, SurfaceShelter.DoorLabel));
             }
             consoles.Add(new(DeckPlan.ConsoleKind.ShelterTank,

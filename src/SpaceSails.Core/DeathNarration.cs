@@ -154,8 +154,12 @@ public static class DeathNarration
     /// on landing party show that I was wearing the red shirt :-D"</i>. Star Trek's away-team red shirt is
     /// exactly the register the away-team death should have, and this game has always been willing to be
     /// funny about death (the parrot, the insurance, "there are worse epitaphs").</summary>
+    // #583 adds Collector to the landing-party art: a captain taken on foot on a moon died in a SUIT on the
+    // ground, whoever's hand it was — so it is the red-shirt card, not the gun-camera freeze-frame off a
+    // ship's nose. The place decides the picture; the cause decides the words.
     public static string ArtFile(DeathCause cause, DeathPlace place) =>
-        place == DeathPlace.LandingParty && cause is DeathCause.Reevers or DeathCause.Suffocated
+        place == DeathPlace.LandingParty
+            && cause is DeathCause.Reevers or DeathCause.Suffocated or DeathCause.Collector
             ? "death-landing-party.jpg"
             : ArtFile(cause);
 
@@ -194,6 +198,17 @@ public static class DeathNarration
         "The collectors' boarding volley caught you {where} — they don't come to collect twice.",
         "One massive volley {where}, and the last stand was over before the echo. The debt collected itself.",
         "They ran you down {where} and settled the account in lead. The purse was never the point.",
+    ];
+
+    // #583 · The same people, on foot, on a moon. The ship lines above are all about a boarding volley and a
+    // last stand at the controls, and reading those over a captain taken walking across regolith would be
+    // the same borrowed prose #574 was filed about. No volley out here: a writ, a hand, and a long walk to
+    // somebody else's boat.
+    private static readonly string[] CollectorLinesOnFoot =
+    [
+        "They walked you down on {body} — no burn to make, no gun to reach, just a gloved hand on the carry loop and the writ read out over your own suit channel.",
+        "The repo crew took you on foot on {body}. You were carrying more air than argument, and they had all day.",
+        "It ended on {body}'s ground, at walking pace. They never even ran — they did not have to; the tank did their work.",
     ];
 
     private static readonly string[] ImpactLines =
@@ -291,8 +306,16 @@ public static class DeathNarration
     /// has one place to check itself against.</para></summary>
     public static bool CanHappen(DeathCause cause, DeathPlace place) => cause switch
     {
-        // Somebody has to be there to collect you, and to fly a ship into something.
-        DeathCause.Collector or DeathCause.Impact => place == DeathPlace.OwnShip,
+        // You have to be at the controls to fly a ship into something.
+        DeathCause.Impact => place == DeathPlace.OwnShip,
+
+        // #583 · AND NOW THE COLLECTORS COME TO THE GROUND. This used to be OwnShip-only, and it was right
+        // for as long as heat could only ever be delivered to a deck — the owner's own ruling that a
+        // collector death "should only happen in those situations, never in any other". What changed is the
+        // situation: a repo boat now sets down on the regolith and a crew walks you down on foot, because
+        // "FBI does not arrest cars ... they look for the driver". Still never on a derelict — boarding a
+        // wreck they are already inside is its own arrival and is not built yet.
+        DeathCause.Collector => place != DeathPlace.Derelict,
         // The Old Ones and the tank reach you anywhere you are out of the ship.
         DeathCause.Reevers or DeathCause.Joined or DeathCause.Suffocated => place != DeathPlace.OwnShip,
         _ => true,
@@ -328,6 +351,15 @@ public static class DeathNarration
                 return t.Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that hull" : bodyName!);
             }
         }
+
+        // #583 · A collector catch on the GROUND gets ground words. The ship pool talks about a boarding
+        // volley and a last stand, which is a different death entirely.
+        if (place == DeathPlace.LandingParty && cause == DeathCause.Collector)
+        {
+            string onFoot = CollectorLinesOnFoot[(int)(seed % (ulong)CollectorLinesOnFoot.Length)];
+            return onFoot.Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that ground" : bodyName!);
+        }
+
         return Line(cause, seed, bodyName);
     }
 
