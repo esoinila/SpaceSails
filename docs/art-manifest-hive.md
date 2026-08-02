@@ -103,3 +103,28 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 
 The **descent card** (`art/the-descent.jpg`, `UndergroundComplex.DescentArtUrl`) is a #585 slot that
 predates this manifest and is already wired; it is listed here only so nobody paints it twice.
+
+## 3. `art/death-underground.jpg` — DIED IN A SECRET LAB ★ owner's ask
+
+- **Slot:** `DeathNarration.ArtFile(cause, DeathPlace.Underground)` — every death on a Hive floor.
+- **Why:** owner, having suffocated on B2 and been handed the away-team card: *"now we have the suffocated
+  on surface one :-D"* and *"let's make a died in a secret lab photo also :-D"*. The red-shirt card is a
+  figure on regolith with a sky over it, which is the one thing this death does not have.
+- **Composition (16:9):** a suited body slumped against the wall of a poured-concrete corridor, seen from a
+  few metres. Dark visor. An open, empty satchel beside them. Drag marks through undisturbed dust. A heavy
+  sealed bulkhead in the gloom behind. One working light strip; everything else dark. **No blood, no
+  violence, no creature** — this is suffocation, quiet and administrative.
+- **Painted 2026-08-02.** Clean of lettering.
+
+## 4. `art/the-dead-air.jpg` — THE FIRST DEAD FLOOR ★ owner's ask
+
+- **Slot:** `UndergroundComplex.VacuumArtUrl`, raised once per excursion the first time the captain steps
+  out onto a floor that does not hold pressure.
+- **Why:** *"there should be a warning or something :-D"* · *"maybe pop-up about you have air or you are in
+  vacuum type ... it is vital info"* · *"on surface there are emergency shelters :-D"*. The rule was being
+  announced in a pulse that fades in eight seconds, between one about bench hardware and one about dust.
+- **Composition (16:9):** looking down a long dark concrete corridor. **The air is gone and the picture has
+  to say so without a word** — fine dust hanging perfectly still in a suit-lamp beam, frost rimed along one
+  wall seam, emergency lighting glowing uselessly on a circuit nobody has paid for. No people, nothing
+  organic. Cold, still, enormous: a place built for people and containing none.
+- **Painted 2026-08-02.** Clean of lettering.

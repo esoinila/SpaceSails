@@ -1832,9 +1832,20 @@ public partial class Map
         // you, and there is nobody aboard a dead hull or out on an empty moon. Owner: "the debt collector
         // deaths should also only happen in those situations never in any other". Coerced rather than
         // trusted, because this method has four callers and will have more.
-        DeathPlace place = Derelict.TryParseWreckId(dying.Stop.Body.Id, out _)
-            ? DeathPlace.Derelict
-            : DeathPlace.LandingParty;
+        // #608 · AND UNDER A MOON IS ITS OWN PLACE. Owner, having suffocated on B2 and been handed the
+        // surface card: "now we have the suffocated on surface one :-D"
+        //
+        // He was 150 m down in a poured corridor being told about regolith, a suit and the long walk back to
+        // the tube. Nothing here knew "underground" existed, so every death in the Hive fell through to the
+        // away team's — the sim knowing one thing and the sentence reporting another, which is the named bug
+        // class on this ground and the third card it has cost.
+        //
+        // The floor is the fact, and it is right here on the excursion. It just was not being asked.
+        DeathPlace place = dying.Floor < 0
+            ? DeathPlace.Underground
+            : Derelict.TryParseWreckId(dying.Stop.Body.Id, out _)
+                ? DeathPlace.Derelict
+                : DeathPlace.LandingParty;
         if (!DeathNarration.CanHappen(cause, place))
         {
             cause = DeathCause.Reevers;

@@ -1115,6 +1115,54 @@ public static class UndergroundComplex
         "🕳 No plate by the lift, no department, no number painted anywhere. The building has floors it " +
         "does not count, and you are standing on one.";
 
+    // ── #608 · THE ONE THING YOU MUST NOT MISS ──────────────────────────────────────────────────────────
+    //
+    // Owner, after suffocating on B2: "I thought there is air in the base?" ... "there should be a warning
+    // or something :-D" ... "maybe pop-up about you have air or you are in vacuum type ... it is vital info"
+    // ... "like the basement is more dangerous than the surface now :-D" ... "on surface there are emergency
+    // shelters :-D"
+    //
+    // He is right on every count, and the last two are the argument. The surface gives a captain a visible
+    // building to run to; a dead floor gives them a number they have to have been told. The rule itself is
+    // good and stays exactly as it is — the top of each shaft band holds pressure and the rest costs air —
+    // but it was being announced in a pulse that fades in eight seconds, between one about bench hardware
+    // and one about dust.
+    //
+    // So the first dead floor of an excursion stops the world and says it properly, WITH THE ARITHMETIC:
+    // which floors have air, how far the nearest one is, and how long the tank has. After that the pulse
+    // line is enough, because by then it is knowledge rather than news.
+
+    public const string VacuumArtUrl = "art/the-dead-air.jpg";
+
+    public const string VacuumCardLabel = "🫁 DEAD AIR";
+
+    /// <summary>What the first dead floor says. It states the rule and does the sum — a warning that makes
+    /// the captain work out their own margin is a warning delivered too late.</summary>
+    public static string VacuumCard(int level, double airSeconds)
+    {
+        int band = BandOf(level);
+        int refuge = BandTop(band);          // the top of this band always holds pressure
+        int floorsUp = -level - -refuge;     // how many floors between here and breathable
+        string tank = airSeconds > 0
+            ? $"{(int)(airSeconds / 60)} min {(int)(airSeconds % 60):00} s"
+            : "whatever is left";
+
+        string upstairs = floorsUp == 0
+            ? "this floor"
+            : $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";
+
+        return
+            "The doors part on nothing.\n\n" +
+            "No pressure, no lights but yours, and the dust has not been disturbed since it settled. You " +
+            $"are {MetresDown(level):F0} m under the regolith and your tank is now the clock.\n\n" +
+            "THE RULE, because it is the only one down here that can kill you: the TOP FLOOR OF EVERY SHAFT " +
+            "BAND holds pressure. Nothing else does. That is where the lobbies were, and the fans on those " +
+            "floors are still turning on somebody's account.\n\n" +
+            $"The nearest air is {NameOf(refuge)} — {upstairs}. You have {tank}.\n\n" +
+            "There are no shelters down here. Nobody built one, because nobody who worked in this building " +
+            "was ever meant to be caught out by it.";
+    }
+
     /// <summary>Said on stepping out on the top floor — the lie that makes the rest work.</summary>
     public const string PressurisedLine =
         "🫁 The doors part on warm air and standing lights. Your suit stops drawing and the readout holds. " +

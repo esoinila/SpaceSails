@@ -66,6 +66,7 @@ public static class VaultSerializer
     private const string SecOverheard = "overheard";
     private const string SecFieldNotes = "fieldnotes";   // #587 · the field book
     private const string SecAuthorities = "authorities";  // #590 · the cards that run a shaft
+    private const string SecSatchel = "satchel";          // #603 · everything carried on foot
     private const string SecKaamos = "kaamos";
     private const string SecNebula = "nebula";
     private const string SecResume = "resume";
@@ -92,6 +93,7 @@ public static class VaultSerializer
         AddSection(sections, SecOverheard, vault.Overheard);
         AddSection(sections, SecFieldNotes, vault.FieldNotes);
         AddSection(sections, SecAuthorities, vault.Authorities);
+        AddSection(sections, SecSatchel, vault.Satchel);
         AddSection(sections, SecKaamos, vault.Kaamos);
         AddSection(sections, SecNebula, vault.Nebula);
         AddSection(sections, SecResume, vault.Resume);
@@ -168,6 +170,7 @@ public static class VaultSerializer
             Overheard = Harvest<OverheardSection>(sections, SecOverheard, warnings),
             FieldNotes = Harvest<FieldNotesSection>(sections, SecFieldNotes, warnings),
             Authorities = Harvest<AuthoritiesSection>(sections, SecAuthorities, warnings),
+            Satchel = Harvest<SatchelSection>(sections, SecSatchel, warnings),
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),
             Resume = Harvest<ResumeSection>(sections, SecResume, warnings),

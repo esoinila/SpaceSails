@@ -556,6 +556,10 @@ public partial class Map
         // gate eleven times is not eleven findings.
         public HashSet<int> HiveShaftsRefused { get; } = [];
 
+        // #608 · Whether this excursion has had the DEAD AIR card. Once: after that the pulse line is
+        // enough, because by then it is knowledge rather than news.
+        public bool HiveVacuumWarned { get; set; }
+
         // #592 · Whether this excursion has already had the floor-with-no-plate beat. Once is the whole
         // point: the second time you step out down there it is just a corridor, and it should be.
         public bool HiveUnlistedSeen { get; set; }
@@ -1584,7 +1588,7 @@ public partial class Map
     /// <summary>#600 · The buttons on this car's panel, from where the captain is standing.</summary>
     private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
         _surface is { } ex
-            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, _authorityCards)
+            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, AuthorityCardIds())
             : [];
 
     /// <summary>#600 · A button was pressed. A refusing button says why and the car does not move — a button
@@ -1698,11 +1702,37 @@ public partial class Map
             ApplyNerveShock(9.0, "a building with floors it does not count");
         }
 
-        // The floor announces which KIND of floor it is, in those words, so the captain is never guessing
-        // whether their tank is running.
-        if (ex.HiveFloorsSeen.Add(level))
+        // \u2500\u2500 #608 \u00b7 WHETHER YOU CAN BREATHE HERE IS A CARD, NOT A TOAST \u2500\u2500
+        //
+        // Owner, having suffocated on B2: "I thought there is air in the base?" / "there should be a warning
+        // or something :-D" / "maybe pop-up about you have air or you are in vacuum type ... it is vital
+        // info" / "like the basement is more dangerous than the surface now :-D".
+        //
+        // The last one is exactly right and it is the DESIGN \u2014 depth is paid for in air (#585) \u2014 but the
+        // game was announcing the single most important fact about a floor in a pulse message that fades in
+        // eight seconds, alongside pulses about hardware and dust. On the surface an emergency shelter is a
+        // visible building you can run to; down here the equivalent is knowing which floors hold pressure,
+        // and that was being whispered.
+        //
+        // So the FIRST time each excursion meets dead air it stops the world with a card. Every later dead
+        // floor is the pulse line again, because by then the captain has been told and a card per floor
+        // would be a card nobody reads.
+        bool firstSight = ex.HiveFloorsSeen.Add(level);
+        bool pressurised = UndergroundComplex.HoldsPressure(level);
+
+        if (firstSight && !pressurised && !ex.HiveVacuumWarned)
         {
-            ShowAndFile(UndergroundComplex.HoldsPressure(level)
+            ex.HiveVacuumWarned = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.VacuumCardLabel,
+                UndergroundComplex.VacuumArtUrl,
+                UndergroundComplex.VacuumCard(level, ex.AirSeconds));
+            ShowAndFile(UndergroundComplex.DeadAirLine, "\ud83e\udec1");
+        }
+        else if (firstSight)
+        {
+            ShowAndFile(pressurised
                 ? UndergroundComplex.PressurisedLine
                 : UndergroundComplex.DeadAirLine, "\ud83e\udec1");
         }
@@ -1784,9 +1814,33 @@ public partial class Map
         // #585 · A facility keeps records of the OTHER facilities. Operational paper and files are the
         // strongest leads in the game, which is the right shape: the deeper into one of these you go, the
         // more of the map opens up.
-        if (haul is UndergroundComplex.Haul.Records or UndergroundComplex.Haul.Dirt)
+        // ── #603 · PAPER IS NOW A THING YOU CARRY, NOT A LEAD YOU ARE GIVEN ──
+        //
+        // Operational paper used to grant a lead the moment you picked it up — the game did the thinking and
+        // handed you the answer. The owner's version is better: the decision to read a document AS A CLUE is
+        // the player's, and making it is what lights the tracker. A paper you have not connected to anything
+        // is just paper.
+        //
+        // A file on somebody is carried too, but it is never offered to a door: it is leverage on a PERSON,
+        // which is the only currency down here you spend on somebody you can go and meet.
+        string findId = $"hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}";
+        if (haul == UndergroundComplex.Haul.Records)
         {
+            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Paper, findId))];
+        }
+        else if (haul == UndergroundComplex.Haul.Dirt)
+        {
+            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Dirt, findId))];
+
+            // A file still names a moon on its own — it is about a PERSON and the person is somewhere. Only
+            // the operational paper became a thing you have to decide about.
             GrantLabLead(DiceRule.Seed($"lead:hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
+        }
+
+        if (Core.Satchel.IsFull(_satchel))
+        {
+            ShowPulseMessage("🎒 Your hands and pockets are full. Something has to be read, spent or left " +
+                "behind before you can carry anything else out of here.");
         }
 
         // #590 · THE CARD IS NOW A THING YOU HOLD. It runs the shaft below the band it was found in, so the
@@ -1800,7 +1854,8 @@ public partial class Map
         {
             if (UndergroundComplex.CardInRoom(ex.Stop.Body.Id, ex.Floor) is { } card)
             {
-                _authorityCards.Add(card.Id);
+                _satchel = [.. Core.Satchel.Add(_satchel,
+                    new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
 
                 // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to
                 // really tell the story here :-D" — the right pair with the sealed way, because the Hive has
@@ -2017,12 +2072,26 @@ public partial class Map
     // wash. Without it the search was a lottery with four thousand tickets.
     private readonly HashSet<string> _labLeads = [];
 
-    // #590 · THE AUTHORITIES THE CAPTAIN IS CARRYING, by
-    // <see cref="Core.UndergroundComplex.AuthorityCard.Id"/>. A card is a durable possession, not a state of
-    // one excursion: you find it eleven floors under a moon, fly home, come back a month later and the gate
-    // still reads it. So it lives on the page beside the leads and rides in the vault, not on the
-    // SurfaceExcursion (which is thrown away the moment the shuttle lifts).
-    private readonly HashSet<string> _authorityCards = [];
+    // ── #603 · THE SATCHEL: everything the captain is carrying on foot ──────────────────────────────────
+    //
+    // Owner: "we should have some option to try use those at the locked doors... maybe we need like
+    // on-site-carried-items inventory ... The captains ledger has the ship stuff but we should have
+    // something similar on foot."
+    //
+    // This REPLACES the #590 card set. Cards were the first thing the captain carried that the player could
+    // not see, and by the time papers, files and loose rounds joined them there would have been four private
+    // stores and still no pockets. One list now, and a panel draws it.
+    //
+    // Durable, not per-excursion: you find a thing eleven floors under a moon, fly home, come back a month
+    // later and it is still in your pocket. So it rides in the vault beside the leads rather than on the
+    // SurfaceExcursion, which is thrown away the moment the shuttle lifts.
+    private List<Core.Satchel.Item> _satchel = [];
+
+    /// <summary>#590 · The card ids the lift panel and its gate ask about, DERIVED from the satchel so there
+    /// is one store. A second copy kept in step by hand is the failure this ground's spec opens with a table
+    /// of.</summary>
+    private HashSet<string> AuthorityCardIds() =>
+        [.. Core.Satchel.OfKind(_satchel, Core.Satchel.Kind.Authority).Select(i => i.Id)];
 
     /// <summary>#590 · Every card the captain holds, parsed back into what it authorises. Unreadable entries
     /// from an edited or future save are simply dropped rather than thrown over — the vault is tolerant
@@ -2030,7 +2099,7 @@ public partial class Map
     private List<Core.UndergroundComplex.AuthorityCard> HeldAuthorities()
     {
         var held = new List<Core.UndergroundComplex.AuthorityCard>();
-        foreach (string id in _authorityCards)
+        foreach (string id in AuthorityCardIds())
         {
             if (Core.UndergroundComplex.AuthorityCard.TryParse(id, out Core.UndergroundComplex.AuthorityCard c))
             {
