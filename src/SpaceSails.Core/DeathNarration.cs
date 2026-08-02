@@ -73,6 +73,16 @@ public enum DeathPlace
 
     /// <summary>An away team on a surface. Regolith, a suit, and a long walk back to the tube.</summary>
     LandingParty,
+
+    /// <summary>#609 · Inside a clandestine facility, under a moon. Owner, having suffocated on B2 and been
+    /// handed the surface card: <i>"now we have the suffocated on surface one :-D"</i>.
+    ///
+    /// <para>He was 150 m down in a poured corridor and the card said regolith, a suit and a long walk back
+    /// to the tube — the sim knowing one thing and the SENTENCE reporting another, which is a named bug class
+    /// on this ground and has now cost three cards. There was no value here meaning "underground", so every
+    /// death in the Hive inherited the away team's, and every word of it was wrong: no ground to keep you,
+    /// no sky, and a way out that somebody has to call a car for.</para></summary>
+    Underground,
 }
 
 /// <summary>
@@ -157,11 +167,21 @@ public static class DeathNarration
     // #583 adds Collector to the landing-party art: a captain taken on foot on a moon died in a SUIT on the
     // ground, whoever's hand it was — so it is the red-shirt card, not the gun-camera freeze-frame off a
     // ship's nose. The place decides the picture; the cause decides the words.
-    public static string ArtFile(DeathCause cause, DeathPlace place) =>
-        place == DeathPlace.LandingParty
+    public static string ArtFile(DeathCause cause, DeathPlace place)
+    {
+        // #609 · A death UNDER a moon is not a death ON one. The red-shirt card is a figure on regolith with
+        // a sky over it, and down here there is neither. Owner asked for the picture by name: "let's make a
+        // died in a secret lab photo also :-D"
+        if (place == DeathPlace.Underground)
+        {
+            return "death-underground.jpg";
+        }
+
+        return place == DeathPlace.LandingParty
             && cause is DeathCause.Reevers or DeathCause.Suffocated or DeathCause.Collector
             ? "death-landing-party.jpg"
             : ArtFile(cause);
+    }
 
     public static string ArtFile(DeathCause cause) => cause switch
     {
@@ -315,7 +335,10 @@ public static class DeathNarration
         // situation: a repo boat now sets down on the regolith and a crew walks you down on foot, because
         // "FBI does not arrest cars ... they look for the driver". Still never on a derelict — boarding a
         // wreck they are already inside is its own arrival and is not built yet.
-        DeathCause.Collector => place != DeathPlace.Derelict,
+        // #609 · nor 150 m under a moon. Same reasoning as the derelict, one shaft further: a collector is a
+        // person who came for you, and nobody rides a lift they would have to call a car for to collect a
+        // debt in a building that is not on any register.
+        DeathCause.Collector => place is not (DeathPlace.Derelict or DeathPlace.Underground),
         // The Old Ones and the tank reach you anywhere you are out of the ship.
         DeathCause.Reevers or DeathCause.Joined or DeathCause.Suffocated => place != DeathPlace.OwnShip,
         _ => true,
@@ -334,6 +357,31 @@ public static class DeathNarration
         _ => "",
     };
 
+    /// <summary>#609 · Suffocating on a floor of a clandestine facility. The tank is the clock everywhere on
+    /// a surface, but down here the walk back is a walk to a LIFT — a machine, with a panel, that somebody
+    /// has to still be paying for. None of these say what the place was for.</summary>
+    private static readonly string[] SuffocationLinesBelow =
+    [
+        "The readout went amber somewhere on the stairs down and you told yourself you had counted right. " +
+        "The corridor is poured concrete, lit on a circuit nobody has paid for in decades, and the car is " +
+        "three hundred metres of shaft above you. It does not come when you are not there to call it.",
+
+        "You sit down against a wall that was cast in a mould and then finished by hand, under {body}, in a " +
+        "building with floors it does not count. The tank stops. The lights stay on, because the lights " +
+        "were never the thing that was going to run out.",
+
+        "There was air on the top floor. There was air on the top floor of every band, which is a fact you " +
+        "understood perfectly and used to plan a route that turned out to be eleven metres too long.",
+    ];
+
+    /// <summary>#609 · Anything else that ends a captain down there. Deliberately spare: nothing is supposed
+    /// to be alive on these floors yet, so this pool exists to be CORRECT rather than to be used.</summary>
+    private static readonly string[] ReeverLinesBelow =
+    [
+        "It ends in a corridor under {body} that is on no plan anybody ever filed, and the only thing that " +
+        "will ever know is a building which stopped being told things a long time ago.",
+    ];
+
     public static string Line(DeathCause cause, DeathPlace place, ulong seed, string? bodyName)
     {
         if (place == DeathPlace.Derelict)
@@ -350,6 +398,15 @@ public static class DeathNarration
                 string t = aboard[(int)(seed % (ulong)aboard.Length)];
                 return t.Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that hull" : bodyName!);
             }
+        }
+
+        // #609 · A death in the facility gets facility words. The away-team pool talks about regolith, a
+        // suit and the walk back to the tube — none of which is where the captain is standing.
+        if (place == DeathPlace.Underground)
+        {
+            string[] below = cause == DeathCause.Suffocated ? SuffocationLinesBelow : ReeverLinesBelow;
+            return below[(int)(seed % (ulong)below.Length)]
+                .Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that moon" : bodyName!);
         }
 
         // #583 · A collector catch on the GROUND gets ground words. The ship pool talks about a boarding

@@ -4113,3 +4113,107 @@
 }
 
 .lift-stop.sealed .lift-stop-air { color: #e0a070; }
+
+/* #603 · THE LOCKED DOOR, and the pockets it reminds you of. Owner: "we should advertise the items list on
+   closed locked door pop-up... something like check your items button there that opens inventory." */
+.locked-door {
+    width: min(34rem, 94vw);
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(224, 160, 112, 0.4);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+.locked-door-line {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #cfd8e4;
+}
+
+.locked-door-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* The affordance the door exists to advertise — brighter than the dismiss, because it is the one that
+   answers the question the captain is standing there asking. */
+.locked-door-try {
+    flex: 1;
+    padding: 0.55rem 0.8rem;
+    font: inherit;
+    font-size: 0.9rem;
+    color: #0c1017;
+    background: #d8b884;
+    border: none;
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.locked-door-try:hover { background: #e8cb9c; }
+
+/* #603 · THE SATCHEL. */
+.satchel {
+    width: min(32rem, 94vw);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(200, 170, 120, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+.satchel-sub, .satchel-empty {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #8fa2bb;
+}
+
+.satchel-empty { padding: 0.8rem 0; }
+
+.satchel-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    overflow-y: auto;
+}
+
+.satchel-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.5rem 0.7rem;
+    font: inherit;
+    font-size: 0.86rem;
+    text-align: left;
+    color: #e6dcc8;
+    background: #171a20;
+    border: 1px solid rgba(200, 170, 120, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-item:hover:not(:disabled) {
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.5);
+}
+
+/* Opened from nowhere in particular, it is a LOOK — the rows are not buttons pretending to be inert, they
+   simply are not offering anything, because there is nothing here to offer it to. */
+.satchel-item.inert { cursor: default; opacity: 0.92; }
+
+.satchel-item-try {
+    font-size: 0.74rem;
+    color: #d8b884;
+    white-space: nowrap;
+}

@@ -62,6 +62,11 @@ public sealed class Vault
     /// <summary>#590 · The authority cards the captain is carrying. Its own independently optional section;
     /// a pre-#590 file simply lacks it and defaults to an empty wallet.</summary>
     public AuthoritiesSection? Authorities { get; init; }
+
+    /// <summary>#603 · Everything the captain is carrying on foot. Supersedes <see cref="Authorities"/>,
+    /// which is still read on load so an older save's cards are not lost — a captain who earned a card
+    /// eleven floors down does not lose it to a refactor.</summary>
+    public SatchelSection? Satchel { get; init; }
     public KaamosSection? Kaamos { get; init; }
     public NebulaSection? Nebula { get; init; }
     public ResumeSection? Resume { get; init; }
@@ -351,6 +356,19 @@ public sealed record FieldNotesSection
 ///
 /// <para>These are durable on purpose. A card is found eleven floors under a moon and must still be in the
 /// captain's pocket a month and a world later, or it is not a possession — it is a mood.</para></summary>
+/// <summary>#603 · THE POCKET. Stored as opaque item strings (<c>Satchel.Item.Stored</c>) so the save carries
+/// the FACT and never the words — every label, every clue's certainty and every card's title is a seeded
+/// property of the world, rebuilt at read time. A file that carried the prose would go stale the day the
+/// prose changed, which is the shape of half the bugs in this repository's history.
+///
+/// <para>Supersedes <see cref="AuthoritiesSection"/>, which is still READ on load so an older save's cards
+/// migrate in rather than being lost.</para></summary>
+public sealed record SatchelSection
+{
+    /// <summary>Items, in whatever order they were written.</summary>
+    public IReadOnlyList<string> Items { get; init; } = [];
+}
+
 public sealed record AuthoritiesSection
 {
     /// <summary>Card ids, in whatever order they were written.</summary>

@@ -1144,6 +1144,86 @@
         </div>
     }
 
+    @* #603 · A DOOR THAT WILL NOT OPEN, AND THE POCKETS YOU MIGHT HAVE. Owner: "we should advertise the
+       items list on closed locked door pop-up... something like check your items button there that opens
+       inventory."
+
+       The #212 law applied to the satchel: the refusal already said WHY, and a captain standing there with
+       an authority in their pocket had no way to find out whether it was the one. The door offers the verb
+       now — and it is also how the satchel gets discovered, because nobody reads a keybind and everybody
+       presses the button on the thing that just refused them. *@
+    @if (_lockedDoor is { } door)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLockedDoor)">
+            <div class="locked-door" @onclick:stopPropagation="true">
+                <div class="view-object-title">🔒 @door.Sign</div>
+                <div class="locked-door-line">@door.Line</div>
+                <div class="locked-door-actions">
+                    <button type="button" class="locked-door-try" @onclick="OpenSatchelAtTheDoor">
+                        🎒 Check your items@(_satchel.Count > 0 ? $" ({_satchel.Count})" : "")
+                    </button>
+                    <button type="button" class="view-object-close"
+                            @onclick="() => Dismiss(CloseLockedDoor)">Leave it</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
+       instrument it is a list of things to TRY, and every answer is definite. *@
+    @if (_showSatchel)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
+            <div class="satchel" @onclick:stopPropagation="true">
+                <div class="view-object-title">🎒 WHAT YOU ARE CARRYING</div>
+                <div class="satchel-sub">
+                    @if (_satchelTarget is { } at)
+                    {
+                        <text>Offering it to <strong>@at.Label</strong>. Pick something.</text>
+                    }
+                    else
+                    {
+                        <text>
+                            Everything found out here, and it stays yours between visits.
+                            @(SpaceSails.Core.Satchel.Capacity - _satchel.Count) space@(SpaceSails.Core.Satchel.Capacity - _satchel.Count == 1 ? "" : "s") left.
+                        </text>
+                    }
+                </div>
+
+                @if (_satchel.Count == 0)
+                {
+                    <div class="satchel-empty">
+                        Empty. Rooms down here are worth searching — most are stripped, and the ones that
+                        are not are the reason anybody comes.
+                    </div>
+                }
+                else
+                {
+                    <div class="satchel-items">
+                        @foreach (SpaceSails.Core.Satchel.Item item in _satchel)
+                        {
+                            bool canOffer = TargetFor(item) is not null;
+                            <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
+                                    disabled="@(!canOffer)"
+                                    @onclick="() => TryItem(item)">
+                                <span class="satchel-item-name">@SatchelLabel(item)</span>
+                                @if (canOffer)
+                                {
+                                    <span class="satchel-item-try">
+                                        @(_satchelTarget is null ? "read it →" : "try it →")
+                                    </span>
+                                }
+                            </button>
+                        }
+                    </div>
+                }
+
+                <button type="button" class="view-object-close"
+                        @onclick="() => Dismiss(CloseSatchel)">Close</button>
+            </div>
+        </div>
+    }
+
     @if (_viewObject is { } vo)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseViewObject)">

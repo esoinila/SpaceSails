@@ -338,6 +338,11 @@ public partial class Map
         public double AimX { get; set; }
         public double AimY { get; set; }
         public double FiringUntilMs { get; set; }
+
+        // #603 · WHAT IS IN IT. Owner: "those rounds might be special types even." A magazine is no longer
+        // just a count — it is a count OF SOMETHING, because the lab round clears a line with one shot and
+        // will kill you at arm's length, and issue ball does neither.
+        public string AmmoId { get; set; } = Core.Ammunition.Issue.Id;
     }
 
     // The three things a channeled dig can be (beach-comber kit): bury a carried chest where you stand,
@@ -555,6 +560,10 @@ public partial class Map
         // on the second press reads as a broken button — but it is only FILED once, because pressing one
         // gate eleven times is not eleven findings.
         public HashSet<int> HiveShaftsRefused { get; } = [];
+
+        // #609 · Whether this excursion has had the DEAD AIR card. Once: after that the pulse line is
+        // enough, because by then it is knowledge rather than news.
+        public bool HiveVacuumWarned { get; set; }
 
         // #592 · Whether this excursion has already had the floor-with-no-plate beat. Once is the whole
         // point: the second time you step out down there it is just a corridor, and it should be.
@@ -1584,7 +1593,7 @@ public partial class Map
     /// <summary>#600 · The buttons on this car's panel, from where the captain is standing.</summary>
     private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
         _surface is { } ex
-            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, _authorityCards)
+            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, AuthorityCardIds())
             : [];
 
     /// <summary>#600 · A button was pressed. A refusing button says why and the car does not move — a button
@@ -1652,8 +1661,15 @@ public partial class Map
             (_avatarX, _avatarY) = MoonSurface.LiftHead(
                 ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField()).CarFloor;
             RebuildSurfaceDeck();
+            // #603 \u00b7 And what you came out WITH. Owner: "Also in the brief pop-up of going to the surface...
+            // inventory key needs to be advertised." Surfacing is the moment a captain takes stock \u2014 they
+            // have just stopped spending air and started counting what it bought \u2014 so it is the one place
+            // the pocket should announce itself without being asked.
+            string carried = _satchel.Count > 0
+                ? $" You are carrying {_satchel.Count} thing{(_satchel.Count == 1 ? "" : "s")} out of it \u2014 \ud83c\udf92 I to look."
+                : "";
             ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
-                "maintenance shed. The moon is exactly as indifferent as you left it.");
+                "maintenance shed. The moon is exactly as indifferent as you left it." + carried);
             RequestVaultSave();
             return;
         }
@@ -1698,11 +1714,37 @@ public partial class Map
             ApplyNerveShock(9.0, "a building with floors it does not count");
         }
 
-        // The floor announces which KIND of floor it is, in those words, so the captain is never guessing
-        // whether their tank is running.
-        if (ex.HiveFloorsSeen.Add(level))
+        // \u2500\u2500 #609 \u00b7 WHETHER YOU CAN BREATHE HERE IS A CARD, NOT A TOAST \u2500\u2500
+        //
+        // Owner, having suffocated on B2: "I thought there is air in the base?" / "there should be a warning
+        // or something :-D" / "maybe pop-up about you have air or you are in vacuum type ... it is vital
+        // info" / "like the basement is more dangerous than the surface now :-D".
+        //
+        // The last one is exactly right and it is the DESIGN \u2014 depth is paid for in air (#585) \u2014 but the
+        // game was announcing the single most important fact about a floor in a pulse message that fades in
+        // eight seconds, alongside pulses about hardware and dust. On the surface an emergency shelter is a
+        // visible building you can run to; down here the equivalent is knowing which floors hold pressure,
+        // and that was being whispered.
+        //
+        // So the FIRST time each excursion meets dead air it stops the world with a card. Every later dead
+        // floor is the pulse line again, because by then the captain has been told and a card per floor
+        // would be a card nobody reads.
+        bool firstSight = ex.HiveFloorsSeen.Add(level);
+        bool pressurised = UndergroundComplex.HoldsPressure(level);
+
+        if (firstSight && !pressurised && !ex.HiveVacuumWarned)
         {
-            ShowAndFile(UndergroundComplex.HoldsPressure(level)
+            ex.HiveVacuumWarned = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.VacuumCardLabel,
+                UndergroundComplex.VacuumArtUrl,
+                UndergroundComplex.VacuumCard(level, ex.AirSeconds));
+            ShowAndFile(UndergroundComplex.DeadAirLine, "\ud83e\udec1");
+        }
+        else if (firstSight)
+        {
+            ShowAndFile(pressurised
                 ? UndergroundComplex.PressurisedLine
                 : UndergroundComplex.DeadAirLine, "\ud83e\udec1");
         }
@@ -1784,9 +1826,33 @@ public partial class Map
         // #585 · A facility keeps records of the OTHER facilities. Operational paper and files are the
         // strongest leads in the game, which is the right shape: the deeper into one of these you go, the
         // more of the map opens up.
-        if (haul is UndergroundComplex.Haul.Records or UndergroundComplex.Haul.Dirt)
+        // ── #603 · PAPER IS NOW A THING YOU CARRY, NOT A LEAD YOU ARE GIVEN ──
+        //
+        // Operational paper used to grant a lead the moment you picked it up — the game did the thinking and
+        // handed you the answer. The owner's version is better: the decision to read a document AS A CLUE is
+        // the player's, and making it is what lights the tracker. A paper you have not connected to anything
+        // is just paper.
+        //
+        // A file on somebody is carried too, but it is never offered to a door: it is leverage on a PERSON,
+        // which is the only currency down here you spend on somebody you can go and meet.
+        string findId = $"hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}";
+        if (haul == UndergroundComplex.Haul.Records)
         {
+            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Paper, findId))];
+        }
+        else if (haul == UndergroundComplex.Haul.Dirt)
+        {
+            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Dirt, findId))];
+
+            // A file still names a moon on its own — it is about a PERSON and the person is somewhere. Only
+            // the operational paper became a thing you have to decide about.
             GrantLabLead(DiceRule.Seed($"lead:hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
+        }
+
+        if (Core.Satchel.IsFull(_satchel))
+        {
+            ShowPulseMessage("🎒 Your hands and pockets are full. Something has to be read, spent or left " +
+                "behind before you can carry anything else out of here.");
         }
 
         // #590 · THE CARD IS NOW A THING YOU HOLD. It runs the shaft below the band it was found in, so the
@@ -1800,7 +1866,8 @@ public partial class Map
         {
             if (UndergroundComplex.CardInRoom(ex.Stop.Body.Id, ex.Floor) is { } card)
             {
-                _authorityCards.Add(card.Id);
+                _satchel = [.. Core.Satchel.Add(_satchel,
+                    new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
 
                 // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to
                 // really tell the story here :-D" — the right pair with the sealed way, because the Hive has
@@ -1855,8 +1922,201 @@ public partial class Map
             ApplyNerveShock(3.0, "a corridor somebody dug for a year and then closed");
         }
 
-        ShowPulseMessage(UndergroundComplex.LockedLine(sign));
+        // ── #603 · AND THE DOOR TELLS YOU YOU HAVE POCKETS ──
+        //
+        // Owner: "we should advertise the items list on closed locked door pop-up... something like check
+        // your items button there that opens inventory."
+        //
+        // This is the #212 law applied to the satchel: the refusal already said WHY, and a captain standing
+        // in front of it with an authority in their pocket had no way to find out whether it was the one.
+        // The door now offers the verb. It is also how the satchel gets discovered at all — nobody reads a
+        // keybind, and everybody presses the button on the thing that just refused them.
+        _lockedDoor = new LockedDoorLook(
+            sign,
+            UndergroundComplex.LockedLine(sign),
+            UndergroundComplex.IsSealedWay(sign)
+                ? SatchelTry.Target.SealedWay
+                : SatchelTry.Target.RoomDoor);
     }
+
+    /// <summary>#603 · The door the captain is standing at, while its pop-up is up.</summary>
+    private sealed record LockedDoorLook(string Sign, string Line, SatchelTry.Target Target);
+
+    private LockedDoorLook? _lockedDoor;
+
+    private void CloseLockedDoor() => _lockedDoor = null;
+
+    /// <summary>#603 · "Check your items" — the satchel, opened AT something, so every item is a thing you
+    /// can offer rather than a thing you can look at.</summary>
+    private void OpenSatchelAtTheDoor()
+    {
+        if (_lockedDoor is { } door)
+        {
+            _satchelTarget = (door.Target, null, door.Sign);
+        }
+        _lockedDoor = null;
+        _showSatchel = true;
+    }
+
+    /// <summary>#603 · Open it from nowhere in particular — just to see what you are carrying.</summary>
+    private void OpenSatchel()
+    {
+        _satchelTarget = null;
+        _showSatchel = true;
+    }
+
+    private void CloseSatchel()
+    {
+        _showSatchel = false;
+        _satchelTarget = null;
+    }
+
+    private bool _showSatchel;
+
+    /// <summary>What the satchel is currently open AT, if anything: the target, whatever that target needs
+    /// to judge an offer, and what to call it on screen.</summary>
+    private (SatchelTry.Target Target, string? Context, string Label)? _satchelTarget;
+
+    /// <summary>#603 · Offer one carried thing to whatever the satchel is open at. The outcome is always
+    /// SAID — a control that does nothing and says nothing is indistinguishable from a bug.</summary>
+    private void TryItem(Core.Satchel.Item item)
+    {
+        if (TargetFor(item) is not { } at)
+        {
+            return;
+        }
+
+        SatchelTry.Outcome outcome = SatchelTry.Offer(item, at.Target, at.Context);
+        ShowPulseMessage(outcome.Line);
+
+        if (!outcome.Worked)
+        {
+            return;
+        }
+
+        // ── #603 · READING A PAPER NEVER SPENDS IT ──
+        //
+        // Owner: "press I ... inventory opens... select paper and see what the clue is." / "it should be
+        // viewable many times."
+        //
+        // The first cut consumed it, which was wrong twice over. It conflated LOOKING with DECIDING — one
+        // click both read the document and burned it — and it broke the field book's own law (#587: "a find
+        // that is shown once is a find that is lost"). A paper is a thing you own; you can take it out and
+        // read it again in a year.
+        //
+        // So the document is always shown, in full, every time. The tracker gets plotted on the first read
+        // and GrantLabLead no-ops on every one after, which is the honest shape: the knowledge is what is
+        // one-shot, not the paper.
+        if (item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
+        {
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id)).ToUpperInvariant()}",
+                "",
+                Core.FieldClue.Document(item.Id) + "\n\n" + outcome.Line);
+
+            GrantLabLead(DiceRule.Seed($"clue:{item.Id}"));
+        }
+
+        // ── #603 case 2 · THE ROUNDS GO IN, AND THE GUN REMEMBERS WHAT THEY WERE ──
+        //
+        // Six rounds is not a resupply, it is a decision — which gun, and with what. A sentry loaded with
+        // the lab round clears a line with one shot and refuses anything already on top of it; one loaded
+        // with issue ball does neither. Both facts have to live on the magazine, so the bot carries the kind.
+        if (item.Kind == Core.Satchel.Kind.Rounds && at.Target == SatchelTry.Target.DrySentry
+            && _surface is { } loadEx)
+        {
+            SurfaceBot? gun = loadEx.Bots.FirstOrDefault(b => b.Deployed && b.Unit == at.Context);
+            if (gun is not null)
+            {
+                gun.Rounds += item.Count;
+                gun.AmmoId = item.Id;
+                _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count)];
+
+                Core.Ammunition.Kind kind = Core.Ammunition.ById(item.Id);
+                if (kind.MinimumRangeDu > 0)
+                {
+                    ShowPulseMessage(
+                        $"🔫 {gun.Unit} takes them. It will not fire these at anything closer than " +
+                        $"{kind.MinimumRangeDu:F0} du — they arm after travel, and that is the whole point " +
+                        "of them.");
+                }
+            }
+        }
+
+        CloseSatchel();
+    }
+
+    /// <summary>#603 · What this item can be offered to right now.
+    ///
+    /// <para>Opened AT something — a door, a gate — everything goes to that. Opened from nowhere with the I
+    /// key, most things are just a look, but a DOCUMENT can always be read as a clue, because the tracker is
+    /// on the captain's arm and deciding a paper is a map is something they can do standing anywhere. That
+    /// is the owner's own framing: the lead is not granted on pickup, it is granted when the player decides
+    /// the paper means something.</para></summary>
+    private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(Core.Satchel.Item item)
+    {
+        if (_satchelTarget is { } at)
+        {
+            return at;
+        }
+
+        // A document can always be read — the tracker is on the captain's arm.
+        if (item.Kind == Core.Satchel.Kind.Paper)
+        {
+            return (SatchelTry.Target.Tracker, null, "the motion tracker");
+        }
+
+        // #603 case 2 · And rounds go into a gun you are STANDING AT. Owner: "if we run empty on our
+        // autoguns and have those on our inventory then from there we should be able to load them into the
+        // guns." The interesting case is precisely a sentry that has run dry out in the field, away from the
+        // tube — a handful is never a resupply, but it might be enough to get you home.
+        if (item.Kind == Core.Satchel.Kind.Rounds && DrySentryUnderfoot() is { } unit)
+        {
+            return (SatchelTry.Target.DrySentry, unit, unit);
+        }
+
+        return null;
+    }
+
+    /// <summary>#603 · The dry sentry within reach, if there is one. Deployed and out of ammunition: a live
+    /// one does not want your six rounds and a carried one is not deployed.</summary>
+    private string? DrySentryUnderfoot()
+    {
+        if (_surface is not { } ex)
+        {
+            return null;
+        }
+
+        double radiusSq = DeckPlan.InteractRadius * DeckPlan.InteractRadius;
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (!b.Deployed || b.Rounds > 0)
+            {
+                continue;
+            }
+            double dx = b.X - _avatarX, dy = b.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) <= radiusSq)
+            {
+                return b.Unit;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>What to write on one row of the pocket. The prose is rebuilt from the world here rather than
+    /// stored, so a save can never go stale against the words.</summary>
+    private static string SatchelLabel(Core.Satchel.Item item) => item.Kind switch
+    {
+        Core.Satchel.Kind.Authority =>
+            UndergroundComplex.AuthorityCard.TryParse(item.Id, out UndergroundComplex.AuthorityCard c)
+                ? UndergroundComplex.CardTitle(c)
+                : "🎫 an authority card",
+        Core.Satchel.Kind.Paper =>
+            $"📋 operational paper — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
+        Core.Satchel.Kind.Rounds => $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",
+        _ => "🗃 a file on somebody",
+    };
 
     // ── #588 · A PERSON, OUT OF THE PIECES ─────────────────────────────────────────────────────────────
     //
@@ -2017,12 +2277,26 @@ public partial class Map
     // wash. Without it the search was a lottery with four thousand tickets.
     private readonly HashSet<string> _labLeads = [];
 
-    // #590 · THE AUTHORITIES THE CAPTAIN IS CARRYING, by
-    // <see cref="Core.UndergroundComplex.AuthorityCard.Id"/>. A card is a durable possession, not a state of
-    // one excursion: you find it eleven floors under a moon, fly home, come back a month later and the gate
-    // still reads it. So it lives on the page beside the leads and rides in the vault, not on the
-    // SurfaceExcursion (which is thrown away the moment the shuttle lifts).
-    private readonly HashSet<string> _authorityCards = [];
+    // ── #603 · THE SATCHEL: everything the captain is carrying on foot ──────────────────────────────────
+    //
+    // Owner: "we should have some option to try use those at the locked doors... maybe we need like
+    // on-site-carried-items inventory ... The captains ledger has the ship stuff but we should have
+    // something similar on foot."
+    //
+    // This REPLACES the #590 card set. Cards were the first thing the captain carried that the player could
+    // not see, and by the time papers, files and loose rounds joined them there would have been four private
+    // stores and still no pockets. One list now, and a panel draws it.
+    //
+    // Durable, not per-excursion: you find a thing eleven floors under a moon, fly home, come back a month
+    // later and it is still in your pocket. So it rides in the vault beside the leads rather than on the
+    // SurfaceExcursion, which is thrown away the moment the shuttle lifts.
+    private List<Core.Satchel.Item> _satchel = [];
+
+    /// <summary>#590 · The card ids the lift panel and its gate ask about, DERIVED from the satchel so there
+    /// is one store. A second copy kept in step by hand is the failure this ground's spec opens with a table
+    /// of.</summary>
+    private HashSet<string> AuthorityCardIds() =>
+        [.. Core.Satchel.OfKind(_satchel, Core.Satchel.Kind.Authority).Select(i => i.Id)];
 
     /// <summary>#590 · Every card the captain holds, parsed back into what it authorises. Unreadable entries
     /// from an edited or future save are simply dropped rather than thrown over — the vault is tolerant
@@ -2030,7 +2304,7 @@ public partial class Map
     private List<Core.UndergroundComplex.AuthorityCard> HeldAuthorities()
     {
         var held = new List<Core.UndergroundComplex.AuthorityCard>();
-        foreach (string id in _authorityCards)
+        foreach (string id in AuthorityCardIds())
         {
             if (Core.UndergroundComplex.AuthorityCard.TryParse(id, out Core.UndergroundComplex.AuthorityCard c))
             {
@@ -3520,7 +3794,10 @@ public partial class Map
         // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
         // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
         // "Now the cannons shot though the walls").
-        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers());
+        // #603 · The guns fire what is IN them: a bot loaded with the lab round drops a queue in one
+        // shot and one loaded with issue ball grinds them down.
+        var loaded = live.Select(b => Core.Ammunition.ById(b.AmmoId)).ToList();
+        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers(), loaded);
 
         // Fold the drained magazines back and flash a zap line from each bot that fired.
         double nowMs = _lastTimestampMs ?? 0;
@@ -3606,12 +3883,30 @@ public partial class Map
     // only ever be drawn at the target the volley could actually have spent its round on.
     private (double X, double Y)? NearestReeverInArc(SurfaceBot bot)
     {
+        // #603 · WHAT IS LOADED DECIDES WHAT IT WILL SHOOT AT. Owner: "some lab found exploding rounds
+        // might be too dangerous to use to close by targets."
+        //
+        // A two-stage round arms after travel, so at arm's length the second charge goes off level with the
+        // gun and whoever is standing beside it. The sentry simply will not take that shot — the interlock
+        // idiom this ground already speaks (#462's airlock, #523's automatic, the vent readiness refusal).
+        //
+        // The consequence is the frightening part and it is entirely the captain's own doing: a gun loaded
+        // with the wrong thing is SILENT with the pack on top of it, because of a choice made three rooms
+        // ago. The override the owner asked for ("the gun complains but also gives override option to just
+        // fire") belongs at the HUD, on a captain's word — not here, where it would fire itself.
+        double minimum = Core.Ammunition.ById(bot.AmmoId).MinimumRangeDu;
+        double minimumSq = minimum * minimum;
+
         double bestSq = SentryBot.RangeDeckUnits * SentryBot.RangeDeckUnits;
         (double, double)? best = null;
         foreach (Reever r in _reevers)
         {
             double dx = r.X - bot.X, dy = r.Y - bot.Y;
             double d2 = (dx * dx) + (dy * dy);
+            if (d2 < minimumSq)
+            {
+                continue;   // inside the arming distance: it would take the gun with it
+            }
             if (d2 <= bestSq && SentryBot.CanEngage(bot.X, bot.Y, r.X, r.Y, _deckPlan.CollisionField))
             {
                 bestSq = d2;
@@ -5184,6 +5479,10 @@ public partial class Map
             {
                 aboard.Add("🤖 T — pick up the sentry");
             }
+            if (_satchel.Count > 0)
+            {
+                aboard.Add($"🎒 I — items ({_satchel.Count})");
+            }
             aboard.Add("F — first person");
             aboard.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute");
             return string.Join(" ∙ ", aboard);
@@ -5209,6 +5508,14 @@ public partial class Map
         if (ex.Carrying)
         {
             parts.Add("G — drop the chest & sprint");
+        }
+
+        // #603 · The satchel, once there is anything in it. Owner: "the I key should be advertised in the
+        // hud also like we do now for the other keys." Shown WITH the count, because the useful question at
+        // a glance is not "do I have pockets" but "is there anything in them".
+        if (_satchel.Count > 0)
+        {
+            parts.Add($"🎒 I — items ({_satchel.Count})");
         }
         parts.Add("F — first person");
         parts.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute"); // #338: the first-sound switch, always spelled out

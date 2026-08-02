@@ -387,10 +387,11 @@ public partial class Map
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             // #587 · the field book: what was found on the ground, kept so it can be re-read.
             FieldNotes = _fieldNotes.Count > 0 ? new FieldNotesSection { Notes = _fieldNotes } : null,
-            // #590 · the authority cards the captain is carrying — durable, because a card found
-            // eleven floors under a moon has to still be in the pocket a month and a world later.
-            Authorities = _authorityCards.Count > 0
-                ? new AuthoritiesSection { Cards = [.. _authorityCards] }
+            // #603 · the satchel — everything carried on foot, durable because a thing found eleven floors
+            // under a moon has to still be in the pocket a month and a world later. Opaque item strings, so
+            // the save carries the FACT and never the words.
+            Satchel = _satchel.Count > 0
+                ? new SatchelSection { Items = [.. _satchel.Select(i => i.Stored)] }
                 : null,
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
@@ -866,16 +867,27 @@ public partial class Map
         _overheard = vault.Overheard is { } book ? [.. book.Lines] : [];
         _fieldNotes = vault.FieldNotes is { } field ? [.. field.Notes] : [];   // #587
 
-        // #590 · The wallet. A pre-#590 file simply has no section and loads as an empty one.
-        _authorityCards.Clear();
-        if (vault.Authorities is { } wallet)
+        // #603 · The satchel. Unreadable entries from an edited or future save are dropped rather than
+        // thrown over — the vault is tolerant everywhere else and a mystery object is not worth a lost game.
+        _satchel = [];
+        foreach (string stored in vault.Satchel?.Items ?? [])
         {
-            foreach (string id in wallet.Cards)
+            if (Core.Satchel.Item.TryParse(stored, out Core.Satchel.Item item))
             {
-                if (UndergroundComplex.AuthorityCard.TryParse(id, out _))
-                {
-                    _authorityCards.Add(id);
-                }
+                _satchel = [.. Core.Satchel.Add(_satchel, item)];
+            }
+        }
+
+        // #590 → #603 MIGRATION. An older save carries its cards in their own section and knows nothing
+        // about a satchel. They are read in rather than dropped: a captain who earned an authority eleven
+        // floors down must not lose it to a refactor, and this costs one loop that does nothing forever
+        // after the first load.
+        foreach (string id in vault.Authorities?.Cards ?? [])
+        {
+            if (UndergroundComplex.AuthorityCard.TryParse(id, out _))
+            {
+                _satchel = [.. Core.Satchel.Add(_satchel,
+                    new Core.Satchel.Item(Core.Satchel.Kind.Authority, id))];
             }
         }
 
