@@ -3731,18 +3731,13 @@ public partial class Map
     // The onset odds multiplier: the link is strong at the ship (a drop there would be silly), and drops
     // grow likelier the deeper the captain wanders into the site (owner: "more likely deep in a site,
     // during solar interference"). 1× at the tube mouth, up to ~2× deep by the monolith.
-    private double CommsOnsetBias()
-    {
-        if (MoonSurface.IsSafeAboard(_avatarY))
-        {
-            return 0.5; // basically at the ship — the downlink is solid
-        }
-        double top = MoonSurface.SurfaceTopY;
-        double deep = MoonSurface.MonolithY;
-        double span = top - deep;
-        double depth = span > 0 ? Math.Clamp((top - _avatarY) / span, 0.0, 1.0) : 0.0;
-        return 1.0 + depth;
-    }
+    //
+    // #637 · It used to read the MOON's axis unconditionally — "are you above the regolith's top rim at
+    // y = −20" — and a derelict's whole deck runs −9..+9, so aboard a wreck the early return fired at every
+    // point of every hull and the link never degraded anywhere. AwayTeamSide is the one place that knows
+    // which door you are on the far side of, and now which axis measures the walk away from it.
+    private double CommsOnsetBias() =>
+        AwayTeamSide.CommsOnsetBias(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
 
     // A scripted onset (a bad expedition beat, solar interference): if no episode is underway, pull the
     // next one forward to NOW. Pure schedule nudge — it changes WHEN the display gate closes, never the
@@ -3846,7 +3841,18 @@ public partial class Map
         bool inShelter = onExcursion && _surface is { } shelterEx
             && (ShelterUnderfoot(shelterEx) >= 0
                 || (shelterEx.Floor < 0 && UndergroundComplex.HoldsPressure(shelterEx.Floor)));
-        bool onRegolith = onExcursion && !MoonSurface.IsSafeAboard(_avatarY) && !inShelter;
+        // #637 · AND A DERELICT IS EXPOSED GROUND TOO. This asked the moon's question — "are you above the
+        // regolith's top rim at y = −20" — and a wreck's whole deck runs −9..+9, so aboard a hull it was
+        // always FALSE: the ambient pressure the entire dread economy runs on never applied inside a ship,
+        // `?wreck=infested` included. A captain could walk the spine of a haunted hull, in the dark, in
+        // vacuum, and the gauge scored it as standing in the shuttle bay. The damage half of that same
+        // constant was fixed in #574 and the air half in #621; this is the sanity half, one call site over.
+        //
+        // The name changed with the meaning: it is not the regolith, it is being on the far side of your own
+        // door — whichever door this world has (AwayTeamSide).
+        bool awayFromSafety = onExcursion
+            && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius)
+            && !inShelter;
 
         // #380 item 2: the band this frame opened on — so once, per excursion, we can speak the FIRST slide
         // down a rung (naming the cause and the remedy the bare gauge never did). Recovery only ever raises
@@ -3856,7 +3862,7 @@ public partial class Map
         // #379 · the per-spell sighting tally still lives here (the tracker's own hearing decides what counts
         // as a fresh contact); #480 prices the result in whole pips instead of a shaped float.
         int heardMovers = 0;
-        if (onRegolith && _surface is not null)
+        if (awayFromSafety && _surface is not null)
         {
             // #446: the tracker's fan still HEARS to its full detection range — that far, faint blip is the
             // whole point of the instrument. But a contact only FRIGHTENS you inside the dread range.
@@ -3877,15 +3883,19 @@ public partial class Map
 
         var frame = new NervePips.Frame(
             OnExcursion: onExcursion,
-            OnRegolith: onRegolith,
-            SeesMonolith: onRegolith && SeesMonolith(),
+            OnRegolith: awayFromSafety,
+            // There is no monolith aboard a dead ship, and now that a wreck can BE exposed ground the guard
+            // has to be said rather than left to arithmetic: SeesMonolith() measures from the moon field's
+            // anchor at y = −232, which no point of a hull is within 26 du of. True today, and exactly the
+            // kind of "satisfied by accident" that #637 is a list of.
+            SeesMonolith: !OnWreck && awayFromSafety && SeesMonolith(),
             // #446 (owner, live 2026-07-26: "The reevers should not lower sanity unless they get REALLY
             // close"). ChaseActive used to be the bare `_reevers.Count > 0` — a pack EXISTING anywhere on
             // the field, so one Old One drifting on the far rim taxed the captain at the same flat rate as
             // one at their shoulder, and the gauge bottomed out before anything ever reached them. Now we
             // hand Core the distance to the nearest hunter and it prices the dread off that; the moving
             // count is likewise only the ones near enough to matter, so a far-off tide is atmosphere.
-            Stressors: onRegolith
+            Stressors: awayFromSafety
                 ? new NerveModel.Stressors(
                     CountMovingReeversWithin(NerveModel.DreadRangeDeckUnits),
                     _reevers.Count > 0,
@@ -3893,7 +3903,7 @@ public partial class Map
                     IsCornered(),
                     NearestReeverRange())
                 : default,
-            FreshSightings: onRegolith && firstFrightOfSpell ? freshSightings : 0,
+            FreshSightings: awayFromSafety && firstFrightOfSpell ? freshSightings : 0,
             Touched: _touchedThisFrame,
             DtSeconds: dtRealSeconds,
             // #480 · fear tracks MORTAL DANGER: below a couple of blows left, every further hand costs its
