@@ -271,18 +271,31 @@ public static class WreckInterior
         ];
     }
 
-    private static string CauseLabel(Derelict.WreckCause cause) => cause switch
+    /// <summary>What the cause's own console is called. The WORDS come from Core — the same string the
+    /// reachability audit fails with — and only the glyph is the client's.
+    ///
+    /// <para>It was a second, complete list of names typed here, which is the house law's own example: two
+    /// places holding one fact is the bug even while they agree. They did not agree. Neither list had an arm
+    /// for <see cref="Derelict.WreckCause.VentedByOneOfTheirOwn"/>, so the hull <c>?archive=1</c> boots into
+    /// stood a console in the middle of her corridor labelled <b>THE WRECK</b>, and the audit's failure
+    /// message for it read "the wreck".</para></summary>
+    public static string CauseLabel(Derelict.WreckCause cause) =>
+        CauseGlyph(cause) + " " + WreckLayout.CauseStationName(cause).ToUpperInvariant();
+
+    private static string CauseGlyph(Derelict.WreckCause cause) => cause switch
     {
-        Derelict.WreckCause.ReactorCascade => "☢ THE REACTOR SPACES",
-        Derelict.WreckCause.DriveFailure => "🔧 THE DRIVE BELLS",
-        Derelict.WreckCause.HullBreach => "🕳 THE HOLE THROUGH HER",
-        Derelict.WreckCause.LifeSupportFailure => "🌬 THE SCRUBBER STACKS",
-        Derelict.WreckCause.NavigationalError => "🧭 THE NAV POST",
-        Derelict.WreckCause.Mutiny => "🔒 THE ARMS LOCKER",
-        Derelict.WreckCause.Piracy => "📦 THE STRIPPED HOLD",
-        Derelict.WreckCause.Infested => "🕷 THE NEST IN THE DEEP HOLD",
-        Derelict.WreckCause.InsuranceJob => "🚀 THE LIFEBOAT CRADLES",
-        _ => "THE WRECK",
+        Derelict.WreckCause.ReactorCascade => "☢",
+        Derelict.WreckCause.DriveFailure => "🔧",
+        Derelict.WreckCause.HullBreach => "🕳",
+        Derelict.WreckCause.LifeSupportFailure => "🌬",
+        Derelict.WreckCause.NavigationalError => "🧭",
+        Derelict.WreckCause.Mutiny => "🔒",
+        Derelict.WreckCause.Piracy => "📦",
+        Derelict.WreckCause.Infested => "🕷",
+        Derelict.WreckCause.InsuranceJob => "🚀",
+        // Her damage is not structural at all: it is which side of every hatch the dogs are on.
+        Derelict.WreckCause.VentedByOneOfTheirOwn => "🚪",
+        _ => "🛰",
     };
 
     /// <summary>Which compartment a point stands in — the header line the HUD reads.</summary>

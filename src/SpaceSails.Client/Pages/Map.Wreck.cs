@@ -79,8 +79,8 @@ public sealed partial class Map
         ShowPulseMessage(id switch
         {
             "cause" => $"🔎 {Derelict.Evidence(w.Cause)}",
-            "log" => LogFinding(w),
-            "manifest" => ManifestFinding(w),
+            "log" => Derelict.LogFinding(w),
+            "manifest" => Derelict.ManifestFinding(w),
             _ => "🔎 Nothing here but cold deck plate.",
         });
 
@@ -118,35 +118,12 @@ public sealed partial class Map
         : label.Contains("MANIFEST", StringComparison.OrdinalIgnoreCase) ? "manifest"
         : "cause";
 
-    // The bridge log: how long she has been out here, and the shape of her last hours. This is what turns
-    // "an old wreck" into "she was lost 31 years ago and nobody came" — the search-cone fiction, on a desk.
-    private static string LogFinding(in Derelict.Wreck w) =>
-        $"🖥 The log ends {w.YearsAdrift:N0} years ago. " +
-        (w.Cause switch
-        {
-            Derelict.WreckCause.DriveFailure =>
-                "The last hundred entries are the same restart attempt, timestamped every twenty minutes, for nine days.",
-            Derelict.WreckCause.LifeSupportFailure =>
-                "The entries stay calm, technical and hopeful right up until they stop mid-word.",
-            Derelict.WreckCause.Mutiny =>
-                "The last week is written in two hands that stop acknowledging each other, then one hand only.",
-            Derelict.WreckCause.InsuranceJob =>
-                "The distress call is in the log — drafted, revised, and SAVED four hours before the emergency it describes.",
-            Derelict.WreckCause.NavigationalError =>
-                "The last entry is a burn confirmation for a burn the fuel logs say never fired.",
-            Derelict.WreckCause.Piracy =>
-                "The last entry is a contact report. There is no entry after it.",
-            _ => "The last entries are ordinary ship's business, and then there are no more.",
-        });
-
-    // The manifest: what she was carrying and what it is worth — the number both endings are priced on.
-    private static string ManifestFinding(in Derelict.Wreck w) =>
-        $"📦 The manifest assesses her cargo at {w.AssessedValueCr:N0} cr" +
-        (w.Cause == Derelict.WreckCause.InsuranceJob
-            ? " — countersigned twice, by the same hand, and the cargo seals have been opened and re-set."
-            : w.Cause == Derelict.WreckCause.Piracy
-                ? ". The near hold is empty; the deep hold is exactly as listed. Whoever boarded her was in a hurry."
-                : ". It is all still aboard. Nobody has been here.");
+    // The bridge log and the manifest USED TO BE TWO PRIVATE SWITCHES HERE, out of reach of any test and out
+    // of sight of Derelict.Evidence — which narrates the same ship. They disagreed: the vented hull had no
+    // arm in the log switch, so the station printed "the log ends N years ago … and then there are no more"
+    // while her evidence, on the same screen, said the log runs on for months in one immaculate hand. The
+    // words the log should have spoken were already written, and Core-tested, in HullVenting.VentedShipLogLine
+    // — read by nothing at all. Both switches now live in Core beside the evidence they must agree with.
 
     /// <summary>The causes the captain may put their name to: the ones their evidence supports. Reading
     /// only the damage lets you name the obvious answer — and a wreck that LIES will hand you the wrong

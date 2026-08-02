@@ -1044,10 +1044,12 @@
                 {
                     <div class="tm-art" style="background-image: url('@wreckArt');"></div>
                 }
-                <div class="tm-caption">
-                    Lost @salvageWreck.YearsAdrift.ToString("N0") years. Cargo assessed at
-                    @salvageWreck.AssessedValueCr.ToString("N0") cr, and nobody has been aboard since.
-                </div>
+                @* The footing comes from Core. It was typed here, and it said "and nobody has been aboard
+                   since" on EVERY hull — including ?wreck=piracy, whose evidence two stations away is an
+                   airlock cycled from OUTSIDE and a near hold stripped to bare frames, and ?wreck=infested,
+                   where something has been aboard the whole time. What is true of every wreck is not that
+                   nobody has been aboard; it is that nobody came back for her. *@
+                <div class="tm-caption">@Derelict.CardFooting(salvageWreck)</div>
 
                 @if (CanFileWreckReport)
                 {
