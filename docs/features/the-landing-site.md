@@ -51,9 +51,16 @@ So, added to the standing rules:
 - **`prove a guard can fail` catches all three**, which is why it is not optional. Two of the three were caught
   by doing it; the third was caught only because a *different* assertion in the same test happened to be strict
   enough to notice the empty world.
-- **When you find a stale mirror, grep for its siblings before closing the ticket.** #573 fixed this exact
-  duplicate in `SurfaceReachabilityTests`, in a comment that *named* `SurfaceLayoutTests` — and left it there
-  for two months.
+- **When you find a stale mirror, grep for its siblings before closing the ticket — and make the grep produce
+  a CHANGE, not a sentence.** #573 fixed this exact duplicate in `SurfaceReachabilityTests` and wrote, in a
+  comment directly above the fix, *"mirrors its constants, the same way `SurfaceLayoutTests.Env` does."* It
+  identified the surviving copy, by name, in the file next door — and that copy still shipped for two months
+  and was still laying an empty world when we found it.
+
+  > **A comment that names a second source of truth is a TODO with no owner.**
+
+  So the rule is not "leave a note for the next person". Either delete the sibling in the same PR, or open an
+  issue for it before you close the one you are on. A note is what we already tried.
 
 So the standing rule for this ground is: **one copy, read by everyone, plus a guard that walks the real
 object.** A guard that reads the generator's inputs instead of its output is not a guard.
