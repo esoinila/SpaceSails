@@ -20,6 +20,12 @@ No real likenesses, no film-frame reproductions. Landscape / wide (card slot is 
 | callisto | Callisto | The most cratered world — a dense saturation of impact scars, dark dusty ice, faint Jupiter; a half-buried lander leg as landmark. |
 | titan | Titan | Orange methane haze, dim diffuse light, dark dune fields and a hint of a liquid-methane shoreline; a weathered beacon in the murk. |
 | enceladus | Enceladus | Blinding-white fresh ice, blue "tiger-stripe" fractures, a distant plume catching sunlight over the limb; a beacon on a snowfield. |
+| miranda | Miranda | *(painted off-brief and never listed until #528 found it orphaned)* Sheer fractured white-grey ice cliffs at Verona Rupes scale, black star-field sky with a faint aurora smear, and a low run of old squared blocks along the valley floor that nobody cut for a survey — that run is the landmark, and the reason a chest went down beside it. |
+
+> **Which of these are actually wired lives in Core now** — `TreasureMapArt.PaintedBodies` — because this
+> table was a document and the client kept its own private list, and the two disagreed about miranda for as
+> long as the file existed. `TreasureMapArtIsWiredTests` checks the list against the shipped files in both
+> directions: a listed body with no JPG, and a JPG with no body pointed at it.
 
 ## Card-frame art (optional, one-off)
 
