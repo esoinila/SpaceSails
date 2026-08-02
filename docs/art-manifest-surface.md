@@ -132,3 +132,52 @@ shops have had since #367.
 
 Every slot still `onerror`-hides, so a future body-specific override can drop in over the shared art without
 a code change.
+
+---
+
+## #528 round two — two beats on the ground that were only ever a sentence
+
+### `art/lab-door-regolith.jpg` — A SEALED DOOR, BURIED FLUSH WITH THE REGOLITH
+
+- **Slot:** `SecretLab.DoorPlate`, raised in `Map.SecretLab.TrySecretLabDetectorReveal`.
+- **Why it needed one:** it is the only find in the beach-comber lane that is not a thing you pick up, and
+  the decision it opens — *force it, or walk away and pretend you never found it* — is one of the sharpest
+  in the game. It was being offered over a toast that fades in a second and a half.
+- **Discipline:** the picture shows the door and NOTHING about what is behind it. There is no marking on it,
+  which is the point: an unmarked door is what you get when the marking would have been the crime.
+
+> **Prompt used:** A heavy armoured hatch buried flush with the grey regolith of an airless moon, most of it
+> still under decades of undisturbed dust, one corner swept clean by hand to reveal machined steel and a
+> ring of massive locking dogs. Completely unmarked — no plate, no stencil, no marking of any kind. A probe
+> rod stands upright in the dust beside it and a shallow scrape trails away. Empty plain and hard black sky
+> beyond. Grimy lived-in used-future sci-fi, muted desaturated palette of dust brown and cold steel,
+> painterly, moody, low raking light, long shadows, no text, no lettering, no numbers, no logos, no readable
+> writing, no people.
+
+### `art/outpost-effects.jpg` — WHAT WAS LEFT ON THE FLOOR
+
+- **Slot:** `SurfaceOutpost.EffectsPlate`, raised in `Map.Outpost.OutpostEffectsInteract` beside the filed
+  line and the dossier kit.
+- **Why it needed one:** the console in the game most obviously ABOUT a person, and the only picture it had
+  was the dossier's own (`dossier-effects.jpg`, which is the dossier, not the floor).
+- **ONE canvas for all four covers**, on the wrecks' anti-tell law (`Derelict.LogArtFile`): the objects are
+  the same four objects in every hut, and `SurfaceOutpost.EffectsLine` already carries the whole of the
+  difference between a survey hut, a relay shack, a sample store and a clinic.
+- **Canon-bound:** it implies an industry that went dark and a state worth hiding from, and says nothing at
+  all about what is walking around outside.
+
+> **Prompt used:** The contents of a dead stranger cleared out of a wallet and laid out on the cold gritty
+> floor of a small sealed hut on an airless moon, seen from directly above in the beam of a dropped helmet
+> lamp: a worn leather wallet fallen open and empty, a blank laminated card on a snapped fabric lanyard, a
+> folded sheet of paper creased into quarters and turned blank side up, a creased photograph lying FACE DOWN
+> showing only its blank grey back, a few plain unmarked metal tokens. Every surface in frame is completely
+> blank — no printing, no barcode, no photograph of a person, no marking of any kind anywhere. Dust and
+> frost at the edges of the frame. Grimy lived-in used-future sci-fi, muted desaturated palette of grey and
+> faded brown, painterly, moody low-key lighting, no text, no lettering, no numbers, no logos, no barcodes,
+> no readable writing, no faces, no people.
+
+- **A second pass was needed here.** The first came back with a photo-ID badge carrying a face and a
+  barcode — the one thing this set is not allowed to have. Naming the blankness of every surface
+  *individually* ("turned blank side up", "lying FACE DOWN showing only its blank grey back") is what fixed
+  it; a blanket "no text" at the end of the prompt is not enough when the prompt has asked for documents.
+- **Painted 2026-08-03.** Both guarded by `RevealPlatesArePaintedTests.EveryBeatPlateIsPaintedAndSaysItOnce`.

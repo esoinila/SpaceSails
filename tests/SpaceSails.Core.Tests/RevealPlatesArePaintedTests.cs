@@ -217,6 +217,46 @@ public class RevealPlatesArePaintedTests
         Assert.Equal(2, pictures.Count);   // one log plate and one manifest plate, across all ten hulls
     }
 
+    /// <summary>
+    /// #528 ROUND TWO — the plates that belong to a BEAT rather than to an arc's fragment pool.
+    ///
+    /// <para>KAAMOS and NEBULA hand their plates out of a keyed pool, so <see cref="AllPlates"/> can walk
+    /// them. These ones hang off the predicate that fires them (a d20 branch, a detector square, a console
+    /// press), which means nothing enumerates them and nothing would ever notice one going dark. This list
+    /// IS the enumeration, and the count below is what stops deleting an entry from quietly satisfying it.
+    /// </para>
+    ///
+    /// <para><b>Proven RED:</b> point <c>SecretLab.TheyStandPlate</c> at <c>art/lab-they-stand-nope.jpg</c>
+    /// and this fails naming the basename; drop an entry from the list and the count fails.</para>
+    /// </summary>
+    private static IEnumerable<(string Where, RevealPlate Plate)> BeatPlates() =>
+    [
+        ("SecretLab.DoorPlate", SecretLab.DoorPlate),
+        ("SecretLab.TheyStandPlate", SecretLab.TheyStandPlate),
+        ("SurfaceOutpost.EffectsPlate", SurfaceOutpost.EffectsPlate),
+    ];
+
+    [Fact]
+    public void EveryBeatPlateIsPaintedAndSaysItOnce()
+    {
+        var seenArt = new HashSet<string>(StringComparer.Ordinal);
+        var seenTitles = new HashSet<string>(StringComparer.Ordinal);
+        int n = 0;
+
+        foreach ((string where, RevealPlate plate) in BeatPlates())
+        {
+            n++;
+            Assert.StartsWith("art/", plate.ArtFile, StringComparison.Ordinal);
+            AssertPainted($"Beat plate {where}", plate.ArtFile);
+            Assert.False(string.IsNullOrWhiteSpace(plate.Title), $"{where} has no title.");
+            Assert.True(plate.Caption.Length > 80, $"{where}'s caption is too short to be evidence.");
+            Assert.True(seenArt.Add(plate.ArtFile), $"{where} shares a painting with another plate.");
+            Assert.True(seenTitles.Add(plate.Title), $"{where} shares a title with another plate.");
+        }
+
+        Assert.Equal(3, n);
+    }
+
     [Fact]
     public void EveryPlateSaysSomethingAndSaysItOnce()
     {

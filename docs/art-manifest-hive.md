@@ -160,3 +160,30 @@ what to do about it.
 
 **Both are canon-bound:** neither the art nor the line may say what wore the collar or what the round was
 issued against. *(House law §0, and the grep that enforces it.)*
+
+---
+
+## #528 round two — the reveal that had no frame
+
+### `art/lab-they-stand.jpg` — THEY ARE STANDING OFF THEIR BENCHES
+
+- **Slot:** `SecretLab.TheyStandPlate`, raised in `Map.SecretLab.FireSecretLabReveal` on the
+  `RevealOutcome.ItSalvagesYou` branch.
+- **Reach it:** land, take the metal detector out, sweep the door square, force the door, read the CORE LOG
+  and roll under 9 on the d20.
+- **Why it needed one:** the loudest moment on this ground, and the *other* branch of the very same roll
+  already ends in a painted selfie against this same room. The bad half got a pulse line.
+- **Why it is not a tell:** it fires strictly AFTER the d20 has resolved and been shown. The captain already
+  knows which way it went before the picture arrives.
+- **Canon-bound** (house law §0): the caption is benches, restraints and a count. It never says what they
+  are, and it never will. `TheHiveTests.NothingDownHereEXPLAINSAnything`, one deck up.
+
+> **Prompt used:** A buried clandestine laboratory chamber deep under an airless moon: poured concrete and
+> cold steel, two long rows of low steel benches with restraint cradles, lit only by failing emergency
+> strips and one helmet lamp. Most cradles still hold still, grey, gaunt humanoid figures lying under a skin
+> of frost. Three of them have come off their benches and are standing on the floor, backs and shoulders to
+> the viewer, heads turned away, no faces visible. Deep shadow beyond, dust hanging in the beam. Grimy
+> lived-in used-future sci-fi, muted desaturated palette of concrete grey and sick green, painterly, moody
+> low-key lighting, no text, no lettering, no numbers, no logos, no readable writing, no visible faces.
+
+- **Painted 2026-08-03**, first pass. Guarded by `RevealPlatesArePaintedTests.EveryBeatPlateIsPaintedAndSaysItOnce`.
