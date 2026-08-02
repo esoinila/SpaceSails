@@ -21,6 +21,32 @@ Raised by the owner, 2026-08-02, playing B1 of a records annex:
 > `TheHiveTests.NothingDownHereEXPLAINSAnything`, which greps the prose for exactly this and which the art
 > must not go around.
 
+## Inference horror — the house technique for this set
+
+Owner, naming it (2026-08-02):
+
+> *"kind of horror theme in lovecraft way ... like finding massive collar designed for Cthulhu's neck :D"*
+
+**The object is mundane. The implication is not.** A collar is a collar — leather, buckles, a maker's stamp.
+Nothing about it is frightening; its *dimensions* are the entire horror, and nobody in the frame says so.
+
+This is also the safest way to carry the Reever canon. An object that implies by dimension **cannot** explain
+anything — it is a collar — while telling the viewer more than any log entry would. The canon grep passes not
+because we were careful with words but because the object is genuinely not talking.
+
+For a picture, that means:
+
+1. **Scale is the subject.** A collar with nothing beside it for scale is a painting of a collar. There must
+   be something ordinary in frame — a bench, a doorway, a hand, a standard crate — and the artifact must be
+   wrong against it.
+2. **Paint it as a catalogue would.** Even light, square on, workshop or store-room. No dutch angles, no
+   dramatic uplighting, no fog. The moment the picture is *spooky* it stops being evidence.
+3. **Nobody reacts.** No figure recoiling, no torch beam picking it out. If a person is in frame they are
+   working.
+4. **Show the object, never the user.** No silhouettes, no restraints in use, nothing implied by a shape in
+   the dark. The viewer supplies the animal or does not — and **both are fine.** That is what makes it
+   horror rather than a puzzle.
+
 ## Generation recipe
 
 grok is the project's gen-AI art source (owner ruling 2026-07-18: **images only — no code, no git**).
