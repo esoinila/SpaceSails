@@ -2112,6 +2112,10 @@ public partial class Map
     // Returns true when it consumed the key by closing something.
     private bool TryDismissTopOverlay()
     {
+        // #528: the story plate is the most modal thing there is — it opens without being asked for, over
+        // whatever the captain was already doing (a bar menu, a counter, a dig). Esc takes it FIRST, or the
+        // key would peel the card underneath it and leave the picture sitting there.
+        if (_storyPlate is not null) { CloseStoryPlate(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
