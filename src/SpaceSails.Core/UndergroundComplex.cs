@@ -317,12 +317,62 @@ public static class UndergroundComplex
             return "SURFACE";
         }
 
-        string[] departments =
-        [
-            "ADMINISTRATION", "LABORATORIES", "LONG STORAGE", "PLANT",
-            "ARCHIVE", "ISOLATION", "DEEP STORAGE", "UNMARKED",
-        ];
-        return $"B{-level} · {departments[(-level - 1) % departments.Length]}";
+        return $"B{-level} · {DepartmentOf(level)}";
+    }
+
+    /// <summary>#605 · THE DEPARTMENTS, in one place. They were a `string[]` local inside <see cref="NameOf"/>,
+    /// which was fine while the name was the only thing that used them — the moment a floor's COLOUR also
+    /// depends on which department it is, two copies of this list would be two answers to one question, and
+    /// this ground has a table at the top of its spec full of exactly that.</summary>
+    public static readonly string[] Departments =
+    [
+        "ADMINISTRATION", "LABORATORIES", "LONG STORAGE", "PLANT",
+        "ARCHIVE", "ISOLATION", "DEEP STORAGE", "UNMARKED",
+    ];
+
+    /// <summary>Which department a level belongs to. Cycles, so a deep site repeats — and that repetition is
+    /// the point: B1 and B9 are both ADMINISTRATION and are meant to feel alike.</summary>
+    public static string DepartmentOf(int level) =>
+        Departments[(-level - 1) % Departments.Length];
+
+    /// <summary>
+    /// #605 · WHAT COLOUR THIS FLOOR IS PAINTED. Owner, riding between floors cut from the same bones:
+    /// <i>"Let's like change the wall colors on different floors... now they look too same"</i> — and then,
+    /// naming the reference: <i>"We could use something like star trek og or Babylon 5 colors for different
+    /// purposes ... command, medical, so fourth"</i>.
+    ///
+    /// <para>The important call: the livery belongs to the DEPARTMENT, not to the floor number. A colour per
+    /// floor would be noise — pretty, and telling you nothing. A colour per department is a LANGUAGE (the
+    /// spec's §11, "colour is a language"): two ADMINISTRATION floors nine levels apart look alike because
+    /// they ARE alike, and a captain learns the building instead of learning a gradient.</para>
+    ///
+    /// <para>Muted on purpose. These are painted bands on poured concrete in a facility that stopped being
+    /// maintained decades ago, not a bridge set — they read as livery at a glance and never compete with the
+    /// consoles, which are the only things down here that mean "you may touch this".</para>
+    ///
+    /// <para><b>Null on a floor nobody listed (#592).</b> A livery is something a department paints on its own
+    /// corridor, and those floors have no department and no plate. So the band nobody admits to is the one
+    /// place the concrete is left bare — the ABSENCE is the tell, and it costs not one word of narration.</para>
+    /// </summary>
+    public static BodyPalette.Ink? LiveryFor(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        if (level >= 0 || IsUnlisted(bodyId, level))
+        {
+            return null;
+        }
+
+        return DepartmentOf(level) switch
+        {
+            "ADMINISTRATION" => new BodyPalette.Ink(198, 170, 98),   // command gold
+            "LABORATORIES" => new BodyPalette.Ink(108, 156, 206),    // sciences blue
+            "LONG STORAGE" => new BodyPalette.Ink(120, 166, 130),    // stores green
+            "PLANT" => new BodyPalette.Ink(198, 112, 90),            // engineering rust
+            "ARCHIVE" => new BodyPalette.Ink(154, 136, 194),         // records violet
+            "ISOLATION" => new BodyPalette.Ink(172, 208, 206),       // medical pale
+            "DEEP STORAGE" => new BodyPalette.Ink(92, 142, 152),     // deep teal
+            _ => new BodyPalette.Ink(152, 158, 168),                 // UNMARKED — a grey that is not a colour
+        };
     }
 
     /// <summary>#592 · What the level is called, given which building it is in. A floor the directory never
@@ -494,13 +544,17 @@ public static class UndergroundComplex
         // BOTH ends shut. The missing right-hand cap is the "open end" itself.
         walls.Add(new(left, shaftY - CorridorHalf, left, shaftY + CorridorHalf, true));
         walls.Add(new(right, shaftY - CorridorHalf, right, shaftY + CorridorHalf, true));
-        labels.Add(new(shaftX - 26, shaftY + 1.4, NameOf(bodyId, level)));
+        // #605 · The floor's name used to be pinned 26 du off down the spine, which is most of a screen
+        // from the only thing that tells you which floor you are on. It is painted at the LIFT now
+        // (HiveInterior), stacked under the depth, so the plate and the number are read together.
 
         // ── THE SHAFT. Same spot on every floor.
         walls.Add(new(shaftX - ShaftHalf, shaftY + CorridorHalf, shaftX - ShaftHalf, shaftY + CorridorHalf + 5, true));
         walls.Add(new(shaftX + ShaftHalf, shaftY + CorridorHalf, shaftX + ShaftHalf, shaftY + CorridorHalf + 5, true));
         walls.Add(new(shaftX - ShaftHalf, shaftY + CorridorHalf + 5, shaftX + ShaftHalf, shaftY + CorridorHalf + 5, true));
-        labels.Add(new(shaftX, shaftY + CorridorHalf + 6.5, "\U0001F6D7 LIFT"));
+        // #605 · The "LIFT" plate is gone from here. The console at the car mouth is already labelled LIFT,
+        // and the signage stack above it (HiveInterior) now answers the bigger question in the same wall
+        // space. Three plates on one wall is a wall nobody reads.
 
         // ── THE RIBS. Cross corridors off the spine, with rooms flanking them.
         for (int i = 0; i < ribXs.Count; i++)
@@ -1086,8 +1140,13 @@ public static class UndergroundComplex
     /// <para>The first floor is far down because the facility is BURIED — the shed on the surface is a lid
     /// over a shaft, and the descent card earns that ("service lamps go past in the wall at first, then a
     /// rhythm, and you find you have been counting them and have lost count"). After that a floor is a
-    /// floor plus its slab, its services and the rock somebody left between levels.</para></summary>
-    public const double OverburdenMetres = 40.0;
+    /// floor plus its slab, its services and the rock somebody left between levels.</para>
+    ///
+    /// <para>Owner, reading the paint on B1: <i>"also we could make it deeper like 150 meters :-D"</i> — and
+    /// he is right, 40 m was a car park. The overburden is the number that has to sell the lid, because it
+    /// is the whole ride down before the first door opens, and the descent card has always described a shaft
+    /// long enough to lose count in. At 150 m it does.</para></summary>
+    public const double OverburdenMetres = 150.0;
 
     /// <summary>Floor to floor, including the slab and the rock between.</summary>
     public const double MetresPerFloor = 12.0;

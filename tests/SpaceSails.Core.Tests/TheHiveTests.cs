@@ -70,12 +70,26 @@ public sealed class TheHiveTests
         // Going down must be legible and coming back up must never be a search. A shaft that wandered between
         // levels would turn the whole complex into a maze whose exit moves, which is a different and much
         // worse game than the one being built.
+        //
+        // #605 · Asserted against the ALCOVE ITSELF rather than against a label near it. This used to look
+        // for a landmark reading "LIFT", which was a proxy — and when the signage was reworked (the plate by
+        // the car now answers WHERE YOU ARE, so a third plate saying LIFT was one too many for one wall) the
+        // guard went red without the law having changed at all. A test that pins the decoration reports on
+        // the decoration; the law here is about ROCK, so it is the walls that get asserted.
         (double x, double y) = UndergroundComplex.ShaftAt(Field);
+        double side = UndergroundComplex.ShaftHalf, mouth = y + UndergroundComplex.CorridorHalf;
+
         foreach (int level in Floors())
         {
             UndergroundComplex.FloorPlan floor = UndergroundComplex.Build("miranda", level, Field);
-            Assert.Contains(floor.Labels, l =>
-                Math.Abs(l.X - x) < 6 && Math.Abs(l.Y - y) < 14 && l.Label.Contains("LIFT", StringComparison.Ordinal));
+
+            // Both sides of the car's alcove, standing off the spine at the same spot on every floor.
+            foreach (double wallX in new[] { x - side, x + side })
+            {
+                Assert.Contains(floor.Walls, w =>
+                    Math.Abs(w.X1 - wallX) < 0.001 && Math.Abs(w.X2 - wallX) < 0.001
+                    && Math.Abs(Math.Min(w.Y1, w.Y2) - mouth) < 0.001);
+            }
         }
     }
 
