@@ -665,6 +665,65 @@ public partial class Map
     // patron's table shuts her card so two cards never stack. (#425)
     private void CloseOracleFromBar() => _oracleOpen = false;
 
+    // ── "Who's in tonight" — the empty chair gets a sentence (issue #410, story pass 2026-08-02) ───────
+    //
+    // #410's rota shipped complete: each regular is present at a port only sometimes, in a seeded seat, and
+    // an away one is Gone or InTheBack. But an away regular gets NO CONSOLE — so the player walks up to an
+    // empty chair, presses E, and NOTHING HAPPENS. Three-quarters of the roster could be out and the room
+    // would never say so; PatronState.Gone vs InTheBack was computed every watch and told to nobody. That
+    // is criterion 1 — "a truth that lives only in Core is not being told" — and the fix is a sentence, in
+    // the one voice that would actually know: the barkeep's.
+    //
+    // Read at _dockVisitSimTime, the SAME frozen watch the deck was welded at (Map.Deck), NOT the live
+    // clock. Reading SimTime here would let the line drift out of step with the chairs mid-dock — the sim
+    // saying one thing and the sentence another, which is this repo's most common bug by measure.
+    private string? WhoIsInTonight()
+    {
+        if (_dockedHavenId is not { } id)
+        {
+            return null;
+        }
+
+        var seatedHere = new List<string>();
+        var steppedOut = new List<string>();
+        var inTheBack = new List<string>();
+        foreach (HavenInterior.SeatedRegular r in HavenInterior.ResolveRegulars(id, _dockVisitSimTime))
+        {
+            switch (r.State)
+            {
+                case PatronState.AtBar: seatedHere.Add(r.ShortName); break;
+                case PatronState.InTheBack: inTheBack.Add(r.ShortName); break;
+                default: steppedOut.Add(r.ShortName); break;
+            }
+        }
+
+        var said = new List<string>();
+        if (seatedHere.Count > 0)
+        {
+            said.Add($"{Names(seatedHere)} {(seatedHere.Count == 1 ? "is" : "are")} in tonight.");
+        }
+        else
+        {
+            said.Add("Quiet house tonight — none of the usual faces.");
+        }
+        if (steppedOut.Count > 0)
+        {
+            said.Add($"{Names(steppedOut)} stepped out.");
+        }
+        if (inTheBack.Count > 0)
+        {
+            said.Add($"{Names(inTheBack)} {(inTheBack.Count == 1 ? "is" : "are")} somewhere in the back.");
+        }
+        return string.Join(" ", said);
+
+        static string Names(IReadOnlyList<string> who) => who.Count switch
+        {
+            1 => who[0],
+            2 => $"{who[0]} and {who[1]}",
+            _ => $"{string.Join(", ", who.Take(who.Count - 1))} and {who[^1]}",
+        };
+    }
+
     // Append a heard line to the durable "overheard at the bar" book, capped, and persist it. The receipt
     // (#119 idiom) so the words the captain paid for are revisitable, not gone with the toast.
     private void Overhear(string text, string source)

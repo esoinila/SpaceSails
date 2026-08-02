@@ -485,6 +485,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?land=1`** | **Ride the shuttle down as soon as the world is ready, onto the first landable body in reach (honours `?site=N`) — the real descent, skipping only the walk to the hatch and the boarding panel. The one-URL way to playtest a surface (#464).** |
 | **`?reevers=N`** | **Set N Old Ones (0–8) down ON the captain the moment they land, already aware — the chase, the pack spacing and the #453 exchange (block roll, blood, five blows) in seconds instead of a long walk (#458).** |
 | **`?bond=1`** | **Boot docked at a bar and FORCE the next ambient scare (shudder/buzzer/PA) to open a STRANGER-BOND — a co-present stranger stands you a cognac, the hero beat (#429).** |
+| **`?oracle=1`** | **Seat the station oracle — Solenne “Static” Marsh — in the port-back corner of whatever bar you dock at, every watch. Unforced she is a fixture only ~55 % of watches, so her whole scene was a coin flip to open (#428). Pair with `&dock=<berth>`.** |
 | **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout, its state transitions, and (only at `all`, which is the only value that includes the capstone contract) the one-time "true terms" notice, without a playthrough (#422).** |
 | **`?nebula=adjuster`** | **Seat the rare Nebula Mutual adjuster at whatever bar you dock at, every watch — the tell (fragment 3) becomes playable on demand instead of merely grantable (#422). Pair with `&dock=<berth>`.** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
@@ -783,11 +784,44 @@ the assembled shard texts readable beneath it (mirrors the KAAMOS readout).
 
 There is also a **third hand** that leaks arc-2 shards: **Static Marsh**, the station oracle (`OracleRant`),
 can speak `rebirth-glitch`, `adjuster-tell` or `clinic-ledger` as a true line at any bar — stand her a drink
-to widen the channel.
+to widen the channel. Seat her on demand with **`?oracle=1`** (below).
 
 **What is deliberately NOT built:** the sanity throws. `NebulaLore.TruthSanityShockHook` (30.0) and
 `ArcConvergence.ConvergenceSanityShockHook` (64.0) are consumed by nothing, so the two biggest reveals in the
 game cost the captain no nerve at all. See issue #422.
+
+### The station oracle — `?oracle=1` (#425 / #428)
+
+**Solenne “Static” Marsh**, the ranting drunk in the corner: a lapsed Nebula Mutual pattern-auditor who
+listened to the archived dead too long. Most of what she says is beautiful noise; a rare line *"sounds nuts
+but is TRUE"* and can leak a real KAAMOS or NEBULA shard. She is a corner fixture only
+`OracleRant.PresenceChance` (55 %) of watches, so until this cheat existed her whole scene was a coin flip
+to open — and unlike `?kaamos=N` / `?nebula=N`, **nothing ever granted a rant**. `?oracle=1` boots you
+docked at a bar (default **The Space Bar**; combine with `?dock=<id>` for another) and **seats her**,
+whatever her rota says. It hands you the person, never the truth: the lines are the same seeded stream the
+rota would have given.
+
+1. `/map?oracle=1` → boot docked. A toast names where she is.
+2. Walk into the bar and head **aft along the left wall** — her corner is `(−11, HallTopY+19)`, deliberately
+   clear of every other console by more than `[E]`'s reach, so you cannot grab the wrong one.
+3. **[E]** on **`◈ “STATIC” MARSH`** → her card: name, backstory, and the opening rant.
+4. **🌀 Keep listening** turns the dial one line on. At zero drinks ~14 % of lines are true
+   (`OracleRant.BaseTrueChance`), so expect to press it several times.
+5. **🥃 Buy her a drink** (the price is on the button) → she may **wave the glass off** ("not thirsty for
+   THAT vintage, it's ticking wrong") — the #347 offer-first path, and **nothing is debited on a refusal**.
+   An accepted glass costs the bar's drink price, widens the channel (+7 pp true chance per drink, capped at
+   45 %) and draws a fresh line at once.
+6. **THE TELL:** when a line lands, the card may say *"…the room goes quiet. A faint chill."* It fires on
+   most true lines **and on a minority of nonsense** — a hush that lies. The sifting is the point; do not
+   read the glow as confirmation.
+7. **A true line acts.** A `SecretLab` or `Collector` perception is filed to the durable **overheard book**
+   as a *lead you still have to walk out*. A fragment line assembles a real shard into the arc and shows the
+   canonical lore appended — check the **Captain's ledger** for the KAAMOS/NEBULA readout and for the
+   `👂 Static Marsh` line under **🔭 Tips, intel & rumors**.
+
+The reading is per-berth session state: a new dock wipes the dial and the drinks, so a drunk oracle at one
+port does not stay prophetic at the next. `?oracle=1` is **not** a one-shot (unlike `?bond=1`) — she stays
+seated for the whole run, because she is a conversation rather than a single beat.
 
 ### The secret lab — `?secretlab=1` (#409)
 
@@ -825,6 +859,13 @@ beat. The loop:
 
 Effects apply through the **existing** contact systems (`ContactLedger.AddGoodwill`, `PourRum`) — a bonded
 stranger becomes a **findable known contact** (they gain a drink/relationship row), never a new parallel path.
+
+**The afterlife** (story pass 2026-08-02): a bond that MAKES something — the cognac, or a whole new contact
+— is now also filed to the durable overheard book as *"🥂 How you met …"*, so it groups under that person in
+the Captain's ledger under **🔭 Tips, intel & rumors**. Open the ledger after the toast and the provenance of
+the friendship is on the record; before, the hero beat lived only in a toast that faded, and nothing anywhere
+said how the two of you came to know each other. A `Comment` or a `Deepen` stays passing, by design — a
+shared word is a grace, not a relationship.
 
 Discovery **persists per game-thread**: once found, a revisit to that body shows the door already revealed.
 To exercise the *discovery* vector itself on an ordinary body, land empty-handed and **probe** (`[E]` on the

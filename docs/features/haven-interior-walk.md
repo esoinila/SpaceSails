@@ -456,6 +456,26 @@ Verified in-browser at Cinder Roost: cracked/opened V-06 → walked the tube →
 carved doorway into the back room (location readout "BONDED STORES · BACK ROOM"), stash and Magpie
 booth both reachable, first-person renders the grown room.
 
+## The room says who is in it (story pass, 2026-08-02, issue #410)
+
+The roving-regulars rota (`PatronRota`, #410) had shipped complete — each of the four regulars is at a
+given port only *sometimes*, in a seeded seat, with an honest per-place skew, and an away one is
+`Gone` or `InTheBack`. But **an away regular is given no console at all**, so the player walked up to an
+empty chair, pressed `[E]`, and nothing happened. Three-quarters of the roster could be out and the room
+would never say so; the `Gone` / `InTheBack` distinction was computed on every watch and told to nobody.
+
+The barkeep now says it — *"Silas and Coil are in tonight. Gilt-Eye stepped out. The Fixer is somewhere
+in the back."* — as a small line on the counter card, read off `HavenInterior.ResolveRegulars` (which now
+carries the `PatronState` through) at **`_dockVisitSimTime`**, the same frozen watch the deck was welded
+at. Reading the live clock there would let the sentence drift out of step with the chairs mid-dock, which
+is this repo's most common bug by measure. `TheBarSaysWhoIsInTonightTests` holds the sentence's source and
+the deck's consoles together at every bar over fifty watches, and pins that both away flavours really
+occur (a clause nothing can reach is dead prose).
+
+The **station oracle** (Solenne "Static" Marsh, #425) keeps her own corner and her own rota, and is now
+reachable on demand: **`?oracle=1`** seats her at whatever bar you dock at (#428). See
+[`testing-guide.md`](../testing-guide.md).
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat

@@ -105,7 +105,11 @@ public static class HavenInterior
     /// re-dock a watch later and the room reads different. Built once per (station, unlock-state, watch),
     /// lazily, and shared.
     /// </summary>
-    public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0)
+    /// <param name="forceOracle">The <c>?oracle=1</c> seat cheat (#428): plant the oracle's corner console
+    /// whatever her rota says this watch. Part of the cache key — a deck built before the cheat was armed
+    /// can never be handed back for a forced boot.</param>
+    public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0,
+        bool forceOracle = false)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
@@ -118,10 +122,10 @@ public static class HavenInterior
         string wingKey = active.Count == 0
             ? bodyId
             : bodyId + "|" + string.Join(",", active.Select(w => w.UnlockHatchId).OrderBy(s => s, System.StringComparer.Ordinal));
-        string key = $"{wingKey}@{watch}"; // the seated-regular rota re-rolls each watch, so it keys the cache
+        string key = $"{wingKey}@{watch}{(forceOracle ? "+oracle" : "")}"; // the seated-regular rota re-rolls each watch, so it keys the cache
         if (!Cache.TryGetValue(key, out DeckPlan? deck))
         {
-            deck = BuildComplex(spec, active, simTime);
+            deck = BuildComplex(spec, active, simTime, forceOracle);
             Cache[key] = deck;
         }
         return deck;
@@ -204,15 +208,20 @@ public static class HavenInterior
     private static readonly (float X, float Y) OracleCorner = (-11f, HallTopY + 19f);
 
     /// <summary>Is the oracle at this bar on this docking watch? The pure Core rota (OracleRant.PresentAt);
-    /// exposed so the interaction gate and the deck build agree on whether her corner holds anyone.</summary>
-    public static bool OraclePresent(string bodyId, double simTime) =>
-        SpaceSails.Core.OracleRant.PresentAt(bodyId, simTime);
+    /// exposed so the interaction gate and the deck build agree on whether her corner holds anyone.
+    /// <paramref name="forced"/> is the <c>?oracle=1</c> seat cheat (#428) — passed straight through to Core,
+    /// so the console the deck plants and the gate the E-key reads can never disagree about it.</summary>
+    public static bool OraclePresent(string bodyId, double simTime, bool forced = false) =>
+        SpaceSails.Core.OracleRant.PresentAt(bodyId, simTime, forced);
 
     /// <summary>One resolved seated regular for a bar watch: the same shout-name id the contact systems
     /// key on, whether they're at a table this watch, and — when present — the deck coords of their seat
     /// (with a per-regular seeded facing so two visits don't line up identically). Away regulars carry
     /// <see cref="Present"/> = false and are parked off-frame by the droid fill.</summary>
-    public readonly record struct SeatedRegular(string Id, string Label, string ShortName, bool Present, double X, double Y, double Facing, ulong Seed);
+    /// <param name="State">WHY they are or aren't here — at a table, stepped out, or away in the back.
+    /// The rota has always computed this; until the bar could SAY it, an away regular was an empty chair
+    /// with no console and therefore no sentence, and the distinction lived only in Core.</param>
+    public readonly record struct SeatedRegular(string Id, string Label, string ShortName, bool Present, double X, double Y, double Facing, ulong Seed, PatronState State);
 
     // The floating deck-label short-name per regular (the droid tag, kept as it read before #410); the
     // full shout-name id lives on the console. Unknown ids fall back to the id itself.
@@ -239,7 +248,7 @@ public static class HavenInterior
             // the identical angle each visit — small idle life on top of the per-frame thermal jitter.
             ulong seed = RegularSeed(s.Regular, PatronRota.WatchIndex(simTime));
             double facing = -System.Math.PI / 2 + (SpaceSails.Core.ReeverIdle.FacingTwitchAt(seed, 0) * 1.5);
-            seated.Add(new SeatedRegular(s.Regular, $"◈ {s.Regular}", ShortNameFor(s.Regular), s.Present, sx, sy, facing, seed));
+            seated.Add(new SeatedRegular(s.Regular, $"◈ {s.Regular}", ShortNameFor(s.Regular), s.Present, sx, sy, facing, seed, s.State));
         }
         return seated;
     }
@@ -337,7 +346,8 @@ public static class HavenInterior
 
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
-    private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings, double simTime)
+    private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings, double simTime,
+        bool forceOracle = false)
     {
         DeckPlan ship = DeckPlan.Ship;
         bool backRoomOpen = activeWings.Count > 0; // the Magpie's back-room stop is reachable once a wing is welded on
@@ -492,7 +502,7 @@ public static class HavenInterior
         // The station oracle (issue #425), if she's tuned to this bar this watch. A BarPatron console in
         // the port-back corner; the client's E-router matches her by name (OracleRant.Nickname) and hands
         // off to the oracle flow, never the generic quest-giver path. Absent watches leave the stool empty.
-        bool oracleHere = OraclePresent(spec.BodyId, simTime);
+        bool oracleHere = OraclePresent(spec.BodyId, simTime, forceOracle);
         if (oracleHere)
         {
             consoles.Add(new(DeckPlan.ConsoleKind.BarPatron, OracleCorner.X, OracleCorner.Y,

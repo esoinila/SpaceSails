@@ -1528,6 +1528,14 @@
             <div class="deck-offer-blurb">
                 House special: <strong>@keep.DrinkName</strong> — @keep.DrinkFlavor
             </div>
+            @* #410 — the empty chair gets a sentence. The rota decides which regulars drink at THIS port on
+               THIS watch and sends the rest out or into the back; until now an away one simply had no
+               console, so the room never said where they'd gone. The barkeep is the one person who'd know.
+               Read off the same frozen watch the deck was welded at, so the line and the chairs agree. *@
+            @if (WhoIsInTonight() is { } roomTonight)
+            {
+                <div class="deck-offer-blurb small text-secondary">“@roomTonight”</div>
+            }
             @if (_barNotice is { } note)
             {
                 <div class="deck-bank-notice small">@note</div>
