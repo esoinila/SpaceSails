@@ -91,6 +91,29 @@ public static class HiveInterior
             consoles.Add(new(DeckPlan.ConsoleKind.HiveHaul, (float)rx, (float)ry, "🔦 SEARCH THE ROOM"));
         }
 
+        // ── #608 · THE REFUGES, DRAWN TO BE FOUND ───────────────────────────────────────────────────────
+        //
+        // Owner, after suffocating on B2: "the rooms should have airlocks etc ... some havens :-D" / "on
+        // surface there are emergency shelters :-D" / "there should be like at least one air replenish
+        // station in each of the airless labs underground... for pure safety".
+        //
+        // The hardest thing about a dead floor is that every door on it looks like every other door, and one
+        // of them is the only one that matters. On the surface a shelter is a DIFFERENT SHAPE of building
+        // seen across open ground; down here every room is the same poured box off the same rib, so the
+        // refuge has to be told rather than shown — a plate over its door, at the signage size the depth
+        // plate uses, because this is the second question a captain asks after "which floor is this".
+        //
+        // The rack is a console like any other so the [E] verb is the surface's verb, and the room's own
+        // doorway is already drawn Imported violet with every other door down here (#592's language: what
+        // was flown in, versus what was cut out of the moon).
+        foreach (UndergroundComplex.Refuge refuge in floor.Refuges)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.HiveRefuge,
+                (float)refuge.X, (float)refuge.Y, UndergroundComplex.RefugeTankLabel));
+            labels.Add(((float)refuge.X, (float)(refuge.Y - UndergroundComplex.RefugeHalfHeight - 2.0),
+                refuge.Sign));
+        }
+
         // The lift, on every floor, in the same place.
         (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(field);
         consoles.Add(new(DeckPlan.ConsoleKind.HiveLift,
@@ -158,6 +181,27 @@ public static class HiveInterior
                 17f, holdsAir ? 1 : 2),
         };
         labels.Add(((float)shaftX - 30f, (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
+
+        // ── #608 · AND THE REFUGE'S OWN PLATE, IN THE PLATE-BY-THE-LIFT'S OWN LANGUAGE ───────────────────
+        //
+        // Smaller than the depth over the car, because the depth is the where-am-I question and this is the
+        // where-is-the-air one — but the same KIND of lettering, so a captain crossing a dead floor reads it
+        // the way they read a fire exit: without meaning to.
+        //
+        // TONE 1, WHICH IS THE WHOLE OF THE RECONCILIATION WITH #612. The plate over the lift now answers
+        // "can I breathe here" in colour — StencilAir for PRESSURISED, StencilDead for NO ATMOSPHERE — and
+        // #612's own rule is that the instruments may never disagree about air. On a dead floor that plate
+        // is shouting NO ATMOSPHERE in the dead ink while this one says AIR forty du away, so the two would
+        // read as a contradiction unless they are plainly speaking about different things in one shared
+        // language. They are: tone 1 means YOU CAN BREATHE HERE, wherever "here" is, and the word REFUGE
+        // says the "here" is this room and not this floor. The plate describes the level; this describes a
+        // door. Same ink, same claim, different scope — and the hud's AIR: TANKS/ROOM agrees with both,
+        // because all three now read TankIsDrawing.
+        foreach (UndergroundComplex.Refuge refuge in floor.Refuges)
+        {
+            bigLabels.Add(((float)refuge.X, (float)(refuge.Y + UndergroundComplex.RefugeHalfHeight + 3.2),
+                UndergroundComplex.RefugeGlyph, 26f, 1));
+        }
 
         return new DeckPlan(
             [.. walls], [.. consoles], [.. labels], [],

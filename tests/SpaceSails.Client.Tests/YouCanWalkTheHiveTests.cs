@@ -125,6 +125,105 @@ public sealed class YouCanWalkTheHiveTests
     }
 
     [Fact]
+    public void EveryAirlessFloorHasARefugeYouCanWALKToFromTheLift()
+    {
+        // ── #608 · THE ONE THAT DECIDES WHETHER ANY OF THIS IS REAL ──
+        //
+        // Owner: "there should be like at least one air replenish station in each of the airless labs
+        // underground... for pure safety". Core guarantees one exists on every airless floor
+        // (TheRefugesUndergroundTests). This guarantees you can GET TO IT — and those are different claims,
+        // which is the whole reason this project owns an A* audit. A refuge you cannot walk to is a refuge
+        // that does not exist, and it is worse than none: the card, the plate and the tracker ring would all
+        // be promising air that the collision field does not honour, and a captain would spend the last of a
+        // tank believing them.
+        //
+        // A REACHABILITY TEST IS ONLY AS HONEST AS BOTH ITS ENDPOINTS. #600 is the lesson: the A* audit had
+        // proved for months that you can REACH the lift and never once that the lift is a way HOME, and the
+        // car only went down. So neither end of this walk is taken on trust — the spawn and the refuge are
+        // each asserted STANDABLE first. A goal buried in wall would make CanReach return false and read as
+        // "the corridors are broken"; a goal that is somehow standable inside a sealed box would pass a
+        // sloppier test on a floor nobody could ever cross.
+        AuditEveryFloor((_, level, deck) =>
+        {
+            if (UndergroundComplex.HoldsPressure(level))
+            {
+                return null;   // the floor is the refuge
+            }
+
+            var refuges = deck.Consoles
+                .Where(c => c.Kind == DeckPlan.ConsoleKind.HiveRefuge)
+                .Select(c => new DeckReachability.Point(c.X, c.Y))
+                .ToList();
+            if (refuges.Count == 0)
+            {
+                return "a vacuum floor with no refuge drawn on it at all.";
+            }
+
+            (double sx, double sy) = HiveInterior.SpawnOn(Field);
+            if (!DeckReachability.Standable(sx, sy, DeckPlan.AvatarRadius, deck.CollisionField))
+            {
+                return "the walk starts inside a wall — this floor's verdict would mean nothing.";
+            }
+
+            var spawn = new DeckReachability.Point(sx, sy);
+            var bounds = (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
+
+            foreach (DeckReachability.Point r in refuges)
+            {
+                if (!DeckReachability.Standable(r.X, r.Y, DeckPlan.AvatarRadius, deck.CollisionField))
+                {
+                    return $"the refuge at ({r.X:F0}, {r.Y:F0}) is solid wall — nobody could stand in it.";
+                }
+                if (!DeckReachability.CanReach(spawn, r, deck.CollisionField, DeckPlan.AvatarRadius, bounds))
+                {
+                    return $"the refuge at ({r.X:F0}, {r.Y:F0}) cannot be walked to from the car.";
+                }
+            }
+            return null;
+        }, "spec — every airless floor has air you can actually reach");
+    }
+
+    [Fact]
+    public void TheRefugeIsAWalkFromTheLiftAndNotAStepFromIt()
+    {
+        // #608 · "Never on the way. If it sits beside the lift it is decoration; it earns its existence by
+        // being somewhere you have to decide to detour to." That is what keeps #585's central call alive —
+        // depth is paid for in air, and every stair down is a decision about getting back up. Core places
+        // for the detour; this measures the walk on the REAL deck, over the real corridors, because a
+        // straight-line distance and a route through a facility are not the same number and only one of them
+        // is what the captain pays.
+        AuditEveryFloor((_, level, deck) =>
+        {
+            if (UndergroundComplex.HoldsPressure(level))
+            {
+                return null;
+            }
+
+            (double sx, double sy) = HiveInterior.SpawnOn(Field);
+            var spawn = new DeckReachability.Point(sx, sy);
+            var bounds = (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
+
+            foreach (DeckPlan.ConsoleSpot c in deck.Consoles)
+            {
+                if (c.Kind != DeckPlan.ConsoleKind.HiveRefuge)
+                {
+                    continue;
+                }
+                DeckReachability.Walk walk = DeckReachability.Path(
+                    spawn, new DeckReachability.Point(c.X, c.Y),
+                    deck.CollisionField, DeckPlan.AvatarRadius, bounds);
+
+                double walked = walk.Steps * DeckReachability.DefaultStep;
+                if (walked < UndergroundComplex.MinRefugeDetourDu)
+                {
+                    return $"the refuge is {walked:F0} du of walking from the car — that is decoration.";
+                }
+            }
+            return null;
+        }, "spec — reaching the air is a decision to detour");
+    }
+
+    [Fact]
     public void NothingIsOBSTRUCTEDByTheDoorsThatWillNeverOpen()
     {
         // The owner's third question, and the one with a real trap in it. A locked door is drawn AND backed by
@@ -197,7 +296,14 @@ public sealed class YouCanWalkTheHiveTests
         // The complaint that started all of this, stated as a floor-by-floor law: not a two-door apartment.
         AuditEveryFloor((_, _, deck) =>
         {
-            int rooms = deck.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HiveHaul);
+            // #608 · THE REFUGE COUNTS AS A ROOM, because it IS one. It is carved out of the floor's own
+            // rooms (one poured box off a rib, with its doorway), so counting only HiveHaul would read a
+            // safety regulation as a floor being made smaller — and on the tightest floors this law already
+            // sits exactly on 4, so it would have gone red for a change that took nothing away. What the law
+            // is about is whether stepping out of the car is worth the ride: a room you can breathe in is
+            // very much somewhere to go.
+            int rooms = deck.Consoles.Count(c =>
+                c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveRefuge);
             int sealedDoors = deck.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HiveSign);
 
             if (rooms < 4)

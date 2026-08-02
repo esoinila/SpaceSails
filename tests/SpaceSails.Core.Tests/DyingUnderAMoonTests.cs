@@ -142,13 +142,24 @@ public sealed class DyingUnderAMoonTests
     }
 
     [Fact]
-    public void TheDeadAirCardIsHONESTAboutThereBeingNoShelter()
+    public void TheDeadAirCardNamesTheRefugeNowThatThereIsOne()
     {
-        // The owner's comparison is the whole point: "on surface there are emergency shelters". Down here
-        // there are none, and the card must say so rather than let a captain go looking for one — a search
-        // for a refuge that does not exist is the most expensive possible way to spend a tank.
+        // #608 · THIS TEST USED TO ASSERT THE OPPOSITE, and that is worth a sentence rather than a delete.
+        //
+        // It pinned "no shelters" — correct while it was written, because there were none, and a captain
+        // hunting for a refuge that does not exist is the most expensive possible way to spend a tank. The
+        // owner then ruled the other way: "there should be like at least one air replenish station in each
+        // of the airless labs underground... for pure safety". A card that still said "no shelters" would
+        // now be the single most dangerous sentence in the game — it would make a captain ration a tank they
+        // did not have to ration, and walk past the room that would have saved them.
+        //
+        // The prose and the generator have to agree, so this checks BOTH ENDS: the card promises a refuge,
+        // and the floor it is talking about actually has one.
         string card = UndergroundComplex.VacuumCard(-2, 300);
-        Assert.Contains("no shelters", card, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PRESSURE REFUGE", card, StringComparison.Ordinal);
+        Assert.DoesNotContain("no shelters", card, StringComparison.OrdinalIgnoreCase);
+
+        Assert.NotEmpty(UndergroundComplex.Build("miranda", -2, SurfaceLayout.DefaultField).Refuges);
     }
 
     [Fact]

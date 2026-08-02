@@ -326,7 +326,14 @@ public sealed class TheUnlistedBandTests
                     UndergroundComplex.Build(body, level, SurfaceLayout.DefaultField);
 
                 Assert.True(floor.Walls.Count > 60, $"{body} {floor.Name}: that is a flat, not a facility.");
-                Assert.True(floor.RoomCentres.Count >= 4, $"{body} {floor.Name}: too few rooms to search.");
+
+                // #608 · A REFUGE IS A ROOM, so it counts as one. It is carved out of this floor's own room
+                // list (one poured box off a rib, with its doorway), which means counting only RoomCentres
+                // would read a safety regulation as the building getting smaller — and the tightest floors
+                // sit exactly on 4, so this went red for a change that took nothing away. What the law is
+                // about is whether the floor is a facility; a room you can breathe in is very much a room.
+                Assert.True(floor.RoomCentres.Count + floor.Refuges.Count >= 4,
+                    $"{body} {floor.Name}: too few rooms to search.");
                 Assert.True(floor.Locked.Count >= 3, $"{body} {floor.Name}: nothing implies the rest of it.");
 
                 foreach (SurfaceLayout.Wall w in floor.Walls)
