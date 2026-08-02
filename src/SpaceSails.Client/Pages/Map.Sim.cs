@@ -351,7 +351,7 @@ public partial class Map
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
         string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable; ?kaamos=pod|holder instead SEATS the rare find so it can be EARNED
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
-        string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable
+        string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable; ?nebula=adjuster instead SEATS the rare bar contact so the tell can be EARNED
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
         DeathCause? deathCheat = null; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
@@ -763,8 +763,15 @@ public partial class Map
                 // #422 dev cheat: /map?nebula=N assembles the first N NEBULA MUTUAL fragments (canonical
                 // order), /map?nebula=all assembles every one — the Captain's-ledger readout, its state
                 // transitions, and the one-time truth notice reachable without a full playthrough.
+                //
+                // Those GRANT the fragments. /map?nebula=adjuster instead SEATS the one that could only ever
+                // be granted: the roving Nebula Mutual adjuster drinks at a given bar roughly one watch in
+                // five, so the bar scene — the arc's best-written beat — was unopenable on purpose. Seated,
+                // the "▓ Ask about NEBULA" seam is on the barkeep card at whatever bar you dock at.
+                // Combine freely: /map?nebula=adjuster&dock=the-space-bar. (The KAAMOS twin is ?kaamos=holder.)
                 string candidate = Uri.UnescapeDataString(pair["nebula=".Length..]).ToLowerInvariant();
-                if (candidate == "all" || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                if (candidate is "all" or "adjuster"
+                    || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                 {
                     nebulaCheat = candidate;
                 }
@@ -1072,7 +1079,7 @@ public partial class Map
 
         if (nebulaCheat is not null)
         {
-            SeedNebulaCheat(nebulaCheat); // #422: assemble N NEBULA fragments so the readout + truth notice are testable
+            SeedNebulaCheat(nebulaCheat); // #422: assemble N NEBULA fragments (readout + truth notice), or seat the adjuster so the bar scene itself can be played
         }
 
         if (convergeCheat)

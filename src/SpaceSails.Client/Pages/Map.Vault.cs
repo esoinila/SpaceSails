@@ -183,6 +183,18 @@ public partial class Map
         // #422/#425: likewise the NEBULA shards, and the oracle's per-visit reading state — a fresh universe
         // has never leaned on Static's corner.
         _nebula.Clear();
+
+        // #422 story pass · the two run-scoped counters arc 2 gates its beats on, which this method (whose
+        // contract is "the exact inverse of BuildVault", the #563 lesson) was quietly not resetting. Both
+        // leaked across a New voyage started without a page reload, and both then LIED on the card:
+        //   · _rebirthsSeen fed the clinic-ledger gate, so a captain's FIRST death in a brand-new universe
+        //     could be handed "Someone under your number has woken here before, more than once" — the shard
+        //     whose whole fiction is that you have been here before. (Its durable partner, the thread's own
+        //     retired-captain count, is correct and stays.)
+        //   · _insurancePosterReads is what makes `fine-print` "the fine print, read TWICE"; carried over, a
+        //     fresh captain's very first look at a poster read the small print they had never read.
+        _rebirthsSeen = 0;
+        _insurancePosterReads = 0;
         _oracleStation = null;
         _oracleOpen = false;
         _oracleLine = null;

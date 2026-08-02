@@ -239,8 +239,49 @@ sanity/#226 lane consumes it when the beat is built.
 - **Client save wiring.** `NebulaProgress` rides the vault the same way the other ledgers do
   (`VaultMapper.ToSection` on save, `Apply(vault.Nebula, …)` on load, `Clear()` on a fresh thread) — done in
   `Map.Vault` alongside the oracle lane.
-- **Dev cheats.** `?nebula=N|all` (the readout + truth notice) and `?converge=1` (fire the convergence from
-  one URL), documented in `docs/testing-guide.md`.
+- **Dev cheats.** `?nebula=N|all` (the readout + truth notice), `?nebula=adjuster` (**seat** the rare bar
+  contact so fragment 3's scene can be played rather than granted) and `?converge=1` (fire the convergence
+  from one URL), documented in `docs/testing-guide.md` Appendix A.
+
+### The story pass (2026-08-02, #422)
+
+The arc was walked line by line, in the order a player meets it, the afternoon after the KAAMOS walk
+(#411/#634). What it found:
+
+- **The Captain's-ledger countdown counted to the wrong number** — the exact twin of the KAAMOS finding.
+  *"The shape isn't clear yet — N more shards to read it"* measured N against the size of the whole intel
+  **pool** (5) instead of `IntelNeededToUnlock` (**4**), so it was always exactly one shard pessimistic: at
+  three shards it asked for two more and one more opened the contract.
+- **The convergence card repeated itself.** The marquee reveal closed on *"Every death you have died was a
+  withdrawal. The same forty names, the same lucid dark."* — two sentences copied verbatim out of the
+  paragraph directly above them. The foot is Core copy now (`ArcConvergence.ConvergenceFoot`) and a guard
+  pins that no sentence of it appears in the body.
+- **One button for two different acts.** The bar seam read *"▓ Ask about NEBULA"* for both steps, including
+  the one where nobody is asked anything — the capstone is your own gathered small print answering itself on
+  your own table. (Unlike the KAAMOS seam, **neither** NEBULA step takes coin, so neither wears a price.)
+- **A parenthesised instruction to the player** stood in for the poster's first-read tell:
+  *"(Read it closely — come back and look again.)"* It still sends the captain back for the second read —
+  that is the whole beat — but in the captain's voice.
+- **Two run-scoped counters leaked across a New voyage** started without a page reload
+  (`ResetLiveStateForNewGame` is documented as "the exact inverse of BuildVault", the #563 lesson). The worse
+  one fed the `clinic-ledger` gate, so a captain's **first** death in a brand-new universe could be handed
+  *"Someone under your number has woken here before, more than once."*
+
+Every player-visible sentence on the arc now lives in Core beside the predicate it describes
+(`NebulaLore.IntelStillNeeded` / `LedgerHeadline` / `LedgerProgressLine` / `TruthNotice` / `TruthLedgerLine` /
+`PosterFirstReadLine` / `BarSeamLabel` / `BarSeamTitle`), so a test can hold the **sentence** to the **sim** —
+`tests/SpaceSails.Core.Tests/TheNebulaLedgerTellsTheTruthTests.cs`, every guard proven RED first.
+
+**What arc 2 did NOT share** with its sibling is the KAAMOS capstone bug: that arc's berth-code prose named
+four specific shards although its gate takes any four of five, so it credited pieces the captain had never
+found. This capstone's prose names none — *"the pieces resolve into the clause the sales voice skips"* — and
+`TheCapstonesOwnLoreNamesNoShard…` pins that it stays that way.
+
+**Left for the owner, not built:** the convergence card already **states arc 2's whole truth as an
+announcement**, at 3 NEBULA intel — *below* this arc's own capstone gate of 4 — so a player who is running
+both threads normally reads the answer before they ever earn `policy-terms`, and the capstone then lands as a
+recap. Options and costs are filed on [#422]. So is the fact that **both** marquee reveals cost zero nerve
+(`TruthSanityShockHook` = 30 and `ConvergenceSanityShockHook` = 64 are unconsumed constants).
 
 **Still hook-only (deliberately NOT wired here — another lane owns it):**
 - **The sanity throws.** The sanity/#226 lane consumes `NebulaLore.TruthSanityShockHook` and

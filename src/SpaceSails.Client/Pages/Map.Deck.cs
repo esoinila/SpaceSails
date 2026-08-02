@@ -885,7 +885,9 @@ public partial class Map
                 _insurancePosterReads++;
                 if (_insurancePosterReads == 1)
                 {
-                    ShowPulseMessage("📋 “We Bring You Back Meaner.” Cheerful as ever. Your eye catches the grey line at the bottom, but you're already walking. (Read it closely — come back and look again.)");
+                    // The tell one beat early (#380's law), in the captain's own voice — it used to end on a
+                    // parenthesised instruction to the player. Copy in Core beside the fragment it leads to.
+                    ShowPulseMessage(Core.NebulaLore.PosterFirstReadLine);
                 }
                 else if (_insurancePosterReads >= 2)
                 {

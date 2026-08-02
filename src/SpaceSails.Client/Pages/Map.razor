@@ -1562,7 +1562,9 @@
                    adjuster is drinking here, or the small print's ready to resolve into the contract). *@
                 @if (NebulaBarSeamAvailable())
                 {
-                    <button type="button" class="btn btn-sm btn-outline-info" title="Ask around about the pirate-insurance fine print — NEBULA MUTUAL" @onclick="AskAboutNebula">▓ Ask about NEBULA</button>
+                    @* The label names the STEP: you ask about NEBULA of the adjuster, but nobody is asked
+                       anything when your own gathered small print answers itself on your own table. *@
+                    <button type="button" class="btn btn-sm btn-outline-info" title="@NebulaBarSeamTitle()" @onclick="AskAboutNebula">@NebulaBarSeamLabel()</button>
                 }
                 <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="() => Dismiss(CloseBarkeep)">Done</button>
             </div>
@@ -4306,7 +4308,11 @@
                 <div class="convergence-head">Two mysteries. One truth.</div>
                 <div class="convergence-sub">PROJEKTI KAAMOS · NEBULA MUTUAL — the same held breath</div>
                 <div class="convergence-body">@ArcConvergence.ConvergenceReveal</div>
-                <div class="convergence-foot">Every death you have died was a withdrawal. The same forty names, the same lucid dark.</div>
+                @* The foot is the beat AFTER the beat, and it must not be a recap: it used to close on two
+                   sentences copied verbatim out of the paragraph directly above it, so the biggest card in
+                   the game repeated itself to the player's face. Core owns the line now, and a guard pins
+                   that no sentence of it appears in the body (#422 story pass). *@
+                <div class="convergence-foot">@ArcConvergence.ConvergenceFoot</div>
                 <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseConvergenceReveal)">…sit with that</button>
             </div>
         </div>

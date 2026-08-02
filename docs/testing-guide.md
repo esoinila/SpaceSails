@@ -485,7 +485,8 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?land=1`** | **Ride the shuttle down as soon as the world is ready, onto the first landable body in reach (honours `?site=N`) — the real descent, skipping only the walk to the hatch and the boarding panel. The one-URL way to playtest a surface (#464).** |
 | **`?reevers=N`** | **Set N Old Ones (0–8) down ON the captain the moment they land, already aware — the chase, the pack spacing and the #453 exchange (block roll, blood, five blows) in seconds instead of a long walk (#458).** |
 | **`?bond=1`** | **Boot docked at a bar and FORCE the next ambient scare (shudder/buzzer/PA) to open a STRANGER-BOND — a co-present stranger stands you a cognac, the hero beat (#429).** |
-| **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout + the one-time "true terms" notice without a playthrough (#422).** |
+| **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout, its state transitions, and (only at `all`, which is the only value that includes the capstone contract) the one-time "true terms" notice, without a playthrough (#422).** |
+| **`?nebula=adjuster`** | **Seat the rare Nebula Mutual adjuster at whatever bar you dock at, every watch — the tell (fragment 3) becomes playable on demand instead of merely grantable (#422). Pair with `&dock=<berth>`.** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 | **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
 | **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** |
@@ -738,22 +739,55 @@ reading the port posters twice, at a bar from a roving **Nebula adjuster**, off 
 from the **clinic's** books. Progress shows in the Captain's ledger as **"▓ NEBULA MUTUAL — N of 5 clauses"**,
 the assembled shard texts readable beneath it (mirrors the KAAMOS readout).
 
+**The one-URL shortcuts (these GRANT the shards):**
+
 - **`?nebula=N`** assembles the first N fragments in canonical order; **`?nebula=all`** assembles every one
-  (5 intel shards + the capstone contract). Watch the ledger readout build, and at N ≥ 4 the one-time
-  **"▓▓ THE POLICY'S TRUE TERMS RESOLVE"** notice fire.
+  (5 intel shards + the capstone contract). At **4 intel** the ledger flips to *"Enough of the small print to
+  earn the contract"* and the bar seam starts offering the capstone.
+- The one-time **"▓▓ THE POLICY'S TRUE TERMS RESOLVE"** notice needs the **capstone contract as well as the
+  intel** (`NebulaLore.KnowsTheTruth` is *both*), and the capstone is fragment **6** in canonical order — so
+  `?nebula=4` and even `?nebula=5` fire nothing, and **`?nebula=all` is the only value that fires it.** (This
+  section used to say "at N ≥ 4"; it was wrong, and `HoldingEveryClauseButNotTheContractIsNotKnowingTheTruth`
+  now pins it.)
+- `/map?nebula=3` is the fastest look at the mid-arc card; `/map?nebula=all` is the end state.
 - **`?converge=1`** is the marquee smoke test: it seeds exactly the joint threshold on **both** arcs
   (3 KAAMOS intel + 3 NEBULA intel) and fires **THE CONVERGENCE** — a full staged reveal card, above
   everything, stating that the sealed ice-moon berth and your brain-backup insurance are the same story.
   It fires **once per universe** (the seen-bit is persisted in the vault); reload and it does not replay.
+  **Note the bar:** 3 NEBULA intel is *below* this arc's own capstone gate of 4, so the convergence card can
+  and normally does arrive **before** `policy-terms` — see the open structural question on
+  [#422](https://github.com/esoinila/SpaceSails/issues/422).
 
-**In-play delivery to verify by hand:**
-- **Die** (get caught by a collector, or fly into a body) → on the resurrection card, a green monospace
-  **glitch flash** ("…DO NOT REVIVE ORIGINAL") assembles `rebirth-glitch`. Getting caught by a **collector**
-  first also shows the **writ glimpse** (`collector-writ`). A **second** death shows the **clinic's second
-  page** (`clinic-ledger`).
-- **Read a `📋 PIRATE INSURANCE` poster twice** (any port hall/bar) → the second read assembles `fine-print`.
-- **At a bar**, when the seam offers **"▓ Ask about NEBULA"**, a roving adjuster gives `adjuster-tell`; once
-  4 intel are in hand the same seam resolves the capstone **`policy-terms`**.
+**The seat (this lets a rare beat be PLAYED, not granted):**
+
+| URL | what you walk |
+| --- | --- |
+| `/map?dock=the-space-bar&nebula=adjuster` | Walk to the counter and the barkeep card carries **▓ Ask about NEBULA** — the Nebula Mutual adjuster is in, this watch, at this bar. Unforced they drink at a given bar roughly one watch in five. |
+
+**In-play delivery to verify by hand (the canonical order):**
+
+1. **`rebirth-glitch`** — **die** (get caught by a collector, or fly into a body). On the resurrection card,
+   a green monospace **glitch flash** ("…DO NOT REVIVE ORIGINAL") assembles it. The flash is seeded off the
+   death, so it varies between rebirths; it shows on **every** rebirth, and the shard is gathered once.
+2. **`fine-print`** — walk up to a **`📋 PIRATE INSURANCE`** poster (any port hall or bar) and press **[E]**.
+   The first read only leaves you the tell (*"Your eye snags on the grey line under it… Come back and read it
+   properly"*); **[E]** again to close, **[E]** a third time to re-open, and the second read assembles it.
+3. **`adjuster-tell`** — the bar seam, `?nebula=adjuster` above. Static Marsh (the station oracle) can also
+   speak this one as a true line.
+4. **`collector-writ`** — get **grappled by a collector** in flight. The writ glimpse rides the DEMAND card,
+   the once, before you choose SUBMIT / BRIBE / RESIST.
+5. **`clinic-ledger`** — die a **second** time in the same universe. The bill's second page rides the wake
+   card. (Its gate is this thread's own retired-captain count, so a New voyage starts naive again.)
+6. **`policy-terms`** — the same bar seam once 4 intel are in hand; the button reads **▓ Put the NEBULA small
+   print together**, because at that step nobody is being asked anything. Neither NEBULA step costs coin.
+
+There is also a **third hand** that leaks arc-2 shards: **Static Marsh**, the station oracle (`OracleRant`),
+can speak `rebirth-glitch`, `adjuster-tell` or `clinic-ledger` as a true line at any bar — stand her a drink
+to widen the channel.
+
+**What is deliberately NOT built:** the sanity throws. `NebulaLore.TruthSanityShockHook` (30.0) and
+`ArcConvergence.ConvergenceSanityShockHook` (64.0) are consumed by nothing, so the two biggest reveals in the
+game cost the captain no nerve at all. See issue #422.
 
 ### The secret lab — `?secretlab=1` (#409)
 
