@@ -150,6 +150,31 @@ public static class HavenInterior
     private const float BarRight = 19f;
     private static readonly float BarTopY = HallTopY + 22f;
 
+    // --- The wide door from the round hall INTO the bar (the hall's north edge, edge 2) --------------
+    // The gap the captain walks through at the end of the ship → tube → immigration hall → bar walk.
+    // Named because four things have to mean the SAME doorway: the two wall stubs either side of it on
+    // the hall ring, the two bar-floor walls either side of it on the bar's south side, the auto-door
+    // itself, and — since #428 — where <see cref="BarThreshold"/> stands a captain who booted ashore.
+    // They agreed as five typed-in literals; two places computing one fact is the bug even then.
+    private const float BarDoorLeft = -1f;
+    private const float BarDoorRight = 6f;
+
+    /// <summary>WHERE THE WALK ENDS — the position the <c>?ashore=1</c> boot cheat (#428) stands the
+    /// captain at: one step past the hall's north door, the exact spot the REAL walk (ship → tube →
+    /// immigration hall → this door) puts them the moment the bar becomes the room they are standing in.
+    ///
+    /// <para>Derived from the doorway itself — its two jambs and the hall's north edge — and never typed
+    /// in. A cheat that invented its own coordinates would be a second source of truth for a fact the
+    /// geometry already owns, and unaudited client geometry literals are this project's oldest and most
+    /// reliably wrong bug class. The heading is <c>+Y</c>: facing into the room, the way you were walking
+    /// when you came through (the deck's own convention — <c>atan2(dy, dx)</c>).</para></summary>
+    public static (double X, double Y, double Heading) BarThreshold =>
+        ((BarDoorLeft + BarDoorRight) / 2.0, HallTopY + AshoreStepDeckUnits, System.Math.PI / 2);
+
+    /// <summary>How far past the door line the ashore boot stands: one avatar ACROSS, so the captain is
+    /// wholly inside the room rather than straddling the door line they just crossed.</summary>
+    private const double AshoreStepDeckUnits = 2 * DeckPlan.AvatarRadius;
+
     // --- The roaming Magpie (PR-F, the owner's "people cannot be static furniture" ruling) ---
     // A fence's runner who never sits still: a bar table one watch, out of reach the next, waiting in
     // the opened Bonded Stores back room after that. Four sim-hours a stop; a full loop is half a day,
@@ -398,11 +423,11 @@ public static class HavenInterior
                 walls.Add(new(a.X, a.Y, TubeLeft, a.Y, false, true));
                 walls.Add(new(TubeRight, b.Y, b.X, b.Y, false, true));
             }
-            else if (k == 2) // north edge: the wide door to the bar (gap x -1..6)
+            else if (k == 2) // north edge: the wide door to the bar (gap x BarDoorLeft..BarDoorRight)
             {
-                walls.Add(new(a.X, a.Y, 6, a.Y, false, true));
-                walls.Add(new(-1, b.Y, b.X, b.Y, false, true));
-                doors.Add(new(-1, a.Y, 6, a.Y)); // wide auto door
+                walls.Add(new(a.X, a.Y, BarDoorRight, a.Y, false, true));
+                walls.Add(new(BarDoorLeft, b.Y, b.X, b.Y, false, true));
+                doors.Add(new(BarDoorLeft, a.Y, BarDoorRight, a.Y)); // wide auto door
             }
             else // a sealed berth / department — or an opened expansion joint
             {
@@ -446,8 +471,8 @@ public static class HavenInterior
         labels.Add((HallCenterX, HallCenterY + 3, $"⚓ {spec.Authority} ORBIT"));
 
         // The bar, off the hall's north door.
-        walls.Add(new(BarLeft, HallTopY, -1, HallTopY, false, true));   // bar floor wall, port of the door
-        walls.Add(new(6, HallTopY, BarRight, HallTopY, false, true));   // bar floor wall, starboard of the door
+        walls.Add(new(BarLeft, HallTopY, BarDoorLeft, HallTopY, false, true));   // bar floor wall, port of the door
+        walls.Add(new(BarDoorRight, HallTopY, BarRight, HallTopY, false, true)); // bar floor wall, starboard of the door
         walls.Add(new(BarLeft, HallTopY, BarLeft, BarTopY, false, true));
         walls.Add(new(BarRight, HallTopY, BarRight, BarTopY, false, true));
         walls.Add(new(BarLeft, BarTopY, BarRight, BarTopY, true, true)); // spinward window onto space

@@ -491,6 +491,8 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 | **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
 | **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** |
+| **`?ashore=1`** | **Boot docked AND ALREADY STANDING IN THE BAR — the ship → airlock → tube → immigration hall → bar walk already walked (#428). Every bar beat begins with that walk; in a hidden/automated tab it cannot be walked at all. Pairs with `?dock=` / `?start=`, and with every bar cheat.** |
+| **`?nerve=N`** | **Seed the nerve gauge at N of 10 whole pips at boot (#428/#480). Clamps to the gauge; `?nerve=10` is the shipped default. The only way to reach a sanity beat without being hunted for minutes first.** |
 
 ### Dying on purpose — `?death=<cause>` (#621)
 
@@ -654,6 +656,26 @@ Fast rig: `/map?dock=the-tilt&site=0&land=1&reevers=4` — boots you onto Mirand
 pack inbound. Stand still and watch the ledger fill; walk into the pack to test the touch rules; run up the
 tube to test recovery. The ledger also appears on the death card under **WHAT BROKE YOU**.
 
+**Start the gauge where the beat is — `?nerve=N` (#428).** A full gauge is ten pips and every loss is one
+pip, so *watching* a sanity beat used to mean surviving five to ten minutes of being hunted first. `?nerve=N`
+seeds the gauge at boot at **N of `NervePips.MaxPips` whole pips** — the same segments the corner gauge
+draws, not points out of a hundred — clamped to the gauge at both ends (`?nerve=10` is the shipped default,
+`?nerve=99` is the same thing). It moves the needle and nothing else: no beat is skipped, no cause is
+faked, and the ledger still has to earn every line it prints.
+
+```
+/map?nerve=1&dock=the-tilt&site=0&land=1&reevers=1   one pip left, one hand inbound — the overdraw break
+/map?nerve=3&dock=the-tilt&site=0&land=1             the monolith's three-pip lump, onto a frayed captain
+/map?nerve=2&archive=1&land=1                        the archive node's dwell with almost nothing to spend
+/map?nerve=0&dock=the-tilt&site=0&land=1             the SHOT band and its readout, from a standing start
+```
+
+At **`?nerve=1` the captain is not yet overdrawn** (`CaptainSuccession.EmptyThreshold` sits under one pip),
+which is the point: what you watch is the real two-step break — a hand takes the last pip, the *next* one
+breaks them — rather than a death the cheat invented. `?nerve=0` is the already-empty state the next
+qualifying hit ends. Both are pinned by `TheNerveSeedIsMeasuredInPipsTests`, because a seed read in the
+wrong unit parses fine and silently changes which of the two you are looking at.
+
 > **Blazor cache gotcha (cost real time on 2026-07-28):** the published Pages build is served from a
 > service-worker cache. A plain reload can re-serve the OLD wasm and you will "verify" a fix that isn't
 > there. Clear it in the tab console — `(await caches.keys()).forEach(k => caches.delete(k))` — **and** add a
@@ -795,6 +817,37 @@ to widen the channel. Seat her on demand with **`?oracle=1`** (below).
 **What is deliberately NOT built:** the sanity throws. `NebulaLore.TruthSanityShockHook` (30.0) and
 `ArcConvergence.ConvergenceSanityShockHook` (64.0) are consumed by nothing, so the two biggest reveals in the
 game cost the captain no nerve at all. See issue #422.
+
+### Already in the bar — `?ashore=1` (#428)
+
+Every bar beat this game has starts with the same walk: ship → airlock → tube → immigration hall → the
+wide north door → the bar. It is a good walk. It is also, on **every single boot**, the thing standing
+between a tester and the beat under test — and in an automated or backgrounded browser tab the page is
+`document.hidden`, so rAF is throttled and WASD never lands. There, the walk is not slow; it is
+**impossible**, and not one bar beat could be smoke-tested at all.
+
+`?ashore=1` boots you docked (default **The Space Bar**; any `?dock=<id>` or `?start=<id>` you pass still
+wins) with the captain **already standing one step inside the bar**, facing into the room, Deck up. It
+seats nobody and grants nothing — it moves the captain, exactly as the walk would have.
+
+```
+/map?oracle=1&ashore=1                            the rant: one URL, one [E]
+/map?ashore=1&nebula=adjuster                     arc 2's best beat, at the counter
+/map?ashore=1&kaamos=holder&dock=ringside-exchange
+/map?ashore=1&bond=1                              stand still; the forced scare opens the cognac beat
+/map?ashore=1&simhours=9&dock=cinder-roost        the Magpie's third stop, at the back room
+```
+
+The position is **derived from the doorway the real walk crosses** (`HavenInterior.BarThreshold`, off the
+hall's north door), never typed in — a boot coordinate is exactly the shape of this project's oldest bug
+class. `TheAshoreBootStandsYouInTheBarTests` audits it against the shipping deck plan: it is standable, it
+is in the bar and not the concourse, it is in the doorway's mouth (you can step back out), **nothing is
+under `[E]` before you move**, every barkeep/patron console is walkable from it, and you can still walk
+home to your own ship.
+
+Pointed at a **pumps-only berth** — a dockable haven with no walkable complex, which clamps you on and
+leaves you on the Nav map — it says so in a DEV pulse rather than teleporting the captain into a bar that
+does not exist. The seven stations that *do* have one are the seven in `HavenInterior.Specs`.
 
 ### The station oracle — `?oracle=1` (#425 / #428)
 

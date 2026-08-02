@@ -352,6 +352,8 @@ public partial class Map
         string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable; ?kaamos=pod|holder instead SEATS the rare find so it can be EARNED
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
         bool oracleCheat = false; // #428 /map?oracle=1: seat the station oracle at whatever bar you dock at (she's a coin-flip fixture otherwise)
+        bool ashoreCheat = false; // #428 /map?ashore=1: boot docked AND already standing in the bar — the ship→tube→hall walk already walked
+        int? nerveCheat = null;   // #428 /map?nerve=N: seed the nerve gauge at N of NervePips.MaxPips whole pips at boot
         string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable; ?nebula=adjuster instead SEATS the rare bar contact so the tell can be EARNED
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
         DeathCause? deathCheat = null; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
@@ -760,6 +762,54 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["oracle=".Length..]).ToLowerInvariant();
                 oracleCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("ashore=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #428 dev cheat: /map?ashore=1 boots docked (default The Space Bar, override with ?dock= /
+                // ?start=) and ALREADY STANDING IN THE BAR, one step inside the hall's north door, facing in.
+                //
+                // Every bar beat there is — the oracle (?oracle=1), the stranger-bond (?bond=1), the KAAMOS
+                // berth-holder and the Nebula adjuster (?kaamos=holder / ?nebula=adjuster), the Magpie's rota
+                // (?simhours=), the barkeep, the gift shop, the insurance poster — made you walk ship →
+                // airlock → tube → immigration hall → bar on EVERY boot first. That walk is a pleasure to
+                // play and a wall to test: an MCP-driven browser tab is `document.hidden`, so rAF is
+                // throttled and WASD never lands, and not one bar beat could be smoke-tested at all.
+                //
+                // It seats nobody and grants nothing — it moves the captain, exactly as the walk would have.
+                // The position is derived from the doorway the real walk crosses (HavenInterior.BarThreshold),
+                // never typed in. Combine freely:
+                //   /map?oracle=1&ashore=1                      the rant, one URL and one [E]
+                //   /map?ashore=1&dock=cinder-roost&backroom=open
+                //   /map?ashore=1&nebula=adjuster&simhours=9
+                string candidate = Uri.UnescapeDataString(pair["ashore=".Length..]).ToLowerInvariant();
+                ashoreCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("nerve=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #428 dev cheat: /map?nerve=N seeds the nerve gauge at boot at N WHOLE PIPS — the same ten
+                // the corner gauge draws (#480), not points out of a hundred — so N reads straight off the
+                // pip row the player looks at. Out-of-range asks clamp to the gauge, the ?air=N idiom.
+                //
+                // The clamp is NOT applied here, deliberately. NervePips.FromPips already clamps to the
+                // model's own MinPips..MaxPips on the way onto the pip lattice, and a second Math.Clamp on
+                // this line would be a second place computing the gauge's bounds — the "one source of truth"
+                // rule, and the reason a guard on the seed can only be honest if there is one clamp to break.
+                //
+                // Without it no sanity beat could be reached on demand: nerve only falls by being hunted for
+                // minutes, so the overdraw death, the monolith's lump landing on an already-frayed captain
+                // and the archive node's dwell were each a long walk away from any boot. One URL each now:
+                //   /map?nerve=1&dock=the-tilt&site=0&land=1&reevers=1   one pip left, a hand inbound
+                //   /map?nerve=3&dock=the-tilt&site=0&land=1             the monolith, hit at a low gauge
+                //   /map?nerve=2&archive=1&land=1                        the dwell, with almost nothing to spend
+                //
+                // At N=1 the captain is NOT yet overdrawn (CaptainSuccession.EmptyThreshold sits under one
+                // pip), so what you watch is the real two-step break — a hand takes the last pip, the NEXT
+                // one breaks them — rather than an instant death the cheat invented.
+                string candidate = Uri.UnescapeDataString(pair["nerve=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pips))
+                {
+                    nerveCheat = pips;
+                }
+            }
             else if (pair.StartsWith("reevers=", StringComparison.OrdinalIgnoreCase))
             {
                 // #458 dev cheat: /map?reevers=N drops N Old Ones RIGHT ON the captain the moment they set
@@ -814,6 +864,15 @@ public partial class Map
             // same non-scene as a scare with no room of strangers. Default The Space Bar; any ?dock= wins.
             _oracleForce = true;
             dockCheat ??= "the-space-bar";
+        }
+
+        // #428 · An ashore boot needs a bar to be ashore IN. Same idiom as the bond and the oracle above —
+        // default a berth with a walkable interior — but guarded the way #621's death default is: `?dock=`
+        // is read before `?start=` below, so defaulting one unconditionally would quietly outrank a
+        // `?start=` the caller did pass. Anything the caller asked for still wins.
+        if (ashoreCheat && dockCheat is null && startId is null)
+        {
+            dockCheat = "the-space-bar";
         }
 
         // #621 · A death needs somewhere to have happened. Without a start this boot ends at the front
@@ -1043,6 +1102,26 @@ public partial class Map
         {
             PeekSavedVault(); // #225: surface a "Continue — docked at <haven>" lead if a vault exists.
             _showStartPicker = true;
+        }
+
+        // #428 · ?ashore=1 — walk the walk for them. AFTER the clamp (the interior is welded by
+        // SetDeckForDock, which the start above ran) and BEFORE any landing cheat, which brings its own
+        // ground and takes the captain off this deck entirely.
+        if (ashoreCheat)
+        {
+            ShowPulseMessage(StandAtTheBarThreshold()
+                ? $"🍸 Test: you are ashore in {_havenName} — the ship → tube → hall walk is already behind you. [E] works the tables, the counter and the corners."
+                : "🍸 Test: ?ashore=1 needs a berth with a walkable interior — this one has no bar to stand in. Try &dock=the-space-bar.");
+        }
+
+        // #428 · ?nerve=N — seed the gauge BEFORE the landing cheat rides the shuttle down and before any
+        // ?death= is staged, because both READ the live nerve: the descent's first frames price the gauge,
+        // and the death card asks CaptainSuccession.OverdrawQualifies(_nerve) whether the captain was
+        // already empty. Seeding after them would hand the card the default steady gauge and caption a
+        // shattered captain as merely mauled — the sentence saying one thing while the sim did another.
+        if (nerveCheat is { } seedPips)
+        {
+            _nerve = NervePips.FromPips(seedPips);
         }
 
         if (_pendingExpeditionCheat is not null)

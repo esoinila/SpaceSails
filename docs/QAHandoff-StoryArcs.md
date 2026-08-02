@@ -155,6 +155,8 @@ nearly impossible to reach on purpose.
 | `?sling=<bodyId>` | boot an inbound arc with a close pass ~12 days out |
 | `?ellipse=1` | append one visibly eccentric body for the Kepler rails |
 | `?start=<station>` | boot docked at a named station |
+| `?ashore=1` | boot docked **and already standing in the bar** — the ship → tube → hall walk already walked, so every bar beat is one URL away even in a tab where WASD cannot land |
+| `?nerve=N` | seed the nerve gauge at *N* of ten whole pips at boot — the only way to reach a sanity beat without being hunted for minutes first |
 
 **If an arc has no quick start, saying so is itself a finding — file it.** An arc that can only be reached by
 playing for an hour is an arc that will never be regression-tested again.
