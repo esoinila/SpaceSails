@@ -41,6 +41,7 @@ public class VaultSerializerTests
         Caches = new CachesSection
         {
             NextMintIndex = 5,
+            LastCheckedPeriod = 3, // #223: the discovery watch's bookmark rides with the hoard
             Caches =
             [
                 new CacheRecord
@@ -121,6 +122,7 @@ public class VaultSerializerTests
         Assert.Equal(500, loaded.Contacts.Contacts[0].CreditBalance);
         Assert.Equal(2, loaded.Contacts.Contacts[0].Transactions.Count);
         Assert.Equal(5, loaded.Caches!.NextMintIndex);
+        Assert.Equal(3, loaded.Caches.LastCheckedPeriod); // #223 — the watch survives the file, not just the session
         Assert.True(loaded.Caches.Caches[0].Cargo[0].Hot);
         Assert.Equal("cacheId", loaded.Quests!.Quests[0].Fields.Keys.First());
         Assert.Single(loaded.Quests.Obligations);
@@ -357,6 +359,25 @@ public class VaultSerializerTests
         Assert.Null(loaded.Ship);
         Assert.Null(loaded.Caches);
         Assert.Null(loaded.Resume);
+    }
+
+    /// <summary>#223 · A voyage saved BEFORE the discovery watch rode the vault has a caches section with
+    /// no bookmark field at all. It must read back as WATCH NOT STARTED (−1) so the client re-seeds it at
+    /// the load clock — never as day 0, which would resolve every day since the epoch on the first frame
+    /// and empty the captain's hoard the instant they resumed.</summary>
+    [Fact]
+    public void Caches_LegacyFileWithNoWatchField_ReadsAsWatchNotStarted()
+    {
+        string json = VaultSerializer.Save(FullVault());
+        JsonObject root = (JsonObject)JsonNode.Parse(json)!;
+        JsonObject caches = (JsonObject)((JsonObject)root["sections"]!)["caches"]!;
+        Assert.True(caches.Remove("lastCheckedPeriod")); // the old shape: the field never existed
+        RestampChecksum(root);
+
+        Vault loaded = VaultSerializer.Load(root.ToJsonString());
+
+        Assert.False(loaded.Tampered);
+        Assert.Equal(CacheLedger.WatchNotStarted, loaded.Caches!.LastCheckedPeriod);
     }
 
     [Fact]

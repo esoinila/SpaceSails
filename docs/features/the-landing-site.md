@@ -178,6 +178,25 @@ ground explains the Old Ones, and nothing ever will — see `reever-origin-canon
 4.3 **Object persistence.** Dead Reevers stay where they were left; your caches stay buried where you buried
 them. *(Owner: "the long walk should walk with expected object persistence.")*
 
+4.4 **The shovel takes the chest, and nothing but the chest.** The chest is a SNAPSHOT taken at the shuttle
+door (`ShuttleExcursion.Pack`) — but the hold keeps living all the way down: dig an older cache back up on
+this same ground and its units are aboard now, in no chest at all. Burying used to clear the whole hold, so
+everything picked up since boarding was neither underground (the map card and the "off the books" line name
+only the snapshot) nor aboard: it evaporated. Coin was always deducted honestly — the pending amount, never
+the purse; `ShuttleExcursion.HoldAfterBurying` is cargo's half of the same law. *(Enforced:
+`ShuttleExcursionTests.HoldAfterBurying_*`.)*
+
+4.5 **The watch is part of the hoard, not a fact beside it.** Bury a chest and the game promises *"rivals may
+dig it up over the coming days"*. That promise is a slow per-cache roll whose bookmark — the last whole day
+resolved — used to live in a private client field and was therefore never saved. Reload, resume a voyage with
+chests in the ground, and the watch came back unstarted: no rival ever dug anything up again, however many
+days you flew. The bookmark now lives on `CacheLedger.LastCheckedPeriod` and rides the vault with the caches
+it governs; a save older than the field reads back as *watch not started* and the client re-seeds it at the
+clock the captain wakes at — never at day zero, which would resolve every day since the epoch in one pass and
+empty the hoard on load. *(Enforced: `VaultMapperTests.Caches_RoundTrip_PreservesTheDiscoveryWatchBookmark`,
+`Caches_OldVaultWithoutTheWatch_LoadsAsNotStarted`, `Caches_Clear_StopsTheWatch`,
+`VaultSerializerTests.Caches_LegacyFileWithNoWatchField_ReadsAsWatchNotStarted`.)*
+
 ## 5 · The instruments
 
 5.1 **The motion tracker is motion-only.** A still contact is not a contact. This is a feature — it is what

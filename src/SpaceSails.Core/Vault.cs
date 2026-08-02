@@ -161,6 +161,14 @@ public sealed record CachesSection
     /// <summary>The mint counter, preserved so freshly-buried caches after a load can't collide with
     /// loaded ids.</summary>
     public int NextMintIndex { get; init; }
+
+    /// <summary>The discovery watch's bookmark — the last whole day this hoard was rolled through
+    /// (<see cref="CacheLedger.LastCheckedPeriod"/>). Defaults to <see cref="CacheLedger.WatchNotStarted"/>
+    /// so a vault written before this field existed loads as "no watch yet" and the client re-seeds it at
+    /// the load clock; without the default a legacy save would read period 0 and resolve every day since
+    /// the epoch in one go — a hoard massacre on load.</summary>
+    public long LastCheckedPeriod { get; init; } = CacheLedger.WatchNotStarted;
+
     public IReadOnlyList<CacheRecord> Caches { get; init; } = [];
 }
 

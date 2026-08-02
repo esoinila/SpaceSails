@@ -3242,9 +3242,20 @@ public partial class Map
     {
         int coin = Math.Clamp(ex.PendingCoin, 0, _credits);
         _credits -= coin;
-        _cargoUnits = 0;
-        _cargoValue = 0;
+
+        // Only what is IN THE CHEST leaves the books. The chest is a snapshot taken at the shuttle door
+        // (ShuttleExcursion.Pack); the hold keeps living all the way down — a cache dug back up on this
+        // same ground, a beach-comber scrap recovered after a panic drop. Clearing the whole hold here
+        // therefore ATE those units: the map card and the "off the books" line name only the snapshot, so
+        // they were neither buried nor aboard. Coin was always deducted honestly (the pending amount, no
+        // more); this is cargo's half of the same law. ShuttleExcursion.HoldAfterBurying owns the rule.
+        var left = ShuttleExcursion.HoldAfterBurying(_cargoByClass, ex.PendingCargo);
         _cargoByClass.Clear();
+        foreach (KeyValuePair<string, int> line in left)
+        {
+            _cargoByClass[line.Key] = line.Value;
+        }
+        RecomputeCargoTotals();
 
         int standing = WatchdogLevelAt(ex.Stop.Body.Id);
         int presence = Math.Max(standing, roll.Reevers);
@@ -5249,6 +5260,7 @@ public partial class Map
         ex.Channel = null;
         bool escapedWithWatchdogs = _reevers.Count > 0;
         TreasureCache? buried = ex.Cache;
+        bool droppedAndLeft = ex.ChestDropped; // read before the excursion (and its dropped pile) is folded away
 
         // #314: carried sentries come home (with their drained magazines); any left DEPLOYED on the
         // ground is abandoned — a write-off with a ledger line (#119 voice). Retrieve them before liftoff
@@ -5303,6 +5315,16 @@ public partial class Map
         string botTail = abandoned > 0
             ? $" {abandoned} sentry bot{(abandoned == 1 ? "" : "s")} left behind — written off."
             : "";
+
+        // #313 · THE CHEST YOU DROPPED AND NEVER WENT BACK FOR. Dropping it (G) says "come back for it when
+        // the ground's clear", and inside the excursion that is exactly true — walk over the spot and it is
+        // back in the sling. Lift off without it and the ✗-less pile on the regolith is simply gone with the
+        // excursion. What the SIM does is the honest news, and it was the one thing never said: nothing went
+        // into the ground, so nothing ever left the ship's books — the coin never left the purse, the hold
+        // never emptied. Say it, or the captain flies home believing they abandoned a fortune out there.
+        string dropTail = droppedAndLeft
+            ? " 🧰 You lifted off without the chest you dropped — but nothing went into the ground, so nothing left the books: the coin is still in the purse and the hold is untouched."
+            : "";
         if (buried is { } cache)
         {
             _treasureMapCard = cache;
@@ -5315,7 +5337,7 @@ public partial class Map
         else if (!settledExpedition && !settledDeflection) // an away-gig settle already spoke its payout line
         {
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
-            ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}");
+            ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}{dropTail}");
         }
     }
 

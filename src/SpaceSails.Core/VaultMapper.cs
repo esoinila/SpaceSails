@@ -81,7 +81,12 @@ public static class VaultMapper
     {
         ArgumentNullException.ThrowIfNull(ledger);
         var caches = ledger.Caches.Select(ToRecord).ToList();
-        return new CachesSection { NextMintIndex = ledger.NextMintIndex(), Caches = caches };
+        return new CachesSection
+        {
+            NextMintIndex = ledger.NextMintIndex(),
+            LastCheckedPeriod = ledger.LastCheckedPeriod, // the watch is part of the hoard, not beside it
+            Caches = caches,
+        };
     }
 
     public static void Apply(CachesSection? section, CacheLedger ledger)
@@ -98,6 +103,7 @@ public static class VaultMapper
         }
 
         ledger.RestoreMintIndex(section.NextMintIndex);
+        ledger.LastCheckedPeriod = section.LastCheckedPeriod;
     }
 
     private static CacheRecord ToRecord(TreasureCache c) => new()

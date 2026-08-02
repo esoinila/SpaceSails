@@ -230,4 +230,49 @@ public class ShuttleExcursionTests
         Assert.False(ShuttleExcursion.ExplainsEmptyBoard(1));
         Assert.False(ShuttleExcursion.ExplainsEmptyBoard(3));
     }
+
+    // ── Pack's inverse: what stays aboard when the chest goes into the ground ──
+
+    /// <summary>THE BURY DOES NOT EAT THE HOLD. The chest is a snapshot taken at the shuttle door, but
+    /// the hold keeps living for the whole excursion — dig an older cache back up on this same ground and
+    /// its units are aboard now, in NO chest. Burying used to clear the hold outright, so those units were
+    /// neither underground (the map card names only the snapshot) nor aboard: they evaporated. Only the
+    /// buried lines leave the books.</summary>
+    [Fact]
+    public void HoldAfterBurying_TakesTheChestsLines_AndLeavesEverythingPickedUpSince()
+    {
+        var hold = new Dictionary<string, int> { ["He3"] = 4, ["Salvage"] = 3 };   // 4 boarded + 3 dug up
+        var chest = new[] { new CacheCargo("He3", 4, Hot: true) };                 // the snapshot at the door
+
+        var left = ShuttleExcursion.HoldAfterBurying(hold, chest);
+
+        Assert.False(left.ContainsKey("He3"));   // the chest's own line went under
+        Assert.Equal(3, left["Salvage"]);        // the salvage came home
+    }
+
+    /// <summary>A partly-buried class keeps its remainder, and the hold is never driven negative by a
+    /// snapshot larger than what is actually aboard.</summary>
+    [Fact]
+    public void HoldAfterBurying_DeductsPerClass_AndNeverGoesNegative()
+    {
+        var hold = new Dictionary<string, int> { ["Ice"] = 5, ["Alloys"] = 1 };
+        var chest = new[] { new CacheCargo("Ice", 2, false), new CacheCargo("Alloys", 9, false), new CacheCargo("He3", 3, false) };
+
+        var left = ShuttleExcursion.HoldAfterBurying(hold, chest);
+
+        Assert.Equal(3, left["Ice"]);              // 5 − 2
+        Assert.False(left.ContainsKey("Alloys"));  // floored at zero, and an emptied class leaves the book
+        Assert.False(left.ContainsKey("He3"));     // a line the hold never had cannot conjure one
+    }
+
+    /// <summary>An empty chest changes nothing — a sightseeing hop never touches the hold.</summary>
+    [Fact]
+    public void HoldAfterBurying_EmptyChest_LeavesTheHoldWhole()
+    {
+        var hold = new Dictionary<string, int> { ["He3"] = 2 };
+
+        var left = ShuttleExcursion.HoldAfterBurying(hold, []);
+
+        Assert.Equal(2, left["He3"]);
+    }
 }
