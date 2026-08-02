@@ -51,6 +51,18 @@ public static class Satchel
         /// <summary>A file on somebody. Leverage, and the one thing here that is spent on a PERSON rather
         /// than on a door — so it is carried, and it is never "tried" against anything down a corridor.</summary>
         Dirt,
+
+        /// <summary>#614 · A record of something too big to lift. Owner: <i>"like finding a massive collar
+        /// designed for Cthulhu's neck :D"</i>
+        ///
+        /// <para>Appended deliberately, never inserted: the ordinal is what a saved satchel stores, so
+        /// putting a new kind in the middle would silently reinterpret every item in every existing
+        /// vault.</para>
+        ///
+        /// <para>A relic is not a key and is never offered to a door. It buys nothing and opens nothing. It
+        /// is carried because a captain who has seen it is a different captain, and because the day somebody
+        /// finally wants to talk about what is down here, this is the thing on the table.</para></summary>
+        Relic,
     }
 
     /// <summary>One thing in the pocket.</summary>
