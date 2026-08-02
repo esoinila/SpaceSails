@@ -3896,9 +3896,10 @@ public partial class Map
             OnExcursion: onExcursion,
             OnRegolith: awayFromSafety,
             // There is no monolith aboard a dead ship, and now that a wreck can BE exposed ground the guard
-            // has to be said rather than left to arithmetic: SeesMonolith() measures from the moon field's
-            // anchor at y = −232, which no point of a hull is within 26 du of. True today, and exactly the
-            // kind of "satisfied by accident" that #637 is a list of.
+            // has to be said rather than left to arithmetic (#637's whole list is things satisfied by
+            // accident). SeesMonolith() now answers the question properly on its own — it asks
+            // Monolith.StandsOn, the same predicate the renderer builds the slab from, and a wreck id is
+            // not the canon moon — so !OnWreck is belt to that braces rather than the only thing holding it.
             SeesMonolith: !OnWreck && awayFromSafety && SeesMonolith(),
             // #446 (owner, live 2026-07-26: "The reevers should not lower sanity unless they get REALLY
             // close"). ChaseActive used to be the bare `_reevers.Count > 0` — a pack EXISTING anywhere on
