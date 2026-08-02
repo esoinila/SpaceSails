@@ -560,6 +560,12 @@ public partial class Map
         // point: the second time you step out down there it is just a corridor, and it should be.
         public bool HiveUnlistedSeen { get; set; }
 
+        // #528 · Whether this excursion has already had the two reveal cards the Hive earns — the sealed way
+        // on, and the first authority card. Once each: a card that pops at every sealed door in a corridor
+        // of sealed doors is a slideshow, and the second one is never the beat the first one was.
+        public bool HiveSealedWayShown { get; set; }
+        public bool HiveAuthorityShown { get; set; }
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -1235,6 +1241,26 @@ public partial class Map
             list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home, lab));
         }
 
+        // ── #591 · UNDERGROUND, THE BEACONS ARE DIFFERENT PLACES ──
+        //
+        // Owner, on B1: "now that we are underground the elevator would be nice to be on the motion detector,
+        // the surface hut's are really not that relevant down here".
+        //
+        // He is right, and it is the same fault as the reach: these are SURFACE beacons. The tube mouth and
+        // the shelters are up a lift shaft and several hundred metres of rock away, so painting them on the
+        // fan down here is not merely useless — it is actively wrong, because the way home ring is the one
+        // the captain reads when the air gets short and it would be pointing at a hut they cannot reach.
+        //
+        // Down here there is exactly ONE place worth a ring, and it is the same one every floor: the lift.
+        // It is the way home in the only sense that matters underground, so it takes the HOME flag and the
+        // calm colour that goes with it — a place, not a thing that moves.
+        if (ex.Floor < 0)
+        {
+            (double liftX, double liftY) = UndergroundComplex.ShaftAt(MoonSurface.ExpeditionField());
+            Add(liftX, liftY + UndergroundComplex.CorridorHalf + 2.5, home: true);
+            return list;
+        }
+
         Add(MoonSurface.SpawnX, MoonSurface.SpawnY, home: true);
         foreach (SurfaceStructure.Spec shelter in SheltersOn(ex))
         {
@@ -1524,7 +1550,7 @@ public partial class Map
     // you air.
     private void HiveLiftInteract()
     {
-        if (_surface is not { } ex)
+        if (_surface is null)
         {
             return;
         }
@@ -1534,106 +1560,79 @@ public partial class Map
             return;
         }
 
-        // #585 · THE CAR SERVES A BAND, NOT A BUILDING. Owner's own architectural note: "the lift shafts are
-        // the limiting factor, but besides those we have space." So depth is unbounded and the SHAFT is what
-        // rations it — reach the bottom of this car's band and it will not go further, and the way down is
-        // another shaft on this floor that you have to find.
-        string body = ex.Stop.Body.Id;
-
-        // #592 · TWO BOTTOMS, AND THE WHOLE FEATURE LIVES IN THE GAP.
+        // ── #600 · THE PANEL, BECAUSE THE CAR ONLY WENT DOWN ──
         //
-        // `listedBottom` is what the building says about itself — the last floor on the plan in the lobby.
-        // `bottom` is how far a captain can actually walk. On a rare site there is a band between them that
-        // the directory never mentioned, served by a shaft that is not where the others are.
+        // Owner, on B1: "looks like the elevator only takes me down... how do I get back to the surface with
+        // it :-D Am I marooned in a secret lab underground now :-D ?" — then, deciding it: "we should have
+        // elevator panel with UI then".
         //
-        // The panel is NOT allowed to know about the gap. See below.
-        int listedBottom = UndergroundComplex.DepthOf(body);
-        int bottom = UndergroundComplex.TrueDepthOf(body);
-        int bandFloor = UndergroundComplex.BandFloor(body, UndergroundComplex.BandOf(Math.Min(ex.Floor, -1)));
+        // This function USED to be the ride: one keypress, always one floor deeper, and the only way out was
+        // to reach the bottom of the band first. On a twenty-floor site that meant riding eighteen floors
+        // further from the surface, through dead air, to go up. The file's own comment two screens down says
+        // a captain trapped on a dead floor is a death; the lift was the thing doing the trapping.
+        //
+        // It survived #590, #591 and #592 all editing this function, because none of them asked what the UP
+        // case did — and the A* audit cannot see a state machine. It proves the captain can REACH the lift,
+        // never that the lift is a way HOME.
+        //
+        // Core owns which buttons exist (UndergroundComplex.LiftPanel) so that the #590 card gate and the
+        // #592 silence are ONE pure, tested rule instead of something re-derived in a razor file.
+        _showLiftPanel = true;
+        RendererInterop.PlayCue("board");
+    }
 
-        if (ex.Floor == 0)
+    /// <summary>#600 · The buttons on this car's panel, from where the captain is standing.</summary>
+    private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
+        _surface is { } ex
+            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, _authorityCards)
+            : [];
+
+    /// <summary>#600 · A button was pressed. A refusing button says why and the car does not move — a button
+    /// that is present and explains itself is the entire reason it is not simply absent.</summary>
+    private void PressLiftButton(UndergroundComplex.LiftStop stop)
+    {
+        if (_surface is not { } ex || stop.IsCurrent)
         {
-            RideTheLiftTo(ex, -1);
             return;
         }
-
-        if (ex.Floor > bandFloor)
+        if (stop.Refusal is { } refused)
         {
-            RideTheLiftTo(ex, ex.Floor - 1);
-            return;
-        }
-
-        // ── #590 · THE BOTTOM OF THE BAND, AND THE CARD THAT GETS PAST IT ──
-        //
-        // Owner: "could there be like a keycode etc that allows us access to the lab". This is where the
-        // Haul.Key card stopped being a promise. The car itself still will not go lower — that stays true,
-        // and it is why the building has more than one lift — but the NEXT shaft is on this floor, and its
-        // gate reads an authority. So depth below the first band is no longer a number the seed hands you:
-        // it is something you earn by working the floors you are standing on until the card turns up.
-        //
-        // The refusal always says why, and says whether what you ARE carrying is the wrong card, because a
-        // gate that just sits there is indistinguishable from a bug.
-        if (ex.Floor > bottom)
-        {
-            int nextBand = UndergroundComplex.BandOf(ex.Floor) + 1;
-            var wanted = new UndergroundComplex.AuthorityCard(body, nextBand);
-
-            if (_authorityCards.Contains(wanted.Id))
+            // Said every time — a refusal that goes quiet on the second press reads as a broken button.
+            // Filed once, because pressing one gate eleven times is not eleven findings.
+            string line = UndergroundComplex.WrongCardLine(-ex.Floor, HeldAuthorities());
+            int refusedBand = UndergroundComplex.BandOf(stop.Level);
+            if (ex.HiveShaftsRefused.Add(refusedBand))
             {
-                if (ex.HiveShaftsOpened.Add(nextBand))
-                {
-                    ShowAndFile(UndergroundComplex.CardAcceptedLine(wanted), "🎫");
-                    ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
-                }
-
-                // #592 · The next band's car opens at ITS OWN head, which is not always one floor down.
-                // Where a site's listed depth stops mid-band there is a GAP under it with nothing dug in
-                // it, and the unlisted shaft starts below that. Stepping "one floor down" would walk into
-                // rock that was never generated.
-                RideTheLiftTo(ex, UndergroundComplex.BandTop(nextBand));
-                return;
-            }
-
-            // ── #592 · AND HERE THE BUILDING LIES BY OMISSION ──
-            //
-            // Standing on the last floor the directory admits to, the panel must behave EXACTLY as it does
-            // at the true bottom of an ordinary site: silence, and the car goes up.
-            //
-            // The #590 refusal names a shaft — "the second shaft is here, below B13, and its gate wants an
-            // authority" — and that is right everywhere the building is being honest about its own size. One
-            // floor lower it would announce the secret in the one sentence the secret cannot survive. So
-            // would EndOfTheLineLine, which promises that something was reached another way and is down here
-            // somewhere. Neither is said. The button really is not there, and there is nothing to hear.
-            //
-            // The way down is a card somebody left in a room: a piece of paper telling the truth about a
-            // building that is not.
-            if (ex.Floor <= listedBottom)
-            {
-                RideTheLiftTo(ex, 0);
-                return;
-            }
-
-            // Said every time — a refusal that goes quiet on the second press is a refusal that reads as a
-            // broken button. FILED only once per shaft, because the field book is a record of what was
-            // found, and pressing the same gate eleven times is not eleven findings.
-            string refusal = UndergroundComplex.WrongCardLine(-ex.Floor, HeldAuthorities());
-            if (ex.HiveShaftsRefused.Add(nextBand))
-            {
-                ShowAndFile(refusal, "🔒");
+                ShowAndFile(line, "🔒");
             }
             else
             {
-                ShowPulseMessage(refusal);
+                ShowPulseMessage($"🔒 {refused}");
             }
-            RideTheLiftTo(ex, 0);
             return;
         }
 
-        // The true bottom of the site. Nothing is under this, no card would help, and the panel says nothing
-        // it does not know — the only thing left to do here is go up, which the car does. (EndOfTheLineLine
-        // is deliberately NOT said here: it promises a shaft somewhere below, and below this there is none.)
-        RideTheLiftTo(ex, 0);
+        _showLiftPanel = false;
+
+        // Going below this car's own band is the OTHER shaft, and #590's card is what opened it.
+        int nextBand = UndergroundComplex.BandOf(Math.Min(ex.Floor, -1)) + 1;
+        if (stop.Level < 0 && UndergroundComplex.BandOf(stop.Level) == nextBand
+            && ex.HiveShaftsOpened.Add(nextBand))
+        {
+            ShowAndFile(
+                UndergroundComplex.CardAcceptedLine(
+                    new UndergroundComplex.AuthorityCard(ex.Stop.Body.Id, nextBand)), "🎫");
+            ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
+        }
+
+        RideTheLiftTo(ex, stop.Level);
     }
+
+    private void CloseLiftPanel() => _showLiftPanel = false;
+
+    /// <summary>#600 · Whether the lift panel is up. The sim keeps running behind it, exactly as it does
+    /// behind the valve board.</summary>
+    private bool _showLiftPanel;
 
     private void RideTheLiftTo(SurfaceExcursion ex, int level)
     {
@@ -1642,9 +1641,16 @@ public partial class Map
 
         if (level == 0)
         {
-            // Back out on the regolith, at the lift head where the car came up.
-            (double hx, double hy) = SecretLabHeadSpot(ex);
-            (_avatarX, _avatarY) = (hx, hy - 3);
+            // #602 · Back out INSIDE THE SHED — the box the car came up into. Owner: "I would expect to spawn
+            // into the elevator box where we went down with", which is also what the line below has always
+            // said out loud ("lets you out into somebody's idea of a maintenance shed").
+            //
+            // Taken from the shed itself rather than from a magic offset off its centre, so the spot the
+            // captain lands on cannot drift from the walls that are drawn around it. That drift is exactly
+            // what put him in a wall: this used to compute its own position from the RAW seeded head spot
+            // while the shed was built at the nudged one.
+            (_avatarX, _avatarY) = MoonSurface.LiftHead(
+                ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField()).CarFloor;
             RebuildSurfaceDeck();
             ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
                 "maintenance shed. The moon is exactly as indifferent as you left it.");
@@ -1711,9 +1717,20 @@ public partial class Map
     /// fact, two uses, nothing to keep in sync.</summary>
     private (double X, double Y) SecretLabHeadSpot(SurfaceExcursion ex)
     {
-        SecretLab.Placement p = SecretLab.For(
-            ex.Stop.Body.Id, MoonSurface.ExpeditionField(), forcePresent: true);
-        return (p.DoorX, p.DoorY);
+        // #602 · THE SAME FUNCTION THE SHED IS DRAWN BY, and for once the comment above this one was not
+        // describing the code. Owner, stepping out of the car: "Oh I emerged into the wall on the surface...
+        // I cannot move :-D"
+        //
+        // This used to return SecretLab.For(...).DoorX/DoorY — the RAW seeded spot. But MoonSurface builds
+        // the shed at SecretLab.HeadSpot(...), which starts from that raw spot and then MOVES it clear of
+        // the shelters and huts already standing there. So on any site where the nudge did something, the
+        // lift returned the captain to the un-nudged spot: inside the very structure the nudge exists to
+        // avoid, in a wall, unable to move.
+        //
+        // The old comment claimed "one seeded fact, two uses, nothing to keep in sync" — which was the
+        // intention and not the code. It is one function now, so it is true.
+        return SecretLab.HeadSpot(
+            ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
     }
 
     /// <summary>#585 - Turning over one room of the facility. About a third are stripped; the rarest thing in
@@ -1784,6 +1801,19 @@ public partial class Map
             if (UndergroundComplex.CardInRoom(ex.Stop.Body.Id, ex.Floor) is { } card)
             {
                 _authorityCards.Add(card.Id);
+
+                // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to
+                // really tell the story here :-D" — the right pair with the sealed way, because the Hive has
+                // exactly two objects about the idea of passage and this is the one that works.
+                if (!ex.HiveAuthorityShown)
+                {
+                    ex.HiveAuthorityShown = true;
+                    _viewObject = new DeckPlan.ConsoleSpot(
+                        DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                        UndergroundComplex.AuthorityCardLabel,
+                        UndergroundComplex.AuthorityCardArtUrl,
+                        UndergroundComplex.AuthorityCardStory(card));
+                }
             }
             else
             {
@@ -1804,7 +1834,28 @@ public partial class Map
         {
             return;
         }
-        ShowPulseMessage(UndergroundComplex.LockedLine(spot.Label.Replace("\ud83d\udd12 ", "")));
+        string sign = spot.Label.Replace("\ud83d\udd12 ", "");
+
+        // #528 \u00b7 THE WAY ON, CLOSED. Owner, standing at a rib's far end: "I see there is a nice lock here at
+        // the end of the corridor.... maybe we could have a gen-AI image for it and a pop-up to tell the
+        // story?"
+        //
+        // It fires at the moment it explains the most (#528's fourth rule): the captain has just walked the
+        // length of a rib and met a plate with a distance painted on it. ONLY the sealed way earns a card \u2014 a
+        // room door that will not open is a sign to read, not a scene, and forty of them would be a
+        // slideshow. The pulse line still says its piece underneath, here and every time after.
+        if (UndergroundComplex.IsSealedWay(sign) && _surface is { } sealedEx && !sealedEx.HiveSealedWayShown)
+        {
+            sealedEx.HiveSealedWayShown = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.SealedWayCardLabel,
+                UndergroundComplex.SealedWayArtUrl,
+                UndergroundComplex.SealedWayCard(sign));
+            ApplyNerveShock(3.0, "a corridor somebody dug for a year and then closed");
+        }
+
+        ShowPulseMessage(UndergroundComplex.LockedLine(sign));
     }
 
     // ── #588 · A PERSON, OUT OF THE PIECES ─────────────────────────────────────────────────────────────
@@ -4981,8 +5032,18 @@ public partial class Map
         // straight into the reused buffer — no intermediate list + Select allocation.
         string bodyId = ex.Stop.Body.Id;
         _hudMarks.Clear();
+
+        // #591 · EVERYTHING BURIED IS BURIED ON THE SURFACE. A floor of the Hive reuses the surface's own
+        // coordinate envelope (#585), which is what makes depth free — and it also means a cache buried at
+        // (x, y) on the regolith has an (x, y) on B3 that is several hundred metres of rock away and belongs
+        // to somebody else's corridor. Drawn unguarded, the captain's own treasure ✗ appears ON the facility
+        // deck, and its beacon on the fan points at it.
+        //
+        // Same reasoning as the beacons above: these are surface instruments reporting surface facts, and
+        // underground they are not merely useless but WRONG. Gated once, here, because _hudMarks feeds both
+        // the on-grid marks and BuildCacheBeacons — one source, one gate.
         // 🗺 Layers (#405) Ground finds → Treasure ✗: the buried-cache marks the excursion HUD carries.
-        foreach (TreasureCache c in LayerVisible("finds.treasure") ? _caches.CachesAt(bodyId) : [])
+        foreach (TreasureCache c in LayerVisible("finds.treasure") && ex.Floor >= 0 ? _caches.CachesAt(bodyId) : [])
         {
             if (!c.PlayerOwned)
             {
@@ -5010,7 +5071,9 @@ public partial class Map
         // hard-ground flag so the deck-plan paints a bedrock mark distinct from a plain checked square. The
         // draw is BOUNDED (MaxSweptDrawn) so a fully-probed field can't paint an unbounded mark cloud.
         _hudSwept.Clear();
-        foreach (KeyValuePair<(int X, int Y), BeachComber.Outcome> kv in ex.Swept)
+        // #591 · Also a surface fact: a probed regolith square has nothing to say about a poured floor
+        // hundreds of metres under it.
+        foreach (KeyValuePair<(int X, int Y), BeachComber.Outcome> kv in ex.Floor < 0 ? [] : ex.Swept)
         {
             if (_hudSwept.Count >= MaxSweptDrawn)
             {

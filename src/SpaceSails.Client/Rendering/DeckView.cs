@@ -151,6 +151,10 @@ public sealed class DeckView
     // #563 · Solid ROCK, as opposed to a made pressure boundary. Same weight as hull because it is just as
     // solid, but warm and dusty rather than cold blue-white — the difference between a monolith and a
     // bulkhead, which is the difference between standing on a moon and standing in a ship.
+    // #600 · Paint on poured concrete: worn, low-contrast, and deliberately dimmer than any label that
+    // means something is interactable. Signage you read at a glance and then stop seeing.
+    private static readonly RgbaColor StencilPaint = new(120, 138, 160, 120);
+
     private static readonly RgbaColor StoneLine = new(166, 150, 130);
     private static readonly RgbaColor WindowLine = new(80, 220, 210, 220);
     private static readonly RgbaColor ConsoleGlow = new(120, 220, 200);
@@ -445,6 +449,23 @@ public sealed class DeckView
 
         // #348: each room label on its own dark backing plate for contrast over the art panels, with
         // MED BAY drawn as the clean-room exception (see the RoomLabel* colours above).
+        // #600 · SIGNAGE, painted on the structure at the size a facility actually paints it. Owner, riding
+        // between floors cut from the same bones: "something different in every floor so we visually spot
+        // some difference when we go to different floors."
+        //
+        // Drawn before the room labels and in a dimmer ink than them ON PURPOSE: this is paint on a wall the
+        // captain glances at, not a caption competing with the consoles. It is big enough to read without
+        // looking for it and quiet enough to ignore while doing something else.
+        foreach ((float bx, float by, string text) in plan.BigLabels)
+        {
+            if (DarkState(bx, by) == 0)
+            {
+                continue;
+            }
+            (float bxp, float byp) = P(bx, by);
+            _renderer.DrawText(bxp, byp, text, StencilPaint, "bold 34px monospace", TextAlign.Center);
+        }
+
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
         {
             int ls = DarkState(lx, ly); // #371 Phase 3 fog: hide an unseen chamber's label, dim an explored one

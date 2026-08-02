@@ -100,6 +100,20 @@ public static class HiveInterior
         {
             labels.Add(((float)m.X, (float)m.Y, m.Label));
         }
+
+        // #600 · THE DEPTH, PAINTED BY THE LIFT. Owner, riding between floors built from the same bones:
+        // "something different in every floor so we visually spot some difference" / "we can use seriously
+        // large numbers there :-D" / "or depths (in meters)".
+        //
+        // Two lines, stencilled on the wall beside the car the way a stairwell or a car park marks a level:
+        // the depth, which is a fact about where you are standing, and the department, which is what this
+        // floor was for. Together they are the glance that says which floor you stepped out on — and the
+        // depth is the number that makes the walk back up mean something.
+        var bigLabels = new List<(float X, float Y, string Text)>
+        {
+            ((float)(shaftX - 30), (float)(shaftY + UndergroundComplex.CorridorHalf + 12),
+                UndergroundComplex.DepthPaint(level)),
+        };
         labels.Add(((float)shaftX - 30f, (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
 
         return new DeckPlan(
@@ -108,7 +122,8 @@ public static class HiveInterior
             droidCount: droidCount, fillDroids: fillDroids,
             location: (_, _) => floor.Name,
             doors: [.. doors], shipFixtures: false, followCam: true,
-            tables: DeckPlan.Ship.Tables);
+            tables: DeckPlan.Ship.Tables,
+            bigLabels: [.. bigLabels]);
     }
 
     /// <summary>One key per room per floor, so a searched room on B2 is not a searched room on B3.</summary>

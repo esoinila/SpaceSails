@@ -1084,6 +1084,66 @@
 
     @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
        player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
+    @* #600 · THE LIFT PANEL. Owner, having ridden a car that only ever went down: "we should have elevator
+       panel with UI then (I wonder what the elevator music would be like ) :-D"
+
+       The buttons come from Core (UndergroundComplex.LiftPanel) rather than being worked out here, so the
+       #590 card gate and the #592 silence are one tested rule and this file only draws it. SURFACE is always
+       the first button — that is the whole bug fix.
+
+       Each button carries the one fact that decides whether the trip is free: whether that floor still holds
+       air. A refusing button is PRESENT and says why; an absent button and a broken one look identical from
+       the captain's side, and this ground has already shipped that mistake once. *@
+    @if (_showLiftPanel && _surface is { } liftEx)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLiftPanel)">
+            <div class="lift-panel" @onclick:stopPropagation="true">
+                <div class="view-object-title">🛗 CAR PANEL</div>
+                <div class="lift-sub">
+                    This car serves its own band and no further. You are at
+                    <strong>@SpaceSails.Core.UndergroundComplex.DepthPaint(liftEx.Floor)</strong>.
+                </div>
+
+                <div class="lift-stops">
+                    @foreach (SpaceSails.Core.UndergroundComplex.LiftStop stop in LiftStops())
+                    {
+                        string cls = "lift-stop"
+                            + (stop.IsCurrent ? " here" : "")
+                            + (stop.Refusal is not null ? " sealed" : "")
+                            + (stop.Pressurised ? "" : " dead");
+                        <button type="button" class="@cls" disabled="@stop.IsCurrent"
+                                title="@(stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
+                                @onclick="() => PressLiftButton(stop)">
+                            <span class="lift-stop-depth">@SpaceSails.Core.UndergroundComplex.DepthPaint(stop.Level)</span>
+                            <span class="lift-stop-name">@stop.Name</span>
+                            <span class="lift-stop-air">
+                                @if (stop.IsCurrent)
+                                {
+                                    <text>◄ you are here</text>
+                                }
+                                else if (stop.Refusal is not null)
+                                {
+                                    <text>🔒 sealed</text>
+                                }
+                                else if (stop.Pressurised)
+                                {
+                                    <text>🫁 air</text>
+                                }
+                                else
+                                {
+                                    <text>dead air</text>
+                                }
+                            </span>
+                        </button>
+                    }
+                </div>
+
+                <button type="button" class="view-object-close" title="Step out of the car"
+                        @onclick="() => Dismiss(CloseLiftPanel)">Close</button>
+            </div>
+        </div>
+    }
+
     @if (_viewObject is { } vo)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseViewObject)">

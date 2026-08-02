@@ -1077,6 +1077,196 @@ public static class UndergroundComplex
         $"🔒 {sign}. The lock is not a lock you can argue with — it is a decision somebody made, and it is " +
         "still being enforced by a building whose owners stopped answering a long time ago.";
 
+    /// <summary>#600 · How far under the regolith the shed's floor a given level sits, in metres.
+    ///
+    /// <para>Owner: <i>"we can use seriously large numbers there :-D ... or depths (in meters)"</i>. He is
+    /// right that the depth is the better number — <c>B4</c> is an index and <c>−76 m</c> is a fact about
+    /// where you are standing, and it is the one that makes the walk back up mean something.</para>
+    ///
+    /// <para>The first floor is far down because the facility is BURIED — the shed on the surface is a lid
+    /// over a shaft, and the descent card earns that ("service lamps go past in the wall at first, then a
+    /// rhythm, and you find you have been counting them and have lost count"). After that a floor is a
+    /// floor plus its slab, its services and the rock somebody left between levels.</para></summary>
+    public const double OverburdenMetres = 40.0;
+
+    /// <summary>Floor to floor, including the slab and the rock between.</summary>
+    public const double MetresPerFloor = 12.0;
+
+    /// <summary>Metres below the surface for a level. 0 on the surface, positive going down.</summary>
+    public static double MetresDown(int level) =>
+        level >= 0 ? 0 : OverburdenMetres + ((-level - 1) * MetresPerFloor);
+
+    /// <summary>What is painted on the wall beside the lift, big enough to read on the way past.</summary>
+    public static string DepthPaint(int level) =>
+        level >= 0 ? "SURFACE" : $"−{MetresDown(level):F0} m";
+
+    // ── #600 · THE PANEL, BECAUSE THE CAR ONLY WENT DOWN ────────────────────────────────────────────────
+    //
+    // Owner, on B1: "looks like the elevator only takes me down... how do I get back to the surface with it
+    // :-D Am I marooned in a secret lab underground now :-D ?" — then: "we should have elevator panel with
+    // UI then".
+    //
+    // He was not marooned, but only by luck. `HiveLiftInteract` had ONE action and it always descended; the
+    // car returned to the surface solely when pressed at the bottom of the band. Getting out of B2 on a
+    // twenty-floor site therefore meant riding eighteen floors DEEPER first, on the tank, through dead air.
+    // The file's own comment says a captain trapped on a dead floor is a death, and the lift was the thing
+    // doing the trapping.
+    //
+    // It survived #590, #591 and #592 all editing that function because none of them asked what the UP case
+    // did, and the A* audit cannot see a state machine — it proves you can REACH the lift, never that the
+    // lift is a way HOME. That seam is where this hid.
+    //
+    // The fiction already had the answer written down: `EndOfTheLineLine` says "the panel has no button
+    // below B{n}", which means there is a panel with buttons on it. So there is.
+
+    /// <summary>One button on the lift panel.</summary>
+    /// <param name="Level">The floor it goes to; 0 is the surface.</param>
+    /// <param name="Name">What is written on the button.</param>
+    /// <param name="Pressurised">Whether that floor still holds air — the panel says so, because it is the
+    /// single fact that decides whether the trip is free.</param>
+    /// <param name="IsCurrent">The floor the car is on now: shown, and not a destination.</param>
+    /// <param name="Refusal">Null when the button works. When set, the button is PRESENT and says why it
+    /// will not — an absent button and a broken one look identical, and this ground has already shipped that
+    /// mistake once.</param>
+    public readonly record struct LiftStop(
+        int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal);
+
+    /// <summary>
+    /// #600 · What this car's panel offers, standing on <paramref name="level"/>.
+    ///
+    /// <para><b>SURFACE is always on it.</b> That is the whole bug fix: from any floor, the way out must
+    /// never require travelling further in.</para>
+    ///
+    /// <para>Then every floor of THIS car's band that the site actually has. A car serves a band and no
+    /// further (#585) — the way deeper is a different shaft — so the band below appears only as the single
+    /// gated button described next.</para>
+    ///
+    /// <para><b>#590 · the gate.</b> If a band exists below this one, the button for it is present and
+    /// refuses by name unless the captain holds its authority card.</para>
+    ///
+    /// <para><b>#592 · the silence.</b> With one exception: if the band below is the one the building does
+    /// not admit to, the button is not there at all unless the card is already held. A refusal that names a
+    /// shaft would announce the secret in the one sentence it cannot survive — so on the last listed floor
+    /// the panel looks exactly like the panel at the true bottom of an ordinary site.</para>
+    /// </summary>
+    public static IReadOnlyList<LiftStop> LiftPanel(
+        string bodyId, int level, IReadOnlyCollection<string> heldCardIds)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(heldCardIds);
+
+        var stops = new List<LiftStop>
+        {
+            new(0, "SURFACE", Pressurised: true, IsCurrent: level >= 0, Refusal: null),
+        };
+
+        int band = BandOf(Math.Min(level, -1));
+        int deepest = BandFloor(bodyId, band);
+        for (int f = BandTop(band); f >= deepest; f--)
+        {
+            stops.Add(new(f, NameOf(bodyId, f), HoldsPressure(f), f == level, null));
+        }
+
+        int next = band + 1;
+        if (!SiteHasBand(bodyId, next))
+        {
+            return stops;   // nothing under this shaft at all; the panel simply ends
+        }
+
+        bool holdsIt = heldCardIds.Contains(new AuthorityCard(bodyId, next).Id);
+        bool unlisted = IsUnlisted(bodyId, BandTop(next));
+        if (unlisted && !holdsIt)
+        {
+            return stops;   // #592: the building does not admit this exists, and neither does its panel
+        }
+
+        stops.Add(new(
+            BandTop(next),
+            holdsIt ? "↓ THE OTHER SHAFT" : "↓ THE OTHER SHAFT — SEALED",
+            HoldsPressure(BandTop(next)),
+            IsCurrent: false,
+            holdsIt ? null : "This car does not go lower. The shaft that does is on this floor, and its " +
+                "gate wants an authority this building has not issued in a long time."));
+        return stops;
+    }
+
+    // ── #528 · TWO CARDS FOR THE TWO HALVES OF A DOOR ───────────────────────────────────────────────────
+    //
+    // Owner, standing at a rib's far end: "I see there is a nice lock here at the end of the corridor....
+    // maybe we could have a gen-AI image for it and a pop-up to tell the story?" — and then, a minute later:
+    // "the authority card could also have a gen ai image to really tell the story here :-D"
+    //
+    // He picked the right pair without saying so. The Hive has exactly two objects that are ABOUT the idea of
+    // passage: a door that will never open, and a piece of paper that opens one. Giving both the reveal-card
+    // treatment (#528) makes them answer each other.
+    //
+    // #528's recipe, which is a recipe and not a decoration:
+    //   1. a title that names the place and the verb;
+    //   2. one painted image of a CONSEQUENCE rather than an action;
+    //   3. a caption that describes evidence and STOPS — it never says what it means;
+    //   4. it fires at the moment it explains the most.
+    //
+    // The hard constraint on both, and the reason they are written here rather than in the client: neither
+    // may TEASE. The sealed sector doors exist to be walls with a world behind them (#590 call 2), so the
+    // card about one may never suggest that anything opens it — not a key, not a code, and above all not the
+    // authority card, which is a real object a captain may be carrying while they read this. A player who
+    // reads "no authority on the plate" and goes off to try their card has been lied to by a card.
+
+    /// <summary>Is this sign the far end of a rib — the sealed way on — rather than a room's door?
+    ///
+    /// <para>Asked of the sign itself so the client never has to recognise one by parsing a distance out of
+    /// it. The prose and the plate are then the same string by construction, which is the standing rule on
+    /// this ground.</para></summary>
+    public static bool IsSealedWay(string sign)
+    {
+        ArgumentNullException.ThrowIfNull(sign);
+        return sign.StartsWith('⟶');   // ⟶ SECTOR n · d.d km
+    }
+
+    public const string SealedWayArtUrl = "art/the-sealed-way.jpg";
+
+    public const string SealedWayCardLabel = "🔒 THE WAY ON, CLOSED";
+
+    /// <summary>#528 · The card the first sealed rib mouth earns. The plate's own text is quoted VERBATIM
+    /// rather than rebuilt, so the words on the wall and the words on the card can never drift.</summary>
+    public static string SealedWayCard(string sign)
+    {
+        ArgumentNullException.ThrowIfNull(sign);
+        return
+            "The corridor does not end here. It is closed here.\n\n" +
+            $"{sign} — stencilled, not printed. Somebody stood where you are standing with a plate and a " +
+            "brush and recorded how far the passage runs before it stops being their department. The " +
+            "distance is the only thing on it. No department, no date, no name.\n\n" +
+            "The seal went in after the cut: the paint on the frame is a different age from the paint on " +
+            "the walls either side of it. Nobody closes a passage they have not first spent a year digging, " +
+            "and nobody digs that far through a moon to reach somewhere they mean to give up.\n\n" +
+            "There is no handle on this side. The bolt pattern says there is none on the other side either. " +
+            "It was not shut to keep anybody out of there. It was shut to keep it shut.";
+    }
+
+    public const string AuthorityCardArtUrl = "art/the-authority-card.jpg";
+
+    public const string AuthorityCardLabel = "🎫 THE COUNTERSIGNATURE";
+
+    /// <summary>#528 · The card the first authority card earns — the object, described and not explained.
+    ///
+    /// <para>It says what the thing IS and stops. It does not say what it opens: that is what the pulse line
+    /// and the gate itself are for, and a card that spelled out the mechanic would turn a find into a
+    /// tutorial. What it does instead is make a laminated staff pass frightening, which is the whole tone of
+    /// this facility — the horror here is administrative and it has a filing system.</para></summary>
+    public static string AuthorityCardStory(AuthorityCard card) =>
+        "It is heavier than it looks. A laminate over a metal core, the sort of thing made to survive a " +
+        "fire in a records room.\n\n" +
+        $"{CardTitle(card)}. Two countersignatures, both in the same careful hand, four years apart by the " +
+        "dates and identical in pressure. A grade. A photograph of somebody who has been told not to smile " +
+        "and has obeyed exactly.\n\n" +
+        "The issuing office is stencilled across the top and appears in no register you have ever read. " +
+        "The countersigning office is a sub-registry of the issuing one. Between them they employed the " +
+        "person in the photograph, paid them, graded them, and put them on the other side of a door that " +
+        "the people upstairs did not know was there.\n\n" +
+        "There is no expiry field. Not an expired one — none. Somebody designed this for a building they " +
+        "expected to outlive them, and they were right about the building.";
+
     private static double Lerp(double a, double b, double t) => a + ((b - a) * t);
 
     private static double Frac(string bodyId, string tag) =>

@@ -4023,3 +4023,93 @@
     margin-top: 0.5rem;
     border-top: 1px solid rgba(150, 170, 190, 0.18);
 }
+
+/* #600 · THE LIFT PANEL. Owner, after a car that only ever went down: "we should have elevator panel with
+   UI then". Built on the view-object backdrop like the valve board, because a captain standing in a lift
+   with the doors open is doing the same thing as a captain standing at a board: reading, and choosing. */
+.lift-panel {
+    width: min(30rem, 94vw);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(140, 190, 235, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+.lift-sub {
+    font-size: 0.8rem;
+    color: #8fa2bb;
+    line-height: 1.45;
+}
+
+.lift-stops {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    overflow-y: auto;
+}
+
+/* One row per button: the depth big on the left (it is the fact that decides whether the trip is free),
+   what the floor is called in the middle, and its air state on the right. */
+.lift-stop {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr auto;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    font: inherit;
+    text-align: left;
+    color: #cfe0f2;
+    background: #121924;
+    border: 1px solid rgba(140, 190, 235, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.lift-stop:hover:not(:disabled) {
+    background: #18222f;
+    border-color: rgba(140, 190, 235, 0.5);
+}
+
+.lift-stop-depth {
+    font-family: monospace;
+    font-size: 1.15rem;
+    color: #e6edf5;
+}
+
+.lift-stop-name {
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+}
+
+.lift-stop-air {
+    font-size: 0.72rem;
+    color: #7f8ea3;
+    white-space: nowrap;
+}
+
+/* A dead floor is stated, never hidden — depth is paid for in air and the panel is where that is decided. */
+.lift-stop.dead .lift-stop-air { color: #d09a6a; }
+
+/* The floor the car is on. Not a destination. */
+.lift-stop.here {
+    background: #0e1620;
+    border-color: rgba(240, 208, 112, 0.5);
+    cursor: default;
+}
+
+.lift-stop.here .lift-stop-depth { color: #f0d070; }
+
+/* PRESENT and refusing. An absent button and a broken one look identical from the captain's side. */
+.lift-stop.sealed {
+    border-style: dashed;
+    border-color: rgba(224, 160, 112, 0.45);
+    color: #9aa7b8;
+}
+
+.lift-stop.sealed .lift-stop-air { color: #e0a070; }
