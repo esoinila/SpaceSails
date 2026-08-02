@@ -102,6 +102,36 @@ public static class MoonSurface
     /// expedition regions + fog) are laid inside — the same one <see cref="BuildLayout"/> hands to
     /// <see cref="SurfaceLayout.For"/>. Exposed so <c>Map.Surface</c> can resolve expedition door/region
     /// geometry against the identical anchor and bounds.</summary>
+    /// <summary>#602 · THE LIFT HEAD'S SHED, as one object everybody reads.
+    ///
+    /// <para>Owner, stepping out of the car: <i>"Oh I emerged into the wall on the surface... I cannot move
+    /// :-D"</i> — and then, on where he expected to be: <i>"I would expect to spawn into the elevator box
+    /// where we went down with."</i></para>
+    ///
+    /// <para>These four numbers used to be <c>const</c> locals inside the wall builder, so nothing outside
+    /// this method could say where the shed was or how big it is. The lift's return path therefore invented
+    /// its own answer, and put the captain in a wall. A test that hard-coded 5.0 and 4.0 to check it would
+    /// have been the same bug wearing a lab coat — the mirrored-constant failure this ground keeps paying
+    /// for. So the shed is a value now: built from it, returned into it, and asserted against it.</para></summary>
+    public readonly record struct LiftHeadBox(
+        double CentreX, double CentreY, double HalfW, double HalfH, double DoorHalf)
+    {
+        /// <summary>Is this point inside the shed — the box the car opens into?</summary>
+        public bool Contains(double x, double y, double clearance = 0) =>
+            Math.Abs(x - CentreX) <= HalfW - clearance && Math.Abs(y - CentreY) <= HalfH - clearance;
+
+        /// <summary>Where the car sets the captain down: inside the box, toward its door, which is what
+        /// riding a lift up into a shed actually looks like.</summary>
+        public (double X, double Y) CarFloor => (CentreX, CentreY - (HalfH * 0.75));
+    }
+
+    /// <summary>The shed for this body and site, already moved clear of the shelters and the hut.</summary>
+    public static LiftHeadBox LiftHead(string bodyId, string? siteSalt, in SurfaceLayout.Field field)
+    {
+        (double hx, double hy) = SecretLab.HeadSpot(bodyId, siteSalt, field);
+        return new LiftHeadBox(hx, hy, HalfW: 5.0, HalfH: 4.0, DoorHalf: 1.6);
+    }
+
     public static SurfaceLayout.Field ExpeditionField() =>
         new(SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, MonolithX, MonolithY);
 
@@ -424,8 +454,9 @@ public static class MoonSurface
             // #585: the RESOLVED entrance, which has already been moved clear of this site's shelters and
             // its outpost hut. The raw seed is per-BODY and the things it collides with are per-SITE, which
             // is how a maintenance shed ended up buried inside somebody's hut.
-            (double hx, double hy) = SecretLab.HeadSpot(bodyId, siteSalt, field);
-            const double halfW = 5.0, halfH = 4.0, gap = 1.6;
+            LiftHeadBox box = LiftHead(bodyId, siteSalt, field);
+            (double hx, double hy) = (box.CentreX, box.CentreY);
+            double halfW = box.HalfW, halfH = box.HalfH, gap = box.DoorHalf;
 
             walls.Add(new((float)(hx - halfW), (float)(hy + halfH), (float)(hx + halfW), (float)(hy + halfH), false, false, IsStone: true));
             walls.Add(new((float)(hx - halfW), (float)(hy - halfH), (float)(hx - halfW), (float)(hy + halfH), false, false, IsStone: true));

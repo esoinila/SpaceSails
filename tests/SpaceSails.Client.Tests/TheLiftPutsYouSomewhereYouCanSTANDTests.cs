@@ -51,10 +51,9 @@ public sealed class TheLiftPutsYouSomewhereYouCanSTANDTests
                     body, body, [], 0, (_, _) => { },
                     siteSalt: site.LayoutSalt, siteName: site.Name, hasSecretSite: true);
 
-                (double hx, double hy) = SecretLab.HeadSpot(body, site.LayoutSalt, Field);
-
-                // Where RideTheLiftTo(ex, 0) sets the captain down: the head spot, a pace toward the door.
-                double x = hx, y = hy - 3;
+                // Asked of the shed itself — a test that retyped the offset would be the same bug it is
+                // guarding against.
+                (double x, double y) = MoonSurface.LiftHead(body, site.LayoutSalt, Field).CarFloor;
 
                 if (!DeckReachability.Standable(x, y, DeckPlan.AvatarRadius, deck.CollisionField))
                 {
@@ -86,8 +85,8 @@ public sealed class TheLiftPutsYouSomewhereYouCanSTANDTests
                     body, body, [], 0, (_, _) => { },
                     siteSalt: site.LayoutSalt, siteName: site.Name, hasSecretSite: true);
 
-                (double hx, double hy) = SecretLab.HeadSpot(body, site.LayoutSalt, Field);
-                var from = new DeckReachability.Point(hx, hy - 3);
+                (double cx, double cy) = MoonSurface.LiftHead(body, site.LayoutSalt, Field).CarFloor;
+                var from = new DeckReachability.Point(cx, cy);
                 // The way home is the TUBE MOUTH — the spot a landing actually puts the captain on,
                 // so it is standable on every site by construction. The first cut of this test aimed at
                 // a point I picked off the landing band instead, and it sat inside a structure on The
@@ -136,4 +135,29 @@ public sealed class TheLiftPutsYouSomewhereYouCanSTANDTests
             "or these tests are no longer covering the case that broke (#602).");
     }
 
+
+    [Fact]
+    public void TheCarOpensINSIDETheShedItWentDownFrom()
+    {
+        // Owner's own expectation, and the fiction's: "I would expect to spawn into the elevator box where we
+        // went down with." RideTheLiftTo already says it out loud — "the car climbs for a long time and lets
+        // you out into somebody's idea of a maintenance shed" — so the captain must actually be in the shed,
+        // not merely near it.
+        //
+        // With clearance for their own width, so "inside" means standing in the room rather than embedded in
+        // its wall, and on the DOOR side of centre, because that is the way out.
+        foreach (string body in Bodies)
+        {
+            foreach (LandingSite site in LandingSites.For(body))
+            {
+                MoonSurface.LiftHeadBox box = MoonSurface.LiftHead(body, site.LayoutSalt, Field);
+                (double x, double y) = box.CarFloor;
+
+                Assert.True(box.Contains(x, y, DeckPlan.AvatarRadius),
+                    $"{body} · {site.Name}: the car sets the captain down outside its own shed.");
+                Assert.True(y < box.CentreY,
+                    $"{body} · {site.Name}: the car opens on the far side of the shed from its door.");
+            }
+        }
+    }
 }

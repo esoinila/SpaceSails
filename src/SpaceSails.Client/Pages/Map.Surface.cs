@@ -1641,9 +1641,16 @@ public partial class Map
 
         if (level == 0)
         {
-            // Back out on the regolith, at the lift head where the car came up.
-            (double hx, double hy) = SecretLabHeadSpot(ex);
-            (_avatarX, _avatarY) = (hx, hy - 3);
+            // #602 · Back out INSIDE THE SHED — the box the car came up into. Owner: "I would expect to spawn
+            // into the elevator box where we went down with", which is also what the line below has always
+            // said out loud ("lets you out into somebody's idea of a maintenance shed").
+            //
+            // Taken from the shed itself rather than from a magic offset off its centre, so the spot the
+            // captain lands on cannot drift from the walls that are drawn around it. That drift is exactly
+            // what put him in a wall: this used to compute its own position from the RAW seeded head spot
+            // while the shed was built at the nudged one.
+            (_avatarX, _avatarY) = MoonSurface.LiftHead(
+                ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField()).CarFloor;
             RebuildSurfaceDeck();
             ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
                 "maintenance shed. The moon is exactly as indifferent as you left it.");
