@@ -265,9 +265,14 @@ public partial class Map
 
         // #411: the log that gestures at the sealed ice-moon project (VantarLore.KaamosHook) is also a KAAMOS
         // intel shard. Reading it the first time files vantar-log to the ledger; a re-read shows the log plainly.
+        //
+        // The log NEVER names the project — "a moon off the charts, a project that runs on in the cold with
+        // the lights off" is the whole point of VantarLore's fragment 4, and the connection to the plate at
+        // Ringside is the player's to make. This line used to make it for them ("This is a piece of PROJEKTI
+        // KAAMOS"), which is the announcing shape the house forbids. It files the shard and says no more.
         if (con.LoreIndex == VantarLore.KaamosHook
             && TryAssembleKaamos("vantar-log",
-                $"🖥 {fragment}   ❄ This is a piece of PROJEKTI KAAMOS — filed to the Captain's ledger. " +
+                $"🖥 {fragment}   ❄ Filed to the Captain's ledger. " +
                 KaamosLore.ById("vantar-log")!.Lore))
         {
             return;

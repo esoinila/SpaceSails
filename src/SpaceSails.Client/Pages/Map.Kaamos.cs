@@ -21,11 +21,25 @@ public partial class Map
 
     // The loud, one-time notice appended the instant the reach opens — the berth-code AND the legitimising
     // intel both in hand (KaamosLore.CanReachEnceladus). The ACTUAL route is a separate lane
-    // (feat/kaamos-route); here we announce the window and gate a "route pending" line, nothing more.
-    private const string KaamosReachNotice =
-        "   ❄❄ THE BERTH-CODE RESOLVES — Enceladus can be reached. The window is real. " +
-        "(The cycler route is still being charted; when it opens, a ship that's on the board rides it in. " +
-        "For now: route pending.)";
+    // (feat/kaamos-route); the copy lives in Core with the rest of the arc's authored prose
+    // (KaamosLore.ReachNotice), so the loud line and the ledger's resting line say one thing, and the
+    // "no route yet" fact is told in fiction — a window that has not come round — instead of as a
+    // production note ("For now: route pending", which is what it used to say out loud).
+
+    // #411 story pass · the /map?kaamos=holder dev seat: the rare KAAMOS berth-holder is drinking at
+    // WHATEVER bar this captain docks at, this watch. Session-scoped, set once at boot from the query.
+    private bool _kaamosHolderCheat;
+
+    // #411 story pass · the /map?kaamos=pod dev seat: the cold supply pod is under the ground you land on,
+    // so the one fragment with no direct cheat is EARNED with a shovel rather than granted. The probe site
+    // asks only while cold-pod is NOT yet held, so a forced ground yields exactly one pod, not a field.
+    private bool _kaamosPodCheat;
+
+    /// <summary>#411 story pass · is the cold pod under THIS square? The seeded answer, or the dev seat's
+    /// yes — asked in one place so the probe site (Map.Surface) stays a one-liner and the cheat cannot
+    /// drift out of step with the find.</summary>
+    private bool KaamosPodHere(string bodyId, int squareX, int squareY) =>
+        KaamosFind.IsColdPodSquare(bodyId, squareX, squareY, forced: _kaamosPodCheat);
 
     /// <summary>Assemble a KAAMOS fragment, persist it, and narrate the find. Returns true only on the
     /// first time this shard is held, so a caller narrates a genuinely NEW find and a re-read stays quiet.
@@ -46,7 +60,7 @@ public partial class Map
         }
 
         RequestVaultSave(); // a shard gathered is durable — save on the change (Map.Vault autosave)
-        string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosReachNotice : "";
+        string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosLore.ReachNotice : "";
         RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
         ShowPulseMessage(foundMessage + tail);
         MaybeFireConvergence(); // #422: an arc-1 shard may be the edge that crosses the JOINT threshold too
@@ -64,35 +78,21 @@ public partial class Map
             return null;
         }
 
-        int intel = _kaamos.IntelAssembled;
-        int need = KaamosLore.IntelFragments.Count();
-        bool hasKey = _kaamos.Has(KaamosLore.KeyFragment.Id);
-
+        // Every sentence on this card is built in Core against the same predicates the GATE reads
+        // (KaamosLore.LedgerHeadline / LedgerProgressLine / LedgerLoreFor). The countdown used to be
+        // computed here off the size of the intel pool instead of the unlock threshold — always one shard
+        // too many — and the capstone used to re-read as a fixed list of four shards whether or not this
+        // captain had found them. Neither can drift now: the ledger asks the arc.
         var lines = new List<string>();
         foreach (KaamosFragment f in _kaamos.Assembled)
         {
-            lines.Add($"◆ {f.Title} — {f.Lore}");
+            lines.Add($"◆ {f.Title} — {KaamosLore.LedgerLoreFor(f, _kaamos)}");
         }
 
-        if (_kaamos.CanReachEnceladus)
-        {
-            lines.Add("❄ The berth-code resolves. Enceladus can be reached — the cycler window is real. (Route pending: the way in is still being charted.)");
-        }
-        else if (_kaamos.HasEnoughIntelToEarnTheKey)
-        {
-            lines.Add("❄ Enough intel to earn the berth-code. Ask around the bars — the pieces resolve into one number the sealed berth still listens for.");
-        }
-        else
-        {
-            lines.Add($"❄ The shape isn't clear yet — {need - intel} more shard{(need - intel == 1 ? "" : "s")} to see it. A plaque line alone is never enough; one lone rumor is never enough.");
-        }
-
-        string headline = hasKey
-            ? $"❄ PROJEKTI KAAMOS — {intel} of {need} shards · berth-code in hand"
-            : $"❄ PROJEKTI KAAMOS — {intel} of {need} shards assembled";
+        lines.Add(KaamosLore.LedgerProgressLine(_kaamos));
 
         return new Stations.Captain.LedgerTip(
-            headline, lines.ToArray(), "the sealed ice-moon mystery",
+            KaamosLore.LedgerHeadline(_kaamos), lines.ToArray(), "the sealed ice-moon mystery",
             ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null);
     }
 
@@ -113,7 +113,7 @@ public partial class Map
         string bar = _dockedHavenId;
         int watchDay = (int)(SimTime / 86400);
 
-        if (!_kaamos.Has("holders-tell") && KaamosFind.HolderAtBar(bar, watchDay))
+        if (!_kaamos.Has("holders-tell") && KaamosFind.HolderAtBar(bar, watchDay, forced: _kaamosHolderCheat))
         {
             return "holders-tell";
         }
@@ -133,6 +133,13 @@ public partial class Map
 
     private bool KaamosBarSeamAvailable() => KaamosBarNextStep() is not null;
 
+    // What the seam's button SAYS — and, for the step that takes coin, what it costs. The button used to
+    // read "🌑 Ask about KAAMOS" for every step, including the one that quietly took 1,200 cr out of the
+    // purse the instant it was clicked, while every other button on the same counter printed its own price.
+    private string KaamosBarSeamLabel() => KaamosLore.BarSeamLabel(KaamosBarNextStep());
+
+    private string KaamosBarSeamTitle() => KaamosLore.BarSeamTitle(KaamosBarNextStep());
+
     // The barkeep-card "🌑 Ask about KAAMOS" action: advance the thread by one step. The holder shares the
     // tell for free (a nod across the room); the coordinate costs a round on the counter; the capstone is
     // the pieces answering each other at the table — no coin, the earned last piece.
@@ -148,9 +155,12 @@ public partial class Map
                 break;
 
             case "berth-code":
+                // The resolution names the shards THIS captain actually holds (KaamosLore.KeyResolution).
+                // The old line pasted the capstone's authored text, which credited a fixed four — so a
+                // captain who reached the threshold without ever buying a coordinate was told, in the
+                // biggest sentence in the arc, that the coordinate they never bought was in the answer.
                 TryAssembleKaamos("berth-code",
-                    "❄ You spread what you've gathered across the table and the numbers answer each other. " +
-                    KaamosLore.KeyFragment.Lore);
+                    "❄ You spread what you've gathered across the table. " + KaamosLore.KeyResolution(_kaamos));
                 break;
 
             case "bought-coordinate":
@@ -173,11 +183,33 @@ public partial class Map
         }
     }
 
-    // ── The test cheat: /map?kaamos=N assembles the first N fragments (canonical order), /map?kaamos=all
-    //    assembles every one — so the readout, its state transitions, and the reach notice are all reachable
-    //    without a full playthrough. Documented in docs/features/KaamosPlotline.md and the testing guide. ──
+    // ── The test cheats. /map?kaamos=N assembles the first N fragments (canonical order) and
+    //    /map?kaamos=all assembles every one — so the readout, its state transitions, and the reach notice
+    //    are reachable without a full playthrough. Those GRANT the shards. The two seats below let the two
+    //    fragments that were otherwise unreachable on purpose be EARNED instead:
+    //
+    //      /map?kaamos=pod      the cold supply pod is under this landing site's ground (dig it up)
+    //      /map?kaamos=holder   the rare berth-holder is drinking at whatever bar you dock at
+    //
+    //    (Owner's rule, written next to these cheats in Map.Sim: "a scene nobody can reach on demand is a
+    //    scene that ships broken.") All four documented in docs/testing-guide.md Appendix A and
+    //    docs/features/KaamosPlotline.md. ──
     private void SeedKaamosCheat(string spec)
     {
+        if (string.Equals(spec, "pod", StringComparison.OrdinalIgnoreCase))
+        {
+            _kaamosPodCheat = true;
+            ShowPulseMessage("🧪 Test: the cold KAAMOS supply pod is under this ground — land, take the metal detector out and probe any square.");
+            return;
+        }
+
+        if (string.Equals(spec, "holder", StringComparison.OrdinalIgnoreCase))
+        {
+            _kaamosHolderCheat = true;
+            ShowPulseMessage("🧪 Test: the KAAMOS berth-holder is drinking at every bar this run — dock, walk to the counter, and the seam offers the tell.");
+            return;
+        }
+
         int count = string.Equals(spec, "all", StringComparison.OrdinalIgnoreCase)
             ? KaamosLore.Fragments.Count
             : int.TryParse(spec, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? Math.Clamp(n, 0, KaamosLore.Fragments.Count) : 0;
@@ -194,7 +226,7 @@ public partial class Map
         }
 
         RequestVaultSave();
-        string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosReachNotice : "";
+        string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosLore.ReachNotice : "";
         ShowPulseMessage($"🧪 Test: assembled {_kaamos.Count} KAAMOS fragment{(_kaamos.Count == 1 ? "" : "s")} ({_kaamos.IntelAssembled} intel). See the Captain's ledger.{tail}");
         MaybeFireConvergence(); // #422: a big ?kaamos= may itself cross the joint bar if NEBULA is already up
     }

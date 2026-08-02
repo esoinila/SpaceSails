@@ -43,7 +43,12 @@ public enum KaamosSource
 /// <param name="Source">Which living system hands this piece over (issue #411's fragment map).</param>
 /// <param name="IsKey">True for the single capstone (the berth code) that turns intel into a route.</param>
 /// <param name="Lore">The fragment text. A shard of the truth, never the truth entire.</param>
-public sealed record KaamosFragment(string Id, string Title, KaamosSource Source, bool IsKey, string Lore);
+/// <param name="KeyClause">What THIS shard contributes when the berth code resolves — the half-sentence the
+/// capstone names it by ("the held pod's cycler window"). Empty for the capstone itself, which is the thing
+/// being derived. The capstone's prose is built from the clauses of the shards actually in hand
+/// (<see cref="KaamosLore.KeyDerivation"/>), so it can never credit a piece the player never found.</param>
+public sealed record KaamosFragment(
+    string Id, string Title, KaamosSource Source, bool IsKey, string Lore, string KeyClause = "");
 
 /// <summary>
 /// PROJEKTI KAAMOS — "the polar night" — the seeded lore-fragment pool and the reach logic (issue
@@ -84,40 +89,46 @@ public static class KaamosLore
             "Ringside's dedication says it plainly, if you read the whole plate: her first commission was " +
             "the KAAMOS supply run out to the ice moon, and the berth for it is still on the board, still " +
             "listed, and nobody has filed for it in a long time. A berth kept open is a berth someone " +
-            "expects a ship to fill. The name means the polar night. Nobody at the Exchange will say whose."),
+            "expects a ship to fill. The name means the polar night. Nobody at the Exchange will say whose.",
+            "the plate's still-listed berth"),
 
         new("cold-pod", "The cold supply pod", KaamosSource.DerelictPod, false,
             "Half-buried in the regolith, a supply pod that never made its run — hull frost-cracked, its " +
             "manifest slug still readable: CONSUMABLES, WINTERING CREW, 40 SOULS · DEST. KAAMOS · HOLD FOR " +
             "CYCLER WINDOW. The seals were never broken. Whatever it was carrying to the ice moon, the ice " +
-            "moon went without it — and the pod was logged HELD, not lost. Someone chose not to send it."),
+            "moon went without it — and the pod was logged HELD, not lost. Someone chose not to send it.",
+            "the held pod's cycler window"),
 
         new("vantar-log", "Vantar's wintering log", KaamosSource.LabLog, false,
             "A log salvaged from a sealed lab, the hand disciplined and then, later, not: \"The dark below " +
             "the ice is total and it is patient, and I have taught them to be the same. They do not sleep " +
             "through the night — they hold it, together, as one held breath. The winter does not kill what " +
-            "refuses to be many.\" The last entries are dated long after his listed death. They are calm."),
+            "refuses to be many.\" The last entries are dated long after his listed death. They are calm.",
+            "Vantar's dates"),
 
         new("holders-tell", "The berth-holder's tell", KaamosSource.BarRumor, false,
             "The one who used to run the KAAMOS berth drinks alone and answers only sideways: \"You don't " +
             "file for that berth, spacer. You keep it. There's a difference, and I learned it late.\" Pressed, " +
             "quieter: \"It still calls the manifest in. Every window, right on the tick. Same forty names. " +
-            "I stopped reading who was speaking them.\" Then the glass is empty and the conversation with it."),
+            "I stopped reading who was speaking them.\" Then the glass is empty and the conversation with it.",
+            "the holder's tick"),
 
         new("bought-coordinate", "The bought coordinate", KaamosSource.BoughtTip, false,
             "A round on the counter buys the rest of it: a coordinate off the ephemeris where the charts " +
             "just say ICE MOON — UNREACHABLE, and a date, and the word CYCLER. \"The window's real,\" they " +
             "say, pocketing the coin. \"Comes round rare. A ship that's on the board when it opens can ride " +
-            "it in. Getting back out — that's not the part they sell tickets for.\" You have the where and the when."),
+            "it in. Getting back out — that's not the part they sell tickets for.\" You have the where and the when.",
+            "the bought coordinate"),
 
-        // ── The capstone. Not a rumor: the earned KEY. Surfaces only once the rest is in hand. ──
+        // ── The capstone. Not a rumor: the earned KEY. Surfaces only once the rest is in hand. Its prose
+        //    names NO shard: which pieces answered each other depends on which the player actually holds,
+        //    and that sentence is built at read time by KeyDerivation/KeyResolution. ──
 
         new("berth-code", "The KAAMOS berth code", KaamosSource.BerthCode, true,
-            "Assembled, the pieces answer each other: the held pod's cycler window, Vantar's dates, the " +
-            "holder's tick, the bought coordinate — one number falls out of them, the string the sealed " +
-            "berth still listens for. It is not a password so much as a name the dark already knows. Enter " +
-            "it on the board when the window opens and the berth stops being a place nobody files for. It " +
-            "becomes a place expecting you. You could go to the ice moon now. That was always the danger."),
+            "One number falls out of them, the string the sealed berth still listens for. It is not a " +
+            "password so much as a name the dark already knows. Enter it on the board when the window opens " +
+            "and the berth stops being a place nobody files for. It becomes a place expecting you. You " +
+            "could go to the ice moon now. That was always the danger."),
     ];
 
     /// <summary>How many INTEL shards (non-key fragments) must be assembled before the capstone can be
@@ -192,4 +203,132 @@ public static class KaamosLore
     /// will consume this when the reveal is built); named in this lane's own file so the number is
     /// authored where the fiction lives and nothing in the sanity Core is touched.</summary>
     public const double RevealSanityShockHook = 40.0;
+
+    // ── The sentences the player actually reads (#411 story pass, 2026-08-02). ────────────────────────────
+    //
+    // These used to be built in the client (Map.Kaamos), and two of them LIED about the sim — the house's
+    // third and commonest bug class:
+    //
+    //   · the ledger's countdown printed "N more shards to see it" using the size of the whole intel pool
+    //     (5) instead of the threshold that actually opens the capstone (IntelNeededToUnlock, 4), so it was
+    //     always exactly one shard pessimistic — the gate opened while the card still asked for more;
+    //   · the capstone's prose named FOUR specific shards ("the held pod's cycler window, Vantar's dates,
+    //     the holder's tick, the bought coordinate") although the gate takes ANY four of five, so a captain
+    //     who had never bought a coordinate was told the coordinate they never bought was in the answer.
+    //
+    // Both are fixed by moving the sentence to where the predicate lives: the number the ledger prints is
+    // now computed from the same constant the gate reads, and the capstone credits exactly the shards this
+    // progress holds. One source of truth, and the tests can hold the SENTENCE to the SIM.
+
+    /// <summary>How many MORE intel shards this progress needs before the shape is clear and the capstone can
+    /// be earned — zero once <see cref="HasEnoughIntelToEarnTheKey"/> is true. This is THE number the ledger
+    /// prints, derived from <see cref="IntelNeededToUnlock"/> (the constant the gate itself reads) rather
+    /// than from the size of the pool, so the countdown and the gate cannot drift apart.</summary>
+    public static int IntelStillNeeded(KaamosProgress progress) =>
+        Math.Max(0, IntelNeededToUnlock - IntelAssembled(progress));
+
+    /// <summary>The clauses of the shards this progress actually holds, joined into the half-sentence the
+    /// berth code is derived from ("the held pod's cycler window, Vantar's dates and the holder's tick").
+    /// Only held shards appear — the capstone may never credit a piece the captain never found. Empty only
+    /// for a progress holding no intel at all, which the gate never lets reach the capstone.</summary>
+    public static string KeyDerivation(KaamosProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        var clauses = IntelFragments
+            .Where(f => progress.Has(f.Id) && f.KeyClause.Length > 0)
+            .Select(f => f.KeyClause)
+            .ToList();
+
+        return clauses.Count switch
+        {
+            0 => string.Empty,
+            1 => clauses[0],
+            _ => string.Join(", ", clauses.Take(clauses.Count - 1)) + " and " + clauses[^1],
+        };
+    }
+
+    /// <summary>The capstone as the player reads it: the pieces THEY hold answering each other, then the
+    /// authored berth-code text. Used both by the bar seam that resolves it and by the ledger that re-reads
+    /// it, so the two can never tell different stories about the same number.</summary>
+    public static string KeyResolution(KaamosProgress progress)
+    {
+        string derivation = KeyDerivation(progress);
+        string opening = derivation.Length > 0
+            ? $"The pieces answer each other — {derivation}. "
+            : "The pieces answer each other. ";
+        return opening + KeyFragment.Lore;
+    }
+
+    /// <summary>The lore text to SHOW for a held fragment: the capstone reads as its resolution (the shards
+    /// this captain actually assembled), everything else reads as authored.</summary>
+    public static string LedgerLoreFor(KaamosFragment fragment, KaamosProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(fragment);
+        return fragment.IsKey ? KeyResolution(progress) : fragment.Lore;
+    }
+
+    /// <summary>The Captain's-ledger headline for the arc — the shard count and whether the key is held.</summary>
+    public static string LedgerHeadline(KaamosProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        int intel = IntelAssembled(progress);
+        int pool = IntelFragments.Count();
+        return progress.Has(KeyFragment.Id)
+            ? $"❄ PROJEKTI KAAMOS — {intel} of {pool} shards · berth-code in hand"
+            : $"❄ PROJEKTI KAAMOS — {intel} of {pool} shards assembled";
+    }
+
+    /// <summary>The ledger's state line — where this thread stands and what would move it. The countdown
+    /// counts down to the GATE, not to the pool.</summary>
+    public static string LedgerProgressLine(KaamosProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        if (CanReachEnceladus(progress))
+        {
+            return ReachLedgerLine;
+        }
+
+        if (HasEnoughIntelToEarnTheKey(progress))
+        {
+            return "❄ Enough intel to earn the berth-code. Ask around the bars — the pieces resolve into " +
+                   "one number the sealed berth still listens for.";
+        }
+
+        int more = IntelStillNeeded(progress);
+        return $"❄ The shape isn't clear yet — {more} more shard{(more == 1 ? "" : "s")} to see it. " +
+               "A plaque line alone is never enough; one lone rumor is never enough.";
+    }
+
+    /// <summary>The loud one-time line the world says on the single edge that opens the reach. It tells the
+    /// captain, in fiction, that the code is entered and that there is nothing further to do until the
+    /// window comes round — the route lane is a later lane, and the waiting is the honest way to say so.
+    /// (It used to end "For now: route pending", which is a production note wearing a parenthesis.)</summary>
+    public const string ReachNotice =
+        "   ❄❄ THE BERTH-CODE RESOLVES — you say the number once, to nobody, and the sealed berth is listed " +
+        "to your hull. The cycler window is real. It is not open yet. Keep the code and keep the berth: when " +
+        "the window comes round, a ship that is on the board rides it all the way in.";
+
+    /// <summary>The same fact, at rest, in the ledger.</summary>
+    public const string ReachLedgerLine =
+        "❄ The berth-code is entered and the ice-moon berth is listed to your hull. The cycler window is " +
+        "real and not yet open — there is nothing to do now but hold the berth and wait for it.";
+
+    /// <summary>The label on the bar seam's button for the step this bar can take. The bought coordinate
+    /// COSTS, so its button says so and says how much, like every other counter at that bar that takes
+    /// coin — a free step never wears a price, and a paid step is never disguised as a question.</summary>
+    public static string BarSeamLabel(string? stepFragmentId) => stepFragmentId switch
+    {
+        "berth-code" => "❄ Put the KAAMOS pieces together",
+        "bought-coordinate" => $"🌑 Buy the KAAMOS coordinate · {KaamosFind.BoughtCoordinateCredits:N0} cr",
+        _ => "🌑 Ask about KAAMOS",
+    };
+
+    /// <summary>The hover line behind <see cref="BarSeamLabel"/> — what this particular step actually is.</summary>
+    public static string BarSeamTitle(string? stepFragmentId) => stepFragmentId switch
+    {
+        "berth-code" => "Spread what you have gathered on the table and let the numbers answer each other",
+        "bought-coordinate" =>
+            $"Stand a round for the where and the when — {KaamosFind.BoughtCoordinateCredits:N0} cr off the purse",
+        _ => "Ask around about the sealed ice-moon berth — PROJEKTI KAAMOS",
+    };
 }
