@@ -338,6 +338,11 @@ public partial class Map
         public double AimX { get; set; }
         public double AimY { get; set; }
         public double FiringUntilMs { get; set; }
+
+        // #603 · WHAT IS IN IT. Owner: "those rounds might be special types even." A magazine is no longer
+        // just a count — it is a count OF SOMETHING, because the lab round clears a line with one shot and
+        // will kill you at arm's length, and issue ball does neither.
+        public string AmmoId { get; set; } = Core.Ammunition.Issue.Id;
     }
 
     // The three things a channeled dig can be (beach-comber kit): bury a carried chest where you stand,
@@ -2013,6 +2018,32 @@ public partial class Map
             GrantLabLead(DiceRule.Seed($"clue:{item.Id}"));
         }
 
+        // ── #603 case 2 · THE ROUNDS GO IN, AND THE GUN REMEMBERS WHAT THEY WERE ──
+        //
+        // Six rounds is not a resupply, it is a decision — which gun, and with what. A sentry loaded with
+        // the lab round clears a line with one shot and refuses anything already on top of it; one loaded
+        // with issue ball does neither. Both facts have to live on the magazine, so the bot carries the kind.
+        if (item.Kind == Core.Satchel.Kind.Rounds && at.Target == SatchelTry.Target.DrySentry
+            && _surface is { } loadEx)
+        {
+            SurfaceBot? gun = loadEx.Bots.FirstOrDefault(b => b.Deployed && b.Unit == at.Context);
+            if (gun is not null)
+            {
+                gun.Rounds += item.Count;
+                gun.AmmoId = item.Id;
+                _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count)];
+
+                Core.Ammunition.Kind kind = Core.Ammunition.ById(item.Id);
+                if (kind.MinimumRangeDu > 0)
+                {
+                    ShowPulseMessage(
+                        $"🔫 {gun.Unit} takes them. It will not fire these at anything closer than " +
+                        $"{kind.MinimumRangeDu:F0} du — they arm after travel, and that is the whole point " +
+                        "of them.");
+                }
+            }
+        }
+
         CloseSatchel();
     }
 
@@ -2029,9 +2060,48 @@ public partial class Map
         {
             return at;
         }
-        return item.Kind == Core.Satchel.Kind.Paper
-            ? (SatchelTry.Target.Tracker, null, "the motion tracker")
-            : null;
+
+        // A document can always be read — the tracker is on the captain's arm.
+        if (item.Kind == Core.Satchel.Kind.Paper)
+        {
+            return (SatchelTry.Target.Tracker, null, "the motion tracker");
+        }
+
+        // #603 case 2 · And rounds go into a gun you are STANDING AT. Owner: "if we run empty on our
+        // autoguns and have those on our inventory then from there we should be able to load them into the
+        // guns." The interesting case is precisely a sentry that has run dry out in the field, away from the
+        // tube — a handful is never a resupply, but it might be enough to get you home.
+        if (item.Kind == Core.Satchel.Kind.Rounds && DrySentryUnderfoot() is { } unit)
+        {
+            return (SatchelTry.Target.DrySentry, unit, unit);
+        }
+
+        return null;
+    }
+
+    /// <summary>#603 · The dry sentry within reach, if there is one. Deployed and out of ammunition: a live
+    /// one does not want your six rounds and a carried one is not deployed.</summary>
+    private string? DrySentryUnderfoot()
+    {
+        if (_surface is not { } ex)
+        {
+            return null;
+        }
+
+        double radiusSq = DeckPlan.InteractRadius * DeckPlan.InteractRadius;
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (!b.Deployed || b.Rounds > 0)
+            {
+                continue;
+            }
+            double dx = b.X - _avatarX, dy = b.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) <= radiusSq)
+            {
+                return b.Unit;
+            }
+        }
+        return null;
     }
 
     /// <summary>What to write on one row of the pocket. The prose is rebuilt from the world here rather than
@@ -3724,7 +3794,10 @@ public partial class Map
         // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
         // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
         // "Now the cannons shot though the walls").
-        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers());
+        // #603 · The guns fire what is IN them: a bot loaded with the lab round drops a queue in one
+        // shot and one loaded with issue ball grinds them down.
+        var loaded = live.Select(b => Core.Ammunition.ById(b.AmmoId)).ToList();
+        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers(), loaded);
 
         // Fold the drained magazines back and flash a zap line from each bot that fired.
         double nowMs = _lastTimestampMs ?? 0;
@@ -3810,12 +3883,30 @@ public partial class Map
     // only ever be drawn at the target the volley could actually have spent its round on.
     private (double X, double Y)? NearestReeverInArc(SurfaceBot bot)
     {
+        // #603 · WHAT IS LOADED DECIDES WHAT IT WILL SHOOT AT. Owner: "some lab found exploding rounds
+        // might be too dangerous to use to close by targets."
+        //
+        // A two-stage round arms after travel, so at arm's length the second charge goes off level with the
+        // gun and whoever is standing beside it. The sentry simply will not take that shot — the interlock
+        // idiom this ground already speaks (#462's airlock, #523's automatic, the vent readiness refusal).
+        //
+        // The consequence is the frightening part and it is entirely the captain's own doing: a gun loaded
+        // with the wrong thing is SILENT with the pack on top of it, because of a choice made three rooms
+        // ago. The override the owner asked for ("the gun complains but also gives override option to just
+        // fire") belongs at the HUD, on a captain's word — not here, where it would fire itself.
+        double minimum = Core.Ammunition.ById(bot.AmmoId).MinimumRangeDu;
+        double minimumSq = minimum * minimum;
+
         double bestSq = SentryBot.RangeDeckUnits * SentryBot.RangeDeckUnits;
         (double, double)? best = null;
         foreach (Reever r in _reevers)
         {
             double dx = r.X - bot.X, dy = r.Y - bot.Y;
             double d2 = (dx * dx) + (dy * dy);
+            if (d2 < minimumSq)
+            {
+                continue;   // inside the arming distance: it would take the gun with it
+            }
             if (d2 <= bestSq && SentryBot.CanEngage(bot.X, bot.Y, r.X, r.Y, _deckPlan.CollisionField))
             {
                 bestSq = d2;
