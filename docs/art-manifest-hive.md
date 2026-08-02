@@ -145,13 +145,13 @@ the item would describe it — *runs shaft 2 of a facility that is not this one*
 which building that is to the player. Same rule the sealed way already follows: it says what it is, never
 what to do about it.
 
-- `art/the-penetrator.jpg` — **the two-stage round.** One shell, out of its packing, on a bench. The
+- `art/the-penetrator.jpg` (PAINTED 2026-08-02) — **the two-stage round.** One shell, out of its packing, on a bench. The
   casing machined to a standard nobody uses for pest control, a driving band, a second stage visible at the
   break. Beside it the packing crate stencilling, deliberately **out of focus and illegible**. Feeling: this
   was made to go through something that was expected to be shot at, and somebody signed for a case of it and
   filed the case under consumables. **Minimum-range warning is a fact about the round, not a label on the
   picture — no lettering anywhere in the image.**
-- `art/the-collar.jpg` — **the annular item.** Owner: *"kind of horror theme in a Lovecraft way… like
+- `art/the-collar.jpg` (PAINTED 2026-08-02) — **the annular item.** Owner: *"kind of horror theme in a Lovecraft way… like
   finding a massive collar designed for Cthulhu's neck"* and, of the inventory: *"it would be our precious
   and it would have admire and discuss options :-D"*. A single band of dark metal on a pallet, **big enough
   that the pallet is the only thing telling you the scale.** Machined inside, with fixing points spaced for

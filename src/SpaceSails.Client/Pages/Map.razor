@@ -1200,20 +1200,34 @@
                 else
                 {
                     <div class="satchel-items">
+                        @* #614 · A row can now do two different things, so it is two controls rather than
+                           one button wearing two hats. LOOK is always available and never spends anything
+                           (#603's law: looking is free and repeatable); TRY is the deliberate second press
+                           that costs you the decision. Putting them on one button would mean a captain who
+                           wanted to admire the collar had to risk offering it to a door. *@
                         @foreach (SpaceSails.Core.Satchel.Item item in _satchel)
                         {
                             bool canOffer = TargetFor(item) is not null;
-                            <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
-                                    disabled="@(!canOffer)"
-                                    @onclick="() => TryItem(item)">
-                                <span class="satchel-item-name">@SatchelLabel(item)</span>
-                                @if (canOffer)
+                            bool canLook = LookAtItem(item) is not null;
+                            <div class="satchel-row">
+                                <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
+                                        disabled="@(!canOffer)"
+                                        @onclick="() => TryItem(item)">
+                                    <span class="satchel-item-name">@SatchelLabel(item)</span>
+                                    @if (canOffer)
+                                    {
+                                        <span class="satchel-item-try">
+                                            @(_satchelTarget is null ? "read it →" : "try it →")
+                                        </span>
+                                    }
+                                </button>
+                                @if (canLook)
                                 {
-                                    <span class="satchel-item-try">
-                                        @(_satchelTarget is null ? "read it →" : "try it →")
-                                    </span>
+                                    <button type="button" class="satchel-look"
+                                            title="Look at it properly"
+                                            @onclick="() => OpenItemCard(item)">🔍</button>
                                 }
-                            </button>
+                            </div>
                         }
                     </div>
                 }

@@ -4212,6 +4212,34 @@
    simply are not offering anything, because there is nothing here to offer it to. */
 .satchel-item.inert { cursor: default; opacity: 0.92; }
 
+/* #614 · The row is a pair now: the item, and a lens for the things worth looking at. The lens sits OUTSIDE
+   the item button so that admiring a thing can never be a mis-click on offering it to a door. */
+.satchel-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.3rem;
+}
+
+.satchel-row .satchel-item { flex: 1 1 auto; }
+
+.satchel-look {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: #e6dcc8;
+    background: #171a20;
+    border: 1px solid rgba(200, 170, 120, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-look:hover {
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.6);
+}
+
 .satchel-item-try {
     font-size: 0.74rem;
     color: #d8b884;

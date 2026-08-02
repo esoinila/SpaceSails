@@ -2070,6 +2070,13 @@ public partial class Map
             UndergroundComplex.Haul.Key when found is not null
                 => "  \ud83c\udf92 Into your pocket: an authority card.",
             UndergroundComplex.Haul.Equipment => "  \ud83d\udcb3 Crated and carried out \u2014 it sells, it does not fit a pocket.",
+
+            // #614 \u00b7 You cannot lift it and the game must not pretend you can. What goes in the pocket is
+            // the RECORD of it, which is also the only honest thing to have taken: a measurement is exactly
+            // as much of this object as anybody has ever managed to remove from the room.
+            UndergroundComplex.Haul.Relic => "  \ud83c\udf92 Into your pocket: measurements, a photograph, a scraping. "
+                + "The thing itself stays where it is.",
+
             _ => "",
         };
 
@@ -2097,6 +2104,20 @@ public partial class Map
         if (haul == UndergroundComplex.Haul.Records)
         {
             _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Paper, findId))];
+        }
+        else if (haul == UndergroundComplex.Haul.Relic)
+        {
+            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Relic, findId))];
+
+            // The card is raised on the spot, unconditionally and every time. This is the one object in the
+            // game that a captain will want to look at again the moment they find it, and #528's
+            // once-per-excursion gate is for things that RECUR — a rib mouth, a card, a dead floor. There is
+            // one of these in a facility and most facilities do not have one.
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                CarriedObject.CollarLabel, CarriedObject.CollarArtUrl, CarriedObject.CollarStory);
+
+            ApplyNerveShock(9.0, "standing next to something that was measured for a neck");
         }
         else if (haul == UndergroundComplex.Haul.Dirt)
         {
@@ -2227,6 +2248,30 @@ public partial class Map
     /// <summary>What the satchel is currently open AT, if anything: the target, whatever that target needs
     /// to judge an offer, and what to call it on screen.</summary>
     private (SatchelTry.Target Target, string? Context, string Label)? _satchelTarget;
+
+    /// <summary>#614 · The card for a carried thing, or null if it is ordinary. Asked once per row while the
+    /// satchel draws, which is why <see cref="CarriedObject.Card"/> is cheap and pure.</summary>
+    private CarriedObject.Reveal? LookAtItem(Core.Satchel.Item item) =>
+        _surface is { } ex ? CarriedObject.Card(item, ex.Stop.Body.Id) : null;
+
+    /// <summary>#614 · LOOK AT IT PROPERLY. Owner: <i>"we could have gen-AI images of plotwise important
+    /// items... maybe they say something about what door they open."</i>
+    ///
+    /// <para>Free and repeatable, per #603's ruling that reading a thing and DECIDING something with it are
+    /// two different acts — the owner asked for the paper to be viewable many times and the same law covers
+    /// every object worth a card. The satchel stays open underneath, because a captain comparing three
+    /// authority cards should not have to reopen their pockets between each one.</para></summary>
+    private void OpenItemCard(Core.Satchel.Item item)
+    {
+        if (LookAtItem(item) is not { } card)
+        {
+            return;
+        }
+
+        _viewObject = new DeckPlan.ConsoleSpot(
+            DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+            card.Label, card.ArtUrl, card.Story);
+    }
 
     /// <summary>#603 · Offer one carried thing to whatever the satchel is open at. The outcome is always
     /// SAID — a control that does nothing and says nothing is indistinguishable from a bug.</summary>
@@ -2368,7 +2413,13 @@ public partial class Map
         // one thing about a paper worth comparing across a pocketful of them.
         Core.Satchel.Kind.Paper =>
             $"📋 {Core.FieldClue.Title(item.Id)} — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
-        Core.Satchel.Kind.Rounds => $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",
+        Core.Satchel.Kind.Rounds => item.Id == Ammunition.LabTwoStage.Id
+            ? $"🔫 {item.Count} × {Ammunition.LabTwoStage.Name}"
+            : $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",
+
+        // #614 · Named for what you actually have, which is paperwork about a thing you left in a room.
+        Core.Satchel.Kind.Relic => "⭕ measurements of the thing on the pallet",
+
         _ => "🗃 a file on somebody",
     };
 

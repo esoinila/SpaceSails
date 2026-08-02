@@ -992,6 +992,31 @@ public static class UndergroundComplex
         Records,
         /// <summary>A way through a door somewhere — a code, a card, a countersigned authority.</summary>
         Key,
+
+        /// <summary>#614 · The thing on the pallet. Exactly one room in a whole facility, and only in the
+        /// band nobody listed.</summary>
+        Relic,
+    }
+
+    /// <summary>#614 · WHERE THE THING ON THE PALLET IS, and why it is not a roll.
+    ///
+    /// <para>Same reasoning as <see cref="KeyRoomFor"/>, for the same reason: a one-in-N object placed by
+    /// seeded dice is an object that is silently absent on some worlds FOREVER, and nothing on screen ever
+    /// says so. Every test still passes and the best thing in the game is simply missing from a third of the
+    /// universe.</para>
+    ///
+    /// <para>So it is designated: the deepest floor of the band nobody listed. Sites without an unlisted band
+    /// have no relic at all, which is correct — it is the payoff for getting somewhere you were not supposed
+    /// to be able to reach, and a facility that admits to its own depth has nowhere to put it.</para>
+    ///
+    /// <para><b>Room 0.</b> A floor's room count depends on the site's field, so the only index a
+    /// field-free designation may safely name is the one every floor has. Room 0 cannot collide with
+    /// <see cref="KeyRoomFor"/> either: that one sits on the LISTED bottom, and a site only has a relic when
+    /// its true depth runs deeper than the depth it admits to.</para></summary>
+    public static (int Level, int RoomIndex)? RelicRoomFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return HasUnlistedBand(bodyId) ? (TrueDepthOf(bodyId), 0) : null;
     }
 
     /// <summary>What is in this room. Weighted so the place feels stripped but worth walking: about a third
@@ -1013,6 +1038,13 @@ public static class UndergroundComplex
         if (KeyRoomFor(bodyId) is { } wayDown && level == wayDown.Level && roomIndex == wayDown.RoomIndex)
         {
             return Haul.Key;
+        }
+
+        // #614 · And the one room that holds the thing nobody signed for. Designated for the same reason as
+        // the Key room above — see RelicRoomFor.
+        if (RelicRoomFor(bodyId) is { } pallet && level == pallet.Level && roomIndex == pallet.RoomIndex)
+        {
+            return Haul.Relic;
         }
 
         int face = DiceRule.Roll(DiceRule.Seed($"hive:haul:{bodyId}:{level}:{roomIndex}"), 9).Face;
@@ -1092,6 +1124,14 @@ public static class UndergroundComplex
             "does not say what was moved. It says exactly how often, and to where.",
         Haul.Key => KeyLine(bodyId, level),
         Haul.Dirt => DirtOn(bodyId, level, roomIndex),
+
+        // #614 · The room is described. The thing is NOT explained, here or anywhere: the pulse says what is
+        // in front of you and the card (CarriedObject.CollarStory) says what it measures, and between them
+        // they never once say what it was for. Canon holds hardest exactly here.
+        Haul.Relic =>
+            "⭕ The room is a bay, and there is one thing in it: a band of dark alloy on a pallet, taller " +
+            "than you are and machined inside and out. Nobody stripped this room. They left it, and they " +
+            "left the lights on over it.",
         _ =>
             "🚪 Stripped to the fittings. Whoever cleared this room did it carefully and did it in a hurry, " +
             "which are two different things and both of them are here.",

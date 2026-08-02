@@ -508,7 +508,53 @@ Consequences worth keeping:
 pocket rests on — every site has a band 0, so a Key found at the bottom of one always has somewhere to point,
 and a Key room issues a card exactly when there is a shaft below it and never otherwise.)*
 
-13.10 **The first-ground card teaches the game we are actually shipping.**
+13.10 **Some things you carry are worth looking at, and a card describes the LOCK, never the DOOR.**
+
+Owner: *"we could have gen-AI images of plotwise important items… maybe they say something about what door
+they open."*
+
+The second half is the whole design problem. "Says what door it opens" is the tempting reading and it is a
+**quest marker**: an item that names its lock does the captain's thinking, and this facility is built on the
+opposite law. So the rule is:
+
+> A card may say **which shaft**, of **what kind of building**, and **whether it is this building**.
+> It may never say **where that building is**, or anything a tracker could act on.
+
+That is the same discipline `SealedWayCard` already keeps — say what it is, never what to do about it. And it
+is what makes #613's foreign card pay: a captain holding a live authority for a shaft they have not found is
+holding a reason to keep flying, not a waypoint.
+
+| gets a card | does not |
+| --- | --- |
+| an authority card (which shaft; and *"not this one"* when it is foreign) | operational paper — it has its own reader (#603) |
+| the two-stage penetrator | issue ball — it is the round you always have |
+| the thing on the pallet | a file on somebody — leverage, not a display piece |
+
+A game where every object earns a full-screen card has no objects that matter.
+
+**The thing on the pallet.** Owner: *"kind of horror theme in a Lovecraft way … like finding a massive collar
+designed for Cthulhu's neck :D"*. One per facility, only in the band nobody listed, on its deepest floor —
+and it is **designated, not rolled**, for the same reason the way-down card is (#592): a seeded one-in-N
+object is an object that is silently absent on some worlds *forever*, with every test still green.
+
+Everything frightening about it is arithmetic. The pallet is the only thing in the art that gives its scale.
+There is no creature, no bones, no log, no note. What the captain takes away is a **measurement** — you
+cannot lift it, and a satchel claiming to contain a three-metre alloy band would be the third named bug class
+all over again. And canon holds hardest exactly here, because this is the most tempting object in the game to
+explain the Old Ones with. It does not.
+
+*(Enforced: `TheThingsWorthLookingAtTests` — the shaft is named and the moon never is (verified RED against a
+card that appends the body id), most carried things get no card, exactly one relic per facility on a
+designated real room (verified RED against a rolled placement), the kind was APPENDED so old vaults still
+read, and the canon grep covers every new string.)*
+
+**A note on the harness.** The relic-room guard first failed against an invented 78 du-wide field, reporting
+zero rooms on *every* floor of *every* site — listed and unlisted alike. A guard that fails on a field the
+game never generates is not evidence of a bug, it is evidence of a bad harness. Hive tests use
+`SurfaceLayout.DefaultField`. This is the same lesson the client A\* audit taught: *a test is only as honest
+as the world you hand it.*
+
+13.11 **The first-ground card teaches the game we are actually shipping.**
 
 Owner: *"the E key does a lot more now"* and *"also going to ground is more than burying chest now."*
 
