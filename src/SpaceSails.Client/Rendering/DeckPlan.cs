@@ -34,7 +34,11 @@ public sealed class DeckPlan
         // buildings share the air law and nothing else: the surface rack sits beside an ammunition press in
         // a regolith drum that a whole site has several of, and this is a poured room a safety inspectorate
         // made somebody build, one per dead floor, with nothing in it but air. One kind per verb.
-        HiveRefuge }
+        HiveRefuge,
+        // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
+        // handle stencilled on its housing. TWO kinds for one object, because they are two different
+        // decisions — looking costs a throw, and pulling must stay possible without one.
+        ArchiveNode, ArchiveSwitch }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.

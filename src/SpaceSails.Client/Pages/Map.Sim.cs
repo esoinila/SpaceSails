@@ -97,6 +97,19 @@ public partial class Map
     // carries the wreck id (Derelict.BodyIdFor), so the deck builder and the excursion route by id alone.
     // The ship holds on her for free while the away team is inside — see LoiterKeeping / Lab 40.
     private const string WreckCheatId = "kestrel-3";
+
+    /// <summary>The hull a wreck cheat boots you onto: the first seeded ship that died THAT way, or the
+    /// default hull when no cause was asked for (and when the search finds none, which cannot happen for a
+    /// cause the generator can produce, but a null here would be a crash for a typo).
+    ///
+    /// <para>ONE function rather than an expression at the parse site, because <c>?archive=1</c>'s guard has
+    /// to be able to ask "does the hull this cheat produces actually carry a node?" — and a guard that asks a
+    /// re-typed copy of the expression is guarding the copy.</para></summary>
+    private static Derelict.Wreck CheatWreck(Derelict.WreckCause? cause) =>
+        cause is { } forced
+            ? Derelict.SeededWithCause(forced) ?? Derelict.Seeded(WreckCheatId)
+            : Derelict.Seeded(WreckCheatId);
+
     private static BodyDefinition WreckSiteBody(string berthId, in Derelict.Wreck wreck) => new()
     {
         Id = Derelict.BodyIdFor(wreck.Id),
@@ -542,6 +555,25 @@ public partial class Map
                     }
                 }
             }
+            else if (pair.StartsWith("archive=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Dev cheat: /map?archive=1&land=1 boards a derelict that is CARRYING A COLD-ARCHIVE NODE.
+                // The whole beat — the dwell field, the throw, the visions, the handle — lives in one hold on
+                // about one eligible wreck in three, and the house rule written next to these cheats is that
+                // "a scene nobody can reach on demand is a scene that ships broken." So this boots the one
+                // cause Core guarantees a node on (ArchiveCheatWreck): the ship one of her own opened to
+                // space, where the node is the reason she died.
+                //
+                // It is deliberately NOT a "spawn a node anywhere" switch. The fiction the node belongs to
+                // arrives with the hull; a node bolted into a drive failure would be a prop.
+                string candidate = Uri.UnescapeDataString(pair["archive=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _archiveCheat = true;
+                    wreckCheat = true;
+                    wreckCauseCheat = ArchiveCheatCause;
+                }
+            }
             else if (pair.StartsWith("air=", StringComparison.OrdinalIgnoreCase))
             {
                 // #564 dev cheat: /map?air=45 starts the excursion with 45 seconds in the tank instead of a
@@ -802,9 +834,7 @@ public partial class Map
             string berthId = DockedStarts.TryGetValue(berthKey, out string? wreckBerth) ? wreckBerth : berthKey;
             if (scenario.Bodies.Any(b => b.Id == berthId))
             {
-                Derelict.Wreck w = wreckCauseCheat is { } forced
-                    ? Derelict.SeededWithCause(forced) ?? Derelict.Seeded(WreckCheatId)
-                    : Derelict.Seeded(WreckCheatId);
+                Derelict.Wreck w = CheatWreck(wreckCauseCheat);
                 scenario = scenario with { Bodies = [.. scenario.Bodies, WreckSiteBody(berthId, w)] };
                 _wreck = w;
                 dockCheat = berthId; // clamp onto the berth she hangs off, so she is in reach at spawn
@@ -1528,6 +1558,9 @@ public partial class Map
         UpdateCapture(dtRealSeconds);
         UpdateEncounters();
         UpdateLocalTrade(dtRealSeconds);
+        // The archive node's two edges (walking into the field, walking to arm's length) BEFORE the nerve
+        // step, so a throw forced by the approach is billed on the same tick the captain crossed the line.
+        StepArchiveNode();
         StepNerve(dtRealSeconds); // #317: the nerve gauge advances every tick — regolith drains, the ship eases
 
         UpdatePrediction();
@@ -2033,6 +2066,9 @@ public partial class Map
         // board underneath is still the thing the captain came to use.
         if (_ventReadCard is not null) { CloseVentReadCard(); return true; }
         if (_showVentPanel) { CloseVentPanel(); return true; }
+        // The vision card sits above everything on a wreck — it is the loudest thing that can happen in that
+        // hold, and it opens without being asked for.
+        if (_archiveCard is not null) { CloseArchiveCard(); return true; }
         if (_wreckLook is not null) { CloseWreckLook(); return true; }
         if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
         if (_showWreckChoice) { CloseWreckChoice(); return true; }

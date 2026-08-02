@@ -2318,6 +2318,57 @@
     background: rgba(255, 180, 90, 0.26);
 }
 
+/* THE ARCHIVE NODE'S VISIONS — the wreck cards are lamp-amber because a captain is standing in a room
+   with a lamp. These are not a room; they are what a mind with no eyes made of a place. So the frame goes
+   cold, which is the same distinction art-manifest-visions.md draws for the canvases themselves. */
+.archive-vision {
+    border-color: rgba(150, 200, 235, 0.4);
+    background: #080b12;
+}
+
+.archive-vision .view-object-title {
+    color: #cfe6f7;
+}
+
+.archive-vision .view-object-close {
+    background: rgba(150, 200, 235, 0.12);
+    border-color: rgba(150, 200, 235, 0.42);
+    color: #cfe6f7;
+}
+
+.archive-vision .view-object-close:hover {
+    background: rgba(150, 200, 235, 0.24);
+}
+
+/* What happened, in the house voice — above the lore, because the band is the event and the vision is
+   only what the event contained. */
+.archive-band {
+    color: rgba(207, 230, 247, 0.92);
+    font: 600 0.92rem/1.35 monospace;
+    text-align: center;
+}
+
+/* Stencilling on a jar's collar — clerical, upright, and pointedly NOT italic like the vision text: it is
+   the one thing on this card that is a document rather than a memory. Only ever present on the bands that
+   were bought with a bad throw. */
+.archive-collar {
+    align-self: stretch;
+    padding: 0.4rem 0.6rem;
+    border: 1px dashed rgba(150, 200, 235, 0.4);
+    border-radius: 0.3rem;
+    background: rgba(150, 200, 235, 0.06);
+    color: #e3eef7;
+    font: 0.82rem/1.4 monospace;
+    letter-spacing: 0.02em;
+}
+
+/* Visible arithmetic — house law. A bad throw is only bearable when you can read why. */
+.archive-dice {
+    color: rgba(207, 230, 247, 0.62);
+    font: 0.78rem/1.3 monospace;
+    text-align: center;
+}
+
 /* THE CAPTAIN'S SELFIE (#400) — the framed shot: the vista, the captain's #368 portrait disc composited
    into the corner (v1's "no image processing" composite), the boast, and the ledger stamp. */
 .selfie-frame {

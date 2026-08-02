@@ -329,6 +329,17 @@ public static class NervePips
     /// <param name="HealthPipsLeft">Blows the captain can still take (#453's condition marker). Drives the
     /// low-health exception to the once-per-encounter touch latch. Defaults to <see cref="int.MaxValue"/> —
     /// "not hurt / not known" — so a caller that has not been taught about health keeps the plain latch.</param>
+    /// <param name="InArchiveField">THE ARCHIVE NODE'S DWELL (<c>docs/features/the-archive-node.md</c> §3).
+    /// The captain is standing inside <see cref="ArchiveNode.FieldRadius"/> of the one warm thing on a dead
+    /// ship. It is the only sustained pressure that is NOT a regolith pressure — a derelict's interior reads
+    /// as "aboard" to every other rule in this file — so it is carried as its own flag rather than smuggled
+    /// through <see cref="NerveModel.Stressors"/>.
+    ///
+    /// <para>While it applies the captain is NOT safe, which is the whole point: without that, the airlock's
+    /// give-back beat would run at the same time as the archive's take beat and the two would very nearly
+    /// cancel. The gauge would sit still while the ledger printed "you have stood too long beside the thing
+    /// in the hold" — the sentence saying one thing and the sim doing another, which is the most expensive
+    /// bug class this project has.</para></param>
     public readonly record struct Frame(
         bool OnExcursion,
         bool OnRegolith,
@@ -337,7 +348,8 @@ public static class NervePips
         int FreshSightings,
         bool Touched,
         double DtSeconds,
-        int HealthPipsLeft = int.MaxValue);
+        int HealthPipsLeft = int.MaxValue,
+        bool InArchiveField = false);
 
     /// <summary>The result of one frame: the new (still pip-aligned) nerve, the latched monolith flag, the
     /// advanced beat clock, every named event that fired THIS frame — in the order they happened, for the
@@ -379,7 +391,11 @@ public static class NervePips
             }
         }
 
-        bool safe = !f.OnExcursion || !f.OnRegolith;
+        // THE DWELL IS NOT A REGOLITH PRESSURE. A derelict's interior is "aboard" to every other rule here,
+        // so standing beside an archive node would otherwise be scored as SAFE and hand pips BACK. It does
+        // not merely add a cost — it takes safety away, which is what makes the gauge agree with the line.
+        bool archive = f.OnExcursion && f.InArchiveField;
+        bool safe = (!f.OnExcursion || !f.OnRegolith) && !archive;
         double dread = NerveModel.Dread(f.Stressors.NearestContactRange);
 
         // Proximity GATES the beat (it no longer scales an amount): beyond the dread range an Old One is
@@ -393,6 +409,7 @@ public static class NervePips
         (double cornerCarry, int cornerBeats) = Tick(Cause.Cornered, beats.Cornered, cornered, f.DtSeconds);
         (double digCarry, int digBeats) = Tick(Cause.DigUnderThreat, beats.Dig, digging, f.DtSeconds);
         (double airCarry, int airBeats) = Tick(Cause.Airlock, beats.Airlock, safe, f.DtSeconds);
+        (double archiveCarry, int archiveBeats) = Tick(Cause.Archive, beats.Archive, archive, f.DtSeconds);
 
         // The touch latch re-arms the moment the captain is CLEAR — safe up the tube, or with nothing near
         // enough to frighten them. Then the next ambush is a fresh shock again.
@@ -437,6 +454,12 @@ public static class NervePips
             {
                 Fire(Cause.DigUnderThreat, BeatPips);
             }
+            // The slowest sustained beat in the game, and the only one you can walk out of by taking your
+            // salvage and leaving. Crossing the compartment costs effectively nothing; working in it counts.
+            for (int i = 0; i < archiveBeats; i++)
+            {
+                Fire(Cause.Archive, BeatPips);
+            }
         }
         else
         {
@@ -446,7 +469,7 @@ public static class NervePips
             }
         }
 
-        var clock = new Beats(closeCarry, cornerCarry, digCarry, airCarry, touchSpent);
+        var clock = new Beats(closeCarry, cornerCarry, digCarry, airCarry, touchSpent, archiveCarry);
         return new Step(n, monolithSeen, clock, (IReadOnlyList<Event>?)events ?? NoEvents, f.OnExcursion);
     }
 

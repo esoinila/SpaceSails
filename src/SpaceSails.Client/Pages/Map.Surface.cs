@@ -820,6 +820,10 @@ public partial class Map
             if (_wreck is { } aboardWreck)
             {
                 PrepareVenting(aboardWreck);
+
+                // …and whether she is carrying the one warm thing. Seeded off her id, decided ONCE here, so
+                // a rebuild of the deck can never roll a node onto a hull that did not have one.
+                PrepareArchiveNode(aboardWreck);
             }
 
             // A fresh boarding is a fresh hull: nothing has woken, the fan has not come up, and the tracker
@@ -2955,7 +2959,7 @@ public partial class Map
         {
             _deckPlan = WreckInterior.WreckDeck(
                 aboard, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids,
-                HeldDoors(), BlockedDoors());
+                HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
             return;
         }
 
@@ -3887,7 +3891,11 @@ public partial class Map
             DtSeconds: dtRealSeconds,
             // #480 · fear tracks MORTAL DANGER: below a couple of blows left, every further hand costs its
             // pip again instead of being absorbed by the once-per-encounter latch.
-            HealthPipsLeft: _surface is { } hurt ? CaptainCondition.MaxHits - hurt.HitsTaken : int.MaxValue);
+            HealthPipsLeft: _surface is { } hurt ? CaptainCondition.MaxHits - hurt.HitsTaken : int.MaxValue,
+            // THE DWELL. The one sustained pressure that is not a regolith pressure: a derelict's interior
+            // reads as "aboard" to every other rule in NervePips, so standing beside the archive node would
+            // otherwise be scored SAFE and hand pips BACK while the ledger said it was taking them.
+            InArchiveField: InArchiveField);
 
         NervePips.Step step = NervePips.Advance(_nerve, _monolithSeen, _nerveBeats, in frame);
         bool monolithFired = !_monolithSeen && step.MonolithSeen;

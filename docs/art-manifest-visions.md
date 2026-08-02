@@ -98,5 +98,8 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 5 | `archive-wintering` | `vision-wintering.jpg` | ✅ | ✅ |
 | 6 | `archive-your-rack` | `vision-your-rack.jpg` | ✅ | ✅ |
 
-"Code wired" here means Core names the file and the client's existing `onerror`-hide slot will show it
-the moment it exists; the node's own client lane (the field, the card, the switch) is still to come.
+**All six are now on screen.** The node's client lane landed — the dwell field, the confrontation card
+and the handle — so every canvas above is reachable in the game at `/map?archive=1&land=1`: walk aft
+into the **DEEP HOLD** and go to the column. The visions render on their own cold-framed card
+(`.archive-vision`), still `onerror`-hiding, still with **no caption from the game** — the image is the
+evidence and naming it is the captain's job.

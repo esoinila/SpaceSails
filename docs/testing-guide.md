@@ -487,6 +487,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?bond=1`** | **Boot docked at a bar and FORCE the next ambient scare (shudder/buzzer/PA) to open a STRANGER-BOND — a co-present stranger stands you a cognac, the hero beat (#429).** |
 | **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout + the one-time "true terms" notice without a playthrough (#422).** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
+| **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
 
 ### The salvage run — `?wreck=1` / `?wreck=<cause>` (#488)
 
@@ -546,6 +547,42 @@ that arrives already blown.
 > **The loop worth playtesting is the greedy one:** dog the hatch, start the pump, walk out and hold the
 > lane with a sentry while the rough stage banks your charge — then decide whether to stay for the tail.
 > Owner's own verdict on it: *"I love that pressure waiting in a hot spot with round counts dropping."*
+
+### The archive node — `?archive=1`
+
+> **The house rule this cheat exists for, written in `Map.Sim.cs` beside the others:** *"a scene nobody can
+> reach on demand is a scene that ships broken."* The node is aboard about **one eligible wreck in three**,
+> and the compartment it sits in is one room of one hull — which makes it, like the repo boat and the deep
+> Hive floors, nearly impossible to playtest on purpose.
+
+```
+/map?archive=1&land=1     board the hull that is carrying one, straight from the URL
+```
+
+`?archive=1` implies `?wreck=ventedbyoneoftheirown`: the ship one of her own opened to space is the one
+cause where Core guarantees a node, because **the node is why she died**. It is deliberately not a
+"spawn a node anywhere" switch — a spar bolted into a drive failure would be a prop.
+
+Walk aft down the spine and into the **DEEP HOLD** (top row, the second compartment from the stern). Full
+design in [features/the-archive-node.md](features/the-archive-node.md).
+
+| What to check | What you should see |
+|---|---|
+| **The fiction arrives before the mechanic** | The first time you cross into the field, one line about the **temperature** and nothing else — no warning, no noun for what is doing it, and the pip row has not moved yet. |
+| **The dwell is the slowest beat in the game** | Walk straight through the hold and it costs you nothing worth counting. STAND there and a pip goes every `NervePips.ArchiveBeatSeconds`, each one saying *"you have stood too long beside the thing in the hold"*. |
+| **The gauge agrees with the ledger** | This is the one to try to break. A wreck's interior scores as *safe*, so the airlock's give-back beat runs in there — if the two ever cancel, the ledger prints a loss while the gauge sits still. Watch the pip row actually fall. |
+| **Nothing announces anything** | No prompt, no dialog, no "are you sure?". The compartment is a field you chose to stand in. |
+| **Arm's length forces the throw** | Walking up to the column is enough — you do not have to press anything to be looked at. `[E]` on it does the same. Visible arithmetic on the card. |
+| **The visions are art, not captions** | Five painted canvases, no caption telling you what the handlers are. The card never explains, never confirms, and never mentions the Old Ones. |
+| **The collar is bought, never given** | Whose pattern is in the spar only appears on the ≤ 8 bands — the ones you were *looked at* for. A clean throw never reads it. |
+| **The label is the confirmation dialog** | `⏻ PURGE NODE — RESIDENT PATTERN NOT RECOVERABLE` is stencilled on the deck. Pressing `[E]` pulls it. That is all that happens, and it is meant to be. |
+| **You can pull it without paying** | The handle stands 3.5 du from the column, deliberately outside the confront radius: you may reach it, pull it, and never find out what you did. |
+| **The record of a purge is the silence** | The line at the handle is the same sentence whatever was inside. If it ever names the resident, the whole §5 shape is gone. |
+
+> **Not in this lane, and deliberately so:** the resurrection card's `NO PATTERN ON FILE` line (the feature
+> doc's build step 5). It needs the owner to rule on whether purging your own pattern actually *ends* the
+> policy — and a card that says the policy is closed while the rebirth still fires is the sentence-versus-sim
+> bug this project has paid for three times. Filed rather than guessed.
 
 ### The quantized nerve — reading the pips and the ledger (#480)
 
