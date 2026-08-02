@@ -18,9 +18,21 @@ public static class NebulaFind
     /// <summary>True if the rare Nebula Mutual adjuster is drinking at THIS bar on THIS watch-day (sim-day).
     /// Deterministic per (bar, day). The client offers the "ask about NEBULA" seam when this holds and the
     /// <c>adjuster-tell</c> shard is not yet in hand. Salted distinctly from the KAAMOS holder so the two
-    /// contacts never share a watch by coincidence.</summary>
-    public static bool AdjusterAtBar(string bodyId, int watchDay)
+    /// contacts never share a watch by coincidence.
+    ///
+    /// <para><paramref name="forced"/> is the <c>/map?nebula=adjuster</c> dev seat (2026-08-02 story pass,
+    /// the <see cref="KaamosFind.HolderAtBar"/> idiom): the adjuster is drinking at THIS bar, this watch,
+    /// whichever bar you docked at. One watch in five, at whichever bar you happen to walk into, is not a
+    /// scene anyone can open on purpose — and <c>?nebula=N</c> only ever GRANTED the shard, which proves
+    /// nothing about the scene that hands it over. ("A scene nobody can reach on demand is a scene that
+    /// ships broken", <c>Map.Sim</c>'s own rule.)</para></summary>
+    public static bool AdjusterAtBar(string bodyId, int watchDay, bool forced = false)
     {
+        if (forced)
+        {
+            return true;
+        }
+
         if (string.IsNullOrEmpty(bodyId))
         {
             return false;

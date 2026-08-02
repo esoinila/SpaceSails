@@ -88,6 +88,15 @@ public static class ArcConvergence
         "was a withdrawal. The same forty names, the same lucid dark. You did not find two mysteries. You " +
         "found out where you go when you die, and that it has been waiting for you to arrive in person.";
 
+    /// <summary>The line the reveal card rests on, under <see cref="ConvergenceReveal"/> — the beat after the
+    /// beat, the thing the captain is left holding. It must say something the body has NOT already said: the
+    /// card used to close on <i>"Every death you have died was a withdrawal. The same forty names, the same
+    /// lucid dark."</i>, which is two sentences copied verbatim out of the paragraph directly above it, so the
+    /// biggest card in the game repeated itself to the player's face (found by the #422 story pass,
+    /// 2026-08-02). What is left to say is not a recap; it is the bill, which has not stopped.</summary>
+    public const string ConvergenceFoot =
+        "The premium comes due again next port. You will pay it, and now you will know what for.";
+
     /// <summary>The convergence's sanity cost, as a HOOK value only (issue #422: "a big #391 sanity throw",
     /// the heaviest in the game). Strictly greater than <see cref="KaamosLore.RevealSanityShockHook"/> (the
     /// KAAMOS 40) and than <see cref="NebulaLore.TruthSanityShockHook"/> — the two reveals landing as one is
