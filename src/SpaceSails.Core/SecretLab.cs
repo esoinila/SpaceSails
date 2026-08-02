@@ -184,9 +184,8 @@ public static class SecretLab
         (double hx, double hy) = HeadSpot(bodyId, siteSalt, field);
         double midX = (field.LeftX + field.RightX) / 2.0;
         double dir = hx <= midX ? 1.0 : -1.0;
-        double cx = hx + (dir * (RoomDepth / 2.0));
 
-        // Wide enough to cover the shed at the door AND the chamber that grows away from it — and NO wider.
+        // Wide enough to cover the hut at the door AND the chamber that grows away from it — and NO wider.
         //
         // #587: this was RoomDepth + RoomWidth/2 (23 du), which was generous to the point of being a bug. On
         // top of nine shelter reservations it rejected so many seeded features that different bodies started
@@ -194,11 +193,59 @@ public static class SecretLab
         // hashes to 5, and SiteSalt_ParameterizesTheGround found two salts generating an identical field.
         // A keep-out is a claim on ground, and an over-claim quietly costs the whole world its variety.
         //
-        // The honest number: from the reservation's centre (half the chamber's depth out from the door) it
-        // has to reach the far side of the shed one way and the end of the chamber the other. That is
-        // RoomDepth/2 plus the shed's own half-diagonal.
-        double radius = (RoomDepth / 2.0) + 6.5;
-        return (cx, hy, radius);
+        // #606 · So when the shed grew into a full-sized hut, the answer was NOT a bigger circle. Two circles
+        // are being covered — the hut standing ON the door, and the chamber whose own bounding circle sits
+        // half its depth out from it — and the smallest disc round both is the one whose diameter is their
+        // span. Recentring it buys almost all of the extra reach for almost none of the extra ground: the hut
+        // roughly doubled and the claim went up by about a du.
+        double hut = SurfaceStructure.EnvelopeOf(HeadHutAt(bodyId, siteSalt, 0, 0)).Reach;
+        double chamber = Math.Sqrt(((RoomDepth / 2.0) * (RoomDepth / 2.0)) + ((RoomWidth / 2.0) * (RoomWidth / 2.0)));
+        double lo = -hut, hi = (RoomDepth / 2.0) + chamber;
+        return (hx + (dir * ((lo + hi) / 2.0)), hy, (hi - lo) / 2.0);
+    }
+
+    /// <summary>#606 · THE LIFT HEAD IS AN ORDINARY HUT. Owner, twice, while playing:
+    /// <i>"I think the lift could also be a little more hidden on the surface, since up there there are no
+    /// guards... it could be in an ordinary hut, with 2 doors .. we have those. The expensive doors would be
+    /// the clue"</i> — and then, after another look at the ground, <i>"the elevator still stands out on
+    /// surface like a sore thumb"</i>.
+    ///
+    /// <para>The second sentence is the one that matters, because the first fix was colour and colour was
+    /// never the problem. The head was a 10 x 8 box of five thin lines while every other building on the moon
+    /// is <see cref="SurfaceStructure"/>'s piled regolith — hatched mass, real thickness, a seeded angle. It
+    /// was not a camouflaged lift head, it was the only building on the ground drawn in a different hand. A
+    /// captain does not have to know what a lift head looks like to pick that out; they only have to be able
+    /// to see.</para>
+    ///
+    /// <para>So it is built by the same function as its neighbours, at a size drawn from the same range, and
+    /// what is left to notice is what the owner asked to be the clue: the DOORS were flown here. Every hatch
+    /// on a landing site is swaged out of the hill it is set in; two machined pressure doors on a survey shack
+    /// are a receipt, and a receipt is the only thing this facility has ever been careless with (#601).</para>
+    ///
+    /// <para><b>Rectangular, always.</b> The one property that is not seeded, and it earns the exception: a
+    /// lift car is a box, and a rotated box is the shape everything downstream — the car's return spot, the
+    /// keep-out, the audit — can answer <i>"is the captain inside this"</i> about without inventing a second
+    /// geometry to be wrong in. A third of the huts on any site are rectangles, so it hides in plain sight.</para></summary>
+    public static SurfaceStructure.Spec HeadHut(string bodyId, string? siteSalt, in SurfaceLayout.Field field)
+    {
+        (double hx, double hy) = HeadSpot(bodyId, siteSalt, field);
+        return HeadHutAt(bodyId, siteSalt, hx, hy);
+    }
+
+    /// <summary>The hut's SHAPE, which is pure of where it ends up standing — so <see cref="HeadSpot"/> may
+    /// ask how much room it needs without asking itself where it is.</summary>
+    private static SurfaceStructure.Spec HeadHutAt(string bodyId, string? siteSalt, double x, double y)
+    {
+        string salt = siteSalt ?? "";
+        return SurfaceStructure.Ordinary(
+            x, y,
+            size: 10.0 + (4.0 * Frac(bodyId, $"head-size:{salt}")),
+            thickFrac: Frac(bodyId, $"head-thick:{salt}"),
+            angleFrac: Frac(bodyId, $"head-angle:{salt}"),
+            // Two, because he asked for two and because a facility that put a car in a shack would want a way
+            // out of it that is not the way in.
+            doors: 2,
+            shapeFace: (int)SurfaceStructure.Footprint.Rectangular);
     }
 
     /// <summary>#585 · WHERE THE LIFT HEAD ACTUALLY STANDS, once everything else on this site has had its say.
@@ -226,10 +273,18 @@ public static class SecretLab
 
         // Everything on this site that a shed must not be inside. The hut is built into an edge lane, so it
         // is the likeliest collision by a distance.
+        //
+        // #606 · The clearance is the head's OWN reach plus a berth, not a flat 12 du. That constant was
+        // written when the head was a 10 x 8 box whose half-diagonal was 6.4, so it happened to hold; the
+        // moment the head became a full-sized hut it would have been a number that no longer described
+        // anything, quietly letting a pressure drum and a lift share a wall. Two footprints do not overlap
+        // when the gap between their centres beats the sum of their reaches — that sentence, and no constant.
+        double reach = SurfaceStructure.EnvelopeOf(HeadHutAt(bodyId, salt, 0, 0)).Reach;
         var taken = new List<(double X, double Y, double R)>();
         foreach (SurfaceStructure.Spec shelter in SurfaceShelter.SpecsFor(bodyId, salt, field))
         {
-            taken.Add((shelter.CentreX, shelter.CentreY, SurfaceStructure.KeepOutRadius(shelter) + HeadClearance));
+            taken.Add((shelter.CentreX, shelter.CentreY,
+                SurfaceStructure.KeepOutRadius(shelter) + reach + HeadBerth));
         }
 
         SurfaceOutpost.Placement hut = SurfaceOutpost.For(bodyId, salt, field, forcePresent: true);
@@ -251,8 +306,10 @@ public static class SecretLab
         return (x, y);
     }
 
-    /// <summary>How much room the shed wants around it, beyond the neighbour's own footprint.</summary>
-    private const double HeadClearance = 12.0;
+    /// <summary>The bare air the head wants between its own wall and a neighbour's, on top of both
+    /// footprints. Enough that the two never read as one complex; small, because every du of it is ground
+    /// claimed away from the ordinary buildings (#587).</summary>
+    private const double HeadBerth = 4.0;
 
     /// <summary>The hut is a room appended from its hatch, so it needs a generous berth from a bare point.</summary>
     private const double OutpostClearance = 30.0;

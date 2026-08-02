@@ -155,7 +155,16 @@ public sealed class TheLiftPutsYouSomewhereYouCanSTANDTests
 
                 Assert.True(box.Contains(x, y, DeckPlan.AvatarRadius),
                     $"{body} · {site.Name}: the car sets the captain down outside its own shed.");
-                Assert.True(y < box.CentreY,
+
+                // #606 · Stated as a DISTANCE now, not as "y is smaller". The shed became an ordinary hut
+                // with a seeded angle, and an axis-aligned assertion about a rotated building is right on one
+                // site in a hundred by accident — which is the flavour of guard that passes while the ground
+                // is broken.
+                double toDoor = Math.Sqrt(((x - box.DoorX) * (x - box.DoorX)) + ((y - box.DoorY) * (y - box.DoorY)));
+                double centreToDoor = Math.Sqrt(
+                    ((box.CentreX - box.DoorX) * (box.CentreX - box.DoorX))
+                    + ((box.CentreY - box.DoorY) * (box.CentreY - box.DoorY)));
+                Assert.True(toDoor < centreToDoor,
                     $"{body} · {site.Name}: the car opens on the far side of the shed from its door.");
             }
         }

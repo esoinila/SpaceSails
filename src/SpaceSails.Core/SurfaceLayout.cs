@@ -774,15 +774,34 @@ public static class SurfaceLayout
     private static (double X, double Y, double R) StructureFootprint(
         in Field f, double cx, double cy, double size, string bodyId, string tag)
     {
-        double thickness = 1.6 + (1.4 * Frac(bodyId, $"{tag}:thick"));
-        double w = System.Math.Clamp(size * 1.4, 12, 20);
-        double h = System.Math.Clamp(size * 1.1, 10, 16);
-        double halfW = (w / 2) + thickness, halfH = (h / 2) + thickness;
+        SurfaceStructure.Spec spec = OrdinaryStructure(f, cx, cy, size, bodyId, tag);
+        return (spec.CentreX, spec.CentreY, SurfaceStructure.KeepOutRadius(spec));
+    }
 
-        double x = System.Math.Clamp(cx, f.LeftX + EdgeMargin + halfW, f.RightX - EdgeMargin - halfW);
-        double y = System.Math.Clamp(cy, f.BottomY + 2 + halfH, f.LandingBandY - 2 - halfH);
-        double radius = System.Math.Sqrt(((w / 2) * (w / 2)) + ((h / 2) * (h / 2))) + thickness;
-        return (x, y, radius);
+    /// <summary>#606 · ONE description of an outlying building, asked twice.
+    ///
+    /// <para>This function and <see cref="AddStructure"/> used to hold the same four rolls and the same
+    /// clamps side by side — the ledger's copy and the builder's copy of one fact, which is the failure this
+    /// whole file is annotated with. They are the same sentence now, and <see cref="SurfaceStructure.Ordinary"/>
+    /// is where "what a hut on this ground looks like" actually lives, so a lift head that wants to pass for
+    /// one has something to ask instead of numbers to imitate.</para></summary>
+    private static SurfaceStructure.Spec OrdinaryStructure(
+        in Field f, double cx, double cy, double size, string bodyId, string tag)
+    {
+        SurfaceStructure.Spec spec = SurfaceStructure.Ordinary(
+            cx, cy, size,
+            thickFrac: Frac(bodyId, $"{tag}:thick"),
+            angleFrac: Frac(bodyId, $"{tag}:angle"),
+            doors: 1 + Face(bodyId, $"{tag}:doors", 2),
+            shapeFace: Face(bodyId, $"{tag}:shape", 3));
+
+        // Keep the whole thing (walls included) off the edge lanes.
+        double halfW = (spec.Width / 2) + spec.WallThickness, halfH = (spec.Height / 2) + spec.WallThickness;
+        return spec with
+        {
+            CentreX = System.Math.Clamp(cx, f.LeftX + EdgeMargin + halfW, f.RightX - EdgeMargin - halfW),
+            CentreY = System.Math.Clamp(cy, f.BottomY + 2 + halfH, f.LandingBandY - 2 - halfH),
+        };
     }
 
     private static void AddStructure(
@@ -793,22 +812,9 @@ public static class SurfaceLayout
         System.Collections.Generic.List<(double X, double Y, double R)>? footprints = null)
     {
         // 1.6..3.0 du of piled regolith — the owner's Greenland longhouse, and comfortably above the
-        // captain's own 1.4 du width so the hatching never emits a segment shorter than a body.
-        double thickness = 1.6 + (1.4 * Frac(bodyId, $"{tag}:thick"));
-        double w = System.Math.Clamp(size * 1.4, 12, 20);
-        double h = System.Math.Clamp(size * 1.1, 10, 16);
-
-        // Keep the whole thing (walls included) off the edge lanes.
-        double halfW = (w / 2) + thickness, halfH = (h / 2) + thickness;
-        cx = System.Math.Clamp(cx, f.LeftX + EdgeMargin + halfW, f.RightX - EdgeMargin - halfW);
-        cy = System.Math.Clamp(cy, f.BottomY + 2 + halfH, f.LandingBandY - 2 - halfH);
-
-        var spec = new SurfaceStructure.Spec(
-            cx, cy, w, h,
-            AngleRad: Frac(bodyId, $"{tag}:angle") * System.Math.Tau,
-            Doors: 1 + Face(bodyId, $"{tag}:doors", 2),
-            WallThickness: thickness,
-            Shape: (SurfaceStructure.Footprint)Face(bodyId, $"{tag}:shape", 3));
+        // captain's own 1.4 du width so the hatching never emits a segment shorter than a body. The numbers
+        // and the clamps live in OrdinaryStructure now, because the claim ledger has to agree with them.
+        SurfaceStructure.Spec spec = OrdinaryStructure(f, cx, cy, size, bodyId, tag);
 
         SurfaceStructure.Built built = SurfaceStructure.Build(spec);
         centres.Add((spec.CentreX, spec.CentreY));

@@ -88,9 +88,17 @@ public sealed class DeckPlan
     /// with far away imported materials)."</i> Every ordinary hatch is drawn in its world's own stone, so the
     /// one that is not becomes a sentence — somebody shipped materials across the system to seal this, and
     /// nobody does that for a store cupboard.</param>
+    /// <param name="Machined">#606 · Not merely off-palette — a different KIND of object. Owner, on hiding
+    /// the lift head in an ordinary hut: <i>"The expensive doors would be the clue."</i>
+    ///
+    /// <para>Colour alone had already failed once (#585): violet marks shelters, about one ruin hatch in
+    /// seven, and the way down, so it identified nothing. A tell that has to survive being one of three
+    /// things has to be readable as SHAPE. This one is drawn heavy, with a second inner rail and its frame
+    /// picked out at the jambs — a machined pressure door in a wall of piled regolith, next to hatches that
+    /// are a single thin stroke. It still opens: sealed is what it looks like, not what it does.</para></param>
     public readonly record struct Door(
         float X1, float Y1, float X2, float Y2, bool Locked = false, int Interlock = 0,
-        bool Imported = false);
+        bool Imported = false, bool Machined = false);
 
     /// <summary>An interaction point on the deck. A <see cref="ConsoleKind.ViewObject"/> spot also
     /// carries an <paramref name="ImageUrl"/> and <paramref name="Caption"/> — press E and the game

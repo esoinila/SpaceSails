@@ -659,6 +659,43 @@ is the standing lesson that a reachability test is only as honest as its endpoin
 `TheRefugeIsAWalkFromTheLiftAndNotAStepFromIt` measures the detour over the real corridors rather than in a
 straight line. Every one of these was watched go **red** on a deliberately broken generator before it
 shipped.)*
+13.12 **The way in is an ordinary hut, and the doors are the only thing wrong with it** (#606).
+
+> *"it could be in an ordinary hut, with 2 doors .. we have those. The expensive doors would be the clue... a
+> clue we can get tipped about or find it in papers"* — and, after another look at the ground, *"the elevator
+> still stands out on surface like a sore thumb."*
+
+The second sentence is the law. **Whatever hides the head, it must not be the odd building on the site.**
+
+- It is built by `SurfaceStructure` with a spec from `SurfaceStructure.Ordinary` — the same builder, the same
+  size range, the same piled-regolith masonry and seeded angle as its neighbours. Before this it was five
+  hand-typed lines in a 10 × 8 rectangle, which is why no amount of colour ever hid it: **it was drawn in a
+  different hand from every other building on the moon,** and that reads from anywhere. Rectangular is the one
+  property not seeded, and it earns the exception — a car is a box, and a rotated box is a shape the return
+  spot, the keep-out and the audits can all answer *"is the captain inside this"* about without a second
+  geometry to be wrong in.
+- **Two doors, both `Imported` AND `Machined`.** Colour alone had already failed once (§13 / #585): violet
+  marks shelters, one ruin hatch in seven, *and* the way down, so it identified nothing. Weight is the second
+  channel — a heavy leaf with an inner rail and its frame picked out at the jambs, against the single thin
+  stroke every other hatch on the moon is drawn with. It still retracts; **sealed is what it looks like, not
+  what it does**, because a door that refused here would strand a captain in a lift head.
+- **No caption.** The maintenance plate and *THE CAR IS STILL HERE* are gone, and the panel inside is named
+  for what it looks like bolted to a wall (`▤ SERVICE PANEL`), never for what it does — console labels draw
+  through walls, so a name is a sign on the outside whatever room it is standing in. The findability #584 was
+  filed about moves to the **information**: the tip-gated tracker wash, the detector gradient, the papers that
+  name a moon. *(That is the trade #606 makes on purpose: a clue chain is a better game than a caption, and a
+  worse one if the chain ever stops working.)*
+- **The claim ledger got recentred, not enlarged.** A hut twice the old shed's size is covered by moving
+  `SecretLab.ChamberFootprint`'s disc rather than growing it — two circles, the hut on the door and the
+  chamber half its depth out, and the smallest disc round both. The reservation went up by about a du. #587's
+  warning stands: an over-claim is ground taken from the ordinary buildings, and it costs the world its
+  variety.
+
+*(Enforced: `TheLiftHeadIsJustAnotherHutTests` measures the DIFFERENCE between the site built with the
+facility and without it — segment count, reach against the radii the plan publishes for its own buildings, no
+label at all, and the doors — so it audits the drawn ground rather than the generator's intentions.
+`TheLiftPutsYouSomewhereYouCanSTANDTests` still walks it: the head is bigger and rotated now, and both of
+those are new ways to trap somebody.)*
 
 13.12 **The plate by the lift says the depth, the department, and whether you can breathe** (#612) — three
 lines, one eye-line, on the wall you face when the doors open. The atmosphere line is `SuitAir.PlateLine` off

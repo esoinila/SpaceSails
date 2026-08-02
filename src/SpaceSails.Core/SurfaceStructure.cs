@@ -107,15 +107,75 @@ public static class SurfaceStructure
         Math.Sqrt(((spec.Width / 2) * (spec.Width / 2)) + ((spec.Height / 2) * (spec.Height / 2)))
         + spec.WallThickness;
 
-    /// <summary>Build one structure. Pure: the same spec always yields the same walls.</summary>
-    public static Built Build(in Spec spec)
+    // #606 · THE ORDINARY HUT, AS ONE DESCRIPTION. Owner, twice, looking at a landing site: *"it could be in
+    // an ordinary hut, with 2 doors .. we have those"* and then *"the elevator still stands out on surface
+    // like a sore thumb"*.
+    //
+    // It stood out because it was not built by this file at all — it was five hand-typed lines in the
+    // renderer, a 10 x 8 unhatched box on a ground where every other building is piled regolith with real
+    // thickness. No amount of colour hides a structure that is drawn in a different language from its
+    // neighbours. So there is now ONE answer to "what does a building on this ground look like", and the lift
+    // head asks it like everybody else; the only thing left to notice about it is the doors.
+    //
+    // The fractions and the die faces are the CALLER'S, not rolled here, because SurfaceLayout seeds off
+    // (bodyId, tag) and SecretLab off its own key — and a factory that rolled its own would quietly re-seed
+    // every ground in the game the day it was introduced.
+
+    /// <summary>The thinnest / thickest a piled-regolith wall gets. The owner's Greenland longhouse, and
+    /// comfortably above the captain's 1.4 du width so hatching never emits a segment shorter than a body.</summary>
+    public const double OrdinaryThinnest = 1.6;
+    public const double OrdinaryThickest = 3.0;
+
+    /// <summary>One ordinary building, from a nominal <paramref name="size"/> and four seeded rolls the
+    /// caller has already made. Width and height are clamped to the range this ground builds in, so nothing
+    /// placed through here can be the odd shape out.</summary>
+    public static Spec Ordinary(
+        double centreX, double centreY, double size,
+        double thickFrac, double angleFrac, int doors, int shapeFace) =>
+        new(centreX, centreY,
+            Width: Math.Clamp(size * 1.4, 12, 20),
+            Height: Math.Clamp(size * 1.1, 10, 16),
+            AngleRad: angleFrac * Math.Tau,
+            Doors: doors,
+            WallThickness: OrdinaryThinnest + ((OrdinaryThickest - OrdinaryThinnest) * thickFrac),
+            Shape: (Footprint)shapeFace);
+
+    /// <summary>#606 · What a spec ACTUALLY comes out as on the ground, which is not what it says.
+    ///
+    /// <para><see cref="Build"/> raises a footprint that is too small to carry a doorway (see the floors
+    /// below), so a caller reading <see cref="Spec.Width"/> is reading an ask rather than a building. That
+    /// gap is harmless while only the builder knows about it and stops being harmless the moment anything
+    /// else — a claim ledger, a lift car, a test — needs to know how much ground the thing occupies. One
+    /// expression, read by the builder and by everybody who has to place around it.</para></summary>
+    public readonly record struct Envelope(double HalfW, double HalfH, double Thickness)
+    {
+        /// <summary>The rotation-proof reach from the centre: the half-diagonal of the OUTER face. Honest at
+        /// every angle, which a half-width is not.</summary>
+        public double Reach => Math.Sqrt((HalfW * HalfW) + (HalfH * HalfH));
+
+        /// <summary>The clear floor inside, once the walls have taken their thickness out of it.</summary>
+        public double InnerHalfW => HalfW - Thickness;
+        public double InnerHalfH => HalfH - Thickness;
+    }
+
+    /// <summary>The outer half-extents and wall thickness <see cref="Build"/> will use for this spec.</summary>
+    public static Envelope EnvelopeOf(in Spec spec)
     {
         double thickness = Math.Max(MinThickness, spec.WallThickness);
         // The floor is generous on purpose: a ring's faces are much shorter than its width, so a footprint
         // merely wide enough for a doorway can still produce faces that are not. Sized so even the smallest
         // ring this can emit has faces that clear MinDooredFace.
-        double halfW = Math.Max(spec.Width, (MinDooredFace * 2.2) + (thickness * 2)) / 2;
-        double halfH = Math.Max(spec.Height, (MinDooredFace * 1.9) + (thickness * 2)) / 2;
+        return new Envelope(
+            Math.Max(spec.Width, (MinDooredFace * 2.2) + (thickness * 2)) / 2,
+            Math.Max(spec.Height, (MinDooredFace * 1.9) + (thickness * 2)) / 2,
+            thickness);
+    }
+
+    /// <summary>Build one structure. Pure: the same spec always yields the same walls.</summary>
+    public static Built Build(in Spec spec)
+    {
+        Envelope env = EnvelopeOf(spec);
+        double thickness = env.Thickness, halfW = env.HalfW, halfH = env.HalfH;
 
         var walls = new List<SurfaceLayout.Wall>();
         var doorways = new List<Doorway>();
