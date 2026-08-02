@@ -112,6 +112,16 @@ public partial class Map
                 // The stranger stands you the cognac — you drink it. A shared glass is the strongest sanity
                 // relief (SharedWithContact), riding the one wobble/tot law via PourRum.
                 PourRum($"{StrangerBond.HeroCognac} with {display} — on the fright", NerveModel.DrinkKind.SharedWithContact);
+
+                // #528 · THE ONE WARM PLATE IN A DREAD-HEAVY SET. Nearly every card this lane has painted is
+                // somebody's worst day; this is the beat where the shudder stops and a stranger who had no
+                // reason to stay in the room stayed in it. A game that only ever hands out a picture for the
+                // bad news teaches the player that a picture IS bad news, which is a tell of a different
+                // kind. Only on the outcome that actually MADE something — the same gate the memory rides.
+                ShowStoryPlate(
+                    StrangerBond.CognacPlate.Title,
+                    StrangerBond.CognacPlate.ArtFile,
+                    StrangerBond.CognacPlate.Caption);
                 break;
         }
 

@@ -1625,6 +1625,11 @@
     {
         <div class="deck-offer-card oracle-card @(oline.RoomGoesQuiet ? "oracle-quiet" : "")">
             <div class="deck-offer-giver">🌀 @Core.OracleRant.FullName</div>
+            @* #528 · THE CORNER, PAINTED. A backdrop rather than a plate: this card is a conversation the
+               captain stays inside, turning the dial line by line, and a modal opening over it every time
+               would be a card on a card. Same onerror-hide law as every other slot — no file, no frame. *@
+            <img class="oracle-art" src="@Core.OracleRant.ArtFile" alt="@Core.OracleRant.FullName"
+                 onerror="this.style.display='none'" />
             <div class="deck-offer-blurb oracle-backstory">@Core.OracleRant.Backstory</div>
             @if (oline.RoomGoesQuiet)
             {

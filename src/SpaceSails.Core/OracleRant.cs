@@ -87,6 +87,21 @@ public static class OracleRant
         "A lapsed Nebula Mutual pattern-auditor who listened to the archived dead too long, let her own " +
         "policy lapse, and never got her frequency back. She perceives too much on too many channels.";
 
+    /// <summary>
+    /// #528 · THE CORNER, PAINTED. The oracle already has a card; what she did not have was a FACE for it,
+    /// and she is the most describable person in the game — the room half-turned away from her, the drink
+    /// fizzing at the wrong frequency (which is the game's own line, from the empty-stool message).
+    ///
+    /// <para>It is a backdrop rather than a plate: this card is a CONVERSATION the captain stays inside,
+    /// turning the dial line by line, and a modal that opened over it every time would be a card on a card.
+    /// The picture belongs in her card, under her name, where it sits while she talks.</para>
+    ///
+    /// <para>Nothing in the frame says whether she is right. That is the entire mechanic: a true line "sounds
+    /// nuts but IS true" and the sifting is the point, so the painting may never look more or less credible
+    /// on the watch she happens to be right.</para>
+    /// </summary>
+    public const string ArtFile = "art/oracle-rant.jpg";
+
     /// <summary>Sim-seconds the oracle holds one presence state before the rota re-rolls — the same
     /// four-sim-hour watch beat the seated regulars and the Magpie use, so the room shuffles together.</summary>
     public const double WatchSeconds = 4 * 3600;

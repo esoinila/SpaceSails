@@ -85,6 +85,20 @@
     color: #c9b6ff;
 }
 
+/* #528 — the oracle's corner, painted. Sits between her name and her backstory, sized so the CARD is still
+   the card: it is a backdrop for a conversation, not a plate that takes the screen. It onerror-hides, so a
+   missing file leaves the card exactly as it read before, with no gap and no broken frame. */
+.oracle-art {
+    display: block;
+    width: 100%;
+    max-height: 9rem;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    margin: 0.35rem 0 0.5rem;
+    opacity: 0.88;
+    border: 1px solid rgba(170, 140, 255, 0.28);
+}
+
 .oracle-backstory {
     font-size: 0.85em;
     opacity: 0.72;
