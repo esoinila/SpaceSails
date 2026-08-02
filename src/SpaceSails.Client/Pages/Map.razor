@@ -966,6 +966,36 @@
         </div>
     }
 
+    @* THE ARCHIVE NODE — what the thing in the hold gave back. See docs/features/the-archive-node.md.
+
+       House rules this card keeps, and they are the whole feature:
+         · The image is the EVIDENCE, never the conclusion. There is no caption telling you what the
+           handlers are; the game does not know either.
+         · The arithmetic is VISIBLE. A bad result is only bearable when you can read exactly why it went
+           that way, so the modifier stack is printed rather than hidden.
+         · The COLLAR line only appears on the bands that got close enough to read it. Knowing whose
+           pattern is in the spar is bought with a bad throw, never given with a good one.
+         · Nothing here explains anything. It never confirms what Nebula keeps, and it never says a word
+           about the Old Ones. *@
+    @if (_archiveCard is { } vision)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseArchiveCard)">
+            <div class="view-object archive-vision" @onclick:stopPropagation="true">
+                <div class="view-object-title">@vision.Title</div>
+                <img class="view-object-img" src="@vision.Art" alt="@vision.Title" onerror="this.style.display='none'" />
+                <div class="archive-band">@vision.BandLine</div>
+                <div class="view-object-caption">@vision.Lore</div>
+                @if (vision.Collar is { Length: > 0 } collar)
+                {
+                    <div class="archive-collar">@collar</div>
+                }
+                <div class="archive-dice">🎲 @vision.Dice</div>
+                <button type="button" class="view-object-close" title="Get your eyes off it"
+                        @onclick="() => Dismiss(CloseArchiveCard)">Get your eyes off it</button>
+            </div>
+        </div>
+    }
+
     @* #488 · WHAT YOU ARE LOOKING AT. The cause's own station is the one you stand in front of, so it shows
        the wreck's portrait — eight ships that died eight different ways should not read the same. The image
        is the EVIDENCE, never the conclusion; naming what it means is still the captain's job. *@

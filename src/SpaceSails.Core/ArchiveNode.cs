@@ -72,6 +72,23 @@ public static class ArchiveNode
     /// ship.</summary>
     public const string HoldCompartment = "DEEP HOLD";
 
+    /// <summary>THE BEAT THAT ARRIVES ONE EARLY. What the captain is told the first time they walk into the
+    /// field, before they have touched anything and before the pip row has moved.
+    ///
+    /// <para>Every other wreck in this game is cold and dark, and the art manifest fights to keep it that
+    /// way. A hold where ONE object is warm is wrong in a way a player feels before they can name it — so
+    /// this says the temperature and nothing else. No warning, no instruction, no noun for what is doing
+    /// it.</para></summary>
+    public const string FieldEntryLine =
+        "❄ Your suit's skin readout climbs three degrees crossing the hold, and stops climbing when you " +
+        "stop. Forty years at three kelvin, and something down here is still running warm.";
+
+    /// <summary>What is left after the handle. Read at the column by a captain who has already pulled it —
+    /// the same sentence whatever was inside, because that is the whole point of §5.</summary>
+    public const string ColdColumnLine =
+        "The column is frost to the touch now, all the way through, and it is exactly as interesting as " +
+        "every other dead fitting on this ship. There is nothing here to look at.";
+
     // ── Layer 1: the dwell ────────────────────────────────────────────────────────────────────────────
 
     /// <summary>How near you have to be for it to start counting, in deck units. Wide enough that the
@@ -354,6 +371,31 @@ public static class ArchiveNode
              : face <= 6 ? Resident.DelinquentSubscriber
              : Resident.Stranger;
     }
+
+    /// <summary>Whether a confrontation at this band got close enough to READ THE COLLAR — the design's
+    /// only route to knowing whose pattern is in the spar before you pull the handle, and it is bought with
+    /// a bad throw rather than with a good one. <see cref="Band.Noticed"/> and worse: you were near enough
+    /// for it to attend to you, which is near enough to see the stencilling.</summary>
+    public static bool ReadsTheCollar(Band band) => band is Band.Noticed or Band.Inside;
+
+    /// <summary>What the stencilling on the jar's collar says, once a captain has paid to be close enough to
+    /// read it. Evidence, never conclusion: a number, a status, a date — the same clerical hand every other
+    /// piece of Nebula paper in the game is written in. It never says what will happen if you pull.</summary>
+    public static string CollarLine(Resident who) => who switch
+    {
+        Resident.Stranger =>
+            "COLLAR: a policy number that is not yours, a premium paid up to a date thirty years past, and a " +
+            "status line reading CURRENT. Somebody has been paying this since before the ship died. Nobody " +
+            "has told them where it went.",
+        Resident.DelinquentSubscriber =>
+            "COLLAR: a policy number that is not yours, and under it, stamped and then stamped again in a " +
+            "heavier hand: DELINQUENT — RETURN TO ARCHIVE. Somebody is still out there working this file.",
+        Resident.YourOwn =>
+            "COLLAR: your own policy number. The one off the card they hand you at every clinic. It is the " +
+            "same number, in the same clerical hand, on a jar in the hold of a ship that died before you " +
+            "were born.",
+        _ => "",
+    };
 
     /// <summary>Pulling it. The noise stops, the visions stop, the hull goes as cold and quiet as every
     /// other wreck in the game — and pips come back, because relief is real and that is the trap.</summary>

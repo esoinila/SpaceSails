@@ -5,12 +5,22 @@ meant to see, and carries a switch that does exactly what it says on the label.*
 
 *Owner's idea, 2026-07-29.*
 
-**Status: Core landed, client lane still to come.** `src/SpaceSails.Core/ArchiveNode.cs` (placement,
-the field, the throw and its bands, the authored vision pool, the switch and who is inside it),
-`NervePips.Cause.Archive` (the slowest sustained beat in the game), the tenth wreck cause
-`Derelict.WreckCause.VentedByOneOfTheirOwn`, and `HullVenting.StartsVented` — all pure, all tested
-(`ArchiveNodeTests`, `VentedWreckTests`). Nothing is wired into the deck yet: no field in the walk loop,
-no card, no handle. Art tracked in [../art-manifest-visions.md](../art-manifest-visions.md).
+**Status: LANDED and playable — `/map?archive=1&land=1`.** Core (`src/SpaceSails.Core/ArchiveNode.cs`:
+placement, the field, the throw and its bands, the authored vision pool, the collar, the switch and who
+is inside it), `NervePips.Cause.Archive` (the slowest sustained beat in the game, and now actually
+consumed by `NervePips.Advance`), the tenth wreck cause `Derelict.WreckCause.VentedByOneOfTheirOwn`, and
+`HullVenting.StartsVented`. The client lane is `src/SpaceSails.Client/Pages/Map.Archive.cs` — the dwell
+field in the walk loop, the confrontation card, the handle — with the two stations in
+`WreckLayout.ArchiveStation` / `ArchiveSwitchStation` so CI walks to them. Guards: `ArchiveNodeTests`,
+`VentedWreckTests`, `TheArchiveNodeIsOnTheDeckTests`. Art tracked in
+[../art-manifest-visions.md](../art-manifest-visions.md).
+
+**Still open, deliberately — §7 step 5, the death line.** `ArchiveNode.NoRestoreLine` exists and nothing
+reads it. Printing `NO PATTERN ON FILE — POLICY CLOSED` on a resurrection card that then resurrects you
+anyway is the sentence-vs-sim bug this project has paid for three times, so the card stays silent until
+the owner rules on whether purging your own pattern actually **ends** the policy. Filed as an issue
+rather than guessed. Until then `Resident.YourOwn` is a warning a careful captain can read on the collar
+and heed — and nothing more.
 
 > "Somehow this reminds me of the Space Madness episode in Ren & Stimpy, where cadet Stimpy is left to
 > patrol a big red button named 'history eraser button', that nobody knows what it does. At the end
@@ -204,10 +214,27 @@ their policy can simply not pull an unread handle. The information was always pu
    ledger line so the captain's ledger says *why*: **"you stood too long beside the archive node."**
 3. **Art** — five vision canvases via grok, `docs/art-manifest-visions.md`, same evidence-not-conclusion
    rule as the wrecks.
-4. **Client wiring** — the node as a `WreckInterior` console + a dwell field in the deck loop, the
-   confrontation card, the switch. One lane, after 1–3 are green.
+4. **Client wiring** — ✅ **landed.** The node as two `WreckInterior` consoles (the column and the
+   handle, 3.5 du apart so the handle can be pulled without a throw) + a dwell field in the deck loop,
+   the confrontation card, the switch, and the `?archive=1` quick start.
 5. **The death line** — the one new line on the resurrection card for case 3. Smallest change in the
-   whole feature and the one everything else is for.
+   whole feature and the one everything else is for. **Blocked on an owner ruling**: does purging your
+   own pattern actually close the policy, or does the card merely read differently? The line cannot ship
+   until the sim backs it.
+
+### What the vision cards hand over (decided in the client lane, flagged for the owner)
+
+§4's *Feeds* column names what each vision supports, not which shard id it delivers, and the pool in
+`NebulaLore` is **not** extended — a sixth clause would move `IntelNeededToUnlock`'s arithmetic under a
+shipped arc. So the node is a second *route* to existing shards:
+
+| Vision | Hands over | Why |
+|---|---|---|
+| `archive-rows` | `fine-print` | The poster's grey line says the thing they keep is the PATTERN. This is the warehouse, and you have now been in it. |
+| `archive-intake` | `clinic-ledger` | Two patterns off one subscriber; one filed, one billed. The bill's second page is that arithmetic from the clerk's side. |
+| `archive-handlers` | *nothing* | The third-arc seed. A shard would file a question as an answer. |
+| `archive-wintering` | *nothing* | The KAAMOS rhyme, delivered as a picture rather than a clause. |
+| `archive-your-rack` | *nothing* | Not lore about the corporation — the player's own save looking back. No ledger entry would not cheapen it. |
 
 ## 8. THE TENTH CAUSE — the ship that vented herself
 

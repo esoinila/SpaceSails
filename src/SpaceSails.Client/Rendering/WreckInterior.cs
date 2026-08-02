@@ -46,6 +46,11 @@ public static class WreckInterior
     /// side, air on the other. These read Δp and offer the equalisation valve.</param>
     /// <param name="blockedDoors">Compartments the captain cannot walk into: held by pressure OR dogged
     /// shut by hand. A superset of <paramref name="heldDoors"/>.</param>
+    /// <param name="archiveAboard">This hull is carrying a cold-archive node (<see cref="ArchiveNode.IsAboard"/>).
+    /// Dresses the deep hold with the column and its handle. The CALLER decides — the deck never rolls.</param>
+    /// <param name="archivePurged">The handle has been pulled. The column stays exactly where it was and
+    /// stays exactly as inert as every other dead thing on this ship: nothing is removed from the deck,
+    /// because a purge is not a tidy-up. Only the labels change, and only to stop promising.</param>
     public static DeckPlan WreckDeck(
         in Derelict.Wreck wreck,
         System.Collections.Generic.IReadOnlySet<string> examined,
@@ -53,7 +58,9 @@ public static class WreckInterior
         int droidCount,
         System.Action<double, DeckPlan.Droid[]> fillDroids,
         System.Collections.Generic.IReadOnlySet<string>? heldDoors = null,
-        System.Collections.Generic.IReadOnlySet<string>? blockedDoors = null)
+        System.Collections.Generic.IReadOnlySet<string>? blockedDoors = null,
+        bool archiveAboard = false,
+        bool archivePurged = false)
     {
         System.ArgumentNullException.ThrowIfNull(fillDroids);
         examined ??= new System.Collections.Generic.HashSet<string>();
@@ -192,6 +199,32 @@ public static class WreckInterior
             DeckPlan.ConsoleKind.WreckPlacard,
             (float)WreckLayout.PlacardStation.X, (float)WreckLayout.PlacardStation.Y,
             $"🪧 ATMOSPHERE CONTROL → {HullVenting.ValveCompartment}"));
+
+        // ── The one warm thing aboard ─────────────────────────────────────────────────────────────────
+        // Not a fitting and not evidence: freight nobody invoiced, strapped down in the deep hold. Two
+        // controls on one housing — the column you go and look at, and the handle with the honest legend
+        // stencilled on it. The legend is DRAWN ON THE DECK rather than hidden behind a press, because the
+        // whole joke needs the captain to have read it before they decide anything (and, per §9, the game
+        // never restates it and never puts an "are you sure?" in front of it).
+        if (archiveAboard)
+        {
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ArchiveNode,
+                (float)WreckLayout.ArchiveStation.X, (float)WreckLayout.ArchiveStation.Y,
+                archivePurged ? "❄ THE COLUMN — cold" : "❄ THE COLUMN IN THE HOLD"));
+
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ArchiveSwitch,
+                (float)WreckLayout.ArchiveSwitchStation.X, (float)WreckLayout.ArchiveSwitchStation.Y,
+                archivePurged ? "⏻ PURGE NODE — pulled" : "⏻ " + ArchiveNode.SwitchLegend));
+
+            // And the thing you can read from the doorway, the way the cradles are counted from the
+            // doorway: on every other hull in the game nothing has power. Here one object does.
+            labels.Add((
+                (float)WreckLayout.ArchiveStation.X,
+                (float)WreckLayout.ArchiveStation.Y + 1.4f,
+                archivePurged ? "NEBULA MUTUAL · SUBSTRATE SPAR" : "NEBULA MUTUAL · SUBSTRATE SPAR · ⚡"));
+        }
 
         // ── The decision ──────────────────────────────────────────────────────────────────────────────
         // Amidships in the near hold, where the cargo actually is. You cannot decide what to do with her

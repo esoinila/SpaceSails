@@ -370,6 +370,38 @@ public static class WreckLayout
     public static IReadOnlyList<(string Name, DeckReachability.Point At)> Stations(Derelict.WreckCause cause) =>
         [.. StandardFittings, (CauseStationName(cause), CauseStation(cause))];
 
+    // ── The archive node, when a hull is carrying one ────────────────────────────────────────────────
+    //
+    // NOT a standard fitting: it is CARGO nobody invoiced, and it is aboard about one eligible hull in three
+    // (ArchiveNode.IsAboard). It is written down HERE rather than in the renderer for the reason every other
+    // literal on this ship moved into Core — placed by eye, the scuttling panel landed on the nest and the
+    // valve board stood in a doorway, and no test could see either.
+
+    /// <summary>The column itself, in the deep hold — <see cref="ArchiveNode.HoldCompartment"/>, because that
+    /// is where freight nobody invoiced ends up, and because it puts the field between the away team and the
+    /// far end of the ship. Against the aft bulkhead: the away team meets it walking IN, not on the way out.</summary>
+    public static DeckReachability.Point ArchiveStation => new(-13.8f, -7.8f);
+
+    /// <summary>The handle plate at the inboard end of the same housing — <see cref="ArchiveNode.SwitchLegend"/>
+    /// stencilled on it.
+    ///
+    /// <para>It is a SEPARATE doorstep on purpose, and the separation is the mechanic rather than tidiness:
+    /// the design's law is that a captain <i>may pull the handle without paying, and never find out what they
+    /// did</i>. Put the handle inside the confrontation's card and pulling it would first cost a throw, which
+    /// is the one thing the whole Ren &amp; Stimpy joke cannot survive. So the column and the handle are 3.5 du
+    /// apart — far enough that <c>NearestConsoleSpot</c> can tell them apart, close enough to be one object.</para></summary>
+    public static DeckReachability.Point ArchiveSwitchStation => new(-13.8f, -4.3f);
+
+    /// <summary>The reachability/separation list for a hull that IS carrying a node. Kept apart from
+    /// <see cref="Stations"/> so the "every ship has identical fittings" law stays literally true — but
+    /// audited on every cause anyway, because geometry that is only checked where it is currently used is
+    /// geometry that breaks the day somebody widens the eligibility rule.</summary>
+    public static IReadOnlyList<(string Name, DeckReachability.Point At)> StationsWithArchive(
+        Derelict.WreckCause cause) =>
+        [.. Stations(cause),
+         ("the archive node", ArchiveStation),
+         ("the purge handle", ArchiveSwitchStation)];
+
     /// <summary>Where the cause's own evidence stands.</summary>
     public static DeckReachability.Point CauseStation(Derelict.WreckCause cause) => cause switch
     {
