@@ -299,6 +299,46 @@ public static class NebulaLore
         "one no advertising should keep — and then you are already walking. It will still be here. Come " +
         "back and read it properly.";
 
+    // ── The plates (#528 · the reveal-card audit, 2026-08-02). ────────────────────────────────────────
+    //
+    // Arc 2 had no art of its own at all. The best-written character in the game — the adjuster who has filed
+    // the same subscriber six times and shaken six certain hands — had no face, while a routine collector
+    // shakedown got a painted portrait. And the moment the whole policy resolves, which is the second-largest
+    // reveal in the game, was a toast.
+    //
+    // Same seam as KAAMOS (KaamosLore.PlateFor), same discipline: EVIDENCE, then stop. The plate is what is in
+    // the room. The fragment's own prose still carries every word of what it means, and the picture is not
+    // allowed to say any of it. Keyed by fragment id so the client asks the arc rather than holding literals.
+
+    /// <summary>The reveal plate for a fragment id — only the two beats that earn one. The glitch on the
+    /// resurrection card, the poster's grey line, the collector's writ and the clinic's second page all arrive
+    /// INSIDE a host card that already has its own picture (the BUSTED modal, the poster) — giving them a
+    /// second frame would stack a card on a card. These two arrive at a bar table with nothing around them.</summary>
+    private static readonly Dictionary<string, RevealPlate> PlatesById = new(StringComparer.Ordinal)
+    {
+        ["adjuster-tell"] = new(
+            "▓ THE ONE WHO FILES YOU",
+            "art/nebula-adjuster.jpg",
+            "The only person in this bar reading. The folio is thick and thumbed soft at one corner and it " +
+            "fell open at a page nobody had to look up. They keep a finger on the line the whole time they " +
+            "talk to you, the way you hold a place you have held before."),
+
+        ["policy-terms"] = new(
+            "▓▓ WHAT THE PREMIUM BUYS",
+            "art/nebula-truth.jpg",
+            "A counter, a bell, a stamp block, and a stool nobody is sitting on. The office behind it has no " +
+            "back wall — the paper shelves simply become racks, and the racks carry on past the last light " +
+            "anybody bothered to install. Everything filed here is filed cold, and the aisle does not end."),
+    };
+
+    /// <summary>The reveal plate this beat earns, or null for the beats that arrive inside a host card that
+    /// already has a picture. Asked at the single seam where a shard is assembled.</summary>
+    public static RevealPlate? PlateFor(string fragmentId) =>
+        fragmentId is not null && PlatesById.TryGetValue(fragmentId, out RevealPlate? plate) ? plate : null;
+
+    /// <summary>Every plate in the arc, with the fragment id it belongs to — the tests' handle.</summary>
+    public static IEnumerable<KeyValuePair<string, RevealPlate>> AllPlates => PlatesById;
+
     /// <summary>The label on the bar seam's button for the step this bar can take. Neither NEBULA step takes
     /// coin (the adjuster is the one talking, and the capstone is your own papers on your own table), so no
     /// label wears a price — but the two steps are different acts and read differently, which the one shared

@@ -20,7 +20,7 @@ are the arc's turnings and they were all toasts.
 
 ## The plate recipe (the vented-room card, generalised)
 
-Four things, all load-bearing — see `KaamosPlate` in `src/SpaceSails.Core/KaamosLore.cs`:
+Four things, all load-bearing — see `RevealPlate` in `src/SpaceSails.Core/KaamosLore.cs`:
 
 1. **A title that names the place and the verb.** Not "fragment acquired".
 2. **One painted image of a CONSEQUENCE**, not an action shot.
@@ -32,7 +32,7 @@ Four things, all load-bearing — see `KaamosPlate` in `src/SpaceSails.Core/Kaam
 **Not every beat gets one.** Three of the six KAAMOS shards are deliberately plate-less: a line on a
 dedication plaque, a log found in a drawer, and a coordinate bought over a counter each already arrive
 with their own scene around them, and none is a turning. Over-carding cheapens the ones that are not —
-`KaamosPlatesArePaintedTests.TheBeatsThatAreTheRightSizeAsProseGetNoPlate` pins that decision.
+`RevealPlatesArePaintedTests.TheBeatsThatAreTheRightSizeAsProseGetNoPlate` pins that decision.
 
 ---
 
@@ -121,7 +121,7 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 2 | `holders-tell` | `kaamos-berth-holder.jpg` | ✅ | ✅ | ✅ |
 | 3 | `berth-code` | `kaamos-berth-resolves.jpg` | ✅ | ✅ | ✅ |
 
-The guard is `tests/SpaceSails.Core.Tests/KaamosPlatesArePaintedTests.cs`: every plate must be keyed to a
+The guard is `tests/SpaceSails.Core.Tests/RevealPlatesArePaintedTests.cs`: every plate must be keyed to a
 real fragment and must name a JPG that is **actually on disk**. The `onerror`-hide law is what makes
 shipping code before art safe, and it is exactly why a plate pointed at a file nobody painted is otherwise
 **invisible** — it does not throw, it does not log, it just leaves a hole in the card forever. The csproj

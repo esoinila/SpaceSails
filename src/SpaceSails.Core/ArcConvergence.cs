@@ -97,6 +97,22 @@ public static class ArcConvergence
     public const string ConvergenceFoot =
         "The premium comes due again next port. You will pay it, and now you will know what for.";
 
+    /// <summary>#528 · THE PLATE. The biggest reveal in the game was a text div, while a routine collector
+    /// shakedown got a painted portrait — the exact inversion #528 was filed about.
+    ///
+    /// <para>It is deliberately a PLATE and not an illustration of the paragraph above it. The card's copy
+    /// may still change (the arc's own passes are live); an image that depicted the text would have to be
+    /// repainted every time a sentence moved, and worse, it would say the thing out loud. What it shows is
+    /// the shape of the reveal: two entirely different filing systems — one warm, wooden, papered, a
+    /// bureaucracy; one cold, steel, frosted, a cold store — running toward each other down one aisle and
+    /// meeting at a single shared cabinet, the joinery seamless, as though it had always been one building.
+    /// Two mysteries; one truth. Nobody in the room to react to it, because a figure looking would be the
+    /// game telling the captain how to feel.</para>
+    ///
+    /// <para><c>onerror</c>-hides like every other slot: a missing file leaves the card exactly as it was
+    /// before this line existed.</para></summary>
+    public const string ArtFile = "art/convergence.jpg";
+
     /// <summary>The convergence's sanity cost, as a HOOK value only (issue #422: "a big #391 sanity throw",
     /// the heaviest in the game). Strictly greater than <see cref="KaamosLore.RevealSanityShockHook"/> (the
     /// KAAMOS 40) and than <see cref="NebulaLore.TruthSanityShockHook"/> — the two reveals landing as one is

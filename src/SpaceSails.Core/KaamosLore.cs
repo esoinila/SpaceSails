@@ -59,10 +59,10 @@ public sealed record KaamosFragment(
 /// </summary>
 /// <param name="Title">The stamp across the top of the card.</param>
 /// <param name="ArtFile">The painting, under <c>wwwroot/</c>. A missing file degrades to no image at all
-/// (the house <c>onerror</c>-hide law) — never a broken frame. <c>KaamosPlatesArePaintedTests</c> holds
+/// (the house <c>onerror</c>-hide law) — never a broken frame. <c>RevealPlatesArePaintedTests</c> holds
 /// every one of these to a file that actually exists.</param>
 /// <param name="Caption">What is in front of you, and nothing about what it implies.</param>
-public sealed record KaamosPlate(string Title, string ArtFile, string Caption);
+public sealed record RevealPlate(string Title, string ArtFile, string Caption);
 
 /// <summary>
 /// PROJEKTI KAAMOS — "the polar night" — the seeded lore-fragment pool and the reach logic (issue
@@ -343,7 +343,7 @@ public static class KaamosLore
     /// <summary>The reveal plate for a fragment id, keyed by the same ids <see cref="Fragments"/> uses.
     /// Only the beats that EARN a card are here — a shard that is a line on a plaque or a coordinate bought
     /// over a counter is the right size as prose, and over-carding cheapens the ones that are not.</summary>
-    private static readonly Dictionary<string, KaamosPlate> PlatesById = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, RevealPlate> PlatesById = new(StringComparer.Ordinal)
     {
         ["cold-pod"] = new(
             "❄ THE POD THAT WAS HELD",
@@ -370,12 +370,12 @@ public static class KaamosLore
     /// <summary>The reveal plate this beat earns, or null for the beats that are the right size as prose.
     /// Asked by the client at the single seam where a shard is assembled, so a plate can never be shown for
     /// a shard the captain did not just find.</summary>
-    public static KaamosPlate? PlateFor(string fragmentId) =>
-        fragmentId is not null && PlatesById.TryGetValue(fragmentId, out KaamosPlate? plate) ? plate : null;
+    public static RevealPlate? PlateFor(string fragmentId) =>
+        fragmentId is not null && PlatesById.TryGetValue(fragmentId, out RevealPlate? plate) ? plate : null;
 
     /// <summary>Every plate in the arc, with the fragment id it belongs to — the tests' handle, so a plate
     /// keyed to a shard that does not exist, or pointed at art nobody painted, fails the build.</summary>
-    public static IEnumerable<KeyValuePair<string, KaamosPlate>> AllPlates => PlatesById;
+    public static IEnumerable<KeyValuePair<string, RevealPlate>> AllPlates => PlatesById;
 
     /// <summary>The label on the bar seam's button for the step this bar can take. The bought coordinate
     /// COSTS, so its button says so and says how much, like every other counter at that bar that takes

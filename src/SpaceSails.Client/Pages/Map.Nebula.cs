@@ -58,6 +58,16 @@ public partial class Map
         string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaLore.TruthNotice : "";
         RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
         ShowPulseMessage(foundMessage + tail);
+
+        // #528 · the two beats of this arc that arrive at a bare bar table get the house reveal card. The
+        // other four (the glitch on the resurrection card, the poster's grey line, the collector's writ, the
+        // clinic's second page) arrive INSIDE a host card that already has a picture, so they get none —
+        // stacking a card on a card is not service, it is noise. Core owns the words (NebulaLore.PlateFor).
+        if (NebulaLore.PlateFor(fragmentId) is { } plate)
+        {
+            ShowStoryPlate(plate.Title, plate.ArtFile, plate.Caption);
+        }
+
         MaybeFireConvergence(); // the marquee edge — checked on every arc assemble
         return true;
     }
