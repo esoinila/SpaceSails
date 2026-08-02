@@ -466,6 +466,62 @@ floor held to the same facility standard as a listed one. The client A\* audit w
 13.8 **Nothing down here explains what the Old Ones are.** A facility may be enormous, expensive and
 obviously state-backed, and may never say what it was for. *(Enforced: the prose is grepped.)*
 
+13.9 **What you picked up is in your pocket, and the pocket says so.**
+
+Three faults found in one playtest, all of them the same fault wearing three coats: *the satchel did not tell
+the truth about itself.*
+
+| the captain saw | what was actually wrong |
+| --- | --- |
+| *"now I used e to search and then checked inventory on many rooms"* | the haul line described the ROOM and stopped. Some hauls are things you carry and some are not, and the only way to learn which was to open the satchel every time — the game asking the player to audit it |
+| *"the operational papers … look identical in inventory"* | six rows reading `operational paper` is not an inventory, it is a counter. You cannot tell which one you read, which floor it came off, or whether the seventh pickup got you anything new |
+| *"I picked authority card but it did not go to inventory"* | on the bottom band the card evaporated |
+
+The third one is the one worth writing down, because it is **the third named bug class again**: the sim did
+one thing and the sentence said another. `CardInRoom` returns null at the bottom band and is *right* to — a
+card for a hole nobody dug would be a lie — but the client then granted a lead and put nothing in the pocket
+while `KeyLine` went on describing a countersigned card in the captain's hand.
+
+The rule that fixes it is not a special case:
+
+> **A card is an object. You picked it up, so you have it.**
+
+When the shaft it runs is not in this building, it is a card for **another one** — which is exactly the wallet
+`WrongCardLine` has always described (*"every one of them countersigned, current, and for another shaft"*).
+Until now that line described a thing the game could not give you. Now the deepest floor of one facility hands
+you the way into the next, which is the best thing a bottom floor could hold, and the prose that was decoration
+became literally true without a word of it changing.
+
+Consequences worth keeping:
+
+- **A pickup announcement names what went in and what did not.** Equipment is crated and sold; it does not fit
+  a pocket, and saying so is the whole of the distinction.
+- **Every paper has its own short title**, taken from the *same roll* as its text — one source, consumed once.
+  Rolling twice is the cheap cousin of this repo's fourth named bug class and would hand a captain a *pay
+  sheet* that opens as a *shipping manifest*. *(Enforced: `ThePaperInYourPocketIsThePaperYouOpen`, verified
+  RED against a separately-seeded title.)*
+- **A title is what the paperwork calls itself.** No title may contain *lead*, *clue*, *site*, *facility* or
+  *secret*: the whole ladder rests on the captain deciding a document is worth something, and a form that
+  announced its own importance would make that decision for them.
+
+*(Enforced: `TheSatchelTests` for the titles and the pairing, `TheAuthorityCardTests` for the invariant the
+pocket rests on — every site has a band 0, so a Key found at the bottom of one always has somewhere to point,
+and a Key room issues a card exactly when there is a shaft below it and never otherwise.)*
+
+13.10 **The first-ground card teaches the game we are actually shipping.**
+
+Owner: *"the E key does a lot more now"* and *"also going to ground is more than burying chest now."*
+
+`E` meant DIG when a surface was regolith and somewhere to leave a chest. It is now the one key that touches
+anything at all — a door, a console, a shelter's pump, a lift panel, a room worth turning over — and a card
+still titling it *Dig* was teaching a new captain to walk past every building on the moon. The head line led
+with caching for the same historical reason; what is true of every square metre of a surface, and is the clock
+every other choice runs against, is the **air**.
+
+*(Enforced: `GroundLessonTests` — the `E` lever names door, console, lift and room and never says "dig" in its
+title; the head mentions air; the shelter is on the card at all; and the `I` lever is written for the empty
+pockets a first landing actually has.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

@@ -256,4 +256,68 @@ public sealed class TheSatchelTests
             }
         }
     }
+
+    [Fact]
+    public void EveryPaperHasItsOwnShortTitle_SoAPocketfulIsNotSixIdenticalLines()
+    {
+        // #613 · Owner, holding several at once: "the operational papers could have individual short
+        // titles ... now they look identical in inventory."
+        //
+        // Worse than cosmetic. Six satchel entries all reading "operational paper" is not an inventory, it
+        // is a counter: you cannot tell which one you have read, which floor it came off, or whether the
+        // seventh pickup got you anything you did not already have.
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (int floor = -1; floor >= -24; floor--)
+        {
+            for (int room = 0; room < 4; room++)
+            {
+                string title = FieldClue.Title($"hive:luna:{floor}:{room}");
+
+                // Short enough to sit on one satchel row beside an emoji and a certainty.
+                Assert.InRange(title.Length, 4, 40);
+
+                // It is what the PAPERWORK calls itself. It must never do the player's thinking: the whole
+                // ladder rests on the captain deciding a document is worth something, and a title that said
+                // "lead" or "site" would make that decision for them.
+                foreach (string tell in new[] { "lead", "clue", "site", "facility", "secret" })
+                {
+                    Assert.DoesNotContain(tell, title, StringComparison.OrdinalIgnoreCase);
+                }
+                seen.Add(title);
+            }
+        }
+
+        // Genuinely several distinct ones across a site, not one string with the id glued on.
+        Assert.True(seen.Count >= 5, $"only {seen.Count} distinct paper titles across 96 finds");
+    }
+
+    [Fact]
+    public void ThePaperInYourPocketIsThePaperYouOpen()
+    {
+        // ONE SOURCE, consumed once. This repo's fourth named bug class is a single source read out of
+        // order; the cheapest cousin of it is a single source ROLLED TWICE. Title and Document must not
+        // each take their own roll, or a captain carries a "pay sheet" that opens as a shipping manifest.
+        //
+        // The pairing is checked through the visible strings, which is the only thing a player can see and
+        // therefore the only thing worth pinning.
+        (string Title, string InDoc)[] pairs =
+        [
+            ("movement order, third copy", "movement order"),
+            ("supply requisition, countersigned", "supply requisition"),
+            ("shipping manifest, torn", "shipping manifest"),
+            ("maintenance log, two hands", "maintenance log"),
+            ("inspection schedule, margin list", "inspection schedule"),
+            ("pay sheet, allowances", "pay sheet"),
+        ];
+
+        for (int floor = -1; floor >= -24; floor--)
+        {
+            string id = $"hive:ganymede:{floor}:0";
+            string title = FieldClue.Title(id);
+            string doc = FieldClue.Document(id);
+
+            (string Title, string InDoc) pair = Assert.Single(pairs, p => p.Title == title);
+            Assert.Contains(pair.InDoc, doc, StringComparison.OrdinalIgnoreCase);
+        }
+    }
 }

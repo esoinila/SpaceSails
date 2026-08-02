@@ -142,7 +142,13 @@ public sealed class DeckView
         // regolith. How deep you are is the single most important fact about your situation down there: it
         // is the number that decides whether you get back up on the air you have, and it was only ever
         // available as a label lying on the floor plan behind you.
-        string? TrackerPlace = null);
+        string? TrackerPlace = null,
+        // #612 · Whether the tank is actually RUNNING. Owner: "where here does it say if I consume tanks or
+        // have air?" — it did not, anywhere. The gauge showed a duration and a distance and left the single
+        // most important bit, whether that duration is going DOWN, to be inferred from where the captain
+        // thought they were standing. Harmless on a surface, where the answer is always yes; not harmless
+        // once a lift can put you on a pressurised floor in sixty seconds.
+        bool AirDrawing = true);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -153,7 +159,16 @@ public sealed class DeckView
     // bulkhead, which is the difference between standing on a moon and standing in a ship.
     // #600 · Paint on poured concrete: worn, low-contrast, and deliberately dimmer than any label that
     // means something is interactable. Signage you read at a glance and then stop seeing.
-    private static readonly RgbaColor StencilPaint = new(120, 138, 160, 120);
+    // #612 · Owner: "they are kind of hidden now". They were — a dim blue-grey on a dark floor, which is
+    // fine for a wall marking and wrong for the one plate that answers WHERE AM I. Facility signage yellow
+    // now, and bright enough to be read from across a corridor without hunting for it.
+    private static readonly RgbaColor StencilPaint = new(226, 196, 92, 235);
+
+    /// <summary>A floor that still holds pressure — the relief colour, cool and calm.</summary>
+    private static readonly RgbaColor StencilAir = new(130, 214, 176, 235);
+
+    /// <summary>And one that does not. The same amber every other "this is costing you" reads in.</summary>
+    private static readonly RgbaColor StencilDead = new(232, 150, 84, 240);
 
     private static readonly RgbaColor StoneLine = new(166, 150, 130);
     private static readonly RgbaColor WindowLine = new(80, 220, 210, 220);
@@ -464,14 +479,23 @@ public sealed class DeckView
         // Drawn before the room labels and in a dimmer ink than them ON PURPOSE: this is paint on a wall the
         // captain glances at, not a caption competing with the consoles. It is big enough to read without
         // looking for it and quiet enough to ignore while doing something else.
-        foreach ((float bx, float by, string text, float px) in plan.BigLabels)
+        foreach ((float bx, float by, string text, float px, int tone) in plan.BigLabels)
         {
             if (DarkState(bx, by) == 0)
             {
                 continue;
             }
             (float bxp, float byp) = P(bx, by);
-            _renderer.DrawText(bxp, byp, text, StencilPaint, $"bold {px:0}px monospace", TextAlign.Center);
+            // #612 · Owner: "The meters and the floor name could be yellow here... they are kind of hidden
+            // now.... it should say if the floor is pressurized also." Tone 1 is the relief of a floor that
+            // still holds air; tone 2 is the one that costs you; everything else is paint on a wall.
+            RgbaColor ink = tone switch
+            {
+                1 => StencilAir,
+                2 => StencilDead,
+                _ => StencilPaint,
+            };
+            _renderer.DrawText(bxp, byp, text, ink, $"bold {px:0}px monospace", TextAlign.Center);
         }
 
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
@@ -1289,7 +1313,8 @@ public sealed class DeckView
             FillRect(ax0, ay0, aw * (float)frac, ah, fill);
             DrawRectOutline(ax0, ay0, aw, ah, TrackerRing);
             _renderer.DrawText(ax0, ay0 + ah + 11f,
-                SuitAir.Readout(hud.AirSeconds, hud.AirDistanceHome), fill, "10px monospace", TextAlign.Left);
+                SuitAir.Readout(hud.AirSeconds, hud.AirDistanceHome, hud.AirDrawing),
+                fill, "10px monospace", TextAlign.Left);
             airBottom = ay0 + ah + 20f;
         }
 

@@ -1815,7 +1815,54 @@ public partial class Map
 
         // Everything found down here is FILED (#587) - this is the place in the game most worth being able to
         // re-read, and a file on a harbourmaster that faded after eight seconds would be a joke.
-        ShowAndFile(UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which),
+        // #613 \u00b7 AND SAY WHETHER IT WENT INTO YOUR POCKET. Owner, after clearing a corridor: "now I used e
+        // to search and then checked inventory on many rooms" / "we should tell the users if stuff is picked
+        // up into inventory or not."
+        //
+        // The haul line describes what is in the room and stops, which was right while everything either
+        // paid out in credits or was flavour. Some of it is now a THING YOU CARRY and some of it is not, and
+        // the captain was opening the satchel after every single room to find out which \u2014 the game asking
+        // the player to audit it.
+        // \u2500\u2500 #613 \u00b7 THE CARD YOU FOUND IS ALWAYS A CARD YOU CARRY \u2500\u2500
+        //
+        // Owner, in a four-floor site: "now I picked authority card but it did not go to inventory."
+        //
+        // He was right and the cause was mine. CardInRoom returns the card for the band BELOW, and correctly
+        // returns null on the bottom band \u2014 a card for a hole nobody dug would be a lie. But the client then
+        // handed out a lead and put NOTHING in the pocket, while the prose went on describing a countersigned
+        // card in the captain's hand. The sim did one thing and the sentence said another: this repo's third
+        // named bug class, and I shipped it again.
+        //
+        // A card is an OBJECT. You picked it up, so you have it. When the shaft it runs is not in this
+        // building it is a card for another one \u2014 which is exactly the wallet the refusal line has been
+        // describing all along ("every one of them countersigned, current, and for another shaft"). Until now
+        // that line was describing a thing the game could not give you. Now the deepest floor of one facility
+        // hands you the way into the next, which is the best thing a bottom floor could possibly hold.
+        UndergroundComplex.AuthorityCard? found = null;
+        if (haul == UndergroundComplex.Haul.Key)
+        {
+            found = UndergroundComplex.CardInRoom(ex.Stop.Body.Id, ex.Floor);
+            if (found is null
+                && GrantLabLead(DiceRule.Seed($"lead:hive-key:{ex.Stop.Body.Id}:{ex.Floor}:{which}")) is { } far
+                && UndergroundComplex.SiteHasBand(far, 0))
+            {
+                found = new UndergroundComplex.AuthorityCard(far, 0);
+            }
+        }
+
+        string pocket = haul switch
+        {
+            UndergroundComplex.Haul.Records => "  \ud83c\udf92 Into your pocket: operational paper.",
+            UndergroundComplex.Haul.Dirt => "  \ud83c\udf92 Into your pocket: a file on somebody.",
+            UndergroundComplex.Haul.Key when found is { } c && c.BodyId != ex.Stop.Body.Id
+                => "  \ud83c\udf92 Into your pocket: an authority card \u2014 and it is not for this building.",
+            UndergroundComplex.Haul.Key when found is not null
+                => "  \ud83c\udf92 Into your pocket: an authority card.",
+            UndergroundComplex.Haul.Equipment => "  \ud83d\udcb3 Crated and carried out \u2014 it sells, it does not fit a pocket.",
+            _ => "",
+        };
+
+        ShowAndFile(UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which) + pocket,
             haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
 
         if (haul == UndergroundComplex.Haul.Dirt)
@@ -1862,29 +1909,22 @@ public partial class Map
         // On the bottom band there is no shaft below to authorise, and rather than hand out an authority for
         // a hole nobody dug, that Key names another moon: the same payoff Records and Dirt give, which keeps
         // the deepest floor of a site pointing outward instead of at itself.
-        if (haul == UndergroundComplex.Haul.Key)
+        if (found is { } card)
         {
-            if (UndergroundComplex.CardInRoom(ex.Stop.Body.Id, ex.Floor) is { } card)
-            {
-                _satchel = [.. Core.Satchel.Add(_satchel,
-                    new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
+            _satchel = [.. Core.Satchel.Add(_satchel,
+                new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
 
-                // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to
-                // really tell the story here :-D" — the right pair with the sealed way, because the Hive has
-                // exactly two objects about the idea of passage and this is the one that works.
-                if (!ex.HiveAuthorityShown)
-                {
-                    ex.HiveAuthorityShown = true;
-                    _viewObject = new DeckPlan.ConsoleSpot(
-                        DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                        UndergroundComplex.AuthorityCardLabel,
-                        UndergroundComplex.AuthorityCardArtUrl,
-                        UndergroundComplex.AuthorityCardStory(card));
-                }
-            }
-            else
+            // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to
+            // really tell the story here :-D" — the right pair with the sealed way, because the Hive has
+            // exactly two objects about the idea of passage and this is the one that works.
+            if (!ex.HiveAuthorityShown)
             {
-                GrantLabLead(DiceRule.Seed($"lead:hive-key:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
+                ex.HiveAuthorityShown = true;
+                _viewObject = new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                    UndergroundComplex.AuthorityCardLabel,
+                    UndergroundComplex.AuthorityCardArtUrl,
+                    UndergroundComplex.AuthorityCardStory(card));
             }
         }
 
@@ -2112,8 +2152,11 @@ public partial class Map
             UndergroundComplex.AuthorityCard.TryParse(item.Id, out UndergroundComplex.AuthorityCard c)
                 ? UndergroundComplex.CardTitle(c)
                 : "🎫 an authority card",
+        // #613 · Each paper by its own name. Owner: "the operational papers could have individual short
+        // titles… now they look identical in inventory." The certainty stays on the end, because that is the
+        // one thing about a paper worth comparing across a pocketful of them.
         Core.Satchel.Kind.Paper =>
-            $"📋 operational paper — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
+            $"📋 {Core.FieldClue.Title(item.Id)} — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
         Core.Satchel.Kind.Rounds => $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",
         _ => "🗃 a file on somebody",
     };
@@ -2223,11 +2266,14 @@ public partial class Map
 
     /// <summary>#585 · A clue names a moon. Called from every find in the gumshoe chain — a file in a
     /// facility, papers in a ruin, what a dead specialist's family turns out to know.</summary>
-    private void GrantLabLead(ulong seed)
+    /// <summary>Names a moon worth searching, and returns WHICH — #613, so a Key found on a bottom floor can
+    /// mint the card for the shaft it points at. Returns the body even when the lead was already known: the
+    /// lead is news you can only hear once, the card is an object that exists regardless.</summary>
+    private string? GrantLabLead(ulong seed)
     {
         if (_surface is not { } ex)
         {
-            return;
+            return null;
         }
 
         var candidates = new List<string>();
@@ -2244,15 +2290,20 @@ public partial class Map
         }
 
         string? named = SecretLab.MoonWorthLookingAt(candidates, seed);
-        if (named is null || !_labLeads.Add(named))
+        if (named is null)
         {
-            return;
+            return null;
+        }
+        if (!_labLeads.Add(named))
+        {
+            return named;
         }
 
         string display = ShuttleDestinationsInRange()
             .FirstOrDefault(s => s.Body.Id == named)?.Body.Name ?? named;
         ShowAndFile(SecretLab.LeadLine(display), "🔎");
         RequestVaultSave();
+        return named;
     }
 
     // ── #587 · THE FIELD BOOK ──────────────────────────────────────────────────────────────────────────
@@ -5409,6 +5460,11 @@ public partial class Map
             Rumours: BuildRumours(ex),
             // #564: the tank, drawn as a bar under the tracker.
             AirSeconds: ex.AirSeconds,
+            // #612 · Is the tank actually running? Aboard, in a shelter, or on a floor that holds
+            // pressure it is not — and the gauge said nothing either way until the owner asked
+            // "where here does it say if I consume tanks or have air?"
+            AirDrawing: !MoonSurface.IsSafeAboard(_avatarY) && !StandingInTheShelter(ex)
+                && !(ex.Floor < 0 && UndergroundComplex.HoldsPressure(ex.Floor)),
             AirDistanceHome: DistanceToTheTube(),
             // #573 · AND, once it is low, a BIG on-grid counter anchored to the captain — the same
             // seven-segment idiom the reactor overload uses, which is the owner's own comparison

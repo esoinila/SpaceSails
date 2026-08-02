@@ -128,3 +128,35 @@ predates this manifest and is already wired; it is listed here only so nobody pa
   wall seam, emergency lighting glowing uselessly on a circuit nobody has paid for. No people, nothing
   organic. Cold, still, enormous: a place built for people and containing none.
 - **Painted 2026-08-02.** Clean of lettering.
+
+## 5. Plot items get a card of their own ★ owner's ask — #614
+
+Owner: *"we could have gen-AI images of plotwise important items… maybe they say something about what door
+they open."*
+
+Two objects in the Hive already have a card (§1 the sealed way, §2 the authority card) and everything else a
+captain picks up is a row in a list. The items that carry PLOT should each get the same treatment — the art,
+and a sentence about what the thing is *for*.
+
+**The rule the second half needs.** "Says what door it opens" is the tempting version and it is a quest
+marker: an item that names its lock does the captain's thinking, and this whole facility is built on the
+opposite law (**inference horror**, §0). The line describes the **lock**, the way the paperwork that issued
+the item would describe it — *runs shaft 2 of a facility that is not this one* — and leaves working out
+which building that is to the player. Same rule the sealed way already follows: it says what it is, never
+what to do about it.
+
+- `art/the-penetrator.jpg` — **the two-stage round.** One shell, out of its packing, on a bench. The
+  casing machined to a standard nobody uses for pest control, a driving band, a second stage visible at the
+  break. Beside it the packing crate stencilling, deliberately **out of focus and illegible**. Feeling: this
+  was made to go through something that was expected to be shot at, and somebody signed for a case of it and
+  filed the case under consumables. **Minimum-range warning is a fact about the round, not a label on the
+  picture — no lettering anywhere in the image.**
+- `art/the-collar.jpg` — **the annular item.** Owner: *"kind of horror theme in a Lovecraft way… like
+  finding a massive collar designed for Cthulhu's neck"* and, of the inventory: *"it would be our precious
+  and it would have admire and discuss options :-D"*. A single band of dark metal on a pallet, **big enough
+  that the pallet is the only thing telling you the scale.** Machined inside, with fixing points spaced for
+  something with a circumference no catalogued animal has. Wear polish on the inner face — **it has been
+  worn.** No creature, no bones, no explanation. The horror is entirely in the measurement.
+
+**Both are canon-bound:** neither the art nor the line may say what wore the collar or what the round was
+issued against. *(House law §0, and the grep that enforces it.)*
