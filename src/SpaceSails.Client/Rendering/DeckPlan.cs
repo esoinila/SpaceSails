@@ -151,7 +151,15 @@ public sealed class DeckPlan
     /// <para>Owner, riding between floors that are built from the same bones: <i>"something different
     /// in every floor so we visually spot some difference when we go to different floors"</i> —
     /// and, for what it should say, <i>"we can use seriously large numbers there :-D"</i> ...
-    /// <i>"or depths (in meters)"</i>.</para></summary>
+    /// <i>"or depths (in meters)"</i>.</para>
+    ///
+    /// <para>#612 · <c>Tone</c> is what the sign MEANS, never a colour — the plan is Core-shaped data and
+    /// the ink lives in the renderer. 0 = painted signage (the depth, the department), 1 = you can breathe
+    /// here (a floor that holds pressure, or a #608 refuge cut into one that does not), 2 = you cannot and
+    /// your tank is running. Owner, on the first cut of the plate: <i>"they are kind of hidden now"</i> /
+    /// <i>"the meters and the floor name could be yellow here"</i> — which the renderer answers with a
+    /// backing plate as well as brighter ink, because text on a busy deck needs a background and not merely
+    /// a louder colour.</para></summary>
     public (float X, float Y, string Text, float Px, int Tone)[] BigLabels { get; private set; } = [];
     public Backdrop[] Backdrops { get; private set; }
     public Door[] Doors { get; }

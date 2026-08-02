@@ -143,12 +143,19 @@ public sealed class DeckView
         // is the number that decides whether you get back up on the air you have, and it was only ever
         // available as a label lying on the floor plan behind you.
         string? TrackerPlace = null,
-        // #612 · Whether the tank is actually RUNNING. Owner: "where here does it say if I consume tanks or
-        // have air?" — it did not, anywhere. The gauge showed a duration and a distance and left the single
-        // most important bit, whether that duration is going DOWN, to be inferred from where the captain
-        // thought they were standing. Harmless on a surface, where the answer is always yes; not harmless
-        // once a lift can put you on a pressurised floor in sixty seconds.
-        bool AirDrawing = true);
+        // #612 · WHERE THE AIR IS COMING FROM. Owner: "where here does it say if I consume tanks or have
+        // air?" / "now we don't see if we need to worry about O2 from anywhere. That is really important info
+        // for the suit hud to tell us." — it did not say, anywhere. The gauge showed a duration and a
+        // distance and left the single most important bit, whether that duration is going DOWN, to be
+        // inferred from where the captain thought they were standing. Harmless on a surface, where the answer
+        // is always yes; not harmless once a lift can put you on a pressurised floor in sixty seconds.
+        //
+        // A WHOLE ANSWER rather than a bool, because there are three roofs and the tank does a different
+        // thing under each. Handed down as the sim's OWN answer rather than re-derived here (the #591
+        // one-reach lesson: the renderer working out for itself what the sim already knows is how two
+        // instruments come to disagree — and there is nothing worse to disagree about than whether the
+        // captain can breathe).
+        SuitAir.Supply AirSupply = SuitAir.Supply.Tanks);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
@@ -162,13 +169,27 @@ public sealed class DeckView
     // #612 · Owner: "they are kind of hidden now". They were — a dim blue-grey on a dark floor, which is
     // fine for a wall marking and wrong for the one plate that answers WHERE AM I. Facility signage yellow
     // now, and bright enough to be read from across a corridor without hunting for it.
-    private static readonly RgbaColor StencilPaint = new(226, 196, 92, 235);
+    //
+    // ...and he then hit it AGAIN, which is the tell: the fault was never the hue. Ink over a corridor full
+    // of hull lines, doors and console glow has little contrast left to raise, because the thing it is
+    // competing with is BUSY rather than bright. Text on a busy deck needs a BACKGROUND — which is exactly
+    // what #348 concluded for the room labels, and this plate is signage twice their size. So the yellow
+    // stays and every painted sign gets its own dark panel (see the BigLabels draw). The way a stairwell
+    // actually marks a level is a painted panel, not a brighter stencil.
+    private static readonly RgbaColor StencilPaint = new(240, 208, 96, 245);
 
-    /// <summary>A floor that still holds pressure — the relief colour, cool and calm.</summary>
-    private static readonly RgbaColor StencilAir = new(130, 214, 176, 235);
+    // #612 · The dark panel every painted sign sits on, so the deck behind it stops competing.
+    private static readonly RgbaColor StencilPlate = new(10, 14, 20, 225);
 
-    /// <summary>And one that does not. The same amber every other "this is costing you" reads in.</summary>
-    private static readonly RgbaColor StencilDead = new(232, 150, 84, 240);
+    /// <summary>You can breathe here — the relief colour, cool and calm. A floor that still holds pressure,
+    /// or a #608 refuge cut into one that does not. The SAME green the gauge's own source chip wears,
+    /// because a captain who has learned a colour on one instrument must not have to learn it again on the
+    /// other.</summary>
+    private static readonly RgbaColor StencilAir = new(130, 214, 176, 245);
+
+    /// <summary>And you cannot. The same amber every other "this is costing you" reads in — including the
+    /// chip on the suit gauge.</summary>
+    private static readonly RgbaColor StencilDead = new(232, 150, 84, 245);
 
     private static readonly RgbaColor StoneLine = new(166, 150, 130);
     private static readonly RgbaColor WindowLine = new(80, 220, 210, 220);
@@ -479,6 +500,13 @@ public sealed class DeckView
         // Drawn before the room labels and in a dimmer ink than them ON PURPOSE: this is paint on a wall the
         // captain glances at, not a caption competing with the consoles. It is big enough to read without
         // looking for it and quiet enough to ignore while doing something else.
+        //
+        // #612 · ON A PLATE, not merely in a louder colour. The dim-paint idea above was right about the
+        // FICTION and wrong about the screen: paint over a lit corridor is hard to read, and the owner hit
+        // that twice ("they are kind of hidden now", then again after the ink was brightened). A dark panel
+        // behind the letters is what makes signage legible in the real world too, and it is the same trick
+        // #348 already uses one size down for the room labels — so the Hive's plate and the ship's cabin
+        // labels are now the same instrument at two scales, which is one thing to learn instead of two.
         foreach ((float bx, float by, string text, float px, int tone) in plan.BigLabels)
         {
             if (DarkState(bx, by) == 0)
@@ -487,14 +515,25 @@ public sealed class DeckView
             }
             (float bxp, float byp) = P(bx, by);
             // #612 · Owner: "The meters and the floor name could be yellow here... they are kind of hidden
-            // now.... it should say if the floor is pressurized also." Tone 1 is the relief of a floor that
-            // still holds air; tone 2 is the one that costs you; everything else is paint on a wall.
+            // now.... it should say if the floor is pressurized also." Tone chooses the ink and nothing
+            // else: tone 1 is the relief of somewhere you can breathe, tone 2 is the one that costs you, and
+            // everything else is paint on a wall. A state gets the colour that state wears everywhere else
+            // in the game — the same green and the same amber as the chip on the suit gauge.
             RgbaColor ink = tone switch
             {
                 1 => StencilAir,
                 2 => StencilDead,
                 _ => StencilPaint,
             };
+
+            // Monospace, so the width is arithmetic rather than a measurement the renderer cannot do — the
+            // same 0.6-em-per-glyph estimate DrawRoomLabel has used since #348, with the baseline sitting
+            // roughly three quarters down the panel (canvas draws text from its alphabetic baseline).
+            float w = (text.Length * px * 0.62f) + (px * 0.9f);
+            float h = px * 1.32f;
+            float x0 = bxp - (w / 2f), y0 = byp - (h * 0.77f);
+            FillRect(x0, y0, w, h, StencilPlate);
+            DrawRectOutline(x0, y0, w, h, new RgbaColor(ink.R, ink.G, ink.B, 90));
             _renderer.DrawText(bxp, byp, text, ink, $"bold {px:0}px monospace", TextAlign.Center);
         }
 
@@ -1307,14 +1346,44 @@ public sealed class DeckView
                 _ => new RgbaColor(90, 40, 38, 230),
             };
 
-            FillRect(ax0 - 6f, ay0 - 13f, aw + 12f, ah + 30f, new RgbaColor(6, 11, 10, 205));
+            // #612 · AND WHERE IT IS COMING FROM. Owner, on a pressurised floor with no way to tell:
+            // "Maybe we should have on our hud a AIR: Tanks / External symbol... it is vital info."
+            //
+            // Drawn as a SOLID CHIP — dark letters on a block of colour — rather than as coloured text,
+            // because a filled block is read pre-attentively and a word is not. At a glance the captain gets
+            // green-or-amber; a beat later a triangle pointing down or a stopped square; only then the word.
+            // That is three chances to learn the most consequential fact on the surface without reading.
+            //
+            // The chip is a SEPARATE colour from the bar on purpose. The bar answers "can I still get home
+            // on this tank", which stays a real question in a shelter — you have to leave eventually. The
+            // chip answers "is it going down right now". Both are true at once and they are not the same,
+            // and the old gauge could only show one of them.
+            bool drawing = SuitAir.Drawing(hud.AirSupply);
+            RgbaColor chipInk = hud.AirSupply switch
+            {
+                SuitAir.Supply.Room => StencilAir,
+                SuitAir.Supply.Ship => new RgbaColor(150, 215, 255, 245),
+                _ => StencilDead,
+            };
+
+            FillRect(ax0 - 6f, ay0 - 15f, aw + 12f, ah + 32f, new RgbaColor(6, 11, 10, 205));
             _renderer.DrawText(ax0, ay0 - 4f, "AIR", fill, "bold 10px monospace", TextAlign.Left);
+
+            string chip = $"{SuitAir.SourceGlyph(hud.AirSupply)} {SuitAir.SourceLabel(hud.AirSupply)}";
+            float chipW = (chip.Length * 6.2f) + 10f;
+            float chipX = Math.Max(ax0 + 26f, ax0 + aw - chipW);
+            FillRect(chipX, ay0 - 14f, chipW, 13f, chipInk);
+            _renderer.DrawText(chipX + 5f, ay0 - 4f, chip, new RgbaColor(8, 12, 16, 255),
+                "bold 10px monospace", TextAlign.Left);
+
             FillRect(ax0, ay0, aw, ah, new RgbaColor(14, 18, 24, 220));
             FillRect(ax0, ay0, aw * (float)frac, ah, fill);
-            DrawRectOutline(ax0, ay0, aw, ah, TrackerRing);
+            // A held tank is ringed in its source's colour, so the "is it running" answer is on the bar
+            // itself and not only on the chip above it — the one place a captain's eye is already resting.
+            DrawRectOutline(ax0, ay0, aw, ah, drawing ? TrackerRing : chipInk);
             _renderer.DrawText(ax0, ay0 + ah + 11f,
-                SuitAir.Readout(hud.AirSeconds, hud.AirDistanceHome, hud.AirDrawing),
-                fill, "10px monospace", TextAlign.Left);
+                SuitAir.Readout(hud.AirSeconds, hud.AirDistanceHome, hud.AirSupply),
+                drawing ? fill : chipInk, "10px monospace", TextAlign.Left);
             airBottom = ay0 + ah + 20f;
         }
 

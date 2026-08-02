@@ -927,9 +927,25 @@ public partial class Map
         // steadies. Everything below is dead, so depth is paid for in air and every stair down is a decision
         // about getting back up. Checked before the drain, like the shelter branch, so no ordering can
         // suffocate a captain standing in a pressurised corridor.
+        //
+        // #612 · AND THE WHOLE QUESTION IS NOW ASKED IN CORE. These were three conditions in a row here, and
+        // the readout that reported them was a fourth condition somewhere else — which is the exact shape of
+        // every expensive bug this project has filed: two places working the same answer out separately, and
+        // one of them edited. SuitAir.SourceOf is the one predicate. The drain branches on ITS answer, the
+        // gauge is handed the same answer, and the plate by the lift asks it the same way — so nothing on
+        // screen can report a rule the sim is not running.
+        //
+        // The order inside SourceOf is this method's own order and must stay so: floor, then refuge, then
+        // shelter, then ship.
+        int inside = ShelterUnderfoot(ex);
+        SuitAir.Supply supply = AirSupplyOf(ex);
+        AnnounceAirSupply(supply, roomSpeaksForItself: inside >= 0 || RefugeUnderfoot(ex) >= 0);
+
         if (ex.Floor < 0)
         {
-            if (UndergroundComplex.HoldsPressure(ex.Floor))
+            // What the FLOOR provides on its own — the identical question HiveInterior's plate asks of the
+            // same level, which is why the sign on the wall and the tank on your back cannot come apart.
+            if (SuitAir.SourceOf(ex.Floor, insideShelter: false, aboard: false) == SuitAir.Supply.Room)
             {
                 ex.RefugeBreathNoted = false;
                 return;
@@ -989,7 +1005,6 @@ public partial class Map
             // deeper, and it is the only thing stopping the facility from being somewhere to live.
         }
 
-        int inside = ShelterUnderfoot(ex);
         if (inside >= 0)
         {
             if (!ex.ShelterBreathNoted)
@@ -1032,7 +1047,7 @@ public partial class Map
         // Inside the ship or in her tube you are breathing hers, and the tank tops up. This is the ONLY
         // place it refills (bar a cache found out in the world), which is what makes the tube the anchor
         // the whole supply line hangs from (#562).
-        if (MoonSurface.IsSafeAboard(_avatarY))
+        if (supply == SuitAir.Supply.Ship)
         {
             ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, dtRealSeconds * TubeRefillRate);
             ex.AirWarned = false;   // re-arm the warnings: the next walk out gets told again
@@ -1046,10 +1061,11 @@ public partial class Map
         // Every branch above has already returned for its own reason — it had a rack to run or a tank to top
         // up, which this cannot express. What it CAN do is make the two answers impossible to disagree: the
         // suit does not spend anything the hud has just told the captain it is not spending. Nothing reaches
-        // here that TankIsDrawing calls false, so this line does nothing today; the day somebody adds a
-        // fifth way to breathe and forgets one of the two places, it is the difference between a wrong
-        // colour and a death.
-        if (!TankIsDrawing(ex))
+        // here that the predicate calls not-drawing, so this line does nothing today; the day somebody adds a
+        // fifth way to breathe and forgets one of the branches above, it is the difference between a wrong
+        // colour and a death. It reads the VALUE the gauge was handed, not a fresh call — a second call is a
+        // second chance to answer differently.
+        if (!SuitAir.Drawing(supply))
         {
             return;
         }
@@ -1138,6 +1154,38 @@ public partial class Map
     // whole of the owner's "keep calm" rule.
     private double _airLastX;
     private double _airLastY;
+
+    // ── #612 · WHERE THE AIR IS COMING FROM. ────────────────────────────────────────────────────────────
+    //
+    // The last answer the predicate gave, kept ONLY so the crossing can be said once. It is deliberately not
+    // what anything DISPLAYS — a cached copy of a fact is a second source of that fact, and this is the one
+    // fact in the game that must not have two. Null before an excursion has ticked, which is also what stops
+    // the crossing line firing on the frame a captain lands.
+    private SuitAir.Supply? _airSupplyNoted;
+
+    /// <summary>#612 · THE CROSSING, SAID ONCE. Owner: <i>"maybe pop-up about you have air or you are in
+    /// vacuum type ... it is vital info :-D"</i>.
+    ///
+    /// <para>It fires only where the tank STARTS or STOPS, never on Room→Ship (both are free, and a line
+    /// about a change that costs nothing is the nag that turns a vital fact into wallpaper), and never on
+    /// the first tick of an excursion. A room with a DOOR is left to say it in its own voice —
+    /// <c>SurfaceShelter.BreathingLine</c> and <c>UndergroundComplex.RefugeBreathingLine</c> are already the
+    /// better sentences for those thresholds, and two lines for one door is exactly the noise the tank
+    /// mechanic was told not to become. What is left is the crossing nothing else narrates: stepping out of
+    /// the car onto a floor that holds or does not, and leaving her tube for the regolith.</para></summary>
+    private void AnnounceAirSupply(SuitAir.Supply supply, bool roomSpeaksForItself)
+    {
+        SuitAir.Supply? was = _airSupplyNoted;
+        _airSupplyNoted = supply;
+
+        if (was is null || SuitAir.Drawing(was.Value) == SuitAir.Drawing(supply) || roomSpeaksForItself)
+        {
+            return;
+        }
+
+        RendererInterop.PlayCue("blip");
+        ShowPulseMessage(SuitAir.SupplyChangedLine(supply));
+    }
 
     /// <summary>How fast her tube refills a suit — several times real time, because standing in an airlock
     /// watching a gauge is not the game. Getting home is the achievement; the top-up is a formality.</summary>
@@ -1665,12 +1713,23 @@ public partial class Map
     /// told, in colour, that their tank was running out.</para>
     ///
     /// <para>So the drain is gated on this and the gauge is fed from this. Anything that ever becomes a new
-    /// place to breathe is added HERE, once, and both follow.</para></summary>
-    private bool TankIsDrawing(SurfaceExcursion ex) =>
-        !MoonSurface.IsSafeAboard(_avatarY)                                  // her tube: breathing hers
-        && !StandingInTheShelter(ex)                                         // #573 the deep shelter
-        && !(ex.Floor < 0 && UndergroundComplex.HoldsPressure(ex.Floor))     // #585 a band top
-        && RefugeUnderfoot(ex) < 0;                                          // #608 a pressure refuge
+    /// place to breathe is added HERE, once, and both follow.</para>
+    ///
+    /// <para><b>And "here" is now Core</b>, because this client-side version could still only be read by a
+    /// client: the plate <c>HiveInterior</c> paints by the lift was calling
+    /// <c>UndergroundComplex.HoldsPressure</c> for itself and spelling its own words, which made a THIRD
+    /// answer to the same question. <see cref="SuitAir.SourceOf"/> is the predicate; this method is the one
+    /// place that gathers the four facts to hand it, and every surface reads what it says.</para></summary>
+    private SuitAir.Supply AirSupplyOf(SurfaceExcursion ex) =>
+        SuitAir.SourceOf(
+            ex.Floor,
+            StandingInTheShelter(ex),                        // #573 the deep shelter
+            MoonSurface.IsSafeAboard(_avatarY),              // her tube: breathing hers
+            ex.Floor < 0 && RefugeUnderfoot(ex) >= 0);       // #608 a pressure refuge on a dead floor
+
+    /// <summary>Is the tank running? The one bit of <see cref="AirSupplyOf"/>, for callers that want no
+    /// more than that.</summary>
+    private bool TankIsDrawing(SurfaceExcursion ex) => SuitAir.Drawing(AirSupplyOf(ex));
 
     /// <summary>Run one rack for <paramref name="dt"/> seconds: it makes air, it moves what it can into the
     /// suit, and the warnings re-arm if anything went in. Returns the reservoir it is left holding, and
@@ -5198,6 +5257,9 @@ public partial class Map
         bool outwalkedTheWrit = ex.CollectorsLanded && _busted is null;
 
         _surface = null;
+        // #612: the next landing works its own air out from scratch, so no crossing line is ever inherited
+        // from the last moon.
+        _airSupplyNoted = null;
         _reevers.Clear();
         _collectors.Clear();
         _lastNearestReeverRange = null;
@@ -5761,8 +5823,12 @@ public partial class Map
             // #612 · Is the tank actually running? The gauge said nothing either way until the owner asked
             // "where here does it say if I consume tanks or have air?" — and it now asks ONE function
             // (#608), the same one the drain itself is gated on.
-            AirDrawing: TankIsDrawing(ex),
+
             AirDistanceHome: DistanceToTheTube(),
+            // #612 · AND WHERE IT IS COMING FROM — the sim's own answer, handed down rather than worked out
+            // again in the renderer. Owner, on a pressurised floor: "where here does it say if I consume
+            // tanks or have air?" The bar showed a clock and never said whether the clock was running.
+            AirSupply: AirSupplyOf(ex),
             // #573 · AND, once it is low, a BIG on-grid counter anchored to the captain — the same
             // seven-segment idiom the reactor overload uses, which is the owner's own comparison
             // ("similar counter as the round count counting down seconds on the map"). A bar in the corner

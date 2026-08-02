@@ -169,16 +169,23 @@ public static class HiveInterior
         // out of a car needs WHERE AM I and CAN I BREATHE in one glance, and the second one decides whether
         // everything they were about to do is affordable. Three lines, one plate, and the air line carries
         // the colour so it reads before it is read.
-        bool holdsAir = UndergroundComplex.HoldsPressure(level);
+        //
+        // THE WORDS AND THE VERDICT ARE BOTH SuitAir'S. This line first shipped calling
+        // UndergroundComplex.HoldsPressure itself and spelling its own two strings — which made it the THIRD
+        // place in the game deciding whether a tank is running, after the drain and the hud. Three places
+        // that must agree is not redundancy, it is a countdown to a disagreement, and #608 proved it inside a
+        // day by adding a fourth way to breathe that only the drain heard about. The plate asks
+        // SuitAir.SourceOf of this level and prints SuitAir.PlateLine, so the sign on the wall and the gauge
+        // on the suit are physically incapable of saying different things about the same floor.
         double signX = shaftX;
         double signY = shaftY + UndergroundComplex.CorridorHalf;
+        SuitAir.Supply floorAir = SuitAir.SourceOf(level, insideShelter: false, aboard: false);
         var bigLabels = new List<(float X, float Y, string Text, float Px, int Tone)>
         {
             ((float)signX, (float)(signY + 10.6), UndergroundComplex.DepthPaint(level), 44f, 0),
             ((float)signX, (float)(signY + 7.8), UndergroundComplex.NameOf(bodyId, level), 19f, 0),
-            ((float)signX, (float)(signY + 5.4),
-                holdsAir ? "PRESSURISED · TANK STOPPED" : "NO ATMOSPHERE · TANK RUNNING",
-                17f, holdsAir ? 1 : 2),
+            ((float)signX, (float)(signY + 5.4), SuitAir.PlateLine(floorAir), 17f,
+                SuitAir.Drawing(floorAir) ? 2 : 1),
         };
         labels.Add(((float)shaftX - 30f, (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
 

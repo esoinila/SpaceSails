@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Linq;
 using SpaceSails.Core;
 using Xunit;
 
@@ -178,6 +179,147 @@ public class SuitAirTests
         Assert.Equal(SuitAir.Band.Gone, SuitAir.BandFor(0, 10));
         Assert.Contains("EMPTY", SuitAir.Readout(0, 10), StringComparison.Ordinal);
         Assert.Equal(0.0, SuitAir.Drain(0, 5));
+    }
+
+    // ── #612 · WHERE THE AIR IS COMING FROM. ────────────────────────────────────────────────────────────
+    //
+    // Owner, standing on a pressurised floor 150 m under a moon: "I thought there is air in the base?" /
+    // "where here does it say if I consume tanks or have air?" / "Maybe we should have on our hud a AIR:
+    // Tanks / External symbol... That is really important info for the suit hud to tell us."
+    //
+    // The gauge showed a clock. A clock counting down and a clock that is parked look nearly identical at a
+    // glance, and the difference between them is the difference between every minute costing you and this
+    // one being free.
+
+    [Fact]
+    public void APARKEDClockNeverReadsLikeARunningOne()
+    {
+        // THE LAW. Whatever the tank holds and however far home is, the sentence a captain reads must be
+        // different when the tank is running from when it is not — not a shade different, a different
+        // sentence. Swept across every band the gauge has, because a readout that only distinguishes the two
+        // in the comfortable band is a readout that goes quiet exactly when it matters.
+        (double Air, double Home)[] everyBand =
+        [
+            (SuitAir.TankSeconds, 20),                       // Easy
+            (SuitAir.TankSeconds * 0.5, 3900),               // Thinking
+            (200, 3000),                                     // PastTheLine
+            (SuitAir.TankSeconds * 0.05, 40),                // Critical
+            (SuitAir.ReserveSeconds * 0.5, 100),             // on the reserve
+            (0, 10),                                         // Gone
+        ];
+
+        foreach ((double air, double home) in everyBand)
+        {
+            string running = SuitAir.Readout(air, home, SuitAir.Supply.Tanks);
+            string held = SuitAir.Readout(air, home, SuitAir.Supply.Room);
+            string filling = SuitAir.Readout(air, home, SuitAir.Supply.Ship);
+
+            Assert.NotEqual(running, held);
+            Assert.NotEqual(running, filling);
+            Assert.NotEqual(held, filling);
+
+            // The reach advice is arithmetic about SPENDING. Quoting it at somebody who is not spending is
+            // the instrument answering a question nobody asked — and it is the exact way a parked clock
+            // comes to look like a running one.
+            Assert.DoesNotContain("du further", held, StringComparison.Ordinal);
+            Assert.DoesNotContain("du further", filling, StringComparison.Ordinal);
+            Assert.DoesNotContain("PAST THE LINE", held, StringComparison.Ordinal);
+
+            Assert.Contains("SEALED", held, StringComparison.Ordinal);
+            Assert.Contains("FILLING", filling, StringComparison.Ordinal);
+            Assert.DoesNotContain("SEALED", running, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void TheSUITAndTheFLOORAgreeAboutEveryFloorInTheHive()
+    {
+        // Owner: "It has to agree with the plate by the lift on every floor. Two instruments disagreeing
+        // about whether you can breathe is worse than one instrument saying nothing."
+        //
+        // The plate asks SourceOf(level, false, false) and so does the drain, so this is the one question
+        // asked of every level a shaft can reach — well past any depth the generator ships, because
+        // HoldsPressure is unbounded by design and a law that only holds down to B20 is not a law.
+        for (int level = -1; level >= -200; level--)
+        {
+            SuitAir.Supply supply = SuitAir.SourceOf(level, insideShelter: false, aboard: false);
+            bool holds = UndergroundComplex.HoldsPressure(level);
+
+            Assert.Equal(holds ? SuitAir.Supply.Room : SuitAir.Supply.Tanks, supply);
+            Assert.Equal(!holds, SuitAir.Drawing(supply));
+
+            // And the words on the wall say the same thing as the bit the sim branches on.
+            string plate = SuitAir.PlateLine(supply);
+            Assert.Equal(holds, plate.Contains("TANK STOPPED", StringComparison.Ordinal));
+            Assert.Equal(!holds, plate.Contains("TANK RUNNING", StringComparison.Ordinal));
+
+            // ...and so does the gauge the captain is wearing while standing on it.
+            Assert.Equal(holds,
+                SuitAir.Readout(SuitAir.TankSeconds * 0.5, 40, supply).Contains("SEALED", StringComparison.Ordinal));
+        }
+
+        // On the regolith, with no roof of any kind, the tank is always what you are breathing.
+        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf(0, insideShelter: false, aboard: false));
+    }
+
+    [Fact]
+    public void TheROOFSAreAskedInTheDrainsOwnOrder()
+    {
+        // SourceOf exists so that the drain and the gauge cannot come apart, which only holds while it asks
+        // the questions in the order the drain asks them: the floor first, then the shelter underfoot, then
+        // the ship. Pin all three, because an "obvious" reordering is a silent behaviour change in the one
+        // routine that can kill a captain.
+
+        // A live floor holds whatever is standing on it — it is not overruled by anything.
+        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf(-1, insideShelter: false, aboard: true));
+        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf(-1, insideShelter: true, aboard: true));
+
+        // A dead floor is exactly as bare as open regolith. Nothing about being indoors saves you.
+        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf(-2, insideShelter: false, aboard: false));
+
+        // #608 · ...unless you are standing in the refuge somebody was made to build. This is the case that
+        // broke the first cut of #612: a fourth way to breathe that the drain learned about and the gauge
+        // did not, which is a captain sitting in air being told their tank is running out.
+        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf(-2, false, false, inRefuge: true));
+        Assert.False(SuitAir.Drawing(SuitAir.SourceOf(-2, false, false, inRefuge: true)));
+
+        // And a refuge is a room on a FLOOR — it does not exist on the regolith, where the shelters are.
+        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf(0, false, false, inRefuge: true));
+
+        // Up top: a shelter's drum outranks the ship, because you cannot be in both and the shelter is the
+        // one you are standing in.
+        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf(0, insideShelter: true, aboard: true));
+        Assert.Equal(SuitAir.Supply.Ship, SuitAir.SourceOf(0, insideShelter: false, aboard: true));
+    }
+
+    [Fact]
+    public void ThereAreThreeROOFSAndNoTwoOfThemLookAlike()
+    {
+        // Owner: "it must be readable as a symbol and a colour before it is read as a word." A captain
+        // glances at this; they do not parse it. So every source needs its OWN glyph and its own word — two
+        // roofs sharing a symbol is one roof with two names, and the glance stops working.
+        var seenGlyph = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+        var seenWord = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+        var seenPlate = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+        var seenCrossing = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+
+        foreach (SuitAir.Supply supply in Enum.GetValues<SuitAir.Supply>())
+        {
+            Assert.True(seenGlyph.Add(SuitAir.SourceGlyph(supply)),
+                $"{supply} shares its glyph with another source — the symbol has stopped separating them.");
+            Assert.True(seenWord.Add(SuitAir.SourceLabel(supply)), $"{supply} shares its word.");
+            Assert.True(seenPlate.Add(SuitAir.PlateLine(supply)), $"{supply} shares its plate line.");
+            Assert.True(seenCrossing.Add(SuitAir.SupplyChangedLine(supply)), $"{supply} shares its crossing line.");
+
+            // One glyph, so it fits on the chip beside the word at gauge size.
+            Assert.Single(SuitAir.SourceGlyph(supply));
+            // The word is a word, not a sentence: it has to sit on a bar 200 px wide.
+            Assert.InRange(SuitAir.SourceLabel(supply).Length, 3, 6);
+        }
+
+        // And exactly one of the three spends the tank. If two of them did, the chip would be reporting a
+        // distinction the drain does not make.
+        Assert.Single(Enum.GetValues<SuitAir.Supply>(), SuitAir.Drawing);
     }
 
     // ── #573 · BREATHING. All of it from the owner's diving: "keep calm so the O2 does not run out". ──
