@@ -82,7 +82,8 @@ public partial class Map
     {
         // Re-weld at the SAME watch this visit docked at, so an opened wing appears without re-rolling the
         // seated regulars mid-dock (their rota was baked when we tied up — issue #410).
-        if (_dockedHavenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime) is { } complex)
+        if (_dockedHavenId is { } id
+            && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce) is { } complex)
         {
             _deckPlan = complex;
         }
@@ -810,7 +811,8 @@ public partial class Map
     private void SetDeckForDock(string? havenId)
     {
         _dockVisitSimTime = SimTime; // freeze the watch this docking sees the bar on (issue #410 rota)
-        if (havenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime) is { } complex)
+        if (havenId is { } id
+            && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";

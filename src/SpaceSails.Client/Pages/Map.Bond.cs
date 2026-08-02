@@ -115,6 +115,20 @@ public partial class Map
                 break;
         }
 
+        // Story pass 2026-08-02 — THE BOND HAD NO AFTERLIFE. A bond that books goodwill makes a findable
+        // KNOWN contact, so the RELATIONSHIP survived; but the moment that made it — the stranger flagging
+        // the bar for two OLD PERIHELION "on the fright", the hero beat of the whole system — lived only in
+        // a toast that faded, and nothing anywhere said how you two came to know each other. Every other
+        // earned line at a bar rides the durable overheard book (owner's #212 rule: words the captain paid
+        // for "may not hide" and "may not auto-vanish"), and this is the one worth keeping most. File it
+        // under the person, so it groups beneath them in the Captain's ledger (#347's per-contact section)
+        // as the provenance of the friendship. Only the outcomes that MADE something: a shared word or a
+        // notch of warmth is a passing grace and stays passing.
+        if (outcome is StrangerBond.Bond.Drink or StrangerBond.Bond.NewContact)
+        {
+            Overhear($"🥂 How you met {display} — {line}", giver);
+        }
+
         RendererInterop.PlayCue("rum"); // a warm cue under the toast (silent if audio is off)
         ShowPulseMessage("🥂 " + line);
 

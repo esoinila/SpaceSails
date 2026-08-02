@@ -351,6 +351,7 @@ public partial class Map
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
         string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable; ?kaamos=pod|holder instead SEATS the rare find so it can be EARNED
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
+        bool oracleCheat = false; // #428 /map?oracle=1: seat the station oracle at whatever bar you dock at (she's a coin-flip fixture otherwise)
         string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable; ?nebula=adjuster instead SEATS the rare bar contact so the tell can be EARNED
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
         DeathCause? deathCheat = null; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
@@ -746,6 +747,19 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["bond=".Length..]).ToLowerInvariant();
                 bondCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("oracle=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #428 dev cheat: /map?oracle=1 boots docked at a bar (default The Space Bar, override with
+                // ?dock=<id>) and SEATS the station oracle — Solenne "Static" Marsh (#425/#427) — in her
+                // port-back corner, whatever her rota says this watch. She is a fixture only ~55% of watches
+                // (OracleRant.PresenceChance), so the whole scene — the rant, the drink that widens the
+                // channel, the room-goes-quiet tell, a true-line KAAMOS/Nebula shard landing in the ledger —
+                // was a coin-flip to open, and no cheat GRANTED her lines either. The same seat idiom as
+                // ?kaamos=holder / ?nebula=adjuster: it does not hand you a truth, it hands you the person.
+                // Combine freely: /map?oracle=1&dock=ringside-exchange&credits=5000.
+                string candidate = Uri.UnescapeDataString(pair["oracle=".Length..]).ToLowerInvariant();
+                oracleCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("reevers=", StringComparison.OrdinalIgnoreCase))
             {
                 // #458 dev cheat: /map?reevers=N drops N Old Ones RIGHT ON the captain the moment they set
@@ -790,6 +804,15 @@ public partial class Map
             // Arm the forced bond and make sure we boot INTO a bar (a scare on the bare ship deck has no room
             // of strangers). Default to The Space Bar; any ?dock=<id> the caller passed wins.
             _bondForce = true;
+            dockCheat ??= "the-space-bar";
+        }
+
+        if (oracleCheat)
+        {
+            // #428 · Arm her seat BEFORE any deck is welded (SetDeckForDock reads _oracleForce and it rides
+            // the deck cache key), and make sure we boot INTO a bar — an oracle with no bar to haunt is the
+            // same non-scene as a scare with no room of strangers. Default The Space Bar; any ?dock= wins.
+            _oracleForce = true;
             dockCheat ??= "the-space-bar";
         }
 
@@ -1085,6 +1108,13 @@ public partial class Map
         if (convergeCheat)
         {
             SeedConvergeCheat(); // #422: seed both arcs' joint threshold and fire THE CONVERGENCE reveal
+        }
+
+        if (_oracleForce)
+        {
+            // #428: say WHERE she is, not just that she's here — the corner is deliberately clear of every
+            // other console, and a captain who can't find her reads the cheat as broken.
+            ShowPulseMessage("🌀 Test: Static Marsh has the port-back corner of this bar, whatever the watch. Walk in, head aft along the left wall, and press E on ◈ “STATIC” MARSH.");
         }
 
         // Tuesday plan PR-A: ?start=wreck drops you 2 km off the roadster — you're on top of her, so
@@ -2121,6 +2151,12 @@ public partial class Map
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
         if (_bankSession is not null) { CloseBank(); return true; }
         if (_barMenu is not null) { CloseBarkeep(); return true; }
+        // #425 · The oracle's corner card was the ONE bar card this chain never knew about (story pass
+        // 2026-08-02). She belongs to the same mutually-exclusive doorway family as the counter and the
+        // patron's table — both of which open by shutting her — so Esc peeled every card in the bar except
+        // hers, which sat there ignoring the key while everything else obeyed it. Her ✕ was always the
+        // "Done" button; this just lets the house key close her too (#351's family).
+        if (_oracleOpen) { CloseOracle(); return true; }
         if (_shuttleBayStops is not null) { CloseShuttleBayDoor(); return true; }
         if (_pinJob is not null) { CancelPin(); return true; }
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
