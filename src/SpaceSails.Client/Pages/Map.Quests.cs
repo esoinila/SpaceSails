@@ -347,26 +347,24 @@ public partial class Map
         await RefocusMap();
     }
 
-    // The bodies whose treasure-map card art the grok image lane has delivered
-    // (docs/FridaySecondPlan/hoard-image-manifest.md). Copied verbatim to art/treasure-<bodyId>.jpg.
-    // Bodies absent from this set (e.g. miranda) still fall back to the deterministic gradient below.
-    private static readonly HashSet<string> _treasureMapArtBodies = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "phobos", "luna", "europa", "ganymede", "callisto", "titan", "enceladus",
-    };
-
-    // The map card's big image slot (Map.razor → .tm-art, behind the red .tm-x). When the grok image
-    // lane has delivered a per-body asset (docs/FridaySecondPlan/hoard-image-manifest.md) we point at
-    // art/treasure-<bodyId>.jpg; the deterministic per-body gradient stays layered UNDER it as the
-    // fallback (so a missing/404 asset — or any body without art yet — still reads as a tinted card,
-    // Phobos always the same tint). background-size: cover lives in .tm-art and applies to both layers.
+    // The map card's big image slot (Map.razor → .tm-art, behind the red .tm-x). When the grok image lane
+    // has delivered a per-body asset (docs/FridaySecondPlan/hoard-image-manifest.md) we point at
+    // art/treasure-<bodyId>.jpg; the deterministic per-body gradient stays layered UNDER it as the fallback
+    // (so a missing/404 asset — or any body without art yet — still reads as a tinted card, Phobos always
+    // the same tint). background-size: cover lives in .tm-art and applies to both layers.
+    //
+    // #528: WHICH bodies are painted now lives in Core (TreasureMapArt) rather than in a private set here.
+    // It was a client-only literal whose own comment named miranda as the example of a body with no art —
+    // while art/treasure-miranda.jpg sat finished in wwwroot the whole time. The gradient fallback is what
+    // made that invisible, the same way the onerror-hide law hides a missing plate; the list has to be
+    // somewhere a test can read it, and TreasureMapArtIsWiredTests now checks it in BOTH directions.
     private static string TreasureMapArtCss(string bodyId)
     {
         int h = Math.Abs(bodyId.GetHashCode());
         int hue = h % 360;
         string gradient = $"radial-gradient(circle at 38% 32%, hsl({hue}, 40%, 34%), hsl({(hue + 28) % 360}, 45%, 12%) 70%)";
-        return _treasureMapArtBodies.Contains(bodyId)
-            ? $"url('art/treasure-{bodyId.ToLowerInvariant()}.jpg'), {gradient}"
+        return TreasureMapArt.ArtFile(bodyId) is { Length: > 0 } art
+            ? $"url('{art}'), {gradient}"
             : gradient;
     }
 

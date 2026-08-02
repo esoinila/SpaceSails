@@ -39,7 +39,10 @@
   <!-- #528 — the plate gate reads the LIVE art directory the same way. Every reveal plate names a JPG;
        a plate pointed at a file nobody painted degrades silently in the browser (the onerror-hide law is
        what makes that safe) and would therefore never be noticed. Copy the arc's paintings beside the test
-       assembly so KaamosPlatesArePaintedTests can hold each constant to a file that actually exists. -->
+       assembly so RevealPlatesArePaintedTests can hold each constant to a file that actually exists.
+       The treasure-* glob is copied WHOLE on purpose: TreasureMapArtIsWiredTests checks the other
+       direction too — a painting that shipped with nothing pointed at it — and can only see the orphans
+       if every one of them is here. -->
   <ItemGroup>
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\kaamos-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\nebula-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
@@ -47,6 +50,8 @@
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\death-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\busted-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\bolivia-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\treasure-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\vented-nest-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

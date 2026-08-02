@@ -139,6 +139,22 @@ scratchpad, eyeball each one, then copy into `wwwroot/art/`.
   no regolith, no blood, no creature.**
 - **Painted 2026-08-02.** Clean of lettering.
 
+### The nest, before and after (`vented-nest-intact.jpg` / `vented-nest-dead.jpg`)
+
+Both were painted long ago; only the **after** was ever wired. `vented-nest-intact.jpg` — the nest alive,
+grown up over the racks, its mouths open — sat in `wwwroot/art` with nothing in the codebase pointing at
+it, which meant the *setup* for this hull's best payoff was missing while the picture of it was on disk.
+Wired by #528: the before-card raises once per boarding, the first time the captain stands in the nest
+compartment while the sim says it is still infested and still holding air.
+
+- **Slots:** `NestPlates.Live` / `NestPlates.Dead` (Core — the after-card's copy used to be a literal in
+  `Map.Venting`), raised in `CheckVentPayoffUnderfoot`.
+- **Why the pair matters:** #380's law — *an event must introduce its fiction one beat earlier.* "What the
+  vacuum left" only lands as hard as it does if you saw what was there before it left.
+- **Guarded:** `NestPlatesTests` — both painted, the two pictures and captions genuinely different (a pair
+  that showed the same image would say the vacuum changed nothing), and **neither plate names what made
+  it.** Same law as `TheHiveTests.NothingDownHereEXPLAINSAnything`, one deck up.
+
 ### Still unpainted in this family
 
 - `art/death-suffocated.jpg` — the name `ArtFile(cause)` carried for a year with nothing behind it. Now
