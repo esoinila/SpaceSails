@@ -499,7 +499,7 @@ place out of four, and nothing that reaches an impact at all.
 
 ```
 /map?death=impact                                  the ship into a world at speed
-/map?death=collector&dock=selene-gate              CAUGHT — the demand card, then SUBMIT / BRIBE / RESIST
+/map?death=collector                               CAUGHT — the demand card, then SUBMIT / BRIBE / RESIST
 /map?death=suffocated&dock=the-tilt&land=1         the tank runs dry on the regolith
 /map?death=reevers&dock=the-tilt&land=1            the Old Ones take you on the ground
 /map?death=suffocated&wreck=1&land=1               the tank runs dry inside a dead hull
@@ -516,6 +516,10 @@ excursion's own floor and body id decide it, which is the classifier #609 was fi
 override it would be a second source of truth for the exact fact that has now cost three death cards. You
 choose the place by booting into it — nothing landed is `OwnShip`, `&land=1` is the landing party,
 `&wreck=1&land=1` is a derelict, and `&floor=N` under `&secretlab=1` is the Hive.
+
+A death on her deck with no `?dock=` / `?start=` of its own defaults to a berth (The Tilt), because
+otherwise the boot ends at the front door and the death card opens on top of the menu. Anything you pass
+still wins.
 
 Two things are read off the LIVE state rather than invented, for the same reason: whether the *nerve* ran
 out (so a full-nerve captain honestly gets the mauled caption, a shattered one the overdraw caption), and

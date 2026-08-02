@@ -786,6 +786,18 @@ public partial class Map
             dockCheat ??= "the-space-bar";
         }
 
+        // #621 · A death needs somewhere to have happened. Without a start this boot ends at the front
+        // door, and the death card would open OVER the picker — a modal on top of a menu, which is not a
+        // scene anybody can read. Same idiom as the bond above: default a berth, and any ?dock= / ?start=
+        // the caller passed still wins. Only for a death staged on her DECK; a landing cheat brings its
+        // own ground and its own berth with it.
+        // (…and only when NOTHING else chose a start: `?dock=` is read before `?start=` below, so
+        // defaulting one unconditionally would quietly outrank a `?start=` the caller did pass.)
+        if (deathCheat is not null && !_landCheat && dockCheat is null && startId is null)
+        {
+            dockCheat = "the-tilt";
+        }
+
         // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
         // raise the front door NOW in its "warming the reactor" state, so the WASM warm-up never reads as
         // a broken, click-eating menu. It flips to the live slots once _worldReady flips below.
