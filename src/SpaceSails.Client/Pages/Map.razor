@@ -1011,6 +1011,24 @@
         </div>
     }
 
+    @* #528 · THE STORY PLATE — the vented-room card with the wreck taken out of it, so any beat in the
+       game can be given the same level of service instead of a pulse line that fades in a second and a
+       half. Same markup, same onerror-hide, same discipline: the image is the EVIDENCE and naming what it
+       means is still the captain's job. The text comes from Core (KaamosLore.PlateFor is the first
+       tenant), never from a literal here. *@
+    @if (_storyPlate is { } plate)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseStoryPlate)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@plate.Title</div>
+                <img class="view-object-img" src="@plate.Art" alt="@plate.Title" onerror="this.style.display='none'" />
+                <div class="view-object-caption">@plate.Caption</div>
+                <button type="button" class="view-object-close" title="Look away"
+                        @onclick="() => Dismiss(CloseStoryPlate)">Look away</button>
+            </div>
+        </div>
+    }
+
     @* #488 · THE TWO ROADS. Standing at a derelict's cargo, having read her: file the accident report for a
        finder's fee and a contact, or strip her and say nothing for everything today. The cause you put your
        name to is picked from what your evidence actually supports — a wreck that lies will offer you a

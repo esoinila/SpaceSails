@@ -51,6 +51,20 @@ public sealed record KaamosFragment(
     string Id, string Title, KaamosSource Source, bool IsKey, string Lore, string KeyClause = "");
 
 /// <summary>
+/// A reveal PLATE for a KAAMOS beat — the house's title/image/caption card (#528), the same recipe the
+/// vented-room card uses: a title that names the place and the verb, one painted image of a CONSEQUENCE,
+/// and a caption that describes EVIDENCE and stops. It never says what any of it means; the arc's own
+/// prose (the fragment <see cref="KaamosFragment.Lore"/>, which still goes out on the pulse line and into
+/// the ledger) supplies the words, and the plate supplies the dread.
+/// </summary>
+/// <param name="Title">The stamp across the top of the card.</param>
+/// <param name="ArtFile">The painting, under <c>wwwroot/</c>. A missing file degrades to no image at all
+/// (the house <c>onerror</c>-hide law) — never a broken frame. <c>KaamosPlatesArePaintedTests</c> holds
+/// every one of these to a file that actually exists.</param>
+/// <param name="Caption">What is in front of you, and nothing about what it implies.</param>
+public sealed record KaamosPlate(string Title, string ArtFile, string Caption);
+
+/// <summary>
 /// PROJEKTI KAAMOS — "the polar night" — the seeded lore-fragment pool and the reach logic (issue
 /// #411). The arc is a slow-burn mystery: scattered fragments, each surfaced by a system that already
 /// exists, assemble into enough intel to earn the one thing the world has always denied — a way to
@@ -312,6 +326,56 @@ public static class KaamosLore
     public const string ReachLedgerLine =
         "❄ The berth-code is entered and the ice-moon berth is listed to your hull. The cycler window is " +
         "real and not yet open — there is nothing to do now but hold the berth and wait for it.";
+
+    // ── The plates (#528 · the reveal-card audit, 2026-08-02). ────────────────────────────────────────
+    //
+    // The arc's three most loaded beats — the pod that was held, the one who kept the berth, and the berth
+    // answering — used to arrive as a pulse line: a toast that fades in a second and a half. That is the
+    // systemic failure #528 names. They now raise the house reveal card as well, and because the sentence
+    // belongs beside the predicate (the #634 lesson: a comment that names a second source of truth is a
+    // TODO with no owner), the titles and captions live HERE, keyed by the same fragment ids the pool and
+    // the gate use, rather than as literals in the client.
+    //
+    // Caption discipline, inherited from the vented-room card: EVIDENCE, then stop. Not one of the three
+    // says what it means. The pod's seals are latched; nobody says who chose not to send it. The stools
+    // beside the drinker are empty; nobody says why. The board has one line lit; nobody says who is asking.
+
+    /// <summary>The reveal plate for a fragment id, keyed by the same ids <see cref="Fragments"/> uses.
+    /// Only the beats that EARN a card are here — a shard that is a line on a plaque or a coordinate bought
+    /// over a counter is the right size as prose, and over-carding cheapens the ones that are not.</summary>
+    private static readonly Dictionary<string, KaamosPlate> PlatesById = new(StringComparer.Ordinal)
+    {
+        ["cold-pod"] = new(
+            "❄ THE POD THAT WAS HELD",
+            "art/kaamos-cold-pod.jpg",
+            "Frost has split her along three seams and the dust has scoured her manifest plate down to " +
+            "nothing you can read. Every clamp seal is still latched exactly as it left the yard. She was " +
+            "not lost on the way out — she never went. Somebody stood here, in a shed, and set her down."),
+
+        ["holders-tell"] = new(
+            "🌑 THE ONE WHO KEPT THE BERTH",
+            "art/kaamos-berth-holder.jpg",
+            "The stools either side of them are empty, in a bar where nothing is empty. Two glasses down " +
+            "before you sat and neither of them was looked at. They answer the bulkhead rather than you, " +
+            "and every answer stops one word before the part you asked about."),
+
+        ["berth-code"] = new(
+            "❄❄ ONE LINE STILL LIT",
+            "art/kaamos-berth-resolves.jpg",
+            "Rows and rows of dead slots going up into the dark of the concourse, and low on the board one " +
+            "line still burning — burning since before the characters on it wore away. Nothing has filed " +
+            "against it in a lifetime. Nobody ever told the board to stop asking, and it has not."),
+    };
+
+    /// <summary>The reveal plate this beat earns, or null for the beats that are the right size as prose.
+    /// Asked by the client at the single seam where a shard is assembled, so a plate can never be shown for
+    /// a shard the captain did not just find.</summary>
+    public static KaamosPlate? PlateFor(string fragmentId) =>
+        fragmentId is not null && PlatesById.TryGetValue(fragmentId, out KaamosPlate? plate) ? plate : null;
+
+    /// <summary>Every plate in the arc, with the fragment id it belongs to — the tests' handle, so a plate
+    /// keyed to a shard that does not exist, or pointed at art nobody painted, fails the build.</summary>
+    public static IEnumerable<KeyValuePair<string, KaamosPlate>> AllPlates => PlatesById;
 
     /// <summary>The label on the bar seam's button for the step this bar can take. The bought coordinate
     /// COSTS, so its button says so and says how much, like every other counter at that bar that takes

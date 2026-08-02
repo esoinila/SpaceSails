@@ -63,6 +63,18 @@ public partial class Map
         string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosLore.ReachNotice : "";
         RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
         ShowPulseMessage(foundMessage + tail);
+
+        // #528 · the beats that earn a picture get one. Three of this arc's turnings — the pod that was
+        // held, the one who kept the berth, and the berth answering — used to be a toast that faded in a
+        // second and a half; they are now the house reveal card as well, raised at the single seam where a
+        // shard is actually assembled so it can never be shown for a shard nobody found. The other shards
+        // (a line on a plaque, a log in a drawer, a coordinate bought over a counter) stay prose on
+        // purpose: over-carding cheapens the ones that are not. Core owns the words (KaamosLore.PlateFor).
+        if (KaamosLore.PlateFor(fragmentId) is { } plate)
+        {
+            ShowStoryPlate(plate.Title, plate.ArtFile, plate.Caption);
+        }
+
         MaybeFireConvergence(); // #422: an arc-1 shard may be the edge that crosses the JOINT threshold too
         return true;
     }

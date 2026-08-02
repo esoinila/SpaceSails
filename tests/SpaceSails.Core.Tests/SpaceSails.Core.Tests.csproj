@@ -36,4 +36,12 @@
     <Content Include="..\..\src\SpaceSails.Client\Components\DiceTray.razor.css" Link="cssource\DiceTray.razor.css" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- #528 — the plate gate reads the LIVE art directory the same way. Every reveal plate names a JPG;
+       a plate pointed at a file nobody painted degrades silently in the browser (the onerror-hide law is
+       what makes that safe) and would therefore never be noticed. Copy the arc's paintings beside the test
+       assembly so KaamosPlatesArePaintedTests can hold each constant to a file that actually exists. -->
+  <ItemGroup>
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\kaamos-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
