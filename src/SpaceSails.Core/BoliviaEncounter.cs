@@ -70,6 +70,33 @@ public static class BoliviaEncounter
         ]),
     ];
 
+    // ── The plates (#528 · the reveal-card audit, 2026-08-02). ────────────────────────────────────────
+    //
+    // The most cinematic scene in the game was three lines of text with buttons under them. The freeze-frame
+    // that ENDS it has been painted since PR-BUSTED — a sepia last charge into blown-out light — and the
+    // three beats that earn it had nothing. A player who holds the line never sees a single picture of the
+    // stand they just survived.
+    //
+    // Each beat now has its own frame, in the freeze-frame's register: deep sepia, blown-out highlights,
+    // near-black silhouettes, no faces. They are ACTION here rather than consequence, and that is the one
+    // place in this game where an action shot is correct — the Bolivia is the last stand, the whole point
+    // is the charge, and its consequence card already exists at the end of the script.
+    //
+    // Keyed by the beat's own id rather than by index, so reordering or inserting a beat cannot silently
+    // shuffle the pictures out from under the narration. An unknown id answers empty, and the client's
+    // onerror-hide leaves the panel exactly as it was before this existed.
+
+    /// <summary>The painting for a beat of the stand, or empty for a beat that has none. Keyed by
+    /// <see cref="EncounterBeat.Id"/> — never by position, because a script is a list somebody will edit.
+    /// <c>RevealPlatesArePaintedTests</c> holds every non-empty answer to a file that exists.</summary>
+    public static string ArtFile(string beatId) => beatId switch
+    {
+        "breach" => "art/bolivia-breach.jpg",
+        "crossfire" => "art/bolivia-crossfire.jpg",
+        "run" => "art/bolivia-run.jpg",
+        _ => "",
+    };
+
     /// <summary>One resolved beat: which beat, the choice taken, and the opposed roll it produced.</summary>
     public readonly record struct BeatOutcome(int BeatIndex, string ChoiceId, OpposedRoll Roll);
 
