@@ -271,6 +271,7 @@ public class RevealPlatesArePaintedTests
         ("CollectorLanding.SiegePlate", CollectorLanding.SiegePlate),
         ("NestPlates.Released", NestPlates.Released),
         ("ArchiveNode.PurgedPlate", ArchiveNode.PurgedPlate),
+        ("StrangerBond.CognacPlate", StrangerBond.CognacPlate),
     ];
 
     [Fact]
@@ -291,7 +292,21 @@ public class RevealPlatesArePaintedTests
             Assert.True(seenTitles.Add(plate.Title), $"{where} shares a title with another plate.");
         }
 
-        Assert.Equal(7, n);
+        Assert.Equal(8, n);
+    }
+
+    /// <summary>
+    /// #528 · AND THE ORACLE'S CORNER, which is a BACKDROP rather than a plate — her card is a conversation
+    /// the captain stays inside, turning the dial line by line, and a modal opening over it every time would
+    /// be a card on a card. It is still an <c>art/</c> constant behind an <c>onerror</c>-hide, so it is
+    /// still a name nothing in the build could otherwise keep.
+    ///
+    /// <para><b>Proven RED:</b> point <c>OracleRant.ArtFile</c> at a basename that is not on disk.</para>
+    /// </summary>
+    [Fact]
+    public void TheOraclesCornerIsPainted()
+    {
+        AssertPainted("The oracle's corner", OracleRant.ArtFile);
     }
 
     [Fact]
