@@ -227,3 +227,67 @@ the same one on all ten hulls, and the per-cause CAPTION does every bit of the w
 > Sidelight: `wreck-insurance-job.jpg` is a lifeboat bay with every cradle empty and the clamps neatly stowed
 > — which is exactly the scene the owner described the same morning as a whole feature. See
 > [features/safety-card.md](features/safety-card.md).
+
+### #528 round two — three more beats aboard a hull
+
+#### `art/hatch-both-ways.jpg` — IT OPENS BOTH WAYS
+
+- **Slot:** `NestPlates.Released` / `NestPlates.ReleasedTitle(compartment)`, raised in
+  `Map.Venting.ReleaseWhatWasSealedIn`.
+- Owner: *"and once unlocked the door starts to open also for the reevers :-D"*.
+- **Why it needed one:** the sealed door is the whole decision the vacuum mechanic exists to make
+  interesting, and throwing it was a pulse line — standing between a before-card and an after-card that have
+  both had paintings for weeks. It is also the beat with the most to SHOW: the crew dogged this hatch from
+  the corridor side, and something has been working at the other face of it ever since. That is a fact you
+  can paint and cannot state.
+- **Canon-bound:** the gouges are on the INSIDE of the door and the caption stops there.
+  `NestPlatesTests.NeitherPlateExplainsAnything` now walks all three.
+
+> **Prompt used:** A corridor inside a long-dead spaceship, lit by one helmet lamp: a heavy compartment
+> hatch that has just been levered off its locking dogs and swung open into the corridor, the dogs hanging
+> loose. Beyond it is complete darkness that the lamp does not reach. The INSIDE face of the open hatch is
+> covered in long deep parallel gouges scratched into the metal from that side. Frost on the deck plating,
+> the corridor receding away behind. Grimy lived-in used-future sci-fi, muted desaturated palette of cold
+> grey and rust, painterly, moody low-key lighting, no text, no lettering, no numbers, no logos, no readable
+> writing, no creatures, no people.
+
+#### `art/archive-pulled.jpg` — THE COLUMN IS COLD NOW
+
+- **Slot:** `ArchiveNode.PurgedPlate`, raised in `Map.Archive.PullArchiveSwitch`.
+- **Why it needed one:** the one thing in the game that cannot be undone, and it was a toast. The four
+  archive visions each got a painting on the way in; the moment the noise stops had nothing at all.
+- **Why a plate does not break the feature's restraint:** it fires *after* the handle has already gone over.
+  It is not a confirmation dialog — the stencilled legend is still the only confirmation there is, and if
+  `PullArchiveSwitch` ever grows an "are you sure?", the feature is gone.
+- **Names nobody**, exactly as `PurgeLine` does not. A captain who did not pay to read the collar never
+  learns whose pattern it was, and the record of what they did is the silence afterwards.
+
+> **Prompt used:** A compartment inside a long-dead spaceship, lit by one helmet lamp: a tall dark equipment
+> column bolted floor to ceiling in the middle of the deck, its casing now furred white with thick frost all
+> the way up, every indicator on it dead. A heavy industrial lever on its housing has been thrown down into
+> the off position. The compartment is utterly still and utterly ordinary. Grimy lived-in used-future
+> sci-fi, muted desaturated palette of cold grey-white and rust, painterly, moody low-key lighting, no text,
+> no lettering, no numbers, no logos, no readable writing, no people.
+
+#### `art/death-joined-derelict.jpg` — the death aboard a hull where the captain did not stop
+
+- **Slot:** `DeathNarration.ArtFile(DeathCause.Joined, DeathPlace.Derelict)`.
+- **The bug it closes:** #636 gave the derelict a card of its own and then handed all four of its causes the
+  same one — right first move, one move short. Joined is the only cause aboard a hull where the captain
+  **kept going**: *"you stopped moving deep inside {body}, and then moving again, wrong"*, *"you went further
+  IN rather than back toward the lock"*. `death-derelict.jpg` is a hull with a captain who has come to a
+  halt in it. A card whose picture ends the sentence differently from the words is this project's most
+  expensive recurring bug (#545, #574, #609, #621) and it does not stop being one when the two are merely at
+  different volumes.
+- **Guarded:** `RevealPlatesArePaintedTests.TheJoinedDeathAboardAHullDoesNotShareTheStOPPEDFrame`.
+  **Proven RED** by restoring the unconditional `return "death-derelict.jpg"`.
+
+> **Prompt used:** A corridor deep inside a long-dead spaceship, seen from the lock end: a suit helmet lamp
+> lying dropped on the deck plating in the foreground, its beam thrown uselessly sideways against a
+> bulkhead. Far down the corridor, at the very edge of the light, the back of a single suited figure is
+> walking away from the viewer, deeper into the ship, small and already half swallowed by the dark. Nothing
+> else moves. Grimy lived-in used-future sci-fi, muted desaturated palette of cold grey-blue and rust,
+> painterly, deep shadow, moody low-key lighting, no text, no lettering, no numbers, no logos, no readable
+> writing, no faces.
+
+- **Painted 2026-08-03**, first pass each.

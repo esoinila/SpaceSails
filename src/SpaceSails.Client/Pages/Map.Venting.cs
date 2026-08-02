@@ -1186,6 +1186,12 @@ public sealed partial class Map
         ShowPulseMessage(
             $"🕷 The {name} hatch comes off its dogs — and it opens BOTH ways. Whatever the last crew shut " +
             "in there has been waiting on the other side of it, and it does not need a second invitation.");
+
+        // #528 · THE THIRD PLATE IN THIS ROOM'S SET, and the one that was missing. The sealed door is the
+        // whole decision the vacuum mechanic exists to make interesting, and throwing it was a pulse line —
+        // beside a before-card and an after-card that have both had paintings for weeks. What the picture
+        // shows is the INSIDE face of the door, and nothing about what worked at it.
+        ShowStoryPlate(NestPlates.ReleasedTitle(name), NestPlates.Released.ArtFile, NestPlates.Released.Caption);
         BoardLog($"🕷 Opened the sealed {name} — {came} came out.");
         ApplyNerveShock(NervePips.SightingPips * (int)NervePips.PipUnit, "you opened the door they sealed");
         RendererInterop.PlayCue("alarm");

@@ -140,6 +140,39 @@ public class RevealPlatesArePaintedTests
     }
 
     /// <summary>
+    /// #528 · THE DEATH ABOARD A HULL WHERE THE CAPTAIN DID NOT STOP.
+    ///
+    /// <para>#636 gave the derelict a card of its own and then handed all four of its causes the same one,
+    /// which was the right first move and one move short. Joined is the only cause aboard a hull where the
+    /// captain kept going — the prose says <i>"you stopped moving deep inside {body}, and then moving again,
+    /// wrong"</i> and <i>"you went further IN rather than back toward the lock"</i> — and
+    /// <c>death-derelict.jpg</c> is a hull with a captain who has come to a halt in it.</para>
+    ///
+    /// <para>A card whose picture ends the sentence differently from the words is this project's most
+    /// expensive recurring bug (#545, #574, #609, #621), and it does not stop being one when the two are
+    /// merely at different volumes.</para>
+    ///
+    /// <para><b>Proven RED:</b> restore the unconditional <c>return "death-derelict.jpg"</c> and this fails
+    /// naming the cause that is sharing a frame it should not.</para>
+    /// </summary>
+    [Fact]
+    public void TheJoinedDeathAboardAHullDoesNotShareTheStOPPEDFrame()
+    {
+        string joined = DeathNarration.ArtFile(DeathCause.Joined, DeathPlace.Derelict);
+        AssertPainted("The Joined-aboard-a-hull card", "art/" + joined);
+
+        foreach (DeathCause other in Enum.GetValues<DeathCause>())
+        {
+            if (other == DeathCause.Joined)
+            {
+                continue;
+            }
+
+            Assert.NotEqual(joined, DeathNarration.ArtFile(other, DeathPlace.Derelict));
+        }
+    }
+
+    /// <summary>
     /// #654 · A WRECK HAS THREE EVIDENCE STATIONS AND ALL THREE SHOW A PICTURE — on all ten hulls.
     ///
     /// <para>The bridge log and the cargo manifest are the corroboration <c>MisreadsAs</c> is built on:
@@ -236,6 +269,8 @@ public class RevealPlatesArePaintedTests
         ("SurfaceOutpost.EffectsPlate", SurfaceOutpost.EffectsPlate),
         ("CollectorLanding.ArrivalPlate", CollectorLanding.ArrivalPlate),
         ("CollectorLanding.SiegePlate", CollectorLanding.SiegePlate),
+        ("NestPlates.Released", NestPlates.Released),
+        ("ArchiveNode.PurgedPlate", ArchiveNode.PurgedPlate),
     ];
 
     [Fact]
@@ -256,7 +291,7 @@ public class RevealPlatesArePaintedTests
             Assert.True(seenTitles.Add(plate.Title), $"{where} shares a title with another plate.");
         }
 
-        Assert.Equal(5, n);
+        Assert.Equal(7, n);
     }
 
     [Fact]

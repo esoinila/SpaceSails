@@ -40,7 +40,35 @@ public static class NestPlates
         "Deep parallel gouges cross the deck toward a sealed hatch and stop there. Whatever spent forty " +
         "years working at that door is not working at it now.");
 
+    /// <summary>
+    /// #528 · UNDOGGING A HATCH OPENS IT BOTH WAYS. Owner: <i>"and once unlocked the door starts to open
+    /// also for the reevers :-D"</i>
+    ///
+    /// <para>The third plate in this room's set, and the one that was missing: the sealed door is the whole
+    /// decision the vacuum mechanic exists to make interesting, and throwing it was a pulse line. It is also
+    /// the beat with the most to show — the crew dogged this hatch from the corridor side and something has
+    /// been working at the other face of it ever since, which is a fact you can PAINT and cannot state.
+    /// </para>
+    ///
+    /// <para>The gouges in the frame are on the INSIDE of the door. That is the whole caption's job: the
+    /// evidence, and not one word about what made them. Same law as <see cref="Live"/> and
+    /// <see cref="Dead"/>, and the same reason — the game does not know either.</para>
+    ///
+    /// <para>Raised from the BOARD as readily as from the door, which is worse and correct: throw that
+    /// switch from aft in ENGINEERING and the picture is of a door you are not standing at.</para>
+    /// </summary>
+    public static readonly RevealPlate Released = new(
+        "IT OPENS BOTH WAYS",
+        "art/hatch-both-ways.jpg",
+        "The hatch is off its dogs and swung wide, and past it your lamp finds nothing at all. The inside "
+        + "face of the door — the face nobody in this corridor has looked at in forty years — is scored "
+        + "with long deep parallel gouges, worked at from that side, over and over, for a very long time.");
+
     /// <summary>The after-card's stamp for a named compartment — <c>"💨 DEEP HOLD — WHAT THE VACUUM LEFT"</c>.
     /// Built here so the two halves of the title cannot drift apart in two files.</summary>
     public static string DeadTitle(string compartment) => $"💨 {compartment} — {Dead.Title}";
+
+    /// <summary>The released-card's stamp — <c>"🕷 DEEP HOLD — IT OPENS BOTH WAYS"</c>. Same reason as
+    /// <see cref="DeadTitle"/>: the room is the subject of the sentence and the halves must not drift.</summary>
+    public static string ReleasedTitle(string compartment) => $"🕷 {compartment} — {Released.Title}";
 }
