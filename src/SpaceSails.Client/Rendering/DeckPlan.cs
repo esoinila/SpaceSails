@@ -147,7 +147,7 @@ public sealed class DeckPlan
     /// in every floor so we visually spot some difference when we go to different floors"</i> —
     /// and, for what it should say, <i>"we can use seriously large numbers there :-D"</i> ...
     /// <i>"or depths (in meters)"</i>.</para></summary>
-    public (float X, float Y, string Text)[] BigLabels { get; private set; } = [];
+    public (float X, float Y, string Text, float Px)[] BigLabels { get; private set; } = [];
     public Backdrop[] Backdrops { get; private set; }
     public Door[] Doors { get; }
 
@@ -165,6 +165,14 @@ public sealed class DeckPlan
     /// <para>It is the plan's property rather than the renderer's constant because it is a fact about a
     /// WORLD — you build out of what is under your boots — and the renderer only happens to draw it. Null
     /// on the ship and the stations, which are made of steel like everything else in the fleet.</para></summary>
+    /// <summary>#605 · The ink this deck's MADE structure draws in — poured, welded, bolted things, as
+    /// opposed to a body's stonework (<see cref="StoneInk"/>). Null everywhere it has always been null: the
+    /// ship, the stations and the wrecks are steel and keep the standard hull line.
+    ///
+    /// <para>The Hive uses it to carry a floor's DEPARTMENT LIVERY, so two floors cut from identical bones
+    /// are told apart at a glance by what they were for.</para></summary>
+    public SpaceSails.Core.BodyPalette.Ink? HullInk { get; private set; }
+
     public SpaceSails.Core.BodyPalette.Ink? StoneInk { get; private set; }
 
     /// <summary>#592 · The ink an ORDINARY door is drawn in on this ground — the local stone, brightened.
@@ -204,7 +212,8 @@ public sealed class DeckPlan
         SpaceSails.Core.SurfaceScenery.Mark[]? scenery = null,
         SpaceSails.Core.BodyPalette.Ink? stoneInk = null,
         SpaceSails.Core.BodyPalette.Ink? doorInk = null,
-        (float X, float Y, string Text)[]? bigLabels = null)
+        (float X, float Y, string Text, float Px)[]? bigLabels = null,
+        SpaceSails.Core.BodyPalette.Ink? hullInk = null)
     {
         Walls = walls;
         CollisionSegments = new SurfaceCollision.Segment[walls.Length];
@@ -216,6 +225,7 @@ public sealed class DeckPlan
         Consoles = consoles;
         RoomLabels = roomLabels;
         BigLabels = bigLabels ?? [];
+        HullInk = hullInk;
         Backdrops = backdrops;
         Doors = doors ?? [];
         Tables = tables ?? [];

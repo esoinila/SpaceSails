@@ -88,10 +88,18 @@ internal static class FloorSvg
 
         // ── LAYER 4 · THE STRUCTURE. Everything down here is poured, welded and bolted, so it draws in the
         //    ship's own hull ink, exactly as HiveInterior draws it (#585).
+        // #605 · In the floor's own DEPARTMENT LIVERY, because that is what the deck draws. A lab that kept
+        // painting every floor the same grey would be showing a building the game stopped shipping — and the
+        // whole reason the livery exists is that floors looked too alike, which is precisely the kind of
+        // thing this lab is supposed to be able to show.
+        BodyPalette.Ink? livery = UndergroundComplex.LiveryFor(body, level);
+        string hullInk = livery is { } lv
+            ? $"stroke=\"rgb({lv.R},{lv.G},{lv.B})\""
+            : "stroke=\"#aab9cd\"";
         foreach (SurfaceLayout.Wall wall in floor.Walls)
         {
             Line(s, PX(wall.X1), PY(wall.Y1), PX(wall.X2), PY(wall.Y2),
-                "stroke=\"#aab9cd\" stroke-width=\"1.6\" stroke-linecap=\"square\"");
+                $"{hullInk} stroke-width=\"1.6\" stroke-linecap=\"square\"");
         }
 
         // ── LAYER 5 · THE DOORS. Open ones in imported violet (the one colour down here that was flown in),
@@ -136,6 +144,14 @@ internal static class FloorSvg
         {
             Text(s, PX(m.X), PY(m.Y), "#d8c58a", 9, Escape(m.Label), "start");
         }
+
+        // #600 · THE DEPTH PAINTED BY THE LIFT, drawn where the deck draws it — because the owner's note on
+        // the first cut was about PLACEMENT ("too far from it"), and a lab that omitted the signage could not
+        // have shown that. If the deck paints it, the picture paints it.
+        Text(s, PX(shaftX), PY(shaftY + corridor + 9.6), "#8fa2bb", 26,
+            Escape(UndergroundComplex.DepthPaint(level)));
+        Text(s, PX(shaftX), PY(shaftY + corridor + 6.6), "#8fa2bb", 12,
+            Escape(UndergroundComplex.NameOf(body, level)));
 
         // ── THE CAPTION — the same numbers the stdout table prints, so a picture pulled out of labviz/ in
         //    six months still says what it is.

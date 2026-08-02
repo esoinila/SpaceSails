@@ -109,10 +109,42 @@ public static class HiveInterior
         // the depth, which is a fact about where you are standing, and the department, which is what this
         // floor was for. Together they are the glance that says which floor you stepped out on — and the
         // depth is the number that makes the walk back up mean something.
-        var bigLabels = new List<(float X, float Y, string Text)>
+        // Owner, seeing the first cut: "Let's put the elevation next to the elevator... now it is too far
+        // from it." It was 30 du off to one side, which is most of a screen — a number that far from the
+        // thing it describes is not signage, it is litter. It sits just above the car's own mouth now, over
+        // the 🛗 LIFT plate, which is where a building paints a level: on the wall you face when the doors
+        // open.
+        // #605 · THE PLATE BY THE CAR — depth over department, both painted at signage size.
+        //
+        // Owner, twice: "Let's put the elevation next to the elevator... now it is too far from it", then
+        // "the name of the floor should read next to the elevator... we have them in the buttons let's have
+        // them on the level also" and "it is way too small and too far from the elevator".
+        //
+        // Both complaints are the same fault. The name was pinned 26 du off down the spine at caption size,
+        // which is neither next to the lift nor readable at a glance — so it was information the captain had
+        // to go and look for, about the one thing they most need to know without looking.
+        //
+        // They are one plate now, directly over the car's mouth: the depth big because it is the number that
+        // decides whether you can walk back up, the department under it because that is what the floor was
+        // FOR — and it is what the panel's own buttons promised on the way in.
+        // Owner, on why it has to dominate: "It is the where-am-I question answer when you come with the
+        // elevator so it is like the most important thing to see."
+        //
+        // That is the whole brief. A captain steps out of a car onto one of twenty floors cut from identical
+        // bones, and the first thing they need is not a console or a corridor — it is WHICH ONE. So the plate
+        // sits directly over the car's mouth, in the eye-line of somebody who has just turned around, and it
+        // is the largest thing drawn on the floor.
+        //
+        // And it is modelled on a real reflex, which is why it belongs here rather than in the HUD — owner:
+        // "sometimes people get off the elevator at wrong floor so there is this instinct to always check
+        // that the floor is correct." A number on the instrument panel would answer the question; a plate on
+        // the WALL is the thing you actually look at, because looking at it is what people do.
+        double signX = shaftX;
+        double signY = shaftY + UndergroundComplex.CorridorHalf;
+        var bigLabels = new List<(float X, float Y, string Text, float Px)>
         {
-            ((float)(shaftX - 30), (float)(shaftY + UndergroundComplex.CorridorHalf + 12),
-                UndergroundComplex.DepthPaint(level)),
+            ((float)signX, (float)(signY + 9.6), UndergroundComplex.DepthPaint(level), 44f),
+            ((float)signX, (float)(signY + 6.6), UndergroundComplex.NameOf(bodyId, level), 19f),
         };
         labels.Add(((float)shaftX - 30f, (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
 
@@ -123,7 +155,10 @@ public static class HiveInterior
             location: (_, _) => floor.Name,
             doors: [.. doors], shipFixtures: false, followCam: true,
             tables: DeckPlan.Ship.Tables,
-            bigLabels: [.. bigLabels]);
+            bigLabels: [.. bigLabels],
+            // #605 · The floor's department livery. Null on the band nobody listed, so that concrete is the
+            // one place down here left bare — the absence is the tell.
+            hullInk: UndergroundComplex.LiveryFor(bodyId, level));
     }
 
     /// <summary>One key per room per floor, so a searched room on B2 is not a searched room on B3.</summary>

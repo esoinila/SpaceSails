@@ -367,10 +367,18 @@ public sealed class DeckView
             // when a plan carries no ink (the ship, the stations, anything made of steel), so nothing that
             // is not a world changes at all.
             RgbaColor stone = plan.StoneInk is { } ink ? new RgbaColor(ink.R, ink.G, ink.B) : StoneLine;
+
+            // #605 · A MADE structure can carry its own ink too. Owner, riding floors cut from the same
+            // bones: "Let's like change the wall colors on different floors... now they look too same" —
+            // answered with department livery rather than a per-floor gradient, so the colour is a language
+            // and not decoration. Null everywhere it has always been null (the ship, the stations, the
+            // wrecks are steel), so nothing outside the Hive changes by a pixel.
+            RgbaColor hull = plan.HullInk is { } made ? new RgbaColor(made.R, made.G, made.B) : HullLine;
+
             RgbaColor color = ws == 1 ? ExploredWall
                 : w.IsWindow ? WindowLine
                 : w.IsStone ? stone
-                : w.IsHull ? HullLine
+                : w.IsHull ? hull
                 : InnerLine;
             // Stone is drawn as heavy as hull: it is just as solid, and a monolith you could mistake for
             // rubble is a monolith that stops being the centrepiece of the moon it stands on.
@@ -456,14 +464,14 @@ public sealed class DeckView
         // Drawn before the room labels and in a dimmer ink than them ON PURPOSE: this is paint on a wall the
         // captain glances at, not a caption competing with the consoles. It is big enough to read without
         // looking for it and quiet enough to ignore while doing something else.
-        foreach ((float bx, float by, string text) in plan.BigLabels)
+        foreach ((float bx, float by, string text, float px) in plan.BigLabels)
         {
             if (DarkState(bx, by) == 0)
             {
                 continue;
             }
             (float bxp, float byp) = P(bx, by);
-            _renderer.DrawText(bxp, byp, text, StencilPaint, "bold 34px monospace", TextAlign.Center);
+            _renderer.DrawText(bxp, byp, text, StencilPaint, $"bold {px:0}px monospace", TextAlign.Center);
         }
 
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
