@@ -262,4 +262,65 @@ public sealed class TheAuthorityCardTests
             Assert.Equal(wanted.OrderBy(b => b), issued.OrderBy(b => b));
         }
     }
+
+    [Fact]
+    public void EverySiteHasABandZero_SoAKeyFoundAtTheBottomAlwaysHasSomewhereToPointAt()
+    {
+        // #613 · THE INVARIANT THE POCKET RESTS ON. Owner, in a four-floor site: "now I picked authority
+        // card but it did not go to inventory."
+        //
+        // CardInRoom returns null on the bottom band and it is RIGHT to — there is no shaft below to
+        // authorise, and a card for a hole nobody dug would be a lie. The fault was the client’s: it handed
+        // out a lead and put nothing in the pocket, while the prose went on describing a countersigned card
+        // in the captain’s hand.
+        //
+        // The fix is that such a card is for ANOTHER building — the one the lead names — which is exactly
+        // the wallet WrongCardLine has always described. That only works if the moon a lead can name always
+        // has a band 0 to issue for. This pins it, so nobody can tighten SiteHasBand later and quietly turn
+        // every bottom-floor Key back into a card that evaporates.
+        string[] bodies =
+        [
+            "luna", "ganymede", "europa", "callisto", "io", "titan", "enceladus", "phobos", "deimos",
+            "triton", "charon", "mimas", "rhea", "iapetus", "secret-lab-site", "the-crater-shelf",
+        ];
+
+        foreach (string body in bodies)
+        {
+            Assert.True(UndergroundComplex.SiteHasBand(body, 0),
+                $"{body} has no band 0 — a Key found at the bottom of another site could not issue a card for it");
+
+            // And the card it would issue must survive a save and come back the same card, because that is
+            // the whole of what the satchel stores.
+            var minted = new UndergroundComplex.AuthorityCard(body, 0);
+            Assert.True(UndergroundComplex.AuthorityCard.TryParse(minted.Id, out UndergroundComplex.AuthorityCard back));
+            Assert.Equal(minted, back);
+        }
+    }
+
+    [Fact]
+    public void TheBottomBandIssuesNoCardForITSELF_WhichIsWhyTheClientLooksElsewhere()
+    {
+        // The other half of #613, and the reason the bug was invisible on a deep site: on any band that has
+        // a shaft under it the card arrives normally, so the fault only ever showed on the LAST band — and
+        // the owner found it on a four-floor rock, which is one band and nothing else.
+        //
+        // Stated as a law rather than a shape: a Key room issues a card exactly when there is a shaft below
+        // it, and never otherwise.
+        foreach (string body in new[] { "luna", "secret-lab-site", "titan" })
+        {
+            int deepest = UndergroundComplex.TrueDepthOf(body);
+            for (int level = -1; level >= deepest; level--)
+            {
+                bool below = UndergroundComplex.SiteHasBand(body, UndergroundComplex.BandOf(level) + 1);
+                UndergroundComplex.AuthorityCard? card = UndergroundComplex.CardInRoom(body, level);
+
+                Assert.Equal(below, card is not null);
+                if (card is { } c)
+                {
+                    Assert.Equal(body, c.BodyId);
+                    Assert.Equal(UndergroundComplex.BandOf(level) + 1, c.Band);
+                }
+            }
+        }
+    }
 }

@@ -124,8 +124,7 @@ public static class FieldClue
             "somewhere the sheet does not otherwise mention.",
         ];
 
-        ulong seed = DiceRule.Seed($"clue:paper:{paperId}");
-        string body = papers[(int)(seed % (ulong)papers.Length)];
+        string body = papers[WhichPaper(paperId, papers.Length)];
 
         Certainty certainty = CertaintyOf(paperId);
         string worth = certainty switch
@@ -142,5 +141,40 @@ public static class FieldClue
         };
 
         return body + worth;
+    }
+
+    /// <summary>Which of the papers this id is. ONE roll, shared by the title and the page — so the cover
+    /// sheet in the satchel is the cover sheet of the document you will actually read. Rolling twice would
+    /// give a captain a pay sheet in their pocket that opens as a shipping manifest.</summary>
+    private static int WhichPaper(string paperId, int count) =>
+        (int)(DiceRule.Seed($"clue:paper:{paperId}") % (ulong)count);
+
+    /// <summary>#613 · WHAT THE PAPER IS CALLED, in a pocket. Owner, holding several: <i>"the operational
+    /// papers could have individual short titles… now they look identical in inventory."</i>
+    ///
+    /// <para>He is right, and it was worse than cosmetic. A satchel of six lines all reading "operational
+    /// paper" is a satchel you cannot reason about: you cannot tell which one you have already read, which
+    /// one came from the floor with the sealed way, or whether picking up a seventh got you anything new. An
+    /// inventory whose entries are indistinguishable is not an inventory, it is a counter.</para>
+    ///
+    /// <para>The titles are what the paperwork calls ITSELF — dry, filed, and about procedure. None of them
+    /// says lead, clue, site or facility, because the whole point of the ladder is that the captain decides a
+    /// document is worth something. A form that announced its own importance would be doing that for
+    /// them.</para></summary>
+    public static string Title(string paperId)
+    {
+        ArgumentNullException.ThrowIfNull(paperId);
+
+        string[] titles =
+        [
+            "movement order, third copy",
+            "supply requisition, countersigned",
+            "shipping manifest, torn",
+            "maintenance log, two hands",
+            "inspection schedule, margin list",
+            "pay sheet, allowances",
+        ];
+
+        return titles[WhichPaper(paperId, titles.Length)];
     }
 }

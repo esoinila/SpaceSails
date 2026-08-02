@@ -10,7 +10,7 @@ namespace SpaceSails.Core.Tests;
 public class GroundLessonTests
 {
     [Fact]
-    public void TheThreeSurfaceKeys_AreEachNamed()
+    public void EverySurfaceKey_IsNamed()
     {
         // E, T and G are the whole reason the card exists. If a lever is ever dropped from this list, the
         // key it teaches goes back to being a secret.
@@ -87,5 +87,59 @@ public class GroundLessonTests
         // …and a save written before #440 simply lacks the field, which must read as "not yet taught"
         // (they get it once on their next trip down) rather than throwing or defaulting to already-seen.
         Assert.False(new ProgressSection().GroundLessonSeen);
+    }
+
+    [Fact]
+    public void TheEKeyTeachesEVERYTHINGItDoesNow_AndNotJustDigging()
+    {
+        // #440 REOPENED. Owner, after a day of building the ground out: "the E key does a lot more now."
+        //
+        // It did mean DIG, once, when a surface was regolith and somewhere to leave a chest. E is now the
+        // ONE key that touches anything at all, and a card that still titled it "Dig" was teaching a new
+        // captain to walk past every door, console, pump, lift and searchable room on the moon.
+        //
+        // This guard is deliberately about the TITLE as well as the body, because the title is the only part
+        // a captain reads at a glance, and the title was the part that was lying.
+        GroundLesson.Lever e = Assert.Single(GroundLesson.Levers, l => l.Key == "E");
+
+        Assert.DoesNotContain("dig", e.Title, System.StringComparison.OrdinalIgnoreCase);
+        foreach (string thing in new[] { "door", "console", "lift", "room" })
+        {
+            Assert.Contains(thing, e.What, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        // The shovel is not GONE — it is one of the things E does, and burying is still the reason most
+        // captains first press it. It just no longer gets to be the whole lesson.
+        Assert.Contains("bur", e.What, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void TheCardKnowsTheGroundIsMoreThanAPlaceToBuryThings()
+    {
+        // Owner: "also going to ground is more than burying chest now." The head line led with caching,
+        // which was written when caching was all there was. The one thing true of every square metre of a
+        // surface — and the clock every other choice out here runs against — is the AIR.
+        Assert.Contains("air", GroundLesson.Head, System.StringComparison.OrdinalIgnoreCase);
+
+        // And the shelter is on the card at all, which it was not until #573: the single building that can
+        // save a captain's life must not be something they discover by nearly dying without it.
+        Assert.Contains(GroundLesson.Laws, l => l.Contains("shelter", System.StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void TheSatchelLeverIsWrittenForEmptyPockets()
+    {
+        // #603 · Owner: "should we mention the inventory here also?" This card is where keys are introduced
+        // and I now does something, so yes.
+        //
+        // The wording constraint is the interesting half. On a FIRST landing the pockets are empty, so a
+        // lever that describes what is in them describes nothing. It has to promise (a) there is somewhere
+        // for the first thing you find to go, (b) it survives the trip home, and (c) it is what you reach
+        // for at a door that will not open — which is the only moment a captain goes looking for it.
+        GroundLesson.Lever i = Assert.Single(GroundLesson.Levers, l => l.Key == "I");
+
+        Assert.Contains("stays yours", i.What, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("try", i.What, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("door", i.What, System.StringComparison.OrdinalIgnoreCase);
     }
 }

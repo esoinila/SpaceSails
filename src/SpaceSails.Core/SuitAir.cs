@@ -173,8 +173,20 @@ public static class SuitAir
     }
 
     /// <summary>The gauge line: how long you have, and — the part that matters — how much further you may
-    /// go and still come home. A bare percentage would be exactly the silent timer this must not be.</summary>
-    public static string Readout(double airLeftSeconds, double distanceHomeDu)
+    /// go and still come home. A bare percentage would be exactly the silent timer this must not be.
+    ///
+    /// <para>#612 · <paramref name="drawing"/> is whether the tank is actually RUNNING.
+    /// Owner, standing on a floor of the Hive and reading this line: <i>"where here does it say if I consume
+    /// tanks or have air?"</i></para>
+    ///
+    /// <para>It did not say, anywhere. The gauge showed a duration and a distance and left the single most
+    /// important bit — whether that duration is going DOWN — to be inferred from where the captain thought
+    /// they were standing. On a surface that was survivable, because the answer was always yes. It stopped
+    /// being survivable the day floors existed that hold pressure and floors that do not, sixty seconds
+    /// apart by lift: a captain sitting in a pressurised lobby watching a countdown they believe is running
+    /// will leave far too early, and one who thinks they are sealed when they are not will not leave at
+    /// all.</para></summary>
+    public static string Readout(double airLeftSeconds, double distanceHomeDu, bool drawing = true)
     {
         if (airLeftSeconds <= 0)
         {
@@ -184,12 +196,20 @@ public static class SuitAir
         string clock = OnTheReserve(airLeftSeconds)
             ? $"RESERVE {(int)Math.Ceiling(airLeftSeconds / ReserveSeconds * ReserveMinutes)}m"
             : SuitClock(airLeftSeconds);
+
+        // Not drawing: the tank is stopped and the distance-home arithmetic is meaningless, because nothing
+        // is being spent to stand here. Say THAT, and say it in the words the floor used when it lulled you.
+        if (!drawing)
+        {
+            return $"AIR {clock} · SEALED — you are breathing the room, not the tank.";
+        }
+
         return BandFor(airLeftSeconds, distanceHomeDu) switch
         {
             Band.PastTheLine => $"AIR {clock} — PAST THE LINE. The walk back costs more than you are carrying.",
             Band.Critical => $"AIR {clock} — almost gone.",
-            Band.Thinking => $"AIR {clock} · {RemainingReachDu(airLeftSeconds, distanceHomeDu):F0} du further, then turn.",
-            _ => $"AIR {clock} · {RemainingReachDu(airLeftSeconds, distanceHomeDu):F0} du further and still home dry",
+            Band.Thinking => $"AIR {clock} ▼ · {RemainingReachDu(airLeftSeconds, distanceHomeDu):F0} du further, then turn.",
+            _ => $"AIR {clock} ▼ · {RemainingReachDu(airLeftSeconds, distanceHomeDu):F0} du further and still home dry",
         };
     }
 

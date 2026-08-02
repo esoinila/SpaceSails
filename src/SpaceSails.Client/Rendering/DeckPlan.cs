@@ -147,7 +147,7 @@ public sealed class DeckPlan
     /// in every floor so we visually spot some difference when we go to different floors"</i> —
     /// and, for what it should say, <i>"we can use seriously large numbers there :-D"</i> ...
     /// <i>"or depths (in meters)"</i>.</para></summary>
-    public (float X, float Y, string Text, float Px)[] BigLabels { get; private set; } = [];
+    public (float X, float Y, string Text, float Px, int Tone)[] BigLabels { get; private set; } = [];
     public Backdrop[] Backdrops { get; private set; }
     public Door[] Doors { get; }
 
@@ -212,7 +212,7 @@ public sealed class DeckPlan
         SpaceSails.Core.SurfaceScenery.Mark[]? scenery = null,
         SpaceSails.Core.BodyPalette.Ink? stoneInk = null,
         SpaceSails.Core.BodyPalette.Ink? doorInk = null,
-        (float X, float Y, string Text, float Px)[]? bigLabels = null,
+        (float X, float Y, string Text, float Px, int Tone)[]? bigLabels = null,
         SpaceSails.Core.BodyPalette.Ink? hullInk = null)
     {
         Walls = walls;

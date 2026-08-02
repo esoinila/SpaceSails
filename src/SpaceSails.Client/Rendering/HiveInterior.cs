@@ -139,12 +139,23 @@ public static class HiveInterior
         // "sometimes people get off the elevator at wrong floor so there is this instinct to always check
         // that the floor is correct." A number on the instrument panel would answer the question; a plate on
         // the WALL is the thing you actually look at, because looking at it is what people do.
+        // #612 · AND WHETHER YOU CAN BREATHE HERE. Owner, reading the plate: "it should say if the floor is
+        // pressurized also" — and, of the gauge: "where here does it say if I consume tanks or have air?"
+        //
+        // It is the same question twice, and the plate is the right place to answer it: a captain stepping
+        // out of a car needs WHERE AM I and CAN I BREATHE in one glance, and the second one decides whether
+        // everything they were about to do is affordable. Three lines, one plate, and the air line carries
+        // the colour so it reads before it is read.
+        bool holdsAir = UndergroundComplex.HoldsPressure(level);
         double signX = shaftX;
         double signY = shaftY + UndergroundComplex.CorridorHalf;
-        var bigLabels = new List<(float X, float Y, string Text, float Px)>
+        var bigLabels = new List<(float X, float Y, string Text, float Px, int Tone)>
         {
-            ((float)signX, (float)(signY + 9.6), UndergroundComplex.DepthPaint(level), 44f),
-            ((float)signX, (float)(signY + 6.6), UndergroundComplex.NameOf(bodyId, level), 19f),
+            ((float)signX, (float)(signY + 10.6), UndergroundComplex.DepthPaint(level), 44f, 0),
+            ((float)signX, (float)(signY + 7.8), UndergroundComplex.NameOf(bodyId, level), 19f, 0),
+            ((float)signX, (float)(signY + 5.4),
+                holdsAir ? "PRESSURISED · TANK STOPPED" : "NO ATMOSPHERE · TANK RUNNING",
+                17f, holdsAir ? 1 : 2),
         };
         labels.Add(((float)shaftX - 30f, (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
 
