@@ -478,16 +478,45 @@ public sealed class DeckView
                 leaf = new RgbaColor(di.R, di.G, di.B, 95);
             }
 
+            // #606 · A MACHINED DOOR IS A DIFFERENT OBJECT, not a different colour. Owner, hiding the lift
+            // head in an ordinary hut: "The expensive doors would be the clue."
+            //
+            // Colour had already been asked to carry this and could not (#585) — violet means shelter, means
+            // one ruin hatch in seven, and means the way down, so it identified nothing. Weight is a second
+            // channel: a fat leaf with an inner rail and its frame picked out at the jambs, against the single
+            // thin stroke every hatch on the moon is drawn with. That reads at a glance, from close, without a
+            // word of copy — which is the whole technique (docs/art-manifest-hive.md).
+            //
+            // It still retracts. SEALED is what it looks like, not what it does: a door here that refused to
+            // open would strand a captain in a lift head, and the reachability audits would be right to say so.
+            float weight = d.Machined ? 6f : 3.5f;
             bool open = Airlock.MayOpen(toDoor, nearestPartner, DoorOpenRadius);
             if (open)
             {
                 // Retracted: a short leaf at each jamb (25% in from each end).
-                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), leaf, 3f);
-                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), leaf, 3f);
+                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
+                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
             }
             else
             {
-                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), shut, 3.5f);
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), shut, weight);
+                if (d.Machined)
+                {
+                    DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), new RgbaColor(18, 20, 30, 210), 2f);
+                }
+            }
+            if (d.Machined)
+            {
+                // The frame: a short stub across the opening at each jamb, the way a plan draws a door that
+                // was set into a hole somebody cut rather than built around.
+                float jx = d.X2 - d.X1, jy = d.Y2 - d.Y1;
+                float jl = MathF.Sqrt((jx * jx) + (jy * jy));
+                if (jl > 0.01f)
+                {
+                    float nx = -jy / jl * 0.9f, ny = jx / jl * 0.9f;
+                    DrawSeg(P(d.X1 - nx, d.Y1 - ny), P(d.X1 + nx, d.Y1 + ny), shut, 2.5f);
+                    DrawSeg(P(d.X2 - nx, d.Y2 - ny), P(d.X2 + nx, d.Y2 + ny), shut, 2.5f);
+                }
             }
         }
 
