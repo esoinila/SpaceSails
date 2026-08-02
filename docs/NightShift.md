@@ -43,6 +43,16 @@ PR, and again if it sits.** Three sessions running lost time to this. A rebase c
 guard by reintroducing the fixed behaviour from the other side — **re-verify your guards still go RED after
 rebasing.**
 
+**Do not let a branch chase a moving base.** On 2026-08-02 one PR was rebased onto the head, then spent so
+long on a local suite that the base moved twice more underneath it; it never pushed at all. Push the rebase
+*first*, let CI start, and run your local checks while it does. A branch that is rebased-but-unpushed is
+invisible to everyone and helps nobody.
+
+And when a rebase reports a conflict, **read what the two sides were each doing before resolving.** The worst
+conflict that night was two PRs editing `BuildBeacons` — and they turned out to touch different branches of
+it (one the surface wash, one the underground one), so the correct resolution kept *both* and the clean
+rebase confirmed it. Git flags textual adjacency; only you can see intent.
+
 ---
 
 ## 2 · Merge authority
@@ -78,7 +88,22 @@ coin-flip merged at 3am.
 6. **Core stays pure and deterministic** — seeded off `DiceRule.Seed`/`DiceRule.Roll`. No `DateTime`, no
    `Random`.
 7. **Full suite before every PR.** `dotnet test -c Debug` from the repo root, ~25 min, currently ~2550 Core +
-   ~25 client. A PR that says "tests pass" without the numbers has not run them.
+   ~30 client. A PR that says "tests pass" without the numbers has not run them.
+
+   **…but CI is the arbiter, and on a busy night the local number is not trustworthy.** This is not a
+   theory — on 2026-08-02 three workers each went looking for a full local Core count and *not one of them
+   got a reliable answer.* The same code aborted at **2533, then 2531, 2512 and 2484** on successive runs,
+   purely from testhost/MSBuild lock contention between concurrent sessions. With several workers running at
+   once, that is the **normal** overnight condition, not an anomaly.
+
+   So when the box is busy:
+   - run the **client** suite (fast, stable) and **targeted Core over every file you touched**;
+   - let CI's `build-and-test` — the whole solution, clean, on Linux — be the verdict;
+   - **say plainly in the PR that you could not get a full local number.** Quoting a count you do not trust
+     is worse than reporting the gap, because the next person reads it as evidence.
+   - `Stop-Process -Name testhost -Force -ErrorAction SilentlyContinue` clears a jam. If a run has been
+     thrashing for twenty minutes, kill it and push — getting the PR in front of CI beats another hour of
+     local flakiness.
 8. **Comment style.** Heavy `// #NNN · TITLE` blocks that quote the owner verbatim and explain **why**, not
    what. This codebase's comments are its design record; match the neighbours.
 
