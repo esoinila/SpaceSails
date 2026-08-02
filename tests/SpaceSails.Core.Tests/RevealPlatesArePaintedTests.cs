@@ -96,6 +96,33 @@ public class RevealPlatesArePaintedTests
     }
 
     [Fact]
+    public void EveryBoliviaBeatIsPainted()
+    {
+        // The stand is keyed by beat ID, not index, so this sweep walks the SCRIPT — the thing the client
+        // actually renders — rather than the three ids I happen to remember. Insert a beat and forget its
+        // painting and this is what says so.
+        Assert.NotEmpty(BoliviaEncounter.Script);
+
+        foreach (EncounterBeat beat in BoliviaEncounter.Script)
+        {
+            string art = BoliviaEncounter.ArtFile(beat.Id);
+            Assert.False(
+                string.IsNullOrEmpty(art),
+                $"Bolivia beat \"{beat.Id}\" has no plate. The freeze-frame that ENDS this script has been " +
+                "painted since PR-BUSTED; a beat that earns it should not be text with buttons under it.");
+            AssertPainted($"Bolivia beat \"{beat.Id}\"", art);
+        }
+    }
+
+    [Fact]
+    public void AnUnknownBoliviaBeatAsksForNothing()
+    {
+        // The client calls ArtFile with whatever id the script hands it and renders nothing on empty. A
+        // stray id must be a quiet no-picture, never a broken frame.
+        Assert.Equal(string.Empty, BoliviaEncounter.ArtFile("no-such-beat"));
+    }
+
+    [Fact]
     public void EveryDeathCardIsPainted()
     {
         // The sweep that #621's bug would have failed: every cause × every place, because the PLACE decides

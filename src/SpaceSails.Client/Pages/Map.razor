@@ -4128,6 +4128,17 @@
                         @if (bust.BoliviaBeatIndex < BoliviaEncounter.Script.Count)
                         {
                             EncounterBeat beat = BoliviaEncounter.Script[bust.BoliviaBeatIndex];
+                            @* #528 · THE STAND HAS A PICTURE NOW. The freeze-frame that ENDS this scene has
+                               been painted since PR-BUSTED; the three beats that earn it were text with
+                               buttons under them, so a captain who HELD the line never saw one frame of
+                               what they just lived through. Same sepia register as the freeze-frame. Keyed
+                               by the beat's id, never its index — a script is a list somebody will edit —
+                               and onerror-hides, so a missing file leaves this panel as it was. *@
+                            @if (BoliviaEncounter.ArtFile(beat.Id) is { Length: > 0 } beatArt)
+                            {
+                                <img class="bolivia-beat-img" src="@beatArt" alt="" aria-hidden="true"
+                                     onerror="this.style.display='none'" />
+                            }
                             <div class="busted-quote">@beat.Narration</div>
                             <div class="busted-options">
                                 @foreach (EncounterChoice choice in beat.Choices)

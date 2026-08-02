@@ -3079,6 +3079,21 @@
     margin-bottom: 0.75rem;
 }
 
+/* #528 · the Bolivia's per-beat plate. Capped SHORT (28vh) and cropped, because the three choice buttons
+   under it are the reason the card is open — a picture that pushed them off the fold would make the scene
+   worse, not better. The sepia frame matches the freeze-frame that ends the same script. A missing file
+   onerror-hides and this rule simply never applies. */
+.bolivia-beat-img {
+    display: block;
+    width: 100%;
+    max-height: 28vh;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    border: 1px solid rgba(190, 150, 110, 0.32);
+    background: #0b0906;
+    margin-bottom: 0.7rem;
+}
+
 /* #480 — the nerve ledger on the death card: the last few named pips, so "what broke me?" is answered at the
    one moment the question is loudest. Monospace and plain, deliberately reading like an instrument readout
    rather than more fiction — the fiction is the line above it. */
