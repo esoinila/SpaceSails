@@ -139,6 +139,15 @@ public sealed class DeckPlan
 
     public ConsoleSpot[] Consoles { get; private set; }
     public (float X, float Y, string Text)[] RoomLabels { get; private set; }
+
+    /// <summary>#600 · Signage PAINTED ON THE STRUCTURE — drawn several times the size of a room
+    /// label, the way a real facility marks a stairwell or a car-park level.
+    ///
+    /// <para>Owner, riding between floors that are built from the same bones: <i>"something different
+    /// in every floor so we visually spot some difference when we go to different floors"</i> —
+    /// and, for what it should say, <i>"we can use seriously large numbers there :-D"</i> ...
+    /// <i>"or depths (in meters)"</i>.</para></summary>
+    public (float X, float Y, string Text)[] BigLabels { get; private set; } = [];
     public Backdrop[] Backdrops { get; private set; }
     public Door[] Doors { get; }
 
@@ -194,7 +203,8 @@ public sealed class DeckPlan
         (float X, float Y)[]? tables = null,
         SpaceSails.Core.SurfaceScenery.Mark[]? scenery = null,
         SpaceSails.Core.BodyPalette.Ink? stoneInk = null,
-        SpaceSails.Core.BodyPalette.Ink? doorInk = null)
+        SpaceSails.Core.BodyPalette.Ink? doorInk = null,
+        (float X, float Y, string Text)[]? bigLabels = null)
     {
         Walls = walls;
         CollisionSegments = new SurfaceCollision.Segment[walls.Length];
@@ -205,6 +215,7 @@ public sealed class DeckPlan
         CollisionField = SurfaceCollision.WallIndex.Build(CollisionSegments);
         Consoles = consoles;
         RoomLabels = roomLabels;
+        BigLabels = bigLabels ?? [];
         Backdrops = backdrops;
         Doors = doors ?? [];
         Tables = tables ?? [];
