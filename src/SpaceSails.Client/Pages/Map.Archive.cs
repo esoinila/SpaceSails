@@ -265,6 +265,15 @@ public sealed partial class Map
 
         ShowPulseMessage("⏻ " + ArchiveNode.PurgeLine);
         RendererInterop.PlayCue("board");
+
+        // #528 · The one irreversible act in the game, and it was a toast. A plate is not a confirmation
+        // dialog — it fires AFTER the handle has gone over, which is the one place a picture can be as quiet
+        // as this feature needs and still exist. The four visions each got a painting on the way in; the
+        // moment the noise stops had nothing. Core owns the words, and they name nobody, as always.
+        ShowStoryPlate(
+            ArchiveNode.PurgedPlate.Title,
+            ArchiveNode.PurgedPlate.ArtFile,
+            ArchiveNode.PurgedPlate.Caption);
         RebuildWreckDeck();   // the legend still reads, and now it reads "pulled"
         RequestVaultSave();
     }

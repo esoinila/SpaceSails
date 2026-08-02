@@ -201,7 +201,18 @@ public static class DeathNarration
         // all. The place decides the picture; the derelict finally has one.
         if (place == DeathPlace.Derelict)
         {
-            return "death-derelict.jpg";
+            // #636 gave the derelict a card of its own and then handed all four of its causes the SAME one,
+            // which was the right first move and is one move short. The Joined death aboard a hull is not
+            // the same picture as the other three: it is the only one where the captain did not stop. The
+            // prose says so — "you stopped moving deep inside {body}, and then moving again, wrong", "you
+            // went further IN rather than back toward the lock" — and `death-derelict.jpg` is a hull with a
+            // captain who has come to a halt in it. A card whose picture ends the sentence differently from
+            // the words is this project's most expensive recurring bug, and it does not stop being one when
+            // the two are merely at different volumes.
+            //
+            // The frame it gets instead is a dropped lamp and a figure walking AWAY from the lock, small and
+            // already half swallowed. Nothing in it explains anything, which is the rule for this cause.
+            return cause == DeathCause.Joined ? "death-joined-derelict.jpg" : "death-derelict.jpg";
         }
 
         return place == DeathPlace.LandingParty

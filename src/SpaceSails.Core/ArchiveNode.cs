@@ -410,6 +410,29 @@ public static class ArchiveNode
         "is now exactly as quiet as every other dead ship you have stood in. Your hands are steadier. That " +
         "is the part to be careful about.";
 
+    /// <summary>
+    /// #528 · THE ONE THING IN THE GAME THAT CANNOT BE UNDONE, and it was a toast.
+    ///
+    /// <para>Every other irreversible act in SpaceSails is loud about itself. This one is deliberately not:
+    /// there is no confirmation, no restatement, no softening, and the whole feature turns on that
+    /// restraint. But a plate is not a confirmation — it fires <b>after</b> the handle has already gone
+    /// over, which is the one place a picture can be as quiet as this feature needs and still exist.</para>
+    ///
+    /// <para>And it is the natural place for a card, because what the captain has just done is make a
+    /// compartment ORDINARY. The four visions each got a painting on the way in; the moment the noise stops
+    /// had nothing at all. The frost on the column IS the whole story.</para>
+    ///
+    /// <para>Note what is NOT here, exactly as in <see cref="PurgeLine"/>: any statement about whose pattern
+    /// it was. A captain who did not pay to read the collar never learns, and the record of what they did is
+    /// the silence afterwards.</para>
+    /// </summary>
+    public static readonly RevealPlate PurgedPlate = new(
+        "THE COLUMN IS COLD NOW",
+        "art/archive-pulled.jpg",
+        "Frost has closed over the housing all the way up, every indicator on it is dark, and the handle is "
+        + "down. The compartment is exactly as interesting as every other dead fitting on this ship. There "
+        + "is nothing here to look at, and there never will be again.");
+
     /// <summary>The line the resurrection card reads, ONCE, on the death after a captain purged their own
     /// pattern — the smallest change in the whole feature and the thing everything else is for. The card
     /// has never read this before and will never read it again.</summary>
