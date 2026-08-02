@@ -3262,7 +3262,7 @@ public partial class Map
         // #411: a rare seeded square on an outer icy moon hides a cold KAAMOS supply pod — a cargo run that
         // never arrived, distinct from ordinary treasure. Sweeping it the first time assembles cold-pod (and
         // may open the reach). Once held, the square is ordinary regolith and the normal probe result stands.
-        if (!_kaamos.Has("cold-pod") && KaamosFind.IsColdPodSquare(ex.Stop.Body.Id, squareX, squareY))
+        if (!_kaamos.Has("cold-pod") && KaamosPodHere(ex.Stop.Body.Id, squareX, squareY))
         {
             TryAssembleKaamos("cold-pod",
                 "❄ Your probe rings off metal a foot down — not a coin, a HULL. You clear the frost and it's a " +

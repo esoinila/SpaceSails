@@ -336,7 +336,7 @@ public partial class Map
         Derelict.WreckCause? wreckCauseCheat = null; // #488 /map?wreck=<cause>: board a wreck that died THAT way
         bool secretlabDeep = false;  // #592 /map?secretlab=deep: the rock whose site hides a band
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
-        string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable
+        string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable; ?kaamos=pod|holder instead SEATS the rare find so it can be EARNED
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
         string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
@@ -655,8 +655,18 @@ public partial class Map
                 // #411 dev cheat: /map?kaamos=N assembles the first N PROJEKTI KAAMOS fragments (canonical
                 // order), /map?kaamos=all assembles every one — so the Captain's-ledger readout, its state
                 // transitions, and the one-time reach notice are all reachable without a full playthrough.
+                //
+                // Those GRANT the fragments. Two of the six could only ever be granted, because their real
+                // delivery is deliberately rare: the cold pod is one seeded probe square in seventeen on one
+                // of seven outer moons, and the berth-holder drinks at a given bar roughly one watch in four.
+                // So /map?kaamos=pod puts the pod under whatever ground this excursion lands on, and
+                // /map?kaamos=holder seats the holder at whatever bar this captain docks at — the two beats
+                // become playable on demand instead of merely grantable ("a scene nobody can reach on demand
+                // is a scene that ships broken", and a granted shard proves nothing about the scene that
+                // hands it over). Combine freely: /map?kaamos=holder&dock=ringside-exchange.
                 string candidate = Uri.UnescapeDataString(pair["kaamos=".Length..]).ToLowerInvariant();
-                if (candidate == "all" || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                if (candidate is "all" or "pod" or "holder"
+                    || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                 {
                     kaamosCheat = candidate;
                 }
@@ -974,7 +984,7 @@ public partial class Map
 
         if (kaamosCheat is not null)
         {
-            SeedKaamosCheat(kaamosCheat); // #411: assemble N KAAMOS fragments so the readout + reach notice are testable
+            SeedKaamosCheat(kaamosCheat); // #411: assemble N KAAMOS fragments (readout + reach notice), or seat the pod/holder so the find itself can be played
         }
 
         if (nebulaCheat is not null)

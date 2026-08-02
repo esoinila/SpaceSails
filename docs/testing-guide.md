@@ -479,6 +479,8 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
+| **`?kaamos=pod`** | **Seat the cold KAAMOS supply pod under the ground this excursion lands on — probe any square with the metal detector and *earn* fragment 2 instead of being handed it (#411). Pair with `&land=1`.** |
+| **`?kaamos=holder`** | **Seat the rare KAAMOS berth-holder at whatever bar you dock at, every watch — the tell (fragment 4) becomes playable on demand (#411). Pair with `&dock=<berth>`.** |
 | **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
 | **`?land=1`** | **Ride the shuttle down as soon as the world is ready, onto the first landable body in reach (honours `?site=N`) — the real descent, skipping only the walk to the hatch and the boarding panel. The one-URL way to playtest a surface (#464).** |
 | **`?reevers=N`** | **Set N Old Ones (0–8) down ON the captain the moment they land, already aware — the chase, the pack spacing and the #453 exchange (block roll, blood, five blows) in seconds instead of a long walk (#458).** |
@@ -610,6 +612,49 @@ onto a chosen ground. The verify loop for "does the choice change the surface":
 4. **Board** → walk down. The surface header reads **SET DOWN AT: <SITE>**, and the deep-field walls/features
    differ between, say, site 0 and site 1 on the same body.
 5. Lift off, board again → the same seeded set is offered; re-picking the same site yields the same ground.
+
+### PROJEKTI KAAMOS (arc 1) — `?kaamos=` (#411)
+
+Arc 1 is the sealed ice-moon berth nobody files for. Six fragments — five intel shards and the earned
+capstone — each handed over by a different system. Progress shows in the Captain's ledger as
+**"❄ PROJEKTI KAAMOS — N of 5 shards assembled"**, with every assembled shard re-readable beneath it.
+
+**The one-URL shortcuts (these GRANT the shards):**
+
+- **`?kaamos=N`** assembles the first N fragments in canonical order; **`?kaamos=all`** assembles every one.
+  At 4 intel the ledger flips to *"Enough intel to earn the berth-code"*; with the capstone too, the
+  one-time **"❄❄ THE BERTH-CODE RESOLVES"** notice fires and the ledger settles into the held-berth line.
+- `/map?kaamos=3` is the fastest look at the mid-arc card; `/map?kaamos=all` is the end state.
+
+**The two seats (these let a rare beat be PLAYED, not granted):**
+
+| URL | what you walk |
+| --- | --- |
+| `/map?dock=the-tilt&site=0&land=1&kaamos=pod` | Land, take out the **metal detector**, probe any square: the cold supply pod is under this ground. This is the only fragment with no direct grant-free path — one seeded square in seventeen, on seven outer moons. |
+| `/map?dock=ringside-exchange&kaamos=holder` | Walk to the counter and the barkeep card carries **🌑 Ask about KAAMOS** — the berth-holder is in, this watch, at this bar. Unforced they drink at a given bar roughly one watch in four. |
+
+**In-play delivery to verify by hand (the canonical order):**
+
+1. **`listed-berth`** — dock at **Ringside Exchange**, walk ashore to the **⚜ DEDICATION PLAQUE** and press
+   **[E]**. Ringside is the one plate in the system that names KAAMOS. (The Deep's plate echoes the sealed
+   berth *unnamed* and correctly hands over nothing.)
+2. **`cold-pod`** — `?kaamos=pod` above, or sweep an outer icy moon (europa, ganymede, callisto, titan,
+   miranda, triton) with the detector until a square rings off metal.
+3. **`vantar-log`** — `/map?secretlab=1&land=1`, force the hidden door, and read the lab console whose log
+   is the **undated** one ("a moon off the charts… the manifest sealed"). It never names the project; the
+   connection to the plate is yours to make.
+4. **`holders-tell`** — the bar seam, `?kaamos=holder` above.
+5. **`bought-coordinate`** — the same bar seam once the thread has begun. The button prices itself
+   (**🌑 Buy the KAAMOS coordinate · 1,200 cr**) because clicking it spends the money.
+6. **`berth-code`** — the same seam once 4 intel are in hand; the button reads **❄ Put the KAAMOS pieces
+   together**, and the resolution names *the shards you actually hold*, never a fixed four.
+
+There is also a **third hand** that leaks arc-1 shards: **Static Marsh**, the station oracle
+(`OracleRant`), can speak `vantar-log`, `holders-tell` or `cold-pod` as a true line at any bar — stand her
+a drink to widen the channel.
+
+**What is deliberately NOT built:** the Enceladus route and the reveal at the ice moon.
+`KaamosLore.RevealSanityShockHook` (40.0) is consumed by nothing. See issue #411.
 
 ### NEBULA MUTUAL (arc 2) and THE CONVERGENCE — `?nebula=` / `?converge=1` (#422)
 

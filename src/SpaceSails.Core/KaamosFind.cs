@@ -23,9 +23,21 @@ public static class KaamosFind
     public const int ColdPodOneInSquares = 17;
 
     /// <summary>True if THIS beach-comber square, on THIS body, is the one hiding the cold KAAMOS supply
-    /// pod. Deterministic. The client checks it on a probe and, on the first hit, assembles <c>cold-pod</c>.</summary>
-    public static bool IsColdPodSquare(string bodyId, int squareX, int squareY)
+    /// pod. Deterministic. The client checks it on a probe and, on the first hit, assembles <c>cold-pod</c>.
+    ///
+    /// <para><paramref name="forced"/> is the <c>/map?kaamos=pod</c> dev seat (2026-08-02 story pass): the
+    /// pod is under whatever ground you are standing on, so fragment 2 can be EARNED with a shovel instead
+    /// of granted by <c>?kaamos=N</c>. It is the only fragment with no direct quick start — one seeded square
+    /// in seventeen, on seven bodies, is a scene nobody can reach on demand, and "a scene nobody can reach on
+    /// demand is a scene that ships broken". The forced answer deliberately ignores the body list too: the
+    /// point is to test the FIND, and a tester who has landed somewhere warm should not have to fly.</para></summary>
+    public static bool IsColdPodSquare(string bodyId, int squareX, int squareY, bool forced = false)
     {
+        if (forced)
+        {
+            return true;
+        }
+
         if (string.IsNullOrEmpty(bodyId) || !ColdPodBodies.Contains(bodyId))
         {
             return false;
@@ -42,9 +54,19 @@ public static class KaamosFind
 
     /// <summary>True if the rare KAAMOS berth-holder is drinking at THIS bar on THIS watch-day (sim-day).
     /// Deterministic per (bar, day). The client offers the "ask about KAAMOS" seam when this holds and the
-    /// <c>holders-tell</c> shard is not yet in hand.</summary>
-    public static bool HolderAtBar(string bodyId, int watchDay)
+    /// <c>holders-tell</c> shard is not yet in hand.
+    ///
+    /// <para><paramref name="forced"/> is the <c>/map?kaamos=holder</c> dev seat (2026-08-02 story pass): the
+    /// berth-holder is drinking at THIS bar, this watch, whichever bar you docked at. One watch in four, at
+    /// whichever bar you happen to walk into, is not a scene anyone can open on purpose — and the tell is the
+    /// arc's best-written beat, so it was also the one hardest to look at.</para></summary>
+    public static bool HolderAtBar(string bodyId, int watchDay, bool forced = false)
     {
+        if (forced)
+        {
+            return true;
+        }
+
         if (string.IsNullOrEmpty(bodyId))
         {
             return false;
