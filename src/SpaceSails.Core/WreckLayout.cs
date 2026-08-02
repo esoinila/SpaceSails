@@ -261,8 +261,10 @@ public static class WreckLayout
                 break;
 
             default:
-                // DriveFailure, LifeSupportFailure, NavigationalError, InsuranceJob — she is INTACT, which
-                // is its own kind of wrong. Nothing to draw; that IS the finding.
+                // DriveFailure, LifeSupportFailure, NavigationalError, InsuranceJob and
+                // VentedByOneOfTheirOwn — she is INTACT, which is its own kind of wrong. Nothing to draw;
+                // that IS the finding. On the vented hull the damage is not structural at all: it is which
+                // side of every hatch the dogs are on, and the vacuum behind them.
                 break;
         }
     }
@@ -423,6 +425,12 @@ public static class WreckLayout
         // one, and this is where it is.
         Derelict.WreckCause.Infested => new(-11f, -6f),
         Derelict.WreckCause.InsuranceJob => new(7f, 6f),
+        // AMIDSHIPS IN THE SPINE, AND THE ONLY CAUSE STATION THAT IS NOT IN A ROOM — because her evidence is
+        // not in a room. "Every door was thrown from the SPINE side": you stand in the corridor, look fore
+        // and aft, and every hatch on the ship has its dogs on YOUR side of it. The tenth cause was the only
+        // one with no arm in this switch, so it fell through to the fallback below — which happens to be this
+        // same point, reached by accident and named "the wreck". Declared now, so the station is a decision.
+        Derelict.WreckCause.VentedByOneOfTheirOwn => new(0f, 0f),
         _ => new(0f, 0f),
     };
 
@@ -460,6 +468,7 @@ public static class WreckLayout
         Derelict.WreckCause.Piracy => "the stripped hold",
         Derelict.WreckCause.Infested => "the nest in the deep hold",
         Derelict.WreckCause.InsuranceJob => "the lifeboat cradles",
+        Derelict.WreckCause.VentedByOneOfTheirOwn => "the hatch dogs — spine side",
         _ => "the wreck",
     };
 }
