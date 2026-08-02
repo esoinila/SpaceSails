@@ -308,6 +308,179 @@ public static class UndergroundComplex
     public static bool HoldsPressure(int level) =>
         level < 0 && (-level - 1) % FloorsPerShaft == 0;
 
+    // ── #608 · THE REFUGES — A DEAD FLOOR IS A FLOOR OF SUIT-WORK, AND SUITS RUN OUT ─────────────────────
+    //
+    // Owner, in the order he said it, after suffocating on B2: "I thought there is air in the base?" ...
+    // "there should be a warning or something :-D ... the rooms should have airlocks etc ... some havens
+    // :-D" ... "like the basement is more dangerous than the surface now :-D" ... "on surface there are
+    // emergency shelters :-D" ... "Still for safety there would need to be a couple of places with air lock
+    // and air refilling, because otherwise the elevator being busy could kill employees, and those honest
+    // criminal scientists are hard to recruit :-D" ... and finally, deciding it:
+    //
+    //     "there should be like at least one air replenish station in each of the airless labs
+    //      underground... for pure safety"
+    //
+    // AT LEAST ONE, ON EVERY AIRLESS FLOOR. Not "most floors", not "a rare one" — a regulation, in-world and
+    // in code, and RefugesAreOnEveryAirlessFloor walks every floor of every band on every body to say so.
+    //
+    // THE REASON IT IS RIGHT, which is the owner's and is better than the mechanic it costs. He also ruled
+    // on why any floor down here is pressurised at all: "the thought about the dead floors is that it is
+    // very difficult to work in the suit. So all work would happen out of it. So any room that would house
+    // like office work would be pressurized by that constraint" — "like writing with a pen ... reading
+    // documents etc.... that kind of thing would not happen at all in vacuum as a working environment" —
+    // "or any kind of fine motor skill stuff".
+    //
+    // So an airless floor is not an ABANDONED floor. It is a floor of SUIT-WORK: storage, hauling, plant,
+    // hard-vacuum process. It had people in it, in suits, all day, every day — and a building that staffs a
+    // vacuum floor and gives its staff nowhere to go when a tank runs short is a building that is one busy
+    // lift away from killing somebody. Whoever inspected this place made them pay for the refuge. That the
+    // pressure vessels are still holding decades after the last invoice is the same sentence the surface
+    // shelter tells (#573): somebody built this for a stranger and it outlasted them.
+    //
+    // WHAT IT DOES NOT DO IS CANCEL #585. Depth is still paid for in air, because a refuge is not a floor:
+    //
+    //   * it is NEVER beside the lift (MinRefugeDetourDu) — reaching one is a decision to detour, which is
+    //     the verb #608 asked for: not "how long dare I stay" but "can I get from the car to the refuge to
+    //     the room I want and back";
+    //   * its rack is the SURFACE rack, law for law — SurfaceShelter.Produce/Transfer and the two-thirds
+    //     ceiling somebody set on purpose for the next person through the door. More refuges buy RANGE,
+    //     never independence, exactly as more shelters do;
+    //   * it holds pressure and nothing else. There is no locker down here, no reload, no bunk.
+    //
+    // Canon holds: the plate says what the room is FOR and never what the building was for. A safety sign is
+    // the one thing on this ground that is allowed to be plain — a captain who cannot find air is not being
+    // teased (#573) — and it is still an inspectorate's sign, not an explanation.
+
+    /// <summary>Half the breathable width of a refuge, in deck units — the room's own box, inset by the
+    /// poured wall. <see cref="RefugeHolds"/> is the one place that reads it.</summary>
+    public const double RefugeHalfWidth = 6.3;
+
+    /// <summary>Half the breathable height of a refuge.</summary>
+    public const double RefugeHalfHeight = 4.8;
+
+    /// <summary>How far a refuge must stand from the lift before it counts as one worth having.
+    ///
+    /// <para>#608: <i>"Never on the way. If it sits beside the lift it is decoration; it earns its existence
+    /// by being somewhere you have to decide to detour to."</i> Measured from the shaft, so this is the
+    /// smallest walk a captain can ever be asked for — and it is a floor plan, so the real one is longer.</para>
+    ///
+    /// <para><b>Why 70 and not 34.</b> This shipped for an hour as 34, which was chosen by eye and was
+    /// WORTHLESS: the nearest room to the shaft that this generator can produce, measured over 808 dead
+    /// floors, is 34.2 du out — so every room on every floor qualified, the constraint selected nothing, and
+    /// the guard that was supposed to enforce it passed happily on a build deliberately rigged to put the
+    /// refuge in the closest room there is. That is the house rule this repo names out loud (revert the fix
+    /// and watch the guard go RED), and it caught a threshold that meant nothing.</para>
+    ///
+    /// <para>At 70 it is twice the nearest possible room and still satisfiable on every floor the generator
+    /// makes, so the detour is real AND the fallback below never has to fire.</para></summary>
+    public const double MinRefugeDetourDu = 70.0;
+
+    /// <summary>Is (<paramref name="x"/>, <paramref name="y"/>) inside the air of the refuge centred at
+    /// (<paramref name="cx"/>, <paramref name="cy"/>)?
+    ///
+    /// <para><b>The one containment law</b>, so Core, the audit and the live suit cannot disagree about
+    /// whether the captain is breathing. Rectangular rather than the shelter's inscribed ellipse
+    /// (<c>SurfaceShelter.Contains</c>) for the one reason that matters: a shelter is a regolith drum and
+    /// its corners are metres of piled dirt, while this is a POURED ROOM with square corners — an ellipse
+    /// here would leave a captain standing plainly inside a sealed room watching their tank tick down, which
+    /// is precisely the kind of instrument-disagrees-with-the-world lie this ground keeps paying for.</para></summary>
+    public static bool RefugeHolds(double cx, double cy, double x, double y) =>
+        Math.Abs(x - cx) <= RefugeHalfWidth && Math.Abs(y - cy) <= RefugeHalfHeight;
+
+    /// <summary>One pressure refuge: a room somebody kept the seals on, with an air cracker in it.</summary>
+    public readonly record struct Refuge(double X, double Y, string Sign)
+    {
+        /// <summary>Is the captain in its air? <see cref="RefugeHolds"/>, so there is only ever one answer.</summary>
+        public bool Contains(double x, double y) => RefugeHolds(X, Y, x, y);
+    }
+
+    /// <summary>What is stencilled beside a refuge door. An inspectorate's plate: a number, an occupancy and
+    /// a date somebody stopped renewing — which is the whole story of this building told by a form.</summary>
+    public static string RefugeSign(string bodyId, int level, int index)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ulong seed = DiceRule.Seed($"hive:refuge-sign:{bodyId}:{level}:{index}");
+        int number = (int)(seed % 40) + 1;
+        int occupancy = 4 + (int)((seed / 11) % 9);
+        return $"🫁 PRESSURE REFUGE {number} · OCCUPANCY {occupancy} · KEEP CLEAR";
+    }
+
+    /// <summary>The refuges on a floor, taken out of the rooms it had already built.
+    ///
+    /// <para>A refuge IS one of the floor's rooms — three poured walls and a doorway cut in its corridor
+    /// face — and that is deliberate rather than lazy. A room is already audited walkable from the lift
+    /// (13.1), already has a door the captain can find, and already sits down a rib rather than on the
+    /// spine. Inventing a second kind of chamber would be a second thing to keep reachable, and a refuge you
+    /// cannot walk to is a refuge that does not exist.</para>
+    ///
+    /// <para>It stops being a haul room when it becomes one: a pressure vessel somebody maintained is not a
+    /// drawer to turn over, and the air is what it pays.</para></summary>
+    private static List<Refuge> CarveRefuges(
+        string bodyId, int level, List<(double X, double Y)> rooms, double shaftX, double shaftY)
+    {
+        var refuges = new List<Refuge>();
+        if (HoldsPressure(level) || rooms.Count == 0)
+        {
+            return refuges;   // a pressurised floor IS the refuge
+        }
+
+        // #592 · The one room that may never be taken. On a site with a band nobody listed, room 0 of the
+        // last listed floor is the card that reaches it (KeyRoomFor) — designated exactly because a rolled
+        // index would sometimes miss and strand the whole feature forever. Turning it into a refuge would
+        // do the same thing by a different route.
+        int reserved = KeyRoomFor(bodyId) is { } key && key.Level == level ? key.RoomIndex : -1;
+
+        var faraway = new List<int>();
+        var anywhere = new List<int>();
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            if (i == reserved)
+            {
+                continue;
+            }
+            anywhere.Add(i);
+            double dx = rooms[i].X - shaftX, dy = rooms[i].Y - shaftY;
+            if ((dx * dx) + (dy * dy) >= MinRefugeDetourDu * MinRefugeDetourDu)
+            {
+                faraway.Add(i);
+            }
+        }
+
+        // The detour is the design, so it is preferred — but it is NOT allowed to cost the guarantee. On a
+        // floor whose rooms all happen to crowd the shaft, a near refuge beats no refuge, every time: the
+        // owner's line is "at least one ... for pure safety", and a safety regulation that a seed can talk
+        // out of is not one.
+        List<int> pool = faraway.Count > 0 ? faraway : anywhere;
+        if (pool.Count == 0)
+        {
+            return refuges;
+        }
+
+        int pick = pool[DiceRule.Roll(DiceRule.Seed($"hive:refuge:{bodyId}:{level}"), pool.Count).Face - 1];
+        (double rx, double ry) = rooms[pick];
+        rooms.RemoveAt(pick);
+        refuges.Add(new Refuge(rx, ry, RefugeSign(bodyId, level, 0)));
+        return refuges;
+    }
+
+    /// <summary>Said once, stepping into a refuge's air on a dead floor. The relief, and the reason it is
+    /// there — which is a form somebody filed, not a kindness.</summary>
+    public const string RefugeBreathingLine =
+        "🫁 The inner door cycles behind you and the readout stops falling. Pressure — in a room somebody " +
+        "was made to build, on a floor nobody was ever meant to be caught out on. The seals held.";
+
+    /// <summary>What the console inside is called.</summary>
+    public const string RefugeTankLabel = "🫁 REFUGE RACK";
+
+    /// <summary>What the plate over the door says at signage size — short enough to read at a run, because
+    /// that is how it will be read.
+    ///
+    /// <para>It names the ROOM, not the floor, and that word is load-bearing (#612). The plate by the lift
+    /// is simultaneously shouting NO ATMOSPHERE about the level; a sign forty du away reading only AIR
+    /// would be a second instrument appearing to contradict the first, which is the one thing #612 says is
+    /// worse than saying nothing. <c>REFUGE ·</c> makes the scope of the claim part of the claim.</para></summary>
+    public const string RefugeGlyph = "🫁 REFUGE · AIR";
+
     /// <summary>What the level is called on the lift panel and the plan header. Named by depth band rather
     /// than from a hand-written list, because there is no longer a fixed bottom to write down.</summary>
     public static string NameOf(int level)
@@ -410,7 +583,8 @@ public static class UndergroundComplex
         IReadOnlyList<LockedDoor> Locked,
         IReadOnlyList<SurfaceLayout.Landmark> Labels,
         IReadOnlyList<(double X, double Y)> RoomCentres,
-        IReadOnlyList<Rib> Ribs);
+        IReadOnlyList<Rib> Ribs,
+        IReadOnlyList<Refuge> Refuges);
 
     /// <summary>#587 · A CROSS CORRIDOR, PUBLISHED RATHER THAN INFERRED.
     ///
@@ -596,8 +770,16 @@ public static class UndergroundComplex
             AddRoomsAlong(walls, doorways, locked, rooms, claimed, bodyId, level, i, x, mouth, far, down);
         }
 
+        // #608 · LAST, because a refuge is taken out of the rooms this floor actually managed to build. Any
+        // earlier and it would be a designated INDEX rather than a designated ROOM — and the claim ledger
+        // above drops a room whenever one would sit on something already standing, so an index chosen before
+        // the loop is an index that sometimes names nothing. That is exactly the shape of the bug KeyRoomFor
+        // was written to avoid, and a safety regulation may not be the second thing in this file to trip
+        // over it.
+        List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, shaftX, shaftY);
+
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(level),
-            walls, doorways, locked, labels, rooms, ribList);
+            walls, doorways, locked, labels, rooms, ribList, refuges);
     }
 
     /// <summary>Rooms down both sides of a rib. About half are locked — the owner's illusion of scale — and a
@@ -1158,9 +1340,17 @@ public static class UndergroundComplex
             "THE RULE, because it is the only one down here that can kill you: the TOP FLOOR OF EVERY SHAFT " +
             "BAND holds pressure. Nothing else does. That is where the lobbies were, and the fans on those " +
             "floors are still turning on somebody's account.\n\n" +
-            $"The nearest air is {NameOf(refuge)} — {upstairs}. You have {tank}.\n\n" +
-            "There are no shelters down here. Nobody built one, because nobody who worked in this building " +
-            "was ever meant to be caught out by it.";
+            $"The nearest floor of air is {NameOf(refuge)} — {upstairs}. You have {tank}.\n\n" +
+            // #608 · AND THE OTHER HALF, now that it is true. This card used to end "there are no shelters
+            // down here", which was honest when it was written and is now the most dangerous sentence in the
+            // game: a captain who believes it will ration a tank they did not have to ration. Owner: "there
+            // should be like at least one air replenish station in each of the airless labs underground...
+            // for pure safety". So the card says where the exception is, and says the two things about it
+            // that decide whether it is any use — it is not beside the lift, and the instrument finds it.
+            "There is a PRESSURE REFUGE on this floor. Every vacuum floor in this building has one: staff " +
+            "worked these levels in suits all day, and somebody with a clipboard made the owners pay for " +
+            "somewhere to go when a tank ran short. It is not beside the lift — it never is — and your " +
+            "tracker paints it as a ring like any shelter on the surface.";
     }
 
     /// <summary>Said on stepping out on the top floor — the lie that makes the rest work.</summary>

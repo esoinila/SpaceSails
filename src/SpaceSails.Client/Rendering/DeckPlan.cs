@@ -29,7 +29,12 @@ public sealed class DeckPlan
         MonolithFoot,
         // #585 · THE HIVE: the lift car, a room to search, a door that never opens, and the
         // camouflaged lift head that is the only part of the whole facility above ground.
-        HiveLift, HiveHaul, HiveSign, HiveHead }
+        HiveLift, HiveHaul, HiveSign, HiveHead,
+        // #608 · The pressure refuge's rack. Its OWN kind rather than a re-used ShelterTank, because the two
+        // buildings share the air law and nothing else: the surface rack sits beside an ammunition press in
+        // a regolith drum that a whole site has several of, and this is a poured room a safety inspectorate
+        // made somebody build, one per dead floor, with nothing in it but air. One kind per verb.
+        HiveRefuge }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.

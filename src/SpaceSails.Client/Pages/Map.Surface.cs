@@ -544,6 +544,15 @@ public partial class Map
         public Dictionary<int, double> ShelterReservoir { get; } = [];
         public HashSet<int> ShelterPumpNoted { get; } = [];
 
+        // #608 · The same three pieces of state for the underground refuges, kept SEPARATE rather than
+        // sharing the shelter dictionaries. The two are indexed differently — a shelter is an index into a
+        // site's shelter list, a refuge is an index into a FLOOR's — so one dictionary would have B3's
+        // refuge and the site's fourth shelter arguing over the same key, and the captain would find a rack
+        // mysteriously drawn down by a building they have never been in.
+        public Dictionary<int, double> RefugeReservoir { get; } = [];
+        public HashSet<int> RefugePumpNoted { get; } = [];
+        public bool RefugeBreathNoted { get; set; }
+
         // ── #585 · THE HIVE. Which floor the captain is on (0 = the surface), and which rooms down there
         //    have already been turned over. Persisted with the excursion, so stepping back into the lift
         //    finds the facility exactly as you left it.
@@ -922,10 +931,62 @@ public partial class Map
         {
             if (UndergroundComplex.HoldsPressure(ex.Floor))
             {
+                ex.RefugeBreathNoted = false;
                 return;
             }
-            // A dead floor drains exactly like open regolith: this is the price of going deeper, and it is
-            // the only thing stopping the facility from being somewhere to live.
+
+            // ── #608 · THE REFUGE ON A DEAD FLOOR ────────────────────────────────────────────────────────
+            //
+            // Owner: "there should be like at least one air replenish station in each of the airless labs
+            // underground... for pure safety" — and, the reason, "otherwise the elevator being busy could
+            // kill employees".
+            //
+            // The SAME two things a shelter does, in the same order and by the same functions: the drain
+            // stops because you are standing in an atmosphere, and the rack pumps on its own for as long as
+            // you care to stand there. Checked BEFORE the drain and returning outright, exactly like the
+            // shelter branch below, so there is no ordering by which a captain sitting in a refuge can
+            // suffocate in it.
+            //
+            // What it does NOT do is make the floor free. It is one room, never beside the lift, and its
+            // regulator stops at the same two thirds somebody set on the surface for the next person
+            // through the door — so depth still costs air (#585), and the refuge buys RANGE.
+            int refuge = RefugeUnderfoot(ex);
+            if (refuge >= 0)
+            {
+                if (!ex.RefugeBreathNoted)
+                {
+                    ex.RefugeBreathNoted = true;
+                    ShowPulseMessage(UndergroundComplex.RefugeBreathingLine);
+                    string found = SurfaceShelter.PartialLine(
+                        RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds);
+                    if (found.Length > 0)
+                    {
+                        // The same fact told by state rather than by a card, and down here it is a colder
+                        // one: a rack in a sealed room a hundred and fifty metres under a moon has been
+                        // drawn on, and the building has been shut for decades.
+                        ShowAndFile(found, "🫁");
+                    }
+                }
+
+                ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
+                    ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
+                if (intoTheTank > 0)
+                {
+                    if (ex.RefugePumpNoted.Add(refuge))
+                    {
+                        ShowPulseMessage(SurfaceShelter.PumpingLine);
+                    }
+                }
+                else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
+                {
+                    ShowPulseMessage(SurfaceShelter.PumpDoneLine);
+                }
+                return;
+            }
+            ex.RefugeBreathNoted = false;
+
+            // Anywhere else on a dead floor drains exactly like open regolith: this is the price of going
+            // deeper, and it is the only thing stopping the facility from being somewhere to live.
         }
 
         int inside = ShelterUnderfoot(ex);
@@ -951,17 +1012,10 @@ public partial class Map
             // nasty failure he walked into: stranded beside an empty rack with nothing to do but die. A
             // cracker that always produces cannot strand anybody, and standing in a shed while the Old Ones
             // keep walking prices the top-up far better than an empty state ever did.
-            double held = SurfaceShelter.Produce(ShelterReservoirNow(ex, inside), dtRealSeconds);
-            double pumped = SurfaceShelter.Transfer(
-                ex.AirSeconds, held, SuitAir.TankSeconds, dtRealSeconds);
-
-            ex.ShelterReservoir[inside] = held - pumped;
+            ex.ShelterReservoir[inside] = DrawFromRack(ex, ShelterReservoirNow(ex, inside),
+                dtRealSeconds, out double pumped);
             if (pumped > 0)
             {
-                ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, pumped);
-                ex.AirLowWarned = false;
-                ex.AirWarned = false;
-                ex.ReserveNoted = false;
                 if (ex.ShelterPumpNoted.Add(inside))
                 {
                     ShowPulseMessage(SurfaceShelter.PumpingLine);
@@ -984,6 +1038,19 @@ public partial class Map
             ex.AirWarned = false;   // re-arm the warnings: the next walk out gets told again
             ex.AirLowWarned = false;
             ex.ReserveNoted = false;
+            return;
+        }
+
+        // #612 + #608 · THE DRAIN IS GATED ON THE SAME PREDICATE THE GAUGE READS.
+        //
+        // Every branch above has already returned for its own reason — it had a rack to run or a tank to top
+        // up, which this cannot express. What it CAN do is make the two answers impossible to disagree: the
+        // suit does not spend anything the hud has just told the captain it is not spending. Nothing reaches
+        // here that TankIsDrawing calls false, so this line does nothing today; the day somebody adds a
+        // fifth way to breathe and forgets one of the two places, it is the difference between a wrong
+        // colour and a death.
+        if (!TankIsDrawing(ex))
+        {
             return;
         }
 
@@ -1267,6 +1334,31 @@ public partial class Map
         {
             (double liftX, double liftY) = UndergroundComplex.ShaftAt(MoonSurface.ExpeditionField());
             Add(liftX, liftY + UndergroundComplex.CorridorHalf + 2.5, home: true);
+
+            // ── #608 · AND THE REFUGES, WHICH ARE THIS FLOOR'S SHELTERS ──
+            //
+            // Owner, exactly: "and those need to show in the motion detector, not the surface ones, when you
+            // are 150 meters below surface."
+            //
+            // That sentence is the whole rule and both halves of it are load-bearing. The surface shelters
+            // are up a shaft and several hundred metres of rock away, so painting them here would be the map
+            // lying (#573) in its most expensive form — a ring on the instrument a captain would spend the
+            // last of a tank walking toward. They are already gone, and they stay gone: this branch never
+            // touches SheltersOn.
+            //
+            // What replaces them is the thing the ring MEANS. On the regolith a not-home ring is "air you
+            // can reach that is not the ship"; on a dead floor that is the refuge, and it deserves the same
+            // colour because it is the same promise. It also answers #608's hardest requirement — "a refuge
+            // you discover AFTER you needed it is a cruelty" — without a map, a paper or a tutorial: the
+            // instrument the captain already watches simply has it on it.
+            //
+            // Nothing is painted on a floor that holds pressure, because there is nothing to point at: the
+            // whole floor is the refuge, and a ring saying "air, 40 du that way" while you are standing in
+            // air is an instrument disagreeing with the room.
+            foreach ((double rx, double ry) in RefugesOn())
+            {
+                Add(rx, ry, home: false);
+            }
             return list;
         }
 
@@ -1546,6 +1638,125 @@ public partial class Map
         ex.ShelterReservoir[index] = start;
         return start;
     }
+
+    // ── #608 · ONE RACK LAW, TWO BUILDINGS ──────────────────────────────────────────────────────────────
+    //
+    // The underground refuges are the surface shelter's mechanic, underground — so they are the surface
+    // shelter's CODE, not a second copy of it. Everything that decides how much air moves lives in
+    // SurfaceShelter (Produce, Transfer, the two-thirds ceiling somebody set for the next person through the
+    // door) and both callers step through this one function.
+    //
+    // The reason it is a function rather than a comment saying "keep these in sync": this project's most
+    // expensive habit is two places that have to agree and only one being changed, and the two racks are a
+    // perfect candidate — they will be tuned by somebody reading one of them. #573's shelter and #608's
+    // refuge now cannot drift, because there is nothing to drift.
+
+    /// <summary>#612 + #608 · IS THE TANK RUNNING? ONE ANSWER, READ BY THE SIM AND BY THE GAUGE.
+    ///
+    /// <para>#612 shipped the <c>AIR: TANKS / ROOM</c> source on the hud because the owner asked <i>"where
+    /// here does it say if I consume tanks or have air?"</i> — and its own issue states the hard part: the
+    /// gauge <b>"has to agree with the plate by the lift on every floor. Two instruments disagreeing about
+    /// whether you can breathe is worse than one instrument saying nothing."</b></para>
+    ///
+    /// <para>It was computed as its own expression beside <c>StepSuitAir</c>'s branches, which is the exact
+    /// arrangement this project keeps paying for: two places that must agree, and only one gets changed. It
+    /// did not survive its first contact with a new way to breathe. A refuge (#608) stops the drain, and the
+    /// hud went on reading TANKS while the sim was not spending anything — a captain sitting in air being
+    /// told, in colour, that their tank was running out.</para>
+    ///
+    /// <para>So the drain is gated on this and the gauge is fed from this. Anything that ever becomes a new
+    /// place to breathe is added HERE, once, and both follow.</para></summary>
+    private bool TankIsDrawing(SurfaceExcursion ex) =>
+        !MoonSurface.IsSafeAboard(_avatarY)                                  // her tube: breathing hers
+        && !StandingInTheShelter(ex)                                         // #573 the deep shelter
+        && !(ex.Floor < 0 && UndergroundComplex.HoldsPressure(ex.Floor))     // #585 a band top
+        && RefugeUnderfoot(ex) < 0;                                          // #608 a pressure refuge
+
+    /// <summary>Run one rack for <paramref name="dt"/> seconds: it makes air, it moves what it can into the
+    /// suit, and the warnings re-arm if anything went in. Returns the reservoir it is left holding, and
+    /// reports how much reached the tank.</summary>
+    private double DrawFromRack(SurfaceExcursion ex, double held, double dt, out double pumped)
+    {
+        double made = SurfaceShelter.Produce(held, dt);
+        pumped = SurfaceShelter.Transfer(ex.AirSeconds, made, SuitAir.TankSeconds, dt);
+        if (pumped > 0)
+        {
+            ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, pumped);
+            ex.AirLowWarned = false;
+            ex.AirWarned = false;
+            ex.ReserveNoted = false;
+        }
+        return made - pumped;
+    }
+
+    /// <summary>#608 · The refuges on the floor the captain is standing on, read off the deck the renderer
+    /// actually drew.
+    ///
+    /// <para><b>Not rebuilt from Core.</b> <c>UndergroundComplex.Build</c> is pure but not free, and this is
+    /// asked every frame by the suit; more importantly, a second call would be a second answer. The consoles
+    /// on <c>_deckPlan</c> ARE the refuges — <see cref="HiveInterior.FloorDeck"/> put them there off the
+    /// floor plan — so the room the captain can see and the room that holds their air are the same object by
+    /// construction rather than by two functions agreeing.</para></summary>
+    private List<(double X, double Y)> RefugesOn()
+    {
+        var found = new List<(double, double)>();
+        foreach (DeckPlan.ConsoleSpot spot in _deckPlan.Consoles)
+        {
+            if (spot.Kind == DeckPlan.ConsoleKind.HiveRefuge)
+            {
+                found.Add((spot.X, spot.Y));
+            }
+        }
+        return found;
+    }
+
+    /// <summary>Which refuge the captain is standing inside, or -1. Never anything but -1 above ground.</summary>
+    private int RefugeUnderfoot(SurfaceExcursion ex)
+    {
+        if (ex.Floor >= 0)
+        {
+            return -1;
+        }
+        List<(double X, double Y)> all = RefugesOn();
+        for (int i = 0; i < all.Count; i++)
+        {
+            if (UndergroundComplex.RefugeHolds(all[i].X, all[i].Y, _avatarX, _avatarY))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>A refuge rack's reservoir, in suit-seconds — the shelter's own story, told about a room
+    /// under a moon. Keyed per FLOOR, so walking back into B7's refuge finds it as you left it and B3's is
+    /// somebody else's problem.</summary>
+    private double RefugeReservoirNow(SurfaceExcursion ex, int index)
+    {
+        if (index < 0)
+        {
+            return 0;
+        }
+        int key = RefugeKey(ex.Floor, index);
+        if (ex.RefugeReservoir.TryGetValue(key, out double held))
+        {
+            return held;
+        }
+
+        // #573's idiom, underground: a rack that is not full means SOMEBODY WAS HERE. Down here that is a
+        // colder sentence than it is on the regolith — the building has been shut for decades and the seals
+        // on this room have not — and it costs nothing but a seeded roll.
+        double start = SurfaceShelter.SomebodyWasHere(
+                ex.Stop.Body.Id, $"{ex.Site.LayoutSalt}:hive{ex.Floor}", index)
+            ? SurfaceShelter.ReservoirSeconds * 0.42
+            : SurfaceShelter.ReservoirSeconds;
+        ex.RefugeReservoir[key] = start;
+        return start;
+    }
+
+    /// <summary>One key per refuge per floor, so B2's rack is not B3's. Same shape as
+    /// <see cref="HiveInterior.RoomKey"/>, and deliberately a different dictionary.</summary>
+    private static int RefugeKey(int level, int index) => (level * 1000) - index;
 
     // ── #585 · THE HIVE: down the shaft, and back up ───────────────────────────────
     //
@@ -2489,13 +2700,49 @@ public partial class Map
         }
 
         double held = ShelterReservoirNow(ex, which);
-        double ceiling = SuitAir.TankSeconds * SurfaceShelter.FillToFraction;
-        ShowPulseMessage(ex.AirSeconds >= ceiling
+        ShowPulseMessage(RackGaugeLine(ex, held));
+    }
+
+    // ── #608 · THE REFUGE'S RACK [E]. The same gauge, in a poured room under a moon. ─────────────────────
+    //
+    // Owner: "Still for safety there would need to be a couple of places with air lock and air refilling,
+    // because otherwise the elevator being busy could kill employees, and those honest criminal scientists
+    // are hard to recruit :-D"
+    //
+    // It reads the machine rather than working a lever, for the identical reason the shelter's does: the
+    // rack pumps on its own for as long as you stand in the air (StepSuitAir), and the PUMPING TIME is the
+    // honest cost. An affordance that did nothing would be worse than none (#212), so [E] says what the
+    // machine is doing and leaves the captain to decide how long they dare stand there — which, on a dead
+    // floor with the lift several rooms away, is a much sharper decision than it is on the regolith.
+    private void HiveRefugeInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.HiveRefuge })
+        {
+            return;
+        }
+
+        int which = RefugeUnderfoot(ex);
+        if (which < 0)
+        {
+            ShowPulseMessage("🫁 The rack's fitting is through the inner door. Step into the air.");
+            return;
+        }
+        ShowPulseMessage(RackGaugeLine(ex, RefugeReservoirNow(ex, which)));
+    }
+
+    /// <summary>#608 · What a rack — either rack — says when it is asked how it is doing. One reading of one
+    /// machine, so the shed on the regolith and the refuge eleven floors down can never describe the same
+    /// state in two different ways.</summary>
+    private static string RackGaugeLine(SurfaceExcursion ex, double held) =>
+        ex.AirSeconds >= SuitAir.TankSeconds * SurfaceShelter.FillToFraction
             ? SurfaceShelter.PumpDoneLine
             : held > SurfaceShelter.ReservoirSeconds * 0.1
                 ? SurfaceShelter.PumpingLine
-                : SurfaceShelter.TrickleLine);
-    }
+                : SurfaceShelter.TrickleLine;
 
     /// <summary>#573 · Raise the tank-is-low card, once per captain ever. Returns true when it went up, so
     /// the caller keeps its pulse line for every later trip.</summary>
@@ -5460,11 +5707,10 @@ public partial class Map
             Rumours: BuildRumours(ex),
             // #564: the tank, drawn as a bar under the tracker.
             AirSeconds: ex.AirSeconds,
-            // #612 · Is the tank actually running? Aboard, in a shelter, or on a floor that holds
-            // pressure it is not — and the gauge said nothing either way until the owner asked
-            // "where here does it say if I consume tanks or have air?"
-            AirDrawing: !MoonSurface.IsSafeAboard(_avatarY) && !StandingInTheShelter(ex)
-                && !(ex.Floor < 0 && UndergroundComplex.HoldsPressure(ex.Floor)),
+            // #612 · Is the tank actually running? The gauge said nothing either way until the owner asked
+            // "where here does it say if I consume tanks or have air?" — and it now asks ONE function
+            // (#608), the same one the drain itself is gated on.
+            AirDrawing: TankIsDrawing(ex),
             AirDistanceHome: DistanceToTheTube(),
             // #573 · AND, once it is low, a BIG on-grid counter anchored to the captain — the same
             // seven-segment idiom the reactor overload uses, which is the owner's own comparison

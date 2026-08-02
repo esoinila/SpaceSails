@@ -522,6 +522,50 @@ every other choice runs against, is the **air**.
 title; the head mentions air; the shelter is on the card at all; and the `I` lever is written for the empty
 pockets a first landing actually has.)*
 
+13.11 **Every airless floor carries at least one pressure refuge** (#608). Owner, after suffocating on B2 and
+then ruling on it: *"there should be like at least one air replenish station in each of the airless labs
+underground… for pure safety"*. **Each** — not most, not a rare one. It is a safety regulation in-world and a
+law in code.
+
+The reason is his too, and it is better than the mechanic it costs. He also ruled on why any floor down here
+holds pressure at all: *"it is very difficult to work in the suit. So all work would happen out of it"* —
+*"writing with a pen … reading documents … any kind of fine motor skill stuff"* does not happen in vacuum. So
+an airless floor is **not an abandoned floor**: it is a floor of **suit-work** — storage, hauling, plant, hard
+vacuum process — staffed all day by people in suits, and a building that staffs one and gives them nowhere to
+go is one busy lift away from killing somebody. *"otherwise the elevator being busy could kill employees, and
+those honest criminal scientists are hard to recruit :-D"*
+
+- **It is one of the floor's own rooms**, carved out of the room list after the ribs are laid — three poured
+  walls and a doorway, so it is walkable from the lift by the same law as every other room (13.1) rather than
+  by a second placement that would have to be kept reachable separately. It stops being a haul room when it
+  becomes one.
+- **It is never on the way.** `MinRefugeDetourDu` = 70 du from the shaft, which is **twice** the nearest room
+  the generator can produce. The first cut of this constant was 34 and was worthless — the closest room over
+  808 dead floors is 34.2 du out, so the rule selected every room and its guard passed on a build rigged to
+  put the refuge in the nearest box there is. **A threshold that nothing can violate is not a threshold**;
+  measure the distribution before choosing the number.
+- **It does not cancel #585.** Depth is still paid for in air: one room, a walk away, and its rack is the
+  *surface* rack — `SurfaceShelter.Produce`/`Transfer` and the two-thirds ceiling somebody set on purpose for
+  the next person through the door. Refuges buy **range**, never independence, exactly as shelters do. One
+  rack law, two buildings: `Map.Surface.DrawFromRack` is the only place either of them moves air.
+- **The tracker paints the refuges underground, and never the surface shelters.** Owner: *"those need to show
+  in the motion detector, not the surface ones, when you are 150 meters below surface."* A shelter ring on B7
+  would be the map lying in its most expensive form — a ring a captain would spend the last of a tank walking
+  toward. This is also how #608's hardest requirement is met without a map or a tutorial: *a refuge you
+  discover after you needed it is a cruelty*, so the instrument the captain already watches has it on it.
+- **The dead-air card no longer says "there are no shelters down here".** It said so honestly when it was
+  written (#609) and it would now be the most dangerous sentence in the game.
+
+*(Enforced: `TheRefugesUndergroundTests` — one on every airless floor and none on a pressurised one, over
+1 100 floors of 100 sites; never beside the lift; never also a room to search; never emptying a floor or
+taking the room the way-down card is designated to; deterministic; one containment law; the canon grep.
+`YouCanWalkTheHiveTests.EveryAirlessFloorHasARefugeYouCanWALKToFromTheLift` A\*s from the lift car to the
+refuge on every airless floor of every site — **verifying both endpoints are standable first**, because #600
+is the standing lesson that a reachability test is only as honest as its endpoints — and
+`TheRefugeIsAWalkFromTheLiftAndNotAStepFromIt` measures the detour over the real corridors rather than in a
+straight line. Every one of these was watched go **red** on a deliberately broken generator before it
+shipped.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible
