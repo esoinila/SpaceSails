@@ -121,6 +121,30 @@ scratchpad, eyeball each one, then copy into `wwwroot/art/`.
 
 **All nine painted and shipped, 2026-07-29.**
 
+## 10. `art/death-derelict.jpg` — DIED ABOARD SOMEBODY ELSE'S SHIP (#621)
+
+- **Slot:** `DeathNarration.ArtFile(cause, DeathPlace.Derelict)` — every death inside a hull.
+- **Why:** #574 gave the derelict its own prose and its own tail and then left it the away team's PICTURE.
+  A captain killed deep inside a wreck was shown `death-reevers.jpg` — boot prints in regolith, an open
+  chest, an Earth in a grey sky — under the pool's own sentence, *"No dust to leave a mark in — just a
+  corridor, and then not you."* The prose denied the dust the picture was made of. `Joined` had the same
+  fault (a crowd of Old Ones standing on a moon), and `Suffocated` resolved to `death-suffocated.jpg`, a
+  file this game has never shipped: a broken image in the middle of a death card.
+- **Composition (16:9):** a suited body slumped sitting against the wall of a derelict's interior corridor,
+  seen from a few metres. Dark mirrored visor. Riveted steel bulkhead ribs, exposed conduit, a heavy sealed
+  pressure door with a wheel handle in the gloom behind. Frost rimed along the plating seams. A dropped tool
+  and a loose glove hanging **weightless** — she has no gravity and no air, and the picture has to say both
+  without a word. One faint smeared handprint in the grime above the body: it reads as a suffocation OR as
+  something that had you against the bulkhead, and the card never says which. **No sky, no stars, no window,
+  no regolith, no blood, no creature.**
+- **Painted 2026-08-02.** Clean of lettering.
+
+### Still unpainted in this family
+
+- `art/death-suffocated.jpg` — the name `ArtFile(cause)` carried for a year with nothing behind it. Now
+  unreachable (every away place answers before it), so it is a *nice-to-have*, not a gap: a card for a
+  suffocation with no place named at all.
+
 ### What the set taught us
 
 - **Never say "torch."** The mutiny prompt asked for an arms locker *"opened with a cutting torch"* and got, twice,

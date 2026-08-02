@@ -4038,9 +4038,15 @@
                             </button>
                             <button type="button" class="btn btn-danger busted-opt" @onclick="BustedResist">
                                 <span class="bo-title">🔫 RESIST@(bust.Heat >= EncounterRule.MaxHeatLevel ? " — THE BOLIVIA" : "")</span>
+                                @* #621 · The hint used to price only the LOSS. Winning a heat-1/2 resist
+                                   raises heat by one — the sim does it, and the game said so only in the
+                                   result line, after the button had been pressed. A cost you can confirm
+                                   only once you have paid it is not a tell. And the Bolivia is the one
+                                   option on this card that ends the captain, which the player is entitled
+                                   to know one beat early rather than at the freeze-frame. *@
                                 <span class="bo-detail">@(bust.Heat >= EncounterRule.MaxHeatLevel
-                                    ? "All guns blazing. A last stand on the dice — you fight clear, or you don't."
-                                    : "One opposed roll. Win and they peel off; lose and it's a harsher cut.")@(_hasNetJammer ? " (jammer +2)" : "")</span>
+                                    ? "All guns blazing. A last stand on the dice — you fight clear, or the freeze-frame does the rest and the policy issues somebody new."
+                                    : "One opposed roll. Win and they peel off, but heat climbs a notch and the next wave is meaner; lose and it's a harsher cut.")@(_hasNetJammer ? " (jammer +2)" : "")</span>
                             </button>
                         </div>
                         break;
@@ -4132,7 +4138,14 @@
                                 <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-freeze-caption">"…the periapsis said 'under the surface'. It wasn't bluffing."</div>
-                            <div class="busted-quote">The hull meets @bust.ImpactBodyName at speed. No corridor, no atmosphere to catch you — just rock. The freeze-frame holds.</div>
+                            @* #621 · This line was TYPED HERE, word for word off ImpactLines[1], and then
+                               had "The freeze-frame holds." appended — which is BUSTED's own language about
+                               a collector's gun-camera still, on a death with no collector and no camera.
+                               That is the exact append #574 pulled out of every other card and replaced with
+                               DeathNarration.Tail, which answers "" for an impact; the guard that pins the
+                               law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
+                               was quietly going round it. Both faults are one fix: read the seam. *@
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
                         </div>
                         break;
@@ -4222,9 +4235,19 @@
                                 }
                             </div>
                         }
+                        @* #621 · THE RECEIPT NOW ADDS UP. It printed a 200 cr stake, a −500 cr bill and
+                           "0 cr in hand", which is not arithmetic — the purse is floored at zero and the
+                           three hundred that went missing was never mentioned anywhere. On the standard
+                           uninsured wake the bill ALWAYS exceeds the stake, so this was every death, every
+                           time. The shortfall is stated in the same breath as the numbers that made it, and
+                           it is said the way this clinic says everything: without being asked. *@
                         <div class="busted-receipt">
-                            <div>💰 @BustedRule.InsuranceCredits.ToString("N0") cr insurance stake</div>
+                            <div>💰 @bust.StakeCr.ToString("N0") cr insurance stake</div>
                             <div>🏥 −@bust.ClinicBillCr.ToString("N0") cr clinic bill (the rebirth tax)</div>
+                            @if (bust.ClinicBillCr > bust.StakeCr)
+                            {
+                                <div>🧾 @((bust.ClinicBillCr - bust.StakeCr).ToString("N0")) cr short — nobody asks you for it. It goes on the policy's tab, with everything else.</div>
+                            }
                             <div>👛 @_credits.ToString("N0") cr in hand</div>
                             @* #477: not a "reach-a-pump reserve" any more — that WAS the bug. The floor was
                                priced at exactly the autopilot's own reserve, so the wake handed over fuel
