@@ -76,12 +76,26 @@ are the fast paths per arc, so nobody has to fly anywhere to test anything.
 Dev server: `dotnet run --project src/SpaceSails.Client --urls http://localhost:PORT`, then
 `http://localhost:PORT/map?<cheats>`.
 
+> **This project's own rule, written in `Map.Sim.cs` next to these cheats:**
+> *"a scene nobody can reach on demand is a scene that ships broken"* and *"Testing is a feature (owner's
+> rule)."* That is the authority for the line above: an arc with no quick start is a finding, not an
+> inconvenience.
+
 ### The Hive / secret lab
 
 ```
-/map?secretlab=1&land=1        boot straight onto the rock, hidden door pre-revealed
-/map?secretlab=deep            a site with the band nobody listed (#592) — the deep content
+/map?secretlab=1&land=1           boot straight onto the rock, hidden door pre-revealed
+/map?secretlab=deep&land=1        a site with the band nobody listed (#592) — the deep content
+/map?secretlab=1&land=1&floor=3   ride STRAIGHT DOWN to B3 (clamped to the site's own bottom)
+/map?secretlab=deep&land=1&floor=20&air=90   deep, low on air, on a dead floor
 ```
+
+**`?floor=N` and `?air=N` are the two that matter most down here** and are easy to miss. A full tank is six
+minutes of walking *by design* — fine to play, useless to test — so `?air=45` is how you see the
+point-of-no-return warning, the refuges (#608), the vacuum card and the underground death card without
+strolling. `?floor=` exists because half the Hive's open work is on floors you would otherwise have to ride
+to.
+
 Once down: `E` works everything (doors, consoles, the lift panel, a room worth searching), `I` opens the
 satchel, `T` plants a sentry, `G` drops the chest.
 
@@ -120,8 +134,30 @@ satchel, `T` plants a sentry, `G` drops the chest.
 /map?credits=N&fuel=N&simhours=N    set up state without flying to it
 ```
 
-**If an arc below has no quick start, saying so is itself a finding — file it.** An arc that can only be
-reached by playing for an hour is an arc that will never be regression-tested again.
+### The full cheat surface, verified against `Map.Sim.cs` on 2026-08-02
+
+Several of these are not in the testing guide's tables and are the fastest way into scenes that are otherwise
+nearly impossible to reach on purpose.
+
+| cheat | what it does |
+| --- | --- |
+| `?floor=N` | ride straight down to B*N* in a Hive; clamped to the site's own bottom |
+| `?air=N` | start the excursion with *N* seconds of tank instead of a full one |
+| `?collectors=N` | force a repo boat to follow you down and land *N* seconds in, whatever the heat gauge says — the scene is deliberately rare and mid-mission, i.e. *"nearly impossible to playtest on purpose"* |
+| `?outpost=1` | guarantee the outpost hut on whatever site you land on |
+| `?hoard=mine\|rumor\|both` | seed the ledger's 🗺 section — map card and dig doors without a bury run |
+| `?fetch=intel\|active\|picked` | inject the fetch mission at a given leg |
+| `?crack=active\|picked` | inject the hatch-crack job at a stage (pair with `?start=<station>`) |
+| `?backroom=open\|quest` | weld V-06's back room open, or stage the crack job with its real code |
+| `?tip=route` | seed a route tip with provenance into the ledger |
+| `?reveal=<bodyId>` | chart a hidden body immediately (repeatable) |
+| `?skim=<bodyId>` | boot a hyperbolic inbound grazing that body's cloud tops (needs an atmosphere: jupiter, earth, venus, saturn, titan) |
+| `?sling=<bodyId>` | boot an inbound arc with a close pass ~12 days out |
+| `?ellipse=1` | append one visibly eccentric body for the Kepler rails |
+| `?start=<station>` | boot docked at a named station |
+
+**If an arc has no quick start, saying so is itself a finding — file it.** An arc that can only be reached by
+playing for an hour is an arc that will never be regression-tested again.
 
 ---
 
