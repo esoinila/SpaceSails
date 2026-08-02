@@ -1884,6 +1884,103 @@ public partial class Map
         StateHasChanged();
     }
 
+    /// <summary>
+    /// #621 dev cheat · <c>/map?death=&lt;cause&gt;</c> — land first (if the URL asked to), THEN die.
+    ///
+    /// <para><see cref="AutoLandForCheatAsync"/> is fire-and-forget with several early returns, so the death
+    /// cannot simply be queued after it in the boot block: it would fire while the shuttle was still coming
+    /// down and the excursion's floor and body id — the two facts the place classifier reads — would not
+    /// exist yet. Awaited here instead, in the one place that knows the landing is over.</para>
+    /// </summary>
+    private async Task AutoLandThenStageDeathAsync(DeathCause? cause)
+    {
+        await AutoLandForCheatAsync();
+        if (cause is { } asked)
+        {
+            StageDeathCheat(asked);
+        }
+    }
+
+    /// <summary>
+    /// #621 dev cheat · KILL THE CAPTAIN NOW, through the real machinery.
+    ///
+    /// <para>Nothing here builds a card. It calls the same three triggers the game calls
+    /// (<see cref="TriggerSurfaceOverdrawDeath"/>, <see cref="TriggerImpact"/>, <see cref="ApplyHunterCatch"/>)
+    /// with the same arguments the sim would have handed them, so every downstream fact — the seeded line,
+    /// the place classification, the art, the tail, the succession, the clinic bill, the rebirth glitch — is
+    /// computed exactly as it is in play. A cheat that painted its own death card would prove that the cheat
+    /// works and nothing else, which is the failure this project has named: a green test that asserts
+    /// nothing, dressed as a quick start.</para>
+    ///
+    /// <para>Two arguments are read from the LIVE state rather than invented, for the same reason:
+    /// <c>nerveRanOut</c> comes from <see cref="CaptainSuccession.OverdrawQualifies"/> on the real gauge
+    /// (so a full-nerve captain gets the mauled caption and a shattered one gets the overdraw caption,
+    /// truthfully), and the place is never passed at all — the excursion decides it.</para>
+    /// </summary>
+    private void StageDeathCheat(DeathCause cause)
+    {
+        string asked = cause.ToString().ToLowerInvariant();
+        if (_busted is not null)
+        {
+            return; // already mid-reckoning — one death at a time, the same rule the triggers keep
+        }
+
+        // AWAY FROM HER DECK. One call, and the excursion answers WHERE by itself.
+        if (_surface is { } ex)
+        {
+            TriggerSurfaceOverdrawDeath(
+                ex, nerveRanOut: CaptainSuccession.OverdrawQualifies(_nerve), known: cause);
+
+            // Say so when the law refused the cause — read back off the staged encounter rather than
+            // re-deriving it, so the message can never disagree with the card behind it.
+            if (_busted is { } staged && staged.Cause != cause)
+            {
+                ShowPulseMessage(
+                    $"🧪 DEV ?death={asked}: a {asked} death cannot happen on a {staged.Place} "
+                    + $"(DeathNarration.CanHappen) — the law substituted {staged.Cause}.");
+            }
+            return;
+        }
+
+        switch (cause)
+        {
+            case DeathCause.Impact:
+                // The surface collected the ship. The crossing is synthesised at the ship's own position on
+                // the nearest body, which is what SurfaceImpact would have handed over one tick later.
+                UpdateNearestBody();
+                if (_nearestBody is not { } rock)
+                {
+                    ShowPulseMessage("🧪 DEV ?death=impact: no body charted yet to fly into.");
+                    return;
+                }
+                TriggerImpact(new SurfaceImpact.Crossing(rock.Id, rock.Name, 1.0, SimTime, _ship.Position));
+                return;
+
+            case DeathCause.Collector:
+                // Not the freeze-frame — the CATCH, which is where a collector death actually begins. You
+                // get the demand card and have to lose your way through SUBMIT / BRIBE / RESIST → THE
+                // BOLIVIA to reach it, because that ladder is the thing worth playing and reading.
+                _heat = EncounterRule.RaiseHeat(_heat, 2, SimTime);
+                SpawnHunterForHeatEvent();
+                if (_hunters.Count == 0)
+                {
+                    ShowPulseMessage(
+                        "🧪 DEV ?death=collector: nothing policed within reach of this berth to send muscle "
+                        + "from — try &dock=selene-gate or &dock=ringside.");
+                    return;
+                }
+                ApplyHunterCatch(_hunters[^1]);
+                return;
+
+            default:
+                // Reevers / Joined / Suffocated need somebody out of the ship; Void has no lane at all yet.
+                ShowPulseMessage(
+                    $"🧪 DEV ?death={asked}: not a death that happens on her deck. Add &land=1 (the ground), "
+                    + "&wreck=1&land=1 (a derelict) or &secretlab=1&land=1&floor=2 (the Hive).");
+                return;
+        }
+    }
+
     // The dice helpers a resist/Bolivia roll carries — the purchasable-modifier seam. One example is
     // shipped (the Boarding-nets jammer); the shop of helpers is a follow-up (owner §5.0).
     private List<DiceModifier> ResistModifiers()
@@ -2132,6 +2229,7 @@ public partial class Map
         _heat = HeatState.None;
         _lastAnnouncedHeat = 0;
         b.ClinicBillCr = outcome.ClinicBillCr;
+        b.StakeCr = kit.Credits;   // #621: the receipt reads the kit that paid, not a constant beside it
         b.HullDescription = outcome.HullDescription;
 
         // Wake at the nearest haven's clinic: reset the ship state onto that haven, riding its rails.
@@ -2334,6 +2432,13 @@ public partial class Map
         public string? ResultMessage { get; set; }
         public string? ClinicName { get; set; }
         public int ClinicBillCr { get; set; }
+
+        /// <summary>#621 · What the policy actually PAID — read off the rebirth outcome's own kit, not
+        /// re-quoted from <see cref="BustedRule.InsuranceCredits"/> in the markup. The receipt was printing
+        /// the uninsured constant while the purse was set from the kit; the day a policy tier hands a
+        /// different stake the card would have gone on stating the old number with complete confidence, and
+        /// two places computing one fact is the bug even while they agree.</summary>
+        public int StakeCr { get; set; }
         public string? HullDescription { get; set; }
         public string? ImpactBodyName { get; set; } // #264: the body that collected the ship
 

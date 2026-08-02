@@ -488,6 +488,44 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout + the one-time "true terms" notice without a playthrough (#422).** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 | **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
+| **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** |
+
+### Dying on purpose — `?death=<cause>` (#621)
+
+The death card is the one screen every player is guaranteed to see, and until now none of it could be
+reached on demand. The routes were `?floor=2&air=10` (walk until you suffocate), `?reevers=8` (survive
+long enough to be overdrawn) and `?collectors=20` (lose the Bolivia) — three causes out of six, one
+place out of four, and nothing that reaches an impact at all.
+
+```
+/map?death=impact                                  the ship into a world at speed
+/map?death=collector                               CAUGHT — the demand card, then SUBMIT / BRIBE / RESIST
+/map?death=suffocated&dock=the-tilt&land=1         the tank runs dry on the regolith
+/map?death=reevers&dock=the-tilt&land=1            the Old Ones take you on the ground
+/map?death=suffocated&wreck=1&land=1               the tank runs dry inside a dead hull
+/map?death=reevers&wreck=1&land=1                  something has you against a bulkhead
+/map?death=suffocated&secretlab=1&land=1&floor=2   150 m under a moon, in a poured corridor
+```
+
+The cause is a `DeathCause` name, lowercased: `collector`, `impact`, `reevers`, `joined`, `void`,
+`suffocated`. It stages the **genuine trigger** — `TriggerImpact`, a real collector catch, or
+`TriggerSurfaceOverdrawDeath` — never a mocked card, so what you see is what a player sees.
+
+**There is deliberately no `?place=`.** *Where* you died is not an opinion the URL gets to hold: the
+excursion's own floor and body id decide it, which is the classifier #609 was filed about. A cheat able to
+override it would be a second source of truth for the exact fact that has now cost three death cards. You
+choose the place by booting into it — nothing landed is `OwnShip`, `&land=1` is the landing party,
+`&wreck=1&land=1` is a derelict, and `&floor=N` under `&secretlab=1` is the Hive.
+
+A death on her deck with no `?dock=` / `?start=` of its own defaults to a berth (The Tilt), because
+otherwise the boot ends at the front door and the death card opens on top of the menu. Anything you pass
+still wins.
+
+Two things are read off the LIVE state rather than invented, for the same reason: whether the *nerve* ran
+out (so a full-nerve captain honestly gets the mauled caption, a shattered one the overdraw caption), and
+whether the cause is legal where you are standing — ask for a `collector` death inside a wreck and the law
+substitutes one that can happen there, and the game says so in a DEV pulse rather than inventing a
+character. `?death=void` has no lane yet and says so.
 
 ### The salvage run — `?wreck=1` / `?wreck=<cause>` (#488)
 

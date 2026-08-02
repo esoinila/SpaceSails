@@ -238,15 +238,33 @@ between them and the tube. *"FBI does not arrest cars ... they look for the driv
 
 ## 7 · Dying
 
-7.1 **A death card knows WHERE it happened.** `DeathPlace` — own ship, derelict, landing party — decides the
-picture; the cause decides the words. `CanHappen(cause, place)` is the law, and every enum value is walked by
-a guard.
+7.1 **A death card knows WHERE it happened.** `DeathPlace` — own ship, derelict, landing party, **underground**
+(#609) — decides the picture; the cause decides the words. `CanHappen(cause, place)` is the law, and every
+enum value is walked by a guard.
 
 7.2 **No borrowed prose.** The ship's collector lines are boarding volleys and last stands at the controls;
 reading those over a captain walked down on regolith is the bug #574 was filed about.
 
 7.3 **The red shirt.** A captain who died on the ground gets `death-landing-party.jpg`, whoever's hand it
 was.
+
+7.4 **The picture is a sentence too** (#621). #574 wrote the law and then only wrote the words: for a year a
+death aboard a derelict was shown `death-reevers.jpg` — boot prints in regolith, a chest, an Earth in the sky
+— directly under its own line, *"No dust to leave a mark in — just a corridor."* And a suffocation aboard her
+resolved to `death-suffocated.jpg`, **a file the game has never shipped.** Every place that can kill a captain
+now has a card of its own, and a guard asserts each one is a file that exists in `wwwroot/art`, because a name
+that resolves to nothing passes every string assertion ever written about it.
+
+7.5 **Reaching a death on purpose** (#621). `?death=<cause>` stages the real pipeline at boot. The place is
+never a parameter — the excursion decides it — so the cheat cannot be used to prove a card that the game
+cannot actually stage. See `testing-guide.md` Appendix A.
+
+7.6 **A dead hull is not her tube** (#621). The suit asked `MoonSurface.IsSafeAboard(y)` — "above the
+regolith's rim at y = −20" — to decide whether the captain was breathing ship's air. A derelict's whole deck
+runs −9 to +9, so the answer was YES everywhere aboard every wreck: the gauge read *"FILLING — you are on her
+air"* inside a hull that has held vacuum for years, and the tank really did refill. It also made
+`DeathCause.Suffocated` unreachable on a derelict, which is why the missing picture above was invisible.
+`AwayTeamSide.BackAtTheShuttle` is now the one place that answers it, for both the air and the reach rule.
 
 ---
 

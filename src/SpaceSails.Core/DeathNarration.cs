@@ -177,6 +177,19 @@ public static class DeathNarration
             return "death-underground.jpg";
         }
 
+        // #621 · AND A DEATH INSIDE A HULL IS NOT A DEATH ON A MOON EITHER. #574 gave the derelict its own
+        // prose and its own tail and then left it the away team's PICTURE, which is the same bug one line
+        // down the card: `death-reevers.jpg` is boot prints in regolith with a chest and an Earth in the
+        // sky, and it was being shown under a sentence that reads "No dust to leave a mark in — just a
+        // corridor". `death-joined.jpg` is a crowd of Old Ones on a moon, shown under "deep inside {body}".
+        // And the third one, Suffocated, resolved to `death-suffocated.jpg`, WHICH THE GAME DOES NOT SHIP —
+        // a broken image on a death card, invisible until #621 made the tank able to run out in there at
+        // all. The place decides the picture; the derelict finally has one.
+        if (place == DeathPlace.Derelict)
+        {
+            return "death-derelict.jpg";
+        }
+
         return place == DeathPlace.LandingParty
             && cause is DeathCause.Reevers or DeathCause.Suffocated or DeathCause.Collector
             ? "death-landing-party.jpg"
@@ -190,7 +203,14 @@ public static class DeathNarration
         DeathCause.Reevers => "death-reevers.jpg",
         DeathCause.Joined => "death-joined.jpg",
         DeathCause.Void => "death-void.jpg",
-        DeathCause.Suffocated => "death-suffocated.jpg",
+
+        // #621 · This said `death-suffocated.jpg` for a year and THE GAME HAS NEVER SHIPPED THAT FILE. It
+        // was not caught because a suffocation can only happen away from her deck and every away place —
+        // ground, hull, Hive — is answered above before it ever reaches here, except one: a derelict, where
+        // the tank could not run out (see AwayTeamSide). The name was a promise nothing had to keep.
+        // The placeless answer is the away team's card, because a suffocation with no place named is a
+        // captain out of their ship on the ground; the placed overload is the one the card actually calls.
+        DeathCause.Suffocated => "death-landing-party.jpg",
         _ => "busted-ship-explosion.jpg",
     };
 
@@ -341,6 +361,12 @@ public static class DeathNarration
         DeathCause.Collector => place is not (DeathPlace.Derelict or DeathPlace.Underground),
         // The Old Ones and the tank reach you anywhere you are out of the ship.
         DeathCause.Reevers or DeathCause.Joined or DeathCause.Suffocated => place != DeathPlace.OwnShip,
+
+        // #621 · The void is where there is NO ground and no hull — "no beacon, no body, just the long dark",
+        // "there was no ground to hit". It was falling through the `_ => true` default and so was legal on a
+        // moon, inside a wreck and a hundred and fifty metres under a moon, where its own prose is nonsense.
+        // That default absorbing a gap is precisely the shape #609 was filed about; the cause is stated.
+        DeathCause.Void => place == DeathPlace.OwnShip,
         _ => true,
     };
 

@@ -353,6 +353,7 @@ public partial class Map
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
         string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
+        DeathCause? deathCheat = null; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -600,6 +601,39 @@ public partial class Map
                     _collectorCheatSeconds = Math.Max(0, eta);
                 }
             }
+            else if (pair.StartsWith("death=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #621 dev cheat: /map?death=<cause> KILLS THE CAPTAIN AT BOOT, through the real pipeline.
+                //
+                // The death card is the one screen every player is guaranteed to see, and until now there
+                // was no way to reach any of it on demand: the routes were ?floor=2&air=10 (walk until you
+                // suffocate), ?reevers=8 (survive long enough to be overdrawn) and ?collectors=20 (lose the
+                // Bolivia). Four causes, five stages, four places, one seeded line pool each — verified by
+                // reading the source. This project's own rule, written beside these cheats: "a scene nobody
+                // can reach on demand is a scene that ships broken."
+                //
+                // It stages the GENUINE trigger — TriggerSurfaceOverdrawDeath / TriggerImpact / a real
+                // collector catch — never a mocked card, so what you see is what a player sees: the real
+                // four-stage freeze beat, the real seeded narration, the real resurrection.
+                //
+                // There is deliberately NO ?place= parameter. WHERE you died is not an opinion the URL gets
+                // to hold: the excursion's own floor and body id decide it, which is the classifier #609 was
+                // filed about, and a cheat that could override it would be a second source of truth for the
+                // exact fact that has now cost three death cards. You choose the place by booting into it:
+                //   /map?death=impact                                   own ship
+                //   /map?death=collector                                own ship (the BUSTED ladder)
+                //   /map?death=suffocated&dock=the-tilt&land=1          landing party
+                //   /map?death=reevers&wreck=1&land=1                   derelict
+                //   /map?death=suffocated&secretlab=1&land=1&floor=2    underground
+                string candidate = Uri.UnescapeDataString(pair["death=".Length..]).ToLowerInvariant();
+                foreach (DeathCause c in Enum.GetValues<DeathCause>())
+                {
+                    if (candidate == c.ToString().ToLowerInvariant())
+                    {
+                        deathCheat = c;
+                    }
+                }
+            }
             else if (pair.StartsWith("floor=", StringComparison.OrdinalIgnoreCase))
             {
                 // #585 dev cheat: /map?secretlab=1&land=1&floor=3 rides you straight down to B3.
@@ -750,6 +784,18 @@ public partial class Map
             // of strangers). Default to The Space Bar; any ?dock=<id> the caller passed wins.
             _bondForce = true;
             dockCheat ??= "the-space-bar";
+        }
+
+        // #621 · A death needs somewhere to have happened. Without a start this boot ends at the front
+        // door, and the death card would open OVER the picker — a modal on top of a menu, which is not a
+        // scene anybody can read. Same idiom as the bond above: default a berth, and any ?dock= / ?start=
+        // the caller passed still wins. Only for a death staged on her DECK; a landing cheat brings its
+        // own ground and its own berth with it.
+        // (…and only when NOTHING else chose a start: `?dock=` is read before `?start=` below, so
+        // defaulting one unconditionally would quietly outrank a `?start=` the caller did pass.)
+        if (deathCheat is not null && !_landCheat && dockCheat is null && startId is null)
+        {
+            dockCheat = "the-tilt";
         }
 
         // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
@@ -979,7 +1025,14 @@ public partial class Map
             // #464: ride the shuttle down now that the berth is clamped and the ephemeris is live, so the
             // in-range board is real. Fire-and-forget: BeginSurfaceExcursion narrates its own descent
             // phases and yields between them, exactly as the hatch's own path does.
-            _ = AutoLandForCheatAsync();
+            // #621: …and ?death= waits for the boots to be on the ground, because the PLACE is read off the
+            // live excursion. Killing the captain before the shuttle has landed would classify the death on
+            // her deck and hand back the wrong card — which is the whole bug the cheat exists to hunt.
+            _ = AutoLandThenStageDeathAsync(deathCheat);
+        }
+        else if (deathCheat is { } onHerDeck)
+        {
+            StageDeathCheat(onHerDeck);
         }
 
         if (_pendingDeflectionCheat is not null)

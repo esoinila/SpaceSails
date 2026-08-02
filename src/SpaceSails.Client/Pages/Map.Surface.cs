@@ -1724,11 +1724,18 @@ public partial class Map
     /// <c>UndergroundComplex.HoldsPressure</c> for itself and spelling its own words, which made a THIRD
     /// answer to the same question. <see cref="SuitAir.SourceOf"/> is the predicate; this method is the one
     /// place that gathers the four facts to hand it, and every surface reads what it says.</para></summary>
+    /// <para><b>#621 · and the third fact was answered with the wrong world's rule.</b> "Aboard" was
+    /// <c>MoonSurface.IsSafeAboard(_avatarY)</c> — the regolith's top rim at y = −20 — while a derelict's
+    /// whole deck runs −9 to +9, so every point aboard every wreck said YES. The gauge told a captain
+    /// standing in a hull that has held vacuum for years that they were on HER AIR and their tank was
+    /// FILLING, and the drain agreed with it. <see cref="AwayTeamSide.BackAtTheShuttle"/> is the one place
+    /// that knows which door you are on the far side of, and both the reach rule and this one now read
+    /// it.</para>
     private SuitAir.Supply AirSupplyOf(SurfaceExcursion ex) =>
         SuitAir.SourceOf(
             ex.Floor,
             StandingInTheShelter(ex),                        // #573 the deep shelter
-            MoonSurface.IsSafeAboard(_avatarY),              // her tube: breathing hers
+            CaptainBeyondReach,                              // her tube — or past a wreck's lock: breathing hers
             ex.Floor < 0 && RefugeUnderfoot(ex) >= 0);       // #608 a pressure refuge on a dead floor
 
     /// <summary>Is the tank running? The one bit of <see cref="AirSupplyOf"/>, for callers that want no
@@ -5122,10 +5129,12 @@ public partial class Map
     /// <para>Aboard, safety is not a latitude. It is the shuttle's own lock: past that bulkhead is the away
     /// team's side and nothing follows you there, which is the same crew-only-door law the tube obeys.</para>
     /// </summary>
+    /// <para>#621 · And the answer now lives in <see cref="AwayTeamSide.BackAtTheShuttle"/>, because the AIR
+    /// needed the same fact and worked it out for itself with the moon's rule alone — the same bug, in the
+    /// one instrument a captain cannot survive being lied to by. Two places computing one fact is the bug
+    /// even while they agree.</para>
     private bool CaptainBeyondReach =>
-        OnWreck
-            ? WreckLayout.PastTheLock(_avatarX, DeckPlan.AvatarRadius)
-            : MoonSurface.IsSafeAboard(_avatarY);
+        AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
 
     private void ResolveReeverSwings(double nowMs)
     {
