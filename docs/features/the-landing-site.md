@@ -616,7 +616,7 @@ every other choice runs against, is the **air**.
 title; the head mentions air; the shelter is on the card at all; and the `I` lever is written for the empty
 pockets a first landing actually has.)*
 
-13.11 **Every airless floor carries at least one pressure refuge** (#608). Owner, after suffocating on B2 and
+13.12 **Every airless floor carries at least one pressure refuge** (#608). Owner, after suffocating on B2 and
 then ruling on it: *"there should be like at least one air replenish station in each of the airless labs
 underground… for pure safety"*. **Each** — not most, not a rare one. It is a safety regulation in-world and a
 law in code.
@@ -659,7 +659,31 @@ is the standing lesson that a reachability test is only as honest as its endpoin
 `TheRefugeIsAWalkFromTheLiftAndNotAStepFromIt` measures the detour over the real corridors rather than in a
 straight line. Every one of these was watched go **red** on a deliberately broken generator before it
 shipped.)*
-13.12 **The way in is an ordinary hut, and the doors are the only thing wrong with it** (#606).
+
+13.13 **The plate by the lift says the depth, the department, and whether you can breathe** (#612) — three
+lines, one eye-line, on the wall you face when the doors open. The atmosphere line is `SuitAir.PlateLine` off
+`SuitAir.SourceOf`, which is the same call the drain and the gauge make, so the sign on the wall and the tank
+on your back cannot come apart. *(Enforced: `TheHudSaysWhereTheAirComesFromTests` walks every floor of every
+clandestine site and fails the moment the two disagree.)*
+
+Owner: *"I thought there is air in the base?"* / *"where here does it say if I consume tanks or have air?"*
+The floor had known since #585 and nothing on screen said so.
+
+**Three surfaces may SHOW it; exactly one may COMPUTE it.** The hud's chip, the plate over the car, and the
+refuge's own `🫁` sign are all worth having — owner: *"I think the hud and level are enough … but having third
+does not hurt"*. What is not worth having is three derivations, and that is what shipped: the drain branched
+on its own conditions, the hud re-derived them beside it, and the plate called `HoldsPressure` for itself. It
+took less than a day to bite — #608 added a fourth way to breathe and only the drain heard, so a captain
+sitting in a refuge full of air was told in colour that their tank was running out.
+
+**Signage goes on a PLATE, not merely in a brighter ink.** The depth and department shipped as worn paint at
+47 % alpha; the owner said *"they are kind of hidden now"*, the ink was made yellow, and he hit it again. That
+second miss is the whole lesson: the fault was never the hue. Paint has little contrast left to raise against
+a corridor full of hull lines, doors and console glow, because what it competes with is **busy** rather than
+bright. Text on a busy deck needs a background — which is what #348 already concluded one size down for the
+room labels.
+
+13.14 **The way in is an ordinary hut, and the doors are the only thing wrong with it** (#606).
 
 > *"it could be in an ordinary hut, with 2 doors .. we have those. The expensive doors would be the clue... a
 > clue we can get tipped about or find it in papers"* — and, after another look at the ground, *"the elevator
@@ -696,29 +720,6 @@ facility and without it — segment count, reach against the radii the plan publ
 label at all, and the doors — so it audits the drawn ground rather than the generator's intentions.
 `TheLiftPutsYouSomewhereYouCanSTANDTests` still walks it: the head is bigger and rotated now, and both of
 those are new ways to trap somebody.)*
-
-13.12 **The plate by the lift says the depth, the department, and whether you can breathe** (#612) — three
-lines, one eye-line, on the wall you face when the doors open. The atmosphere line is `SuitAir.PlateLine` off
-`SuitAir.SourceOf`, which is the same call the drain and the gauge make, so the sign on the wall and the tank
-on your back cannot come apart. *(Enforced: `TheHudSaysWhereTheAirComesFromTests` walks every floor of every
-clandestine site and fails the moment the two disagree.)*
-
-Owner: *"I thought there is air in the base?"* / *"where here does it say if I consume tanks or have air?"*
-The floor had known since #585 and nothing on screen said so.
-
-**Three surfaces may SHOW it; exactly one may COMPUTE it.** The hud's chip, the plate over the car, and the
-refuge's own `🫁` sign are all worth having — owner: *"I think the hud and level are enough … but having third
-does not hurt"*. What is not worth having is three derivations, and that is what shipped: the drain branched
-on its own conditions, the hud re-derived them beside it, and the plate called `HoldsPressure` for itself. It
-took less than a day to bite — #608 added a fourth way to breathe and only the drain heard, so a captain
-sitting in a refuge full of air was told in colour that their tank was running out.
-
-**Signage goes on a PLATE, not merely in a brighter ink.** The depth and department shipped as worn paint at
-47 % alpha; the owner said *"they are kind of hidden now"*, the ink was made yellow, and he hit it again. That
-second miss is the whole lesson: the fault was never the hue. Paint has little contrast left to raise against
-a corridor full of hull lines, doors and console glow, because what it competes with is **busy** rather than
-bright. Text on a busy deck needs a background — which is what #348 already concluded one size down for the
-room labels.
 
 ## Working method
 
