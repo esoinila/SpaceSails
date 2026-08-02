@@ -843,6 +843,37 @@ public partial class Map
     // the station room. Kept fresh as you walk so quest/status flavor can read it.
     private void RefreshAshore() => _ashore = _deckPlan.FollowCam && _avatarY > StationFloorY;
 
+    // #428 · ?ashore=1 — THE WALK, ALREADY WALKED. Stand the captain at the bar-room threshold of the
+    // haven they just clamped onto, facing into the room, with the Deck up.
+    //
+    // Every bar beat we have — the oracle (#428), the stranger-bond (#429), the KAAMOS holder and the
+    // Nebula adjuster (#411/#422), the Magpie's rota, the barkeep, the talking drinks — begins with the
+    // same ship → airlock → tube → immigration hall → bar walk on EVERY boot. That walk is fine to play
+    // and useless to test: in an MCP-driven tab the game is `document.hidden`, rAF is throttled and WASD
+    // never lands, so not one of those beats could be smoke-tested at all. "A scene nobody can reach on
+    // demand is a scene that ships broken" (this file's own neighbours).
+    //
+    // The position is NOT invented here: HavenInterior.BarThreshold derives it from the hall's north
+    // doorway — the same gap the real walk crosses — so the cheat cannot drift from the geometry it is
+    // pretending to have walked. Returns false (and moves nothing) at a berth with no interior to stand
+    // in, so the caller can say so instead of teleporting the captain into a berth that has no bar.
+    private bool StandAtTheBarThreshold()
+    {
+        if (_dockedHavenId is not { } id || !HavenInterior.HasInterior(id) || !_deckPlan.FollowCam)
+        {
+            return false;
+        }
+
+        (_avatarX, _avatarY, _avatarHeading) = HavenInterior.BarThreshold;
+        RefreshAshore();
+        // You are standing in a room, so show the room — the same two lines a shuttle arrival ashore
+        // sets (TakeShuttleTo). Booting ashore onto the Nav map would put the captain in the bar and the
+        // camera on the ecliptic, which is the sentence-versus-sim shape this project keeps paying for.
+        _deckMode = true;
+        _activeDesk = ShipDesk.Deck;
+        return true;
+    }
+
     // --- Ashore quests (M-Q1): the hooded stranger at the bar table ---
 
     // Walk up to a booth and press E. Which patron you're next to (from their console label) sets who
