@@ -182,6 +182,26 @@ have.
 
 5.3 **The air bar is coloured by BAND, not fullness.**
 
+5.4 **The air row says WHERE the air is coming from, and there is exactly one predicate that decides it**
+(#612). `SuitAir.SourceOf(floor, insideShelter, aboard)` → `TANKS` / `ROOM` / `SHIP`. The drain branches on
+it, the gauge is handed its answer, and the plate by the lift asks it of the floor.
+
+> *"Maybe we should have on our hud a AIR: Tanks / External symbol… now we don't see if we need to worry
+> about O₂ from anywhere. That is really important info for the suit hud to tell us."*
+
+- **A clock that is parked must not read like a clock that is running.** The gauge showed a countdown and
+  never said whether it was counting. The readout changes *sentence*, not adjective: the reach advice
+  ("N du further, then turn") is arithmetic about spending and is never quoted at somebody who is not
+  spending. *(Enforced: `APARKEDClockNeverReadsLikeARunningOne`, swept across every band.)*
+- **Symbol and colour before word.** A solid chip — dark letters on a block of colour — because a filled
+  block is read pre-attentively and a word is not. Every source has its own glyph and its own word.
+- **The bar and the chip answer different questions and both are true at once.** The bar: *can I still get
+  home on this tank* — which stays a real question in a shelter, because you have to leave. The chip: *is it
+  going down right now*.
+- **One line on the crossing, never a state that repeats** — the tank starting or stopping, said once. A
+  shelter is left to say it in its own voice; two lines for one threshold is the nag the tank mechanic was
+  told not to become.
+
 ## 6 · What the ship does NOT do down here
 
 **The captain is in a suit on a moon. The hull is docked and empty somewhere above.**
@@ -639,6 +659,29 @@ is the standing lesson that a reachability test is only as honest as its endpoin
 `TheRefugeIsAWalkFromTheLiftAndNotAStepFromIt` measures the detour over the real corridors rather than in a
 straight line. Every one of these was watched go **red** on a deliberately broken generator before it
 shipped.)*
+
+13.12 **The plate by the lift says the depth, the department, and whether you can breathe** (#612) — three
+lines, one eye-line, on the wall you face when the doors open. The atmosphere line is `SuitAir.PlateLine` off
+`SuitAir.SourceOf`, which is the same call the drain and the gauge make, so the sign on the wall and the tank
+on your back cannot come apart. *(Enforced: `TheHudSaysWhereTheAirComesFromTests` walks every floor of every
+clandestine site and fails the moment the two disagree.)*
+
+Owner: *"I thought there is air in the base?"* / *"where here does it say if I consume tanks or have air?"*
+The floor had known since #585 and nothing on screen said so.
+
+**Three surfaces may SHOW it; exactly one may COMPUTE it.** The hud's chip, the plate over the car, and the
+refuge's own `🫁` sign are all worth having — owner: *"I think the hud and level are enough … but having third
+does not hurt"*. What is not worth having is three derivations, and that is what shipped: the drain branched
+on its own conditions, the hud re-derived them beside it, and the plate called `HoldsPressure` for itself. It
+took less than a day to bite — #608 added a fourth way to breathe and only the drain heard, so a captain
+sitting in a refuge full of air was told in colour that their tank was running out.
+
+**Signage goes on a PLATE, not merely in a brighter ink.** The depth and department shipped as worn paint at
+47 % alpha; the owner said *"they are kind of hidden now"*, the ink was made yellow, and he hit it again. That
+second miss is the whole lesson: the fault was never the hue. Paint has little contrast left to raise against
+a corridor full of hull lines, doors and console glow, because what it competes with is **busy** rather than
+bright. Text on a busy deck needs a background — which is what #348 already concluded one size down for the
+room labels.
 
 ## Working method
 
