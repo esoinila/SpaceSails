@@ -424,8 +424,8 @@ The rule generalises past this file: **a list built by appending is not a list i
 correctness depends on order, sort at the point of use.
 
 13.3 **The lift is the hardest law down here.** A captain who cannot reach the car is trapped in a building
-on a dead floor, and on an unpressurised floor that is a death. The lift console is audited as a target of
-13.1 like any room, and `TheCaptainCanSTANDWhereTheLiftPutsThem` checks the doors do not open into wall.
+on a dead floor, and on an unpressurised floor that is a death. The lift console is audited as a
+target of 13.1 like any room, and `TheCaptainCanSTANDWhereTheLiftPutsThem` checks the doors do not open into wall.
 
 13.4 **A locked door never seals a room you are told you can enter.** Locked doors are drawn *and* backed by
 a wall — that is what makes them honest — so hanging one on an enterable room's only face would strand it
