@@ -563,7 +563,11 @@ public static class MoonSurface
         // Miranda's canon slab only. Every body dresses this same deep anchor differently — Luna's
         // mass-driver muzzle, a seeded plinth elsewhere — and putting THE MONOLITH's card on a launch head
         // would be the borrowed-prose bug (#574) wearing a landmark.
-        if (bodyId == "miranda")
+        // Monolith.StandsOn, not a literal body id: the slab's GEOMETRY is only laid on the canon empty-salt
+        // ground (SurfaceLayout routes site 1+ to the seeded generator), so a `bodyId == "miranda"` test put
+        // the ▮ THE MONOLITH card and the foot-offering on the Shadowed Rille and the Ridge Camp, pointing at
+        // open regolith. That is precisely what the note below forbids — a marker pointing at nothing.
+        if (Monolith.StandsOn(bodyId, siteSalt))
         {
             consoles.Add(new(DeckPlan.ConsoleKind.ViewObject,
                 MonolithX, MonolithY - (float)Monolith.HalfHeight - 2f,

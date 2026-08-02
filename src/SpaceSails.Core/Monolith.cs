@@ -54,6 +54,28 @@ public static class Monolith
     public const double MarkerRing = 11.0;
     public const double MarkerHalf = 0.9;
 
+    /// <summary>The body the slab stands on. It is ONE object in the whole system, not a species.</summary>
+    public const string BodyId = "miranda";
+
+    /// <summary>
+    /// Does the monolith stand on THIS ground? Only on <see cref="BodyId"/>'s canon site — site 0, the
+    /// Wild Plain, the empty-salt ground <c>SurfaceLayout.For</c> routes to the authored maze for. Every
+    /// other site on the same moon is seeded ground with no slab in it, and every other body's deep anchor
+    /// is its own thing (Luna's mass-driver muzzle, a seeded plinth elsewhere).
+    ///
+    /// <para><b>Why this is a function and not three literals.</b> The slab, its picture, the once-in-a-life
+    /// nerve hit and the first-monolith selfie each decided this for themselves, and they disagreed: the
+    /// geometry was built for <c>miranda</c> + empty salt, the console and the foot-offering for any
+    /// <c>miranda</c> site, and the nerve/selfie for ANY body at all — they keyed off the deep anchor's
+    /// coordinates, which every ground has. So walking up to Luna's launch muzzle spent the marquee
+    /// once-in-a-life beat, narrated as <i>"the monolith resolves out of the dark"</i>, on a broken machine
+    /// — and because that flag is kept for life, the real slab could never deliver it afterwards. That is
+    /// the borrowed-prose bug (#574) wearing a landmark, which the renderer's own comment forbids two lines
+    /// from where it happened. One predicate; everything asks it.</para>
+    /// </summary>
+    public static bool StandsOn(string? bodyId, string? siteSalt) =>
+        string.Equals(bodyId, BodyId, StringComparison.Ordinal) && string.IsNullOrEmpty(siteSalt);
+
     /// <summary>The label on the ground.</summary>
     public const string ConsoleLabel = "▮ THE MONOLITH";
 

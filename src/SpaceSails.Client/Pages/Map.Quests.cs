@@ -371,12 +371,14 @@ public partial class Map
     // ---- The discovery watch (ruling 4): rivals find our hoards on a slow roll ----
 
     // Start the watch at the current day the first time we bury, so a just-dug chest isn't rolled for
-    // the partial current day.
+    // the partial current day. Also called after a vault load, which is how a save written before the
+    // watch was persisted (LastCheckedPeriod = WatchNotStarted) starts watching again from the moment
+    // the captain wakes — never from the epoch, which would resolve every day at once.
     private void SeedDiscoveryWatch()
     {
-        if (_lastCacheCheckPeriod < 0)
+        if (_caches.LastCheckedPeriod < 0)
         {
-            _lastCacheCheckPeriod = DiscoveryRule.PeriodIndex(SimTime);
+            _caches.LastCheckedPeriod = DiscoveryRule.PeriodIndex(SimTime);
         }
     }
 
@@ -384,12 +386,13 @@ public partial class Map
     // warp that skips days can't skip a roll). A found cache is GONE — a ledger squawk marks the loss.
     private void RunCacheDiscoveryWatch()
     {
-        if (_lastCacheCheckPeriod < 0)
+        long lastChecked = _caches.LastCheckedPeriod;
+        if (lastChecked < 0)
         {
             return; // nothing buried yet
         }
         long nowPeriod = DiscoveryRule.PeriodIndex(SimTime);
-        if (nowPeriod <= _lastCacheCheckPeriod)
+        if (nowPeriod <= lastChecked)
         {
             return;
         }
@@ -397,7 +400,7 @@ public partial class Map
         {
             // Never roll a cache for days before it was in the ground: start its scan at the later of
             // the global last-check and its own burial day.
-            long from = Math.Max(_lastCacheCheckPeriod, DiscoveryRule.PeriodIndex(c.BuriedSimTime));
+            long from = Math.Max(lastChecked, DiscoveryRule.PeriodIndex(c.BuriedSimTime));
             // #295: a Reever-haunted stash is harder for rivals to work — the watchdogs guard it too.
             if (DiscoveryRule.DiscoveredWithin(c.Id, from, SimTime, c.ReeverLevel) is not null)
             {
@@ -406,7 +409,7 @@ public partial class Map
                 ShowPulseMessage($"🏴‍☠️ Someone dug up our chest on {BodyName(c.BodyId)} — {c.ContentsLine()} gone. Split the hoards next time.");
             }
         }
-        _lastCacheCheckPeriod = nowPeriod;
+        _caches.LastCheckedPeriod = nowPeriod;
     }
 
     // Knock on a locked station hatch (a ring department or a bar back-room). Nobody answers — for now.
@@ -2030,9 +2033,14 @@ public partial class Map
     // read this book; the discovery watch prunes it.
     private readonly CacheLedger _caches = new();
 
-    // The discovery watch (ruling 4): the last whole day we resolved the per-cache discovery roll, so
-    // a warp that skips days can't skip a roll. -1 = nothing resolved yet.
-    private long _lastCacheCheckPeriod = -1;
+    // The discovery watch's bookmark (ruling 4) — the last whole day we resolved the per-cache discovery
+    // roll, so a warp that skips days can't skip a roll — now lives ON THE LEDGER
+    // (CacheLedger.LastCheckedPeriod), because a hoard and the clock that threatens it are ONE fact and
+    // the vault has to carry both. As a private field beside the ledger it was never saved: reload the
+    // page, Resume a voyage with chests in the ground, and the watch came back at -1 —
+    // RunCacheDiscoveryWatch bailed on "nothing buried yet" and no rival ever dug anything up again,
+    // however many days you flew. The line the game prints at the shovel ("rivals may dig it up over the
+    // coming days") stopped being true the moment you saved.
 
     // The treasure-map card currently on screen (the full-screen artifact), or null. Shown on burying
     // a fresh chest and any time the captain opens a map from the ledger's 🗺 section.

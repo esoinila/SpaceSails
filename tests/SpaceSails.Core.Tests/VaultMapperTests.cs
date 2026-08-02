@@ -121,6 +121,59 @@ public class VaultMapperTests
         Assert.False(c.HasDigSpot); // the client reads this and scatters the ✗ by hash instead
     }
 
+    /// <summary>#223 · THE WATCH RIDES THE VAULT WITH THE HOARD. The discovery roll's bookmark (the last
+    /// whole day the caches were rolled through) is part of the hoard, not a fact beside it: a save that
+    /// carries chests but not the watch reloads with the watch stopped, and the client's
+    /// RunCacheDiscoveryWatch bails on "nothing buried yet" forever after. The line the game prints at the
+    /// shovel — "rivals may dig it up over the coming days" — is then a lie for every resumed voyage.</summary>
+    [Fact]
+    public void Caches_RoundTrip_PreservesTheDiscoveryWatchBookmark()
+    {
+        var ledger = new CacheLedger();
+        ledger.Bury("phobos", 1200, [new CacheCargo("He3", 3, true)], 70000, "you", playerOwned: true);
+        ledger.LastCheckedPeriod = DiscoveryRule.PeriodIndex(70000);
+
+        CachesSection section = VaultMapper.ToSection(ledger);
+        var restored = new CacheLedger();
+        VaultMapper.Apply(section, restored);
+
+        Assert.Equal(ledger.LastCheckedPeriod, restored.LastCheckedPeriod);
+        Assert.True(restored.LastCheckedPeriod >= 0); // a watch that is actually running
+    }
+
+    /// <summary>A vault written before the bookmark existed loads as WATCH NOT STARTED — never as day 0,
+    /// which would resolve every day since the epoch in a single pass and empty the captain's hoard the
+    /// instant they resumed. The client re-seeds it at the load clock instead.</summary>
+    [Fact]
+    public void Caches_OldVaultWithoutTheWatch_LoadsAsNotStarted()
+    {
+        var section = new CachesSection
+        {
+            NextMintIndex = 1,
+            // LastCheckedPeriod deliberately unset — the old shape.
+            Caches = [new CacheRecord { Id = "cache-you-0", BodyId = "phobos", Owner = "you", PlayerOwned = true }],
+        };
+
+        var restored = new CacheLedger();
+        VaultMapper.Apply(section, restored);
+
+        Assert.Equal(CacheLedger.WatchNotStarted, restored.LastCheckedPeriod);
+    }
+
+    /// <summary>A new voyage is a new universe: clearing the hoard stops its watch too, so the fresh run
+    /// cannot inherit the last one's bookmark and roll a chest it does not have.</summary>
+    [Fact]
+    public void Caches_Clear_StopsTheWatch()
+    {
+        var ledger = new CacheLedger();
+        ledger.Bury("phobos", 100, [], 70000, "you", playerOwned: true);
+        ledger.LastCheckedPeriod = 42;
+
+        ledger.Clear();
+
+        Assert.Equal(CacheLedger.WatchNotStarted, ledger.LastCheckedPeriod);
+    }
+
     [Fact]
     public void HotCargo_RoundTrip_ViaLines()
     {

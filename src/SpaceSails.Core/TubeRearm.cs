@@ -35,8 +35,15 @@ public static class TubeRearm
         "It happens on its own — no key, no panel. Walk in dry, wait while the bar fills, walk out fed. "
         + "Step out early and nothing is lost; the rounds already racked are already in the magazine.",
 
+        // #580/#563 · "the only place your sentries get fed" was true in #562 and stopped being true the
+        // moment the ground grew things to find in: a shelter's emergency press reloads magazines in full,
+        // every time you ask (SurfaceShelter.LockerRounds), and an outpost hut's ammunition locker spreads
+        // its rounds across the bots you brought. The anchor is still the anchor — what makes the tube
+        // special is that it is the one that is ALWAYS there and comes to you. The rest you have to find.
         "The rounds are cheap on purpose. What going deep really costs you is the WALK BACK — this tube is "
-        + "the only place your sentries get fed, so every excursion is a loop with one anchor.",
+        + "the one supply point that is always where you left it, so every excursion is a loop with one "
+        + "anchor. There is other ammunition out on the ground, in shelters and in other people's lockers, "
+        + "but you have to find it first and carry it to the bot yourself.",
 
         "So plan the route out with the route home in it. The far end of a site is not where the ground "
         + "stops; it is where the magazine and whatever is following you say turn around.",

@@ -905,6 +905,16 @@ public partial class Map
 
         ApplyResumeBerth(vault.Resume, vault.SavedSimTime);
 
+        // #223 · THE WATCH RESUMES WITH THE HOARD. The discovery roll's bookmark rides the vault now
+        // (CacheLedger.LastCheckedPeriod, applied above) — but a save written before it did carries
+        // WatchNotStarted, and a watch that never starts is a hoard nothing can ever take. Seed it HERE,
+        // after ApplyResumeBerth has set SimTime, so an old voyage picks the watch back up at the clock
+        // the captain woke at rather than resolving every day since the epoch in one pass.
+        if (_caches.Caches.Any(c => c.PlayerOwned))
+        {
+            SeedDiscoveryWatch();
+        }
+
         // Loading a saved game shows NONE of the tutorial promotions (owner, 2026-07-18) — set last so
         // even the no-berth ApplyStart("earth") fallback above can't leave the greeting raised.
         _showTutorial = false;

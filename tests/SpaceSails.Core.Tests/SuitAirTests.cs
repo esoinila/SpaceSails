@@ -398,4 +398,26 @@ public class SuitAirTests
         Assert.False(SuitAir.TaskWouldStrandYou(airForAShortWalkHome, 1, 300));
         Assert.True(SuitAir.TaskWouldStrandYou(airForAShortWalkHome, 240, 300));
     }
+
+    /// <summary>#573/#608 · THE LOW-AIR CARD MAY NOT CONTRADICT ITS OWN HEAD. It told the captain to "find
+    /// something out here that still holds a charge" and then, one beat later, that "her tube is the only
+    /// place a suit refills" — written when it was true, and false since shelters and pressure refuges
+    /// started recharging suits (SurfaceShelter.Transfer, to two thirds and no further). This is the same
+    /// fault the underground death card was already fixed for, on the card a captain reads FIRST, and it is
+    /// the dangerous direction: a captain who believes there is nothing out here rations a tank they did not
+    /// have to ration and walks past the room that would have saved them. Both ends are checked — the card
+    /// says a refuge exists, and the rack really does fill one.</summary>
+    [Fact]
+    public void TheLowAirCardNamesTheRefuge_AndDoesNotClaimTheTubeIsTheOnlyRefill()
+    {
+        string all = string.Join(" ", AirCard.Beats) + " " + AirCard.Head;
+
+        Assert.Contains("shelter", all, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("only place a suit refills", all, StringComparison.OrdinalIgnoreCase);
+
+        // And the sim's end of it: a rack really does put air back into a suit that is running low.
+        Assert.True(SurfaceShelter.Transfer(
+            airLeftSeconds: 60, reservoirSeconds: SurfaceShelter.ReservoirSeconds,
+            tankSeconds: SuitAir.TankSeconds, dt: 1.0) > 0);
+    }
 }

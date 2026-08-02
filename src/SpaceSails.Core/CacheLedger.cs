@@ -21,13 +21,28 @@ public sealed class CacheLedger
     /// <summary>Every known cache, newest first (the ledger's render order and what a save serializes).</summary>
     public IReadOnlyList<TreasureCache> Caches => _caches;
 
+    /// <summary>The sentinel <see cref="LastCheckedPeriod"/> carries while no watch is running — nothing
+    /// of ours is in the ground yet, or a save from before the watch was persisted has not been re-seeded.</summary>
+    public const long WatchNotStarted = -1;
+
+    /// <summary>The last discovery period (<c>DiscoveryRule.PeriodIndex</c>) this hoard was rolled through
+    /// — the watch's own bookmark, so a warp that skips days cannot skip a roll.
+    ///
+    /// <para>It lives HERE, on the ledger it governs, rather than beside it in the client: the caches and
+    /// the clock that threatens them are one fact, and the vault must carry both or the promise made at
+    /// bury time ("rivals may dig it up over the coming days") quietly stops being true after a resume.
+    /// <see cref="WatchNotStarted"/> means no watch is running.</para></summary>
+    public long LastCheckedPeriod { get; set; } = WatchNotStarted;
+
     /// <summary>Wipe the ledger back to a fresh, empty hoard — the per-game-thread reset (feat/game-threads,
     /// owner 2026-07-18): a NEW voyage is a NEW universe, so a chest we know of in one run must NOT be known
-    /// in the next. Also rewinds the mint counter so the fresh run's first burial mints from zero.</summary>
+    /// in the next. Also rewinds the mint counter so the fresh run's first burial mints from zero, and stops
+    /// the discovery watch — a universe with no hoards has nothing to roll for.</summary>
     public void Clear()
     {
         _caches.Clear();
         _seq = 0;
+        LastCheckedPeriod = WatchNotStarted;
     }
 
     /// <summary>A fresh, owner-scoped id + mint index for the next burial (monotonic, so two burials
@@ -103,4 +118,42 @@ public sealed class CacheLedger
 
     /// <summary>Total coin buried across our own caches (for the ledger's hoard summary).</summary>
     public int BuriedCoin => _caches.Where(c => c.PlayerOwned).Sum(c => c.Coin);
+
+    /// <summary>How many chests of OURS are in the ground (a rival's map we hold is not a holding).</summary>
+    public int OwnCacheCount => _caches.Count(c => c.PlayerOwned);
+
+    /// <summary>
+    /// The ledger's one-line read of the hoard: what is ours, underground, and therefore off the books —
+    /// "🪙 2,400 cr + 7 units (3 hot) in the ground across 2 caches". Empty when we have buried nothing,
+    /// so the section simply shows its maps.
+    ///
+    /// <para>The numbers behind it (<see cref="BuriedCoin"/>, <see cref="BuriedHotUnits"/>) have existed
+    /// since the hoard shipped and nothing ever read them: the one figure a captain wants from this page —
+    /// how much of the fortune is out of a boarding party's reach, and how much of it is evidence — lived
+    /// only in Core. A truth that lives only in Core is not being told.</para>
+    /// </summary>
+    public string HoardLine()
+    {
+        int chests = OwnCacheCount;
+        if (chests == 0)
+        {
+            return "";
+        }
+        int coin = BuriedCoin;
+        int units = _caches.Where(c => c.PlayerOwned).Sum(c => c.TotalCargoUnits);
+        int hot = BuriedHotUnits;
+
+        var parts = new List<string>();
+        if (coin > 0)
+        {
+            parts.Add($"{coin:N0} cr");
+        }
+        if (units > 0)
+        {
+            parts.Add(hot > 0 ? $"{units} units ({hot} hot)" : $"{units} units");
+        }
+        string what = parts.Count == 0 ? "nothing left worth digging" : string.Join(" + ", parts);
+        string where = chests == 1 ? "one cache" : $"{chests} caches";
+        return $"🪙 {what} in the ground across {where} — off the books while it stays there.";
+    }
 }

@@ -3242,9 +3242,20 @@ public partial class Map
     {
         int coin = Math.Clamp(ex.PendingCoin, 0, _credits);
         _credits -= coin;
-        _cargoUnits = 0;
-        _cargoValue = 0;
+
+        // Only what is IN THE CHEST leaves the books. The chest is a snapshot taken at the shuttle door
+        // (ShuttleExcursion.Pack); the hold keeps living all the way down — a cache dug back up on this
+        // same ground, a beach-comber scrap recovered after a panic drop. Clearing the whole hold here
+        // therefore ATE those units: the map card and the "off the books" line name only the snapshot, so
+        // they were neither buried nor aboard. Coin was always deducted honestly (the pending amount, no
+        // more); this is cargo's half of the same law. ShuttleExcursion.HoldAfterBurying owns the rule.
+        var left = ShuttleExcursion.HoldAfterBurying(_cargoByClass, ex.PendingCargo);
         _cargoByClass.Clear();
+        foreach (KeyValuePair<string, int> line in left)
+        {
+            _cargoByClass[line.Key] = line.Value;
+        }
+        RecomputeCargoTotals();
 
         int standing = WatchdogLevelAt(ex.Stop.Body.Id);
         int presence = Math.Max(standing, roll.Reevers);
@@ -3885,9 +3896,10 @@ public partial class Map
             OnExcursion: onExcursion,
             OnRegolith: awayFromSafety,
             // There is no monolith aboard a dead ship, and now that a wreck can BE exposed ground the guard
-            // has to be said rather than left to arithmetic: SeesMonolith() measures from the moon field's
-            // anchor at y = −232, which no point of a hull is within 26 du of. True today, and exactly the
-            // kind of "satisfied by accident" that #637 is a list of.
+            // has to be said rather than left to arithmetic (#637's whole list is things satisfied by
+            // accident). SeesMonolith() now answers the question properly on its own — it asks
+            // Monolith.StandsOn, the same predicate the renderer builds the slab from, and a wreck id is
+            // not the canon moon — so !OnWreck is belt to that braces rather than the only thing holding it.
             SeesMonolith: !OnWreck && awayFromSafety && SeesMonolith(),
             // #446 (owner, live 2026-07-26: "The reevers should not lower sanity unless they get REALLY
             // close"). ChaseActive used to be the bare `_reevers.Count > 0` — a pack EXISTING anywhere on
@@ -4192,8 +4204,24 @@ public partial class Map
         return false;
     }
 
+    // #586 · IN SIGHT OF THE MONOLITH — and only where the monolith actually IS.
+    //
+    // This used to be pure distance to MoonSurface.MonolithX/Y, which is the DEEP ANCHOR of every ground
+    // there is: every seeded site puts its own fixture there (Luna's mass-driver muzzle, a plinth
+    // elsewhere), so walking up to any of them fired the once-in-a-life Lovecraftian hit — 24 nerve, the
+    // line "👁 The monolith resolves out of the dark", and the FirstMonolith selfie against the monolith
+    // plate — over a broken launch machine. And _monolithSeen is kept FOR LIFE, so the captain who did
+    // that could never be shown the real slab's beat again. Constant governing the wrong thing, and the
+    // sentence disagreeing with the sim, in one line.
+    //
+    // Monolith.StandsOn is the same predicate the renderer builds the slab's card from, so the beat cannot
+    // drift from the object again.
     private bool SeesMonolith()
     {
+        if (_surface is not { } ex || !Monolith.StandsOn(ex.Stop.Body.Id, ex.Site.LayoutSalt))
+        {
+            return false;
+        }
         double dx = _avatarX - MoonSurface.MonolithX;
         double dy = _avatarY - MoonSurface.MonolithY;
         return (dx * dx) + (dy * dy) <= MonolithSightRange * MonolithSightRange;
@@ -5249,6 +5277,7 @@ public partial class Map
         ex.Channel = null;
         bool escapedWithWatchdogs = _reevers.Count > 0;
         TreasureCache? buried = ex.Cache;
+        bool droppedAndLeft = ex.ChestDropped; // read before the excursion (and its dropped pile) is folded away
 
         // #314: carried sentries come home (with their drained magazines); any left DEPLOYED on the
         // ground is abandoned — a write-off with a ledger line (#119 voice). Retrieve them before liftoff
@@ -5303,6 +5332,16 @@ public partial class Map
         string botTail = abandoned > 0
             ? $" {abandoned} sentry bot{(abandoned == 1 ? "" : "s")} left behind — written off."
             : "";
+
+        // #313 · THE CHEST YOU DROPPED AND NEVER WENT BACK FOR. Dropping it (G) says "come back for it when
+        // the ground's clear", and inside the excursion that is exactly true — walk over the spot and it is
+        // back in the sling. Lift off without it and the ✗-less pile on the regolith is simply gone with the
+        // excursion. What the SIM does is the honest news, and it was the one thing never said: nothing went
+        // into the ground, so nothing ever left the ship's books — the coin never left the purse, the hold
+        // never emptied. Say it, or the captain flies home believing they abandoned a fortune out there.
+        string dropTail = droppedAndLeft
+            ? " 🧰 You lifted off without the chest you dropped — but nothing went into the ground, so nothing left the books: the coin is still in the purse and the hold is untouched."
+            : "";
         if (buried is { } cache)
         {
             _treasureMapCard = cache;
@@ -5315,7 +5354,7 @@ public partial class Map
         else if (!settledExpedition && !settledDeflection) // an away-gig settle already spoke its payout line
         {
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
-            ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}");
+            ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}{dropTail}");
         }
     }
 
