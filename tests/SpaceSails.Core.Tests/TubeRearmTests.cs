@@ -83,4 +83,23 @@ public class TubeRearmTests
         Assert.Equal(SentryBot.MaxMagazine - 40, q.RoundsBought);
         Assert.Equal(SentryBot.MaxMagazine, q.Magazines[0]);
     }
+
+    /// <summary>#562 vs #580/#563 · THE TUBE IS THE ANCHOR, NOT THE ONLY SUPPLY POINT. The card said "this
+    /// tube is the only place your sentries get fed" — true when it was written, and false since a shelter's
+    /// emergency press started reloading magazines in full every time you ask (SurfaceShelter.LockerRounds)
+    /// and an outpost hut's locker started spreading rounds across the bots you brought. A once-per-captain
+    /// card that names the wrong law teaches a captain to walk past the thing that would have saved the
+    /// walk. What is still true — and what the card must keep saying — is that the tube is the one that is
+    /// ALWAYS there.</summary>
+    [Fact]
+    public void ItDoesNotClaimToBeTheOnlySupplyPoint_BecauseSheltersAndLockersExist()
+    {
+        string all = string.Join(" ", TubeRearm.Beats);
+
+        Assert.DoesNotContain("only place your sentries get fed", all, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("shelter", all, System.StringComparison.OrdinalIgnoreCase);
+
+        // The other end: a shelter really does reload, and it is not a token drawer.
+        Assert.True(SurfaceShelter.LockerRounds > 0);
+    }
 }

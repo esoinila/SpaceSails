@@ -35,9 +35,16 @@ public static class AirCard
         + "full the tank is — that number is useless — it tells you how much FURTHER you can go and still "
         + "get home.",
 
-        "The walk back costs the same air as the walk out, and nothing on the ground will sell you more. "
-        + "Her tube is the only place a suit refills, which is why every excursion is a loop rather than a "
-        + "line.",
+        // #608/#580 · WHAT THIS BEAT USED TO SAY WAS TRUE WHEN IT WAS WRITTEN AND IS NOT NOW. It read
+        // "nothing on the ground will sell you more. Her tube is the only place a suit refills" — while the
+        // card's own Head, two fields up, already told the captain to "find something out here that still
+        // holds a charge". Pressure refuges and survey shelters DO recharge a suit (SurfaceShelter.Transfer,
+        // to two thirds and no further), and every airless floor is required to hold one. A card that
+        // contradicts itself in the same breath teaches nobody anything.
+        "The walk back costs the same air as the walk out, and nothing on this moon SELLS you any. Her tube "
+        + "is the only thing that fills a tank to the top, which is why every excursion is a loop rather "
+        + "than a line — but a shelter or a pressure refuge, if you can reach one, will put two thirds back "
+        + "in and stop there. It leaves the rest for whoever comes next.",
 
         "When the walk home costs more than you are carrying, the suit says so ONCE, plainly. After that it "
         + "stops being a warning and starts being arithmetic.",

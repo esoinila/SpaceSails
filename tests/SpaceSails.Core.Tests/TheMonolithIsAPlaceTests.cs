@@ -33,6 +33,30 @@ public sealed class TheMonolithIsAPlaceTests
             "the approach stubs are jammed against the slab.");
     }
 
+    /// <summary>THE MONOLITH IS ONE OBJECT, ON ONE GROUND. The slab's geometry is only laid where
+    /// <c>SurfaceLayout.For</c> routes to the authored maze — Miranda's canon empty-salt site — yet the
+    /// once-in-a-life nerve hit and the FirstMonolith selfie keyed off the DEEP ANCHOR's coordinates, which
+    /// every ground has. Luna's mass-driver muzzle sits on that exact anchor. So a captain who walked up to
+    /// a broken launch machine was told "the monolith resolves out of the dark", paid 24 nerve for it, and —
+    /// the flag being kept for life — could never be shown the real one afterwards.</summary>
+    [Theory]
+    [InlineData("miranda", "", true)]                       // the canon ground, and the only one
+    [InlineData("miranda", "ShadowedRille", false)]          // same moon, seeded ground: no slab is built there
+    [InlineData("miranda", "RidgeCamp", false)]
+    [InlineData("luna", "", false)]                          // the mass-driver muzzle stands on the same anchor
+    [InlineData("phobos", "", false)]                        // a map may pace "from the monolith"; the slab is elsewhere
+    [InlineData("europa", "QuietBasin", false)]
+    public void TheSlabStandsOnExactlyOneGround(string bodyId, string siteSalt, bool expected)
+    {
+        Assert.Equal(expected, Monolith.StandsOn(bodyId, siteSalt));
+
+        // And the predicate must agree with the ground the layout generator actually builds: the authored
+        // maze (the only plan that lays the slab) is exactly where StandsOn is true.
+        bool authoredMaze = SurfaceLayout.For(bodyId, SurfaceLayout.DefaultField, siteSalt)
+            .Landmarks.Any(m => m.Label.Contains("MONOLITH", System.StringComparison.Ordinal));
+        Assert.Equal(expected, authoredMaze);
+    }
+
     [Fact]
     public void ItStaysINSIDETheCanonMazeCell()
     {

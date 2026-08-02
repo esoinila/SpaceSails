@@ -4203,8 +4203,24 @@ public partial class Map
         return false;
     }
 
+    // #586 · IN SIGHT OF THE MONOLITH — and only where the monolith actually IS.
+    //
+    // This used to be pure distance to MoonSurface.MonolithX/Y, which is the DEEP ANCHOR of every ground
+    // there is: every seeded site puts its own fixture there (Luna's mass-driver muzzle, a plinth
+    // elsewhere), so walking up to any of them fired the once-in-a-life Lovecraftian hit — 24 nerve, the
+    // line "👁 The monolith resolves out of the dark", and the FirstMonolith selfie against the monolith
+    // plate — over a broken launch machine. And _monolithSeen is kept FOR LIFE, so the captain who did
+    // that could never be shown the real slab's beat again. Constant governing the wrong thing, and the
+    // sentence disagreeing with the sim, in one line.
+    //
+    // Monolith.StandsOn is the same predicate the renderer builds the slab's card from, so the beat cannot
+    // drift from the object again.
     private bool SeesMonolith()
     {
+        if (_surface is not { } ex || !Monolith.StandsOn(ex.Stop.Body.Id, ex.Site.LayoutSalt))
+        {
+            return false;
+        }
         double dx = _avatarX - MoonSurface.MonolithX;
         double dy = _avatarY - MoonSurface.MonolithY;
         return (dx * dx) + (dy * dy) <= MonolithSightRange * MonolithSightRange;
