@@ -545,6 +545,11 @@ interesting one turns up:
 /map?wreck=hullbreach&land=1      ← the two holes it made going through her
 ```
 
+All ten `WreckCause` names parse, lowercased — the four above plus `drivefailure`, `reactorcascade`,
+`lifesupportfailure`, `navigationalerror`, `piracy` and `ventedbyoneoftheirown`. There is a guard on it
+now: `TenHullsTenStoriesTests` walks every cause through `SeededWithCause`, so a cause the seeding cannot
+reach fails CI instead of returning an unhelpful default hull.
+
 **The loop:** board → walk the spine → read the three stations (the damage, the bridge log, the cargo
 manifest) → the cargo console → file the report naming a cause, or strip her and say nothing.
 

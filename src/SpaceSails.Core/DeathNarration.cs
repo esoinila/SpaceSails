@@ -226,11 +226,15 @@ public static class DeathNarration
         // captain out of their ship on the ground; the placed overload is the one the card actually calls.
         DeathCause.Suffocated => "death-landing-party.jpg",
 
-        // Placeless, a scuttling is a hull coming apart, which is what this frame is. In practice the placed
-        // overload never reaches here: CanHappen makes Scuttled a derelict-only cause, and the derelict has
-        // its own card (`death-derelict.jpg`). Named rather than left to the default, because a cause
-        // absorbed by a `_ =>` arm is how `death-suffocated.jpg` stayed a promise nothing kept for a year.
-        DeathCause.Scuttled => "busted-ship-explosion.jpg",
+        // The placeless answer for a cause with exactly ONE legal place is that place's card — the same
+        // reasoning that gives a placeless suffocation the away team's. `CanHappen` makes Scuttled a
+        // derelict-only cause, so there is no version of this death that happens anywhere else.
+        //
+        // It said `busted-ship-explosion.jpg` for one commit, on the grounds that a scuttling IS a hull
+        // coming apart, and `EveryCause_HasItsOwnArt` caught it in CI: that frame is the captain's own ship
+        // going up, and lending it to a death aboard somebody else's is the picture disagreeing with the sim
+        // — which is exactly as bad as the words doing it, and is what this whole cause was added to stop.
+        DeathCause.Scuttled => "death-derelict.jpg",
         _ => "busted-ship-explosion.jpg",
     };
 
