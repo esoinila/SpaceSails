@@ -118,11 +118,18 @@ public sealed partial class Map
         }
 
         // Still aboard. The overload does not negotiate, and the insurance issues a new captain.
+        //
+        // #525 · THE CAUSE IS PASSED, NOT ROLLED. This called the trigger with no known cause, so the card
+        // fell to DeathNarration.SurfaceEnd and told a captain who had turned two keys ninety seconds
+        // earlier that "an Old One's hand is the last straw" — on a drive-failure hull with nothing living
+        // in her. The one death in the game the captain unambiguously CHOSE was narrated as being taken by
+        // something else, which is the same failure #545 and #609 were filed about, on the worst possible
+        // beat for it. The clock knows exactly what killed them; it just was not saying.
         _scuttleSecondsLeft = null;
         if (_surface is { } dying && _busted is null)
         {
             LogAutopilotEvent("☢ The overload ran out with the away team still aboard.");
-            TriggerSurfaceOverdrawDeath(dying, nerveRanOut: false);
+            TriggerSurfaceOverdrawDeath(dying, nerveRanOut: false, known: DeathCause.Scuttled);
         }
     }
 

@@ -47,6 +47,20 @@ public enum DeathCause
     /// project has paid for repeatedly (#545's death card blaming Reevers for three men with rifles). The
     /// caller PASSES this rather than rolling for it, because it is the one thing it knows for certain.</para></summary>
     Suffocated,
+
+    /// <summary>#525 · THE OVERLOAD YOU SET YOURSELF ran out with you still aboard.
+    ///
+    /// <para>#525's outcome table records this row as <i>built</i>. It was not: <c>AdvanceScuttleClock</c>
+    /// called <c>TriggerSurfaceOverdrawDeath</c> with no known cause, so the card rolled
+    /// <see cref="DeathNarration.SurfaceEnd"/> and told the captain an Old One's hand was the last straw —
+    /// aboard a drive-failure hull with nothing living in her, ninety seconds after they turned two keys
+    /// themselves. The same failure this project has now paid for four times (#545's card blaming Reevers
+    /// for three men with rifles), on the one death the captain unambiguously chose.</para>
+    ///
+    /// <para>Only ever <see cref="DeathPlace.Derelict"/>: the panel is bolted to somebody else's reactor,
+    /// and your own ship has no such switch (that lane is #525's second half, and the CASTAWAY outcome it
+    /// wants is still unbuilt). The tail is already right — <i>"Her log will not mention it."</i></para></summary>
+    Scuttled,
 }
 
 /// <summary>
@@ -211,6 +225,12 @@ public static class DeathNarration
         // The placeless answer is the away team's card, because a suffocation with no place named is a
         // captain out of their ship on the ground; the placed overload is the one the card actually calls.
         DeathCause.Suffocated => "death-landing-party.jpg",
+
+        // Placeless, a scuttling is a hull coming apart, which is what this frame is. In practice the placed
+        // overload never reaches here: CanHappen makes Scuttled a derelict-only cause, and the derelict has
+        // its own card (`death-derelict.jpg`). Named rather than left to the default, because a cause
+        // absorbed by a `_ =>` arm is how `death-suffocated.jpg` stayed a promise nothing kept for a year.
+        DeathCause.Scuttled => "busted-ship-explosion.jpg",
         _ => "busted-ship-explosion.jpg",
     };
 
@@ -223,6 +243,8 @@ public static class DeathNarration
         DeathCause.Joined => "WHAT HAPPENED — you walked into the crowd",
         DeathCause.Void => "WHAT HAPPENED — lost to the void",
         DeathCause.Suffocated => "WHAT HAPPENED — the air ran out",
+        // Not "the reactor got you". You set it.
+        DeathCause.Scuttled => "WHAT HAPPENED — you were still aboard when she went",
         _ => "WHAT HAPPENED",
     };
 
@@ -317,6 +339,20 @@ public static class DeathNarration
         "On {body} the gauge reached nothing between one bulkhead and the next. She had nothing to give you.",
     ];
 
+    /// <summary>#525 · The overload ran out with the away team still aboard. The ship announced it herself,
+    /// four times, in a voice recorded by somebody long dead — so the one thing these lines may never say is
+    /// that the captain was surprised.</summary>
+    private static readonly string[] ScuttleLinesAboardAWreck =
+    [
+        "You set it yourself, aft, next to the thing you were setting it on, and then you did not get " +
+        "forward in time. {body} goes all at once and mostly inward, and you go with her.",
+        "The last thing aboard {body} still able to power a speaker spent ninety seconds telling all hands " +
+        "to muster at their assigned boats. You had already counted those boats. You were still counting " +
+        "doors when the note came up half a tone and stopped.",
+        "Somewhere between the reactor spaces and the lock you ran out of ship you had left open. {body} " +
+        "was patient about the doors you dogged on the way aft, and precise about the ones you did not.",
+    ];
+
     private static string[] PoolFor(DeathCause cause) => cause switch
     {
         DeathCause.Collector => CollectorLines,
@@ -325,6 +361,11 @@ public static class DeathNarration
         DeathCause.Joined => JoinedLines,
         DeathCause.Void => VoidLines,
         DeathCause.Suffocated => SuffocationLines,
+        // Scuttled can only ever be a derelict (CanHappen), so the derelict branch of Line always catches
+        // it first. Named anyway: a cause absorbed by a `_ =>` default is exactly the shape #609 was filed
+        // about, and the fallback here is the COLLECTOR pool — a boarding volley, over a captain who turned
+        // two keys alone on a dead ship.
+        DeathCause.Scuttled => ScuttleLinesAboardAWreck,
         _ => CollectorLines,
     };
 
@@ -367,6 +408,12 @@ public static class DeathNarration
         // moon, inside a wreck and a hundred and fifty metres under a moon, where its own prose is nonsense.
         // That default absorbing a gap is precisely the shape #609 was filed about; the cause is stated.
         DeathCause.Void => place == DeathPlace.OwnShip,
+
+        // #525 · The scuttling panel is bolted to somebody else's reactor. Your own ship has no such switch
+        // yet (that is #525's second half, with the CASTAWAY outcome still unbuilt), and a moon has no
+        // reactor at all — so this cause is legal in exactly one place and says so, rather than falling
+        // through a default that would make it legal 150 m under a moon.
+        DeathCause.Scuttled => place == DeathPlace.Derelict,
         _ => true,
     };
 
@@ -417,6 +464,7 @@ public static class DeathNarration
                 DeathCause.Reevers => ReeverLinesAboardAWreck,
                 DeathCause.Joined => JoinedLinesAboardAWreck,
                 DeathCause.Suffocated => SuffocationLinesAboardAWreck,
+                DeathCause.Scuttled => ScuttleLinesAboardAWreck,
                 _ => null,
             };
             if (aboard is not null)

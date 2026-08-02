@@ -506,10 +506,11 @@ place out of four, and nothing that reaches an impact at all.
 /map?death=suffocated&wreck=1&land=1               the tank runs dry inside a dead hull
 /map?death=reevers&wreck=1&land=1                  something has you against a bulkhead
 /map?death=suffocated&secretlab=1&land=1&floor=2   150 m under a moon, in a poured corridor
+/map?death=scuttled&wreck=1&land=1                 the overload you set yourself ran out (#525)
 ```
 
 The cause is a `DeathCause` name, lowercased: `collector`, `impact`, `reevers`, `joined`, `void`,
-`suffocated`. It stages the **genuine trigger** — `TriggerImpact`, a real collector catch, or
+`suffocated`, `scuttled`. It stages the **genuine trigger** — `TriggerImpact`, a real collector catch, or
 `TriggerSurfaceOverdrawDeath` — never a mocked card, so what you see is what a player sees.
 
 **There is deliberately no `?place=`.** *Where* you died is not an opinion the URL gets to hold: the
