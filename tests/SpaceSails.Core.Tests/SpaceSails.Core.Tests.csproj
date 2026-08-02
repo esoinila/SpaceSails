@@ -52,6 +52,9 @@
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\bolivia-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\treasure-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\vented-nest-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- #654 — all three of a derelict's evidence stations, so EveryWreckEvidenceStationIsPainted can
+         hold the ten cause portraits AND the two generic station plates to files on disk. -->
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\wreck-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

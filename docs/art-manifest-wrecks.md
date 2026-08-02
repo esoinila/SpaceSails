@@ -155,8 +155,58 @@ compartment while the sim says it is still infested and still holding air.
   that showed the same image would say the vacuum changed nothing), and **neither plate names what made
   it.** Same law as `TheHiveTests.NothingDownHereEXPLAINSAnything`, one deck up.
 
+### The other two evidence stations (#654) — `wreck-log.jpg`, `wreck-manifest.jpg`
+
+A derelict has **three** evidence stations and exactly one of them showed a picture. The cause's own room
+got a full plate; 🖥 THE BRIDGE LOG and 📦 THE CARGO MANIFEST got a pulse line that faded in a second and a
+half — on all ten hulls. They are not colour: they are the **corroboration `MisreadsAs` is built on**, and
+reading both is the single thing that takes the decoy off the choice card.
+
+**The shape is decided by the anti-tell law, and it is not optional.** `WreckLayout.StandardFittings`
+carries the owner's ruling — *"even without reevers we should have those tech we used here available, to
+not give a clue that they might not be needed"* — **ABSENCE OF A TOOL IS INFORMATION**, and so is absence
+of a plate. A painting that appeared on the insurance job's manifest and nowhere else would tell the
+captain the ship was a staged loss before they had read a word of it. So: **one generic canvas per station,
+the same one on all ten hulls, and the per-cause CAPTION does every bit of the work** — exactly the way
+`death-derelict.jpg` serves every derelict death regardless of what killed you.
+
+- **Slots:** `Derelict.LogArtFile` / `Derelict.ManifestArtFile` (`const`, because a const cannot vary by
+  hull), captioned by `Derelict.LogCaption` / `Derelict.ManifestCaption` — the finding text with the
+  station glyph split off, so the card is not printing 🖥 under a title that already carries it. Raised in
+  `Map.Wreck.ExamineWreckEvidence` beside the cause station's own card.
+- **Guarded:** `RevealPlatesArePaintedTests.EveryWreckEvidenceStationIsPainted` (all three stations, all ten
+  hulls, held to files on disk) and `TheHullsShareOnePaintingAndShareNoSentence` — **two paintings, ten
+  distinct log sentences, none of them the "ordinary ship's business" fallback.** That second one asserts
+  the trade this whole entry is about: the variance is not allowed to live in the pixels.
+  - *Proven RED twice:* the painted sweep failed naming `art/wreck-log.jpg` before the file was copied in;
+    and deleting a cause's arm from `LogCaption` drops the distinct count to nine and names the hull.
+
+> **Prompt used** (`art/wreck-log.jpg`): The bridge log position of a long-dead spaceship, lit by a single
+> helmet lamp in the dark: a heavy metal desk still bolted to the deck, a dead flat screen that has not been
+> lit in forty years, a watch officer chair pushed back and left that way, an even blanket of dust over
+> everything, a stylus set down beside a blank scoured slate. Nothing is broken and nobody is here. Grimy
+> lived-in used-future sci-fi, muted desaturated palette of cold grey and rust, painterly, moody low-key
+> lighting, no text, no lettering, no numbers, no logos, no readable writing, no people.
+
+> **Prompt used** (`art/wreck-manifest.jpg`): The cargo paperwork station in the deep hold of a long-dead
+> spaceship, lit by a helmet lamp: a bolted console with a dark screen, a rack of heavy cargo seals hanging
+> on a hook, a clipboard board of blank scoured slates, ranks of stacked crates behind it receding into
+> total darkness, frost creeping across the deck plating. Nothing is damaged and nothing is obviously wrong.
+> Grimy lived-in used-future sci-fi, muted desaturated palette of cold grey-green and dust brown, painterly,
+> moody low-key lighting, no text, no lettering, no numbers, no logos, no readable writing, no people.
+
+- **Painted 2026-08-02**, first pass each, no retries. The log came back with a **handprint pressed into the
+  dust on the desktop** that nobody asked for — evidence, never conclusion, and it belongs on all ten hulls
+  because a handprint says somebody was here and says nothing at all about who.
+- The manifest's seals are deliberately *just seals*: neither intact nor re-set. Whether they were opened is
+  a sentence, and the sentence is the captain's to read.
+
 ### Still unpainted in this family
 
+- `art/castaway.jpg` — **alive and shipless.** Every other end state in the game has a picture; the one
+  that is supposed to be a *beginning* has none, and it cannot be painted before the moment exists (#525).
+  When the castaway wake lands: a cold boat, no drive plume, a very long way from anything, and nothing in
+  frame explaining who is in it.
 - `art/death-suffocated.jpg` — the name `ArtFile(cause)` carried for a year with nothing behind it. Now
   unreachable (every away place answers before it), so it is a *nice-to-have*, not a gap: a card for a
   suffocation with no place named at all.

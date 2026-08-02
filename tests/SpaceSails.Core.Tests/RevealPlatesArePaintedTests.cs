@@ -139,6 +139,84 @@ public class RevealPlatesArePaintedTests
         }
     }
 
+    /// <summary>
+    /// #654 · A WRECK HAS THREE EVIDENCE STATIONS AND ALL THREE SHOW A PICTURE — on all ten hulls.
+    ///
+    /// <para>The bridge log and the cargo manifest are the corroboration <c>MisreadsAs</c> is built on:
+    /// reading both is the single thing that takes the decoy off the choice card. They were a pulse line
+    /// that faded in a second and a half while the damage two rooms away got a full plate.</para>
+    ///
+    /// <para><b>Proven RED:</b> point <see cref="Derelict.LogArtFile"/> at <c>art/wreck-log-nope.jpg</c> and
+    /// this fails naming the basename; the whole point of the sweep is that the browser would not have.</para>
+    /// </summary>
+    [Fact]
+    public void EveryWreckEvidenceStationIsPainted()
+    {
+        AssertPainted("The bridge log station", Derelict.LogArtFile);
+        AssertPainted("The cargo manifest station", Derelict.ManifestArtFile);
+        Assert.NotEqual(Derelict.LogArtFile, Derelict.ManifestArtFile);
+
+        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
+        {
+            AssertPainted($"Wreck {cause}'s own cause station", Derelict.ArtFile(cause));
+        }
+    }
+
+    /// <summary>
+    /// AND THE PICTURE IS THE SAME ONE EVERY TIME, WHILE THE WORDS ARE NEVER THE SAME TWICE.
+    ///
+    /// <para>That trade is the whole design of the two new slots, and it is the owner's anti-tell law
+    /// applied to art: a plate that showed up on the insurance job's manifest and nowhere else would tell
+    /// the captain the ship was a staged loss before they had read a word of it, and undo the misdirection
+    /// the cause taxonomy exists for. So the variance is not allowed to live in the pixels — it has to live
+    /// in the caption, and this asserts BOTH halves at once so neither can drift alone.</para>
+    ///
+    /// <para><b>Proven RED:</b> delete <see cref="Derelict.WreckCause.HullBreach"/>'s arm from
+    /// <c>LogCaption</c> — she falls through to <i>"ordinary ship's business"</i>, the distinct count drops
+    /// to nine, and this names her. (That is exactly how the vented hull's log broke in #533, one switch
+    /// over.)</para>
+    /// </summary>
+    [Fact]
+    public void TheHullsShareOnePaintingAndShareNoSentence()
+    {
+        var logs = new HashSet<string>(StringComparer.Ordinal);
+        var pictures = new HashSet<string>(StringComparer.Ordinal);
+        int hulls = 0;
+
+        foreach (Derelict.WreckCause cause in Enum.GetValues<Derelict.WreckCause>())
+        {
+            Derelict.Wreck w = Derelict.SeededWithCause(cause)
+                ?? throw new InvalidOperationException($"no seeded hull for {cause}");
+            hulls++;
+
+            // The station's picture, chosen the way Map.Wreck.ExamineWreckEvidence chooses it.
+            pictures.Add(Derelict.LogArtFile);
+            pictures.Add(Derelict.ManifestArtFile);
+
+            string log = Derelict.LogCaption(w);
+            Assert.True(log.Length > 60, $"{cause}'s log caption is too short to be evidence: \"{log}\"");
+            Assert.DoesNotContain("ordinary ship's business", log, StringComparison.Ordinal);
+            Assert.True(
+                logs.Add(log),
+                $"{cause}'s bridge log reads word for word like another hull's. The painting is deliberately "
+                + "shared; the SENTENCE is the only thing telling these ten ships apart.");
+
+            string manifest = Derelict.ManifestCaption(w);
+            Assert.True(manifest.Length > 40, $"{cause}'s manifest caption is too short to be evidence.");
+
+            // The glyph belongs to the station label, not to the words — the card prints the title above the
+            // caption, and the pulse line prints the glyph in front of it. One text, two readers, one icon.
+            Assert.DoesNotContain("🖥", log, StringComparison.Ordinal);
+            Assert.DoesNotContain("📦", manifest, StringComparison.Ordinal);
+            Assert.StartsWith("🖥 " + log, Derelict.LogFinding(w), StringComparison.Ordinal);
+            Assert.StartsWith("📦 " + manifest, Derelict.ManifestFinding(w), StringComparison.Ordinal);
+        }
+
+        Assert.Equal(10, hulls);
+        Assert.Equal(10, logs.Count);
+        Assert.Equal(2, pictures.Count);   // one log plate and one manifest plate, across all ten hulls
+    }
+
     [Fact]
     public void EveryPlateSaysSomethingAndSaysItOnce()
     {
