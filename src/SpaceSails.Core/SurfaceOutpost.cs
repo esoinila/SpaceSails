@@ -284,6 +284,29 @@ public static class SurfaceOutpost
     public static string CacheLine(int rounds) =>
         $"🔫 Their locker: {rounds} rounds, the right calibre, still greased. Racked across your sentries.";
 
+    /// <summary>
+    /// SOMEBODY'S EFFECTS, ON A FLOOR THEY DID NOT WALK OFF — one plate, all four covers.
+    ///
+    /// <para>This is the console in the game most obviously ABOUT a person, and until now the only picture
+    /// it had was the dossier's. It is also the whole story the hut tells: a wallet, a badge for a facility
+    /// with a number and no name, a chit paid by an employer. It implies an industry that went dark and a
+    /// state worth hiding from, and it says NOTHING about what is walking around outside — that stays
+    /// unstated, always (owner's canon ruling).</para>
+    ///
+    /// <para><b>One canvas for all four of <see cref="OutpostCover"/>, on the wrecks' anti-tell law.</b> The
+    /// cover is already announced on the door, so the DIFFERENCE is not a secret — but the effects are the
+    /// same four objects on every hut and painting four of them would only invite a fifth reading that
+    /// isn't there. <see cref="EffectsLine"/> carries the whole of it, as it already did.</para>
+    ///
+    /// <para>Every surface in the painting is blank. The words are the code's job.</para>
+    /// </summary>
+    public static readonly RevealPlate EffectsPlate = new(
+        "WHAT WAS LEFT ON THE FLOOR",
+        "art/outpost-effects.jpg",
+        "A wallet fallen open and emptied, a laminated card on a snapped lanyard, a sheet folded into "
+        + "quarters, a photograph lying face down, and some small change nobody came back for. Whoever set "
+        + "these down in a sealed hut on an airless moon did not set them down expecting to be leaving.");
+
     // ── seeding ────────────────────────────────────────────────────────────────────────────────────────
     private const int Resolution = 4096;
 

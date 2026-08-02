@@ -270,6 +270,15 @@ public partial class Map
         ShowAndFile(SurfaceOutpost.EffectsLine(cover), "🚹");
         AssembleSomebody(ex, ex.Stop.Body.Id, ex.Site.LayoutSalt, OutpostKitIndex);
 
+        // #528 · AND IT LOOKS LIKE SOMETHING. The one console in the game most obviously ABOUT a person had
+        // no picture of its own — the dossier's art is the dossier's. One canvas for all four covers, on the
+        // wrecks' anti-tell law (Derelict.LogArtFile): the objects are the same four in every hut, and
+        // EffectsLine already carries the whole of the difference.
+        ShowStoryPlate(
+            SurfaceOutpost.EffectsPlate.Title,
+            SurfaceOutpost.EffectsPlate.ArtFile,
+            SurfaceOutpost.EffectsPlate.Caption);
+
         // Reading somebody's last effects on a floor they did not walk off costs a little nerve. Small: the
         // place is long cold, and the captain is a pirate. It is the recognition that stings, not the fright.
         ApplyNerveShock(OutpostEffectsChill, "what was left on the floor of somebody else's bad idea");
