@@ -506,10 +506,11 @@ place out of four, and nothing that reaches an impact at all.
 /map?death=suffocated&wreck=1&land=1               the tank runs dry inside a dead hull
 /map?death=reevers&wreck=1&land=1                  something has you against a bulkhead
 /map?death=suffocated&secretlab=1&land=1&floor=2   150 m under a moon, in a poured corridor
+/map?death=scuttled&wreck=1&land=1                 the overload you set yourself ran out (#525)
 ```
 
 The cause is a `DeathCause` name, lowercased: `collector`, `impact`, `reevers`, `joined`, `void`,
-`suffocated`. It stages the **genuine trigger** — `TriggerImpact`, a real collector catch, or
+`suffocated`, `scuttled`. It stages the **genuine trigger** — `TriggerImpact`, a real collector catch, or
 `TriggerSurfaceOverdrawDeath` — never a mocked card, so what you see is what a player sees.
 
 **There is deliberately no `?place=`.** *Where* you died is not an opinion the URL gets to hold: the
@@ -543,6 +544,11 @@ interesting one turns up:
 /map?wreck=mutiny&land=1          ← the barricade weave down the spine
 /map?wreck=hullbreach&land=1      ← the two holes it made going through her
 ```
+
+All ten `WreckCause` names parse, lowercased — the four above plus `drivefailure`, `reactorcascade`,
+`lifesupportfailure`, `navigationalerror`, `piracy` and `ventedbyoneoftheirown`. There is a guard on it
+now: `TenHullsTenStoriesTests` walks every cause through `SeededWithCause`, so a cause the seeding cannot
+reach fails CI instead of returning an unhelpful default hull.
 
 **The loop:** board → walk the spine → read the three stations (the damage, the bridge log, the cargo
 manifest) → the cargo console → file the report naming a cause, or strip her and say nothing.

@@ -197,11 +197,19 @@ public static class NervePips
     };
 
     /// <summary>The words the player reads when this pip moves — the actual deliverable of #480. Present
-    /// tense, in the house voice, no numbers (the pip itself is the number).</summary>
+    /// tense, in the house voice, no numbers (the pip itself is the number).
+    ///
+    /// <para><b>These are now read in TWO WORLDS.</b> Until #637 the gauge could only ever run on a moon —
+    /// a derelict's whole deck satisfied the moon's "you are safely aboard" rule, so nothing inside a hull
+    /// ever cost a pip and nothing inside a hull ever printed one of these lines. Fixing that made every
+    /// label here reachable on a steel deck in vacuum, where there is no regolith, no tube and no sky. A
+    /// label may only name a fixture BOTH places have.</para></summary>
     public static string Name(Cause c) => c switch
     {
         Cause.Close => "it is right there",
-        Cause.Cornered => "cornered — no lane to the tube",
+        // Was "cornered — no lane to the tube". A wreck has no tube: the way home is the shuttle's own
+        // lock, and #637 made this line reachable aboard one for the first time.
+        Cause.Cornered => "cornered — no lane back",
         Cause.DigUnderThreat => "you cannot stop digging",
         Cause.Sighting => "something crests the tracker",
         Cause.Touch => "it laid hands on you",
