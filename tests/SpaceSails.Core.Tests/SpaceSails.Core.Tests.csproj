@@ -58,6 +58,7 @@
     <!-- #528 round two — the plates that hang off a beat's own predicate rather than an arc's pool. -->
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\lab-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\outpost-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\collector-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

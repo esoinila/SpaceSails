@@ -181,3 +181,39 @@ a code change.
   *individually* ("turned blank side up", "lying FACE DOWN showing only its blank grey back") is what fixed
   it; a blanket "no text" at the end of the prompt is not enough when the prompt has asked for documents.
 - **Painted 2026-08-03.** Both guarded by `RevealPlatesArePaintedTests.EveryBeatPlateIsPaintedAndSaysItOnce`.
+
+### `art/collector-boat-down.jpg` — THEY DID NOT COME FOR THE SHIP
+
+- **Slot:** `CollectorLanding.ArrivalPlate`, raised in `Map.Surface.LandTheCollectors`.
+- **Why it needed one:** four loaded lines narrate this pursuit and every one of them was a toast. The
+  arrival is the worst place for that — it is the ONLY warning the player gets, and after it the only
+  information in the world is a tracker fan. A sentence that fades in a second and a half is not a warning.
+- **The caption is `ClosingLine`**, which until this pass was written, reviewed, shipped and **referenced by
+  nothing at all**. It is exactly the right words for this picture, so this is where it finally gets said.
+  Split into `ClosingCaption` on the `Derelict.LogCaption` idiom (one text, two readers, one glyph).
+
+> **Prompt used:** A second small landing boat set down hard on grey regolith a few hundred metres from the
+> viewer on an airless moon, landing lights off, no beacon, its ramp already down and a wedge of interior
+> light spilling onto the dust. Four suited figures are walking out from it, spread wide apart in a loose
+> line, unhurried, coming toward the viewer across an empty plain. Long low shadows, a hard black sky. Grimy
+> lived-in used-future sci-fi, muted desaturated palette of dust grey and cold blue, painterly, moody, no
+> text, no lettering, no numbers, no logos, no readable writing, no visible faces.
+
+### `art/collector-siege.jpg` — THEY SETTLE IN TO WAIT
+
+- **Slot:** `CollectorLanding.SiegePlate`, raised in `Map.Surface` beside `ShelterIsNotSanctuaryLine`.
+- **The one rule this frame lives by:** it shows them **settled, not attacking**. Nothing in it is a fight.
+  The clock is your tank, and what makes it horrible is how comfortable everyone else looks. A refuge that
+  silently fails to be one is the worst thing a survival game can do, and the picture has to say so as
+  plainly as the line already does.
+
+> **Prompt used:** The view from inside a small pressurised surface shelter on an airless moon, looking out
+> through a thick scratched round viewport at grey regolith. Outside, three suited figures have taken up
+> positions in a loose arc on the dust and settled down to wait — one seated on a rock, one standing with
+> arms folded, one crouched — patient, in no hurry at all, facing the shelter. The inside of the port is
+> fogged at its edges with breath frost. Grimy lived-in used-future sci-fi, muted desaturated palette of
+> dust grey and dim amber interior light, painterly, moody, no text, no lettering, no numbers, no logos, no
+> readable writing, no visible faces.
+
+- **Painted 2026-08-03**, first pass each. Guarded by
+  `RevealPlatesArePaintedTests.EveryBeatPlateIsPaintedAndSaysItOnce`.

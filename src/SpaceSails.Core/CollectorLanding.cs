@@ -120,8 +120,12 @@ public static class CollectorLanding
         "have all day. You have a tank.\"";
 
     /// <summary>Said when the tracker first shows them moving. They walk. That is the point.</summary>
-    public const string ClosingLine =
-        "🚨 They are not hurrying. Four contacts on the fan, spread wide and walking — the spacing of people " +
+    public const string ClosingLine = "🚨 " + ClosingCaption;
+
+    /// <summary>The same words without the alarm glyph, so <see cref="ArrivalPlate"/> can caption itself
+    /// without printing 🚨 under a title. One text, two readers — the <c>Derelict.LogCaption</c> idiom.</summary>
+    public const string ClosingCaption =
+        "They are not hurrying. Four contacts on the fan, spread wide and walking — the spacing of people " +
         "who have done this before and expect the ground to do the work for them.";
 
     /// <summary>What it says when a hand closes on your arm out here.</summary>
@@ -141,6 +145,38 @@ public static class CollectorLanding
         "⛺ The shelter's door cycles shut behind you and holds. It was built to keep vacuum out, and it will " +
         "— it was not built to keep a writ out. Through the port, they take up positions and settle in to " +
         "wait. Your air is the clock now, and they know it.";
+
+    /// <summary>
+    /// THEY DID NOT COME FOR THE SHIP — the plate for the landing, and the beat the whole lane turns on.
+    ///
+    /// <para>Four loaded lines narrate this pursuit and every one of them was a toast. The arrival is the
+    /// worst place for that: it is the ONLY warning the player gets, and after it the only information in
+    /// the world is a tracker fan. A sentence that fades in a second and a half is not a warning.</para>
+    ///
+    /// <para>The caption is <see cref="ClosingLine"/> — which until now was written, reviewed and shipped
+    /// and then <b>referenced by nothing at all</b>. It is exactly the right words for this picture, so the
+    /// plate is where it finally gets said: they are not hurrying, and the spacing is the spacing of people
+    /// who expect the ground to do the work for them.</para>
+    /// </summary>
+    public static readonly RevealPlate ArrivalPlate = new(
+        "THEY DID NOT COME FOR THE SHIP",
+        "art/collector-boat-down.jpg",
+        ClosingCaption);
+
+    /// <summary>
+    /// A SHELTER IS A PRESSURE VESSEL, NOT A SANCTUARY.
+    ///
+    /// <para>The one beat in the lane the game already tells you out loud rather than letting you discover
+    /// it by being taken inside a refuge you thought was safe — and the picture has to do the same job: it
+    /// shows them SETTLED, not attacking. Nothing here is a fight. The clock in the frame is your tank, and
+    /// the thing that makes it horrible is how comfortable everyone else looks.</para>
+    /// </summary>
+    public static readonly RevealPlate SiegePlate = new(
+        "THEY SETTLE IN TO WAIT",
+        "art/collector-siege.jpg",
+        "Through the shelter's port they have taken up positions on the regolith and stopped moving — one "
+        + "sitting on a rock, one standing with their arms folded, one down on a knee. Nobody is trying the "
+        + "door. Nobody has to.");
 
     /// <summary>Is this contact close enough to be a catch?</summary>
     public static bool HasYou(double collectorX, double collectorY, double avatarX, double avatarY)

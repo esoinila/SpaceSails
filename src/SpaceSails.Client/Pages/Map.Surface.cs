@@ -4904,6 +4904,14 @@ public partial class Map
             {
                 ex.CollectorShelterNoted = true;
                 ShowPulseMessage(CollectorLanding.ShelterIsNotSanctuaryLine);
+
+                // #528 · AND THE PICTURE DOES THE SAME JOB THE LINE DOES: it shows them SETTLED, not
+                // attacking. Nothing in this frame is a fight. The clock is your tank, and what makes it
+                // horrible is how comfortable everyone else looks.
+                ShowStoryPlate(
+                    CollectorLanding.SiegePlate.Title,
+                    CollectorLanding.SiegePlate.ArtFile,
+                    CollectorLanding.SiegePlate.Caption);
             }
 
             if (reachable && CollectorLanding.HasYou(c.X, c.Y, _avatarX, _avatarY))
@@ -4949,6 +4957,16 @@ public partial class Map
             ex.CollectorsHailed = true;
             ShowPulseMessage(CollectorLanding.HailLine);
         }
+
+        // #528 · THE ONLY WARNING THE PLAYER GETS. Four loaded lines narrate this pursuit and every one of
+        // them was a toast; the arrival is the worst place for that, because after it the only information
+        // in the world is a tracker fan. A sentence that fades in a second and a half is not a warning.
+        // Core owns the words — and the caption is ClosingLine, which was written, reviewed and shipped and
+        // then referenced by nothing at all until now.
+        ShowStoryPlate(
+            CollectorLanding.ArrivalPlate.Title,
+            CollectorLanding.ArrivalPlate.ArtFile,
+            CollectorLanding.ArrivalPlate.Caption);
 
         // It is a fright, and a specific one: the ground just stopped being only about the Old Ones.
         ApplyNerveShock(4.0, "a boat you did not call, setting down beside yours");
