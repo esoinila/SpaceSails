@@ -105,6 +105,21 @@ public sealed partial class Map
             }
         }
 
+        // #654 · AND THE OTHER TWO STATIONS, ON EVERY HULL. The log and the manifest are not colour: they
+        // are the CORROBORATION that lets a careful captain catch a wreck that lies, and reading both is the
+        // one thing that takes the decoy off the choice card. They were a pulse line that faded in a second
+        // and a half while the damage two rooms away got a full plate.
+        //
+        // ONE generic painting each, and the same one on all ten hulls — see Derelict.LogArtFile for why
+        // that is not laziness. The caption does every bit of the differentiating.
+        else if (id is "log" or "manifest")
+        {
+            _wreckLook = new WreckLook(
+                spot.Label.Replace("✔ ", ""),
+                id == "log" ? Derelict.LogArtFile : Derelict.ManifestArtFile,
+                id == "log" ? Derelict.LogCaption(w) : Derelict.ManifestCaption(w));
+        }
+
         if (fresh)
         {
             RendererInterop.PlayCue("reveal");

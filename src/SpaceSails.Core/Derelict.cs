@@ -248,15 +248,36 @@ public static class Derelict
     /// And the words the log was supposed to speak already existed, written and Core-tested, in
     /// <see cref="HullVenting.VentedShipLogLine"/> — read by nothing.</para>
     /// </summary>
-    public static string LogFinding(in Wreck w) => w.Cause switch
+    public static string LogFinding(in Wreck w) => "🖥 " + LogCaption(w);
+
+    /// <summary>
+    /// THE ONE PICTURE THE BRIDGE LOG IS ALLOWED TO HAVE — <b>one canvas, every hull, no exceptions</b>
+    /// (#654).
+    ///
+    /// <para>There is no per-cause switch here and there must never be one. <see cref="WreckLayout"/>'s
+    /// standing law is the owner's: <i>"even without reevers we should have those tech we used here
+    /// available, to not give a clue that they might not be needed"</i> — ABSENCE OF A TOOL IS INFORMATION,
+    /// and so is absence of a plate. A picture that appeared on the insurance job's log and nowhere else
+    /// would tell the captain the ship was a staged loss <b>before they had read a word of it</b>, and the
+    /// entire <see cref="MisreadsAs"/> mechanism is built on their not knowing that yet.</para>
+    ///
+    /// <para>So the painting is generic — a desk, a dark screen, a chair pushed back — and the CAPTION
+    /// (<see cref="LogCaption"/>) carries every difference between the ten hulls. Exactly the arrangement
+    /// <c>death-derelict.jpg</c> already uses for every derelict death regardless of what killed you.</para>
+    /// </summary>
+    public const string LogArtFile = "art/wreck-log.jpg";
+
+    /// <summary>The bridge log's finding without its station glyph, so the reveal card can caption itself
+    /// without printing the icon twice under a title that already carries it. One text, two readers.</summary>
+    public static string LogCaption(in Wreck w) => w.Cause switch
     {
         // THE SECOND MADNESS, and the only hull whose log does not end. It is deliberately not prefixed with
         // the years — saying "the log ends N years ago" and then describing eleven months of entries after
         // the ending is the exact contradiction this seam was written to stop.
         WreckCause.VentedByOneOfTheirOwn =>
-            $"🖥 She was opened to space {w.YearsAdrift:N0} years ago. " + HullVenting.VentedShipLogLine,
+            $"She was opened to space {w.YearsAdrift:N0} years ago. " + HullVenting.VentedShipLogLine,
 
-        _ => $"🖥 The log ends {w.YearsAdrift:N0} years ago. " + (w.Cause switch
+        _ => $"The log ends {w.YearsAdrift:N0} years ago. " + (w.Cause switch
         {
             WreckCause.DriveFailure =>
                 "The last hundred entries are the same restart attempt, timestamped every twenty minutes, for nine days.",
@@ -291,8 +312,17 @@ public static class Derelict
 
     /// <summary>THE CARGO MANIFEST: what she was carrying and what it is worth — the number both endings are
     /// priced on. Beside the log for the same reason the log is beside the evidence.</summary>
-    public static string ManifestFinding(in Wreck w) =>
-        $"📦 The manifest assesses her cargo at {w.AssessedValueCr:N0} cr" + (w.Cause switch
+    public static string ManifestFinding(in Wreck w) => "📦 " + ManifestCaption(w);
+
+    /// <summary>THE CARGO MANIFEST'S ONE PICTURE, on the same all-ten-or-none law as
+    /// <see cref="LogArtFile"/> — and here the law bites hardest, because this is the station where the
+    /// fraud lives. The seals in the painting are neither intact nor re-set; they are just seals. Whether
+    /// they were opened is a sentence, and the sentence is the captain's to read.</summary>
+    public const string ManifestArtFile = "art/wreck-manifest.jpg";
+
+    /// <summary>The manifest's finding without its station glyph — see <see cref="LogCaption"/>.</summary>
+    public static string ManifestCaption(in Wreck w) =>
+        $"The manifest assesses her cargo at {w.AssessedValueCr:N0} cr" + (w.Cause switch
         {
             WreckCause.InsuranceJob =>
                 " — countersigned twice, by the same hand, and the cargo seals have been opened and re-set.",
