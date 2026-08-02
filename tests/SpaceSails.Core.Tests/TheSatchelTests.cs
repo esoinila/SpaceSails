@@ -210,4 +210,50 @@ public sealed class TheSatchelTests
         Assert.InRange(vague, 0.35, 0.65);   // most paper is a mention
         Assert.Equal(3, seen.Count);         // and every tier actually occurs
     }
+
+    [Fact]
+    public void APaperCanBeREADAgainAndAgain()
+    {
+        // Owner: "press I ... inventory opens... select paper and see what the clue is." / "it should be
+        // viewable many times."
+        //
+        // The first cut consumed the paper on reading, which conflated LOOKING with DECIDING and broke the
+        // field book's own law (#587: a find that is shown once is a find that is lost). The document is a
+        // pure function of the paper, so it can be re-read forever and always says the same thing.
+        foreach (int i in Enumerable.Range(0, 30))
+        {
+            string id = $"hive:luna:-3:{i}";
+            string first = FieldClue.Document(id);
+
+            Assert.False(string.IsNullOrWhiteSpace(first));
+            Assert.Equal(first, FieldClue.Document(id));
+
+            // And it tells you HOW GOOD it is, every time, without being spent to find out.
+            Assert.Contains(
+                FieldClue.CertaintyOf(id) switch
+                {
+                    FieldClue.Certainty.Vague => "Only named",
+                    FieldClue.Certainty.Narrow => "a description",
+                    _ => "POSITION",
+                },
+                first, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void ADocumentNeverNamesTheMoonForYou()
+    {
+        // Working out WHERE is the act the player is paying for. A paper that printed the answer would hand
+        // back the search it exists to narrow — the same reason a vague clue paints a wide wash rather than
+        // a dot.
+        string[] moons = ["luna", "phobos", "europa", "titan", "miranda", "callisto", "triton"];
+        foreach (int i in Enumerable.Range(0, 40))
+        {
+            string doc = FieldClue.Document($"hive:luna:-3:{i}");
+            foreach (string moon in moons)
+            {
+                Assert.DoesNotContain(moon, doc, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
 }

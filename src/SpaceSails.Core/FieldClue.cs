@@ -89,4 +89,58 @@ public static class FieldClue
         Certainty.Narrow => "a description",
         _ => "a position",
     };
+
+    /// <summary>#603 · WHAT IS ACTUALLY ON THE PAGE. Owner: <i>"if we open inventory and view the paper from
+    /// there then?"</i>
+    ///
+    /// <para>Reading a document and DECIDING it is a lead are two different acts, and the satchel was
+    /// conflating them — one click both read the paper and spent it. Now looking is free and always
+    /// available, and the decision is a second, deliberate press.</para>
+    ///
+    /// <para>The text describes the paper. It never says what to do with it, and it never names the moon —
+    /// working that out is the act the player is paying for.</para></summary>
+    public static string Document(string paperId)
+    {
+        ArgumentNullException.ThrowIfNull(paperId);
+
+        string[] papers =
+        [
+            "A duplicate movement order, carbon third copy, the top two long gone. Somebody has ticked a " +
+            "column of dates in pencil and initialled the bottom without dating it themselves.",
+
+            "A supply requisition for a place named only by a code, countersigned by an office that signed " +
+            "for a great many things that year. The quantities are for a facility, not a survey.",
+
+            "Half a shipping manifest, torn on the fold. What is left is the ROUTE — where it left, where " +
+            "it called, and the last line, which is a place and not a port.",
+
+            "A maintenance log kept in one hand for years and then in another. The second hand records " +
+            "fewer visits and stops recording them entirely, and does not say why.",
+
+            "An inspection schedule with a site list down the margin. Most have a date beside them. One has " +
+            "a date, a line through it, and a different date.",
+
+            "A pay sheet. Names, grades, a column for the site allowance, and a footnote about the rate for " +
+            "somewhere the sheet does not otherwise mention.",
+        ];
+
+        ulong seed = DiceRule.Seed($"clue:paper:{paperId}");
+        string body = papers[(int)(seed % (ulong)papers.Length)];
+
+        Certainty certainty = CertaintyOf(paperId);
+        string worth = certainty switch
+        {
+            Certainty.Vague =>
+                "\n\nThere is a place named on it. Only named — the way you name somewhere you have never " +
+                "had to find.",
+            Certainty.Narrow =>
+                "\n\nAnd there is a description: a landform, a bearing taken off it, a distance somebody " +
+                "paced rather than measured. Enough to walk to in an afternoon.",
+            _ =>
+                "\n\nAnd there is a POSITION, written to the figure. Somebody wrote it down like that " +
+                "because somebody else was going to have to drive there in the dark.",
+        };
+
+        return body + worth;
+    }
 }

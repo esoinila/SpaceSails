@@ -1989,15 +1989,28 @@ public partial class Map
             return;
         }
 
-        // A clue is SPENT by reading it — that is the decision the owner asked for, and a paper you have
-        // already understood is not a second lead.
+        // ── #603 · READING A PAPER NEVER SPENDS IT ──
+        //
+        // Owner: "press I ... inventory opens... select paper and see what the clue is." / "it should be
+        // viewable many times."
+        //
+        // The first cut consumed it, which was wrong twice over. It conflated LOOKING with DECIDING — one
+        // click both read the document and burned it — and it broke the field book's own law (#587: "a find
+        // that is shown once is a find that is lost"). A paper is a thing you own; you can take it out and
+        // read it again in a year.
+        //
+        // So the document is always shown, in full, every time. The tracker gets plotted on the first read
+        // and GrantLabLead no-ops on every one after, which is the honest shape: the knowledge is what is
+        // one-shot, not the paper.
         if (item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
         {
-            _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id)];
-            if (_surface is { } ex)
-            {
-                GrantLabLead(DiceRule.Seed($"clue:{item.Id}"));
-            }
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id)).ToUpperInvariant()}",
+                "",
+                Core.FieldClue.Document(item.Id) + "\n\n" + outcome.Line);
+
+            GrantLabLead(DiceRule.Seed($"clue:{item.Id}"));
         }
 
         CloseSatchel();
