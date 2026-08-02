@@ -266,6 +266,23 @@ air"* inside a hull that has held vacuum for years, and the tank really did refi
 `DeathCause.Suffocated` unreachable on a derelict, which is why the missing picture above was invisible.
 `AwayTeamSide.BackAtTheShuttle` is now the one place that answers it, for both the air and the reach rule.
 
+7.7 **And two more asked it after that** (#637). Occurrences 6 and 7 of the same pattern, found by walking
+`?wreck=infested&land=1`:
+
+- **A derelict cost no nerve.** `StepNerve`'s `onRegolith` was the moon's rule, so the ambient pressure the
+  whole dread economy runs on never applied inside a hull. A captain could walk the spine of a haunted ship,
+  in the dark, in vacuum, and the gauge scored it as standing in the shuttle bay. The damage half of that
+  constant was fixed in #574 and the air half in #621; this was the sanity half, one call site over.
+- **Comms never degraded aboard.** `CommsOnsetBias` returned its at-the-ship `0.5` at every point of every
+  wreck, so the deep-in-a-dead-hull drop — the best place in the game for one — could never fire.
+
+Both now go through `AwayTeamSide`, which gained `HowFarInside` (the same question asked with a number: Y from
+the regolith's rim down to the monolith, X from the shuttle's lock aft to the transom) and `CommsOnsetBias`.
+And because *a rule enforced on a function a caller is free not to use is not enforced*,
+`ADerelictIsNotAMoonTests` reads the live client source and fails on any file outside `AwayTeamSide` that asks
+`MoonSurface.IsSafeAboard` at all — the idiom `CssZBandSyncTests` and `TheDeathCardReadsTheNarrationSeamTests`
+already use.
+
 ---
 
 ## 8 · Cost

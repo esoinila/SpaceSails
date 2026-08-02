@@ -103,7 +103,12 @@ public partial class Map
         // people, because it was written for a sealed site with a crew in it — so on a moon it read as the
         // ship's voice, which is precisely what it was. A captain standing on open regolith is outside all
         // three of those things, and alone.
-        bool onRegolith = _surface is not null && !OnWreck && !MoonSurface.IsSafeAboard(_avatarY);
+        // #637 · Correct already — a wreck is not regolith and the `!OnWreck` says so — but it asked the moon
+        // its own question directly, which is the habit the whole occurrence list is made of. Routed through
+        // the one function that knows which door you are on the far side of, so the rule is enforced on
+        // something a caller cannot decline to use. Identical arithmetic off a wreck; unreachable on one.
+        bool onRegolith = _surface is not null && !OnWreck
+            && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
         HullShudder.Setting setting = HullShudder.SettingOutside(onRegolith, deepSite, haven);
 
         // The bounded escalation (owner: "keep bounded — mostly it IS nothing"): only a deep site that is a
