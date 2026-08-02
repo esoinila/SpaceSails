@@ -234,6 +234,8 @@ public class RevealPlatesArePaintedTests
         ("SecretLab.DoorPlate", SecretLab.DoorPlate),
         ("SecretLab.TheyStandPlate", SecretLab.TheyStandPlate),
         ("SurfaceOutpost.EffectsPlate", SurfaceOutpost.EffectsPlate),
+        ("CollectorLanding.ArrivalPlate", CollectorLanding.ArrivalPlate),
+        ("CollectorLanding.SiegePlate", CollectorLanding.SiegePlate),
     ];
 
     [Fact]
@@ -254,7 +256,7 @@ public class RevealPlatesArePaintedTests
             Assert.True(seenTitles.Add(plate.Title), $"{where} shares a title with another plate.");
         }
 
-        Assert.Equal(3, n);
+        Assert.Equal(5, n);
     }
 
     [Fact]
