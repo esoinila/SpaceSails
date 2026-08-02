@@ -145,6 +145,15 @@ public partial class Map
                 // #313: the panic drop — ditch the chest to sprint full speed, recover it later.
                 DropChest();
                 return true;
+            case "i" or "I":
+                // #603 · THE SATCHEL. Owner: "the I key should be advertised in the hud also like we do now
+                // for the other keys." Opened from nowhere in particular it is just a look at what you are
+                // carrying; opened from a locked door it is a list of things to TRY.
+                if (_surface is not null)
+                {
+                    OpenSatchel();
+                }
+                return true;
             case "t" or "T":
                 // #314: set down a carried sentry at your feet (or pick up one you're standing on).
                 if (_surface is not null)

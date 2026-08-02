@@ -6,7 +6,7 @@ using SpaceSails.Core;
 namespace SpaceSails.Core.Tests;
 
 /// <summary>
-/// #608 · A DEATH UNDER A MOON IS NOT A DEATH ON ONE. Owner, having suffocated on B2 and been handed the
+/// #609 · A DEATH UNDER A MOON IS NOT A DEATH ON ONE. Owner, having suffocated on B2 and been handed the
 /// away-team card: <i>"now we have the suffocated on surface one :-D"</i>
 ///
 /// <para>He was 150 m down in a poured corridor and the card told him about regolith, a suit and a long walk

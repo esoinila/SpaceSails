@@ -1832,7 +1832,7 @@ public partial class Map
         // you, and there is nobody aboard a dead hull or out on an empty moon. Owner: "the debt collector
         // deaths should also only happen in those situations never in any other". Coerced rather than
         // trusted, because this method has four callers and will have more.
-        // #608 · AND UNDER A MOON IS ITS OWN PLACE. Owner, having suffocated on B2 and been handed the
+        // #609 · AND UNDER A MOON IS ITS OWN PLACE. Owner, having suffocated on B2 and been handed the
         // surface card: "now we have the suffocated on surface one :-D"
         //
         // He was 150 m down in a poured corridor being told about regolith, a suit and the long walk back to

@@ -74,7 +74,7 @@ public enum DeathPlace
     /// <summary>An away team on a surface. Regolith, a suit, and a long walk back to the tube.</summary>
     LandingParty,
 
-    /// <summary>#608 · Inside a clandestine facility, under a moon. Owner, having suffocated on B2 and been
+    /// <summary>#609 · Inside a clandestine facility, under a moon. Owner, having suffocated on B2 and been
     /// handed the surface card: <i>"now we have the suffocated on surface one :-D"</i>.
     ///
     /// <para>He was 150 m down in a poured corridor and the card said regolith, a suit and a long walk back
@@ -169,7 +169,7 @@ public static class DeathNarration
     // ship's nose. The place decides the picture; the cause decides the words.
     public static string ArtFile(DeathCause cause, DeathPlace place)
     {
-        // #608 · A death UNDER a moon is not a death ON one. The red-shirt card is a figure on regolith with
+        // #609 · A death UNDER a moon is not a death ON one. The red-shirt card is a figure on regolith with
         // a sky over it, and down here there is neither. Owner asked for the picture by name: "let's make a
         // died in a secret lab photo also :-D"
         if (place == DeathPlace.Underground)
@@ -335,7 +335,7 @@ public static class DeathNarration
         // situation: a repo boat now sets down on the regolith and a crew walks you down on foot, because
         // "FBI does not arrest cars ... they look for the driver". Still never on a derelict — boarding a
         // wreck they are already inside is its own arrival and is not built yet.
-        // #608 · nor 150 m under a moon. Same reasoning as the derelict, one shaft further: a collector is a
+        // #609 · nor 150 m under a moon. Same reasoning as the derelict, one shaft further: a collector is a
         // person who came for you, and nobody rides a lift they would have to call a car for to collect a
         // debt in a building that is not on any register.
         DeathCause.Collector => place is not (DeathPlace.Derelict or DeathPlace.Underground),
@@ -357,7 +357,7 @@ public static class DeathNarration
         _ => "",
     };
 
-    /// <summary>#608 · Suffocating on a floor of a clandestine facility. The tank is the clock everywhere on
+    /// <summary>#609 · Suffocating on a floor of a clandestine facility. The tank is the clock everywhere on
     /// a surface, but down here the walk back is a walk to a LIFT — a machine, with a panel, that somebody
     /// has to still be paying for. None of these say what the place was for.</summary>
     private static readonly string[] SuffocationLinesBelow =
@@ -374,7 +374,7 @@ public static class DeathNarration
         "understood perfectly and used to plan a route that turned out to be eleven metres too long.",
     ];
 
-    /// <summary>#608 · Anything else that ends a captain down there. Deliberately spare: nothing is supposed
+    /// <summary>#609 · Anything else that ends a captain down there. Deliberately spare: nothing is supposed
     /// to be alive on these floors yet, so this pool exists to be CORRECT rather than to be used.</summary>
     private static readonly string[] ReeverLinesBelow =
     [
@@ -400,7 +400,7 @@ public static class DeathNarration
             }
         }
 
-        // #608 · A death in the facility gets facility words. The away-team pool talks about regolith, a
+        // #609 · A death in the facility gets facility words. The away-team pool talks about regolith, a
         // suit and the walk back to the tube — none of which is where the captain is standing.
         if (place == DeathPlace.Underground)
         {

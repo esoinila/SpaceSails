@@ -556,7 +556,7 @@ public partial class Map
         // gate eleven times is not eleven findings.
         public HashSet<int> HiveShaftsRefused { get; } = [];
 
-        // #608 · Whether this excursion has had the DEAD AIR card. Once: after that the pulse line is
+        // #609 · Whether this excursion has had the DEAD AIR card. Once: after that the pulse line is
         // enough, because by then it is knowledge rather than news.
         public bool HiveVacuumWarned { get; set; }
 
@@ -1656,8 +1656,15 @@ public partial class Map
             (_avatarX, _avatarY) = MoonSurface.LiftHead(
                 ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField()).CarFloor;
             RebuildSurfaceDeck();
+            // #603 \u00b7 And what you came out WITH. Owner: "Also in the brief pop-up of going to the surface...
+            // inventory key needs to be advertised." Surfacing is the moment a captain takes stock \u2014 they
+            // have just stopped spending air and started counting what it bought \u2014 so it is the one place
+            // the pocket should announce itself without being asked.
+            string carried = _satchel.Count > 0
+                ? $" You are carrying {_satchel.Count} thing{(_satchel.Count == 1 ? "" : "s")} out of it \u2014 \ud83c\udf92 I to look."
+                : "";
             ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
-                "maintenance shed. The moon is exactly as indifferent as you left it.");
+                "maintenance shed. The moon is exactly as indifferent as you left it." + carried);
             RequestVaultSave();
             return;
         }
@@ -1702,7 +1709,7 @@ public partial class Map
             ApplyNerveShock(9.0, "a building with floors it does not count");
         }
 
-        // \u2500\u2500 #608 \u00b7 WHETHER YOU CAN BREATHE HERE IS A CARD, NOT A TOAST \u2500\u2500
+        // \u2500\u2500 #609 \u00b7 WHETHER YOU CAN BREATHE HERE IS A CARD, NOT A TOAST \u2500\u2500
         //
         // Owner, having suffocated on B2: "I thought there is air in the base?" / "there should be a warning
         // or something :-D" / "maybe pop-up about you have air or you are in vacuum type ... it is vital
@@ -1910,8 +1917,123 @@ public partial class Map
             ApplyNerveShock(3.0, "a corridor somebody dug for a year and then closed");
         }
 
-        ShowPulseMessage(UndergroundComplex.LockedLine(sign));
+        // ── #603 · AND THE DOOR TELLS YOU YOU HAVE POCKETS ──
+        //
+        // Owner: "we should advertise the items list on closed locked door pop-up... something like check
+        // your items button there that opens inventory."
+        //
+        // This is the #212 law applied to the satchel: the refusal already said WHY, and a captain standing
+        // in front of it with an authority in their pocket had no way to find out whether it was the one.
+        // The door now offers the verb. It is also how the satchel gets discovered at all — nobody reads a
+        // keybind, and everybody presses the button on the thing that just refused them.
+        _lockedDoor = new LockedDoorLook(
+            sign,
+            UndergroundComplex.LockedLine(sign),
+            UndergroundComplex.IsSealedWay(sign)
+                ? SatchelTry.Target.SealedWay
+                : SatchelTry.Target.RoomDoor);
     }
+
+    /// <summary>#603 · The door the captain is standing at, while its pop-up is up.</summary>
+    private sealed record LockedDoorLook(string Sign, string Line, SatchelTry.Target Target);
+
+    private LockedDoorLook? _lockedDoor;
+
+    private void CloseLockedDoor() => _lockedDoor = null;
+
+    /// <summary>#603 · "Check your items" — the satchel, opened AT something, so every item is a thing you
+    /// can offer rather than a thing you can look at.</summary>
+    private void OpenSatchelAtTheDoor()
+    {
+        if (_lockedDoor is { } door)
+        {
+            _satchelTarget = (door.Target, null, door.Sign);
+        }
+        _lockedDoor = null;
+        _showSatchel = true;
+    }
+
+    /// <summary>#603 · Open it from nowhere in particular — just to see what you are carrying.</summary>
+    private void OpenSatchel()
+    {
+        _satchelTarget = null;
+        _showSatchel = true;
+    }
+
+    private void CloseSatchel()
+    {
+        _showSatchel = false;
+        _satchelTarget = null;
+    }
+
+    private bool _showSatchel;
+
+    /// <summary>What the satchel is currently open AT, if anything: the target, whatever that target needs
+    /// to judge an offer, and what to call it on screen.</summary>
+    private (SatchelTry.Target Target, string? Context, string Label)? _satchelTarget;
+
+    /// <summary>#603 · Offer one carried thing to whatever the satchel is open at. The outcome is always
+    /// SAID — a control that does nothing and says nothing is indistinguishable from a bug.</summary>
+    private void TryItem(Core.Satchel.Item item)
+    {
+        if (TargetFor(item) is not { } at)
+        {
+            return;
+        }
+
+        SatchelTry.Outcome outcome = SatchelTry.Offer(item, at.Target, at.Context);
+        ShowPulseMessage(outcome.Line);
+
+        if (!outcome.Worked)
+        {
+            return;
+        }
+
+        // A clue is SPENT by reading it — that is the decision the owner asked for, and a paper you have
+        // already understood is not a second lead.
+        if (item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
+        {
+            _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id)];
+            if (_surface is { } ex)
+            {
+                GrantLabLead(DiceRule.Seed($"clue:{item.Id}"));
+            }
+        }
+
+        CloseSatchel();
+    }
+
+    /// <summary>#603 · What this item can be offered to right now.
+    ///
+    /// <para>Opened AT something — a door, a gate — everything goes to that. Opened from nowhere with the I
+    /// key, most things are just a look, but a DOCUMENT can always be read as a clue, because the tracker is
+    /// on the captain's arm and deciding a paper is a map is something they can do standing anywhere. That
+    /// is the owner's own framing: the lead is not granted on pickup, it is granted when the player decides
+    /// the paper means something.</para></summary>
+    private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(Core.Satchel.Item item)
+    {
+        if (_satchelTarget is { } at)
+        {
+            return at;
+        }
+        return item.Kind == Core.Satchel.Kind.Paper
+            ? (SatchelTry.Target.Tracker, null, "the motion tracker")
+            : null;
+    }
+
+    /// <summary>What to write on one row of the pocket. The prose is rebuilt from the world here rather than
+    /// stored, so a save can never go stale against the words.</summary>
+    private static string SatchelLabel(Core.Satchel.Item item) => item.Kind switch
+    {
+        Core.Satchel.Kind.Authority =>
+            UndergroundComplex.AuthorityCard.TryParse(item.Id, out UndergroundComplex.AuthorityCard c)
+                ? UndergroundComplex.CardTitle(c)
+                : "🎫 an authority card",
+        Core.Satchel.Kind.Paper =>
+            $"📋 operational paper — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
+        Core.Satchel.Kind.Rounds => $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",
+        _ => "🗃 a file on somebody",
+    };
 
     // ── #588 · A PERSON, OUT OF THE PIECES ─────────────────────────────────────────────────────────────
     //
@@ -5253,6 +5375,10 @@ public partial class Map
             {
                 aboard.Add("🤖 T — pick up the sentry");
             }
+            if (_satchel.Count > 0)
+            {
+                aboard.Add($"🎒 I — items ({_satchel.Count})");
+            }
             aboard.Add("F — first person");
             aboard.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute");
             return string.Join(" ∙ ", aboard);
@@ -5278,6 +5404,14 @@ public partial class Map
         if (ex.Carrying)
         {
             parts.Add("G — drop the chest & sprint");
+        }
+
+        // #603 · The satchel, once there is anything in it. Owner: "the I key should be advertised in the
+        // hud also like we do now for the other keys." Shown WITH the count, because the useful question at
+        // a glance is not "do I have pockets" but "is there anything in them".
+        if (_satchel.Count > 0)
+        {
+            parts.Add($"🎒 I — items ({_satchel.Count})");
         }
         parts.Add("F — first person");
         parts.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute"); // #338: the first-sound switch, always spelled out
