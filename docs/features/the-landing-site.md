@@ -26,6 +26,34 @@ Every expensive bug on this ground had one shape: **two sources of truth for one
 | The sim vs the sentence | A suffocation narrated as a debt-collector killing |
 | A test pinning what I wrote, not what shipped | Green tests over a death card nobody could reach |
 | One source, consumed **out of order** (#587) | A wall-builder's cursor walked backwards and sealed the two mouths it was opening — rooms drawn and unreachable on 35 floors |
+| **A guard handed the wrong world, or a threshold that selects everything** | Three independent instances in one afternoon (2026-08-02) — see below |
+
+### The fifth class: a green test that asserts nothing
+
+On 2026-08-02 three people working in three different areas hit the same shape within hours of each other:
+
+| where | what the guard did | what it actually proved |
+| --- | --- | --- |
+| `SurfaceLayoutTests.Env` | laid an invented 78 × 64 world, on which the shelters eat the whole field | **every body came out with zero buildings.** "No two bodies share a ground" was passing on eight nearly-empty fields |
+| `MinRefugeDetourDu` (#608) | set to 34 du by eye | the nearest room this generator can produce is **34.2 du** out, measured over 808 floors. The threshold selected every room. The sabotage that puts the refuge in the closest room to the lift **passed** |
+| the relic-room guard (#614) | ran against a 78 du-wide field | reported zero rooms on **every floor of every site**, listed and unlisted alike |
+
+The common failure is not a wrong assertion — every one of these assertions was correct. It is that **the world
+handed to the assertion could not distinguish pass from fail.** A guard is only evidence if the thing it forbids
+would actually have tripped it.
+
+So, added to the standing rules:
+
+- **Hive and surface guards use `SurfaceLayout.DefaultField`.** Never a typed-in envelope. This is the same
+  one-source law as everywhere else, and a test file is not exempt from it.
+- **A threshold must be measured against what the generator can actually produce**, not chosen by eye. If the
+  tightest real case sits at 34.2, a limit of 34 is a limit of zero.
+- **`prove a guard can fail` catches all three**, which is why it is not optional. Two of the three were caught
+  by doing it; the third was caught only because a *different* assertion in the same test happened to be strict
+  enough to notice the empty world.
+- **When you find a stale mirror, grep for its siblings before closing the ticket.** #573 fixed this exact
+  duplicate in `SurfaceReachabilityTests`, in a comment that *named* `SurfaceLayoutTests` — and left it there
+  for two months.
 
 So the standing rule for this ground is: **one copy, read by everyone, plus a guard that walks the real
 object.** A guard that reads the generator's inputs instead of its output is not a guard.
