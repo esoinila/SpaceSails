@@ -177,8 +177,11 @@ public partial class Map
         _caches.Clear();
         _overheard = [];
 
-        // #411: a new voyage is a new universe — the KAAMOS shards this captain gathered are unknown again.
+        // #411: a new voyage is a new universe — the KAAMOS shards this captain gathered are unknown again,
+        // and so is the head office: a captain who has never been under the ice has never counted the beds,
+        // and must be able to pay for it (the arc's 40) exactly once more.
         _kaamos.Clear();
+        _headOfficeBeatsSeen.Clear();
 
         // #422/#425: likewise the NEBULA shards, and the oracle's per-visit reading state — a fresh universe
         // has never leaned on Static's corner.

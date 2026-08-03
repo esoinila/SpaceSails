@@ -957,6 +957,14 @@ public partial class Map
         }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.ViewObject } spot)
         {
+            // #411 · the head office's two consoles show their own card again, so the beats a captain will
+            // want to look at twice can be looked at twice. Asked before the plaque path, which is about a
+            // dedication plate and has nothing to say about a room under the ice.
+            if (_surface is { } hqEx && TryHeadOfficeConsole(hqEx, spot.Label))
+            {
+                return;
+            }
+
             _viewObject = MaybeAppendPlaqueGratitude(spot); // #394: Ringside's plaque grows a line once saved
 
             // #411: reading the whole dedication plate that NAMES PROJEKTI KAAMOS (Ringside's, the one place

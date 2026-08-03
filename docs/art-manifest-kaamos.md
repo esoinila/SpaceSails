@@ -156,6 +156,56 @@ with their own scene around them, and none is a turning. Over-carding cheapens t
 > is kept, muted desaturated palette with cold blue-white spill from one side, painterly, moody, enormous
 > sense of scale, quiet, no text, no lettering, no numbers, no logos, no readable writing, no people.
 
+## 6. `art/kaamos-wintering-hall.jpg` — FORTY-ONE
+
+- **Slot:** `UndergroundComplex.WinteringHallArtUrl`, raised on stepping out at **B23 · THE WINTERING
+  HALL** and again on `[E]` at the console there.
+- **Reach it:** `/map?kaamos=hq&land=1&floor=23`.
+- **Why it exists:** it is the room this whole arc was written for, and the one place
+  `KaamosLore.RevealSanityShockHook` (40.0) is spent. If any beat in the game earns a canvas, it is this
+  one.
+- **The evidence in frame:** rows of identical narrow berths, every one of them MADE — blanket turned
+  back at the same angle, pillow squared — and none occupied; a wall of thick glass with black water
+  behind it; the lighting fully on; a floor with no dust and no footprints; **one berth apart from the
+  rest**. Nobody. The card counts, because counting is a thing the captain does with their own eyes; the
+  picture never says whose the last one is, and neither does anything else, ever.
+- **Composition rule:** no figure anywhere, and nothing that looks recently disturbed. The horror is that
+  it is READY.
+
+> **Prompt used:** An enormous long dormitory gallery deep beneath an ice moon, one vast room with a low
+> ribbed concrete ceiling and a wall of thick dark glass along one side holding back black water. Four long
+> rows of identical narrow institutional berths receding into the distance, each one immaculately made up
+> with the blanket turned back and the pillow squared, none of them occupied and no people anywhere in the
+> frame. Warm even lighting fully on across the whole hall. At the very end of the nearest row, slightly
+> apart from the others, one final berth made up exactly the same way. The floor is polished and completely
+> free of dust and footprints. Grimy lived-in used-future sci-fi but this room is kept, muted desaturated
+> palette of warm grey and cold blue-green from the water, painterly, moody, enormous sense of scale,
+> deeply quiet, no text, no lettering, no numbers, no logos, no readable writing, no people.
+
+## 7. `art/kaamos-berth-office.jpg` — ONE LINE STILL LIT
+
+- **Slot:** `UndergroundComplex.BerthOfficeArtUrl`, raised at **B24 · THE BERTH OFFICE**, the deepest
+  floor of the deepest building in the game.
+- **Reach it:** `/map?kaamos=hq&land=1&floor=24`.
+- **The one deliberate inconsistency, and it is the beat:** every other room in the head office is
+  immaculate, and this one is knee-deep. It is untidy with **its own output** — the log has been printing
+  continuously and folding itself onto the floor, and nobody has emptied it, because emptying it is not a
+  thing anybody ever wrote down. The card says exactly that and stops.
+- **The evidence in frame:** a wall board of stacked slot lines, all dead but one still burning amber; a
+  console still printing; a drift of continuous paper across the floor; one chair pushed neatly in.
+  Nobody. It is the same image as §3's berth board seen from the other end of the same conversation, and
+  it is deliberately a DIFFERENT painting — one canvas doing two rooms would be a lie about a place.
+
+> **Prompt used:** A small deep-underground clerical office, one console desk against a bare concrete wall
+> with a single dim monitor screen. Above it a tall wall-mounted allocation board of stacked slot lines,
+> every line dark and dead except one low on the board still burning a warm amber, and the characters on
+> every line are worn into completely illegible smeared marks with no readable characters. A continuous
+> printed paper log has spooled out of a slot in the console and folded itself into a deep drift across the
+> floor, generations of it, undisturbed. One empty office chair pushed neatly in. Absolutely nobody present,
+> no people anywhere. Grimy lived-in used-future sci-fi, muted desaturated palette of concrete grey with one
+> amber light source, painterly, moody, cold, quiet, no text, no lettering, no numbers, no logos, no
+> readable writing, no people.
+
 ---
 
 ## Generation recipe
@@ -181,6 +231,8 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 3 | `berth-code` | `kaamos-berth-resolves.jpg` | ✅ | ✅ | ✅ |
 | 4 | `BouncePlate` (#635, the front door — not a fragment) | `kaamos-returned-filing.jpg` | ✅ | ✅ | ✅ |
 | 5 | `UndergroundComplex.HeadOfficeArrivalArtUrl` (#411, the first descent — not a fragment) | `kaamos-head-office.jpg` | ✅ | ✅ | ✅ |
+| 6 | `UndergroundComplex.WinteringHallArtUrl` (#411, B23) | `kaamos-wintering-hall.jpg` | ✅ | ✅ | ✅ |
+| 7 | `UndergroundComplex.BerthOfficeArtUrl` (#411, B24) | `kaamos-berth-office.jpg` | ✅ | ✅ | ✅ |
 
 The guard is `tests/SpaceSails.Core.Tests/RevealPlatesArePaintedTests.cs`: every plate must be keyed to a
 real fragment and must name a JPG that is **actually on disk**. The `onerror`-hide law is what makes

@@ -232,11 +232,13 @@ And at the end of the fourth row there is one more, made up the same way. **Fort
 Nothing on screen says whose it is. Nothing on screen says what happened to the forty. The captain does
 the arithmetic, or does not, and either way the game never confirms it.
 
-> **This is where `KaamosLore.RevealSanityShockHook = 40.0` lands, and it is the only place it could.**
+> **SHIPPED, and flagged: this is where `KaamosLore.RevealSanityShockHook = 40.0` lands, and it is the
+> only place it could — one line in `Map.HeadOffice` overrules it.**
 > The constant's own doc comment reads: *"reaching the wintering mind is the heaviest #391 throw in the
 > game"*, and the bible's reveal is *"it has kept a berth warm for you."* The forty-first bed **is that
 > sentence, as evidence.** 40 nerve is ~40% of the gauge and the biggest single throw in the game
-> (the monolith is 24). Wired in PR 3, flagged loudly there, overrulable in one line.
+> (the monolith is 24). The call site is `Map.HeadOffice.MaybeRaiseHeadOfficeBeat`, and it is the only one
+> in the game — a reveal that costs 40 twice is a reveal that costs 80.
 
 ### B24 — the berth office
 
@@ -322,7 +324,7 @@ absolutely no confirmation of what it did.
 | **1** | this document; the front door (#635 option 3) with guards proven RED; the fifth bug-class row in the story-arcs handoff | shipped |
 | **2** | the route: the KAAMOS supply run on the board, the cycler window, the crossing; `ArcNewsBreaks` (#663) on the berth-code edge; `?kaamos=hq` | shipped |
 | **3** | the facility READS different: `UndergroundComplex.Kind.HeadOffice`, 24 listed floors with no band nobody listed, 24 unrepeated plates, the two-word livery, `WING n · 24.6 km`, a lift that asks for nothing, the head office's own door register, the establishing plate, and the ice empty until the hull is on the board | shipped |
-| **4** | the wintering hall (B23), the berth office (B24), the standing order as takeable evidence, and the 40.0 throw | |
+| **4** | the wintering hall (B23), the berth office (B24), the standing order as takeable evidence, and the 40.0 throw | shipped |
 
 ### Cheats (each documented in `../testing-guide.md` Appendix A in its own PR)
 

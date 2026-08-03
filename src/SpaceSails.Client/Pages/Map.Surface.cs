@@ -2026,6 +2026,11 @@ public partial class Map
             }
         }
 
+        // #411 · THE TWO FLOORS THE WHOLE ARC WAS WRITTEN FOR. Raised after the first-descent block on
+        // purpose: those floors are reached from underground, so `wasUnderground` is true by the time a
+        // captain gets to either of them and the establishing card above has long since been spent.
+        MaybeRaiseHeadOfficeBeat(ex);
+
         // #592 · THE FLOOR THAT IS NOT ON THE PLAN. The whole beat of the feature, said once, on the first
         // step out onto the band nobody listed — and it is the hardest place in the game to hold the canon
         // line. It says the operation upstairs was enormous, funded, staffed and inspected, and that this
@@ -3009,6 +3014,10 @@ public partial class Map
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
                 3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied);
+            // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
+            // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
+            // walks every floor of it, are untouched.
+            ComposeHeadOfficeFloor(ex);
             return;
         }
 

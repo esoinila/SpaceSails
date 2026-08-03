@@ -764,7 +764,9 @@ patron like any other haul. Then the **cycler window** — a real grid over sim 
 | --- | --- |
 | `/map?kaamos=hq` | Alongside the ice moon with the run in hand — open the shuttle bay and go down. |
 | `/map?kaamos=hq&land=1` | …and the shuttle takes it from there, boots on the ice in one URL. Walk to the lift head and ride down: **the head office** is under it (#411). |
-| `/map?kaamos=hq&land=1&floor=23` | Straight to B23, THE WINTERING HALL, without four days of walking. |
+| `/map?kaamos=hq&land=1&floor=23` | Straight to **B23 · THE WINTERING HALL** — the card, and the biggest nerve throw in the game (40 of 100). |
+| `/map?kaamos=hq&land=1&floor=24` | **B24 · THE BERTH OFFICE** — the console that has never stopped filing. |
+| `/map?kaamos=hq&land=1&floor=12&nerve=10` | **B12 · THE STANDING ORDER** — search the first room off the nearest rib for the one sheet worth carrying out. |
 | `/map?kaamos=all&ashore=1` | The other end: the berth-code resolves at the bar seam, the ❄❄ notice fires, 📰 **THE STORY BREAKS** raises the arc-news card, and a housekeeping line lands on the wire. |
 
 Things to check: right-clicking Enceladus with no berth-code shows **no** cycler row at all (the fiction may
