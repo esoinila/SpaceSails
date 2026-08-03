@@ -668,7 +668,7 @@ faked, and the ledger still has to earn every line it prints.
 
 ```
 /map?nerve=1&dock=the-tilt&site=0&land=1&reevers=1   one pip left, one hand inbound — the overdraw break
-/map?nerve=3&dock=the-tilt&site=0&land=1             the monolith's three-pip lump, onto a frayed captain
+/map?nerve=3&dock=the-space-bar&body=phobos&site=0&land=1   the monolith's three-pip lump, onto a frayed captain
 /map?nerve=2&archive=1&land=1                        the archive node's dwell with almost nothing to spend
 /map?nerve=0&dock=the-tilt&site=0&land=1             the SHOT band and its readout, from a standing start
 ```
@@ -707,8 +707,8 @@ dock held 9 h at warp), so it is specific to the wake state.
 A body is a world, not a level: every landable body now offers a **seeded set of 2–4 landing sites**, each
 named in the house voice with a one-line character tag (*"The Wild Plain — nobody out here will hear you"*).
 The set is deterministic per body id, so a revisit re-offers the identical board. **Site 0 is always the Wild
-Plain on the body's canon ground** (Miranda's monolith maze, Luna's mass-driver ruins, the seeded signature —
-unchanged); **sites 1+ re-seed a visibly different wing/feature layout** on the same body. The picked site
+Plain on the body's canon ground** (Phobos's MONOLITH on the Stickney rim, Miranda's false-slab maze, Luna's
+mass-driver ruins, the seeded signature — unchanged); **sites 1+ re-seed a visibly different wing/feature layout** on the same body. The picked site
 persists for the visit and is named in the surface header (**🛬 SET DOWN AT: …**).
 
 `?site=N` pre-selects site N in the boarding panel (clamped to the body's real set), so you can board straight
@@ -1092,7 +1092,7 @@ Luna — the mass-driver ruins (4)
   /map?dock=selene-gate&body=luna&site=3&land=1        The Shadowed Rille
 
 Phobos (4)
-  /map?dock=the-space-bar&body=phobos&site=0&land=1    The Wild Plain
+  /map?dock=the-space-bar&body=phobos&site=0&land=1    The Wild Plain — THE MONOLITH (#649: the one object, on the one ground)
   /map?dock=the-space-bar&body=phobos&site=1&land=1    The Ice Fissure
   /map?dock=the-space-bar&body=phobos&site=2&land=1    The Ridge Camp
   /map?dock=the-space-bar&body=phobos&site=3&land=1    The Crater Shelf

@@ -13,8 +13,9 @@ namespace SpaceSails.Client.Rendering;
 /// surface — no scene switch, no teleport.
 ///
 /// <para>#313 reshaped the surface into a PLACE, not a menu: a wide regolith field whose safe top holds
-/// the landing area and a lonely automated kiosk, and whose deep far side holds THE MONOLITH at the
-/// heart of a crude maze — prime Old-Ones ground where the cornering loss-condition is real geometry.
+/// the landing area and a lonely automated kiosk, and whose deep far side holds the body's own deep
+/// landmark — Phobos's MONOLITH, Miranda's false slab at the heart of a crude maze, Luna's mass-driver
+/// muzzle — prime Old-Ones ground where the cornering loss-condition is real geometry.
 /// A visit commits to nothing; the ⛏ dig site only appears when there is a reason to dig (a chest in
 /// cargo, or an own cache's ✗ already in the ground). The <c>fillDroids</c> delegate is the caller's so
 /// the ship's crew AND the live, converging Old Ones ride the one droid buffer.</para>
@@ -50,12 +51,17 @@ public static class MoonSurface
     public const float LandingBandY = SurfaceTopY - 7f;
 
     /// <summary>The DEEP COMMITMENT ANCHOR — the heart of the deep field, at the far side. A shared LAW:
-    /// every body's geography dresses this spot differently (Miranda's MONOLITH slab, Luna's mass-driver
-    /// muzzle, a seeded fixture elsewhere — see <see cref="SurfaceLayout"/>), but the anchor itself is
-    /// fixed so the nerve/sight and pack-spawn math is one thing across bodies. Named for Miranda's canon
-    /// monolith, which still sits exactly here. TODO(#226): the #318 first-sight sanity hook keys off it.</summary>
-    public static readonly float MonolithX = (float)SurfaceLayout.DefaultField.AnchorX;
-    public static readonly float MonolithY = (float)SurfaceLayout.DefaultField.AnchorY;
+    /// every body's geography dresses this spot differently (Phobos's MONOLITH, Miranda's false slab,
+    /// Luna's mass-driver muzzle, a seeded fixture elsewhere — see <see cref="SurfaceLayout"/>), but the
+    /// anchor itself is fixed so the sight and pack-spawn math is one thing across bodies.
+    ///
+    /// <para>#649 · These were called <c>MonolithX</c>/<c>MonolithY</c>, and the name was the bug: a MONOLITH
+    /// constant governing every ground in the game (bug class 2, and the exact reason a captain standing at
+    /// Luna's launch muzzle was told <i>"the monolith resolves out of the dark"</i> and charged the
+    /// once-in-a-life nerve hit for it — #648). The anchor belongs to the FIELD; what stands on it belongs to
+    /// the body.</para></summary>
+    public static readonly float AnchorX = (float)SurfaceLayout.DefaultField.AnchorX;
+    public static readonly float AnchorY = (float)SurfaceLayout.DefaultField.AnchorY;
 
     // #313's single fixed ⛏ DIG HERE field (DigFieldX/DigFieldY, deep by the monolith) is RETIRED by the
     // beach-comber kit (owner, Evening wind 2026-07-18: "bury anywhere"). Burying and probing now happen
@@ -174,7 +180,7 @@ public static class MoonSurface
     }
 
     public static SurfaceLayout.Field ExpeditionField() =>
-        new(SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, MonolithX, MonolithY);
+        new(SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, AnchorX, AnchorY);
 
     /// <summary>The beach-comber kit's "reasonable surface square" test (owner, 2026-07-18: bury/probe
     /// anywhere "outside the landing band / walls"). A spot is diggable when it sits on the open regolith —
@@ -463,7 +469,7 @@ public static class MoonSurface
             (x, y) => y > DeckPlan.ShuttleHatchY ? ship.Location(x, y)
                     : y > SurfaceTopY ? "DOWN-TUBE (the shuttle ride)"
                     : y > LandingBandY - 2 ? "LANDING AREA"
-                    : y < MonolithY + 8 && Math.Abs(x - MonolithX) < 16 ? layout.Scheme
+                    : y < AnchorY + 8 && Math.Abs(x - AnchorX) < 16 ? layout.Scheme
                     : $"{bodyDisplayName.ToUpperInvariant()} SURFACE";
 
         // #563 · The terrain. Owner: "put something more interesting in the landscape." Crater rims, scree
@@ -537,40 +543,42 @@ public static class MoonSurface
                 (float)head.CarX, (float)head.CarY, "▤ SERVICE PANEL"));
         }
 
-        // #586 · THE MONOLITH'S SWEPT APRON. Owner: "it is supposed to be impressive... now it looks like a
-        // box in closet." Widening the slab alone could never fix that — on a crude grid every rectangle is a
+        // #586 · THE SWEPT APRON. Owner: "it is supposed to be impressive... now it looks like a box in
+        // closet." Widening the slab alone could never fix that — on a crude grid every rectangle is a
         // rectangle, and the grid is the aesthetic, not a limitation.
         //
         // What DOES read at this scale is ground that is visibly cleared. A ring of swept regolith around the
         // slab, in a field where everything else is rubble and drift, is legible from a long way off and says
         // the one thing the stone cannot say by itself: SOMEBODY CARED ABOUT THIS SPOT. Drawn as scenery, so
         // it can never become a fence around the landmark and turn a pilgrimage into a puzzle.
-        for (int i = 0; i < Monolith.ApronSegments; i++)
-        {
-            double a0 = i / (double)Monolith.ApronSegments * Math.Tau;
-            double a1 = (i + 1) / (double)Monolith.ApronSegments * Math.Tau;
-            sceneryList.Add(new SurfaceScenery.Mark(
-                MonolithX + (Math.Cos(a0) * Monolith.ApronRadius),
-                MonolithY + (Math.Sin(a0) * Monolith.ApronRadius),
-                MonolithX + (Math.Cos(a1) * Monolith.ApronRadius),
-                MonolithY + (Math.Sin(a1) * Monolith.ApronRadius),
-                SurfaceScenery.Kind.Ridge));
-        }
+        //
+        // #649 · AND ONLY WHERE THERE IS SOMETHING TO SWEEP AROUND. This loop ran unconditionally, so every
+        // ground in the game — Luna's mass-driver muzzle, every seeded ancient spur, every slag field, every
+        // second and third landing site on every moon — was drawn standing inside the monolith's ceremony
+        // ring. That is the same fault as #648 one layer out in the picture instead of the predicate: a
+        // ceremony that belongs to ONE object, laid on grounds that have never seen it, telling the captain
+        // somebody cared about a patch of rubble. The apron belongs to the thing it is swept around, so it is
+        // asked for by the thing it is swept around.
+        AddApron(sceneryList, Monolith.StandsOn(bodyId, siteSalt)
+            ? (Monolith.ApronRadius, Monolith.ApronSegments)
+            : FalseSlab.StandsOn(bodyId, siteSalt)
+                ? (FalseSlab.ApronRadius, FalseSlab.ApronSegments)
+                : null);
 
         // #586 · THE PICTURE, AND WHAT IS AT ITS FOOT. Owner: "let's have gen AI image at the monolith and
         // some items appearing there now and then ... it is supposed to be impressive."
         //
-        // Miranda's canon slab only. Every body dresses this same deep anchor differently — Luna's
-        // mass-driver muzzle, a seeded plinth elsewhere — and putting THE MONOLITH's card on a launch head
-        // would be the borrowed-prose bug (#574) wearing a landmark.
+        // The monolith's own ground only. Every body dresses this same deep anchor differently — Miranda's
+        // false slab, Luna's mass-driver muzzle, a seeded plinth elsewhere — and putting THE MONOLITH's card
+        // on a launch head would be the borrowed-prose bug (#574) wearing a landmark.
         // Monolith.StandsOn, not a literal body id: the slab's GEOMETRY is only laid on the canon empty-salt
-        // ground (SurfaceLayout routes site 1+ to the seeded generator), so a `bodyId == "miranda"` test put
-        // the ▮ THE MONOLITH card and the foot-offering on the Shadowed Rille and the Ridge Camp, pointing at
-        // open regolith. That is precisely what the note below forbids — a marker pointing at nothing.
+        // ground (SurfaceLayout routes site 1+ to the seeded generator), so a bare body-id test put the
+        // ▮ THE MONOLITH card and the foot-offering on that moon's seeded sites too, pointing at open
+        // regolith. That is precisely what the note below forbids — a marker pointing at nothing.
         if (Monolith.StandsOn(bodyId, siteSalt))
         {
             consoles.Add(new(DeckPlan.ConsoleKind.ViewObject,
-                MonolithX, MonolithY - (float)Monolith.HalfHeight - 2f,
+                AnchorX, AnchorY - (float)Monolith.HalfHeight - 2f,
                 Monolith.ConsoleLabel, Monolith.ArtUrl, Monolith.Lore));
 
             // And whatever somebody left, if this window has anything. NOT a console that is always there
@@ -580,9 +588,21 @@ public static class MoonSurface
             if (left != Monolith.Offering.Nothing)
             {
                 consoles.Add(new(DeckPlan.ConsoleKind.MonolithFoot,
-                    MonolithX + (float)Monolith.HalfWidth + 2.5f, MonolithY,
+                    AnchorX + (float)Monolith.HalfWidth + 2.5f, AnchorY,
                     Monolith.FootLabel(left)));
             }
+        }
+
+        // #649 · AND MIRANDA'S OWN CARD. The maze centre had a picture and a card for as long as it was
+        // called the monolith; taking the word back must not take the content with it, or the canon ground
+        // the owner walks by default would quietly lose the one thing at the end of its long walk. It gets
+        // its OWN card, which describes a stacked, mortared, weathering object and accounts for nothing —
+        // reusing the monolith's plate here would have been #574 all over again.
+        else if (FalseSlab.StandsOn(bodyId, siteSalt))
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject,
+                AnchorX, AnchorY - (float)FalseSlab.HalfHeight - 2f,
+                FalseSlab.ConsoleLabel, FalseSlab.ArtUrl, FalseSlab.Lore));
         }
 
         SurfaceScenery.Mark[] scenery = [.. sceneryList];
@@ -645,6 +665,26 @@ public static class MoonSurface
         return new Layout(
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location,
             doors.ToArray(), scenery);
+    }
+
+    /// <summary>#649 · Lay a swept apron ring around the deep anchor, or lay nothing at all. One function so
+    /// the two objects that have ceremony cannot drift apart in how it is drawn, and so the grounds that have
+    /// none get nothing rather than somebody else's.</summary>
+    private static void AddApron(List<SurfaceScenery.Mark> scenery, (double Radius, int Segments)? apron)
+    {
+        if (apron is not { } a || a.Segments <= 0)
+        {
+            return;
+        }
+        for (int i = 0; i < a.Segments; i++)
+        {
+            double a0 = i / (double)a.Segments * Math.Tau;
+            double a1 = (i + 1) / (double)a.Segments * Math.Tau;
+            scenery.Add(new SurfaceScenery.Mark(
+                AnchorX + (Math.Cos(a0) * a.Radius), AnchorY + (Math.Sin(a0) * a.Radius),
+                AnchorX + (Math.Cos(a1) * a.Radius), AnchorY + (Math.Sin(a1) * a.Radius),
+                SurfaceScenery.Kind.Ridge));
+        }
     }
 
     // The ship carries one amber shuttle-airlock door across the (bottom) hatch; drop it so the tube's

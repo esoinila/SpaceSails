@@ -40,14 +40,35 @@ public class SurfaceLayoutTests
     }
 
     [Fact]
-    public void Miranda_KeepsTheMonolith_Canon()
+    public void Miranda_KeepsItsMaze_Canon()
     {
         SurfaceLayout.Plan miranda = SurfaceLayout.For("miranda", Env);
-        Assert.Equal("THE MONOLITH MAZE", miranda.Scheme);
-        Assert.Contains(miranda.Landmarks, m => m.Label.Contains("MONOLITH"));
+        // #649 · The maze is canon; the WORD is not its. It kept the geometry and gave back "monolith".
+        Assert.Equal(FalseSlab.Scheme, miranda.Scheme);
+        Assert.Contains(miranda.Landmarks, m => m.Label == FalseSlab.ConsoleLabel);
+        Assert.DoesNotContain(miranda.Landmarks, m => m.Label.Contains("MONOLITH"));
         // The freestanding slab still sits exactly on the deep anchor (the #318 nerve hook keys off it).
         Assert.Contains(miranda.Landmarks, m =>
             System.Math.Abs(m.X - Env.AnchorX) < 4 && System.Math.Abs(m.Y - Env.AnchorY) < 6);
+    }
+
+    /// <summary>#649 · Phobos is the monolith's ground and it is AUTHORED — it used to fall through to the
+    /// seeded rubble generator, which is why the moon every treasure map names had no monolith on it.</summary>
+    [Fact]
+    public void Phobos_IsTheMonolithsGround_AndIsNotSeededRubble()
+    {
+        SurfaceLayout.Plan phobos = SurfaceLayout.For(Monolith.BodyId, Env);
+        Assert.Equal(SurfaceLayout.MonolithScheme, phobos.Scheme);
+        Assert.Contains(phobos.Landmarks, m => m.Label == Monolith.ConsoleLabel);
+        Assert.NotEqual("THE DEEP RUINS", phobos.Scheme);
+
+        // And it is NOT a maze. The owner's ruling: "it must not sit in a fenced little plot with the rest of
+        // the set dressing around it… open enough that the object IS the horizon, not a prop in a room."
+        // Miranda's corridor rows are what a boxed backyard looks like in this generator, and Phobos has to
+        // carry visibly fewer segments than the ground that has them.
+        SurfaceLayout.Plan miranda = SurfaceLayout.For("miranda", Env);
+        Assert.True(phobos.Walls.Count < miranda.Walls.Count,
+            "the monolith's ground carries as much geometry as the maze — that is a courtyard again.");
     }
 
     [Fact]

@@ -87,6 +87,16 @@ public static class SurfaceLayout
     /// intrudes here, so a walk-around always exists and the deep is always reachable from the top.</summary>
     public const double EdgeMargin = 10.0;
 
+    /// <summary>How much ground a SEEDED body's deep landmark keeps to itself — the cleared space around the
+    /// fixture at the anchor, off-limits to huts and rubble alike.
+    ///
+    /// <para>#649: this used to be spelled <c>Monolith.ApronRadius</c>, which was fine only for as long as
+    /// nobody changed it. The monolith stands on exactly one ground and the seeded generator lays every
+    /// ground that is not it, so the owner's <i>"make it bigger"</i> would have moved the buildings on eight
+    /// moons that have never seen the thing. Bug class 2 — a constant governing the wrong thing — caught
+    /// before it could fire.</para></summary>
+    public const double AnchorReserveRadius = 15.0;
+
     /// <summary>Lay out one landable body's ground. Miranda and Luna are authored; everything else is
     /// seeded deterministically from its id, so no two grounds are the same by construction.</summary>
     public static Plan For(string bodyId, in Field field) => For(bodyId, field, null);
@@ -154,7 +164,11 @@ public static class SurfaceLayout
         {
             return (bodyId ?? "") switch
             {
-                "miranda" => Miranda(field, keepOut),
+                FalseSlab.BodyId => Miranda(field, keepOut),
+                // #649 · Phobos is AUTHORED now, because it is where the monolith stands. It used to fall
+                // through to the seeded rubble generator while the map cards in every captain's pocket had
+                // been pacing off "the monolith" on this moon since #164.
+                Monolith.BodyId => Phobos(field, keepOut),
                 "luna" => Luna(field, keepOut),
                 _ => Seeded(bodyId ?? "", field, keepOut),
             };
@@ -187,9 +201,15 @@ public static class SurfaceLayout
 
     private static long Q(double v) => (long)System.Math.Round(v * 10.0);
 
-    // ── Miranda — THE MONOLITH maze (canon, owner's #313). Reproduced exactly from the original
-    //    hand-built geometry: concentric gapped corridor rows the Old Ones exploit to corner a dawdler,
-    //    two spurs, and the freestanding slab at the heart. This is the ground that must NOT change. ──
+    // ── Miranda — the maze (canon, owner's #313). Reproduced exactly from the original hand-built
+    //    geometry: concentric gapped corridor rows the Old Ones exploit to corner a dawdler, two spurs,
+    //    and the freestanding slab at the heart. This is the ground that must NOT change.
+    //
+    //    #649 · The slab at the heart is THE FALSE SLAB now, not the monolith: the owner reserved that word
+    //    for the one object, and it stands on Phobos, where every treasure map has paced off it since #164.
+    //    Every number below is the number that was there yesterday (FalseSlab's constants are the slab's own
+    //    former values), so this ground generates byte-for-byte the walls it generated before. Only the NAME
+    //    and the CARD moved — the geometry the owner authored is untouched, as it must be. ──
     private static Plan Miranda(in Field f, System.Collections.Generic.List<(double X, double Y, double R)> keepOut)
     {
         double ax = f.AnchorX, ay = f.AnchorY;
@@ -204,27 +224,23 @@ public static class SurfaceLayout
         AddGappedRow(walls, left, right, ay - 4, ax + 9, 3);
         walls.Add(new(ax - 6, ay + 12, ax - 6, ay + 6, false));
         walls.Add(new(ax + 4, ay + 6, ax + 4, ay - 4, false));
-        // #586 · THE MONOLITH ITSELF. Owner: "it is supposed to be impressive... now it looks like a box in
-        // closet." It was 2.4 x 5 du — the captain is 1.4 across, so the ancient artefact at the heart of the
-        // canon ground was two captains tall in a field of 310 x 260.
-        //
-        // Widened to a SLAB (Monolith.HalfWidth/HalfHeight), still inside the cell the canon maze rows leave
-        // for it — the maze is canon and every row above stays exactly where it was authored. The rest of the
-        // impression is not geometry: it is the swept apron and the approach stubs laid in MoonSurface, the
-        // picture on [E], and the fact that things are LEFT here between visits.
-        AddSolidMass(walls, ax - Monolith.HalfWidth, ay - Monolith.HalfHeight,
-            ax + Monolith.HalfWidth, ay + Monolith.HalfHeight, hull: true);
+        // #586 / #649 · THE SLAB AT THE HEART OF THE MAZE. A wall of stacked courses inside the cell the
+        // canon maze rows leave for it — the maze is canon and every row above stays exactly where it was
+        // authored. Its numbers are FalseSlab's own now, so a change to the monolith's scale (which the
+        // owner wants to be enormous) can never quietly resize somebody else's corridor.
+        AddSolidMass(walls, ax - FalseSlab.HalfWidth, ay - FalseSlab.HalfHeight,
+            ax + FalseSlab.HalfWidth, ay + FalseSlab.HalfHeight, hull: true);
 
         // The four approach stubs, just inside the apron: the remains of something that was walked to on
         // purpose. Small, solid, and unmistakably PLACED — the difference between a rock and a ruin.
         foreach ((double mx, double my) in new[]
         {
-            (ax, ay + Monolith.MarkerRing), (ax, ay - Monolith.MarkerRing),
-            (ax - Monolith.MarkerRing, ay), (ax + Monolith.MarkerRing, ay),
+            (ax, ay + FalseSlab.MarkerRing), (ax, ay - FalseSlab.MarkerRing),
+            (ax - FalseSlab.MarkerRing, ay), (ax + FalseSlab.MarkerRing, ay),
         })
         {
-            AddSolidMass(walls, mx - Monolith.MarkerHalf, my - Monolith.MarkerHalf,
-                mx + Monolith.MarkerHalf, my + Monolith.MarkerHalf, hull: true);
+            AddSolidMass(walls, mx - FalseSlab.MarkerHalf, my - FalseSlab.MarkerHalf,
+                mx + FalseSlab.MarkerHalf, my + FalseSlab.MarkerHalf, hull: true);
         }
 
         // #563 · THE CANON GROUND GETS BUILDINGS TOO. Owner, standing on it: "no real buildings and
@@ -237,9 +253,63 @@ public static class SurfaceLayout
         // empty flanks and shallows the maze never occupied, which is most of the field.
         AddOutlyingStructures(walls, doorways, centres, f, "miranda", ax, ay, keepOut, footprints);
 
-        var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, "▮ THE MONOLITH") };
-        return new Plan("THE MONOLITH MAZE", walls, marks, doorways, centres, footprints);
+        var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, FalseSlab.ConsoleLabel) };
+        return new Plan(FalseSlab.Scheme, walls, marks, doorways, centres, footprints);
     }
+
+    // ── Phobos — THE MONOLITH (#164 / #586 / #649). The one object, on the one ground, on the moon whose
+    //    name has been printed on every treasure map since the first one was minted.
+    //
+    //    Owner's ruling (worldbuilding §8): it must NOT sit in a fenced little plot with the set dressing
+    //    around it — "whatever ground carries it has to be open enough that the object IS the horizon, not a
+    //    prop in a room." So this scheme is defined as much by what it does not lay as by what it does:
+    //    there is no maze, no corridor rows, no ruin field between you and it. Open regolith from the
+    //    landing band all the way down, and the thing standing in it. The buildings this ground gets are
+    //    AddOutlyingStructures' four, which are held clear of the signature by construction and end up out
+    //    in the flanks — a rim camp on the edge of a plain, not a courtyard.
+    //
+    //    What the slab and its ceremony actually MEASURE is #649's second half (the scale pass) and is not
+    //    decided here: every number below is read from Monolith, which is the one source. ──
+    private static Plan Phobos(in Field f, System.Collections.Generic.List<(double X, double Y, double R)> keepOut)
+    {
+        double ax = f.AnchorX, ay = f.AnchorY;
+        var walls = new System.Collections.Generic.List<Wall>();
+        var doorways = new System.Collections.Generic.List<Doorway>();
+        var centres = new System.Collections.Generic.List<(double X, double Y)>();
+        var footprints = new System.Collections.Generic.List<(double X, double Y, double R)>();
+
+        // THE MONOLITH. One solid mass, clamped into the field like every other authored signature so the
+        // edge lanes stay open and a way down always exists however large it grows.
+        AddClampedSolidMass(walls, f, ax - Monolith.HalfWidth, ay - Monolith.HalfHeight,
+            ax + Monolith.HalfWidth, ay + Monolith.HalfHeight, hull: true);
+
+        // The four stubs at the compass points, just inside the swept apron: the remains of an approach.
+        // Small, solid, and unmistakably PLACED — the difference between a rock and a ruin. They are the
+        // only other made thing within sight of it.
+        foreach ((double mx, double my) in new[]
+        {
+            (ax, ay + Monolith.MarkerRing), (ax, ay - Monolith.MarkerRing),
+            (ax - Monolith.MarkerRing, ay), (ax + Monolith.MarkerRing, ay),
+        })
+        {
+            AddClampedSolidMass(walls, f, mx - Monolith.MarkerHalf, my - Monolith.MarkerHalf,
+                mx + Monolith.MarkerHalf, my + Monolith.MarkerHalf, hull: true);
+        }
+
+        // #563 · Real buildings with real doors, the same as every other ground gets — but only out in the
+        // flanks. AddOutlyingStructures refuses to place anything near the signature, which is exactly the
+        // "not a boxed backyard" rule expressed as code rather than as a wish.
+        AddOutlyingStructures(walls, doorways, centres, f, Monolith.BodyId, ax, ay, keepOut, footprints);
+
+        var marks = new System.Collections.Generic.List<Landmark> { new(ax, ay - 3, Monolith.ConsoleLabel) };
+        return new Plan(MonolithScheme, walls, marks, doorways, centres, footprints);
+    }
+
+    /// <summary>The location line the deep area reads on the monolith's ground. Named for the place, not the
+    /// object: the Stickney rim is the real feature the real 85 m boulder sits on
+    /// (<see cref="Landmarks.PhobosMonolith"/>), and the house rule holds — the PLACE is real, what happens
+    /// in its shadow is ours.</summary>
+    public const string MonolithScheme = "THE STICKNEY RIM";
 
     // ── Luna — the MASS-DRIVER RUINS (worldbuilding §1: the lunar mass drivers). A visibly different
     //    scheme (owner: "come up with something different… at least the walls of buildings should not be
@@ -356,10 +426,15 @@ public static class SurfaceLayout
         // The deep landmark's own fixture is laid AFTER this loop but stands on real ground. Claim it first,
         // or a building can be seeded around the anchor and then have the fixture dropped across its door.
         //
-        // #586: claimed at the APRON's radius, not the slab's. The monolith is not just the stone any more —
-        // it is a swept platform with approach stubs on it, and the whole of that is the landmark. A building
-        // seeded on the apron would put somebody's hut in the middle of the one ceremonial space on the moon.
-        Reserve(ax, ay, Monolith.ApronRadius, Monolith.ApronRadius);
+        // #586: claimed at the CEREMONY's radius, not the fixture's. A deep landmark is not just the stone —
+        // there is cleared ground around it — and a building seeded on that would put somebody's hut in the
+        // middle of the one ceremonial space on the moon.
+        //
+        // #649 · This read Monolith.ApronRadius, which is bug class 2 in waiting: the monolith stands on ONE
+        // ground and this function lays every ground that is NOT it, so growing the slab (which the owner has
+        // asked for) would have silently moved the huts on eight moons that have never seen it. Same value,
+        // its own name, no shared fate.
+        Reserve(ax, ay, AnchorReserveRadius, AnchorReserveRadius);
 
         // #585 · AND THE SHELTERS, which are laid by SurfaceShelter on a completely separate pass and were
         // therefore invisible to this ledger — so a seeded feature could be dropped straight through a
@@ -957,6 +1032,22 @@ public static class SurfaceLayout
         x1 = System.Math.Max(f.LeftX + EdgeMargin, x1);
         x2 = System.Math.Min(f.RightX - EdgeMargin, x2);
         AddBox(walls, x1, y1, x2, y2, hull);
+    }
+
+    /// <summary>#649 · <see cref="AddSolidMass"/>, clamped into the field's kept-open edge lanes — what an
+    /// authored signature needs once it is big enough to reach them.
+    ///
+    /// <para>The monolith went onto Phobos as a clamped BOX and the reachability audit caught it in one run:
+    /// 99 cells of sealed ground at (−8, −234.5), which is the inside of the slab. A solid drawn as four
+    /// lines has an interior, and an interior is somewhere a captain could stand if only they could get in.
+    /// The two properties are independent and the object needs both, so there is a helper that has both
+    /// rather than a caller that remembers to.</para></summary>
+    private static void AddClampedSolidMass(System.Collections.Generic.List<Wall> walls, in Field f,
+        double x1, double y1, double x2, double y2, bool hull)
+    {
+        x1 = System.Math.Max(f.LeftX + EdgeMargin, x1);
+        x2 = System.Math.Min(f.RightX - EdgeMargin, x2);
+        AddSolidMass(walls, x1, y1, x2, y2, hull);
     }
 
     // ── Seeded sampling: pure and deterministic per (bodyId, tag) off the shared dice engine. ──

@@ -19,7 +19,7 @@ Miranda offers **3** sites, into a 78 × 64 du field:
 
 | site | name | scheme | wall segments | % of field |
 |---|---|---|---|---|
-| 0 | The Wild Plain | THE MONOLITH MAZE | **12** | 12% |
+| 0 | The Wild Plain | THE FALSE-SLAB MAZE (was THE MONOLITH MAZE until #649) | **12** | 12% |
 | 1 | The Shadowed Rille | THE DEEP RUINS | 20 | 23% |
 | 2 | The Ridge Camp | THE DEEP RUINS | 25 | 21% |
 
