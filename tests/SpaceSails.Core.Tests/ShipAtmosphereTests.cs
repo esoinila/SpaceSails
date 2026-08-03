@@ -1,0 +1,320 @@
+using SpaceSails.Core;
+
+namespace SpaceSails.Core.Tests;
+
+/// <summary>
+/// HER AIR, AS LAWS. The owner asked for three things and they pull in different directions, which is why
+/// each of them gets held here rather than in the client: <i>"we might want to isolate cabins to keep our
+/// disease etc."</i> (free, reversible, asks nobody), <i>"our venting must have captains ok mechanism in it,
+/// like firing a shot or looting"</i> (gated, irreversible, named), and <i>"there must be controls to do so on
+/// the bridge, but the bridge position needs captains ok to vent"</i> (two consoles, one rule).
+/// </summary>
+public sealed class ShipAtmosphereTests
+{
+    /// <summary>Her compartments as the shared rules see them, with a set of hatches dogged.</summary>
+    private static IReadOnlyList<HullVenting.Space> Her(params string[] dogged)
+    {
+        var shut = new HashSet<string>(dogged, StringComparer.Ordinal);
+        var spaces = new List<HullVenting.Space>(ShipLayout.Rooms.Length);
+        foreach (ShipLayout.Room room in ShipLayout.Rooms)
+        {
+            spaces.Add(new HullVenting.Space(
+                room.Name, DoorShut: shut.Contains(room.Name), Vented: false,
+                Infested: false, HoldsSurvivor: false, CaptainInside: false));
+        }
+        return spaces;
+    }
+
+    /// <summary>
+    /// THE BUG THE CORRIDOR'S NAME CAUSED. <see cref="HullVenting.SharedAtmosphere"/> compares against the
+    /// corridor's name to know which end of a door it is looking at, and it used to compare against the
+    /// DERELICT's name unconditionally (<c>"THE SPINE"</c>). Her corridor is called <c>"THE CORRIDOR"</c>, so
+    /// asking about hers returned a volume of ONE — the corridor, alone, connected to nothing — and every
+    /// readout built on it was quietly wrong while looking perfectly plausible.
+    /// </summary>
+    [Fact]
+    public void HerWholeShipIsOneAtmosphereWhenNothingIsDogged()
+    {
+        IReadOnlyList<string> volume = HullVenting.SharedAtmosphere(
+            ShipLayout.SpineName, Her(), ShipLayout.SpineName);
+
+        // Every compartment, plus the corridor itself.
+        Assert.Equal(ShipLayout.Rooms.Length + 1, volume.Count);
+        foreach (ShipLayout.Room room in ShipLayout.Rooms)
+        {
+            Assert.Contains(room.Name, volume);
+        }
+    }
+
+    /// <summary>And the shape of the old bug, kept as a test so nobody re-hardcodes it: ask with the wrong
+    /// corridor name and the flood fill finds nothing at all, because no hatch aboard opens onto a corridor by
+    /// that name.</summary>
+    [Fact]
+    public void AskingWithTheWrongCorridorNameFindsNothing()
+    {
+        IReadOnlyList<string> volume = HullVenting.SharedAtmosphere(
+            HullVenting.SpineName, Her(), ShipLayout.SpineName);
+
+        Assert.Equal([HullVenting.SpineName], volume);
+    }
+
+    [Fact]
+    public void ADoggedCabinIsItsOwnAtmosphere()
+    {
+        IReadOnlyList<string> volume = HullVenting.SharedAtmosphere(
+            ShipLayout.SpineName, Her("CABIN 2"), ShipLayout.SpineName);
+
+        Assert.DoesNotContain("CABIN 2", volume);
+        Assert.Equal(ShipLayout.Rooms.Length, volume.Count);   // the rest of her, and the corridor
+
+        // And from the other side: the cabin alone. This is the quarantine the owner asked for — "isolate
+        // cabins to keep our disease" — and it is the same search answering, not a second rule.
+        IReadOnlyList<string> berth = HullVenting.SharedAtmosphere(
+            "CABIN 2", Her("CABIN 2"), ShipLayout.SpineName);
+        Assert.Equal(["CABIN 2"], berth);
+    }
+
+    /// <summary>A berth that is not one of her compartments would make <c>WhatIsInThere</c> quietly say a cabin
+    /// holds no bunks — the exact class of bug this repo has now been bitten by four times: a name written down
+    /// twice, in two places, drifting.</summary>
+    [Fact]
+    public void EveryBerthIsACompartmentSheActuallyHas()
+    {
+        foreach (string berth in ShipAtmosphere.Berths)
+        {
+            Assert.Contains(berth, ShipLayout.Rooms.Select(r => r.Name));
+        }
+    }
+
+    [Fact]
+    public void OnlyBerthsAreSpokenOfAsHoldingPeople()
+    {
+        Assert.Contains("berth", ShipAtmosphere.WhatIsInThere("CABIN 1"), StringComparison.Ordinal);
+        Assert.Contains("no bunks", ShipAtmosphere.WhatIsInThere("CARGO HOLD"), StringComparison.Ordinal);
+    }
+
+    // ── The gate ──────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// PROXIMITY IS NEVER CONSENT, and neither is having a compartment selected. The board may OFFER; it may
+    /// never take. This is the boarding gate's own promise, restated for the valve — no amount of selecting can
+    /// return <see cref="ShipAuthority.VentIntent.Authorized"/> on its own.
+    /// </summary>
+    [Fact]
+    public void SelectingACompartmentIsNeverAuthorisation()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.Opportunity,
+            ShipAuthority.EvaluateVent("CABIN 1", authorizedRoom: null));
+    }
+
+    [Fact]
+    public void TheWordAuthorisesTheROOMItNamedAndNoOther()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.Authorized,
+            ShipAuthority.EvaluateVent("CABIN 1", "CABIN 1"));
+
+        // The whole reason the authorization carries a name: the captain cannot arm one compartment and blow
+        // another by moving the selection.
+        Assert.Equal(
+            ShipAuthority.VentIntent.Opportunity,
+            ShipAuthority.EvaluateVent("CABIN 2", "CABIN 1"));
+    }
+
+    [Fact]
+    public void NothingSelectedIsNoQuestionOnTheTable()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.NothingSelected,
+            ShipAuthority.EvaluateVent(null, "CABIN 1"));
+    }
+
+    // ── Delegation: the standing order to damage control ──────────────────────────────────────────────
+
+    /// <summary>
+    /// THE OWNER'S OWN ARRANGEMENT, and the reason it stays safe. <i>"Let's add separate option to captains
+    /// desk to authorize the back of the ship repair station … (even while the bridge still works) … like we
+    /// have the fire at will checkbox."</i>
+    ///
+    /// <para>A standing order authorizes the SELECTED compartment without the per-room word — and it still
+    /// cannot authorize nothing. The board can never act on its own, whatever the captain has delegated.</para>
+    /// </summary>
+    [Fact]
+    public void AStandingOrderAuthorisesTheSelectedCompartment()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.Authorized,
+            ShipAuthority.EvaluateVent("CARGO HOLD", authorizedRoom: null, standingOrder: true));
+    }
+
+    [Fact]
+    public void AStandingOrderStillCannotAuthoriseNothing()
+    {
+        Assert.Equal(
+            ShipAuthority.VentIntent.NothingSelected,
+            ShipAuthority.EvaluateVent(null, authorizedRoom: null, standingOrder: true));
+    }
+
+    /// <summary>Delegation is a decision, so it has to be visible: the board says whose authority it acts
+    /// under, every time. A delegated act must never read like an unauthorized one.</summary>
+    [Fact]
+    public void TheBoardSaysWhoseAuthorityItIsActingUnder()
+    {
+        Assert.Contains("standing order", ShipAuthority.StandingOrderStandsLine,
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("damage control", ShipAuthority.StandingOrderGivenLine,
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("your word", ShipAuthority.StandingOrderWithdrawnLine,
+                        StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// NEITHER STATION LOCKS THE OTHER OUT. Owner: <i>"At Star Trek Enterprise in the Next Gen they also had
+    /// that kind of Engineering / Bridge duplication, so it makes sense to not lock the engineering station to
+    /// uselessness while the bridge works."</i>
+    ///
+    /// <para>So a dead repeater is a SIGNPOST, not the system refusing: it points aft, where the valves are
+    /// mechanical and answer regardless — the same sentence a derelict's dead bridge panel has always said,
+    /// arrived at from the other direction.</para>
+    /// </summary>
+    [Fact]
+    public void ADeadRepeaterPointsAftRatherThanRefusing()
+    {
+        string line = ShipAuthority.DeadRepeaterLine(ShipLayout.ValveCompartment);
+
+        Assert.Contains(ShipLayout.ValveCompartment, line, StringComparison.Ordinal);
+        Assert.Contains("mechanical", line, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── The limited pre-ok: one act, no room named ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// THE RUNG THE DESK WAS MISSING. Owner: <i>"we have the authorize next shot, that kind of authorize damage
+    /// control next vent action is missing, it would be usefull as limited pre-ok from captain."</i>
+    ///
+    /// <para>The word at the board is specific and needs the captain standing at the valve; the standing order
+    /// is open-ended and forever. This is a captain clearing the NEXT act without knowing which compartment it
+    /// will be — the shape of a fire — and it is spent by the act, exactly as a cleared shot is.</para>
+    /// </summary>
+    [Fact]
+    public void AClearedNextActAuthorisesWhicheverCompartmentItTurnsOutToBe()
+    {
+        Assert.Equal(
+            ShipAuthority.VentAuthority.NextActionCleared,
+            ShipAuthority.AuthorityFor("SHUTTLE BAY", authorizedRoom: null,
+                                       standingOrder: false, nextActionCleared: true));
+
+        // …and it is one of the two that get used up.
+        Assert.True(ShipAuthority.IsSpentByTheAct(ShipAuthority.VentAuthority.NextActionCleared));
+        Assert.True(ShipAuthority.IsSpentByTheAct(ShipAuthority.VentAuthority.NamedWord));
+        Assert.False(ShipAuthority.IsSpentByTheAct(ShipAuthority.VentAuthority.StandingOrder));
+    }
+
+    /// <summary>
+    /// A STANDING ORDER MUST NEVER BURN A LIMITED CLEARANCE. If the captain has delegated, the delegation
+    /// answers — otherwise handing damage control standing authority would quietly eat every pre-ok the captain
+    /// had also given, and the desk's button would lie about what it still holds.
+    /// </summary>
+    [Fact]
+    public void TheFreeAuthorityAnswersBeforeTheOnesThatAreSpent()
+    {
+        Assert.Equal(
+            ShipAuthority.VentAuthority.StandingOrder,
+            ShipAuthority.AuthorityFor("CABIN 1", authorizedRoom: "CABIN 1",
+                                       standingOrder: true, nextActionCleared: true));
+
+        // With no standing order, the NAMED word goes before the general clearance: it was given for this
+        // exact compartment, and spending it is what "by name" means.
+        Assert.Equal(
+            ShipAuthority.VentAuthority.NamedWord,
+            ShipAuthority.AuthorityFor("CABIN 1", authorizedRoom: "CABIN 1",
+                                       standingOrder: false, nextActionCleared: true));
+    }
+
+    /// <summary>Even a cleared act cannot authorize nothing — the board still cannot act on its own.</summary>
+    [Fact]
+    public void AClearedNextActStillCannotAuthoriseNothing()
+    {
+        Assert.Equal(
+            ShipAuthority.VentAuthority.None,
+            ShipAuthority.AuthorityFor(null, authorizedRoom: null,
+                                       standingOrder: false, nextActionCleared: true));
+    }
+
+    /// <summary>The log has to record WHICH authority let it happen — a pre-cleared act must not be
+    /// indistinguishable from one the captain stood there and ordered.</summary>
+    [Fact]
+    public void TheLogNamesTheAuthorityThatAnswered()
+    {
+        Assert.Contains("standing order",
+                        ShipAuthority.UnderAuthority(ShipAuthority.VentAuthority.StandingOrder),
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("by name",
+                        ShipAuthority.UnderAuthority(ShipAuthority.VentAuthority.NamedWord),
+                        StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("next act",
+                        ShipAuthority.UnderAuthority(ShipAuthority.VentAuthority.NextActionCleared),
+                        StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The gate is on the ACT, not on the console — which is what lets her have a working bridge
+    /// repeater without it becoming a way around the captain's word. Same inputs, same answer, wherever the
+    /// captain is standing.</summary>
+    [Fact]
+    public void TheRepeaterIsAConvenienceNotALoophole()
+    {
+        Assert.Equal(
+            ShipAuthority.EvaluateVent("ENGINE ROOM", "ENGINE ROOM"),
+            ShipAuthority.EvaluateVent("ENGINE ROOM", "ENGINE ROOM"));
+
+        // Both of her boards exist, and they are far enough apart to be separate places to stand.
+        double dx = ShipLayout.ValveStation.X - ShipLayout.BridgeRepeaterStation.X;
+        double dy = ShipLayout.ValveStation.Y - ShipLayout.BridgeRepeaterStation.Y;
+        Assert.True(Math.Sqrt((dx * dx) + (dy * dy)) > 10.0,
+                    "her two atmosphere boards should be at opposite ends of the ship");
+    }
+
+    // ── The interlock, which is mechanical and has nothing to do with authority ────────────────────────
+
+    [Fact]
+    public void TheHandleRefusesTheRoomYouAreStandingIn()
+    {
+        var here = new HullVenting.Space(
+            "CABIN 1", DoorShut: true, Vented: false, Infested: false,
+            HoldsSurvivor: false, CaptainInside: true);
+
+        Assert.Equal(HullVenting.VentReadiness.CaptainInside, HullVenting.Readiness(here));
+    }
+
+    [Fact]
+    public void TheHandleRefusesAnOpenHatch()
+    {
+        var open = new HullVenting.Space(
+            "CABIN 1", DoorShut: false, Vented: false, Infested: false,
+            HoldsSurvivor: false, CaptainInside: false);
+
+        Assert.Equal(HullVenting.VentReadiness.DoorOpen, HullVenting.Readiness(open));
+    }
+
+    /// <summary>Her own tanks pay for putting the air back, and they are finite: the whole point of a reserve is
+    /// that a captain who vents a compartment because it was quicker than walking around it sees the gauge
+    /// afterwards.</summary>
+    [Fact]
+    public void PuttingTheAirBackNeedsAFillInHerTanks()
+    {
+        var blown = new HullVenting.Space(
+            "CARGO HOLD", DoorShut: true, Vented: true, Infested: false,
+            HoldsSurvivor: false, CaptainInside: false);
+
+        Assert.Equal(HullVenting.RefillReadiness.Ready, HullVenting.RefillState(blown, ShipAtmosphere.ReserveFills));
+        Assert.Equal(HullVenting.RefillReadiness.NoReserve, HullVenting.RefillState(blown, 0));
+    }
+
+    [Fact]
+    public void HerReserveLineSaysWhenItIsEmpty()
+    {
+        Assert.Contains("EMPTY", ShipAtmosphere.ReserveLine(0), StringComparison.Ordinal);
+        Assert.Contains("8", ShipAtmosphere.ReserveLine(ShipAtmosphere.ReserveFills), StringComparison.Ordinal);
+    }
+}

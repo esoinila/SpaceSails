@@ -694,7 +694,8 @@
                         <g class="@cls" @onclick="() => SelectVentSpace(name)">
                             <rect x="@Du(x0)" y="@Du(y)" width="@Du(x1 - x0)"
                                   height="@Du(WreckLayout.BottomY - WreckLayout.SpineHalfHeight)" rx="0.4" />
-                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, x1 - x0, VentAreaTag(name, space, x1 - x0)))
+                            @((MarkupString)VentAreaLabelSvg(name, cx, cy, x1 - x0, VentAreaTag(name, space, x1 - x0),
+                                                             WreckLayout.BottomY - WreckLayout.SpineHalfHeight))
                             @* The door onto the spine, at the doorway the captain actually walks through:
                                solid when sealed, broken when open. *@
                             <line class="vent-door"
@@ -996,6 +997,508 @@
         </div>
     }
 
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       HER OWN ATMOSPHERE BOARD. Owner: "I think our ship should also have these controls. They are so cool
+       and it would be consistent in the universe", then "our venting must have captains ok mechanism in it,
+       like firing a shot or looting", and "there must be controls to do so on the bridge, but the bridge
+       position needs captains ok to vent".
+
+       The SAME panel as a derelict's, deliberately — one board, learned once, and the safest ship in the game
+       is the tutorial for the most dangerous one. What is different is the gate in front of the irreversible
+       half (the captain's word, by name), the fact that her board can say what is in the room, and that her
+       repeater actually has a bus behind it.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_showShipBoard)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipBoard)">
+            <div class="vent-board" @onclick:stopPropagation="true">
+                <div class="view-object-title">⚙ ATMOSPHERE CONTROL — HER OWN HULL</div>
+                <div class="vent-sub">
+                    @ShipBreathingLine()
+                    You are in <strong>@(ShipCompartment() ?? ShipLayout.SpineName)</strong>.
+                </div>
+                <div class="vent-readout">@ShipAtmosphere.ReserveLine(_shipReserve)</div>
+
+                @* Her deck, from ShipLayout's own rectangles — the same numbers her walls are built from, so a
+                   compartment on this map is where it is on the deck by construction. Y is negated because SVG
+                   y runs down and decks run up. Every number goes through Du(): a Finnish browser renders 20.5
+                   as "20,5" and SVG reads that as two coordinates — it would come apart for the owner and for
+                   nobody else. *@
+                <svg class="vent-map" viewBox="@ShipViewBox" preserveAspectRatio="xMidYMid meet"
+                     role="group" aria-label="her compartments">
+                    <polygon class="vent-hull" points="@ShipHullOutline" />
+
+                    @* THE CORRIDOR IS A PART OF THE SHIP YOU TOUCH — the wreck board's hard-won lesson (owner:
+                       "why can I not pump the spine? … oh it has its own button instead of just selecting it
+                       from map?"). It is a volume on the mimic, so it answers to the mimic. *@
+                    @{
+                        string shipCorridorCls = "vent-area spine"
+                            + (_shipSelected == ShipLayout.SpineName ? " picked" : "")
+                            + (ShipCompartment() is null ? " here" : "");
+                    }
+                    <g class="@shipCorridorCls" @onclick="() => SelectShipSpace(ShipLayout.SpineName)">
+                        @((MarkupString)ShipCorridorTagSvg())
+                        <rect class="vent-spine-band"
+                              x="@Du(ShipLayout.EngineBulkheadX)" y="@Du(-ShipLayout.SpineHalfHeight)"
+                              width="@Du(ShipLayout.BridgeBulkheadX - ShipLayout.EngineBulkheadX)"
+                              height="@Du(ShipLayout.SpineHalfHeight * 2)" rx="0.4" />
+                    </g>
+
+                    @foreach (ShipLayout.Room shipRoom in ShipLayout.Rooms)
+                    {
+                        HullVenting.Space shipSpace = ShipSpaceNow(shipRoom.Name);
+                        string shipCls = "vent-area"
+                            + (shipSpace.Vented ? " vented" : "")
+                            + (shipSpace.DoorShut ? " sealed" : "")
+                            + (shipSpace.CaptainInside ? " here" : "")
+                            + (_shipSelected == shipRoom.Name ? " picked" : "");
+                        float shipCx = (shipRoom.X0 + shipRoom.X1) / 2f;
+                        float shipCy = -(shipRoom.Y0 + shipRoom.Y1) / 2f;
+                        (float dsx1, float dsy1, float dsx2, float dsy2) = ShipLayout.DoorSegment(shipRoom);
+
+                        <g class="@shipCls" @onclick="() => SelectShipSpace(shipRoom.Name)">
+                            <rect x="@Du(shipRoom.X0)" y="@Du(-shipRoom.Y1)"
+                                  width="@Du(shipRoom.X1 - shipRoom.X0)"
+                                  height="@Du(shipRoom.Y1 - shipRoom.Y0)" rx="0.4" />
+                            @* Her berths are 3.5 du wide and 7 tall, so their names go SIDEWAYS rather than
+                               across — the owner's own read of the first board: "the cabins map here could use
+                               font rotation to fit the texts?" The helper decides; it is handed the room's
+                               height so that it can. *@
+                            @((MarkupString)VentAreaLabelSvg(
+                                shipRoom.Name, shipCx, shipCy, shipRoom.X1 - shipRoom.X0,
+                                ShipAreaTag(shipRoom.Name), shipRoom.Y1 - shipRoom.Y0))
+                            @* Her hatch, at the doorway the captain actually walks through: solid when shut,
+                               broken when open. ONE definition (ShipLayout.DoorSegment), read both by the thing
+                               that draws it and the thing that walks into it. *@
+                            <line class="vent-door"
+                                  x1="@Du(dsx1)" x2="@Du(dsx2)" y1="@Du(-dsy1)" y2="@Du(-dsy2)" />
+                        </g>
+                    }
+                </svg>
+
+                @if (_shipSelected == ShipLayout.SpineName)
+                {
+                    <div class="vent-actions">
+                        <div class="vent-picked">@ShipLayout.SpineName</div>
+                        <div class="vent-readout">
+                            🌡 Her corridor, and every hatch aboard opens onto it. There is no valve here: you
+                            cannot open the volume you are standing in to space, and there is no door onto
+                            itself to dog.
+                        </div>
+                        <div class="vent-readout">@ShipLayout.VestibuleIsNotACompartment</div>
+                        <button type="button" class="btn btn-outline-warning btn-sm"
+                                title="Dog every hatch the pressure is not already holding. The reflex, for a fire or a leak."
+                                @onclick="SealHerUp">
+                            🔒 Seal her up
+                        </button>
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                title="Undog every hatch the pressure is not holding."
+                                @onclick="UnsealHer">
+                            🔓 Open her up again
+                        </button>
+                    </div>
+                }
+                else if (_shipSelected is { } shipPicked)
+                {
+                    var shipSel = ShipSpaceNow(shipPicked);
+                    var shipReadiness = HullVenting.Readiness(shipSel);
+                    var shipAuthority = ShipAuthorityNow();
+                    var shipIntent = shipAuthority == ShipAuthority.VentAuthority.None
+                        ? (_shipSelected is null
+                            ? ShipAuthority.VentIntent.NothingSelected
+                            : ShipAuthority.VentIntent.Opportunity)
+                        : ShipAuthority.VentIntent.Authorized;
+                    var shipRefill = HullVenting.RefillState(shipSel, _shipReserve);
+                    bool shipHeld = HullVenting.DoorHeldByPressure(shipSel, ShipCorridorPressurised);
+
+                    <div class="vent-actions">
+                        <div class="vent-picked">@shipPicked</div>
+
+                        @* WHAT IS IN THERE — the sentence a derelict's board cannot say. Hers can, because the
+                           crew are aboard and the manifest knows where they sleep, and that is exactly why the
+                           act needs a name attached to it. *@
+                        <div class="vent-readout">@ShipAtmosphere.WhatIsInThere(shipPicked)</div>
+
+                        @* Isolation: the everyday half, and it asks nobody. Owner: "we might want to isolate
+                           cabins to keep our disease etc." *@
+                        <button type="button" class="btn btn-outline-light btn-sm"
+                                disabled="@shipHeld"
+                                title="@(shipHeld ? HullVenting.PressureLockLine(shipPicked, shipSel.Vented)
+                                                  : ShipAtmosphere.IsolationNeedsNobody)"
+                                @onclick="() => ToggleShipDoor(shipPicked, false)">
+                            @(shipSel.DoorShut ? "🔓 Undog the hatch" : "🔒 Dog the hatch")
+                        </button>
+
+                        @* THE GATE. Not a confirmation dialogue: the word carries the room's NAME, so changing
+                           the selection revokes it — the same promise the boarding authorization makes, for the
+                           same reason (proximity is never consent).
+
+                           BOTH STEPS ARE ALWAYS DRAWN, greyed with their reason on them. The first cut hid
+                           them until the act was legal, and the owner — standing at his own bridge repeater
+                           with the hold selected — had to ask "how do I vent the cargo hold here?" There was
+                           nothing on the panel to tell him: the refusal line said "shut the door before you
+                           pull THIS" while `this` was not on screen to be pulled. A control you cannot press
+                           teaches the sequence; a control that is absent teaches nothing. *@
+                        @* Under a standing order there is no single word to withdraw — the authority was given
+                           at the desk and is taken back there. Saying so beats a button that would lie about
+                           what it does. (Owner's arrangement: "like we have the fire at will checkbox".) *@
+                        @if (shipAuthority is ShipAuthority.VentAuthority.StandingOrder
+                                                or ShipAuthority.VentAuthority.NextActionCleared)
+                        {
+                            @* WHICH authority is answering, named. A delegated or pre-cleared act must never
+                               read like one the captain stood here and ordered. *@
+                            <span class="text-warning small">
+                                ⚓ Acting @ShipAuthority.UnderAuthority(shipAuthority).
+                                @(shipAuthority == ShipAuthority.VentAuthority.NextActionCleared
+                                    ? "This clearance is spent by the next act." : "")
+                            </span>
+                        }
+                        else if (shipIntent == ShipAuthority.VentIntent.Authorized)
+                        {
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    title="Take it back. Nothing has happened yet."
+                                    @onclick="WithdrawTheCaptainsWord">
+                                ↩ Withdraw the word
+                            </button>
+                        }
+                        else if (shipAuthority == ShipAuthority.VentAuthority.None)
+                        {
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    disabled="@(shipReadiness != HullVenting.VentReadiness.Ready)"
+                                    title="@(shipReadiness == HullVenting.VentReadiness.Ready
+                                             ? ShipAuthority.WhyItNeedsSaying
+                                             : HullVenting.RefusalLine(shipReadiness, shipPicked))"
+                                    @onclick="() => GiveTheCaptainsWord(shipPicked)">
+                                🔑 Captain's word: @shipPicked
+                            </button>
+                        }
+                        @* TWO ROADS TO AN EMPTY ROOM, and the owner named both: "one by venting to space in an
+                           emergency hurry and another where we more slowly pump it into our stores with rough
+                           vacuum pumps and it is kept in the ship." Same word gates both, because both end in
+                           a compartment of your own ship at vacuum. *@
+                        <button type="button" class="btn btn-danger btn-sm"
+                                disabled="@(shipIntent != ShipAuthority.VentIntent.Authorized
+                                            || shipReadiness != HullVenting.VentReadiness.Ready)"
+                                title="@(shipReadiness != HullVenting.VentReadiness.Ready
+                                         ? HullVenting.RefusalLine(shipReadiness, shipPicked)
+                                         : shipIntent != ShipAuthority.VentIntent.Authorized
+                                             ? ShipAuthority.AskFor(shipPicked)
+                                             : "Instant, and the air is GONE — the emergency road. "
+                                               + ShipAtmosphere.TheSuitsBesideTheBunks)"
+                                @onclick="() => VentShipCompartment(shipPicked)">
+                            💨 OPEN @shipPicked TO SPACE
+                        </button>
+                        @if (ShipPumpOn(shipPicked) is { } shipRunning)
+                        {
+                            <button type="button" class="btn btn-outline-warning btn-sm"
+                                    title="@(shipRunning.RoughBanked
+                                             ? "The fill is already in her tanks. Stopping now leaves the room breathable."
+                                             : "Stop before the mark and the air stays in the room — none of it reaches the tanks.")"
+                                    @onclick="() => StopShipPump(shipPicked)">
+                                @(shipRunning.RoughBanked ? "🛢 Stop — take the air and go" : "🛢 Stop the pump")
+                            </button>
+                        }
+                        else
+                        {
+                            var shipVolume = HullVenting.SharedAtmosphere(
+                                shipPicked, ShipSpacesNow(), ShipLayout.SpineName);
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    disabled="@(shipIntent != ShipAuthority.VentIntent.Authorized
+                                                || shipReadiness != HullVenting.VentReadiness.Ready)"
+                                    title="@(shipReadiness != HullVenting.VentReadiness.Ready
+                                             ? HullVenting.RefusalLine(shipReadiness, shipPicked)
+                                             : shipIntent != ShipAuthority.VentIntent.Authorized
+                                                 ? ShipAuthority.AskFor(shipPicked)
+                                                 : shipVolume.Count > 1
+                                                     ? $"One atmosphere, {shipVolume.Count} spaces: {string.Join(", ", shipVolume)}. They stand open to each other, so they empty together."
+                                                     : "Slower than the handle, and the air is KEPT: the mechanical stage banks a fill into her tanks, the long tail brings it down to a pressure that kills.")"
+                                    @onclick="() => StartShipPump(shipPicked)">
+                                @(shipVolume.Count > 1
+                                    ? $"🛢 Pump this volume into her tanks ({shipVolume.Count} spaces)"
+                                    : "🛢 Pump it into her tanks")
+                            </button>
+                        }
+
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                disabled="@(shipRefill != HullVenting.RefillReadiness.Ready)"
+                                title="@(shipRefill == HullVenting.RefillReadiness.Ready
+                                         ? "Spend one fill from her own tanks. Whatever went out with the air stays out."
+                                         : HullVenting.RefillRefusalLine(shipRefill, shipPicked))"
+                                @onclick="() => RefillShipCompartment(shipPicked)">
+                            🫁 Put the air back (@_shipReserve)
+                        </button>
+
+                        @if (shipReadiness != HullVenting.VentReadiness.Ready
+                             && string.IsNullOrEmpty(_shipBoardMessage))
+                        {
+                            <div class="vent-refusal">@HullVenting.RefusalLine(shipReadiness, shipPicked)</div>
+                        }
+                    </div>
+                }
+
+                @* A board that opens with nothing but "Step away" reads as broken — the wreck's panel taught
+                   that (owner: "the vent panel only shows step away button in start"). The switches belong to a
+                   ROOM, so until one is picked the panel says so. *@
+                @if (_shipSelected is null)
+                {
+                    <div class="vent-pick-hint">▲ Pick a compartment on the map — the switches belong to a room.</div>
+                }
+
+                @if (_shipBoardMessage is { Length: > 0 } shipBoardMsg)
+                {
+                    <div class="vent-message">@shipBoardMsg</div>
+                }
+
+                @* HER BOARD'S OWN LOG, like a derelict's. A panel can only ever show one line, so anything that
+                   happened while the captain was looking elsewhere — a pump banking, a hatch that would not
+                   move — was gone before it could be read. Newest at the top, because the newest is what you
+                   came to read. *@
+                @if (_shipBoardLog.Count > 0)
+                {
+                    <div class="vent-history">
+                        <div class="vent-history-head">OPERATING LOG — HER OWN BOARD</div>
+                        @for (int i = _shipBoardLog.Count - 1; i >= 0; i--)
+                        {
+                            <div class="vent-history-line">@_shipBoardLog[i]</div>
+                        }
+                    </div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipBoard)">Step away</button>
+            </div>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #523 · THE CHARGE BOARD, aft with the machinery. Owner: "I like you make a PR about how spaceships manage
+       their electric charge build up and make us a panel about it into the rear of the ship … Now that desk is
+       kind of lame on the ship, so let's add some kind of on automatic there."
+
+       The mechanic was live and invisible: a charged hull is SEEN THREE TIMES AS FAR (SensorModel
+       .ChargeGlowFactor), and the only instrument that ever mentioned it halved the number and told you about a
+       cat. The dump stays — the joke is good and the act is real — and the board grows around it.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_showChargeBoard)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseChargeBoard)">
+            <div class="vent-board" @onclick:stopPropagation="true">
+                <div class="view-object-title">⚡ HULL CHARGE — HER OWN POTENTIAL</div>
+
+                @if (_plasma is null)
+                {
+                    <div class="vent-sub">
+                        Nothing out here charges her: this voyage runs without the plasma layer, so the board is
+                        a row of dead needles and the dump is a party trick.
+                    </div>
+                }
+                else
+                {
+                    double hullNow = HullChargeNow();
+                    double ambientNow = AmbientChargeNow();
+                    HullCharge.Band band = HullCharge.BandOf(hullNow);
+                    <div class="vent-sub">
+                        HULL: <strong>@HullCharge.BandWord(band)</strong> ·
+                        holding @((hullNow * 100).ToString("0", CultureInfo.InvariantCulture))% of what this
+                        space could put on her
+                    </div>
+                    <div class="vent-readout">@HullCharge.DrivenByLine(ambientNow)</div>
+                    <div class="vent-readout @(band >= HullCharge.Band.Glowing ? "alive" : "")">
+                        @HullCharge.VisibilityLine(hullNow)
+                    </div>
+                    @if (band == HullCharge.Band.Arcing)
+                    {
+                        <div class="vent-refusal">
+                            ⚡ She is arcing across herself. Everything with a telescope has already noticed.
+                        </div>
+                    }
+
+                    <div class="vent-actions">
+                        @* THE AUTOMATIC — the owner's ask, and a real device: a hollow-cathode plasma contactor,
+                           two of which fly on the ISS for exactly this reason. It costs expellant while it runs,
+                           which is what keeps it a decision. *@
+                        <button type="button"
+                                class="btn btn-sm @(_contactorOn ? "btn-success" : "btn-outline-success")"
+                                title="@(_contactorOn ? HullCharge.ContactorOnLine : HullCharge.ContactorOffLine)"
+                                @onclick="ToggleContactor">
+                            @(_contactorOn ? "🜁 CONTACTOR RUNNING — click to secure" : "🜁 Run the contactor (automatic)")
+                        </button>
+                        @* LAB 43: inside a stream the plasma delivers more current than the cathode can emit, so
+                           the automatic can only take the edge off. Ride the river or go unheard, never both. *@
+                        @if (_contactorOn && !HullCharge.ContactorWinsHere(ambientNow))
+                        {
+                            <span class="text-warning small">🜁 outmatched here — she will sit high while you ride the stream</span>
+                        }
+
+                        @* And the switch that was the whole console: dump the hull to space. Instant, free, and
+                           it does not touch what has soaked into the boards. *@
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                title="Dump the hull charge to space now — instant, free, and it will start climbing again immediately."
+                                @onclick="VentCharge">
+                            ⚡ Dump her charge
+                        </button>
+                    </div>
+
+                    <div class="vent-readout">
+                        🜁 Expellant: @_reactionMassPulses pulses ·
+                        the contactor sips @HullCharge.ContactorPulsesPerMinute.ToString("0.0", CultureInfo.InvariantCulture) per minute while it runs
+                    </div>
+
+                    @* THE ADMISSION, always shown. Deep dielectric charging buries itself in the boards over
+                       hours; the hull gauge reads fine the whole time and the contactor does not help. Same law
+                       the wreck's life-sign sensor lives by: the instrument says something is happening, never
+                       what. *@
+                    <div class="vent-sub">@HullCharge.WhatTheGaugeCannotSee</div>
+                }
+
+                @if (_chargeBoardMessage is { Length: > 0 } chargeMsg)
+                {
+                    <div class="vent-message">@chargeMsg</div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseChargeBoard)">Step away</button>
+            </div>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       #528 · THE STORY CARD AND THE STORY PLATE. Owner: "The pattern something of importance to story telling
+       happens we get image pop up should happen universally in the game as long as it does not block the playing
+       too much or be too repetitive."
+
+       Two presentations of one idiom, chosen by Core (StoryBeats.PresentationOf): the CARD takes the screen when
+       the moment was already a pause, and the PLATE rides the edge for a few seconds when the game is still
+       moving. Every picture degrades honestly — an unpainted beat still delivers its title and caption.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_storyCard is { } told)
+    {
+        var toldCopy = StoryBeatCopy(told.Beat, told.Subject);
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseStoryCard)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@toldCopy.Title</div>
+                @if (toldCopy.Art is { Length: > 0 })
+                {
+                    <img class="view-object-img" src="@toldCopy.Art" alt="@toldCopy.Title"
+                         onerror="this.style.display='none'" />
+                }
+                <div class="view-object-caption">@toldCopy.Caption</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseStoryCard)">…go on</button>
+            </div>
+        </div>
+    }
+
+    @* The plate: same picture, same words, no keyboard stolen and no world stopped. It is not clickable on
+       purpose — a thing you must dismiss is a thing that blocked you. *@
+    @if (_storyPlate is { } flash)
+    {
+        var flashCopy = StoryBeatCopy(flash.Beat, flash.Subject);
+        <div class="story-plate" aria-live="polite">
+            @if (flashCopy.Art is { Length: > 0 })
+            {
+                <img class="story-plate-art" src="@flashCopy.Art" alt=""
+                     onerror="this.style.display='none'" />
+            }
+            <div class="story-plate-words">
+                <div class="story-plate-title">@flashCopy.Title</div>
+                <div class="story-plate-caption">@flashCopy.Caption</div>
+            </div>
+        </div>
+    }
+
+    @* THE CASTAWAY CARD. She went; he did not. Owner's own objection, answered: "if you can not get away with
+       ship, then propably not with shuttle either" — true about speed, beside the point. The hull was the
+       asset, the bounty and the prize; a man in a small cold boat is worth the fuel to nobody. *@
+    @if (_shipEpitaph is { } castaway)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipEpitaph)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">☢ SHE IS GONE, AND YOU ARE NOT</div>
+                <div class="view-object-caption">@castaway.Went</div>
+                <div class="view-object-caption">@castaway.Survives</div>
+                <div class="view-object-caption">@castaway.Rescue</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipEpitaph)">…take the berth</button>
+            </div>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
+       HER SCUTTLING CHARGES, AND THE TWO HANDS IT TAKES. Owner: "that ship also has the scuttling charges...
+       let's have a captains approval mechanic for that also on our ship. :-D ... it is the last defence against
+       the Borg in Star Trek :-D", and then the sentence that makes it a mechanic rather than an ending: "they
+       only need to activate it for the borg to back down enough."
+
+       The second key is the CREW's — "I guess we need the another opinion we just don't have a desk for that on
+       the bridge yet" — read off the sheet already on the captain's desk. No new desk required, and the crew
+       temperature stops being a report card.
+       ═══════════════════════════════════════════════════════════════════════════════════════════════════ *@
+    @if (_showShipScuttlePanel)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseShipScuttlePanel)">
+            <div class="vent-board" @onclick:stopPropagation="true">
+                <div class="view-object-title">☢ SCUTTLING CHARGES — HER OWN KEEL</div>
+
+                @if (_shipChargesSeconds is { } shipBurn)
+                {
+                    <div class="vent-sub">
+                        @(Scuttle.CanAbort(shipBurn)
+                            ? "The note of her is up half a tone. The panel will still take the keys back."
+                            : "Past recall. Whatever happens now happens on its own schedule.")
+                    </div>
+                    <div class="vent-readout">
+                        ☢ OVERLOAD — @HullVenting.SoakLabel(shipBurn) · the way out is the way you came in
+                    </div>
+                    @if (Scuttle.CanAbort(shipBurn))
+                    {
+                        <button type="button" class="btn btn-outline-warning btn-sm" @onclick="BackTheKeysOut">
+                            ↩ Back the keys out
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="vent-sub">@ShipScuttle.NeverDelegable</div>
+                    <div class="vent-readout">@ShipScuttle.PriceLine(_cargoUnits, (long)_cargoValue, _credits)</div>
+
+                    <div class="vent-actions">
+                        <button type="button"
+                                class="btn btn-sm @(_shipScuttleWordGiven ? "btn-success" : "btn-outline-danger")"
+                                title="@ShipScuttle.AskFor("this ship")"
+                                @onclick="GiveTheWordAgainstHer">
+                            @(_shipScuttleWordGiven ? "✅ THE CAPTAIN'S KEY IS TURNED — click to take it back" : "🔑 The captain's key")
+                        </button>
+
+                        @* THE SECOND OPINION. Not a rules explanation and not a dice roll the captain can
+                           re-roll: the crew answer from where they already stand with him. *@
+                        <button type="button"
+                                class="btn btn-sm @(_shipScuttleSecondKey == ShipScuttle.SecondKey.Refused ? "btn-outline-secondary" : "btn-outline-warning")"
+                                disabled="@(!_shipScuttleWordGiven)"
+                                title="Scuttling her takes two hands. Ask the crew for theirs."
+                                @onclick="AskTheCrewForTheSecondKey">
+                            🧑‍🔧 Ask the crew for the second key
+                        </button>
+
+                        <button type="button" class="btn btn-danger btn-sm"
+                                disabled="@(!_shipScuttleWordGiven
+                                            || _shipScuttleSecondKey is null
+                                            || _shipScuttleSecondKey == ShipScuttle.SecondKey.Refused)"
+                                title="@(_shipScuttleSecondKey == ShipScuttle.SecondKey.Refused
+                                         ? ShipScuttle.RefusedPointerLine
+                                         : "Both keys together. Ninety seconds, and a recall window for the first sixty.")"
+                                @onclick="TurnBothKeys">
+                            ☢ TURN BOTH KEYS
+                        </button>
+                    </div>
+                }
+
+                @if (_shipScuttleMessage is { Length: > 0 } shipScuttleMsg)
+                {
+                    <div class="vent-message">@shipScuttleMsg</div>
+                }
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseShipScuttlePanel)">Step away</button>
+            </div>
+        </div>
+    }
+
     @* #488 · WHAT YOU ARE LOOKING AT. The cause's own station is the one you stand in front of, so it shows
        the wreck's portrait — eight ships that died eight different ways should not read the same. The image
        is the EVIDENCE, never the conclusion; naming what it means is still the captain's job. *@
@@ -1016,15 +1519,15 @@
        half. Same markup, same onerror-hide, same discipline: the image is the EVIDENCE and naming what it
        means is still the captain's job. The text comes from Core (KaamosLore.PlateFor is the first
        tenant), never from a literal here. *@
-    @if (_storyPlate is { } plate)
+    @if (_revealCard is { } plate)
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseStoryPlate)">
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseRevealCard)">
             <div class="view-object" @onclick:stopPropagation="true">
                 <div class="view-object-title">@plate.Title</div>
                 <img class="view-object-img" src="@plate.Art" alt="@plate.Title" onerror="this.style.display='none'" />
                 <div class="view-object-caption">@plate.Caption</div>
                 <button type="button" class="view-object-close" title="Look away"
-                        @onclick="() => Dismiss(CloseStoryPlate)">Look away</button>
+                        @onclick="() => Dismiss(CloseRevealCard)">Look away</button>
             </div>
         </div>
     }
@@ -2158,23 +2661,241 @@
        hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
        OUT IN THE CORRIDOR, not just from the board you walked away from. Two clocks racing each other: the
        one emptying a room, and the one on the sentry holding the lane while it does. *@
-    @if (OnWreck && _deckMode && (_pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null))
+    @* HER OWN CLOCKS, out where she can be read from the corridor. Owner, having started a pump on her board
+       and walked away: "I expect to see the pumping here now as we have on the reever infested salvage ship."
+       Same strip, same classes — a run you can only infer from a sentence on a panel is a run you will forget
+       you started, and hers take the best part of a minute. *@
+    @* #538 · THE CAPTAIN'S REMOTE. Owner: "Maybe small button to open the sentry settings pop-up 😎" and then the
+       better name for it — "Captain's remote". A small button on the deck HUD, because this is a handheld thing a
+       captain thumbs while crouched behind a bulkhead, not a settings menu on a console somewhere else. *@
+    @if (_deckMode && _surface is not null)
+    {
+        <button type="button" class="btn btn-sm btn-outline-warning captains-remote-btn"
+                title="@SilentRunning.PanelTitle — hold your bots, and put the boat to sleep"
+                @onclick="OpenCaptainsRemote">
+            📻 Remote
+        </button>
+    }
+
+    @if (_showCaptainsRemote)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseCaptainsRemote)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@SilentRunning.PanelTitle</div>
+                <div class="view-object-caption">@SilentRunning.PanelBlurb</div>
+
+                <div class="vent-actions">
+                    <button type="button"
+                            class="btn btn-sm @(_weaponsTight ? "btn-warning" : "btn-outline-warning")"
+                            title="@(_weaponsTight ? SentryBot.WeaponsFreeLine : SentryBot.WeaponsTightLine)"
+                            @onclick="ToggleWeaponsTight">
+                        @(_weaponsTight ? "🤖 WEAPONS TIGHT — press to free" : "🤖 Weapons tight (bots hold)")
+                    </button>
+
+                    @* #540 · THE WARM-UP IS ORDERED FROM HERE. Owner: "Shuttle warm up should work from remote."
+                       So this one button is the whole boat: it reverses whatever standing order she is under, and
+                       says which way she is currently travelling on the dial. *@
+                    <button type="button"
+                            class="btn btn-sm @(_boatOrderedCold ? "btn-warning" : "btn-outline-warning")"
+                            title="@(_boatOrderedCold ? SilentRunning.BoatWakingLine : SilentRunning.BoatDarkLine)"
+                            @onclick="ToggleBoatPower">
+                        @SilentRunning.BoatButtonLabel(BoatState)
+                    </button>
+                    @* #537 · THE THIRD SWITCH OF THE SAME FAMILY. Owner: "Sweeping could cost time… Also it
+                       might be noisy to say knock on walls etc." Quiet or quick is exactly the trade the other
+                       two buttons make, so it belongs on the same handheld and not on a console somewhere. *@
+                    @if (OnWreck)
+                    {
+                        <button type="button"
+                                class="btn btn-sm @(_soundQuietly ? "btn-warning" : "btn-outline-warning")"
+                                title="@HullSounding.OfferLine(SoundingGear)"
+                                @onclick="ToggleQuietSearch">
+                            @(_soundQuietly ? "✊ QUIET SEARCH — knuckles only" : "📡 Sounder (quick, and heard)")
+                        </button>
+                    }
+                </div>
+
+                <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>
+                <div class="vent-sub">@SilentRunning.WhatItCostsLine</div>
+
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseCaptainsRemote)">Pocket it</button>
+            </div>
+        </div>
+    }
+
+    @* #409+ · THE DOOR BOARD. Owner: "Surely some control panels based on the vent panel can be added 🤠" —
+       so it is the vent board's own idiom, one row per chamber, and throwing a door here throws it on the
+       ground two rooms away. That reach is the whole reason a lock is a TOOL rather than a walk. *@
+    @if (_showDoorBoard)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseDoorBoard)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">🎛 DOOR BOARD — VANTAR LABS</div>
+                <div class="view-object-caption">
+                    Every door in the mountain, on one wall. @(_hasVantarCard
+                        ? "The card is in your hand, so they will key as well as shut."
+                        : "They will shut. Keying wants a card you are not carrying.")
+                </div>
+
+                <div class="vent-actions">
+                    @* #633 · named `labDoor`, not `door`: razor compiles this whole file into ONE method, so
+                       the #602 locked-door card's `door` on the other branch and this loop's `door` became the
+                       same scope the moment the branches met. *@
+                    @foreach (var labDoor in _labDoors.OrderBy(d => d.Key, StringComparer.Ordinal))
+                    {
+                        string id = labDoor.Key;
+                        <button type="button"
+                                class="btn btn-sm @(labDoor.Value == LockedDoor.State.Locked ? "btn-warning" : "btn-outline-warning")"
+                                title="@LockedDoor.Label(labDoor.Value, _hasVantarCard)"
+                                @onclick="() => WorkTheDoor(id)">
+                            @LockedDoor.Label(labDoor.Value, _hasVantarCard)
+                        </button>
+                    }
+                </div>
+
+                <div class="vent-sub">@LockedDoor.WhichSideLine</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseDoorBoard)">Step back</button>
+            </div>
+        </div>
+    }
+
+    @* #409+ · THE ALARM PANEL — "something to try to hack". The die is SHOWN: target, the stack of named
+       modifiers, and the number it landed on, because a roll a captain cannot argue with is a roll they did
+       not take part in. And it states the cost of a wrong answer BEFORE they press it, so declining is a
+       real option. *@
+    @if (_showAlarmPanel)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseAlarmPanel)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@LabSecurity.PanelTitle</div>
+                <div class="view-object-caption">@LabSecurity.OfferLine(LabSecurity.HackTarget, LabHackStack)</div>
+
+                <div class="vent-readout">
+                    @foreach (var mod in LabSecurity.Modifiers(CurrentApproach()))
+                    {
+                        <div>@(mod.Value >= 0 ? "+" : "")@mod.Value — @mod.Label</div>
+                    }
+                </div>
+
+                @if (_labHackRoll is { } roll)
+                {
+                    <div class="vent-readout">
+                        🎲 @roll.Face @(roll.Total - roll.Face >= 0 ? "+" : "")@(roll.Total - roll.Face)
+                        = <strong>@roll.Total</strong> against @LabSecurity.HackTarget —
+                        @(LabSecurity.Beat(roll) ? "it lets go." : "no.")
+                    </div>
+                }
+
+                <div class="vent-actions">
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="HackTheAlarm"
+                            disabled="@(_labAlarm is LabSecurity.State.Disarmed or LabSecurity.State.LockedDown)">
+                        🔔 Have a go at it
+                    </button>
+                </div>
+
+                <div class="vent-sub">@LabSecurity.LockdownLine</div>
+                <button type="button" class="view-object-close" @onclick="() => Dismiss(CloseAlarmPanel)">Leave it</button>
+            </div>
+        </div>
+    }
+
+    @* #540 · ONE STRIP, EVERY CLOCK. This used to be three separate `.wreck-clocks` blocks — and since the CSS
+       pins the strip at a FIXED top/right, any two of them running at once drew exactly on top of each other.
+       Weapons tight plus a pump was already an unreadable pile; the boat's clocks would have made three. So they
+       are one list now, ordered by how much they should frighten you: the keel, then the way off her, then the
+       air, then the standing orders you might have forgotten. Which is also the owner's scene, in order —
+       "say self destruct tics down but shuttle still warms up". *@
+    @if (_deckMode && (_weaponsTight || BoatClockWorthShowing || SweepersAboard
+                       || LabAlarmSecondsLeft is not null
+                       || SoundingSecondsLeft is not null || SearchBandLine is not null
+                       || (OnWreck
+                           ? _pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null
+                           : _shipPumps.Count > 0 || _shipChargesSeconds is not null)))
     {
         <div class="wreck-clocks">
+            @* #538 · THE SWEEP, ABOVE EVERYTHING. Three professionals working the hull outrank a countdown for
+               the captain's attention, because the countdown is a number and this is a question — where are they
+               now, and do they know. It reads the WORST state anybody aboard is in, so a challenge cannot be
+               hidden behind two colleagues still ticking boxes. *@
+            @if (SweepersAboard)
+            {
+                <div class="wc-line overload @(AnySweeperOnTheCaptain ? "no-recall" : "")">
+                    <span class="wc-tag">🕶 @WorstSweeperState.ToString().ToUpperInvariant()</span>
+                    <span class="wc-room">
+                        @(WorstSweeperState switch
+                        {
+                            InspectionTeam.Awareness.Challenging => "stand still",
+                            InspectionTeam.Awareness.Hunting => "they know you are aboard",
+                            InspectionTeam.Awareness.Investigating => "somebody heard that",
+                            _ => "not looking for you yet",
+                        })
+                    </span>
+                    <span class="wc-time">@_sweepers.Count</span>
+                </div>
+            }
+
             @* THE OVERLOAD, LOUDEST AND FIRST. Owner, having armed it: "it should have a timer visible in
                UI" — and he is right that this was absurd: the entire scene is walking AWAY from the panel,
                and the clock was only readable by going back to it. Past the recall point it stops being a
                countdown and starts being a fact. *@
-            @if (_scuttleSecondsLeft is { } burn)
+            @if ((OnWreck ? _scuttleSecondsLeft : _shipChargesSeconds) is { } burn)
             {
                 <div class="wc-line overload @(Scuttle.CanAbort(burn) ? "" : "no-recall")">
                     <span class="wc-tag">☢ @(Scuttle.CanAbort(burn) ? "OVERLOAD" : "NO RECALL")</span>
-                    <span class="wc-room">get off her</span>
+                    <span class="wc-room">@(OnWreck ? "get off her" : "her own keel")</span>
                     <span class="wc-time">@HullVenting.SoakLabel(burn)</span>
                 </div>
             }
+
+            @* #409+ · THE MOUNTAIN COUNTING. Above the rest of the strip because it is the only clock here that
+               ends with every door in the place keyed, including the one behind you. *@
+            @if (LabAlarmSecondsLeft is { } alarm)
+            {
+                <div class="wc-line overload @(alarm <= 20 ? "no-recall" : "")">
+                    <span class="wc-tag">🔔 ALARM</span>
+                    <span class="wc-room">@(_hasVantarCard ? "you hold the card" : "the card is deeper in")</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(alarm)</span>
+                </div>
+            }
+
+            @* #537 · THE KNOCK, and the band it is being spent on. A sounding is seconds you are committed to,
+               exactly like a pump run, so it goes in the same column — and the band sits under it because a
+               captain who walked away from the manifest should not have to walk back for four numbers. *@
+            @if (SoundingSecondsLeft is { } knock)
+            {
+                <div class="wc-line pump">
+                    <span class="wc-tag">@(_soundQuietly ? "✊ KNOCKING" : "📡 SOUNDING")</span>
+                    <span class="wc-room">stand still</span>
+                    <span class="wc-time">@HullVenting.SoakLabel(knock)</span>
+                </div>
+            }
+            @if (SearchBandLine is { } band)
+            {
+                <div class="wc-line">
+                    <span class="wc-tag">📐 UNACCOUNTED</span>
+                    <span class="wc-room">@band</span>
+                    <span class="wc-time">K</span>
+                </div>
+            }
+
+            @* THE BOAT, SECOND. Owner: "A timer on the map about the cool down and warm up" — and the map is
+               exactly where it belongs, because a captain watching this clock is nowhere near a console. It sits
+               under the overload on purpose: those are the two numbers whose race is the whole scene. *@
+            @if (BoatClockWorthShowing)
+            {
+                <div class="wc-line @(BoatState == SilentRunning.BoatState.WarmingUp ? "overload" : "")">
+                    <span class="wc-tag">@SilentRunning.ClockTag(BoatState)</span>
+                    <span class="wc-room">@SilentRunning.ClockNote(BoatState)</span>
+                    <span class="wc-time">
+                        @(BoatState == SilentRunning.BoatState.Cold
+                            ? "—"
+                            : HullVenting.SoakLabel(BoatSecondsLeft))
+                    </span>
+                </div>
+            }
+
             @* Every pump gets a line, because several can run at once now. *@
-            @foreach (var run in _pumps.Values.OrderBy(p => p.SecondsLeft))
+            @foreach (var run in (OnWreck ? _pumps : _shipPumps).Values.OrderBy(p => p.SecondsLeft))
             {
                 <div class="wc-line pump">
                     <span class="wc-tag">🛢 @(run.RoughBanked ? "TAIL" : "PUMPING")</span>
@@ -2182,12 +2903,28 @@
                     <span class="wc-time">@HullVenting.SoakLabel(run.SecondsLeft)</span>
                 </div>
             }
-            @foreach ((string room, double secs) in RoomsSoaking)
+            @if (OnWreck)
             {
-                <div class="wc-line">
-                    <span class="wc-tag">💨 VACUUM</span>
-                    <span class="wc-room">@room</span>
-                    <span class="wc-time">@HullVenting.SoakLabel(secs)</span>
+                @foreach ((string room, double secs) in RoomsSoaking)
+                {
+                    <div class="wc-line">
+                        <span class="wc-tag">💨 VACUUM</span>
+                        <span class="wc-room">@room</span>
+                        <span class="wc-time">@HullVenting.SoakLabel(secs)</span>
+                    </div>
+                }
+            }
+
+            @* #538 · WEAPONS TIGHT, FOR AS LONG AS IT STANDS. Owner: "the remote to sentries should be in the
+               mobile hud not at captains desk." The order is given on foot and its whole danger is forgetting
+               it — so it is not a checkbox somewhere else, it is a line you cannot walk past. Last in the strip
+               because it is a standing order rather than a countdown. *@
+            @if (_weaponsTight)
+            {
+                <div class="wc-line overload no-recall">
+                    <span class="wc-tag">🤖 TIGHT</span>
+                    <span class="wc-room">nothing of yours fires</span>
+                    <span class="wc-time">H</span>
                 </div>
             }
         </div>
@@ -3985,6 +4722,13 @@
                                                               StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
+                                                              WeaponsTight="_weaponsTight"
+                                                              DamageControlAuthorized="_dcStandingOrder"
+                                                              OnToggleDamageControlAuthority="ToggleDamageControlAuthority"
+                                                              DamageControlNextActCleared="_dcNextActionCleared"
+                                                              OnAuthorizeNextDamageControlAct="AuthorizeNextDamageControlAct"
+                                                              ArmedCompartment="@_shipAuthorized"
+                                                              BridgeRepeaterAlive="ShipBridgeAlive"
                                                               Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
                                                               OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
                                                               OnPointScope="PointScopeForActiveFetch"
@@ -4047,7 +4791,15 @@
                         @* PR-BUSTED art (docs/art-manifest-busted.md item 3): busted-collector-hail.jpg —
                            the hard-eyed repo captain backs ONLY the Demand header (modifier class), with a
                            dark scrim so the callsign stays readable. Other panels' .busted-hail is untouched. *@
-                        <div class="busted-hail busted-collector-hail">⛓ CAUGHT — @bust.HunterCallsign has you grappled</div>
+                        @* #528 · the slot from docs/art-manifest-busted.md item 3, PAINTED at last: grapple
+                           cables across the frame and the collector's hull filling the ports. The heading rides
+                           on the art rather than instead of it — the words are the alarm, the picture is why it
+                           is frightening. *@
+                        <div class="busted-hail busted-collector-hail">
+                            <img class="busted-hail-art" src="@StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail)"
+                                 alt="" aria-hidden="true" onerror="this.style.display='none'" />
+                            <span>⛓ CAUGHT — @bust.HunterCallsign has you grappled</span>
+                        </div>
                         <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
                         <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
                         @* #422 arc 2 — THE COLLECTOR'S WRIT. The first time a collector grapples you, you get a

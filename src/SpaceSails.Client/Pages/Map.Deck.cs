@@ -155,6 +155,24 @@ public partial class Map
                     OpenSatchel();
                 }
                 return true;
+            case "h" or "H":
+                // #538 · THE REMOTE IS IN YOUR HAND, NOT ON THE BRIDGE. Owner: "the remote to sentries should be
+                // in the mobile hud not at captains desk" — and of course: you give this order folded into a
+                // hole with somebody else's boots on the deck plating, nowhere near a desk. H for HOLD.
+                if (_surface is not null)
+                {
+                    ToggleWeaponsTight();
+                }
+                return true;
+            case "k" or "K":
+                // #537 · KNOCK. Owner: "a combi of detect tool that scans on timer like 5 seconds at a spot",
+                // "it might be noisy to say knock on walls etc." K starts a sounding where you stand — a clock
+                // that dies the moment you walk away, and a racket the hull hears either way.
+                if (_surface is not null && OnWreck)
+                {
+                    ToggleSounding();
+                }
+                return true;
             case "t" or "T":
                 // #314: set down a carried sentry at your feet (or pick up one you're standing on).
                 if (_surface is not null)
@@ -308,13 +326,20 @@ public partial class Map
                 ShowPulseMessage(SleepInBunk());
                 break;
             case DeckPlan.ConsoleKind.Vent:
-                VentCharge();               // the CAPACITOR, not the air — see the console's own label
+                // #523 · The console's own label still says CAPACITOR, not air. What changed is that the
+                // dump stopped being the whole interaction: it is one switch on a board that also shows what
+                // the hull is holding and what the space around her is doing to it. VentCharge() is still the
+                // act — the board is where you decide to take it.
+                OpenChargeBoard();
                 break;
             case DeckPlan.ConsoleKind.ShipDoor:
                 ToggleShipDoorAtHand();     // her own hatches, dogged by hand at the door
                 break;
             case DeckPlan.ConsoleKind.ShipValves:
                 OpenShipVentPanel();        // the board, aft with the machinery (and its bridge repeater)
+                break;
+            case DeckPlan.ConsoleKind.ShipScuttle:
+                OpenShipScuttlePanel();     // her own charges — two keys, and one of them is the crew's
                 break;
             case DeckPlan.ConsoleKind.Cargo:
                 ShowPulseMessage(_cargoUnits > 0
@@ -337,8 +362,26 @@ public partial class Map
                 }
                 break;
             case DeckPlan.ConsoleKind.ShuttleAirlock:
+                // #531 · THE BELTS ARE ON THE BOAT. A drained sentry carried back to the lock fills here, and
+                // that is the whole press — the destination list is one more press away, so nothing is taken
+                // from a captain who came to leave rather than to reload.
+                if (TryFillCarriedSentryAtTheLock())
+                {
+                    break;
+                }
+
                 if (_surface is not null)
                 {
+                    // #540 · ASK HER FIRST. Everything below this line is IRREVERSIBLE — the lock cycles, the
+                    // scuttle resolves against whatever was still aboard — and a boat whose hatch is dogged is
+                    // not going anywhere, so doing any of it before she answers would resolve a departure that
+                    // never happened. Asking also STARTS her warm-up, which is the honest reading of pressing E
+                    // at a lock: you tried to leave, and she has begun waking.
+                    if (!BoatReadyToFly())
+                    {
+                        break;
+                    }
+
                     // #488: leaving a wreck, the boat's own lock CYCLES rather than opening — it matches
                     // whatever the hull is reading first, so the shuttle's air is never once exposed to it.
                     if (OnWreck)
@@ -367,8 +410,24 @@ public partial class Map
             case DeckPlan.ConsoleKind.DrillPoint:
                 DrillPointInteract(); // #394: drill the charge (a long channel), or fire it once armed
                 break;
+            case DeckPlan.ConsoleKind.SecretDoor when OnWreck:
+                OpenTheFalsePlate();    // #537: the plate a sounding found — "a tool to get at it"
+                break;
             case DeckPlan.ConsoleKind.SecretDoor:
                 SecretDoorInteract(); // #409: force the hidden lab door — the channel that appends the lab region
+                break;
+            case DeckPlan.ConsoleKind.LabDoor:
+                // #409+ · a door in the mountain: open it, shut it, or — with Vantar's card — key it.
+                WorkTheDoor(NearestLabDoorId());
+                break;
+            case DeckPlan.ConsoleKind.LabDoorBoard:
+                OpenDoorBoard();            // the vent panel's own idiom, for doors
+                break;
+            case DeckPlan.ConsoleKind.LabAlarm:
+                OpenAlarmPanel();           // "something to try to hack"
+                break;
+            case DeckPlan.ConsoleKind.LabKeyCard:
+                TakeVantarsCard();
                 break;
             case DeckPlan.ConsoleKind.LabCache:
                 LabCacheInteract(); // #409: claim Vantar's fat one-time cache

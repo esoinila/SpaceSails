@@ -184,6 +184,10 @@ public partial class Map
                     PushNewsEvent(NewsWire.NewsEventKind.SlugHit, npc.Ship.Callsign,
                         _nearestBody?.Name);
                     ShowPulseMessage($"🎯 DIRECT HIT — {npc.Ship.Callsign}'s sail is gone; she's ADRIFT and boardable");
+
+                    // #528 · the CONSEQUENCE, shown: her hull intact, her windows still lit, her sail in ribbons.
+                    // Cooled, so it cannot punctuate the same fight twice.
+                    RaiseStoryBeat(StoryBeats.Beat.SailHoled, npc.Ship.Callsign);
                     RendererInterop.PlayCue("hit");
                     CompleteHuntQuests(npc.Ship.Id); // holing her settles a bar hunt contract too (M-Q1)
 
@@ -260,6 +264,142 @@ public partial class Map
         {
             AdvanceTutorial(StepAuthorizeShot); // second hunt, step 3: the captain's word
         }
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// WEAPONS TIGHT — the mirror of fire at will, and the order #538's hiding scene cannot work without. A
+    /// deployed bot shoots what it sees and the tube gun never runs dry, so concealment is worthless while the
+    /// captain's own automation is still making decisions.
+    ///
+    /// <para>It never disarms the captain: their trigger still works. A captain deciding to shoot and a machine
+    /// deciding for them are different acts, which is the distinction the whole authority idiom rests on.</para>
+    /// </summary>
+    private bool _weaponsTight;
+
+    /// <summary>Whether the captain's remote is open. Owner: <i>"Maybe small button to open the sentry settings
+    /// pop-up 😎"</i>, and then the better name for it — <i>"Captain's remote"</i>.</summary>
+    private bool _showCaptainsRemote;
+
+    /// <summary>The captain's standing order for the boat. Owner: <i>"Shuttle should also power down to make it
+    /// less of an anomaly."</i> A lit shuttle clamped to a dead hull is the anomaly an inspection team notices long
+    /// before it notices a man.</summary>
+    private bool _boatOrderedCold;
+
+    /// <summary>
+    /// Where she actually is between cold (0) and flying (1) — a dial, not a countdown, so that reversing the
+    /// order keeps the progress already made. Owner: <i>"A timer on the map about the cool down and warm up"</i>,
+    /// which only makes sense if both directions take real time.
+    /// </summary>
+    private double _boatWarmth = 1.0;
+
+    private SilentRunning.BoatState BoatState => SilentRunning.StateOf(_boatWarmth, _boatOrderedCold);
+
+    private double BoatSecondsLeft => SilentRunning.SecondsLeft(_boatWarmth, _boatOrderedCold);
+
+    /// <summary>Whether her clocks are worth a line on the map — i.e. anything other than a warm boat, which is
+    /// the boring default and would only clutter the strip.</summary>
+    private bool BoatClockWorthShowing => BoatState != SilentRunning.BoatState.Warm;
+
+    private void OpenCaptainsRemote()
+    {
+        _showCaptainsRemote = true;
+        RendererInterop.PlayCue("board");
+    }
+
+    private void CloseCaptainsRemote() => _showCaptainsRemote = false;
+
+    /// <summary>
+    /// Reverse the standing order for the boat, from the remote, wherever the captain is standing. Owner:
+    /// <i>"Shuttle warm up should work from remote"</i> — so this is the ONE place the boat is commanded, and the
+    /// lock merely reports what it finds.
+    /// </summary>
+    private void ToggleBoatPower()
+    {
+        _boatOrderedCold = !_boatOrderedCold;
+
+        ShowPulseMessage(_boatOrderedCold ? SilentRunning.BoatDarkLine : SilentRunning.BoatWakingLine);
+        LogAutopilotEvent(_boatOrderedCold
+            ? $"🛸 Rigging the boat down — {SilentRunning.SecondsLeft(_boatWarmth, true):0} s to quiet."
+            : $"🛸 Bringing the boat up — {SilentRunning.SecondsLeft(_boatWarmth, false):0} s to her hatch.");
+
+        // Said once, the first time a captain orders her up while something else is already counting: this is the
+        // scene the owner sketched — "self destruct tics down but shuttle still warms up".
+        if (!_boatOrderedCold && !_twoClocksSaid && SomethingElseIsCountingDown)
+        {
+            _twoClocksSaid = true;
+            LogAutopilotEvent(SilentRunning.TwoClocksLine);
+        }
+
+        RendererInterop.PlayCue("board");
+        StateHasChanged();
+    }
+
+    private bool _twoClocksSaid;
+
+    /// <summary>Whether a hull clock is already running against her warm-up — the overload on either keel.</summary>
+    private bool SomethingElseIsCountingDown => _scuttleSecondsLeft is not null || _shipChargesSeconds is not null;
+
+    /// <summary>
+    /// Run the boat's dial in whichever direction her standing order points. Ticked wherever the captain is,
+    /// because a captain who ordered her up and then went back for one more crate should find her open.
+    /// </summary>
+    private void AdvanceBoatSpinUp(double dtSeconds)
+    {
+        SilentRunning.BoatState was = BoatState;
+        _boatWarmth = SilentRunning.AdvanceWarmth(_boatWarmth, _boatOrderedCold, dtSeconds);
+        SilentRunning.BoatState now = BoatState;
+
+        if (now == was)
+        {
+            return;
+        }
+
+        // Arriving at either end is worth saying out loud: one of them opens a hatch, the other closes it.
+        ShowPulseMessage(SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold));
+        if (now == SilentRunning.BoatState.Warm)
+        {
+            RendererInterop.PlayCue("door");
+        }
+    }
+
+    /// <summary>Whether the boat will take the captain anywhere right now — asked by the lock before it offers to
+    /// leave. This is where the warm-up is CHARGED, which is the owner's own framing.</summary>
+    private bool BoatReadyToFly()
+    {
+        if (SilentRunning.ReadyToFly(_boatWarmth, _boatOrderedCold))
+        {
+            return true;
+        }
+
+        if (_boatOrderedCold)
+        {
+            // Asked for a ride while she is going or gone dark: waking her IS the answer, and it starts now.
+            ToggleBoatPower();
+            return false;
+        }
+
+        ShowPulseMessage(SilentRunning.NotARideYetLine(BoatSecondsLeft));
+        RendererInterop.PlayCue("block");
+        return false;
+    }
+
+    private void ToggleWeaponsTight()
+    {
+        _weaponsTight = !_weaponsTight;
+
+        ShowPulseMessage(_weaponsTight ? SentryBot.WeaponsTightLine : SentryBot.WeaponsFreeLine);
+        LogAutopilotEvent(_weaponsTight
+            ? "🤖 WEAPONS TIGHT ordered — bots and the tube gun stand down."
+            : "🤖 Weapons free — the bots have their arcs back.");
+
+        // Said once, on the way in: the order that hides you also stops defending you.
+        if (_weaponsTight)
+        {
+            LogAutopilotEvent(SentryBot.TightIsAlsoUndefendedLine);
+        }
+
+        RendererInterop.PlayCue("board");
         StateHasChanged();
     }
 
@@ -713,6 +853,11 @@ public partial class Map
             _fireAtSimTime = SimTime + FireLockLeadSeconds;
             _shotAuthorized = false; // one shot per captain's word (fire-at-will stands)
             ShowPulseMessage("BARREL LOCKED — round away in 60 s (scrub to abort)");
+
+            // #528 · THE FIRST ROUND THIS CAPTAIN EVER FIRED. A smuggler becomes a pirate exactly once, and it
+            // used to be a status line that faded in a second and a half. A PLATE rather than a card, because
+            // this happens mid-fight and must not take the keyboard.
+            RaiseStoryBeat(StoryBeats.Beat.FirstShotFired);
         }
         else if (_fireBlockedBy is not null)
         {
@@ -1812,7 +1957,11 @@ public partial class Map
     /// below only knows the ground's two answers (the Old Ones took you, or you joined them), so anything
     /// that kills a captain for another reason — running the tank dry — would have been narrated as a
     /// Reever's hand. That is the same sim-says-one-thing-sentence-says-another failure #545 fixed for the
-    /// black-ops sweep, and the fix is the same: the caller passes what it knows.</param>
+    /// black-ops sweep, and the fix is the same: the caller passes what it knows.
+    ///
+    /// <para>#633 · Both branches invented this parameter independently, for the same reason, one day apart
+    /// — <c>known</c> here and <c>forcedCause</c> on <c>main</c> (#538's sweep team). One name survives, and
+    /// it is this one: nothing is being FORCED, the caller simply is not guessing.</para></param>
     private void TriggerSurfaceOverdrawDeath(
         SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null)
     {
@@ -1826,6 +1975,11 @@ public partial class Map
 
         string body = dying.Stop.Body.Name;
         ulong seed = DiceRule.Seed("overdraw", (long)SimTime);
+        // #538 · WHO ACTUALLY KILLED YOU. SurfaceEnd only ever answers "the pack, or the rare Joined at a
+        // sliver" — which was fine while the pack was the only thing aboard that could end a captain. The
+        // first playtest of the sweep team ended with three men with rifles shooting a captain in a corridor
+        // and a card that said "the Old Ones took you… ran you down on her regolith short of the tube". A
+        // caller that KNOWS the cause now says so, and the roll is only consulted when nobody does.
         DeathCause cause = known ?? DeathNarration.SurfaceEnd(_nerve, seed); // Reevers, or the rare Joined at a sliver
 
         // #574 · A death away from her deck can never be a COLLECTOR — a collector is a person who came for
@@ -1878,6 +2032,9 @@ public partial class Map
             // captain who turned both keys themselves ninety seconds ago.
             DeathCause.Scuttled =>
                 $"☢ The overload ran out with the captain still aboard the {body}. She goes all at once and mostly inward. The insurance will need a new name.",
+            // Nothing about this one is about nerve, so it must not narrate as if it were.
+            DeathCause.Inspected =>
+                $"🕶 Found aboard {body}, told to stand still, and not standing still. The sweep goes on down the corridor. The insurance will need a new name.",
             _ =>
                 $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.",
         };

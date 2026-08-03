@@ -205,6 +205,29 @@ public sealed class DeckView
     // toward you matters, and two hostiles that read identically on the map is one hostile with two names.
     // Red is the thing that wants to eat you; amber is the thing that wants your money and has paperwork.
     private static readonly RgbaColor CollectorColor = new(226, 170, 60);
+
+    /// <summary>#538 · A professional reads COLD — instrument white-blue, not the pack's red. Two hostile things
+    /// on one deck have to be told apart at a glance, and the colour is the only thing doing that job while a
+    /// captain is deciding which way to run.</summary>
+    private static readonly RgbaColor SweeperColor = new(150, 205, 235);
+
+    /// <summary>
+    /// #537 · The ship's own structure — closed-cell metal foam and everything packed into it.
+    ///
+    /// <para><b>BLACK, and that is the point.</b> Owner: <i>"the hatched line should have the line and black bg
+    /// under it … I don't want to draw attention to it :-D … so we can hide things more in it."</i> The first
+    /// version filled the runs a shade lighter than the deck, and that inverted the original bug rather than
+    /// fixing it: instead of a black gap you could see INTO, there was a bright bar announcing exactly where
+    /// every hiding place on the ship was. A structure that draws the eye is as bad as one you can see through.
+    /// So it is the deck's own black with only the hatch over it — present, structural, and utterly unremarkable
+    /// until somebody knocks on it.</para>
+    /// </summary>
+    private static readonly RgbaColor FoamFill = new(8, 11, 15, 255);
+
+    /// <summary>…and the section hatch over it, barely there. Any brighter and the wall becomes a texture a
+    /// player studies, which is the opposite of what it is for — the owner's whole note about this was that it
+    /// must not draw attention, because things are meant to hide in it.</summary>
+    private static readonly RgbaColor FoamHatch = new(58, 66, 76, 105);
     private static readonly RgbaColor HuskColor = new(120, 70, 60, 150); // #314: a downed Old One's husk
     private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
@@ -379,6 +402,64 @@ public sealed class DeckView
                     DrawSeg((vx0, vhy), (vx0 + vw, vhy), VoidHatch, 1f);
                 }
                 _renderer.DrawText(vx0 + vw / 2f, vy0 + vh / 2f, "· ? ·", VoidText, "10px monospace", TextAlign.Center);
+            }
+        }
+
+        // ── #537 · STRUCTURE, FILLED. Owner, reading the deck after the wall padding shipped: "we should cover
+        //    those narrow spaces … all of them … if we can see into them from the hall then they don't hide
+        //    anything", then how it should look — "some kind of fill there would make it look like the space is
+        //    filled with stuff" — and then what it IS: "I like to think it is structurally optimal metal foam
+        //    and technology of the ship :-D  metal foam :-D"
+        //
+        //    He is right about the bug and right about the material. A run drawn as two lines round a black gap
+        //    reads as a SPACE, and a hiding place drawn as a space is not hidden — a captain could read every
+        //    void off the map without knocking on anything, which made the clue redundant and the sounder a
+        //    formality. And metal foam is the honest answer to why the walls are thick at all: closed-cell
+        //    metallic foam is stiff for its mass, which is exactly what you fill a whipple layer with. The
+        //    thickness is engineering, not an excuse for a hiding place.
+        //
+        //    So it is drawn as CELLS rather than as hatching: a stochastic scatter that reads as foam packed
+        //    with kit, and — the part that matters — reads identically along its whole length, so the one
+        //    stretch of it that is hollow looks like all the rest until somebody sounds it.
+        foreach (DeckPlan.Structure s in plan.Structures)
+        {
+            (float fx0, float fy0) = P(Math.Min(s.X0, s.X1), Math.Max(s.Y0, s.Y1));
+            (float fx1, float fy1) = P(Math.Max(s.X0, s.X1), Math.Min(s.Y0, s.Y1));
+            float fw = fx1 - fx0, fh = fy1 - fy0;
+            if (fw <= 0 || fh <= 0)
+            {
+                continue;
+            }
+
+            FillRect(fx0, fy0, fw, fh, FoamFill);
+
+            // SECTION HATCH — the drawing convention for CUT MATERIAL, which is exactly what this is. Owner:
+            // "could we get like a cross-section dashed line instead of the current fill?" He is right and it is
+            // the better answer for two reasons. A deck plan IS a section drawing, so 45° hatching is the mark an
+            // engineer would already read as "you are looking at the inside of a wall" — no legend needed. And it
+            // is uniform: a stochastic scatter has clumps and sparse patches, and a player hunting for hiding
+            // places will read a sparse patch as a lead. Hatching has nothing to find in it, which is the whole
+            // job — the one stretch that is hollow must look like every other stretch until somebody knocks.
+            float step = 0.85f * scale;
+            if (step < 3f)
+            {
+                continue;   // finer than this is a smear at this zoom, not a hatch
+            }
+
+            float dash = step * 0.55f, gap = step * 0.35f;
+
+            // 45° in SCREEN space: y = x − c. Sweep c so the family covers the whole rectangle.
+            for (float c = fx0 - fh; c <= fx1; c += step)
+            {
+                // Where that diagonal enters and leaves this rectangle.
+                float tFrom = Math.Max(fx0, c + fy0);
+                float tTo = Math.Min(fx1, c + fy1);
+
+                for (float td = tFrom; td < tTo; td += dash + gap)
+                {
+                    float tEnd = Math.Min(td + dash, tTo);
+                    DrawSeg((td, td - c), (tEnd, tEnd - c), FoamHatch, 1f);
+                }
             }
         }
 
@@ -711,7 +792,18 @@ public sealed class DeckView
             // #295: the Reevers read hostile — a red mark, not the crew's grey.
             bool reever = droid.Name == "Reever";
             bool collector = droid.Name == "Collector";   // #583: a repo crew on foot, amber not red
-            RgbaColor mark = reever ? ReeverColor : collector ? CollectorColor : DroidColor;
+            // #538: the sweep team, by callsign. They collide and are seen on the captain's own radius, so
+            // they are drawn on it too — the #473 lesson about daylight showing between a body and its
+            // picture.
+            //
+            // #633 · THREE KINDS OF FIGURE ON ONE DECK, and each branch only knew two. The pack is red, the
+            // repo crew amber, a professional cold blue: what is walking toward you matters, and two hostiles
+            // that read identically on the map are one hostile with two names.
+            bool sweeper = IsSweeper(droid.Name);
+            RgbaColor mark = reever ? ReeverColor
+                : collector ? CollectorColor
+                : sweeper ? SweeperColor
+                : DroidColor;
             // #473 · AN OLD ONE'S PICTURE IS ITS BODY. The captain is drawn at exactly DeckPlan.AvatarRadius
             // (below), but the Old Ones — who collide, catch, block and get shoved apart on that SAME radius —
             // were drawn a tenth of a deck unit smaller. Every law that reads their body therefore fired with
@@ -721,18 +813,51 @@ public sealed class DeckView
             // be used in every single one" — the drawing is one of them. Crew stay at 0.5: nothing collides
             // with a barkeep, so their mark is free to be a mark.
             // #583: a collector has a body that catches on the same radius as everyone else's, so it is
-            // drawn at that radius for the same reason an Old One is — the picture IS the law.
-            float bodyRadius = reever || collector ? (float)DeckPlan.AvatarRadius : 0.5f;
+            // drawn at that radius for the same reason an Old One is — the picture IS the law. Same for a
+            // sweeper (#538), and for the same reason.
+            float bodyRadius = reever || collector || sweeper ? (float)DeckPlan.AvatarRadius : 0.5f;
             _renderer.DrawCircle(dx, dy, bodyRadius * scale, mark, mark);
             // Heads up as one (hull-shudder pause), or the crew catch each other's eye (unexplained signal),
             // else the droid's own facing. The shudder pause wins if both somehow overlap.
-            double facing = headsUp && !reever && !collector ? Math.PI / 2
+            double facing = headsUp && !reever && !collector && !sweeper ? Math.PI / 2
                 : glance?[di] ?? droid.FacingRad;
             float fx = dx + (float)Math.Cos(facing) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(facing) * scale * 0.8f;
             DrawSeg((dx, dy), (fx, fy), mark, 1.5f);
+
+            // #538 · THE LAMP, DRAWN AT EXACTLY THE ANGLE THE RULE CHECKS. InspectionTeam.LampConeHalfAngleDegrees
+            // and LampRange are read straight from Core here rather than eyeballed, because a cone drawn wider than
+            // it is tested is a lie the player learns the expensive way — and this cone IS the counter-play, so it
+            // has to be trustworthy enough to stand three metres to the side of.
+            if (sweeper)
+            {
+                double half = SpaceSails.Core.InspectionTeam.LampConeHalfAngleDegrees * Math.PI / 180.0;
+                double range = SpaceSails.Core.InspectionTeam.LampRange;
+                RgbaColor lamp = SweeperColor with { A = 44 };
+                for (int e = -1; e <= 1; e += 2)
+                {
+                    double edge = facing + (e * half);
+                    // AND STOPPED AT THE FIRST BULKHEAD, because the RULE stops there. First pass drew both
+                    // edges to full reach through steel — cone tested right, cone drawn wrong, which is the
+                    // same lie as drawing it too wide and just as expensive to learn from: a captain would
+                    // have read light spilling into a compartment nobody could actually see into.
+                    double lit = plan.CastRay(droid.X, droid.Y, Math.Cos(edge), Math.Sin(edge),
+                                              out double hit, out _, out _, out _)
+                        ? Math.Min(range, hit)
+                        : range;
+                    float reach = (float)lit * scale;
+                    DrawSeg((dx, dy),
+                            (dx + (float)Math.Cos(edge) * reach, dy - (float)Math.Sin(edge) * reach),
+                            lamp, 1f);
+                }
+            }
+
             _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name,
-                reever ? ReeverColor : collector ? CollectorColor : TextDim, "8px monospace", TextAlign.Center);
+                reever ? ReeverColor
+                    : collector ? CollectorColor
+                    : sweeper ? SweeperColor
+                    : TextDim,
+                "8px monospace", TextAlign.Center);
         }
 
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
@@ -1076,7 +1201,12 @@ public sealed class DeckView
 
     // A WORKING crew member (the people who work the deck): the barkeep, the customs officer, the ship's own
     // droids — anyone who is neither a Reever nor a drinking PATRON (a seated bar regular, or the Magpie).
-    private static bool IsCrew(string name) => name is not ("Reever" or "Collector") && !IsPatron(name);
+    private static bool IsCrew(string name) =>
+        name is not ("Reever" or "Collector") && !IsSweeper(name) && !IsPatron(name);
+
+    /// <summary>#538 · A sweeper, by callsign. Never crew: nobody on that team is going to catch a barkeep's eye
+    /// during a hull shudder, and giving them the crew's grey would hide the second hostile thing on the deck.</summary>
+    private static bool IsSweeper(string name) => name.StartsWith("SWEEP-", StringComparison.Ordinal);
 
     // The drinking patrons — the regulars' short names (HavenInterior.ShortNameFor) + the roaming Magpie +
     // the station Oracle (a ranting-drunk bar fixture, #425, not working staff) + the empty-chair fallback.

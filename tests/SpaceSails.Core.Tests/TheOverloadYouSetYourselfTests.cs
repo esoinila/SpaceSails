@@ -24,15 +24,43 @@ using SpaceSails.Core;
 /// </summary>
 public class TheOverloadYouSetYourselfTests
 {
+    /// <summary>#633 · A SCUTTLING NEEDS A REACTOR, AND THERE ARE NOW TWO OF THEM.
+    ///
+    /// <para>This test used to be called <c>ScuttlingIsOnlyEverAboardSomebodyElsesShip</c> and asserted
+    /// <c>OwnShip</c> was illegal, on the stated grounds that <i>"your own ship has no such switch yet — that
+    /// is #525's second half, with the CASTAWAY outcome still unbuilt."</i> While this branch was writing
+    /// that sentence, <c>main</c> was building the switch: <c>ShipScuttle</c>, the charges in the machinery
+    /// space, and the crew's second key off <c>CrewTemp.StandingOf</c>. Reuniting the branches makes the old
+    /// assertion false, so it is restated rather than deleted — the law it protects is not "one place", it is
+    /// <b>a place with a reactor in it</b>, which is why a moon and a suit are still nos.</para></summary>
     [Fact]
-    public void ScuttlingIsOnlyEverAboardSomebodyElsesShip()
+    public void ScuttlingOnlyEverHappensWhereThereIsAReactorToOverload()
     {
-        // The panel is bolted to a derelict's reactor. Your own ship has no such switch yet — that is #525's
-        // second half, with the CASTAWAY outcome still unbuilt — and a moon has no reactor at all.
+        // Somebody else's, aft on a wreck (#525) — or her own, in the machinery space (main's half of #525).
         Assert.True(DeathNarration.CanHappen(DeathCause.Scuttled, DeathPlace.Derelict));
-        Assert.False(DeathNarration.CanHappen(DeathCause.Scuttled, DeathPlace.OwnShip));
+        Assert.True(DeathNarration.CanHappen(DeathCause.Scuttled, DeathPlace.OwnShip));
+
+        // A landing party carries a suit and a tank, and a moon has no reactor at all.
         Assert.False(DeathNarration.CanHappen(DeathCause.Scuttled, DeathPlace.LandingParty));
         Assert.False(DeathNarration.CanHappen(DeathCause.Scuttled, DeathPlace.Underground));
+    }
+
+    /// <summary>#633 · …and the two places must not borrow each other's words or each other's picture. The
+    /// wreck goes inward and quietly, with a log that will not mention it; her own deck is the fireball the
+    /// player just watched. One cause, two cards — which is the whole reason <c>DeathPlace</c> exists.</summary>
+    [Fact]
+    public void HerOwnScuttlingIsNotNarratedAsSomebodyElsesWreck()
+    {
+        Assert.NotEqual(
+            DeathNarration.ArtFile(DeathCause.Scuttled, DeathPlace.Derelict),
+            DeathNarration.ArtFile(DeathCause.Scuttled, DeathPlace.OwnShip));
+
+        for (ulong seed = 0; seed < 12; seed++)
+        {
+            Assert.NotEqual(
+                DeathNarration.Line(DeathCause.Scuttled, DeathPlace.Derelict, seed, "Long Shrift"),
+                DeathNarration.Line(DeathCause.Scuttled, DeathPlace.OwnShip, seed, "Long Shrift"));
+        }
     }
 
     [Fact]

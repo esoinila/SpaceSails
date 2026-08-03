@@ -80,7 +80,7 @@ public sealed partial class Map
         {
             "cause" => $"🔎 {Derelict.Evidence(w.Cause)}",
             "log" => Derelict.LogFinding(w),
-            "manifest" => Derelict.ManifestFinding(w),
+            "manifest" => ManifestFindingWithTheClue(w),
             _ => "🔎 Nothing here but cold deck plate.",
         });
 
@@ -139,6 +139,39 @@ public sealed partial class Map
     // while her evidence, on the same screen, said the log runs on for months in one immaculate hand. The
     // words the log should have spoken were already written, and Core-tested, in HullVenting.VentedShipLogLine
     // — read by nothing at all. Both switches now live in Core beside the evidence they must agree with.
+    //
+    // #633 · AND THE SWITCHES CAME BACK ON `main`, WITH ONE THING IN THEM THAT IS NOT PROSE. While this
+    // branch was moving the words into Core, `main` was adding #537's search clue to the client's copy: a
+    // hull that hides a void books one compartment longer than her deck plan draws it, and reading the
+    // manifest properly is what hands you that discrepancy. The prose stays in Core, where the tests can see
+    // it agree with the evidence; the CLUE stays here, because it is about THIS boarding's hidden void and
+    // nothing in Core knows that. One fact, one owner, each.
+
+    /// <summary>
+    /// #537 · THE MANIFEST IS WHERE THE LIE IS. Core writes the document; this adds what reading it properly
+    /// tells you about the hull you are standing in. On a clean hull the frame numbers match down the page
+    /// and it is an honest dead end, which it has to be: a document that only speaks up when there is
+    /// something to find is a pointer, not a clue.
+    /// </summary>
+    private string ManifestFindingWithTheClue(in Derelict.Wreck w)
+    {
+        string cargo = Derelict.ManifestFinding(w);
+        _manifestRead = true;
+
+        if (_hullVoid is not { } hidden)
+        {
+            return cargo + " Her shielding is booked section by section, and every section holds the same.";
+        }
+
+        HullSounding.Discrepancy clue = HullSounding.AsDiscrepancy(hidden);
+
+        LogAutopilotEvent(HullSounding.ClueLine(clue));
+        LogAutopilotEvent(HullSounding.BlindSearchLine(
+            SoundingGear,
+            HullSounding.HullArea(WreckLayout.AftX, WreckLayout.BowX, WreckLayout.TopY, WreckLayout.BottomY)));
+
+        return cargo + " " + HullSounding.ClueLine(clue);
+    }
 
     /// <summary>The causes the captain may put their name to: the ones their evidence supports. Reading
     /// only the damage lets you name the obvious answer — and a wreck that LIES will hand you the wrong
@@ -194,7 +227,16 @@ public sealed partial class Map
             return;
         }
 
-        Derelict.SalvageOutcome outcome = Derelict.Resolve(w, choice, _wreckReported);
+        // #524 · SHE IS WORTH WHAT IS LEFT OF HER. A fire eats an equal share per compartment while the
+        // captain decides what to do about it, so the payout resolves against the burnt-down hull rather than
+        // the one the manifest remembers. Derelict.Resolve stays pure; the wreck is a record struct, so what
+        // it is handed is simply a smaller ship.
+        Derelict.Wreck burnt = w with { AssessedValueCr = SalvageValueNow(w) };
+        Derelict.SalvageOutcome outcome = Derelict.Resolve(burnt, choice, _wreckReported);
+        if (burnt.AssessedValueCr < w.AssessedValueCr)
+        {
+            LogAutopilotEvent(HullFire.CostLine(w.AssessedValueCr, burnt.AssessedValueCr));
+        }
 
         _credits += outcome.CreditsNow;
         if (outcome.HeatGained > 0)
@@ -331,7 +373,18 @@ public sealed partial class Map
     /// </summary>
     private void MakeNoiseAboard(double x, double y, double earshot)
     {
-        if (!OnWreck || _reevers.Count == 0)
+        if (!OnWreck)
+        {
+            return;
+        }
+
+        // #538 · COLLEAGUES HEAR ABOUT IT. The sweep team is alerted FIRST and separately, because the two ears
+        // are different instruments: the pack's is capped at the nearest two and does not care who else is aboard,
+        // while three professionals share a channel — if one hears it, they all hear about it. And this must run
+        // even when the pack is empty, which the old early return quietly prevented.
+        AlertSweepersToNoise(x, y);
+
+        if (_reevers.Count == 0)
         {
             return;
         }

@@ -270,7 +270,7 @@ public sealed partial class Map
         // dialog — it fires AFTER the handle has gone over, which is the one place a picture can be as quiet
         // as this feature needs and still exist. The four visions each got a painting on the way in; the
         // moment the noise stops had nothing. Core owns the words, and they name nobody, as always.
-        ShowStoryPlate(
+        ShowRevealCard(
             ArchiveNode.PurgedPlate.Title,
             ArchiveNode.PurgedPlate.ArtFile,
             ArchiveNode.PurgedPlate.Caption);

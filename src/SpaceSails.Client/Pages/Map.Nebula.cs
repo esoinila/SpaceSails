@@ -65,7 +65,7 @@ public partial class Map
         // stacking a card on a card is not service, it is noise. Core owns the words (NebulaLore.PlateFor).
         if (NebulaLore.PlateFor(fragmentId) is { } plate)
         {
-            ShowStoryPlate(plate.Title, plate.ArtFile, plate.Caption);
+            ShowRevealCard(plate.Title, plate.ArtFile, plate.Caption);
         }
 
         MaybeFireConvergence(); // the marquee edge — checked on every arc assemble

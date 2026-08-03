@@ -245,7 +245,9 @@ public partial class Map
     }
 
     // M7 additions — Electric Universe layer (only live when _plasma is not null)
-    private const double ArcChargeThreshold = 0.9;      // hull arcs (halo + system-wide visibility)
+    // #523: the threshold lives in Core now (HullCharge.ArcThreshold) so the sim and the charge board cannot
+    // disagree about when she is arcing. This alias keeps the call sites readable.
+    private const double ArcChargeThreshold = HullCharge.ArcThreshold;
     private bool _wasArcing;                             // rising-edge detector for the thunder cue
     private const double VentCooldownSeconds = 1.0;     // separate budget from the thrust pulse cooldown
     private double _lastVentSimTime = -VentCooldownSeconds; // so the very first vent isn't rejected
@@ -716,8 +718,15 @@ public partial class Map
                 // real descent — it skips only the walk to the hatch and the boarding panel, so a surface
                 // playtest is one URL instead of two minutes of walking. Owner, 2026-07-27: "It is not ready
                 // until it is playtested in the browser."
+                // …and ?land=<bodyId> lands on a NAMED body instead of whatever happens to be nearest.
+                // Owner: "We should test those sites with direct opens to them via URL parameters to find out
+                // the usual issues." He is right that this was the gap: ?land=1 takes the first landable thing
+                // in reach, so aiming at a particular ground meant re-rolling berths until it came up — which
+                // is exactly the friction that stops scenes being booted, and booting scenes is how the bugs
+                // in this repo actually get found.
                 string candidate = Uri.UnescapeDataString(pair["land=".Length..]).ToLowerInvariant();
-                _landCheat = candidate is "1" or "true" or "yes";
+                _landCheat = candidate.Length > 0;
+                _landBodyCheat = candidate is "1" or "true" or "yes" ? null : candidate;
             }
             else if (pair.StartsWith("kaamos=", StringComparison.OrdinalIgnoreCase))
             {
@@ -820,6 +829,17 @@ public partial class Map
                 if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
                 {
                     _reeverAmbushCheat = Math.Clamp(n, 0, 8);
+                }
+            }
+            else if (pair.StartsWith("sweep=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #538 dev cheat: /map?sweep=N puts N professionals aboard whatever hull you board — the black-ops
+                // inspection team. Mirrors ?reevers=N, because the scene it makes is the same shape of thing to
+                // want to watch: "we take our guns and hide to let them pass."
+                string candidate = Uri.UnescapeDataString(pair["sweep=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int sweepers))
+                {
+                    _sweepTeamCheat = Math.Clamp(sweepers, 0, InspectionTeam.TeamSize);
                 }
             }
             else if (pair.StartsWith("nebula=", StringComparison.OrdinalIgnoreCase))
@@ -1866,10 +1886,30 @@ public partial class Map
             }
         }
 
+        // #523 · HER CHARGE SYSTEMS BELONG TO THE SHIP, NOT TO A VIEW. The contactor holds the hull down and
+        // spends expellant doing it, and the charge soaking into the boards behind the panel keeps climbing,
+        // whether the captain is walking her corridor or sitting at the helm — the stealth tax is paid in
+        // FLIGHT, which is exactly where it was invisible before. (Ticking it only in deck mode was the first
+        // cut of this, and it would have made the whole system a curiosity you could only see while parked.)
+        AdvanceChargeSystems(dtRealSeconds);
+
+        // #538 · a boat that was told to wake keeps waking whether or not the captain is watching her do it.
+        AdvanceBoatSpinUp(dtRealSeconds);
+        AdvanceSweepTeam(dtRealSeconds);   // #538: somebody else's team, working the hull
+        AdvanceSounding(dtRealSeconds);     // #537: the clock on a knock
+        AdvanceLabAlarm(dtRealSeconds);     // #409+: the mountain counting
+
+        // #528 · retire a plate whose seconds are up, and let a held card speak once the scene is calm. Ship
+        // level for the same reason: a beat can be raised in flight (a shot, a sail, a hail) and must be
+        // served there.
+        AdvanceStoryCards();
+
         if (_deckMode)
         {
             MoveAvatar(dtRealSeconds);
             StepSurface(dtRealSeconds); // #295/#313: dig channel, the Old Ones' converging chase, linger trickle
+            AdvanceShipPumps(dtRealSeconds); // her own roughing pumps — the thrifty road, on her own deck
+            AdvanceShipCharges(dtRealSeconds); // and her own overload, if the keys have turned
             DrawWalkFrame();
 
             if (_showScope && _scopeView is not null)
@@ -2224,7 +2264,10 @@ public partial class Map
         // #528: the story plate is the most modal thing there is — it opens without being asked for, over
         // whatever the captain was already doing (a bar menu, a counter, a dig). Esc takes it FIRST, or the
         // key would peel the card underneath it and leave the picture sitting there.
-        if (_storyPlate is not null) { CloseStoryPlate(); return true; }
+        if (_revealCard is not null) { CloseRevealCard(); return true; }
+        // #633 · The StoryBeats CARD is modal too, and Esc has to reach it. The PLATE (the edge flash) is
+        // deliberately NOT listed: it steals nothing and retires itself, so there is nothing for Esc to take.
+        if (_storyCard is not null) { CloseStoryCard(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
@@ -2491,7 +2534,17 @@ public partial class Map
         }
 
         _lastVentSimTime = _ship.SimTime;
+        double shed = _ship.Charge * 0.5;
         _ship = _ship with { Charge = _ship.Charge * 0.5 };
+
+        // #528 / Lab 43 · light the plume at the mast, and tell the story once in a while. Both are cooled by
+        // their own rules — the flash by its 600 ms, the card by StoryBeats.CadenceOf — so a captain who dumps
+        // every minute is not narrated at every minute.
+        _lastDischargeMs = _lastTimestampMs ?? 0;
+        if (shed >= HullCharge.ContactorHoldsAt)
+        {
+            RaiseStoryBeat(StoryBeats.Beat.ChargeLetGo);
+        }
         // #369: the vent is automatic here, so each discharge reads a rotating flavor quip
         // (house voice) rather than a bare status line. Deterministic per vent via the counter.
         ShowPulseMessage(StaticCharge.LineFor(_ventLineSeed++));

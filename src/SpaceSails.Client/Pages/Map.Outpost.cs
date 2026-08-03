@@ -274,7 +274,7 @@ public partial class Map
         // no picture of its own — the dossier's art is the dossier's. One canvas for all four covers, on the
         // wrecks' anti-tell law (Derelict.LogArtFile): the objects are the same four in every hut, and
         // EffectsLine already carries the whole of the difference.
-        ShowStoryPlate(
+        ShowRevealCard(
             SurfaceOutpost.EffectsPlate.Title,
             SurfaceOutpost.EffectsPlate.ArtFile,
             SurfaceOutpost.EffectsPlate.Caption);

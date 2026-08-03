@@ -617,6 +617,116 @@ It reads perfectly well as an air-plant failure, and filing it that way pays exa
 
 
 
+### Her walls are thicker than they look
+
+A hull that holds an atmosphere is not made of lines. Outboard of every compartment runs a **shielding band** —
+whipple layers, tankage, cable and plumbing — and every bulkhead with a room on both sides has its own thin
+technical run inside it. Aft of the last bulkhead sits a **machinery space**, because the drive and the plant have
+to live somewhere.
+
+Your own ship is built the same way. That is not decoration: it is where things can be hidden, and a ship where
+only *derelicts* had thick walls would tell you which hulls were worth searching before you searched them.
+
+### Knocking on them
+
+**About one hull in five is hiding a space that is not on her deck plan** — and her plating is honest. Her
+*manifest* is not. A lying ship books one run of her shielding at a third of what every other section holds, and
+the discrepancy is on the cargo manifest for anyone who reads it properly. On an honest ship the frame numbers
+match all the way down the page, which is exactly what an honest ship should look like.
+
+Press **K** to sound the plating where you stand. It costs time — you must not move — and it costs **noise**,
+which on a hull with something aboard is the expensive half. Two ways to do it, switched on the captain's remote:
+
+- **📡 the sounder** — five seconds, reaches four metres, and is heard the length of her
+- **✊ knuckles** — twelve seconds, reaches two, and nobody hears a thing
+
+Sounding her end to end would be twenty-two separate rackets. Reading the manifest first turns that into one or
+two. That is the whole mechanic: *knowing where to knock is worth more than being able to knock.*
+
+Three answers come back. **Solid** is a wall. **Hollow** is a false plate you can take off. And **odd** — the note
+going dead a little too soon, the way it does near an edge — means it is close and not here, which is what makes
+the quiet gear usable at all.
+
+What is behind them is rarely money. A rack of code keys with one slot empty. Ship's papers for three different
+vessels and a photograph of this one wearing another name. A cold locker with somebody in it, in a flight suit
+that is not this ship's.
+
+### Somebody else's team
+
+On one kind of wreck you will not be alone, and the other people aboard will not be the pack.
+
+A **black-ops inspection team** works a route through her while you are inside it — three professionals, sweeping
+compartment by compartment. They are the opposite of the Old Ones in every way that matters. They see a long way
+but **only where the lamp is pointed**. They hear through walls and do not care which way they are facing. And
+they **challenge before they shoot**: three flat seconds of *stand still, hands where I can see them*, which is
+the only reason this is a scene you can play rather than a coin flip.
+
+So the counter-play inverts. You do not out-run a professional. You stand still, three metres off their axis, and
+you make no sound.
+
+**Your own kit will give you away before you do.** A deployed sentry shoots what it sees and does not know the
+difference between a Reever and a professional; the boat's tube gun will fire on the first person through that
+hatch; and a lit shuttle clamped to a dead hull with its transponder answering is an anomaly a sweep team notices
+long before it notices a man.
+
+Hence the **captain's remote** — 📻 on the deck HUD, or **H**. Three switches and one idea:
+
+> Tight guns will not defend you. A cold boat will not fly you, arm you or open up for you.
+> **Everything that makes you hard to find makes you slow to leave.**
+
+Going dark takes twelve seconds. Coming back takes twenty-five, and **her hatch stays shut until she is warm** —
+so you are not waiting to depart, you are waiting to be let in, in the open, at the lock. Change your mind halfway
+and you keep the progress you made; the boat is a dial, not two stopwatches.
+
+And if the pack finds them first, stand still and watch. Two things that both want you dead, spending themselves
+on each other. You were not offered this and you are not required to help either one.
+
+### The labs in the mountains
+
+Some grounds hide a door, and behind it a laboratory cut into rock by somebody who could not do the work
+anywhere legal.
+
+They go in three chambers — **the antechamber, the clean room, the heart** — each narrower than the last, with a
+door between each. Force the outer door and something under the floor starts counting: **seventy-five seconds**,
+and a security detail comes up out of the dark at the far end, unhurried, checking their lamps.
+
+You have that long to reach the **alarm panel** in the clean room and argue with it. The panel shows you the die,
+the target and every modifier you are carrying — because a roll you cannot argue with is a roll you did not take
+part in. What helps is what you did earlier: his card, his own logs in his own handwriting, a sentry's brain on
+the end of a cable. A wrong answer takes twenty-five seconds off the clock, so there are only a few tries in it.
+
+Beat it and the muscle goes back to sleep. That matters: **walking in quietly is a complete answer**, and it is
+the reason the whole silent-running kit is worth carrying.
+
+Lose, and **lockdown** keys every door in the mountain at once — the one ahead of you, the one behind you, and the
+one you came in through. The only thing that opens them is Vantar's card, and the card is in the deepest room. A
+captain who ran at the first alarm never had it, and now needs it.
+
+Beside the panel is the **door board** — the atmosphere board's cousin, one row per chamber. It is what makes a
+lock a tool rather than a walk: you can throw a door two rooms away without going back to it. An Old One cannot
+open a door, but it can lean on one, and forty years has not made them impatient. A shut door buys twenty-five
+seconds. A locked one buys the room.
+
+And the walls have rooms behind them too. A mountain has endless places to put something.
+
+### The line item nobody can explain
+
+Every legitimate filing in the system carries it:
+
+```
+⚖ compliance surcharge (cl. 14(b)) — 2,400 cr
+```
+
+Ask, and nobody will tell you — not because they will not, but because they cannot. The clerk turns the form round
+and points at the field. The harbourmaster has been there nineteen years and it was already printed. Somebody
+checks the schedule, then its index, then the book that indexes the index, and the clause is cited in all of them
+and explained by none.
+
+What everyone knows is what it costs, and that doing it the other way costs nothing at all. That is most of what
+you need to know about why the labs are in mountains.
+
+
+
 ## 19. The electric sky ⚡
 
 - Near the sun the plasma halo charges your hull; the flowing ribbons between planets

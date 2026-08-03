@@ -203,6 +203,128 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
             await _page.Locator(".pilot-banner").First.ClickAsync(new() { Trial = true }); // canary #6
             Record("nav: the pilot banner (who has the ship) is reachable");
 
+            // --- 9. HER ATMOSPHERE BOARD OPENS, AND THE VALVE IS STILL BEHIND THE CAPTAIN'S WORD. -
+            //
+            // Owner, standing at her valves: "those panels won't open there, so implementation is not
+            // there" — and it was worse than that. The board printed a status line and had no valves;
+            // AND both of her atmosphere consoles were unreachable, because NearestConsoleSpot returned
+            // the FIRST console in array order rather than the nearest, so an earlier console always
+            // took the [E]. Neither fault was visible to any test we had: the geometry audit walks
+            // reachability (ConsoleCrowdingTests) but cannot know whether a panel RENDERS, and nothing
+            // else opened it. This is the browser saying it does.
+            //
+            // It is also the gate, proven where a player would meet it: with nothing authorized there is
+            // no way to open a compartment to space, whatever is selected.
+            await _page.Locator("button.desk-tab", new() { HasTextString = "Deck" }).ClickAsync();
+            await _page.Locator(".deck-view-toggle").WaitForAsync(
+                new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+            Record("desk switch: the Deck tab puts the captain on her own deck");
+
+            // The deck's keys are handled on .map-page (tabindex 0), so the walk needs focus there.
+            await _page.Locator(".map-page").FocusAsync();
+
+            // THE WALK AFT, dead-reckoned off the ship's own numbers. Docked, the captain stands at
+            // (2.5, 6) in the airlock corridor (HavenInterior's spawn — NOT the bare ship's bridge spawn,
+            // which is what the first cut of this assumed and why it walked into nothing). Her atmosphere
+            // valves are at ShipLayout.ValveStation (−16, −7), aft in the engine room, and the interact
+            // radius is 3 du. WASD walks at 9 du/s, frame-rate independent.
+            //
+            //   s ~0.7 s : down out of the airlock corridor to the centreline (y ≈ 0)
+            //   a ~2.1 s : aft along the corridor to x ≈ −16, straight through the engine bulkhead's
+            //              centreline door (x −14, a 4 du gap at y −2…2) — hence the trip to y ≈ 0 first
+            //   s ~0.8 s : down to y ≈ −7, arriving within a unit of the board
+            //
+            // Every leg has ~3 du of slack before the console falls out of reach, so this is not a
+            // frame-perfect walk; and nothing else aboard is within reach of the finish (her charge dump,
+            // the nearest thing, is 6 du away — which is the separation the deck audit now holds).
+            await WalkAsync("s", 700);
+            await WalkAsync("a", 2100);
+            await WalkAsync("s", 800);
+            await _page.Keyboard.PressAsync("e");
+
+            ILocator shipBoard = _page.Locator(".vent-board");
+            await shipBoard.WaitForAsync(
+                new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+            Assert.Contains("ATMOSPHERE", await shipBoard.InnerTextAsync(), StringComparison.Ordinal);
+            string boardText = await shipBoard.InnerTextAsync();
+            Assert.Contains("HER OWN HULL", boardText, StringComparison.Ordinal);
+            Assert.Contains("Reserve", boardText, StringComparison.Ordinal);
+            Record("her atmosphere board opens at the bridge repeater");
+            await ProofShotAsync("her-atmosphere-board");
+
+            // THE GATE, at the moment the board comes up: nothing is authorized, so no handle on the
+            // panel can open a compartment to space. A button that existed here would be the whole
+            // design defeated — "proximity is never consent" is the rule this inherits from the
+            // boarding authorization, which exists because the owner once got robbed by accident.
+            Assert.Equal(0, await _page.Locator(".vent-board button", new() { HasTextString = "TO SPACE" })
+                                        .CountAsync());
+            Record("her board offers no way to vent without the captain's word");
+
+            // And she is still a ship at peace when the board is put away.
+            await _page.Locator(".vent-board button", new() { HasTextString = "Step away" }).ClickAsync();
+            await shipBoard.WaitForAsync(
+                new() { State = WaitForSelectorState.Hidden, Timeout = ActionTimeoutMs });
+            Record("her board closes");
+
+            // --- 10. HER SCUTTLING CHARGES, AND THE SECOND KEY. -----------------------------------
+            //
+            // Owner: "that ship also has the scuttling charges... let's have a captains approval mechanic for
+            // that also on our ship" — and the rule that makes it more than a button: the charges take TWO
+            // hands, and the second one is the CREW'S. So the gate proves the panel opens aft and that TURN
+            // BOTH KEYS is refused until both have been given. A self-destruct armable by one press is the one
+            // bug in this game nobody would get to report twice.
+            //
+            // The charges are port-side aft at ShipLayout.ScuttleStation (−17, 7) and the captain is standing
+            // at the valves (−16, −7): a straight walk up the engine room, 14 du at 9 du/s.
+            await _page.Locator(".map-page").FocusAsync();
+            await WalkAsync("w", 1600);
+            await _page.Keyboard.PressAsync("e");
+
+            ILocator charges = _page.Locator(".vent-board");
+            await charges.WaitForAsync(
+                new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+            Assert.Contains("SCUTTLING CHARGES", await charges.InnerTextAsync(), StringComparison.Ordinal);
+            Record("her scuttling-charge panel opens aft");
+            await ProofShotAsync("her-scuttling-charges");
+
+            // BOTH KEYS OR NEITHER: no word given, nobody asked, so the act is unavailable.
+            Assert.True(
+                await _page.Locator(".vent-board button", new() { HasTextString = "TURN BOTH KEYS" })
+                           .IsDisabledAsync(),
+                "her charges could be armed without the captain's word and the crew's second key");
+            Record("her charges refuse to arm on one hand");
+
+            await _page.Locator(".vent-board button", new() { HasTextString = "Step away" }).ClickAsync();
+            await charges.WaitForAsync(
+                new() { State = WaitForSelectorState.Hidden, Timeout = ActionTimeoutMs });
+            Record("her charge panel closes cold");
+
+            // --- 11. THE CHARGE BOARD (#523). ------------------------------------------------------
+            //
+            // Owner: "Now that desk is kind of lame on the ship, so let's add some kind of on automatic there."
+            // The console used to halve a hidden number and tell a joke about a cat; it is a board now. From the
+            // charges at (−17, 7) the charge dump is at (−21, −3): down the engine room, then a step to port.
+            //
+            // NOTE the gate boots `scenario=sol`, which does NOT enable the plasma layer — so this proves the
+            // board's HONEST branch, the one a standard voyage actually shows: it opens, and it explains why the
+            // needles are dead instead of pretending to read something.
+            await _page.Locator(".map-page").FocusAsync();
+            await WalkAsync("s", 1150);
+            await WalkAsync("a", 500);
+            await _page.Keyboard.PressAsync("e");
+
+            ILocator chargeBoard = _page.Locator(".vent-board");
+            await chargeBoard.WaitForAsync(
+                new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+            Assert.Contains("HULL CHARGE", await chargeBoard.InnerTextAsync(), StringComparison.Ordinal);
+            Record("her charge board opens at the dump");
+            await ProofShotAsync("her-charge-board");
+
+            await _page.Locator(".vent-board button", new() { HasTextString = "Step away" }).ClickAsync();
+            await chargeBoard.WaitForAsync(
+                new() { State = WaitForSelectorState.Hidden, Timeout = ActionTimeoutMs });
+            Record("her charge board closes");
+
             // --- The console must be clean: no uncaught JS, no unexplained error logs. ----------
             Assert.True(_pageErrors.Count == 0,
                 "Uncaught JS errors during boot:\n  " + string.Join("\n  ", _pageErrors));
@@ -333,6 +455,37 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
     }
 
     private void Record(string name) => _log.AppendLine($"PASS — {name}");
+
+    /// <summary>
+    /// A PROOF SHOT ON A GREEN RUN. The gate has always saved a screenshot when it FAILS; the owner reviews
+    /// this project from a phone, often at sea, and asked for screenshots to comment on — so the boards it
+    /// proves are also worth photographing when they work. Same artifacts directory CI already uploads, so a
+    /// green check now carries pictures of what green means.
+    /// </summary>
+    private async Task ProofShotAsync(string name)
+    {
+        try
+        {
+            string dir = ArtifactsDir();
+            Directory.CreateDirectory(dir);
+            await _page.ScreenshotAsync(new() { Path = Path.Combine(dir, $"proof-{name}.png") });
+            _log.AppendLine($"SHOT — proof-{name}.png");
+        }
+        catch (Exception ex)
+        {
+            // A missing photograph must never fail a green gate.
+            _log.AppendLine($"SHOT FAILED — {name}: {ex.Message}");
+        }
+    }
+
+    /// <summary>Hold a deck key down for a while, the way a captain walks. The deck reads held keys and
+    /// integrates real time at a fixed speed (9 du/s), so a duration is a distance.</summary>
+    private async Task WalkAsync(string key, int milliseconds)
+    {
+        await _page.Keyboard.DownAsync(key);
+        await Task.Delay(milliseconds);
+        await _page.Keyboard.UpAsync(key);
+    }
 
     private async Task CaptureFailureArtifactsAsync()
     {

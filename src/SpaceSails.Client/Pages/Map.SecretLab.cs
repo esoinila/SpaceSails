@@ -69,7 +69,7 @@ public partial class Map
         // you pick up, and it was a sentence that faded in a second and a half — under a decision (force it,
         // or walk away and pretend you never found it) that is one of the sharpest in the game. Core owns
         // the words; the picture shows the door and nothing about what is behind it.
-        ShowStoryPlate(SecretLab.DoorPlate.Title, SecretLab.DoorPlate.ArtFile, SecretLab.DoorPlate.Caption);
+        ShowRevealCard(SecretLab.DoorPlate.Title, SecretLab.DoorPlate.ArtFile, SecretLab.DoorPlate.Caption);
         return true;
     }
 
@@ -134,12 +134,46 @@ public partial class Map
             {
                 continue; // the fat cache is one-time — drop it once claimed
             }
-            DeckPlan.ConsoleKind kind = rc.Kind == SecretLab.LabConsoleKind.DiscoveryCache
-                ? DeckPlan.ConsoleKind.LabCache
-                : DeckPlan.ConsoleKind.LabConsole;
+            if (rc.Kind == SecretLab.LabConsoleKind.KeyCard && _hasVantarCard)
+            {
+                continue;   // taken; the chair it hung on stays, the card does not
+            }
+
+            DeckPlan.ConsoleKind kind = rc.Kind switch
+            {
+                SecretLab.LabConsoleKind.DiscoveryCache => DeckPlan.ConsoleKind.LabCache,
+                // #409+ · the two panels and the card get their own kinds, because they are three different
+                // verbs and a captain must be able to tell which one they are standing at before pressing E.
+                SecretLab.LabConsoleKind.DoorBoard => DeckPlan.ConsoleKind.LabDoorBoard,
+                SecretLab.LabConsoleKind.AlarmPanel => DeckPlan.ConsoleKind.LabAlarm,
+                SecretLab.LabConsoleKind.KeyCard => DeckPlan.ConsoleKind.LabKeyCard,
+                _ => DeckPlan.ConsoleKind.LabConsole,
+            };
             consoles.Add(new(kind, (float)rc.X, (float)rc.Y, rc.Label));
         }
+
+        // ── THE DOORS. A shut one is a WALL, which is the whole of #465 applied on the ground: opacity and
+        //    solidity are different properties and a door happens to have both, so a closed door is added as a
+        //    wall segment and an open one is not. The console is always there, or a captain could not reopen
+        //    what they shut.
+        foreach (SecretLab.LabDoor d in region.Doors)
+        {
+            LockedDoor.State state = _labDoors.TryGetValue(d.Id, out LockedDoor.State s) ? s : LockedDoor.State.Shut;
+
+            if (!LockedDoor.Passable(state))
+            {
+                walls.Add(new((float)d.X, (float)(d.Y - LabDoorHalf), (float)d.X, (float)(d.Y + LabDoorHalf),
+                              false, false));
+            }
+
+            consoles.Add(new(DeckPlan.ConsoleKind.LabDoor, (float)d.X, (float)(d.Y - LabDoorHalf - 0.9),
+                             $"{LockedDoor.Label(state, _hasVantarCard)} · {d.Deeper}"));
+        }
     }
+
+    /// <summary>Half the height of a lab doorway. The same 1.6 the hidden door's own gap uses, so every opening
+    /// in the mountain is the same size and a captain never has to judge one by eye.</summary>
+    private const double LabDoorHalf = 1.6;
 
     // ── Forcing the hidden door [E]: a channeled progress bar (the #393 door-force idiom), abortable. ──
     private void SecretDoorInteract()
@@ -187,6 +221,12 @@ public partial class Map
             return;
         }
         ex.SecretLabForced = true;
+
+        // #409+ · A DOOR TAKEN OFF ITS FRAME IS WHAT THE HOUSE IS LISTENING FOR. Forcing, not opening — a door
+        // worked properly is a door the system has no opinion about. This is also where the doors are given
+        // their forty-years-ago state (shut, not keyed) and where the muscle stands up.
+        ArmTheLabAlarm(SecretLab.Build(
+            ex.Stop.Body.Id, MoonSurface.ExpeditionField(), placement.DoorX, placement.DoorY).Doors);
 
         var walls = new List<DeckPlan.Wall>();
         var labels = new List<(float X, float Y, string Text)>();
@@ -331,7 +371,7 @@ public partial class Map
             // has resolved and been shown, so it can never be a tell: the captain already knows which way it
             // went before the picture arrives. The salvage branch keeps its selfie and gets no card, because
             // a card on both would be a card on a card.
-            ShowStoryPlate(
+            ShowRevealCard(
                 SecretLab.TheyStandPlate.Title,
                 SecretLab.TheyStandPlate.ArtFile,
                 SecretLab.TheyStandPlate.Caption);
