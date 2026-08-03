@@ -1,4 +1,4 @@
-# Image manifest — PROJEKTI KAAMOS (#411, #528)
+﻿# Image manifest — PROJEKTI KAAMOS (#411, #528)
 
 Three plates for the polar-night arc: the pod that was held, the one who kept the berth, and the berth
 answering. Each entry names the **slot in code**, the **destination file** under
@@ -125,6 +125,37 @@ with their own scene around them, and none is a turning. Over-carding cheapens t
 > Grimy lived-in used-future sci-fi, muted desaturated palette of brown and cold grey, painterly, moody,
 > melancholy, quiet, no text, no lettering, no numbers, no logos, no readable writing, no people.
 
+## 5. `art/kaamos-head-office.jpg` — THE HEAD OFFICE
+
+- **Slot:** `UndergroundComplex.HeadOfficeArrivalArtUrl`, handed out by
+  `UndergroundComplex.FirstDescentCard(bodyId)`. Like the front door's plate it hangs off a **predicate**
+  rather than an arc's fragment pool, so it has its own guard
+  (`RevealPlatesArePaintedTests.TheHeadOfficesEstablishingShotIsPainted`).
+- **Fires when:** the lift reaches the first floor of the head office, once per excursion — the same seam
+  the Hive's own THE SHAFT card uses, choosing between the two by building.
+- **Reach it:** `/map?kaamos=hq&land=1`, walk to the lift head, ride down.
+- **Why it is its own canvas:** the owner's ruling is that a player who has crawled a Hive should recognise
+  the rank difference **without being told it**, and the first descent is the one frame where that can be
+  said in a breath. Showing the Hive's shaft card here would throw the whole thing away at the cheapest
+  possible moment. It is built out of the same four things the Hive's is — a shaft, a directory, a lobby,
+  a floor — with every one answered differently.
+- **The evidence in frame:** lobby lighting fully on; stone facing and a coffered ceiling somebody paid for;
+  a directory board with every row present and illegible; a long empty coat rack; an empty bench; a polished
+  floor with no dust and no footprints. Nobody. The caption names those and stops — it may say the lamps
+  come up ahead of the car, and it may never say who turned them on.
+- **Text rule:** a directory board is made of writing, so every row had to come out as a smudge; the same
+  discipline the berth board in §3 needed.
+
+> **Prompt used:** The doors of a lift opening onto an enormous underground lobby, deep beneath an ice moon.
+> A vast institutional reception hall in poured concrete and pale stone facing, brutalist, expensively built,
+> with a coffered ceiling receding into distance and a long empty reception counter. Warm amber lighting is
+> fully on across the whole space and immaculately maintained. A tall directory board mounted beside the lift
+> surround, its rows of entries worn into completely illegible smudged marks with no readable characters. A
+> row of empty coat hooks and one long empty bench. The floor is polished and spotless with no dust and no
+> footprints. Absolutely nobody present, no people anywhere. Grimy lived-in used-future sci-fi but this room
+> is kept, muted desaturated palette with cold blue-white spill from one side, painterly, moody, enormous
+> sense of scale, quiet, no text, no lettering, no numbers, no logos, no readable writing, no people.
+
 ---
 
 ## Generation recipe
@@ -149,6 +180,7 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 2 | `holders-tell` | `kaamos-berth-holder.jpg` | ✅ | ✅ | ✅ |
 | 3 | `berth-code` | `kaamos-berth-resolves.jpg` | ✅ | ✅ | ✅ |
 | 4 | `BouncePlate` (#635, the front door — not a fragment) | `kaamos-returned-filing.jpg` | ✅ | ✅ | ✅ |
+| 5 | `UndergroundComplex.HeadOfficeArrivalArtUrl` (#411, the first descent — not a fragment) | `kaamos-head-office.jpg` | ✅ | ✅ | ✅ |
 
 The guard is `tests/SpaceSails.Core.Tests/RevealPlatesArePaintedTests.cs`: every plate must be keyed to a
 real fragment and must name a JPG that is **actually on disk**. The `onerror`-hide law is what makes

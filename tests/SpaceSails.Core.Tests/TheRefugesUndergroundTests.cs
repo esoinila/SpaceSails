@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -285,8 +285,8 @@ public sealed class TheRefugesUndergroundTests
             UndergroundComplex.RefugeBreathingLine,
             UndergroundComplex.RefugeTankLabel,
             UndergroundComplex.RefugeGlyph,
-            UndergroundComplex.VacuumCard(-2, 600),
-            UndergroundComplex.VacuumCard(-7, 90),
+            UndergroundComplex.VacuumCard("miranda", -2, 600),
+            UndergroundComplex.VacuumCard("miranda", -7, 90),
         };
         for (int i = 0; i < 12; i++)
         {

@@ -98,6 +98,20 @@ public class RevealPlatesArePaintedTests
     }
 
     [Fact]
+    public void TheHeadOfficesEstablishingShotIsPainted()
+    {
+        // #411 · The first descent at the head office is not the first descent at a branch office, and it
+        // gets its own canvas for exactly that reason. Like the front door's plate it hangs off a predicate
+        // rather than an arc's pool, so the sweep above cannot see it. Proven RED by pointing
+        // HeadOfficeArrivalArtUrl at art/kaamos-head-office-nope.jpg.
+        AssertPainted("The head office's first descent", UndergroundComplex.HeadOfficeArrivalArtUrl);
+
+        // …and the two establishing cards are genuinely different pictures. One shot doing both jobs would
+        // be the rank difference thrown away in the one frame where it is easiest to show.
+        Assert.NotEqual(UndergroundComplex.DescentArtUrl, UndergroundComplex.HeadOfficeArrivalArtUrl);
+    }
+
+    [Fact]
     public void TheConvergenceIsPainted()
     {
         // The biggest reveal in the game. It was a text div while a routine collector shakedown had a

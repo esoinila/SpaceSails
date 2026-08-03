@@ -321,7 +321,8 @@ absolutely no confirmation of what it did.
 | --- | --- | --- |
 | **1** | this document; the front door (#635 option 3) with guards proven RED; the fifth bug-class row in the story-arcs handoff | shipped |
 | **2** | the route: the KAAMOS supply run on the board, the cycler window, the crossing; `ArcNewsBreaks` (#663) on the berth-code edge; `?kaamos=hq` | shipped |
-| **3+** | the facility: `UndergroundComplex.Kind.HeadOffice`, the 24 plates, the livery, the wing distances, the wintering hall, the berth office, the standing order, the 40.0 throw, the art | |
+| **3** | the facility READS different: `UndergroundComplex.Kind.HeadOffice`, 24 listed floors with no band nobody listed, 24 unrepeated plates, the two-word livery, `WING n · 24.6 km`, a lift that asks for nothing, the head office's own door register, the establishing plate, and the ice empty until the hull is on the board | shipped |
+| **4** | the wintering hall (B23), the berth office (B24), the standing order as takeable evidence, and the 40.0 throw | |
 
 ### Cheats (each documented in `../testing-guide.md` Appendix A in its own PR)
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -148,6 +148,16 @@ public sealed class TheLiftPanelTests
                     continue;
                 }
 
+                // #411 · And so is the head office, for the opposite reason. A branch office's card opens
+                // exactly one band; the head office asks for nothing, on any floor, because a hull that is
+                // on the board is expected and the building has never had another kind of visitor. That
+                // half is asserted — with this half beside it, so neither can quietly become the other —
+                // in TheHeadOfficeTests.TheHeadOfficeLiftNeverAsksForACardAndABranchOfficeAlwaysDoes.
+                if (UndergroundComplex.IsHeadOffice(body))
+                {
+                    continue;
+                }
+
                 UndergroundComplex.LiftStop gated = Assert.Single(
                     Panel(body, level), s => UndergroundComplex.BandOf(s.Level) == next && s.Level < 0);
                 Assert.NotNull(gated.Refusal);
@@ -200,7 +210,9 @@ public sealed class TheLiftPanelTests
             {
                 int next = UndergroundComplex.BandOf(level) + 1;
                 if (!UndergroundComplex.SiteHasBand(body, next)
-                    || UndergroundComplex.IsUnlisted(body, UndergroundComplex.BandTop(next)))
+                    || UndergroundComplex.IsUnlisted(body, UndergroundComplex.BandTop(next))
+                    // #411 · the head office has no gate to be the wrong key for — see the test named above.
+                    || UndergroundComplex.IsHeadOffice(body))
                 {
                     continue;
                 }

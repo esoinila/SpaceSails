@@ -763,13 +763,32 @@ patron like any other haul. Then the **cycler window** — a real grid over sim 
 | URL | what you walk |
 | --- | --- |
 | `/map?kaamos=hq` | Alongside the ice moon with the run in hand — open the shuttle bay and go down. |
-| `/map?kaamos=hq&land=1` | …and the shuttle takes it from there, boots on the ice in one URL. |
+| `/map?kaamos=hq&land=1` | …and the shuttle takes it from there, boots on the ice in one URL. Walk to the lift head and ride down: **the head office** is under it (#411). |
+| `/map?kaamos=hq&land=1&floor=23` | Straight to B23, THE WINTERING HALL, without four days of walking. |
 | `/map?kaamos=all&ashore=1` | The other end: the berth-code resolves at the bar seam, the ❄❄ notice fires, 📰 **THE STORY BREAKS** raises the arc-news card, and a housekeeping line lands on the wire. |
 
 Things to check: right-clicking Enceladus with no berth-code shows **no** cycler row at all (the fiction may
 not arrive before the arc does); with the code but no run it is visible-but-disabled and says why; with the
 run but a shut window it quotes the wait in days, and that quoted wait is the real one. Parking in the ice
 moon's orbit settles the run through the ordinary moon-haven cargo path — no second completion code exists.
+
+### The head office under the ice (#411, the owner's 2026-08-03 ruling)
+
+`/map?kaamos=hq&land=1` and then down the lift. What you are checking is the **rank difference**, which
+is said entirely in the branch-office vocabulary a Hive already taught you:
+
+| the grammar | a Hive (a branch office) | the head office |
+| --- | --- | --- |
+| depth on the panel | 3–20 floors, and one site in four hides a band from its own staff | **24, and it lists every one** |
+| the lift | a card opens exactly one shaft band; the button below reads `↓ THE OTHER SHAFT — SEALED` | **the car answers**, on every floor, and never asks for anything |
+| department plates | eight names on a cycle — B1 and B9 are both ADMINISTRATION | **24 plates, none repeated**, RECEPTION down to THE BERTH OFFICE |
+| sealed corridor mouths | `⟶ SECTOR 7 · 2.4 km` | `⟶ WING 1 · 24.6 km` |
+| livery | one hue per department, on unmaintained concrete | one hue per **wing**, stepped darker per floor down it, and **kept** |
+| the first descent card | the Hive's own shaft card | its own painted establishing shot |
+
+And the thing to check that is not on any screen: **fly to Enceladus without the berth code and there
+must be nothing there.** Featureless ice and a good view — not a locked door, not a refusal, not a hint.
+Try `/map?start=enceladus&land=1` with no `?kaamos=` at all; the ground must have no lift head on it.
 
 **The two seats (these let a rare beat be PLAYED, not granted):**
 

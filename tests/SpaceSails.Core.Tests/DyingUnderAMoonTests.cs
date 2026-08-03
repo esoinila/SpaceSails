@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -124,7 +124,7 @@ public sealed class DyingUnderAMoonTests
         // the card names the rule, names the nearest breathable floor, and states the tank.
         foreach (int level in new[] { -2, -3, -6, -11, -23 })
         {
-            string card = UndergroundComplex.VacuumCard(level, airSeconds: 754);
+            string card = UndergroundComplex.VacuumCard("miranda", level, airSeconds: 754);
 
             // The rule itself, in words, because it is the only thing down here that can kill you.
             Assert.Contains("TOP FLOOR OF EVERY SHAFT BAND", card, StringComparison.Ordinal);
@@ -132,7 +132,7 @@ public sealed class DyingUnderAMoonTests
             // Where you are, and where the air is.
             Assert.Contains($"{UndergroundComplex.MetresDown(level):F0} m", card, StringComparison.Ordinal);
             int refuge = UndergroundComplex.BandTop(UndergroundComplex.BandOf(level));
-            Assert.Contains(UndergroundComplex.NameOf(refuge), card, StringComparison.Ordinal);
+            Assert.Contains(UndergroundComplex.NameOf("miranda", refuge), card, StringComparison.Ordinal);
             Assert.True(UndergroundComplex.HoldsPressure(refuge),
                 $"B{-level}: the card points at B{-refuge} as the nearest air and it does not hold pressure.");
 
@@ -155,7 +155,7 @@ public sealed class DyingUnderAMoonTests
         //
         // The prose and the generator have to agree, so this checks BOTH ENDS: the card promises a refuge,
         // and the floor it is talking about actually has one.
-        string card = UndergroundComplex.VacuumCard(-2, 300);
+        string card = UndergroundComplex.VacuumCard("miranda", -2, 300);
         Assert.Contains("PRESSURE REFUGE", card, StringComparison.Ordinal);
         Assert.DoesNotContain("no shelters", card, StringComparison.OrdinalIgnoreCase);
 

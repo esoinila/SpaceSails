@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -41,7 +41,7 @@ public sealed class TheFloorTellsYouWhereYouAreTests
                 {
                     continue;   // an unlisted floor is bare on purpose — see below
                 }
-                string dept = UndergroundComplex.DepartmentOf(level);
+                string dept = UndergroundComplex.DepartmentOf(body, level);
                 if (byDepartment.TryGetValue(dept, out BodyPalette.Ink seen))
                 {
                     Assert.Equal(seen, ink);
@@ -63,7 +63,7 @@ public sealed class TheFloorTellsYouWhereYouAreTests
         for (int level = -1; level >= -UndergroundComplex.Departments.Length; level--)
         {
             BodyPalette.Ink ink = UndergroundComplex.LiveryFor("luna", level)!.Value;
-            string dept = UndergroundComplex.DepartmentOf(level);
+            string dept = UndergroundComplex.DepartmentOf("luna", level);
             Assert.False(seen.TryGetValue(ink, out string? other),
                 $"{dept} and {other} are painted the same colour.");
             seen[ink] = dept;
@@ -127,8 +127,8 @@ public sealed class TheFloorTellsYouWhereYouAreTests
         // failure this ground's spec opens with a table of.
         foreach (int level in Enumerable.Range(1, 40).Select(n => -n))
         {
-            string dept = UndergroundComplex.DepartmentOf(level);
-            Assert.Contains(dept, UndergroundComplex.NameOf(level), StringComparison.Ordinal);
+            string dept = UndergroundComplex.DepartmentOf("luna", level);
+            Assert.Contains(dept, UndergroundComplex.NameOf("luna", level), StringComparison.Ordinal);
             Assert.Contains(dept, UndergroundComplex.Departments);
         }
     }
