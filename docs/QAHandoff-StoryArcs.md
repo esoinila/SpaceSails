@@ -126,6 +126,9 @@ satchel, `T` plants a sentry, `G` drops the chest.
 
 ```
 /map?kaamos=N        the KAAMOS plotline (features/KaamosPlotline.md)
+/map?kaamos=bounce   its FRONT DOOR — the freight agent whose docket the board keeps returning (#635)
+/map?kaamos=hq&land=1  the head office under the ice: the route already ridden, boots on the ground (#411)
+  …&floor=23          B23 THE WINTERING HALL · &floor=24 THE BERTH OFFICE · &floor=12 THE STANDING ORDER
 /map?nebula=all      the nebula arc (features/NebulaArc.md)
 /map?bond=1          the bond
 /map?converge=1      arc convergence

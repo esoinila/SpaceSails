@@ -176,6 +176,18 @@ public partial class Map
             _kaamos.Assemble(f.Id);
         }
 
+        // …and this cheat IS a clandestine-site cheat, so it says so, in the field the surface path already
+        // reads. Without it `?kaamos=hq&land=1` sets the captain down on open regolith and `?floor=N` does
+        // nothing — because both of those hang off `_secretLabForceBodyId`, and a testing-guide row that
+        // promised `&floor=23` would have been this project's third bug class in its own documentation.
+        // An organic landing at the ice moon is untouched: nothing sets this but a cheat.
+        _secretLabForceBodyId = KaamosLore.IceMoonBodyId;
+
+        // And name the ground, rather than trusting `?land=1` to pick the nearest thing in reach. It would
+        // pick the ice moon today; a cheat that silently lands you somewhere else is worse than one that
+        // refuses, and "somewhere else" is a thing a future scenario edit could quietly introduce.
+        _forcedLandingBodyId = KaamosLore.IceMoonBodyId;
+
         if (!KaamosRunEverTaken && BodyById(KaamosLore.IceMoonBodyId) is not null)
         {
             // Priced the way the offer would have priced it, and BEFORE the undock below, because the purse

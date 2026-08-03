@@ -112,6 +112,16 @@ public class RevealPlatesArePaintedTests
     }
 
     [Fact]
+    public void TheHeadOfficesTwoBeatsArePainted()
+    {
+        // #411 · The floors the whole arc was written for. Like the establishing shot they hang off a
+        // predicate rather than a fragment pool, so the sweep above cannot see them — and a hole in the
+        // wintering hall's card would be a hole in the biggest moment in the game.
+        AssertPainted("The wintering hall", UndergroundComplex.WinteringHallArtUrl);
+        AssertPainted("The berth office", UndergroundComplex.BerthOfficeArtUrl);
+    }
+
+    [Fact]
     public void TheConvergenceIsPainted()
     {
         // The biggest reveal in the game. It was a text div while a routine collector shakedown had a

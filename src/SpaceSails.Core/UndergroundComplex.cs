@@ -614,6 +614,39 @@ public static class UndergroundComplex
         "DEEP RESIDENCY", "THE WATER GALLERY", "THE WINTERING HALL", "THE BERTH OFFICE",
     ];
 
+    /// <summary>
+    /// #411 · WHICH FLOOR A HEAD-OFFICE PLATE IS ON — read out of the plate list rather than typed twice.
+    ///
+    /// <para>Three floors of this building have a beat on them (the standing order, the wintering hall, the
+    /// berth office) and every one of them is identified by its PLATE. Writing "−23" beside "THE WINTERING
+    /// HALL" in a second place would be the same fact in two files, and this repo has a table of what that
+    /// costs: re-order the departments once and the beat fires on ATTENDANCE instead, with every test still
+    /// green because both numbers agree with themselves.</para>
+    ///
+    /// <para>Throws on a plate that is not in the list, deliberately: a beat pointed at a floor that does not
+    /// exist should fail loudly at the first call, not go quietly missing on some worlds forever.</para></summary>
+    public static int HeadOfficeLevelOf(string plate)
+    {
+        ArgumentNullException.ThrowIfNull(plate);
+        int index = Array.IndexOf(HeadOfficeDepartments, plate);
+        if (index < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(plate), plate, "no floor of the head office carries that plate");
+        }
+
+        return -(index + 1);
+    }
+
+    /// <summary>B12 — the room the takeable evidence is in.</summary>
+    public static int StandingOrderLevel => HeadOfficeLevelOf("THE STANDING ORDER");
+
+    /// <summary>B23 — the room this arc was written for.</summary>
+    public static int WinteringHallLevel => HeadOfficeLevelOf("THE WINTERING HALL");
+
+    /// <summary>B24 — the office that never stopped filing.</summary>
+    public static int BerthOfficeLevel => HeadOfficeLevelOf("THE BERTH OFFICE");
+
     /// <summary>The plate stock this building draws on.</summary>
     public static string[] DepartmentsFor(string bodyId)
     {
@@ -1195,6 +1228,21 @@ public static class UndergroundComplex
         return HasUnlistedBand(bodyId) ? (TrueDepthOf(bodyId), 0) : null;
     }
 
+    /// <summary>
+    /// #411 · THE ONE PIECE OF PAPER WORTH CARRYING OUT OF THE HEAD OFFICE, designated for exactly the
+    /// reason <see cref="KeyRoomFor"/> and <see cref="RelicRoomFor"/> are: a seeded roll would leave it
+    /// silently absent on some threads forever, and nothing on screen would ever say so.
+    ///
+    /// <para>It is a <see cref="Haul.Records"/> room and not a <see cref="Haul.Relic"/> one, and that is the
+    /// honest call rather than the convenient one — the relic's own prose describes a band of alloy on a
+    /// pallet, and dressing a sheet of paper in it would be the sim doing one thing while the sentence said
+    /// another. Records already goes into the satchel as paper, which is all this needs.</para></summary>
+    public static (int Level, int RoomIndex)? StandingOrderRoomFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return IsHeadOffice(bodyId) ? (StandingOrderLevel, 0) : null;
+    }
+
     /// <summary>What is in this room. Weighted so the place feels stripped but worth walking: about a third
     /// empty, and DIRT is the rarest thing in the building because it is the most valuable.</summary>
     public static Haul InRoom(string bodyId, int level, int roomIndex)
@@ -1221,6 +1269,13 @@ public static class UndergroundComplex
         if (RelicRoomFor(bodyId) is { } pallet && level == pallet.Level && roomIndex == pallet.RoomIndex)
         {
             return Haul.Relic;
+        }
+
+        // #411 · And the head office's one designated room — the sheet that says the runs were to continue
+        // until countermanded, in a folder with nothing else in it.
+        if (StandingOrderRoomFor(bodyId) is { } order && level == order.Level && roomIndex == order.RoomIndex)
+        {
+            return Haul.Records;
         }
 
         int face = DiceRule.Roll(DiceRule.Seed($"hive:haul:{bodyId}:{level}:{roomIndex}"), 9).Face;
@@ -1295,6 +1350,9 @@ public static class UndergroundComplex
         Haul.Equipment =>
             "🧪 Bench hardware, crated and never unpacked — the good stuff, bought with somebody's grant and " +
             "abandoned with the lights on. It will fetch a great deal from people who will not ask.",
+        // #411 · The head office's designated sheet reads as itself; everywhere else, operational paper.
+        Haul.Records when StandingOrderRoomFor(bodyId) is { } o && level == o.Level && roomIndex == o.RoomIndex
+            => StandingOrderLine,
         Haul.Records =>
             "📋 Operational paper: rosters, routes, a shipping schedule with a column nobody has labelled. It " +
             "does not say what was moved. It says exactly how often, and to where.",
@@ -1519,6 +1577,62 @@ public static class UndergroundComplex
             ? (HeadOfficeArrivalLabel, HeadOfficeArrivalArtUrl, HeadOfficeArrivalCard)
             : (DescentCardLabel, DescentArtUrl, DescentCard);
     }
+
+    // ── #411 · THE THREE FLOORS WITH A BEAT ON THEM ──────────────────────────────────────────────────
+    //
+    // Every one of these is EVIDENCE and stops. Between them they say that somebody set an enormous thing
+    // going, that nobody ever stopped it, and that it is still going. Not one of them says what it is, who
+    // is doing it, or what any of it means — canon holds hardest exactly here, because this is the deepest
+    // and most tempting room in the game.
+
+    /// <summary>B12 · the sheet in the folder. Per #614's law a card may say WHAT and never WHERE: this
+    /// names an instruction and an unused countersignature block, and no place at all.</summary>
+    public const string StandingOrderLine =
+        "📋 One countersigned sheet in a folder with nothing else in it: the runs are to continue UNTIL " +
+        "COUNTERMANDED. Underneath, a countersignature block — ruled, printed, and never used. The folder has " +
+        "been opened often enough to wear the crease through, and closed again every time.";
+
+    public const string WinteringHallArtUrl = "art/kaamos-wintering-hall.jpg";
+
+    public const string WinteringHallLabel = "❄❄ FORTY-ONE";
+
+    /// <summary>B23. The room this arc was written for, and the only card in the game that is allowed to do
+    /// arithmetic — because counting is a thing a captain does with their own eyes, and the count is the
+    /// whole beat. It still never says whose the last one is.</summary>
+    public const string WinteringHallCard =
+        "The floor is one room, and the room does not end where the lamps do.\n\n" +
+        "Four rows of ten, and every one of them is MADE. Not stripped, not stacked, not sheeted over for a " +
+        "shutdown: made. The blanket turned back at the same angle on all forty. The pillow squared. Along " +
+        "one side the wall is glass a hand thick and behind it there is black water going down further than " +
+        "the lamps reach.\n\n" +
+        "At the end of the fourth row, apart from the others by the width of a walkway, there is one more. " +
+        "Turned back at the same angle. Squared.\n\n" +
+        "Forty-one.";
+
+    /// <summary>Said on the pulse line as well, because the card is dismissed and the log is not.</summary>
+    public const string WinteringHallLine =
+        "❄ You count them twice, from the far end the second time, because the first answer was not the one " +
+        "you expected.";
+
+    /// <summary>Why the nerve goes. Deliberately does not state the arithmetic — the captain has just done it.</summary>
+    public const string WinteringHallShockReason =
+        "a room that has been kept made up for a very long time, and the count in it";
+
+    public const string BerthOfficeArtUrl = "art/kaamos-berth-office.jpg";
+
+    public const string BerthOfficeLabel = "❄ ONE LINE STILL LIT";
+
+    /// <summary>B24. The last floor, and the smallest room on it. It is the only untidy room in the building
+    /// — and it is untidy with its own output, which is the tidiest possible reason.</summary>
+    public const string BerthOfficeCard =
+        "One console, one board, one line lit.\n\n" +
+        "It is the only room in this building that is not immaculate, and it is knee-deep. The log has been " +
+        "printing continuously and folding itself onto the floor, and nobody has emptied it, because " +
+        "emptying it is not a thing anybody ever wrote down.\n\n" +
+        "The entries are a requisition against a berth at Ringside Exchange, filed on every cycler window, " +
+        "on the tick. The acknowledgement column beside them is blank for so far back that the form has " +
+        "changed twice inside the drift.\n\n" +
+        "The newest sheet is still warm. Under it, queued and dated, is the next one.";
 
     /// <summary>What the lift says as it starts down. The one beat of scale before any of the plan is drawn.</summary>
     public const string DescendingLine =
