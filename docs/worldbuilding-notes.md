@@ -92,6 +92,55 @@ distract from it.*
 - Nobody agrees who built the monolith; everybody agrees the anchor bolts for the cable went
   in suspiciously easily.
 
+## 8. The monolith is one object, and it is enormous (owner ruling, 2026-08-03)
+
+*Settles #649 ("which moon is THE MONOLITH on?") on the fiction side. Recorded verbatim in
+intent so it cannot be lost; the code decision follows from it.*
+
+- **Unique.** There is **one** monolith. Not a class of object, not a kind of landmark that a
+  generator can roll twice. If two grounds both call something "the monolith", one of them is
+  wrong and has to be renamed — the word is reserved.
+- **Bigger.** The owner's note is about *scale*: the real Phobos slab's dimensions were huge,
+  and the game has been under-selling it. It must **show its size** on screen — you should
+  read it as large from a long way off, and it should keep getting larger as you walk, the way
+  only genuinely big things do.
+- **Not in a boxed backyard.** It must not sit in a fenced little plot with the rest of the
+  set dressing around it. Whatever ground carries it has to be open enough that the object is
+  the horizon, not a prop in a room. A monolith you can pace out in ten steps of decking is
+  not the monolith.
+- **Not built by us.** Nothing about it may read as human manufacture — no seams that look
+  like a fab, no scale that flatters a shipyard, no explanatory plate. The correct player
+  reaction is *nobody I know could have put that there*.
+
+### The monolith site is a strange-things-happen place
+
+- The mood the owner asked for, in his own reference: **Babylon 5** — Sheridan and the giants
+  on the playground; **"background puppeteers watching if their kids perform in the school
+  play."** You are being *watched by something that has a stake in you and will not say so*.
+- **Awesome and a little scary. Lovecraftian.** Not a jump scare and not a monster —
+  the dread of scale and of attention. The nerve system already prices the sight
+  (`NerveModel.MonolithSightShock`, the single biggest fright in a captain's life, fires once);
+  the *place* should earn that number rather than the number carrying the place alone.
+- **Per standing canon it is NEVER explained and NEVER confirmed.** No card states what it is,
+  no sensor returns a reading that settles it, no NPC knows. Anything that happens near it is
+  reported by the world in a way that stays deniable. This is the same law that governs the
+  Reever origin: the inference is the horror, and confirming it kills it.
+
+## 9. KAAMOS is the head office (owner ruling, 2026-08-03)
+
+*Bears on #411 (the KAAMOS plotline) and #635 (KAAMOS has no front door). Destination design,
+not route design.*
+
+- **The KAAMOS destination is the HEAD of the organization.** Not another outpost, not a
+  bigger version of a wintering camp: the place everything else answers to.
+- **"As fancy as the secret labs."** The secret labs set the bar for how a serious facility
+  presents itself; the head office has to clear it, visibly, on first sight.
+- **The Hive facilities are branch offices.** Everything the player has learned to read
+  underground — sealed `SECTOR n · 2.4 km` doors, authority cards that open exactly one band,
+  the department plates by the lift car, the band nobody listed — is *branch-office* grammar.
+  **HQ outclasses them**, and it should outclass them in the same vocabulary, so a player who
+  has crawled a Hive recognises the rank difference without being told it.
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |
