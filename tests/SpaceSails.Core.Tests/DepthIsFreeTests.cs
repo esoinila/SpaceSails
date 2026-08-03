@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SpaceSails.Core;
 
@@ -139,7 +139,7 @@ public sealed class DepthIsFreeTests
     {
         for (int level = -1; level >= UndergroundComplex.DeepestPossibleFloor; level--)
         {
-            string name = UndergroundComplex.NameOf(level);
+            string name = UndergroundComplex.NameOf("miranda", level);
             Assert.StartsWith($"B{-level}", name, StringComparison.Ordinal);
             Assert.Contains("·", name, StringComparison.Ordinal);
         }

@@ -2007,10 +2007,12 @@ public partial class Map
             // being a field with things scattered on it and becomes a LID.
             if (ex.HiveFloorsSeen.Count == 0)
             {
+                // #411 · …and which card, because the head office's first descent is not a branch office's.
+                // Core decides, so the two can never be shown for the wrong building.
+                (string dLabel, string dArt, string dCard) =
+                    UndergroundComplex.FirstDescentCard(ex.Stop.Body.Id);
                 _viewObject = new DeckPlan.ConsoleSpot(
-                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                    UndergroundComplex.DescentCardLabel,
-                    UndergroundComplex.DescentArtUrl, UndergroundComplex.DescentCard);
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY, dLabel, dArt, dCard);
             }
         }
 
@@ -2058,7 +2060,7 @@ public partial class Map
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                 UndergroundComplex.VacuumCardLabel,
                 UndergroundComplex.VacuumArtUrl,
-                UndergroundComplex.VacuumCard(level, ex.AirSeconds));
+                UndergroundComplex.VacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds));
             ShowAndFile(UndergroundComplex.DeadAirLine, "\ud83e\udec1");
         }
         else if (firstSight)
@@ -6092,7 +6094,7 @@ public partial class Map
             // #591 · The fan's real reach, so the ring the captain reads is the ring the chirp heard, and
             // where they are, so depth is on the instrument rather than on the plan behind them.
             FanReach: fanReach,
-            TrackerPlace: ex.Floor < 0 ? UndergroundComplex.NameOf(ex.Floor) : null,
+            TrackerPlace: ex.Floor < 0 ? UndergroundComplex.NameOf(ex.Stop.Body.Id, ex.Floor) : null,
             // #591 · Contacts heard through a wall are a REGION, never a body. Nothing walks these corridors
             // yet (the Old Ones are a regolith tide and are cleared on descent, by the owner's ruling), so
             // today this smudges an empty floor — which is the correct order of work: make the instrument

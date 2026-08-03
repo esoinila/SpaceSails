@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -88,7 +88,7 @@ public sealed class TheUnlistedBandTests
             {
                 Assert.False(UndergroundComplex.IsUnlisted(body, level));
                 Assert.Equal(UndergroundComplex.KindFor(body), UndergroundComplex.KindOn(body, level));
-                Assert.Equal(UndergroundComplex.NameOf(level), UndergroundComplex.NameOf(body, level));
+                Assert.Equal($"B{-level} · {UndergroundComplex.DepartmentOf(body, level)}", UndergroundComplex.NameOf(body, level));
             }
         }
     }

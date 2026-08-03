@@ -67,12 +67,60 @@ public static class UndergroundComplex
         BlackClinic,
         /// <summary>A transfer station: things came in, things went out, and the manifests do not match.</summary>
         TransitStation,
+
+        /// <summary>#411/#635 · THE HEAD OFFICE. Owner ruling, 2026-08-03: <i>"The KAAMOS destination is the
+        /// HEAD of the organization. Not another outpost, not a bigger wintering camp: the place everything
+        /// else answers to … The Hive facilities are branch offices. HQ outclasses them, and it should
+        /// outclass them IN THE SAME VOCABULARY, so a player who has crawled a Hive recognises the rank
+        /// difference without being told it."</i>
+        ///
+        /// <para>It is <b>never rolled</b>. <see cref="KindFor"/> assigns it to exactly one body in the
+        /// system and the die that picks the other five has never heard of it — a head office that a seed
+        /// could produce twice would not be a head office.</para></summary>
+        HeadOffice,
     }
 
-    /// <summary>Which kind hides under this body. Seeded, so a moon has the site it has.</summary>
+    /// <summary>
+    /// #411 · Is the building under this body THE head office? There is exactly one, it is under the ice
+    /// moon, and the id comes from the arc that owns it (<see cref="KaamosLore.IceMoonBodyId"/>) rather than
+    /// from a literal typed here — one source of truth, and the reason nothing in this file has to know what
+    /// PROJEKTI KAAMOS is.
+    ///
+    /// <para>Everything below asks this ONE question and then answers in the branch-office vocabulary the
+    /// player already reads. That is the whole of the ruling: not a new grammar, the same grammar at a rank
+    /// nobody has to be told about.</para></summary>
+    public static bool IsHeadOffice(string bodyId) =>
+        string.Equals(bodyId, KaamosLore.IceMoonBodyId, StringComparison.Ordinal);
+
+    /// <summary>
+    /// #411 · IS THE HEAD OFFICE THERE? The only site in the game whose existence is a fact about the
+    /// CAPTAIN rather than about the moon.
+    ///
+    /// <para>Every other clandestine site is a one-in-forty roll on a body id. This one is there when the
+    /// berth-code has resolved and the hull is on the board (<see cref="KaamosLore.CanReachEnceladus"/>),
+    /// and it is <b>not there</b> otherwise — not sealed, not refused, not hinted at. Featureless ice and a
+    /// good view.</para>
+    ///
+    /// <para>That refusal-by-ABSENCE is the whole reason the arrival lands, and it is the honest reading of
+    /// an arc every one of whose shards is about a filing, a window, a berth or a manifest and not one of
+    /// which is about fuel: nobody is stopping a captain going to the ice moon. What nobody can do is be
+    /// EXPECTED there.</para>
+    ///
+    /// <para>Pure and world-blind, so the client asks rather than deciding — a rule this load-bearing living
+    /// as an <c>if</c> in a partial class is a rule no test can reach.</para></summary>
+    public static bool HeadOfficePresent(string bodyId, bool onTheBoard) =>
+        IsHeadOffice(bodyId) && onTheBoard;
+
+    /// <summary>Which kind hides under this body. Seeded, so a moon has the site it has — except the one
+    /// that is not a matter of chance.</summary>
     public static Kind KindFor(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
+        if (IsHeadOffice(bodyId))
+        {
+            return Kind.HeadOffice;
+        }
+
         return (Kind)(DiceRule.Roll(DiceRule.Seed($"hive:kind:{bodyId}"), 5).Face - 1);
     }
 
@@ -108,6 +156,7 @@ public static class UndergroundComplex
         Kind.ProcessingDepot => "▣ THE PROCESSING DEPOT",
         Kind.RecordsAnnex => "▣ THE RECORDS ANNEX",
         Kind.BlackClinic => "▣ THE CLINIC",
+        Kind.HeadOffice => "▣ THE HEAD OFFICE",
         _ => "▣ THE TRANSIT STATION",
     };
 
@@ -137,6 +186,15 @@ public static class UndergroundComplex
     public static int DepthOf(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
+
+        // #411 · The head office takes the whole allowance, and LISTS all of it. A branch office's depth is
+        // a roll; HQ's is the building. Note this is the DEPTH IT ADMITS TO, and for once that is also the
+        // bottom of the hole — see HasUnlistedBand.
+        if (IsHeadOffice(bodyId))
+        {
+            return DeepestPossibleFloor;
+        }
+
         int roll = DiceRule.Roll(DiceRule.Seed($"hive:depth:{bodyId}"), 12).Face;
         int floors = roll switch
         {
@@ -183,6 +241,24 @@ public static class UndergroundComplex
     public static bool HasUnlistedBand(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
+
+        // #411 · THE HEAD OFFICE HAS NOTHING TO HIDE FROM ITSELF, and that absence is the rank difference.
+        // A branch office lies by omission to its own staff — a shaft not in the directory, a floor the
+        // panel does not list. Here the directory is complete, every button is on the panel, and the whole
+        // building is on the plan in the lobby. It does not need to keep a secret from the people who work
+        // here, because the people who work here are the ones keeping it.
+        //
+        // BELT AND BRACES, said out loud rather than left to be discovered: this is currently REDUNDANT.
+        // The head office already takes the whole allowance (DepthOf == DeepestPossibleFloor), so the second
+        // guard below — "a band whose own shaft head would be clamped to nothing is not a band" — already
+        // says no. It stays because the redundancy is the point: the day somebody raises the performance
+        // bound, HQ would silently grow a band it does not admit to and the whole rank difference this file
+        // is built on turns inside out. Its guard was proven RED by forcing this TRUE rather than by
+        // deleting it, which is the honest way to say "dead today, load-bearing tomorrow".
+        if (IsHeadOffice(bodyId))
+        {
+            return false;
+        }
 
         // Only somewhere that already had room to hide something. A three-floor annex with a secret basement
         // is a bungalow with a dungeon; the lie needs a building big enough to keep a secret from its staff.
@@ -482,15 +558,27 @@ public static class UndergroundComplex
     public const string RefugeGlyph = "🫁 REFUGE · AIR";
 
     /// <summary>What the level is called on the lift panel and the plan header. Named by depth band rather
-    /// than from a hand-written list, because there is no longer a fixed bottom to write down.</summary>
-    public static string NameOf(int level)
+    /// than from a hand-written list, because there is no longer a fixed bottom to write down.
+    ///
+    /// <para><b>There is no site-blind overload of this, on purpose.</b> There used to be, and it was fine
+    /// for exactly as long as every building in the game used one list of department names. The moment a
+    /// second building had its own plates (#411's head office), a body-blind <c>NameOf(level)</c> became a
+    /// second answer to "what is this floor called" — which is this repo's most expensive shape, and the
+    /// comment explaining it would have been a TODO with no owner. Everything asks with the body.</para></summary>
+    public static string NameOf(string bodyId, int level)
     {
+        ArgumentNullException.ThrowIfNull(bodyId);
         if (level >= 0)
         {
             return "SURFACE";
         }
 
-        return $"B{-level} · {DepartmentOf(level)}";
+        if (IsUnlisted(bodyId, level))
+        {
+            return $"B{-level} · NO PLATE";
+        }
+
+        return $"B{-level} · {DepartmentOf(bodyId, level)}";
     }
 
     /// <summary>#605 · THE DEPARTMENTS, in one place. They were a `string[]` local inside <see cref="NameOf"/>,
@@ -503,10 +591,43 @@ public static class UndergroundComplex
         "ARCHIVE", "ISOLATION", "DEEP STORAGE", "UNMARKED",
     ];
 
-    /// <summary>Which department a level belongs to. Cycles, so a deep site repeats — and that repetition is
-    /// the point: B1 and B9 are both ADMINISTRATION and are meant to feel alike.</summary>
-    public static string DepartmentOf(int level) =>
-        Departments[(-level - 1) % Departments.Length];
+    /// <summary>
+    /// #411 · THE HEAD OFFICE'S OWN PLATES — twenty-four of them, one per floor, <b>none repeated</b>.
+    ///
+    /// <para>That is the rank difference, in the branch-office vocabulary and costing one list of words. A
+    /// branch reuses its plate stock (eight names on a cycle, so B1 and B9 are both ADMINISTRATION and are
+    /// meant to feel alike); the head office had a plate made for every floor it has. A captain who has
+    /// crawled a Hive reads the fourth un-repeated plate and knows what kind of building they are in.</para>
+    ///
+    /// <para>And the list is the story. Nobody narrates any of it: it starts as an office and turns, somewhere
+    /// around the middle, into a vocabulary about people, and never turns back. BRANCH LIAISON is the one that
+    /// does the most work — the department plates by a Hive's lift car are a branch-office idiom, and this is
+    /// the office that ISSUED them. What none of these words ever do is explain anything.</para>
+    /// </summary>
+    public static readonly string[] HeadOfficeDepartments =
+    [
+        "RECEPTION", "ESTABLISHMENT", "THE REGISTRY", "SCHEDULING & WINDOWS",
+        "PROCUREMENT", "CONTRACTS", "BRANCH LIAISON", "AUDIT",
+        "PAYROLL — CLOSED ACCOUNTS", "LONG CONTRACTS", "CONTINUITY", "THE STANDING ORDER",
+        "SITE ESTABLISHMENT", "DISPATCH", "THE COLD ROOMS", "OCCUPANCY",
+        "WELFARE", "THE WINTER OFFICE", "RESIDENCY", "THE QUIET ROOMS",
+        "DEEP RESIDENCY", "THE WATER GALLERY", "THE WINTERING HALL", "THE BERTH OFFICE",
+    ];
+
+    /// <summary>The plate stock this building draws on.</summary>
+    public static string[] DepartmentsFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return IsHeadOffice(bodyId) ? HeadOfficeDepartments : Departments;
+    }
+
+    /// <summary>Which department a level belongs to. A branch office cycles, so a deep site repeats — and
+    /// that repetition is the point. The head office does not, because it never had to.</summary>
+    public static string DepartmentOf(string bodyId, int level)
+    {
+        string[] stock = DepartmentsFor(bodyId);
+        return stock[(-level - 1) % stock.Length];
+    }
 
     /// <summary>
     /// #605 · WHAT COLOUR THIS FLOOR IS PAINTED. Owner, riding between floors cut from the same bones:
@@ -535,7 +656,44 @@ public static class UndergroundComplex
             return null;
         }
 
-        return DepartmentOf(level) switch
+        // #411 · THE HEAD OFFICE PAINTS BY WING, AND STEPS DOWN THE WING.
+        //
+        // Two rules at once, because the first one alone broke the second and a shipped guard said so:
+        //
+        //   · a HUE per shaft band, so six wings read as six wings and a captain who has ridden one knows
+        //     at a glance which one they are in;
+        //   · a VALUE per floor within the wing, because the owner's original complaint about this whole
+        //     feature was "now they look too same", and ConsecutiveFloorsNeverLookAlike is that complaint
+        //     turned into a law. Painting a wing one flat colour handed four identical floors straight back.
+        //
+        // So the language has two words instead of one, which is MORE legible than the branch office's, not
+        // less — the hue says where in the building, the value says how far down the wing. That is what a
+        // place with a signage budget does, and it costs one multiplier.
+        //
+        // Kept CLEAN, which is the whole tell: a branch office's colour is painted concrete somebody stopped
+        // maintaining decades ago, and this is the same six-hue language still being kept up, by nobody, on
+        // a schedule.
+        if (IsHeadOffice(bodyId))
+        {
+            BodyPalette.Ink wing = BandOf(level) switch
+            {
+                0 => new BodyPalette.Ink(214, 186, 112),   // reception gold, and it still looks new
+                1 => new BodyPalette.Ink(126, 176, 226),
+                2 => new BodyPalette.Ink(136, 186, 146),
+                3 => new BodyPalette.Ink(178, 156, 214),
+                4 => new BodyPalette.Ink(190, 220, 218),
+                _ => new BodyPalette.Ink(124, 178, 190),   // the deep wings, colder and no less kept
+            };
+
+            // Which step down the wing this floor is: the top of the band is the full value, and each floor
+            // under it is darker. Never zero-length, because a band always has a top.
+            int step = -level - 1 - (BandOf(level) * FloorsPerShaft);
+            double k = 1.0 - (0.13 * Math.Clamp(step, 0, FloorsPerShaft - 1));
+            return new BodyPalette.Ink(
+                (byte)Math.Round(wing.R * k), (byte)Math.Round(wing.G * k), (byte)Math.Round(wing.B * k));
+        }
+
+        return DepartmentOf(bodyId, level) switch
         {
             "ADMINISTRATION" => new BodyPalette.Ink(198, 170, 98),   // command gold
             "LABORATORIES" => new BodyPalette.Ink(108, 156, 206),    // sciences blue
@@ -548,17 +706,10 @@ public static class UndergroundComplex
         };
     }
 
-    /// <summary>#592 · What the level is called, given which building it is in. A floor the directory never
-    /// listed has no department, because a department is a thing you write on a plan — and the whole point
-    /// of these floors is that nobody wrote them anywhere.
-    ///
-    /// <para>It is not a hint: you can only read this once you are standing on the floor, and by then the
-    /// building has stopped keeping the secret from you and is only keeping it from everybody else.</para></summary>
-    public static string NameOf(string bodyId, int level)
-    {
-        ArgumentNullException.ThrowIfNull(bodyId);
-        return IsUnlisted(bodyId, level) ? $"B{-level} · NO PLATE" : NameOf(level);
-    }
+    // #592 · The floor a directory never listed has no department, because a department is a thing you
+    // write on a plan — and the whole point of those floors is that nobody wrote them anywhere. That case now
+    // lives inside NameOf above, with the rest of the naming, rather than in a wrapper around a body-blind
+    // twin of it.
 
     /// <summary>The lift shaft's spot — the SAME (x, y) on every floor, so going down is legible and coming
     /// back up is never a search. Sits on the spine corridor at the field's heart.</summary>
@@ -763,7 +914,7 @@ public static class UndergroundComplex
             {
                 double km = 0.8 + (Frac(bodyId, $"hive:{level}:rib-km:{i}") * 3.4);
                 locked.Add(new(x - CorridorHalf, far, x + CorridorHalf, far,
-                    $"\u27F6 SECTOR {7 + i} \u00b7 {km:F1} km"));
+                    SealedMouthSign(bodyId, i, km)));
             }
             walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
 
@@ -897,6 +1048,22 @@ public static class UndergroundComplex
         }
     }
 
+    /// <summary>
+    /// #411 · What is painted on a corridor mouth that will not open — the cheapest illusion of scale there
+    /// is, and the one plate where the rank difference is a single number.
+    ///
+    /// <para>A branch office says <c>SECTOR 7 · 2.4 km</c>: a serious operation, and a distance a captain can
+    /// imagine walking. The head office says <c>WING 3 · 24.6 km</c> — the same plate, the same typeface, one
+    /// order of magnitude, and a word that says the thing beyond it is not a sector of this building but a
+    /// whole PART of it. Nobody is told which is bigger.</para></summary>
+    public static string SealedMouthSign(string bodyId, int index, double km)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return IsHeadOffice(bodyId)
+            ? $"\u27F6 WING {index + 1} \u00b7 {km * 10.0:F1} km"
+            : $"\u27F6 SECTOR {7 + index} \u00b7 {km:F1} km";
+    }
+
     /// <summary>What is painted on a door. Institutional, expensive, and never explanatory — the register of
     /// a place with serious funding and nothing to say for itself.</summary>
     public static string SignFor(string bodyId, string tag) => SignFor(bodyId, 0, tag);
@@ -937,6 +1104,15 @@ public static class UndergroundComplex
         [
             "MEDICAL", "REHABILITATION", "RECOVERY 2", "THEATRE", "PHARMACY — LOCKED",
             "CONSENT FILES", "AFTERCARE", "MORTUARY",
+        ],
+        Kind.HeadOffice =>
+        [
+            // #411 · The head office's own register: nothing clandestine, nothing furtive, nothing that
+            // sounds like it is hiding. It sounds like a HEAD OFFICE — which, once a captain has read four
+            // floors of it under a kilometre of ice with nobody in the corridors, is far worse.
+            "OFFICE OF THE REGISTRAR", "STANDING ORDERS — CURRENT", "BRANCH RETURNS", "ESTABLISHMENT BOARD",
+            "COMMITTEE ROOM 2", "SIGNATURES", "APPROPRIATIONS", "THE LONG LEDGER",
+            "DEPUTATIONS", "MINUTES — SEALED", "ATTENDANCE", "THE STANDING LIST",
         ],
         _ =>
         [
@@ -1309,6 +1485,41 @@ public static class UndergroundComplex
         "shed with a maintenance plate, on a moon with no register entry, on nobody's chart.\n\n" +
         "The car keeps going down. You have time to think about that, and you would rather not.";
 
+    // ── #411 · AND THE OTHER ONE. The first descent at the head office is not the same beat as the first
+    //    descent at a branch office, and giving it the same card would be the loudest missed opportunity in
+    //    the arc: the whole ruling is that a captain who has crawled a Hive should recognise the rank on
+    //    sight. So the establishing shot is its own, and it is built out of the same four things the Hive's
+    //    is — a shaft, a directory, a lobby, a floor — with every one of them answered differently.
+    //
+    //    Discipline, harder here than anywhere: EVIDENCE, then stop. The card may say the lamps come up
+    //    ahead of the car. It may not say who turned them on.
+
+    public const string HeadOfficeArrivalArtUrl = "art/kaamos-head-office.jpg";
+
+    public const string HeadOfficeArrivalLabel = "🧊 THE HEAD OFFICE";
+
+    /// <summary>The first descent at the head office, said once. Four paragraphs, and not one of them tells
+    /// the captain what any of it means.</summary>
+    public const string HeadOfficeArrivalCard =
+        "The car does not go down a shaft so much as down a BUILDING.\n\n" +
+        "Service lamps go past in the wall at first, the way they do everywhere. Then the shaft opens out " +
+        "and the lamps stop being service lamps: they are lobby lighting, warm and even, and they come up " +
+        "ahead of the car and go down behind it.\n\n" +
+        "The doors part on a floor built to receive people. Stone facing around the lift surround. A bench. " +
+        "A rack for coats with nothing on it. And a directory beside the doors that lists TWENTY-FOUR floors " +
+        "— all of them, none of them abbreviated, none of them missing.\n\n" +
+        "There is no dust on the floor. Not undisturbed dust. None.";
+
+    /// <summary>Which establishing card this building's first descent earns — asked in one place so the two
+    /// can never be shown for the wrong building.</summary>
+    public static (string Label, string ArtUrl, string Card) FirstDescentCard(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return IsHeadOffice(bodyId)
+            ? (HeadOfficeArrivalLabel, HeadOfficeArrivalArtUrl, HeadOfficeArrivalCard)
+            : (DescentCardLabel, DescentArtUrl, DescentCard);
+    }
+
     /// <summary>What the lift says as it starts down. The one beat of scale before any of the plan is drawn.</summary>
     public const string DescendingLine =
         "🛗 The car takes a moment to decide you are allowed, and then it drops. It keeps dropping. Whatever " +
@@ -1360,8 +1571,9 @@ public static class UndergroundComplex
 
     /// <summary>What the first dead floor says. It states the rule and does the sum — a warning that makes
     /// the captain work out their own margin is a warning delivered too late.</summary>
-    public static string VacuumCard(int level, double airSeconds)
+    public static string VacuumCard(string bodyId, int level, double airSeconds)
     {
+        ArgumentNullException.ThrowIfNull(bodyId);
         int band = BandOf(level);
         int refuge = BandTop(band);          // the top of this band always holds pressure
         int floorsUp = -level - -refuge;     // how many floors between here and breathable
@@ -1380,7 +1592,7 @@ public static class UndergroundComplex
             "THE RULE, because it is the only one down here that can kill you: the TOP FLOOR OF EVERY SHAFT " +
             "BAND holds pressure. Nothing else does. That is where the lobbies were, and the fans on those " +
             "floors are still turning on somebody's account.\n\n" +
-            $"The nearest floor of air is {NameOf(refuge)} — {upstairs}. You have {tank}.\n\n" +
+            $"The nearest floor of air is {NameOf(bodyId, refuge)} — {upstairs}. You have {tank}.\n\n" +
             // #608 · AND THE OTHER HALF, now that it is true. This card used to end "there are no shelters
             // down here", which was honest when it was written and is now the most dangerous sentence in the
             // game: a captain who believes it will ration a tank they did not have to ration. Owner: "there
@@ -1510,7 +1722,12 @@ public static class UndergroundComplex
             return stops;   // nothing under this shaft at all; the panel simply ends
         }
 
-        bool holdsIt = heldCardIds.Contains(new AuthorityCard(bodyId, next).Id);
+        // #411 · THE CAR ANSWERS. A branch office's card opens exactly one band, and the way down is a piece
+        // of paper somebody left in a room. The head office asks the captain for nothing at all, on any
+        // floor — not because it is careless, but because a hull that is on the board is expected and the
+        // building has never had any other kind of visitor. The gate is simply ABSENT, and the absence is
+        // the rank difference: the same panel, and only one of them negotiates.
+        bool holdsIt = IsHeadOffice(bodyId) || heldCardIds.Contains(new AuthorityCard(bodyId, next).Id);
         bool unlisted = IsUnlisted(bodyId, BandTop(next));
         if (unlisted && !holdsIt)
         {

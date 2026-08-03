@@ -253,6 +253,18 @@ One thing that lane deliberately does NOT gate: whether the ice moon has anythin
 keyed on the berth code alone, so a captain who crosses the deep black the long way round arrives at the
 same door. A route that is the only way in is a railroad.
 
+### The destination (owner ruling, 2026-08-03) — the head office
+
+`worldbuilding-notes.md` §9: *"The KAAMOS destination is the HEAD of the organization … as fancy as the
+secret labs … the Hive facilities are branch offices."* Under the ice is
+`UndergroundComplex.Kind.HeadOffice`: twenty-four listed floors, no band nobody listed, twenty-four
+unrepeated department plates, wings instead of sectors at ten times the distance, a lift that asks for
+nothing, and livery that is still being kept up by nobody. It is **not a roll** — it is there when the
+hull is on the board and not otherwise, so a captain who flies out early finds featureless ice.
+
+Design, floor by floor, in [`kaamos-head-office.md`](kaamos-head-office.md) §3–§6 — including what may
+never be confirmed down there, which is everything this document's §2 says.
+
 **Hook-only (still deliberately NOT wired, to avoid collisions):**
 - **The reveal.** The sanity/#226 lane consumes `RevealSanityShockHook` for the climactic throw at
   Enceladus.

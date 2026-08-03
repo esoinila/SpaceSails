@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -24,6 +24,35 @@ public partial class Map
     {
         string body = ex.Stop.Body.Id;
         bool cheat = _secretLabForceBodyId == body;
+
+        // ── #411 · THE HEAD OFFICE IS NOT A ROLL. ────────────────────────────────────────────────────────
+        //
+        // Every other clandestine site in the game is a one-in-forty fact about a moon. The one under the
+        // ice is a fact about the CAPTAIN: it is there when the berth-code has resolved and the hull is on
+        // the board, and it is not there otherwise — not sealed, not refused, not hinted at. Featureless ice
+        // and a good view.
+        //
+        // That refusal-by-ABSENCE is the whole reason the arrival lands, and it is the honest reading of an
+        // arc every one of whose shards is about a filing, a window, a berth or a manifest and not one of
+        // which is about fuel: nobody is stopping you going to Enceladus. What nobody can do is be EXPECTED
+        // there. (docs/features/kaamos-head-office.md §1.)
+        //
+        // And when it IS there, the door is already known — the arc sold you the coordinate over a counter
+        // (`bought-coordinate`, "you have the where and the when"), so making the captain sweep a 310 × 260
+        // field with a detector for a door they were handed would be the game forgetting its own fiction.
+        if (UndergroundComplex.IsHeadOffice(body))
+        {
+            if (!UndergroundComplex.HeadOfficePresent(body, _kaamos.CanReachEnceladus) && !cheat)
+            {
+                ex.Lab = null;
+                return;
+            }
+
+            ex.Lab = SecretLab.For(body, MoonSurface.ExpeditionField(), forcePresent: true);
+            ex.SecretLabDoorRevealed = true;
+            return;
+        }
+
         SecretLab.Placement placement = SecretLab.For(body, MoonSurface.ExpeditionField(), forcePresent: cheat);
         if (!placement.HasLab)
         {

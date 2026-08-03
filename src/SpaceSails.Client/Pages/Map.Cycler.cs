@@ -178,9 +178,15 @@ public partial class Map
 
         if (!KaamosRunEverTaken && BodyById(KaamosLore.IceMoonBodyId) is not null)
         {
+            // Priced the way the offer would have priced it, and BEFORE the undock below, because the purse
+            // scales on the haul from the berth the job was taken at. A cheat that hands over the same job
+            // for a different number is a cheat that playtests a contract the game does not issue.
+            int reward = HaulReward.ForHaul(
+                HelioRadiusMeters(_dockedHavenId), HelioRadiusMeters(KaamosLore.IceMoonBodyId));
+
             _quests.Add(new Quest(KaamosLore.SupplyRunQuestId, QuestKind.CargoRun, "THE BOARD",
                 "", BodyName(KaamosLore.IceMoonBodyId), KaamosLore.SupplyRunTitle,
-                KaamosLore.SupplyRunBlurb(0), 0, DestBodyId: KaamosLore.IceMoonBodyId));
+                KaamosLore.SupplyRunBlurb(reward), reward, DestBodyId: KaamosLore.IceMoonBodyId));
         }
 
         if (_ephemeris is not null)
