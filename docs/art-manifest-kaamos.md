@@ -97,6 +97,34 @@ with their own scene around them, and none is a turning. Over-carding cheapens t
 > Grimy lived-in used-future sci-fi, muted desaturated palette, painterly, moody, cold, quiet, no readable
 > text, no lettering, no numbers, no logos, no people.
 
+## 4. `art/kaamos-returned-filing.jpg` — RETURNED TO SENDER
+
+- **Slot:** `KaamosLore.BouncePlate` — **not** in `PlatesById`, on purpose. That dictionary is keyed by
+  fragment id and every key in it must be a real pool fragment; the returned filing is the arc's front door
+  (#635) and deliberately not a fragment. It gets its own constant and its own guard
+  (`RevealPlatesArePaintedTests.TheKaamosFrontDoorIsPainted`).
+- **Fires when:** the captain puts their own hull's number on a freight agent's docket and the board sends
+  it straight back (`Map.Kaamos.TakeKaamosBounceFiling`).
+- **Reach it:** `/map?kaamos=bounce` — dock anywhere, walk to a bar patron, press `[E]`, take the job.
+- **Why it earns a plate at all**, when three of the six shards do not: for most captains this is the
+  **first thing PROJEKTI KAAMOS ever says**, and #528's whole finding is that the beats which turn a story
+  get a picture. The three plate-less shards each already arrive with a scene around them. This one is a
+  parcel on a counter, and without the card it is a toast that fades in a second and a half.
+- **The evidence in frame:** four return stamps overlapping the same corner of one docket, each fainter
+  than the last; the consignee line filled and the delivery line blank; nobody behind the counter; nobody
+  throwing it away. The caption names those and stops. It never says who is not answering.
+- **Text rule:** a docket is made of writing, so every mark on it had to come out as an illegible smear —
+  the same discipline the berth board in #3 needed, for the same reason.
+
+> **Prompt used:** A small battered parcel sitting alone on a scuffed freight counter in a dim orbital
+> exchange office, wrapped in worn brown shipping fabric and bound with old strapping. A paper docket is
+> glued to its top corner and four rubber return stamps overlap on that same corner, each fainter than the
+> last, every one of them a completely illegible smeared ink mark with no readable characters. A worn
+> rubber stamp and a dried ink pad lie beside it. Behind the counter a tall rack of empty pigeonhole slots,
+> all dark. Low amber office lighting, dust hanging in the air, riveted bulkhead, scratched countertop.
+> Grimy lived-in used-future sci-fi, muted desaturated palette of brown and cold grey, painterly, moody,
+> melancholy, quiet, no text, no lettering, no numbers, no logos, no readable writing, no people.
+
 ---
 
 ## Generation recipe
@@ -120,6 +148,7 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 1 | `cold-pod` | `kaamos-cold-pod.jpg` | ✅ | ✅ | ✅ |
 | 2 | `holders-tell` | `kaamos-berth-holder.jpg` | ✅ | ✅ | ✅ |
 | 3 | `berth-code` | `kaamos-berth-resolves.jpg` | ✅ | ✅ | ✅ |
+| 4 | `BouncePlate` (#635, the front door — not a fragment) | `kaamos-returned-filing.jpg` | ✅ | ✅ | ✅ |
 
 The guard is `tests/SpaceSails.Core.Tests/RevealPlatesArePaintedTests.cs`: every plate must be keyed to a
 real fragment and must name a JPG that is **actually on disk**. The `onerror`-hide law is what makes

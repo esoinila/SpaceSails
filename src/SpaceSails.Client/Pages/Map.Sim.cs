@@ -743,7 +743,7 @@ public partial class Map
                 // is a scene that ships broken", and a granted shard proves nothing about the scene that
                 // hands it over). Combine freely: /map?kaamos=holder&dock=ringside-exchange.
                 string candidate = Uri.UnescapeDataString(pair["kaamos=".Length..]).ToLowerInvariant();
-                if (candidate is "all" or "pod" or "holder"
+                if (candidate is "all" or "pod" or "holder" or "bounce"
                     || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                 {
                     kaamosCheat = candidate;

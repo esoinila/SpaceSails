@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>Where a KAAMOS fragment surfaces in the living world — one delivery vector per existing
 /// system (issue #411). The value is canon: it is how the design doc and the client agree on which
@@ -281,12 +281,21 @@ public static class KaamosLore
         return fragment.IsKey ? KeyResolution(progress) : fragment.Lore;
     }
 
-    /// <summary>The Captain's-ledger headline for the arc — the shard count and whether the key is held.</summary>
+    /// <summary>The Captain's-ledger headline for the arc — the shard count and whether the key is held.
+    ///
+    /// <para>#635: a captain whose only KAAMOS is a returned filing has no shards to count, and
+    /// <i>"0 of 5 shards assembled"</i> is a progress bar for a quest nobody has been given. The card in
+    /// that state names the thing they are holding instead — which is the only thing they know.</para></summary>
     public static string LedgerHeadline(KaamosProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
         int intel = IntelAssembled(progress);
         int pool = IntelFragments.Count();
+        if (progress.Count == 0 && progress.BerthFilingBounced)
+        {
+            return BounceHeadline;
+        }
+
         return progress.Has(KeyFragment.Id)
             ? $"❄ PROJEKTI KAAMOS — {intel} of {pool} shards · berth-code in hand"
             : $"❄ PROJEKTI KAAMOS — {intel} of {pool} shards assembled";
@@ -297,6 +306,11 @@ public static class KaamosLore
     public static string LedgerProgressLine(KaamosProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
+        if (progress.Count == 0 && progress.BerthFilingBounced)
+        {
+            return BounceLedgerLine;   // #635 · the front door, and nothing gathered behind it yet
+        }
+
         if (CanReachEnceladus(progress))
         {
             return ReachLedgerLine;
@@ -321,6 +335,56 @@ public static class KaamosLore
         "   ❄❄ THE BERTH-CODE RESOLVES — you say the number once, to nobody, and the sealed berth is listed " +
         "to your hull. The cycler window is real. It is not open yet. Keep the code and keep the berth: when " +
         "the window comes round, a ship that is on the board rides it all the way in.";
+
+    // ── #635 · THE FRONT DOOR: a consignment the board will not take ─────────────────────────────────────
+    //
+    // The issue's four options, and why this is the one built: a bar RUMOUR (option 1) adds another line to
+    // bars #410 already calls too chatty; a GLINTING PLAQUE (option 2) is the game announcing where to
+    // look, which is the opposite of this house's grain; LEAVING IT (option 4) costs most players six beats
+    // and the best line in the game. Option 3 — a mission-desk contract that bounces off the sealed berth —
+    // is the most in-genre because the arc is about LOGISTICS, and it is the one the owner's 2026-08-03
+    // ruling points at: a hook made of grammar the player already reads.
+    //
+    // The discipline it is held to: it may hand over NO shard (the pool is what the gate counts) and it may
+    // state NOTHING of §2. Everything below is a docket. A docket may say a berth is HELD and it may say a
+    // window is not open, because that is what a returned filing says; it may not say who is holding it.
+
+    /// <summary>What the freight agent's card is titled in the ledger receipt.</summary>
+    public const string BounceOfferTitle = "File a consignment the board keeps sending back";
+
+    /// <summary>The agent's pitch, in their own voice. It names the price on the same card that takes it —
+    /// the #634 lesson, learned the hard way by a button that spent 1,200 cr the instant it was clicked —
+    /// and it is honest about what the captain is buying, which is an attempt and a piece of paper.</summary>
+    public static string BounceOfferBlurb(int fee) =>
+        $"“Fourth time this docket's come back at me and I've stopped asking the clerk why. Manifest's clean, " +
+        $"consignee's listed, the berth is listed. The board just won't take the filing off my hull. You've " +
+        $"got a hull. Put your number on it, I pay you {fee:N0} cr whichever way it falls, and if it bounces " +
+        $"off you as well then it isn't me. It's out at the ice, if that means anything to you. Means nothing " +
+        $"to me and I've been doing this thirty years.”";
+
+    /// <summary>What the board answers. The whole hook, and it is four words of docket vocabulary: HELD, not
+    /// closed; a window that is not open; a consignee that cannot be raised; and a berth with an address.
+    /// Naming Ringside is not a signpost bolted on — a returned filing names the berth it was returned by,
+    /// and that IS how a bounce receipt reads. What it never says is who is holding it, or why.</summary>
+    public static string BounceReceipt(int fee) =>
+        "❄ You put your own hull's number on the docket and the board answers before your hand is off the " +
+        "plate: RETURNED — CONSIGNEE CANNOT BE RAISED — BERTH HELD, AWAITING CYCLER WINDOW. Held. Not closed, " +
+        "not lapsed, not struck: held, at Ringside Exchange, for a window the board declines to date. The " +
+        $"agent shrugs, counts out your {fee:N0} cr and takes the parcel back to wherever it lives between " +
+        "attempts. Nobody asks for the receipt, so you keep it.";
+
+    /// <summary>The ledger's headline while the returned filing is all this captain has. It names what is in
+    /// the pocket rather than counting shards nobody has been asked for yet — <i>"0 of 5 assembled"</i> is a
+    /// progress bar for a quest that has not been given.</summary>
+    public const string BounceHeadline = "❄ A BERTH THAT WILL NOT TAKE A FILING";
+
+    /// <summary>And the line under it. It points at nothing the world does not already do out loud: an
+    /// exchange that has been running long enough to have a dedication puts it on the concourse wall, where
+    /// everyone walks past it. The captain is left with a place and a habit, not an instruction.</summary>
+    public const string BounceLedgerLine =
+        "❄ A returned filing — held, not closed — for a berth at Ringside Exchange that answers nobody and " +
+        "has not been struck off in a lifetime of windows. Ringside is old enough to have a dedication, and " +
+        "old houses hang those where the concourse can read them.";
 
     /// <summary>The same fact, at rest, in the ledger.</summary>
     public const string ReachLedgerLine =
@@ -366,6 +430,19 @@ public static class KaamosLore
             "line still burning — burning since before the characters on it wore away. Nothing has filed " +
             "against it in a lifetime. Nobody ever told the board to stop asking, and it has not."),
     };
+
+    /// <summary>#635 · The front door's plate. It is NOT in <see cref="PlatesById"/> on purpose: that
+    /// dictionary is keyed by fragment id and every key in it must be a real pool fragment (a test says so),
+    /// and the returned filing is deliberately not a fragment. It earns a card anyway — it is the first
+    /// thing this arc ever says to most captains, and #528's whole finding is that the beats which turn a
+    /// story get a picture. Caption discipline as everywhere: evidence, then stop. Three return stamps and
+    /// nobody throwing it away; not one word about who is not answering.</summary>
+    public static readonly RevealPlate BouncePlate = new(
+        "❄ RETURNED TO SENDER",
+        "art/kaamos-returned-filing.jpg",
+        "The parcel is back on the counter with four return stamps overlapping on the same corner of the " +
+        "docket, each one fainter than the last. The consignee line is filled in and the delivery line is " +
+        "blank. Nobody behind the counter looks at it, and nobody has thrown it away.");
 
     /// <summary>The reveal plate this beat earns, or null for the beats that are the right size as prose.
     /// Asked by the client at the single seam where a shard is assembled, so a plate can never be shown for

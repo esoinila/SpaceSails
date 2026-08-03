@@ -88,6 +88,16 @@ public class RevealPlatesArePaintedTests
     }
 
     [Fact]
+    public void TheKaamosFrontDoorIsPainted()
+    {
+        // #635 · the returned filing is deliberately NOT a fragment, so it is deliberately not in
+        // KaamosLore.AllPlates — which means the sweep above cannot see it and this is the only thing that
+        // can. It is also the FIRST plate most captains will ever see of this arc, so a hole in it is a
+        // hole in the front door. Proven RED by pointing BouncePlate at art/kaamos-returned-filing-no.jpg.
+        AssertPainted("The KAAMOS front door", KaamosLore.BouncePlate.ArtFile);
+    }
+
+    [Fact]
     public void TheConvergenceIsPainted()
     {
         // The biggest reveal in the game. It was a text div while a routine collector shakedown had a

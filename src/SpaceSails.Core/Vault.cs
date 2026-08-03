@@ -396,6 +396,13 @@ public sealed record KaamosSection
     /// <summary>The assembled fragment ids (see <see cref="KaamosLore.Fragments"/>). Order is not
     /// meaningful — assembly is a set — but the writer emits canonical order for a stable file.</summary>
     public IReadOnlyList<string> AssembledFragmentIds { get; init; } = [];
+
+    /// <summary>#635 · Whether this captain has had a filing for the sealed ice-moon berth returned by the
+    /// board — the arc's front door, and not a fragment: it credits nothing toward the gate. Its own flag
+    /// rather than a pool id, because the pool is the thing the reach logic counts and a phantom id in it
+    /// would be exactly the drift <see cref="KaamosProgress.Assemble"/> refuses. A save written before
+    /// #635 simply lacks the property and defaults to false.</summary>
+    public bool BerthFilingBounced { get; init; }
 }
 
 // ── NEBULA MUTUAL (#422): the second story arc, the truth behind the player's own deaths, per-thread. ──

@@ -1,4 +1,4 @@
-# PROJEKTI KAAMOS — the ice-moon plotline spine
+﻿# PROJEKTI KAAMOS — the ice-moon plotline spine
 
 *The sealed ice-moon project, the berth nobody files for, and the truth at Enceladus.*
 Issue [#411]. This document is the **north star**: the sibling lanes (secret labs #409, roving
@@ -211,11 +211,30 @@ own trigger and narrates the shard (`KaamosLore.ById(id)!.Lore`):
 | `/map?kaamos=all` | **Grants** every one (opening the reach + the one-time notice) |
 | `/map?kaamos=pod` | **Seats** the cold supply pod under the ground you land on — probe and *earn* it |
 | `/map?kaamos=holder` | **Seats** the berth-holder at whatever bar you dock at, every watch |
+| `/map?kaamos=bounce` | **Seats** the freight agent with the returned docket — the arc's front door (#635) |
 
 The last two exist because two of the six fragments could previously only be *granted*: the pod is one
 seeded square in seventeen on one of seven outer moons, and the holder drinks at a given bar roughly one
 watch in four. A granted shard proves nothing about the scene that hands it over — and the holder's tell
 is the best-written beat in the arc, so it was also the one hardest to go and look at.
+
+### The front door (#635, 2026-08-03)
+
+The arc had **no inciting hook**: nothing pointed a player at Ringside's plate rather than any of the other
+six in the system, and the ledger's own card only appeared once a shard was already in hand — so the
+longest-prepared arc in the game was invisible until somebody tripped over it.
+
+It now opens with a **returned filing**. A freight agent at a bar pays a flat 350 cr
+(`KaamosFind.BounceFilingFee`) to have a consignment filed under somebody else's hull, because theirs keeps
+coming back; the board returns it off yours too, with the one word that makes a dead berth interesting:
+*HELD*. Seeded one bar-watch in three (`KaamosFind.BounceAtBar`), offered only to a captain holding nothing
+of the arc, and it **hands over no shard** — it is `KaamosProgress.BerthFilingBounced`, its own per-thread
+flag, because the pool is what the gate counts and a sixth intel piece would move every threshold in this
+document. What it changes is that the ❄ card is now in the ledger for a captain who has assembled nothing,
+naming the paper in their pocket rather than counting shards nobody has asked for.
+
+The whole spec, and the head office at the far end of it, is
+[`kaamos-head-office.md`](kaamos-head-office.md).
 
 **Hook-only (still deliberately NOT wired, to avoid collisions):**
 - **The route.** When `CanReachEnceladus(progress)` turns true, the eventual route/scenario lane

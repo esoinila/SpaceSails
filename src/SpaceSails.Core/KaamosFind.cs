@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// The seeded WHERE for the two KAAMOS fragments that need a deterministic "is it here?" — the cold
@@ -80,4 +80,56 @@ public static class KaamosFind
     /// shard). A modest, flat price — a tip bought, never an economy. Authored here so the fiction's number
     /// lives with the fiction.</summary>
     public const int BoughtCoordinateCredits = 1200;
+
+    // ── #635 · THE FRONT DOOR: the consignment that keeps coming back ───────────────────────────────────
+    //
+    // The finding this answers, verbatim from the issue: "The KAAMOS arc has no inciting hook. Nothing
+    // points a player at Ringside Exchange's dedication plaque rather than any of the other six plates in
+    // the system; the ledger's card only appears once a shard is already held. So the longest-prepared arc
+    // in the game is invisible until a player trips over it by accident."
+    //
+    // The owner's 2026-08-03 ruling names the shape of the fix: a hook "built out of grammar the player
+    // already reads, instead of a new signpost bolted onto a plaque". A freight agent with a docket the
+    // board will not accept is that grammar exactly — this game's whole register is paperwork — and it does
+    // not violate #380, because nothing about the arc arrives early. A berth that is HELD rather than
+    // CLOSED refuses a filing and prints WHY on the docket. That is the world being consistent.
+    //
+    // It hands over NO shard. It cannot: the pool is what the gate counts, and a sixth intel piece would
+    // move the threshold under every existing test and every existing save. What it hands over is the fact
+    // that there is something to be curious ABOUT.
+
+    /// <summary>Rarity of the returned filing: on roughly one bar-watch in this many, a freight agent in
+    /// the room is holding the docket that keeps coming back. Deliberately far more common than the
+    /// berth-holder (<see cref="HolderOneInWatches"/>) — this is a front door, and a front door that opens
+    /// one watch in four is a front door most captains never find. Keyed on (bar, watch-day) so it is a
+    /// fact about the room and not a re-roll of the button.</summary>
+    public const int BounceOneInWatches = 3;
+
+    /// <summary>True if a freight agent at THIS bar on THIS watch-day is holding the consignment the board
+    /// keeps returning. Deterministic per (bar, day), the <see cref="HolderAtBar"/> idiom.
+    ///
+    /// <para><paramref name="forced"/> is the <c>/map?kaamos=bounce</c> dev seat: the agent is at whatever
+    /// bar you walk into, this watch. The front door of the longest arc in the game must be openable on
+    /// demand, or it is a scene that ships broken.</para></summary>
+    public static bool BounceAtBar(string bodyId, int watchDay, bool forced = false)
+    {
+        if (forced)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(bodyId))
+        {
+            return false;
+        }
+
+        ulong h = DiceRule.Seed($"kaamos:bounce:{bodyId}", watchDay);
+        return h % (ulong)BounceOneInWatches == 0;
+    }
+
+    /// <summary>What the agent counts out for putting your hull's number on their docket. A filing fee,
+    /// not a job: it is paid whether or not the board accepts, because the attempt is the service. Small
+    /// enough that nobody takes the front door for a living, and non-zero so that the beat is never a
+    /// bait-and-switch — the captain is told the price before they agree, on the same card that names it.</summary>
+    public const int BounceFilingFee = 350;
 }
