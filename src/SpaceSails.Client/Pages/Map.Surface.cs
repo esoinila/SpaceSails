@@ -444,6 +444,16 @@ public partial class Map
         // the walk, and it is the walk the owner wants to be long enough to feel the thing grow.
         public bool MonolithApproachAnnounced { get; set; }
 
+        // #649 · THE WATCH. How long the captain has stood inside the monolith's sight this excursion, and
+        // whether the ground has already done its one strange thing. Real-time seconds, like every other
+        // surface clock (#469: SimTime is the ship's orbital clock and barely advances on a regolith, so a
+        // dwell measured on it would never come due — the bug that froze the Old Ones where they were born).
+        //
+        // Per EXCURSION, never persisted: this is not a milestone and there is no ledger of it anywhere in
+        // the game. Nothing is counting; that is rather the point.
+        public double MonolithDwellSeconds { get; set; }
+        public bool MonolithWatchSpent { get; set; }
+
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
 
@@ -3634,6 +3644,11 @@ public partial class Map
     // Ones somehow knowing where the shuttle would touch down.
     private int _reeverAmbushCheat;
 
+    // #649: /map?watchers=1 opens the monolith's attentive window and shortens the dwell to a couple of
+    // seconds. It does NOT change what happens — the beat, the variant roll and the (zero) cost are the
+    // ones a captain gets — because a cheat that shows you a different scene is worse than no cheat at all.
+    private bool _watchersCheat;
+
     // The surface tick: dig channel, sentries, the chase, and the ambient tide — all cheap, no pathfinding.
     private void StepSurface(double dtRealSeconds)
     {
@@ -4039,6 +4054,13 @@ public partial class Map
             ShowAndFile(Monolith.ApproachLine, "▮");
         }
 
+        // #649 · AND THEN, RARELY, THE GROUND DOES SOMETHING. See MonolithWatch for the register and the
+        // three gates; this is only the clock and the telling. Owner's reference: Babylon 5, Sheridan and
+        // the giants on the playground — "background puppeteers watching if their kids perform in the school
+        // play." Parental, not predatory: it costs nothing, it never repeats inside an excursion, and the
+        // world never remarks on it afterwards.
+        StepMonolithWatch(dtRealSeconds);
+
         // #380 item 2: the one-per-excursion band-drop pulse. The first time this frame's toll drops the nerve
         // a whole rung (Steady→Rattled, or lower), say WHY it falls and HOW to mend it — the cause+remedy the
         // bare gauge never showed. Latched on the excursion (a fresh landing re-arms it), the house one-time idiom.
@@ -4300,6 +4322,65 @@ public partial class Map
     //
     // Monolith.StandsOn is the same predicate the renderer builds the slab's card from, so the beat cannot
     // drift from the object again.
+    /// <summary>#649 · THE DWELL, AND THE ONE STRANGE THING.
+    ///
+    /// <para>Three gates, all of them Core's (<see cref="MonolithWatch"/>): the PLACE (the monolith's own
+    /// ground, and inside its sight), the WINDOW (about one visit-window in three is attentive, on the same
+    /// slow clock the foot-offerings use, so it holds still for a whole excursion), and the DWELL — you have
+    /// to STAY. Nothing is watching to see you arrive. It is watching to see whether you stand there.</para>
+    ///
+    /// <para>Walking out of sight resets the clock, which is the difference between standing at a thing and
+    /// passing it. Once per excursion at most, and the beat costs the captain nothing —
+    /// <see cref="MonolithWatch.NerveCost"/> carries the reasoning and is the one number to change.</para>
+    ///
+    /// <para>Deliberately NOT a story card or a plate. The picture idiom (#528) is the right instrument for
+    /// almost everything and the wrong one here: a frame around a thing says THIS IS A THING, and the whole
+    /// ruling is that anything happening near this stone stays deniable.</para></summary>
+    private void StepMonolithWatch(double dtRealSeconds)
+    {
+        if (_surface is not { } ex || !MonolithWatch.CanHappenOn(ex.Stop.Body.Id, ex.Site.LayoutSalt))
+        {
+            return;
+        }
+
+        if (!SeesMonolith())
+        {
+            ex.MonolithDwellSeconds = 0;   // you walked away; standing at a thing is not passing it
+            return;
+        }
+
+        ex.MonolithDwellSeconds += dtRealSeconds;
+
+        // ?watchers=1 — the beat is rare BY DESIGN (one window in three, then forty seconds of standing
+        // still), which makes it the exact shape of scene Map.Sim's own rule is about: "a scene nobody can
+        // reach on demand is a scene that ships broken." The cheat opens the window and shortens the dwell;
+        // it does not change what happens, so what a tester sees is what a captain sees.
+        double dwell = _watchersCheat ? MonolithWatch.DwellSeconds * 0.05 : MonolithWatch.DwellSeconds;
+        if (ex.MonolithWatchSpent || ex.MonolithDwellSeconds < dwell)
+        {
+            return;
+        }
+
+        long epoch = Monolith.EpochAt(SimTime);
+        if (!_watchersCheat && !MonolithWatch.AttentiveIn(ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch))
+        {
+            ex.MonolithWatchSpent = true;   // this window is not one of them; do not keep asking
+            return;
+        }
+
+        ex.MonolithWatchSpent = true;
+        MonolithWatch.What what = MonolithWatch.Which(
+            ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch, packOnTheField: _reevers.Count > 0);
+        ShowAndFile(MonolithWatch.Line(what), MonolithWatch.Glyph);
+
+        // NerveCost is 0.0 and the call is left in on purpose: the number is a feel call the owner may want
+        // to make, and a call site that has to be re-found is a decision that quietly never gets made.
+        if (MonolithWatch.NerveCost > 0)
+        {
+            ApplyNerveShock(MonolithWatch.NerveCost, "something out here was paying attention");
+        }
+    }
+
     /// <summary>How far the captain is from the deep anchor, squared. One expression, because the sight beat
     /// and the arrival beat must measure from the same point or they can disagree about where the thing
     /// is.</summary>

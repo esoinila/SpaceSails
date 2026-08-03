@@ -141,6 +141,15 @@ constants. Details: `features/the-landing-site.md` §10.4b.
   reported by the world in a way that stays deniable. This is the same law that governs the
   Reever origin: the inference is the horror, and confirming it kills it.
 
+**Shipped (#649, PR 3 — the watch).** `MonolithWatch`: three gates (the monolith's own ground and inside
+its sight; about one visit-window in three, on the foot-offerings' slow clock; forty seconds of standing
+still, once per excursion). Six variants, every one a fact about the *world* and not a thing that could be
+met — the shadows disagreeing with the slab's, your own prints ahead of you, the pack going still and
+facing the stone, a tide in the dust, one tracker contact too many, the light dipping with nothing crossing
+the sun. **It costs nothing**: the place is already priced at 24, and a site that bills you for standing in
+it is a predator whatever the prose says. Not a card and not a plate — a frame around a thing says THIS IS
+A THING. Cheat `?watchers=1`. Details: `features/the-landing-site.md` §10.4c.
+
 ## 9. KAAMOS is the head office (owner ruling, 2026-08-03)
 
 *Bears on #411 (the KAAMOS plotline) and #635 (KAAMOS has no front door). Destination design,
