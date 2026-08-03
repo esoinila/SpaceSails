@@ -22,21 +22,118 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public sealed class TheMonolithIsAPlaceTests
 {
+    /// <summary>#649 · IT IS DRAWN AT ITS CANON SIZE, and every number comes off the one fact.
+    ///
+    /// <para>Owner: <i>"The Phobos one's dimensions were huge and it should not live in a boxed backyard but
+    /// show more of its size."</i> The game has recorded that size since #164 — 85 m, on the landmark the
+    /// treasure maps are minted from — and drew it at six deck units, four metres, for months. The fact and
+    /// the picture disagreeing by a factor of twenty is bug class 1 with the wrongness baked in before the
+    /// literal was even typed, which is why this asserts the DERIVATION and not a number.</para></summary>
     [Fact]
-    public void TheSlabIsBigEnoughToBeAWallRatherThanACrate()
+    public void EveryDimensionComesOffTheOneCanonFact()
     {
-        // Four captains wide is the floor. Below that it is furniture, whatever the label says.
-        const double captain = 1.4;
-        Assert.True(Monolith.HalfWidth * 2 >= captain * 4,
+        // The one fact, and it is the map card's, not this file's.
+        Assert.Equal(Landmarks.PhobosMonolith.HeightMeters, Monolith.HeightMetres);
+        Assert.Equal(85.0, Monolith.HeightMetres);
+
+        // Drawn at its real size: the footprint's long axis, converted back to metres, IS the 1:4:9 face of
+        // an 85 m object. If somebody types a deck-unit number over this, the arithmetic stops closing.
+        Assert.Equal(Monolith.HeightMetres * Monolith.WidthRatio,
+            SurfaceScale.Metres(Monolith.HalfWidth * 2), 6);
+        Assert.Equal(Monolith.HeightMetres * Monolith.DepthRatio,
+            SurfaceScale.Metres(Monolith.HalfHeight * 2), 6);
+
+        // 1 : 4 : 9 — the squares of the first three integers, identical in every unit system anybody could
+        // measure it in, and a plan no quarry cuts. The proportions are the "not built by us", so a change
+        // that quietly rounded them off would take the whole point with it.
+        Assert.Equal(4.0, Monolith.HalfWidth / Monolith.HalfHeight, 6);
+
+        // BIGGER THAN THE FRAME. DeckView holds about 64 du across and 28 deep; a landmark that fits inside
+        // one screen is a prop in a room, which is the exact thing the ruling forbids. The stone must at
+        // least dominate the frame, and its ceremony must exceed it.
+        Assert.True(Monolith.HalfWidth * 2 > 64 * 0.75,
+            "the whole slab fits comfortably on one screen — it is a prop in a room again.");
+        Assert.True(Monolith.ApronRadius * 2 > 64,
+            "the swept ground fits on one screen, so there is no approach to cross.");
+
+        // And it grew: whatever else changes, it may never go back to being furniture. Four captains wide
+        // was the old floor and is now the floor of the floor.
+        Assert.True(Monolith.HalfWidth * 2 >= SurfaceScale.CaptainWidthDu * 4,
             "the monolith is narrower than four captains — it is a crate again.");
 
-        // And the apron has to be big enough to read as a cleared APPROACH from a distance, not a kerb.
-        Assert.True(Monolith.ApronRadius > Monolith.HalfWidth * 4,
+        // The ceremony still reads as an approach rather than a kerb, and the stubs stand ON it, clear of
+        // the stone's own ends.
+        Assert.True(Monolith.ApronRadius > Monolith.HalfWidth * 1.4,
             "the swept apron is barely wider than the stone, so there is no approach to see.");
         Assert.True(Monolith.MarkerRing < Monolith.ApronRadius,
             "the approach stubs stand outside the apron they are supposed to be on.");
         Assert.True(Monolith.MarkerRing > Monolith.HalfWidth + 2,
             "the approach stubs are jammed against the slab.");
+    }
+
+    /// <summary>#649 · THE SIGHT AND THE ARRIVAL ARE BOTH FUNCTIONS OF HOW BIG IT IS.
+    ///
+    /// <para>The once-in-a-life nerve range was a flat 26 du typed into <c>Map.Surface</c>, eyeballed against
+    /// a six-du slab. At the real size that puts the biggest single fright in a captain's life at the moment
+    /// they walk into the rock — the beat firing after the thing it is about. A range that does not move with
+    /// the object is a constant governing the wrong thing (bug class 2) waiting for its day.</para></summary>
+    [Fact]
+    public void YouSeeItLongBeforeYouReachIt()
+    {
+        Assert.True(Monolith.SightRangeDu > Monolith.ApronRadius,
+            "you cross onto the swept ground before the thing resolves — the beat fires after its own moment.");
+        Assert.True(Monolith.ApproachRangeDu > Monolith.HalfHeight,
+            "the arrival beat lands inside the stone.");
+        Assert.True(Monolith.SightRangeDu > Monolith.ApproachRangeDu,
+            "first sight and arrival are the same distance — one of the two beats is redundant.");
+
+        // The walk from the landing band to the stone has to be long enough that the thing GROWS on the way
+        // (owner: "keep getting larger as you walk, the way only genuinely big things do"). If sight range
+        // covered the whole walk, it would be in view from the pad and never resolve out of anything.
+        double walk = SurfaceLayout.DefaultField.LandingBandY - SurfaceLayout.DefaultField.AnchorY;
+        Assert.True(walk > Monolith.SightRangeDu * 2,
+            "the whole walk is inside sight range — there is nothing to approach.");
+    }
+
+    /// <summary>#649 · THE SHADOW IS THE ONLY THING ON A TOP-DOWN PLAN THAT CAN SAY 'TALL', so it has to
+    /// actually be one: cast by this object's height at this sun, longer than the world is deep.</summary>
+    [Fact]
+    public void TheShadowIsLongerThanTheFieldIsDeep()
+    {
+        double fieldDepth = SurfaceLayout.DefaultField.LandingBandY - SurfaceLayout.DefaultField.BottomY;
+        Assert.True(Monolith.ShadowLengthDu > fieldDepth,
+            "the shadow ends inside the walked field — there is somewhere on this moon you are not in it.");
+
+        // It is cast, not chosen: height over the tangent of the sun's altitude, and nothing else.
+        Assert.Equal(
+            Monolith.HeightDu / System.Math.Tan(Monolith.SunAltitudeDegrees * System.Math.PI / 180.0),
+            Monolith.ShadowLengthDu, 6);
+        double sun = Monolith.SunAltitudeDegrees;
+        Assert.True(sun > 0 && sun < 45,
+            "the sun is too high for a landmark to have a shadow worth walking down.");
+        Assert.True(Monolith.ShadowSpread > 1.0, "a low sun's shadow does not narrow with distance.");
+    }
+
+    /// <summary>#649 · NOTHING IS BUILT INSIDE IT. Four separate placers used to hold the deep landmark at
+    /// arm's length with a number each, every one of them sized for a six-du fixture. The object publishes
+    /// its own claim now, and it has to cover everything it occupies.</summary>
+    [Fact]
+    public void TheObjectPublishesTheGroundItOccupies()
+    {
+        SurfaceLayout.Field f = SurfaceLayout.DefaultField;
+
+        (double X, double Y, double R)? claim = Monolith.KeepOutOn(Monolith.BodyId, "", f);
+        Assert.NotNull(claim);
+        Assert.Equal(f.AnchorX, claim!.Value.X);
+        Assert.Equal(f.AnchorY, claim.Value.Y);
+        Assert.True(claim.Value.R > Monolith.ApronRadius,
+            "the claim stops at the swept ground — a hut may stand on the edge of the ceremony.");
+        Assert.True(claim.Value.R > Monolith.HalfWidth,
+            "the claim is narrower than the stone — a building can be seeded INSIDE the monolith.");
+
+        // And nowhere else in the game claims it, because nothing else has one.
+        Assert.Null(Monolith.KeepOutOn(Monolith.BodyId, "RidgeCamp", f));
+        Assert.Null(Monolith.KeepOutOn(FalseSlab.BodyId, "", f));
     }
 
     /// <summary>THE MONOLITH IS ONE OBJECT, ON ONE GROUND. The slab's geometry is only laid where

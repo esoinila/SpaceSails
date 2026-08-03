@@ -417,6 +417,16 @@ public static class SecretLab
         SurfaceOutpost.Placement hut = SurfaceOutpost.For(bodyId, salt, field, forcePresent: true);
         taken.Add((hut.DoorX, hut.DoorY, OutpostClearance));
 
+        // #649 · And the monolith, on the one ground that carries one. The lift head is seeded down the deep
+        // field and the deep field is where the stone is; without this the camouflaged shed could be seeded
+        // inside 54 du of solid rock, which is a captain riding a lift up into somewhere they cannot stand —
+        // the #602 report, wearing a landmark. Asked of the object, so its size and this clearance cannot
+        // drift apart.
+        if (Monolith.KeepOutOn(bodyId, salt, field) is { } slab)
+        {
+            taken.Add((slab.X, slab.Y, slab.R + reach));
+        }
+
         // A handful of seeded retries along the deep field, then give up and take the last one rather than
         // loop: a shed slightly close to a hut is a cosmetic problem, and no shed at all is a dead feature.
         for (int attempt = 0; attempt < 24 && Clashes(x, y, taken); attempt++)

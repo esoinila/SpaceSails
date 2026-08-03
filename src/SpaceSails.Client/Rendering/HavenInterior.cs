@@ -91,7 +91,18 @@ public static class HavenInterior
 
     // Keyed by "bodyId|<sorted opened-hatch ids>", so the locked concourse and the wing-grown variant
     // are cached side by side and a station is still built at most once per unlock state.
-    private static readonly Dictionary<string, DeckPlan> Cache = new();
+    //
+    // #649 · CONCURRENT, for exactly the reason MoonSurface's layout cache already is (#585): in WASM the
+    // game is single-threaded and a plain Dictionary is safe, but xUnit runs test classes IN PARALLEL, so
+    // two of them building haven decks at once corrupt it — "Operations that change non-concurrent
+    // collections must have exclusive access." It surfaced here as TheOracleCanBeSeatedOnDemandTests failing
+    // about one run in three with an InvalidOperationException that has nothing to do with the oracle, which
+    // is the worst kind of failure there is: a flaky audit teaches you to ignore audits.
+    //
+    // Found by an unrelated change to the surface renderer shifting the timing enough to lose the race. It
+    // was always there. Building a deck is deterministic, so a racing double-build is pure waste and never a
+    // wrong answer — only the dictionary itself ever needed protecting.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DeckPlan> Cache = new();
 
     /// <summary>Does this haven have a walkable interior (so docking should weld on a tube)?</summary>
     public static bool HasInterior(string bodyId) => System.Array.Exists(Specs, s => s.BodyId == bodyId);

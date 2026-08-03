@@ -30,8 +30,17 @@ public static class SurfaceLayout
 {
     /// <summary>A generated interior wall in deck units. <paramref name="IsHull"/> marks a solid opaque
     /// face (a landmark's own slab, the mass-driver muzzle) versus an open ruin/maze wall; the client
-    /// maps both onto its collidable <c>DeckPlan.Wall</c>, so both stop a boot and a shamble alike.</summary>
-    public readonly record struct Wall(double X1, double Y1, double X2, double Y2, bool IsHull);
+    /// maps both onto its collidable <c>DeckPlan.Wall</c>, so both stop a boot and a shamble alike.
+    ///
+    /// <para>#649 · <paramref name="Unseen"/> is a segment that COLLIDES AND IS NEVER DRAWN — the same
+    /// distinction the field's own bound already makes (<see cref="SurfaceEdge"/>: it stops you and nothing
+    /// is ever painted for it). It exists for the inside of a solid: <see cref="AddSolidMass"/> hatches a
+    /// mass through so no gap in it can hold a body, and on a small fixture those strokes are what makes it
+    /// read as mass rather than as a suspiciously thick room. On the monolith they would be forty-nine
+    /// parallel lines across the one object in the game whose card says <i>no seam</i> — masonry drawn onto
+    /// the thing nobody built. Same collision, no joins.</para></summary>
+    public readonly record struct Wall(double X1, double Y1, double X2, double Y2, bool IsHull,
+        bool Unseen = false);
 
     /// <summary>A deep-field landmark to label on the ground: its glyph-tagged text at (X, Y).</summary>
     public readonly record struct Landmark(double X, double Y, string Label);
@@ -125,6 +134,14 @@ public static class SurfaceLayout
         // every body whether or not this one hides one — the door spot is seeded the same way regardless, so
         // it costs a building's worth of ground and means a lab can never open into somebody's wall.
         list.Add(SecretLab.ChamberFootprint(bodyId ?? "", field, siteSalt));
+
+        // #649 · AND THE MONOLITH, on the one ground that has one. It is 54 du across and its swept apron is
+        // 86; a placer that had never heard of it would put a hut inside the stone. Asked of the object
+        // itself rather than restated as a number here, so growing it moves everything that must move.
+        if (Monolith.KeepOutOn(bodyId, siteSalt, field) is { } slab)
+        {
+            list.Add(slab);
+        }
         return list;
     }
 
@@ -280,8 +297,13 @@ public static class SurfaceLayout
 
         // THE MONOLITH. One solid mass, clamped into the field like every other authored signature so the
         // edge lanes stay open and a way down always exists however large it grows.
+        // hatchDrawn: false — the mass is hatched through for collision (nothing can stand inside it) and
+        // NONE of those strokes is drawn. Every other solid on every moon reads as piled regolith because of
+        // that hatch; this one must read as ONE FACE, which is what its own card says it is ("No seam") and
+        // what the owner's "not having been built by us" looks like on a crude grid. The picture is the
+        // filled mass MoonSurface lays over it.
         AddClampedSolidMass(walls, f, ax - Monolith.HalfWidth, ay - Monolith.HalfHeight,
-            ax + Monolith.HalfWidth, ay + Monolith.HalfHeight, hull: true);
+            ax + Monolith.HalfWidth, ay + Monolith.HalfHeight, hull: true, hatchDrawn: false);
 
         // The four stubs at the compass points, just inside the swept apron: the remains of an approach.
         // Small, solid, and unmistakably PLACED — the difference between a rock and a ruin. They are the
@@ -718,7 +740,7 @@ public static class SurfaceLayout
     /// as a suspiciously thick room. Nothing about the outline changes; the inside simply stops being a
     /// place.</para></summary>
     private static void AddSolidMass(System.Collections.Generic.List<Wall> walls,
-        double x1, double y1, double x2, double y2, bool hull)
+        double x1, double y1, double x2, double y2, bool hull, bool hatchDrawn = true)
     {
         AddBox(walls, x1, y1, x2, y2, hull);
 
@@ -727,7 +749,7 @@ public static class SurfaceLayout
         double lo = System.Math.Min(x1, x2), hi = System.Math.Max(x1, x2);
         for (double x = lo + hatch; x < hi - 1e-9; x += hatch)
         {
-            walls.Add(new(x, y1, x, y2, hull));
+            walls.Add(new(x, y1, x, y2, hull, Unseen: !hatchDrawn));
         }
     }
 
@@ -1043,11 +1065,11 @@ public static class SurfaceLayout
     /// The two properties are independent and the object needs both, so there is a helper that has both
     /// rather than a caller that remembers to.</para></summary>
     private static void AddClampedSolidMass(System.Collections.Generic.List<Wall> walls, in Field f,
-        double x1, double y1, double x2, double y2, bool hull)
+        double x1, double y1, double x2, double y2, bool hull, bool hatchDrawn = true)
     {
         x1 = System.Math.Max(f.LeftX + EdgeMargin, x1);
         x2 = System.Math.Min(f.RightX - EdgeMargin, x2);
-        AddSolidMass(walls, x1, y1, x2, y2, hull);
+        AddSolidMass(walls, x1, y1, x2, y2, hull, hatchDrawn);
     }
 
     // ── Seeded sampling: pure and deterministic per (bodyId, tag) off the shared dice engine. ──

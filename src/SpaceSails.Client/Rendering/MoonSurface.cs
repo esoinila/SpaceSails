@@ -273,7 +273,9 @@ public static class MoonSurface
             // #589: this world's own stone, so a glance at the walls says which moon this is.
             stoneInk: BodyPalette.For(bodyId),
             // #592: and its doors, so an IMPORTED one stands out as the sentence it is.
-            doorInk: BodyPalette.DoorInk(bodyId));
+            doorInk: BodyPalette.DoorInk(bodyId),
+            // #649: the monolith's filled mass — the one object on any moon drawn without a join in it.
+            structures: layout.Structures);
     }
 
     // #371 Phase 1 · the memoized, delegate-free layout: everything in a surface deck that is a pure
@@ -290,7 +292,10 @@ public static class MoonSurface
         DeckPlan.Door[] Doors,
         // #563: the terrain layer — drawn, never collided. Memoised alongside the walls because it is a
         // pure function of the same key, and regenerating a dozen craters per frame would be silly.
-        SurfaceScenery.Mark[] Scenery);
+        SurfaceScenery.Mark[] Scenery,
+        // #649: the filled masses. Exactly one ground in the game has one — the monolith — and it is the
+        // opposite of the scenery array: drawn AND collided, by the walls that share its outline.
+        DeckPlan.Structure[] Structures);
 
     // WASM is single-threaded, so a plain dictionary is safe. Bounded (see the growth guard above).
     private const int LayoutCacheCap = 64;
@@ -389,8 +394,11 @@ public static class MoonSurface
             // opposed to a fallen span, and that distinction is worth keeping. What was wrong was the ink:
             // it drew in the ship's cold blue-white hull stroke, so 16 of the Ridge Camp's 25 segments were
             // painted as spaceship. Same flag, translated to stone.
+            // #649 · Unseen carries through: a solid's internal hatch may be collision-only (the monolith's
+            // is), and the renderer already knows how to stop you at something it never paints — that is what
+            // the field's own bound has always been.
             walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, false,
-                IsStone: w.IsHull));
+                Unseen: w.Unseen, IsStone: w.IsHull));
         }
 
         // #573 · EVERY BUILDING GETS A REAL DOOR. Owner: "there seemed to be shelter like spaces that were
@@ -463,13 +471,42 @@ public static class MoonSurface
 
         var backdrops = new List<DeckPlan.Backdrop>(ship.Backdrops);
 
+        // #649 · THE ONE FILLED MASS ON ANY MOON. Every other solid object on a landing site is drawn as a
+        // hatched outline — the established idiom for piled regolith, and the reason a plinth reads as mass
+        // rather than as a room. The monolith is drawn as neither: a single unbroken filled rectangle, with
+        // no join anywhere in it, using the same primitive the ship's solid shielding uses (#537: "drawn
+        // filled so it cannot be mistaken for somewhere you could be").
+        //
+        // This is the owner's "not having been built by us", in the picture rather than in a sentence. The
+        // proportions are 1 : 4 : 9 and no quarry cuts that; the face has no seam and no course; and neither
+        // fact is ever stated anywhere the captain can read it.
+        var structures = new List<DeckPlan.Structure>();
+        if (Monolith.StandsOn(bodyId, siteSalt))
+        {
+            structures.Add(new DeckPlan.Structure(
+                AnchorX - (float)Monolith.HalfWidth, AnchorY - (float)Monolith.HalfHeight,
+                AnchorX + (float)Monolith.HalfWidth, AnchorY + (float)Monolith.HalfHeight));
+        }
+
+        // #649 · HOW WIDE "THE DEEP AREA" IS depends on what is standing in it. This was a flat 16 du either
+        // side of the anchor, which is honest for a six-du fixture and a lie for a fifty-four-du one: a
+        // captain with a glove flat on the west end of the monolith would have been told they were on
+        // PHOBOS SURFACE, which is the sim doing one thing and the sentence saying another (bug class 3), on
+        // the one square of ground in the game where the sentence matters most.
+        double deepHalfW = Math.Max(16.0, Monolith.StandsOn(bodyId, siteSalt)
+            ? Monolith.ApronRadius
+            : 0.0);
+        double deepTopY = AnchorY + Math.Max(8.0, Monolith.StandsOn(bodyId, siteSalt)
+            ? Monolith.HalfHeight + 8.0
+            : 0.0);
+
         // The location line is a pure function of (position, bodyDisplayName, layout.Scheme, ship) — all
         // deterministic per body id, none of it component-bound — so the closure is safe to cache.
         Func<double, double, string> location =
             (x, y) => y > DeckPlan.ShuttleHatchY ? ship.Location(x, y)
                     : y > SurfaceTopY ? "DOWN-TUBE (the shuttle ride)"
                     : y > LandingBandY - 2 ? "LANDING AREA"
-                    : y < AnchorY + 8 && Math.Abs(x - AnchorX) < 16 ? layout.Scheme
+                    : y < deepTopY && Math.Abs(x - AnchorX) < deepHalfW ? layout.Scheme
                     : $"{bodyDisplayName.ToUpperInvariant()} SURFACE";
 
         // #563 · The terrain. Owner: "put something more interesting in the landscape." Crater rims, scree
@@ -577,18 +614,39 @@ public static class MoonSurface
         // regolith. That is precisely what the note below forbids — a marker pointing at nothing.
         if (Monolith.StandsOn(bodyId, siteSalt))
         {
+            // #649 · THE SHADOW, which is the only way a top-down plan can say 121 deck units TALL.
+            //
+            // Owner: it must "read as large from a long way off, and keep getting larger as you walk, the way
+            // only genuinely big things do." Nothing about a footprint does that — a rectangle on a grid is a
+            // rectangle whatever size it is, and the camera only frames about 64 du, so from the landing band
+            // even a slab this big is simply off-screen. What IS visible from every square of the field is
+            // what an object that tall does to the light: at 18° of sun it throws a lane of dark roughly 370
+            // du up-field, which is longer than the walked world is deep.
+            //
+            // So the captain steps off the pad into shade that runs off the bottom of the map, and the only
+            // way to find out what is casting it is to walk down it. Nothing says so. Drawn as scenery —
+            // never collided — because a shadow is not a thing you can bump into, and because the one law
+            // this ground has is that what stops you and what you can see are separate arrays.
+            AddShadow(sceneryList, field);
+
+            // The card, on the APPROACH side. It used to sit deep of the slab, which was harmless at six deck
+            // units and is a walk of fifty round solid rock at the real size — an affordance you can see and
+            // cannot reach is worse than none (#212). The captain always comes from up-field; the console
+            // meets them at the face.
             consoles.Add(new(DeckPlan.ConsoleKind.ViewObject,
-                AnchorX, AnchorY - (float)Monolith.HalfHeight - 2f,
+                AnchorX, AnchorY + (float)Monolith.HalfHeight + 2.5f,
                 Monolith.ConsoleLabel, Monolith.ArtUrl, Monolith.Lore));
 
             // And whatever somebody left, if this window has anything. NOT a console that is always there
             // with an empty payload — a marker pointing at nothing is the map lying, which is the one thing
-            // this ground is not allowed to do.
+            // this ground is not allowed to do. Along the same face, a good way down it: things are left at
+            // the FOOT of the thing, and the foot is now long enough to walk.
             Monolith.Offering left = Monolith.AtTheFoot(bodyId, siteSalt, monolithEpoch);
             if (left != Monolith.Offering.Nothing)
             {
                 consoles.Add(new(DeckPlan.ConsoleKind.MonolithFoot,
-                    AnchorX + (float)Monolith.HalfWidth + 2.5f, AnchorY,
+                    AnchorX + (float)(Monolith.HalfWidth * 0.55),
+                    AnchorY + (float)Monolith.HalfHeight + 2.5f,
                     Monolith.FootLabel(left)));
             }
         }
@@ -664,7 +722,7 @@ public static class MoonSurface
 
         return new Layout(
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(), location,
-            doors.ToArray(), scenery);
+            doors.ToArray(), scenery, structures.ToArray());
     }
 
     /// <summary>#649 · Lay a swept apron ring around the deep anchor, or lay nothing at all. One function so
@@ -684,6 +742,47 @@ public static class MoonSurface
                 AnchorX + (Math.Cos(a0) * a.Radius), AnchorY + (Math.Sin(a0) * a.Radius),
                 AnchorX + (Math.Cos(a1) * a.Radius), AnchorY + (Math.Sin(a1) * a.Radius),
                 SurfaceScenery.Kind.Ridge));
+        }
+    }
+
+    /// <summary>#649 · THE MONOLITH'S SHADOW — a lane of dark running up-field from the slab's face to the
+    /// far end of the walked world, drawn and never collided.
+    ///
+    /// <para>Every number is the object's own (<see cref="Monolith.ShadowLengthDu"/>, <c>HalfWidth</c>,
+    /// <c>ShadowSpread</c>) and none of them is typed here, which is the point: this is a picture OF a
+    /// height, and if the height ever changes the picture has to change with it or the drawing starts lying
+    /// about the thing it is drawn from — bug class 3, the one this ground keeps paying for.</para>
+    ///
+    /// <para>It reaches past the top of the field and is clamped there. Nothing marks where it ends, because
+    /// the true edge of it is over the horizon and saying so would be the game explaining itself.</para>
+    /// </summary>
+    private static void AddShadow(List<SurfaceScenery.Mark> scenery, in SurfaceLayout.Field field)
+    {
+        double nearY = field.AnchorY + Monolith.HalfHeight;          // the lit face; the shade starts here
+        double farY = Math.Min(field.LandingBandY, nearY + Monolith.ShadowLengthDu);
+        if (farY <= nearY)
+        {
+            return;
+        }
+
+        double nearHalf = Monolith.HalfWidth;
+        double farHalf = Monolith.HalfWidth * Monolith.ShadowSpread;   // a low sun's penumbra is not subtle
+
+        // Nine strokes: the two edges of the umbra and seven streaks inside it. Enough that a captain crossing
+        // it reads a REGION of shade rather than a channel with banks — a rille is two lines and this must
+        // never be mistaken for one.
+        const int Strokes = 9;
+        for (int i = 0; i < Strokes; i++)
+        {
+            double t = (i / (double)(Strokes - 1) * 2.0) - 1.0;       // −1 … +1 across the lane
+            // The inner streaks stop short and at staggered lengths, so the far end frays out instead of
+            // ending on a line. A shadow with a hem is a wall's shadow; this one belongs to something whose
+            // top nobody has seen.
+            double reach = i == 0 || i == Strokes - 1 ? 1.0 : 0.55 + (0.4 * ((i * 7 % 5) / 4.0));
+            scenery.Add(new SurfaceScenery.Mark(
+                field.AnchorX + (t * nearHalf), nearY,
+                field.AnchorX + (t * farHalf * reach), nearY + ((farY - nearY) * reach),
+                SurfaceScenery.Kind.Rille));
         }
     }
 

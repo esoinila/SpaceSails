@@ -67,9 +67,14 @@ public partial class Map
     /// <summary>How long a nerve event's line hangs by the gauge before fading.</summary>
     private const double NerveFlashMs = 2600;
 
-    // First sight of the monolith: within this many deck-units of it, the captain lays eyes on the thing
-    // (owner's #313 maze). Reaches the maze approach (outer wall ~12 du out) with margin. FLAGGED for tuning.
-    private const double MonolithSightRange = 26.0;
+    // #649 · First sight of the monolith: the range is the OBJECT'S, not this file's.
+    //
+    // It was a flat 26 du typed here — eyeballed against a slab six deck units across, back when the slab
+    // was on the wrong moon. The stone is fifty-four across now and its swept apron is eighty-six, so 26
+    // would have put the biggest single fright in a captain's life at the moment they walked into the rock,
+    // with nothing left to resolve out of anything. Monolith.SightRangeDu is three fifths of its height, so
+    // the beat lands while the thing is still a shape on the tracker and the RESOLVING is what does it —
+    // and if it ever grows again, the sight grows with it instead of quietly becoming a lie.
 
     // Cornered: a Reever wedged up-field of the captain and this close laterally reads as a net across the
     // escape (owner: "being cornered"). A cheap geometry check — no pathfinding. FLAGGED for tuning.
@@ -432,6 +437,12 @@ public partial class Map
         public bool GraceEndedAnnounced { get; set; }
         public bool SentryHintShown { get; set; }         // #380 item 7: the one-time first-deploy sentry hint has fired
         public bool NerveBandDropAnnounced { get; set; }  // #380 item 2: the one-time "nerves fraying" band-drop pulse has fired
+
+        // #649 · The one-per-excursion beat for the moment the monolith stops being a shape and becomes the
+        // sky. Separate from _monolithSeen, which is the once-in-a-LIFE nerve hit: the first sight is a
+        // milestone and happens once ever, but ARRIVING at the foot of it is worth a line every time you make
+        // the walk, and it is the walk the owner wants to be long enough to feel the thing grow.
+        public bool MonolithApproachAnnounced { get; set; }
 
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
@@ -4012,6 +4023,22 @@ public partial class Map
             OfferSelfie(SelfieBeats.FirstMonolith, "art/selfie-monolith.jpg");
         }
 
+        // #649 · AND THE ARRIVAL, which is a different beat from the first sight and lands much closer in.
+        //
+        // Monolith.ApproachLine has existed since #586 with NO CALLER — designed and never consumed, which
+        // QAHandoff-StoryTelling.md §1 names as its own failure class. It is the one beat of pure SCALE the
+        // crude grid cannot draw by itself, and the scale pass is exactly where it belongs: the nerve hit
+        // fires at three fifths of the thing's height away, while it is still a shape; this fires when you
+        // cross onto the swept ground and it fills the view. Two beats, two distances, both derived from how
+        // big the thing actually is.
+        if (onExcursion && _surface is { MonolithApproachAnnounced: false } walk
+            && Monolith.StandsOn(walk.Stop.Body.Id, walk.Site.LayoutSalt)
+            && DistanceToAnchorSquared() <= Monolith.ApproachRangeDu * Monolith.ApproachRangeDu)
+        {
+            walk.MonolithApproachAnnounced = true;
+            ShowAndFile(Monolith.ApproachLine, "▮");
+        }
+
         // #380 item 2: the one-per-excursion band-drop pulse. The first time this frame's toll drops the nerve
         // a whole rung (Steady→Rattled, or lower), say WHY it falls and HOW to mend it — the cause+remedy the
         // bare gauge never showed. Latched on the excursion (a fresh landing re-arms it), the house one-time idiom.
@@ -4273,15 +4300,23 @@ public partial class Map
     //
     // Monolith.StandsOn is the same predicate the renderer builds the slab's card from, so the beat cannot
     // drift from the object again.
+    /// <summary>How far the captain is from the deep anchor, squared. One expression, because the sight beat
+    /// and the arrival beat must measure from the same point or they can disagree about where the thing
+    /// is.</summary>
+    private double DistanceToAnchorSquared()
+    {
+        double dx = _avatarX - MoonSurface.AnchorX;
+        double dy = _avatarY - MoonSurface.AnchorY;
+        return (dx * dx) + (dy * dy);
+    }
+
     private bool SeesMonolith()
     {
         if (_surface is not { } ex || !Monolith.StandsOn(ex.Stop.Body.Id, ex.Site.LayoutSalt))
         {
             return false;
         }
-        double dx = _avatarX - MoonSurface.AnchorX;
-        double dy = _avatarY - MoonSurface.AnchorY;
-        return (dx * dx) + (dy * dy) <= MonolithSightRange * MonolithSightRange;
+        return DistanceToAnchorSquared() <= Monolith.SightRangeDu * Monolith.SightRangeDu;
     }
 
     // #314: the sentry line. Every SentryBot.FireIntervalSeconds, deployed non-dry bots each put one

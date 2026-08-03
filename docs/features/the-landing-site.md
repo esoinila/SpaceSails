@@ -441,6 +441,41 @@ the empty ruins are: if there were always something, the walk would be a shoppin
 never changes under a captain standing on it — the object-persistence law. The window is part of the deck
 cache key, or the cache would serve a console saying something is there long after it is not.
 
+10.4b **It is drawn at its canon size (#649).** Owner: *"The Phobos one's dimensions were huge and it
+should not live in a boxed backyard but show more of its size and not having been built by us at least."*
+
+The size has been in the game since #164 — `Landmarks.PhobosMonolith.HeightMeters` is **85 m** — and the
+slab was drawn at six deck units. Four metres. So `SurfaceScale` now states what a deck unit is (0.7 m,
+anchored on the captain's own 1.4 du width), and **every dimension of the monolith is derived from that one
+canon number**: nothing about it is typed in, because a landmark whose canon size and drawn size differ by a
+factor of twenty is bug class 1 with the wrongness baked in before the literal was written.
+
+- **Proportions are 1 : 4 : 9** — the squares of the first three integers, identical in every unit system
+  anyone could ever measure it in. That is doing real work as well as being an homage: a nine-to-one sheer
+  plan with dead-parallel long faces is a shape no quarry cuts and no yard would, which is *"not built by
+  us"* expressed as geometry rather than as a sentence. **The ratio is never stated anywhere in the game.**
+- **The footprint is 54 × 13.5 du.** `DeckView` frames about 64 × 28, so the stone alone dominates the
+  screen and its swept apron (86 du across) exceeds it — the ruling's *"the object IS the horizon, not a
+  prop in a room"*, as something a guard can check.
+- **The shadow is how a top-down plan says TALL.** At 18° of sun a 121 du object throws about 370 du of
+  shade — longer than the walked field is deep. It runs up-field from the lit face to the landing band, so
+  a captain steps off the pad into a lane of dark that runs off the bottom of the world, and the only way
+  to find out what casts it is to walk down it. Nothing says so. Drawn as scenery: it does not collide.
+- **It is drawn as one unbroken filled mass**, the only object on any moon that is. Every other solid is a
+  hatched outline (the idiom for piled regolith); at this size that hatch is forty-nine parallel strokes
+  across the one object whose own card says *"No seam."* The mass still hatches through for **collision**
+  and none of it is **painted** — `SurfaceLayout.Wall.Unseen`, the same collide-but-never-draw distinction
+  the field's own bound has always used.
+- **Sight and arrival are both functions of the size.** First sight (the once-in-a-life nerve hit, 24, plus
+  the FirstMonolith selfie) fires at 0.6 × its height, ~73 du, while it is still a shape. `ApproachLine` —
+  which had existed since #586 with **no caller**, a designed-and-never-consumed failure — fires when you
+  cross onto the swept ground. Two beats, two distances, both derived.
+- **The object publishes the ground it occupies** (`Monolith.KeepOutOn`). Four placers used to hold the deep
+  landmark at arm's length with a number each, every one sized for a six-du fixture; growing the stone under
+  them would have seeded a pressure drum inside a wall.
+- **The card meets you on the side you walk from.** It used to sit deep of the slab, which is harmless at
+  six deck units and a fifty-du walk around solid rock at the real one.
+
 10.5 **Every line is somebody ELSE's visit.** The stone never moves, hums, glows or responds, and the card
 explains nothing. The Old Ones' origin is canon and is never confirmed by a card or a sensor; the monolith is
 older than the question and does not answer it. *(Enforced: `TheMonolithIsAPlaceTests` greps the prose.)*
