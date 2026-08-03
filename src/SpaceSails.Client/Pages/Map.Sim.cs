@@ -743,7 +743,7 @@ public partial class Map
                 // is a scene that ships broken", and a granted shard proves nothing about the scene that
                 // hands it over). Combine freely: /map?kaamos=holder&dock=ringside-exchange.
                 string candidate = Uri.UnescapeDataString(pair["kaamos=".Length..]).ToLowerInvariant();
-                if (candidate is "all" or "pod" or "holder" or "bounce"
+                if (candidate is "all" or "pod" or "holder" or "bounce" or "hq"
                     || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                 {
                     kaamosCheat = candidate;
@@ -1147,6 +1147,15 @@ public partial class Map
         if (_pendingExpeditionCheat is not null)
         {
             InjectExpeditionCheat(); // #370: after the clamp — the accepted gig lands on a live, docked world
+        }
+
+        // #411 — the head-office route seat has to be applied BEFORE ?land= fires, because the shuttle
+        // board is computed off where the ship floats and this cheat MOVES the ship to the ice moon. Every
+        // other ?kaamos= value is state-only and rides the ordinary block further down.
+        if (string.Equals(kaamosCheat, "hq", StringComparison.OrdinalIgnoreCase))
+        {
+            SeedKaamosHeadOfficeCheat();
+            kaamosCheat = null;
         }
 
         if (_landCheat)

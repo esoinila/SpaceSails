@@ -212,6 +212,7 @@ own trigger and narrates the shard (`KaamosLore.ById(id)!.Lore`):
 | `/map?kaamos=pod` | **Seats** the cold supply pod under the ground you land on — probe and *earn* it |
 | `/map?kaamos=holder` | **Seats** the berth-holder at whatever bar you dock at, every watch |
 | `/map?kaamos=bounce` | **Seats** the freight agent with the returned docket — the arc's front door (#635) |
+| `/map?kaamos=hq` | The whole route already ridden — shards, code, run filed, ship alongside the ice (#411) |
 
 The last two exist because two of the six fragments could previously only be *granted*: the pod is one
 seeded square in seventeen on one of seven outer moons, and the holder drinks at a given bar roughly one
@@ -236,10 +237,23 @@ naming the paper in their pocket rather than counting shards nobody has asked fo
 The whole spec, and the head office at the far end of it, is
 [`kaamos-head-office.md`](kaamos-head-office.md).
 
+### The route (2026-08-03) — the hook, consumed
+
+`CanReachEnceladus` is no longer a predicate nobody reads. **`CyclerWindow`** (pure Core) is the timetable
+the doc above promised: a grid over sim time, 2 days open every 40, a 38-day free-return ride, a gate with a
+spoken refusal per blocker, and every sentence authored beside the predicate that decides it. The berth code
+puts the hull on the board; a **listed supply run** comes back onto the board with it, carrying the cold
+pod's own manifest slug; the run is an ordinary `CargoRun` to a moon haven, so the ordinary
+park-in-orbit completion settles it and no second completion path exists.
+
+Which of #411's three options this is, and why, is [`kaamos-head-office.md`](kaamos-head-office.md) §1 — it
+is **B**, and the owner can overrule it in one line.
+
+One thing that lane deliberately does NOT gate: whether the ice moon has anything on it. The head office is
+keyed on the berth code alone, so a captain who crosses the deep black the long way round arrives at the
+same door. A route that is the only way in is a railroad.
+
 **Hook-only (still deliberately NOT wired, to avoid collisions):**
-- **The route.** When `CanReachEnceladus(progress)` turns true, the eventual route/scenario lane
-  turns it into a navigable **cycler window** to `IceMoonBodyId` — the only place that touches the
-  shuttle/scenario code. **This lane does not.**
 - **The reveal.** The sanity/#226 lane consumes `RevealSanityShockHook` for the climactic throw at
   Enceladus.
 - **Client save wiring.** The client gathers `KaamosProgress` into the vault the same way it does

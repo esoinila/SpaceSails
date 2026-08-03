@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// The ship's news wire (PR-14, docs/SaturdayPlan/StationDesks.md #14): one deterministic feed
@@ -31,6 +31,12 @@ public static class NewsWire
         AsteroidInbound,
         AsteroidDeflected,
         AsteroidStruck,
+
+        // #411/#663 — a story arc reaching the point where the WORLD notices. Subject is the arc's own
+        // flat, clerical headline: the wire never editorialises about a plot, it files it. This is the
+        // event behind StoryBeats.Beat.ArcNewsBreaks, whose card caption is written for exactly this
+        // moment ("one figure walks away from the screen instead of toward it").
+        ArcBeatBreaks,
     }
 
     /// <summary>One player-triggered event, dated and named. <paramref name="Subject"/> is the
@@ -217,6 +223,9 @@ public static class NewsWire
             $"{evt.Subject} still stands: a crew rode the rock down and shoved it off the line before it arrived. The rings kept the orbit. Drinks are on the Exchange.",
         NewsEventKind.AsteroidStruck =>
             $"The rock reached {evt.Subject}. Heavy damage across the trade decks and the berths are a mess, but she held — the Exchange is already clearing wreckage and reopening dock by dock.",
+        // #411/#663 — the subject IS the headline. An arc beat arrives already written in the voice of
+        // whoever filed it, because the alternative is the wire explaining a plot to the player.
+        NewsEventKind.ArcBeatBreaks => evt.Subject,
         _ => "Static on the wire.",
     };
 }

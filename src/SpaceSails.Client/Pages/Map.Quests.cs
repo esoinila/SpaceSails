@@ -537,6 +537,15 @@ public partial class Map
             return;
         }
 
+        // #411 — the far end of the same arc. Once the berth-code has resolved, the ice-moon berth is
+        // listed to this hull and a standing consignment has come back onto the board with it. Whoever is
+        // drinking here hands it over as the ordinary, absurdly-well-paid haul they believe it to be.
+        if (MakeKaamosSupplyRunOffer(giver) is { } kaamosRun)
+        {
+            _pendingOffer = kaamosRun;
+            return;
+        }
+
         Quest? offer = MakeContactOffer(giver);
         if (offer is not null)
         {
@@ -1653,6 +1662,14 @@ public partial class Map
         // and its giver, then the immediate next action — so the captain is never left guessing at the
         // moment of acceptance ("I took the parcel but the mission is quite unclear"). The live
         // next-action also rides the Captain desk chip (CaptainQuestChipLine) while the job is in hand.
+        // #411 — the run gets the arc's own receipt as well as the house one: the manifest slug is the
+        // cold pod's, word for word, because it is the same consignment. Nobody remarks on that.
+        if (offer.Id == KaamosLore.SupplyRunQuestId)
+        {
+            ShowPulseMessage(KaamosLore.SupplyRunAccepted);
+            return;
+        }
+
         ContractFacts facts = FactsFor(offer);
         ShowPulseMessage($"{MissionBrief.Receipt(facts.Kind, facts.Giver)} {MissionBrief.NextLine(facts)}");
     }

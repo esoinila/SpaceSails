@@ -3008,6 +3008,20 @@
                                 : $"🚀 Long haul to {lhMenuPlanet.Name} — no window from here")
                         </button>
                     }
+                    @* #411 ❄ THE CYCLER WINDOW — the KAAMOS route, and the only body in the system it is
+                       ever offered at. Shown only to a captain whose berth-code has resolved (the fiction may
+                       not arrive before the arc does, #380), and visible-but-disabled with the reason when the
+                       run is not filed or the arc is simply not here yet (#212). Core owns every word. *@
+                    @if (KaamosCyclerRowVisible(menuBody.Id))
+                    {
+                        string? cyBlock = KaamosCyclerBlock();
+                        <button type="button" class="btn btn-sm @(cyBlock is null ? "btn-info" : "btn-outline-secondary")"
+                                disabled="@(cyBlock is not null)"
+                                title="@(cyBlock ?? "Put her on the slow arc and be carried all the way in — 38 days, no burn, no brake at the far end")"
+                                @onclick="RideTheCyclerWindow">
+                            @KaamosCyclerLabel()
+                        </button>
+                    }
                     @* #290 🪂 AEROBRAKE — the third way to pay the arrival bill (beside the propulsive insert
                        and the warn-and-coast). Shown only for skim-atmosphere worlds (Uranus first; the
                        giants, Earth, Mars — never Titan/Venus). Quotes the honest trade, or is visible-but-

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -79,8 +79,33 @@ public partial class Map
             ShowRevealCard(plate.Title, plate.ArtFile, plate.Caption);
         }
 
+        if (tail.Length > 0)
+        {
+            AnnounceTheBerthIsListed();
+        }
+
         MaybeFireConvergence(); // #422: an arc-1 shard may be the edge that crosses the JOINT threshold too
         return true;
+    }
+
+    /// <summary>#663 · THE WORLD NOTICES. <c>StoryBeats.Beat.ArcNewsBreaks</c> shipped with a painted canvas,
+    /// a cadence and no caller at all; the story-QA run's finding is that <i>"an arc beat landing on the news
+    /// wire is the exact storytelling device the KAAMOS and Nebula passes are missing — the wire is where an
+    /// arc stops being your private business."</i>
+    ///
+    /// <para>This is the edge it belongs on and the only one in arc 1 that a stranger could possibly observe:
+    /// a berth that has been dead for a lifetime takes a filing. Everything else in KAAMOS happens inside the
+    /// captain's own head or across a table.</para>
+    ///
+    /// <para>The register is the whole trick. The wire does not announce a mystery; it files a housekeeping
+    /// note about a dormant listing, in the flattest voice an exchange clerk has, and never says whose hull.
+    /// That is what makes the beat's own caption land — <i>"one figure walks away from the screen instead of
+    /// toward it, because it is not news to them"</i> — which is a line written for exactly this moment and
+    /// has been waiting on the shelf for it.</para></summary>
+    private void AnnounceTheBerthIsListed()
+    {
+        PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks, CyclerWindow.BerthListedHeadline);
+        RaiseStoryBeat(StoryBeats.Beat.ArcNewsBreaks, "the berth at Ringside");
     }
 
     // ── The intel readout (deliverable: make progress VISIBLE). Reuses the Captain's-ledger tip idiom:
@@ -319,6 +344,11 @@ public partial class Map
 
         RequestVaultSave();
         string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosLore.ReachNotice : "";
+        if (tail.Length > 0)
+        {
+            AnnounceTheBerthIsListed();   // #663: the cheat crosses the same edge, so it raises the same beat
+        }
+
         ShowPulseMessage($"🧪 Test: assembled {_kaamos.Count} KAAMOS fragment{(_kaamos.Count == 1 ? "" : "s")} ({_kaamos.IntelAssembled} intel). See the Captain's ledger.{tail}");
         MaybeFireConvergence(); // #422: a big ?kaamos= may itself cross the joint bar if NEBULA is already up
     }
