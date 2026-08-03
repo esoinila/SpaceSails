@@ -107,7 +107,7 @@ public sealed class ADerelictIsNotAMoonTests
         Assert.InRange(atTheRim, 1.0, 1.01);
 
         double byTheMonolith = AwayTeamSide.CommsOnsetBias(
-            onWreck: false, MoonSurface.MonolithX, MoonSurface.MonolithY, AvatarRadius);
+            onWreck: false, MoonSurface.AnchorX, MoonSurface.AnchorY, AvatarRadius);
         Assert.Equal(2.0, byTheMonolith, 6);
     }
 

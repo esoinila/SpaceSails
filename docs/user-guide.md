@@ -378,8 +378,9 @@ the **SHUTTLE BAY**, board, pick a landing site, and ride down. Down there you a
 in a suit, and the ground keeps what you leave in it.
 
 - **Sites are worlds, not levels.** Every landable body offers a seeded set of 2–4 landing
-  sites, each named in the house voice. Site 0 is always the body's canon ground (Miranda's
-  monolith maze, Luna's mass-driver ruins); the others re-seed a visibly different layout.
+  sites, each named in the house voice. Site 0 is always the body's canon ground (Phobos's
+  monolith, Miranda's false-slab maze, Luna's mass-driver ruins); the others re-seed a visibly
+  different layout.
 - **Dig with `E`.** Carrying a chest, `E` buries it *where you stand* and an ✗ marks the spot.
   Empty-handed, `E` probes the square for what somebody else buried. A buried hoard lives off
   the ship, so no confiscation can ever touch it.

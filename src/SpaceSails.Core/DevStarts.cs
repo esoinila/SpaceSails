@@ -28,8 +28,13 @@ public static class DevStarts
     public static IReadOnlyList<Entry> All { get; } =
     [
         // --- The regolith: excursions, the Old Ones, and the ground itself -------------------------------
-        new("🛬", "Miranda — the monolith maze",
-            "Docked at The Tilt with Miranda in shuttle reach. Walk to the shuttle bay, board, and set down on the canon ground: the maze, the monolith, and the Old Ones under it.",
+        // #649 · THE MONOLITH'S OWN GROUND, and it is not Miranda's. The word was reserved for the one
+        // object, and the one object stands where every treasure map has said it does since #164.
+        new("▮", "Phobos — THE MONOLITH",
+            "Off The Space Bar, straight down onto the Stickney rim: open regolith and the one thing in the system nobody can account for. The long walk, the card on [E], and whatever somebody left at its foot this window (#649).",
+            "/map?dock=the-space-bar&body=phobos&site=0&land=1"),
+        new("🛬", "Miranda — the false-slab maze",
+            "Docked at The Tilt with Miranda in shuttle reach. Walk to the shuttle bay, board, and set down on the canon ground: the maze, the stacked slab at the heart of it, and the Old Ones under it.",
             "/map?dock=the-tilt&site=0"),
         new("🌑", "Miranda — the Shadowed Rille",
             "The same moon, a different world: site 1 re-seeds the ground into a gully of permanent night. The A/B for \"a body is a world, not a level\" (#320).",

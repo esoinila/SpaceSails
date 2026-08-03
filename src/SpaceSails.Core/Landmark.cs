@@ -23,10 +23,16 @@ public readonly record struct Landmark(string BodyId, string Name, double Height
 /// plain static registry, the same "one table, not a system" shape as the other Core data rules.</summary>
 public static class Landmarks
 {
+    /// <summary>#649 · THE moon. One word, one object, one ground: the map cards, the drawn slab, the
+    /// once-in-a-life nerve hit and the selfie all read this constant through
+    /// <see cref="Monolith.BodyId"/>, so the card in your pocket and the thing on the horizon can never
+    /// again name two different moons.</summary>
+    public const string MonolithBodyId = "phobos";
+
     /// <summary>The Phobos monolith (#164): the 85 m boulder by the Stickney rim, the outer-system's
     /// quiet meeting place for deals struck away from station security.</summary>
     public static readonly Landmark PhobosMonolith = new(
-        "phobos", "the monolith", 85.0,
+        MonolithBodyId, "the monolith", 85.0,
         "an 85 m monolith boulder on grey regolith near the Stickney crater rim, long shadow, deals done in its shade");
 
     private static readonly Dictionary<string, Landmark> ByBody = new()

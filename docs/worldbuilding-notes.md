@@ -112,6 +112,13 @@ intent so it cannot be lost; the code decision follows from it.*
   like a fab, no scale that flatters a shipyard, no explanatory plate. The correct player
   reaction is *nobody I know could have put that there*.
 
+**Shipped (#649, PR 1).** `Monolith.BodyId` is `phobos`, read from `Landmarks.MonolithBodyId` so the
+map cards and the drawn slab cannot name two moons again. Phobos's ground is authored — "THE STICKNEY
+RIM" — with no maze and no ruin field between the landing band and the object. Miranda keeps its canon
+maze, byte-for-byte, and its centre is **the false slab**: quarried, mortared, weathering, a different
+class of object that never borrows the word. The swept apron, which used to be drawn on every ground in
+the game, is now asked for by the thing it is swept around. Details: `features/the-landing-site.md` §10.
+
 ### The monolith site is a strange-things-happen place
 
 - The mood the owner asked for, in his own reference: **Babylon 5** — Sheridan and the giants

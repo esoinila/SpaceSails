@@ -3,18 +3,30 @@ using System;
 namespace SpaceSails.Core;
 
 /// <summary>
-/// #586 · THE MONOLITH — the thing you walk out there to SEE.
+/// #586 / #649 · THE MONOLITH — the thing you walk out there to SEE. There is exactly ONE of it, and it
+/// stands on PHOBOS.
 ///
 /// <para>Owner, standing at it after the ground rebuild: <i>"let's have gen AI image at the monolith and
 /// some items appearing there now and then ... it is supposed to be impressive... now it looks like a box in
 /// closet."</i></para>
 ///
-/// <para>He is right, and the measurement is brutal. The canon monolith was a slab
-/// <b>2.4 by 5 deck units</b> — the captain is 1.4 du across, so the ancient artefact at the heart of the
-/// canon ground was about two captains tall, sitting in a field 310 by 260. It is the deep commitment anchor
-/// of the whole site: the reason to make the long walk, the thing the nerve/sight system keys off, and the
-/// only object on Miranda that is older than everything else in the game put together. It read as a
-/// cupboard.</para>
+/// <para><b>#649 · THE UNIQUENESS RULING (owner, 2026-08-03, recorded in
+/// <c>docs/worldbuilding-notes.md</c> §8).</b> <i>"There is ONE monolith. Not a class of object, not a kind
+/// of landmark a generator can roll twice. If two grounds both call something 'the monolith', one of them is
+/// wrong and has to be renamed — the word is reserved."</i></para>
+///
+/// <para>Two grounds did. The MAP CARDS have paced off <c>the monolith</c> on <b>Phobos</b> since #164 —
+/// <see cref="Landmarks.PhobosMonolith"/>, the genuine 85 m boulder on the Stickney rim, the flagship
+/// treasure island and the port the worldbuilding notes (§7) are built around. The DRAWN SLAB stood on
+/// <b>Miranda</b>, at the heart of the authored maze, because that is where the very first hand-built ground
+/// happened to put it. So the game said PHOBOS on the card in your pocket and drew the thing on a different
+/// moon, and #648 could only unify the PREDICATE — every caller now asks one function — not the FACT.</para>
+///
+/// <para>The fact is settled here: <see cref="BodyId"/> is <c>phobos</c>. The slab, its picture, the
+/// once-in-a-life nerve hit, the selfie, the swept apron, the foot-offering and the map cards all resolve to
+/// the one object on the one ground. Miranda's maze keeps its maze and its centre is
+/// <see cref="FalseSlab"/> — a made thing, quarried and mortared, which is a different kind of object
+/// entirely and never borrows the word.</para>
 ///
 /// <para><b>The fix is NOT to draw a bigger box.</b> The deck plan is a crude grid on purpose (the owner's
 /// own ruling — the NetHack look is the aesthetic, not a limitation), and on a crude grid every rectangle is
@@ -30,11 +42,15 @@ namespace SpaceSails.Core;
 public static class Monolith
 {
     /// <summary>Half-width of the slab itself. Six deck units across — four captains wide, so it reads as a
-    /// WALL of something rather than a box, while still fitting the maze cell it has always stood in (the
-    /// canon rows at ±6 and −4 are untouched: the maze is canon and stays exactly as authored).</summary>
+    /// WALL of something rather than a box.
+    ///
+    /// <para>#649: this used to be capped by the cell Miranda's canon maze rows left for it. The slab does
+    /// not stand in that maze any more, so nothing about the monolith's size is decided by somebody else's
+    /// corridor. The scale itself is the next pass's job (the owner's <i>"show more of its size"</i>); this
+    /// commit only moves the object to the ground that has always been named on the card.</para></summary>
     public const double HalfWidth = 3.0;
 
-    /// <summary>Half-height of the slab. Seven deep, filling its cell without crossing the maze rows.</summary>
+    /// <summary>Half-height of the slab.</summary>
     public const double HalfHeight = 3.5;
 
     /// <summary>The cleared apron it stands on — drawn, never collided (<c>DeckPlan.Scenery</c>), because a
@@ -54,14 +70,20 @@ public static class Monolith
     public const double MarkerRing = 11.0;
     public const double MarkerHalf = 0.9;
 
-    /// <summary>The body the slab stands on. It is ONE object in the whole system, not a species.</summary>
-    public const string BodyId = "miranda";
+    /// <summary>The body the slab stands on. It is ONE object in the whole system, not a species.
+    ///
+    /// <para>#649 · <b>PHOBOS</b>, and it is not a free choice: <see cref="Landmarks.PhobosMonolith"/> has
+    /// paced every treasure map off <i>the monolith</i> on this moon since #164, and the worldbuilding notes
+    /// build a whole port around it (§7 — deals in its shadow, hoards in its regolith, the beanstalk anchor
+    /// bolts that went in suspiciously easily). Reading the same word off two moons was the bug; the card
+    /// was never the half that was wrong.</para></summary>
+    public const string BodyId = Landmarks.MonolithBodyId;
 
     /// <summary>
     /// Does the monolith stand on THIS ground? Only on <see cref="BodyId"/>'s canon site — site 0, the
-    /// Wild Plain, the empty-salt ground <c>SurfaceLayout.For</c> routes to the authored maze for. Every
+    /// Wild Plain, the empty-salt ground <c>SurfaceLayout.For</c> routes to the authored plan for. Every
     /// other site on the same moon is seeded ground with no slab in it, and every other body's deep anchor
-    /// is its own thing (Luna's mass-driver muzzle, a seeded plinth elsewhere).
+    /// is its own thing (Miranda's false slab, Luna's mass-driver muzzle, a seeded plinth elsewhere).
     ///
     /// <para><b>Why this is a function and not three literals.</b> The slab, its picture, the once-in-a-life
     /// nerve hit and the first-monolith selfie each decided this for themselves, and they disagreed: the

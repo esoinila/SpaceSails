@@ -70,7 +70,7 @@ public static class AwayTeamSide
     {
         (double threshold, double deepest, double at) = onWreck
             ? (WreckLayout.ShuttleLockX, WreckLayout.AftX, avatarX)
-            : (MoonSurface.SurfaceTopY, MoonSurface.MonolithY, avatarY);
+            : (MoonSurface.SurfaceTopY, MoonSurface.AnchorY, avatarY);
 
         double span = threshold - deepest;
         return span > 0 ? System.Math.Clamp((threshold - at) / span, 0.0, 1.0) : 0.0;

@@ -35,7 +35,10 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
   behind the captain's portrait disc in `Map.razor`.
 - **Why:** the beat shipped passing **no vista at all**, so the marquee once-in-a-life shot was a portrait
   floating on an empty stage. This is the "kind of lame" the owner named.
-- **Composition (16:9):** Miranda's canon ground at the monolith maze. Deep background: the **monolith** —
+- **#649 · the ground moved.** The monolith stands on **Phobos** now, not Miranda — the word was reserved
+  for the one object and the one object is where the treasure maps have always said. The painted plate is
+  unaffected (it shows open regolith and a slab, not a maze), but any repaint briefs the Stickney rim.
+- **Composition (16:9):** open regolith on the Stickney rim. Deep background: the **monolith** —
   a vast, too-regular black slab, far older than anything human, lit only along one edge. Middle distance:
   three or four **Old Ones** shambling in out of the regolith haze toward the viewer, low and wrong-jointed,
   silhouetted, unhurried. Foreground right: the tube-mouth **autocannon (GATE-1)** mid-burst — hard muzzle
@@ -113,6 +116,27 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
   > steel counter under hard light, paint worn at the edges. Square macro composition. Grimy lived-in
   > used-future sci-fi, muted desaturated palette, painterly, moody lighting, no text, no lettering.
 
+## 6. `art/false-slab.jpg` — MIRANDA'S CENTRE (#649)
+
+- **Slot:** the `ViewObject` console at the heart of Miranda's canon maze (`MoonSurface.BuildLayout`,
+  `FalseSlab.ArtUrl`), popped on **[E]** with `FalseSlab.Lore` as the caption.
+- **Why:** the owner reserved the word *monolith* for the one object, which stands on Phobos. Miranda's maze
+  centre needed a name, a card and a plate of its own — reusing the monolith's picture here would be the
+  borrowed-prose bug (#574) wearing a landmark, and it is the exact thing the ruling is against.
+- **Composition (16:9):** the slab must read as **MADE**, at a glance, at any distance. Everything the
+  monolith's card says it is not: courses of quarried block, mortar joints wider at the top than the bottom,
+  a drill scar down one course, one shoulder rounded by four billion years of nothing much, grey dust
+  clinging to the face and drifted deep against the foot. Around it the maze's broken concentric rows and the
+  four small approach stubs on a swept circle. No figure, no scale bar, no plate — the courses are the scale.
+- **Prompt:**
+  > A wide cinematic view across a grey airless moon's regolith inside a low crude ruin maze of broken
+  > concentric walls. At the centre stands a squat rectangular slab about two people tall, plainly built of
+  > nine courses of quarried blocks with visible mortar joints, wider joints near the top, a long drill scar
+  > gouged down one course, one shoulder rounded and eroded, grey dust clinging to its face. Dust drifted
+  > deep against its foot. Four small square stone stubs stand out on a swept circle of cleared ground
+  > around it. Harsh low sunlight, long hard shadows, black sky, no stars. Grimy lived-in used-future
+  > sci-fi, muted desaturated palette, painterly, moody lighting, no text, no lettering, no people, no faces.
+
 ---
 
 ## Status
@@ -124,6 +148,7 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 3 | `treasure-miranda.jpg` | ✅ (dynamic path, gradient fallback) | ✅ |
 | 4 | `souvenir-surface-tshirt.jpg` | ✅ (kiosk card built) | ✅ |
 | 5 | `souvenir-surface-magnet.jpg` | ✅ (kiosk card built) | ✅ |
+| 6 | `false-slab.jpg` | ✅ (#649) | ✅ |
 
 **Complete.** All five generated with `grok-4.5` and shipped. The kiosk purchase card was built in the same
 pass (`_kioskCard` in `Map.Surface.cs`, rendered in `Map.razor` on the existing `view-object` idiom), so the

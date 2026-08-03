@@ -404,8 +404,34 @@ than a crate (four captains, floor), a visibly **swept apron** in a field where 
 four approach stubs that are unmistakably *placed*, a picture when you put your hand on it, and things left
 at its foot.
 
-10.2 **The maze is untouched.** The slab stays inside the cell the canon rows leave it. Miranda's maze is the
-one piece of ground nobody has asked to change.
+10.2 **It stands on PHOBOS, and there is exactly one of it (#649).** Owner's ruling, 2026-08-03
+(`worldbuilding-notes.md` §8): *"There is ONE monolith. Not a class of object, not a kind of landmark a
+generator can roll twice. If two grounds both call something 'the monolith', one of them is wrong and has to
+be renamed — the word is reserved."*
+
+Two grounds did. Every treasure map minted since #164 paces off *the monolith* on **Phobos**
+(`Landmarks.PhobosMonolith` — the real 85 m boulder on the Stickney rim); the drawn slab stood on
+**Miranda**, because that is where the first hand-built ground happened to put it. #648 unified the
+*predicate* — everything asks `Monolith.StandsOn` — and could not fix the *fact* it answered with. The fact
+is settled: `Monolith.BodyId` is `phobos`, read from `Landmarks.MonolithBodyId`, so the card in your pocket
+and the thing on the horizon cannot name two moons.
+
+Phobos's ground is **authored** now (`SurfaceLayout.MonolithScheme`, "THE STICKNEY RIM") and it is defined as
+much by what it does not lay: **no maze, no corridor rows, no ruin field between you and it** — the ruling's
+*"it must not sit in a fenced little plot… open enough that the object IS the horizon, not a prop in a
+room."* Buildings are held clear of the signature by `AddOutlyingStructures` and end up in the flanks.
+
+10.2b **Miranda keeps its maze and gives back the word.** The centre of the canon maze is `FalseSlab` — a
+different *class* of object, not a second nameless ancient one: quarried, mortared, tool-marked and
+weathering, everything the monolith's own card says it is not. Its geometry is byte-for-byte the numbers the
+slab used to carry, so the ground the owner has never asked to change generates exactly the walls it
+generated before; only the name, the card and the ceremony moved. Its card describes and does not account
+for — it never names a builder, a purpose, or the other object.
+
+10.2c **The ceremony belongs to the object.** The swept apron used to be drawn unconditionally, so every
+landing site on every moon stood inside the monolith's ring of cleared ground — the borrowed-prose bug (#574)
+in scenery instead of in a sentence, and invisible to every Core audit because scenery does not collide.
+It is asked for by the thing it is swept around. *(Enforced: `TheCeremonyBelongsToTheObjectTests`.)*
 
 10.3 **Things are left there, and they change.** `Monolith.AtTheFoot(body, salt, epoch)` — seeded on the site
 *and* a slow visit-window. Roughly half of all windows are empty, which is load-bearing for the same reason

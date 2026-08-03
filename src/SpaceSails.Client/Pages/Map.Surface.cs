@@ -3435,7 +3435,7 @@ public partial class Map
     // onto the captain and the tube line — the motion-tracker "wall of signal" moment.
     private void SpawnReevers(int count)
     {
-        double baseY = Math.Min(_avatarY - 4, MoonSurface.MonolithY + 10);
+        double baseY = Math.Min(_avatarY - 4, MoonSurface.AnchorY + 10);
         for (int i = 0; i < count; i++)
         {
             if (_reevers.Count >= ReeverEngineCeiling)
@@ -4263,7 +4263,7 @@ public partial class Map
 
     // #586 · IN SIGHT OF THE MONOLITH — and only where the monolith actually IS.
     //
-    // This used to be pure distance to MoonSurface.MonolithX/Y, which is the DEEP ANCHOR of every ground
+    // This used to be pure distance to MoonSurface.AnchorX/Y, which is the DEEP ANCHOR of every ground
     // there is: every seeded site puts its own fixture there (Luna's mass-driver muzzle, a plinth
     // elsewhere), so walking up to any of them fired the once-in-a-life Lovecraftian hit — 24 nerve, the
     // line "👁 The monolith resolves out of the dark", and the FirstMonolith selfie against the monolith
@@ -4279,8 +4279,8 @@ public partial class Map
         {
             return false;
         }
-        double dx = _avatarX - MoonSurface.MonolithX;
-        double dy = _avatarY - MoonSurface.MonolithY;
+        double dx = _avatarX - MoonSurface.AnchorX;
+        double dy = _avatarY - MoonSurface.AnchorY;
         return (dx * dx) + (dy * dy) <= MonolithSightRange * MonolithSightRange;
     }
 
