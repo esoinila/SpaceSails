@@ -119,6 +119,14 @@ maze, byte-for-byte, and its centre is **the false slab**: quarried, mortared, w
 class of object that never borrows the word. The swept apron, which used to be drawn on every ground in
 the game, is now asked for by the thing it is swept around. Details: `features/the-landing-site.md` §10.
 
+**Shipped (#649, PR 2 — the scale).** `SurfaceScale` states what a deck unit is (0.7 m, anchored on the
+captain's own width) and every dimension of the monolith is derived from the one canon number the game
+already held: 85 m. Proportions 1 : 4 : 9, never stated in the game; footprint 54 × 13.5 du against a
+64 × 28 du frame; a shadow ~370 du long — longer than the field is deep — running up to the landing band,
+which is how a top-down plan says *tall*; drawn as the only unbroken filled mass on any moon, because its
+own card says *no seam*. Sight range and the arrival beat are both functions of its height now, not typed
+constants. Details: `features/the-landing-site.md` §10.4b.
+
 ### The monolith site is a strange-things-happen place
 
 - The mood the owner asked for, in his own reference: **Babylon 5** — Sheridan and the giants

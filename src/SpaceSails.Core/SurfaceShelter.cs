@@ -135,7 +135,19 @@ public static class SurfaceShelter
 
             if (Math.Abs(x - anchorX) < 40 && Math.Abs(y - anchorY) < 30)
             {
-                continue;   // never on the monolith's toes
+                continue;   // never on the deep landmark's toes
+            }
+
+            // #649 · AND WHEN THE DEEP LANDMARK IS THE MONOLITH, ask it how much room it takes rather than
+            // trusting the box above. That box was written when every anchor carried a six-du fixture, and
+            // the monolith is 54 du across with an 86 du apron round it: the flat 40 × 30 would have let a
+            // pressure drum be seeded INSIDE the stone. A shelter is the answer to the air mechanic — a hut
+            // that has to move costs nothing, a shelter that has to move costs a captain who walked to where
+            // the beacon said it was.
+            if (Monolith.KeepOutOn(bodyId, siteSalt, field) is { } slab
+                && Math.Sqrt(((x - slab.X) * (x - slab.X)) + ((y - slab.Y) * (y - slab.Y))) < slab.R)
+            {
+                continue;
             }
 
             bool crowded = false;

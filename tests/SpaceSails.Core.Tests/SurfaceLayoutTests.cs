@@ -62,13 +62,29 @@ public class SurfaceLayoutTests
         Assert.Contains(phobos.Landmarks, m => m.Label == Monolith.ConsoleLabel);
         Assert.NotEqual("THE DEEP RUINS", phobos.Scheme);
 
-        // And it is NOT a maze. The owner's ruling: "it must not sit in a fenced little plot with the rest of
-        // the set dressing around it… open enough that the object IS the horizon, not a prop in a room."
-        // Miranda's corridor rows are what a boxed backyard looks like in this generator, and Phobos has to
-        // carry visibly fewer segments than the ground that has them.
-        SurfaceLayout.Plan miranda = SurfaceLayout.For("miranda", Env);
-        Assert.True(phobos.Walls.Count < miranda.Walls.Count,
-            "the monolith's ground carries as much geometry as the maze — that is a courtyard again.");
+        // And it is NOT A BOXED BACKYARD. The owner's ruling: "it must not sit in a fenced little plot with
+        // the rest of the set dressing around it… open enough that the object IS the horizon, not a prop in a
+        // room." Stated as the thing that can actually be checked: every segment on this ground belongs
+        // either to the object itself or to a building out in the flanks. There is NOTHING in between — no
+        // corridor row, no rubble span, nothing to walk round on the way in. Miranda's maze fails this by
+        // construction, which is the point of the contrast.
+        var stray = new List<string>();
+        foreach (SurfaceLayout.Wall w in phobos.Walls)
+        {
+            double mx = (w.X1 + w.X2) / 2, my = (w.Y1 + w.Y2) / 2;
+            bool onTheObject = System.Math.Sqrt(((mx - Env.AnchorX) * (mx - Env.AnchorX))
+                                              + ((my - Env.AnchorY) * (my - Env.AnchorY))) <= Monolith.KeepOutRadius;
+            bool inABuilding = (phobos.BuildingFootprints ?? []).Any(b =>
+                System.Math.Sqrt(((mx - b.X) * (mx - b.X)) + ((my - b.Y) * (my - b.Y))) <= b.R + 2);
+            if (!onTheObject && !inABuilding)
+            {
+                stray.Add($"({mx:0.0}, {my:0.0})");
+            }
+        }
+        Assert.True(stray.Count == 0,
+            "geometry on the monolith's ground that is neither the object nor a building in the flanks — "
+            + "something is standing between the landing band and the thing you came to see: "
+            + string.Join(", ", stray));
     }
 
     [Fact]

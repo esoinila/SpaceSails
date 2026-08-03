@@ -41,17 +41,47 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class Monolith
 {
-    /// <summary>Half-width of the slab itself. Six deck units across — four captains wide, so it reads as a
-    /// WALL of something rather than a box.
-    ///
-    /// <para>#649: this used to be capped by the cell Miranda's canon maze rows left for it. The slab does
-    /// not stand in that maze any more, so nothing about the monolith's size is decided by somebody else's
-    /// corridor. The scale itself is the next pass's job (the owner's <i>"show more of its size"</i>); this
-    /// commit only moves the object to the ground that has always been named on the card.</para></summary>
-    public const double HalfWidth = 3.0;
+    // ── HOW BIG IT IS ───────────────────────────────────────────────────────────────────────────────────
+    //
+    // #649 · Owner: "The Phobos one's dimensions were HUGE and it should not live in a boxed backyard but
+    // show more of its size and not having been built by us at least."
+    //
+    // Every number below comes off ONE fact, and it is a fact the game already held: the landmark the
+    // treasure maps are minted from records the boulder's height, 85 m (Landmarks.PhobosMonolith, #164,
+    // from the real Mars Global Surveyor object on the Stickney rim). Nothing here is typed in. That is
+    // deliberate and it is the house law rather than tidiness — bug class 1 is "numbers typed into a
+    // renderer that nothing derives or checks, found wrong three times out of three", and a landmark whose
+    // canon size is 85 m and whose drawn size was six deck units is that bug in its purest form: the fact
+    // and the picture disagreeing by a factor of twenty, in the open, for months.
 
-    /// <summary>Half-height of the slab.</summary>
-    public const double HalfHeight = 3.5;
+    /// <summary>The one fact: the real object's height, off the landmark the map cards are minted from.</summary>
+    public static double HeightMetres => Landmarks.PhobosMonolith.HeightMeters;
+
+    /// <summary>Its height on the grid — 121 deck units, which is not a number that can be drawn top-down and
+    /// is the whole difficulty. What CAN be drawn is what a thing that tall does to the ground around it:
+    /// its footprint, and its shadow.</summary>
+    public static double HeightDu => SurfaceScale.DeckUnits(HeightMetres);
+
+    // The proportions are 1 : 4 : 9 — the squares of the first three integers, the one set of ratios that
+    // comes out identical in every unit system anybody could ever measure it in. It is an homage and it is
+    // doing real work: a slab at 1:4:9 has a footprint no quarry produces (a nine-to-one plan, sheer, with
+    // the long faces dead parallel) and no yard would cut, which is the owner's "not having been built by
+    // us" expressed as geometry instead of as a sentence. Nothing in the game ever states the ratio.
+
+    /// <summary>The width face, as a fraction of the height.</summary>
+    public const double WidthRatio = 4.0 / 9.0;
+
+    /// <summary>The depth face, as a fraction of the height.</summary>
+    public const double DepthRatio = 1.0 / 9.0;
+
+    /// <summary>Half the slab's width on the plan — about 27 du, so the stone alone is four fifths of
+    /// everything the camera can hold at once (<c>DeckView</c> frames roughly 64 du). It was 3.</summary>
+    public static double HalfWidth => HeightDu * WidthRatio / 2.0;
+
+    /// <summary>Half the slab's depth on the plan — about 7 du. Deliberately the SHORT axis: it keeps the
+    /// deep field behind the slab walkable, and it is what makes the thing read as a slab standing edge-on to
+    /// the walk rather than as a block sitting in the way.</summary>
+    public static double HalfHeight => HeightDu * DepthRatio / 2.0;
 
     /// <summary>The cleared apron it stands on — drawn, never collided (<c>DeckPlan.Scenery</c>), because a
     /// ring you cannot walk across would turn the landmark into a wall and the pilgrimage into a puzzle.
@@ -59,16 +89,70 @@ public static class Monolith
     /// <para>This is what does the work the slab cannot: ground that is visibly SWEPT, a made platform, in a
     /// field where everything else is rubble and drift. You can see it from a long way off and it tells you
     /// somebody cared about this spot.</para></summary>
-    public const double ApronRadius = 15.0;
+    public static double ApronRadius => HalfWidth * 1.6;
 
-    /// <summary>How many segments the apron ring is drawn with — enough to read as a circle at this scale
-    /// without flooding the scenery list.</summary>
-    public const int ApronSegments = 28;
+    /// <summary>How many segments the apron ring is drawn with — scaled with the ring, so the circle reads as
+    /// a circle at any size instead of as a polygon that grew.</summary>
+    public static int ApronSegments => 72;
 
     /// <summary>Four stubs at the compass points just inside the apron: the remains of an approach. Small,
-    /// solid, and unmistakably PLACED — the difference between a rock and a ruin.</summary>
-    public const double MarkerRing = 11.0;
-    public const double MarkerHalf = 0.9;
+    /// solid, and unmistakably PLACED — the difference between a rock and a ruin. Outside the slab's own ends
+    /// by construction, because <see cref="ApronRadius"/> is.</summary>
+    public static double MarkerRing => ApronRadius * 0.82;
+    public static double MarkerHalf => 1.6;
+
+    /// <summary>Everything the object and its ceremony occupy, as ONE claim that every placer on the ground
+    /// asks for — the shelters, the outlying huts, the outpost, the lift head.
+    ///
+    /// <para>This is the part that stops "make it bigger" from being a disaster. Four separate placers used
+    /// to keep the deep landmark at arm's length with a number each, all of them sized for a six-du slab: a
+    /// flat 40 × 30 box in <see cref="SurfaceShelter"/>, a flat 26 in the outlying-structure loop, the lift
+    /// head's own clash list, and the seeded ledger. Growing the stone twenty-fold under four constants that
+    /// had never heard of it would have put a pressure drum — the building a captain walks to when their air
+    /// runs out — inside a wall. One claim, published by the thing that makes it.</para></summary>
+    public static double KeepOutRadius => ApronRadius + 10.0;
+
+    /// <summary>Where the swept apron and the slab sit on a given ground, or nothing at all. The single
+    /// question every placer asks; there is no second way to find out where the monolith is.</summary>
+    public static (double X, double Y, double R)? KeepOutOn(
+        string? bodyId, string? siteSalt, in SurfaceLayout.Field field) =>
+        StandsOn(bodyId, siteSalt) ? (field.AnchorX, field.AnchorY, KeepOutRadius) : null;
+
+    // ── AND HOW YOU KNOW IT IS THERE FROM THE OTHER END OF THE FIELD ────────────────────────────────────
+    //
+    // Owner: it must "read as large from a long way off, and keep getting larger as you walk, the way only
+    // genuinely big things do." A top-down deck plan cannot draw a height at all — but a 121 du object with
+    // the sun near the horizon throws a shadow LONGER THAN THE FIELD, and that is a thing the plan can draw.
+    // So the captain steps off the pad into a lane of dark that runs off the bottom of the world, and the
+    // only way to find out what is casting it is to walk down it.
+
+    /// <summary>How high the sun stands over this ground. Low, because Phobos's day is seven and a half hours
+    /// and any given hour of it is a low one; and because a landmark is not a landmark at noon.</summary>
+    public const double SunAltitudeDegrees = 18.0;
+
+    /// <summary>How far the shadow reaches up-field — around 370 du, which is longer than the whole walked
+    /// field is deep. It is clamped to the ground when it is drawn; the point of the number is that there is
+    /// nowhere on this moon you can stand and not be in it.</summary>
+    public static double ShadowLengthDu =>
+        HeightDu / System.Math.Tan(SunAltitudeDegrees * System.Math.PI / 180.0);
+
+    /// <summary>How wide the shadow is at its far end, relative to the slab. A shadow cast by a low sun
+    /// spreads: the penumbra of a 121 du object at this range is not subtle.</summary>
+    public const double ShadowSpread = 1.35;
+
+    /// <summary>How close you have to be for the thing to resolve out of the dark — the range the
+    /// once-in-a-life nerve hit and the FirstMonolith selfie fire at.
+    ///
+    /// <para>Derived, not tuned. It was a flat 26 du typed into <c>Map.Surface</c>, sized by eye for a slab
+    /// six deck units across; at the real size that would have put the biggest fright in the captain's life
+    /// at the moment they walked into the stone. Sight is a function of how big the thing is, so this is
+    /// one: three fifths of its height, about 73 du, which is a little over two screens — far enough that
+    /// it resolves while it is still a shape, close enough that the resolving is what does it.</para></summary>
+    public static double SightRangeDu => HeightDu * 0.6;
+
+    /// <summary>How close you have to be for it to stop being a shape and become the sky — the range
+    /// <see cref="ApproachLine"/> lands at, which is the moment you cross onto the swept ground.</summary>
+    public static double ApproachRangeDu => ApronRadius + HalfHeight;
 
     /// <summary>The body the slab stands on. It is ONE object in the whole system, not a species.
     ///
