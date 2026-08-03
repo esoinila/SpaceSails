@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
 namespace SpaceSails.Core;
 
@@ -159,7 +159,11 @@ public static class VaultMapper
     public static KaamosSection ToSection(KaamosProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        return new KaamosSection { AssembledFragmentIds = progress.AssembledIds };
+        return new KaamosSection
+        {
+            AssembledFragmentIds = progress.AssembledIds,
+            BerthFilingBounced = progress.BerthFilingBounced,   // #635 · the front door, per-thread
+        };
     }
 
     /// <summary>Rehydrate assembled fragments into a progress holder (via <see cref="KaamosProgress.Load"/>,
@@ -168,7 +172,7 @@ public static class VaultMapper
     public static void Apply(KaamosSection? section, KaamosProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        progress.Load(section?.AssembledFragmentIds);
+        progress.Load(section?.AssembledFragmentIds, section?.BerthFilingBounced ?? false);
     }
 
     // ── NEBULA MUTUAL (#422) — the second-arc fragment assembly + the one-time convergence bit, per-thread. ──

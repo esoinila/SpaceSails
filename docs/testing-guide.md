@@ -479,6 +479,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
+| **`?kaamos=bounce`** | **Seat the freight agent holding the docket the board keeps sending back at every bar — PROJEKTI KAAMOS's FRONT DOOR (#635). Press `[E]` at any bar patron, take the job, and the filing bounces off your hull too: the arc appears in the Captain's ledger with no shard in hand.** |
 | **`?kaamos=pod`** | **Seat the cold KAAMOS supply pod under the ground this excursion lands on — probe any square with the metal detector and *earn* fragment 2 instead of being handed it (#411). Pair with `&land=1`.** |
 | **`?kaamos=holder`** | **Seat the rare KAAMOS berth-holder at whatever bar you dock at, every watch — the tell (fragment 4) becomes playable on demand (#411). Pair with `&dock=<berth>`.** |
 | **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
@@ -733,6 +734,22 @@ capstone — each handed over by a different system. Progress shows in the Capta
   one-time **"❄❄ THE BERTH-CODE RESOLVES"** notice fires and the ledger settles into the held-berth line.
 - `/map?kaamos=3` is the fastest look at the mid-arc card; `/map?kaamos=all` is the end state.
 
+**The front door — `?kaamos=bounce` (#635):**
+
+The arc used to be invisible until a captain happened to read the whole of one dedication plate among
+seven, and its ledger card appeared only *after* a shard was already held. It now has an inciting hook, and
+it is a piece of paperwork, because that is what this arc is about:
+
+| URL | what you walk |
+| --- | --- |
+| `/map?ashore=1&kaamos=bounce` | Press `[E]` at any bar patron. A freight agent offers **350 cr** to put your own hull's number on a consignment that has come back four times. Take it, and the board answers *RETURNED — CONSIGNEE CANNOT BE RAISED — BERTH HELD, AWAITING CYCLER WINDOW.* You keep the receipt; the ❄ card is now in the Captain's ledger with **nothing assembled**. |
+
+Things to check while you are there: the fee is printed on the offer card *before* you press the button;
+the docket says HELD and never says who is holding it; the ledger headline is **not** "0 of 5 shards"; and
+the agent is gone from the offer rota the moment you hold any shard at all. Unforced the agent is in the
+room roughly **one bar-watch in three**, seeded per (bar, day) — walk into the same bar on consecutive
+watches to see it come and go without re-rolling under you.
+
 **The two seats (these let a rare beat be PLAYED, not granted):**
 
 | URL | what you walk |
@@ -760,8 +777,10 @@ There is also a **third hand** that leaks arc-1 shards: **Static Marsh**, the st
 (`OracleRant`), can speak `vantar-log`, `holders-tell` or `cold-pod` as a true line at any bar — stand her
 a drink to widen the channel.
 
-**What is deliberately NOT built:** the Enceladus route and the reveal at the ice moon.
-`KaamosLore.RevealSanityShockHook` (40.0) is consumed by nothing. See issue #411.
+**What is deliberately NOT built YET:** the Enceladus route and the head office at the end of it.
+`KaamosLore.RevealSanityShockHook` (40.0) is still consumed by nothing. Both are specified, sliced and
+under construction — see [`features/kaamos-head-office.md`](features/kaamos-head-office.md), issue #411,
+and the owner's 2026-08-03 ruling that the destination is the HEAD OFFICE of the organization.
 
 ### NEBULA MUTUAL (arc 2) and THE CONVERGENCE — `?nebula=` / `?converge=1` (#422)
 

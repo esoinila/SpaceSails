@@ -84,6 +84,9 @@ public static class DevStarts
             "/map?credits=50000"),
 
         // --- The long stories, without the playthrough ---------------------------------------------------
+        new("❄", "PROJEKTI KAAMOS — the front door",
+            "Docked and standing in the bar, with the freight agent whose docket the board keeps returning in the room. Take the job and the arc opens with no shard in hand (#635).",
+            "/map?ashore=1&kaamos=bounce"),
         new("🌑", "PROJEKTI KAAMOS — assembled",
             "Every fragment of the sealed ice-moon plot already gathered: the intel readout, the reach notice, the berth-code (#411).",
             "/map?kaamos=all"),

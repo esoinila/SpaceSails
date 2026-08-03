@@ -526,6 +526,17 @@ public partial class Map
             return;
         }
 
+        // #635 — PROJEKTI KAAMOS's front door. Before this, the longest-prepared arc in the game was
+        // invisible until a captain happened to read the whole of one dedication plate among seven. A
+        // freight agent holding a docket the board keeps returning is the arc arriving through the system
+        // the player already reads (paperwork), and it hands over no shard — only the question. Offered
+        // only while the captain has nothing of the arc at all, so it can never elbow a live thread aside.
+        if (MakeKaamosBounceOffer(giver) is { } kaamosBounce)
+        {
+            _pendingOffer = kaamosBounce;
+            return;
+        }
+
         Quest? offer = MakeContactOffer(giver);
         if (offer is not null)
         {
@@ -1598,6 +1609,15 @@ public partial class Map
             return;
         }
         _pendingOffer = null;
+
+        // #635 — the returned filing. It is a contract in every respect a player can see (a card, a price,
+        // Take or Pass) and in exactly one respect it is not: there is nothing afterwards to go and do, so
+        // it never enters _quests. What it settles is settled at the counter, in front of you.
+        if (offer.Id == KaamosBounceOfferId)
+        {
+            TakeKaamosBounceFiling(offer);
+            return;
+        }
 
         if (offer.Kind == QuestKind.Intel)
         {

@@ -35,6 +35,10 @@ public partial class Map
     // asks only while cold-pod is NOT yet held, so a forced ground yields exactly one pod, not a field.
     private bool _kaamosPodCheat;
 
+    // #635 story pass · the /map?kaamos=bounce dev seat: the freight agent with the docket the board keeps
+    // returning is at WHATEVER bar this captain docks at, this watch. Session-scoped, set once at boot.
+    private bool _kaamosBounceCheat;
+
     /// <summary>#411 story pass · is the cold pod under THIS square? The seeded answer, or the dev seat's
     /// yes — asked in one place so the probe site (Map.Surface) stays a one-liner and the cheat cannot
     /// drift out of step with the find.</summary>
@@ -85,7 +89,11 @@ public partial class Map
     //    until the first shard is in hand (nothing to show on a fresh universe). ──
     private Stations.Captain.LedgerTip? KaamosLedgerTip()
     {
-        if (_kaamos.Count == 0)
+        // #635 · THE CARD USED TO WAIT FOR A SHARD. That is the front-door bug stated as code: the only
+        // place in the game that says PROJEKTI KAAMOS is a thing you could be doing appeared strictly after
+        // you had already started doing it. A returned filing is now enough to raise it — the captain is
+        // holding a piece of paper, and a piece of paper in the pocket belongs in the ledger.
+        if (_kaamos.Count == 0 && !_kaamos.BerthFilingBounced)
         {
             return null;
         }
@@ -106,6 +114,71 @@ public partial class Map
         return new Stations.Captain.LedgerTip(
             KaamosLore.LedgerHeadline(_kaamos), lines.ToArray(), "the sealed ice-moon mystery",
             ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null);
+    }
+
+    // ── #635 · THE FRONT DOOR. The one beat in this arc that a captain who knows nothing can meet, and the
+    //    only one that asks for nothing first. A freight agent at a bar is holding a docket that keeps
+    //    coming back; they will pay a small fee for you to try filing it under your hull, because a
+    //    fourth-hand attempt is cheaper than an answer. It bounces. The bounce is the hook.
+    //
+    //    Why it rides the CONTRACT card rather than a new modal: the offer/accept/pass machinery already
+    //    exists, is already how this game hands a captain a piece of work, and puts the price on the same
+    //    card as the button (the #634 lesson). And it is the shape #635's option 3 asked for — "a
+    //    mission-desk contract points a delivery AT the sealed berth, which bounces" — with the important
+    //    difference that the captain is told, before they agree, that the thing has bounced four times
+    //    already. A job that evaporates after you take it is a bug wearing a story; a filing you are paid
+    //    to attempt is a job that did exactly what it said.
+    //
+    //    It is NOT a fragment and hands over no shard: the pool is what the gate counts. What it hands over
+    //    is the ledger card, which is the thing the arc has never had. ──
+
+    /// <summary>The stable id the accept path watches for. One string, in one place, because a contract
+    /// that is intercepted by its id and minted somewhere else is two sources of truth for one fact.</summary>
+    private const string KaamosBounceOfferId = "kaamos-bounce";
+
+    /// <summary>The returned-filing offer for this bar and watch, or null if there is nobody holding one.
+    /// Offered only to a captain who has NOTHING of the arc yet: it is a door, and a door in the middle of
+    /// a corridor you are already walking is furniture.</summary>
+    private Quest? MakeKaamosBounceOffer(string giver)
+    {
+        if (_kaamos.BerthFilingBounced || _kaamos.Count > 0 || _dockedHavenId is not { } bar)
+        {
+            return null;
+        }
+
+        int watchDay = (int)(SimTime / 86400);
+        if (!KaamosFind.BounceAtBar(bar, watchDay, forced: _kaamosBounceCheat))
+        {
+            return null;
+        }
+
+        int fee = KaamosFind.BounceFilingFee;
+        return new Quest(KaamosBounceOfferId, QuestKind.CargoRun, giver,
+            "", "Ringside Exchange", KaamosLore.BounceOfferTitle, KaamosLore.BounceOfferBlurb(fee), fee);
+    }
+
+    /// <summary>Put the captain's hull number on the docket and let the board answer. Pays the agreed fee,
+    /// marks the thread open, and raises the card. No quest is added — there is nothing to go and do, which
+    /// is the point: what the captain leaves the counter with is a returned filing and a question.</summary>
+    private void TakeKaamosBounceFiling(Quest offer)
+    {
+        int fee = KaamosFind.BounceFilingFee;
+        _credits += fee;
+
+        if (!_kaamos.MarkBerthFilingBounced())
+        {
+            return; // already bounced this thread — the offer should never have been minted; stay quiet
+        }
+
+        RequestVaultSave();
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage(KaamosLore.BounceReceipt(fee));
+        ShowRevealCard(KaamosLore.BouncePlate.Title, KaamosLore.BouncePlate.ArtFile, KaamosLore.BouncePlate.Caption);
+
+        // Durable, and in somebody's voice — the ledger's 👂 section keeps it where the captain will meet it
+        // again a week later, which is when a front door has to still be standing open.
+        Overhear($"👂 {GiverDisplay(offer.Giver)}: \"Held, it says. Not closed. Thirty years and I've never seen held.\"",
+            "kaamos-bounce");
     }
 
     // ── The bar seam (holders-tell · bought-coordinate · the berth-code capstone). One discoverable action
@@ -212,6 +285,13 @@ public partial class Map
         {
             _kaamosPodCheat = true;
             ShowPulseMessage("🧪 Test: the cold KAAMOS supply pod is under this ground — land, take the metal detector out and probe any square.");
+            return;
+        }
+
+        if (string.Equals(spec, "bounce", StringComparison.OrdinalIgnoreCase))
+        {
+            _kaamosBounceCheat = true;
+            ShowPulseMessage("🧪 Test: a freight agent with the docket the board keeps returning is at every bar this run — dock, walk to a patron and press [E]. (#635, the arc's front door.)");
             return;
         }
 

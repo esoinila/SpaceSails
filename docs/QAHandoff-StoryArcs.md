@@ -1,4 +1,4 @@
-# QA handoff — the story arcs nobody has played
+﻿# QA handoff — the story arcs nobody has played
 
 *Written 2026-08-02 for the Fable QA run. Owner is at the gym; the brief is to find real bugs in the arcs
 that have shipped but have never been PLAYED.*
@@ -17,7 +17,7 @@ stated in his own words, is:
 So this is not a test-writing task. **It is a playing task, and the tests come second** — written only to pin
 what playing found, and only after being proven to fail on the broken behaviour.
 
-### The four named bug classes — check these FIRST in any area
+### The five named bug classes — check these FIRST in any area
 
 | # | class | what it looks like |
 | --- | --- | --- |
@@ -25,6 +25,7 @@ what playing found, and only after being proven to fail on the broken behaviour.
 | 2 | **A constant governing the wrong thing** | a MOON constant governing a SHIP — 4 occurrences. |
 | 3 | **The sim does one thing, the SENTENCE or the DRAWN SHAPE says another** | 3 in one afternoon, all found by playing. A suffocation narrated as a killing; a card described in prose that never entered the pocket. |
 | 4 | **One source consumed in the WRONG ORDER** | a list built by appending is not a list in order. Sealed 35 floors' worth of doorways while every test passed. |
+| 5 | **A green test that asserts nothing** | the assertion was right; the WORLD handed to it could not tell pass from fail. A guard laid an invented 78 du field on which every body builds nothing; a threshold set to 34 du when the nearest real case the generator can produce is 34.2. Three independent instances in one afternoon — the full table is in [`features/the-landing-site.md`](features/the-landing-site.md#the-fifth-class-a-green-test-that-asserts-nothing). Use `SurfaceLayout.DefaultField`, and measure a threshold against what the generator actually produces. |
 
 ### The house laws you may not break
 
