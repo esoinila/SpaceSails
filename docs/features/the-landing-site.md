@@ -476,6 +476,38 @@ factor of twenty is bug class 1 with the wrongness baked in before the literal w
 - **The card meets you on the side you walk from.** It used to sit deep of the slab, which is harmless at
   six deck units and a fifty-du walk around solid rock at the real one.
 
+10.4c **The site is a strange-things-happen place (#649).** Owner's ruling, in his own reference:
+**Babylon 5** — Sheridan and the giants on the playground; *"background puppeteers watching if their kids
+perform in the school play."* Awesome and a little scary; **parental, not predatory**.
+
+`MonolithWatch`. Three gates, all of them Core's:
+
+- **Place.** `Monolith.StandsOn`, and inside the stone's sight. This ground and no other — that is what
+  makes it a property of the *place*.
+- **Window.** About one visit-window in three is attentive, seeded on the same slow clock the foot-offerings
+  use, so it holds still for a whole excursion and is the same on a revisit inside the window. Most walks
+  out here are a long walk to a stone, which is what makes the other ones mean anything.
+- **Dwell.** Forty seconds inside its sight, and at most once per excursion. Walking out of sight resets it.
+  Nothing is watching to see you *arrive*; it is watching to see whether you **stand there**.
+
+Six variants, and every one of them is a fact about the **world** rather than a thing that could be met:
+the shadows disagree with the slab's for a beat; your own bootprints are ahead of you; every Old One on the
+field stops at once and faces the stone; a tide crosses the dust on a moon with nothing to pull it; the
+tracker paints one contact too many that never moves; the light drops a third with nothing crossing the sun.
+
+**It costs nothing** (`MonolithWatch.NerveCost`, a flagged feel call). The place is already priced at 24 —
+the biggest single fright in a captain's life, once ever — and a site that also bills you for standing in
+it is a site you learn to avoid, whatever the prose says. The world noticing you and then not hurting you is
+the more unsettling reading, and it is the parental one.
+
+**Not a card and not a plate**, which is the hardest call in it. The picture idiom (#528) is right for
+almost everything and wrong here: a frame around a thing says THIS IS A THING, and one canvas across six
+variants becomes the picture a player learns to read as *that again* — confirmation by repetition. The
+nearest thing this ground already has, what somebody left at the foot of the stone, is text and it works.
+
+*(Enforced: `NothingOutHereEverSaysWhatItWasTests` — the same law as
+`TheHiveTests.NothingDownHereEXPLAINSAnything`.)* Cheat: `?watchers=1`.
+
 10.5 **Every line is somebody ELSE's visit.** The stone never moves, hums, glows or responds, and the card
 explains nothing. The Old Ones' origin is canon and is never confirmed by a card or a sensor; the monolith is
 older than the question and does not answer it. *(Enforced: `TheMonolithIsAPlaceTests` greps the prose.)*

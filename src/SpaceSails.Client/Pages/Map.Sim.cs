@@ -667,6 +667,22 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["outpost=".Length..]).ToLowerInvariant();
                 _outpostCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("watchers=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #649 dev cheat: /map?watchers=1 makes the monolith's ground ATTENTIVE this visit and cuts
+                // the dwell from forty seconds to two, so the strange-things-happen beat can be watched on
+                // demand instead of hunted for. It is rare by design — one visit-window in three, and then
+                // only if you stand still at the stone — which makes it precisely the shape of scene this
+                // file's own rule is about: "a scene nobody can reach on demand is a scene that ships
+                // broken." It changes the GATES and nothing else: the variant roll and the (zero) cost are
+                // the ones a captain gets, so what a tester sees is what a captain sees.
+                //
+                //   /map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1
+                //   …and with a pack on the field, for the variant that needs one:
+                //   /map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1&reevers=3
+                string candidate = Uri.UnescapeDataString(pair["watchers=".Length..]).ToLowerInvariant();
+                _watchersCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
             {
                 // #409 dev cheat: /map?secretlab=1 spawns a plain LANDABLE rock parked in shuttle range at the
