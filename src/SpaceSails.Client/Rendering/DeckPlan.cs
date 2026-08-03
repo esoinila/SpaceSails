@@ -38,7 +38,12 @@ public sealed class DeckPlan
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.
-        ArchiveNode, ArchiveSwitch }
+        ArchiveNode, ArchiveSwitch,
+        // #633 · …and `main`'s five, appended rather than merged into the run above, so the reunification is
+        // legible in the list itself. HER OWN SCUTTLING CHARGES (the derelicts have carried a panel since
+        // #488; a ship is a ship), and #538's lab security: the door, the board that governs it, the alarm
+        // and the key card that answers to it.
+        ShipScuttle, LabDoor, LabDoorBoard, LabAlarm, LabKeyCard }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.
@@ -114,6 +119,16 @@ public sealed class DeckPlan
     /// under the vector overlay. The top-down renderer walks these; first-person textures walls.</summary>
     public readonly record struct Backdrop(string Url, float X, float Y, float W, float H, float Alpha);
 
+    /// <summary>
+    /// #537 · A RECTANGLE OF SOLID SHIP. Shielding bands, bulkhead runs, machinery spaces — anything that is
+    /// STRUCTURE rather than room, drawn filled so it cannot be mistaken for somewhere you could be.
+    ///
+    /// <para>Owner: <i>"if we can see into them from the hall then they don't hide anything."</i> A narrow gap
+    /// left black reads as a space, and a hiding place drawn as a space is not a hiding place — the whole
+    /// knock-on-the-walls search was readable off the map until these were filled.</para>
+    /// </summary>
+    public readonly record struct Structure(float X0, float Y0, float X1, float Y1);
+
     public const double InteractRadius = 3.0;
     public const double AvatarRadius = 0.7;
 
@@ -122,6 +137,13 @@ public sealed class DeckPlan
     /// seals it; a surface excursion (see <c>MoonSurface</c>) carves it open and grows the tube below.
     /// The crew-only-door law lives here: Reevers may chase to this line but never cross it.</summary>
     public const float ShuttleHatchY = -10f;
+    /// <summary>
+    /// #537 · HER OWN SHIELDING, at the derelicts' spec. Owner: <i>"Our own ship should match these specs
+    /// also. 👍😎"</i> Read from <c>WreckLayout</c> rather than re-typed, so the ship you own and the ships you
+    /// rob can never drift apart on a number that is supposed to be the same number.
+    /// </summary>
+    public const float ShieldingDepth = SpaceSails.Core.WreckLayout.ShieldingDepth;
+
     public const float ShuttleHatchX1 = -9f;
     public const float ShuttleHatchX2 = -5f;
 
@@ -131,8 +153,15 @@ public sealed class DeckPlan
     /// the surface tide needs room for the 3 crew + the engine ceiling on live Reevers (24), so the
     /// buffer grows to 27 — only the surface plan ever fills that far; the ship/complex still fill ≤10.
     /// #583: and four more for a repo crew that lands on the same ground (CollectorLanding.PartySize is
-    /// clamped to 4), which is a DIFFERENT kind of figure sharing the same buffer — 31.</summary>
-    public const int MaxDroids = 31;
+    /// clamped to 4), which is a DIFFERENT kind of figure sharing the same buffer — 31.
+    /// #538: and three more for the black-ops sweep team, which is a third kind — 34.
+    ///
+    /// <para>#633 · The two branches each raised this for their own band and each was left short by the
+    /// other's: 31 here, 30 on `main`. Sized now for ALL FOUR bands (3 + 24 + 4 + 3), which is what
+    /// <c>Map.Surface.SurfaceDroidCount</c> computes and what <c>FillSurfaceDroids</c> writes. A buffer that
+    /// is one band short does not throw — it silently draws nobody, which is how this class of bug survives
+    /// a merge.</para></summary>
+    public const int MaxDroids = 34;
 
     public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
 
@@ -174,6 +203,10 @@ public sealed class DeckPlan
     /// a louder colour.</para></summary>
     public (float X, float Y, string Text, float Px, int Tone)[] BigLabels { get; private set; } = [];
     public Backdrop[] Backdrops { get; private set; }
+
+    /// <summary>Filled structure — see <see cref="Structure"/>. Drawn under everything else, because it is what
+    /// the ship is made of rather than something in her.</summary>
+    public Structure[] Structures { get; private set; }
     public Door[] Doors { get; }
 
     /// <summary>#563 · TERRAIN — drawn, never collided. Kept in its own array rather than as a flag on
@@ -238,8 +271,10 @@ public sealed class DeckPlan
         SpaceSails.Core.BodyPalette.Ink? stoneInk = null,
         SpaceSails.Core.BodyPalette.Ink? doorInk = null,
         (float X, float Y, string Text, float Px, int Tone)[]? bigLabels = null,
-        SpaceSails.Core.BodyPalette.Ink? hullInk = null)
+        SpaceSails.Core.BodyPalette.Ink? hullInk = null,
+        Structure[]? structures = null)
     {
+        Structures = structures ?? [];
         Walls = walls;
         CollisionSegments = new SurfaceCollision.Segment[walls.Length];
         for (int i = 0; i < walls.Length; i++)
@@ -281,7 +316,8 @@ public sealed class DeckPlan
     /// interactable consoles, room labels, and any backdrops. Any array may be empty.</summary>
     public readonly record struct DeckRegion(
         Wall[] Walls, ConsoleSpot[] Consoles,
-        (float X, float Y, string Text)[] Labels, Backdrop[] Backdrops);
+        (float X, float Y, string Text)[] Labels, Backdrop[] Backdrops,
+        Structure[]? Structures = null);
 
     /// <summary>Grow this plan by one region. The walls (and ONLY the new walls) get fresh collision
     /// segments appended after the existing ones; consoles, labels and backdrops concatenate. Existing
@@ -311,6 +347,7 @@ public sealed class DeckPlan
         Consoles = Concat(Consoles, region.Consoles);
         RoomLabels = Concat(RoomLabels, region.Labels);
         Backdrops = Concat(Backdrops, region.Backdrops);
+        Structures = Concat(Structures, region.Structures);
         AppendedRegionCount++;
     }
 
@@ -383,20 +420,39 @@ public sealed class DeckPlan
 
     public ConsoleKind NearestConsole(double x, double y) => NearestConsoleSpot(x, y)?.Kind ?? ConsoleKind.None;
 
-    /// <summary>The nearest interactable console within reach, or null — lets a caller read the
-    /// specific spot's label (e.g. which bar patron you walked up to), not just its kind.</summary>
+    /// <summary>
+    /// The nearest interactable console within reach, or null — lets a caller read the specific spot's
+    /// label (e.g. which bar patron you walked up to), not just its kind.
+    ///
+    /// <para>IT NOW ACTUALLY MEANS NEAREST. For as long as this existed it returned the FIRST console in
+    /// array order within the interact radius, which is a different function with the same name — and the
+    /// reason the owner could not open her atmosphere board: <i>"those panels won't open there"</i>. Her
+    /// valves and her bridge repeater are APPENDED to the console list (they are built per-compartment,
+    /// after the hand-written spots), while the charge dump and the COMMS SEAT sit early in it. So every
+    /// point from which the valves were reachable also reached an earlier console, and the earlier console
+    /// took the key. Both of her boards were unpressable, on a deck where both are drawn.</para>
+    ///
+    /// <para>Array order is a build detail. It must never decide what the captain is standing at — with the
+    /// true nearest, a console is reached by walking to it, which is the only rule a player can see. Ties
+    /// keep array order so the answer stays deterministic (and <c>ConsoleCrowdingTests</c> proves no console
+    /// is left with nowhere to be reached from).</para>
+    /// </summary>
     public ConsoleSpot? NearestConsoleSpot(double x, double y)
     {
+        ConsoleSpot? best = null;
+        double bestDistance = double.MaxValue;
+
         foreach (ConsoleSpot c in Consoles)
         {
             double d = Math.Sqrt((x - c.X) * (x - c.X) + (y - c.Y) * (y - c.Y));
-            if (d <= InteractRadius)
+            if (d <= InteractRadius && d < bestDistance)
             {
-                return c;
+                bestDistance = d;
+                best = c;
             }
         }
 
-        return null;
+        return best;
     }
 
     /// <summary>
@@ -492,6 +548,31 @@ public sealed class DeckPlan
             new(-18, -10, ShuttleHatchX1, -10, false, true),
             new(ShuttleHatchX2, -10, 20, -10, false, true),
             new(ShuttleHatchX1, -10, ShuttleHatchX2, -10, false, true), // the hatch itself — sealed here
+
+            // --- #537 · HER SHIELDING, same specs as the derelicts ---
+            // Owner: "Our own ship should match these specs also. 👍😎" — and she should, for two reasons that
+            // are both his. The fiction one: "the walls that can hold vacuum are not thin and all kinds of tech
+            // needs to exist on the ship somewhere", which is as true of the ship you own as of the ones you rob.
+            // And the mechanical one, which matters more: the anti-tell rule. If derelicts had shielded hulls and
+            // ours did not, the thickness itself would be a salvage-only feature and the player would read it as
+            // scenery rather than as ship.
+            //
+            // Drawn along her PARALLEL SIDES only — the straight runs, broken where her airlock vestibule bumps
+            // out to port and where the shuttle hatch opens to starboard. Her bow is glass and her stern tapers;
+            // neither carries a band, for the same reason the wreck's bow taper does not.
+            new(-18, 10 + ShieldingDepth, -1, 10 + ShieldingDepth, false, true),
+            new(-18, 10, -18, 10 + ShieldingDepth, false, true),
+            new(-1, 10, -1, 10 + ShieldingDepth, false, true),
+            new(6, 10 + ShieldingDepth, 20, 10 + ShieldingDepth, false, true),
+            new(6, 10, 6, 10 + ShieldingDepth, false, true),
+            new(20, 10, 20, 10 + ShieldingDepth, false, true),
+
+            new(-18, -10 - ShieldingDepth, ShuttleHatchX1, -10 - ShieldingDepth, false, true),
+            new(-18, -10, -18, -10 - ShieldingDepth, false, true),
+            new(ShuttleHatchX1, -10, ShuttleHatchX1, -10 - ShieldingDepth, false, true),
+            new(ShuttleHatchX2, -10 - ShieldingDepth, 20, -10 - ShieldingDepth, false, true),
+            new(ShuttleHatchX2, -10, ShuttleHatchX2, -10 - ShieldingDepth, false, true),
+            new(20, -10, 20, -10 - ShieldingDepth, false, true),
 
             // --- Bridge bulkhead (x=18), door on the centerline, 4 du wide ---
             new(18, 10, 18, 2, false, false),
@@ -687,10 +768,31 @@ public sealed class DeckPlan
             (float)ShipLayout.BridgeRepeaterStation.X, (float)ShipLayout.BridgeRepeaterStation.Y,
             "⚙ ATMOSPHERE (bridge repeater)"));
 
+        // HER SCUTTLING CHARGES, port side aft with the machinery. The derelicts have carried a scuttling
+        // panel since #488; the owner's point is that a ship is a ship — and that this one is the last
+        // argument a captain has when something is already aboard.
+        consoles.Add(new ConsoleSpot(
+            ConsoleKind.ShipScuttle,
+            (float)ShipLayout.ScuttleStation.X, (float)ShipLayout.ScuttleStation.Y,
+            "☢ SCUTTLING CHARGES"));
+
+        // #537 · AND HER OWN SHIELDING IS FILLED TOO. Owner: "we should cover those narrow spaces … all of
+        // them." All of them means hers as well — and on the ship it matters for a second reason: she is the
+        // deck a player reads most, so a narrow black strip down her sides teaches them what a hiding place
+        // looks like before they ever board a wreck.
+        Structure[] shipStructures =
+        [
+            new(-18, 10, -1, 10 + ShieldingDepth),
+            new(6, 10, 20, 10 + ShieldingDepth),
+            new(-18, -10 - ShieldingDepth, ShuttleHatchX1, -10),
+            new(ShuttleHatchX2, -10 - ShieldingDepth, 20, -10),
+        ];
+
         return new DeckPlan([.. walls], [.. consoles], roomLabels, backdrops,
             spawnX: 21, spawnY: 0, // on the bridge, facing the bow glass
             droidCount: 3, fillDroids: FillShipDroids, location: ShipLocation,
-            doors: [.. doors], shipFixtures: true, tables: tables);
+            doors: [.. doors], shipFixtures: true, tables: tables,
+            structures: shipStructures);
     }
 
     // --- Droid pirate infantry 🤖🏴‍☠️ ---

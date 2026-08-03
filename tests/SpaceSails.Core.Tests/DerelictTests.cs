@@ -57,8 +57,11 @@ public class DerelictTests
         Derelict.SalvageOutcome o = Derelict.Resolve(
             w, Derelict.SalvageChoice.FileTheReport, Derelict.WreckCause.HullBreach);
 
-        int fee = (int)(100_000 * Derelict.ReportFeeFraction);          // the owner's 10%
-        int bonus = (int)(100_000 * Derelict.CorrectCauseBonusFraction);
+        // #553 · BOTH HALVES ARRIVE NET OF cl. 14(b). Filing is legal work, so it attracts the surcharge — the
+        // line item nobody can explain, off the back of an incident nobody will describe. The captain is paying,
+        // in credits, for the regulation that drove the research into mountains in the first place.
+        int fee = ComplianceSurcharge.Deduct((int)(100_000 * Derelict.ReportFeeFraction));
+        int bonus = ComplianceSurcharge.Deduct((int)(100_000 * Derelict.CorrectCauseBonusFraction));
         Assert.Equal(fee + bonus, o.CreditsNow);
         Assert.True(o.ContactEarned);                                   // the part that outlives the payout
         Assert.Equal(0, o.HeatGained);
@@ -74,7 +77,9 @@ public class DerelictTests
         Derelict.SalvageOutcome o = Derelict.Resolve(
             w, Derelict.SalvageChoice.FileTheReport, Derelict.WreckCause.Mutiny);
 
-        Assert.Equal((int)(100_000 * Derelict.ReportFeeFraction), o.CreditsNow);
+        // …and a wrong finding still pays the surcharge. The clause does not care whether you were right; it
+        // cares that you filed.
+        Assert.Equal(ComplianceSurcharge.Deduct((int)(100_000 * Derelict.ReportFeeFraction)), o.CreditsNow);
         Assert.False(o.ContactEarned);
         Assert.Contains("did not survive review", o.Line);
     }

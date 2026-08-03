@@ -254,3 +254,54 @@ constants** because it refused them as never-assigned fields. It was right — n
 promise to the crew yet, and no crewman can die. A bar that moved for invented reasons would be worse than
 one that does not move, because the captain cannot act on a number nobody is keeping. Those are §7's real
 next slice, ahead of the crossings ledger.
+
+---
+
+## 9. The second key, and why pirate captains dressed like that
+
+The crew's opinion stopped being a read-out on 2026-07-30, the moment her scuttling charges were built.
+
+> *"that ship also has the scuttling charges… let's have a captains approval mechanic for that also on our
+> ship. :-D … it is the last defence against the Borg in Star Trek :-D"*
+>
+> *"I guess we need the another opinion we just don't have a desk for that on the bridge yet."*
+
+Star Trek's self-destruct takes two officers, and she has no first officer. **So the second key is the
+crew's** — resolved straight off `CrewTemp.StandingOf`, the sheet already on the captain's own desk:
+
+| where they stand | what happens at the panel |
+|---|---|
+| Solid / Grumbling | they turn it, and nobody says anything |
+| Petition | they turn it — and hold your eye a beat too long afterwards |
+| Ultimatum / Marooning | nobody puts a hand on the other key |
+
+This is §3 made mechanical, in the one place a player cannot mistake it for flavour: a **monstrous captain
+with a devoted crew** can end the ship, and a **decent captain nobody trusts** finds the panel waiting on a
+hand that is not coming. Nothing explains itself; the crew's behaviour is the whole read-out, exactly as this
+document has required from the start.
+
+### And then the owner explained pirate fashion
+
+> *"Maybe this explains the silly pompous styles of pirate captains… it was branding to make their crews love
+> them and feel less replaceable :-D"*
+
+Which is the best in-fiction reading of the plumage anyone has offered, and it is now **mechanically true**
+rather than merely charming. If the crew hold a key the captain cannot turn alone, then everything a captain
+does to be *loved* is an investment in keeping that key turnable — the coat, the hat, the flag, the name, the
+speech before a boarding, the share divided in front of everybody instead of counted in the cabin.
+
+It also names the thing a pirate captain is actually afraid of, and it is not the navy: **he is replaceable,
+and he knows the crew know it.** The theatre is a costly signal against exactly that.
+
+What it suggests as mechanics — filed, not built:
+
+- **The plumage is a purchase.** A coat, a hat, a flag, a figurehead, a ship's name — real money spent on
+  nothing but how he reads to the people who sail him. It buys `CrewTemp` standing and nothing else, which
+  makes it the first thing in the game whose entire value is other people's opinion.
+- **A ledger entry with no line crossed.** Dividing the share where the crew can watch you count is not
+  honesty, it is *theatre about* honesty — and both belong in the ledger of §1, distinguishable only by who
+  was in the room.
+- **The trap in it.** Branding raises what the crew expect of the performance. A captain who has bought the
+  hat and then files an honest report that costs everyone their share has further to fall than one who never
+  dressed up. Which is the most in-genre punishment this design has produced so far, and nobody had to invent
+  a rule for it.

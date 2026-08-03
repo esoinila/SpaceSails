@@ -30,6 +30,30 @@ public enum DeathCause
     /// chest is still out there. (Wired ready; the surface-death lane sets it.)</summary>
     Reevers,
 
+    /// <summary>
+    /// THE OVERLOAD YOU SET YOURSELF ran out with you still aboard. Owner: <i>"that ship also has the
+    /// scuttling charges... it is the last defence against the Borg in Star Trek"</i> — and the whole point
+    /// of the charges is the THREAT, so this cause only ever fires when the threat did not work and the
+    /// captain stayed aboard anyway.
+    ///
+    /// <para>#525 · It was filed as <i>built</i> and was not: <c>AdvanceScuttleClock</c> called
+    /// <c>TriggerSurfaceOverdrawDeath</c> with no known cause, so the card rolled
+    /// <see cref="DeathNarration.SurfaceEnd"/> and told the captain an Old One's hand was the last straw —
+    /// aboard a drive-failure hull with nothing living in her, ninety seconds after they turned two keys
+    /// themselves. The same failure this project has now paid for four times (#545's card blaming Reevers
+    /// for three men with rifles), on the one death the captain unambiguously chose.</para>
+    ///
+    /// <para><b>#633 · TWO PLACES, ONE CAUSE.</b> The branches built the two halves of #525 apart and each
+    /// named the cause <c>Scuttled</c>: <c>our-own-ship-has-compartments</c> built the derelict's panel
+    /// (bolted to somebody else's reactor) and wrote here that her own ship <i>"has no such switch"</i>;
+    /// <c>main</c> built exactly that switch (<see cref="ShipScuttle"/>, <c>Map.ShipScuttleBoard</c>, the
+    /// crew's second key). Both are true now, so this is ONE cause legal in exactly TWO places — see
+    /// <see cref="DeathNarration.CanHappen"/> — and every word of the card is chosen by
+    /// <see cref="DeathPlace"/>: the fireball is hers, the quiet inward collapse is the wreck's. The tail
+    /// aboard a wreck is already right — <i>"Her log will not mention it."</i></para>
+    /// </summary>
+    Scuttled,
+
     /// <summary>The eerie variant of a surface death: nerves shot to a sliver, and the last anyone saw, the
     /// captain walked TOWARD the crowd, not away — "joined them" (owner's cruise ruling). Chosen sparingly by
     /// <see cref="DeathNarration.SurfaceEnd"/> so it stays chilling. (Wired ready.)</summary>
@@ -48,19 +72,16 @@ public enum DeathCause
     /// caller PASSES this rather than rolling for it, because it is the one thing it knows for certain.</para></summary>
     Suffocated,
 
-    /// <summary>#525 · THE OVERLOAD YOU SET YOURSELF ran out with you still aboard.
+    /// <summary>
+    /// #538 · A PROFESSIONAL SHOT YOU. The black-ops sweep team's challenge ran out with the captain still in
+    /// the lamp — which is nothing like being run down by the pack, and used to narrate as if it were.
     ///
-    /// <para>#525's outcome table records this row as <i>built</i>. It was not: <c>AdvanceScuttleClock</c>
-    /// called <c>TriggerSurfaceOverdrawDeath</c> with no known cause, so the card rolled
-    /// <see cref="DeathNarration.SurfaceEnd"/> and told the captain an Old One's hand was the last straw —
-    /// aboard a drive-failure hull with nothing living in her, ninety seconds after they turned two keys
-    /// themselves. The same failure this project has now paid for four times (#545's card blaming Reevers
-    /// for three men with rifles), on the one death the captain unambiguously chose.</para>
-    ///
-    /// <para>Only ever <see cref="DeathPlace.Derelict"/>: the panel is bolted to somebody else's reactor,
-    /// and your own ship has no such switch (that lane is #525's second half, and the CASTAWAY outcome it
-    /// wants is still unbuilt). The tail is already right — <i>"Her log will not mention it."</i></para></summary>
-    Scuttled,
+    /// <para>Added because the first playtest of the sweep scene ended with the card saying <i>"the Old Ones
+    /// took you… they ran you down on Quiet Sister's regolith short of the tube"</i> after three men with
+    /// rifles shot a captain standing in a corridor. The sim did one thing and the card reported another,
+    /// which in this codebase is the bug, not a wording nit.</para>
+    /// </summary>
+    Inspected,
 }
 
 /// <summary>
@@ -166,6 +187,17 @@ public static class DeathNarration
             return "\"…and the footprints only lead one way — in.\"";
         }
 
+        // #538 · AND THE THIRD PIECE OF THE SAME CARD. Adding DeathCause.Inspected fixed the headline and the
+        // narration line and left THIS one still reading "…they simply kept coming, and the guard did not hold
+        // forever" — a pack quote, under a headline that says you were found aboard, after three professionals
+        // shot a captain who was standing still. Caught by booting the scene and reading the card, which is the
+        // owner's method and the reason it keeps being right: the parts were all there and one of them was
+        // pointed at the wrong death.
+        if (cause == DeathCause.Inspected)
+        {
+            return "\"…nobody raised their voice, and it was over before the echo.\"";
+        }
+
         return nerveRanOut
             ? "\"…the nerve was already gone. The hand was only the last of it.\""
             : "\"…they simply kept coming, and the guard did not hold forever.\"";
@@ -215,8 +247,22 @@ public static class DeathNarration
             return cause == DeathCause.Joined ? "death-joined-derelict.jpg" : "death-derelict.jpg";
         }
 
+        // #633 · HER OWN CHARGES GET HER OWN FIREBALL. The two branches built the two halves of #525 apart;
+        // reunited, a scuttling is legal in two places and the picture has to say which. Aboard a wreck it
+        // is the derelict card above (a hull going inward, quietly, with the log that will not mention it);
+        // on HER deck it is the same frame the impact death already earns, because that is literally what
+        // the player just watched happen to their own ship.
+        if (place == DeathPlace.OwnShip && cause == DeathCause.Scuttled)
+        {
+            return "busted-ship-explosion.jpg";
+        }
+
+        // #633 · #538's sweep team only ever finds you on an away leg (ChallengeRunsOut requires `_surface`),
+        // so on the ground it is the away-team card — a captain in a suit, whoever's hand it was, exactly the
+        // reasoning #583 used to move a foot-caught collector off the gun-camera frame.
         return place == DeathPlace.LandingParty
             && cause is DeathCause.Reevers or DeathCause.Suffocated or DeathCause.Collector
+                or DeathCause.Inspected
             ? "death-landing-party.jpg"
             : ArtFile(cause);
     }
@@ -237,15 +283,21 @@ public static class DeathNarration
         // captain out of their ship on the ground; the placed overload is the one the card actually calls.
         DeathCause.Suffocated => "death-landing-party.jpg",
 
-        // The placeless answer for a cause with exactly ONE legal place is that place's card — the same
-        // reasoning that gives a placeless suffocation the away team's. `CanHappen` makes Scuttled a
-        // derelict-only cause, so there is no version of this death that happens anywhere else.
-        //
         // It said `busted-ship-explosion.jpg` for one commit, on the grounds that a scuttling IS a hull
         // coming apart, and `EveryCause_HasItsOwnArt` caught it in CI: that frame is the captain's own ship
         // going up, and lending it to a death aboard somebody else's is the picture disagreeing with the sim
         // — which is exactly as bad as the words doing it, and is what this whole cause was added to stop.
+        //
+        // #633 · The cause is no longer derelict-only (main built her own charges), so the PLACED overload
+        // above now answers both: her deck gets the fireball, a wreck gets this. What is left here is the
+        // placeless answer, and a scuttling with no place named is the one the game staged first.
         DeathCause.Scuttled => "death-derelict.jpg",
+
+        // #538 · Placeless, this is a captain out of their ship and away — the sweep team cannot reach her
+        // own deck (see `CanHappen`) — so it takes the away-team card, exactly as a placeless suffocation
+        // does, rather than the gun-camera freeze-frame that belongs to the collectors. A canvas of its own
+        // is filed, not built.
+        DeathCause.Inspected => "death-landing-party.jpg",
         _ => "busted-ship-explosion.jpg",
     };
 
@@ -258,8 +310,10 @@ public static class DeathNarration
         DeathCause.Joined => "WHAT HAPPENED — you walked into the crowd",
         DeathCause.Void => "WHAT HAPPENED — lost to the void",
         DeathCause.Suffocated => "WHAT HAPPENED — the air ran out",
-        // Not "the reactor got you". You set it.
-        DeathCause.Scuttled => "WHAT HAPPENED — you were still aboard when she went",
+        // Not "the reactor got you". You set it — and "her" reads true for both the hull you were stripping
+        // and your own ship, which is why one headline can serve the cause in both of its legal places.
+        DeathCause.Scuttled => "WHAT HAPPENED — you scuttled her, and stayed aboard",
+        DeathCause.Inspected => "WHAT HAPPENED — you were found aboard",
         _ => "WHAT HAPPENED",
     };
 
@@ -295,6 +349,15 @@ public static class DeathNarration
         "You flew {body}'s periapsis under its own surface. The ground was where the orbit said it would be.",
     ];
 
+    /// <summary>Her own charges, with the captain still standing in her. Every line has to carry the same
+    /// fact: this was a decision, taken twice, by two hands — and then not walked away from.</summary>
+    private static readonly string[] ScuttledLines =
+    [
+        "You turned the keys {where} and then did not leave. The charges kept their end of the bargain.",
+        "Both keys, ninety seconds, and a way out you had already dogged shut {where}. She went exactly as advertised.",
+        "The overload ran to zero {where} with the captain still aboard. Whatever you were threatening, you meant it.",
+    ];
+
     private static readonly string[] ReeverLines =
     [
         "The Old Ones took you on {body} — the chest is still out there, for anyone fool enough to go back for it.",
@@ -307,6 +370,16 @@ public static class DeathNarration
         "They found no body on {body}. The last anyone saw, you walked TOWARD the crowd, not away from it.",
         "On {body} your nerve went to nothing, and then so did you. No struggle in the regolith — just footprints, leading in.",
         "The tracker on {body} still shows you moving, some nights. You didn't run from the Old Ones at the end. You joined them.",
+    ];
+
+    /// <summary>#538 · Shot by somebody who was working. Every line has to carry the thing that makes this
+    /// death different from all the others: it was ADMINISTRATIVE. Nobody was angry, nobody wanted your cargo,
+    /// and the whole exchange was over in three seconds because you were seen.</summary>
+    private static readonly string[] InspectedLines =
+    [
+        "They found you aboard {body} and did what they were sent to do. Nobody raised their voice and nobody hurried.",
+        "The lamp stopped on you {where} and three seconds later the sweep went on down the corridor. You were a line in somebody's report.",
+        "You were seen {where}, told to stand still, and did not. They were never there to negotiate — they were there to make sure she stopped existing.",
     ];
 
     private static readonly string[] VoidLines =
@@ -370,17 +443,20 @@ public static class DeathNarration
 
     private static string[] PoolFor(DeathCause cause) => cause switch
     {
+        DeathCause.Scuttled => ScuttledLines,
         DeathCause.Collector => CollectorLines,
         DeathCause.Impact => ImpactLines,
         DeathCause.Reevers => ReeverLines,
         DeathCause.Joined => JoinedLines,
         DeathCause.Void => VoidLines,
         DeathCause.Suffocated => SuffocationLines,
-        // Scuttled can only ever be a derelict (CanHappen), so the derelict branch of Line always catches
-        // it first. Named anyway: a cause absorbed by a `_ =>` default is exactly the shape #609 was filed
-        // about, and the fallback here is the COLLECTOR pool — a boarding volley, over a captain who turned
-        // two keys alone on a dead ship.
-        DeathCause.Scuttled => ScuttleLinesAboardAWreck,
+        // #633 · Scuttled is listed ONCE, at the top of this switch, and it resolves to her own ship's pool.
+        // That is the placeless answer and it is the right one now: the derelict branch of `Line(cause,
+        // place, …)` catches a wreck scuttling before it ever reaches here, so what is left over is her
+        // deck. (Before the branches were reunited this arm read `ScuttleLinesAboardAWreck`, because on that
+        // side her ship had no such switch. Main built the switch. A cause absorbed by a `_ =>` default is
+        // the shape #609 was filed about, so it stays named either way.)
+        DeathCause.Inspected => InspectedLines,
         _ => CollectorLines,
     };
 
@@ -424,11 +500,23 @@ public static class DeathNarration
         // That default absorbing a gap is precisely the shape #609 was filed about; the cause is stated.
         DeathCause.Void => place == DeathPlace.OwnShip,
 
-        // #525 · The scuttling panel is bolted to somebody else's reactor. Your own ship has no such switch
-        // yet (that is #525's second half, with the CASTAWAY outcome still unbuilt), and a moon has no
-        // reactor at all — so this cause is legal in exactly one place and says so, rather than falling
-        // through a default that would make it legal 150 m under a moon.
-        DeathCause.Scuttled => place == DeathPlace.Derelict,
+        // #525 · The scuttling panel is bolted to somebody else's reactor, and a moon has no reactor at all
+        // — so this cause is legal in a NAMED set of places and says so, rather than falling through a
+        // default that would make it legal 150 m under a moon.
+        //
+        // #633 · That named set is now TWO. This read `place == DeathPlace.Derelict` and justified itself
+        // with "your own ship has no such switch yet (that is #525's second half)" — which was true on this
+        // branch and false on `main`, where #525's second half shipped: `ShipScuttle`, the charges in the
+        // machinery space, and the crew's second key. Reunifying the branches without widening this would
+        // have been a constant governing the wrong world (named bug class 2) on the very first own-ship
+        // scuttling. There is still no reactor under a moon and none on a landing party's back.
+        DeathCause.Scuttled => place is DeathPlace.Derelict or DeathPlace.OwnShip,
+
+        // #538 · A sweep team finds you where you are not supposed to be. The sim says so itself:
+        // `ChallengeRunsOut` only fires with an away excursion live (`_surface`), so there is no version of
+        // this death on her own bridge — and the card's own words ("you were FOUND aboard") would be a lie
+        // about the place if there were.
+        DeathCause.Inspected => place != DeathPlace.OwnShip,
         _ => true,
     };
 

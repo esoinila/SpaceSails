@@ -18,6 +18,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- CA1416: the client assembly is [SupportedOSPlatform("browser")] because the Blazor WASM SDK says so,
+         and this test project runs on the CI runner. Every member it touches — DeckPlan's walls, consoles and
+         NearestConsoleSpot, and the layout builders in HavenInterior / WreckInterior / MoonSurface — is pure
+         arithmetic with no browser API anywhere beneath it, which is exactly why the geometry CAN be audited
+         off-browser. Scoped to this project; the client itself keeps the analyzer. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

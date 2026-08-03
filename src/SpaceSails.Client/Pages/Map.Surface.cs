@@ -258,6 +258,19 @@ public partial class Map
     // The engine ceiling for the buffer arithmetic below (CollectorLanding.PartySize is clamped to 4).
     private const int MaxCollectors = 4;
 
+    /// <summary>
+    /// #633 · HOW MANY FIGURES A SURFACE PLAN HAS TO BE ABLE TO DRAW, in one place, as the sum of its bands
+    /// rather than a number somebody typed. The two branches each maintained this expression separately and
+    /// each dropped the other's band: one read <c>3 + ReeverEngineCeiling + MaxCollectors</c>, the other
+    /// <c>3 + ReeverEngineCeiling + InspectionTeam.TeamSize</c>. Both were correct on their own branch and
+    /// both are wrong now, which is precisely why the sum lives here and every caller reads it.
+    ///
+    /// <para>The bands, in buffer order: the crew (3), the pack (<see cref="ReeverEngineCeiling"/>), the repo
+    /// crew (<see cref="MaxCollectors"/>), the sweep team (<c>InspectionTeam.TeamSize</c>).
+    /// <see cref="FillSurfaceDroids"/> writes them at exactly these offsets.</para></summary>
+    private const int SurfaceDroidCount =
+        3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize;
+
     private sealed class Reever
     {
         public double X, Y, Facing, Vx, Vy;
@@ -737,6 +750,7 @@ public partial class Map
             excursion.AirSeconds = startingAir;   // #564 ?air=N — a short tank, for testing the line
         }
         _reevers.Clear();
+        _sweepers.Clear();
         _lastNearestReeverRange = null;
         _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
         _sightings = NerveModel.SightingSpell.Fresh; // #379: a fresh watch — the first fright of it lands full
@@ -839,6 +853,19 @@ public partial class Map
             // helped if it had: SpawnReevers places its pack in regolith coordinates. Routed to the wreck's
             // own spawner instead, so the owner can dial the hull hot for the fight the airlock gun exists
             // for ("I want to test triggering the reevers :-D").
+            // #538 · AND SOMEBODY ELSE MAY ALREADY BE ABOARD. The INSURANCE JOB hosts the sweep team, because
+            // her own fiction already says "she was LOST ON PURPOSE… the most valuable thing aboard is the
+            // evidence" — so what they came to remove is exactly what the captain came to take. Nothing had to be
+            // invented for the owner's "they want to keep their secrets, but the rewards could be big also".
+            // #537 · WHAT SHE IS HIDING, decided once, off her id — so a captain who comes back finds the
+            // same ship rather than a fresh roll.
+            ResolveHullVoid();
+
+            if (_wreck is { Cause: Derelict.WreckCause.InsuranceJob } || _sweepTeamCheat > 0)
+            {
+                SpawnSweepTeam(_sweepTeamCheat > 0 ? _sweepTeamCheat : InspectionTeam.TeamSize);
+            }
+
             if (_wreck is { Cause: Derelict.WreckCause.Infested } || _reeverAmbushCheat > 0)
             {
                 SpawnWreckPack(_reeverAmbushCheat > 0 ? _reeverAmbushCheat : 4);
@@ -2965,14 +2992,14 @@ public partial class Map
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
         {
             _deckPlan = WreckInterior.WreckDeck(
-                aboard, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids,
+                aboard, _wreckExamined, _wreckSalvaged, SurfaceDroidCount, FillSurfaceDroids,
                 HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
             return;
         }
 
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
-            3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids,
+            SurfaceDroidCount, FillSurfaceDroids,
             siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name, // #320: the picked site seeds the ground + names the header
             // #586: which visit-window the monolith's foot is showing. Bucketed off sim time so it holds
             // still for a whole excursion (a captain who comes back the same afternoon finds what they left —
@@ -3451,6 +3478,10 @@ public partial class Map
     // the real ground. It skips only the walk to the hatch and the boarding panel, nothing that matters.
     private bool _landCheat;
 
+    /// <summary>Which body <c>?land=&lt;bodyId&gt;</c> asked for, or null for "the first one in reach". Matched on
+    /// id OR name, case-insensitively, because a playtester types what they see on the map.</summary>
+    private string? _landBodyCheat;
+
     private async Task AutoLandForCheatAsync()
     {
         if (!_landCheat || _surface is not null)
@@ -3463,21 +3494,35 @@ public partial class Map
         // to be nearer and the wreck is unreachable except by walking the deck to the shuttle bay.
         List<ShuttleStop> board = [.. ShuttleDestinationsInRange()];
 
-        // #585: ?body=ID wins the toss outright, so any ground can be opened and LOOKED at from one URL.
+        // #585 / #633 · A NAMED BODY WINS THE TOSS OUTRIGHT, so any ground can be opened and LOOKED at from
+        // one URL. Two spellings reach this line — `?body=<id>` (#585) and `?land=<id|name>` (#464) — because
+        // the branches grew one each; BOTH still parse, and they resolve through this ONE lookup rather than
+        // two, which is the only way they can be guaranteed to land in the same place.
+        //
         // The named body must still be on the board — the cheat may never reach somewhere the player could
-        // not — but if it is there, it is the one we land on.
-        ShuttleStop? target = _forcedLandingBodyId is { } wanted
-            ? board.FirstOrDefault(s => s.IsLandable
-                && string.Equals(s.Body.Id, wanted, StringComparison.OrdinalIgnoreCase))
-            : null;
-
-        if (target is null && _forcedLandingBodyId is { } missing)
+        // not — and when it is not, it REFUSES and says so. A cheat that silently lands you somewhere else is
+        // worse than one that refuses, because you playtest the wrong scene and trust the result.
+        if ((_landBodyCheat ?? _forcedLandingBodyId) is { } wanted)
         {
-            string reachable = string.Join(", ", board.Where(s => s.IsLandable).Select(s => s.Body.Id));
-            ShowPulseMessage($"🧪 DEV ?body={missing}: not landable from this berth. In reach: {reachable}");
+            ShuttleStop? named = board.FirstOrDefault(
+                s => s.IsLandable
+                     && (string.Equals(s.Body.Id, wanted, StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(s.Body.Name, wanted, StringComparison.OrdinalIgnoreCase)));
+
+            if (named is null)
+            {
+                string inReach = string.Join(", ", board.Where(s => s.IsLandable).Select(s => s.Body.Id));
+                ShowPulseMessage($"🧪 DEV ?land={wanted}: not landable from this berth. In reach: " +
+                                 (inReach.Length > 0 ? inReach : "nothing"));
+                _landCheat = false;
+                return;
+            }
+
+            await RideTheShuttleDownForCheatAsync(named);
+            return;
         }
 
-        target ??=
+        ShuttleStop? target =
             board.FirstOrDefault(s => s.IsLandable && Derelict.TryParseWreckId(s.Body.Id, out _))
             ?? board.FirstOrDefault(s => s.IsLandable);
         if (target is null)
@@ -3485,6 +3530,17 @@ public partial class Map
             ShowPulseMessage("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
             return;
         }
+
+        await RideTheShuttleDownForCheatAsync(target);
+    }
+
+    /// <summary>
+    /// The descent both <c>?land=1</c> and <c>?land=&lt;bodyId&gt;</c> ride. One method on purpose: two copies of
+    /// "land, then put the boots somewhere sensible" would drift, and the drift would be invisible until a
+    /// playtester landed by name and found themselves standing in vacuum.
+    /// </summary>
+    private async Task RideTheShuttleDownForCheatAsync(ShuttleStop target)
+    {
         LandingSite site = LandingSites.For(target.Body.Id)[
             Math.Clamp(_forcedSiteIndex ?? 0, 0, LandingSites.For(target.Body.Id).Count - 1)];
         // Bring the sling down loaded — a cheat that lands you empty-handed made [T] look broken
@@ -3605,6 +3661,7 @@ public partial class Map
         ServeStandingPumpOrder();                                                   // #488: …and the corridor last
         AdvanceScuttleClock(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the overload
         AdvanceNests(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));        // #488: the nest is a source
+        AdvanceFire(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #524: and the fire eats
         AdvanceVacuumExposure(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: vacuum is ground
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
@@ -3813,11 +3870,11 @@ public partial class Map
             return;
         }
         double detection = FanReach();   // #591: shorter with every floor down
-        // #583: the chirp counts the collectors too — the holster device does not know or care whose
-        // boots they are, and a boat crew walking up on you is exactly the thing it exists to make you
-        // look at.
-        var entities = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy))
-            .Concat(_collectors.Select(c => new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy)));
+        // #583 / #538 · The chirp counts everything on its feet down here — the pack, the sweep team, and
+        // the repo crew. The holster device does not know or care whose boots they are, and a boat crew
+        // walking up on you is exactly the thing it exists to make you look at. ONE accessor, so the ear and
+        // the hull can never disagree about who is walking about in it.
+        var entities = EverythingThatMoves();
         int heard = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, entities, detection);
         (_chirp, bool chirp) = MotionTracker.StepChirp(_chirp, heard, dtRealSeconds);
         if (chirp)
@@ -4255,8 +4312,16 @@ public partial class Map
         // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
         // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
         // "Now the cannons shot though the walls").
-        // #603 · The guns fire what is IN them: a bot loaded with the lab round drops a queue in one
-        // shot and one loaded with issue ball grinds them down.
+        // #538 · WEAPONS TIGHT. While the order stands, nothing of the captain's fires — not a deployed
+        // bot, not the tube gun that never runs dry. Skipping the volley entirely is the honest
+        // implementation: no rounds leave, no magazines drain, and no noise is made, which is the point.
+        if (!SentryBot.MayOpenFire(_weaponsTight))
+        {
+            return;
+        }
+
+        // #603 · And what does leave is what is IN them: a bot loaded with the lab round drops a queue in
+        // one shot and one loaded with issue ball grinds them down.
         var loaded = live.Select(b => Core.Ammunition.ById(b.AmmoId)).ToList();
         SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers(), loaded);
 
@@ -4434,6 +4499,57 @@ public partial class Map
             return;
         }
         ShowPulseMessage($"🤖 {carried.Unit} deployed — magazine {SentryBot.Readout(carried.Rounds)}. It'll hold this arc until the counter reads 00. Bots buy time, not safety.");
+    }
+
+    /// <summary>
+    /// FILL A CARRIED SENTRY AT THE LOCK. Owner: <i>"Carrying the autogun to our shuttle air-lock should reload
+    /// it ( might ve needed for big ship) 😎"</i>
+    ///
+    /// <para>The boat carries the belts; the bot carries only what you last gave it. So a drained sentry is a
+    /// WALK rather than a write-off — a stroll on a small hull, and a real decision on the 4× hauler of #531
+    /// with a pack somewhere behind you. Free of any other currency on purpose: the cost is time and exposure,
+    /// the same shape as the pump's.</para>
+    ///
+    /// <para>Returns true when it actually did something, so the lock can say that instead of opening the
+    /// destination list — pressing E again gets you the list, and nothing is taken away.</para>
+    /// </summary>
+    private bool TryFillCarriedSentryAtTheLock()
+    {
+        if (_surface is not { } ex)
+        {
+            return false;
+        }
+
+        SurfaceBot? carried = ex.Bots.FirstOrDefault(b => !b.Deployed);
+        if (carried is null)
+        {
+            return false;   // nothing in the sling; the lock has its usual job to do
+        }
+
+        if (!SentryBot.NeedsFilling(carried.Rounds))
+        {
+            ShowPulseMessage(SentryBot.AlreadyFullLine(carried.Unit));
+            return false;   // it said its piece, but the lock should still open
+        }
+
+        // #540 · A COLD BOAT ARMS NOBODY. Owner, on what makes the wait bite: "As the ammo count runs down and
+        // reload place is warming up to allow use and its gun." The belts live aboard her, behind a hatch that is
+        // dogged while she sleeps — so going dark takes away the resupply and the covering gun as well as the ride.
+        if (!SilentRunning.HatchOpen(BoatState))
+        {
+            ShowPulseMessage(SilentRunning.ReloadNeedsHerAwakeLine(BoatSecondsLeft));
+            RendererInterop.PlayCue("block");
+            return true;    // handled: an empty sling and a shut boat is not a reason to offer a ride out
+        }
+
+        int was = carried.Rounds;
+        carried.Rounds = SentryBot.MaxMagazine;
+        ShowPulseMessage(SentryBot.FilledLine(carried.Unit, was));
+        LogAutopilotEvent($"🤖 {carried.Unit} refilled at the lock ({SentryBot.Readout(was)} → " +
+                          $"{SentryBot.Readout(SentryBot.MaxMagazine)}).");
+        RendererInterop.PlayCue("board");
+        RequestVaultSave();
+        return true;
     }
 
     private void StepReevers(double dtRealSeconds)
@@ -4908,7 +5024,7 @@ public partial class Map
                 // #528 · AND THE PICTURE DOES THE SAME JOB THE LINE DOES: it shows them SETTLED, not
                 // attacking. Nothing in this frame is a fight. The clock is your tank, and what makes it
                 // horrible is how comfortable everyone else looks.
-                ShowStoryPlate(
+                ShowRevealCard(
                     CollectorLanding.SiegePlate.Title,
                     CollectorLanding.SiegePlate.ArtFile,
                     CollectorLanding.SiegePlate.Caption);
@@ -4963,7 +5079,7 @@ public partial class Map
         // in the world is a tracker fan. A sentence that fades in a second and a half is not a warning.
         // Core owns the words — and the caption is ClosingLine, which was written, reviewed and shipped and
         // then referenced by nothing at all until now.
-        ShowStoryPlate(
+        ShowRevealCard(
             CollectorLanding.ArrivalPlate.Title,
             CollectorLanding.ArrivalPlate.ArtFile,
             CollectorLanding.ArrivalPlate.Caption);
@@ -5292,6 +5408,16 @@ public partial class Map
         {
             return;
         }
+
+        // #540 · AND THIS IS THE ONE THAT MATTERS. Owner: "its doors open once the warm up is complete", and then
+        // the scene it is for — "Under a swarm of reevers with slinged autoguns that wait can feel really long
+        // time 😎". Departing the SYSTEM was already gated; the ride HOME from a hull was not, which is exactly
+        // where a captain meets the clock: standing at the lock, in the open, waiting to be let in.
+        if (!BoatReadyToFly())
+        {
+            return;
+        }
+
         ex.Channel = null;
         bool escapedWithWatchdogs = _reevers.Count > 0;
         TreasureCache? buried = ex.Cache;
@@ -5442,6 +5568,13 @@ public partial class Map
     private void FillSurfaceDroids(double simTime, DeckPlan.Droid[] buffer)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // [0..3): the crew
+        // #633 · FOUR BANDS, NOT THREE, AND THEY MAY NOT OVERLAP. `main` put the sweep team at
+        // `3 + ReeverEngineCeiling` because on that branch nothing else lived there; this branch had already
+        // given those slots to the repo crew (#583). Reunited without this line the collectors' loop below
+        // would overwrite all three sweepers every frame — one buffer written by two fillers, which is the
+        // named bug class and exactly the thing a merge produces. The bands are stated ONCE, here and in
+        // SurfaceDroidCount, and every filler is offset from the one before it.
+        FillSweeperDroids(buffer, 3 + ReeverEngineCeiling + MaxCollectors);
         for (int i = 0; i < ReeverEngineCeiling; i++)
         {
             int slot = 3 + i;
@@ -5633,10 +5766,7 @@ public partial class Map
             // announcement, just a fan that was not on the screen a second ago. Once it has seen anything
             // it stays live for the rest of the boarding — an ear does not un-hear.
             _hudEntities.Clear();
-            foreach (Reever r in _reevers)
-            {
-                _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
-            }
+            _hudEntities.AddRange(EverythingThatMoves());   // #538: the pack AND the sweep team
 
             // #583: a repo crew that boarded a wreck behind you is a contact like any other.
             foreach (Collector c in _collectors)
@@ -5759,18 +5889,10 @@ public partial class Map
         // #371 Phase 1 (perf): fill the reused entity buffer instead of a lazy Select — one iterator fewer
         // per frame, and MotionTracker.Sweep reads it as an IEnumerable exactly as before.
         _hudEntities.Clear();
-        foreach (Reever r in _reevers)
-        {
-            _hudEntities.Add(new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
-        }
+        // #538 / #583 · The pack, the sweep team AND the repo crew — everything on this ground that is on
+        // its feet, from the one accessor that lists them.
+        _hudEntities.AddRange(EverythingThatMoves());
 
-        // #583 · The repo crew is on the fan too. They WALK, and a motion-only ear hears walking louder
-        // than anything else on this ground — which is the whole warning the player gets that the boat that
-        // came down is now spread out and coming. Same instrument, no special case: they are contacts.
-        foreach (Collector c in _collectors)
-        {
-            _hudEntities.Add(new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy));
-        }
         // #591 · The sweep is cut to what the fan can hear from this floor. On the regolith that is
         // unbounded and nothing changes; eleven floors down it is the reason the corridor is quiet.
         double fanReach = FanReach();
@@ -5972,6 +6094,14 @@ public partial class Map
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
             var aboard = new List<string> { "WASD — move", "E — examine / take" };
+
+            // #538 · the sentry remote lives on the HUD, and it never hides: an affordance you cannot see is an
+            // affordance you do not have (#212), and this is the one whose absence gets a captain shot.
+            if (ex.Bots.Count > 0)
+            {
+                aboard.Add(_weaponsTight ? "🤖 H — WEAPONS TIGHT (press to free)" : "🤖 H — weapons tight");
+            }
+
             if (ex.Bots.Any(b => !b.Deployed))
             {
                 aboard.Add("🤖 T — deploy a sentry");
@@ -5986,6 +6116,14 @@ public partial class Map
             {
                 aboard.Add($"🎒 I — items ({_satchel.Count})");
             }
+
+            // #537 · A VERB NOBODY IS TOLD ABOUT IS A VERB NOBODY HAS. Caught by booting the scene and
+            // reading the hint bar, which is the owner's own method: the knock was bound, the clock ran, the
+            // sweep team heard it — and the strip along the bottom never mentioned K existed.
+            aboard.Add(IsSounding
+                ? (_soundQuietly ? "✊ K — stop knocking" : "📡 K — stop sounding")
+                : (_soundQuietly ? "✊ K — knock (quiet)" : "📡 K — sound the plating (loud)"));
+
             aboard.Add("F — first person");
             aboard.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute");
             return string.Join(" ∙ ", aboard);

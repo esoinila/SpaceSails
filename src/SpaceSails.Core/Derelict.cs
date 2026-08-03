@@ -495,7 +495,11 @@ public static class Derelict
                 Line: $"The {wreck.ShipName} was never found. Nobody thanks you, and nobody comes looking — yet.");
         }
 
-        int fee = (int)System.Math.Round(value * ReportFeeFraction);
+        // #553 · AND THE HONEST ROAD PAYS THE SURCHARGE. Filing is legal work, so it attracts cl. 14(b) — the
+        // line item nobody can explain, off the back of an incident nobody will describe. It is also the
+        // in-fiction reason this road has always paid worse than stripping her: the regulation that drove the
+        // work into mountains is the same regulation the captain is paying for here, in credits, on a receipt.
+        int fee = ComplianceSurcharge.Deduct((int)System.Math.Round(value * ReportFeeFraction));
         bool readRight = reportedCause == wreck.Cause;
 
         if (!readRight)
@@ -510,7 +514,8 @@ public static class Derelict
         }
 
         bool fraud = wreck.Cause == WreckCause.InsuranceJob;
-        int bonus = (int)System.Math.Round(value * (fraud ? FraudBountyFraction : CorrectCauseBonusFraction));
+        int bonus = ComplianceSurcharge.Deduct(
+            (int)System.Math.Round(value * (fraud ? FraudBountyFraction : CorrectCauseBonusFraction)));
 
         return new SalvageOutcome(
             CreditsNow: fee + bonus,

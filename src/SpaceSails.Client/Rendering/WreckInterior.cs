@@ -69,6 +69,17 @@ public static class WreckInterior
         var consoles = new System.Collections.Generic.List<DeckPlan.ConsoleSpot>();
         var labels = new System.Collections.Generic.List<(float X, float Y, string Text)>();
 
+        // #537 · HER STRUCTURE, FILLED. Owner, reading the deck after the padding shipped: "we should cover
+        // those narrow spaces … all of them … if we can see into them from the hall then they don't hide
+        // anything", and then how: "some kind of fill there would make it look like the space is filled with
+        // stuff." Right on both counts — a run drawn as two lines round a black gap reads as a SPACE, and a
+        // hiding place drawn as a space is not one.
+        var structures = new System.Collections.Generic.List<DeckPlan.Structure>();
+        foreach ((float sx0, float sy0, float sx1, float sy1) in WreckLayout.StructuralFills())
+        {
+            structures.Add(new(sx0, sy0, sx1, sy1));
+        }
+
         // ── The hull, the spine and the bulkheads — straight off Core's geometry, so what CI walks is
         //    exactly what the captain walks. IsWindow/IsHull are dressing the audit does not care about,
         //    so they are applied here by position rather than carried through Core.
@@ -240,7 +251,8 @@ public static class WreckInterior
             spawnX: SpawnX, spawnY: SpawnY,
             droidCount: droidCount, fillDroids: fillDroids,
             location: LocationName,
-            doors: [.. doors], shipFixtures: false, followCam: true, tables: []);
+            doors: [.. doors], shipFixtures: false, followCam: true, tables: [],
+            structures: [.. structures]);
     }
 
     // The outer shell reads as hull; everything inside is interior partition.

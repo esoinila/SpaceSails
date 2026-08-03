@@ -118,7 +118,7 @@ public partial class Map
                 // reason to stay in the room stayed in it. A game that only ever hands out a picture for the
                 // bad news teaches the player that a picture IS bad news, which is a tell of a different
                 // kind. Only on the outcome that actually MADE something — the same gate the memory rides.
-                ShowStoryPlate(
+                ShowRevealCard(
                     StrangerBond.CognacPlate.Title,
                     StrangerBond.CognacPlate.ArtFile,
                     StrangerBond.CognacPlate.Caption);

@@ -24,6 +24,132 @@ public static class WreckLayout
     /// to +<see cref="SpineHalfHeight"/>.</summary>
     public const float SpineHalfHeight = 3f;
 
+    /// <summary>
+    /// #537 · THE SHIELDING BAND, outboard of the pressure hull the whole length of her parallel middle body.
+    ///
+    /// <para>Owner, on being shown that a hidden void had nowhere to physically BE — the compartments are
+    /// contiguous, so every square metre of her was already spoken for: <i>"I guess making outside walls thicker
+    /// (shielding etc) might offer less audited dimensions? Or having like technical plumbing space in the between
+    /// walls?"</i> That is the right answer and it is also how spacecraft are actually built: whipple layers,
+    /// radiation shielding, tankage, cable and plumbing runs all live between an inner pressure wall and an outer
+    /// skin.</para>
+    ///
+    /// <para>It solves the problem structurally rather than by fiddling with numbers. A band outboard of the
+    /// rooms has <b>no doorway to respect</b>, so a void can sit anywhere along her length — which the previous
+    /// attempt could not manage: respecting each compartment's own door left the bow rooms with NEGATIVE margin
+    /// and only the aft holds able to host anything. And it answers the owner's question directly: the room is
+    /// not smaller on the inside. The space is between the walls, where it belongs.</para>
+    ///
+    /// <para><b>Every hull has it</b>, and that is the anti-tell rule (his own, from the valve boards): if only
+    /// ships with something to hide carried a shielding band, finding a shielding band would name the ship.</para>
+    /// </summary>
+    public const float ShieldingDepth = 2.5f;
+
+    /// <summary>The outer skin — the pressure hull plus her shielding. Only along the parallel middle body; the
+    /// bow taper carries no band, because shielding runs down the sides of a ship and not around her nose.</summary>
+    public const float OuterTopY = TopY - ShieldingDepth;
+
+    /// <summary>…and the same on the other side.</summary>
+    public const float OuterBottomY = BottomY + ShieldingDepth;
+
+    /// <summary>Where the band runs forward to. Aft it runs to the transom.</summary>
+    public const float ShieldingForwardEnd = BowX - 6;
+
+    /// <summary>
+    /// #537 · AND SHE IS LONGER THAN HER ROOMS. Owner, on being told the side band was the fix: <i>"It would make
+    /// sense that the walls that can hold vacuum are not thin and all kinds of tech needs to exist on the ship
+    /// somewhere"</i>, and then the shortcut — <i>"That padding to every wall is a whole job in itself. Just make
+    /// every ship longer. 😅"</i>
+    ///
+    /// <para>He is right on both counts, and they are the same point twice: a ship is not a row of rooms with a
+    /// skin painted on. She is rooms, plus everything that makes the rooms work — plant, tankage, the drive, the
+    /// runs between them — and until now her compartments went edge to edge and the drive lived nowhere at all.
+    /// So the transom moves aft of the last bulkhead and the gap is MACHINERY SPACE: unassigned, unaudited, and
+    /// exactly where a ship's tech actually is.</para>
+    ///
+    /// <para><b>The compartments do not move.</b> <see cref="AftX"/> stays the aft edge of ENGINEERING and REACTOR
+    /// SPACES; only the shell goes further. Anything else would have re-cut eight rooms to buy one space.</para>
+    /// </summary>
+    public const float MachineryDepth = 8f;
+
+    /// <summary>The transom — aft of the last bulkhead by a machinery space, not flush with it.</summary>
+    public const float TransomX = AftX - MachineryDepth;
+
+    /// <summary>
+    /// #537 · AND HER INTERIOR BULKHEADS ARE NOT LINES EITHER. Owner, after the shielding band shipped, giving the
+    /// reason he had wanted padding on the INSIDE walls all along: <i>"the reason I wanted padding on interior
+    /// walls was to not make finding the hidden spaces too easy. Still a room with a wall to technical space is a
+    /// good bet on large enough hiding space. 😎👍"</i>
+    ///
+    /// <para>He is right and it is the sharper half of the idea. A shielding band on the OUTSIDE ONLY is itself a
+    /// tell: a captain learns in one boarding that hidden space is always outboard, never knocks anywhere else,
+    /// and the deduction collapses into a reflex. Give every transverse bulkhead its own thin technical run and a
+    /// void can be almost anywhere — so the clue has to be read rather than guessed at.</para>
+    ///
+    /// <para><b>And the heuristic survives, which is the good bit.</b> A bulkhead run is
+    /// <see cref="BulkheadDepth"/> deep against the band's <see cref="ShieldingDepth"/>, so an outboard wall
+    /// really is the better bet for anything BIG — a folded gun mount, a cold locker with somebody in it — while a
+    /// bulkhead will take papers and a rack of keys and nothing else. Where a thing can be hidden is decided by
+    /// what it is, which is exactly "a good bet" rather than a rule.</para>
+    /// </summary>
+    public const float BulkheadDepth = 1.2f;
+
+    /// <summary>
+    /// #537 · WHERE HER STRUCTURE IS, as filled rectangles — the shielding band and every bulkhead's technical
+    /// run. Owner, looking at the deck after the padding shipped: <i>"we should cover those narrow spaces … all
+    /// of them … if we can see into them from the hall then they don't hide anything."</i>
+    ///
+    /// <para>He is exactly right and it was a bad miss. The runs were drawn as two lines with the gap between
+    /// them left BLACK — the same black as a room — so a captain could read every hiding place off the map
+    /// without knocking on anything. The whole search collapses: the clue is redundant, the sounder is a
+    /// formality, and the noise it costs buys nothing. A hidden space that is drawn as a space is not hidden.</para>
+    ///
+    /// <para>So the runs are FILLED, and they read as what they are: steel, tankage and pipework with a ship
+    /// built round them. A void inside one looks exactly like every other stretch of it until somebody knocks —
+    /// which is the entire mechanic, and it did not work until now.</para>
+    /// </summary>
+    public static IEnumerable<(float X0, float Y0, float X1, float Y1)> StructuralFills()
+    {
+        // The shielding band, both sides, the length of the parallel middle body.
+        yield return (TransomX, OuterTopY, ShieldingForwardEnd, TopY);
+        yield return (TransomX, BottomY, ShieldingForwardEnd, OuterBottomY);
+
+        // …and every interior bulkhead's own run.
+        float half = BulkheadDepth / 2f;
+        foreach (bool top in new[] { true, false })
+        {
+            float yIn = top ? -SpineHalfHeight : SpineHalfHeight;
+            float yOut = top ? TopY : BottomY;
+            foreach (float x in InteriorBulkheads(top))
+            {
+                yield return (x - half, System.Math.Min(yIn, yOut), x + half, System.Math.Max(yIn, yOut));
+            }
+        }
+    }
+
+    /// <summary>The transverse bulkhead positions that have a room on BOTH sides — the ones with a technical run
+    /// inside them. The hull's own ends are not in here: they have the machinery space and the bow behind them.</summary>
+    public static IEnumerable<float> InteriorBulkheads(bool top)
+    {
+        var seen = new HashSet<float>();
+        var ends = new HashSet<float> { AftX, BowX - 6 };
+
+        foreach ((string _, float x0, float x1, bool isTop) in Compartments)
+        {
+            if (isTop != top)
+            {
+                continue;
+            }
+            foreach (float x in new[] { x0, x1 })
+            {
+                if (!ends.Contains(x) && seen.Add(x))
+                {
+                    yield return x;
+                }
+            }
+        }
+    }
+
     /// <summary>Where the shuttle puts the away team down — just inside the wreck's airlock, on the spine.
     /// Deliberately AT a doorway, so the first compartment is one step away.</summary>
     public const double SpawnX = 18.0;
@@ -148,13 +274,29 @@ public static class WreckLayout
     {
         var walls = new List<SurfaceCollision.Segment>();
 
-        // Outer shell. The bow tapers; the aft is a flat transom where the drive used to be.
-        walls.Add(new(AftX, TopY, BowX - 6, TopY));
-        walls.Add(new(AftX, BottomY, BowX - 6, BottomY));
+        // Outer shell. The bow tapers; the aft is a flat transom where the drive used to be — and it now sits
+        // a MACHINERY SPACE aft of the last bulkhead rather than flush against it, because a ship is her rooms
+        // plus everything that makes the rooms work.
+        walls.Add(new(TransomX, TopY, BowX - 6, TopY));
+        walls.Add(new(TransomX, BottomY, BowX - 6, BottomY));
         walls.Add(new(BowX - 6, TopY, BowX, -2f));
         walls.Add(new(BowX - 6, BottomY, BowX, 2f));
         walls.Add(new(BowX, -2f, BowX, 2f));
+        walls.Add(new(TransomX, TopY, TransomX, BottomY));
+
+        // …and the aft bulkhead that closes the pressure hull off from it. The machinery space is OUTSIDE the
+        // part of her that ever held air, which is why nothing walks into it by accident.
         walls.Add(new(AftX, TopY, AftX, BottomY));
+
+        // #537 · THE SHIELDING BAND. Two long enclosed boxes outboard of the pressure hull, closed at both
+        // ends — normally solid ship, and on a hull with something to hide, one section of it is not. Present on
+        // EVERY cause: a band that only appeared on ships with a void would announce them.
+        walls.Add(new(TransomX, OuterTopY, ShieldingForwardEnd, OuterTopY));
+        walls.Add(new(TransomX, OuterBottomY, ShieldingForwardEnd, OuterBottomY));
+        walls.Add(new(TransomX, OuterTopY, TransomX, TopY));
+        walls.Add(new(TransomX, BottomY, TransomX, OuterBottomY));
+        walls.Add(new(ShieldingForwardEnd, OuterTopY, ShieldingForwardEnd, TopY));
+        walls.Add(new(ShieldingForwardEnd, BottomY, ShieldingForwardEnd, OuterBottomY));
 
         // The spine corridor: two long walls, broken by a doorway into each compartment.
         foreach ((float x0, float x1) in SpineSegments())
@@ -163,13 +305,37 @@ public static class WreckLayout
             walls.Add(new(x0, SpineHalfHeight, x1, SpineHalfHeight));
         }
 
-        // Compartment bulkheads.
+        // Compartment bulkheads. The hull's own ends stay single lines — there is machinery space behind one
+        // and the bow taper behind the other — but every bulkhead with a room on BOTH sides is a thin closed box
+        // with a technical run inside it, because a wall that holds an atmosphere is not a line and the ship's
+        // pipework has to go somewhere.
         foreach ((string _, float x0, float x1, bool top) in Compartments)
         {
             float yIn = top ? -SpineHalfHeight : SpineHalfHeight;
             float yOut = top ? TopY : BottomY;
-            walls.Add(new(x0, yIn, x0, yOut));
-            walls.Add(new(x1, yIn, x1, yOut));
+
+            foreach (float x in new[] { x0, x1 })
+            {
+                if (x == AftX || x == BowX - 6)
+                {
+                    walls.Add(new(x, yIn, x, yOut));
+                }
+            }
+        }
+
+        foreach (bool top in new[] { true, false })
+        {
+            float yIn = top ? -SpineHalfHeight : SpineHalfHeight;
+            float yOut = top ? TopY : BottomY;
+            float half = BulkheadDepth / 2f;
+
+            foreach (float x in InteriorBulkheads(top))
+            {
+                walls.Add(new(x - half, yIn, x - half, yOut));
+                walls.Add(new(x + half, yIn, x + half, yOut));
+                walls.Add(new(x - half, yIn, x + half, yIn));
+                walls.Add(new(x - half, yOut, x + half, yOut));
+            }
         }
 
         // The away team's own lock across the spine: two stubs off the corridor walls with a passage
@@ -321,8 +487,23 @@ public static class WreckLayout
     /// know you want it.</para>
     ///
     /// <para>Every real ship answers this with a placard at the lock, which is also the safety card the
-    /// owner filed a design for. So she gets one, where you come in.</para></summary>
-    public static DeckReachability.Point PlacardStation => new(16.5f, 2.0f);
+    /// owner filed a design for. So she gets one, where you come in.</para>
+    ///
+    /// <para>NOT (16.5, 2), where it was first bolted: 1.62 du from the FORWARD LOCKER's hatch control, so
+    /// the first thing the captain meets on a derelict was two labels drawn on top of each other. Nothing
+    /// caught it, because <see cref="StandardFittings"/> is audited against ITSELF and the hatch controls are
+    /// generated per compartment — the same blind spot her own ship had. The deck audit walks the built plan
+    /// now, consoles and all (<c>ConsoleCrowdingTests</c>).</para>
+    ///
+    /// <para>Nor (20.5, 2), which was my first correction and traded one law for another: it is half a unit
+    /// off the shuttle-lock wall, and <c>WreckLayoutTests</c> walks to every station at half again the
+    /// captain's width — <i>"only a thinner captain could reach the damage-control placard"</i>. A plate you
+    /// have to squeeze past is not a plate anybody reads.</para>
+    ///
+    /// <para>(15, 1.7) clears every wall by 1.3 du and every other console by 3, and it is still the first
+    /// plate of the boarding: the captain comes through the lock at x 21 and walks straight past it on the
+    /// only road there is.</para></summary>
+    public static DeckReachability.Point PlacardStation => new(15f, 1.7f);
 
     /// <summary>Her dead bridge panel — the master that has no bus behind it, and therefore a signpost
     /// rather than a control.
@@ -381,8 +562,21 @@ public static class WreckLayout
 
     /// <summary>The column itself, in the deep hold — <see cref="ArchiveNode.HoldCompartment"/>, because that
     /// is where freight nobody invoiced ends up, and because it puts the field between the away team and the
-    /// far end of the ship. Against the aft bulkhead: the away team meets it walking IN, not on the way out.</summary>
-    public static DeckReachability.Point ArchiveStation => new(-13.8f, -7.8f);
+    /// far end of the ship.
+    ///
+    /// <para>#633 · IT WAS AGAINST THE AFT BULKHEAD AT <c>(-13.8, -7.8)</c> AND HAD TO COME FORWARD. Two of
+    /// #537's laws, built on `main` while this node was being built here, closed that corner between them.
+    /// The interior bulkhead runs turn the DEEP HOLD's aft wall at <c>x = -15</c> from a line into a
+    /// <see cref="BulkheadDepth"/>-deep closed box spanning <c>-15.6 … -14.4</c>, which left the column
+    /// 0.6 du of clearance where the walk audit wants 1.05 — unreachable on all ten causes. And the room's
+    /// aft end is already spoken for on one of them: the nest sits at <c>(-11, -6)</c>, so everything the
+    /// bulkhead run allows is inside the 3 du no-two-stations-share-a-doorstep rule.
+    ///
+    /// <para>So it moves to the hold's FORWARD end, which turns out to be the better staging anyway: the away
+    /// team comes aft down the spine, turns in at the hold's door, and the column is the first thing in the
+    /// room rather than the last. The structural law does not move — it governs every bulkhead on every hull,
+    /// and this governs one crate.</para></para></summary>
+    public static DeckReachability.Point ArchiveStation => new(-3.5f, -7.7f);
 
     /// <summary>The handle plate at the inboard end of the same housing — <see cref="ArchiveNode.SwitchLegend"/>
     /// stencilled on it.
@@ -391,8 +585,11 @@ public static class WreckLayout
     /// the design's law is that a captain <i>may pull the handle without paying, and never find out what they
     /// did</i>. Put the handle inside the confrontation's card and pulling it would first cost a throw, which
     /// is the one thing the whole Ren &amp; Stimpy joke cannot survive. So the column and the handle are 3.5 du
-    /// apart — far enough that <c>NearestConsoleSpot</c> can tell them apart, close enough to be one object.</para></summary>
-    public static DeckReachability.Point ArchiveSwitchStation => new(-13.8f, -4.3f);
+    /// apart — far enough that <c>NearestConsoleSpot</c> can tell them apart, close enough to be one object.</para>
+    ///
+    /// <para>#633 · Moved forward with the column, keeping the 3.5 du between them EXACTLY, because that
+    /// distance is the mechanic and not a layout preference.</para></summary>
+    public static DeckReachability.Point ArchiveSwitchStation => new(-3.5f, -4.2f);
 
     /// <summary>The reachability/separation list for a hull that IS carrying a node. Kept apart from
     /// <see cref="Stations"/> so the "every ship has identical fittings" law stays literally true — but

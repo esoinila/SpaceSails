@@ -612,6 +612,15 @@ public partial class Map
         {
             return;
         }
+
+        // #538 · A COLD BOAT IS NOT A RIDE. Owner: "Shuttle should also power down to make it less of an
+        // anomaly" and then, on the price of it, "Warm up time is a cost there 😎" — so the warm-up is charged
+        // HERE, at the moment a captain wants to leave, rather than when they went dark. Asking a sleeping boat
+        // for a ride starts waking her, which is the only sensible reading of the request.
+        if (!BoatReadyToFly())
+        {
+            return;
+        }
         CelestialBody dest = stop.Body;
         double newT = SimTime + stop.TravelSeconds;
 
@@ -806,6 +815,13 @@ public partial class Map
         CompleteCargoRunQuests(dock.Id); // arriving at the delivery berth finishes a cargo run (M-Q3)
         PayCompletedQuests();            // then any finished bar contracts pay out (M-Q1)
         RequestVaultSave();              // #225: a dock is the canonical resume state — autosave it
+
+        // #541 · THE TUBE IS THE ESTABLISHING SHOT. Owner, photographing a long glazed gangway on the way aboard
+        // at Tallinn: "This kind of tunnel when docking the ship could be used in gen-ai to tell how big the docked
+        // place is." Raised LAST, so the clamp, the settled match tab and the quest payouts have all had their say
+        // first — this is scene-setting, and it goes through the one story-beat door like everything else. Once per
+        // berth, ever, which is what taught that seam the OncePerSubject cadence.
+        RaiseStoryBeat(ArrivalTube.BeatFor(ArrivalTube.TierFor(_ephemeris!, dock.Id)), dock.Name);
     }
 
     private const double UndockPushMps = 300; // gentle shove off the clamp so the ship drifts clear

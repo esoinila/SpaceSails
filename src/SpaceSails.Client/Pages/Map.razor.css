@@ -4339,3 +4339,88 @@
     color: #d8b884;
     white-space: nowrap;
 }
+
+/* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen
+   universally … as long as it does not block the playing too much"). Bottom-left, above the deck HUD and below
+   the modals, pointer-events NONE so it can never eat a click during a fight. */
+.story-plate {
+    position: absolute;
+    left: 1rem;
+    bottom: 5.5rem;
+    z-index: calc(var(--z-desks-popups) + 40);
+    display: flex;
+    gap: 0.6rem;
+    align-items: stretch;
+    width: min(30rem, 66vw);
+    padding: 0.5rem;
+    background: rgba(8, 11, 17, 0.92);
+    border: 1px solid rgba(255, 180, 90, 0.35);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.6rem 2rem rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    animation: story-plate-in 260ms ease-out;
+}
+
+@keyframes story-plate-in {
+    from { opacity: 0; transform: translateY(0.5rem); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.story-plate-art {
+    width: 8.5rem;
+    height: 5.4rem;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    background: #05070c;
+    flex: 0 0 auto;
+}
+
+.story-plate-words { min-width: 0; }
+
+.story-plate-title {
+    color: #ffd9a0;
+    font: 600 0.82rem/1.2 monospace;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.25rem;
+}
+
+.story-plate-caption {
+    color: rgba(232, 236, 244, 0.92);
+    font-size: 0.78rem;
+    line-height: 1.3;
+}
+
+/* #528 · the collector's hail, painted. The art sits BEHIND the heading rather than replacing it. */
+.busted-collector-hail { position: relative; overflow: hidden; }
+
+.busted-hail-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.5;
+    z-index: 0;
+}
+
+.busted-collector-hail > span { position: relative; z-index: 1; }
+
+/* #538 · the captain's remote — a small handheld affordance on the deck HUD. It stays visible while an excursion
+   is live, because the order it carries is the one whose absence gets a captain shot.
+
+   IT SITS BOTTOM-LEFT, ABOVE THE FIRST-PERSON TOGGLE, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it:
+   "look at the sanity and health meters now overlap" — and they did, because I put this at top 3.2rem, which is
+   directly on the nerve readout AND on the five condition pips beneath it. Both meters, buried by a button.
+
+   The rule was already written down forty lines up, for the first-person toggle: "on a surface excursion the
+   enlarged SANITY gauge owns the top-left corner … nothing buries the gauge, and the toggle stays plainly
+   pressable (#212 affordances-never-hide)". The toggle steps down and to the right for exactly this reason. I
+   added a control to that corner without reading the rule that corner already had — so this now follows the
+   same precedent it should have followed first time: same column as the toggle, one row above it. */
+.captains-remote-btn {
+    position: absolute;
+    left: 0.75rem;
+    bottom: 5.2rem;
+    z-index: calc(var(--z-desks-popups) + 30);
+    opacity: 0.92;
+}

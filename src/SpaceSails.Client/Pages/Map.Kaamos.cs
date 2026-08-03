@@ -72,7 +72,7 @@ public partial class Map
         // purpose: over-carding cheapens the ones that are not. Core owns the words (KaamosLore.PlateFor).
         if (KaamosLore.PlateFor(fragmentId) is { } plate)
         {
-            ShowStoryPlate(plate.Title, plate.ArtFile, plate.Caption);
+            ShowRevealCard(plate.Title, plate.ArtFile, plate.Caption);
         }
 
         MaybeFireConvergence(); // #422: an arc-1 shard may be the edge that crosses the JOINT threshold too

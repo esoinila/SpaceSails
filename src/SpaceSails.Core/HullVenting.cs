@@ -524,8 +524,19 @@ public static class HullVenting
     /// compartment opens onto the corridor and onto nothing else) so the fill terminates in one hop and
     /// could have been written as two ifs — but writing the answer instead of the search is how a rule stops
     /// being true the day somebody cuts a hatch between two holds. This asks the doors.</remarks>
-    public static IReadOnlyList<string> SharedAtmosphere(string name, IReadOnlyList<Space> spaces)
+    /// <param name="corridorName">What the volume every hatch opens onto is CALLED on this ship. Defaults to
+    /// a derelict's <see cref="SpineName"/>; the player's own ship calls hers
+    /// <c>ShipLayout.SpineName</c> ("THE CORRIDOR").
+    ///
+    /// <para>It had to become a parameter the moment a second kind of ship used these rules. The door graph
+    /// below compares against the spine's name to know which end of an edge it is looking at, so with the
+    /// wreck's name baked in, asking about HER corridor returned a volume of one — the corridor, alone,
+    /// connected to nothing — and every readout built on it was quietly wrong. A name is not a rule.</para></param>
+    public static IReadOnlyList<string> SharedAtmosphere(
+        string name, IReadOnlyList<Space> spaces, string? corridorName = null)
     {
+        string corridor = corridorName ?? SpineName;
+
         var found = new HashSet<string>(System.StringComparer.Ordinal) { name };
         var queue = new Queue<string>();
         queue.Enqueue(name);
@@ -533,7 +544,7 @@ public static class HullVenting
         while (queue.Count > 0)
         {
             string at = queue.Dequeue();
-            foreach (string next in OpenNeighbours(at, spaces))
+            foreach (string next in OpenNeighbours(at, spaces, corridor))
             {
                 if (found.Add(next))
                 {
@@ -548,10 +559,12 @@ public static class HullVenting
     }
 
     /// <summary>Everything one space is standing open to right now. THE DOOR GRAPH, and the only place it is
-    /// written down: every compartment has one hatch and it opens onto the corridor.</summary>
-    private static IEnumerable<string> OpenNeighbours(string at, IReadOnlyList<Space> spaces)
+    /// written down: every compartment has one hatch and it opens onto the corridor — whatever the ship in
+    /// question calls its corridor.</summary>
+    private static IEnumerable<string> OpenNeighbours(
+        string at, IReadOnlyList<Space> spaces, string corridor)
     {
-        if (string.Equals(at, SpineName, System.StringComparison.Ordinal))
+        if (string.Equals(at, corridor, System.StringComparison.Ordinal))
         {
             foreach (Space s in spaces)
             {
@@ -568,7 +581,7 @@ public static class HullVenting
             // A dogged hatch is its own little world — that is the whole point of dogging it.
             if (string.Equals(s.Name, at, System.StringComparison.Ordinal) && !s.DoorShut)
             {
-                yield return SpineName;
+                yield return corridor;
             }
         }
     }

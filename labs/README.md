@@ -415,6 +415,16 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     it silently never fires. The lesson: *a rule written as its answer stops being true the day the geometry
     moves.* Wired into CI as `HullVentingTests`.
 
+> **Two labs share the numbers 43 and 44.** The branches `main` and `our-own-ship-has-compartments` ran
+> apart for a day and each numbered its next two labs the same way; the reunification merge (#633) kept
+> **all four**, because a lab that is deleted is a measurement that has to be paid for twice. Until they are
+> renumbered, cite them by **directory**, not by number — a comment saying "Lab 43" is ambiguous, and the
+> two you want are `43-miranda-sites` (ground measurement, cited by `SurfaceLayout`, `SurfaceScenery`,
+> `Map.Outpost`) and `43-the-sharpest-point` (hull discharge, cited by `HullCharge`, `SilentRunning`,
+> `StoryBeats`, `Map.ChargeBoard`, `Map.Plot`). Same for 44: `44-a-lab-about-the-lab` (Hive floor wash,
+> cited by `DeckReachability`) and `44-knock-on-the-hull` (the search mechanic, cited by `HullSounding`,
+> `Map.Sounding`).
+
 43. [**What is actually on a landing site?**](43-miranda-sites/README.md) — measures the ground a moon
     generates, and draws it, because a descent will not render in an automated browser tab. Written when the
     owner found Miranda's canon site to be the *thinnest* ground on the moon.
@@ -431,6 +441,29 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     between the walls that are drawn and the walls that are walked. The lesson: *an audit that names a
     coordinate tells you where to start looking; one that draws the floor tells you what to fix* — detection
     and diagnosis are two different tools, and a project with only one keeps paying for the other.
+
+43. [**The sharpest point**](43-the-sharpest-point/README.md) — the owner asked for a plasma-ball effect on
+    the hull discharge and attached a condition: *"if physics supports it."* So the lab asked before anything was
+    drawn, and came back with a prettier effect than the one I was going to make, plus a correction to a fiction
+    the game had been telling since M7. Field strength is potential over radius of curvature, so a discharge
+    leaves from whatever is **sharpest**: her antenna whip runs **20,000×** the field of the hull skin, which
+    means a sphere of light around the ship would be drawing the one place it cannot start. A fully wound hull
+    holds **0.22 J** — a static shock off a door handle — so the dump gets no explosion cue. And the flash is
+    **85,514× dimmer** than her own reflected sunlight, which killed "a charged hull is SEEN" outright: she is
+    not brighter, she is **LOUDER**, a broadband radio source everything with a receiver gets for free. Also
+    derived a trade nobody designed: inside a plasma stream **23.8 mA arrives against ~10 mA emitted**, so the
+    automatic cannot win there — *you may go fast or you may go unheard.*
+
+44. [**Knock on the hull**](44-knock-on-the-hull/README.md) — the owner specified a search mechanic in two
+    sentences (*"Sweeping could cost time… like pumping vacuum does… idea is to know where to do it"* and *"it
+    might be noisy to say knock on walls etc"*) and the lab existed to answer the one question they rest on: **is
+    believing the clue actually worth anything?** It is — 22× on the sounder — but the finding that matters is
+    that **the noise is the teeth, not the clock**: a blind hull-wide search is 22 separate loud events against a
+    pack cap designed to absorb one, so the whole authored pack is up after the second spot. It also refuted me
+    twice, which is why it ran before any pixels: my clue rule named **the wrong wall on the wrong side of the
+    keel**, and the third "odd" reading I had built as a general convergence turns out to *lose* for the loud
+    gear at narrow bands — it is what makes the QUIET gear usable, and it is now sold as nothing more. Wired into
+    CI as `HullSoundingTests`.
 
 ## Framing rule
 
