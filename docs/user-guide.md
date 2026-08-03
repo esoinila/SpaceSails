@@ -448,7 +448,39 @@ better.
 
 
 
-## 17. Salvage — the ships nobody came back for 🛟
+## 17. Going below — the facility under the hut 🛗
+
+Some grounds have a hut on them. It looks like every other structure out there — no caption,
+nothing pointing at it — and inside is a **lift**, and the lift goes a long way down.
+
+**Read the plate by the car.** It tells you three things before you commit: how deep you are,
+what **department** this floor belongs to, and whether there is anything to breathe. `E` works
+everything down here — doors, consoles, the lift panel, a room worth searching — and `I` opens
+your **satchel**. `T` still sets a sentry; `G` still handles a chest.
+
+- **Sealed means sealed.** A door stencilled `SECTOR n · 2.4 km` will never open, for you or
+  anybody. It is not a puzzle. It is the facility telling you how big it really is.
+- **Cards, not codes.** An **authority card** is an object: you picked it up, so you have it.
+  It opens exactly one class of thing — the next shaft band **below where you found it** —
+  and nothing here ever asks you to type a number. When a door refuses you, it says *why*.
+- **Air is the clock, not a health bar.** Your suit carries a working shift and a reserve, and
+  you breathe faster when you are frightened or hurt. Pressurised floors cost you nothing, and
+  every airless floor keeps a **pressure refuge** within a short detour — there is no corridor
+  down here that is fatal by construction. Know where the nearest one is anyway.
+- **The tracker gets worse as you go deeper.** Read the floor designation off the plate and
+  trust that instead.
+- **Nothing will tell you it matters.** Papers you find each carry their own title, and not one
+  of them will call itself a lead, a clue, or a secret. That is deliberate: what you carry out
+  of here is worth exactly what you can make of it.
+- **Very rarely, there is a band nobody listed.** It hangs off its own shaft, its depth does
+  not agree with the numbers above it, and nothing announces it. It pays in **information**,
+  not hardware — and on its deepest floor there is something on a pallet you will not be
+  lifting. What you take away from it is a measurement.
+
+You can die down here, and it is its own kind of dying — see *Getting killed is not game over*
+above. Everything you buried on the surface is still yours.
+
+## 18. Salvage — the ships nobody came back for 🛟
 
 Not every place worth boarding is a world or a berth. Somewhere out there are **derelicts**: ships that
 died under way and have been coasting ever since, cargo still in the hold, nobody aboard to object.
@@ -585,7 +617,7 @@ It reads perfectly well as an air-plant failure, and filing it that way pays exa
 
 
 
-## 18. The electric sky ⚡
+## 19. The electric sky ⚡
 
 - Near the sun the plasma halo charges your hull; the flowing ribbons between planets
 are **plasma streams** — riding one pushes you along it (charged hulls
@@ -597,7 +629,7 @@ visible, desperate, or both.
 
 
 
-## 19. The physics, honestly
+## 20. The physics, honestly
 
 - **There is no drag.** A circular orbit holds forever with zero thrust
 (measured: −0.025% radius drift over a full year).
@@ -608,6 +640,31 @@ speed at the same sun-distance far from it and you fly formation with it forever
 velocity is purely tangential, and pulses only scale velocity, never rotate it.
 - Phasing beats thrust: launch day matters more than pulse count for reaching a moving
 target. Scrub, watch the ghosts, move the node.
+
+
+
+## 21. Threads worth pulling 🧵
+
+Some of what this world tells you is not a mission. It is a **fragment** — a plaque you read
+in passing, a line in a log, a tell from a contact who has had one too many, a page of a bill
+you only see the second time you are billed.
+
+The game will not sit you down and explain any of it. What it will do is **keep** it:
+
+- **Tips carry their provenance.** Who told you, at which station, on which day. A tip that
+  points nowhere useful yet is still filed, marked *background — may matter later*. It often
+  does.
+- **The ledger counts what you have assembled**, and says so plainly — *N of 5* — without
+  telling you what the five add up to.
+- **Nothing is a wall of exposition.** When enough of a thread is in your hands, a single card
+  fires, once. If you have not earned it, no amount of asking will produce it; if you have the
+  key but not the evidence, or the evidence but not the key, the answer is still no.
+
+There are **two** such threads running through the world at the moment, started in completely
+different ways — one you have to go looking for, one that finds you the first time something
+goes badly wrong. They are not unrelated.
+
+That is all the help you get. 🌑
 
 
 

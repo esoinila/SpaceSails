@@ -2,6 +2,12 @@
 
 ## Deterministic Real-Time Orbital Simulation in the Browser — and the Human-PO / AI-Head-Coder Method That Built It
 
+> ⚠️ **Superseded.** This is the original v0.1 outline, kept for provenance — it is the first
+> shape the paper took, and its numbers are frozen at 2026-07-05 (thirteen lessons, ~60 PRs,
+> ~180 tests). **The live manuscript is [`spacesails-paper.tex`](spacesails-paper.tex)**
+> ([PDF](spacesails-paper.pdf)), currently draft v0.4, which carries the long arcs, the ground
+> game, the story-QA method, and the real counts. Do not cite anything below as current.
+
 *DRAFT v0.1 — 2026-07-05. Venue framing per the owner: primarily a SIGGRAPH-style
 real-time-systems paper (a), with the experience report (c) carried as a first-class
 section rather than a separate submission. Authors, venue target, and figure list TBD
