@@ -480,6 +480,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
 | **`?kaamos=bounce`** | **Seat the freight agent holding the docket the board keeps sending back at every bar — PROJEKTI KAAMOS's FRONT DOOR (#635). Press `[E]` at any bar patron, take the job, and the filing bounces off your hull too: the arc appears in the Captain's ledger with no shard in hand.** |
+| **`?kaamos=hq`** | **The whole KAAMOS route already ridden: every shard assembled, the berth-code resolved, the supply run filed, and the ship let go alongside the ice moon (#411). Add `&land=1` to put boots on it.** |
 | **`?kaamos=pod`** | **Seat the cold KAAMOS supply pod under the ground this excursion lands on — probe any square with the metal detector and *earn* fragment 2 instead of being handed it (#411). Pair with `&land=1`.** |
 | **`?kaamos=holder`** | **Seat the rare KAAMOS berth-holder at whatever bar you dock at, every watch — the tell (fragment 4) becomes playable on demand (#411). Pair with `&dock=<berth>`.** |
 | **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
@@ -750,6 +751,25 @@ the agent is gone from the offer rota the moment you hold any shard at all. Unfo
 room roughly **one bar-watch in three**, seeded per (bar, day) — walk into the same bar on consecutive
 watches to see it come and go without re-rolling under you.
 
+**The route — `?kaamos=hq` (#411):**
+
+The berth-code puts your hull ON THE BOARD, and a **KAAMOS supply run** comes back onto the listing with it:
+CONSUMABLES, WINTERING CREW, 40 SOULS, the cold pod's own manifest slug word for word. Take it from any bar
+patron like any other haul. Then the **cycler window** — a real grid over sim time, 2 days open every 40
+(`CyclerWindow`) — and when it comes round, right-click **Enceladus** on the map and the body menu carries
+**❄ Ride the cycler window in**. 38 days of being carried, no burn, no brake at the far end.
+
+| URL | what you walk |
+| --- | --- |
+| `/map?kaamos=hq` | Alongside the ice moon with the run in hand — open the shuttle bay and go down. |
+| `/map?kaamos=hq&land=1` | …and the shuttle takes it from there, boots on the ice in one URL. |
+| `/map?kaamos=all&ashore=1` | The other end: the berth-code resolves at the bar seam, the ❄❄ notice fires, 📰 **THE STORY BREAKS** raises the arc-news card, and a housekeeping line lands on the wire. |
+
+Things to check: right-clicking Enceladus with no berth-code shows **no** cycler row at all (the fiction may
+not arrive before the arc does); with the code but no run it is visible-but-disabled and says why; with the
+run but a shut window it quotes the wait in days, and that quoted wait is the real one. Parking in the ice
+moon's orbit settles the run through the ordinary moon-haven cargo path — no second completion code exists.
+
 **The two seats (these let a rare beat be PLAYED, not granted):**
 
 | URL | what you walk |
@@ -777,7 +797,7 @@ There is also a **third hand** that leaks arc-1 shards: **Static Marsh**, the st
 (`OracleRant`), can speak `vantar-log`, `holders-tell` or `cold-pod` as a true line at any bar — stand her
 a drink to widen the channel.
 
-**What is deliberately NOT built YET:** the Enceladus route and the head office at the end of it.
+**What is deliberately NOT built YET:** the head office under the ice.
 `KaamosLore.RevealSanityShockHook` (40.0) is still consumed by nothing. Both are specified, sliced and
 under construction — see [`features/kaamos-head-office.md`](features/kaamos-head-office.md), issue #411,
 and the owner's 2026-08-03 ruling that the destination is the HEAD OFFICE of the organization.

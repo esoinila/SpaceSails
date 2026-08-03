@@ -1,4 +1,4 @@
-# The KAAMOS head office — the front door, the route, and the place at the end of it
+﻿# The KAAMOS head office — the front door, the route, and the place at the end of it
 
 *The build spec for issues [#635] (the arc has no front door) and [#411] (the climax), against the
 owner's ruling of 2026-08-03, recorded in [`../worldbuilding-notes.md`](../worldbuilding-notes.md) §9.*
@@ -320,7 +320,7 @@ absolutely no confirmation of what it did.
 | PR | what lands | state |
 | --- | --- | --- |
 | **1** | this document; the front door (#635 option 3) with guards proven RED; the fifth bug-class row in the story-arcs handoff | shipped |
-| **2** | the route: the KAAMOS supply run on the board, the cycler window, the crossing; `ArcNewsBreaks` (#663) on the berth-code edge; `?kaamos=hq` | |
+| **2** | the route: the KAAMOS supply run on the board, the cycler window, the crossing; `ArcNewsBreaks` (#663) on the berth-code edge; `?kaamos=hq` | shipped |
 | **3+** | the facility: `UndergroundComplex.Kind.HeadOffice`, the 24 plates, the livery, the wing distances, the wintering hall, the berth office, the standing order, the 40.0 throw, the art | |
 
 ### Cheats (each documented in `../testing-guide.md` Appendix A in its own PR)
@@ -328,7 +328,7 @@ absolutely no confirmation of what it did.
 | URL | what it does |
 | --- | --- |
 | `/map?kaamos=bounce` | seats the freight agent with the returned docket at every bar — the front door, on demand |
-| `/map?kaamos=hq` | *(PR 2)* the berth code resolved, the run accepted and the window open — put on the ice |
+| `/map?kaamos=hq` | every shard, the berth code resolved, the run filed and the ship let go alongside the ice — add `&land=1` for boots on it |
 
 ### The reuse rule for PR 3
 

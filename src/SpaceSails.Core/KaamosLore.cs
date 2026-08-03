@@ -336,6 +336,42 @@ public static class KaamosLore
         "to your hull. The cycler window is real. It is not open yet. Keep the code and keep the berth: when " +
         "the window comes round, a ship that is on the board rides it all the way in.";
 
+    // ── #411 · THE RUN: the berth code buys a listed supply run ──────────────────────────────────────────
+    //
+    // The arc's own promise, kept in the arc's own register. The captain does not charter anything and is
+    // not offered an adventure: a job appears on the board, filed the way any job is filed, and the dread
+    // is that it is ROUTINE. The bible's sentence is "filing for it answers it" — so the player files.
+    //
+    // What the manifest says is the pod's manifest, verbatim, because it is the same consignment: the one
+    // that was packed and then HELD, generations ago, and never sent. That is the only joining of the
+    // pieces this text does, and it does it by repeating a slug the player has already read rather than by
+    // explaining anything.
+
+    /// <summary>The run's quest id — stable, so the accept path, the ledger and the route gate all name
+    /// one thing. There is only ever one of these per universe.</summary>
+    public const string SupplyRunQuestId = "kaamos-supply-run";
+
+    /// <summary>What the job is called in the ledger.</summary>
+    public const string SupplyRunTitle = "The KAAMOS supply run";
+
+    /// <summary>The pitch. Whoever hands it over has no idea what it is; that is the whole point. To them
+    /// it is a dormant berth that has come back onto the listing and a consignment nobody has moved in
+    /// decades, and the fee is generous because the haul is absurd.</summary>
+    public static string SupplyRunBlurb(int reward) =>
+        $"“Berth came back onto the listing this week — first time in longer than anybody on this deck has been in the trade — and it " +
+        $"came back with a standing consignment against it. CONSUMABLES, WINTERING CREW, FORTY SOULS. " +
+        $"Nobody's moved it because nobody could file for the berth. You can, apparently. {reward:N0} cr, " +
+        $"and the arc does the flying; you just have to be on it when it comes round. Park up alongside " +
+        $"when you get there and the berth signs for it.”";
+
+    /// <summary>The receipt line, said at the counter the moment the run is in hand. The manifest slug is
+    /// the pod's, word for word — the cold pod in the regolith was carrying this, and was set down instead
+    /// of sent. Nobody remarks on it.</summary>
+    public const string SupplyRunAccepted =
+        "❄ The slip comes across the counter face-down, the way slips do, and reads exactly as the one in " +
+        "the regolith read: CONSUMABLES, WINTERING CREW, 40 SOULS · DEST. KAAMOS · HOLD FOR CYCLER WINDOW. " +
+        "Somebody has struck HOLD through with a single line and written a date beside it. The date is soon.";
+
     // ── #635 · THE FRONT DOOR: a consignment the board will not take ─────────────────────────────────────
     //
     // The issue's four options, and why this is the one built: a bar RUMOUR (option 1) adds another line to
