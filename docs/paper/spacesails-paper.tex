@@ -20,7 +20,7 @@
 and the Human-PO / AI-Head-Coder Method That Built It}
 \author{Erno Soinila, D.Sc.\ (Eng.)\\\small Senior AI Engineer, Efima --- Product Owner\\\small \texttt{erno.soinila@efima.com}
 \and Claude (Fable~5)$^{*}$\\\small Head Coder\\\small Anthropic}
-\date{\small DRAFT v0.3 --- July 2026}
+\date{\small DRAFT v0.4 --- August 2026}
 
 \begin{document}
 
@@ -33,8 +33,8 @@ SpaceSails is a browser-native solar-system sailing and piracy game whose engine
 deterministic 2D $N$-body integrator compiled to WebAssembly. Nothing in it cheats: every
 trajectory is integrated, every prediction is honestly uncertain, and the hardest maneuvers
 are hard because physics says so. The same properties that make the game honest make it a
-classroom: the repository ships a numerical-methods lab course --- now roughly thirty
-type-it-in lessons --- that runs on the game's own engine, and the game ships \emph{the
+classroom: the repository ships a numerical-methods lab course --- 41 type-it-in lessons at
+this writing --- that runs on the game's own engine, and the game ships \emph{the
 numbers the labs measure}. This is the method we most want to convey: measure a mechanic in
 a probe first, then ship the measured number --- the autopilot's orbit-keeping trim budget,
 the wolves' pursuit-escape envelope, the harbor-approach corridor, the mass-driver
@@ -43,17 +43,23 @@ describe (1)~the system: a determinism-first core, adaptive symplectic integrati
 exact maneuver-node landing, honest uncertainty cones, and a closed-form no-tunneling
 proximity test; (2)~the game that grew on it --- a ship that narrates its own flight,
 autopilot that \emph{keeps} an orbit at a quoted trim cost, deliberate piracy resolved by
-on-screen dice, buried treasure with generated maps, a favor bank, and a tolerant save
-vault; (3)~the duty-station interface that distributes one simulation across eight crew
-desks; and (4)~the process: a two-person team --- a human product owner and an AI ``head
-coder'' who \emph{orchestrates} multiple implementation agents working in parallel across
-isolated git worktrees --- that took the project from empty repository to 165 reviewed,
-tested, merged pull requests across 12 active coding days (with travel breaks in between),
-the owner approving from a phone and the AI planning, reviewing, verifying in the owner's
-own live browser, and running the merge train. We argue the combination --- deterministic
-simulation as both gameplay substrate and curriculum, plus orchestrated AI implementation
-under tight human product direction --- is a repeatable method, and we report what it cost,
-where it failed, and what the failures taught the game.
+on-screen dice, a durable life in a tolerant save vault, and a ground game that grew in
+three visible stages from hiding loot, through frontier-detective work, to walkable
+underground facilities; (3)~two long fragment-assembly story arcs and their convergence,
+which turn the game's own death mechanic into an evidence channel; (4)~the duty-station
+interface that distributes one simulation across eight crew desks; (5)~a story-QA method
+--- a cheat-start law that makes every scene reachable on demand, regression guards that
+must be \emph{proven red} before they ship, and five named recurring bug classes --- for
+testing content that a deterministic suite provably cannot reach; and (6)~the process: a
+two-person team --- a human product owner and an AI ``head coder'' who \emph{orchestrates}
+multiple implementation agents working in parallel across isolated git worktrees --- that
+took the project from empty repository to 424 reviewed, tested, merged pull requests across
+24 active coding days (with travel breaks in between), the owner approving from a phone and
+the AI planning, reviewing, verifying in the owner's own live browser, and running the merge
+train. We argue the combination --- deterministic simulation as both gameplay substrate and
+curriculum, plus orchestrated AI implementation under tight human product direction --- is a
+repeatable method, and we report what it cost, where it failed, and what the failures taught
+the game.
 \end{minipage}
 \end{center}
 \vspace{1.5em}
@@ -100,6 +106,15 @@ This paper contributes:
         honestly, after which the game ships the measured number rather than a tuned
         guess --- orbit-keeping trims, the pursuit-escape cliff, harbor corridors, and a
         mass-driver timetable, each traced to the probe that printed it;
+  \item \emph{narrative as an assembly problem} (\S\ref{sec:arcs}): two long arcs whose
+        truths are never told, only assembled from fragments the player earns through
+        ordinary play --- including their own repeated deaths --- with a convergence gate
+        that fires when two independently-collected fragment sets cross a joint threshold;
+  \item \emph{story QA} (\S\ref{sec:storyqa}): the practices that made narrative content
+        testable at the same cadence as physics --- a cheat-start law (``a scene nobody can
+        reach on demand is a scene that ships broken''), a rule that a regression guard must
+        be \emph{proven red} against the unfixed code before it ships, and five named
+        recurring bug classes distilled from the defects that survived a green suite;
   \item an experience report of an \emph{orchestrated} human-PO / AI-head-coder method
         (\S\ref{sec:process}): one lead model that plans, reviews, and merges while several
         implementation agents work in parallel isolated worktrees, plus a live-browser
@@ -400,13 +415,160 @@ interior continuity with the sky outside: the docking tube, the shuttle-bay airl
 a short piloted hop, and (on the board for Phobos) a beanstalk whose two ends are paired
 walkable ports --- each door a transition the player understands as a flight, not a menu.
 
+\subsection{The ground game, in three visible stages}
+\label{sec:ground}
+
+The single largest content change since the previous draft happened on the ground, and it
+is worth reporting as a \emph{sequence} because each stage was a direct answer to what the
+previous one made the owner want next. The progression --- hiding loot, then detective work,
+then walking a facility --- is the clearest instance in the project of content pulling
+systems into existence rather than the reverse.
+
+\paragraph{Stage one: hiding things.} The ground began as one verb. The law takes what it
+can \emph{see}, so the shuttle bay gained a bury destination, a chest is a snapshot of what
+you packed, and the generated map card paces the hoard off the body's best landmark. This is
+the loot economy described above (\S\ref{sec:game}), and mechanically it is small: one
+buried-object ledger and one card generator.
+
+\paragraph{Stage two: frontier detective work.} The owner's complaint about stage one was
+that a cache is a \emph{noun} and he wanted \emph{verbs}. What followed is a small structure
+of investigation missions that share one grammar --- you are given a partial fact and must
+convert it into a place. A \textbf{fetch} runs in legs (intel, then active, then picked up),
+so ``go get it'' becomes a route with intermediate failure. A \textbf{crack job} puts a real
+code on a real hatch: the backroom holds the code, the hatch checks it, and no dice roll
+substitutes. \textbf{Tips} are the load-bearing invention: a route tip is carried with its
+\emph{provenance} --- who told you, at which station, on which day --- and a tip that leads
+nowhere actionable is still filed, marked \emph{background --- may matter later}. That one
+decision is what makes the arcs of \S\ref{sec:arcs} playable at all: the player has a place
+to keep a fact whose meaning has not arrived yet. \textbf{Rumor maps} close the loop by
+pointing at somebody \emph{else's} hoard, and a rival-digging watch records when a cache was
+last checked, so a hoard can be lost to a competitor between visits.
+
+\paragraph{Stage three: secret labs, and a facility you walk.} The current ground is an
+\emph{underground complex}: a lift, floors, rooms, and a plate by the car reading depth,
+department, and atmosphere. Every room on every floor is reachable on foot, enforced by an
+A\textsuperscript{*} flood over roughly 130 generated floors in the guard suite. Three rules
+give it its character, and all three are refusals rather than rewards:
+
+\begin{itemize}
+  \item \textbf{Sealed means sealed.} A door stencilled \textsc{sector n $\cdot$ 2.4\,km}
+        never opens, for anyone, ever. It is scenery that states the facility's true size,
+        and the guard that protects it asserts it stays shut.
+  \item \textbf{An authority card opens exactly one class of thing} --- the next shaft band
+        \emph{below where the card was found} --- never a typed code, and a refusal always
+        says \emph{why} it refused. Progress is therefore an object you picked up, not a
+        string you learned; the vault persists the card as an id, so a save cannot be edited
+        into access.
+  \item \textbf{A rare site has a band nobody listed.} It hangs off its own shaft, its true
+        depth disagrees with its nominal depth, its kind is always different from the bands
+        above it, nothing above announces it, and --- decisively --- it \emph{pays in
+        information, not hardware}. The deepest floor of that band is where the facility
+        keeps the object the owner described only as ``a massive collar designed for
+        Cthulhu's neck.'' You cannot lift it. What you carry out is a \emph{measurement}.
+\end{itemize}
+
+Survival underground is a budget, not a health bar: a suit-air allowance of 1200 seconds of
+play stands in for eight fiction-hours plus a thirty-minute reserve, breathing rate scales
+with nerve and injury, and every airless floor is guaranteed a pressure refuge within a
+bounded detour (70 distance units), so the level generator can never build a corridor that
+is fatal by construction. The position tracker degrades on a curve with depth, which is the
+honest-instrument law of \S\ref{sec:desks} applied to a place with no sky. Carried inventory
+is a satchel with one law --- \emph{a card is an object; you picked it up, so you have it}
+--- and the papers inside it are titled by the same seeded roll that writes their text, with
+a blacklist forbidding any title from containing \emph{lead}, \emph{clue}, \emph{site},
+\emph{facility}, or \emph{secret}: the artifact may not editorialize about its own
+importance. Even ammunition obeys the grammar --- a two-stage penetrator recovered from a
+lab earns a reveal card because it is evidence of what the lab was for; ordinary issue ball
+does not, because it is not.
+
+\subsection{Death is a grammar, not a game over}
+\label{sec:death}
+
+Because the ground can kill you and the law can catch you, the project needed a death that
+was not a reload. The catch encounter (\S\ref{sec:game}) resolves through four named stages
+--- the collector's \textsc{demand} (submit / bribe / resist), then, if you resist at full
+heat, a scripted last stand the owner named \emph{Bolivia} after the film's final frame
+(three beats: the airlock buckling, the crossfire, the one clear run), then a sepia
+\textsc{freeze frame}, and only then rebirth. Resurrection is diegetic: a brain-backup wakes
+the captain at a clinic in a starter-grade hull with a small insurance stake, a clinic bill
+already docked from it, every upgrade reset --- and a full tank, so death costs the hull, the
+purse, the hold, and the upgrades, but never strands the player. Nothing buried or banked was
+ever aboard, which retroactively converts stage one of the ground game into a death-hedging
+strategy. The same pipeline serves every cause of death the game has --- collector, impact,
+the Old Ones, the void, suffocation, scuttling --- and, as \S\ref{sec:arcs} describes, this
+mechanic is also the delivery channel for an entire story arc's evidence.
+
+\section{Two Long Arcs, Assembled Not Told}
+\label{sec:arcs}
+
+The newest content is narrative, and it is built on one constraint that we believe
+generalizes: \emph{the game never states its own mysteries}. Each arc is a set of six
+fragments --- five intel shards and one capstone --- distributed across systems the player
+already touches, with a gate that requires the capstone \emph{and} at least four of the five
+shards. Holding the key without the evidence is refused; holding the evidence without the key
+is refused. The truth is never printed anywhere the player can reach; it exists in a writers'
+bible in the repository and is delivered only as the inference that assembling the fragments
+forces.
+
+\subsection{Arc one: a berth nobody files for}
+
+The first arc was seeded long before it was written, as a single sentence on a station's
+dedication plaque: a supply run to an ice moon, a berth still listed on the board, and nobody
+has filed for it in a long time. Its destination is canonically unreachable --- the closest
+shuttle approach is more than twice the shuttle's proven one-hop range, permanently --- which
+makes the tease structural rather than a locked door. The five shards are placed in five
+\emph{different} subsystems (a plaque, a derelict pod found by beach-combing, a log inside a
+secret lab, a rare bar contact's tell, and a route tip bought with a round of drinks), so no
+single activity can farm the arc, and a station oracle provides a redundant path for three of
+them so that no shard can be permanently missed.
+
+\subsection{Arc two: the policy that pays out}
+
+The second arc self-incites, and this is the design lesson we most want to record. Every port
+in the game advertises pirate insurance --- brain-backup rebirth, a replacement hull, no
+awkward questions at the clinic --- and every player dies eventually. The arc's fragments are
+therefore delivered \emph{by the player's own deaths and the paperwork around them}: a glitch
+on the rebirth card, the second reading of a poster the player has already walked past, a
+collector's writ that describes the captain as a delinquent asset, the second page of a
+clinic bill on a \emph{later} death. Where arc one must be found, arc two arrives on its own
+schedule, and the contrast is the paper's clearest evidence for a simple rule: \emph{an arc
+whose fragments ride a mechanic the player cannot avoid needs no inciting hook; an arc whose
+fragments ride optional content needs one, and will otherwise be invisible.} The second
+observation was filed as a defect against the first arc, not as a feature of it.
+
+\subsection{Convergence, and the one in-person scene}
+
+The two arcs share a gate of their own: when each has crossed three assembled fragments ---
+below either arc's own reveal threshold of four --- a one-time card fires that names the
+connection between them. The owner's framing was explicit and is worth quoting as a design
+brief: ``kind of how in the Expanse the various characters notice their rabbit holes
+converge.'' The joint threshold is the mechanism: convergence is not a scripted beat placed
+after both arcs, it is an emergent consequence of two independent collection curves crossing,
+so different players meet it in different orders and at different times.
+
+One scene is played in person rather than read. It is a cold archive node on a derelict, and
+it is structured as three layers of escalating consent. \emph{Layer one} is simply dwelling
+in the room: standing there spends nerve on a beat, with no prompt --- the player sets their
+own dose. \emph{Layer two} is looking deliberately, resolved by the same open dice rule the
+catch encounter uses, with named modifiers the player can read --- current nerve, whether the
+suit is sealed, how many times they have looked before, and, pointedly, a \emph{penalty} for
+each arc-two fragment already held: the more you understand, the worse it goes. Four outcome
+bands run from looking away to being seen looking. \emph{Layer three} is a switch stencilled
+with a warning that the resident pattern is not recoverable --- and the design note is that
+\textbf{the label \emph{is} the confirmation dialog}. There is no ``are you sure?'' modal; the
+game states the consequence in the world's own typography and lets the player press it. The
+scene's five authored visions carry the arc forward unevenly on purpose: two of them hand over
+a fragment, three hand over nothing but atmosphere, so ``I saw something'' and ``I learned
+something'' are not the same event.
+
 \section{Secretly a Classroom}
 \label{sec:classroom}
 
 \subsection{The Gravity Lab}
 
-The repository ships a growing ladder of type-it-in lessons --- roughly thirty at this
-writing (\texttt{labs/}) --- each a console probe referencing the game's own
+The repository ships a growing ladder of type-it-in lessons --- 41 at this writing
+(\texttt{labs/}, numbered to 44 with three slots reserved for lessons whose mechanics have
+not shipped yet) --- each a console probe referencing the game's own
 \texttt{SpaceSails.Core}: motivation, the standard-textbook treatment (with Curtis
 pointers), what the game simplifies away, a numerical experiment with real printed output,
 and ``break it yourself'' exercises. The honesty rule is absolute: every printed number came
@@ -556,6 +718,115 @@ cliff, a 949\,km door --- that the game now displays to the player as the honest
 what they are doing. The curriculum is the game's R\&D department, and its output is the
 game's numbers.
 
+\subsection{When the probe method left physics}
+\label{sec:labsui}
+
+The most surprising development in the lab course is that the method stopped being about
+orbital mechanics. Labs~32--44 include a class of lesson that measures the \emph{game
+software} with the same instrument the earlier labs pointed at gravity, and each one exists
+because the owner said a version of the same sentence: \emph{this keeps biting us; find a way
+to catch it in CI}.
+
+\begin{itemize}
+  \item \textbf{Lab~34, ``The unclickable lifeline''}: after a playtest in which the rescue
+        affordance was barely clickable at exactly the moment a stranded player needed it,
+        this lab measures the \emph{interface} honestly --- treating a critical control's
+        reachability under duress as a quantity a probe can print, not a matter of taste.
+  \item \textbf{Lab~41, ``Can you get there from here?''}: written after the owner stood in a
+        derelict that had been sealed in half --- two barricades spanning the spine corridor
+        cut off the manifest, four compartments and the entire aft end. The probe is an
+        A\textsuperscript{*} flood over generated interiors, wired into CI, and it is the
+        direct ancestor of the reachability guarantee the underground complex now ships with
+        (\S\ref{sec:ground}).
+  \item \textbf{Lab~44, ``A lab about the lab''}: the owner's own joke made real. The
+        A\textsuperscript{*} audit can prove \emph{that} a room is unreachable; this lab asks
+        whether anything can say \emph{why} --- the diagnosis problem behind a defect in which
+        rooms were drawn and offered an interaction on 35 of 94 generated floors while every
+        test stayed green.
+\end{itemize}
+
+The generalization is the one we did not anticipate when we wrote the pipeline down: the
+lab-to-game loop is not a physics technique. It is a technique for any property the team
+keeps asserting and cannot see --- and level topology and interface reachability turned out
+to be exactly such properties, with exactly the same failure mode (a confident claim, a green
+suite, and a player standing in front of a wall).
+
+\section{Story QA: Testing What the Suite Cannot Reach}
+\label{sec:storyqa}
+
+Determinism makes physics testable, and \S\ref{sec:classroom} argues the curriculum is an
+adversarial suite for the engine. Neither helps with content. A deterministic test can prove
+that a rule computes the right number; it cannot prove that a room is enterable, that a card
+appears at the right beat, or that a lift is a way \emph{home}. The practices in this section
+are what we grew when content volume overtook the suite's reach, and we report them because
+they are the least transferable-looking part of the project and turned out to be the most.
+
+\subsection{The cheat-start law}
+
+The governing sentence is written in the source: \emph{a scene nobody can reach on demand is a
+scene that ships broken}. Every scene, arc state, mission leg, death cause, and ground
+situation is reachable directly from a URL query parameter parsed in a single boot loop --- 31
+such parameters at this writing, each documented in the testing guide's appendix \emph{in the
+same pull request that adds the feature}. The corollary is a QA instruction rather than an
+engineering one: if an arc has no quick start, saying so is itself a finding, and it gets
+filed. The payoff is that a reviewer can be standing inside any scene in the game in one
+navigation, which is what makes review-by-playing survive content scale --- without it, the
+cost of \emph{reaching} a scene silently becomes the reason nobody checks it.
+
+\subsection{A guard must be proven red}
+
+The rule we would most like other teams to steal is small: \emph{before a regression guard
+ships, revert the fix and watch the guard fail}. It exists because it caught the lead. A
+guard written for a level-generation defect passed against the \emph{broken} generator,
+because it asserted the shape of the symptom rather than the law that had been violated. The
+generalization is that a test's honesty is a property of the world handed to it, not of its
+assertions: a correct assertion evaluated against a world that cannot distinguish pass from
+fail is a green test that asserts nothing.
+
+\subsection{Five named bug classes}
+
+Naming a recurring defect converts it from a surprise into a checklist item, and the project
+now keeps five names in a QA handoff document. They are, with the evidence that earned each
+its name:
+
+\begin{enumerate}
+  \item \textbf{Unaudited client geometry literals} --- numbers typed straight into a renderer
+        that nothing derives and nothing checks. Found wrong three times out of three.
+  \item \textbf{A constant governing the wrong thing} --- canonically, a \emph{moon} constant
+        governing a \emph{ship}. Four occurrences.
+  \item \textbf{The simulation does one thing, the sentence or the drawn shape says another}
+        --- three in a single afternoon, every one found by playing and none by testing.
+  \item \textbf{One source consumed in the wrong order} --- ``a list built by appending is not
+        a list in order.'' This one sealed thirty-five floors' worth of doorways while the
+        entire suite stayed green.
+  \item \textbf{A green test that asserts nothing} --- three independent instances found by
+        three workers in three areas in one afternoon: a guard handed a world in which no
+        body could build anything, and a threshold placed so that it selected every case.
+\end{enumerate}
+
+\subsection{Playing finds what reasoning and tests cannot}
+
+The clearest single datum in this section is a defect in which a lift only went \emph{down}.
+It survived three of the lead's own pull requests and an A\textsuperscript{*} reachability
+audit, for a reason worth stating precisely: \emph{a reachability audit proves you can reach
+the lift; it never proves the lift is a way home}. The owner's method --- boot every scene and
+check that all the parts are in the right place --- caught it in one sitting. Nearly every
+expensive defect in this project has had the same signature: invisible to reasoning, invisible
+to the deterministic suite, and obvious on sight.
+
+\subsection{The art pipeline}
+\label{sec:art}
+
+Content at this cadence needed pictures at this cadence. The project's illustrations are
+generative, and the pipeline that keeps them honest is deliberately boring: each set of images
+has a \emph{manifest} document in the repository (eight of them at this writing --- bars,
+wrecks, the surface, the catch encounter, the underground, the two arcs, and the visions)
+naming every intended image, its prompt intent, and the code site that will display it. The
+game now ships 139 generated paintings, and the discipline that matters is a guard rather than
+a process: the suite asserts that every art filename referenced in code resolves to a file
+that exists, so the failure mode of generative content --- a beautiful card with a broken
+image in it --- is a build failure rather than a playtest report.
+
 \section{Experience Report: a Human PO and an AI Head Coder}
 \label{sec:process}
 
@@ -581,35 +852,44 @@ on \texttt{main} whose subject ends in a \texttt{(\#N)} pull-request suffix, one
 PR, and group them by author date:
 \texttt{git log --date=short --pretty='\%ad \%s' origin/main | grep -E '\textbackslash(\#[0-9]+\textbackslash)\$'}.
 Days with zero such commits are idle days and are excluded from the active-day count.}
-gives \textbf{165 merged PRs} over \textbf{12 active days} --- \textbf{13.75 PRs per active
-day} --- inside a 16-day calendar window. The distribution (Table~\ref{tab:cadence}) shows
+gives \textbf{424 merged PRs} over \textbf{24 active days} --- \textbf{17.7 PRs per active
+day} --- inside a 33-day calendar window. The distribution (Table~\ref{tab:cadence}) shows
 both the ramp and the honest gaps.
 
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{@{}lr@{\hspace{2em}}lr@{}}
+\begin{tabular}{@{}lr@{\hspace{1.5em}}lr@{\hspace{1.5em}}lr@{}}
 \toprule
-Date & PRs & Date & PRs \\
+Date & PRs & Date & PRs & Date & PRs \\
 \midrule
-Jul 02 & 1  & Jul 13 & 2  \\
-Jul 03 & 23 & Jul 14 & 17 \\
-Jul 04 & 25 & Jul 15 & 14 \\
-Jul 05 & 32 & Jul 16 & 18 \\
-Jul 06 & 11 & Jul 17 & 16 \\
-Jul 07 & 2  & \multicolumn{2}{l}{Jul 09--12: \emph{travel, 0}} \\
-Jul 08 & 4  & \textbf{Total} & \textbf{165} \\
+Jul 02 & 1  & Jul 14 & 17 & Jul 27 & 16 \\
+Jul 03 & 23 & Jul 15 & 14 & Jul 28 & 24 \\
+Jul 04 & 25 & Jul 16 & 18 & Jul 29 & 19 \\
+Jul 05 & 32 & Jul 17 & 30 & Jul 30 & 28 \\
+Jul 06 & 11 & Jul 18 & 42 & Jul 31 & 7  \\
+Jul 07 & 2  & Jul 19 & 30 & Aug 01 & 14 \\
+Jul 08 & 4  & Jul 20 & 22 & Aug 02 & 32 \\
+Jul 13 & 2  & Jul 26 & 5  & Aug 03 & 6  \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Idle: Jul 09--12, Jul 21--25}} & \textbf{Total} & \textbf{424}\\
 \bottomrule
 \end{tabular}
-\caption{Merged PRs per active day. 165 PRs / 12 active days $=$ 13.75 per active day;
-the Jul~09--12 gap is a travel break, excluded from the denominator.}
+\caption{Merged PRs per active day, counted once per distinct PR number across the release
+branches. 424 PRs / 24 active days $=$ 17.7 per active day; the two gaps are travel breaks,
+excluded from the denominator.}
 \label{tab:cadence}
 \end{table}
 
 Volume is not the claim; the claim is that it was \emph{reviewed} volume. Every PR was
-played on a fresh build, and the suite grew alongside it --- from empty repository to the
-full game plan in the first days, and to roughly 600 deterministic Core tests and a
-$\sim$30-lesson lab course by this writing.
+played on a fresh build, and the suite grew alongside it. The growth is itself the paper's
+sharpest evidence that content, not physics, became the dominant cost: the deterministic
+Core suite stood at 787 facts on 18~July --- immediately after the window the previous draft
+reported --- 1{,}539 on 26~July, and 2{,}278 facts plus 68 theories (238 inline cases) at
+this writing, some 2{,}500 executed Core cases beside 79 client tests and a UI gate, running
+in roughly twenty-two minutes. The lab course grew from 30 lessons to 41 over the same
+stretch. Almost none of that tripling is new integrator code; it is guards for arcs, ground,
+cards, and reachability.
 
 \subsection{Orchestration: one lead, many agents, parallel worktrees}
 \label{sec:orchestration}
@@ -692,7 +972,12 @@ of-influence handoffs --- trading multi-attractor truth for closed-form speed; w
 opposite stance and integrate everything, accepting Eq.~\eqref{eq:adaptive}'s cost to keep
 flybys honest. The educational-games literature on ``stealth learning'' anticipates our
 disguise strategy; our addition is making the curriculum executable against the shipping
-engine. Determinism-first architectures descend from lockstep RTS netcode traditions.
+engine. Determinism-first architectures descend from lockstep RTS netcode traditions. The
+fragment-assembly narrative of \S\ref{sec:arcs} sits in the environmental-storytelling and
+``audio-log'' tradition, but differs in its gating: the reveal is withheld behind a
+\emph{quorum} of independently-sourced fragments rather than a sequence, and the arcs'
+convergence is a threshold crossing rather than an authored beat, so its timing is a property
+of how a particular player played.
 Prior AI-pair-programming experience reports describe a programmer and an assistant; we
 report a different split --- \emph{product owner and head coder} --- in which the human
 writes no code at all and the AI is not one coder but a lead orchestrating several
@@ -704,9 +989,19 @@ The simulation is a 2D ecliptic plane with on-rails circular ephemerides. Multip
 archived pending the economy's server-side move. Persistence now exists for the
 \emph{life} but not the physics: the vault (\S\ref{sec:game}) durably stores relationships,
 balances, caches, and maps, while the mid-flight world state is still a fresh start ---
-deliberately, so a save is a pirate's biography, not a checkpoint. Several labs remain
-reserved (the Persephone cycler, the Titan soft arrival), and the Ancients' auto-plot
-deliberately rations automation to protect the pedagogy.
+deliberately, so a save is a pirate's biography, not a checkpoint. Three lab slots remain
+reserved (the Persephone cycler, the Titan soft arrival, and one more), and the Ancients'
+auto-plot deliberately rations automation to protect the pedagogy.
+
+The narrative work of \S\ref{sec:arcs} carries its own honest limitations. Both arcs are
+\emph{assembly} complete and \emph{destination} incomplete: the fragments, gates, and
+convergence all run, but the journey to arc one's ice moon is a one-time window that is
+hooked rather than flown, and the sanity-shock constants the reveals are meant to spend are
+declared and not yet consumed. The convergence card, as filed, spends both arcs' truths as an
+announcement at three assembled fragments per side --- before either capstone is earned ---
+which is a pacing defect we have recorded rather than hidden. And arc one's discoverability
+problem (\S\ref{sec:arcs}) is open: the longest-prepared story in the game is currently
+invisible until a player trips over it.
 
 \section{Summary}
 
@@ -718,18 +1013,26 @@ engine's best fixes --- the impulse-aware cone of Eq.~\eqref{eq:cone-new}, the c
 no-tunneling test of Eq.~\eqref{eq:notunnel} --- were forced by its own curriculum, and
 its flagship mechanic is a numerical method played at the gun deck. On that same bench the
 game grew a voice, an orbit-keeping autopilot, a GTA-style catch encounter, and a buried-%
-treasure economy --- every displayed number first measured by a probe. Around that core, a
-two-person human-PO / AI-head-coder team --- one lead orchestrating parallel implementation
-agents --- sustained 165 reviewed, merged PRs across 12 active coding days (13.75 per active
-day) without lowering the review bar, because determinism made playing the build a sound
-review procedure. We believe both halves --- the simulation-as-curriculum design and the
-orchestrated PO/head-coder process --- are repeatable, and we offer the repository itself as
-the evidence.
+treasure economy --- every displayed number first measured by a probe. It then grew in a
+direction the first draft of this paper did not anticipate: outward from the cockpit onto the
+ground, from hiding loot to detective work to walking a facility (\S\ref{sec:ground}), and
+into two long arcs whose truths are assembled by the player rather than told
+(\S\ref{sec:arcs}) --- at which point the honesty law had to be re-earned for content that no
+integrator can check, in the form of a cheat-start law, guards proven red before they ship,
+and five named bug classes (\S\ref{sec:storyqa}). The most portable finding of the second
+half is that the lab-to-game probe method was never about physics: pointed at level topology
+and interface reachability, it caught the same class of confident, green, wrong
+(\S\ref{sec:labsui}). Around that core, a two-person human-PO / AI-head-coder team --- one
+lead orchestrating parallel implementation agents --- sustained 424 reviewed, merged PRs
+across 24 active coding days (17.7 per active day) without lowering the review bar, because
+determinism made playing the build a sound review procedure. We believe both halves --- the
+simulation-as-curriculum design and the orchestrated PO/head-coder process --- are
+repeatable, and we offer the repository itself as the evidence.
 
 \section*{Acknowledgments}
 
 SpaceSails was built as a holiday project, and it was possible at this cadence because of
-Anthropic's generous usage allowance for the Claude models through Claude Code --- 165
+Anthropic's generous usage allowance for the Claude models through Claude Code --- 424
 reviewed pull requests of head-coder and implementation-agent work, live-browser
 verification included. That
 allowance is, in a real sense, the project's funding agency, and we acknowledge it as
