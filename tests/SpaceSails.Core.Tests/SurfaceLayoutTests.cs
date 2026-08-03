@@ -10,9 +10,17 @@ namespace SpaceSails.Core.Tests;
 public class SurfaceLayoutTests
 {
     // The shared field envelope MoonSurface hands in — the LAWS (Left/Right/Top/Bottom, the landing
-    // band, the deep commitment anchor). Mirrors MoonSurface's constants so the test lays the same ground.
-    private static readonly SurfaceLayout.Field Env = new(
-        LeftX: -44, RightX: 34, TopY: -20, BottomY: -84, LandingBandY: -27, AnchorX: -6, AnchorY: -70);
+    // band, the deep commitment anchor).
+    //
+    // #606 · READ, never copied — and this was the LAST hand-made copy of it. #573 found the same duplicate
+    // in SurfaceReachabilityTests and fixed it there, in a comment that names this file as the other one; it
+    // was left alone, and it went on laying a 78 x 64 world that has not shipped since the field grew
+    // sixteenfold. That is not a small difference in scale, it is a different question: on that envelope the
+    // shelters eat the whole field, so EVERY body came out with ZERO buildings on it and four to thirty-seven
+    // wall segments. The guard below — no two bodies share a ground — was passing on eight nearly empty
+    // fields, and it went red the first time a keep-out moved by a metre. On the field that ships, the same
+    // eight bodies carry 636–1008 segments and 4–12 buildings apiece, and they differ comfortably.
+    private static readonly SurfaceLayout.Field Env = SurfaceLayout.DefaultField;
 
     private const double AvatarRadius = 0.7; // DeckPlan.AvatarRadius — the captain's own body
 
@@ -32,14 +40,51 @@ public class SurfaceLayoutTests
     }
 
     [Fact]
-    public void Miranda_KeepsTheMonolith_Canon()
+    public void Miranda_KeepsItsMaze_Canon()
     {
         SurfaceLayout.Plan miranda = SurfaceLayout.For("miranda", Env);
-        Assert.Equal("THE MONOLITH MAZE", miranda.Scheme);
-        Assert.Contains(miranda.Landmarks, m => m.Label.Contains("MONOLITH"));
+        // #649 · The maze is canon; the WORD is not its. It kept the geometry and gave back "monolith".
+        Assert.Equal(FalseSlab.Scheme, miranda.Scheme);
+        Assert.Contains(miranda.Landmarks, m => m.Label == FalseSlab.ConsoleLabel);
+        Assert.DoesNotContain(miranda.Landmarks, m => m.Label.Contains("MONOLITH"));
         // The freestanding slab still sits exactly on the deep anchor (the #318 nerve hook keys off it).
         Assert.Contains(miranda.Landmarks, m =>
             System.Math.Abs(m.X - Env.AnchorX) < 4 && System.Math.Abs(m.Y - Env.AnchorY) < 6);
+    }
+
+    /// <summary>#649 · Phobos is the monolith's ground and it is AUTHORED — it used to fall through to the
+    /// seeded rubble generator, which is why the moon every treasure map names had no monolith on it.</summary>
+    [Fact]
+    public void Phobos_IsTheMonolithsGround_AndIsNotSeededRubble()
+    {
+        SurfaceLayout.Plan phobos = SurfaceLayout.For(Monolith.BodyId, Env);
+        Assert.Equal(SurfaceLayout.MonolithScheme, phobos.Scheme);
+        Assert.Contains(phobos.Landmarks, m => m.Label == Monolith.ConsoleLabel);
+        Assert.NotEqual("THE DEEP RUINS", phobos.Scheme);
+
+        // And it is NOT A BOXED BACKYARD. The owner's ruling: "it must not sit in a fenced little plot with
+        // the rest of the set dressing around it… open enough that the object IS the horizon, not a prop in a
+        // room." Stated as the thing that can actually be checked: every segment on this ground belongs
+        // either to the object itself or to a building out in the flanks. There is NOTHING in between — no
+        // corridor row, no rubble span, nothing to walk round on the way in. Miranda's maze fails this by
+        // construction, which is the point of the contrast.
+        var stray = new List<string>();
+        foreach (SurfaceLayout.Wall w in phobos.Walls)
+        {
+            double mx = (w.X1 + w.X2) / 2, my = (w.Y1 + w.Y2) / 2;
+            bool onTheObject = System.Math.Sqrt(((mx - Env.AnchorX) * (mx - Env.AnchorX))
+                                              + ((my - Env.AnchorY) * (my - Env.AnchorY))) <= Monolith.KeepOutRadius;
+            bool inABuilding = (phobos.BuildingFootprints ?? []).Any(b =>
+                System.Math.Sqrt(((mx - b.X) * (mx - b.X)) + ((my - b.Y) * (my - b.Y))) <= b.R + 2);
+            if (!onTheObject && !inABuilding)
+            {
+                stray.Add($"({mx:0.0}, {my:0.0})");
+            }
+        }
+        Assert.True(stray.Count == 0,
+            "geometry on the monolith's ground that is neither the object nor a building in the flanks — "
+            + "something is standing between the landing band and the thing you came to see: "
+            + string.Join(", ", stray));
     }
 
     [Fact]
@@ -116,63 +161,24 @@ public class SurfaceLayoutTests
             $"{bodyId}: no walkable corridor from the tube mouth down to the deep field");
     }
 
-    // A crude grid flood fill in deck units: start just below the tube mouth (the landing area, always
-    // open), step on a 1-du lattice through cells the avatar's body clears, and succeed when we touch the
-    // deep edge (the tide's spawn rim, where caches lie). Uses the SAME SurfaceCollision the live avatar
-    // and Reevers obey, so a reachable deep cell here is a reachable deep cell in play.
+    // #606 · Walked with the INDEXED walker the rest of the audits use, not a hand-rolled lattice.
+    //
+    // The hand-rolled one asked SurfaceCollision.Blocked against a flat wall LIST for every cell, which is
+    // fine on a 78 x 64 board and is a quarter of a billion segment tests on the field that ships. Pointing
+    // the old loop at the real envelope would have meant an audit too slow to keep, which is how a stale
+    // mirror survives in the first place. DeckReachability is the same predicate the live avatar moves by,
+    // over the same spatial index the deck builds, so a reachable deep cell here is one in play.
+    // The goal is a BAND, not a point — the deep edge anywhere along it. A named spot would mostly be
+    // measuring whether this file's arithmetic happened to miss a boulder, which is the sampling mistake
+    // SurfaceReachabilityTests writes up at length.
     private static bool DeepFieldReachableFromTube(IReadOnlyList<SurfaceCollision.Segment> walls)
     {
-        const double cell = 1.0;
-        double minX = Env.LeftX + 1, maxX = Env.RightX - 1;
-        double minY = Env.BottomY + 1, maxY = Env.TopY - 1;
-        int cols = (int)((maxX - minX) / cell) + 1;
-        int rows = (int)((maxY - minY) / cell) + 1;
+        IReadOnlyCollection<DeckReachability.Point> reached = DeckReachability.Reachable(
+            // From the tube mouth column, just inside the landing band (open by law).
+            new DeckReachability.Point(-7, Env.TopY - 2),
+            SurfaceCollision.WallIndex.Build(walls), AvatarRadius,
+            (Env.LeftX + 1, Env.BottomY + 1, Env.RightX - 1, Env.TopY - 1));
 
-        bool Walkable(int cx, int cy)
-        {
-            double x = minX + (cx * cell), y = minY + (cy * cell);
-            return !SurfaceCollision.Blocked(x, y, AvatarRadius, walls);
-        }
-        int Col(double x) => (int)System.Math.Round((x - minX) / cell);
-        int Row(double y) => (int)System.Math.Round((y - minY) / cell);
-
-        // Start: the tube mouth column, just inside the landing band (open by law).
-        int startCol = Col(-7);          // TubeCenterX
-        int startRow = Row(Env.TopY - 2);
-        // Goal band: the deep edge — the bottom rows where the tide claws out and chests are buried.
-        int goalRow = Row(Env.BottomY + 4);
-
-        var seen = new bool[cols, rows];
-        var stack = new Stack<(int, int)>();
-        if (Walkable(startCol, startRow))
-        {
-            stack.Push((startCol, startRow));
-            seen[startCol, startRow] = true;
-        }
-
-        int[] dx = [1, -1, 0, 0];
-        int[] dy = [0, 0, 1, -1];
-        while (stack.Count > 0)
-        {
-            (int x, int y) = stack.Pop();
-            if (y <= goalRow)
-            {
-                return true; // touched the deep edge
-            }
-            for (int k = 0; k < 4; k++)
-            {
-                int nx = x + dx[k], ny = y + dy[k];
-                if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || seen[nx, ny])
-                {
-                    continue;
-                }
-                if (Walkable(nx, ny))
-                {
-                    seen[nx, ny] = true;
-                    stack.Push((nx, ny));
-                }
-            }
-        }
-        return false;
+        return reached.Any(p => p.Y <= Env.BottomY + 4);
     }
 }

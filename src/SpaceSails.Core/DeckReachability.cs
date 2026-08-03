@@ -21,6 +21,12 @@ namespace SpaceSails.Core;
 /// to the places that ARE reachable, so when a console is not, the shape of what the captain can reach
 /// tells you which wall did it. Same reason the labs exist at all: the number has to explain itself.</para>
 ///
+/// <para>#589 · <b>And the flood as well, in the end.</b> <see cref="Reachable"/> answers the question a
+/// PICTURE wants — everywhere you could get to, as a wash over the floor, so a sealed room is an island
+/// nobody coloured in. #587 was found by the A* audit and could not be EXPLAINED by it: the audit named
+/// three coordinates and an evening went into guessing which wall put them there. Both now step over one
+/// <c>Lattice</c>, so a point the flood washes is a point the walk can reach, by construction.</para>
+///
 /// <para>Pure and deterministic: same walls + same points + same step → same verdict, always.</para>
 /// </summary>
 public static class DeckReachability
@@ -50,6 +56,119 @@ public static class DeckReachability
         double x, double y, double radius, IReadOnlyList<SurfaceCollision.Segment> walls) =>
         !SurfaceCollision.Blocked(x, y, radius, walls);
 
+    /// <summary>#589 · THE GRID, OWNED IN ONE PLACE. The walk and the flood ask the identical questions —
+    /// where does this point land, is that square standable, may I take this diagonal — and the moment they
+    /// each answer them for themselves they are two pathfinders that agree only by luck. That is exactly the
+    /// drift the Hive keeps paying for (see <c>docs/features/the-landing-site.md</c>), so there is one
+    /// lattice and both step over it.</summary>
+    private sealed class Lattice
+    {
+        private readonly IReadOnlyList<SurfaceCollision.Segment> _walls;
+        private readonly double _radius;
+        private readonly (double MinX, double MinY, double MaxX, double MaxY) _bounds;
+        private readonly double _step;
+        private readonly int _width;
+        private readonly int _height;
+
+        internal Lattice(
+            IReadOnlyList<SurfaceCollision.Segment> walls, double radius,
+            (double MinX, double MinY, double MaxX, double MaxY) bounds, double step)
+        {
+            _walls = walls;
+            _radius = radius;
+            _bounds = bounds;
+            _step = step;
+            _width = (int)Math.Ceiling((bounds.MaxX - bounds.MinX) / step) + 1;
+            _height = (int)Math.Ceiling((bounds.MaxY - bounds.MinY) / step) + 1;
+        }
+
+        internal (int Cx, int Cy) Cell(Point p) =>
+            ((int)Math.Round((p.X - _bounds.MinX) / _step), (int)Math.Round((p.Y - _bounds.MinY) / _step));
+
+        internal Point World((int Cx, int Cy) c) =>
+            new(_bounds.MinX + (c.Cx * _step), _bounds.MinY + (c.Cy * _step));
+
+        internal bool Clear((int Cx, int Cy) c)
+        {
+            if (c.Cx < 0 || c.Cy < 0 || c.Cx >= _width || c.Cy >= _height)
+            {
+                return false;
+            }
+            Point p = World(c);
+            return Standable(p.X, p.Y, _radius, _walls);
+        }
+
+        /// <summary>May the captain move off <paramref name="from"/> by this delta? No cutting corners: a
+        /// diagonal needs both its orthogonal neighbours clear, or the walk could slip between two walls
+        /// that touch — a route the real collision would never allow.</summary>
+        internal bool CanStep((int Cx, int Cy) from, int dx, int dy)
+        {
+            if (!Clear((from.Cx + dx, from.Cy + dy)))
+            {
+                return false;
+            }
+            return dx == 0 || dy == 0
+                || (Clear((from.Cx + dx, from.Cy)) && Clear((from.Cx, from.Cy + dy)));
+        }
+    }
+
+    /// <summary>
+    /// #589 · EVERYWHERE THE CAPTAIN COULD GET TO, as a set of grid points — the shape of what is reachable
+    /// rather than a yes/no about one place.
+    ///
+    /// <para><see cref="Path"/> answers "can I get there" and hands back a route, which is what a red test
+    /// wants. This answers the question a PICTURE wants: wash the floor with everywhere you can stand, and a
+    /// sealed room shows up as an island nobody coloured in. That is the whole of Lab 44, and it is the
+    /// difference between knowing a room is unreachable and seeing which wall did it.</para>
+    ///
+    /// <para>Same lattice, same standability predicate and the same no-corner-cutting rule as the walk, so a
+    /// point in this set is reachable by <see cref="CanReach"/> and a point outside it is not.</para>
+    /// </summary>
+    public static IReadOnlyCollection<Point> Reachable(
+        Point from,
+        IReadOnlyList<SurfaceCollision.Segment> walls,
+        double radius,
+        (double MinX, double MinY, double MaxX, double MaxY) bounds,
+        double step = DefaultStep)
+    {
+        ArgumentNullException.ThrowIfNull(walls);
+        if (step <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(step));
+        }
+
+        var grid = new Lattice(walls, radius, bounds, step);
+        (int Cx, int Cy) start = grid.Cell(from);
+
+        var found = new List<Point>();
+        if (!grid.Clear(start))
+        {
+            return found;
+        }
+
+        var seen = new HashSet<(int, int)> { start };
+        var queue = new Queue<(int Cx, int Cy)>();
+        queue.Enqueue(start);
+
+        while (queue.Count > 0)
+        {
+            (int Cx, int Cy) current = queue.Dequeue();
+            found.Add(grid.World(current));
+
+            foreach ((int dx, int dy) in Neighbours)
+            {
+                (int Cx, int Cy) next = (current.Cx + dx, current.Cy + dy);
+                if (seen.Contains(next) || !grid.CanStep(current, dx, dy))
+                {
+                    continue;
+                }
+                seen.Add(next);
+                queue.Enqueue(next);
+            }
+        }
+        return found;
+    }
+
     /// <summary>
     /// Walk from <paramref name="from"/> to <paramref name="to"/> with A*, over a grid of
     /// <paramref name="step"/> deck units, treating any point within <paramref name="radius"/> of a wall as
@@ -73,27 +192,13 @@ public static class DeckReachability
             throw new ArgumentOutOfRangeException(nameof(step));
         }
 
-        (int Cx, int Cy) Cell(Point p) =>
-            ((int)Math.Round((p.X - bounds.MinX) / step), (int)Math.Round((p.Y - bounds.MinY) / step));
-        Point World((int Cx, int Cy) c) =>
-            new(bounds.MinX + (c.Cx * step), bounds.MinY + (c.Cy * step));
-
-        int width = (int)Math.Ceiling((bounds.MaxX - bounds.MinX) / step) + 1;
-        int height = (int)Math.Ceiling((bounds.MaxY - bounds.MinY) / step) + 1;
-
-        bool InBounds((int Cx, int Cy) c) => c.Cx >= 0 && c.Cy >= 0 && c.Cx < width && c.Cy < height;
-        bool Clear((int Cx, int Cy) c)
-        {
-            Point p = World(c);
-            return InBounds(c) && Standable(p.X, p.Y, radius, walls);
-        }
-
-        (int Cx, int Cy) start = Cell(from);
-        (int Cx, int Cy) goal = Cell(to);
+        var grid = new Lattice(walls, radius, bounds, step);
+        (int Cx, int Cy) start = grid.Cell(from);
+        (int Cx, int Cy) goal = grid.Cell(to);
 
         // A start the captain could not stand on is a caller error worth surfacing loudly rather than
         // reporting as "unreachable" — an unwalkable SPAWN is its own, worse bug.
-        if (!Clear(start))
+        if (!grid.Clear(start))
         {
             return new Walk(false, 0, []);
         }
@@ -113,11 +218,11 @@ public static class DeckReachability
             {
                 var path = new List<Point>();
                 (int, int) walk = current;
-                path.Add(World(current));
+                path.Add(grid.World(current));
                 while (cameFrom.TryGetValue(walk, out (int, int) prev))
                 {
                     walk = prev;
-                    path.Add(World(walk));
+                    path.Add(grid.World(walk));
                 }
                 path.Reverse();
                 return new Walk(true, path.Count, path);
@@ -127,15 +232,7 @@ public static class DeckReachability
             foreach ((int dx, int dy) in Neighbours)
             {
                 (int Cx, int Cy) next = (current.Cx + dx, current.Cy + dy);
-                if (!Clear(next))
-                {
-                    continue;
-                }
-
-                // No cutting corners: a diagonal needs both its orthogonal neighbours clear, or the walk
-                // could slip between two walls that touch — a route the real collision would never allow.
-                if (dx != 0 && dy != 0
-                    && (!Clear((current.Cx + dx, current.Cy)) || !Clear((current.Cx, current.Cy + dy))))
+                if (!grid.CanStep(current, dx, dy))
                 {
                     continue;
                 }

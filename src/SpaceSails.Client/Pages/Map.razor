@@ -1,4 +1,4 @@
-@page "/map"
+﻿@page "/map"
 @implements IDisposable
 @implements IHandleEvent
 @inject HttpClient Http
@@ -967,6 +967,36 @@
         </div>
     }
 
+    @* THE ARCHIVE NODE — what the thing in the hold gave back. See docs/features/the-archive-node.md.
+
+       House rules this card keeps, and they are the whole feature:
+         · The image is the EVIDENCE, never the conclusion. There is no caption telling you what the
+           handlers are; the game does not know either.
+         · The arithmetic is VISIBLE. A bad result is only bearable when you can read exactly why it went
+           that way, so the modifier stack is printed rather than hidden.
+         · The COLLAR line only appears on the bands that got close enough to read it. Knowing whose
+           pattern is in the spar is bought with a bad throw, never given with a good one.
+         · Nothing here explains anything. It never confirms what Nebula keeps, and it never says a word
+           about the Old Ones. *@
+    @if (_archiveCard is { } vision)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseArchiveCard)">
+            <div class="view-object archive-vision" @onclick:stopPropagation="true">
+                <div class="view-object-title">@vision.Title</div>
+                <img class="view-object-img" src="@vision.Art" alt="@vision.Title" onerror="this.style.display='none'" />
+                <div class="archive-band">@vision.BandLine</div>
+                <div class="view-object-caption">@vision.Lore</div>
+                @if (vision.Collar is { Length: > 0 } collar)
+                {
+                    <div class="archive-collar">@collar</div>
+                }
+                <div class="archive-dice">🎲 @vision.Dice</div>
+                <button type="button" class="view-object-close" title="Get your eyes off it"
+                        @onclick="() => Dismiss(CloseArchiveCard)">Get your eyes off it</button>
+            </div>
+        </div>
+    }
+
     @* ═══════════════════════════════════════════════════════════════════════════════════════════════════
        HER OWN ATMOSPHERE BOARD. Owner: "I think our ship should also have these controls. They are so cool
        and it would be consistent in the universe", then "our venting must have captains ok mechanism in it,
@@ -1484,6 +1514,24 @@
         </div>
     }
 
+    @* #528 · THE STORY PLATE — the vented-room card with the wreck taken out of it, so any beat in the
+       game can be given the same level of service instead of a pulse line that fades in a second and a
+       half. Same markup, same onerror-hide, same discipline: the image is the EVIDENCE and naming what it
+       means is still the captain's job. The text comes from Core (KaamosLore.PlateFor is the first
+       tenant), never from a literal here. *@
+    @if (_revealCard is { } plate)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseRevealCard)">
+            <div class="view-object" @onclick:stopPropagation="true">
+                <div class="view-object-title">@plate.Title</div>
+                <img class="view-object-img" src="@plate.Art" alt="@plate.Title" onerror="this.style.display='none'" />
+                <div class="view-object-caption">@plate.Caption</div>
+                <button type="button" class="view-object-close" title="Look away"
+                        @onclick="() => Dismiss(CloseRevealCard)">Look away</button>
+            </div>
+        </div>
+    }
+
     @* #488 · THE TWO ROADS. Standing at a derelict's cargo, having read her: file the accident report for a
        finder's fee and a contact, or strip her and say nothing for everything today. The cause you put your
        name to is picked from what your evidence actually supports — a wreck that lies will offer you a
@@ -1499,10 +1547,12 @@
                 {
                     <div class="tm-art" style="background-image: url('@wreckArt');"></div>
                 }
-                <div class="tm-caption">
-                    Lost @salvageWreck.YearsAdrift.ToString("N0") years. Cargo assessed at
-                    @salvageWreck.AssessedValueCr.ToString("N0") cr, and nobody has been aboard since.
-                </div>
+                @* The footing comes from Core. It was typed here, and it said "and nobody has been aboard
+                   since" on EVERY hull — including ?wreck=piracy, whose evidence two stations away is an
+                   airlock cycled from OUTSIDE and a near hold stripped to bare frames, and ?wreck=infested,
+                   where something has been aboard the whole time. What is true of every wreck is not that
+                   nobody has been aboard; it is that nobody came back for her. *@
+                <div class="tm-caption">@Derelict.CardFooting(salvageWreck)</div>
 
                 @if (CanFileWreckReport)
                 {
@@ -1587,6 +1637,160 @@
 
     @* View-object popup: a Gen-AI image (a souvenir T-shirt, a fridge magnet, any lore prop) the
        player walks up to and inspects with E. Click away, hit Close, or press E again to dismiss. *@
+    @* #600 · THE LIFT PANEL. Owner, having ridden a car that only ever went down: "we should have elevator
+       panel with UI then (I wonder what the elevator music would be like ) :-D"
+
+       The buttons come from Core (UndergroundComplex.LiftPanel) rather than being worked out here, so the
+       #590 card gate and the #592 silence are one tested rule and this file only draws it. SURFACE is always
+       the first button — that is the whole bug fix.
+
+       Each button carries the one fact that decides whether the trip is free: whether that floor still holds
+       air. A refusing button is PRESENT and says why; an absent button and a broken one look identical from
+       the captain's side, and this ground has already shipped that mistake once. *@
+    @if (_showLiftPanel && _surface is { } liftEx)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLiftPanel)">
+            <div class="lift-panel" @onclick:stopPropagation="true">
+                <div class="view-object-title">🛗 CAR PANEL</div>
+                <div class="lift-sub">
+                    This car serves its own band and no further. You are at
+                    <strong>@SpaceSails.Core.UndergroundComplex.DepthPaint(liftEx.Floor)</strong>.
+                </div>
+
+                <div class="lift-stops">
+                    @foreach (SpaceSails.Core.UndergroundComplex.LiftStop stop in LiftStops())
+                    {
+                        string cls = "lift-stop"
+                            + (stop.IsCurrent ? " here" : "")
+                            + (stop.Refusal is not null ? " sealed" : "")
+                            + (stop.Pressurised ? "" : " dead");
+                        <button type="button" class="@cls" disabled="@stop.IsCurrent"
+                                title="@(stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
+                                @onclick="() => PressLiftButton(stop)">
+                            <span class="lift-stop-depth">@SpaceSails.Core.UndergroundComplex.DepthPaint(stop.Level)</span>
+                            <span class="lift-stop-name">@stop.Name</span>
+                            <span class="lift-stop-air">
+                                @if (stop.IsCurrent)
+                                {
+                                    <text>◄ you are here</text>
+                                }
+                                else if (stop.Refusal is not null)
+                                {
+                                    <text>🔒 sealed</text>
+                                }
+                                else if (stop.Pressurised)
+                                {
+                                    <text>🫁 air</text>
+                                }
+                                else
+                                {
+                                    <text>dead air</text>
+                                }
+                            </span>
+                        </button>
+                    }
+                </div>
+
+                <button type="button" class="view-object-close" title="Step out of the car"
+                        @onclick="() => Dismiss(CloseLiftPanel)">Close</button>
+            </div>
+        </div>
+    }
+
+    @* #603 · A DOOR THAT WILL NOT OPEN, AND THE POCKETS YOU MIGHT HAVE. Owner: "we should advertise the
+       items list on closed locked door pop-up... something like check your items button there that opens
+       inventory."
+
+       The #212 law applied to the satchel: the refusal already said WHY, and a captain standing there with
+       an authority in their pocket had no way to find out whether it was the one. The door offers the verb
+       now — and it is also how the satchel gets discovered, because nobody reads a keybind and everybody
+       presses the button on the thing that just refused them. *@
+    @if (_lockedDoor is { } door)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseLockedDoor)">
+            <div class="locked-door" @onclick:stopPropagation="true">
+                <div class="view-object-title">🔒 @door.Sign</div>
+                <div class="locked-door-line">@door.Line</div>
+                <div class="locked-door-actions">
+                    <button type="button" class="locked-door-try" @onclick="OpenSatchelAtTheDoor">
+                        🎒 Check your items@(_satchel.Count > 0 ? $" ({_satchel.Count})" : "")
+                    </button>
+                    <button type="button" class="view-object-close"
+                            @onclick="() => Dismiss(CloseLockedDoor)">Leave it</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
+       instrument it is a list of things to TRY, and every answer is definite. *@
+    @if (_showSatchel)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
+            <div class="satchel" @onclick:stopPropagation="true">
+                <div class="view-object-title">🎒 WHAT YOU ARE CARRYING</div>
+                <div class="satchel-sub">
+                    @if (_satchelTarget is { } at)
+                    {
+                        <text>Offering it to <strong>@at.Label</strong>. Pick something.</text>
+                    }
+                    else
+                    {
+                        <text>
+                            Everything found out here, and it stays yours between visits.
+                            @(SpaceSails.Core.Satchel.Capacity - _satchel.Count) space@(SpaceSails.Core.Satchel.Capacity - _satchel.Count == 1 ? "" : "s") left.
+                        </text>
+                    }
+                </div>
+
+                @if (_satchel.Count == 0)
+                {
+                    <div class="satchel-empty">
+                        Empty. Rooms down here are worth searching — most are stripped, and the ones that
+                        are not are the reason anybody comes.
+                    </div>
+                }
+                else
+                {
+                    <div class="satchel-items">
+                        @* #614 · A row can now do two different things, so it is two controls rather than
+                           one button wearing two hats. LOOK is always available and never spends anything
+                           (#603's law: looking is free and repeatable); TRY is the deliberate second press
+                           that costs you the decision. Putting them on one button would mean a captain who
+                           wanted to admire the collar had to risk offering it to a door. *@
+                        @foreach (SpaceSails.Core.Satchel.Item item in _satchel)
+                        {
+                            bool canOffer = TargetFor(item) is not null;
+                            bool canLook = LookAtItem(item) is not null;
+                            <div class="satchel-row">
+                                <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
+                                        disabled="@(!canOffer)"
+                                        @onclick="() => TryItem(item)">
+                                    <span class="satchel-item-name">@SatchelLabel(item)</span>
+                                    @if (canOffer)
+                                    {
+                                        <span class="satchel-item-try">
+                                            @(_satchelTarget is null ? "read it →" : "try it →")
+                                        </span>
+                                    }
+                                </button>
+                                @if (canLook)
+                                {
+                                    <button type="button" class="satchel-look"
+                                            title="Look at it properly"
+                                            @onclick="() => OpenItemCard(item)">🔍</button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                <button type="button" class="view-object-close"
+                        @onclick="() => Dismiss(CloseSatchel)">Close</button>
+            </div>
+        </div>
+    }
+
     @if (_viewObject is { } vo)
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseViewObject)">
@@ -1827,6 +2031,14 @@
             <div class="deck-offer-blurb">
                 House special: <strong>@keep.DrinkName</strong> — @keep.DrinkFlavor
             </div>
+            @* #410 — the empty chair gets a sentence. The rota decides which regulars drink at THIS port on
+               THIS watch and sends the rest out or into the back; until now an away one simply had no
+               console, so the room never said where they'd gone. The barkeep is the one person who'd know.
+               Read off the same frozen watch the deck was welded at, so the line and the chairs agree. *@
+            @if (WhoIsInTonight() is { } roomTonight)
+            {
+                <div class="deck-offer-blurb small text-secondary">“@roomTonight”</div>
+            }
             @if (_barNotice is { } note)
             {
                 <div class="deck-bank-notice small">@note</div>
@@ -1873,13 +2085,17 @@
                    (a rare holder is in, a coordinate's for sale, or the pieces are ready to resolve). *@
                 @if (KaamosBarSeamAvailable())
                 {
-                    <button type="button" class="btn btn-sm btn-outline-info" title="Ask around about the sealed ice-moon berth — PROJEKTI KAAMOS" @onclick="AskAboutKaamos">🌑 Ask about KAAMOS</button>
+                    @* The label names the STEP, and prices the one step that takes coin — the bought
+                       coordinate used to be spent behind a button that said only "Ask about KAAMOS". *@
+                    <button type="button" class="btn btn-sm btn-outline-info" title="@KaamosBarSeamTitle()" @onclick="AskAboutKaamos">@KaamosBarSeamLabel()</button>
                 }
                 @* #422: the NEBULA seam — only shows when this bar can advance arc 2 this watch (a rare Nebula
                    adjuster is drinking here, or the small print's ready to resolve into the contract). *@
                 @if (NebulaBarSeamAvailable())
                 {
-                    <button type="button" class="btn btn-sm btn-outline-info" title="Ask around about the pirate-insurance fine print — NEBULA MUTUAL" @onclick="AskAboutNebula">▓ Ask about NEBULA</button>
+                    @* The label names the STEP: you ask about NEBULA of the adjuster, but nobody is asked
+                       anything when your own gathered small print answers itself on your own table. *@
+                    <button type="button" class="btn btn-sm btn-outline-info" title="@NebulaBarSeamTitle()" @onclick="AskAboutNebula">@NebulaBarSeamLabel()</button>
                 }
                 <button type="button" class="btn btn-sm btn-outline-light" title="Settle up and step back" @onclick="() => Dismiss(CloseBarkeep)">Done</button>
             </div>
@@ -1912,6 +2128,11 @@
     {
         <div class="deck-offer-card oracle-card @(oline.RoomGoesQuiet ? "oracle-quiet" : "")">
             <div class="deck-offer-giver">🌀 @Core.OracleRant.FullName</div>
+            @* #528 · THE CORNER, PAINTED. A backdrop rather than a plate: this card is a conversation the
+               captain stays inside, turning the dial line by line, and a modal opening over it every time
+               would be a card on a card. Same onerror-hide law as every other slot — no file, no frame. *@
+            <img class="oracle-art" src="@Core.OracleRant.ArtFile" alt="@Core.OracleRant.FullName"
+                 onerror="this.style.display='none'" />
             <div class="deck-offer-blurb oracle-backstory">@Core.OracleRant.Backstory</div>
             @if (oline.RoomGoesQuiet)
             {
@@ -2517,14 +2738,17 @@
                 </div>
 
                 <div class="vent-actions">
-                    @foreach (var door in _labDoors.OrderBy(d => d.Key, StringComparer.Ordinal))
+                    @* #633 · named `labDoor`, not `door`: razor compiles this whole file into ONE method, so
+                       the #602 locked-door card's `door` on the other branch and this loop's `door` became the
+                       same scope the moment the branches met. *@
+                    @foreach (var labDoor in _labDoors.OrderBy(d => d.Key, StringComparer.Ordinal))
                     {
-                        string id = door.Key;
+                        string id = labDoor.Key;
                         <button type="button"
-                                class="btn btn-sm @(door.Value == LockedDoor.State.Locked ? "btn-warning" : "btn-outline-warning")"
-                                title="@LockedDoor.Label(door.Value, _hasVantarCard)"
+                                class="btn btn-sm @(labDoor.Value == LockedDoor.State.Locked ? "btn-warning" : "btn-outline-warning")"
+                                title="@LockedDoor.Label(labDoor.Value, _hasVantarCard)"
                                 @onclick="() => WorkTheDoor(id)">
-                            @LockedDoor.Label(door.Value, _hasVantarCard)
+                            @LockedDoor.Label(labDoor.Value, _hasVantarCard)
                         </button>
                     }
                 </div>
@@ -2782,6 +3006,20 @@
                             @(lhMenuDep.Ok
                                 ? LongHaul.MenuAction(lhMenuPlanet.Name, lhMenuDep.DeparturePulses, FormatSimTime(lhMenuDep.ArrivalCenterTime))
                                 : $"🚀 Long haul to {lhMenuPlanet.Name} — no window from here")
+                        </button>
+                    }
+                    @* #411 ❄ THE CYCLER WINDOW — the KAAMOS route, and the only body in the system it is
+                       ever offered at. Shown only to a captain whose berth-code has resolved (the fiction may
+                       not arrive before the arc does, #380), and visible-but-disabled with the reason when the
+                       run is not filed or the arc is simply not here yet (#212). Core owns every word. *@
+                    @if (KaamosCyclerRowVisible(menuBody.Id))
+                    {
+                        string? cyBlock = KaamosCyclerBlock();
+                        <button type="button" class="btn btn-sm @(cyBlock is null ? "btn-info" : "btn-outline-secondary")"
+                                disabled="@(cyBlock is not null)"
+                                title="@(cyBlock ?? "Put her on the slow arc and be carried all the way in — 38 days, no burn, no brake at the far end")"
+                                @onclick="RideTheCyclerWindow">
+                            @KaamosCyclerLabel()
                         </button>
                     }
                     @* #290 🪂 AEROBRAKE — the third way to pay the arrival bill (beside the propulsive insert
@@ -4232,7 +4470,11 @@
                                                 }
                                             </div>
                                             <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2"
-                                                    disabled="@(_sentryMissing <= 0 || _credits < 2)"
+                                                    @* #562: the affordability gate reads the CONSTANT, not a
+                                                       literal. A hard-coded 2 here silently shadowed
+                                                       RestockPricePerRound and went wrong the moment the
+                                                       ammo was re-priced — which is now. *@
+                                                    disabled="@(_sentryMissing <= 0 || _credits < SentryBot.RestockPricePerRound)"
                                                     title="@($"Rack {_sentryMissing} rounds across the roster at {SentryBot.RestockPricePerRound} cr each")"
                                                     @onclick="RestockSentries">
                                                 @(_sentryMissing <= 0 ? "Magazines full" : $"🔫 Rearm sentries — {_sentryMissing} rounds · {_sentryCost:N0} cr")
@@ -4508,6 +4750,7 @@
                                                               Accounts="LedgerAccounts()"
                                                               OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
                                                               Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
+                                                              HoardSummary="@_caches.HoardLine()"
                                                               OnReopenStartPicker="ReopenStartPicker"
                                                               OnOpenSaves="OpenSaveDrawer"
                                                               Voyage="CrewVoyage()"
@@ -4597,9 +4840,15 @@
                             </button>
                             <button type="button" class="btn btn-danger busted-opt" @onclick="BustedResist">
                                 <span class="bo-title">🔫 RESIST@(bust.Heat >= EncounterRule.MaxHeatLevel ? " — THE BOLIVIA" : "")</span>
+                                @* #621 · The hint used to price only the LOSS. Winning a heat-1/2 resist
+                                   raises heat by one — the sim does it, and the game said so only in the
+                                   result line, after the button had been pressed. A cost you can confirm
+                                   only once you have paid it is not a tell. And the Bolivia is the one
+                                   option on this card that ends the captain, which the player is entitled
+                                   to know one beat early rather than at the freeze-frame. *@
                                 <span class="bo-detail">@(bust.Heat >= EncounterRule.MaxHeatLevel
-                                    ? "All guns blazing. A last stand on the dice — you fight clear, or you don't."
-                                    : "One opposed roll. Win and they peel off; lose and it's a harsher cut.")@(_hasNetJammer ? " (jammer +2)" : "")</span>
+                                    ? "All guns blazing. A last stand on the dice — you fight clear, or the freeze-frame does the rest and the policy issues somebody new."
+                                    : "One opposed roll. Win and they peel off, but heat climbs a notch and the next wave is meaner; lose and it's a harsher cut.")@(_hasNetJammer ? " (jammer +2)" : "")</span>
                             </button>
                         </div>
                         break;
@@ -4661,6 +4910,17 @@
                         @if (bust.BoliviaBeatIndex < BoliviaEncounter.Script.Count)
                         {
                             EncounterBeat beat = BoliviaEncounter.Script[bust.BoliviaBeatIndex];
+                            @* #528 · THE STAND HAS A PICTURE NOW. The freeze-frame that ENDS this scene has
+                               been painted since PR-BUSTED; the three beats that earn it were text with
+                               buttons under them, so a captain who HELD the line never saw one frame of
+                               what they just lived through. Same sepia register as the freeze-frame. Keyed
+                               by the beat's id, never its index — a script is a list somebody will edit —
+                               and onerror-hides, so a missing file leaves this panel as it was. *@
+                            @if (BoliviaEncounter.ArtFile(beat.Id) is { Length: > 0 } beatArt)
+                            {
+                                <img class="bolivia-beat-img" src="@beatArt" alt="" aria-hidden="true"
+                                     onerror="this.style.display='none'" />
+                            }
                             <div class="busted-quote">@beat.Narration</div>
                             <div class="busted-options">
                                 @foreach (EncounterChoice choice in beat.Choices)
@@ -4691,7 +4951,14 @@
                                 <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-freeze-caption">"…the periapsis said 'under the surface'. It wasn't bluffing."</div>
-                            <div class="busted-quote">The hull meets @bust.ImpactBodyName at speed. No corridor, no atmosphere to catch you — just rock. The freeze-frame holds.</div>
+                            @* #621 · This line was TYPED HERE, word for word off ImpactLines[1], and then
+                               had "The freeze-frame holds." appended — which is BUSTED's own language about
+                               a collector's gun-camera still, on a death with no collector and no camera.
+                               That is the exact append #574 pulled out of every other card and replaced with
+                               DeathNarration.Tail, which answers "" for an impact; the guard that pins the
+                               law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
+                               was quietly going round it. Both faults are one fix: read the seam. *@
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
                         </div>
                         break;
@@ -4705,14 +4972,14 @@
                            Art is Grok-generated. *@
                         <div class="busted-freeze">
                             <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent surface death">
-                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause)" alt="" aria-hidden="true" />
+                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
                             @* #480 follow-up: the caption names the meter that actually ran out. It used to
                                hardcode the nerve line for everything but Joined — true while nerve was the
                                only thing that ever killed you, wrong now that the five blows decide. *@
                             <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
-                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Seed, bust.DeathBodyName) The freeze-frame holds.</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
                         </div>
                         break;
@@ -4751,10 +5018,10 @@
                            is wired ready for the surface-death lane. Art is Grok-generated. *@
                         <div class="busted-whathappened">
                             <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent death">
-                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause)" alt="" aria-hidden="true" />
+                                <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
-                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Seed, bust.DeathBodyName)</div>
+                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)</div>
                         </div>
                         @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
                         <div class="busted-freeze-art busted-explosion has-art" title="art: the old ship blowing up — the kerosene-explosion budget">
@@ -4781,9 +5048,19 @@
                                 }
                             </div>
                         }
+                        @* #621 · THE RECEIPT NOW ADDS UP. It printed a 200 cr stake, a −500 cr bill and
+                           "0 cr in hand", which is not arithmetic — the purse is floored at zero and the
+                           three hundred that went missing was never mentioned anywhere. On the standard
+                           uninsured wake the bill ALWAYS exceeds the stake, so this was every death, every
+                           time. The shortfall is stated in the same breath as the numbers that made it, and
+                           it is said the way this clinic says everything: without being asked. *@
                         <div class="busted-receipt">
-                            <div>💰 @BustedRule.InsuranceCredits.ToString("N0") cr insurance stake</div>
+                            <div>💰 @bust.StakeCr.ToString("N0") cr insurance stake</div>
                             <div>🏥 −@bust.ClinicBillCr.ToString("N0") cr clinic bill (the rebirth tax)</div>
+                            @if (bust.ClinicBillCr > bust.StakeCr)
+                            {
+                                <div>🧾 @((bust.ClinicBillCr - bust.StakeCr).ToString("N0")) cr short — nobody asks you for it. It goes on the policy's tab, with everything else.</div>
+                            }
                             <div>👛 @_credits.ToString("N0") cr in hand</div>
                             @* #477: not a "reach-a-pump reserve" any more — that WAS the bug. The floor was
                                priced at exactly the autopilot's own reserve, so the wake handed over fuel
@@ -4841,8 +5118,18 @@
                 <div class="convergence-stamp">◼ ❄ THE THREADS CROSS</div>
                 <div class="convergence-head">Two mysteries. One truth.</div>
                 <div class="convergence-sub">PROJEKTI KAAMOS · NEBULA MUTUAL — the same held breath</div>
+                @* #528 · THE PLATE. The biggest reveal in the game was a text div while a routine collector
+                   shakedown had a painted portrait. It is a PLATE, not an illustration of the paragraph
+                   below it: two filing systems that were always one building, and nobody in the room to
+                   react. onerror-hides, so a missing file leaves this card exactly as it was. *@
+                <img class="convergence-img" src="@ArcConvergence.ArtFile" alt="Two mysteries. One truth."
+                     onerror="this.style.display='none'" />
                 <div class="convergence-body">@ArcConvergence.ConvergenceReveal</div>
-                <div class="convergence-foot">Every death you have died was a withdrawal. The same forty names, the same lucid dark.</div>
+                @* The foot is the beat AFTER the beat, and it must not be a recap: it used to close on two
+                   sentences copied verbatim out of the paragraph directly above it, so the biggest card in
+                   the game repeated itself to the player's face. Core owns the line now, and a guard pins
+                   that no sentence of it appears in the body (#422 story pass). *@
+                <div class="convergence-foot">@ArcConvergence.ConvergenceFoot</div>
                 <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseConvergenceReveal)">…sit with that</button>
             </div>
         </div>
@@ -4879,6 +5166,81 @@
                 </ul>
                 <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseGroundLesson)">@GroundLesson.Dismiss</button>
                 <div class="ground-lesson-foot">@GroundLesson.Foot</div>
+            </div>
+        </div>
+    }
+
+    @* #563 · THE MAP JUST GOT BIGGER — the card that fires the first time a captain forces something open
+       and real ground joins the plan. Owner: "The expanding site, how we tell that story to user clearly
+       (do we have pop-up with image) is of great interest." Before this it was a toast that faded, while a
+       scuttled ship got a full card with art. Once per captain, then the toast takes over for good.
+       GEN-AI ART (art/ground-grows.jpg): the forced way standing open onto ground that was not on the plan
+       a moment ago. Degrades to no image via the house onerror rule — never a broken frame. *@
+    @if (_groundGrewOpen)
+    {
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseGroundGrew)">
+            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">@GroundGrows.Stamp</div>
+                <img class="ground-grows-art" src="@GroundGrows.ArtFile" alt=""
+                     onerror="this.style.display='none'" />
+                <div class="convergence-head">@GroundGrows.Head</div>
+                <ul class="ground-grows-beats">
+                    @foreach (string beat in GroundGrows.Beats)
+                    {
+                        <li>@beat</li>
+                    }
+                </ul>
+                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseGroundGrew)">@GroundGrows.Dismiss</button>
+                <div class="ground-lesson-foot">@GroundGrows.Foot</div>
+            </div>
+        </div>
+    }
+
+    @* #562 · THE TUBE FEEDS YOU — first time the ship racks a magazine while the captain stands in her
+       down-tube. Owner: "We need to communicate the reload to user also… maybe a gen AI image about it the
+       first time." Its real job is teaching the SHAPE of an excursion: the tube is the only place sentries
+       get fed, so every trip is a loop with one anchor, and the route out needs the route home in it.
+       GEN-AI ART (art/tube-rearm.jpg). Once per captain; the receipt line carries it thereafter. *@
+    @if (_tubeRearmOpen)
+    {
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseTubeRearm)">
+            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">@TubeRearm.Stamp</div>
+                <img class="ground-grows-art" src="@TubeRearm.ArtFile" alt=""
+                     onerror="this.style.display='none'" />
+                <div class="convergence-head">@TubeRearm.Head</div>
+                <ul class="ground-grows-beats">
+                    @foreach (string beat in TubeRearm.Beats)
+                    {
+                        <li>@beat</li>
+                    }
+                </ul>
+                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseTubeRearm)">@TubeRearm.Dismiss</button>
+                <div class="ground-lesson-foot">@TubeRearm.Foot</div>
+            </div>
+        </div>
+    }
+
+    @* #573 · THE TANK IS GETTING LOW — first time a captain's air passes the low mark on a surface. Owner:
+       "make the art... make a pop-up about oxygen being low... the time to hurry warning to the airlock or
+       refill". He had just died of a resource he could not see. GEN-AI ART (art/air-running-out.jpg): the
+       red-lit visor, a hand on the chest panel, and the lit hatch a long way off across the plain. *@
+    @if (_airCardOpen)
+    {
+        <div class="convergence-backdrop" @onclick="() => Dismiss(CloseAirCard)">
+            <div class="convergence-card ground-grows-card" @onclick:stopPropagation="true">
+                <div class="convergence-stamp">@AirCard.Stamp</div>
+                <img class="ground-grows-art" src="@AirCard.ArtFile" alt=""
+                     onerror="this.style.display='none'" />
+                <div class="convergence-head">@AirCard.Head</div>
+                <ul class="ground-grows-beats">
+                    @foreach (string beat in AirCard.Beats)
+                    {
+                        <li>@beat</li>
+                    }
+                </ul>
+                <button type="button" class="btn btn-light convergence-close" @onclick="() => Dismiss(CloseAirCard)">@AirCard.Dismiss</button>
+                <div class="ground-lesson-foot">@AirCard.Foot</div>
             </div>
         </div>
     }

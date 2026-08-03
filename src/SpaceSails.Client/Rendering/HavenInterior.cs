@@ -91,7 +91,18 @@ public static class HavenInterior
 
     // Keyed by "bodyId|<sorted opened-hatch ids>", so the locked concourse and the wing-grown variant
     // are cached side by side and a station is still built at most once per unlock state.
-    private static readonly Dictionary<string, DeckPlan> Cache = new();
+    //
+    // #649 · CONCURRENT, for exactly the reason MoonSurface's layout cache already is (#585): in WASM the
+    // game is single-threaded and a plain Dictionary is safe, but xUnit runs test classes IN PARALLEL, so
+    // two of them building haven decks at once corrupt it — "Operations that change non-concurrent
+    // collections must have exclusive access." It surfaced here as TheOracleCanBeSeatedOnDemandTests failing
+    // about one run in three with an InvalidOperationException that has nothing to do with the oracle, which
+    // is the worst kind of failure there is: a flaky audit teaches you to ignore audits.
+    //
+    // Found by an unrelated change to the surface renderer shifting the timing enough to lose the race. It
+    // was always there. Building a deck is deterministic, so a racing double-build is pure waste and never a
+    // wrong answer — only the dictionary itself ever needed protecting.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DeckPlan> Cache = new();
 
     /// <summary>Does this haven have a walkable interior (so docking should weld on a tube)?</summary>
     public static bool HasInterior(string bodyId) => System.Array.Exists(Specs, s => s.BodyId == bodyId);
@@ -120,7 +131,11 @@ public static class HavenInterior
     /// re-dock a watch later and the room reads different. Built once per (station, unlock-state, watch),
     /// lazily, and shared.
     /// </summary>
-    public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0)
+    /// <param name="forceOracle">The <c>?oracle=1</c> seat cheat (#428): plant the oracle's corner console
+    /// whatever her rota says this watch. Part of the cache key — a deck built before the cheat was armed
+    /// can never be handed back for a forced boot.</param>
+    public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0,
+        bool forceOracle = false)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
@@ -133,10 +148,10 @@ public static class HavenInterior
         string wingKey = active.Count == 0
             ? bodyId
             : bodyId + "|" + string.Join(",", active.Select(w => w.UnlockHatchId).OrderBy(s => s, System.StringComparer.Ordinal));
-        string key = $"{wingKey}@{watch}"; // the seated-regular rota re-rolls each watch, so it keys the cache
+        string key = $"{wingKey}@{watch}{(forceOracle ? "+oracle" : "")}"; // the seated-regular rota re-rolls each watch, so it keys the cache
         if (!Cache.TryGetValue(key, out DeckPlan? deck))
         {
-            deck = BuildComplex(spec, active, simTime);
+            deck = BuildComplex(spec, active, simTime, forceOracle);
             Cache[key] = deck;
         }
         return deck;
@@ -160,6 +175,31 @@ public static class HavenInterior
     private const float BarLeft = -14f;
     private const float BarRight = 19f;
     private static readonly float BarTopY = HallTopY + 22f;
+
+    // --- The wide door from the round hall INTO the bar (the hall's north edge, edge 2) --------------
+    // The gap the captain walks through at the end of the ship → tube → immigration hall → bar walk.
+    // Named because four things have to mean the SAME doorway: the two wall stubs either side of it on
+    // the hall ring, the two bar-floor walls either side of it on the bar's south side, the auto-door
+    // itself, and — since #428 — where <see cref="BarThreshold"/> stands a captain who booted ashore.
+    // They agreed as five typed-in literals; two places computing one fact is the bug even then.
+    private const float BarDoorLeft = -1f;
+    private const float BarDoorRight = 6f;
+
+    /// <summary>WHERE THE WALK ENDS — the position the <c>?ashore=1</c> boot cheat (#428) stands the
+    /// captain at: one step past the hall's north door, the exact spot the REAL walk (ship → tube →
+    /// immigration hall → this door) puts them the moment the bar becomes the room they are standing in.
+    ///
+    /// <para>Derived from the doorway itself — its two jambs and the hall's north edge — and never typed
+    /// in. A cheat that invented its own coordinates would be a second source of truth for a fact the
+    /// geometry already owns, and unaudited client geometry literals are this project's oldest and most
+    /// reliably wrong bug class. The heading is <c>+Y</c>: facing into the room, the way you were walking
+    /// when you came through (the deck's own convention — <c>atan2(dy, dx)</c>).</para></summary>
+    public static (double X, double Y, double Heading) BarThreshold =>
+        ((BarDoorLeft + BarDoorRight) / 2.0, HallTopY + AshoreStepDeckUnits, System.Math.PI / 2);
+
+    /// <summary>How far past the door line the ashore boot stands: one avatar ACROSS, so the captain is
+    /// wholly inside the room rather than straddling the door line they just crossed.</summary>
+    private const double AshoreStepDeckUnits = 2 * DeckPlan.AvatarRadius;
 
     // --- The roaming Magpie (PR-F, the owner's "people cannot be static furniture" ruling) ---
     // A fence's runner who never sits still: a bar table one watch, out of reach the next, waiting in
@@ -219,15 +259,20 @@ public static class HavenInterior
     private static readonly (float X, float Y) OracleCorner = (-11f, HallTopY + 19f);
 
     /// <summary>Is the oracle at this bar on this docking watch? The pure Core rota (OracleRant.PresentAt);
-    /// exposed so the interaction gate and the deck build agree on whether her corner holds anyone.</summary>
-    public static bool OraclePresent(string bodyId, double simTime) =>
-        SpaceSails.Core.OracleRant.PresentAt(bodyId, simTime);
+    /// exposed so the interaction gate and the deck build agree on whether her corner holds anyone.
+    /// <paramref name="forced"/> is the <c>?oracle=1</c> seat cheat (#428) — passed straight through to Core,
+    /// so the console the deck plants and the gate the E-key reads can never disagree about it.</summary>
+    public static bool OraclePresent(string bodyId, double simTime, bool forced = false) =>
+        SpaceSails.Core.OracleRant.PresentAt(bodyId, simTime, forced);
 
     /// <summary>One resolved seated regular for a bar watch: the same shout-name id the contact systems
     /// key on, whether they're at a table this watch, and — when present — the deck coords of their seat
     /// (with a per-regular seeded facing so two visits don't line up identically). Away regulars carry
     /// <see cref="Present"/> = false and are parked off-frame by the droid fill.</summary>
-    public readonly record struct SeatedRegular(string Id, string Label, string ShortName, bool Present, double X, double Y, double Facing, ulong Seed);
+    /// <param name="State">WHY they are or aren't here — at a table, stepped out, or away in the back.
+    /// The rota has always computed this; until the bar could SAY it, an away regular was an empty chair
+    /// with no console and therefore no sentence, and the distinction lived only in Core.</param>
+    public readonly record struct SeatedRegular(string Id, string Label, string ShortName, bool Present, double X, double Y, double Facing, ulong Seed, PatronState State);
 
     // The floating deck-label short-name per regular (the droid tag, kept as it read before #410); the
     // full shout-name id lives on the console. Unknown ids fall back to the id itself.
@@ -254,7 +299,7 @@ public static class HavenInterior
             // the identical angle each visit — small idle life on top of the per-frame thermal jitter.
             ulong seed = RegularSeed(s.Regular, PatronRota.WatchIndex(simTime));
             double facing = -System.Math.PI / 2 + (SpaceSails.Core.ReeverIdle.FacingTwitchAt(seed, 0) * 1.5);
-            seated.Add(new SeatedRegular(s.Regular, $"◈ {s.Regular}", ShortNameFor(s.Regular), s.Present, sx, sy, facing, seed));
+            seated.Add(new SeatedRegular(s.Regular, $"◈ {s.Regular}", ShortNameFor(s.Regular), s.Present, sx, sy, facing, seed, s.State));
         }
         return seated;
     }
@@ -352,7 +397,8 @@ public static class HavenInterior
 
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
-    private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings, double simTime)
+    private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings, double simTime,
+        bool forceOracle = false)
     {
         DeckPlan ship = DeckPlan.Ship;
         bool backRoomOpen = activeWings.Count > 0; // the Magpie's back-room stop is reachable once a wing is welded on
@@ -403,11 +449,11 @@ public static class HavenInterior
                 walls.Add(new(a.X, a.Y, TubeLeft, a.Y, false, true));
                 walls.Add(new(TubeRight, b.Y, b.X, b.Y, false, true));
             }
-            else if (k == 2) // north edge: the wide door to the bar (gap x -1..6)
+            else if (k == 2) // north edge: the wide door to the bar (gap x BarDoorLeft..BarDoorRight)
             {
-                walls.Add(new(a.X, a.Y, 6, a.Y, false, true));
-                walls.Add(new(-1, b.Y, b.X, b.Y, false, true));
-                doors.Add(new(-1, a.Y, 6, a.Y)); // wide auto door
+                walls.Add(new(a.X, a.Y, BarDoorRight, a.Y, false, true));
+                walls.Add(new(BarDoorLeft, b.Y, b.X, b.Y, false, true));
+                doors.Add(new(BarDoorLeft, a.Y, BarDoorRight, a.Y)); // wide auto door
             }
             else // a sealed berth / department — or an opened expansion joint
             {
@@ -451,8 +497,8 @@ public static class HavenInterior
         labels.Add((HallCenterX, HallCenterY + 3, $"⚓ {spec.Authority} ORBIT"));
 
         // The bar, off the hall's north door.
-        walls.Add(new(BarLeft, HallTopY, -1, HallTopY, false, true));   // bar floor wall, port of the door
-        walls.Add(new(6, HallTopY, BarRight, HallTopY, false, true));   // bar floor wall, starboard of the door
+        walls.Add(new(BarLeft, HallTopY, BarDoorLeft, HallTopY, false, true));   // bar floor wall, port of the door
+        walls.Add(new(BarDoorRight, HallTopY, BarRight, HallTopY, false, true)); // bar floor wall, starboard of the door
         walls.Add(new(BarLeft, HallTopY, BarLeft, BarTopY, false, true));
         walls.Add(new(BarRight, HallTopY, BarRight, BarTopY, false, true));
         walls.Add(new(BarLeft, BarTopY, BarRight, BarTopY, true, true)); // spinward window onto space
@@ -507,7 +553,7 @@ public static class HavenInterior
         // The station oracle (issue #425), if she's tuned to this bar this watch. A BarPatron console in
         // the port-back corner; the client's E-router matches her by name (OracleRant.Nickname) and hands
         // off to the oracle flow, never the generic quest-giver path. Absent watches leave the stool empty.
-        bool oracleHere = OraclePresent(spec.BodyId, simTime);
+        bool oracleHere = OraclePresent(spec.BodyId, simTime, forceOracle);
         if (oracleHere)
         {
             consoles.Add(new(DeckPlan.ConsoleKind.BarPatron, OracleCorner.X, OracleCorner.Y,

@@ -6,6 +6,11 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SpaceSails.Core.Tests/SpaceSails.Core.Tests.csproj" />
+    <!-- #573 · THE DECK AUDIT, FINALLY IN THE BUILD. This project was created so client geometry could be
+         audited at all ("add a CI check to catch all such cases") and was never added to the solution, so
+         CI has never once compiled or run it. A guard nobody executes is not a guard; it is a comment with
+         a csproj. Found while adding the shelter-beacon tests — which, being in this project, would have
+         been just as invisible. -->
     <Project Path="tests/SpaceSails.Client.Tests/SpaceSails.Client.Tests.csproj" />
   </Folder>
   <Folder Name="/labs/">
@@ -41,5 +46,6 @@
     <Project Path="labs/37-the-slow-hand/Lab37.csproj" />
     <Project Path="labs/40-the-ride-waits/Lab40.csproj" />
     <Project Path="labs/41-can-you-get-there/Lab41.csproj" />
+    <Project Path="labs/44-a-lab-about-the-lab/Lab44.csproj" />
   </Folder>
 </Solution>

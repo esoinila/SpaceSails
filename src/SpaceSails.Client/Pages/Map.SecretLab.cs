@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -24,6 +24,35 @@ public partial class Map
     {
         string body = ex.Stop.Body.Id;
         bool cheat = _secretLabForceBodyId == body;
+
+        // ── #411 · THE HEAD OFFICE IS NOT A ROLL. ────────────────────────────────────────────────────────
+        //
+        // Every other clandestine site in the game is a one-in-forty fact about a moon. The one under the
+        // ice is a fact about the CAPTAIN: it is there when the berth-code has resolved and the hull is on
+        // the board, and it is not there otherwise — not sealed, not refused, not hinted at. Featureless ice
+        // and a good view.
+        //
+        // That refusal-by-ABSENCE is the whole reason the arrival lands, and it is the honest reading of an
+        // arc every one of whose shards is about a filing, a window, a berth or a manifest and not one of
+        // which is about fuel: nobody is stopping you going to Enceladus. What nobody can do is be EXPECTED
+        // there. (docs/features/kaamos-head-office.md §1.)
+        //
+        // And when it IS there, the door is already known — the arc sold you the coordinate over a counter
+        // (`bought-coordinate`, "you have the where and the when"), so making the captain sweep a 310 × 260
+        // field with a detector for a door they were handed would be the game forgetting its own fiction.
+        if (UndergroundComplex.IsHeadOffice(body))
+        {
+            if (!UndergroundComplex.HeadOfficePresent(body, _kaamos.CanReachEnceladus) && !cheat)
+            {
+                ex.Lab = null;
+                return;
+            }
+
+            ex.Lab = SecretLab.For(body, MoonSurface.ExpeditionField(), forcePresent: true);
+            ex.SecretLabDoorRevealed = true;
+            return;
+        }
+
         SecretLab.Placement placement = SecretLab.For(body, MoonSurface.ExpeditionField(), forcePresent: cheat);
         if (!placement.HasLab)
         {
@@ -64,6 +93,12 @@ public partial class Map
             "📡 The detector SHRIEKS and holds — not a coin, not scrap: a SEALED DOOR, buried flush with the " +
             "regolith where no door has any right to be. Someone hid this. Force it open ([E] at the door) — " +
             "or walk away and pretend you never found it.");
+
+        // #528 · THE GROUND STOPS BEING GROUND. The only find in the beach-comber lane that is not a thing
+        // you pick up, and it was a sentence that faded in a second and a half — under a decision (force it,
+        // or walk away and pretend you never found it) that is one of the sharpest in the game. Core owns
+        // the words; the picture shows the door and nothing about what is behind it.
+        ShowRevealCard(SecretLab.DoorPlate.Title, SecretLab.DoorPlate.ArtFile, SecretLab.DoorPlate.Caption);
         return true;
     }
 
@@ -236,6 +271,12 @@ public partial class Map
         ShowPulseMessage(
             "⚙ The seal cracks — stale, chemical air, decades unbreathed. Benches. Stasis pods. A spine of dead " +
             "servers. Someone LIVED down here, working. Read the logs ([E] the screens) — and mind the core log.");
+
+        // #563 · Unlike the expedition door, this toast is kept ALWAYS — it is a story beat about what is in
+        // the room, and the card is a mechanics lesson about the map growing. Different jobs, so the card
+        // rides on top the first time rather than replacing anything. (It may well be a captain's first
+        // expansion ever: the lab is the ONLY way an ordinary moon can grow at all today.)
+        ShowGroundGrewCardOnce();
     }
 
     /// <summary>The small nerve chill of crossing into the lab (owner: "entering the lab … is a nerve hit").
@@ -299,9 +340,14 @@ public partial class Map
 
         // #411: the log that gestures at the sealed ice-moon project (VantarLore.KaamosHook) is also a KAAMOS
         // intel shard. Reading it the first time files vantar-log to the ledger; a re-read shows the log plainly.
+        //
+        // The log NEVER names the project — "a moon off the charts, a project that runs on in the cold with
+        // the lights off" is the whole point of VantarLore's fragment 4, and the connection to the plate at
+        // Ringside is the player's to make. This line used to make it for them ("This is a piece of PROJEKTI
+        // KAAMOS"), which is the announcing shape the house forbids. It files the shard and says no more.
         if (con.LoreIndex == VantarLore.KaamosHook
             && TryAssembleKaamos("vantar-log",
-                $"🖥 {fragment}   ❄ This is a piece of PROJEKTI KAAMOS — filed to the Captain's ledger. " +
+                $"🖥 {fragment}   ❄ Filed to the Captain's ledger. " +
                 KaamosLore.ById("vantar-log")!.Lore))
         {
             return;
@@ -348,6 +394,16 @@ public partial class Map
             ShowPulseMessage(
                 $"🖥 {coreLogText}   ▪   {dice} — and behind you the dormant thing's eyes come open. " +
                 $"{roll.PackSize} of them, standing off their benches. It salvages YOU. Get to the tube — RUN.");
+
+            // #528 · THE HIVE'S LOUDEST MOMENT, and it had no frame at all — the other branch of this very
+            // roll ends in a painted selfie against this same room. Raised only here, strictly AFTER the D20
+            // has resolved and been shown, so it can never be a tell: the captain already knows which way it
+            // went before the picture arrives. The salvage branch keeps its selfie and gets no card, because
+            // a card on both would be a card on a card.
+            ShowRevealCard(
+                SecretLab.TheyStandPlate.Title,
+                SecretLab.TheyStandPlate.ArtFile,
+                SecretLab.TheyStandPlate.Caption);
         }
         RequestVaultSave(); // the nerve moved (and maybe the purse) — persist it
     }

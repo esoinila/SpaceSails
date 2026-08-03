@@ -64,6 +64,54 @@ public static class MotionTracker
     public static double DetectionRange(double visualHalfExtentDu) =>
         System.Math.Max(1.0, visualHalfExtentDu) * VisualRangeMultiple;
 
+    // ── #591 · THE FAN IS A SURFACE INSTRUMENT, AND UNDERGROUND IT SHOULD KNOW IT ────────────────────────
+    //
+    // Owner: "the motion tracker should be in underground visibility mode when we are deeeeeeeep under
+    // surface".
+    //
+    // Everything about this device was written for standing on a moon under an open sky: its reach, its
+    // "movement — 47 du, closing", its beacons. Hundreds of metres down inside poured walls it behaved
+    // exactly the same, which is nonsense in the plainest way — a fan that hears as far through rock and
+    // bulkhead as it does across open regolith.
+    //
+    // It also buys something the game wanted anyway. Depth already costs AIR (only the top of each shaft
+    // band holds pressure) and TIME. Making the instrument worse as you descend gives depth a THIRD cost,
+    // and it is the one the player can name: the deepest floors are frightening because you cannot hear
+    // what is coming, and not one enemy had to be added to do it.
+
+    /// <summary>#591 · The share of the surface fan the device keeps however deep it goes. Never zero: a
+    /// dead instrument is not frightening, it is broken, and a captain who stops looking at the tracker has
+    /// simply lost a gauge. This is the floor the curve leans on and never reaches.</summary>
+    public const double UndergroundFloorFraction = 0.28;
+
+    /// <summary>#591 · How many floors of descent halve what is left above the floor fraction. A curve, not
+    /// a table, deliberately: <c>UndergroundComplex.DepthOf</c> is unbounded by design ("depth is free"),
+    /// so anything with a bottom written into it would be wrong the first time a seed rolled deeper.</summary>
+    public const double UndergroundHalvingFloors = 6.0;
+
+    /// <summary>
+    /// #591 · The fan's reach on floor <paramref name="level"/> (negative = underground, −1 is B1), given
+    /// what it would reach on the surface.
+    ///
+    /// <para>Full reach on B1 and degrading from there. B1 is deliberately not degraded at all: it is the
+    /// floor that still holds pressure, still has standing lights, and is the one place down there the
+    /// building is still pretending to work — the instrument agreeing with that is the same lie the rest of
+    /// the floor tells, and the lie is what makes the dark below it land.</para>
+    ///
+    /// <para>Strictly decreasing with depth, and it never reaches zero.</para>
+    /// </summary>
+    public static double UndergroundRange(double surfaceRange, int level)
+    {
+        if (level >= 0)
+        {
+            return surfaceRange;   // on the regolith, under the sky: the instrument it was built to be
+        }
+
+        double floorsBelowTheTop = -level - 1.0;   // B1 = 0, B7 = 6
+        double left = System.Math.Pow(0.5, floorsBelowTheTop / UndergroundHalvingFloors);
+        return surfaceRange * (UndergroundFloorFraction + ((1.0 - UndergroundFloorFraction) * left));
+    }
+
     /// <summary>The faintest a far blip ever paints, as a fraction of a point-blank one — a contact out on
     /// the rim is a whisper, never nothing (#338: "blips at extreme range render faint/small").</summary>
     public const double FaintFloor = 0.18;
@@ -157,15 +205,22 @@ public static class MotionTracker
     }
 
     /// <summary>Sweep every entity and return a blip for each mover, nearest first. Still contacts are
-    /// dropped by construction (motion only).</summary>
+    /// dropped by construction (motion only).
+    ///
+    /// <para>#591 · <paramref name="detectionRange"/> is what the fan can actually HEAR from here. It
+    /// defaults to unbounded, which is the surface behaviour this device shipped with: a far contact still
+    /// paints, pinned to the rim and faint (<see cref="BlipIntensity"/>), because that distant murmur is
+    /// the whole point of the instrument. Underground the reach is real and the cut is real — a shortened
+    /// fan that still painted everything on the rim would be a shortened fan in the numbers only.</para></summary>
     public static System.Collections.Generic.IReadOnlyList<Blip> Sweep(
-        double originX, double originY, System.Collections.Generic.IEnumerable<Entity> entities)
+        double originX, double originY, System.Collections.Generic.IEnumerable<Entity> entities,
+        double detectionRange = double.PositiveInfinity)
     {
         System.ArgumentNullException.ThrowIfNull(entities);
         var blips = new System.Collections.Generic.List<Blip>();
         foreach (Entity e in entities)
         {
-            if (Read(originX, originY, in e) is { } b)
+            if (Read(originX, originY, in e) is { } b && b.Range <= detectionRange)
             {
                 blips.Add(b);
             }

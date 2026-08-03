@@ -90,6 +90,25 @@ public class HoardTests
     // ---- The confiscation seam: buried is off the ship ----
 
     [Fact]
+    public void HoardLine_TotalsOurOwnGroundOnly_AndIsEmptyWithNothingBuried()
+    {
+        var ledger = new CacheLedger();
+        Assert.Equal("", ledger.HoardLine()); // nothing in the ground — the section shows only its maps
+
+        ledger.Bury("phobos", 1200, [new CacheCargo("He3", 3, Hot: true)], 70000, "you", playerOwned: true);
+        ledger.Bury("luna", 1200, [new CacheCargo("Ice", 4, Hot: false)], 71000, "you", playerOwned: true);
+        // A rival's chest we merely hold a map to is a map, never a holding.
+        ledger.Learn(new TreasureCache("cache-npc-9", "phobos", "the monolith", "sunward", 22, 9000,
+            [new CacheCargo("Alloys", 9, true)], 60000, "the Ghost", false));
+
+        string line = ledger.HoardLine();
+
+        Assert.Contains("2,400 cr", line);        // 1200 + 1200, never the Ghost's 9000
+        Assert.Contains("7 units (3 hot)", line); // 3 + 4, of which 3 are evidence
+        Assert.Contains("2 caches", line);
+    }
+
+    [Fact]
     public void BuriedHotUnits_CountsOnlyOurBuriedStolenCargo()
     {
         var ledger = new CacheLedger();

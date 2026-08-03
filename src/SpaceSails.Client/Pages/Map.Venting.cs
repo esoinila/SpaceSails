@@ -51,6 +51,8 @@ public sealed partial class Map
         _ventLog.Clear();       // a new ship keeps her own log, not the last one's
         _placardRead = false;   // and a new ship is a ship you have never read the plate on
         _refillCharges = HullVenting.RefillChargesPerBoarding;
+        _liveNestSeen = false;  // #528: a new ship is a nest you have never stood in front of
+        _ventPayoff.Clear();    // and no room aboard her is holding a card the LAST hull earned
 
         // The hull one of her own opened has no air anywhere — including the corridor. So none of her doors
         // fight you, except the one into the room somebody kept breathing in.
@@ -430,25 +432,55 @@ public sealed partial class Map
     /// gets there.</summary>
     private bool HasVentPayoff(string name) => _ventPayoff.Contains(name);
 
-    /// <summary>Called as the captain walks: the first time they set foot in a room the vacuum has finished
-    /// with, the room shows them what it left. Not a clock, not a notification — you went and looked.</summary>
+    /// <summary>Has this away team already been shown the nest as it stands? Once per boarding — the room
+    /// is a shock the first time and scenery after that, and a card that re-fired every time the captain
+    /// crossed the compartment would turn the loudest room on the hull into a nuisance.</summary>
+    private bool _liveNestSeen;
+
+    /// <summary>Called as the captain walks. Two cards live here, and they are the same story twice:
+    ///
+    /// <para><b>Before</b> — the first time they stand in the nest while it is still alive and the room
+    /// still holds air, it shows them what grew in there. This did not exist until #528, and its painting
+    /// did: <c>vented-nest-intact.jpg</c> shipped with nothing pointing at it. Which meant the setup for
+    /// this hull's best payoff was missing while the picture of it sat on disk. #380's law — the fiction
+    /// arrives one beat early — and "what the vacuum left" only lands because you saw what was there.</para>
+    ///
+    /// <para><b>After</b> — the first time they set foot in a room the vacuum has finished with, the room
+    /// shows them what it left. Not a clock, not a notification: you went and looked.</para>
+    ///
+    /// <para>Both texts come from Core (<see cref="NestPlates"/>); the after-card's copy used to be typed
+    /// here.</para></summary>
     private void CheckVentPayoffUnderfoot()
     {
-        if (_ventPayoff.Count == 0 || _wreckLook is not null || CaptainCompartment() is not { } here)
-        {
-            return;
-        }
-        if (!_ventPayoff.Remove(here))
+        if (_wreckLook is not null || CaptainCompartment() is not { } here)
         {
             return;
         }
 
-        _wreckLook = new WreckLook(
-            $"💨 {here} — WHAT THE VACUUM LEFT",
-            "art/vented-nest-dead.jpg",
-            "The nest is collapsed and hollow, frost-shattered off the racks, and nothing in it is intact. " +
-            "Deep parallel gouges cross the deck toward a sealed hatch and stop there. Whatever spent forty " +
-            "years working at that door is not working at it now.");
+        // The after-card wins if the room has one waiting: a vented nest is not a live one, and the payoff
+        // is what the captain came back for.
+        if (_ventPayoff.Remove(here))
+        {
+            _wreckLook = new WreckLook(
+                NestPlates.DeadTitle(here), NestPlates.Dead.ArtFile, NestPlates.Dead.Caption);
+            RendererInterop.PlayCue("reveal");
+            return;
+        }
+
+        // The before-card. Guarded on the SIM's own state, not on a room name: it shows only while the
+        // space is genuinely infested and genuinely unvented, so a hull whose nest was already cleared
+        // never claims there is one, and the card can never contradict what the compartment is doing.
+        if (_liveNestSeen
+            || !string.Equals(here, WreckLayout.NestCompartment, StringComparison.Ordinal)
+            || !_ventSpaces.TryGetValue(here, out HullVenting.Space space)
+            || !space.Infested
+            || space.Vented)
+        {
+            return;
+        }
+
+        _liveNestSeen = true;
+        _wreckLook = new WreckLook(NestPlates.Live.Title, NestPlates.Live.ArtFile, NestPlates.Live.Caption);
         RendererInterop.PlayCue("reveal");
     }
 
@@ -1291,6 +1323,12 @@ public sealed partial class Map
         ShowPulseMessage(
             $"🕷 The {name} hatch comes off its dogs — and it opens BOTH ways. Whatever the last crew shut " +
             "in there has been waiting on the other side of it, and it does not need a second invitation.");
+
+        // #528 · THE THIRD PLATE IN THIS ROOM'S SET, and the one that was missing. The sealed door is the
+        // whole decision the vacuum mechanic exists to make interesting, and throwing it was a pulse line —
+        // beside a before-card and an after-card that have both had paintings for weeks. What the picture
+        // shows is the INSIDE face of the door, and nothing about what worked at it.
+        ShowRevealCard(NestPlates.ReleasedTitle(name), NestPlates.Released.ArtFile, NestPlates.Released.Caption);
         BoardLog($"🕷 Opened the sealed {name} — {came} came out.");
         ApplyNerveShock(NervePips.SightingPips * (int)NervePips.PipUnit, "you opened the door they sealed");
         RendererInterop.PlayCue("alarm");

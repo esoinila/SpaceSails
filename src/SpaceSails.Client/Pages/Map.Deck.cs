@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -82,7 +82,8 @@ public partial class Map
     {
         // Re-weld at the SAME watch this visit docked at, so an opened wing appears without re-rolling the
         // seated regulars mid-dock (their rota was baked when we tied up — issue #410).
-        if (_dockedHavenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime) is { } complex)
+        if (_dockedHavenId is { } id
+            && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce) is { } complex)
         {
             _deckPlan = complex;
         }
@@ -144,6 +145,15 @@ public partial class Map
             case "g" or "G":
                 // #313: the panic drop — ditch the chest to sprint full speed, recover it later.
                 DropChest();
+                return true;
+            case "i" or "I":
+                // #603 · THE SATCHEL. Owner: "the I key should be advertised in the hud also like we do now
+                // for the other keys." Opened from nowhere in particular it is just a look at what you are
+                // carrying; opened from a locked door it is a list of things to TRY.
+                if (_surface is not null)
+                {
+                    OpenSatchel();
+                }
                 return true;
             case "h" or "H":
                 // #538 · THE REMOTE IS IN YOUR HAND, NOT ON THE BRIDGE. Owner: "the remote to sentries should be
@@ -316,7 +326,11 @@ public partial class Map
                 ShowPulseMessage(SleepInBunk());
                 break;
             case DeckPlan.ConsoleKind.Vent:
-                OpenChargeBoard();          // #523: the charge board — the dump is one switch ON it now
+                // #523 · The console's own label still says CAPACITOR, not air. What changed is that the
+                // dump stopped being the whole interaction: it is one switch on a board that also shows what
+                // the hull is holding and what the space around her is doing to it. VentCharge() is still the
+                // act — the board is where you decide to take it.
+                OpenChargeBoard();
                 break;
             case DeckPlan.ConsoleKind.ShipDoor:
                 ToggleShipDoorAtHand();     // her own hatches, dogged by hand at the door
@@ -418,6 +432,40 @@ public partial class Map
             case DeckPlan.ConsoleKind.LabCache:
                 LabCacheInteract(); // #409: claim Vantar's fat one-time cache
                 break;
+            case DeckPlan.ConsoleKind.HiveLift:
+            case DeckPlan.ConsoleKind.HiveHead:
+                HiveLiftInteract();   // #585: down the shaft, or back up out of it
+                break;
+            case DeckPlan.ConsoleKind.HiveHaul:
+                HiveHaulInteract();   // #585: turn over one room of the facility
+                break;
+            case DeckPlan.ConsoleKind.HiveSign:
+                HiveSignInteract();   // #585: read a door that will not open
+                break;
+            case DeckPlan.ConsoleKind.HiveRefuge:
+                HiveRefugeInteract(); // #608: read the pressure refuge's rack on a dead floor
+                break;
+            case DeckPlan.ConsoleKind.MonolithFoot:
+                MonolithFootInteract(); // #586: whatever somebody left at the foot this window
+                break;
+            case DeckPlan.ConsoleKind.RuinSalvage:
+                RuinSalvageInteract(); // #573: turn over a ruin — about half hold something
+                break;
+            case DeckPlan.ConsoleKind.ShelterLocker:
+                ShelterLockerInteract(); // #573: the shelter's emergency rounds
+                break;
+            case DeckPlan.ConsoleKind.ShelterTank:
+                ShelterTankInteract(); // #573: charge the suit at the deep shelter
+                break;
+            case DeckPlan.ConsoleKind.OutpostDoor:
+                OutpostDoorInteract(); // #563: force the hut's dogged hatch — the channel that appends the room
+                break;
+            case DeckPlan.ConsoleKind.OutpostCache:
+                OutpostCacheInteract(); // #563: their ammunition locker, spread across your sentries
+                break;
+            case DeckPlan.ConsoleKind.OutpostEffects:
+                OutpostEffectsInteract(); // #563: somebody's wallet, and the only story the place tells
+                break;
             case DeckPlan.ConsoleKind.LabConsole:
                 LabConsoleInteract(); // #409: read a Vantar log (the core log fires the diced reveal)
                 break;
@@ -444,6 +492,17 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.WreckPlacard:
                 ReadDamageControlPlacard(); // #488: where the valves are, told at the lock
+                break;
+            case DeckPlan.ConsoleKind.ArchiveNode:
+                ConfrontArchiveNode();      // look at the thing in the hold — the throw, and what it gives back
+                break;
+            case DeckPlan.ConsoleKind.ArchiveSwitch:
+                PullArchiveSwitch();        // the honest legend, with nothing in front of it
+                break;
+            case DeckPlan.ConsoleKind.ShelterDoor:
+                // #585: a shelter door is a door, not a ride home. It has already cycled for you (proximity
+                // opens it, the same as the ship's); pressing [E] on it says so and does nothing else.
+                ShowPulseMessage(SurfaceShelter.DoorPressLine);
                 break;
             case DeckPlan.ConsoleKind.SurfaceAirlock:
                 LiftOffFromSurface();
@@ -811,7 +870,8 @@ public partial class Map
     private void SetDeckForDock(string? havenId)
     {
         _dockVisitSimTime = SimTime; // freeze the watch this docking sees the bar on (issue #410 rota)
-        if (havenId is { } id && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime) is { } complex)
+        if (havenId is { } id
+            && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";
@@ -842,6 +902,37 @@ public partial class Map
     // the station room. Kept fresh as you walk so quest/status flavor can read it.
     private void RefreshAshore() => _ashore = _deckPlan.FollowCam && _avatarY > StationFloorY;
 
+    // #428 · ?ashore=1 — THE WALK, ALREADY WALKED. Stand the captain at the bar-room threshold of the
+    // haven they just clamped onto, facing into the room, with the Deck up.
+    //
+    // Every bar beat we have — the oracle (#428), the stranger-bond (#429), the KAAMOS holder and the
+    // Nebula adjuster (#411/#422), the Magpie's rota, the barkeep, the talking drinks — begins with the
+    // same ship → airlock → tube → immigration hall → bar walk on EVERY boot. That walk is fine to play
+    // and useless to test: in an MCP-driven tab the game is `document.hidden`, rAF is throttled and WASD
+    // never lands, so not one of those beats could be smoke-tested at all. "A scene nobody can reach on
+    // demand is a scene that ships broken" (this file's own neighbours).
+    //
+    // The position is NOT invented here: HavenInterior.BarThreshold derives it from the hall's north
+    // doorway — the same gap the real walk crosses — so the cheat cannot drift from the geometry it is
+    // pretending to have walked. Returns false (and moves nothing) at a berth with no interior to stand
+    // in, so the caller can say so instead of teleporting the captain into a berth that has no bar.
+    private bool StandAtTheBarThreshold()
+    {
+        if (_dockedHavenId is not { } id || !HavenInterior.HasInterior(id) || !_deckPlan.FollowCam)
+        {
+            return false;
+        }
+
+        (_avatarX, _avatarY, _avatarHeading) = HavenInterior.BarThreshold;
+        RefreshAshore();
+        // You are standing in a room, so show the room — the same two lines a shuttle arrival ashore
+        // sets (TakeShuttleTo). Booting ashore onto the Nav map would put the captain in the bar and the
+        // camera on the ecliptic, which is the sentence-versus-sim shape this project keeps paying for.
+        _deckMode = true;
+        _activeDesk = ShipDesk.Deck;
+        return true;
+    }
+
     // --- Ashore quests (M-Q1): the hooded stranger at the bar table ---
 
     // Walk up to a booth and press E. Which patron you're next to (from their console label) sets who
@@ -866,6 +957,14 @@ public partial class Map
         }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.ViewObject } spot)
         {
+            // #411 · the head office's two consoles show their own card again, so the beats a captain will
+            // want to look at twice can be looked at twice. Asked before the plaque path, which is about a
+            // dedication plate and has nothing to say about a room under the ice.
+            if (_surface is { } hqEx && TryHeadOfficeConsole(hqEx, spot.Label))
+            {
+                return;
+            }
+
             _viewObject = MaybeAppendPlaqueGratitude(spot); // #394: Ringside's plaque grows a line once saved
 
             // #411: reading the whole dedication plate that NAMES PROJEKTI KAAMOS (Ringside's, the one place
@@ -886,7 +985,9 @@ public partial class Map
                 _insurancePosterReads++;
                 if (_insurancePosterReads == 1)
                 {
-                    ShowPulseMessage("📋 “We Bring You Back Meaner.” Cheerful as ever. Your eye catches the grey line at the bottom, but you're already walking. (Read it closely — come back and look again.)");
+                    // The tell one beat early (#380's law), in the captain's own voice — it used to end on a
+                    // parenthesised instruction to the player. Copy in Core beside the fragment it leads to.
+                    ShowPulseMessage(Core.NebulaLore.PosterFirstReadLine);
                 }
                 else if (_insurancePosterReads >= 2)
                 {

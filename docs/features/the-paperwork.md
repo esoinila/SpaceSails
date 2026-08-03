@@ -209,6 +209,36 @@ Contradiction : (claimA, claimB) | (claim, worldFact) -> the line, and optionall
 4. **Arc hooks** — a fired contradiction may assemble a `KaamosSource`/`NebulaSource` fragment.
 5. **The third road on the report card** — file the fraud.
 
+## 7b. What the story pass found first (#533, 2026-08-02)
+
+Before any of the above is built, the papers a wreck *already* carries were walked cause by cause. Three
+things were wrong, and all three are the same shape: **a switch with no arm for a cause**, which does not
+error and does not look empty — it quietly borrows the fallback and reads as an ordinary ship.
+
+- **Her log said the opposite of her evidence.** `?wreck=ventedbyoneoftheirown&land=1` — the hull `?archive=1`
+  boots into. The cause station said *"the log runs on for months after that, in one immaculate hand, signing
+  forty names on and off watch"*; the bridge log, one room away, said *"The log ends 31 years ago. The last
+  entries are ordinary ship's business, and then there are no more."* The words the log should have spoken
+  already existed and were already Core-tested — `HullVenting.VentedShipLogLine`, the eleven months of watch
+  rotations signed by four people who were in vacuum when it was written — **read by nothing.** Three other
+  causes (ReactorCascade, HullBreach, Infested) were borrowing the same fallback and now have their own.
+- **Her evidence station had no name.** No arm in `CauseStation`, `CauseStationName` or the renderer's
+  `CauseLabel`, so she got the fallback point (0, 0) and a console labelled **THE WRECK**. The point turned
+  out to be the right one — her evidence is *"every door was thrown from the SPINE side"*, so the place to
+  read it is the corridor, looking fore and aft at every hatch dogged from your side — so it is declared now
+  rather than reached by accident, and it is called `🚪 THE HATCH DOGS — SPINE SIDE`.
+- **The decision card told the pirates they were never here.** The footing under her name read *"and nobody
+  has been aboard since"* on every hull in the fleet — including `?wreck=piracy`, whose manifest two rooms
+  away says *"whoever boarded her was in a hurry"* and whose evidence says the airlock was cycled from
+  OUTSIDE, and `?wreck=infested`, where something has been aboard the whole time. What is true of all ten is
+  that **nobody came back for her**.
+
+The log and manifest prose moved from a private switch in `Map.Wreck.cs` into `Derelict`, beside the evidence
+it has to agree with, and the renderer's second list of station names became `glyph + CauseStationName`. Both
+were two places holding one fact, and both had drifted. `TenHullsTenStoriesTests` and
+`EveryHullNamesItsOwnEvidenceTests` now walk **all ten causes** rather than asserting the three symptoms —
+the failure mode is a cause nobody wrote an arm for, and only walking all ten finds the eleventh.
+
 ## 8. Rules kept
 
 - **The station reports, it never concludes.** No page is ever labelled false by the game.

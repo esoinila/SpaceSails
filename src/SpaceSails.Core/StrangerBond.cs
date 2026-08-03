@@ -347,6 +347,29 @@ public static class StrangerBond
 
     private const int Resolution = 4096;
 
+    /// <summary>
+    /// #528 · THE ONE WARM PLATE IN A DREAD-HEAVY SET.
+    ///
+    /// <para>Nearly every card this lane has painted is somebody's worst day: a hull that died, a room where
+    /// the things stand up, a wallet on a floor. This is the beat where the shudder stops and a stranger
+    /// who has no reason to puts two glasses on the counter — the hero beat of the whole bond system — and
+    /// it was a toast. A game that only ever hands out a picture for the bad news teaches the player that a
+    /// picture IS bad news, which is a tell of a different kind.</para>
+    ///
+    /// <para>Raised only on <see cref="Bond.Drink"/>, the outcome that actually MADE something (the same
+    /// gate the "How you met" memory rides). A shared word or a notch of warmth is a passing grace and
+    /// stays passing — over-carding cheapens the ones that are not.</para>
+    ///
+    /// <para>Evidence, as always: two glasses, two pairs of hands, and liquid that has not finished moving.
+    /// Nobody's face, and not one word about what the alarm was for.</para>
+    /// </summary>
+    public static readonly RevealPlate CognacPlate = new(
+        "TWO GLASSES, AND THE SHUDDER STOPS",
+        "art/bond-cognac.jpg",
+        "Two tumblers land on the counter and the spirit in them is still rocking from whatever the rock "
+        + "just did. One pair of hands is yours. The other belongs to somebody who had no particular reason "
+        + "to stay in the room, and stayed in the room.");
+
     // A uniform [0,1) sample off the ONE shared DiceRule, salted by the purpose tag so the gate, outcome,
     // line and pick streams are independent — platform-stable and replayable (no System.Random, no clock).
     private static double Fraction(ulong seed, string tag)

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -157,6 +157,15 @@ public partial class Map
         _monolithSeen = false;
         _insurance = PirateInsurance.Uninsured;
 
+        // #563 · The once-per-captain teaching cards. This method's contract is that it is "the exact
+        // inverse of BuildVault (so a new game equals a blank vault)", and _groundLessonSeen was quietly
+        // missing from it — a new captain in the same session inherited "already taught" from the previous
+        // one and silently never got the first-ground card. Both bits reset here now.
+        _groundLessonSeen = false;
+        _groundGrewSeen = false;
+        _tubeRearmSeen = false;
+        _airCardSeen = false;
+
         // The mission/contract slate and every relationship, wiped: a new universe owes nobody and knows
         // nobody (owner: mission statuses reset with the new game). New quest ids mint from zero again.
         _quests.Clear();
@@ -168,12 +177,27 @@ public partial class Map
         _caches.Clear();
         _overheard = [];
 
-        // #411: a new voyage is a new universe — the KAAMOS shards this captain gathered are unknown again.
+        // #411: a new voyage is a new universe — the KAAMOS shards this captain gathered are unknown again,
+        // and so is the head office: a captain who has never been under the ice has never counted the beds,
+        // and must be able to pay for it (the arc's 40) exactly once more.
         _kaamos.Clear();
+        _headOfficeBeatsSeen.Clear();
 
         // #422/#425: likewise the NEBULA shards, and the oracle's per-visit reading state — a fresh universe
         // has never leaned on Static's corner.
         _nebula.Clear();
+
+        // #422 story pass · the two run-scoped counters arc 2 gates its beats on, which this method (whose
+        // contract is "the exact inverse of BuildVault", the #563 lesson) was quietly not resetting. Both
+        // leaked across a New voyage started without a page reload, and both then LIED on the card:
+        //   · _rebirthsSeen fed the clinic-ledger gate, so a captain's FIRST death in a brand-new universe
+        //     could be handed "Someone under your number has woken here before, more than once" — the shard
+        //     whose whole fiction is that you have been here before. (Its durable partner, the thread's own
+        //     retired-captain count, is correct and stays.)
+        //   · _insurancePosterReads is what makes `fine-print` "the fine print, read TWICE"; carried over, a
+        //     fresh captain's very first look at a poster read the small print they had never read.
+        _rebirthsSeen = 0;
+        _insurancePosterReads = 0;
         _oracleStation = null;
         _oracleOpen = false;
         _oracleLine = null;
@@ -370,9 +394,20 @@ public partial class Map
                 RingsideSaved = _ringsideSaved,
                 SecretLabsFound = [.. _secretLabsFound],
                 GroundLessonSeen = _groundLessonSeen, // #440: the first-ground card greets a captain once, ever
+                GroundGrewSeen = _groundGrewSeen,     // #563: so does the map-just-grew card
+                TubeRearmSeen = _tubeRearmSeen,       // #562: and the tube-feeds-you card
+                AirCardSeen = _airCardSeen,           // #573: and the tank-is-low card
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
+            // #587 · the field book: what was found on the ground, kept so it can be re-read.
+            FieldNotes = _fieldNotes.Count > 0 ? new FieldNotesSection { Notes = _fieldNotes } : null,
+            // #603 · the satchel — everything carried on foot, durable because a thing found eleven floors
+            // under a moon has to still be in the pocket a month and a world later. Opaque item strings, so
+            // the save carries the FACT and never the words.
+            Satchel = _satchel.Count > 0
+                ? new SatchelSection { Items = [.. _satchel.Select(i => i.Stored)] }
+                : null,
             Kaamos = VaultMapper.ToSection(_kaamos), // #411: the assembled ice-moon shards, per game-thread
             Nebula = VaultMapper.ToSection(_nebula), // #422/#425: the assembled Nebula-Mutual shards (oracle-leaked)
             Resume = BuildResumeSection(),
@@ -814,6 +849,13 @@ public partial class Map
         // someone who has already walked a moon (a pre-#440 save defaults false — they get it once, next
         // trip down, and never again).
         _groundLessonSeen = vault.Progress?.GroundLessonSeen ?? _groundLessonSeen;
+        // #563: same for the map-just-grew card — a captain who has already forced a door open is not told
+        // again what forcing one does (a pre-#563 save defaults false: they get it once, on their next).
+        _groundGrewSeen = vault.Progress?.GroundGrewSeen ?? _groundGrewSeen;
+        // #562: same for the tube-feeds-you card — a captain who has already been racked in the tube is not
+        // taught the supply line again (a pre-#562 save defaults false: they get it once, on their next).
+        _tubeRearmSeen = vault.Progress?.TubeRearmSeen ?? _tubeRearmSeen;
+        _airCardSeen = vault.Progress?.AirCardSeen ?? _airCardSeen;   // #573
         // #409: restore the secret labs this thread has found, so a known body's hidden door stays revealed
         // on every future landing (a pre-#409 save simply lacks the field — an empty set, harmless).
         if (vault.Progress?.SecretLabsFound is { } found)
@@ -838,8 +880,43 @@ public partial class Map
         // The "overheard at the bar" book (owner 2026-07-18): the tips/rumors a player was handed are
         // durable and revisitable — they survive the reload rather than living-and-vanishing in a toast.
         _overheard = vault.Overheard is { } book ? [.. book.Lines] : [];
+        _fieldNotes = vault.FieldNotes is { } field ? [.. field.Notes] : [];   // #587
+
+        // #603 · The satchel. Unreadable entries from an edited or future save are dropped rather than
+        // thrown over — the vault is tolerant everywhere else and a mystery object is not worth a lost game.
+        _satchel = [];
+        foreach (string stored in vault.Satchel?.Items ?? [])
+        {
+            if (Core.Satchel.Item.TryParse(stored, out Core.Satchel.Item item))
+            {
+                _satchel = [.. Core.Satchel.Add(_satchel, item)];
+            }
+        }
+
+        // #590 → #603 MIGRATION. An older save carries its cards in their own section and knows nothing
+        // about a satchel. They are read in rather than dropped: a captain who earned an authority eleven
+        // floors down must not lose it to a refactor, and this costs one loop that does nothing forever
+        // after the first load.
+        foreach (string id in vault.Authorities?.Cards ?? [])
+        {
+            if (UndergroundComplex.AuthorityCard.TryParse(id, out _))
+            {
+                _satchel = [.. Core.Satchel.Add(_satchel,
+                    new Core.Satchel.Item(Core.Satchel.Kind.Authority, id))];
+            }
+        }
 
         ApplyResumeBerth(vault.Resume, vault.SavedSimTime);
+
+        // #223 · THE WATCH RESUMES WITH THE HOARD. The discovery roll's bookmark rides the vault now
+        // (CacheLedger.LastCheckedPeriod, applied above) — but a save written before it did carries
+        // WatchNotStarted, and a watch that never starts is a hoard nothing can ever take. Seed it HERE,
+        // after ApplyResumeBerth has set SimTime, so an old voyage picks the watch back up at the clock
+        // the captain woke at rather than resolving every day since the epoch in one pass.
+        if (_caches.Caches.Any(c => c.PlayerOwned))
+        {
+            SeedDiscoveryWatch();
+        }
 
         // Loading a saved game shows NONE of the tutorial promotions (owner, 2026-07-18) — set last so
         // even the no-berth ApplyStart("earth") fallback above can't leave the greeting raised.

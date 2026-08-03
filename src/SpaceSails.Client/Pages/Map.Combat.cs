@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -1810,9 +1810,22 @@ public partial class Map
 
         _lastAnnouncedHeat = _heat.Level;
 
+        // #580 · NOBODY IS AT THE CONTROLS. While the captain is walking a moon, the ship is a docked hull
+        // with the lights on and no one aboard — so the wolves hold station instead of closing, and cannot
+        // catch her. See EncounterRule.HoldStation for the owner's ruling; the short of it is that heat is
+        // the CAPTAIN's, and a game where a good long excursion means coming home to a boarding party is a
+        // game about guarding a parking lot.
+        bool captainIsAboard = _surface is null;
+
         for (int i = _hunters.Count - 1; i >= 0; i--)
         {
             HunterState hunter = _hunters[i];
+            if (!captainIsAboard)
+            {
+                _hunters[i] = EncounterRule.HoldStation(hunter, SimTime);
+                continue;
+            }
+
             while (hunter.State.SimTime < SimTime && !hunter.CaughtPlayer && !hunter.BrokenOff)
             {
                 double stepTime = Math.Min(SimTime, hunter.State.SimTime + EncounterRule.HunterStepSeconds);
@@ -1940,8 +1953,17 @@ public partial class Map
     /// <param name="nerveRanOut">True when the NERVE overdrew (the gauge hit the floor with a qualifying
     /// hit); false when the FIVE BLOWS ran out and the captain was simply mauled. Drives the freeze-frame
     /// caption — see <see cref="DeathNarration.SurfaceCaption"/>.</param>
-    private void TriggerSurfaceOverdrawDeath(SurfaceExcursion dying, bool nerveRanOut,
-                                             DeathCause? forcedCause = null)
+    /// <param name="known">#564 · A cause the caller already KNOWS, passed instead of rolled. The roll
+    /// below only knows the ground's two answers (the Old Ones took you, or you joined them), so anything
+    /// that kills a captain for another reason — running the tank dry — would have been narrated as a
+    /// Reever's hand. That is the same sim-says-one-thing-sentence-says-another failure #545 fixed for the
+    /// black-ops sweep, and the fix is the same: the caller passes what it knows.
+    ///
+    /// <para>#633 · Both branches invented this parameter independently, for the same reason, one day apart
+    /// — <c>known</c> here and <c>forcedCause</c> on <c>main</c> (#538's sweep team). One name survives, and
+    /// it is this one: nothing is being FORCED, the caller simply is not guessing.</para></param>
+    private void TriggerSurfaceOverdrawDeath(
+        SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null)
     {
         if (_busted is not null)
         {
@@ -1954,11 +1976,34 @@ public partial class Map
         string body = dying.Stop.Body.Name;
         ulong seed = DiceRule.Seed("overdraw", (long)SimTime);
         // #538 · WHO ACTUALLY KILLED YOU. SurfaceEnd only ever answers "the pack, or the rare Joined at a
-        // sliver" — which was fine while the pack was the only thing aboard that could end a captain. The first
-        // playtest of the sweep team ended with three men with rifles shooting a captain in a corridor and a card
-        // that said "the Old Ones took you… ran you down on her regolith short of the tube". A caller that KNOWS
-        // the cause now says so, and the roll is only consulted when nobody does.
-        DeathCause cause = forcedCause ?? DeathNarration.SurfaceEnd(_nerve, seed);
+        // sliver" — which was fine while the pack was the only thing aboard that could end a captain. The
+        // first playtest of the sweep team ended with three men with rifles shooting a captain in a corridor
+        // and a card that said "the Old Ones took you… ran you down on her regolith short of the tube". A
+        // caller that KNOWS the cause now says so, and the roll is only consulted when nobody does.
+        DeathCause cause = known ?? DeathNarration.SurfaceEnd(_nerve, seed); // Reevers, or the rare Joined at a sliver
+
+        // #574 · A death away from her deck can never be a COLLECTOR — a collector is a person who came for
+        // you, and there is nobody aboard a dead hull or out on an empty moon. Owner: "the debt collector
+        // deaths should also only happen in those situations never in any other". Coerced rather than
+        // trusted, because this method has four callers and will have more.
+        // #609 · AND UNDER A MOON IS ITS OWN PLACE. Owner, having suffocated on B2 and been handed the
+        // surface card: "now we have the suffocated on surface one :-D"
+        //
+        // He was 150 m down in a poured corridor being told about regolith, a suit and the long walk back to
+        // the tube. Nothing here knew "underground" existed, so every death in the Hive fell through to the
+        // away team's — the sim knowing one thing and the sentence reporting another, which is the named bug
+        // class on this ground and the third card it has cost.
+        //
+        // The floor is the fact, and it is right here on the excursion. It just was not being asked.
+        DeathPlace place = dying.Floor < 0
+            ? DeathPlace.Underground
+            : Derelict.TryParseWreckId(dying.Stop.Body.Id, out _)
+                ? DeathPlace.Derelict
+                : DeathPlace.LandingParty;
+        if (!DeathNarration.CanHappen(cause, place))
+        {
+            cause = DeathCause.Reevers;
+        }
 
         _busted = new BustedEncounter
         {
@@ -1969,6 +2014,9 @@ public partial class Map
             Bribe = default,             // unused on a surface death (no bribe to your own nerves)
             Phase = BustedEncounter.Stage.SurfaceEnd,
             Cause = cause,
+            // #574: a salvage run and an away team are not the same death. Derelict ids parse; a moon does
+            // not — so the excursion itself says which world's words the card should use.
+            Place = place,
             NerveRanOut = nerveRanOut,
             DeathBodyName = body,
         };
@@ -1977,8 +2025,13 @@ public partial class Map
         RendererInterop.PlayCue("gameover");
         string line = cause switch
         {
+            DeathCause.Suffocated => DeathNarration.SuffocationHeadline(body),
             DeathCause.Joined =>
                 $"🧠 Nerves gone past empty on {body} — the captain turns, and walks TOWARD the crowd. The insurance will need a new name.",
+            // #525 · The one they chose. The pulse must not say an Old One's hand was the last straw over a
+            // captain who turned both keys themselves ninety seconds ago.
+            DeathCause.Scuttled =>
+                $"☢ The overload ran out with the captain still aboard the {body}. She goes all at once and mostly inward. The insurance will need a new name.",
             // Nothing about this one is about nerve, so it must not narrate as if it were.
             DeathCause.Inspected =>
                 $"🕶 Found aboard {body}, told to stand still, and not standing still. The sweep goes on down the corridor. The insurance will need a new name.",
@@ -1990,6 +2043,103 @@ public partial class Map
         _shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"CAPTAIN LOST — {body}", SimTime);
         SquawkNow(Parrot.Squawk.Impact, _lastTimestampMs ?? 0, body, force: true);
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// #621 dev cheat · <c>/map?death=&lt;cause&gt;</c> — land first (if the URL asked to), THEN die.
+    ///
+    /// <para><see cref="AutoLandForCheatAsync"/> is fire-and-forget with several early returns, so the death
+    /// cannot simply be queued after it in the boot block: it would fire while the shuttle was still coming
+    /// down and the excursion's floor and body id — the two facts the place classifier reads — would not
+    /// exist yet. Awaited here instead, in the one place that knows the landing is over.</para>
+    /// </summary>
+    private async Task AutoLandThenStageDeathAsync(DeathCause? cause)
+    {
+        await AutoLandForCheatAsync();
+        if (cause is { } asked)
+        {
+            StageDeathCheat(asked);
+        }
+    }
+
+    /// <summary>
+    /// #621 dev cheat · KILL THE CAPTAIN NOW, through the real machinery.
+    ///
+    /// <para>Nothing here builds a card. It calls the same three triggers the game calls
+    /// (<see cref="TriggerSurfaceOverdrawDeath"/>, <see cref="TriggerImpact"/>, <see cref="ApplyHunterCatch"/>)
+    /// with the same arguments the sim would have handed them, so every downstream fact — the seeded line,
+    /// the place classification, the art, the tail, the succession, the clinic bill, the rebirth glitch — is
+    /// computed exactly as it is in play. A cheat that painted its own death card would prove that the cheat
+    /// works and nothing else, which is the failure this project has named: a green test that asserts
+    /// nothing, dressed as a quick start.</para>
+    ///
+    /// <para>Two arguments are read from the LIVE state rather than invented, for the same reason:
+    /// <c>nerveRanOut</c> comes from <see cref="CaptainSuccession.OverdrawQualifies"/> on the real gauge
+    /// (so a full-nerve captain gets the mauled caption and a shattered one gets the overdraw caption,
+    /// truthfully), and the place is never passed at all — the excursion decides it.</para>
+    /// </summary>
+    private void StageDeathCheat(DeathCause cause)
+    {
+        string asked = cause.ToString().ToLowerInvariant();
+        if (_busted is not null)
+        {
+            return; // already mid-reckoning — one death at a time, the same rule the triggers keep
+        }
+
+        // AWAY FROM HER DECK. One call, and the excursion answers WHERE by itself.
+        if (_surface is { } ex)
+        {
+            TriggerSurfaceOverdrawDeath(
+                ex, nerveRanOut: CaptainSuccession.OverdrawQualifies(_nerve), known: cause);
+
+            // Say so when the law refused the cause — read back off the staged encounter rather than
+            // re-deriving it, so the message can never disagree with the card behind it.
+            if (_busted is { } staged && staged.Cause != cause)
+            {
+                ShowPulseMessage(
+                    $"🧪 DEV ?death={asked}: a {asked} death cannot happen on a {staged.Place} "
+                    + $"(DeathNarration.CanHappen) — the law substituted {staged.Cause}.");
+            }
+            return;
+        }
+
+        switch (cause)
+        {
+            case DeathCause.Impact:
+                // The surface collected the ship. The crossing is synthesised at the ship's own position on
+                // the nearest body, which is what SurfaceImpact would have handed over one tick later.
+                UpdateNearestBody();
+                if (_nearestBody is not { } rock)
+                {
+                    ShowPulseMessage("🧪 DEV ?death=impact: no body charted yet to fly into.");
+                    return;
+                }
+                TriggerImpact(new SurfaceImpact.Crossing(rock.Id, rock.Name, 1.0, SimTime, _ship.Position));
+                return;
+
+            case DeathCause.Collector:
+                // Not the freeze-frame — the CATCH, which is where a collector death actually begins. You
+                // get the demand card and have to lose your way through SUBMIT / BRIBE / RESIST → THE
+                // BOLIVIA to reach it, because that ladder is the thing worth playing and reading.
+                _heat = EncounterRule.RaiseHeat(_heat, 2, SimTime);
+                SpawnHunterForHeatEvent();
+                if (_hunters.Count == 0)
+                {
+                    ShowPulseMessage(
+                        "🧪 DEV ?death=collector: nothing policed within reach of this berth to send muscle "
+                        + "from — try &dock=selene-gate or &dock=ringside.");
+                    return;
+                }
+                ApplyHunterCatch(_hunters[^1]);
+                return;
+
+            default:
+                // Reevers / Joined / Suffocated need somebody out of the ship; Void has no lane at all yet.
+                ShowPulseMessage(
+                    $"🧪 DEV ?death={asked}: not a death that happens on her deck. Add &land=1 (the ground), "
+                    + "&wreck=1&land=1 (a derelict) or &secretlab=1&land=1&floor=2 (the Hive).");
+                return;
+        }
     }
 
     // The dice helpers a resist/Bolivia roll carries — the purchasable-modifier seam. One example is
@@ -2240,6 +2390,7 @@ public partial class Map
         _heat = HeatState.None;
         _lastAnnouncedHeat = 0;
         b.ClinicBillCr = outcome.ClinicBillCr;
+        b.StakeCr = kit.Credits;   // #621: the receipt reads the kit that paid, not a constant beside it
         b.HullDescription = outcome.HullDescription;
 
         // Wake at the nearest haven's clinic: reset the ship state onto that haven, riding its rails.
@@ -2442,6 +2593,13 @@ public partial class Map
         public string? ResultMessage { get; set; }
         public string? ClinicName { get; set; }
         public int ClinicBillCr { get; set; }
+
+        /// <summary>#621 · What the policy actually PAID — read off the rebirth outcome's own kit, not
+        /// re-quoted from <see cref="BustedRule.InsuranceCredits"/> in the markup. The receipt was printing
+        /// the uninsured constant while the purse was set from the kit; the day a policy tier hands a
+        /// different stake the card would have gone on stating the old number with complete confidence, and
+        /// two places computing one fact is the bug even while they agree.</summary>
+        public int StakeCr { get; set; }
         public string? HullDescription { get; set; }
         public string? ImpactBodyName { get; set; } // #264: the body that collected the ship
 
@@ -2456,6 +2614,11 @@ public partial class Map
         // place-dependently (cause art + a seeded house-voice line) before the brain-backup copy. Defaults to
         // the collector (the BUSTED last stand); the impact path sets Impact. Surface causes are wired ready.
         public DeathCause Cause { get; set; } = DeathCause.Collector;
+
+        /// <summary>#574 · WHERE it happened — her own deck, somebody else's hull, or a suit on a surface.
+        /// The card reads the same cause differently depending on this, because a derelict has no regolith
+        /// to be run down on and an away team is not standing on a deck.</summary>
+        public DeathPlace Place { get; set; } = DeathPlace.OwnShip;
         // Which meter actually ran out (#480 follow-up): true = the nerve overdrew, false = the five blows
         // landed. Before #469 was fixed nerve was effectively the ONLY way to die out there, so the card
         // hardcoded the nerve line; now that the condition marker really decides, the caption must not

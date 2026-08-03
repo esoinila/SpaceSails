@@ -92,6 +92,79 @@ distract from it.*
 - Nobody agrees who built the monolith; everybody agrees the anchor bolts for the cable went
   in suspiciously easily.
 
+## 8. The monolith is one object, and it is enormous (owner ruling, 2026-08-03)
+
+*Settles #649 ("which moon is THE MONOLITH on?") on the fiction side. Recorded verbatim in
+intent so it cannot be lost; the code decision follows from it.*
+
+- **Unique.** There is **one** monolith. Not a class of object, not a kind of landmark that a
+  generator can roll twice. If two grounds both call something "the monolith", one of them is
+  wrong and has to be renamed — the word is reserved.
+- **Bigger.** The owner's note is about *scale*: the real Phobos slab's dimensions were huge,
+  and the game has been under-selling it. It must **show its size** on screen — you should
+  read it as large from a long way off, and it should keep getting larger as you walk, the way
+  only genuinely big things do.
+- **Not in a boxed backyard.** It must not sit in a fenced little plot with the rest of the
+  set dressing around it. Whatever ground carries it has to be open enough that the object is
+  the horizon, not a prop in a room. A monolith you can pace out in ten steps of decking is
+  not the monolith.
+- **Not built by us.** Nothing about it may read as human manufacture — no seams that look
+  like a fab, no scale that flatters a shipyard, no explanatory plate. The correct player
+  reaction is *nobody I know could have put that there*.
+
+**Shipped (#649, PR 1).** `Monolith.BodyId` is `phobos`, read from `Landmarks.MonolithBodyId` so the
+map cards and the drawn slab cannot name two moons again. Phobos's ground is authored — "THE STICKNEY
+RIM" — with no maze and no ruin field between the landing band and the object. Miranda keeps its canon
+maze, byte-for-byte, and its centre is **the false slab**: quarried, mortared, weathering, a different
+class of object that never borrows the word. The swept apron, which used to be drawn on every ground in
+the game, is now asked for by the thing it is swept around. Details: `features/the-landing-site.md` §10.
+
+**Shipped (#649, PR 2 — the scale).** `SurfaceScale` states what a deck unit is (0.7 m, anchored on the
+captain's own width) and every dimension of the monolith is derived from the one canon number the game
+already held: 85 m. Proportions 1 : 4 : 9, never stated in the game; footprint 54 × 13.5 du against a
+64 × 28 du frame; a shadow ~370 du long — longer than the field is deep — running up to the landing band,
+which is how a top-down plan says *tall*; drawn as the only unbroken filled mass on any moon, because its
+own card says *no seam*. Sight range and the arrival beat are both functions of its height now, not typed
+constants. Details: `features/the-landing-site.md` §10.4b.
+
+### The monolith site is a strange-things-happen place
+
+- The mood the owner asked for, in his own reference: **Babylon 5** — Sheridan and the giants
+  on the playground; **"background puppeteers watching if their kids perform in the school
+  play."** You are being *watched by something that has a stake in you and will not say so*.
+- **Awesome and a little scary. Lovecraftian.** Not a jump scare and not a monster —
+  the dread of scale and of attention. The nerve system already prices the sight
+  (`NerveModel.MonolithSightShock`, the single biggest fright in a captain's life, fires once);
+  the *place* should earn that number rather than the number carrying the place alone.
+- **Per standing canon it is NEVER explained and NEVER confirmed.** No card states what it is,
+  no sensor returns a reading that settles it, no NPC knows. Anything that happens near it is
+  reported by the world in a way that stays deniable. This is the same law that governs the
+  Reever origin: the inference is the horror, and confirming it kills it.
+
+**Shipped (#649, PR 3 — the watch).** `MonolithWatch`: three gates (the monolith's own ground and inside
+its sight; about one visit-window in three, on the foot-offerings' slow clock; forty seconds of standing
+still, once per excursion). Six variants, every one a fact about the *world* and not a thing that could be
+met — the shadows disagreeing with the slab's, your own prints ahead of you, the pack going still and
+facing the stone, a tide in the dust, one tracker contact too many, the light dipping with nothing crossing
+the sun. **It costs nothing**: the place is already priced at 24, and a site that bills you for standing in
+it is a predator whatever the prose says. Not a card and not a plate — a frame around a thing says THIS IS
+A THING. Cheat `?watchers=1`. Details: `features/the-landing-site.md` §10.4c.
+
+## 9. KAAMOS is the head office (owner ruling, 2026-08-03)
+
+*Bears on #411 (the KAAMOS plotline) and #635 (KAAMOS has no front door). Destination design,
+not route design.*
+
+- **The KAAMOS destination is the HEAD of the organization.** Not another outpost, not a
+  bigger version of a wintering camp: the place everything else answers to.
+- **"As fancy as the secret labs."** The secret labs set the bar for how a serious facility
+  presents itself; the head office has to clear it, visibly, on first sight.
+- **The Hive facilities are branch offices.** Everything the player has learned to read
+  underground — sealed `SECTOR n · 2.4 km` doors, authority cards that open exactly one band,
+  the department plates by the lift car, the band nobody listed — is *branch-office* grammar.
+  **HQ outclasses them**, and it should outclass them in the same vocabulary, so a player who
+  has crawled a Hive recognises the rank difference without being told it.
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |

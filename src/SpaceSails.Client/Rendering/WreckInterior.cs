@@ -46,6 +46,11 @@ public static class WreckInterior
     /// side, air on the other. These read Δp and offer the equalisation valve.</param>
     /// <param name="blockedDoors">Compartments the captain cannot walk into: held by pressure OR dogged
     /// shut by hand. A superset of <paramref name="heldDoors"/>.</param>
+    /// <param name="archiveAboard">This hull is carrying a cold-archive node (<see cref="ArchiveNode.IsAboard"/>).
+    /// Dresses the deep hold with the column and its handle. The CALLER decides — the deck never rolls.</param>
+    /// <param name="archivePurged">The handle has been pulled. The column stays exactly where it was and
+    /// stays exactly as inert as every other dead thing on this ship: nothing is removed from the deck,
+    /// because a purge is not a tidy-up. Only the labels change, and only to stop promising.</param>
     public static DeckPlan WreckDeck(
         in Derelict.Wreck wreck,
         System.Collections.Generic.IReadOnlySet<string> examined,
@@ -53,7 +58,9 @@ public static class WreckInterior
         int droidCount,
         System.Action<double, DeckPlan.Droid[]> fillDroids,
         System.Collections.Generic.IReadOnlySet<string>? heldDoors = null,
-        System.Collections.Generic.IReadOnlySet<string>? blockedDoors = null)
+        System.Collections.Generic.IReadOnlySet<string>? blockedDoors = null,
+        bool archiveAboard = false,
+        bool archivePurged = false)
     {
         System.ArgumentNullException.ThrowIfNull(fillDroids);
         examined ??= new System.Collections.Generic.HashSet<string>();
@@ -204,6 +211,32 @@ public static class WreckInterior
             (float)WreckLayout.PlacardStation.X, (float)WreckLayout.PlacardStation.Y,
             $"🪧 ATMOSPHERE CONTROL → {HullVenting.ValveCompartment}"));
 
+        // ── The one warm thing aboard ─────────────────────────────────────────────────────────────────
+        // Not a fitting and not evidence: freight nobody invoiced, strapped down in the deep hold. Two
+        // controls on one housing — the column you go and look at, and the handle with the honest legend
+        // stencilled on it. The legend is DRAWN ON THE DECK rather than hidden behind a press, because the
+        // whole joke needs the captain to have read it before they decide anything (and, per §9, the game
+        // never restates it and never puts an "are you sure?" in front of it).
+        if (archiveAboard)
+        {
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ArchiveNode,
+                (float)WreckLayout.ArchiveStation.X, (float)WreckLayout.ArchiveStation.Y,
+                archivePurged ? "❄ THE COLUMN — cold" : "❄ THE COLUMN IN THE HOLD"));
+
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ArchiveSwitch,
+                (float)WreckLayout.ArchiveSwitchStation.X, (float)WreckLayout.ArchiveSwitchStation.Y,
+                archivePurged ? "⏻ PURGE NODE — pulled" : "⏻ " + ArchiveNode.SwitchLegend));
+
+            // And the thing you can read from the doorway, the way the cradles are counted from the
+            // doorway: on every other hull in the game nothing has power. Here one object does.
+            labels.Add((
+                (float)WreckLayout.ArchiveStation.X,
+                (float)WreckLayout.ArchiveStation.Y + 1.4f,
+                archivePurged ? "NEBULA MUTUAL · SUBSTRATE SPAR" : "NEBULA MUTUAL · SUBSTRATE SPAR · ⚡"));
+        }
+
         // ── The decision ──────────────────────────────────────────────────────────────────────────────
         // Amidships in the near hold, where the cargo actually is. You cannot decide what to do with her
         // from the bridge — you have to go and look at what she was carrying.
@@ -250,18 +283,31 @@ public static class WreckInterior
         ];
     }
 
-    private static string CauseLabel(Derelict.WreckCause cause) => cause switch
+    /// <summary>What the cause's own console is called. The WORDS come from Core — the same string the
+    /// reachability audit fails with — and only the glyph is the client's.
+    ///
+    /// <para>It was a second, complete list of names typed here, which is the house law's own example: two
+    /// places holding one fact is the bug even while they agree. They did not agree. Neither list had an arm
+    /// for <see cref="Derelict.WreckCause.VentedByOneOfTheirOwn"/>, so the hull <c>?archive=1</c> boots into
+    /// stood a console in the middle of her corridor labelled <b>THE WRECK</b>, and the audit's failure
+    /// message for it read "the wreck".</para></summary>
+    public static string CauseLabel(Derelict.WreckCause cause) =>
+        CauseGlyph(cause) + " " + WreckLayout.CauseStationName(cause).ToUpperInvariant();
+
+    private static string CauseGlyph(Derelict.WreckCause cause) => cause switch
     {
-        Derelict.WreckCause.ReactorCascade => "☢ THE REACTOR SPACES",
-        Derelict.WreckCause.DriveFailure => "🔧 THE DRIVE BELLS",
-        Derelict.WreckCause.HullBreach => "🕳 THE HOLE THROUGH HER",
-        Derelict.WreckCause.LifeSupportFailure => "🌬 THE SCRUBBER STACKS",
-        Derelict.WreckCause.NavigationalError => "🧭 THE NAV POST",
-        Derelict.WreckCause.Mutiny => "🔒 THE ARMS LOCKER",
-        Derelict.WreckCause.Piracy => "📦 THE STRIPPED HOLD",
-        Derelict.WreckCause.Infested => "🕷 THE NEST IN THE DEEP HOLD",
-        Derelict.WreckCause.InsuranceJob => "🚀 THE LIFEBOAT CRADLES",
-        _ => "THE WRECK",
+        Derelict.WreckCause.ReactorCascade => "☢",
+        Derelict.WreckCause.DriveFailure => "🔧",
+        Derelict.WreckCause.HullBreach => "🕳",
+        Derelict.WreckCause.LifeSupportFailure => "🌬",
+        Derelict.WreckCause.NavigationalError => "🧭",
+        Derelict.WreckCause.Mutiny => "🔒",
+        Derelict.WreckCause.Piracy => "📦",
+        Derelict.WreckCause.Infested => "🕷",
+        Derelict.WreckCause.InsuranceJob => "🚀",
+        // Her damage is not structural at all: it is which side of every hatch the dogs are on.
+        Derelict.WreckCause.VentedByOneOfTheirOwn => "🚪",
+        _ => "🛰",
     };
 
     /// <summary>Which compartment a point stands in — the header line the HUD reads.</summary>

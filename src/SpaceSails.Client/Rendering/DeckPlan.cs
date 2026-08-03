@@ -19,9 +19,61 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class DeckPlan
 {
-    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves, ShipScuttle, LabDoor, LabDoorBoard, LabAlarm, LabKeyCard }
+    public enum ConsoleKind { None, Helm, NavPost, Scope, Vent, Cargo, Shuttle, Cantina, CommsSeat, TacticalSeat, TradeSeat, Head, Airlock, BarPatron, Hatch, ViewObject, Stash, ShuttleAirlock, Barkeep, DigSite, SurfaceAirlock, ShelterDoor, Kiosk, MedKit, Bunk, SealedDoor, DiscoveryCache, DrillPoint, SecretDoor, LabCache, LabConsole, SelfieSpot, WreckEvidence, WreckSalvage, WreckValves, WreckBridgePanel, WreckPressureDoor, WreckScuttle, WreckPlacard, ShipDoor, ShipValves,
+        // #563 · The outpost hut: its dogged hatch (force it, the room appends), the ammunition locker
+        // inside, and whoever's effects are still on the floor.
+        OutpostDoor, OutpostCache, OutpostEffects,
+        // #573 · The deep shelter's charging rack — the only place outside her tube that refills a suit.
+        ShelterTank, ShelterLocker, RuinSalvage,
+        // #586 · Whatever somebody left at the foot of the monolith this visit-window.
+        MonolithFoot,
+        // #585 · THE HIVE: the lift car, a room to search, a door that never opens, and the
+        // camouflaged lift head that is the only part of the whole facility above ground.
+        HiveLift, HiveHaul, HiveSign, HiveHead,
+        // #608 · The pressure refuge's rack. Its OWN kind rather than a re-used ShelterTank, because the two
+        // buildings share the air law and nothing else: the surface rack sits beside an ammunition press in
+        // a regolith drum that a whole site has several of, and this is a poured room a safety inspectorate
+        // made somebody build, one per dead floor, with nothing in it but air. One kind per verb.
+        HiveRefuge,
+        // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
+        // handle stencilled on its housing. TWO kinds for one object, because they are two different
+        // decisions — looking costs a throw, and pulling must stay possible without one.
+        ArchiveNode, ArchiveSwitch,
+        // #633 · …and `main`'s five, appended rather than merged into the run above, so the reunification is
+        // legible in the list itself. HER OWN SCUTTLING CHARGES (the derelicts have carried a panel since
+        // #488; a ship is a ship), and #538's lab security: the door, the board that governs it, the alarm
+        // and the key card that answers to it.
+        ShipScuttle, LabDoor, LabDoorBoard, LabAlarm, LabKeyCard }
 
-    public readonly record struct Wall(float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull);
+    /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
+    /// the readable boundary of a made thing; anything else draws as a dimmer inner line.
+    ///
+    /// <para>#563 · <paramref name="Unseen"/> is a wall the eye NEVER sees: it collides exactly like every
+    /// other wall, but nothing is drawn for it. Owner, 2026-07-31: <i>"The space ships come with outside
+    /// borders but the landing site out-doors should not... at least not obviously so with square area"</i>,
+    /// and <i>"if our space has limits for some technical reasons then let's not advertise it, more like
+    /// hide that fact."</i> A hull IS a real boundary and drawing it as one is right — that treatment stays
+    /// on ships. The open regolith has no such object, so the field's envelope must not borrow the ship's
+    /// ink. An airless moon has no atmosphere to scatter light: ground the lamp never reaches is simply
+    /// black, and the field does not END so much as stop being visible.</para>
+    ///
+    /// <para>The deeper reason to hide it (owner, same session): <i>"the reevers and supply line are kind
+    /// of the invisible tether to players distance"</i>. The real edge of a landing site is the point where
+    /// the magazine and the pack behind you say turn around — the #453 law that how deep you dare go is
+    /// priced by sentries and nerve, NOT by geometry. A drawn rectangle competes with that tether and wins,
+    /// announcing the wrong limit before the honest one can be felt.</para></summary>
+    /// <param name="IsStone">#563 · Solid mass that is NOT a made pressure boundary — a monolith, a
+    /// plinth, a mass-driver muzzle, an ancient spur. It draws heavy like hull, because it IS solid, but in
+    /// rock rather than metal.
+    ///
+    /// <para>Owner's complaint was that a landing site looks artificial, and removing the rim fence only got
+    /// half of it: the body's own geography flags its solid objects with <c>IsHull</c>, and on Miranda's
+    /// Ridge Camp that is 16 of 25 segments drawn in the ship's cold pressure-hull stroke. The flag was
+    /// never wrong — a monolith IS solid and a fallen span is not — it was the INK that was wrong. Same
+    /// distinction, different material.</para></param>
+    public readonly record struct Wall(
+        float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull, bool Unseen = false,
+        bool IsStone = false);
 
     /// <summary>An airlock door across a passage. An automatic door slides open as the avatar nears
     /// (a top-down flourish; it never blocks — the passage is always walkable). A <c>Locked</c> door
@@ -40,8 +92,22 @@ public sealed class DeckPlan
     /// and what is transparent to sight and gunfire. A door the player sees shut must stop a round.</summary>
     public const double DoorOpenRadius = 4.0;
 
+    /// <param name="Imported">#592 · This door was not made here. Owner: <i>"some special color not
+    /// distinctive to the site could then used to draw our attention to a place (like expensive door made
+    /// with far away imported materials)."</i> Every ordinary hatch is drawn in its world's own stone, so the
+    /// one that is not becomes a sentence — somebody shipped materials across the system to seal this, and
+    /// nobody does that for a store cupboard.</param>
+    /// <param name="Machined">#606 · Not merely off-palette — a different KIND of object. Owner, on hiding
+    /// the lift head in an ordinary hut: <i>"The expensive doors would be the clue."</i>
+    ///
+    /// <para>Colour alone had already failed once (#585): violet marks shelters, about one ruin hatch in
+    /// seven, and the way down, so it identified nothing. A tell that has to survive being one of three
+    /// things has to be readable as SHAPE. This one is drawn heavy, with a second inner rail and its frame
+    /// picked out at the jambs — a machined pressure door in a wall of piled regolith, next to hatches that
+    /// are a single thin stroke. It still opens: sealed is what it looks like, not what it does.</para></param>
     public readonly record struct Door(
-        float X1, float Y1, float X2, float Y2, bool Locked = false, int Interlock = 0);
+        float X1, float Y1, float X2, float Y2, bool Locked = false, int Interlock = 0,
+        bool Imported = false, bool Machined = false);
 
     /// <summary>An interaction point on the deck. A <see cref="ConsoleKind.ViewObject"/> spot also
     /// carries an <paramref name="ImageUrl"/> and <paramref name="Caption"/> — press E and the game
@@ -85,8 +151,17 @@ public sealed class DeckPlan
     /// for the docked complex's roaming NPC (PR-F: a station patron on a sim-time rota, index 8), then
     /// to 10 for the bar's barkeep pacing behind the counter (#247, index 9). Lane-1 (owner, 2026-07-18):
     /// the surface tide needs room for the 3 crew + the engine ceiling on live Reevers (24), so the
-    /// buffer grows to 27 — only the surface plan ever fills that far; the ship/complex still fill ≤10.</summary>
-    public const int MaxDroids = 30;   // #538: 3 crew + 24 Old Ones + 3 sweepers
+    /// buffer grows to 27 — only the surface plan ever fills that far; the ship/complex still fill ≤10.
+    /// #583: and four more for a repo crew that lands on the same ground (CollectorLanding.PartySize is
+    /// clamped to 4), which is a DIFFERENT kind of figure sharing the same buffer — 31.
+    /// #538: and three more for the black-ops sweep team, which is a third kind — 34.
+    ///
+    /// <para>#633 · The two branches each raised this for their own band and each was left short by the
+    /// other's: 31 here, 30 on `main`. Sized now for ALL FOUR bands (3 + 24 + 4 + 3), which is what
+    /// <c>Map.Surface.SurfaceDroidCount</c> computes and what <c>FillSurfaceDroids</c> writes. A buffer that
+    /// is one band short does not throw — it silently draws nobody, which is how this class of bug survives
+    /// a merge.</para></summary>
+    public const int MaxDroids = 34;
 
     public readonly record struct Droid(double X, double Y, double FacingRad, string Name);
 
@@ -110,12 +185,57 @@ public sealed class DeckPlan
 
     public ConsoleSpot[] Consoles { get; private set; }
     public (float X, float Y, string Text)[] RoomLabels { get; private set; }
+
+    /// <summary>#600 · Signage PAINTED ON THE STRUCTURE — drawn several times the size of a room
+    /// label, the way a real facility marks a stairwell or a car-park level.
+    ///
+    /// <para>Owner, riding between floors that are built from the same bones: <i>"something different
+    /// in every floor so we visually spot some difference when we go to different floors"</i> —
+    /// and, for what it should say, <i>"we can use seriously large numbers there :-D"</i> ...
+    /// <i>"or depths (in meters)"</i>.</para>
+    ///
+    /// <para>#612 · <c>Tone</c> is what the sign MEANS, never a colour — the plan is Core-shaped data and
+    /// the ink lives in the renderer. 0 = painted signage (the depth, the department), 1 = you can breathe
+    /// here (a floor that holds pressure, or a #608 refuge cut into one that does not), 2 = you cannot and
+    /// your tank is running. Owner, on the first cut of the plate: <i>"they are kind of hidden now"</i> /
+    /// <i>"the meters and the floor name could be yellow here"</i> — which the renderer answers with a
+    /// backing plate as well as brighter ink, because text on a busy deck needs a background and not merely
+    /// a louder colour.</para></summary>
+    public (float X, float Y, string Text, float Px, int Tone)[] BigLabels { get; private set; } = [];
     public Backdrop[] Backdrops { get; private set; }
 
     /// <summary>Filled structure — see <see cref="Structure"/>. Drawn under everything else, because it is what
     /// the ship is made of rather than something in her.</summary>
     public Structure[] Structures { get; private set; }
     public Door[] Doors { get; }
+
+    /// <summary>#563 · TERRAIN — drawn, never collided. Kept in its own array rather than as a flag on
+    /// <see cref="Wall"/> ON PURPOSE: <see cref="CollisionSegments"/> is derived from <c>Walls</c> in the
+    /// constructor, so a decorative "wall" would obstruct the captain the moment any caller forgot to
+    /// filter it. Scenery cannot be given substance by an oversight, because the movement code is never
+    /// handed it at all.</summary>
+    public SpaceSails.Core.SurfaceScenery.Mark[] Scenery { get; private set; }
+
+    /// <summary>#589 · The ink this ground's in-situ stonework is drawn in. Owner, touring the rebuilt
+    /// sites: <i>"the in-situ construction materials of the walls might be planet specific ... red for mars
+    /// etc theming"</i> / <i>"gray for Moon"</i> / <i>"something to spot where we are visually"</i>.
+    ///
+    /// <para>It is the plan's property rather than the renderer's constant because it is a fact about a
+    /// WORLD — you build out of what is under your boots — and the renderer only happens to draw it. Null
+    /// on the ship and the stations, which are made of steel like everything else in the fleet.</para></summary>
+    /// <summary>#605 · The ink this deck's MADE structure draws in — poured, welded, bolted things, as
+    /// opposed to a body's stonework (<see cref="StoneInk"/>). Null everywhere it has always been null: the
+    /// ship, the stations and the wrecks are steel and keep the standard hull line.
+    ///
+    /// <para>The Hive uses it to carry a floor's DEPARTMENT LIVERY, so two floors cut from identical bones
+    /// are told apart at a glance by what they were for.</para></summary>
+    public SpaceSails.Core.BodyPalette.Ink? HullInk { get; private set; }
+
+    public SpaceSails.Core.BodyPalette.Ink? StoneInk { get; private set; }
+
+    /// <summary>#592 · The ink an ORDINARY door is drawn in on this ground — the local stone, brightened.
+    /// Null on the ship and the stations, which are steel and keep the amber airlock look.</summary>
+    public SpaceSails.Core.BodyPalette.Ink? DoorInk { get; private set; }
 
     /// <summary>#371 Phase 3 · how many regions have been appended to this live plan (0 on a freshly-built
     /// plan). A cheap handle for the perf test — "segment count grows only by the region's walls" — and for
@@ -146,7 +266,13 @@ public sealed class DeckPlan
         Backdrop[] backdrops, double spawnX, double spawnY,
         int droidCount, Action<double, Droid[]> fillDroids, Func<double, double, string> location,
         Door[]? doors = null, bool shipFixtures = false, bool followCam = false,
-        (float X, float Y)[]? tables = null, Structure[]? structures = null)
+        (float X, float Y)[]? tables = null,
+        SpaceSails.Core.SurfaceScenery.Mark[]? scenery = null,
+        SpaceSails.Core.BodyPalette.Ink? stoneInk = null,
+        SpaceSails.Core.BodyPalette.Ink? doorInk = null,
+        (float X, float Y, string Text, float Px, int Tone)[]? bigLabels = null,
+        SpaceSails.Core.BodyPalette.Ink? hullInk = null,
+        Structure[]? structures = null)
     {
         Structures = structures ?? [];
         Walls = walls;
@@ -158,9 +284,14 @@ public sealed class DeckPlan
         CollisionField = SurfaceCollision.WallIndex.Build(CollisionSegments);
         Consoles = consoles;
         RoomLabels = roomLabels;
+        BigLabels = bigLabels ?? [];
+        HullInk = hullInk;
         Backdrops = backdrops;
         Doors = doors ?? [];
         Tables = tables ?? [];
+        Scenery = scenery ?? [];
+        StoneInk = stoneInk;
+        DoorInk = doorInk;
         SpawnX = spawnX;
         SpawnY = spawnY;
         DroidCount = droidCount;

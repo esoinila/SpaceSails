@@ -67,9 +67,14 @@ public partial class Map
     /// <summary>How long a nerve event's line hangs by the gauge before fading.</summary>
     private const double NerveFlashMs = 2600;
 
-    // First sight of the monolith: within this many deck-units of it, the captain lays eyes on the thing
-    // (owner's #313 maze). Reaches the maze approach (outer wall ~12 du out) with margin. FLAGGED for tuning.
-    private const double MonolithSightRange = 26.0;
+    // #649 · First sight of the monolith: the range is the OBJECT'S, not this file's.
+    //
+    // It was a flat 26 du typed here — eyeballed against a slab six deck units across, back when the slab
+    // was on the wrong moon. The stone is fifty-four across now and its swept apron is eighty-six, so 26
+    // would have put the biggest single fright in a captain's life at the moment they walked into the rock,
+    // with nothing left to resolve out of anything. Monolith.SightRangeDu is three fifths of its height, so
+    // the beat lands while the thing is still a shape on the tracker and the RESOLVING is what does it —
+    // and if it ever grows again, the sight grows with it instead of quietly becoming a lie.
 
     // Cornered: a Reever wedged up-field of the captain and this close laterally reads as a net across the
     // escape (owner: "being cornered"). A cheap geometry check — no pathfinding. FLAGGED for tuning.
@@ -118,6 +123,23 @@ public partial class Map
     // multiple. Used to gate the first-contact chirp on a contact the tracker can actually hear.
     private const double SurfaceVisualHalfWidthDu = 32.0;
 
+    /// <summary>#591 · HOW FAR THE FAN HEARS FROM WHERE THE CAPTAIN IS STANDING — the ONE number, read by
+    /// the chirp, by the nerve, by the sweep and by the draw.
+    ///
+    /// <para>Owner: <i>"the motion tracker should be in underground visibility mode when we are deeeeeeeep
+    /// under surface"</i>. Underground the reach degrades with depth, which gives depth a third cost after
+    /// air and time — and the one the player can name.</para>
+    ///
+    /// <para>It is a method rather than four call sites because those four call sites were already drifting.
+    /// <c>DeckView.DrawMotionTracker</c> computed its own reach from the viewport while the sim used a flat
+    /// 32 du half-width, so on any window not exactly 64:28 the blip a captain SAW at the rim was not the
+    /// blip the chirp had HEARD. That is the sim-says-one-thing-the-drawing-says-another failure this
+    /// project keeps paying for, and shortening one of them without the other would have made it load-
+    /// bearing. The hud now carries this number and the renderer draws to it.</para></summary>
+    private double FanReach() =>
+        MotionTracker.UndergroundRange(
+            MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), _surface?.Floor ?? 0);
+
     // #327 the ship calls home: the mothership's station-keeping hold (sim-seconds) at the moment the
     // captain boarded DOWN — the reference the escalating ladder measures against (OrbitHold). Positive
     // = boarded with a real kept-orbit hold; 0 = boarded onto an orbit no one is keeping (a standing red
@@ -126,6 +148,22 @@ public partial class Map
     // is on screen right now.
     private bool _groundLessonSeen;
     private bool _groundLessonOpen;
+
+    // #563 · the map-just-grew card, same shape: the SEEN bit is per captain and rides in the vault, the
+    // OPEN bit is only whether the card is on screen this instant. Fires the first time forcing something
+    // open appends real ground to the live plan — the one mechanic in this game nobody would guess exists,
+    // and which until now was announced by a toast that faded.
+    private bool _groundGrewSeen;
+    private bool _groundGrewOpen;
+
+    // #562 · the tube-feeds-you card, same shape again. Fires the first time the ship racks a magazine while
+    // the captain stands in her down-tube — the card that teaches the supply line, not the feature.
+    private bool _tubeRearmSeen;
+    private bool _tubeRearmOpen;
+
+    // #573 · the tank-is-low card. Same shape again: a persisted seen-bit, a transient open-bit.
+    private bool _airCardSeen;
+    private bool _airCardOpen;
 
     // on the surface). Set in BeginSurfaceExcursion, read by SurfaceOrbitComms.
     private double _orbitHoldAtBoarding;
@@ -204,6 +242,39 @@ public partial class Map
         public string Unit { get; } = unit;
         public int Rounds { get; set; } = rounds;
     }
+
+    // ── #583 · A REPO CREW ON FOOT. Owner: "FBI does not arrest cars ... they look for the driver". ────
+    //
+    // They are not Old Ones and they do not behave like them: they walk, they spread out, they do not tire,
+    // and what happens if one reaches you is a WRIT, not a mauling. Client-owned position, exactly like a
+    // Reever's — never saved, rebuilt from the seeded roll on any reload.
+    private sealed class Collector
+    {
+        public double X, Y, Facing;
+        public double Vx, Vy;
+
+        // The stable handedness ReeverChase.Step wants so a wall is rounded rather than dithered at. Spread
+        // across the party so they flow around a slab from both ends instead of queueing at one corner.
+        public int WallSide = 1;
+    }
+
+    private readonly List<Collector> _collectors = [];
+
+    // The engine ceiling for the buffer arithmetic below (CollectorLanding.PartySize is clamped to 4).
+    private const int MaxCollectors = 4;
+
+    /// <summary>
+    /// #633 · HOW MANY FIGURES A SURFACE PLAN HAS TO BE ABLE TO DRAW, in one place, as the sum of its bands
+    /// rather than a number somebody typed. The two branches each maintained this expression separately and
+    /// each dropped the other's band: one read <c>3 + ReeverEngineCeiling + MaxCollectors</c>, the other
+    /// <c>3 + ReeverEngineCeiling + InspectionTeam.TeamSize</c>. Both were correct on their own branch and
+    /// both are wrong now, which is precisely why the sum lives here and every caller reads it.
+    ///
+    /// <para>The bands, in buffer order: the crew (3), the pack (<see cref="ReeverEngineCeiling"/>), the repo
+    /// crew (<see cref="MaxCollectors"/>), the sweep team (<c>InspectionTeam.TeamSize</c>).
+    /// <see cref="FillSurfaceDroids"/> writes them at exactly these offsets.</para></summary>
+    private const int SurfaceDroidCount =
+        3 + ReeverEngineCeiling + MaxCollectors + InspectionTeam.TeamSize;
 
     private sealed class Reever
     {
@@ -285,6 +356,11 @@ public partial class Map
         public double AimX { get; set; }
         public double AimY { get; set; }
         public double FiringUntilMs { get; set; }
+
+        // #603 · WHAT IS IN IT. Owner: "those rounds might be special types even." A magazine is no longer
+        // just a count — it is a count OF SOMETHING, because the lab round clears a line with one shot and
+        // will kill you at arm's length, and issue ball does neither.
+        public string AmmoId { get; set; } = Core.Ammunition.Issue.Id;
     }
 
     // The three things a channeled dig can be (beach-comber kit): bury a carried chest where you stand,
@@ -361,6 +437,22 @@ public partial class Map
         public bool GraceEndedAnnounced { get; set; }
         public bool SentryHintShown { get; set; }         // #380 item 7: the one-time first-deploy sentry hint has fired
         public bool NerveBandDropAnnounced { get; set; }  // #380 item 2: the one-time "nerves fraying" band-drop pulse has fired
+
+        // #649 · The one-per-excursion beat for the moment the monolith stops being a shape and becomes the
+        // sky. Separate from _monolithSeen, which is the once-in-a-LIFE nerve hit: the first sight is a
+        // milestone and happens once ever, but ARRIVING at the foot of it is worth a line every time you make
+        // the walk, and it is the walk the owner wants to be long enough to feel the thing grow.
+        public bool MonolithApproachAnnounced { get; set; }
+
+        // #649 · THE WATCH. How long the captain has stood inside the monolith's sight this excursion, and
+        // whether the ground has already done its one strange thing. Real-time seconds, like every other
+        // surface clock (#469: SimTime is the ship's orbital clock and barely advances on a regolith, so a
+        // dwell measured on it would never come due — the bug that froze the Old Ones where they were born).
+        //
+        // Per EXCURSION, never persisted: this is not a milestone and there is no ledger of it anywhere in
+        // the game. Nothing is counting; that is rather the point.
+        public double MonolithDwellSeconds { get; set; }
+        public bool MonolithWatchSpent { get; set; }
 
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
@@ -456,7 +548,126 @@ public partial class Map
         public HashSet<string> SecretLabLogsRead { get; } = [];
         public DoorChannel? SecretLabDoorChannel { get; set; }
 
+        // #563 · The outpost hut on this site, if it has one: where it stands, whether the hatch has been
+        // forced this visit, whether its locker and its effects have been taken/read, and the force channel
+        // while it is running. Session state — a hut re-seals between excursions, which is honest enough:
+        // nobody out here is maintaining a door you levered off its dogs.
+        // #564 · THE TANK. Seconds of suit air left, and whether the captain has already been told they
+        // crossed the point of no return (the warning is a LINE you cross, said once — not a nag).
+        public double AirSeconds { get; set; } = SuitAir.TankSeconds;
+        public bool AirWarned { get; set; }
+
+        // #573 · The low-air mark is a SEPARATE warning from the point-of-no-return, because in a bounded
+        // field the point-of-no-return can never fire at all and the captain would die having been told
+        // nothing. Both are one-shot per walk.
+        public bool AirLowWarned { get; set; }
+
+        // #573 · Whether the secondary pack's cut-in has been announced. One-shot, re-armed by a refill.
+        public bool ReserveNoted { get; set; }
+
+        // #573 · Whether "you can hear yourself in the helmet" has been said at the current level of
+        // distress. Re-arms once the captain calms down, so it marks a CHANGE rather than nagging.
+        public bool HardBreathingNoted { get; set; }
+
+        // #573 · The deep shelter's charging rack: one charge per excursion, then it is dry.
+        // #573 · Per-shelter state, keyed by index into SurfaceShelter.SpecsFor - a site carries several
+        // now. The rack records WHEN it was drawn so it can climb back on its own; the locker is simply
+        // spent, because nobody is out here restocking ammunition.
+        // #573 · Each rack's reservoir, in suit-seconds. Absent = never visited, so it is full (or partly
+        // drawn by somebody else — see SurfaceShelter.SomebodyWasHere). Always producing, never "spent".
+        public Dictionary<int, double> ShelterReservoir { get; } = [];
+        public HashSet<int> ShelterPumpNoted { get; } = [];
+
+        // #608 · The same three pieces of state for the underground refuges, kept SEPARATE rather than
+        // sharing the shelter dictionaries. The two are indexed differently — a shelter is an index into a
+        // site's shelter list, a refuge is an index into a FLOOR's — so one dictionary would have B3's
+        // refuge and the site's fourth shelter arguing over the same key, and the captain would find a rack
+        // mysteriously drawn down by a building they have never been in.
+        public Dictionary<int, double> RefugeReservoir { get; } = [];
+        public HashSet<int> RefugePumpNoted { get; } = [];
+        public bool RefugeBreathNoted { get; set; }
+
+        // ── #585 · THE HIVE. Which floor the captain is on (0 = the surface), and which rooms down there
+        //    have already been turned over. Persisted with the excursion, so stepping back into the lift
+        //    finds the facility exactly as you left it.
+        public int Floor { get; set; }
+        public HashSet<int> HiveRoomsEmptied { get; } = [];
+        public HashSet<int> HiveFloorsSeen { get; } = [];
+
+        // #590 · Which shaft bands this excursion has already talked its way into. Only gates the once-per-
+        // shaft beat when a card is accepted; the CARD itself is durable and lives in the vault, because a
+        // possession that evaporated when the shuttle lifted would not be a possession.
+        public HashSet<int> HiveShaftsOpened { get; } = [];
+
+        // And which have already refused you once. The refusal is said EVERY time — a gate that goes quiet
+        // on the second press reads as a broken button — but it is only FILED once, because pressing one
+        // gate eleven times is not eleven findings.
+        public HashSet<int> HiveShaftsRefused { get; } = [];
+
+        // #609 · Whether this excursion has had the DEAD AIR card. Once: after that the pulse line is
+        // enough, because by then it is knowledge rather than news.
+        public bool HiveVacuumWarned { get; set; }
+
+        // #592 · Whether this excursion has already had the floor-with-no-plate beat. Once is the whole
+        // point: the second time you step out down there it is just a corridor, and it should be.
+        public bool HiveUnlistedSeen { get; set; }
+
+        // #528 · Whether this excursion has already had the two reveal cards the Hive earns — the sealed way
+        // on, and the first authority card. Once each: a card that pops at every sealed door in a corridor
+        // of sealed doors is a slideshow, and the second one is never the beat the first one was.
+        public bool HiveSealedWayShown { get; set; }
+        public bool HiveAuthorityShown { get; set; }
+
+        // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
+        public HashSet<int> KitPieces { get; } = [];
+        public bool DossierShown { get; set; }
+
+        // #585 · This site's shelters, worked out once. See SheltersOn for why this is a field and not a
+        // call: the threshold rule asks the question once per hunter per frame, and the answer is fixed for
+        // the whole excursion.
+        public IReadOnlyList<SurfaceStructure.Spec>? ShelterSpecs { get; set; }
+
+        // ── #583 · THE REPO BOAT. Whether one is coming, when, and what is painted on it — all decided
+        //    ONCE, from the heat this captain earned, at the moment the shuttle sets down. ──
+        public bool CollectorsComing { get; set; }
+        public double CollectorsEtaSeconds { get; set; } = double.PositiveInfinity;
+        public string CollectorCallsign { get; set; } = "";
+        public bool CollectorsLanded { get; set; }
+        public bool CollectorsHailed { get; set; }
+        public bool CollectorShelterNoted { get; set; }
+        public double CollectorBoatX { get; set; }
+        public double CollectorBoatY { get; set; }
+
+        // How long this excursion has been running, in surface seconds. The boat's ETA is measured against
+        // it, so the arrival lands MID-MISSION rather than at the hatch.
+        public double SecondsOnTheGround { get; set; }
+
+        // #580 · There is deliberately NO locker state here any more. The old HashSet of spent lockers is
+        // what stranded the owner beside an empty one; a shelter now reloads whoever reaches it, every time,
+        // so there is nothing left to remember. See SurfaceShelter.LockerRounds for the ruling.
+
+        // #573 · Which ruins have been turned over this visit. A room stays entered once emptied — the walls
+        // and the door remain, so it still reads as a place you have been.
+        public HashSet<string> RuinsSearched { get; } = [];
+
+        // #573 · Whether the "you are breathing shelter air" line has been said for this visit inside. Reset
+        // on stepping out, so coming back in says it again — arriving in a refuge is worth noticing twice.
+        public bool ShelterBreathNoted { get; set; }
+
+        public SurfaceOutpost.Placement? Outpost { get; set; }
+        public bool OutpostForced { get; set; }
+        public bool OutpostLooted { get; set; }
+        public bool OutpostEffectsRead { get; set; }
+        public DoorChannel? OutpostDoorChannel { get; set; }
+
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
+
+        // #562 · The tube rearm in progress: which shouldered bot is being racked, and how far along (0..1).
+        // Null whenever nobody is being fed — which is most of the time, including the instant the captain
+        // steps out of the tube. Session state only: walking out abandons it, and the rounds already bought
+        // are already in the magazine, so there is nothing half-finished to persist.
+        public int? RearmBotIndex { get; set; }
+        public double RearmProgress { get; set; }
         public List<(double X, double Y)> Husks { get; init; } = [];  // #314: downed Old Ones, left where they fell (#316)
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
 
@@ -465,7 +676,7 @@ public partial class Map
         public bool Channeling => Channel is not null;
         // #371 Phase 3 / #394: any channel underway (a dig, a door-force, OR the drill) — mutually exclusive.
         public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null
-            || SecretLabDoorChannel is not null;
+            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null;
     }
 
     // ── Boarding: pick a surface, optionally load a chest, and grow the tube IN PLACE. ──
@@ -529,7 +740,36 @@ public partial class Map
         }
 
         _surface = excursion;
+
+        // ── #583 · DOES THE HEAT FOLLOW YOU DOWN? Rolled ONCE, here, off the heat this captain earned and
+        //    this excursion's threat seed. Decided at the hatch and never re-rolled, so the answer is a fact
+        //    about this trip rather than a die thrown at the player every minute. ──
+        _collectors.Clear();
+        // Regolith only for now. The owner wants this "on land OR at a ship looting it", and he is right —
+        // but a boat cannot set down inside a derelict, so that arrival is a docking and a walk in through
+        // somebody else's airlock, which is its own build (#584). Landing a boat on a hull's deck plan would
+        // be the geometry lying about the fiction, which is the one bug this project keeps paying for.
+        excursion.CollectorsComing = !OnWreck
+            && (_collectorCheatSeconds is not null
+                || CollectorLanding.WillFollowYouDown(_heat.Level, excursion.ThreatSeed));
+        if (excursion.CollectorsComing)
+        {
+            excursion.CollectorsEtaSeconds = _collectorCheatSeconds
+                ?? CollectorLanding.ArrivesAfterSeconds(_heat.Level, excursion.ThreatSeed);
+            excursion.CollectorCallsign = CollectorLanding.CallsignFor(excursion.ThreatSeed);
+        }
+
+        // #580 · The bird stops mid-sentence as the hatch closes. Anything it was saying was about the ship,
+        // and the captain has just stopped being aboard her — leaving the bubble hanging over a moon is the
+        // stale half of the same bug. (Everything that would ADD one is gated in SquawkNow.)
+        _parrotSquawk = null;
+
         ResolveSecretLab(excursion); // #409: does this body hide one of Vantar's labs? (seed, or a known/cheat pre-reveal)
+        ResolveOutpost(excursion);   // #563: does this SITE carry an outpost hut? (three in four do)
+        if (_airCheatSeconds is { } startingAir)
+        {
+            excursion.AirSeconds = startingAir;   // #564 ?air=N — a short tank, for testing the line
+        }
         _reevers.Clear();
         _sweepers.Clear();
         _lastNearestReeverRange = null;
@@ -615,6 +855,10 @@ public partial class Map
             if (_wreck is { } aboardWreck)
             {
                 PrepareVenting(aboardWreck);
+
+                // …and whether she is carrying the one warm thing. Seeded off her id, decided ONCE here, so
+                // a rebuild of the deck can never roll a node onto a hull that did not have one.
+                PrepareArchiveNode(aboardWreck);
             }
 
             // A fresh boarding is a fresh hull: nothing has woken, the fan has not come up, and the tracker
@@ -706,6 +950,2007 @@ public partial class Map
         _groundLessonOpen = false;
     }
 
+    // ── #564 · THE TANK. ────────────────────────────────────────────────────────────────────────────────
+    //
+    // GroundLesson has told every new captain "The walk back is half the tank" since #440, about a resource
+    // that did not exist. This is the resource.
+    //
+    // The rule it is built under: AIR MUST NEVER BE A SILENT TIMER THAT KILLS YOU. So there are three
+    // things and not one — a readout that says how much FURTHER you may go (not merely how much is left), a
+    // one-time line on the step where you cross the point of no return, and a death that says plainly what
+    // happened. A countdown that quietly runs out is the same design failure as an invisible wall.
+    private void StepSuitAir(double dtRealSeconds)
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        // #573 · INSIDE THE SHELTER, NOTHING IS SPENT. Owner, twice and unambiguously: "it should not be
+        // possible to run out of air inside the emergency shelter" / "air should not be expended while in it
+        // at all". Its sign has read PRESSURISED since the day it was built, and a suit standing in an
+        // atmosphere is not drawing on its tank.
+        //
+        // Checked BEFORE the drain and returning outright, so there is no ordering by which a captain
+        // sitting in a refuge can suffocate in it. The tank does not tick up either — the rack does that,
+        // deliberately and with a ceiling; simply standing here is safety, not resupply.
+        // #585 · UNDERGROUND, THE FLOOR DECIDES. Owner's biggest open question, answered with a beat in it:
+        // B1 still holds pressure, so it is a refuge exactly like a shelter - the tank stops and the nerve
+        // steadies. Everything below is dead, so depth is paid for in air and every stair down is a decision
+        // about getting back up. Checked before the drain, like the shelter branch, so no ordering can
+        // suffocate a captain standing in a pressurised corridor.
+        //
+        // #612 · AND THE WHOLE QUESTION IS NOW ASKED IN CORE. These were three conditions in a row here, and
+        // the readout that reported them was a fourth condition somewhere else — which is the exact shape of
+        // every expensive bug this project has filed: two places working the same answer out separately, and
+        // one of them edited. SuitAir.SourceOf is the one predicate. The drain branches on ITS answer, the
+        // gauge is handed the same answer, and the plate by the lift asks it the same way — so nothing on
+        // screen can report a rule the sim is not running.
+        //
+        // The order inside SourceOf is this method's own order and must stay so: floor, then refuge, then
+        // shelter, then ship.
+        int inside = ShelterUnderfoot(ex);
+        SuitAir.Supply supply = AirSupplyOf(ex);
+        AnnounceAirSupply(supply, roomSpeaksForItself: inside >= 0 || RefugeUnderfoot(ex) >= 0);
+
+        if (ex.Floor < 0)
+        {
+            // What the FLOOR provides on its own — the identical question HiveInterior's plate asks of the
+            // same level, which is why the sign on the wall and the tank on your back cannot come apart.
+            if (SuitAir.SourceOf(ex.Floor, insideShelter: false, aboard: false) == SuitAir.Supply.Room)
+            {
+                ex.RefugeBreathNoted = false;
+                return;
+            }
+
+            // ── #608 · THE REFUGE ON A DEAD FLOOR ────────────────────────────────────────────────────────
+            //
+            // Owner: "there should be like at least one air replenish station in each of the airless labs
+            // underground... for pure safety" — and, the reason, "otherwise the elevator being busy could
+            // kill employees".
+            //
+            // The SAME two things a shelter does, in the same order and by the same functions: the drain
+            // stops because you are standing in an atmosphere, and the rack pumps on its own for as long as
+            // you care to stand there. Checked BEFORE the drain and returning outright, exactly like the
+            // shelter branch below, so there is no ordering by which a captain sitting in a refuge can
+            // suffocate in it.
+            //
+            // What it does NOT do is make the floor free. It is one room, never beside the lift, and its
+            // regulator stops at the same two thirds somebody set on the surface for the next person
+            // through the door — so depth still costs air (#585), and the refuge buys RANGE.
+            int refuge = RefugeUnderfoot(ex);
+            if (refuge >= 0)
+            {
+                if (!ex.RefugeBreathNoted)
+                {
+                    ex.RefugeBreathNoted = true;
+                    ShowPulseMessage(UndergroundComplex.RefugeBreathingLine);
+                    string found = SurfaceShelter.PartialLine(
+                        RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds);
+                    if (found.Length > 0)
+                    {
+                        // The same fact told by state rather than by a card, and down here it is a colder
+                        // one: a rack in a sealed room a hundred and fifty metres under a moon has been
+                        // drawn on, and the building has been shut for decades.
+                        ShowAndFile(found, "🫁");
+                    }
+                }
+
+                ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
+                    ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
+                if (intoTheTank > 0)
+                {
+                    if (ex.RefugePumpNoted.Add(refuge))
+                    {
+                        ShowPulseMessage(SurfaceShelter.PumpingLine);
+                    }
+                }
+                else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
+                {
+                    ShowPulseMessage(SurfaceShelter.PumpDoneLine);
+                }
+                return;
+            }
+            ex.RefugeBreathNoted = false;
+
+            // Anywhere else on a dead floor drains exactly like open regolith: this is the price of going
+            // deeper, and it is the only thing stopping the facility from being somewhere to live.
+        }
+
+        if (inside >= 0)
+        {
+            if (!ex.ShelterBreathNoted)
+            {
+                ex.ShelterBreathNoted = true;
+                ShowPulseMessage(SurfaceShelter.BreathingLine);
+                string story = SurfaceShelter.PartialLine(
+                    ShelterReservoirNow(ex, inside) / SurfaceShelter.ReservoirSeconds);
+                if (story.Length > 0)
+                {
+                    // "Somebody was here" is a fact about the world told by state rather than by a card —
+                    // exactly the kind of thing that was being lost eight seconds after it was earned.
+                    ShowAndFile(story, "⛺");
+                }
+            }
+
+            // #573 · THE RACK ALWAYS GIVES, and the PUMPING TIME is the cost. Owner: "it should always give
+            // some more air... like a steady production rate... The time it takes to pump air is good
+            // incentive to not take too much." It replaced a one-shot draw that could be SPENT, which had a
+            // nasty failure he walked into: stranded beside an empty rack with nothing to do but die. A
+            // cracker that always produces cannot strand anybody, and standing in a shed while the Old Ones
+            // keep walking prices the top-up far better than an empty state ever did.
+            ex.ShelterReservoir[inside] = DrawFromRack(ex, ShelterReservoirNow(ex, inside),
+                dtRealSeconds, out double pumped);
+            if (pumped > 0)
+            {
+                if (ex.ShelterPumpNoted.Add(inside))
+                {
+                    ShowPulseMessage(SurfaceShelter.PumpingLine);
+                }
+            }
+            else if (ex.ShelterPumpNoted.Contains(inside) && ex.ShelterPumpNoted.Add(-inside - 1))
+            {
+                ShowPulseMessage(SurfaceShelter.PumpDoneLine);
+            }
+            return;
+        }
+        ex.ShelterBreathNoted = false;
+
+        // Inside the ship or in her tube you are breathing hers, and the tank tops up. This is the ONLY
+        // place it refills (bar a cache found out in the world), which is what makes the tube the anchor
+        // the whole supply line hangs from (#562).
+        if (supply == SuitAir.Supply.Ship)
+        {
+            ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, dtRealSeconds * TubeRefillRate);
+            ex.AirWarned = false;   // re-arm the warnings: the next walk out gets told again
+            ex.AirLowWarned = false;
+            ex.ReserveNoted = false;
+            return;
+        }
+
+        // #612 + #608 · THE DRAIN IS GATED ON THE SAME PREDICATE THE GAUGE READS.
+        //
+        // Every branch above has already returned for its own reason — it had a rack to run or a tank to top
+        // up, which this cannot express. What it CAN do is make the two answers impossible to disagree: the
+        // suit does not spend anything the hud has just told the captain it is not spending. Nothing reaches
+        // here that the predicate calls not-drawing, so this line does nothing today; the day somebody adds a
+        // fifth way to breathe and forgets one of the branches above, it is the difference between a wrong
+        // colour and a death. It reads the VALUE the gauge was handed, not a fresh call — a second call is a
+        // second chance to answer differently.
+        if (!SuitAir.Drawing(supply))
+        {
+            return;
+        }
+
+        // #573 · BREATHING RATE. What you are doing, how frightened you are, and how hurt — the owner's
+        // diving rule ("keep calm so the O2 does not run out"), which makes holding your nerve an actual
+        // move rather than a mood.
+        double moved = Math.Sqrt(((_avatarX - _airLastX) * (_avatarX - _airLastX))
+            + ((_avatarY - _airLastY) * (_avatarY - _airLastY)));
+        (_airLastX, _airLastY) = (_avatarX, _avatarY);
+
+        double speed = dtRealSeconds > 0 ? moved / dtRealSeconds : 0;
+        double exertion = speed < 0.5 ? SuitAir.Breathing.Still
+            : speed > 7.0 ? SuitAir.Breathing.Running
+            : SuitAir.Breathing.Walking;
+
+        double rate = SuitAir.Breathing.Rate(exertion, _nerve, ex.HitsTaken, CaptainCondition.MaxHits);
+        ex.AirSeconds = SuitAir.Drain(ex.AirSeconds, dtRealSeconds * rate);
+
+        // Say it once when the breathing itself becomes the problem. Not a nag — a diagnosis, and a hint
+        // that standing still is a move.
+        if (!ex.HardBreathingNoted && rate >= SuitAir.Breathing.WorthMentioning)
+        {
+            ex.HardBreathingNoted = true;
+            ShowPulseMessage(SuitAir.Breathing.HardBreathingLine);
+        }
+        else if (rate < SuitAir.Breathing.WorthMentioning * 0.8)
+        {
+            ex.HardBreathingNoted = false;   // re-arm once they have calmed down
+        }
+
+        double home = DistanceToTheTube();
+
+        // THE LINE. Once, on the step it is crossed, while there is still a decision in it.
+        if (!ex.AirWarned && SuitAir.PastPointOfNoReturn(ex.AirSeconds, home))
+        {
+            ex.AirWarned = true;
+            RendererInterop.PlayCue("alarm");
+            ShowPulseMessage(SuitAir.CrossingWarning);
+        }
+
+        // #573 · THE SECONDARY PACK CUTS IN. The EMU's real half-hour reserve, and unlike everything else
+        // here it is NOT distance-gated: the primary being gone is worth saying wherever you are standing.
+        if (!ex.ReserveNoted && SuitAir.OnTheReserve(ex.AirSeconds))
+        {
+            ex.ReserveNoted = true;
+            RendererInterop.PlayCue("alarm");
+            ShowPulseMessage(SuitAir.ReserveEngagedLine);
+        }
+
+        // #573 · AND the absolute low mark, which is the one that can actually fire in a field this size.
+        // Without it a captain dies flat, having been warned about nothing — the silent timer the whole
+        // mechanic forbids. It also raises the CARD, once per captain, because running out of air ends the
+        // run and the owner is right that it deserves more than a toast that scrolls past.
+        if (!ex.AirLowWarned && SuitAir.RunningLow(ex.AirSeconds, home))
+        {
+            ex.AirLowWarned = true;
+            RendererInterop.PlayCue("alarm");
+            if (!ShowAirCardOnce())
+            {
+                ShowPulseMessage(SuitAir.LowAirWarning(ex.AirSeconds, home));
+            }
+        }
+
+        if (ex.AirSeconds <= 0)
+        {
+            ShowPulseMessage(SuitAir.SuffocationLine);
+            // The cause is PASSED, not rolled — see TriggerSurfaceOverdrawDeath. A suffocation narrated as
+            // an Old One's hand would be the sim doing one thing and a sentence reporting another.
+            TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false, known: DeathCause.Suffocated);
+        }
+    }
+
+    /// <summary>How far the captain is from the tube mouth — the way home, and the only distance the suit
+    /// has any opinion about. A DISTANCE and never a coordinate, so a captain 400 du sideways and one 400 du
+    /// deep are priced identically (#453: depth is not a danger gradient).</summary>
+    private double DistanceToTheTube()
+    {
+        double dx = _avatarX - MoonSurface.SpawnX;
+        double dy = _avatarY - MoonSurface.SpawnY;
+        return Math.Sqrt((dx * dx) + (dy * dy));
+    }
+
+    // #573 · Last frame's position, for working out whether the captain is standing, walking or running.
+    // Speed is not otherwise tracked on the surface, and the difference between a stroll and a sprint is the
+    // whole of the owner's "keep calm" rule.
+    private double _airLastX;
+    private double _airLastY;
+
+    // ── #612 · WHERE THE AIR IS COMING FROM. ────────────────────────────────────────────────────────────
+    //
+    // The last answer the predicate gave, kept ONLY so the crossing can be said once. It is deliberately not
+    // what anything DISPLAYS — a cached copy of a fact is a second source of that fact, and this is the one
+    // fact in the game that must not have two. Null before an excursion has ticked, which is also what stops
+    // the crossing line firing on the frame a captain lands.
+    private SuitAir.Supply? _airSupplyNoted;
+
+    /// <summary>#612 · THE CROSSING, SAID ONCE. Owner: <i>"maybe pop-up about you have air or you are in
+    /// vacuum type ... it is vital info :-D"</i>.
+    ///
+    /// <para>It fires only where the tank STARTS or STOPS, never on Room→Ship (both are free, and a line
+    /// about a change that costs nothing is the nag that turns a vital fact into wallpaper), and never on
+    /// the first tick of an excursion. A room with a DOOR is left to say it in its own voice —
+    /// <c>SurfaceShelter.BreathingLine</c> and <c>UndergroundComplex.RefugeBreathingLine</c> are already the
+    /// better sentences for those thresholds, and two lines for one door is exactly the noise the tank
+    /// mechanic was told not to become. What is left is the crossing nothing else narrates: stepping out of
+    /// the car onto a floor that holds or does not, and leaving her tube for the regolith.</para></summary>
+    private void AnnounceAirSupply(SuitAir.Supply supply, bool roomSpeaksForItself)
+    {
+        SuitAir.Supply? was = _airSupplyNoted;
+        _airSupplyNoted = supply;
+
+        if (was is null || SuitAir.Drawing(was.Value) == SuitAir.Drawing(supply) || roomSpeaksForItself)
+        {
+            return;
+        }
+
+        RendererInterop.PlayCue("blip");
+        ShowPulseMessage(SuitAir.SupplyChangedLine(supply));
+    }
+
+    /// <summary>How fast her tube refills a suit — several times real time, because standing in an airlock
+    /// watching a gauge is not the game. Getting home is the achievement; the top-up is a formality.</summary>
+    private const double TubeRefillRate = 12.0;
+
+    // ── #562 · THE TUBE REARMS YOU. ────────────────────────────────────────────────────────────────────
+    //
+    // Owner, playtesting Miranda with both sentries shouldered and dry: "The gun reload at airlock is not
+    // working here now… I carry both guns but they are not being reloaded." He was right twice over.
+    //
+    // The bug: boarding the shuttle REMOVES the bots from _shipBots and puts them in ex.Bots, and they only
+    // come back on liftoff. So for the whole excursion the roster is empty, and every rearm affordance — all
+    // of which read _shipBots — reported "No bots aboard… they're deployed on a surface, or written off."
+    // That is false in the one state it matters: the captain is carrying both of them, shouldered, in his own
+    // airlock. Worse, it was a trap. A dry bot could not be fed until liftoff, and the reason you walked back
+    // was that it went dry.
+    //
+    // The fix he asked for: "I expect them to be reloaded at that tube I was at." So the down-tube feeds
+    // them — automatically, cheaply, one magazine at a time, with a bar you can watch and a receipt that
+    // says what it cost.
+    //
+    // WHY A PLACE AND NOT A BUTTON — this is the design, in his words: "the reload forces the player to plan
+    // their routes … and keep their supply line safe for retreat to reload", and the tube is therefore "the
+    // invisible tether to players distance". Every excursion becomes a loop with a known anchor, and the
+    // interesting question is how far out you dare go before the walk back costs more than the rounds would.
+    // The retreat is the price; the credits deliberately are not (SentryBot.RestockPricePerRound, halved).
+    private void StepTubeRearm(double dtRealSeconds)
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        // Standing anywhere but inside the tube ends it. No penalty and nothing lost: rounds already racked
+        // are already in the magazine, and the bar simply starts over next time you come back.
+        if (!MoonSurface.IsInDownTube(_avatarX, _avatarY))
+        {
+            ex.RearmBotIndex = null;
+            ex.RearmProgress = 0;
+            return;
+        }
+
+        // Nothing to feed, or nothing to feed it with. Both are quiet — a captain walks through this tube on
+        // every single trip, and a tube that nags on the way out would be worse than one that never spoke.
+        if (ex.RearmBotIndex is not { } idx)
+        {
+            idx = NextBotWantingRounds(ex);
+            if (idx < 0 || _credits < SentryBot.RestockPricePerRound)
+            {
+                return;
+            }
+            ex.RearmBotIndex = idx;
+            ex.RearmProgress = 0;
+        }
+
+        // The bot may have been planted (or the list rebuilt) since the clock started.
+        if (idx >= ex.Bots.Count || ex.Bots[idx].Deployed)
+        {
+            ex.RearmBotIndex = null;
+            ex.RearmProgress = 0;
+            return;
+        }
+
+        ex.RearmProgress += dtRealSeconds / SentryBot.RearmSecondsPerMagazine;
+        if (ex.RearmProgress < 1.0)
+        {
+            return;
+        }
+
+        RackOneMagazine(ex, idx);
+        ex.RearmBotIndex = null;
+        ex.RearmProgress = 0;
+    }
+
+    /// <summary>The first SHOULDERED bot that is short of a full magazine, or -1. Deployed bots are skipped
+    /// on purpose: one standing out on the regolith is not in the tube being handed rounds, and pretending
+    /// otherwise would be exactly the sim-says-one-thing-sentence-says-another bug this whole lane fixes.
+    /// Fills in roster order, one at a time — a magazine is a timer, and one whole timer beats two short.</summary>
+    private static int NextBotWantingRounds(SurfaceExcursion ex)
+    {
+        for (int i = 0; i < ex.Bots.Count; i++)
+        {
+            if (!ex.Bots[i].Deployed && ex.Bots[i].Rounds < SentryBot.MaxMagazine)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>Rack one magazine as full as the purse allows, spend the credits, and say so. The quote is
+    /// the same pure Core law the haven armory uses (<see cref="SentryBot.QuoteRestock"/>) over a one-bot
+    /// list — the same price seen from another door, never a second economy.</summary>
+    private void RackOneMagazine(SurfaceExcursion ex, int idx)
+    {
+        SurfaceBot bot = ex.Bots[idx];
+        SentryBot.RestockQuote quote = SentryBot.QuoteRestock([bot.Rounds], _credits);
+        if (quote.RoundsBought <= 0)
+        {
+            return; // the purse ran dry between starting the clock and finishing it
+        }
+
+        bot.Rounds = quote.Magazines[0];
+        _credits -= quote.Cost;
+        RendererInterop.PlayCue("board");
+        RequestVaultSave();   // rounds and purse both moved — durable before the next thing happens
+
+        // The first time this ever happens to a captain, the card explains the tether. After that the
+        // receipt is the right register: you know where the ammo comes from now.
+        if (!ShowTubeRearmCardOnce())
+        {
+            ShowPulseMessage(
+                $"🔫 {bot.Unit} racked to {SentryBot.Readout(bot.Rounds)} — {quote.Cost:N0} cr. " +
+                (NextBotWantingRounds(ex) >= 0 ? "Feeding the next one." : "Both full. Back out you go."));
+        }
+    }
+
+    // #563 · The world grew and the captain has read why. Same seam as CloseGroundLesson — Dismiss() hands
+    // the keyboard back to the map div, which matters doubly here: this card can open mid-excursion with a
+    // pack already walking toward you, and a swallowed keypress would be a death.
+    private void CloseGroundGrew()
+    {
+        _groundGrewOpen = false;
+    }
+
+    /// <summary>#563 · Raise the map-just-grew card, but only ever once per captain. Called from every path
+    /// that appends real ground to the live plan (a forced expedition door, Vantar's concealed lab door).
+    ///
+    /// <para>Returns true when the card went up, so the caller can keep its toast for every later time —
+    /// the card explains the rule to someone who has never seen it, and the toast is exactly right for
+    /// someone who has. Saving immediately is deliberate: the one-time bit must be durable the instant it
+    /// is spent, the same habit the convergence reveal uses.</para></summary>
+    private bool ShowGroundGrewCardOnce()
+    {
+        if (_groundGrewSeen)
+        {
+            return false;
+        }
+        _groundGrewSeen = true;
+        _groundGrewOpen = true;
+        RequestVaultSave();
+        StateHasChanged();
+        return true;
+    }
+
+    // #562 · The captain has read what the tube does. Same Dismiss() seam — the keyboard goes back to the
+    // map div, which matters here because the card fires INSIDE the tube, i.e. the moment before a captain
+    // means to walk back out into whatever they retreated from.
+    private void CloseTubeRearm()
+    {
+        _tubeRearmOpen = false;
+    }
+
+    // #573 · The captain has read what the tank is doing. Dismiss() hands the keyboard back — and here that
+    // matters more than anywhere: this card opens while the air is already going, so a swallowed keypress
+    // is spent air.
+    private void CloseAirCard()
+    {
+        _airCardOpen = false;
+    }
+
+    // ── #573 · THE SHELTER'S CHARGING RACK [E]. The only place outside her tube that refills a suit, and
+    //    therefore the only reason the deep field is worth crossing rather than merely looking at. ──
+    /// <summary>#573 · The fixed places the fan should point at: the way home, and every shelter. Bearings
+    /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.</summary>
+    private List<(double Bearing, double Range, bool IsHome, bool IsLab)> BuildBeacons(SurfaceExcursion ex)
+    {
+        var list = new List<(double, double, bool, bool)>();
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        {
+            return list;   // a hull has neither a tube mouth nor a shelter
+        }
+
+        void Add(double x, double y, bool home, bool lab = false)
+        {
+            double dx = x - _avatarX, dy = y - _avatarY;
+            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home, lab));
+        }
+
+        // ── #591 · UNDERGROUND, THE BEACONS ARE DIFFERENT PLACES ──
+        //
+        // Owner, on B1: "now that we are underground the elevator would be nice to be on the motion detector,
+        // the surface hut's are really not that relevant down here".
+        //
+        // He is right, and it is the same fault as the reach: these are SURFACE beacons. The tube mouth and
+        // the shelters are up a lift shaft and several hundred metres of rock away, so painting them on the
+        // fan down here is not merely useless — it is actively wrong, because the way home ring is the one
+        // the captain reads when the air gets short and it would be pointing at a hut they cannot reach.
+        //
+        // Down here there is exactly ONE place worth a ring, and it is the same one every floor: the lift.
+        // It is the way home in the only sense that matters underground, so it takes the HOME flag and the
+        // calm colour that goes with it — a place, not a thing that moves.
+        if (ex.Floor < 0)
+        {
+            (double liftX, double liftY) = UndergroundComplex.ShaftAt(MoonSurface.ExpeditionField());
+            Add(liftX, liftY + UndergroundComplex.CorridorHalf + 2.5, home: true);
+
+            // ── #608 · AND THE REFUGES, WHICH ARE THIS FLOOR'S SHELTERS ──
+            //
+            // Owner, exactly: "and those need to show in the motion detector, not the surface ones, when you
+            // are 150 meters below surface."
+            //
+            // That sentence is the whole rule and both halves of it are load-bearing. The surface shelters
+            // are up a shaft and several hundred metres of rock away, so painting them here would be the map
+            // lying (#573) in its most expensive form — a ring on the instrument a captain would spend the
+            // last of a tank walking toward. They are already gone, and they stay gone: this branch never
+            // touches SheltersOn.
+            //
+            // What replaces them is the thing the ring MEANS. On the regolith a not-home ring is "air you
+            // can reach that is not the ship"; on a dead floor that is the refuge, and it deserves the same
+            // colour because it is the same promise. It also answers #608's hardest requirement — "a refuge
+            // you discover AFTER you needed it is a cruelty" — without a map, a paper or a tutorial: the
+            // instrument the captain already watches simply has it on it.
+            //
+            // Nothing is painted on a floor that holds pressure, because there is nothing to point at: the
+            // whole floor is the refuge, and a ring saying "air, 40 du that way" while you are standing in
+            // air is an instrument disagreeing with the room.
+            foreach ((double rx, double ry) in RefugesOn())
+            {
+                Add(rx, ry, home: false);
+            }
+            return list;
+        }
+
+        Add(MoonSurface.SpawnX, MoonSurface.SpawnY, home: true);
+        foreach (SurfaceStructure.Spec shelter in SheltersOn(ex))
+        {
+            Add(shelter.CentreX, shelter.CentreY, home: false);
+        }
+
+        // #585/#584 · AND THE LIFT HEAD, once the door is known. Owner, standing in a ruin that happened to
+        // have a violet door: "it should be this space? but how do I get in this has purple door and is not
+        // emergency shelter?"
+        //
+        // Two failures behind that one sentence. First, the HUD has been saying "E at the ⊙ HIDDEN DOOR —
+        // force the secret lab open" while nothing anywhere says WHERE it is (#584, filed before he hit it and
+        // then hit anyway). A prompt you cannot act on is worse than silence.
+        //
+        // Second, mine and worse: I gave imported violet to shelters (always), to about one ruin door in
+        // seven, AND to the lift head — so a colour that was supposed to mean "somebody shipped this here"
+        // now means "some doors", and the one door it most needed to distinguish was lost among them. A
+        // signal that fires on three unrelated things is not a signal.
+        //
+        // The beacon is the honest fix: the ground can carry as many violet doors as the fiction wants, and
+        // the INSTRUMENT says which one is the way down.
+        if (ex.SecretLabDoorRevealed && ex.Lab is { HasLab: true } lab)
+        {
+            Add(lab.DoorX, lab.DoorY, home: false, lab: true);
+        }
+
+        return list;
+    }
+
+    /// <summary>#573 · Your own buried caches, as marks on the fan — but ONLY once they are inside its
+    /// reach. The range gate is the entire design: a field this size made finding your own ✗ a real task,
+    /// and an instrument that always knew where it was would take that task straight back off you.</summary>
+    private List<(double Bearing, double Range)> BuildCacheBeacons()
+    {
+        var list = new List<(double, double)>();
+        foreach ((double mx, double my, bool _) in _hudMarks)
+        {
+            double dx = mx - _avatarX, dy = my - _avatarY;
+            double range = Math.Sqrt((dx * dx) + (dy * dy));
+            if (range <= CacheDetectRangeDu)
+            {
+                list.Add((Math.Atan2(dy, dx), range));
+            }
+        }
+        return list;
+    }
+
+    /// <summary>How close a buried cache has to be before the fan admits to it.</summary>
+    private const double CacheDetectRangeDu = 55.0;
+
+    /// <summary>#573 · What the captain has been TOLD, as opposed to what they can see — a wide, soft wash
+    /// rather than a mark. A tip narrows a search; it does not end one, and a dot would claim a precision
+    /// the information does not have.</summary>
+    private List<(double Bearing, double Range, double Spread)> BuildRumours(SurfaceExcursion ex)
+    {
+        var list = new List<(double, double, double)>();
+        if (ex.Lab is not { HasLab: true } lab || ex.SecretLabDoorRevealed)
+        {
+            return list;
+        }
+        // #585: a tip you were GIVEN counts, not only a place you have already been. This used to read only
+        // _secretLabsFound, so the wash helped on a return visit and did nothing on the first — the one visit
+        // where a captain actually needs help. The clue chain had no way into the instrument at all.
+        if (!_labLeads.Contains(ex.Stop.Body.Id) && !_secretLabsFound.Contains(ex.Stop.Body.Id))
+        {
+            return list;   // nobody has tipped you about this one; there is nothing to be vague about
+        }
+
+        double dx = lab.DoorX - _avatarX, dy = lab.DoorY - _avatarY;
+        list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), RumourSpreadDu));
+        return list;
+    }
+
+    /// <summary>How wide a rumour reads on the fan, in deck units. Big — it is a tip, not a fix.</summary>
+    private const double RumourSpreadDu = 45.0;
+
+    // ── #573 · TURNING OVER A RUIN [E]. About half of them hold something; the rest are somebody's empty
+    //    house, and finding those is what makes the others worth the air it cost to walk in. ──
+    private void RuinSalvageInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.RuinSalvage } spot)
+        {
+            return;
+        }
+
+        // Identify WHICH ruin by its position — the console sits at the building's centre, which is the
+        // stable key SurfaceLayout hands out.
+        string body = ex.Stop.Body.Id, salt = ex.Site.LayoutSalt;
+        SurfaceLayout.Plan plan = SurfaceLayout.For(body, MoonSurface.ExpeditionField(), salt);
+        IReadOnlyList<(double X, double Y)> centres = plan.BuildingCentres ?? [];
+
+        int which = -1;
+        for (int i = 0; i < centres.Count; i++)
+        {
+            if (Math.Abs(centres[i].X - spot.X) < 0.5 && Math.Abs(centres[i].Y - spot.Y) < 0.5)
+            {
+                which = i;
+                break;
+            }
+        }
+        if (which < 0)
+        {
+            return;
+        }
+
+        string key = $"{which}";
+        if (!ex.RuinsSearched.Add(key))
+        {
+            ShowPulseMessage("You have already been through this one.");
+            return;
+        }
+
+        switch (SurfaceSalvage.WhatIsInside(body, salt, which))
+        {
+            case SurfaceSalvage.Find.Rounds:
+            {
+                int rounds = SurfaceSalvage.RoundsIn(body, salt, which);
+                var takers = ex.Bots.Where(b => b.Rounds < SentryBot.MaxMagazine).ToList();
+                int left = rounds;
+                foreach (SurfaceBot bot in takers)
+                {
+                    int take = Math.Min(SentryBot.MaxMagazine - bot.Rounds, left);
+                    bot.Rounds += take;
+                    left -= take;
+                    if (left <= 0)
+                    {
+                        break;
+                    }
+                }
+                RendererInterop.PlayCue("board");
+                ShowPulseMessage(SurfaceSalvage.RoundsLine(rounds - left));
+                break;
+            }
+
+            case SurfaceSalvage.Find.Goods:
+            {
+                int credits = SurfaceSalvage.GoodsIn(body, salt, which);
+                _credits += credits;
+                RendererInterop.PlayCue("board");
+                ShowAndFile(SurfaceSalvage.GoodsLine(credits), "💰");
+                break;
+            }
+
+            case SurfaceSalvage.Find.Papers:
+                // Texture, never testimony (#563): a roster, a docket, a note in a locker. Nothing here
+                // explains what is outside, and nothing ever will.
+                ShowAndFile(SurfaceSalvage.PapersLine(body, salt, which), "📄");
+                ApplyNerveShock(2.0, "somebody else's paperwork, still where they left it");
+                AssembleSomebody(ex, body, salt, which);   // #588: a person, out of the pieces
+
+                // #585 · AND SOMETIMES A PLACE NAME. This is the thread that makes the labs findable at all:
+                // a docket in a ruin, read carefully, names a moon somebody was running something on.
+                if (DiceRule.Roll(DiceRule.Seed($"lead:papers:{body}:{salt}:{which}"), 3).Face == 1)
+                {
+                    GrantLabLead(DiceRule.Seed($"lead:pick:{body}:{salt}:{which}"));
+                }
+                break;
+
+            default:
+                ShowAndFile(SurfaceSalvage.EmptyRoomLine(body, salt, which), "🚪");
+                break;
+        }
+
+        RebuildSurfaceDeck();
+        RequestVaultSave();
+    }
+
+    /// <summary>Every shelter on this site, in the stable order everything else indexes by.</summary>
+    /// <summary>#585 · Every shelter on this site — computed ONCE per excursion and remembered.
+    ///
+    /// <para>Owner, after the rebuild: <i>"I think it felt a little sluggish at some points."</i> This was
+    /// the cost I had just added. <c>SurfaceShelter.SpecsFor</c> is pure but not free — it re-runs the
+    /// seeded placement, up to nine shelters over thirty hashed candidate spots each, with a separation
+    /// check against everything placed so far. That was fine when it was called twice a frame to draw
+    /// beacons. It stopped being fine the moment the threshold rule (#585) called it once PER OLD ONE PER
+    /// FRAME: twenty-four hunters × ~270 hash-and-lerp attempts, sixty times a second, to answer a question
+    /// whose answer cannot change for the whole excursion.</para>
+    ///
+    /// <para>Determinism is what makes the cache safe: same body, same salt, same field ⇒ same list, every
+    /// time. Cleared with the excursion, so a new site recomputes.</para></summary>
+    private IReadOnlyList<SurfaceStructure.Spec> SheltersOn(SurfaceExcursion ex)
+    {
+        if (ex.ShelterSpecs is { } cached)
+        {
+            return cached;
+        }
+        IReadOnlyList<SurfaceStructure.Spec> specs = Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
+            ? []
+            : SurfaceShelter.SpecsFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
+        ex.ShelterSpecs = specs;
+        return specs;
+    }
+
+    /// <summary>#585 · Walk a body out of solid mass it has ended up inside — a wall that was built around
+    /// it rather than one it walked into. Tries short steps outward on a ring of bearings and takes the first
+    /// that is open ground; gives up rather than loop, because a contact stuck in stone is a curiosity and a
+    /// frame that never ends is a crash.</summary>
+    private static (double X, double Y) ExtricateFromStone(
+        double x, double y, IReadOnlyList<SurfaceCollision.Segment> walls, double radius)
+    {
+        if (!SurfaceCollision.Blocked(x, y, radius, walls))
+        {
+            return (x, y);
+        }
+
+        for (double reach = 1.5; reach <= 18.0; reach += 1.5)
+        {
+            for (int i = 0; i < 12; i++)
+            {
+                double a = i / 12.0 * Math.Tau;
+                double tx = x + (Math.Cos(a) * reach), ty = y + (Math.Sin(a) * reach);
+                if (!SurfaceCollision.Blocked(tx, ty, radius, walls))
+                {
+                    return (tx, ty);
+                }
+            }
+        }
+        return (x, y);
+    }
+
+    /// <summary>#585 · Push a body back out of any shelter it has ended up inside. The door reads a suit;
+    /// nothing else on this ground gets to be in there. Cheap: a site carries a handful of shelters and the
+    /// common case is a single Contains() that says no.</summary>
+    private (double X, double Y) HoldOutsideShelters(double x, double y)
+    {
+        if (_surface is not { } ex)
+        {
+            return (x, y);
+        }
+        foreach (SurfaceStructure.Spec spec in SheltersOn(ex))
+        {
+            (x, y) = SurfaceShelter.HoldAtTheThreshold(spec, x, y);
+        }
+        return (x, y);
+    }
+
+    /// <summary>Which shelter the captain is standing inside, or -1.</summary>
+    private int ShelterUnderfoot(SurfaceExcursion ex)
+    {
+        IReadOnlyList<SurfaceStructure.Spec> all = SheltersOn(ex);
+        for (int i = 0; i < all.Count; i++)
+        {
+            if (SurfaceShelter.Contains(all[i], _avatarX, _avatarY))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private bool StandingInTheShelter(SurfaceExcursion ex) => ShelterUnderfoot(ex) >= 0;
+
+    /// <summary>A rack's reservoir right now, in suit-seconds. A rack nobody in this run has touched is full
+    /// — unless somebody ELSE drew on it, which is the whole "finding one not full means somebody was here"
+    /// story, told by state rather than by a card.</summary>
+    private double ShelterReservoirNow(SurfaceExcursion ex, int index)
+    {
+        if (index < 0)
+        {
+            return 0;
+        }
+        if (ex.ShelterReservoir.TryGetValue(index, out double held))
+        {
+            return held;
+        }
+        double start = SurfaceShelter.SomebodyWasHere(ex.Stop.Body.Id, ex.Site.LayoutSalt, index)
+            ? SurfaceShelter.ReservoirSeconds * 0.42
+            : SurfaceShelter.ReservoirSeconds;
+        ex.ShelterReservoir[index] = start;
+        return start;
+    }
+
+    // ── #608 · ONE RACK LAW, TWO BUILDINGS ──────────────────────────────────────────────────────────────
+    //
+    // The underground refuges are the surface shelter's mechanic, underground — so they are the surface
+    // shelter's CODE, not a second copy of it. Everything that decides how much air moves lives in
+    // SurfaceShelter (Produce, Transfer, the two-thirds ceiling somebody set for the next person through the
+    // door) and both callers step through this one function.
+    //
+    // The reason it is a function rather than a comment saying "keep these in sync": this project's most
+    // expensive habit is two places that have to agree and only one being changed, and the two racks are a
+    // perfect candidate — they will be tuned by somebody reading one of them. #573's shelter and #608's
+    // refuge now cannot drift, because there is nothing to drift.
+
+    /// <summary>#612 + #608 · IS THE TANK RUNNING? ONE ANSWER, READ BY THE SIM AND BY THE GAUGE.
+    ///
+    /// <para>#612 shipped the <c>AIR: TANKS / ROOM</c> source on the hud because the owner asked <i>"where
+    /// here does it say if I consume tanks or have air?"</i> — and its own issue states the hard part: the
+    /// gauge <b>"has to agree with the plate by the lift on every floor. Two instruments disagreeing about
+    /// whether you can breathe is worse than one instrument saying nothing."</b></para>
+    ///
+    /// <para>It was computed as its own expression beside <c>StepSuitAir</c>'s branches, which is the exact
+    /// arrangement this project keeps paying for: two places that must agree, and only one gets changed. It
+    /// did not survive its first contact with a new way to breathe. A refuge (#608) stops the drain, and the
+    /// hud went on reading TANKS while the sim was not spending anything — a captain sitting in air being
+    /// told, in colour, that their tank was running out.</para>
+    ///
+    /// <para>So the drain is gated on this and the gauge is fed from this. Anything that ever becomes a new
+    /// place to breathe is added HERE, once, and both follow.</para>
+    ///
+    /// <para><b>And "here" is now Core</b>, because this client-side version could still only be read by a
+    /// client: the plate <c>HiveInterior</c> paints by the lift was calling
+    /// <c>UndergroundComplex.HoldsPressure</c> for itself and spelling its own words, which made a THIRD
+    /// answer to the same question. <see cref="SuitAir.SourceOf"/> is the predicate; this method is the one
+    /// place that gathers the four facts to hand it, and every surface reads what it says.</para></summary>
+    /// <para><b>#621 · and the third fact was answered with the wrong world's rule.</b> "Aboard" was
+    /// <c>MoonSurface.IsSafeAboard(_avatarY)</c> — the regolith's top rim at y = −20 — while a derelict's
+    /// whole deck runs −9 to +9, so every point aboard every wreck said YES. The gauge told a captain
+    /// standing in a hull that has held vacuum for years that they were on HER AIR and their tank was
+    /// FILLING, and the drain agreed with it. <see cref="AwayTeamSide.BackAtTheShuttle"/> is the one place
+    /// that knows which door you are on the far side of, and both the reach rule and this one now read
+    /// it.</para>
+    private SuitAir.Supply AirSupplyOf(SurfaceExcursion ex) =>
+        SuitAir.SourceOf(
+            ex.Floor,
+            StandingInTheShelter(ex),                        // #573 the deep shelter
+            CaptainBeyondReach,                              // her tube — or past a wreck's lock: breathing hers
+            ex.Floor < 0 && RefugeUnderfoot(ex) >= 0);       // #608 a pressure refuge on a dead floor
+
+    /// <summary>Is the tank running? The one bit of <see cref="AirSupplyOf"/>, for callers that want no
+    /// more than that.</summary>
+    private bool TankIsDrawing(SurfaceExcursion ex) => SuitAir.Drawing(AirSupplyOf(ex));
+
+    /// <summary>Run one rack for <paramref name="dt"/> seconds: it makes air, it moves what it can into the
+    /// suit, and the warnings re-arm if anything went in. Returns the reservoir it is left holding, and
+    /// reports how much reached the tank.</summary>
+    private double DrawFromRack(SurfaceExcursion ex, double held, double dt, out double pumped)
+    {
+        double made = SurfaceShelter.Produce(held, dt);
+        pumped = SurfaceShelter.Transfer(ex.AirSeconds, made, SuitAir.TankSeconds, dt);
+        if (pumped > 0)
+        {
+            ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, pumped);
+            ex.AirLowWarned = false;
+            ex.AirWarned = false;
+            ex.ReserveNoted = false;
+        }
+        return made - pumped;
+    }
+
+    /// <summary>#608 · The refuges on the floor the captain is standing on, read off the deck the renderer
+    /// actually drew.
+    ///
+    /// <para><b>Not rebuilt from Core.</b> <c>UndergroundComplex.Build</c> is pure but not free, and this is
+    /// asked every frame by the suit; more importantly, a second call would be a second answer. The consoles
+    /// on <c>_deckPlan</c> ARE the refuges — <see cref="HiveInterior.FloorDeck"/> put them there off the
+    /// floor plan — so the room the captain can see and the room that holds their air are the same object by
+    /// construction rather than by two functions agreeing.</para></summary>
+    private List<(double X, double Y)> RefugesOn()
+    {
+        var found = new List<(double, double)>();
+        foreach (DeckPlan.ConsoleSpot spot in _deckPlan.Consoles)
+        {
+            if (spot.Kind == DeckPlan.ConsoleKind.HiveRefuge)
+            {
+                found.Add((spot.X, spot.Y));
+            }
+        }
+        return found;
+    }
+
+    /// <summary>Which refuge the captain is standing inside, or -1. Never anything but -1 above ground.</summary>
+    private int RefugeUnderfoot(SurfaceExcursion ex)
+    {
+        if (ex.Floor >= 0)
+        {
+            return -1;
+        }
+        List<(double X, double Y)> all = RefugesOn();
+        for (int i = 0; i < all.Count; i++)
+        {
+            if (UndergroundComplex.RefugeHolds(all[i].X, all[i].Y, _avatarX, _avatarY))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>A refuge rack's reservoir, in suit-seconds — the shelter's own story, told about a room
+    /// under a moon. Keyed per FLOOR, so walking back into B7's refuge finds it as you left it and B3's is
+    /// somebody else's problem.</summary>
+    private double RefugeReservoirNow(SurfaceExcursion ex, int index)
+    {
+        if (index < 0)
+        {
+            return 0;
+        }
+        int key = RefugeKey(ex.Floor, index);
+        if (ex.RefugeReservoir.TryGetValue(key, out double held))
+        {
+            return held;
+        }
+
+        // #573's idiom, underground: a rack that is not full means SOMEBODY WAS HERE. Down here that is a
+        // colder sentence than it is on the regolith — the building has been shut for decades and the seals
+        // on this room have not — and it costs nothing but a seeded roll.
+        double start = SurfaceShelter.SomebodyWasHere(
+                ex.Stop.Body.Id, $"{ex.Site.LayoutSalt}:hive{ex.Floor}", index)
+            ? SurfaceShelter.ReservoirSeconds * 0.42
+            : SurfaceShelter.ReservoirSeconds;
+        ex.RefugeReservoir[key] = start;
+        return start;
+    }
+
+    /// <summary>One key per refuge per floor, so B2's rack is not B3's. Same shape as
+    /// <see cref="HiveInterior.RoomKey"/>, and deliberately a different dictionary.</summary>
+    private static int RefugeKey(int level, int index) => (level * 1000) - index;
+
+    // ── #585 · THE HIVE: down the shaft, and back up ───────────────────────────────
+    //
+    // Owner: "I just don't want the secret lab to be puny 2 door apartment, but look like it could facilitate
+    // a large operation with serious funding."
+    //
+    // Three calls were made on his behalf when he said "go forward" (all pinned by TheHiveTests, so each is a
+    // one-line overrule): you find it by LOOKING (the lift head's door is the one imported thing on the moon),
+    // it goes three floors and the bottom is not a bottom, and B1 still holds pressure while everything below
+    // it does not. That last one is the whole feel of the place - the top floor lulls you and the rest costs
+    // you air.
+    private void HiveLiftInteract()
+    {
+        if (_surface is null)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveLift or DeckPlan.ConsoleKind.HiveHead })
+        {
+            return;
+        }
+
+        // ── #600 · THE PANEL, BECAUSE THE CAR ONLY WENT DOWN ──
+        //
+        // Owner, on B1: "looks like the elevator only takes me down... how do I get back to the surface with
+        // it :-D Am I marooned in a secret lab underground now :-D ?" — then, deciding it: "we should have
+        // elevator panel with UI then".
+        //
+        // This function USED to be the ride: one keypress, always one floor deeper, and the only way out was
+        // to reach the bottom of the band first. On a twenty-floor site that meant riding eighteen floors
+        // further from the surface, through dead air, to go up. The file's own comment two screens down says
+        // a captain trapped on a dead floor is a death; the lift was the thing doing the trapping.
+        //
+        // It survived #590, #591 and #592 all editing this function, because none of them asked what the UP
+        // case did — and the A* audit cannot see a state machine. It proves the captain can REACH the lift,
+        // never that the lift is a way HOME.
+        //
+        // Core owns which buttons exist (UndergroundComplex.LiftPanel) so that the #590 card gate and the
+        // #592 silence are ONE pure, tested rule instead of something re-derived in a razor file.
+        _showLiftPanel = true;
+        RendererInterop.PlayCue("board");
+    }
+
+    /// <summary>#600 · The buttons on this car's panel, from where the captain is standing.</summary>
+    private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
+        _surface is { } ex
+            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, AuthorityCardIds())
+            : [];
+
+    /// <summary>#600 · A button was pressed. A refusing button says why and the car does not move — a button
+    /// that is present and explains itself is the entire reason it is not simply absent.</summary>
+    private void PressLiftButton(UndergroundComplex.LiftStop stop)
+    {
+        if (_surface is not { } ex || stop.IsCurrent)
+        {
+            return;
+        }
+        if (stop.Refusal is { } refused)
+        {
+            // Said every time — a refusal that goes quiet on the second press reads as a broken button.
+            // Filed once, because pressing one gate eleven times is not eleven findings.
+            string line = UndergroundComplex.WrongCardLine(-ex.Floor, HeldAuthorities());
+            int refusedBand = UndergroundComplex.BandOf(stop.Level);
+            if (ex.HiveShaftsRefused.Add(refusedBand))
+            {
+                ShowAndFile(line, "🔒");
+            }
+            else
+            {
+                ShowPulseMessage($"🔒 {refused}");
+            }
+            return;
+        }
+
+        _showLiftPanel = false;
+
+        // Going below this car's own band is the OTHER shaft, and #590's card is what opened it.
+        int nextBand = UndergroundComplex.BandOf(Math.Min(ex.Floor, -1)) + 1;
+        if (stop.Level < 0 && UndergroundComplex.BandOf(stop.Level) == nextBand
+            && ex.HiveShaftsOpened.Add(nextBand))
+        {
+            ShowAndFile(
+                UndergroundComplex.CardAcceptedLine(
+                    new UndergroundComplex.AuthorityCard(ex.Stop.Body.Id, nextBand)), "🎫");
+            ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
+        }
+
+        RideTheLiftTo(ex, stop.Level);
+    }
+
+    private void CloseLiftPanel() => _showLiftPanel = false;
+
+    /// <summary>#600 · Whether the lift panel is up. The sim keeps running behind it, exactly as it does
+    /// behind the valve board.</summary>
+    private bool _showLiftPanel;
+
+    private void RideTheLiftTo(SurfaceExcursion ex, int level)
+    {
+        bool wasUnderground = ex.Floor < 0;
+        ex.Floor = level;
+
+        if (level == 0)
+        {
+            // #602 · Back out INSIDE THE SHED — the box the car came up into. Owner: "I would expect to spawn
+            // into the elevator box where we went down with", which is also what the line below has always
+            // said out loud ("lets you out into somebody's idea of a maintenance shed").
+            //
+            // Taken from the shed itself rather than from a magic offset off its centre, so the spot the
+            // captain lands on cannot drift from the walls that are drawn around it. That drift is exactly
+            // what put him in a wall: this used to compute its own position from the RAW seeded head spot
+            // while the shed was built at the nudged one.
+            (_avatarX, _avatarY) = MoonSurface.LiftHead(
+                ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField()).CarFloor;
+            RebuildSurfaceDeck();
+            // #603 \u00b7 And what you came out WITH. Owner: "Also in the brief pop-up of going to the surface...
+            // inventory key needs to be advertised." Surfacing is the moment a captain takes stock \u2014 they
+            // have just stopped spending air and started counting what it bought \u2014 so it is the one place
+            // the pocket should announce itself without being asked.
+            string carried = _satchel.Count > 0
+                ? $" You are carrying {_satchel.Count} thing{(_satchel.Count == 1 ? "" : "s")} out of it \u2014 \ud83c\udf92 I to look."
+                : "";
+            ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
+                "maintenance shed. The moon is exactly as indifferent as you left it." + carried);
+            RequestVaultSave();
+            return;
+        }
+
+        (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
+        (_avatarX, _avatarY) = (sx, sy);
+        RebuildSurfaceDeck();
+        RendererInterop.PlayCue("board");
+
+        if (!wasUnderground)
+        {
+            ShowAndFile(UndergroundComplex.DescendingLine, "\ud83d\udec3");
+
+            // #585 \u00b7 THE CARD, on the first descent only. Owner: "I think we need to gen AI pop-up about
+            // finding the elevator." It is the beat the whole feature turns on \u2014 the moment a moon stops
+            // being a field with things scattered on it and becomes a LID.
+            if (ex.HiveFloorsSeen.Count == 0)
+            {
+                // #411 · …and which card, because the head office's first descent is not a branch office's.
+                // Core decides, so the two can never be shown for the wrong building.
+                (string dLabel, string dArt, string dCard) =
+                    UndergroundComplex.FirstDescentCard(ex.Stop.Body.Id);
+                _viewObject = new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY, dLabel, dArt, dCard);
+            }
+        }
+
+        // #411 · THE TWO FLOORS THE WHOLE ARC WAS WRITTEN FOR. Raised after the first-descent block on
+        // purpose: those floors are reached from underground, so `wasUnderground` is true by the time a
+        // captain gets to either of them and the establishing card above has long since been spent.
+        MaybeRaiseHeadOfficeBeat(ex);
+
+        // #592 · THE FLOOR THAT IS NOT ON THE PLAN. The whole beat of the feature, said once, on the first
+        // step out onto the band nobody listed — and it is the hardest place in the game to hold the canon
+        // line. It says the operation upstairs was enormous, funded, staffed and inspected, and that this
+        // was under it, and that the people upstairs did not know. It does not say what it was for. The
+        // captain gets the arithmetic and never the answer; if they want one, the files are in the rooms
+        // and the files are about PEOPLE.
+        if (UndergroundComplex.IsUnlisted(ex.Stop.Body.Id, level)
+            && ex.HiveUnlistedSeen is false)
+        {
+            ex.HiveUnlistedSeen = true;
+            ShowAndFile(
+                UndergroundComplex.UnlistedArrivalLine(
+                    -UndergroundComplex.DepthOf(ex.Stop.Body.Id),
+                    UndergroundComplex.KindFor(ex.Stop.Body.Id),
+                    UndergroundComplex.KindOn(ex.Stop.Body.Id, level)),
+                "\U0001F573");
+            ApplyNerveShock(9.0, "a building with floors it does not count");
+        }
+
+        // \u2500\u2500 #609 \u00b7 WHETHER YOU CAN BREATHE HERE IS A CARD, NOT A TOAST \u2500\u2500
+        //
+        // Owner, having suffocated on B2: "I thought there is air in the base?" / "there should be a warning
+        // or something :-D" / "maybe pop-up about you have air or you are in vacuum type ... it is vital
+        // info" / "like the basement is more dangerous than the surface now :-D".
+        //
+        // The last one is exactly right and it is the DESIGN \u2014 depth is paid for in air (#585) \u2014 but the
+        // game was announcing the single most important fact about a floor in a pulse message that fades in
+        // eight seconds, alongside pulses about hardware and dust. On the surface an emergency shelter is a
+        // visible building you can run to; down here the equivalent is knowing which floors hold pressure,
+        // and that was being whispered.
+        //
+        // So the FIRST time each excursion meets dead air it stops the world with a card. Every later dead
+        // floor is the pulse line again, because by then the captain has been told and a card per floor
+        // would be a card nobody reads.
+        bool firstSight = ex.HiveFloorsSeen.Add(level);
+        bool pressurised = UndergroundComplex.HoldsPressure(level);
+
+        if (firstSight && !pressurised && !ex.HiveVacuumWarned)
+        {
+            ex.HiveVacuumWarned = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.VacuumCardLabel,
+                UndergroundComplex.VacuumArtUrl,
+                UndergroundComplex.VacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds));
+            ShowAndFile(UndergroundComplex.DeadAirLine, "\ud83e\udec1");
+        }
+        else if (firstSight)
+        {
+            ShowAndFile(pressurised
+                ? UndergroundComplex.PressurisedLine
+                : UndergroundComplex.DeadAirLine, "\ud83e\udec1");
+        }
+
+        ApplyNerveShock(UndergroundComplex.HoldsPressure(level) ? 2.0 : 5.0,
+            "a building this expensive, this far down, and this empty");
+        RequestVaultSave();
+    }
+
+    /// <summary>#585 - Where the camouflaged lift head stands. Reuses the seeded secret-lab door spot, so the
+    /// ground already kept clear for the old chamber is exactly the ground the shed stands on - one seeded
+    /// fact, two uses, nothing to keep in sync.</summary>
+    private (double X, double Y) SecretLabHeadSpot(SurfaceExcursion ex)
+    {
+        // #602 · THE SAME FUNCTION THE SHED IS DRAWN BY, and for once the comment above this one was not
+        // describing the code. Owner, stepping out of the car: "Oh I emerged into the wall on the surface...
+        // I cannot move :-D"
+        //
+        // This used to return SecretLab.For(...).DoorX/DoorY — the RAW seeded spot. But MoonSurface builds
+        // the shed at SecretLab.HeadSpot(...), which starts from that raw spot and then MOVES it clear of
+        // the shelters and huts already standing there. So on any site where the nudge did something, the
+        // lift returned the captain to the un-nudged spot: inside the very structure the nudge exists to
+        // avoid, in a wall, unable to move.
+        //
+        // The old comment claimed "one seeded fact, two uses, nothing to keep in sync" — which was the
+        // intention and not the code. It is one function now, so it is true.
+        return SecretLab.HeadSpot(
+            ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
+    }
+
+    /// <summary>#585 - Turning over one room of the facility. About a third are stripped; the rarest thing in
+    /// the building is a FILE ON SOMEBODY, because it is the only haul you spend on a person.</summary>
+    private void HiveHaulInteract()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveHaul } spot)
+        {
+            return;
+        }
+
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        int which = -1;
+        for (int i = 0; i < floor.RoomCentres.Count; i++)
+        {
+            if (Math.Abs(floor.RoomCentres[i].X - spot.X) < 0.5
+                && Math.Abs(floor.RoomCentres[i].Y - spot.Y) < 0.5)
+            {
+                which = i;
+                break;
+            }
+        }
+        if (which < 0 || !ex.HiveRoomsEmptied.Add(HiveInterior.RoomKey(ex.Floor, which)))
+        {
+            return;
+        }
+
+        UndergroundComplex.Haul haul = UndergroundComplex.InRoom(ex.Stop.Body.Id, ex.Floor, which);
+        if (haul == UndergroundComplex.Haul.Equipment)
+        {
+            _credits += 900;
+            RendererInterop.PlayCue("board");
+        }
+
+        // Everything found down here is FILED (#587) - this is the place in the game most worth being able to
+        // re-read, and a file on a harbourmaster that faded after eight seconds would be a joke.
+        // #613 \u00b7 AND SAY WHETHER IT WENT INTO YOUR POCKET. Owner, after clearing a corridor: "now I used e
+        // to search and then checked inventory on many rooms" / "we should tell the users if stuff is picked
+        // up into inventory or not."
+        //
+        // The haul line describes what is in the room and stops, which was right while everything either
+        // paid out in credits or was flavour. Some of it is now a THING YOU CARRY and some of it is not, and
+        // the captain was opening the satchel after every single room to find out which \u2014 the game asking
+        // the player to audit it.
+        // \u2500\u2500 #613 \u00b7 THE CARD YOU FOUND IS ALWAYS A CARD YOU CARRY \u2500\u2500
+        //
+        // Owner, in a four-floor site: "now I picked authority card but it did not go to inventory."
+        //
+        // He was right and the cause was mine. CardInRoom returns the card for the band BELOW, and correctly
+        // returns null on the bottom band \u2014 a card for a hole nobody dug would be a lie. But the client then
+        // handed out a lead and put NOTHING in the pocket, while the prose went on describing a countersigned
+        // card in the captain's hand. The sim did one thing and the sentence said another: this repo's third
+        // named bug class, and I shipped it again.
+        //
+        // A card is an OBJECT. You picked it up, so you have it. When the shaft it runs is not in this
+        // building it is a card for another one \u2014 which is exactly the wallet the refusal line has been
+        // describing all along ("every one of them countersigned, current, and for another shaft"). Until now
+        // that line was describing a thing the game could not give you. Now the deepest floor of one facility
+        // hands you the way into the next, which is the best thing a bottom floor could possibly hold.
+        UndergroundComplex.AuthorityCard? found = null;
+        if (haul == UndergroundComplex.Haul.Key)
+        {
+            found = UndergroundComplex.CardInRoom(ex.Stop.Body.Id, ex.Floor);
+            if (found is null
+                && GrantLabLead(DiceRule.Seed($"lead:hive-key:{ex.Stop.Body.Id}:{ex.Floor}:{which}")) is { } far
+                && UndergroundComplex.SiteHasBand(far, 0))
+            {
+                found = new UndergroundComplex.AuthorityCard(far, 0);
+            }
+        }
+
+        string pocket = haul switch
+        {
+            UndergroundComplex.Haul.Records => "  \ud83c\udf92 Into your pocket: operational paper.",
+            UndergroundComplex.Haul.Dirt => "  \ud83c\udf92 Into your pocket: a file on somebody.",
+            UndergroundComplex.Haul.Key when found is { } c && c.BodyId != ex.Stop.Body.Id
+                => "  \ud83c\udf92 Into your pocket: an authority card \u2014 and it is not for this building.",
+            UndergroundComplex.Haul.Key when found is not null
+                => "  \ud83c\udf92 Into your pocket: an authority card.",
+            UndergroundComplex.Haul.Equipment => "  \ud83d\udcb3 Crated and carried out \u2014 it sells, it does not fit a pocket.",
+
+            // #614 \u00b7 You cannot lift it and the game must not pretend you can. What goes in the pocket is
+            // the RECORD of it, which is also the only honest thing to have taken: a measurement is exactly
+            // as much of this object as anybody has ever managed to remove from the room.
+            UndergroundComplex.Haul.Relic => "  \ud83c\udf92 Into your pocket: measurements, a photograph, a scraping. "
+                + "The thing itself stays where it is.",
+
+            _ => "",
+        };
+
+        ShowAndFile(UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which) + pocket,
+            haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
+
+        if (haul == UndergroundComplex.Haul.Dirt)
+        {
+            ApplyNerveShock(4.0, "reading somebody's file in a building that should not exist");
+        }
+
+        // #585 · A facility keeps records of the OTHER facilities. Operational paper and files are the
+        // strongest leads in the game, which is the right shape: the deeper into one of these you go, the
+        // more of the map opens up.
+        // ── #603 · PAPER IS NOW A THING YOU CARRY, NOT A LEAD YOU ARE GIVEN ──
+        //
+        // Operational paper used to grant a lead the moment you picked it up — the game did the thinking and
+        // handed you the answer. The owner's version is better: the decision to read a document AS A CLUE is
+        // the player's, and making it is what lights the tracker. A paper you have not connected to anything
+        // is just paper.
+        //
+        // A file on somebody is carried too, but it is never offered to a door: it is leverage on a PERSON,
+        // which is the only currency down here you spend on somebody you can go and meet.
+        string findId = $"hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}";
+        if (haul == UndergroundComplex.Haul.Records)
+        {
+            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Paper, findId))];
+        }
+        else if (haul == UndergroundComplex.Haul.Relic)
+        {
+            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Relic, findId))];
+
+            // The card is raised on the spot, unconditionally and every time. This is the one object in the
+            // game that a captain will want to look at again the moment they find it, and #528's
+            // once-per-excursion gate is for things that RECUR — a rib mouth, a card, a dead floor. There is
+            // one of these in a facility and most facilities do not have one.
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                CarriedObject.CollarLabel, CarriedObject.CollarArtUrl, CarriedObject.CollarStory);
+
+            ApplyNerveShock(9.0, "standing next to something that was measured for a neck");
+        }
+        else if (haul == UndergroundComplex.Haul.Dirt)
+        {
+            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Dirt, findId))];
+
+            // A file still names a moon on its own — it is about a PERSON and the person is somewhere. Only
+            // the operational paper became a thing you have to decide about.
+            GrantLabLead(DiceRule.Seed($"lead:hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
+        }
+
+        if (Core.Satchel.IsFull(_satchel))
+        {
+            ShowPulseMessage("🎒 Your hands and pockets are full. Something has to be read, spent or left " +
+                "behind before you can carry anything else out of here.");
+        }
+
+        // #590 · THE CARD IS NOW A THING YOU HOLD. It runs the shaft below the band it was found in, so the
+        // way deeper into a facility is earned by working the floors you are on — and it is durable, so the
+        // gate still reads it a month and a moon later.
+        //
+        // On the bottom band there is no shaft below to authorise, and rather than hand out an authority for
+        // a hole nobody dug, that Key names another moon: the same payoff Records and Dirt give, which keeps
+        // the deepest floor of a site pointing outward instead of at itself.
+        if (found is { } card)
+        {
+            _satchel = [.. Core.Satchel.Add(_satchel,
+                new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
+
+            // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to
+            // really tell the story here :-D" — the right pair with the sealed way, because the Hive has
+            // exactly two objects about the idea of passage and this is the one that works.
+            if (!ex.HiveAuthorityShown)
+            {
+                ex.HiveAuthorityShown = true;
+                _viewObject = new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                    UndergroundComplex.AuthorityCardLabel,
+                    UndergroundComplex.AuthorityCardArtUrl,
+                    UndergroundComplex.AuthorityCardStory(card));
+            }
+        }
+
+        RebuildSurfaceDeck();
+        RequestVaultSave();
+    }
+
+    /// <summary>#585 - A door that never opens, read out loud. It is a WALL with a world behind it, and the
+    /// game never once pretends otherwise - a door that teases would turn scale into a puzzle.</summary>
+    private void HiveSignInteract()
+    {
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveSign } spot)
+        {
+            return;
+        }
+        string sign = spot.Label.Replace("\ud83d\udd12 ", "");
+
+        // #528 \u00b7 THE WAY ON, CLOSED. Owner, standing at a rib's far end: "I see there is a nice lock here at
+        // the end of the corridor.... maybe we could have a gen-AI image for it and a pop-up to tell the
+        // story?"
+        //
+        // It fires at the moment it explains the most (#528's fourth rule): the captain has just walked the
+        // length of a rib and met a plate with a distance painted on it. ONLY the sealed way earns a card \u2014 a
+        // room door that will not open is a sign to read, not a scene, and forty of them would be a
+        // slideshow. The pulse line still says its piece underneath, here and every time after.
+        if (UndergroundComplex.IsSealedWay(sign) && _surface is { } sealedEx && !sealedEx.HiveSealedWayShown)
+        {
+            sealedEx.HiveSealedWayShown = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.SealedWayCardLabel,
+                UndergroundComplex.SealedWayArtUrl,
+                UndergroundComplex.SealedWayCard(sign));
+            ApplyNerveShock(3.0, "a corridor somebody dug for a year and then closed");
+        }
+
+        // ── #603 · AND THE DOOR TELLS YOU YOU HAVE POCKETS ──
+        //
+        // Owner: "we should advertise the items list on closed locked door pop-up... something like check
+        // your items button there that opens inventory."
+        //
+        // This is the #212 law applied to the satchel: the refusal already said WHY, and a captain standing
+        // in front of it with an authority in their pocket had no way to find out whether it was the one.
+        // The door now offers the verb. It is also how the satchel gets discovered at all — nobody reads a
+        // keybind, and everybody presses the button on the thing that just refused them.
+        _lockedDoor = new LockedDoorLook(
+            sign,
+            UndergroundComplex.LockedLine(sign),
+            UndergroundComplex.IsSealedWay(sign)
+                ? SatchelTry.Target.SealedWay
+                : SatchelTry.Target.RoomDoor);
+    }
+
+    /// <summary>#603 · The door the captain is standing at, while its pop-up is up.</summary>
+    private sealed record LockedDoorLook(string Sign, string Line, SatchelTry.Target Target);
+
+    private LockedDoorLook? _lockedDoor;
+
+    private void CloseLockedDoor() => _lockedDoor = null;
+
+    /// <summary>#603 · "Check your items" — the satchel, opened AT something, so every item is a thing you
+    /// can offer rather than a thing you can look at.</summary>
+    private void OpenSatchelAtTheDoor()
+    {
+        if (_lockedDoor is { } door)
+        {
+            _satchelTarget = (door.Target, null, door.Sign);
+        }
+        _lockedDoor = null;
+        _showSatchel = true;
+    }
+
+    /// <summary>#603 · Open it from nowhere in particular — just to see what you are carrying.</summary>
+    private void OpenSatchel()
+    {
+        _satchelTarget = null;
+        _showSatchel = true;
+    }
+
+    private void CloseSatchel()
+    {
+        _showSatchel = false;
+        _satchelTarget = null;
+    }
+
+    private bool _showSatchel;
+
+    /// <summary>What the satchel is currently open AT, if anything: the target, whatever that target needs
+    /// to judge an offer, and what to call it on screen.</summary>
+    private (SatchelTry.Target Target, string? Context, string Label)? _satchelTarget;
+
+    /// <summary>#614 · The card for a carried thing, or null if it is ordinary. Asked once per row while the
+    /// satchel draws, which is why <see cref="CarriedObject.Card"/> is cheap and pure.</summary>
+    private CarriedObject.Reveal? LookAtItem(Core.Satchel.Item item) =>
+        _surface is { } ex ? CarriedObject.Card(item, ex.Stop.Body.Id) : null;
+
+    /// <summary>#614 · LOOK AT IT PROPERLY. Owner: <i>"we could have gen-AI images of plotwise important
+    /// items... maybe they say something about what door they open."</i>
+    ///
+    /// <para>Free and repeatable, per #603's ruling that reading a thing and DECIDING something with it are
+    /// two different acts — the owner asked for the paper to be viewable many times and the same law covers
+    /// every object worth a card. The satchel stays open underneath, because a captain comparing three
+    /// authority cards should not have to reopen their pockets between each one.</para></summary>
+    private void OpenItemCard(Core.Satchel.Item item)
+    {
+        if (LookAtItem(item) is not { } card)
+        {
+            return;
+        }
+
+        _viewObject = new DeckPlan.ConsoleSpot(
+            DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+            card.Label, card.ArtUrl, card.Story);
+    }
+
+    /// <summary>#603 · Offer one carried thing to whatever the satchel is open at. The outcome is always
+    /// SAID — a control that does nothing and says nothing is indistinguishable from a bug.</summary>
+    private void TryItem(Core.Satchel.Item item)
+    {
+        if (TargetFor(item) is not { } at)
+        {
+            return;
+        }
+
+        SatchelTry.Outcome outcome = SatchelTry.Offer(item, at.Target, at.Context);
+        ShowPulseMessage(outcome.Line);
+
+        if (!outcome.Worked)
+        {
+            return;
+        }
+
+        // ── #603 · READING A PAPER NEVER SPENDS IT ──
+        //
+        // Owner: "press I ... inventory opens... select paper and see what the clue is." / "it should be
+        // viewable many times."
+        //
+        // The first cut consumed it, which was wrong twice over. It conflated LOOKING with DECIDING — one
+        // click both read the document and burned it — and it broke the field book's own law (#587: "a find
+        // that is shown once is a find that is lost"). A paper is a thing you own; you can take it out and
+        // read it again in a year.
+        //
+        // So the document is always shown, in full, every time. The tracker gets plotted on the first read
+        // and GrantLabLead no-ops on every one after, which is the honest shape: the knowledge is what is
+        // one-shot, not the paper.
+        if (item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
+        {
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id)).ToUpperInvariant()}",
+                "",
+                Core.FieldClue.Document(item.Id) + "\n\n" + outcome.Line);
+
+            GrantLabLead(DiceRule.Seed($"clue:{item.Id}"));
+        }
+
+        // ── #603 case 2 · THE ROUNDS GO IN, AND THE GUN REMEMBERS WHAT THEY WERE ──
+        //
+        // Six rounds is not a resupply, it is a decision — which gun, and with what. A sentry loaded with
+        // the lab round clears a line with one shot and refuses anything already on top of it; one loaded
+        // with issue ball does neither. Both facts have to live on the magazine, so the bot carries the kind.
+        if (item.Kind == Core.Satchel.Kind.Rounds && at.Target == SatchelTry.Target.DrySentry
+            && _surface is { } loadEx)
+        {
+            SurfaceBot? gun = loadEx.Bots.FirstOrDefault(b => b.Deployed && b.Unit == at.Context);
+            if (gun is not null)
+            {
+                gun.Rounds += item.Count;
+                gun.AmmoId = item.Id;
+                _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count)];
+
+                Core.Ammunition.Kind kind = Core.Ammunition.ById(item.Id);
+                if (kind.MinimumRangeDu > 0)
+                {
+                    ShowPulseMessage(
+                        $"🔫 {gun.Unit} takes them. It will not fire these at anything closer than " +
+                        $"{kind.MinimumRangeDu:F0} du — they arm after travel, and that is the whole point " +
+                        "of them.");
+                }
+            }
+        }
+
+        CloseSatchel();
+    }
+
+    /// <summary>#603 · What this item can be offered to right now.
+    ///
+    /// <para>Opened AT something — a door, a gate — everything goes to that. Opened from nowhere with the I
+    /// key, most things are just a look, but a DOCUMENT can always be read as a clue, because the tracker is
+    /// on the captain's arm and deciding a paper is a map is something they can do standing anywhere. That
+    /// is the owner's own framing: the lead is not granted on pickup, it is granted when the player decides
+    /// the paper means something.</para></summary>
+    private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(Core.Satchel.Item item)
+    {
+        if (_satchelTarget is { } at)
+        {
+            return at;
+        }
+
+        // A document can always be read — the tracker is on the captain's arm.
+        if (item.Kind == Core.Satchel.Kind.Paper)
+        {
+            return (SatchelTry.Target.Tracker, null, "the motion tracker");
+        }
+
+        // #603 case 2 · And rounds go into a gun you are STANDING AT. Owner: "if we run empty on our
+        // autoguns and have those on our inventory then from there we should be able to load them into the
+        // guns." The interesting case is precisely a sentry that has run dry out in the field, away from the
+        // tube — a handful is never a resupply, but it might be enough to get you home.
+        if (item.Kind == Core.Satchel.Kind.Rounds && DrySentryUnderfoot() is { } unit)
+        {
+            return (SatchelTry.Target.DrySentry, unit, unit);
+        }
+
+        return null;
+    }
+
+    /// <summary>#603 · The dry sentry within reach, if there is one. Deployed and out of ammunition: a live
+    /// one does not want your six rounds and a carried one is not deployed.</summary>
+    private string? DrySentryUnderfoot()
+    {
+        if (_surface is not { } ex)
+        {
+            return null;
+        }
+
+        double radiusSq = DeckPlan.InteractRadius * DeckPlan.InteractRadius;
+        foreach (SurfaceBot b in ex.Bots)
+        {
+            if (!b.Deployed || b.Rounds > 0)
+            {
+                continue;
+            }
+            double dx = b.X - _avatarX, dy = b.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) <= radiusSq)
+            {
+                return b.Unit;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>What to write on one row of the pocket. The prose is rebuilt from the world here rather than
+    /// stored, so a save can never go stale against the words.</summary>
+    private static string SatchelLabel(Core.Satchel.Item item) => item.Kind switch
+    {
+        Core.Satchel.Kind.Authority =>
+            UndergroundComplex.AuthorityCard.TryParse(item.Id, out UndergroundComplex.AuthorityCard c)
+                ? UndergroundComplex.CardTitle(c)
+                : "🎫 an authority card",
+        // #613 · Each paper by its own name. Owner: "the operational papers could have individual short
+        // titles… now they look identical in inventory." The certainty stays on the end, because that is the
+        // one thing about a paper worth comparing across a pocketful of them.
+        Core.Satchel.Kind.Paper =>
+            $"📋 {Core.FieldClue.Title(item.Id)} — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
+        Core.Satchel.Kind.Rounds => item.Id == Ammunition.LabTwoStage.Id
+            ? $"🔫 {item.Count} × {Ammunition.LabTwoStage.Name}"
+            : $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",
+
+        // #614 · Named for what you actually have, which is paperwork about a thing you left in a room.
+        Core.Satchel.Kind.Relic => "⭕ measurements of the thing on the pallet",
+
+        _ => "🗃 a file on somebody",
+    };
+
+    // ── #588 · A PERSON, OUT OF THE PIECES ─────────────────────────────────────────────────────────────
+    //
+    // Owner: "when we find somebody's kit maybe we get gen ai compilation of what we discover about them...
+    // nice place for world building and dropping bread crumbs about our big plot", and then the part that
+    // makes it a MECHANIC rather than a lore drop — "if we know what happened to someone we get contacts
+    // easily by contacting their loved ones, in some cases that might lead our gum-shoe-efforts forward."
+    //
+    // Three pieces of kit make a person (one is litter, two is a coincidence). The payoff is not loot: it is
+    // an errand, and a name to drop, and — sometimes — somebody who has been waiting nine years for news and
+    // knows something nobody would ever tell a pirate.
+    private void AssembleSomebody(SurfaceExcursion ex, string body, string salt, int roomIndex)
+    {
+        ex.KitPieces.Add(roomIndex);
+        if (ex.KitPieces.Count < FieldDossier.FragmentsToAssemble || ex.DossierShown)
+        {
+            return;
+        }
+        ex.DossierShown = true;
+
+        // The stranger is keyed on the room whose papers COMPLETED the picture, so which body you are
+        // holding is a fact about where you searched — not a global roll that would have happened anyway.
+        FieldDossier.Person who = FieldDossier.Who(body, salt, roomIndex);
+        string place = Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name);
+
+        // The card, with the compiled effects. Reuses the ViewObject pop-up the builder's plate and the
+        // souvenirs already use — one image surface, not a second one to keep in step.
+        _viewObject = new DeckPlan.ConsoleSpot(
+            DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+            FieldDossier.ConsoleLabel, FieldDossier.ArtUrl, FieldDossier.Compiled(who, place));
+
+        RendererInterop.PlayCue("board");
+        ShowAndFile($"🗂 {who.Name} — a specialist in {who.Discipline}, carried out here by " +
+            $"{who.Employer}. The kit is theirs, all of it, and now you know their name.", "🗂");
+
+        // Somebody is still waiting. This is the thread, and running it is entirely the captain's choice.
+        FieldDossier.NextOfKin kin = FieldDossier.WhoIsWaiting(body, salt, roomIndex);
+        ShowAndFile(FieldDossier.KinLine(who, kin), "📇");
+        if (FieldDossier.KinKnowsSomething(body, salt, roomIndex))
+        {
+            ShowAndFile(FieldDossier.LeadHint(body, salt, roomIndex), "🔎");
+
+            // #585: and what they know is a PLACE. This is the owner's own chain closing — "if we know what
+            // happened to someone we get contacts easily by contacting their loved ones, in some cases that
+            // might lead our gum-shoe-efforts forward" — arriving, eventually, at a moon on the tracker.
+            GrantLabLead(DiceRule.Seed($"lead:kin:{body}:{salt}:{roomIndex}"));
+        }
+
+        // And the lighter one the owner asked for by name: a phrase that opens a door somewhere else.
+        // "In leisure suit larry game there was a tip to go to a door and say Ken sent me."
+        if (FieldDossier.HasIntroduction(body, salt, roomIndex))
+        {
+            ShowAndFile(FieldDossier.IntroductionLine(
+                FieldDossier.InTheKit(body, salt, roomIndex)), "🎟");
+        }
+
+        ApplyNerveShock(4.0, "a stranger's whole life, laid out on a rock");
+    }
+
+    // ── #585 · THE DETECTOR, SWEEPING ─────────────────────────────────────────────────────────────────
+    //
+    // Owner: "the detector should also give detecting readings near it."
+    //
+    // The probe was all-or-nothing — the exact square pings, its eight neighbours shriek, and the other four
+    // thousand squares say nothing — so finding a lab was a lottery rather than a search. This is the
+    // hot-and-cold every treasure hunt has run on forever: a reading that climbs as you close and falls away
+    // as you drift, so a captain can pick a bearing, walk it, and TURN when it cools.
+    //
+    // It only wakes on a moon somebody has named (#585's leads). A detector that hummed everywhere would hand
+    // over every lab in the system for free and make the whole clue chain pointless.
+    private SecretLab.Reading _lastDetectorReading = SecretLab.Reading.Silent;
+
+    private void StepSecretLabDetector()
+    {
+        if (_surface is not { } ex
+            || ex.Lab is not { HasLab: true } lab
+            || ex.SecretLabDoorRevealed
+            || !_labLeads.Contains(ex.Stop.Body.Id))
+        {
+            _lastDetectorReading = SecretLab.Reading.Silent;
+            return;
+        }
+
+        double dx = lab.DoorX - _avatarX, dy = lab.DoorY - _avatarY;
+        SecretLab.Reading now = SecretLab.ReadingAt(Math.Sqrt((dx * dx) + (dy * dy)));
+        if (now == _lastDetectorReading)
+        {
+            return;   // speak on the CHANGE only; a needle that narrates every frame is noise
+        }
+
+        bool warmer = now > _lastDetectorReading;
+        _lastDetectorReading = now;
+
+        string line = SecretLab.ReadingLine(now, warmer);
+        if (line.Length > 0)
+        {
+            ShowPulseMessage(line);
+            if (warmer && now >= SecretLab.Reading.Strong)
+            {
+                RendererInterop.PlayCue("pulse");
+            }
+        }
+    }
+
+    /// <summary>#585 · A clue names a moon. Called from every find in the gumshoe chain — a file in a
+    /// facility, papers in a ruin, what a dead specialist's family turns out to know.</summary>
+    /// <summary>Names a moon worth searching, and returns WHICH — #613, so a Key found on a bottom floor can
+    /// mint the card for the shaft it points at. Returns the body even when the lead was already known: the
+    /// lead is news you can only hear once, the card is an object that exists regardless.</summary>
+    private string? GrantLabLead(ulong seed)
+    {
+        if (_surface is not { } ex)
+        {
+            return null;
+        }
+
+        var candidates = new List<string>();
+        foreach (ShuttleStop stop in ShuttleDestinationsInRange())
+        {
+            if (stop.IsLandable && !Derelict.TryParseWreckId(stop.Body.Id, out _))
+            {
+                candidates.Add(stop.Body.Id);
+            }
+        }
+        if (!candidates.Contains(ex.Stop.Body.Id))
+        {
+            candidates.Add(ex.Stop.Body.Id);
+        }
+
+        string? named = SecretLab.MoonWorthLookingAt(candidates, seed);
+        if (named is null)
+        {
+            return null;
+        }
+        if (!_labLeads.Add(named))
+        {
+            return named;
+        }
+
+        string display = ShuttleDestinationsInRange()
+            .FirstOrDefault(s => s.Body.Id == named)?.Body.Name ?? named;
+        ShowAndFile(SecretLab.LeadLine(display), "🔎");
+        RequestVaultSave();
+        return named;
+    }
+
+    // ── #587 · THE FIELD BOOK ──────────────────────────────────────────────────────────────────────────
+    //
+    // Owner: "we should maybe collect the tips to ledger if we don't show them again?" — and he is right,
+    // because until now they were NOT shown again. Every find out there arrived through ShowPulseMessage,
+    // which fades after at most eight seconds and is then gone: you walk twenty minutes across a vacuum for
+    // a sentence you cannot read twice.
+    //
+    // Exactly the bug he already ruled on for the bar (#347: the words a player paid for "may not hide"),
+    // so it gets exactly the same answer — a durable, capped, vault-persisted book, projected into the
+    // captain's ledger grouped by PLACE. On the ground the thing you want back is not who told you, it is
+    // where you were standing.
+    private List<Core.FieldNote> _fieldNotes = [];
+
+    // #585 · MOONS SOMEBODY HAS NAMED. Owner: "We will be needing some kind of clue in the plot arc to the
+    // radar to really find it in reasonable time in the game :-D ... now we kind of found it by just knowing
+    // it is here somewhere."
+    //
+    // This is the missing link in the whole gumshoe chain. A clue found in a facility, a ruin or a dead
+    // specialist's family names a MOON; landing on a named moon wakes the detector and the tracker's vague
+    // wash. Without it the search was a lottery with four thousand tickets.
+    private readonly HashSet<string> _labLeads = [];
+
+    // ── #603 · THE SATCHEL: everything the captain is carrying on foot ──────────────────────────────────
+    //
+    // Owner: "we should have some option to try use those at the locked doors... maybe we need like
+    // on-site-carried-items inventory ... The captains ledger has the ship stuff but we should have
+    // something similar on foot."
+    //
+    // This REPLACES the #590 card set. Cards were the first thing the captain carried that the player could
+    // not see, and by the time papers, files and loose rounds joined them there would have been four private
+    // stores and still no pockets. One list now, and a panel draws it.
+    //
+    // Durable, not per-excursion: you find a thing eleven floors under a moon, fly home, come back a month
+    // later and it is still in your pocket. So it rides in the vault beside the leads rather than on the
+    // SurfaceExcursion, which is thrown away the moment the shuttle lifts.
+    private List<Core.Satchel.Item> _satchel = [];
+
+    /// <summary>#590 · The card ids the lift panel and its gate ask about, DERIVED from the satchel so there
+    /// is one store. A second copy kept in step by hand is the failure this ground's spec opens with a table
+    /// of.</summary>
+    private HashSet<string> AuthorityCardIds() =>
+        [.. Core.Satchel.OfKind(_satchel, Core.Satchel.Kind.Authority).Select(i => i.Id)];
+
+    /// <summary>#590 · Every card the captain holds, parsed back into what it authorises. Unreadable entries
+    /// from an edited or future save are simply dropped rather than thrown over — the vault is tolerant
+    /// everywhere else and a mystery key is not worth crashing a load for.</summary>
+    private List<Core.UndergroundComplex.AuthorityCard> HeldAuthorities()
+    {
+        var held = new List<Core.UndergroundComplex.AuthorityCard>();
+        foreach (string id in AuthorityCardIds())
+        {
+            if (Core.UndergroundComplex.AuthorityCard.TryParse(id, out Core.UndergroundComplex.AuthorityCard c))
+            {
+                held.Add(c);
+            }
+        }
+        held.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));   // stable order in the refusal line
+        return held;
+    }
+
+    /// <summary>Say it AND keep it. Every durable find on a surface goes through here rather than through
+    /// ShowPulseMessage directly, so there is one place that can never be forgotten about — the pulse is the
+    /// doorbell, the book is the record.</summary>
+    private void ShowAndFile(string text, string glyph)
+    {
+        ShowPulseMessage(text);
+        if (_surface is not { } ex || string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+        _fieldNotes = [.. Core.FieldNotes.Append(_fieldNotes, new Core.FieldNote(
+            text, SimTime, Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name), glyph))];
+    }
+
+    // ── #586 · WHAT SOMEBODY LEFT AT THE FOOT OF THE MONOLITH [E] ──────────────────────────────────────
+    //
+    // Owner: "let's have gen AI image at the monolith and some items appearing there now and then ... it is
+    // supposed to be impressive... now it looks like a box in closet."
+    //
+    // The picture is the [E] on the slab itself. THIS is the other half, and it is the half that makes the
+    // place alive: a landmark that never changes is scenery you visit once. Every line here is somebody
+    // ELSE's visit — a cutting rig laid down neatly, a scoured plate, bootprints that all face the slab and
+    // none lead away. The monolith itself never speaks, never reacts, and is never confirmed to have noticed
+    // anything, which is the whole register (see reever-origin canon: the game never explains this).
+    private void MonolithFootInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.MonolithFoot })
+        {
+            return;
+        }
+
+        long epoch = Monolith.EpochAt(SimTime);
+        Monolith.Offering left = Monolith.AtTheFoot(ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch);
+        if (left == Monolith.Offering.Nothing)
+        {
+            return;
+        }
+
+        string key = $"monolith:{epoch}";
+        if (!ex.RuinsSearched.Add(key))
+        {
+            ShowPulseMessage("You have already looked at it. It has not changed.");
+            return;
+        }
+
+        ShowAndFile(Monolith.FootLine(left, ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch), "▮");
+
+        // It costs nerve to stand here reading somebody else's last afternoon. Remains cost more.
+        ApplyNerveShock(left == Monolith.Offering.Remains ? 5.0 : 2.0,
+            "somebody else got this far, and this is what is left of their visit");
+        RequestVaultSave();
+    }
+
+    // ── #573 · THE SHELTER'S EMERGENCY LOCKER [E]. Owner, on Andy Weir's bubble shelters: they "should also
+    //    contain reload to guns". A shelter stocked with air and nothing else is a tap, not a refuge. ──
+    private void ShelterLockerInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.ShelterLocker })
+        {
+            return;
+        }
+        int whichLocker = ShelterUnderfoot(ex);
+        if (whichLocker < 0)
+        {
+            return;
+        }
+
+        var takers = ex.Bots.Where(b => b.Rounds < SentryBot.MaxMagazine).ToList();
+        if (takers.Count == 0)
+        {
+            ShowPulseMessage(SurfaceShelter.LockerFullLine);
+            return;
+        }
+
+        // #580 · EVERY MAGAZINE, EVERY TIME, FOR AS LONG AS YOU CARE TO STAND HERE. Owner: "we want in
+        // practise unlimited reloads of rounds at the shelters not like couple mags". No drawer, no
+        // reservoir, no cooldown — the press is the point of the building. What this costs is the walk here
+        // and the air it took, which is where the pressure in an excursion is supposed to live.
+        int loaded = 0;
+        foreach (SurfaceBot bot in takers)
+        {
+            loaded += SentryBot.MaxMagazine - bot.Rounds;
+            bot.Rounds = SentryBot.MaxMagazine;
+        }
+
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage(SurfaceShelter.LockerLine(loaded));
+        RequestVaultSave();
+    }
+
+    private void ShelterTankInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.ShelterTank })
+        {
+            return;
+        }
+
+        // #573 · The rack is not a button any more — it pumps on its own for as long as a captain stands in
+        // the shelter (StepSuitAir), because the owner is right that the PUMPING TIME is the honest cost:
+        // "the time it takes to pump air is good incentive to not take too much". So [E] reads the gauge
+        // rather than working a lever. An affordance that did nothing would be worse than none (#212), so it
+        // tells you what the machine is doing and lets you decide how long to stand there.
+        int which = ShelterUnderfoot(ex);
+        if (which < 0)
+        {
+            ShowPulseMessage("🫁 The rack's fitting is inside. Step in out of the vacuum.");
+            return;
+        }
+
+        double held = ShelterReservoirNow(ex, which);
+        ShowPulseMessage(RackGaugeLine(ex, held));
+    }
+
+    // ── #608 · THE REFUGE'S RACK [E]. The same gauge, in a poured room under a moon. ─────────────────────
+    //
+    // Owner: "Still for safety there would need to be a couple of places with air lock and air refilling,
+    // because otherwise the elevator being busy could kill employees, and those honest criminal scientists
+    // are hard to recruit :-D"
+    //
+    // It reads the machine rather than working a lever, for the identical reason the shelter's does: the
+    // rack pumps on its own for as long as you stand in the air (StepSuitAir), and the PUMPING TIME is the
+    // honest cost. An affordance that did nothing would be worse than none (#212), so [E] says what the
+    // machine is doing and leaves the captain to decide how long they dare stand there — which, on a dead
+    // floor with the lift several rooms away, is a much sharper decision than it is on the regolith.
+    private void HiveRefugeInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.HiveRefuge })
+        {
+            return;
+        }
+
+        int which = RefugeUnderfoot(ex);
+        if (which < 0)
+        {
+            ShowPulseMessage("🫁 The rack's fitting is through the inner door. Step into the air.");
+            return;
+        }
+        ShowPulseMessage(RackGaugeLine(ex, RefugeReservoirNow(ex, which)));
+    }
+
+    /// <summary>#608 · What a rack — either rack — says when it is asked how it is doing. One reading of one
+    /// machine, so the shed on the regolith and the refuge eleven floors down can never describe the same
+    /// state in two different ways.</summary>
+    private static string RackGaugeLine(SurfaceExcursion ex, double held) =>
+        ex.AirSeconds >= SuitAir.TankSeconds * SurfaceShelter.FillToFraction
+            ? SurfaceShelter.PumpDoneLine
+            : held > SurfaceShelter.ReservoirSeconds * 0.1
+                ? SurfaceShelter.PumpingLine
+                : SurfaceShelter.TrickleLine;
+
+    /// <summary>#573 · Raise the tank-is-low card, once per captain ever. Returns true when it went up, so
+    /// the caller keeps its pulse line for every later trip.</summary>
+    private bool ShowAirCardOnce()
+    {
+        if (_airCardSeen)
+        {
+            return false;
+        }
+        _airCardSeen = true;
+        _airCardOpen = true;
+        RequestVaultSave();
+        StateHasChanged();
+        return true;
+    }
+
+    /// <summary>#562 · Raise the tube-feeds-you card, once per captain ever. Returns true when it went up,
+    /// so the caller keeps its receipt line for every later racking. The card teaches the shape of an
+    /// excursion — one anchor, plan the route home — and the receipt is right for a captain who knows.</summary>
+    private bool ShowTubeRearmCardOnce()
+    {
+        if (_tubeRearmSeen)
+        {
+            return false;
+        }
+        _tubeRearmSeen = true;
+        _tubeRearmOpen = true;
+        RequestVaultSave();
+        StateHasChanged();
+        return true;
+    }
+
     // #329 follow-up: narrate a coarse descent phase and hand the frame back to the browser so the queued
     // render paints (the flying-🛸 door repaints with the new sub-line) before the next synchronous block.
     // Task.Delay(1) parks on a browser timer — the yield that resets Chrome's page-unresponsive timer, so
@@ -761,18 +3006,40 @@ public partial class Map
         // #488: a DERELICT is not a world. She gets a dead ship to walk — a spine, compartments, and the
         // evidence bolted to her decks — instead of the regolith field and its tube. Routed by body id, the
         // same trick the expedition sites use, so nothing else in the excursion has to know the difference.
+        // #585 · UNDERGROUND. A floor of the Hive is laid inside the SURFACE'S OWN envelope, so the whole
+        // facility costs no new coordinate space - the owner's insight, and the reason "down" beat "wider".
+        // Routed here, the same way a derelict is, so nothing else in the excursion has to know.
+        if (ex.Floor < 0)
+        {
+            _deckPlan = HiveInterior.FloorDeck(
+                ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
+                3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied);
+            // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
+            // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
+            // walks every floor of it, are untouched.
+            ComposeHeadOfficeFloor(ex);
+            return;
+        }
+
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
         {
             _deckPlan = WreckInterior.WreckDeck(
-                aboard, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling + InspectionTeam.TeamSize, FillSurfaceDroids,
-                HeldDoors(), BlockedDoors());
+                aboard, _wreckExamined, _wreckSalvaged, SurfaceDroidCount, FillSurfaceDroids,
+                HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
             return;
         }
 
         _deckPlan = MoonSurface.SurfaceDeck(
             ex.Stop.Body.Id, ex.Stop.Body.Name, OwnCachePositionsAt(ex.Stop.Body.Id),
-            3 + ReeverEngineCeiling + InspectionTeam.TeamSize, FillSurfaceDroids,
-            siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name); // #320: the picked site seeds the ground + names the header
+            SurfaceDroidCount, FillSurfaceDroids,
+            siteSalt: ex.Site.LayoutSalt, siteName: ex.Site.Name, // #320: the picked site seeds the ground + names the header
+            // #586: which visit-window the monolith's foot is showing. Bucketed off sim time so it holds
+            // still for a whole excursion (a captain who comes back the same afternoon finds what they left —
+            // his object-persistence law) and has moved on by the time it is worth walking out there again.
+            monolithEpoch: Monolith.EpochAt(SimTime),
+            // #585: whether this ground carries a clandestine site is ALREADY decided (ResolveSecretLab, which
+            // honours ?secretlab=1). The renderer is told; it never rolls again.
+            hasSecretSite: ex.Lab is { HasLab: true });
 
         // #371 Phase 3: on an expedition site, compose the sealed doors and replay every region already
         // forced open this visit onto the freshly-built base — so a bury/lift/drop rebuild grows back exactly
@@ -790,6 +3057,7 @@ public partial class Map
         // #409: on ANY body that hides a lab (expedition deep field or a rare ordinary moon), compose the
         // revealed hidden door and — once forced — replay the appended lab region onto the freshly-built base.
         ComposeSecretLabSite(ex);
+        ComposeOutpost(ex);          // #563: the hut — its dogged hatch, or the room once it is forced
     }
 
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
@@ -1033,9 +3301,20 @@ public partial class Map
     {
         int coin = Math.Clamp(ex.PendingCoin, 0, _credits);
         _credits -= coin;
-        _cargoUnits = 0;
-        _cargoValue = 0;
+
+        // Only what is IN THE CHEST leaves the books. The chest is a snapshot taken at the shuttle door
+        // (ShuttleExcursion.Pack); the hold keeps living all the way down — a cache dug back up on this
+        // same ground, a beach-comber scrap recovered after a panic drop. Clearing the whole hold here
+        // therefore ATE those units: the map card and the "off the books" line name only the snapshot, so
+        // they were neither buried nor aboard. Coin was always deducted honestly (the pending amount, no
+        // more); this is cargo's half of the same law. ShuttleExcursion.HoldAfterBurying owns the rule.
+        var left = ShuttleExcursion.HoldAfterBurying(_cargoByClass, ex.PendingCargo);
         _cargoByClass.Clear();
+        foreach (KeyValuePair<string, int> line in left)
+        {
+            _cargoByClass[line.Key] = line.Value;
+        }
+        RecomputeCargoTotals();
 
         int standing = WatchdogLevelAt(ex.Stop.Body.Id);
         int presence = Math.Max(standing, roll.Reevers);
@@ -1064,7 +3343,7 @@ public partial class Map
         // #411: a rare seeded square on an outer icy moon hides a cold KAAMOS supply pod — a cargo run that
         // never arrived, distinct from ordinary treasure. Sweeping it the first time assembles cold-pod (and
         // may open the reach). Once held, the square is ordinary regolith and the normal probe result stands.
-        if (!_kaamos.Has("cold-pod") && KaamosFind.IsColdPodSquare(ex.Stop.Body.Id, squareX, squareY))
+        if (!_kaamos.Has("cold-pod") && KaamosPodHere(ex.Stop.Body.Id, squareX, squareY))
         {
             TryAssembleKaamos("cold-pod",
                 "❄ Your probe rings off metal a foot down — not a coin, a HULL. You clear the frost and it's a " +
@@ -1188,7 +3467,7 @@ public partial class Map
     // onto the captain and the tube line — the motion-tracker "wall of signal" moment.
     private void SpawnReevers(int count)
     {
-        double baseY = Math.Min(_avatarY - 4, MoonSurface.MonolithY + 10);
+        double baseY = Math.Min(_avatarY - 4, MoonSurface.AnchorY + 10);
         for (int i = 0; i < count; i++)
         {
             if (_reevers.Count >= ReeverEngineCeiling)
@@ -1247,10 +3526,15 @@ public partial class Map
         // to be nearer and the wreck is unreachable except by walking the deck to the shuttle bay.
         List<ShuttleStop> board = [.. ShuttleDestinationsInRange()];
 
-        // A NAMED body wins over everything, and says so plainly when it is not in reach — a cheat that
-        // silently lands you somewhere else is worse than one that refuses, because you playtest the wrong
-        // scene and trust the result.
-        if (_landBodyCheat is { } wanted)
+        // #585 / #633 · A NAMED BODY WINS THE TOSS OUTRIGHT, so any ground can be opened and LOOKED at from
+        // one URL. Two spellings reach this line — `?body=<id>` (#585) and `?land=<id|name>` (#464) — because
+        // the branches grew one each; BOTH still parse, and they resolve through this ONE lookup rather than
+        // two, which is the only way they can be guaranteed to land in the same place.
+        //
+        // The named body must still be on the board — the cheat may never reach somewhere the player could
+        // not — and when it is not, it REFUSES and says so. A cheat that silently lands you somewhere else is
+        // worse than one that refuses, because you playtest the wrong scene and trust the result.
+        if ((_landBodyCheat ?? _forcedLandingBodyId) is { } wanted)
         {
             ShuttleStop? named = board.FirstOrDefault(
                 s => s.IsLandable
@@ -1310,18 +3594,71 @@ public partial class Map
             return;
         }
 
-        if (_surface is not null)
+        if (_surface is not { } landedOn)
         {
-            _avatarX = MoonSurface.SpawnX;
-            _avatarY = MoonSurface.LandingBandY - 12;
-            RebuildSurfaceDeck();
+            return;
         }
+
+        // #585 · ?secretlab=1&land=1 PUTS YOU AT THE SHAFT. Owner, after an evening of walking a 310 x 260
+        // field to reach the one thing being tested: "instruct to put the debug cheat start next to the lab
+        // so that it can be really tested without playing to find it" — "I mean next to the elevator shaft".
+        //
+        // The hunt is the GAME (the clue, the wash, the detector gradient), and it is exactly what must not
+        // stand between a developer and the feature under test. Every one of the open Hive issues — the
+        // sealed rooms, the visualiser, the card, the tracker, the unlisted band — needs the captain standing
+        // at the lift head within seconds, repeatedly.
+        //
+        // Only under the secret-lab cheat: an ordinary landing still drops you on the open regolith, so this
+        // can never quietly become how the game plays.
+        if (_secretLabForceBodyId == landedOn.Stop.Body.Id && landedOn.Lab is { HasLab: true })
+        {
+            (double hx, double hy) = SecretLab.HeadSpot(
+                landedOn.Stop.Body.Id, landedOn.Site.LayoutSalt, MoonSurface.ExpeditionField());
+
+            // A pace outside the shed's door, facing it — not inside, so the walk in is still walked and the
+            // door, the label and the console are all exercised the way a player meets them.
+            _avatarX = hx;
+            _avatarY = hy - 7.5;
+            RebuildSurfaceDeck();
+            ShowPulseMessage(
+                "🧪 DEV ?secretlab=1: set down at the lift head. The shed is in front of you.");
+
+            // ...and ?floor=N goes the rest of the way down, because half the open work on this feature is
+            // about what a FLOOR looks like rather than about finding the way in.
+            if (_startingFloorCheat is { } askedFor)
+            {
+                // #592 · Clamped to the site's TRUE bottom, not its listed one, so `?floor=20` can reach the
+                // band nobody listed. The whole reason the cheats exist is that the feature under test must
+                // be one URL away, and a hidden floor you can only reach by finding a card first would be
+                // the exact tax they were invented to remove.
+                string cheatBody = landedOn.Stop.Body.Id;
+                int floor = Math.Max(askedFor, UndergroundComplex.TrueDepthOf(cheatBody));
+
+                // The gap between the two buildings has nothing dug in it; land on the unlisted band's own
+                // shaft head rather than in rock.
+                if (floor < UndergroundComplex.DepthOf(cheatBody))
+                {
+                    floor = Math.Min(floor, UndergroundComplex.BandTop(UndergroundComplex.UnlistedBandOf(cheatBody)));
+                }
+                RideTheLiftTo(landedOn, floor);
+            }
+            return;
+        }
+
+        _avatarX = MoonSurface.SpawnX;
+        _avatarY = MoonSurface.LandingBandY - 12;
+        RebuildSurfaceDeck();
     }
 
     // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off. They are
     // roused in the DEEP and come to you (#461) — never set down on the landing pad, which read as the Old
     // Ones somehow knowing where the shuttle would touch down.
     private int _reeverAmbushCheat;
+
+    // #649: /map?watchers=1 opens the monolith's attentive window and shortens the dwell to a couple of
+    // seconds. It does NOT change what happens — the beat, the variant roll and the (zero) cost are the
+    // ones a captain gets — because a cheat that shows you a different scene is worse than no cheat at all.
+    private bool _watchersCheat;
 
     // The surface tick: dig channel, sentries, the chase, and the ambient tide — all cheap, no pathfinding.
     private void StepSurface(double dtRealSeconds)
@@ -1340,12 +3677,21 @@ public partial class Map
         // So the surface clock stops with the card. Nothing steps, and the arrival grace (#461) is rolled
         // forward by the paused span so the twenty seconds the captain is owed start when they can actually
         // use them — reading the rules must never spend the head start the rules are describing.
-        if (_groundLessonOpen)
+        // #563 · The map-just-grew card holds the world for exactly the same reason, and needs it MORE: the
+        // lesson at least fires on arrival, inside the #461 grace, while this one fires the instant a door
+        // gives — deep in a site, after a five-second channel that anything nearby has had time to walk
+        // toward. Reading why the map grew must not be what gets you killed.
+        // #562 · The tube-rearm card holds it too. The tube is the safest square on the moon, so this is
+        // belt-and-braces rather than a rescue — but a modal that leaves the world running is a bug waiting
+        // for the one player who opens it with something already in the tube mouth.
+        if (_groundLessonOpen || _groundGrewOpen || _tubeRearmOpen || _airCardOpen)
         {
             _surface.LandedAtMs += dtRealSeconds * 1000.0;
             return;
         }
 
+        StepSuitAir(dtRealSeconds);     // #564: the tank, the line, and the walk home
+        StepTubeRearm(dtRealSeconds);   // #562: the ship feeds your sentries while you stand in her tube
         StepDigChannel(dtRealSeconds);
         AdvanceVacuumClocks(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the vacuum soak
         AdvancePump(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #488: the thrifty road
@@ -1357,9 +3703,25 @@ public partial class Map
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
+        StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon
+        StepOutpostDoorChannel(dtRealSeconds);   // #563: the outpost hatch's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
         StepSentries(dtRealSeconds);
+        // #585 · NOTHING SHAMBLES DOWN HERE. Owner, stepping out of the car: "I don't think there should be
+        // reevers down here", then "now the reevers are on surface right, so they should not be visible here
+        // on screen now?" — both correct, and the second is the sharper point: they are still up there, and
+        // a captain underground should neither see them nor hear them on the fan.
+        //
+        // Same law a derelict already runs under: the tide claws up out of REGOLITH, and a poured, sealed,
+        // still-powered facility is not regolith. Clearing the live pack means a chase that followed you
+        // across the field is simply over — and the pack you meet coming back up is a fresh one, which is a
+        // better scene than one that rode down in the lift with you.
+        if (_surface is { Floor: < 0 })
+        {
+            _reevers.Clear();
+        }
         StepReevers(dtRealSeconds);
+        StepCollectors(dtRealSeconds); // #583: the repo boat, and the people who got out of it
         StepExpeditionFog(dtRealSeconds); // #371 Phase 3: born-dark regions + behind-cover contacts + echoes
         // #370/#394: an away site runs NO endless tide (owner: "not a continuous endless stream like on
         // Miranda"). The expedition's beats may rouse a LIMITED pack; the deflection rock runs the pack OFF
@@ -1474,18 +3836,13 @@ public partial class Map
     // The onset odds multiplier: the link is strong at the ship (a drop there would be silly), and drops
     // grow likelier the deeper the captain wanders into the site (owner: "more likely deep in a site,
     // during solar interference"). 1× at the tube mouth, up to ~2× deep by the monolith.
-    private double CommsOnsetBias()
-    {
-        if (MoonSurface.IsSafeAboard(_avatarY))
-        {
-            return 0.5; // basically at the ship — the downlink is solid
-        }
-        double top = MoonSurface.SurfaceTopY;
-        double deep = MoonSurface.MonolithY;
-        double span = top - deep;
-        double depth = span > 0 ? Math.Clamp((top - _avatarY) / span, 0.0, 1.0) : 0.0;
-        return 1.0 + depth;
-    }
+    //
+    // #637 · It used to read the MOON's axis unconditionally — "are you above the regolith's top rim at
+    // y = −20" — and a derelict's whole deck runs −9..+9, so aboard a wreck the early return fired at every
+    // point of every hull and the link never degraded anywhere. AwayTeamSide is the one place that knows
+    // which door you are on the far side of, and now which axis measures the walk away from it.
+    private double CommsOnsetBias() =>
+        AwayTeamSide.CommsOnsetBias(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
 
     // A scripted onset (a bad expedition beat, solar interference): if no episode is underway, pull the
     // next one forward to NOW. Pure schedule nudge — it changes WHEN the display gate closes, never the
@@ -1549,8 +3906,12 @@ public partial class Map
         {
             return;
         }
-        double detection = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
-        var entities = EverythingThatMoves();   // #538: the pack AND the sweep team
+        double detection = FanReach();   // #591: shorter with every floor down
+        // #583 / #538 · The chirp counts everything on its feet down here — the pack, the sweep team, and
+        // the repo crew. The holster device does not know or care whose boots they are, and a boat crew
+        // walking up on you is exactly the thing it exists to make you look at. ONE accessor, so the ear and
+        // the hull can never disagree about who is walking about in it.
+        var entities = EverythingThatMoves();
         int heard = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, entities, detection);
         (_chirp, bool chirp) = MotionTracker.StepChirp(_chirp, heard, dtRealSeconds);
         if (chirp)
@@ -1569,7 +3930,34 @@ public partial class Map
     private void StepNerve(double dtRealSeconds)
     {
         bool onExcursion = _surface is { } ex;
-        bool onRegolith = onExcursion && !MoonSurface.IsSafeAboard(_avatarY);
+        // #591 · A SHELTER STEADIES YOU. Owner: "we should restore sanity when we get to a shelter also."
+        //
+        // No new machinery was needed and that is the tell that it is the right rule: nerve already comes
+        // back one beat at a time whenever the captain is SAFE (NervePips.Cause.Airlock), and safe has always
+        // meant "aboard, or in her tube". A pressurised drum with a door nothing outside can work is safe by
+        // exactly the same definition — it is the reason the air stops there too (#573). Saying so here is
+        // the whole change.
+        //
+        // It also completes the building's argument. It gives you air, it reloads you, it keeps the Old Ones
+        // at the threshold — and until now you sat in it watching the one gauge that measures whether you can
+        // keep doing this go on falling.
+        // #585: a pressurised floor of the Hive steadies you for the same reason a shelter does - it is warm,
+        // it is lit, and nothing outside can work its doors. A DEAD floor does not, which is most of them.
+        bool inShelter = onExcursion && _surface is { } shelterEx
+            && (ShelterUnderfoot(shelterEx) >= 0
+                || (shelterEx.Floor < 0 && UndergroundComplex.HoldsPressure(shelterEx.Floor)));
+        // #637 · AND A DERELICT IS EXPOSED GROUND TOO. This asked the moon's question — "are you above the
+        // regolith's top rim at y = −20" — and a wreck's whole deck runs −9..+9, so aboard a hull it was
+        // always FALSE: the ambient pressure the entire dread economy runs on never applied inside a ship,
+        // `?wreck=infested` included. A captain could walk the spine of a haunted hull, in the dark, in
+        // vacuum, and the gauge scored it as standing in the shuttle bay. The damage half of that same
+        // constant was fixed in #574 and the air half in #621; this is the sanity half, one call site over.
+        //
+        // The name changed with the meaning: it is not the regolith, it is being on the far side of your own
+        // door — whichever door this world has (AwayTeamSide).
+        bool awayFromSafety = onExcursion
+            && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius)
+            && !inShelter;
 
         // #380 item 2: the band this frame opened on — so once, per excursion, we can speak the FIRST slide
         // down a rung (naming the cause and the remedy the bare gauge never did). Recovery only ever raises
@@ -1579,13 +3967,13 @@ public partial class Map
         // #379 · the per-spell sighting tally still lives here (the tracker's own hearing decides what counts
         // as a fresh contact); #480 prices the result in whole pips instead of a shaped float.
         int heardMovers = 0;
-        if (onRegolith && _surface is not null)
+        if (awayFromSafety && _surface is not null)
         {
             // #446: the tracker's fan still HEARS to its full detection range — that far, faint blip is the
             // whole point of the instrument. But a contact only FRIGHTENS you inside the dread range.
-            double detection = Math.Min(
-                MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), NerveModel.DreadRangeDeckUnits);
-            var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy));
+            double detection = Math.Min(FanReach(), NerveModel.DreadRangeDeckUnits);
+            var ents = _reevers.Select(r => new MotionTracker.Entity(r.X, r.Y, r.Vx, r.Vy))
+                .Concat(_collectors.Select(c => new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy)));
             heardMovers = MotionTracker.DetectedMovingCount(_avatarX, _avatarY, ents, detection);
         }
         // #480: charge ONLY the first fright of a spell. AdvanceSightings reports a fresh contact on every
@@ -1600,15 +3988,20 @@ public partial class Map
 
         var frame = new NervePips.Frame(
             OnExcursion: onExcursion,
-            OnRegolith: onRegolith,
-            SeesMonolith: onRegolith && SeesMonolith(),
+            OnRegolith: awayFromSafety,
+            // There is no monolith aboard a dead ship, and now that a wreck can BE exposed ground the guard
+            // has to be said rather than left to arithmetic (#637's whole list is things satisfied by
+            // accident). SeesMonolith() now answers the question properly on its own — it asks
+            // Monolith.StandsOn, the same predicate the renderer builds the slab from, and a wreck id is
+            // not the canon moon — so !OnWreck is belt to that braces rather than the only thing holding it.
+            SeesMonolith: !OnWreck && awayFromSafety && SeesMonolith(),
             // #446 (owner, live 2026-07-26: "The reevers should not lower sanity unless they get REALLY
             // close"). ChaseActive used to be the bare `_reevers.Count > 0` — a pack EXISTING anywhere on
             // the field, so one Old One drifting on the far rim taxed the captain at the same flat rate as
             // one at their shoulder, and the gauge bottomed out before anything ever reached them. Now we
             // hand Core the distance to the nearest hunter and it prices the dread off that; the moving
             // count is likewise only the ones near enough to matter, so a far-off tide is atmosphere.
-            Stressors: onRegolith
+            Stressors: awayFromSafety
                 ? new NerveModel.Stressors(
                     CountMovingReeversWithin(NerveModel.DreadRangeDeckUnits),
                     _reevers.Count > 0,
@@ -1616,12 +4009,16 @@ public partial class Map
                     IsCornered(),
                     NearestReeverRange())
                 : default,
-            FreshSightings: onRegolith && firstFrightOfSpell ? freshSightings : 0,
+            FreshSightings: awayFromSafety && firstFrightOfSpell ? freshSightings : 0,
             Touched: _touchedThisFrame,
             DtSeconds: dtRealSeconds,
             // #480 · fear tracks MORTAL DANGER: below a couple of blows left, every further hand costs its
             // pip again instead of being absorbed by the once-per-encounter latch.
-            HealthPipsLeft: _surface is { } hurt ? CaptainCondition.MaxHits - hurt.HitsTaken : int.MaxValue);
+            HealthPipsLeft: _surface is { } hurt ? CaptainCondition.MaxHits - hurt.HitsTaken : int.MaxValue,
+            // THE DWELL. The one sustained pressure that is not a regolith pressure: a derelict's interior
+            // reads as "aboard" to every other rule in NervePips, so standing beside the archive node would
+            // otherwise be scored SAFE and hand pips BACK while the ledger said it was taking them.
+            InArchiveField: InArchiveField);
 
         NervePips.Step step = NervePips.Advance(_nerve, _monolithSeen, _nerveBeats, in frame);
         bool monolithFired = !_monolithSeen && step.MonolithSeen;
@@ -1651,6 +4048,29 @@ public partial class Map
             // does: the monolith behind, the pack closing, and GATE-1 firing over your shoulder.
             OfferSelfie(SelfieBeats.FirstMonolith, "art/selfie-monolith.jpg");
         }
+
+        // #649 · AND THE ARRIVAL, which is a different beat from the first sight and lands much closer in.
+        //
+        // Monolith.ApproachLine has existed since #586 with NO CALLER — designed and never consumed, which
+        // QAHandoff-StoryTelling.md §1 names as its own failure class. It is the one beat of pure SCALE the
+        // crude grid cannot draw by itself, and the scale pass is exactly where it belongs: the nerve hit
+        // fires at three fifths of the thing's height away, while it is still a shape; this fires when you
+        // cross onto the swept ground and it fills the view. Two beats, two distances, both derived from how
+        // big the thing actually is.
+        if (onExcursion && _surface is { MonolithApproachAnnounced: false } walk
+            && Monolith.StandsOn(walk.Stop.Body.Id, walk.Site.LayoutSalt)
+            && DistanceToAnchorSquared() <= Monolith.ApproachRangeDu * Monolith.ApproachRangeDu)
+        {
+            walk.MonolithApproachAnnounced = true;
+            ShowAndFile(Monolith.ApproachLine, "▮");
+        }
+
+        // #649 · AND THEN, RARELY, THE GROUND DOES SOMETHING. See MonolithWatch for the register and the
+        // three gates; this is only the clock and the telling. Owner's reference: Babylon 5, Sheridan and
+        // the giants on the playground — "background puppeteers watching if their kids perform in the school
+        // play." Parental, not predatory: it costs nothing, it never repeats inside an excursion, and the
+        // world never remarks on it afterwards.
+        StepMonolithWatch(dtRealSeconds);
 
         // #380 item 2: the one-per-excursion band-drop pulse. The first time this frame's toll drops the nerve
         // a whole rung (Steady→Rattled, or lower), say WHY it falls and HOW to mend it — the cause+remedy the
@@ -1901,11 +4321,94 @@ public partial class Map
         return false;
     }
 
+    // #586 · IN SIGHT OF THE MONOLITH — and only where the monolith actually IS.
+    //
+    // This used to be pure distance to MoonSurface.AnchorX/Y, which is the DEEP ANCHOR of every ground
+    // there is: every seeded site puts its own fixture there (Luna's mass-driver muzzle, a plinth
+    // elsewhere), so walking up to any of them fired the once-in-a-life Lovecraftian hit — 24 nerve, the
+    // line "👁 The monolith resolves out of the dark", and the FirstMonolith selfie against the monolith
+    // plate — over a broken launch machine. And _monolithSeen is kept FOR LIFE, so the captain who did
+    // that could never be shown the real slab's beat again. Constant governing the wrong thing, and the
+    // sentence disagreeing with the sim, in one line.
+    //
+    // Monolith.StandsOn is the same predicate the renderer builds the slab's card from, so the beat cannot
+    // drift from the object again.
+    /// <summary>#649 · THE DWELL, AND THE ONE STRANGE THING.
+    ///
+    /// <para>Three gates, all of them Core's (<see cref="MonolithWatch"/>): the PLACE (the monolith's own
+    /// ground, and inside its sight), the WINDOW (about one visit-window in three is attentive, on the same
+    /// slow clock the foot-offerings use, so it holds still for a whole excursion), and the DWELL — you have
+    /// to STAY. Nothing is watching to see you arrive. It is watching to see whether you stand there.</para>
+    ///
+    /// <para>Walking out of sight resets the clock, which is the difference between standing at a thing and
+    /// passing it. Once per excursion at most, and the beat costs the captain nothing —
+    /// <see cref="MonolithWatch.NerveCost"/> carries the reasoning and is the one number to change.</para>
+    ///
+    /// <para>Deliberately NOT a story card or a plate. The picture idiom (#528) is the right instrument for
+    /// almost everything and the wrong one here: a frame around a thing says THIS IS A THING, and the whole
+    /// ruling is that anything happening near this stone stays deniable.</para></summary>
+    private void StepMonolithWatch(double dtRealSeconds)
+    {
+        if (_surface is not { } ex || !MonolithWatch.CanHappenOn(ex.Stop.Body.Id, ex.Site.LayoutSalt))
+        {
+            return;
+        }
+
+        if (!SeesMonolith())
+        {
+            ex.MonolithDwellSeconds = 0;   // you walked away; standing at a thing is not passing it
+            return;
+        }
+
+        ex.MonolithDwellSeconds += dtRealSeconds;
+
+        // ?watchers=1 — the beat is rare BY DESIGN (one window in three, then forty seconds of standing
+        // still), which makes it the exact shape of scene Map.Sim's own rule is about: "a scene nobody can
+        // reach on demand is a scene that ships broken." The cheat opens the window and shortens the dwell;
+        // it does not change what happens, so what a tester sees is what a captain sees.
+        double dwell = _watchersCheat ? MonolithWatch.DwellSeconds * 0.05 : MonolithWatch.DwellSeconds;
+        if (ex.MonolithWatchSpent || ex.MonolithDwellSeconds < dwell)
+        {
+            return;
+        }
+
+        long epoch = Monolith.EpochAt(SimTime);
+        if (!_watchersCheat && !MonolithWatch.AttentiveIn(ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch))
+        {
+            ex.MonolithWatchSpent = true;   // this window is not one of them; do not keep asking
+            return;
+        }
+
+        ex.MonolithWatchSpent = true;
+        MonolithWatch.What what = MonolithWatch.Which(
+            ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch, packOnTheField: _reevers.Count > 0);
+        ShowAndFile(MonolithWatch.Line(what), MonolithWatch.Glyph);
+
+        // NerveCost is 0.0 and the call is left in on purpose: the number is a feel call the owner may want
+        // to make, and a call site that has to be re-found is a decision that quietly never gets made.
+        if (MonolithWatch.NerveCost > 0)
+        {
+            ApplyNerveShock(MonolithWatch.NerveCost, "something out here was paying attention");
+        }
+    }
+
+    /// <summary>How far the captain is from the deep anchor, squared. One expression, because the sight beat
+    /// and the arrival beat must measure from the same point or they can disagree about where the thing
+    /// is.</summary>
+    private double DistanceToAnchorSquared()
+    {
+        double dx = _avatarX - MoonSurface.AnchorX;
+        double dy = _avatarY - MoonSurface.AnchorY;
+        return (dx * dx) + (dy * dy);
+    }
+
     private bool SeesMonolith()
     {
-        double dx = _avatarX - MoonSurface.MonolithX;
-        double dy = _avatarY - MoonSurface.MonolithY;
-        return (dx * dx) + (dy * dy) <= MonolithSightRange * MonolithSightRange;
+        if (_surface is not { } ex || !Monolith.StandsOn(ex.Stop.Body.Id, ex.Site.LayoutSalt))
+        {
+            return false;
+        }
+        return DistanceToAnchorSquared() <= Monolith.SightRangeDu * Monolith.SightRangeDu;
     }
 
     // #314: the sentry line. Every SentryBot.FireIntervalSeconds, deployed non-dry bots each put one
@@ -1936,15 +4439,18 @@ public partial class Map
         // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
         // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
         // "Now the cannons shot though the walls").
-        // #538 · WEAPONS TIGHT. While the order stands, nothing of the captain's fires — not a deployed bot,
-        // not the tube gun that never runs dry. Skipping the volley entirely is the honest implementation: no
-        // rounds leave, no magazines drain, and no noise is made, which is the whole point of the order.
+        // #538 · WEAPONS TIGHT. While the order stands, nothing of the captain's fires — not a deployed
+        // bot, not the tube gun that never runs dry. Skipping the volley entirely is the honest
+        // implementation: no rounds leave, no magazines drain, and no noise is made, which is the point.
         if (!SentryBot.MayOpenFire(_weaponsTight))
         {
             return;
         }
 
-        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers());
+        // #603 · And what does leave is what is IN them: a bot loaded with the lab round drops a queue in
+        // one shot and one loaded with issue ball grinds them down.
+        var loaded = live.Select(b => Core.Ammunition.ById(b.AmmoId)).ToList();
+        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers(), loaded);
 
         // Fold the drained magazines back and flash a zap line from each bot that fired.
         double nowMs = _lastTimestampMs ?? 0;
@@ -2030,12 +4536,30 @@ public partial class Map
     // only ever be drawn at the target the volley could actually have spent its round on.
     private (double X, double Y)? NearestReeverInArc(SurfaceBot bot)
     {
+        // #603 · WHAT IS LOADED DECIDES WHAT IT WILL SHOOT AT. Owner: "some lab found exploding rounds
+        // might be too dangerous to use to close by targets."
+        //
+        // A two-stage round arms after travel, so at arm's length the second charge goes off level with the
+        // gun and whoever is standing beside it. The sentry simply will not take that shot — the interlock
+        // idiom this ground already speaks (#462's airlock, #523's automatic, the vent readiness refusal).
+        //
+        // The consequence is the frightening part and it is entirely the captain's own doing: a gun loaded
+        // with the wrong thing is SILENT with the pack on top of it, because of a choice made three rooms
+        // ago. The override the owner asked for ("the gun complains but also gives override option to just
+        // fire") belongs at the HUD, on a captain's word — not here, where it would fire itself.
+        double minimum = Core.Ammunition.ById(bot.AmmoId).MinimumRangeDu;
+        double minimumSq = minimum * minimum;
+
         double bestSq = SentryBot.RangeDeckUnits * SentryBot.RangeDeckUnits;
         (double, double)? best = null;
         foreach (Reever r in _reevers)
         {
             double dx = r.X - bot.X, dy = r.Y - bot.Y;
             double d2 = (dx * dx) + (dy * dy);
+            if (d2 < minimumSq)
+            {
+                continue;   // inside the arming distance: it would take the gun with it
+            }
             if (d2 <= bestSq && SentryBot.CanEngage(bot.X, bot.Y, r.X, r.Y, _deckPlan.CollisionField))
             {
                 bestSq = d2;
@@ -2384,6 +4908,30 @@ public partial class Map
             (double nx, double ny) = ReeverChase.Step(
                 baseX, baseY, aimX, aimY, step * VacuumDrag(r), barrier, walls, reeverRadius, wallSide);
 
+            // #585 · AND OUT OF THE SHELTERS. Owner, playing: "lol I saw one reever get into a shelter :-D",
+            // then "3 reevers waiting in the shelter :-D". A doorway has to be a real gap or the captain
+            // could not use it either, so geometry alone was always going to let a body through — but the
+            // building's own arrival line promises "Nothing outside can work that door", and the whole
+            // reason it exists is his ask for "rooms with doors we can hide behind while we reload our guns
+            // safe from reevers". A refuge you can be followed into is just a smaller room to die in.
+            //
+            // Same fiction that already pens them off the shuttle: the door reads a SUIT. They may crowd the
+            // threshold and wait there — which is its own good scene — and they may not come in.
+            (nx, ny) = HoldOutsideShelters(nx, ny);
+
+            // #585 · AND OUT OF ANYTHING ELSE THEY ENDED UP INSIDE. Owner, playing: "I think we landed a
+            // building on top of two reevers here :-D".
+            //
+            // He did. The pack is spawned in regolith coordinates and the ground is BUILT around them — the
+            // lift head, the outpost hut and the seeded structures all appear on a deck the Old Ones are
+            // already standing on. Bump-and-slide keeps a body out of a wall it walks into; it has nothing to
+            // say about a wall that arrives around a body already there, so they were sealed in, shuffling
+            // inside somebody's masonry.
+            //
+            // So: if a contact is standing IN stone, walk it out along the shortest way. Cheap — the test is
+            // one collision query that says "no" for every Old One on an ordinary frame.
+            (nx, ny) = ExtricateFromStone(nx, ny, walls, reeverRadius);
+
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 
             if (progressed < idleProgress)
@@ -2530,6 +5078,166 @@ public partial class Map
     // random intervals"). This supersedes the old dig-gated linger trickle: the tide runs from the moment
     // the boots hit regolith, not only after a dig, so time in the deep field is bounded on any visit. The
     // acute ReeverRaid pack (BeginDig) still turns out ON TOP of it — the tide is the ambient pressure.
+    // ── #583 · THE REPO BOAT COMES DOWN ────────────────────────────────────────────────────────────────
+    //
+    // Owner, 2026-08-01: "but the heat should not target the ship when the player is not on it but only
+    // target the captain... we could have some other shuttle land near ours on some sites ... that would be
+    // the heat when we are on land or at a ship looting it" — and, settling it, "FBI does not arrest cars ...
+    // they look for the driver".
+    //
+    // #580 stopped the wolves from catching an empty hull, which was right and left heat meaning nothing
+    // during the part of the game the captain is actually in. This is the other half: the collectors come to
+    // the person. A boat sets down between you and your ride, a crew gets out, and they walk. They cannot be
+    // out-burned out here, only outwalked — and the only door that closes on them is the tube's.
+    private void StepCollectors(double dtRealSeconds)
+    {
+        if (_surface is not { } ex || _busted is not null)
+        {
+            return;
+        }
+
+        double dt = Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds);
+        ex.SecondsOnTheGround += dt;
+
+        if (!ex.CollectorsComing)
+        {
+            return;
+        }
+
+        if (!ex.CollectorsLanded)
+        {
+            if (ex.SecondsOnTheGround < ex.CollectorsEtaSeconds)
+            {
+                return;
+            }
+            LandTheCollectors(ex);
+            return; // one beat to read the sky before they start walking
+        }
+
+        // The maze is law for them too: they bump-and-slide on the SAME segments the captain's boots do, so
+        // a building costs them the long way round exactly as it costs an Old One. Unlike an Old One there
+        // is no crew-only leash — they came in their own boat and they have their own airlock.
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+        bool reachable = !CaptainBeyondReach;
+
+        foreach (Collector c in _collectors)
+        {
+            double wasX = c.X, wasY = c.Y;
+            (c.X, c.Y) = CollectorLanding.Step(
+                c.X, c.Y, _avatarX, _avatarY, dt, walls, DeckPlan.AvatarRadius, c.WallSide);
+
+            // #585: the repo crew waits outside too — which is exactly what their own line already says they
+            // do ("they take up positions and settle in to wait"). A writ that walks through the door would
+            // make that sentence a lie, and would take the one decision out of the scene: whether to sit on
+            // your air or run for the tube.
+            (c.X, c.Y) = HoldOutsideShelters(c.X, c.Y);
+
+            c.Vx = dt > 0 ? (c.X - wasX) / dt : 0;
+            c.Vy = dt > 0 ? (c.Y - wasY) / dt : 0;
+            if (Math.Abs(c.Vx) > 1e-6 || Math.Abs(c.Vy) > 1e-6)
+            {
+                c.Facing = Math.Atan2(c.Vy, c.Vx);
+            }
+
+            // A shelter is a pressure vessel, not a sanctuary — and the game says so out loud rather than
+            // letting the player discover it by being taken inside one they thought was safe.
+            if (!ex.CollectorShelterNoted && ShelterUnderfoot(ex) >= 0
+                && CollectorLanding.HasYou(c.X, c.Y, _avatarX, _avatarY) is false
+                && Distance(c.X, c.Y, _avatarX, _avatarY) < 24)
+            {
+                ex.CollectorShelterNoted = true;
+                ShowPulseMessage(CollectorLanding.ShelterIsNotSanctuaryLine);
+
+                // #528 · AND THE PICTURE DOES THE SAME JOB THE LINE DOES: it shows them SETTLED, not
+                // attacking. Nothing in this frame is a fight. The clock is your tank, and what makes it
+                // horrible is how comfortable everyone else looks.
+                ShowRevealCard(
+                    CollectorLanding.SiegePlate.Title,
+                    CollectorLanding.SiegePlate.ArtFile,
+                    CollectorLanding.SiegePlate.Caption);
+            }
+
+            if (reachable && CollectorLanding.HasYou(c.X, c.Y, _avatarX, _avatarY))
+            {
+                TheWritIsServed(ex);
+                return;
+            }
+        }
+    }
+
+    private static double Distance(double ax, double ay, double bx, double by)
+    {
+        double dx = ax - bx, dy = ay - by;
+        return Math.Sqrt((dx * dx) + (dy * dy));
+    }
+
+    /// <summary>#583 · The boat touches down, off to one side of the tube — near enough to be between you
+    /// and the way home, never on top of the hatch (a boat parked on the door would end the excursion by
+    /// geometry instead of by decision).</summary>
+    private void LandTheCollectors(SurfaceExcursion ex)
+    {
+        ex.CollectorsLanded = true;
+        ex.CollectorBoatX = CollectorLanding.SetsDownX(MoonSurface.SpawnX, ex.ThreatSeed);
+        ex.CollectorBoatY = MoonSurface.ReeverBarrierY - 6;
+
+        int party = CollectorLanding.PartySize(_heat.Level);
+        _collectors.Clear();
+        for (int i = 0; i < party && i < MaxCollectors; i++)
+        {
+            _collectors.Add(new Collector
+            {
+                X = ex.CollectorBoatX + ((i - ((party - 1) / 2.0)) * 3.5),
+                Y = ex.CollectorBoatY - 2,
+                Facing = -Math.PI / 2,
+                WallSide = i % 2 == 0 ? 1 : -1,
+            });
+        }
+
+        RendererInterop.PlayCue("alarm");
+        ShowPulseMessage(CollectorLanding.ArrivalLine(ex.CollectorCallsign));
+        if (!ex.CollectorsHailed)
+        {
+            ex.CollectorsHailed = true;
+            ShowPulseMessage(CollectorLanding.HailLine);
+        }
+
+        // #528 · THE ONLY WARNING THE PLAYER GETS. Four loaded lines narrate this pursuit and every one of
+        // them was a toast; the arrival is the worst place for that, because after it the only information
+        // in the world is a tracker fan. A sentence that fades in a second and a half is not a warning.
+        // Core owns the words — and the caption is ClosingLine, which was written, reviewed and shipped and
+        // then referenced by nothing at all until now.
+        ShowRevealCard(
+            CollectorLanding.ArrivalPlate.Title,
+            CollectorLanding.ArrivalPlate.ArtFile,
+            CollectorLanding.ArrivalPlate.Caption);
+
+        // It is a fright, and a specific one: the ground just stopped being only about the Old Ones.
+        ApplyNerveShock(4.0, "a boat you did not call, setting down beside yours");
+        RequestVaultSave();
+    }
+
+    /// <summary>#583 · A hand on your carry loop, on foot, on somebody else's moon. It opens the SAME demand
+    /// the same people open on your own deck — submit, bribe, or resist — because it is the same writ and
+    /// they want the same thing. What is different is that you walked into it and cannot burn away.</summary>
+    private void TheWritIsServed(SurfaceExcursion ex)
+    {
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage(CollectorLanding.ContactLine(ex.CollectorCallsign));
+
+        ulong seed = DiceRule.Seed(ex.ThreatSeed, $"busted-on-foot:{(long)SimTime}");
+        _busted = new BustedEncounter
+        {
+            HunterId = $"collector-ground:{ex.Stop.Body.Id}",
+            HunterCallsign = ex.CollectorCallsign,
+            Heat = Math.Max(1, _heat.Level),
+            Seed = seed,
+            Bribe = BustedRule.BribeDemand(Math.Max(1, _heat.Level), seed),
+            Cause = DeathCause.Collector,
+            DeathBodyName = ex.Stop.Body.Name,
+        };
+        RequestVaultSave();
+    }
+
     private void StepTide(double dtRealSeconds)
     {
         if (_surface is not { } ex)
@@ -2646,7 +5354,19 @@ public partial class Map
         {
             ex.Catches++;
         }
-        _heat = EncounterRule.RaiseHeat(_heat, 1, SimTime);
+        // #580 · NO SHIP HEAT FROM A HAND ON YOUR SUIT. This used to raise _heat by one per catch, and that
+        // was wrong twice over. Owner: "moving on the planet should NOT cause HEAT" / "any heat should happen
+        // on the surface or site, not in space" / "we don't want to be guarding our parking lot ... that is
+        // not good game play :-D".
+        //
+        // He is right on the fiction and on the play. HEAT is what the collectors and the law hold against
+        // your SHIP, earned by robbery and piracy and hot cargo — an Old One grabbing a suit on Miranda tells
+        // nobody anything, and there is no ledger out here to be entered in. On the play side the coupling
+        // was worse than untidy: it turned every excursion into a slow tax on the parked ship, so a good long
+        // walk came home to wolves. The site's own pressure is ex.Catches, above, and that stays local.
+        //
+        // Same class as the Debt Collector deaths he caught earlier: a space-side consequence reaching down
+        // onto a moon where it has no business being.
         // #480 · The nerve price of a hand on you is decided by NervePips, not here: ONE pip, ONCE per
         // encounter (owner: "repeated strikes should not cost more of sanity … we already take medical hit
         // from reever"), and again on every hand once the captain is nearly gone. We only report the event.
@@ -2708,10 +5428,12 @@ public partial class Map
     /// <para>Aboard, safety is not a latitude. It is the shuttle's own lock: past that bulkhead is the away
     /// team's side and nothing follows you there, which is the same crew-only-door law the tube obeys.</para>
     /// </summary>
+    /// <para>#621 · And the answer now lives in <see cref="AwayTeamSide.BackAtTheShuttle"/>, because the AIR
+    /// needed the same fact and worked it out for itself with the moon's rule alone — the same bug, in the
+    /// one instrument a captain cannot survive being lied to by. Two places computing one fact is the bug
+    /// even while they agree.</para>
     private bool CaptainBeyondReach =>
-        OnWreck
-            ? WreckLayout.PastTheLock(_avatarX, DeckPlan.AvatarRadius)
-            : MoonSurface.IsSafeAboard(_avatarY);
+        AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
 
     private void ResolveReeverSwings(double nowMs)
     {
@@ -2826,6 +5548,7 @@ public partial class Map
         ex.Channel = null;
         bool escapedWithWatchdogs = _reevers.Count > 0;
         TreasureCache? buried = ex.Cache;
+        bool droppedAndLeft = ex.ChestDropped; // read before the excursion (and its dropped pile) is folded away
 
         // #314: carried sentries come home (with their drained magazines); any left DEPLOYED on the
         // ground is abandoned — a write-off with a ledger line (#119 voice). Retrieve them before liftoff
@@ -2855,9 +5578,23 @@ public partial class Map
         // fired (an abort), the rock is left on its line — the impact resolves and the port takes it.
         bool settledDeflection = ex.Deflection && SettleDeflection(ex);
 
+        // #583 · IF THEY WERE STILL COMING, YOU GOT AWAY — and the game says so, because an escape that is
+        // narrated as nothing is indistinguishable from an escape that never happened. The heat is untouched:
+        // outwalking a writ is not settling one, and they know the ship and they will know the next port.
+        bool outwalkedTheWrit = ex.CollectorsLanded && _busted is null;
+
         _surface = null;
+        // #612: the next landing works its own air out from scratch, so no crossing line is ever inherited
+        // from the last moon.
+        _airSupplyNoted = null;
         _reevers.Clear();
+        _collectors.Clear();
         _lastNearestReeverRange = null;
+
+        if (outwalkedTheWrit)
+        {
+            ShowPulseMessage(CollectorLanding.EscapedLine);
+        }
 
         SetDeckForDock(ex.RestoreHavenId); // rebuild the ship/complex; folds the surface away
         (_avatarX, _avatarY, _avatarHeading) = (-6, -6.5, Math.PI / 2); // step off into the bay
@@ -2865,6 +5602,16 @@ public partial class Map
 
         string botTail = abandoned > 0
             ? $" {abandoned} sentry bot{(abandoned == 1 ? "" : "s")} left behind — written off."
+            : "";
+
+        // #313 · THE CHEST YOU DROPPED AND NEVER WENT BACK FOR. Dropping it (G) says "come back for it when
+        // the ground's clear", and inside the excursion that is exactly true — walk over the spot and it is
+        // back in the sling. Lift off without it and the ✗-less pile on the regolith is simply gone with the
+        // excursion. What the SIM does is the honest news, and it was the one thing never said: nothing went
+        // into the ground, so nothing ever left the ship's books — the coin never left the purse, the hold
+        // never emptied. Say it, or the captain flies home believing they abandoned a fortune out there.
+        string dropTail = droppedAndLeft
+            ? " 🧰 You lifted off without the chest you dropped — but nothing went into the ground, so nothing left the books: the coin is still in the purse and the hold is untouched."
             : "";
         if (buried is { } cache)
         {
@@ -2878,7 +5625,7 @@ public partial class Map
         else if (!settledExpedition && !settledDeflection) // an away-gig settle already spoke its payout line
         {
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
-            ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}");
+            ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}{dropTail}");
         }
     }
 
@@ -2948,8 +5695,13 @@ public partial class Map
     private void FillSurfaceDroids(double simTime, DeckPlan.Droid[] buffer)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // [0..3): the crew
-        // #538: …and the sweep team last, past the pack's slots — drawn cold rather than red, by callsign.
-        FillSweeperDroids(buffer, 3 + ReeverEngineCeiling);
+        // #633 · FOUR BANDS, NOT THREE, AND THEY MAY NOT OVERLAP. `main` put the sweep team at
+        // `3 + ReeverEngineCeiling` because on that branch nothing else lived there; this branch had already
+        // given those slots to the repo crew (#583). Reunited without this line the collectors' loop below
+        // would overwrite all three sweepers every frame — one buffer written by two fillers, which is the
+        // named bug class and exactly the thing a merge produces. The bands are stated ONCE, here and in
+        // SurfaceDroidCount, and every filler is offset from the one before it.
+        FillSweeperDroids(buffer, 3 + ReeverEngineCeiling + MaxCollectors);
         for (int i = 0; i < ReeverEngineCeiling; i++)
         {
             int slot = 3 + i;
@@ -2966,6 +5718,17 @@ public partial class Map
             {
                 buffer[slot] = new DeckPlan.Droid(-9999, -9999, 0, "Reever");
             }
+        }
+
+        // #583 · And the repo crew, in their own slots after the Old Ones. Drawn as people, named so the
+        // renderer can give them their own ink — they are not hostiles of the same kind and should not read
+        // as more Reevers on the walked map.
+        for (int i = 0; i < MaxCollectors; i++)
+        {
+            int slot = 3 + ReeverEngineCeiling + i;
+            buffer[slot] = i < _collectors.Count
+                ? new DeckPlan.Droid(_collectors[i].X, _collectors[i].Y, _collectors[i].Facing, "Collector")
+                : new DeckPlan.Droid(-9999, -9999, 0, "Collector");
         }
     }
 
@@ -3132,6 +5895,12 @@ public partial class Map
             _hudEntities.Clear();
             _hudEntities.AddRange(EverythingThatMoves());   // #538: the pack AND the sweep team
 
+            // #583: a repo crew that boarded a wreck behind you is a contact like any other.
+            foreach (Collector c in _collectors)
+            {
+                _hudEntities.Add(new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy));
+            }
+
             // THE NEST IS THE LOUDEST THING ABOARD. Owner: "the nest should show in the map and as movement
             // both." It never walks anywhere, so a fan that only reports travel would call it silence — but
             // a nest is not a still contact, it is a mass of small motion that never stops. So it goes on
@@ -3247,8 +6016,15 @@ public partial class Map
         // #371 Phase 1 (perf): fill the reused entity buffer instead of a lazy Select — one iterator fewer
         // per frame, and MotionTracker.Sweep reads it as an IEnumerable exactly as before.
         _hudEntities.Clear();
-        _hudEntities.AddRange(EverythingThatMoves());   // #538: the pack AND the sweep team
-        IReadOnlyList<MotionTracker.Blip> blips = MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities);
+        // #538 / #583 · The pack, the sweep team AND the repo crew — everything on this ground that is on
+        // its feet, from the one accessor that lists them.
+        _hudEntities.AddRange(EverythingThatMoves());
+
+        // #591 · The sweep is cut to what the fan can hear from this floor. On the regolith that is
+        // unbounded and nothing changes; eleven floors down it is the reason the corridor is quiet.
+        double fanReach = FanReach();
+        IReadOnlyList<MotionTracker.Blip> blips =
+            MotionTracker.Sweep(_avatarX, _avatarY, _hudEntities, fanReach);
         double? nearest = blips.Count > 0 ? blips[0].Range : null;
         bool closing = nearest is { } n && _lastNearestReeverRange is { } prev && n < prev - 0.01;
         _lastNearestReeverRange = nearest;
@@ -3259,12 +6035,54 @@ public partial class Map
             _hudBlips.Add((b.Bearing, b.Range));
         }
 
+        // ── #591 · A CONTACT BEHIND A WALL IS A SMUDGE, NOT A CLEAN BLIP ──
+        //
+        // Open regolith is open: a return out there is a return, and the fan's report is as good as it gets.
+        // Inside a poured facility it is not — a fan that reads a body through two bulkheads with the same
+        // confidence it reads one down an open corridor is claiming a precision it does not have.
+        //
+        // No new mechanism: this is the same fog #371 built for wrecks (SightBlockers → a blurred region
+        // whose radius grows with range, because a crude fan is less sure about a far return), pointed
+        // underground. The buffer is cleared unconditionally so a floor with nothing on it cannot inherit
+        // the smears of the last derelict the captain walked.
+        //
+        // Nothing walks these corridors yet — the Old Ones are a regolith tide and are cleared on descent
+        // (owner: "I don't think there should be reevers down here"). So today this smudges an empty floor.
+        // That is the correct order of work and the issue says so: make the instrument honest first, and
+        // whatever eventually comes down here inherits a tracker that already behaves like it is
+        // underground rather than one that has to be taught afterwards.
+        _hudSmudges.Clear();
+        if (ex.Floor < 0)
+        {
+            IReadOnlyList<SurfaceCollision.Segment> walls = SightBlockers();
+            foreach (MotionTracker.Blip b in blips)
+            {
+                double bx = _avatarX + (Math.Cos(b.Bearing) * b.Range);
+                double by = _avatarY + (Math.Sin(b.Bearing) * b.Range);
+                if (SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, bx, by, walls))
+                {
+                    continue;   // you can see it. Your own eyes beat the fan, exactly as they do aboard.
+                }
+                _hudSmudges.Add((bx, by, SmudgeBaseRadius + (b.Range * SmudgeRangeSpread)));
+            }
+        }
+
         // The own caches' ✗ marks (with the DigX/DigY-or-hash-scatter fallback, same as OwnCachePositionsAt)
         // straight into the reused buffer — no intermediate list + Select allocation.
         string bodyId = ex.Stop.Body.Id;
         _hudMarks.Clear();
+
+        // #591 · EVERYTHING BURIED IS BURIED ON THE SURFACE. A floor of the Hive reuses the surface's own
+        // coordinate envelope (#585), which is what makes depth free — and it also means a cache buried at
+        // (x, y) on the regolith has an (x, y) on B3 that is several hundred metres of rock away and belongs
+        // to somebody else's corridor. Drawn unguarded, the captain's own treasure ✗ appears ON the facility
+        // deck, and its beacon on the fan points at it.
+        //
+        // Same reasoning as the beacons above: these are surface instruments reporting surface facts, and
+        // underground they are not merely useless but WRONG. Gated once, here, because _hudMarks feeds both
+        // the on-grid marks and BuildCacheBeacons — one source, one gate.
         // 🗺 Layers (#405) Ground finds → Treasure ✗: the buried-cache marks the excursion HUD carries.
-        foreach (TreasureCache c in LayerVisible("finds.treasure") ? _caches.CachesAt(bodyId) : [])
+        foreach (TreasureCache c in LayerVisible("finds.treasure") && ex.Floor >= 0 ? _caches.CachesAt(bodyId) : [])
         {
             if (!c.PlayerOwned)
             {
@@ -3292,7 +6110,9 @@ public partial class Map
         // hard-ground flag so the deck-plan paints a bedrock mark distinct from a plain checked square. The
         // draw is BOUNDED (MaxSweptDrawn) so a fully-probed field can't paint an unbounded mark cloud.
         _hudSwept.Clear();
-        foreach (KeyValuePair<(int X, int Y), BeachComber.Outcome> kv in ex.Swept)
+        // #591 · Also a surface fact: a probed regolith square has nothing to say about a poured floor
+        // hundreds of metres under it.
+        foreach (KeyValuePair<(int X, int Y), BeachComber.Outcome> kv in ex.Floor < 0 ? [] : ex.Swept)
         {
             if (_hudSwept.Count >= MaxSweptDrawn)
             {
@@ -3309,8 +6129,16 @@ public partial class Map
 
         return new DeckView.SurfaceHud(
             TrackerCaptions: BuildTrackerCaptions(ex, _hudMarks.Count),
-            // #371 Phase 3: the one progress bar serves both channels — a dig OR a forced door.
-            DigProgress: ex.Channel?.Progress ?? ex.DoorChannel?.Progress ?? -1,
+            // #371 Phase 3 / #562: the one progress bar serves every slow thing — a dig, a forced door, or
+            // the tube racking a magazine. The rearm is last because it is the only one that can be running
+            // while the captain is somewhere the others cannot happen (inside the tube), so it can never
+            // actually contend; ordering it here just keeps the two hands-on channels reading first.
+            DigProgress: ex.Channel?.Progress ?? ex.DoorChannel?.Progress
+                ?? (ex.RearmBotIndex is not null ? ex.RearmProgress : -1),
+            // #562: and it says which. A shovel over a magazine being racked would be exactly the class of
+            // lie this lane exists to fix; the rearm is the ship HELPING you, so it reads cold-green.
+            ChannelGlyph: ex.RearmBotIndex is not null && ex.Channel is null && ex.DoorChannel is null ? "🔫" : "⛏",
+            ChannelIsAid: ex.RearmBotIndex is not null && ex.Channel is null && ex.DoorChannel is null,
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
             Blips: _hudBlips,
             Cadence: (int)MotionTracker.CadenceFor(nearest),
@@ -3318,6 +6146,29 @@ public partial class Map
             CacheMarks: _hudMarks,
             Nerve: _nerve,
             NerveReadout: NerveModel.Readout(_nerve),
+            // #573: the places worth walking to, as calm rings on the fan — plus your own caches once they
+            // are in reach, and any rumour you are working from as a wide soft wash.
+            Beacons: BuildBeacons(ex),
+            CacheBeacons: BuildCacheBeacons(),
+            Rumours: BuildRumours(ex),
+            // #564: the tank, drawn as a bar under the tracker.
+            AirSeconds: ex.AirSeconds,
+            // #612 · Is the tank actually running? The gauge said nothing either way until the owner asked
+            // "where here does it say if I consume tanks or have air?" — and it now asks ONE function
+            // (#608), the same one the drain itself is gated on.
+
+            AirDistanceHome: DistanceToTheTube(),
+            // #612 · AND WHERE IT IS COMING FROM — the sim's own answer, handed down rather than worked out
+            // again in the renderer. Owner, on a pressurised floor: "where here does it say if I consume
+            // tanks or have air?" The bar showed a clock and never said whether the clock was running.
+            AirSupply: AirSupplyOf(ex),
+            // #573 · AND, once it is low, a BIG on-grid counter anchored to the captain — the same
+            // seven-segment idiom the reactor overload uses, which is the owner's own comparison
+            // ("similar counter as the round count counting down seconds on the map"). A bar in the corner
+            // is for glancing at; this is for when glancing is no longer enough.
+            Countdown: SuitAir.RunningLow(ex.AirSeconds, DistanceToTheTube()) || SuitAir.OnTheReserve(ex.AirSeconds)
+                ? (_avatarX, _avatarY + 2.6, $"O2 {(int)(ex.AirSeconds / 60)}:{(int)(ex.AirSeconds % 60):00}")
+                : null,
             Bots: _hudBots,
             Husks: _hudHusks,
             KeyHints: BuildSurfaceKeyHints(ex),
@@ -3329,7 +6180,17 @@ public partial class Map
             Echoes: BuildEchoes(ex),             // #371 Phase 3: fading "movement was here" ripples
             StandingPrompt: BuildStandingPrompt(ex),
             // #453: the blood fades over its window, so the spatter is a beat rather than a decal.
-            BloodSplash: BloodShowing ? Math.Clamp((_bloodUntilMs - (_lastTimestampMs ?? 0)) / 900.0, 0, 1) : 0);
+            BloodSplash: BloodShowing ? Math.Clamp((_bloodUntilMs - (_lastTimestampMs ?? 0)) / 900.0, 0, 1) : 0,
+            // #591 · The fan's real reach, so the ring the captain reads is the ring the chirp heard, and
+            // where they are, so depth is on the instrument rather than on the plan behind them.
+            FanReach: fanReach,
+            TrackerPlace: ex.Floor < 0 ? UndergroundComplex.NameOf(ex.Stop.Body.Id, ex.Floor) : null,
+            // #591 · Contacts heard through a wall are a REGION, never a body. Nothing walks these corridors
+            // yet (the Old Ones are a regolith tide and are cleared on descent, by the owner's ruling), so
+            // today this smudges an empty floor — which is the correct order of work: make the instrument
+            // honest first, and whatever eventually comes down here inherits a tracker that already behaves
+            // like it is underground instead of one that has to be taught after the fact.
+            Smudges: _hudSmudges);
     }
 
     // #440 · The standing prompt: ONE bright line above the keybar for the thing this excursion hangs on.
@@ -3378,9 +6239,14 @@ public partial class Map
             {
                 aboard.Add("🤖 T — pick up the sentry");
             }
-            // #537 · A VERB NOBODY IS TOLD ABOUT IS A VERB NOBODY HAS. Caught by booting the scene and reading
-            // the hint bar, which is the owner's own method: the knock was bound, the clock ran, the sweep team
-            // heard it — and the strip along the bottom never mentioned K existed.
+            if (_satchel.Count > 0)
+            {
+                aboard.Add($"🎒 I — items ({_satchel.Count})");
+            }
+
+            // #537 · A VERB NOBODY IS TOLD ABOUT IS A VERB NOBODY HAS. Caught by booting the scene and
+            // reading the hint bar, which is the owner's own method: the knock was bound, the clock ran, the
+            // sweep team heard it — and the strip along the bottom never mentioned K existed.
             aboard.Add(IsSounding
                 ? (_soundQuietly ? "✊ K — stop knocking" : "📡 K — stop sounding")
                 : (_soundQuietly ? "✊ K — knock (quiet)" : "📡 K — sound the plating (loud)"));
@@ -3411,6 +6277,14 @@ public partial class Map
         {
             parts.Add("G — drop the chest & sprint");
         }
+
+        // #603 · The satchel, once there is anything in it. Owner: "the I key should be advertised in the
+        // hud also like we do now for the other keys." Shown WITH the count, because the useful question at
+        // a glance is not "do I have pockets" but "is there anything in them".
+        if (_satchel.Count > 0)
+        {
+            parts.Add($"🎒 I — items ({_satchel.Count})");
+        }
         parts.Add("F — first person");
         parts.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute"); // #338: the first-sound switch, always spelled out
         return string.Join(" ∙ ", parts);
@@ -3424,6 +6298,11 @@ public partial class Map
     private List<string> BuildTrackerCaptions(SurfaceExcursion ex, int ownMarkCount)
     {
         var lines = new List<string>();
+
+        // #564 · The tank used to be the top line HERE, and the owner went looking for a meter under the
+        // tracker and found nothing — because a line of dim 10px text among the key hints is a footnote, not
+        // a gauge. It is a drawn BAR now (DeckView, fed by SurfaceHud.AirSeconds); this list is back to
+        // being what it always was, the affordances.
 
         // The dig affordance, honest to the sling (playtest bug #1 / owner ruling #9: the ground must SAY
         // what's possible). Carrying → bury anywhere you stand; empty → the beach-comber probe, a real

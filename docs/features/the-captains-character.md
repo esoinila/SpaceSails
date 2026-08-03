@@ -254,6 +254,7 @@ constants** because it refused them as never-assigned fields. It was right — n
 promise to the crew yet, and no crewman can die. A bar that moved for invented reasons would be worse than
 one that does not move, because the captain cannot act on a number nobody is keeping. Those are §7's real
 next slice, ahead of the crossings ledger.
+
 ---
 
 ## 9. The second key, and why pirate captains dressed like that

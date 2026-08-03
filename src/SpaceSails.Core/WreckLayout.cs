@@ -427,8 +427,10 @@ public static class WreckLayout
                 break;
 
             default:
-                // DriveFailure, LifeSupportFailure, NavigationalError, InsuranceJob — she is INTACT, which
-                // is its own kind of wrong. Nothing to draw; that IS the finding.
+                // DriveFailure, LifeSupportFailure, NavigationalError, InsuranceJob and
+                // VentedByOneOfTheirOwn — she is INTACT, which is its own kind of wrong. Nothing to draw;
+                // that IS the finding. On the vented hull the damage is not structural at all: it is which
+                // side of every hatch the dogs are on, and the vacuum behind them.
                 break;
         }
     }
@@ -551,6 +553,54 @@ public static class WreckLayout
     public static IReadOnlyList<(string Name, DeckReachability.Point At)> Stations(Derelict.WreckCause cause) =>
         [.. StandardFittings, (CauseStationName(cause), CauseStation(cause))];
 
+    // ── The archive node, when a hull is carrying one ────────────────────────────────────────────────
+    //
+    // NOT a standard fitting: it is CARGO nobody invoiced, and it is aboard about one eligible hull in three
+    // (ArchiveNode.IsAboard). It is written down HERE rather than in the renderer for the reason every other
+    // literal on this ship moved into Core — placed by eye, the scuttling panel landed on the nest and the
+    // valve board stood in a doorway, and no test could see either.
+
+    /// <summary>The column itself, in the deep hold — <see cref="ArchiveNode.HoldCompartment"/>, because that
+    /// is where freight nobody invoiced ends up, and because it puts the field between the away team and the
+    /// far end of the ship.
+    ///
+    /// <para>#633 · IT WAS AGAINST THE AFT BULKHEAD AT <c>(-13.8, -7.8)</c> AND HAD TO COME FORWARD. Two of
+    /// #537's laws, built on `main` while this node was being built here, closed that corner between them.
+    /// The interior bulkhead runs turn the DEEP HOLD's aft wall at <c>x = -15</c> from a line into a
+    /// <see cref="BulkheadDepth"/>-deep closed box spanning <c>-15.6 … -14.4</c>, which left the column
+    /// 0.6 du of clearance where the walk audit wants 1.05 — unreachable on all ten causes. And the room's
+    /// aft end is already spoken for on one of them: the nest sits at <c>(-11, -6)</c>, so everything the
+    /// bulkhead run allows is inside the 3 du no-two-stations-share-a-doorstep rule.
+    ///
+    /// <para>So it moves to the hold's FORWARD end, which turns out to be the better staging anyway: the away
+    /// team comes aft down the spine, turns in at the hold's door, and the column is the first thing in the
+    /// room rather than the last. The structural law does not move — it governs every bulkhead on every hull,
+    /// and this governs one crate.</para></para></summary>
+    public static DeckReachability.Point ArchiveStation => new(-3.5f, -7.7f);
+
+    /// <summary>The handle plate at the inboard end of the same housing — <see cref="ArchiveNode.SwitchLegend"/>
+    /// stencilled on it.
+    ///
+    /// <para>It is a SEPARATE doorstep on purpose, and the separation is the mechanic rather than tidiness:
+    /// the design's law is that a captain <i>may pull the handle without paying, and never find out what they
+    /// did</i>. Put the handle inside the confrontation's card and pulling it would first cost a throw, which
+    /// is the one thing the whole Ren &amp; Stimpy joke cannot survive. So the column and the handle are 3.5 du
+    /// apart — far enough that <c>NearestConsoleSpot</c> can tell them apart, close enough to be one object.</para>
+    ///
+    /// <para>#633 · Moved forward with the column, keeping the 3.5 du between them EXACTLY, because that
+    /// distance is the mechanic and not a layout preference.</para></summary>
+    public static DeckReachability.Point ArchiveSwitchStation => new(-3.5f, -4.2f);
+
+    /// <summary>The reachability/separation list for a hull that IS carrying a node. Kept apart from
+    /// <see cref="Stations"/> so the "every ship has identical fittings" law stays literally true — but
+    /// audited on every cause anyway, because geometry that is only checked where it is currently used is
+    /// geometry that breaks the day somebody widens the eligibility rule.</summary>
+    public static IReadOnlyList<(string Name, DeckReachability.Point At)> StationsWithArchive(
+        Derelict.WreckCause cause) =>
+        [.. Stations(cause),
+         ("the archive node", ArchiveStation),
+         ("the purge handle", ArchiveSwitchStation)];
+
     /// <summary>Where the cause's own evidence stands.</summary>
     public static DeckReachability.Point CauseStation(Derelict.WreckCause cause) => cause switch
     {
@@ -572,6 +622,12 @@ public static class WreckLayout
         // one, and this is where it is.
         Derelict.WreckCause.Infested => new(-11f, -6f),
         Derelict.WreckCause.InsuranceJob => new(7f, 6f),
+        // AMIDSHIPS IN THE SPINE, AND THE ONLY CAUSE STATION THAT IS NOT IN A ROOM — because her evidence is
+        // not in a room. "Every door was thrown from the SPINE side": you stand in the corridor, look fore
+        // and aft, and every hatch on the ship has its dogs on YOUR side of it. The tenth cause was the only
+        // one with no arm in this switch, so it fell through to the fallback below — which happens to be this
+        // same point, reached by accident and named "the wreck". Declared now, so the station is a decision.
+        Derelict.WreckCause.VentedByOneOfTheirOwn => new(0f, 0f),
         _ => new(0f, 0f),
     };
 
@@ -609,6 +665,7 @@ public static class WreckLayout
         Derelict.WreckCause.Piracy => "the stripped hold",
         Derelict.WreckCause.Infested => "the nest in the deep hold",
         Derelict.WreckCause.InsuranceJob => "the lifeboat cradles",
+        Derelict.WreckCause.VentedByOneOfTheirOwn => "the hatch dogs — spine side",
         _ => "the wreck",
     };
 }

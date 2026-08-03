@@ -79,8 +79,8 @@ public sealed partial class Map
         ShowPulseMessage(id switch
         {
             "cause" => $"🔎 {Derelict.Evidence(w.Cause)}",
-            "log" => LogFinding(w),
-            "manifest" => ManifestFinding(w),
+            "log" => Derelict.LogFinding(w),
+            "manifest" => ManifestFindingWithTheClue(w),
             _ => "🔎 Nothing here but cold deck plate.",
         });
 
@@ -105,6 +105,21 @@ public sealed partial class Map
             }
         }
 
+        // #654 · AND THE OTHER TWO STATIONS, ON EVERY HULL. The log and the manifest are not colour: they
+        // are the CORROBORATION that lets a careful captain catch a wreck that lies, and reading both is the
+        // one thing that takes the decoy off the choice card. They were a pulse line that faded in a second
+        // and a half while the damage two rooms away got a full plate.
+        //
+        // ONE generic painting each, and the same one on all ten hulls — see Derelict.LogArtFile for why
+        // that is not laziness. The caption does every bit of the differentiating.
+        else if (id is "log" or "manifest")
+        {
+            _wreckLook = new WreckLook(
+                spot.Label.Replace("✔ ", ""),
+                id == "log" ? Derelict.LogArtFile : Derelict.ManifestArtFile,
+                id == "log" ? Derelict.LogCaption(w) : Derelict.ManifestCaption(w));
+        }
+
         if (fresh)
         {
             RendererInterop.PlayCue("reveal");
@@ -118,37 +133,29 @@ public sealed partial class Map
         : label.Contains("MANIFEST", StringComparison.OrdinalIgnoreCase) ? "manifest"
         : "cause";
 
-    // The bridge log: how long she has been out here, and the shape of her last hours. This is what turns
-    // "an old wreck" into "she was lost 31 years ago and nobody came" — the search-cone fiction, on a desk.
-    private static string LogFinding(in Derelict.Wreck w) =>
-        $"🖥 The log ends {w.YearsAdrift:N0} years ago. " +
-        (w.Cause switch
-        {
-            Derelict.WreckCause.DriveFailure =>
-                "The last hundred entries are the same restart attempt, timestamped every twenty minutes, for nine days.",
-            Derelict.WreckCause.LifeSupportFailure =>
-                "The entries stay calm, technical and hopeful right up until they stop mid-word.",
-            Derelict.WreckCause.Mutiny =>
-                "The last week is written in two hands that stop acknowledging each other, then one hand only.",
-            Derelict.WreckCause.InsuranceJob =>
-                "The distress call is in the log — drafted, revised, and SAVED four hours before the emergency it describes.",
-            Derelict.WreckCause.NavigationalError =>
-                "The last entry is a burn confirmation for a burn the fuel logs say never fired.",
-            Derelict.WreckCause.Piracy =>
-                "The last entry is a contact report. There is no entry after it.",
-            _ => "The last entries are ordinary ship's business, and then there are no more.",
-        });
+    // The bridge log and the manifest USED TO BE TWO PRIVATE SWITCHES HERE, out of reach of any test and out
+    // of sight of Derelict.Evidence — which narrates the same ship. They disagreed: the vented hull had no
+    // arm in the log switch, so the station printed "the log ends N years ago … and then there are no more"
+    // while her evidence, on the same screen, said the log runs on for months in one immaculate hand. The
+    // words the log should have spoken were already written, and Core-tested, in HullVenting.VentedShipLogLine
+    // — read by nothing at all. Both switches now live in Core beside the evidence they must agree with.
+    //
+    // #633 · AND THE SWITCHES CAME BACK ON `main`, WITH ONE THING IN THEM THAT IS NOT PROSE. While this
+    // branch was moving the words into Core, `main` was adding #537's search clue to the client's copy: a
+    // hull that hides a void books one compartment longer than her deck plan draws it, and reading the
+    // manifest properly is what hands you that discrepancy. The prose stays in Core, where the tests can see
+    // it agree with the evidence; the CLUE stays here, because it is about THIS boarding's hidden void and
+    // nothing in Core knows that. One fact, one owner, each.
 
-    // The manifest: what she was carrying and what it is worth — the number both endings are priced on.
     /// <summary>
-    /// #537 · AND THE MANIFEST IS WHERE THE LIE IS. A hull hiding a void books one compartment longer than her own
-    /// deck plan draws it — so the clue is not a new console, it is the document that was already here, read
-    /// properly. On a clean hull the frame numbers match down the page and this is an honest dead end, which it
-    /// has to be: a document that only speaks up when there is something to find is a pointer, not a clue.
+    /// #537 · THE MANIFEST IS WHERE THE LIE IS. Core writes the document; this adds what reading it properly
+    /// tells you about the hull you are standing in. On a clean hull the frame numbers match down the page
+    /// and it is an honest dead end, which it has to be: a document that only speaks up when there is
+    /// something to find is a pointer, not a clue.
     /// </summary>
-    private string ManifestFinding(in Derelict.Wreck w)
+    private string ManifestFindingWithTheClue(in Derelict.Wreck w)
     {
-        string cargo = ManifestCargoLine(w);
+        string cargo = Derelict.ManifestFinding(w);
         _manifestRead = true;
 
         if (_hullVoid is not { } hidden)
@@ -165,14 +172,6 @@ public sealed partial class Map
 
         return cargo + " " + HullSounding.ClueLine(clue);
     }
-
-    private static string ManifestCargoLine(in Derelict.Wreck w) =>
-        $"📦 The manifest assesses her cargo at {w.AssessedValueCr:N0} cr" +
-        (w.Cause == Derelict.WreckCause.InsuranceJob
-            ? " — countersigned twice, by the same hand, and the cargo seals have been opened and re-set."
-            : w.Cause == Derelict.WreckCause.Piracy
-                ? ". The near hold is empty; the deep hold is exactly as listed. Whoever boarded her was in a hurry."
-                : ". It is all still aboard. Nobody has been here.");
 
     /// <summary>The causes the captain may put their name to: the ones their evidence supports. Reading
     /// only the damage lets you name the obvious answer — and a wreck that LIES will hand you the wrong
@@ -535,7 +534,7 @@ public sealed partial class Map
 
         _deckPlan = WreckInterior.WreckDeck(
             w, _wreckExamined, _wreckSalvaged, 3 + ReeverEngineCeiling, FillSurfaceDroids,
-            HeldDoors(), BlockedDoors());
+            HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
     }
 
     /// <summary>The wreck's own header line, and the loiter promise under it — the reason the away team is

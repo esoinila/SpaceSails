@@ -131,6 +131,28 @@ What it can pay in:
 6. **The consequence that does not happen** — the world hook. Biggest of these by far, and the one that
    makes the road mean anything; worth doing last and properly.
 
+## 5b. The death at the end of the clock (#525, 2026-08-02)
+
+The overload has always been able to kill you — stay aboard past zero and `AdvanceScuttleClock` triggers a
+death. What it did **not** do was say what killed you. It called `TriggerSurfaceOverdrawDeath` with no known
+cause, so the card rolled `DeathNarration.SurfaceEnd` and printed:
+
+> 🧠 *Nerves shot past empty on the Long Shrift — an Old One's hand is the last straw.*
+
+Reachable on `?wreck=drivefailure&land=1`: a hull with nothing living in her, ninety seconds after the
+captain turned two keys themselves. #525's outcome table already recorded this row as *built*, with a
+`DeathCause.Scuttled` that did not exist. It does now, and it is the only cause `CanHappen` restricts to
+`DeathPlace.Derelict` — the panel is bolted to somebody else's reactor, and your own ship has no such switch.
+
+The card's tail was already right and nobody had ever read it: **"Her log will not mention it."**
+
+Staged on demand with `?death=scuttled&wreck=1&land=1`.
+
+**Still not built, and still the open half of #525:** the CASTAWAY outcome — at zero with the captain
+*clear* in the shuttle. Today the only way to survive the overload is `ResolveScuttleOnDeparture`, which
+fires the epitaph the moment you undock, so the wreck goes when you leave rather than when the clock says.
+Nothing in the game can end with a captain alive and shipless.
+
 ## 6. Rules kept
 
 - **It never pays.** Certainty is the product.

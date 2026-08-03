@@ -413,6 +413,15 @@
                 @* #223: the buried-treasure maps — every chest we know of, ours and any rival's whose
                    map we hold. Viewable any time: click a map to throw the full-screen card back up. *@
                 <div class="captain-ledger-section-label text-info fw-bold small mt-3">🗺 Treasure maps</div>
+                @* #223: what is actually in the ground, totalled. CacheLedger has known BuriedCoin and
+                   BuriedHotUnits since the hoard shipped and NOTHING ever read them — the one number a
+                   captain wants from this page (how much of my fortune is off the books, and how much of
+                   it is evidence) lived only in Core. Own caches only: a rival's chest is a map, not a
+                   holding. *@
+                @if (HoardSummary.Length > 0)
+                {
+                    <div class="captain-group-flavor">@HoardSummary</div>
+                }
                 <div class="captain-group-cards">
                     @if (Maps.Count == 0)
                     {
@@ -661,6 +670,11 @@
 
     /// <summary>Open the full-screen map card for a cache id.</summary>
     [Parameter] public EventCallback<string> OnViewMap { get; set; }
+
+    /// <summary>#223: one line over the 🗺 section totalling what is OURS and underground — buried coin,
+    /// buried units, and how many of those units are evidence. Empty when we have nothing in the ground
+    /// (a rival's map is not a holding), and then the section shows nothing extra.</summary>
+    [Parameter] public string HoardSummary { get; set; } = "";
 
     /// <summary>One map in the ledger's 🗺 section — the caption, the bearing line, the contents, and
     /// whose hoard it is. The cache id drives the "view the card" jump.</summary>

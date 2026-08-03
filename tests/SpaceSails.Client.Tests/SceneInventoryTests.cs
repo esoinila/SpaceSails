@@ -222,6 +222,29 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.LabDoorBoard] = "the lab's door board, in the clean room of an appended lab",
         [DeckPlan.ConsoleKind.LabAlarm] = "the lab's alarm panel, beside the board",
         [DeckPlan.ConsoleKind.LabKeyCard] = "Vantar's card, in the deepest chamber of an appended lab",
+
+        // ── #633 · AND THE ELEVEN THIS LAW HAD NEVER SEEN ────────────────────────────────────────────────
+        //
+        // This guard was written on `main` while the Hive, the outpost and the archive node were being built
+        // on `our-own-ship-has-compartments`, so the first thing it did on being reunited with them was name
+        // all eleven at once. That is the guard working, not the guard being wrong: every one of them is a
+        // conditional placement, and each entry below states the condition rather than shrugging at it.
+        [DeckPlan.ConsoleKind.OutpostDoor] = "#563 the outpost hut, grown onto a site only when the roll (or " +
+                                             "?outpost=1) puts one there",
+        [DeckPlan.ConsoleKind.OutpostCache] = "#563 the ammunition locker INSIDE that hut",
+        [DeckPlan.ConsoleKind.OutpostEffects] = "#563 whoever's effects are still on that hut's floor",
+        [DeckPlan.ConsoleKind.MonolithFoot] = "#586 whatever was left at the monolith's foot THIS visit-window " +
+                                              "— deliberately absent when the window holds nothing, because a " +
+                                              "marker pointing at nothing is the map lying",
+        [DeckPlan.ConsoleKind.HiveHead] = "#585 the camouflaged lift head, on the surface only where a site " +
+                                          "actually carries a clandestine facility (?secretlab=1)",
+        [DeckPlan.ConsoleKind.HiveLift] = "#585 the lift car, in an underground floor appended on the way down",
+        [DeckPlan.ConsoleKind.HiveHaul] = "#585 a room worth searching, on an appended underground floor",
+        [DeckPlan.ConsoleKind.HiveSign] = "#600 department signage, on an appended underground floor",
+        [DeckPlan.ConsoleKind.HiveRefuge] = "#608 the pressure refuge's rack, one per dead appended floor",
+        [DeckPlan.ConsoleKind.ArchiveNode] = "the column, aboard about one eligible hull in three " +
+                                             "(ArchiveNode.IsAboard) — a fresh wreck plan carries none",
+        [DeckPlan.ConsoleKind.ArchiveSwitch] = "the purge handle on that same housing, and only when it is there",
     };
 
     /// <summary>

@@ -41,6 +41,7 @@ public class VaultSerializerTests
         Caches = new CachesSection
         {
             NextMintIndex = 5,
+            LastCheckedPeriod = 3, // #223: the discovery watch's bookmark rides with the hoard
             Caches =
             [
                 new CacheRecord
@@ -93,6 +94,7 @@ public class VaultSerializerTests
                 new OverheardLine("“A ghost runs dark past the rings this watch.”", 12360.5, "THE MAGPIE", "THE RINGSIDE BAR"),
             ],
         },
+        Authorities = new AuthoritiesSection { Cards = ["luna#1", "titan#3"] },   // #590
         Resume = new ResumeSection { HavenId = "ringside", HavenName = "Ringside", WasDocked = true },
     };
 
@@ -120,6 +122,7 @@ public class VaultSerializerTests
         Assert.Equal(500, loaded.Contacts.Contacts[0].CreditBalance);
         Assert.Equal(2, loaded.Contacts.Contacts[0].Transactions.Count);
         Assert.Equal(5, loaded.Caches!.NextMintIndex);
+        Assert.Equal(3, loaded.Caches.LastCheckedPeriod); // #223 — the watch survives the file, not just the session
         Assert.True(loaded.Caches.Caches[0].Cargo[0].Hot);
         Assert.Equal("cacheId", loaded.Quests!.Quests[0].Fields.Keys.First());
         Assert.Single(loaded.Quests.Obligations);
@@ -128,6 +131,7 @@ public class VaultSerializerTests
         Assert.Equal(["phobos", "the-hermits-rock"], loaded.Progress.SecretLabsFound); // #409 — found labs persist per thread
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
+        Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);   // #590 — the wallet
         Assert.True(loaded.Resume!.WasDocked);
     }
 
@@ -183,6 +187,7 @@ public class VaultSerializerTests
     [InlineData("progress")]
     [InlineData("nerve")]
     [InlineData("overheard")]
+    [InlineData("authorities")]
     [InlineData("resume")]
     public void EachSection_RoundTrips_Independently(string section)
     {
@@ -198,6 +203,7 @@ public class VaultSerializerTests
             "caches" => new Vault { Caches = full.Caches },
             "quests" => new Vault { Quests = full.Quests },
             "insurance" => new Vault { Insurance = full.Insurance },
+            "authorities" => new Vault { Authorities = full.Authorities },
             "upgrades" => new Vault { Upgrades = full.Upgrades },
             "diceItems" => new Vault { DiceItems = full.DiceItems },
             "progress" => new Vault { Progress = full.Progress },
@@ -260,6 +266,40 @@ public class VaultSerializerTests
     }
 
     [Fact]
+    public void Authorities_SurviveTheVaultRoundTrip_ACardIsAPossessionNotAMood()
+    {
+        // #590 · A card is found eleven floors under a moon. It has to still be in the pocket a month and a
+        // world later, or the gate that reads it is a mood rather than a mechanic. The save carries the ID
+        // and nothing else, so this round trip IS the persistence contract.
+        var wallet = new AuthoritiesSection
+        {
+            Cards =
+            [
+                new UndergroundComplex.AuthorityCard("luna", 1).Id,
+                new UndergroundComplex.AuthorityCard("titan", 3).Id,
+            ],
+        };
+
+        Vault loaded = VaultSerializer.Load(VaultSerializer.Save(new Vault { Authorities = wallet }));
+        Assert.NotNull(loaded.Authorities);
+        Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);
+
+        // And it reads back as the thing it authorises, not as a string somebody has to interpret.
+        Assert.True(UndergroundComplex.AuthorityCard.TryParse(
+            loaded.Authorities.Cards[1], out UndergroundComplex.AuthorityCard back));
+        Assert.Equal(new UndergroundComplex.AuthorityCard("titan", 3), back);
+    }
+
+    [Fact]
+    public void Authorities_MissingSection_DefaultsToAnEmptyWallet()
+    {
+        // A pre-#590 save simply lacks the section, and a captain who has never been down a shaft is a
+        // captain carrying nothing. It must never be a load failure.
+        Assert.Empty(new AuthoritiesSection().Cards);
+        Assert.Null(VaultSerializer.Load(VaultSerializer.Save(new Vault())).Authorities);
+    }
+
+    [Fact]
     public void Overheard_MissingSection_DefaultsToAnEmptyBook()
     {
         Assert.Empty(new OverheardSection().Lines);
@@ -319,6 +359,25 @@ public class VaultSerializerTests
         Assert.Null(loaded.Ship);
         Assert.Null(loaded.Caches);
         Assert.Null(loaded.Resume);
+    }
+
+    /// <summary>#223 · A voyage saved BEFORE the discovery watch rode the vault has a caches section with
+    /// no bookmark field at all. It must read back as WATCH NOT STARTED (−1) so the client re-seeds it at
+    /// the load clock — never as day 0, which would resolve every day since the epoch on the first frame
+    /// and empty the captain's hoard the instant they resumed.</summary>
+    [Fact]
+    public void Caches_LegacyFileWithNoWatchField_ReadsAsWatchNotStarted()
+    {
+        string json = VaultSerializer.Save(FullVault());
+        JsonObject root = (JsonObject)JsonNode.Parse(json)!;
+        JsonObject caches = (JsonObject)((JsonObject)root["sections"]!)["caches"]!;
+        Assert.True(caches.Remove("lastCheckedPeriod")); // the old shape: the field never existed
+        RestampChecksum(root);
+
+        Vault loaded = VaultSerializer.Load(root.ToJsonString());
+
+        Assert.False(loaded.Tampered);
+        Assert.Equal(CacheLedger.WatchNotStarted, loaded.Caches!.LastCheckedPeriod);
     }
 
     [Fact]

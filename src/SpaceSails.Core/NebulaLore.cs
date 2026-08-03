@@ -218,4 +218,142 @@ public static class NebulaLore
     /// this when the reveal is built). The heaviest throw of all is the CONVERGENCE, whose shock lives in
     /// <see cref="ArcConvergence.ConvergenceSanityShockHook"/>.</summary>
     public const double TruthSanityShockHook = 30.0;
+
+    // ── The sentences the player actually reads (#422 story pass, 2026-08-02). ────────────────────────────
+    //
+    // These used to be built in the client (Map.Nebula), and the ledger's countdown LIED about the sim —
+    // the house's third and commonest bug class, and the exact twin of the one the KAAMOS pass found the
+    // same afternoon (#411/#634):
+    //
+    //   · the Captain's-ledger card printed "the shape isn't clear yet — N more shards to read it" with N
+    //     measured against the size of the whole intel POOL (five) instead of the threshold that actually
+    //     opens the capstone (IntelNeededToUnlock, four). It was always exactly one shard pessimistic: a
+    //     captain holding three was told two more, and one more opened the contract.
+    //
+    // The fix is the same shape: the sentence lives where the predicate lives, so the number the ledger
+    // prints is derived from the constant the gate itself reads and the two cannot drift apart, and a test
+    // can hold the SENTENCE to the SIM.
+    //
+    // (Arc 2 did NOT share the KAAMOS pass's second bug. The KAAMOS capstone's authored prose named four
+    // specific shards although the gate takes any four of five; this capstone's prose names none — "the
+    // pieces resolve into the clause the sales voice skips" — so it can never credit a piece nobody found.
+    // `TheCapstonesOwnLoreNamesNoShard…` pins that it stays that way.)
+
+    /// <summary>How many MORE intel shards this progress needs before the shape is clear and the capstone
+    /// can be earned — zero once <see cref="HasEnoughIntelToEarnTheContract"/> is true. This is THE number
+    /// the ledger prints, derived from <see cref="IntelNeededToUnlock"/> (the constant the gate itself
+    /// reads) rather than from the size of the pool, so the countdown and the gate cannot drift apart.</summary>
+    public static int IntelStillNeeded(NebulaProgress progress) =>
+        Math.Max(0, IntelNeededToUnlock - IntelAssembled(progress));
+
+    /// <summary>The Captain's-ledger headline for the arc — the clause count and whether the contract is
+    /// held. The count is INTEL only: the capstone is the contract, not a clause of the small print.</summary>
+    public static string LedgerHeadline(NebulaProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        int intel = IntelAssembled(progress);
+        int pool = IntelFragments.Count();
+        return progress.Has(KeyFragment.Id)
+            ? $"▓ NEBULA MUTUAL — {intel} of {pool} clauses · the contract in hand"
+            : $"▓ NEBULA MUTUAL — {intel} of {pool} clauses assembled";
+    }
+
+    /// <summary>The ledger's state line — where this thread stands and what would move it. The countdown
+    /// counts down to the GATE, not to the pool.</summary>
+    public static string LedgerProgressLine(NebulaProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        if (KnowsTheTruth(progress))
+        {
+            return TruthLedgerLine;
+        }
+
+        if (HasEnoughIntelToEarnTheContract(progress))
+        {
+            return "▓ Enough of the small print to earn the contract. Ask around the bars — the pieces " +
+                   "resolve into the clause the sales voice skips.";
+        }
+
+        int more = IntelStillNeeded(progress);
+        return $"▓ The shape isn't clear yet — {more} more shard{(more == 1 ? "" : "s")} to read it. " +
+               "One poster line is never enough; one adjuster's drink is never enough.";
+    }
+
+    /// <summary>The loud one-time notice the world says on the single edge that resolves the whole truth —
+    /// the capstone contract AND the intel that legitimises it (<see cref="KnowsTheTruth"/>). Announced once
+    /// per universe; a reload rehydrates without re-firing.</summary>
+    public const string TruthNotice =
+        "   ▓▓ THE POLICY'S TRUE TERMS RESOLVE — you know what Nebula Mutual files you under now. " +
+        "Not insured against death: filed under it. The premium buys STORAGE, and the original never leaves the dark.";
+
+    /// <summary>The same fact, at rest, in the ledger.</summary>
+    public const string TruthLedgerLine =
+        "▓ The policy's true terms resolve. You are not insured against death — you are filed under it.";
+
+    /// <summary>The line the first read of a 📋 PIRATE INSURANCE poster leaves the captain with — the tell
+    /// that arrives one beat early (#380's law), in the captain's own voice rather than as a parenthesised
+    /// instruction. It has to keep saying "come back and read it", because the SECOND read is the beat and a
+    /// player who never learns there is a second read never gets the shard.</summary>
+    public const string PosterFirstReadLine =
+        "📋 \"We Bring You Back Meaner.\" Cheerful as ever. Your eye snags on the grey line under it — the " +
+        "one no advertising should keep — and then you are already walking. It will still be here. Come " +
+        "back and read it properly.";
+
+    // ── The plates (#528 · the reveal-card audit, 2026-08-02). ────────────────────────────────────────
+    //
+    // Arc 2 had no art of its own at all. The best-written character in the game — the adjuster who has filed
+    // the same subscriber six times and shaken six certain hands — had no face, while a routine collector
+    // shakedown got a painted portrait. And the moment the whole policy resolves, which is the second-largest
+    // reveal in the game, was a toast.
+    //
+    // Same seam as KAAMOS (KaamosLore.PlateFor), same discipline: EVIDENCE, then stop. The plate is what is in
+    // the room. The fragment's own prose still carries every word of what it means, and the picture is not
+    // allowed to say any of it. Keyed by fragment id so the client asks the arc rather than holding literals.
+
+    /// <summary>The reveal plate for a fragment id — only the two beats that earn one. The glitch on the
+    /// resurrection card, the poster's grey line, the collector's writ and the clinic's second page all arrive
+    /// INSIDE a host card that already has its own picture (the BUSTED modal, the poster) — giving them a
+    /// second frame would stack a card on a card. These two arrive at a bar table with nothing around them.</summary>
+    private static readonly Dictionary<string, RevealPlate> PlatesById = new(StringComparer.Ordinal)
+    {
+        ["adjuster-tell"] = new(
+            "▓ THE ONE WHO FILES YOU",
+            "art/nebula-adjuster.jpg",
+            "The only person in this bar reading. The folio is thick and thumbed soft at one corner and it " +
+            "fell open at a page nobody had to look up. They keep a finger on the line the whole time they " +
+            "talk to you, the way you hold a place you have held before."),
+
+        ["policy-terms"] = new(
+            "▓▓ WHAT THE PREMIUM BUYS",
+            "art/nebula-truth.jpg",
+            "A counter, a bell, a stamp block, and a stool nobody is sitting on. The office behind it has no " +
+            "back wall — the paper shelves simply become racks, and the racks carry on past the last light " +
+            "anybody bothered to install. Everything filed here is filed cold, and the aisle does not end."),
+    };
+
+    /// <summary>The reveal plate this beat earns, or null for the beats that arrive inside a host card that
+    /// already has a picture. Asked at the single seam where a shard is assembled.</summary>
+    public static RevealPlate? PlateFor(string fragmentId) =>
+        fragmentId is not null && PlatesById.TryGetValue(fragmentId, out RevealPlate? plate) ? plate : null;
+
+    /// <summary>Every plate in the arc, with the fragment id it belongs to — the tests' handle.</summary>
+    public static IEnumerable<KeyValuePair<string, RevealPlate>> AllPlates => PlatesById;
+
+    /// <summary>The label on the bar seam's button for the step this bar can take. Neither NEBULA step takes
+    /// coin (the adjuster is the one talking, and the capstone is your own papers on your own table), so no
+    /// label wears a price — but the two steps are different acts and read differently, which the one shared
+    /// "▓ Ask about NEBULA" did not: nobody is asked anything when the small print answers itself.</summary>
+    public static string BarSeamLabel(string? stepFragmentId) => stepFragmentId switch
+    {
+        "policy-terms" => "▓ Put the NEBULA small print together",
+        _ => "▓ Ask about NEBULA",
+    };
+
+    /// <summary>The hover line behind <see cref="BarSeamLabel"/> — what this particular step actually is.</summary>
+    public static string BarSeamTitle(string? stepFragmentId) => stepFragmentId switch
+    {
+        "policy-terms" =>
+            "Spread the clauses you have gathered across the table and let them answer each other",
+        _ => "Ask around about the pirate-insurance fine print — NEBULA MUTUAL",
+    };
 }

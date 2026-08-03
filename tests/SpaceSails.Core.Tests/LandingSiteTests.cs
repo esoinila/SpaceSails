@@ -147,8 +147,10 @@ public class LandingSiteTests
         // Miranda always has ≥2 sites here only if count≥2 (guaranteed by MinSites=2), so site 1 exists.
         long variant = SurfaceLayout.WallHash(SurfaceLayout.For("miranda", Env, second.LayoutSalt));
         Assert.NotEqual(maze, variant);
-        // …but the canon monolith maze is still reachable at site 0.
-        Assert.Equal("THE MONOLITH MAZE", SurfaceLayout.For("miranda", Env, "").Scheme);
+        // …but the canon maze is still reachable at site 0.
+        Assert.Equal(FalseSlab.Scheme, SurfaceLayout.For("miranda", Env, "").Scheme);
+        // #649 · and so is the monolith's own authored ground, on the moon the map cards name.
+        Assert.Equal(SurfaceLayout.MonolithScheme, SurfaceLayout.For(Monolith.BodyId, Env, "").Scheme);
     }
 
     // ── An away-expedition rock keeps its authored ground regardless of any salt (single gig site) ──

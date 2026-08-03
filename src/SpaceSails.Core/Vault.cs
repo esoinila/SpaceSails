@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 // The personal vault (#225): the things of personal value — relationships, balances, caches, maps,
 // dice items, insurance, the ship's fit — persisted as versioned, field-tolerant JSON + checksum.
@@ -54,6 +54,19 @@ public sealed class Vault
     public ProgressSection? Progress { get; init; }
     public NerveSection? Nerve { get; init; }
     public OverheardSection? Overheard { get; init; }
+
+    /// <summary>#587 · The captain's FIELD BOOK — what they found on the ground. Its own independently
+    /// optional section; a pre-#587 file simply lacks it and defaults to an empty book.</summary>
+    public FieldNotesSection? FieldNotes { get; init; }
+
+    /// <summary>#590 · The authority cards the captain is carrying. Its own independently optional section;
+    /// a pre-#590 file simply lacks it and defaults to an empty wallet.</summary>
+    public AuthoritiesSection? Authorities { get; init; }
+
+    /// <summary>#603 · Everything the captain is carrying on foot. Supersedes <see cref="Authorities"/>,
+    /// which is still read on load so an older save's cards are not lost — a captain who earned a card
+    /// eleven floors down does not lose it to a refactor.</summary>
+    public SatchelSection? Satchel { get; init; }
     public KaamosSection? Kaamos { get; init; }
     public NebulaSection? Nebula { get; init; }
     public ResumeSection? Resume { get; init; }
@@ -148,6 +161,14 @@ public sealed record CachesSection
     /// <summary>The mint counter, preserved so freshly-buried caches after a load can't collide with
     /// loaded ids.</summary>
     public int NextMintIndex { get; init; }
+
+    /// <summary>The discovery watch's bookmark — the last whole day this hoard was rolled through
+    /// (<see cref="CacheLedger.LastCheckedPeriod"/>). Defaults to <see cref="CacheLedger.WatchNotStarted"/>
+    /// so a vault written before this field existed loads as "no watch yet" and the client re-seeds it at
+    /// the load clock; without the default a legacy save would read period 0 and resolve every day since
+    /// the epoch in one go — a hoard massacre on load.</summary>
+    public long LastCheckedPeriod { get; init; } = CacheLedger.WatchNotStarted;
+
     public IReadOnlyList<CacheRecord> Caches { get; init; } = [];
 }
 
@@ -267,6 +288,24 @@ public sealed record ProgressSection
     /// again (#292's ruling), even across reloads. Defaults false, so a pre-#440 file — a captain who has
     /// already walked a dozen moons — gets it once on their next trip down and then never more.</summary>
     public bool GroundLessonSeen { get; init; }
+
+    /// <summary>#563 — true once this captain has been shown <see cref="GroundGrows"/>, the card that fires
+    /// the first time forcing something open makes the map itself bigger. Same law as
+    /// <see cref="GroundLessonSeen"/>: it greets the truly new and never again, because after one showing
+    /// the toast says everything a card would. Defaults false, so a captain who has already forced a door
+    /// before this existed gets the explanation once on their next one.</summary>
+    public bool GroundGrewSeen { get; init; }
+
+    /// <summary>#562 — true once this captain has been shown <see cref="TubeRearm"/>, the card that fires
+    /// the first time the ship racks a sentry magazine in her down-tube. Same law again: it teaches the
+    /// shape of an excursion (the tube is the one place your sentries get fed, so every trip is a loop with
+    /// one anchor) and then never speaks again, because the receipt line says the rest.</summary>
+    public bool TubeRearmSeen { get; init; }
+
+    /// <summary>#573 — true once this captain has been shown <see cref="AirCard"/>, the card that fires the
+    /// first time their tank passes the low mark on a surface. Same law as its siblings: it teaches the
+    /// clock once and then the pulse line carries it.</summary>
+    public bool AirCardSeen { get; init; }
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──
@@ -305,6 +344,45 @@ public sealed record OverheardSection
     public IReadOnlyList<OverheardLine> Lines { get; init; } = [];
 }
 
+/// <summary>#587 · The captain's field book: everything found out on a surface, kept so it can be re-read.
+/// Owner: <i>"we should maybe collect the tips to ledger if we don't show them again?"</i> — the same ruling
+/// he made for bar intel in #347, pointed at the ground. Its own independently-optional section.</summary>
+public sealed record FieldNotesSection
+{
+    /// <summary>The notes, oldest first. Capped by the writer (see <c>FieldNotes</c>).</summary>
+    public IReadOnlyList<FieldNote> Notes { get; init; } = [];
+}
+
+/// <summary>#590 · WHAT THE CAPTAIN IS CARRYING THAT OPENS SOMETHING. Owner: <i>"could there be like a
+/// keycode etc that allows us access to the lab"</i>.
+///
+/// <para>Stored as the flat list of card ids (<c>UndergroundComplex.AuthorityCard.Id</c>) and nothing else,
+/// so the save carries the FACT and the prose is rebuilt from the generator at read time — the same shape
+/// KAAMOS uses, and for the same reason: a card's title is a seeded property of the world, and a file that
+/// carried the words would go stale the day the words changed. Ids the current build cannot parse are
+/// dropped on load rather than thrown over.</para>
+///
+/// <para>These are durable on purpose. A card is found eleven floors under a moon and must still be in the
+/// captain's pocket a month and a world later, or it is not a possession — it is a mood.</para></summary>
+/// <summary>#603 · THE POCKET. Stored as opaque item strings (<c>Satchel.Item.Stored</c>) so the save carries
+/// the FACT and never the words — every label, every clue's certainty and every card's title is a seeded
+/// property of the world, rebuilt at read time. A file that carried the prose would go stale the day the
+/// prose changed, which is the shape of half the bugs in this repository's history.
+///
+/// <para>Supersedes <see cref="AuthoritiesSection"/>, which is still READ on load so an older save's cards
+/// migrate in rather than being lost.</para></summary>
+public sealed record SatchelSection
+{
+    /// <summary>Items, in whatever order they were written.</summary>
+    public IReadOnlyList<string> Items { get; init; } = [];
+}
+
+public sealed record AuthoritiesSection
+{
+    /// <summary>Card ids, in whatever order they were written.</summary>
+    public IReadOnlyList<string> Cards { get; init; } = [];
+}
+
 // ── PROJEKTI KAAMOS (#411): the ice-moon mystery, assembled per-thread. ──
 
 /// <summary>The KAAMOS lore-fragments this universe's captain has assembled (#411) — stored as the flat
@@ -318,6 +396,13 @@ public sealed record KaamosSection
     /// <summary>The assembled fragment ids (see <see cref="KaamosLore.Fragments"/>). Order is not
     /// meaningful — assembly is a set — but the writer emits canonical order for a stable file.</summary>
     public IReadOnlyList<string> AssembledFragmentIds { get; init; } = [];
+
+    /// <summary>#635 · Whether this captain has had a filing for the sealed ice-moon berth returned by the
+    /// board — the arc's front door, and not a fragment: it credits nothing toward the gate. Its own flag
+    /// rather than a pool id, because the pool is the thing the reach logic counts and a phantom id in it
+    /// would be exactly the drift <see cref="KaamosProgress.Assemble"/> refuses. A save written before
+    /// #635 simply lacks the property and defaults to false.</summary>
+    public bool BerthFilingBounced { get; init; }
 }
 
 // ── NEBULA MUTUAL (#422): the second story arc, the truth behind the player's own deaths, per-thread. ──

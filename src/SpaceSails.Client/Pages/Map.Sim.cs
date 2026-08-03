@@ -97,6 +97,19 @@ public partial class Map
     // carries the wreck id (Derelict.BodyIdFor), so the deck builder and the excursion route by id alone.
     // The ship holds on her for free while the away team is inside — see LoiterKeeping / Lab 40.
     private const string WreckCheatId = "kestrel-3";
+
+    /// <summary>The hull a wreck cheat boots you onto: the first seeded ship that died THAT way, or the
+    /// default hull when no cause was asked for (and when the search finds none, which cannot happen for a
+    /// cause the generator can produce, but a null here would be a crash for a typo).
+    ///
+    /// <para>ONE function rather than an expression at the parse site, because <c>?archive=1</c>'s guard has
+    /// to be able to ask "does the hull this cheat produces actually carry a node?" — and a guard that asks a
+    /// re-typed copy of the expression is guarding the copy.</para></summary>
+    private static Derelict.Wreck CheatWreck(Derelict.WreckCause? cause) =>
+        cause is { } forced
+            ? Derelict.SeededWithCause(forced) ?? Derelict.Seeded(WreckCheatId)
+            : Derelict.Seeded(WreckCheatId);
+
     private static BodyDefinition WreckSiteBody(string berthId, in Derelict.Wreck wreck) => new()
     {
         Id = Derelict.BodyIdFor(wreck.Id),
@@ -113,10 +126,22 @@ public partial class Map
     // #409: the ?secretlab=1 cheat's landable rock — a plain Moon-kind body co-orbiting the berth, well inside
     // one shuttle hop, whose surface ResolveSecretLab forces to hide a Vantar lab with the door pre-revealed.
     private const string SecretLabCheatBodyId = "secret-lab-site";
-    private static BodyDefinition SecretLabSiteBody(string berthId) => new()
+
+    /// <summary>#592 · The ?secretlab=deep rock. A site's whole shape — how deep it goes, what kind of place
+    /// it is, and whether it has a band nobody listed — is seeded off its BODY ID, so reaching the unlisted
+    /// band from a URL is a matter of parking a rock with the right name rather than of overriding a Core
+    /// fact from the client.
+    ///
+    /// <para>This one is a 20-floor clinic with an unlisted LABORATORY under it, down to the generator's own
+    /// performance guard — which makes it the deepest, most awkward site the game can produce and therefore
+    /// the right one to test on. Pinned by <c>TheUnlistedBandTests</c>: if a change to the seeding ever
+    /// stopped it having a hidden band, the cheat would quietly stop reaching the feature it exists for.</para></summary>
+    private const string SecretLabDeepCheatBodyId = "secret-lab-site-unlisted";
+
+    private static BodyDefinition SecretLabSiteBody(string berthId, bool deep) => new()
     {
-        Id = SecretLabCheatBodyId,
-        Name = "The Hermit's Rock",
+        Id = deep ? SecretLabDeepCheatBodyId : SecretLabCheatBodyId,
+        Name = deep ? "The Deep Hermit's Rock" : "The Hermit's Rock",
         ParentId = berthId,
         Mu = 0,
         BodyRadiusM = ExpeditionSite.BodyRadiusMeters,
@@ -324,11 +349,16 @@ public partial class Map
         string? deflectionCheat = null; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
         bool wreckCheat = false; // #488 /map?wreck=1: spawn a derelict in shuttle range — board her, read her, then file or strip
         Derelict.WreckCause? wreckCauseCheat = null; // #488 /map?wreck=<cause>: board a wreck that died THAT way
+        bool secretlabDeep = false;  // #592 /map?secretlab=deep: the rock whose site hides a band
         bool secretlabCheat = false; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
-        string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable
+        string? kaamosCheat = null; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable; ?kaamos=pod|holder instead SEATS the rare find so it can be EARNED
         bool bondCheat = false; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
-        string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable
+        bool oracleCheat = false; // #428 /map?oracle=1: seat the station oracle at whatever bar you dock at (she's a coin-flip fixture otherwise)
+        bool ashoreCheat = false; // #428 /map?ashore=1: boot docked AND already standing in the bar — the ship→tube→hall walk already walked
+        int? nerveCheat = null;   // #428 /map?nerve=N: seed the nerve gauge at N of NervePips.MaxPips whole pips at boot
+        string? nebulaCheat = null; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable; ?nebula=adjuster instead SEATS the rare bar contact so the tell can be EARNED
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
+        DeathCause? deathCheat = null; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
@@ -531,6 +561,128 @@ public partial class Map
                     }
                 }
             }
+            else if (pair.StartsWith("archive=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Dev cheat: /map?archive=1&land=1 boards a derelict that is CARRYING A COLD-ARCHIVE NODE.
+                // The whole beat — the dwell field, the throw, the visions, the handle — lives in one hold on
+                // about one eligible wreck in three, and the house rule written next to these cheats is that
+                // "a scene nobody can reach on demand is a scene that ships broken." So this boots the one
+                // cause Core guarantees a node on (ArchiveCheatWreck): the ship one of her own opened to
+                // space, where the node is the reason she died.
+                //
+                // It is deliberately NOT a "spawn a node anywhere" switch. The fiction the node belongs to
+                // arrives with the hull; a node bolted into a drive failure would be a prop.
+                string candidate = Uri.UnescapeDataString(pair["archive=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _archiveCheat = true;
+                    wreckCheat = true;
+                    wreckCauseCheat = ArchiveCheatCause;
+                }
+            }
+            else if (pair.StartsWith("air=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #564 dev cheat: /map?air=45 starts the excursion with 45 seconds in the tank instead of a
+                // full one. A full tank is six minutes of walking by design — fine to play, useless to TEST,
+                // and the owner should not have to stroll for six minutes to see the point-of-no-return
+                // warning fire. Combine with dock/site/land:
+                //   /map?dock=the-tilt&site=0&land=1&air=45
+                string candidate = Uri.UnescapeDataString(pair["air=".Length..]);
+                if (double.TryParse(candidate, NumberStyles.Float, CultureInfo.InvariantCulture, out double secs))
+                {
+                    _airCheatSeconds = Math.Clamp(secs, 1, SuitAir.TankSeconds);
+                }
+            }
+            else if (pair.StartsWith("collectors=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #583 dev cheat: /map?collectors=20 forces a repo boat to follow you down and puts it on the
+                // ground 20 seconds in, whatever the heat gauge reads. The scene is meant to be RARE and
+                // mid-mission — which makes it nearly impossible to playtest on purpose, and a scene nobody
+                // can reach on demand is a scene that ships broken. Combine with dock/site/land:
+                //   /map?dock=the-tilt&site=0&land=1&collectors=20
+                string candidate = Uri.UnescapeDataString(pair["collectors=".Length..]);
+                if (double.TryParse(candidate, NumberStyles.Float, CultureInfo.InvariantCulture, out double eta))
+                {
+                    _collectorCheatSeconds = Math.Max(0, eta);
+                }
+            }
+            else if (pair.StartsWith("death=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #621 dev cheat: /map?death=<cause> KILLS THE CAPTAIN AT BOOT, through the real pipeline.
+                //
+                // The death card is the one screen every player is guaranteed to see, and until now there
+                // was no way to reach any of it on demand: the routes were ?floor=2&air=10 (walk until you
+                // suffocate), ?reevers=8 (survive long enough to be overdrawn) and ?collectors=20 (lose the
+                // Bolivia). Four causes, five stages, four places, one seeded line pool each — verified by
+                // reading the source. This project's own rule, written beside these cheats: "a scene nobody
+                // can reach on demand is a scene that ships broken."
+                //
+                // It stages the GENUINE trigger — TriggerSurfaceOverdrawDeath / TriggerImpact / a real
+                // collector catch — never a mocked card, so what you see is what a player sees: the real
+                // four-stage freeze beat, the real seeded narration, the real resurrection.
+                //
+                // There is deliberately NO ?place= parameter. WHERE you died is not an opinion the URL gets
+                // to hold: the excursion's own floor and body id decide it, which is the classifier #609 was
+                // filed about, and a cheat that could override it would be a second source of truth for the
+                // exact fact that has now cost three death cards. You choose the place by booting into it:
+                //   /map?death=impact                                   own ship
+                //   /map?death=collector                                own ship (the BUSTED ladder)
+                //   /map?death=suffocated&dock=the-tilt&land=1          landing party
+                //   /map?death=reevers&wreck=1&land=1                   derelict
+                //   /map?death=suffocated&secretlab=1&land=1&floor=2    underground
+                string candidate = Uri.UnescapeDataString(pair["death=".Length..]).ToLowerInvariant();
+                foreach (DeathCause c in Enum.GetValues<DeathCause>())
+                {
+                    if (candidate == c.ToString().ToLowerInvariant())
+                    {
+                        deathCheat = c;
+                    }
+                }
+            }
+            else if (pair.StartsWith("floor=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #585 dev cheat: /map?secretlab=1&land=1&floor=3 rides you straight down to B3.
+                //
+                // Owner: "instruct to put the debug cheat start next to the lab so that it can be really
+                // tested without playing to find it" / "I mean next to the elevator shaft". ?secretlab= now
+                // sets you down AT the shed; this goes the rest of the way, because half the open work on
+                // this feature is about what a FLOOR looks like, and riding four cars to reach B4 every time
+                // is the same tax one level down.
+                //
+                // Positive number, read as a depth: floor=3 means B3. Clamped to the site's own bottom, so a
+                // shallow facility cannot be asked for a floor it does not have.
+                string candidate = Uri.UnescapeDataString(pair["floor=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int deep)
+                    && deep > 0)
+                {
+                    _startingFloorCheat = -deep;
+                }
+            }
+            else if (pair.StartsWith("outpost=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #563 dev cheat: /map?outpost=1 guarantees the OUTPOST HUT on whatever site the excursion
+                // lands on, so the lane can be playtested without hunting for a site that seeded one. Three
+                // sites in four carry a hut anyway; this just removes the hunt. Combine with dock/site/land,
+                // e.g. /map?dock=the-tilt&site=0&land=1&outpost=1 puts you on the regolith with one out there.
+                string candidate = Uri.UnescapeDataString(pair["outpost=".Length..]).ToLowerInvariant();
+                _outpostCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("watchers=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #649 dev cheat: /map?watchers=1 makes the monolith's ground ATTENTIVE this visit and cuts
+                // the dwell from forty seconds to two, so the strange-things-happen beat can be watched on
+                // demand instead of hunted for. It is rare by design — one visit-window in three, and then
+                // only if you stand still at the stone — which makes it precisely the shape of scene this
+                // file's own rule is about: "a scene nobody can reach on demand is a scene that ships
+                // broken." It changes the GATES and nothing else: the variant roll and the (zero) cost are
+                // the ones a captain gets, so what a tester sees is what a captain sees.
+                //
+                //   /map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1
+                //   …and with a pack on the field, for the variant that needs one:
+                //   /map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1&reevers=3
+                string candidate = Uri.UnescapeDataString(pair["watchers=".Length..]).ToLowerInvariant();
+                _watchersCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
             {
                 // #409 dev cheat: /map?secretlab=1 spawns a plain LANDABLE rock parked in shuttle range at the
@@ -540,7 +692,28 @@ public partial class Map
                 // Documented in the PR body. (Ordinary bodies hide labs rarely, off the seed — this is the
                 // fast path.)
                 string candidate = Uri.UnescapeDataString(pair["secretlab=".Length..]).ToLowerInvariant();
-                secretlabCheat = candidate is "1" or "true" or "yes";
+                secretlabCheat = candidate is "1" or "true" or "yes" or "deep";
+
+                // #592 · ?secretlab=deep parks a rock whose site HAS a band nobody listed. The ordinary
+                // cheat rock's site is seeded like any other and happens to be four floors of records annex
+                // with nothing under it, so #592 could not be reached from a URL at all — which is the exact
+                // tax these cheats exist to remove.
+                secretlabDeep = candidate is "deep";
+            }
+            else if (pair.StartsWith("body=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #585 dev cheat: /map?body=phobos&site=2&land=1 lands on THAT body's site 2, whatever is
+                // nearest the berth. Owner: "let's go over all the sites we have not yet tested with the
+                // url-arguments" — and until now that was impossible for most of them. ?land=1 takes the
+                // first landable body in shuttle reach, so from the-tilt every URL in the world reaches
+                // Miranda and nowhere else. Two thirds of the grounds we have just rebuilt had no way to be
+                // opened and looked at, which for this project is the same as having no way to be tested:
+                // "boot every scene and check all the parts are in the right place".
+                string candidate = Uri.UnescapeDataString(pair["body=".Length..]).ToLowerInvariant();
+                if (candidate.Length > 0 && candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+                {
+                    _forcedLandingBodyId = candidate;
+                }
             }
             else if (pair.StartsWith("site=", StringComparison.OrdinalIgnoreCase))
             {
@@ -576,8 +749,18 @@ public partial class Map
                 // #411 dev cheat: /map?kaamos=N assembles the first N PROJEKTI KAAMOS fragments (canonical
                 // order), /map?kaamos=all assembles every one — so the Captain's-ledger readout, its state
                 // transitions, and the one-time reach notice are all reachable without a full playthrough.
+                //
+                // Those GRANT the fragments. Two of the six could only ever be granted, because their real
+                // delivery is deliberately rare: the cold pod is one seeded probe square in seventeen on one
+                // of seven outer moons, and the berth-holder drinks at a given bar roughly one watch in four.
+                // So /map?kaamos=pod puts the pod under whatever ground this excursion lands on, and
+                // /map?kaamos=holder seats the holder at whatever bar this captain docks at — the two beats
+                // become playable on demand instead of merely grantable ("a scene nobody can reach on demand
+                // is a scene that ships broken", and a granted shard proves nothing about the scene that
+                // hands it over). Combine freely: /map?kaamos=holder&dock=ringside-exchange.
                 string candidate = Uri.UnescapeDataString(pair["kaamos=".Length..]).ToLowerInvariant();
-                if (candidate == "all" || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                if (candidate is "all" or "pod" or "holder" or "bounce" or "hq"
+                    || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                 {
                     kaamosCheat = candidate;
                 }
@@ -590,6 +773,67 @@ public partial class Map
                 // docs/testing-guide.md.
                 string candidate = Uri.UnescapeDataString(pair["bond=".Length..]).ToLowerInvariant();
                 bondCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("oracle=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #428 dev cheat: /map?oracle=1 boots docked at a bar (default The Space Bar, override with
+                // ?dock=<id>) and SEATS the station oracle — Solenne "Static" Marsh (#425/#427) — in her
+                // port-back corner, whatever her rota says this watch. She is a fixture only ~55% of watches
+                // (OracleRant.PresenceChance), so the whole scene — the rant, the drink that widens the
+                // channel, the room-goes-quiet tell, a true-line KAAMOS/Nebula shard landing in the ledger —
+                // was a coin-flip to open, and no cheat GRANTED her lines either. The same seat idiom as
+                // ?kaamos=holder / ?nebula=adjuster: it does not hand you a truth, it hands you the person.
+                // Combine freely: /map?oracle=1&dock=ringside-exchange&credits=5000.
+                string candidate = Uri.UnescapeDataString(pair["oracle=".Length..]).ToLowerInvariant();
+                oracleCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("ashore=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #428 dev cheat: /map?ashore=1 boots docked (default The Space Bar, override with ?dock= /
+                // ?start=) and ALREADY STANDING IN THE BAR, one step inside the hall's north door, facing in.
+                //
+                // Every bar beat there is — the oracle (?oracle=1), the stranger-bond (?bond=1), the KAAMOS
+                // berth-holder and the Nebula adjuster (?kaamos=holder / ?nebula=adjuster), the Magpie's rota
+                // (?simhours=), the barkeep, the gift shop, the insurance poster — made you walk ship →
+                // airlock → tube → immigration hall → bar on EVERY boot first. That walk is a pleasure to
+                // play and a wall to test: an MCP-driven browser tab is `document.hidden`, so rAF is
+                // throttled and WASD never lands, and not one bar beat could be smoke-tested at all.
+                //
+                // It seats nobody and grants nothing — it moves the captain, exactly as the walk would have.
+                // The position is derived from the doorway the real walk crosses (HavenInterior.BarThreshold),
+                // never typed in. Combine freely:
+                //   /map?oracle=1&ashore=1                      the rant, one URL and one [E]
+                //   /map?ashore=1&dock=cinder-roost&backroom=open
+                //   /map?ashore=1&nebula=adjuster&simhours=9
+                string candidate = Uri.UnescapeDataString(pair["ashore=".Length..]).ToLowerInvariant();
+                ashoreCheat = candidate is "1" or "true" or "yes";
+            }
+            else if (pair.StartsWith("nerve=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #428 dev cheat: /map?nerve=N seeds the nerve gauge at boot at N WHOLE PIPS — the same ten
+                // the corner gauge draws (#480), not points out of a hundred — so N reads straight off the
+                // pip row the player looks at. Out-of-range asks clamp to the gauge, the ?air=N idiom.
+                //
+                // The clamp is NOT applied here, deliberately. NervePips.FromPips already clamps to the
+                // model's own MinPips..MaxPips on the way onto the pip lattice, and a second Math.Clamp on
+                // this line would be a second place computing the gauge's bounds — the "one source of truth"
+                // rule, and the reason a guard on the seed can only be honest if there is one clamp to break.
+                //
+                // Without it no sanity beat could be reached on demand: nerve only falls by being hunted for
+                // minutes, so the overdraw death, the monolith's lump landing on an already-frayed captain
+                // and the archive node's dwell were each a long walk away from any boot. One URL each now:
+                //   /map?nerve=1&dock=the-tilt&site=0&land=1&reevers=1   one pip left, a hand inbound
+                //   /map?nerve=3&dock=the-tilt&site=0&land=1             the monolith, hit at a low gauge
+                //   /map?nerve=2&archive=1&land=1                        the dwell, with almost nothing to spend
+                //
+                // At N=1 the captain is NOT yet overdrawn (CaptainSuccession.EmptyThreshold sits under one
+                // pip), so what you watch is the real two-step break — a hand takes the last pip, the NEXT
+                // one breaks them — rather than an instant death the cheat invented.
+                string candidate = Uri.UnescapeDataString(pair["nerve=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pips))
+                {
+                    nerveCheat = pips;
+                }
             }
             else if (pair.StartsWith("reevers=", StringComparison.OrdinalIgnoreCase))
             {
@@ -619,8 +863,15 @@ public partial class Map
                 // #422 dev cheat: /map?nebula=N assembles the first N NEBULA MUTUAL fragments (canonical
                 // order), /map?nebula=all assembles every one — the Captain's-ledger readout, its state
                 // transitions, and the one-time truth notice reachable without a full playthrough.
+                //
+                // Those GRANT the fragments. /map?nebula=adjuster instead SEATS the one that could only ever
+                // be granted: the roving Nebula Mutual adjuster drinks at a given bar roughly one watch in
+                // five, so the bar scene — the arc's best-written beat — was unopenable on purpose. Seated,
+                // the "▓ Ask about NEBULA" seam is on the barkeep card at whatever bar you dock at.
+                // Combine freely: /map?nebula=adjuster&dock=the-space-bar. (The KAAMOS twin is ?kaamos=holder.)
                 string candidate = Uri.UnescapeDataString(pair["nebula=".Length..]).ToLowerInvariant();
-                if (candidate == "all" || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                if (candidate is "all" or "adjuster"
+                    || int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                 {
                     nebulaCheat = candidate;
                 }
@@ -640,6 +891,36 @@ public partial class Map
             // of strangers). Default to The Space Bar; any ?dock=<id> the caller passed wins.
             _bondForce = true;
             dockCheat ??= "the-space-bar";
+        }
+
+        if (oracleCheat)
+        {
+            // #428 · Arm her seat BEFORE any deck is welded (SetDeckForDock reads _oracleForce and it rides
+            // the deck cache key), and make sure we boot INTO a bar — an oracle with no bar to haunt is the
+            // same non-scene as a scare with no room of strangers. Default The Space Bar; any ?dock= wins.
+            _oracleForce = true;
+            dockCheat ??= "the-space-bar";
+        }
+
+        // #428 · An ashore boot needs a bar to be ashore IN. Same idiom as the bond and the oracle above —
+        // default a berth with a walkable interior — but guarded the way #621's death default is: `?dock=`
+        // is read before `?start=` below, so defaulting one unconditionally would quietly outrank a
+        // `?start=` the caller did pass. Anything the caller asked for still wins.
+        if (ashoreCheat && dockCheat is null && startId is null)
+        {
+            dockCheat = "the-space-bar";
+        }
+
+        // #621 · A death needs somewhere to have happened. Without a start this boot ends at the front
+        // door, and the death card would open OVER the picker — a modal on top of a menu, which is not a
+        // scene anybody can read. Same idiom as the bond above: default a berth, and any ?dock= / ?start=
+        // the caller passed still wins. Only for a death staged on her DECK; a landing cheat brings its
+        // own ground and its own berth with it.
+        // (…and only when NOTHING else chose a start: `?dock=` is read before `?start=` below, so
+        // defaulting one unconditionally would quietly outrank a `?start=` the caller did pass.)
+        if (deathCheat is not null && !_landCheat && dockCheat is null && startId is null)
+        {
+            dockCheat = "the-tilt";
         }
 
         // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
@@ -709,8 +990,8 @@ public partial class Map
             string berthId = DockedStarts.TryGetValue(berthKey, out string? mappedBerth) ? mappedBerth : berthKey;
             if (scenario.Bodies.Any(b => b.Id == berthId))
             {
-                scenario = scenario with { Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId)] };
-                _secretLabForceBodyId = SecretLabCheatBodyId;
+                scenario = scenario with { Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId, secretlabDeep)] };
+                _secretLabForceBodyId = secretlabDeep ? SecretLabDeepCheatBodyId : SecretLabCheatBodyId;
                 dockCheat = berthId; // clamp onto the berth the rock co-orbits, so it's in reach at spawn
             }
         }
@@ -724,9 +1005,7 @@ public partial class Map
             string berthId = DockedStarts.TryGetValue(berthKey, out string? wreckBerth) ? wreckBerth : berthKey;
             if (scenario.Bodies.Any(b => b.Id == berthId))
             {
-                Derelict.Wreck w = wreckCauseCheat is { } forced
-                    ? Derelict.SeededWithCause(forced) ?? Derelict.Seeded(WreckCheatId)
-                    : Derelict.Seeded(WreckCheatId);
+                Derelict.Wreck w = CheatWreck(wreckCauseCheat);
                 scenario = scenario with { Bodies = [.. scenario.Bodies, WreckSiteBody(berthId, w)] };
                 _wreck = w;
                 dockCheat = berthId; // clamp onto the berth she hangs off, so she is in reach at spawn
@@ -861,9 +1140,38 @@ public partial class Map
             _showStartPicker = true;
         }
 
+        // #428 · ?ashore=1 — walk the walk for them. AFTER the clamp (the interior is welded by
+        // SetDeckForDock, which the start above ran) and BEFORE any landing cheat, which brings its own
+        // ground and takes the captain off this deck entirely.
+        if (ashoreCheat)
+        {
+            ShowPulseMessage(StandAtTheBarThreshold()
+                ? $"🍸 Test: you are ashore in {_havenName} — the ship → tube → hall walk is already behind you. [E] works the tables, the counter and the corners."
+                : "🍸 Test: ?ashore=1 needs a berth with a walkable interior — this one has no bar to stand in. Try &dock=the-space-bar.");
+        }
+
+        // #428 · ?nerve=N — seed the gauge BEFORE the landing cheat rides the shuttle down and before any
+        // ?death= is staged, because both READ the live nerve: the descent's first frames price the gauge,
+        // and the death card asks CaptainSuccession.OverdrawQualifies(_nerve) whether the captain was
+        // already empty. Seeding after them would hand the card the default steady gauge and caption a
+        // shattered captain as merely mauled — the sentence saying one thing while the sim did another.
+        if (nerveCheat is { } seedPips)
+        {
+            _nerve = NervePips.FromPips(seedPips);
+        }
+
         if (_pendingExpeditionCheat is not null)
         {
             InjectExpeditionCheat(); // #370: after the clamp — the accepted gig lands on a live, docked world
+        }
+
+        // #411 — the head-office route seat has to be applied BEFORE ?land= fires, because the shuttle
+        // board is computed off where the ship floats and this cheat MOVES the ship to the ice moon. Every
+        // other ?kaamos= value is state-only and rides the ordinary block further down.
+        if (string.Equals(kaamosCheat, "hq", StringComparison.OrdinalIgnoreCase))
+        {
+            SeedKaamosHeadOfficeCheat();
+            kaamosCheat = null;
         }
 
         if (_landCheat)
@@ -871,7 +1179,14 @@ public partial class Map
             // #464: ride the shuttle down now that the berth is clamped and the ephemeris is live, so the
             // in-range board is real. Fire-and-forget: BeginSurfaceExcursion narrates its own descent
             // phases and yields between them, exactly as the hatch's own path does.
-            _ = AutoLandForCheatAsync();
+            // #621: …and ?death= waits for the boots to be on the ground, because the PLACE is read off the
+            // live excursion. Killing the captain before the shuttle has landed would classify the death on
+            // her deck and hand back the wrong card — which is the whole bug the cheat exists to hunt.
+            _ = AutoLandThenStageDeathAsync(deathCheat);
+        }
+        else if (deathCheat is { } onHerDeck)
+        {
+            StageDeathCheat(onHerDeck);
         }
 
         if (_pendingDeflectionCheat is not null)
@@ -906,17 +1221,24 @@ public partial class Map
 
         if (kaamosCheat is not null)
         {
-            SeedKaamosCheat(kaamosCheat); // #411: assemble N KAAMOS fragments so the readout + reach notice are testable
+            SeedKaamosCheat(kaamosCheat); // #411: assemble N KAAMOS fragments (readout + reach notice), or seat the pod/holder so the find itself can be played
         }
 
         if (nebulaCheat is not null)
         {
-            SeedNebulaCheat(nebulaCheat); // #422: assemble N NEBULA fragments so the readout + truth notice are testable
+            SeedNebulaCheat(nebulaCheat); // #422: assemble N NEBULA fragments (readout + truth notice), or seat the adjuster so the bar scene itself can be played
         }
 
         if (convergeCheat)
         {
             SeedConvergeCheat(); // #422: seed both arcs' joint threshold and fire THE CONVERGENCE reveal
+        }
+
+        if (_oracleForce)
+        {
+            // #428: say WHERE she is, not just that she's here — the corner is deliberately clear of every
+            // other console, and a captain who can't find her reads the cheat as broken.
+            ShowPulseMessage("🌀 Test: Static Marsh has the port-back corner of this bar, whatever the watch. Walk in, head aft along the left wall, and press E on ◈ “STATIC” MARSH.");
         }
 
         // Tuesday plan PR-A: ?start=wreck drops you 2 km off the roadster — you're on top of her, so
@@ -1450,6 +1772,9 @@ public partial class Map
         UpdateCapture(dtRealSeconds);
         UpdateEncounters();
         UpdateLocalTrade(dtRealSeconds);
+        // The archive node's two edges (walking into the field, walking to arm's length) BEFORE the nerve
+        // step, so a throw forced by the approach is billed on the same tick the captain crossed the line.
+        StepArchiveNode();
         StepNerve(dtRealSeconds); // #317: the nerve gauge advances every tick — regolith drains, the ship eases
 
         UpdatePrediction();
@@ -1711,10 +2036,27 @@ public partial class Map
             _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
         }
 
-        UpdateParrot(highResTimestampMs);
-        UpdateShipAlerts(highResTimestampMs);
-        EvaluateLongCoastAdvert(highResTimestampMs); // #172: refresh the next-event cache + long-coast squawk
-        UpdateArrivalBrakeGate(highResTimestampMs);  // #304: raise the arrival-brake ask while the window is open
+        // #580 · THE SHIP'S VOICE DOES NOT REACH A CAPTAIN WHO IS NOT ABOARD HER. Owner, walking Miranda:
+        // "in miranda here... why does the parrot talk about debt collectors now" / "we do not want any ship
+        // type warnings received here on the surface ... that mechanic should not be active here" / "where
+        // the player is not on empty ship".
+        //
+        // Right — the bird is on a perch on a ship that is docked and empty, and the captain is in a suit on
+        // a moon. Everything below this line is the SHIP's channel: her alarm strip, her parrot, the long-
+        // coast advert, the arrival-brake ask. None of it has a listener during an excursion, and squawking
+        // it anyway does real damage: it drags the space fiction down onto the ground and buries the one
+        // channel that IS live down there (air, tracker, nerve) under noise about somebody else's problem.
+        //
+        // Skipped wholesale rather than filtered, so nothing new added to the ship's side can leak down here
+        // by forgetting to ask. On coming back aboard the detectors re-evaluate against live state, so a
+        // condition that is still true announces itself then — which is when it can be acted on.
+        if (_surface is null)
+        {
+            UpdateParrot(highResTimestampMs);
+            UpdateShipAlerts(highResTimestampMs);
+            EvaluateLongCoastAdvert(highResTimestampMs); // #172: next-event cache + long-coast squawk
+            UpdateArrivalBrakeGate(highResTimestampMs);  // #304: the arrival-brake ask while the window is open
+        }
 
         // M28: the CALCULATING FIRING SOLUTION reveal — one Newton iteration per beat.
         if (_fireSolution is { } fireSolution && _revealedIterations < fireSolution.Trace.Count
@@ -1944,11 +2286,24 @@ public partial class Map
     // Returns true when it consumed the key by closing something.
     private bool TryDismissTopOverlay()
     {
+        // #528: the story plate is the most modal thing there is — it opens without being asked for, over
+        // whatever the captain was already doing (a bar menu, a counter, a dig). Esc takes it FIRST, or the
+        // key would peel the card underneath it and leave the picture sitting there.
+        if (_revealCard is not null) { CloseRevealCard(); return true; }
+        // #633 · The StoryBeats CARD is modal too, and Esc has to reach it. The PLATE (the edge flash) is
+        // deliberately NOT listed: it steals nothing and retires itself, so there is nothing for Esc to take.
+        if (_storyCard is not null) { CloseStoryCard(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
         if (_bankSession is not null) { CloseBank(); return true; }
         if (_barMenu is not null) { CloseBarkeep(); return true; }
+        // #425 · The oracle's corner card was the ONE bar card this chain never knew about (story pass
+        // 2026-08-02). She belongs to the same mutually-exclusive doorway family as the counter and the
+        // patron's table — both of which open by shutting her — so Esc peeled every card in the bar except
+        // hers, which sat there ignoring the key while everything else obeyed it. Her ✕ was always the
+        // "Done" button; this just lets the house key close her too (#351's family).
+        if (_oracleOpen) { CloseOracle(); return true; }
         if (_shuttleBayStops is not null) { CloseShuttleBayDoor(); return true; }
         if (_pinJob is not null) { CancelPin(); return true; }
         if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
@@ -1958,6 +2313,9 @@ public partial class Map
         // board underneath is still the thing the captain came to use.
         if (_ventReadCard is not null) { CloseVentReadCard(); return true; }
         if (_showVentPanel) { CloseVentPanel(); return true; }
+        // The vision card sits above everything on a wreck — it is the loudest thing that can happen in that
+        // hold, and it opens without being asked for.
+        if (_archiveCard is not null) { CloseArchiveCard(); return true; }
         if (_wreckLook is not null) { CloseWreckLook(); return true; }
         if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
         if (_showWreckChoice) { CloseWreckChoice(); return true; }

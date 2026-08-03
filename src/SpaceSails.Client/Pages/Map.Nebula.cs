@@ -27,10 +27,14 @@ public partial class Map
     private readonly NebulaProgress _nebula = new();
 
     // The one-time notice the instant the whole truth resolves — the capstone contract AND enough intel behind
-    // it (NebulaLore.KnowsTheTruth). Announced once per universe; a reload rehydrates without re-firing.
-    private const string NebulaTruthNotice =
-        "   ▓▓ THE POLICY'S TRUE TERMS RESOLVE — you know what Nebula Mutual files you under now. " +
-        "Not insured against death: filed under it. The premium buys STORAGE, and the original never leaves the dark.";
+    // it (NebulaLore.KnowsTheTruth). Announced once per universe; a reload rehydrates without re-firing. The
+    // copy lives in Core with the rest of the arc's authored prose (NebulaLore.TruthNotice), so the loud line
+    // and the ledger's resting line are one source of truth and a test can read both.
+
+    // #422 story pass · the /map?nebula=adjuster dev seat: the rare Nebula Mutual adjuster is drinking at
+    // WHATEVER bar this captain docks at, this watch. Session-scoped, set once at boot from the query. The
+    // ?nebula=N cheats only ever GRANTED the shard; this lets the bar scene itself be played.
+    private bool _nebulaAdjusterCheat;
 
     /// <summary>Assemble a NEBULA fragment, persist it, narrate the find, and check the convergence — the
     /// _kaamos idiom (TryAssembleKaamos) for arc 2. Returns true only the first time a shard is held, so a
@@ -51,9 +55,19 @@ public partial class Map
         }
 
         RequestVaultSave();
-        string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaTruthNotice : "";
+        string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaLore.TruthNotice : "";
         RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
         ShowPulseMessage(foundMessage + tail);
+
+        // #528 · the two beats of this arc that arrive at a bare bar table get the house reveal card. The
+        // other four (the glitch on the resurrection card, the poster's grey line, the collector's writ, the
+        // clinic's second page) arrive INSIDE a host card that already has a picture, so they get none —
+        // stacking a card on a card is not service, it is noise. Core owns the words (NebulaLore.PlateFor).
+        if (NebulaLore.PlateFor(fragmentId) is { } plate)
+        {
+            ShowRevealCard(plate.Title, plate.ArtFile, plate.Caption);
+        }
+
         MaybeFireConvergence(); // the marquee edge — checked on every arc assemble
         return true;
     }
@@ -85,35 +99,21 @@ public partial class Map
             return null;
         }
 
-        int intel = _nebula.IntelAssembled;
-        int need = NebulaLore.IntelFragments.Count();
-        bool hasKey = _nebula.Has(NebulaLore.KeyFragment.Id);
-
+        // Every sentence on this card is built in Core against the same predicates the GATE reads
+        // (NebulaLore.LedgerHeadline / LedgerProgressLine). The countdown used to be computed here off the
+        // size of the intel pool (five) instead of the unlock threshold (four) — always exactly one shard
+        // too many, so the contract opened while the card was still asking for more. It cannot drift now:
+        // the ledger asks the arc. (The twin of the KAAMOS pass's first finding, #411/#634.)
         var lines = new List<string>();
         foreach (NebulaFragment f in _nebula.Assembled)
         {
             lines.Add($"▓ {f.Title} — {f.Lore}");
         }
 
-        if (_nebula.KnowsTheTruth)
-        {
-            lines.Add("▓ The policy's true terms resolve. You are not insured against death — you are filed under it.");
-        }
-        else if (_nebula.HasEnoughIntelToEarnTheContract)
-        {
-            lines.Add("▓ Enough of the small print to earn the contract. Ask around the bars — the pieces resolve into the clause the sales voice skips.");
-        }
-        else
-        {
-            lines.Add($"▓ The shape isn't clear yet — {need - intel} more shard{(need - intel == 1 ? "" : "s")} to read it. One poster line is never enough; one adjuster's drink is never enough.");
-        }
-
-        string headline = hasKey
-            ? $"▓ NEBULA MUTUAL — {intel} of {need} clauses · the contract in hand"
-            : $"▓ NEBULA MUTUAL — {intel} of {need} clauses assembled";
+        lines.Add(NebulaLore.LedgerProgressLine(_nebula));
 
         return new Stations.Captain.LedgerTip(
-            headline, lines.ToArray(), "what your resurrections really are",
+            NebulaLore.LedgerHeadline(_nebula), lines.ToArray(), "what your resurrections really are",
             ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null);
     }
 
@@ -133,7 +133,7 @@ public partial class Map
         string bar = _dockedHavenId;
         int watchDay = (int)(SimTime / 86400);
 
-        if (!_nebula.Has("adjuster-tell") && NebulaFind.AdjusterAtBar(bar, watchDay))
+        if (!_nebula.Has("adjuster-tell") && NebulaFind.AdjusterAtBar(bar, watchDay, forced: _nebulaAdjusterCheat))
         {
             return "adjuster-tell";
         }
@@ -147,6 +147,13 @@ public partial class Map
     }
 
     private bool NebulaBarSeamAvailable() => NebulaBarNextStep() is not null;
+
+    // What the seam's button SAYS. It read "▓ Ask about NEBULA" for both of its steps, including the one
+    // where nobody is asked anything — the capstone is your own gathered small print answering itself on
+    // your own table. Neither step takes coin, so neither wears a price.
+    private string NebulaBarSeamLabel() => NebulaLore.BarSeamLabel(NebulaBarNextStep());
+
+    private string NebulaBarSeamTitle() => NebulaLore.BarSeamTitle(NebulaBarNextStep());
 
     // The barkeep-card "▓ Ask about NEBULA" action: advance arc 2 by one step. The adjuster shares the tell
     // over their own drink (no coin — they're the one talking); the capstone is the pieces answering each
@@ -216,9 +223,23 @@ public partial class Map
     // ── The test cheats. /map?nebula=N assembles the first N fragments (canonical order), /map?nebula=all
     //    assembles every one — so the readout, its state transitions and the truth notice are reachable
     //    without a full playthrough. /map?converge=1 seeds ENOUGH OF BOTH arcs to fire the convergence, the
-    //    marquee moment, for a single-URL smoke test. Documented in docs/testing-guide.md. ──
+    //    marquee moment, for a single-URL smoke test.
+    //
+    //    Those GRANT the shards. /map?nebula=adjuster instead SEATS the one fragment that could only ever be
+    //    granted: the roving Nebula Mutual adjuster drinks at a given bar roughly one watch in five, so the
+    //    best-written scene in the arc was also the one nobody could open on purpose ("a scene nobody can
+    //    reach on demand is a scene that ships broken", Map.Sim's own rule — and a granted shard proves
+    //    nothing about the scene that hands it over). Combine freely: /map?nebula=adjuster&dock=the-space-bar.
+    //    All documented in docs/testing-guide.md Appendix A. ──
     private void SeedNebulaCheat(string spec)
     {
+        if (string.Equals(spec, "adjuster", StringComparison.OrdinalIgnoreCase))
+        {
+            _nebulaAdjusterCheat = true;
+            ShowPulseMessage("🧪 Test: a Nebula Mutual adjuster is drinking at every bar this run — dock, walk to the counter, and the seam offers the tell.");
+            return;
+        }
+
         int count = string.Equals(spec, "all", StringComparison.OrdinalIgnoreCase)
             ? NebulaLore.Fragments.Count
             : int.TryParse(spec, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? Math.Clamp(n, 0, NebulaLore.Fragments.Count) : 0;
@@ -235,7 +256,7 @@ public partial class Map
         }
 
         RequestVaultSave();
-        string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaTruthNotice : "";
+        string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaLore.TruthNotice : "";
         ShowPulseMessage($"🧪 Test: assembled {_nebula.Count} NEBULA fragment{(_nebula.Count == 1 ? "" : "s")} ({_nebula.IntelAssembled} intel). See the Captain's ledger.{tail}");
         MaybeFireConvergence(); // a big ?nebula= may itself cross the joint bar if KAAMOS is already up
     }

@@ -1,4 +1,4 @@
-# PROJEKTI KAAMOS — the ice-moon plotline spine
+﻿# PROJEKTI KAAMOS — the ice-moon plotline spine
 
 *The sealed ice-moon project, the berth nobody files for, and the truth at Enceladus.*
 Issue [#411]. This document is the **north star**: the sibling lanes (secret labs #409, roving
@@ -99,6 +99,12 @@ Each source is **canon** (the `KaamosSource` enum): it is the agreement about wh
 responsible for handing which piece over, so the delivering lanes bind to a fragment id rather than
 inventing their own lore.
 
+**A sixth hand, added later:** the station oracle **Static "Static" Marsh** (`OracleRant`, #425) can leak
+`vantar-log`, `holders-tell` or `cold-pod` as one of her true lines at any bar. She is a *perceiver*, not a
+source — she says what she hears on a channel the sane can't, and the shard she hands over is the same
+canonical one. This is the arc's only redundant delivery path and it is a good one: it means a captain who
+never finds a secret lab can still assemble the shape.
+
 ### Sample lore (verbatim, from `KaamosLore.Fragments`)
 
 **`cold-pod` — The cold supply pod** (a dig find):
@@ -113,12 +119,20 @@ inventing their own lore.
 > quieter: "It still calls the manifest in. Every window, right on the tick. Same forty names. I
 > stopped reading who was speaking them." Then the glass is empty and the conversation with it.
 
-**`berth-code` — the capstone** (earned, never a rumor):
-> Assembled, the pieces answer each other: the held pod's cycler window, Vantar's dates, the
-> holder's tick, the bought coordinate — one number falls out of them, the string the sealed berth
-> still listens for. It is not a password so much as a name the dark already knows. Enter it on the
-> board when the window opens and the berth stops being a place nobody files for. It becomes a place
-> expecting you. You could go to the ice moon now. That was always the danger.
+**`berth-code` — the capstone** (earned, never a rumor). Its authored text names **no** shard; the pieces
+it credits are assembled at read time from the ones this captain actually holds
+(`KaamosLore.KeyResolution` prepends *"The pieces answer each other — …"*):
+> One number falls out of them, the string the sealed berth still listens for. It is not a password so
+> much as a name the dark already knows. Enter it on the board when the window opens and the berth stops
+> being a place nobody files for. It becomes a place expecting you. You could go to the ice moon now.
+> That was always the danger.
+
+> **Why (story pass, 2026-08-02).** The prose used to name four shards flat — *"the held pod's cycler
+> window, Vantar's dates, the holder's tick, the bought coordinate"* — but the gate takes **any four of
+> five**, and the bar seam offers the capstone *before* it offers the coordinate. So the arc's biggest
+> sentence routinely credited a coordinate the captain had never bought. Each intel fragment now carries a
+> `KeyClause`, and the capstone names exactly what is in hand
+> (`TheKaamosLedgerTellsTheTruthTests.TheCapstoneNamesEveryShardInHandAndNoShardOutOfIt`).
 
 ---
 
@@ -181,19 +195,77 @@ own trigger and narrates the shard (`KaamosLore.ById(id)!.Lore`):
   pieces resolve into the string.
 - **Intel readout** — a Captain's-ledger tip, "PROJEKTI KAAMOS — N of 5 shards", the assembled shard
   texts readable, leading the ledger while any shard is held (`Map.Kaamos.KaamosLedgerTip`).
-- **Reach notice** — the one-time loud "THE BERTH-CODE RESOLVES — Enceladus can be reached" line,
-  appended on the single edge that flips `CanReachEnceladus`; gates a "route pending" message only.
+- **Reach notice** — the one-time loud "❄❄ THE BERTH-CODE RESOLVES" line (`KaamosLore.ReachNotice`),
+  appended on the single edge that flips `CanReachEnceladus`. It tells the captain the berth is now listed
+  to their hull and that **the window is not open yet** — in fiction. (It used to end *"For now: route
+  pending"*, a production note out loud in the arc's loudest line.)
 - **Vault + reset** — `_kaamos` round-trips via the additive `KaamosSection` (`Map.Vault`
   BuildVault / ApplyVault) and clears on a new voyage.
 
-**Test cheat:** `/map?kaamos=N` assembles the first N fragments in canonical order;
-`/map?kaamos=all` assembles every one (opening the reach). So the readout, its state transitions, and
-the reach notice are all reachable without a playthrough (`Map.Kaamos.SeedKaamosCheat`).
+**Test cheats** (`Map.Kaamos.SeedKaamosCheat`; full table in
+[`../testing-guide.md`](../testing-guide.md#projekti-kaamos-arc-1--kaamos-411)):
+
+| URL | what it does |
+| --- | --- |
+| `/map?kaamos=N` | **Grants** the first N fragments in canonical order |
+| `/map?kaamos=all` | **Grants** every one (opening the reach + the one-time notice) |
+| `/map?kaamos=pod` | **Seats** the cold supply pod under the ground you land on — probe and *earn* it |
+| `/map?kaamos=holder` | **Seats** the berth-holder at whatever bar you dock at, every watch |
+| `/map?kaamos=bounce` | **Seats** the freight agent with the returned docket — the arc's front door (#635) |
+| `/map?kaamos=hq` | The whole route already ridden — shards, code, run filed, ship alongside the ice (#411) |
+
+The last two exist because two of the six fragments could previously only be *granted*: the pod is one
+seeded square in seventeen on one of seven outer moons, and the holder drinks at a given bar roughly one
+watch in four. A granted shard proves nothing about the scene that hands it over — and the holder's tell
+is the best-written beat in the arc, so it was also the one hardest to go and look at.
+
+### The front door (#635, 2026-08-03)
+
+The arc had **no inciting hook**: nothing pointed a player at Ringside's plate rather than any of the other
+six in the system, and the ledger's own card only appeared once a shard was already in hand — so the
+longest-prepared arc in the game was invisible until somebody tripped over it.
+
+It now opens with a **returned filing**. A freight agent at a bar pays a flat 350 cr
+(`KaamosFind.BounceFilingFee`) to have a consignment filed under somebody else's hull, because theirs keeps
+coming back; the board returns it off yours too, with the one word that makes a dead berth interesting:
+*HELD*. Seeded one bar-watch in three (`KaamosFind.BounceAtBar`), offered only to a captain holding nothing
+of the arc, and it **hands over no shard** — it is `KaamosProgress.BerthFilingBounced`, its own per-thread
+flag, because the pool is what the gate counts and a sixth intel piece would move every threshold in this
+document. What it changes is that the ❄ card is now in the ledger for a captain who has assembled nothing,
+naming the paper in their pocket rather than counting shards nobody has asked for.
+
+The whole spec, and the head office at the far end of it, is
+[`kaamos-head-office.md`](kaamos-head-office.md).
+
+### The route (2026-08-03) — the hook, consumed
+
+`CanReachEnceladus` is no longer a predicate nobody reads. **`CyclerWindow`** (pure Core) is the timetable
+the doc above promised: a grid over sim time, 2 days open every 40, a 38-day free-return ride, a gate with a
+spoken refusal per blocker, and every sentence authored beside the predicate that decides it. The berth code
+puts the hull on the board; a **listed supply run** comes back onto the board with it, carrying the cold
+pod's own manifest slug; the run is an ordinary `CargoRun` to a moon haven, so the ordinary
+park-in-orbit completion settles it and no second completion path exists.
+
+Which of #411's three options this is, and why, is [`kaamos-head-office.md`](kaamos-head-office.md) §1 — it
+is **B**, and the owner can overrule it in one line.
+
+One thing that lane deliberately does NOT gate: whether the ice moon has anything on it. The head office is
+keyed on the berth code alone, so a captain who crosses the deep black the long way round arrives at the
+same door. A route that is the only way in is a railroad.
+
+### The destination (owner ruling, 2026-08-03) — the head office
+
+`worldbuilding-notes.md` §9: *"The KAAMOS destination is the HEAD of the organization … as fancy as the
+secret labs … the Hive facilities are branch offices."* Under the ice is
+`UndergroundComplex.Kind.HeadOffice`: twenty-four listed floors, no band nobody listed, twenty-four
+unrepeated department plates, wings instead of sectors at ten times the distance, a lift that asks for
+nothing, and livery that is still being kept up by nobody. It is **not a roll** — it is there when the
+hull is on the board and not otherwise, so a captain who flies out early finds featureless ice.
+
+Design, floor by floor, in [`kaamos-head-office.md`](kaamos-head-office.md) §3–§6 — including what may
+never be confirmed down there, which is everything this document's §2 says.
 
 **Hook-only (still deliberately NOT wired, to avoid collisions):**
-- **The route.** When `CanReachEnceladus(progress)` turns true, the eventual route/scenario lane
-  turns it into a navigable **cycler window** to `IceMoonBodyId` — the only place that touches the
-  shuttle/scenario code. **This lane does not.**
 - **The reveal.** The sanity/#226 lane consumes `RevealSanityShockHook` for the climactic throw at
   Enceladus.
 - **Client save wiring.** The client gathers `KaamosProgress` into the vault the same way it does
@@ -212,6 +284,35 @@ the reach notice are all reachable without a playthrough (`Map.Kaamos.SeedKaamos
   only *which are assembled* differs, and that lives per-thread.
 - **Never spoil the standing tease early.** Enceladus stays unreachable until the code and the intel
   are both in hand.
+
+---
+
+## 8. The story pass (2026-08-02) — what walking the arc found
+
+The whole arc was read line by line, in the order a player meets it. It **tells**: the plate is a good
+tease, the pod's manifest slug is the best single prop in the game, the holder's *"You don't file for that
+berth. You keep it."* is the arc's finest line, and the capstone earns its dread. Four things were lying,
+and are fixed here (each with a Core guard proven RED on the shipped behaviour —
+`tests/SpaceSails.Core.Tests/TheKaamosLedgerTellsTheTruthTests.cs`):
+
+| # | what the screen said | what the sim did |
+| --- | --- | --- |
+| 1 | *"the shape isn't clear yet — N more shards to see it"* | N was measured against the **pool** (5), not the **threshold** (`IntelNeededToUnlock`, 4) — always exactly one shard too many. Holding three, you were told two more; one more opened it. |
+| 2 | the capstone credited *"the held pod's cycler window, Vantar's dates, the holder's tick, the bought coordinate"* | the gate takes **any four of five**, and the bar seam offers the capstone **before** it offers the coordinate — so it routinely credited a piece the captain never bought |
+| 3 | *"For now: route pending."* | a production note, out loud, in the loudest line the arc has |
+| 4 | **🌑 Ask about KAAMOS** | for one of its three steps that button spends **1,200 cr** the instant it is clicked, on a counter where every other button prints its own price |
+
+One more was reworded without a guard: the secret-lab delivery announced *"This is a piece of PROJEKTI
+KAAMOS"* over a log that is written specifically **not** to name the project (`VantarLore` fragment 4:
+*"a moon off the charts, a project that runs on in the cold with the lights off"*). Making the connection
+is the player's job; the line now files the shard and says nothing else.
+
+**Open, for the owner (see [#411]):** `ArcConvergence.ConvergenceReveal` — the #422 marquee card, fired at
+**3** KAAMOS intel and reachable from one URL (`?converge=1`) — states this document's §2 truth in plain
+words: *"Vantar taught a lattice to keep whole crews awake in the dark… the wintering mind remembers
+Vantar… the same forty names, the same lucid dark."* That is the Enceladus reveal, spent early, as an
+announcement. Whatever the climax lane builds has to be designed **around** that card, or that card has to
+move. Not this lane's call.
 
 [#411]: https://github.com/esoinila/SpaceSails/issues/411
 [#409]: https://github.com/esoinila/SpaceSails/issues/409

@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// #380 item 1 · WHAT KILLED THE CAPTAIN — the place-dependent death classification, so the resurrection
@@ -31,9 +31,26 @@ public enum DeathCause
     Reevers,
 
     /// <summary>
-    /// You turned the keys yourself. Owner: <i>"that ship also has the scuttling charges... it is the last
-    /// defence against the Borg in Star Trek"</i> — and the whole point of the charges is the THREAT, so this
-    /// cause only ever fires when the threat did not work and the captain stayed aboard anyway.
+    /// THE OVERLOAD YOU SET YOURSELF ran out with you still aboard. Owner: <i>"that ship also has the
+    /// scuttling charges... it is the last defence against the Borg in Star Trek"</i> — and the whole point
+    /// of the charges is the THREAT, so this cause only ever fires when the threat did not work and the
+    /// captain stayed aboard anyway.
+    ///
+    /// <para>#525 · It was filed as <i>built</i> and was not: <c>AdvanceScuttleClock</c> called
+    /// <c>TriggerSurfaceOverdrawDeath</c> with no known cause, so the card rolled
+    /// <see cref="DeathNarration.SurfaceEnd"/> and told the captain an Old One's hand was the last straw —
+    /// aboard a drive-failure hull with nothing living in her, ninety seconds after they turned two keys
+    /// themselves. The same failure this project has now paid for four times (#545's card blaming Reevers
+    /// for three men with rifles), on the one death the captain unambiguously chose.</para>
+    ///
+    /// <para><b>#633 · TWO PLACES, ONE CAUSE.</b> The branches built the two halves of #525 apart and each
+    /// named the cause <c>Scuttled</c>: <c>our-own-ship-has-compartments</c> built the derelict's panel
+    /// (bolted to somebody else's reactor) and wrote here that her own ship <i>"has no such switch"</i>;
+    /// <c>main</c> built exactly that switch (<see cref="ShipScuttle"/>, <c>Map.ShipScuttleBoard</c>, the
+    /// crew's second key). Both are true now, so this is ONE cause legal in exactly TWO places — see
+    /// <see cref="DeathNarration.CanHappen"/> — and every word of the card is chosen by
+    /// <see cref="DeathPlace"/>: the fireball is hers, the quiet inward collapse is the wreck's. The tail
+    /// aboard a wreck is already right — <i>"Her log will not mention it."</i></para>
     /// </summary>
     Scuttled,
 
@@ -46,6 +63,15 @@ public enum DeathCause
     /// whatever void death lands; none routes here today.)</summary>
     Void,
 
+    /// <summary>#564 · The tank ran out. Not a creature, not a fall, not nerve — the captain walked further
+    /// than their air and knew it, because the suit said so out loud when they crossed the line.
+    ///
+    /// <para>It exists as its own cause for one reason: a suffocation narrated as "an Old One's hand is the
+    /// last straw" would be the sim doing one thing while a SENTENCE reports another — the failure this
+    /// project has paid for repeatedly (#545's death card blaming Reevers for three men with rifles). The
+    /// caller PASSES this rather than rolling for it, because it is the one thing it knows for certain.</para></summary>
+    Suffocated,
+
     /// <summary>
     /// #538 · A PROFESSIONAL SHOT YOU. The black-ops sweep team's challenge ran out with the captain still in
     /// the lamp — which is nothing like being run down by the pack, and used to narrate as if it were.
@@ -56,6 +82,42 @@ public enum DeathCause
     /// which in this codebase is the bug, not a wording nit.</para>
     /// </summary>
     Inspected,
+}
+
+/// <summary>
+/// #574 · WHERE a captain died, which turns out to matter as much as what killed them.
+///
+/// <para>Owner: <i>"let's make sure that landed death reasons and on ship death reasons are dealt correctly
+/// also. Like they are two separate categories. Maybe even 3 ... salvage ship, own ship, and landing
+/// party."</i> He was right, and there was a live bug under it: <c>TriggerSurfaceOverdrawDeath</c> serves
+/// BOTH a regolith death and a death aboard a derelict (the scuttle, the fifth blow, the nerve running out),
+/// while the ground prose says things like <i>"they ran you down on {body}'s REGOLITH short of the tube"</i>.
+/// Die on a steel hull in space and the game described the dust you were not standing in.</para>
+///
+/// <para>The same class of failure as #572's collector card, one level up: the words were not wrong about
+/// the CAUSE, they were wrong about the PLACE.</para>
+/// </summary>
+public enum DeathPlace
+{
+    /// <summary>Aboard the captain's own ship, or in open space with her under them.</summary>
+    OwnShip,
+
+    /// <summary>Inside somebody else's hull — a salvage run on a derelict. Steel, vacuum, no sky and no
+    /// dust; the way out is a lock, not a tube up to a shuttle.</summary>
+    Derelict,
+
+    /// <summary>An away team on a surface. Regolith, a suit, and a long walk back to the tube.</summary>
+    LandingParty,
+
+    /// <summary>#609 · Inside a clandestine facility, under a moon. Owner, having suffocated on B2 and been
+    /// handed the surface card: <i>"now we have the suffocated on surface one :-D"</i>.
+    ///
+    /// <para>He was 150 m down in a poured corridor and the card said regolith, a suit and a long walk back
+    /// to the tube — the sim knowing one thing and the SENTENCE reporting another, which is a named bug class
+    /// on this ground and has now cost three cards. There was no value here meaning "underground", so every
+    /// death in the Hive inherited the away team's, and every word of it was wrong: no ground to keep you,
+    /// no sky, and a way out that somebody has to call a car for.</para></summary>
+    Underground,
 }
 
 /// <summary>
@@ -85,6 +147,12 @@ public static class DeathNarration
     /// (<see cref="DeathCause.Reevers"/>), but with the nerve shot to a sliver a seeded minority JOINED them
     /// (<see cref="DeathCause.Joined"/>). Pure and seeded so a test pins the split. This is the one law the
     /// surface-death lane calls when it lands.</summary>
+    /// <summary>#564 · What the ground says when the air runs out. Deliberately NOT a roll and NOT
+    /// place-dependent: the captain was warned, once and plainly, at the point of no return, and then went
+    /// on. There is nothing to be mysterious about.</summary>
+    public static string SuffocationHeadline(string bodyName) =>
+        $"🫁 The tank read empty on {bodyName}. The suit had said so while there was still a walk back in it.";
+
     public static DeathCause SurfaceEnd(double nerveAtDeath, ulong seed)
     {
         if (nerveAtDeath > JoinedNerveSliver)
@@ -109,6 +177,11 @@ public static class DeathNarration
     /// </summary>
     public static string SurfaceCaption(DeathCause cause, bool nerveRanOut)
     {
+        if (cause == DeathCause.Suffocated)
+        {
+            return "\"…the gauge had been honest the whole way out.\"";
+        }
+
         if (cause == DeathCause.Joined)
         {
             return "\"…and the footprints only lead one way — in.\"";
@@ -132,6 +205,68 @@ public static class DeathNarration
 
     /// <summary>The Grok-generated death image (under <c>art/</c>) a cause shows on the resurrection card.
     /// The two live causes reuse the existing BUSTED frames; the surface + void causes use the death-* set.</summary>
+    /// <summary>#574 · The art, told for the place. A landing party dies in a suit on a surface and gets its
+    /// own frame — the owner asked for the joke and it is the right one: <i>"We could have the gen AI image
+    /// on landing party show that I was wearing the red shirt :-D"</i>. Star Trek's away-team red shirt is
+    /// exactly the register the away-team death should have, and this game has always been willing to be
+    /// funny about death (the parrot, the insurance, "there are worse epitaphs").</summary>
+    // #583 adds Collector to the landing-party art: a captain taken on foot on a moon died in a SUIT on the
+    // ground, whoever's hand it was — so it is the red-shirt card, not the gun-camera freeze-frame off a
+    // ship's nose. The place decides the picture; the cause decides the words.
+    public static string ArtFile(DeathCause cause, DeathPlace place)
+    {
+        // #609 · A death UNDER a moon is not a death ON one. The red-shirt card is a figure on regolith with
+        // a sky over it, and down here there is neither. Owner asked for the picture by name: "let's make a
+        // died in a secret lab photo also :-D"
+        if (place == DeathPlace.Underground)
+        {
+            return "death-underground.jpg";
+        }
+
+        // #621 · AND A DEATH INSIDE A HULL IS NOT A DEATH ON A MOON EITHER. #574 gave the derelict its own
+        // prose and its own tail and then left it the away team's PICTURE, which is the same bug one line
+        // down the card: `death-reevers.jpg` is boot prints in regolith with a chest and an Earth in the
+        // sky, and it was being shown under a sentence that reads "No dust to leave a mark in — just a
+        // corridor". `death-joined.jpg` is a crowd of Old Ones on a moon, shown under "deep inside {body}".
+        // And the third one, Suffocated, resolved to `death-suffocated.jpg`, WHICH THE GAME DOES NOT SHIP —
+        // a broken image on a death card, invisible until #621 made the tank able to run out in there at
+        // all. The place decides the picture; the derelict finally has one.
+        if (place == DeathPlace.Derelict)
+        {
+            // #636 gave the derelict a card of its own and then handed all four of its causes the SAME one,
+            // which was the right first move and is one move short. The Joined death aboard a hull is not
+            // the same picture as the other three: it is the only one where the captain did not stop. The
+            // prose says so — "you stopped moving deep inside {body}, and then moving again, wrong", "you
+            // went further IN rather than back toward the lock" — and `death-derelict.jpg` is a hull with a
+            // captain who has come to a halt in it. A card whose picture ends the sentence differently from
+            // the words is this project's most expensive recurring bug, and it does not stop being one when
+            // the two are merely at different volumes.
+            //
+            // The frame it gets instead is a dropped lamp and a figure walking AWAY from the lock, small and
+            // already half swallowed. Nothing in it explains anything, which is the rule for this cause.
+            return cause == DeathCause.Joined ? "death-joined-derelict.jpg" : "death-derelict.jpg";
+        }
+
+        // #633 · HER OWN CHARGES GET HER OWN FIREBALL. The two branches built the two halves of #525 apart;
+        // reunited, a scuttling is legal in two places and the picture has to say which. Aboard a wreck it
+        // is the derelict card above (a hull going inward, quietly, with the log that will not mention it);
+        // on HER deck it is the same frame the impact death already earns, because that is literally what
+        // the player just watched happen to their own ship.
+        if (place == DeathPlace.OwnShip && cause == DeathCause.Scuttled)
+        {
+            return "busted-ship-explosion.jpg";
+        }
+
+        // #633 · #538's sweep team only ever finds you on an away leg (ChallengeRunsOut requires `_surface`),
+        // so on the ground it is the away-team card — a captain in a suit, whoever's hand it was, exactly the
+        // reasoning #583 used to move a foot-caught collector off the gun-camera frame.
+        return place == DeathPlace.LandingParty
+            && cause is DeathCause.Reevers or DeathCause.Suffocated or DeathCause.Collector
+                or DeathCause.Inspected
+            ? "death-landing-party.jpg"
+            : ArtFile(cause);
+    }
+
     public static string ArtFile(DeathCause cause) => cause switch
     {
         DeathCause.Collector => "busted-freeze-frame.jpg",
@@ -139,11 +274,30 @@ public static class DeathNarration
         DeathCause.Reevers => "death-reevers.jpg",
         DeathCause.Joined => "death-joined.jpg",
         DeathCause.Void => "death-void.jpg",
-        // Her own charges, and the fireball the impact death already owns — one explosion, two ways to earn it.
-        DeathCause.Scuttled => "busted-ship-explosion.jpg",
-        // #538: no canvas of its own yet — the freeze-frame is the right register for it (a professional
-        // outcome, calmly arrived at) and it degrades honestly until one is painted.
-        DeathCause.Inspected => "busted-freeze-frame.jpg",
+
+        // #621 · This said `death-suffocated.jpg` for a year and THE GAME HAS NEVER SHIPPED THAT FILE. It
+        // was not caught because a suffocation can only happen away from her deck and every away place —
+        // ground, hull, Hive — is answered above before it ever reaches here, except one: a derelict, where
+        // the tank could not run out (see AwayTeamSide). The name was a promise nothing had to keep.
+        // The placeless answer is the away team's card, because a suffocation with no place named is a
+        // captain out of their ship on the ground; the placed overload is the one the card actually calls.
+        DeathCause.Suffocated => "death-landing-party.jpg",
+
+        // It said `busted-ship-explosion.jpg` for one commit, on the grounds that a scuttling IS a hull
+        // coming apart, and `EveryCause_HasItsOwnArt` caught it in CI: that frame is the captain's own ship
+        // going up, and lending it to a death aboard somebody else's is the picture disagreeing with the sim
+        // — which is exactly as bad as the words doing it, and is what this whole cause was added to stop.
+        //
+        // #633 · The cause is no longer derelict-only (main built her own charges), so the PLACED overload
+        // above now answers both: her deck gets the fireball, a wreck gets this. What is left here is the
+        // placeless answer, and a scuttling with no place named is the one the game staged first.
+        DeathCause.Scuttled => "death-derelict.jpg",
+
+        // #538 · Placeless, this is a captain out of their ship and away — the sweep team cannot reach her
+        // own deck (see `CanHappen`) — so it takes the away-team card, exactly as a placeless suffocation
+        // does, rather than the gun-camera freeze-frame that belongs to the collectors. A canvas of its own
+        // is filed, not built.
+        DeathCause.Inspected => "death-landing-party.jpg",
         _ => "busted-ship-explosion.jpg",
     };
 
@@ -155,6 +309,9 @@ public static class DeathNarration
         DeathCause.Reevers => "WHAT HAPPENED — the Old Ones took you",
         DeathCause.Joined => "WHAT HAPPENED — you walked into the crowd",
         DeathCause.Void => "WHAT HAPPENED — lost to the void",
+        DeathCause.Suffocated => "WHAT HAPPENED — the air ran out",
+        // Not "the reactor got you". You set it — and "her" reads true for both the hull you were stripping
+        // and your own ship, which is why one headline can serve the cause in both of its legal places.
         DeathCause.Scuttled => "WHAT HAPPENED — you scuttled her, and stayed aboard",
         DeathCause.Inspected => "WHAT HAPPENED — you were found aboard",
         _ => "WHAT HAPPENED",
@@ -172,6 +329,17 @@ public static class DeathNarration
         "The collectors' boarding volley caught you {where} — they don't come to collect twice.",
         "One massive volley {where}, and the last stand was over before the echo. The debt collected itself.",
         "They ran you down {where} and settled the account in lead. The purse was never the point.",
+    ];
+
+    // #583 · The same people, on foot, on a moon. The ship lines above are all about a boarding volley and a
+    // last stand at the controls, and reading those over a captain taken walking across regolith would be
+    // the same borrowed prose #574 was filed about. No volley out here: a writ, a hand, and a long walk to
+    // somebody else's boat.
+    private static readonly string[] CollectorLinesOnFoot =
+    [
+        "They walked you down on {body} — no burn to make, no gun to reach, just a gloved hand on the carry loop and the writ read out over your own suit channel.",
+        "The repo crew took you on foot on {body}. You were carrying more air than argument, and they had all day.",
+        "It ended on {body}'s ground, at walking pace. They never even ran — they did not have to; the tank did their work.",
     ];
 
     private static readonly string[] ImpactLines =
@@ -221,6 +389,58 @@ public static class DeathNarration
         "You went adrift past every well and the dark closed over the transponder. The backup is all that came home.",
     ];
 
+    private static readonly string[] SuffocationLines =
+    [
+        "The tank went dry on {body}, a long way from the tube. The suit had told you where the line was, " +
+        "and you had walked past it with your eyes open.",
+        "You ran out of air on {body} with the way home still ahead of you. Nothing hunted you down; " +
+        "you simply spent more than you were carrying.",
+        "On {body} the gauge reached nothing. It had been counting honestly the entire walk out — the last " +
+        "thing you heard was your own suit stop pretending.",
+    ];
+
+    // ── #574 · The same causes, told for the place they happened in. A derelict has no regolith, no tube
+    //    and no sky; a landing party has all three. Sharing one pool made the game confidently describe the
+    //    wrong world.
+    private static readonly string[] ReeverLinesAboardAWreck =
+    [
+        "They took you deep in {body}'s hull, a long way from the lock. Nothing out there heard it.",
+        "An Old One had you against a bulkhead aboard {body}. No dust to leave a mark in — just a corridor, " +
+        "and then not you.",
+        "You died in somebody else's ship. {body} kept her cargo and took you as well.",
+    ];
+
+    private static readonly string[] JoinedLinesAboardAWreck =
+    [
+        "The away team's beacons show you stopped moving deep inside {body}, and then moving again, wrong.",
+        "Aboard {body} your nerve gave out in the dark, and you went further IN rather than back toward the " +
+        "lock. Nobody followed to see why.",
+        "They never recovered you from {body}. The hull is still logged as empty, which is the part that " +
+        "should worry somebody.",
+    ];
+
+    private static readonly string[] SuffocationLinesAboardAWreck =
+    [
+        "The tank went dry inside {body}, in vacuum she has held for years. Her air went out a long time " +
+        "before yours did.",
+        "You ran out of air aboard {body} with the lock still ahead of you. A dead ship is patient about it.",
+        "On {body} the gauge reached nothing between one bulkhead and the next. She had nothing to give you.",
+    ];
+
+    /// <summary>#525 · The overload ran out with the away team still aboard. The ship announced it herself,
+    /// four times, in a voice recorded by somebody long dead — so the one thing these lines may never say is
+    /// that the captain was surprised.</summary>
+    private static readonly string[] ScuttleLinesAboardAWreck =
+    [
+        "You set it yourself, aft, next to the thing you were setting it on, and then you did not get " +
+        "forward in time. {body} goes all at once and mostly inward, and you go with her.",
+        "The last thing aboard {body} still able to power a speaker spent ninety seconds telling all hands " +
+        "to muster at their assigned boats. You had already counted those boats. You were still counting " +
+        "doors when the note came up half a tone and stopped.",
+        "Somewhere between the reactor spaces and the lock you ran out of ship you had left open. {body} " +
+        "was patient about the doors you dogged on the way aft, and precise about the ones you did not.",
+    ];
+
     private static string[] PoolFor(DeathCause cause) => cause switch
     {
         DeathCause.Scuttled => ScuttledLines,
@@ -229,6 +449,13 @@ public static class DeathNarration
         DeathCause.Reevers => ReeverLines,
         DeathCause.Joined => JoinedLines,
         DeathCause.Void => VoidLines,
+        DeathCause.Suffocated => SuffocationLines,
+        // #633 · Scuttled is listed ONCE, at the top of this switch, and it resolves to her own ship's pool.
+        // That is the placeless answer and it is the right one now: the derelict branch of `Line(cause,
+        // place, …)` catches a wreck scuttling before it ever reaches here, so what is left over is her
+        // deck. (Before the branches were reunited this arm read `ScuttleLinesAboardAWreck`, because on that
+        // side her ship had no such switch. Main built the switch. A cause absorbed by a `_ =>` default is
+        // the shape #609 was filed about, so it stays named either way.)
         DeathCause.Inspected => InspectedLines,
         _ => CollectorLines,
     };
@@ -237,6 +464,139 @@ public static class DeathNarration
     /// resurrection card reads before the existing brain-backup copy. <paramref name="bodyName"/> names the
     /// place (the moon, the body flown into); null/blank reads with a generic place so the line is whole.
     /// Pure: same cause + same seed + same body → same line.</summary>
+    /// <summary>#574 · The line for a death, told for WHERE it happened. A derelict's dead have no regolith
+    /// to lie in and no tube to have been short of.</summary>
+    /// <summary>#574 · Can this cause honestly happen in this place? Owner: <i>"the debt collector deaths
+    /// should also only happen in those situations never in any other :-D"</i>.
+    ///
+    /// <para>A collector is a PERSON who came for you — a heat-hunter with a ship and a boarding volley.
+    /// There is nobody aboard a dead hull and nobody on an empty moon, so that death cannot occur there, and
+    /// a card claiming it would be inventing a character. Likewise an impact is the ship meeting a world at
+    /// speed, which cannot happen to somebody standing on one.</para>
+    ///
+    /// <para>Stated here rather than trusted to callers, so it can be TESTED and so any future death lane
+    /// has one place to check itself against.</para></summary>
+    public static bool CanHappen(DeathCause cause, DeathPlace place) => cause switch
+    {
+        // You have to be at the controls to fly a ship into something.
+        DeathCause.Impact => place == DeathPlace.OwnShip,
+
+        // #583 · AND NOW THE COLLECTORS COME TO THE GROUND. This used to be OwnShip-only, and it was right
+        // for as long as heat could only ever be delivered to a deck — the owner's own ruling that a
+        // collector death "should only happen in those situations, never in any other". What changed is the
+        // situation: a repo boat now sets down on the regolith and a crew walks you down on foot, because
+        // "FBI does not arrest cars ... they look for the driver". Still never on a derelict — boarding a
+        // wreck they are already inside is its own arrival and is not built yet.
+        // #609 · nor 150 m under a moon. Same reasoning as the derelict, one shaft further: a collector is a
+        // person who came for you, and nobody rides a lift they would have to call a car for to collect a
+        // debt in a building that is not on any register.
+        DeathCause.Collector => place is not (DeathPlace.Derelict or DeathPlace.Underground),
+        // The Old Ones and the tank reach you anywhere you are out of the ship.
+        DeathCause.Reevers or DeathCause.Joined or DeathCause.Suffocated => place != DeathPlace.OwnShip,
+
+        // #621 · The void is where there is NO ground and no hull — "no beacon, no body, just the long dark",
+        // "there was no ground to hit". It was falling through the `_ => true` default and so was legal on a
+        // moon, inside a wreck and a hundred and fifty metres under a moon, where its own prose is nonsense.
+        // That default absorbing a gap is precisely the shape #609 was filed about; the cause is stated.
+        DeathCause.Void => place == DeathPlace.OwnShip,
+
+        // #525 · The scuttling panel is bolted to somebody else's reactor, and a moon has no reactor at all
+        // — so this cause is legal in a NAMED set of places and says so, rather than falling through a
+        // default that would make it legal 150 m under a moon.
+        //
+        // #633 · That named set is now TWO. This read `place == DeathPlace.Derelict` and justified itself
+        // with "your own ship has no such switch yet (that is #525's second half)" — which was true on this
+        // branch and false on `main`, where #525's second half shipped: `ShipScuttle`, the charges in the
+        // machinery space, and the crew's second key. Reunifying the branches without widening this would
+        // have been a constant governing the wrong world (named bug class 2) on the very first own-ship
+        // scuttling. There is still no reactor under a moon and none on a landing party's back.
+        DeathCause.Scuttled => place is DeathPlace.Derelict or DeathPlace.OwnShip,
+
+        // #538 · A sweep team finds you where you are not supposed to be. The sim says so itself:
+        // `ChallengeRunsOut` only fires with an away excursion live (`_surface`), so there is no version of
+        // this death on her own bridge — and the card's own words ("you were FOUND aboard") would be a lie
+        // about the place if there were.
+        DeathCause.Inspected => place != DeathPlace.OwnShip,
+        _ => true,
+    };
+
+    /// <summary>#574 · The closing beat of a death card. <i>"The freeze-frame holds"</i> was hard-appended in
+    /// the markup to EVERY death — it is BUSTED's own language, about a collector's gun-camera still, and it
+    /// was being read out over a captain who suffocated alone on a moon with nobody watching. Same failure
+    /// as the borrowed prose, one line further down the card.</summary>
+    public static string Tail(DeathCause cause, DeathPlace place) => (cause, place) switch
+    {
+        (DeathCause.Collector, _) => " The freeze-frame holds.",
+        (_, DeathPlace.Derelict) => " Her log will not mention it.",
+        (DeathCause.Suffocated, _) => " The gauge is still counting down in the dark.",
+        (_, DeathPlace.LandingParty) => " The ground keeps what it is given.",
+        _ => "",
+    };
+
+    /// <summary>#609 · Suffocating on a floor of a clandestine facility. The tank is the clock everywhere on
+    /// a surface, but down here the walk back is a walk to a LIFT — a machine, with a panel, that somebody
+    /// has to still be paying for. None of these say what the place was for.</summary>
+    private static readonly string[] SuffocationLinesBelow =
+    [
+        "The readout went amber somewhere on the stairs down and you told yourself you had counted right. " +
+        "The corridor is poured concrete, lit on a circuit nobody has paid for in decades, and the car is " +
+        "three hundred metres of shaft above you. It does not come when you are not there to call it.",
+
+        "You sit down against a wall that was cast in a mould and then finished by hand, under {body}, in a " +
+        "building with floors it does not count. The tank stops. The lights stay on, because the lights " +
+        "were never the thing that was going to run out.",
+
+        "There was air on the top floor. There was air on the top floor of every band, which is a fact you " +
+        "understood perfectly and used to plan a route that turned out to be eleven metres too long.",
+    ];
+
+    /// <summary>#609 · Anything else that ends a captain down there. Deliberately spare: nothing is supposed
+    /// to be alive on these floors yet, so this pool exists to be CORRECT rather than to be used.</summary>
+    private static readonly string[] ReeverLinesBelow =
+    [
+        "It ends in a corridor under {body} that is on no plan anybody ever filed, and the only thing that " +
+        "will ever know is a building which stopped being told things a long time ago.",
+    ];
+
+    public static string Line(DeathCause cause, DeathPlace place, ulong seed, string? bodyName)
+    {
+        if (place == DeathPlace.Derelict)
+        {
+            string[]? aboard = cause switch
+            {
+                DeathCause.Reevers => ReeverLinesAboardAWreck,
+                DeathCause.Joined => JoinedLinesAboardAWreck,
+                DeathCause.Suffocated => SuffocationLinesAboardAWreck,
+                DeathCause.Scuttled => ScuttleLinesAboardAWreck,
+                _ => null,
+            };
+            if (aboard is not null)
+            {
+                string t = aboard[(int)(seed % (ulong)aboard.Length)];
+                return t.Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that hull" : bodyName!);
+            }
+        }
+
+        // #609 · A death in the facility gets facility words. The away-team pool talks about regolith, a
+        // suit and the walk back to the tube — none of which is where the captain is standing.
+        if (place == DeathPlace.Underground)
+        {
+            string[] below = cause == DeathCause.Suffocated ? SuffocationLinesBelow : ReeverLinesBelow;
+            return below[(int)(seed % (ulong)below.Length)]
+                .Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that moon" : bodyName!);
+        }
+
+        // #583 · A collector catch on the GROUND gets ground words. The ship pool talks about a boarding
+        // volley and a last stand, which is a different death entirely.
+        if (place == DeathPlace.LandingParty && cause == DeathCause.Collector)
+        {
+            string onFoot = CollectorLinesOnFoot[(int)(seed % (ulong)CollectorLinesOnFoot.Length)];
+            return onFoot.Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that ground" : bodyName!);
+        }
+
+        return Line(cause, seed, bodyName);
+    }
+
     public static string Line(DeathCause cause, ulong seed, string? bodyName)
     {
         string[] pool = PoolFor(cause);

@@ -1,4 +1,4 @@
-Does burying the treasure still work. I think the pre T to deploy sent# Friday, second wind — the long arm and the buried hoard (2026-07-17)
+# Friday, second wind — the long arm and the buried hoard (2026-07-17)
 
 *Where the first Friday ended: fourteen PRs merged in one day. The morning train shipped the ship's
 voice (#190), deliberate piracy (#186), orbit-KEEPING (#193) and three new labs (28/29/30); the

@@ -100,11 +100,98 @@ public sealed class DeckView
         // thing is done (owner, 2026-07-26: "It is the key to survival there"). Null when nothing is owed.
         string? StandingPrompt = null,
         // #453 · 1..0 fade on the blood spatter thrown when a blow got past the block. 0 = none.
-        double BloodSplash = 0);
+        double BloodSplash = 0,
+        // #573 · BEACONS on the motion fan: fixed PLACES worth walking to — the way home, and the shelter.
+        // Owner: "could we show those as nearby beacons in the motion meter?... maybe some different colour
+        // there something soothing :-D". Soothing is exactly right and it is not only taste: the fan has
+        // meant ONE thing since it was built — something is moving and it wants you — so anything else
+        // painted on it has to be unmistakably not that. Red things move; blue rings are places, and places
+        // do not come to you.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool IsHome, bool IsLab)>? Beacons = null,
+        // #573 · Your OWN caches, once they are inside the fan's reach. Owner: "we would like our own caches
+        // onto the detector also.... since now finding them is a real task :-D (only if in range though)".
+        // The range gate is the whole point — a map that always knows where your treasure is has taken the
+        // task back off you.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range)>? CacheBeacons = null,
+        // #573 · A TIP, not a fix. Owner: "some kind of we were tipped about sites could be marked there
+        // vaguely also to narrow down search... like the intel of the site gives a vague large blob."
+        // Deliberately the same idiom as the fan's contact smudges — his own earlier ruling that uncertain
+        // knowledge must be painted as an AREA, because drawing a dot would claim a precision the
+        // information does not have and hand back the search it was only meant to narrow.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, double Spread)>? Rumours = null,
+        // #564 · THE TANK. Seconds left and how far home is, so the gauge can be DRAWN rather than written
+        // as prose. It shipped first as the top line of the caption list and the owner went looking for a
+        // meter under the tracker and found nothing — because a footnote in 10px dim monospace, sitting in a
+        // list of key hints, is not a meter. Negative = no tank (aboard, or off a surface entirely).
+        double AirSeconds = -1,
+        double AirDistanceHome = 0,
+        // #562 · The glyph over the channel bar, so the one bar can say WHICH slow thing you are doing. It
+        // was always a shovel, which was fine while digging was the only channel; the tube rearm is not a
+        // shovel and reading one there would be the sim saying one thing while a picture says another.
+        string ChannelGlyph = "⛏",
+        // #562 · The tint of the channel bar's fill. The rearm is the ship helping you, not you exposing
+        // yourself, so it reads cold-green rather than the dig's warning amber.
+        bool ChannelIsAid = false,
+        // #591 · HOW FAR THE FAN HEARS, handed down from the sim rather than re-derived here. The renderer
+        // used to work its own reach out of the viewport while the sim used a flat half-width, so on any
+        // window that was not exactly 64:28 the blip you SAW at the rim was not the blip the chirp had
+        // HEARD. Underground the reach shortens with depth and that drift would have become load-bearing.
+        // Non-positive = fall back to the viewport derivation (callers that predate this).
+        double FanReach = -1,
+        // #591 · Where the captain is, painted on the instrument itself — "B14 · ARCHIVE". Null on the
+        // regolith. How deep you are is the single most important fact about your situation down there: it
+        // is the number that decides whether you get back up on the air you have, and it was only ever
+        // available as a label lying on the floor plan behind you.
+        string? TrackerPlace = null,
+        // #612 · WHERE THE AIR IS COMING FROM. Owner: "where here does it say if I consume tanks or have
+        // air?" / "now we don't see if we need to worry about O2 from anywhere. That is really important info
+        // for the suit hud to tell us." — it did not say, anywhere. The gauge showed a duration and a
+        // distance and left the single most important bit, whether that duration is going DOWN, to be
+        // inferred from where the captain thought they were standing. Harmless on a surface, where the answer
+        // is always yes; not harmless once a lift can put you on a pressurised floor in sixty seconds.
+        //
+        // A WHOLE ANSWER rather than a bool, because there are three roofs and the tank does a different
+        // thing under each. Handed down as the sim's OWN answer rather than re-derived here (the #591
+        // one-reach lesson: the renderer working out for itself what the sim already knows is how two
+        // instruments come to disagree — and there is nothing worse to disagree about than whether the
+        // captain can breathe).
+        SuitAir.Supply AirSupply = SuitAir.Supply.Tanks);
 
     private static readonly RgbaColor Floor = new(10, 14, 22);
     private static readonly RgbaColor HullLine = new(170, 185, 205);
     private static readonly RgbaColor InnerLine = new(110, 125, 145, 200);
+
+    // #563 · Solid ROCK, as opposed to a made pressure boundary. Same weight as hull because it is just as
+    // solid, but warm and dusty rather than cold blue-white — the difference between a monolith and a
+    // bulkhead, which is the difference between standing on a moon and standing in a ship.
+    // #600 · Paint on poured concrete: worn, low-contrast, and deliberately dimmer than any label that
+    // means something is interactable. Signage you read at a glance and then stop seeing.
+    // #612 · Owner: "they are kind of hidden now". They were — a dim blue-grey on a dark floor, which is
+    // fine for a wall marking and wrong for the one plate that answers WHERE AM I. Facility signage yellow
+    // now, and bright enough to be read from across a corridor without hunting for it.
+    //
+    // ...and he then hit it AGAIN, which is the tell: the fault was never the hue. Ink over a corridor full
+    // of hull lines, doors and console glow has little contrast left to raise, because the thing it is
+    // competing with is BUSY rather than bright. Text on a busy deck needs a BACKGROUND — which is exactly
+    // what #348 concluded for the room labels, and this plate is signage twice their size. So the yellow
+    // stays and every painted sign gets its own dark panel (see the BigLabels draw). The way a stairwell
+    // actually marks a level is a painted panel, not a brighter stencil.
+    private static readonly RgbaColor StencilPaint = new(240, 208, 96, 245);
+
+    // #612 · The dark panel every painted sign sits on, so the deck behind it stops competing.
+    private static readonly RgbaColor StencilPlate = new(10, 14, 20, 225);
+
+    /// <summary>You can breathe here — the relief colour, cool and calm. A floor that still holds pressure,
+    /// or a #608 refuge cut into one that does not. The SAME green the gauge's own source chip wears,
+    /// because a captain who has learned a colour on one instrument must not have to learn it again on the
+    /// other.</summary>
+    private static readonly RgbaColor StencilAir = new(130, 214, 176, 245);
+
+    /// <summary>And you cannot. The same amber every other "this is costing you" reads in — including the
+    /// chip on the suit gauge.</summary>
+    private static readonly RgbaColor StencilDead = new(232, 150, 84, 245);
+
+    private static readonly RgbaColor StoneLine = new(166, 150, 130);
     private static readonly RgbaColor WindowLine = new(80, 220, 210, 220);
     private static readonly RgbaColor ConsoleGlow = new(120, 220, 200);
     private static readonly RgbaColor ConsoleNear = new(190, 255, 220);
@@ -113,6 +200,11 @@ public sealed class DeckView
     private static readonly RgbaColor ShuttleColor = new(150, 210, 255, 220);
     private static readonly RgbaColor DroidColor = new(150, 160, 180);
     private static readonly RgbaColor ReeverColor = new(230, 80, 70);   // #295: watchdog red
+
+    // #583 · The repo crew. A cold institutional amber, deliberately NOT the Old Ones' red: what is walking
+    // toward you matters, and two hostiles that read identically on the map is one hostile with two names.
+    // Red is the thing that wants to eat you; amber is the thing that wants your money and has paperwork.
+    private static readonly RgbaColor CollectorColor = new(226, 170, 60);
 
     /// <summary>#538 · A professional reads COLD — instrument white-blue, not the pack's red. Two hostile things
     /// on one deck have to be told apart at a glance, and the colour is the only thing doing that job while a
@@ -257,6 +349,40 @@ public sealed class DeckView
             DrawSeg(P(gx, -9.6), P(gx, 9.6), new RgbaColor(255, 255, 255, 10), 1f);
         }
 
+        // #563 · THE FIELD FALLS INTO THE DARK. An UNSEEN wall stops the captain and draws nothing, which
+        // fixed the owner's "square border … it seems artificial on a Moon" and immediately created the
+        // other half of the problem: an invisible wall you walk into with no warning is worse than a fence,
+        // not better. So the ground darkens over the last several deck units before any unseen bound.
+        //
+        // It is honest rather than decorative. An airless moon has no atmosphere to scatter light, so
+        // regolith the lamp never reaches is simply black — the field does not END, it stops being visible,
+        // and you read "there is nothing out that way" BEFORE you touch anything.
+        //
+        // THE FALLOFF DEPTH WOBBLES, and that is the whole point of doing it this way. Fading on the same
+        // axis-aligned bounds would have drawn the identical rectangle in a softer pencil and left the
+        // complaint untouched ("at least not obviously so with square area"). The wobble is keyed to world
+        // position, not to time or camera, so the dark edge is a fact about the place and holds still while
+        // you walk along it.
+        //
+        // Hung off the unseen walls themselves, so it appears exactly where a hidden bound is and nowhere
+        // else — a ship's plan has none and is untouched.
+        // #563 · TERRAIN, under the falloff so ground near the bound fades into the dark with everything
+        // else. Owner: "put something more interesting in the landscape." These are drawn and never
+        // collided — they live in their own array precisely so no oversight can give them substance.
+        foreach (SpaceSails.Core.SurfaceScenery.Mark m in plan.Scenery)
+        {
+            (RgbaColor ink, float wide) = m.Of switch
+            {
+                SpaceSails.Core.SurfaceScenery.Kind.CraterRim => (new RgbaColor(74, 70, 64, 190), 1.4f),
+                SpaceSails.Core.SurfaceScenery.Kind.Scree => (new RgbaColor(62, 58, 54, 150), 1f),
+                SpaceSails.Core.SurfaceScenery.Kind.Ridge => (new RgbaColor(84, 78, 70, 200), 1.7f),
+                _ => (new RgbaColor(58, 60, 66, 175), 1.3f),
+            };
+            DrawSeg(P(m.X1, m.Y1), P(m.X2, m.Y2), ink, wide);
+        }
+
+        DrawUnseenFalloff(plan, scale, ox, oy);
+
         // #371 Phase 3 fog: paint the still-UNSEEN forced chambers as dark hatched voids — unknown ground
         // behind a freshly-forced door — over the floor/grid, under everything that follows (the walls and
         // consoles inside are skipped, so nothing pokes through). Explored/visible chambers get no void.
@@ -339,6 +465,14 @@ public sealed class DeckView
 
         foreach (DeckPlan.Wall w in plan.Walls)
         {
+            // #563 · An UNSEEN wall is never drawn — the open field's envelope, which collides but has no
+            // object in the world to be. It is checked before the fog so it stays invisible in every
+            // lighting state, including the lit deck where the fog test passes everything.
+            if (w.Unseen)
+            {
+                continue;
+            }
+
             // #371 Phase 3 fog: a wall inside a still-unseen forced chamber is hidden (the room is unknown
             // until the captain looks in); one in an explored-but-out-of-sight chamber draws dim.
             int ws = DarkState((w.X1 + w.X2) / 2.0, (w.Y1 + w.Y2) / 2.0);
@@ -346,8 +480,26 @@ public sealed class DeckView
             {
                 continue;
             }
-            RgbaColor color = ws == 1 ? ExploredWall : w.IsWindow ? WindowLine : w.IsHull ? HullLine : InnerLine;
-            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull ? 2.5f : 1.5f);
+            // #589 · A body's stone is drawn in a body's colour. Falls back to the old warm grey-brown
+            // when a plan carries no ink (the ship, the stations, anything made of steel), so nothing that
+            // is not a world changes at all.
+            RgbaColor stone = plan.StoneInk is { } ink ? new RgbaColor(ink.R, ink.G, ink.B) : StoneLine;
+
+            // #605 · A MADE structure can carry its own ink too. Owner, riding floors cut from the same
+            // bones: "Let's like change the wall colors on different floors... now they look too same" —
+            // answered with department livery rather than a per-floor gradient, so the colour is a language
+            // and not decoration. Null everywhere it has always been null (the ship, the stations, the
+            // wrecks are steel), so nothing outside the Hive changes by a pixel.
+            RgbaColor hull = plan.HullInk is { } made ? new RgbaColor(made.R, made.G, made.B) : HullLine;
+
+            RgbaColor color = ws == 1 ? ExploredWall
+                : w.IsWindow ? WindowLine
+                : w.IsStone ? stone
+                : w.IsHull ? hull
+                : InnerLine;
+            // Stone is drawn as heavy as hull: it is just as solid, and a monolith you could mistake for
+            // rubble is a monolith that stops being the centrepiece of the moon it stands on.
+            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull || w.IsStone ? 2.5f : 1.5f);
         }
 
         // Automatic airlock doors (the docking tube): shut across the passage until you near them,
@@ -357,7 +509,16 @@ public sealed class DeckView
             if (d.Locked)
             {
                 // Another berth's sealed hatch — always shut, drawn cold (steel-blue), a real wall behind.
-                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorLocked, 3.5f);
+                //
+                // #585 · Owner, in the Hive: "the doors should be different color than the walls and say
+                // locked on approach." The cold steel-blue already differs from every wall ink in the game;
+                // what it lacked was WEIGHT — at 3.5px against hull-bright walls it read as just another
+                // line. A door that will never open is the most informative object in a facility, so it is
+                // drawn heaviest of all, with a second inner stroke so it looks barred rather than merely
+                // shut. (The "say locked on approach" half is the console at its midpoint, which names what
+                // is behind it as you come near.)
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorLocked, 5.5f);
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), new RgbaColor(20, 26, 38, 220), 2.0f);
                 continue;
             }
             double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
@@ -385,21 +546,107 @@ public sealed class DeckView
                     nearestPartner = Math.Min(nearestPartner, toOther);
                 }
             }
+            // #592 · A door is made of the hill it is set in — unless somebody paid to ship it here. The
+            // ship and the stations keep the old amber (StoneInk is null there): they ARE steel, and nothing
+            // about a bulkhead should start depending on which moon is outside.
+            RgbaColor shut = DoorShut, leaf = DoorOpen;
+            if (plan.DoorInk is { } local)
+            {
+                SpaceSails.Core.BodyPalette.Ink di = d.Imported
+                    ? SpaceSails.Core.BodyPalette.Imported
+                    : local;
+                shut = new RgbaColor(di.R, di.G, di.B, 230);
+                leaf = new RgbaColor(di.R, di.G, di.B, 95);
+            }
+
+            // #606 · A MACHINED DOOR IS A DIFFERENT OBJECT, not a different colour. Owner, hiding the lift
+            // head in an ordinary hut: "The expensive doors would be the clue."
+            //
+            // Colour had already been asked to carry this and could not (#585) — violet means shelter, means
+            // one ruin hatch in seven, and means the way down, so it identified nothing. Weight is a second
+            // channel: a fat leaf with an inner rail and its frame picked out at the jambs, against the single
+            // thin stroke every hatch on the moon is drawn with. That reads at a glance, from close, without a
+            // word of copy — which is the whole technique (docs/art-manifest-hive.md).
+            //
+            // It still retracts. SEALED is what it looks like, not what it does: a door here that refused to
+            // open would strand a captain in a lift head, and the reachability audits would be right to say so.
+            float weight = d.Machined ? 6f : 3.5f;
             bool open = Airlock.MayOpen(toDoor, nearestPartner, DoorOpenRadius);
             if (open)
             {
                 // Retracted: a short leaf at each jamb (25% in from each end).
-                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), DoorOpen, 3f);
-                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), DoorOpen, 3f);
+                DrawSeg(P(d.X1, d.Y1), P(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
+                DrawSeg(P(d.X2, d.Y2), P(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
             }
             else
             {
-                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), DoorShut, 3.5f);
+                DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), shut, weight);
+                if (d.Machined)
+                {
+                    DrawSeg(P(d.X1, d.Y1), P(d.X2, d.Y2), new RgbaColor(18, 20, 30, 210), 2f);
+                }
+            }
+            if (d.Machined)
+            {
+                // The frame: a short stub across the opening at each jamb, the way a plan draws a door that
+                // was set into a hole somebody cut rather than built around.
+                float jx = d.X2 - d.X1, jy = d.Y2 - d.Y1;
+                float jl = MathF.Sqrt((jx * jx) + (jy * jy));
+                if (jl > 0.01f)
+                {
+                    float nx = -jy / jl * 0.9f, ny = jx / jl * 0.9f;
+                    DrawSeg(P(d.X1 - nx, d.Y1 - ny), P(d.X1 + nx, d.Y1 + ny), shut, 2.5f);
+                    DrawSeg(P(d.X2 - nx, d.Y2 - ny), P(d.X2 + nx, d.Y2 + ny), shut, 2.5f);
+                }
             }
         }
 
         // #348: each room label on its own dark backing plate for contrast over the art panels, with
         // MED BAY drawn as the clean-room exception (see the RoomLabel* colours above).
+        // #600 · SIGNAGE, painted on the structure at the size a facility actually paints it. Owner, riding
+        // between floors cut from the same bones: "something different in every floor so we visually spot
+        // some difference when we go to different floors."
+        //
+        // Drawn before the room labels and in a dimmer ink than them ON PURPOSE: this is paint on a wall the
+        // captain glances at, not a caption competing with the consoles. It is big enough to read without
+        // looking for it and quiet enough to ignore while doing something else.
+        //
+        // #612 · ON A PLATE, not merely in a louder colour. The dim-paint idea above was right about the
+        // FICTION and wrong about the screen: paint over a lit corridor is hard to read, and the owner hit
+        // that twice ("they are kind of hidden now", then again after the ink was brightened). A dark panel
+        // behind the letters is what makes signage legible in the real world too, and it is the same trick
+        // #348 already uses one size down for the room labels — so the Hive's plate and the ship's cabin
+        // labels are now the same instrument at two scales, which is one thing to learn instead of two.
+        foreach ((float bx, float by, string text, float px, int tone) in plan.BigLabels)
+        {
+            if (DarkState(bx, by) == 0)
+            {
+                continue;
+            }
+            (float bxp, float byp) = P(bx, by);
+            // #612 · Owner: "The meters and the floor name could be yellow here... they are kind of hidden
+            // now.... it should say if the floor is pressurized also." Tone chooses the ink and nothing
+            // else: tone 1 is the relief of somewhere you can breathe, tone 2 is the one that costs you, and
+            // everything else is paint on a wall. A state gets the colour that state wears everywhere else
+            // in the game — the same green and the same amber as the chip on the suit gauge.
+            RgbaColor ink = tone switch
+            {
+                1 => StencilAir,
+                2 => StencilDead,
+                _ => StencilPaint,
+            };
+
+            // Monospace, so the width is arithmetic rather than a measurement the renderer cannot do — the
+            // same 0.6-em-per-glyph estimate DrawRoomLabel has used since #348, with the baseline sitting
+            // roughly three quarters down the panel (canvas draws text from its alphabetic baseline).
+            float w = (text.Length * px * 0.62f) + (px * 0.9f);
+            float h = px * 1.32f;
+            float x0 = bxp - (w / 2f), y0 = byp - (h * 0.77f);
+            FillRect(x0, y0, w, h, StencilPlate);
+            DrawRectOutline(x0, y0, w, h, new RgbaColor(ink.R, ink.G, ink.B, 90));
+            _renderer.DrawText(bxp, byp, text, ink, $"bold {px:0}px monospace", TextAlign.Center);
+        }
+
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
         {
             int ls = DarkState(lx, ly); // #371 Phase 3 fog: hide an unseen chamber's label, dim an explored one
@@ -544,10 +791,19 @@ public sealed class DeckView
             (float dx, float dy) = P(droid.X, droid.Y);
             // #295: the Reevers read hostile — a red mark, not the crew's grey.
             bool reever = droid.Name == "Reever";
-            // #538: the sweep team, by callsign. They collide and are seen on the captain's own radius, so they
-            // are drawn on it too — the #473 lesson about daylight showing between a body and its picture.
+            bool collector = droid.Name == "Collector";   // #583: a repo crew on foot, amber not red
+            // #538: the sweep team, by callsign. They collide and are seen on the captain's own radius, so
+            // they are drawn on it too — the #473 lesson about daylight showing between a body and its
+            // picture.
+            //
+            // #633 · THREE KINDS OF FIGURE ON ONE DECK, and each branch only knew two. The pack is red, the
+            // repo crew amber, a professional cold blue: what is walking toward you matters, and two hostiles
+            // that read identically on the map are one hostile with two names.
             bool sweeper = IsSweeper(droid.Name);
-            RgbaColor mark = reever ? ReeverColor : sweeper ? SweeperColor : DroidColor;
+            RgbaColor mark = reever ? ReeverColor
+                : collector ? CollectorColor
+                : sweeper ? SweeperColor
+                : DroidColor;
             // #473 · AN OLD ONE'S PICTURE IS ITS BODY. The captain is drawn at exactly DeckPlan.AvatarRadius
             // (below), but the Old Ones — who collide, catch, block and get shoved apart on that SAME radius —
             // were drawn a tenth of a deck unit smaller. Every law that reads their body therefore fired with
@@ -556,11 +812,14 @@ public sealed class DeckView
             // parked against a wall floated just off it. Owner: "check all reever collisions… the radius must
             // be used in every single one" — the drawing is one of them. Crew stay at 0.5: nothing collides
             // with a barkeep, so their mark is free to be a mark.
-            float bodyRadius = reever || sweeper ? (float)DeckPlan.AvatarRadius : 0.5f;
+            // #583: a collector has a body that catches on the same radius as everyone else's, so it is
+            // drawn at that radius for the same reason an Old One is — the picture IS the law. Same for a
+            // sweeper (#538), and for the same reason.
+            float bodyRadius = reever || collector || sweeper ? (float)DeckPlan.AvatarRadius : 0.5f;
             _renderer.DrawCircle(dx, dy, bodyRadius * scale, mark, mark);
             // Heads up as one (hull-shudder pause), or the crew catch each other's eye (unexplained signal),
             // else the droid's own facing. The shudder pause wins if both somehow overlap.
-            double facing = headsUp && !reever && !sweeper ? Math.PI / 2
+            double facing = headsUp && !reever && !collector && !sweeper ? Math.PI / 2
                 : glance?[di] ?? droid.FacingRad;
             float fx = dx + (float)Math.Cos(facing) * scale * 0.8f;
             float fy = dy - (float)Math.Sin(facing) * scale * 0.8f;
@@ -594,7 +853,11 @@ public sealed class DeckView
             }
 
             _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name,
-                reever ? ReeverColor : sweeper ? SweeperColor : TextDim, "8px monospace", TextAlign.Center);
+                reever ? ReeverColor
+                    : collector ? CollectorColor
+                    : sweeper ? SweeperColor
+                    : TextDim,
+                "8px monospace", TextAlign.Center);
         }
 
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
@@ -811,11 +1074,19 @@ public sealed class DeckView
         // vulnerability window, drawn ON the grid so the player watches the tracker while it fills.
         if (surface is { DigProgress: >= 0 } dig)
         {
-            _renderer.DrawText(ax, ay - 1.6f * scale, "⛏", new RgbaColor(255, 230, 140, 240), "bold 15px monospace", TextAlign.Center);
+            // #562: the glyph and the tint say WHICH slow thing this is. A shovel over a magazine being
+            // racked would be the same class of lie this project keeps paying for.
+            RgbaColor glyphInk = dig.ChannelIsAid
+                ? new RgbaColor(150, 235, 200, 245)
+                : new RgbaColor(255, 230, 140, 240);
+            RgbaColor fillInk = dig.ChannelIsAid
+                ? new RgbaColor(120, 215, 175, 240)
+                : new RgbaColor(255, 200, 90, 240);
+            _renderer.DrawText(ax, ay - 1.6f * scale, dig.ChannelGlyph, glyphInk, "bold 15px monospace", TextAlign.Center);
             float bw = 3.2f * scale, bh = 0.45f * scale;
             float bx0 = ax - bw / 2, by0 = ay + 1.1f * scale;
             FillRect(bx0, by0, bw, bh, new RgbaColor(20, 24, 30, 220));
-            FillRect(bx0, by0, bw * (float)Math.Clamp(dig.DigProgress, 0, 1), bh, new RgbaColor(255, 200, 90, 240));
+            FillRect(bx0, by0, bw * (float)Math.Clamp(dig.DigProgress, 0, 1), bh, fillInk);
         }
 
         // #313 the motion tracker: a crude corner fan of MOVING blips (bearing/range), including
@@ -930,7 +1201,8 @@ public sealed class DeckView
 
     // A WORKING crew member (the people who work the deck): the barkeep, the customs officer, the ship's own
     // droids — anyone who is neither a Reever nor a drinking PATRON (a seated bar regular, or the Magpie).
-    private static bool IsCrew(string name) => name != "Reever" && !IsSweeper(name) && !IsPatron(name);
+    private static bool IsCrew(string name) =>
+        name is not ("Reever" or "Collector") && !IsSweeper(name) && !IsPatron(name);
 
     /// <summary>#538 · A sweeper, by callsign. Never crew: nobody on that team is going to catch a barkeep's eye
     /// during a hull shudder, and giving them the crew's grey would hide the second hostile thing on the deck.</summary>
@@ -952,6 +1224,83 @@ public sealed class DeckView
         t = Math.Clamp(t, 0f, 1f);
         static byte L(byte v, float t) => (byte)(v + (255 - v) * t);
         return new RgbaColor(L(c.R, t), L(c.G, t), L(c.B, t), c.A);
+    }
+
+    // #563 · How deep the dark reaches in from an unseen bound, in deck units, and how far that depth
+    // wanders along it. A straight falloff is just the rectangle again; these two numbers are what stop the
+    // eye finding a corner.
+    private const double FalloffBaseDu = 7.0;
+    private const double FalloffWanderDu = 5.0;
+
+    /// <summary>Darken the ground approaching every <see cref="DeckPlan.Wall.Unseen"/> bound, with an
+    /// irregular inner edge. No-op on any plan without unseen walls — i.e. every ship and station.</summary>
+    private void DrawUnseenFalloff(DeckPlan plan, float scale, float ox, float oy)
+    {
+        // The bounds of the unseen set tell us which side of the field each one is, and therefore which way
+        // "inward" points — a vertical wall at the smallest x faces right, and so on.
+        float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+        int unseen = 0;
+        foreach (DeckPlan.Wall w in plan.Walls)
+        {
+            if (!w.Unseen) { continue; }
+            unseen++;
+            minX = Math.Min(minX, Math.Min(w.X1, w.X2)); maxX = Math.Max(maxX, Math.Max(w.X1, w.X2));
+            minY = Math.Min(minY, Math.Min(w.Y1, w.Y2)); maxY = Math.Max(maxY, Math.Max(w.Y1, w.Y2));
+        }
+        if (unseen == 0)
+        {
+            return;
+        }
+
+        const int Bands = 4;
+        foreach (DeckPlan.Wall w in plan.Walls)
+        {
+            if (!w.Unseen) { continue; }
+
+            bool vertical = Math.Abs(w.X1 - w.X2) < 0.001f;
+            double inward = vertical
+                ? (Math.Abs(w.X1 - minX) < Math.Abs(w.X1 - maxX) ? 1.0 : -1.0)
+                : (Math.Abs(w.Y1 - minY) < Math.Abs(w.Y1 - maxY) ? 1.0 : -1.0);
+
+            double a0 = vertical ? Math.Min(w.Y1, w.Y2) : Math.Min(w.X1, w.X2);
+            double a1 = vertical ? Math.Max(w.Y1, w.Y2) : Math.Max(w.X1, w.X2);
+            const double step = 2.0;
+
+            for (double a = a0; a < a1; a += step)
+            {
+                double span = Math.Min(step, a1 - a);
+                double depth = FalloffBaseDu + (FalloffWanderDu * Wander(a, vertical ? w.X1 : w.Y1));
+
+                for (int k = 0; k < Bands; k++)
+                {
+                    // Darkest against the bound, thinning inward. Near-black keyed to the floor's own blue
+                    // so the dark reads as unlit ground rather than as a painted shape.
+                    var ink = new RgbaColor(4, 6, 10, (byte)(205 - (k * 48)));
+                    double d0 = depth * k / Bands, d1 = depth * (k + 1) / Bands;
+                    double c0 = vertical ? w.X1 + (inward * d0) : w.Y1 + (inward * d0);
+                    double c1 = vertical ? w.X1 + (inward * d1) : w.Y1 + (inward * d1);
+
+                    (double bx0, double by0, double bx1, double by1) = vertical
+                        ? (Math.Min(c0, c1), a, Math.Max(c0, c1), a + span)
+                        : (a, Math.Min(c0, c1), a + span, Math.Max(c0, c1));
+
+                    float sx0 = ox + ((float)bx0 * scale), sy0 = oy - ((float)by1 * scale);
+                    float sx1 = ox + ((float)bx1 * scale), sy1 = oy - ((float)by0 * scale);
+                    FillRect(sx0, sy0, sx1 - sx0, sy1 - sy0, ink);
+                }
+            }
+        }
+    }
+
+    /// <summary>A stable 0..1 wander keyed to a world position — deterministic, so the dark edge is a fact
+    /// about the place and does not shimmer as the camera moves or the frame ticks.</summary>
+    private static double Wander(double along, double which)
+    {
+        // Low frequency ON PURPOSE. A high-frequency hash makes adjacent steps uncorrelated and the
+        // dark edge reads as a jagged comb — obviously generated. This undulates over tens of deck
+        // units, so the boundary wanders the way a shadow line does and no straight run is legible.
+        double s = Math.Sin((along * 0.11) + (which * 0.037)) * 0.5;
+        return s + 0.5;   // 0..1
     }
 
     private void FillRect(float x, float y, float w, float h, RgbaColor color)
@@ -1017,6 +1366,21 @@ public sealed class DeckView
         DrawSeg((cx, cy - r), (cx, cy + r), new RgbaColor(120, 200, 150, 70), 1f);
         _renderer.DrawText(cx, cy - r - 8, "MOTION TRACKER", TrackerRing, $"bold {labelPx:0}px monospace", TextAlign.Center);
 
+        // #591 · WHERE YOU ARE, ON THE INSTRUMENT. Owner: "the motion tracker should be in underground
+        // visibility mode when we are deeeeeeeep under surface" — and depth is the single most important
+        // fact about a captain's situation down there, because it is the number that decides whether they
+        // get back up on the air they have. It was only ever readable as a label lying on the floor plan
+        // behind them, which is the wrong place: you read the plan when you are thinking and the instrument
+        // when you are worried.
+        //
+        // Drawn in the fan's own ink, above the ring beside the title, so a glance says "you are inside
+        // something" before a single word is read.
+        if (hud.TrackerPlace is { Length: > 0 } place)
+        {
+            _renderer.DrawText(cx, cy - r + 4, place, TrackerRing,
+                $"{Math.Clamp(labelPx * 0.82, 8, 11):0}px monospace", TextAlign.Center);
+        }
+
         // Lane-1 (owner, 2026-07-18): the Reever blips are red and "pulsing like a heartbeat" — the
         // creatures' pulse on the sweep. A lub-dub envelope drives the blips' size and glow, quickening
         // with the tracker cadence as the nearest closes; even a far-off tide keeps a slow, live beat.
@@ -1030,9 +1394,13 @@ public sealed class DeckView
         // visible half-width in du is widthPx/scale/2), so the fan hears several times farther than the grid
         // shows. A blip's DISTANCE is read straight off the fan: faint + small on the rim, firming to an
         // insistent near dot as it closes (MotionTracker.BlipIntensity) — the dread-gap made visible.
+        // #591: the reach is HANDED DOWN by the sim now, because the sim and this draw were deriving it
+        // separately and could disagree — and underground the sim shortens it with depth, which would have
+        // made that disagreement the difference between a blip you can hear and a blip you can only see.
+        // The viewport derivation stays as the fallback for callers from before the field existed.
         float surfScale = Math.Min(widthPx / 64f, heightPx / 28f);
         double visualHalfWidthDu = (widthPx / Math.Max(surfScale, 0.001f)) / 2.0;
-        double detectionRange = MotionTracker.DetectionRange(visualHalfWidthDu);
+        double detectionRange = hud.FanReach > 0 ? hud.FanReach : MotionTracker.DetectionRange(visualHalfWidthDu);
         foreach ((double bearing, double range) in hud.Blips)
         {
             double rr = Math.Min(range / detectionRange, 1.0) * (r - 6);
@@ -1046,7 +1414,137 @@ public sealed class DeckView
             _renderer.DrawCircle(bx, by, sz, col, col);
         }
 
+        // #573 · A RUMOUR: a soft, wide, low-contrast wash. It is under everything else on purpose — it is
+        // the least certain thing on the instrument and must never compete with a contact.
+        if (hud.Rumours is { Count: > 0 } rumours)
+        {
+            foreach ((double bearing, double range, double spread) in rumours)
+            {
+                double rr = Math.Min(range / detectionRange, 1.0) * (r - 5);
+                float bx = cx + (float)(Math.Cos(bearing) * rr);
+                float by = cy - (float)(Math.Sin(bearing) * rr);
+                float wide = (float)Math.Max(9.0, spread / detectionRange * r);
+                for (int ring = 3; ring >= 1; ring--)
+                {
+                    _renderer.DrawCircle(bx, by, wide * ring / 3f, null,
+                        new RgbaColor(120, 170, 210, (byte)(30 + (10 * (3 - ring)))), 1f);
+                }
+            }
+        }
+
+        // #573 · Own caches, once they are close enough for the fan to have any business knowing.
+        if (hud.CacheBeacons is { Count: > 0 } caches)
+        {
+            foreach ((double bearing, double range) in caches)
+            {
+                double rr = Math.Min(range / detectionRange, 1.0) * (r - 5);
+                float bx = cx + (float)(Math.Cos(bearing) * rr);
+                float by = cy - (float)(Math.Sin(bearing) * rr);
+                var gold = new RgbaColor(235, 205, 120, 220);
+                DrawSeg((bx - 3.5f, by - 3.5f), (bx + 3.5f, by + 3.5f), gold, 1.6f);
+                DrawSeg((bx + 3.5f, by - 3.5f), (bx - 3.5f, by + 3.5f), gold, 1.6f);
+            }
+        }
+
+        // #573 · The beacons, drawn UNDER nothing and OVER the rings: hollow, calm, and slowly breathing,
+        // so they never read as contacts. A place clamps to the rim when it is beyond the fan's reach, the
+        // same way a distant mover does — you always know which way it is, never how far once it is far.
+        if (hud.Beacons is { Count: > 0 } beacons)
+        {
+            double breathe = 0.85 + (0.15 * Math.Sin(simTime * 0.0016));
+            foreach ((double bearing, double range, bool isHome, bool isLab) in beacons)
+            {
+                double rr = Math.Min(range / detectionRange, 1.0) * (r - 5);
+                float bx = cx + (float)(Math.Cos(bearing) * rr);
+                float by = cy - (float)(Math.Sin(bearing) * rr);
+
+                // The way home is warmer than a shelter, because they are not the same promise: one is your
+                // ship, the other is somebody else's roof.
+                //
+                // #585 · And a LIFT HEAD is neither, so it gets the imported violet the door itself wears
+                // (#592). With nine shelter rings on the fan, one more ring in the same ink is not a signal —
+                // the owner had a tracker full of identical circles and no way to tell which one was the way
+                // down. A beacon that cannot be told apart from its neighbours is decoration.
+                var ink = isLab
+                    ? new RgbaColor(
+                        SpaceSails.Core.BodyPalette.Imported.R,
+                        SpaceSails.Core.BodyPalette.Imported.G,
+                        SpaceSails.Core.BodyPalette.Imported.B, (byte)(235 * breathe))
+                    : isHome
+                        ? new RgbaColor(150, 215, 255, (byte)(210 * breathe))
+                        : new RgbaColor(130, 235, 215, (byte)(195 * breathe));
+
+                // The lab ring is drawn a size larger and doubled, so it reads at a glance on a busy fan.
+                _renderer.DrawCircle(bx, by, (float)((isLab ? 8.0 : 5.5) * breathe), null, ink, isLab ? 2.4f : 1.8f);
+                _renderer.DrawCircle(bx, by, isLab ? 2.4f : 1.6f, ink, ink);
+            }
+        }
+
         _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, $"{readoutPx:0}px monospace", TextAlign.Center);
+
+        // #564 · THE AIR METER, directly under the tracker where the owner looked for it. It gets a BAR
+        // rather than a line of text for the same reason NERVE does: it is one of the two things on a
+        // surface that can kill you without anything touching you, and a number buried among key hints is
+        // not something a captain glances at while a pack closes.
+        float airBottom = cy + r + 14 + readoutPx + 6f;
+        if (hud.AirSeconds >= 0)
+        {
+            float aw = r * 1.75f, ah = Math.Max(7f, r * 0.085f);
+            float ax0 = Math.Max(8f, cx - (aw / 2)), ay0 = airBottom;
+            double frac = Math.Clamp(hud.AirSeconds / SuitAir.TankSeconds, 0, 1);
+
+            // Colour is the BAND, not the fraction — because the question is never "how full is it" but
+            // "can I still get home from here", and those two part company the moment you walk anywhere.
+            SuitAir.Band band = SuitAir.BandFor(hud.AirSeconds, hud.AirDistanceHome);
+            RgbaColor fill = band switch
+            {
+                SuitAir.Band.Easy => new RgbaColor(120, 200, 235, 235),
+                SuitAir.Band.Thinking => new RgbaColor(225, 200, 95, 240),
+                SuitAir.Band.PastTheLine => new RgbaColor(240, 120, 60, 245),
+                SuitAir.Band.Critical => new RgbaColor(255, 60, 45, 250),
+                _ => new RgbaColor(90, 40, 38, 230),
+            };
+
+            // #612 · AND WHERE IT IS COMING FROM. Owner, on a pressurised floor with no way to tell:
+            // "Maybe we should have on our hud a AIR: Tanks / External symbol... it is vital info."
+            //
+            // Drawn as a SOLID CHIP — dark letters on a block of colour — rather than as coloured text,
+            // because a filled block is read pre-attentively and a word is not. At a glance the captain gets
+            // green-or-amber; a beat later a triangle pointing down or a stopped square; only then the word.
+            // That is three chances to learn the most consequential fact on the surface without reading.
+            //
+            // The chip is a SEPARATE colour from the bar on purpose. The bar answers "can I still get home
+            // on this tank", which stays a real question in a shelter — you have to leave eventually. The
+            // chip answers "is it going down right now". Both are true at once and they are not the same,
+            // and the old gauge could only show one of them.
+            bool drawing = SuitAir.Drawing(hud.AirSupply);
+            RgbaColor chipInk = hud.AirSupply switch
+            {
+                SuitAir.Supply.Room => StencilAir,
+                SuitAir.Supply.Ship => new RgbaColor(150, 215, 255, 245),
+                _ => StencilDead,
+            };
+
+            FillRect(ax0 - 6f, ay0 - 15f, aw + 12f, ah + 32f, new RgbaColor(6, 11, 10, 205));
+            _renderer.DrawText(ax0, ay0 - 4f, "AIR", fill, "bold 10px monospace", TextAlign.Left);
+
+            string chip = $"{SuitAir.SourceGlyph(hud.AirSupply)} {SuitAir.SourceLabel(hud.AirSupply)}";
+            float chipW = (chip.Length * 6.2f) + 10f;
+            float chipX = Math.Max(ax0 + 26f, ax0 + aw - chipW);
+            FillRect(chipX, ay0 - 14f, chipW, 13f, chipInk);
+            _renderer.DrawText(chipX + 5f, ay0 - 4f, chip, new RgbaColor(8, 12, 16, 255),
+                "bold 10px monospace", TextAlign.Left);
+
+            FillRect(ax0, ay0, aw, ah, new RgbaColor(14, 18, 24, 220));
+            FillRect(ax0, ay0, aw * (float)frac, ah, fill);
+            // A held tank is ringed in its source's colour, so the "is it running" answer is on the bar
+            // itself and not only on the chip above it — the one place a captain's eye is already resting.
+            DrawRectOutline(ax0, ay0, aw, ah, drawing ? TrackerRing : chipInk);
+            _renderer.DrawText(ax0, ay0 + ah + 11f,
+                SuitAir.Readout(hud.AirSeconds, hud.AirDistanceHome, hud.AirSupply),
+                drawing ? fill : chipInk, "10px monospace", TextAlign.Left);
+            airBottom = ay0 + ah + 20f;
+        }
 
         // Lane-1: the dig/sentry captions seated beneath the readout (owner: "advertise the dig and bot
         // options in text under the motion detector"). Column chrome only — and drawn only while each line
@@ -1060,7 +1558,7 @@ public sealed class DeckView
             // Left-align them in the gutter instead, so a caption grows RIGHTWARDS into open screen and
             // every word survives however long the line gets.
             float capPx = (float)Math.Clamp(r * 0.095, 9, 12);
-            float capY = cy + r + 14 + readoutPx + 8f;
+            float capY = airBottom + 6f;
             float capX = Math.Max(8f, cx - r);
             foreach (string caption in captions)
             {

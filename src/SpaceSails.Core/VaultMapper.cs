@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
 namespace SpaceSails.Core;
 
@@ -81,7 +81,12 @@ public static class VaultMapper
     {
         ArgumentNullException.ThrowIfNull(ledger);
         var caches = ledger.Caches.Select(ToRecord).ToList();
-        return new CachesSection { NextMintIndex = ledger.NextMintIndex(), Caches = caches };
+        return new CachesSection
+        {
+            NextMintIndex = ledger.NextMintIndex(),
+            LastCheckedPeriod = ledger.LastCheckedPeriod, // the watch is part of the hoard, not beside it
+            Caches = caches,
+        };
     }
 
     public static void Apply(CachesSection? section, CacheLedger ledger)
@@ -98,6 +103,7 @@ public static class VaultMapper
         }
 
         ledger.RestoreMintIndex(section.NextMintIndex);
+        ledger.LastCheckedPeriod = section.LastCheckedPeriod;
     }
 
     private static CacheRecord ToRecord(TreasureCache c) => new()
@@ -153,7 +159,11 @@ public static class VaultMapper
     public static KaamosSection ToSection(KaamosProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        return new KaamosSection { AssembledFragmentIds = progress.AssembledIds };
+        return new KaamosSection
+        {
+            AssembledFragmentIds = progress.AssembledIds,
+            BerthFilingBounced = progress.BerthFilingBounced,   // #635 · the front door, per-thread
+        };
     }
 
     /// <summary>Rehydrate assembled fragments into a progress holder (via <see cref="KaamosProgress.Load"/>,
@@ -162,7 +172,7 @@ public static class VaultMapper
     public static void Apply(KaamosSection? section, KaamosProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        progress.Load(section?.AssembledFragmentIds);
+        progress.Load(section?.AssembledFragmentIds, section?.BerthFilingBounced ?? false);
     }
 
     // ── NEBULA MUTUAL (#422) — the second-arc fragment assembly + the one-time convergence bit, per-thread. ──

@@ -44,9 +44,22 @@ public static class SentryBot
     /// class. The captain brings 0..this many down at boarding.</summary>
     public const int RosterCap = 2;
 
-    /// <summary>One honest price: credits per round to rearm/recharge at a haven's service line. A full
-    /// two-bot refill from empty is ~396 cr — a purchasable margin, cheap against a cache but never free.</summary>
-    public const int RestockPricePerRound = 2;
+    /// <summary>One honest price: credits per round to rearm a magazine, wherever the racking happens — a
+    /// haven's service line or the ship's own down-tube (#562). A full two-bot refill from empty is ~198 cr.
+    ///
+    /// <para>#562 · Halved from 2 cr on the owner's ruling: <i>"let's keep the ammo cheap"</i>, because
+    /// <i>"we want to encourage exploration and that takes ammo."</i> The cost of going deep is meant to be
+    /// the WALK BACK and the rounds you spend getting there — the supply line, which he called <i>"the
+    /// invisible tether to players distance"</i> — never a purse decision made at a desk. A six-pack of Old
+    /// Ones costs 84 rounds to clear (<see cref="RoundsPerReever"/> = 14), so a hard fight is ~84 cr against
+    /// a 1,500 cr starting purse: a chore you pay without thinking. If this price ever makes a captain
+    /// ration rounds and stay aboard, it has broken the thing it exists to serve.</para></summary>
+    public const int RestockPricePerRound = 1;
+
+    /// <summary>#562 · How long one magazine takes to rack, in seconds. Owner's pick: <i>"a couple of
+    /// seconds each"</i>, one bot after the other, each with its own progress bar — long enough to feel the
+    /// ship working, short enough never to become a chore between runs.</summary>
+    public const double RearmSecondsPerMagazine = 2.0;
 
     /// <summary>The ship's real armed units (the shuttle-bay boarding troopers, <c>DeckPlan.FillShipDroids</c>).
     /// These are the escorts the captain loads — the roster, not an invention.</summary>
@@ -204,9 +217,63 @@ public static class SentryBot
     /// captain and the Old Ones collide and sight against — a slab between gun and target breaks the shot,
     /// so the nearest target is the nearest VISIBLE one, and a bot with nothing it can see holds fire and
     /// drains nothing (the no-shot/no-drain law). Pass none for the open-ground behaviour.</para></summary>
+    /// <summary>#603 · How far off the line of fire a second target may stand and still be caught by the same
+    /// round. About a body's width — a pack queued down a corridor is caught, a pack fanned out is not.</summary>
+    public const double PenetrationCorridorDu = 1.6;
+
+    /// <summary>#603 · The next target standing behind <paramref name="first"/> on the same line of fire —
+    /// further from the gun, and within a hand's width of the shot's own bearing. Returns -1 when the pack is
+    /// not queued up, which is most of the time and is exactly the point.</summary>
+    private static int BehindTheFirst(
+        Deployed bot, IReadOnlyList<Target> reevers, bool[] alive, int first)
+    {
+        double fx = reevers[first].X - bot.X, fy = reevers[first].Y - bot.Y;
+        double firstDist = System.Math.Sqrt((fx * fx) + (fy * fy));
+        if (firstDist <= 0.001)
+        {
+            return -1;
+        }
+        double ux = fx / firstDist, uy = fy / firstDist;
+
+        int best = -1;
+        double bestAlong = double.MaxValue;
+        for (int j = 0; j < reevers.Count; j++)
+        {
+            if (!alive[j] || j == first)
+            {
+                continue;
+            }
+            double dx = reevers[j].X - bot.X, dy = reevers[j].Y - bot.Y;
+            double along = (dx * ux) + (dy * uy);                        // down the line of fire
+            if (along <= firstDist)
+            {
+                continue;                                                // beside or in front, not behind
+            }
+            double across = System.Math.Abs((dx * -uy) + (dy * ux));     // off the line
+            if (across > PenetrationCorridorDu)
+            {
+                continue;
+            }
+            if (along < bestAlong)
+            {
+                bestAlong = along;
+                best = j;
+            }
+        }
+        return best;
+    }
+
+    /// <param name="ammo">#603 · What each bot is loaded with, in the same order as <paramref name="bots"/>.
+    /// Null — and any missing entry — means issue ball, so every existing caller and every existing test is
+    /// unchanged by construction.
+    ///
+    /// <para>Owner: <i>"some special ammo that only uses one round per reever"</i> and <i>"those rounds would
+    /// go through several reevers if in group also"</i>. Both are the same fact about a round that arms after
+    /// travel and does its work on the far side of the first thing it meets.</para></param>
     public static Volley Step(
         IReadOnlyList<Deployed> bots, IReadOnlyList<Target> reevers,
-        IReadOnlyList<SurfaceCollision.Segment>? walls = null)
+        IReadOnlyList<SurfaceCollision.Segment>? walls = null,
+        IReadOnlyList<Ammunition.Kind>? ammo = null)
     {
         System.ArgumentNullException.ThrowIfNull(bots);
         System.ArgumentNullException.ThrowIfNull(reevers);
@@ -257,13 +324,39 @@ public static class SentryBot
                 continue; // nothing it can SEE in the arc — hold fire, no drain (#437)
             }
 
+            Ammunition.Kind loaded = ammo is not null && i < ammo.Count ? ammo[i] : Ammunition.Issue;
+            int toKill = System.Math.Max(1, loaded.HitsToKill);
+
             botRounds[i] = Fire(botRounds[i]);
             shots++;
+
             hits[best]++;
-            if (hits[best] >= RoundsPerReever)
+            if (hits[best] >= toKill)
             {
                 alive[best] = false;
                 husks.Add(new Husk(reevers[best].X, reevers[best].Y));
+            }
+
+            // #603 · AND IT KEEPS GOING. A round that arms after travel does not stop at the first thing it
+            // meets — anything standing BEHIND that, on the same line, is in the same shot. Owner: "those
+            // rounds would go through several reevers if in group also".
+            //
+            // Strictly behind and close to the bearing, so this rewards a pack that has queued itself down a
+            // corridor and does nothing at all for one that has spread out. That is the round's whole
+            // character: devastating in a corridor, unremarkable in the open, lethal to the firer up close.
+            for (int through = 1; through < loaded.Penetrates; through++)
+            {
+                int next = BehindTheFirst(bots[i], reevers, alive, best);
+                if (next < 0)
+                {
+                    break;
+                }
+                hits[next]++;
+                if (hits[next] >= toKill)
+                {
+                    alive[next] = false;
+                    husks.Add(new Husk(reevers[next].X, reevers[next].Y));
+                }
             }
         }
 

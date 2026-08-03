@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -347,38 +347,38 @@ public partial class Map
         await RefocusMap();
     }
 
-    // The bodies whose treasure-map card art the grok image lane has delivered
-    // (docs/FridaySecondPlan/hoard-image-manifest.md). Copied verbatim to art/treasure-<bodyId>.jpg.
-    // Bodies absent from this set (e.g. miranda) still fall back to the deterministic gradient below.
-    private static readonly HashSet<string> _treasureMapArtBodies = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "phobos", "luna", "europa", "ganymede", "callisto", "titan", "enceladus",
-    };
-
-    // The map card's big image slot (Map.razor → .tm-art, behind the red .tm-x). When the grok image
-    // lane has delivered a per-body asset (docs/FridaySecondPlan/hoard-image-manifest.md) we point at
-    // art/treasure-<bodyId>.jpg; the deterministic per-body gradient stays layered UNDER it as the
-    // fallback (so a missing/404 asset — or any body without art yet — still reads as a tinted card,
-    // Phobos always the same tint). background-size: cover lives in .tm-art and applies to both layers.
+    // The map card's big image slot (Map.razor → .tm-art, behind the red .tm-x). When the grok image lane
+    // has delivered a per-body asset (docs/FridaySecondPlan/hoard-image-manifest.md) we point at
+    // art/treasure-<bodyId>.jpg; the deterministic per-body gradient stays layered UNDER it as the fallback
+    // (so a missing/404 asset — or any body without art yet — still reads as a tinted card, Phobos always
+    // the same tint). background-size: cover lives in .tm-art and applies to both layers.
+    //
+    // #528: WHICH bodies are painted now lives in Core (TreasureMapArt) rather than in a private set here.
+    // It was a client-only literal whose own comment named miranda as the example of a body with no art —
+    // while art/treasure-miranda.jpg sat finished in wwwroot the whole time. The gradient fallback is what
+    // made that invisible, the same way the onerror-hide law hides a missing plate; the list has to be
+    // somewhere a test can read it, and TreasureMapArtIsWiredTests now checks it in BOTH directions.
     private static string TreasureMapArtCss(string bodyId)
     {
         int h = Math.Abs(bodyId.GetHashCode());
         int hue = h % 360;
         string gradient = $"radial-gradient(circle at 38% 32%, hsl({hue}, 40%, 34%), hsl({(hue + 28) % 360}, 45%, 12%) 70%)";
-        return _treasureMapArtBodies.Contains(bodyId)
-            ? $"url('art/treasure-{bodyId.ToLowerInvariant()}.jpg'), {gradient}"
+        return TreasureMapArt.ArtFile(bodyId) is { Length: > 0 } art
+            ? $"url('{art}'), {gradient}"
             : gradient;
     }
 
     // ---- The discovery watch (ruling 4): rivals find our hoards on a slow roll ----
 
     // Start the watch at the current day the first time we bury, so a just-dug chest isn't rolled for
-    // the partial current day.
+    // the partial current day. Also called after a vault load, which is how a save written before the
+    // watch was persisted (LastCheckedPeriod = WatchNotStarted) starts watching again from the moment
+    // the captain wakes — never from the epoch, which would resolve every day at once.
     private void SeedDiscoveryWatch()
     {
-        if (_lastCacheCheckPeriod < 0)
+        if (_caches.LastCheckedPeriod < 0)
         {
-            _lastCacheCheckPeriod = DiscoveryRule.PeriodIndex(SimTime);
+            _caches.LastCheckedPeriod = DiscoveryRule.PeriodIndex(SimTime);
         }
     }
 
@@ -386,12 +386,13 @@ public partial class Map
     // warp that skips days can't skip a roll). A found cache is GONE — a ledger squawk marks the loss.
     private void RunCacheDiscoveryWatch()
     {
-        if (_lastCacheCheckPeriod < 0)
+        long lastChecked = _caches.LastCheckedPeriod;
+        if (lastChecked < 0)
         {
             return; // nothing buried yet
         }
         long nowPeriod = DiscoveryRule.PeriodIndex(SimTime);
-        if (nowPeriod <= _lastCacheCheckPeriod)
+        if (nowPeriod <= lastChecked)
         {
             return;
         }
@@ -399,7 +400,7 @@ public partial class Map
         {
             // Never roll a cache for days before it was in the ground: start its scan at the later of
             // the global last-check and its own burial day.
-            long from = Math.Max(_lastCacheCheckPeriod, DiscoveryRule.PeriodIndex(c.BuriedSimTime));
+            long from = Math.Max(lastChecked, DiscoveryRule.PeriodIndex(c.BuriedSimTime));
             // #295: a Reever-haunted stash is harder for rivals to work — the watchdogs guard it too.
             if (DiscoveryRule.DiscoveredWithin(c.Id, from, SimTime, c.ReeverLevel) is not null)
             {
@@ -408,7 +409,7 @@ public partial class Map
                 ShowPulseMessage($"🏴‍☠️ Someone dug up our chest on {BodyName(c.BodyId)} — {c.ContentsLine()} gone. Split the hoards next time.");
             }
         }
-        _lastCacheCheckPeriod = nowPeriod;
+        _caches.LastCheckedPeriod = nowPeriod;
     }
 
     // Knock on a locked station hatch (a ring department or a bar back-room). Nobody answers — for now.
@@ -522,6 +523,26 @@ public partial class Map
         if (MakeFavorDeliveryOffer(giver) is { } favorOffer)
         {
             _pendingOffer = favorOffer;
+            return;
+        }
+
+        // #635 — PROJEKTI KAAMOS's front door. Before this, the longest-prepared arc in the game was
+        // invisible until a captain happened to read the whole of one dedication plate among seven. A
+        // freight agent holding a docket the board keeps returning is the arc arriving through the system
+        // the player already reads (paperwork), and it hands over no shard — only the question. Offered
+        // only while the captain has nothing of the arc at all, so it can never elbow a live thread aside.
+        if (MakeKaamosBounceOffer(giver) is { } kaamosBounce)
+        {
+            _pendingOffer = kaamosBounce;
+            return;
+        }
+
+        // #411 — the far end of the same arc. Once the berth-code has resolved, the ice-moon berth is
+        // listed to this hull and a standing consignment has come back onto the board with it. Whoever is
+        // drinking here hands it over as the ordinary, absurdly-well-paid haul they believe it to be.
+        if (MakeKaamosSupplyRunOffer(giver) is { } kaamosRun)
+        {
+            _pendingOffer = kaamosRun;
             return;
         }
 
@@ -663,6 +684,65 @@ public partial class Map
     // The oracle's corner card is one of the same mutually-exclusive doorway family — opening the counter or a
     // patron's table shuts her card so two cards never stack. (#425)
     private void CloseOracleFromBar() => _oracleOpen = false;
+
+    // ── "Who's in tonight" — the empty chair gets a sentence (issue #410, story pass 2026-08-02) ───────
+    //
+    // #410's rota shipped complete: each regular is present at a port only sometimes, in a seeded seat, and
+    // an away one is Gone or InTheBack. But an away regular gets NO CONSOLE — so the player walks up to an
+    // empty chair, presses E, and NOTHING HAPPENS. Three-quarters of the roster could be out and the room
+    // would never say so; PatronState.Gone vs InTheBack was computed every watch and told to nobody. That
+    // is criterion 1 — "a truth that lives only in Core is not being told" — and the fix is a sentence, in
+    // the one voice that would actually know: the barkeep's.
+    //
+    // Read at _dockVisitSimTime, the SAME frozen watch the deck was welded at (Map.Deck), NOT the live
+    // clock. Reading SimTime here would let the line drift out of step with the chairs mid-dock — the sim
+    // saying one thing and the sentence another, which is this repo's most common bug by measure.
+    private string? WhoIsInTonight()
+    {
+        if (_dockedHavenId is not { } id)
+        {
+            return null;
+        }
+
+        var seatedHere = new List<string>();
+        var steppedOut = new List<string>();
+        var inTheBack = new List<string>();
+        foreach (HavenInterior.SeatedRegular r in HavenInterior.ResolveRegulars(id, _dockVisitSimTime))
+        {
+            switch (r.State)
+            {
+                case PatronState.AtBar: seatedHere.Add(r.ShortName); break;
+                case PatronState.InTheBack: inTheBack.Add(r.ShortName); break;
+                default: steppedOut.Add(r.ShortName); break;
+            }
+        }
+
+        var said = new List<string>();
+        if (seatedHere.Count > 0)
+        {
+            said.Add($"{Names(seatedHere)} {(seatedHere.Count == 1 ? "is" : "are")} in tonight.");
+        }
+        else
+        {
+            said.Add("Quiet house tonight — none of the usual faces.");
+        }
+        if (steppedOut.Count > 0)
+        {
+            said.Add($"{Names(steppedOut)} stepped out.");
+        }
+        if (inTheBack.Count > 0)
+        {
+            said.Add($"{Names(inTheBack)} {(inTheBack.Count == 1 ? "is" : "are")} somewhere in the back.");
+        }
+        return string.Join(" ", said);
+
+        static string Names(IReadOnlyList<string> who) => who.Count switch
+        {
+            1 => who[0],
+            2 => $"{who[0]} and {who[1]}",
+            _ => $"{string.Join(", ", who.Take(who.Count - 1))} and {who[^1]}",
+        };
+    }
 
     // Append a heard line to the durable "overheard at the bar" book, capped, and persist it. The receipt
     // (#119 idiom) so the words the captain paid for are revisitable, not gone with the toast.
@@ -1539,6 +1619,15 @@ public partial class Map
         }
         _pendingOffer = null;
 
+        // #635 — the returned filing. It is a contract in every respect a player can see (a card, a price,
+        // Take or Pass) and in exactly one respect it is not: there is nothing afterwards to go and do, so
+        // it never enters _quests. What it settles is settled at the counter, in front of you.
+        if (offer.Id == KaamosBounceOfferId)
+        {
+            TakeKaamosBounceFiling(offer);
+            return;
+        }
+
         if (offer.Kind == QuestKind.Intel)
         {
             // A gift of information — delivered on the spot: drop the route tip into the ledger (like a
@@ -1573,6 +1662,14 @@ public partial class Map
         // and its giver, then the immediate next action — so the captain is never left guessing at the
         // moment of acceptance ("I took the parcel but the mission is quite unclear"). The live
         // next-action also rides the Captain desk chip (CaptainQuestChipLine) while the job is in hand.
+        // #411 — the run gets the arc's own receipt as well as the house one: the manifest slug is the
+        // cold pod's, word for word, because it is the same consignment. Nobody remarks on that.
+        if (offer.Id == KaamosLore.SupplyRunQuestId)
+        {
+            ShowPulseMessage(KaamosLore.SupplyRunAccepted);
+            return;
+        }
+
         ContractFacts facts = FactsFor(offer);
         ShowPulseMessage($"{MissionBrief.Receipt(facts.Kind, facts.Giver)} {MissionBrief.NextLine(facts)}");
     }
@@ -2032,9 +2129,14 @@ public partial class Map
     // read this book; the discovery watch prunes it.
     private readonly CacheLedger _caches = new();
 
-    // The discovery watch (ruling 4): the last whole day we resolved the per-cache discovery roll, so
-    // a warp that skips days can't skip a roll. -1 = nothing resolved yet.
-    private long _lastCacheCheckPeriod = -1;
+    // The discovery watch's bookmark (ruling 4) — the last whole day we resolved the per-cache discovery
+    // roll, so a warp that skips days can't skip a roll — now lives ON THE LEDGER
+    // (CacheLedger.LastCheckedPeriod), because a hoard and the clock that threatens it are ONE fact and
+    // the vault has to carry both. As a private field beside the ledger it was never saved: reload the
+    // page, Resume a voyage with chests in the ground, and the watch came back at -1 —
+    // RunCacheDiscoveryWatch bailed on "nothing buried yet" and no rival ever dug anything up again,
+    // however many days you flew. The line the game prints at the shovel ("rivals may dig it up over the
+    // coming days") stopped being true the moment you saved.
 
     // The treasure-map card currently on screen (the full-screen artifact), or null. Shown on burying
     // a fresh chest and any time the captain opens a map from the ledger's 🗺 section.
@@ -2315,6 +2417,20 @@ public partial class Map
                 $"👂 {who}",
                 rumor.Lines.Select(l => l.Text).ToArray(),
                 ProvenanceLine(who, rumor.LatestBar, rumor.LatestSimTime),
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
+        }
+
+        // #587 — THE FIELD BOOK, in the ledger. Owner, on a rebuilt site: "we should maybe collect the tips
+        // to ledger if we don't show them again?" Everything found on a surface used to arrive as a pulse
+        // that faded in eight seconds and was then gone for good — a sentence you walked twenty minutes
+        // across a vacuum for and could never read twice. Same failure the bar had (#347), same fix, grouped
+        // by PLACE rather than by contact: out there the thing you want back is where you were standing.
+        foreach (Core.FieldFinding found in Core.FieldNotes.PerPlace(_fieldNotes))
+        {
+            tips.Add(new Stations.Captain.LedgerTip(
+                $"🥾 {found.Place}",
+                found.Lines.Select(l => $"{l.Glyph} {l.Text}").ToArray(),
+                $"found on the ground · day {(found.LatestSimTime / 86400).ToString("F0", CultureInfo.InvariantCulture)}",
                 ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null));
         }
 

@@ -35,7 +35,10 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
   behind the captain's portrait disc in `Map.razor`.
 - **Why:** the beat shipped passing **no vista at all**, so the marquee once-in-a-life shot was a portrait
   floating on an empty stage. This is the "kind of lame" the owner named.
-- **Composition (16:9):** Miranda's canon ground at the monolith maze. Deep background: the **monolith** —
+- **#649 · the ground moved.** The monolith stands on **Phobos** now, not Miranda — the word was reserved
+  for the one object and the one object is where the treasure maps have always said. The painted plate is
+  unaffected (it shows open regolith and a slab, not a maze), but any repaint briefs the Stickney rim.
+- **Composition (16:9):** open regolith on the Stickney rim. Deep background: the **monolith** —
   a vast, too-regular black slab, far older than anything human, lit only along one edge. Middle distance:
   three or four **Old Ones** shambling in out of the regolith haze toward the viewer, low and wrong-jointed,
   silhouetted, unhurried. Foreground right: the tube-mouth **autocannon (GATE-1)** mid-burst — hard muzzle
@@ -113,6 +116,27 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
   > steel counter under hard light, paint worn at the edges. Square macro composition. Grimy lived-in
   > used-future sci-fi, muted desaturated palette, painterly, moody lighting, no text, no lettering.
 
+## 6. `art/false-slab.jpg` — MIRANDA'S CENTRE (#649)
+
+- **Slot:** the `ViewObject` console at the heart of Miranda's canon maze (`MoonSurface.BuildLayout`,
+  `FalseSlab.ArtUrl`), popped on **[E]** with `FalseSlab.Lore` as the caption.
+- **Why:** the owner reserved the word *monolith* for the one object, which stands on Phobos. Miranda's maze
+  centre needed a name, a card and a plate of its own — reusing the monolith's picture here would be the
+  borrowed-prose bug (#574) wearing a landmark, and it is the exact thing the ruling is against.
+- **Composition (16:9):** the slab must read as **MADE**, at a glance, at any distance. Everything the
+  monolith's card says it is not: courses of quarried block, mortar joints wider at the top than the bottom,
+  a drill scar down one course, one shoulder rounded by four billion years of nothing much, grey dust
+  clinging to the face and drifted deep against the foot. Around it the maze's broken concentric rows and the
+  four small approach stubs on a swept circle. No figure, no scale bar, no plate — the courses are the scale.
+- **Prompt:**
+  > A wide cinematic view across a grey airless moon's regolith inside a low crude ruin maze of broken
+  > concentric walls. At the centre stands a squat rectangular slab about two people tall, plainly built of
+  > nine courses of quarried blocks with visible mortar joints, wider joints near the top, a long drill scar
+  > gouged down one course, one shoulder rounded and eroded, grey dust clinging to its face. Dust drifted
+  > deep against its foot. Four small square stone stubs stand out on a swept circle of cleared ground
+  > around it. Harsh low sunlight, long hard shadows, black sky, no stars. Grimy lived-in used-future
+  > sci-fi, muted desaturated palette, painterly, moody lighting, no text, no lettering, no people, no faces.
+
 ---
 
 ## Status
@@ -124,6 +148,7 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 3 | `treasure-miranda.jpg` | ✅ (dynamic path, gradient fallback) | ✅ |
 | 4 | `souvenir-surface-tshirt.jpg` | ✅ (kiosk card built) | ✅ |
 | 5 | `souvenir-surface-magnet.jpg` | ✅ (kiosk card built) | ✅ |
+| 6 | `false-slab.jpg` | ✅ (#649) | ✅ |
 
 **Complete.** All five generated with `grok-4.5` and shipped. The kiosk purchase card was built in the same
 pass (`_kioskCard` in `Map.Surface.cs`, rendered in `Map.razor` on the existing `view-object` idiom), so the
@@ -132,3 +157,88 @@ shops have had since #367.
 
 Every slot still `onerror`-hides, so a future body-specific override can drop in over the shared art without
 a code change.
+
+---
+
+## #528 round two — two beats on the ground that were only ever a sentence
+
+### `art/lab-door-regolith.jpg` — A SEALED DOOR, BURIED FLUSH WITH THE REGOLITH
+
+- **Slot:** `SecretLab.DoorPlate`, raised in `Map.SecretLab.TrySecretLabDetectorReveal`.
+- **Why it needed one:** it is the only find in the beach-comber lane that is not a thing you pick up, and
+  the decision it opens — *force it, or walk away and pretend you never found it* — is one of the sharpest
+  in the game. It was being offered over a toast that fades in a second and a half.
+- **Discipline:** the picture shows the door and NOTHING about what is behind it. There is no marking on it,
+  which is the point: an unmarked door is what you get when the marking would have been the crime.
+
+> **Prompt used:** A heavy armoured hatch buried flush with the grey regolith of an airless moon, most of it
+> still under decades of undisturbed dust, one corner swept clean by hand to reveal machined steel and a
+> ring of massive locking dogs. Completely unmarked — no plate, no stencil, no marking of any kind. A probe
+> rod stands upright in the dust beside it and a shallow scrape trails away. Empty plain and hard black sky
+> beyond. Grimy lived-in used-future sci-fi, muted desaturated palette of dust brown and cold steel,
+> painterly, moody, low raking light, long shadows, no text, no lettering, no numbers, no logos, no readable
+> writing, no people.
+
+### `art/outpost-effects.jpg` — WHAT WAS LEFT ON THE FLOOR
+
+- **Slot:** `SurfaceOutpost.EffectsPlate`, raised in `Map.Outpost.OutpostEffectsInteract` beside the filed
+  line and the dossier kit.
+- **Why it needed one:** the console in the game most obviously ABOUT a person, and the only picture it had
+  was the dossier's own (`dossier-effects.jpg`, which is the dossier, not the floor).
+- **ONE canvas for all four covers**, on the wrecks' anti-tell law (`Derelict.LogArtFile`): the objects are
+  the same four objects in every hut, and `SurfaceOutpost.EffectsLine` already carries the whole of the
+  difference between a survey hut, a relay shack, a sample store and a clinic.
+- **Canon-bound:** it implies an industry that went dark and a state worth hiding from, and says nothing at
+  all about what is walking around outside.
+
+> **Prompt used:** The contents of a dead stranger cleared out of a wallet and laid out on the cold gritty
+> floor of a small sealed hut on an airless moon, seen from directly above in the beam of a dropped helmet
+> lamp: a worn leather wallet fallen open and empty, a blank laminated card on a snapped fabric lanyard, a
+> folded sheet of paper creased into quarters and turned blank side up, a creased photograph lying FACE DOWN
+> showing only its blank grey back, a few plain unmarked metal tokens. Every surface in frame is completely
+> blank — no printing, no barcode, no photograph of a person, no marking of any kind anywhere. Dust and
+> frost at the edges of the frame. Grimy lived-in used-future sci-fi, muted desaturated palette of grey and
+> faded brown, painterly, moody low-key lighting, no text, no lettering, no numbers, no logos, no barcodes,
+> no readable writing, no faces, no people.
+
+- **A second pass was needed here.** The first came back with a photo-ID badge carrying a face and a
+  barcode — the one thing this set is not allowed to have. Naming the blankness of every surface
+  *individually* ("turned blank side up", "lying FACE DOWN showing only its blank grey back") is what fixed
+  it; a blanket "no text" at the end of the prompt is not enough when the prompt has asked for documents.
+- **Painted 2026-08-03.** Both guarded by `RevealPlatesArePaintedTests.EveryBeatPlateIsPaintedAndSaysItOnce`.
+
+### `art/collector-boat-down.jpg` — THEY DID NOT COME FOR THE SHIP
+
+- **Slot:** `CollectorLanding.ArrivalPlate`, raised in `Map.Surface.LandTheCollectors`.
+- **Why it needed one:** four loaded lines narrate this pursuit and every one of them was a toast. The
+  arrival is the worst place for that — it is the ONLY warning the player gets, and after it the only
+  information in the world is a tracker fan. A sentence that fades in a second and a half is not a warning.
+- **The caption is `ClosingLine`**, which until this pass was written, reviewed, shipped and **referenced by
+  nothing at all**. It is exactly the right words for this picture, so this is where it finally gets said.
+  Split into `ClosingCaption` on the `Derelict.LogCaption` idiom (one text, two readers, one glyph).
+
+> **Prompt used:** A second small landing boat set down hard on grey regolith a few hundred metres from the
+> viewer on an airless moon, landing lights off, no beacon, its ramp already down and a wedge of interior
+> light spilling onto the dust. Four suited figures are walking out from it, spread wide apart in a loose
+> line, unhurried, coming toward the viewer across an empty plain. Long low shadows, a hard black sky. Grimy
+> lived-in used-future sci-fi, muted desaturated palette of dust grey and cold blue, painterly, moody, no
+> text, no lettering, no numbers, no logos, no readable writing, no visible faces.
+
+### `art/collector-siege.jpg` — THEY SETTLE IN TO WAIT
+
+- **Slot:** `CollectorLanding.SiegePlate`, raised in `Map.Surface` beside `ShelterIsNotSanctuaryLine`.
+- **The one rule this frame lives by:** it shows them **settled, not attacking**. Nothing in it is a fight.
+  The clock is your tank, and what makes it horrible is how comfortable everyone else looks. A refuge that
+  silently fails to be one is the worst thing a survival game can do, and the picture has to say so as
+  plainly as the line already does.
+
+> **Prompt used:** The view from inside a small pressurised surface shelter on an airless moon, looking out
+> through a thick scratched round viewport at grey regolith. Outside, three suited figures have taken up
+> positions in a loose arc on the dust and settled down to wait — one seated on a rock, one standing with
+> arms folded, one crouched — patient, in no hurry at all, facing the shelter. The inside of the port is
+> fogged at its edges with breath frost. Grimy lived-in used-future sci-fi, muted desaturated palette of
+> dust grey and dim amber interior light, painterly, moody, no text, no lettering, no numbers, no logos, no
+> readable writing, no visible faces.
+
+- **Painted 2026-08-03**, first pass each. Guarded by
+  `RevealPlatesArePaintedTests.EveryBeatPlateIsPaintedAndSaysItOnce`.

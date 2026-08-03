@@ -85,6 +85,20 @@
     color: #c9b6ff;
 }
 
+/* #528 — the oracle's corner, painted. Sits between her name and her backstory, sized so the CARD is still
+   the card: it is a backdrop for a conversation, not a plate that takes the screen. It onerror-hides, so a
+   missing file leaves the card exactly as it read before, with no gap and no broken frame. */
+.oracle-art {
+    display: block;
+    width: 100%;
+    max-height: 9rem;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    margin: 0.35rem 0 0.5rem;
+    opacity: 0.88;
+    border: 1px solid rgba(170, 140, 255, 0.28);
+}
+
 .oracle-backstory {
     font-size: 0.85em;
     opacity: 0.72;
@@ -2318,6 +2332,57 @@
     background: rgba(255, 180, 90, 0.26);
 }
 
+/* THE ARCHIVE NODE'S VISIONS — the wreck cards are lamp-amber because a captain is standing in a room
+   with a lamp. These are not a room; they are what a mind with no eyes made of a place. So the frame goes
+   cold, which is the same distinction art-manifest-visions.md draws for the canvases themselves. */
+.archive-vision {
+    border-color: rgba(150, 200, 235, 0.4);
+    background: #080b12;
+}
+
+.archive-vision .view-object-title {
+    color: #cfe6f7;
+}
+
+.archive-vision .view-object-close {
+    background: rgba(150, 200, 235, 0.12);
+    border-color: rgba(150, 200, 235, 0.42);
+    color: #cfe6f7;
+}
+
+.archive-vision .view-object-close:hover {
+    background: rgba(150, 200, 235, 0.24);
+}
+
+/* What happened, in the house voice — above the lore, because the band is the event and the vision is
+   only what the event contained. */
+.archive-band {
+    color: rgba(207, 230, 247, 0.92);
+    font: 600 0.92rem/1.35 monospace;
+    text-align: center;
+}
+
+/* Stencilling on a jar's collar — clerical, upright, and pointedly NOT italic like the vision text: it is
+   the one thing on this card that is a document rather than a memory. Only ever present on the bands that
+   were bought with a bad throw. */
+.archive-collar {
+    align-self: stretch;
+    padding: 0.4rem 0.6rem;
+    border: 1px dashed rgba(150, 200, 235, 0.4);
+    border-radius: 0.3rem;
+    background: rgba(150, 200, 235, 0.06);
+    color: #e3eef7;
+    font: 0.82rem/1.4 monospace;
+    letter-spacing: 0.02em;
+}
+
+/* Visible arithmetic — house law. A bad throw is only bearable when you can read why. */
+.archive-dice {
+    color: rgba(207, 230, 247, 0.62);
+    font: 0.78rem/1.3 monospace;
+    text-align: center;
+}
+
 /* THE CAPTAIN'S SELFIE (#400) — the framed shot: the vista, the captain's #368 portrait disc composited
    into the corner (v1's "no image processing" composite), the boast, and the ledger stamp. */
 .selfie-frame {
@@ -3028,6 +3093,21 @@
     margin-bottom: 0.75rem;
 }
 
+/* #528 · the Bolivia's per-beat plate. Capped SHORT (28vh) and cropped, because the three choice buttons
+   under it are the reason the card is open — a picture that pushed them off the fold would make the scene
+   worse, not better. The sepia frame matches the freeze-frame that ends the same script. A missing file
+   onerror-hides and this rule simply never applies. */
+.bolivia-beat-img {
+    display: block;
+    width: 100%;
+    max-height: 28vh;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    border: 1px solid rgba(190, 150, 110, 0.32);
+    background: #0b0906;
+    margin-bottom: 0.7rem;
+}
+
 /* #480 — the nerve ledger on the death card: the last few named pips, so "what broke me?" is answered at the
    one moment the question is loudest. Monospace and plain, deliberately reading like an instrument readout
    rather than more fiction — the fiction is the line above it. */
@@ -3449,6 +3529,20 @@
     margin-bottom: 0.75rem;
 }
 
+/* #528 · the convergence's plate. Kept SHORT (a capped height, not the view-object's 70vh) because this
+   card is mostly prose and the picture is its establishing shot, not its subject — the paragraph under it
+   has to stay on screen with it. A missing file onerror-hides and this rule simply never applies. */
+.convergence-img {
+    display: block;
+    width: 100%;
+    max-height: 34vh;
+    object-fit: cover;
+    border-radius: 0.4rem;
+    border: 1px solid rgba(140, 190, 230, 0.28);
+    background: #05070c;
+    margin-bottom: 0.85rem;
+}
+
 .convergence-body {
     line-height: 1.55;
     color: #d3e0ef;
@@ -3538,6 +3632,36 @@
     margin-top: 0.8rem;
     color: rgba(219, 230, 242, 0.5);
     font-size: 0.78rem;
+}
+
+/* #563 — the map-just-grew card. Same frame as the first-ground lesson (they are siblings: the two things
+   a captain is told once and never again), but keyed cold-green rather than amber, because this one is not
+   a warning — it is the game handing you a bigger world than you thought you had. */
+.ground-grows-card {
+    max-width: min(40rem, 94vw);
+    border-color: rgba(120, 210, 180, 0.5);
+    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 210, 180, 0.18);
+}
+
+.ground-grows-art {
+    display: block;
+    width: 100%;
+    border-radius: 0.25rem;
+    margin: 0.5rem 0 0.7rem;
+    border: 1px solid rgba(120, 210, 180, 0.28);
+}
+
+.ground-grows-beats {
+    margin: 0.9rem 0 0.2rem;
+    padding-left: 1.1rem;
+    text-align: left;
+    color: rgba(226, 238, 250, 0.88);
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+.ground-grows-beats li + li {
+    margin-top: 0.55rem;
 }
 
 /* #488 — the derelict's decision card. Reuses the treasure-map card frame (same "an artifact, full
@@ -3992,6 +4116,228 @@
     padding: 0.7rem 0.2rem 0.2rem;
     margin-top: 0.5rem;
     border-top: 1px solid rgba(150, 170, 190, 0.18);
+}
+
+/* #600 · THE LIFT PANEL. Owner, after a car that only ever went down: "we should have elevator panel with
+   UI then". Built on the view-object backdrop like the valve board, because a captain standing in a lift
+   with the doors open is doing the same thing as a captain standing at a board: reading, and choosing. */
+.lift-panel {
+    width: min(30rem, 94vw);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(140, 190, 235, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+.lift-sub {
+    font-size: 0.8rem;
+    color: #8fa2bb;
+    line-height: 1.45;
+}
+
+.lift-stops {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    overflow-y: auto;
+}
+
+/* One row per button: the depth big on the left (it is the fact that decides whether the trip is free),
+   what the floor is called in the middle, and its air state on the right. */
+.lift-stop {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr auto;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    font: inherit;
+    text-align: left;
+    color: #cfe0f2;
+    background: #121924;
+    border: 1px solid rgba(140, 190, 235, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.lift-stop:hover:not(:disabled) {
+    background: #18222f;
+    border-color: rgba(140, 190, 235, 0.5);
+}
+
+.lift-stop-depth {
+    font-family: monospace;
+    font-size: 1.15rem;
+    color: #e6edf5;
+}
+
+.lift-stop-name {
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+}
+
+.lift-stop-air {
+    font-size: 0.72rem;
+    color: #7f8ea3;
+    white-space: nowrap;
+}
+
+/* A dead floor is stated, never hidden — depth is paid for in air and the panel is where that is decided. */
+.lift-stop.dead .lift-stop-air { color: #d09a6a; }
+
+/* The floor the car is on. Not a destination. */
+.lift-stop.here {
+    background: #0e1620;
+    border-color: rgba(240, 208, 112, 0.5);
+    cursor: default;
+}
+
+.lift-stop.here .lift-stop-depth { color: #f0d070; }
+
+/* PRESENT and refusing. An absent button and a broken one look identical from the captain's side. */
+.lift-stop.sealed {
+    border-style: dashed;
+    border-color: rgba(224, 160, 112, 0.45);
+    color: #9aa7b8;
+}
+
+.lift-stop.sealed .lift-stop-air { color: #e0a070; }
+
+/* #603 · THE LOCKED DOOR, and the pockets it reminds you of. Owner: "we should advertise the items list on
+   closed locked door pop-up... something like check your items button there that opens inventory." */
+.locked-door {
+    width: min(34rem, 94vw);
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(224, 160, 112, 0.4);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+.locked-door-line {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #cfd8e4;
+}
+
+.locked-door-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* The affordance the door exists to advertise — brighter than the dismiss, because it is the one that
+   answers the question the captain is standing there asking. */
+.locked-door-try {
+    flex: 1;
+    padding: 0.55rem 0.8rem;
+    font: inherit;
+    font-size: 0.9rem;
+    color: #0c1017;
+    background: #d8b884;
+    border: none;
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.locked-door-try:hover { background: #e8cb9c; }
+
+/* #603 · THE SATCHEL. */
+.satchel {
+    width: min(32rem, 94vw);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(200, 170, 120, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+.satchel-sub, .satchel-empty {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #8fa2bb;
+}
+
+.satchel-empty { padding: 0.8rem 0; }
+
+.satchel-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    overflow-y: auto;
+}
+
+.satchel-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.5rem 0.7rem;
+    font: inherit;
+    font-size: 0.86rem;
+    text-align: left;
+    color: #e6dcc8;
+    background: #171a20;
+    border: 1px solid rgba(200, 170, 120, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-item:hover:not(:disabled) {
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.5);
+}
+
+/* Opened from nowhere in particular, it is a LOOK — the rows are not buttons pretending to be inert, they
+   simply are not offering anything, because there is nothing here to offer it to. */
+.satchel-item.inert { cursor: default; opacity: 0.92; }
+
+/* #614 · The row is a pair now: the item, and a lens for the things worth looking at. The lens sits OUTSIDE
+   the item button so that admiring a thing can never be a mis-click on offering it to a door. */
+.satchel-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.3rem;
+}
+
+.satchel-row .satchel-item { flex: 1 1 auto; }
+
+.satchel-look {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: #e6dcc8;
+    background: #171a20;
+    border: 1px solid rgba(200, 170, 120, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-look:hover {
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.6);
+}
+
+.satchel-item-try {
+    font-size: 0.74rem;
+    color: #d8b884;
+    white-space: nowrap;
 }
 
 /* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen

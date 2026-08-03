@@ -479,14 +479,63 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
+| **`?kaamos=bounce`** | **Seat the freight agent holding the docket the board keeps sending back at every bar — PROJEKTI KAAMOS's FRONT DOOR (#635). Press `[E]` at any bar patron, take the job, and the filing bounces off your hull too: the arc appears in the Captain's ledger with no shard in hand.** |
+| **`?kaamos=hq`** | **The whole KAAMOS route already ridden: every shard assembled, the berth-code resolved, the supply run filed, and the ship let go alongside the ice moon (#411). Add `&land=1` to put boots on it.** |
+| **`?kaamos=pod`** | **Seat the cold KAAMOS supply pod under the ground this excursion lands on — probe any square with the metal detector and *earn* fragment 2 instead of being handed it (#411). Pair with `&land=1`.** |
+| **`?kaamos=holder`** | **Seat the rare KAAMOS berth-holder at whatever bar you dock at, every watch — the tell (fragment 4) becomes playable on demand (#411). Pair with `&dock=<berth>`.** |
 | **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
 | **`?land=1`** | **Ride the shuttle down as soon as the world is ready, onto the first landable body in reach (honours `?site=N`) — the real descent, skipping only the walk to the hatch and the boarding panel. The one-URL way to playtest a surface (#464).** |
 | **`?land=<bodyId>`** | **Land on a NAMED body instead of whatever happens to be nearest — matched on id OR name, case-insensitively. If it is not landable from this berth it REFUSES and lists what is, because a cheat that silently lands you somewhere else means you playtest the wrong scene and then trust the result (#320).** |
 | **`?sweep=N`** | **Put N (0–3) black-ops sweepers aboard whatever hull you board — the inspection team: 20 du sight inside a 70° cone, 34 du hearing through walls, a 3 s challenge before they shoot (#538).** |
 | **`?reevers=N`** | **Set N Old Ones (0–8) down ON the captain the moment they land, already aware — the chase, the pack spacing and the #453 exchange (block roll, blood, five blows) in seconds instead of a long walk (#458).** |
 | **`?bond=1`** | **Boot docked at a bar and FORCE the next ambient scare (shudder/buzzer/PA) to open a STRANGER-BOND — a co-present stranger stands you a cognac, the hero beat (#429).** |
-| **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout + the one-time "true terms" notice without a playthrough (#422).** |
+| **`?oracle=1`** | **Seat the station oracle — Solenne “Static” Marsh — in the port-back corner of whatever bar you dock at, every watch. Unforced she is a fixture only ~55 % of watches, so her whole scene was a coin flip to open (#428). Pair with `&dock=<berth>`.** |
+| **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout, its state transitions, and (only at `all`, which is the only value that includes the capstone contract) the one-time "true terms" notice, without a playthrough (#422).** |
+| **`?nebula=adjuster`** | **Seat the rare Nebula Mutual adjuster at whatever bar you dock at, every watch — the tell (fragment 3) becomes playable on demand instead of merely grantable (#422). Pair with `&dock=<berth>`.** |
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
+| **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
+| **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** |
+| **`?ashore=1`** | **Boot docked AND ALREADY STANDING IN THE BAR — the ship → airlock → tube → immigration hall → bar walk already walked (#428). Every bar beat begins with that walk; in a hidden/automated tab it cannot be walked at all. Pairs with `?dock=` / `?start=`, and with every bar cheat.** |
+| **`?watchers=1`** | **Open the MONOLITH GROUND'S attentive window and cut the dwell from forty seconds to two, so the strange-things-happen beat (#649) can be watched on demand. Stand at the stone. It is rare by design — one visit-window in three, and then only if you stay — and this changes the GATES and nothing else, so what you see is what a captain sees. Pair with `&dock=the-space-bar&body=phobos&site=0&land=1`, and with `&reevers=3` for the variant that needs a pack on the field.** |
+| **`?nerve=N`** | **Seed the nerve gauge at N of 10 whole pips at boot (#428/#480). Clamps to the gauge; `?nerve=10` is the shipped default. The only way to reach a sanity beat without being hunted for minutes first.** |
+
+### Dying on purpose — `?death=<cause>` (#621)
+
+The death card is the one screen every player is guaranteed to see, and until now none of it could be
+reached on demand. The routes were `?floor=2&air=10` (walk until you suffocate), `?reevers=8` (survive
+long enough to be overdrawn) and `?collectors=20` (lose the Bolivia) — three causes out of six, one
+place out of four, and nothing that reaches an impact at all.
+
+```
+/map?death=impact                                  the ship into a world at speed
+/map?death=collector                               CAUGHT — the demand card, then SUBMIT / BRIBE / RESIST
+/map?death=suffocated&dock=the-tilt&land=1         the tank runs dry on the regolith
+/map?death=reevers&dock=the-tilt&land=1            the Old Ones take you on the ground
+/map?death=suffocated&wreck=1&land=1               the tank runs dry inside a dead hull
+/map?death=reevers&wreck=1&land=1                  something has you against a bulkhead
+/map?death=suffocated&secretlab=1&land=1&floor=2   150 m under a moon, in a poured corridor
+/map?death=scuttled&wreck=1&land=1                 the overload you set yourself ran out (#525)
+```
+
+The cause is a `DeathCause` name, lowercased: `collector`, `impact`, `reevers`, `joined`, `void`,
+`suffocated`, `scuttled`. It stages the **genuine trigger** — `TriggerImpact`, a real collector catch, or
+`TriggerSurfaceOverdrawDeath` — never a mocked card, so what you see is what a player sees.
+
+**There is deliberately no `?place=`.** *Where* you died is not an opinion the URL gets to hold: the
+excursion's own floor and body id decide it, which is the classifier #609 was filed about. A cheat able to
+override it would be a second source of truth for the exact fact that has now cost three death cards. You
+choose the place by booting into it — nothing landed is `OwnShip`, `&land=1` is the landing party,
+`&wreck=1&land=1` is a derelict, and `&floor=N` under `&secretlab=1` is the Hive.
+
+A death on her deck with no `?dock=` / `?start=` of its own defaults to a berth (The Tilt), because
+otherwise the boot ends at the front door and the death card opens on top of the menu. Anything you pass
+still wins.
+
+Two things are read off the LIVE state rather than invented, for the same reason: whether the *nerve* ran
+out (so a full-nerve captain honestly gets the mauled caption, a shattered one the overdraw caption), and
+whether the cause is legal where you are standing — ask for a `collector` death inside a wreck and the law
+substitutes one that can happen there, and the game says so in a DEV pulse rather than inventing a
+character. `?death=void` has no lane yet and says so.
 
 ### The salvage run — `?wreck=1` / `?wreck=<cause>` (#488)
 
@@ -503,6 +552,11 @@ interesting one turns up:
 /map?wreck=mutiny&land=1          ← the barricade weave down the spine
 /map?wreck=hullbreach&land=1      ← the two holes it made going through her
 ```
+
+All ten `WreckCause` names parse, lowercased — the four above plus `drivefailure`, `reactorcascade`,
+`lifesupportfailure`, `navigationalerror`, `piracy` and `ventedbyoneoftheirown`. There is a guard on it
+now: `TenHullsTenStoriesTests` walks every cause through `SeededWithCause`, so a cause the seeding cannot
+reach fails CI instead of returning an unhelpful default hull.
 
 **The loop:** board → walk the spine → read the three stations (the damage, the bridge log, the cargo
 manifest) → the cargo console → file the report naming a cause, or strip her and say nothing.
@@ -547,6 +601,42 @@ that arrives already blown.
 > lane with a sentry while the rough stage banks your charge — then decide whether to stay for the tail.
 > Owner's own verdict on it: *"I love that pressure waiting in a hot spot with round counts dropping."*
 
+### The archive node — `?archive=1`
+
+> **The house rule this cheat exists for, written in `Map.Sim.cs` beside the others:** *"a scene nobody can
+> reach on demand is a scene that ships broken."* The node is aboard about **one eligible wreck in three**,
+> and the compartment it sits in is one room of one hull — which makes it, like the repo boat and the deep
+> Hive floors, nearly impossible to playtest on purpose.
+
+```
+/map?archive=1&land=1     board the hull that is carrying one, straight from the URL
+```
+
+`?archive=1` implies `?wreck=ventedbyoneoftheirown`: the ship one of her own opened to space is the one
+cause where Core guarantees a node, because **the node is why she died**. It is deliberately not a
+"spawn a node anywhere" switch — a spar bolted into a drive failure would be a prop.
+
+Walk aft down the spine and into the **DEEP HOLD** (top row, the second compartment from the stern). Full
+design in [features/the-archive-node.md](features/the-archive-node.md).
+
+| What to check | What you should see |
+|---|---|
+| **The fiction arrives before the mechanic** | The first time you cross into the field, one line about the **temperature** and nothing else — no warning, no noun for what is doing it, and the pip row has not moved yet. |
+| **The dwell is the slowest beat in the game** | Walk straight through the hold and it costs you nothing worth counting. STAND there and a pip goes every `NervePips.ArchiveBeatSeconds`, each one saying *"you have stood too long beside the thing in the hold"*. |
+| **The gauge agrees with the ledger** | This is the one to try to break. A wreck's interior scores as *safe*, so the airlock's give-back beat runs in there — if the two ever cancel, the ledger prints a loss while the gauge sits still. Watch the pip row actually fall. |
+| **Nothing announces anything** | No prompt, no dialog, no "are you sure?". The compartment is a field you chose to stand in. |
+| **Arm's length forces the throw** | Walking up to the column is enough — you do not have to press anything to be looked at. `[E]` on it does the same. Visible arithmetic on the card. |
+| **The visions are art, not captions** | Five painted canvases, no caption telling you what the handlers are. The card never explains, never confirms, and never mentions the Old Ones. |
+| **The collar is bought, never given** | Whose pattern is in the spar only appears on the ≤ 8 bands — the ones you were *looked at* for. A clean throw never reads it. |
+| **The label is the confirmation dialog** | `⏻ PURGE NODE — RESIDENT PATTERN NOT RECOVERABLE` is stencilled on the deck. Pressing `[E]` pulls it. That is all that happens, and it is meant to be. |
+| **You can pull it without paying** | The handle stands 3.5 du from the column, deliberately outside the confront radius: you may reach it, pull it, and never find out what you did. |
+| **The record of a purge is the silence** | The line at the handle is the same sentence whatever was inside. If it ever names the resident, the whole §5 shape is gone. |
+
+> **Not in this lane, and deliberately so:** the resurrection card's `NO PATTERN ON FILE` line (the feature
+> doc's build step 5). It needs the owner to rule on whether purging your own pattern actually *ends* the
+> policy — and a card that says the policy is closed while the rebirth still fires is the sentence-versus-sim
+> bug this project has paid for three times. Filed rather than guessed.
+
 ### The quantized nerve — reading the pips and the ledger (#480)
 
 Owner's ruling, 2026-07-28: *"the sanity events should be quantized. Why and when it drops should be made
@@ -570,6 +660,26 @@ the ledger tells you why, and the ledger is the thing under test.
 Fast rig: `/map?dock=the-tilt&site=0&land=1&reevers=4` — boots you onto Miranda's canon ground with a roused
 pack inbound. Stand still and watch the ledger fill; walk into the pack to test the touch rules; run up the
 tube to test recovery. The ledger also appears on the death card under **WHAT BROKE YOU**.
+
+**Start the gauge where the beat is — `?nerve=N` (#428).** A full gauge is ten pips and every loss is one
+pip, so *watching* a sanity beat used to mean surviving five to ten minutes of being hunted first. `?nerve=N`
+seeds the gauge at boot at **N of `NervePips.MaxPips` whole pips** — the same segments the corner gauge
+draws, not points out of a hundred — clamped to the gauge at both ends (`?nerve=10` is the shipped default,
+`?nerve=99` is the same thing). It moves the needle and nothing else: no beat is skipped, no cause is
+faked, and the ledger still has to earn every line it prints.
+
+```
+/map?nerve=1&dock=the-tilt&site=0&land=1&reevers=1   one pip left, one hand inbound — the overdraw break
+/map?nerve=3&dock=the-space-bar&body=phobos&site=0&land=1   the monolith's three-pip lump, onto a frayed captain
+/map?nerve=2&archive=1&land=1                        the archive node's dwell with almost nothing to spend
+/map?nerve=0&dock=the-tilt&site=0&land=1             the SHOT band and its readout, from a standing start
+```
+
+At **`?nerve=1` the captain is not yet overdrawn** (`CaptainSuccession.EmptyThreshold` sits under one pip),
+which is the point: what you watch is the real two-step break — a hand takes the last pip, the *next* one
+breaks them — rather than a death the cheat invented. `?nerve=0` is the already-empty state the next
+qualifying hit ends. Both are pinned by `TheNerveSeedIsMeasuredInPipsTests`, because a seed read in the
+wrong unit parses fine and silently changes which of the two you are looking at.
 
 > **Blazor cache gotcha (cost real time on 2026-07-28):** the published Pages build is served from a
 > service-worker cache. A plain reload can re-serve the OLD wasm and you will "verify" a fix that isn't
@@ -599,8 +709,8 @@ dock held 9 h at warp), so it is specific to the wake state.
 A body is a world, not a level: every landable body now offers a **seeded set of 2–4 landing sites**, each
 named in the house voice with a one-line character tag (*"The Wild Plain — nobody out here will hear you"*).
 The set is deterministic per body id, so a revisit re-offers the identical board. **Site 0 is always the Wild
-Plain on the body's canon ground** (Miranda's monolith maze, Luna's mass-driver ruins, the seeded signature —
-unchanged); **sites 1+ re-seed a visibly different wing/feature layout** on the same body. The picked site
+Plain on the body's canon ground** (Phobos's MONOLITH on the Stickney rim, Miranda's false-slab maze, Luna's
+mass-driver ruins, the seeded signature — unchanged); **sites 1+ re-seed a visibly different wing/feature layout** on the same body. The picked site
 persists for the visit and is named in the surface header (**🛬 SET DOWN AT: …**).
 
 `?site=N` pre-selects site N in the boarding panel (clamped to the body's real set), so you can board straight
@@ -613,6 +723,107 @@ onto a chosen ground. The verify loop for "does the choice change the surface":
    differ between, say, site 0 and site 1 on the same body.
 5. Lift off, board again → the same seeded set is offered; re-picking the same site yields the same ground.
 
+### PROJEKTI KAAMOS (arc 1) — `?kaamos=` (#411)
+
+Arc 1 is the sealed ice-moon berth nobody files for. Six fragments — five intel shards and the earned
+capstone — each handed over by a different system. Progress shows in the Captain's ledger as
+**"❄ PROJEKTI KAAMOS — N of 5 shards assembled"**, with every assembled shard re-readable beneath it.
+
+**The one-URL shortcuts (these GRANT the shards):**
+
+- **`?kaamos=N`** assembles the first N fragments in canonical order; **`?kaamos=all`** assembles every one.
+  At 4 intel the ledger flips to *"Enough intel to earn the berth-code"*; with the capstone too, the
+  one-time **"❄❄ THE BERTH-CODE RESOLVES"** notice fires and the ledger settles into the held-berth line.
+- `/map?kaamos=3` is the fastest look at the mid-arc card; `/map?kaamos=all` is the end state.
+
+**The front door — `?kaamos=bounce` (#635):**
+
+The arc used to be invisible until a captain happened to read the whole of one dedication plate among
+seven, and its ledger card appeared only *after* a shard was already held. It now has an inciting hook, and
+it is a piece of paperwork, because that is what this arc is about:
+
+| URL | what you walk |
+| --- | --- |
+| `/map?ashore=1&kaamos=bounce` | Press `[E]` at any bar patron. A freight agent offers **350 cr** to put your own hull's number on a consignment that has come back four times. Take it, and the board answers *RETURNED — CONSIGNEE CANNOT BE RAISED — BERTH HELD, AWAITING CYCLER WINDOW.* You keep the receipt; the ❄ card is now in the Captain's ledger with **nothing assembled**. |
+
+Things to check while you are there: the fee is printed on the offer card *before* you press the button;
+the docket says HELD and never says who is holding it; the ledger headline is **not** "0 of 5 shards"; and
+the agent is gone from the offer rota the moment you hold any shard at all. Unforced the agent is in the
+room roughly **one bar-watch in three**, seeded per (bar, day) — walk into the same bar on consecutive
+watches to see it come and go without re-rolling under you.
+
+**The route — `?kaamos=hq` (#411):**
+
+The berth-code puts your hull ON THE BOARD, and a **KAAMOS supply run** comes back onto the listing with it:
+CONSUMABLES, WINTERING CREW, 40 SOULS, the cold pod's own manifest slug word for word. Take it from any bar
+patron like any other haul. Then the **cycler window** — a real grid over sim time, 2 days open every 40
+(`CyclerWindow`) — and when it comes round, right-click **Enceladus** on the map and the body menu carries
+**❄ Ride the cycler window in**. 38 days of being carried, no burn, no brake at the far end.
+
+| URL | what you walk |
+| --- | --- |
+| `/map?kaamos=hq` | Alongside the ice moon with the run in hand — open the shuttle bay and go down. |
+| `/map?kaamos=hq&land=1` | …and the shuttle takes it from there, boots on the ice in one URL. Walk to the lift head and ride down: **the head office** is under it (#411). |
+| `/map?kaamos=hq&land=1&floor=23` | Straight to **B23 · THE WINTERING HALL** — the card, and the biggest nerve throw in the game (40 of 100). |
+| `/map?kaamos=hq&land=1&floor=24` | **B24 · THE BERTH OFFICE** — the console that has never stopped filing. |
+| `/map?kaamos=hq&land=1&floor=12&nerve=10` | **B12 · THE STANDING ORDER** — search the first room off the nearest rib for the one sheet worth carrying out. |
+| `/map?kaamos=all&ashore=1` | The other end: the berth-code resolves at the bar seam, the ❄❄ notice fires, 📰 **THE STORY BREAKS** raises the arc-news card, and a housekeeping line lands on the wire. |
+
+Things to check: right-clicking Enceladus with no berth-code shows **no** cycler row at all (the fiction may
+not arrive before the arc does); with the code but no run it is visible-but-disabled and says why; with the
+run but a shut window it quotes the wait in days, and that quoted wait is the real one. Parking in the ice
+moon's orbit settles the run through the ordinary moon-haven cargo path — no second completion code exists.
+
+### The head office under the ice (#411, the owner's 2026-08-03 ruling)
+
+`/map?kaamos=hq&land=1` and then down the lift. What you are checking is the **rank difference**, which
+is said entirely in the branch-office vocabulary a Hive already taught you:
+
+| the grammar | a Hive (a branch office) | the head office |
+| --- | --- | --- |
+| depth on the panel | 3–20 floors, and one site in four hides a band from its own staff | **24, and it lists every one** |
+| the lift | a card opens exactly one shaft band; the button below reads `↓ THE OTHER SHAFT — SEALED` | **the car answers**, on every floor, and never asks for anything |
+| department plates | eight names on a cycle — B1 and B9 are both ADMINISTRATION | **24 plates, none repeated**, RECEPTION down to THE BERTH OFFICE |
+| sealed corridor mouths | `⟶ SECTOR 7 · 2.4 km` | `⟶ WING 1 · 24.6 km` |
+| livery | one hue per department, on unmaintained concrete | one hue per **wing**, stepped darker per floor down it, and **kept** |
+| the first descent card | the Hive's own shaft card | its own painted establishing shot |
+
+And the thing to check that is not on any screen: **fly to Enceladus without the berth code and there
+must be nothing there.** Featureless ice and a good view — not a locked door, not a refusal, not a hint.
+Try `/map?start=enceladus&land=1` with no `?kaamos=` at all; the ground must have no lift head on it.
+
+**The two seats (these let a rare beat be PLAYED, not granted):**
+
+| URL | what you walk |
+| --- | --- |
+| `/map?dock=the-tilt&site=0&land=1&kaamos=pod` | Land, take out the **metal detector**, probe any square: the cold supply pod is under this ground. This is the only fragment with no direct grant-free path — one seeded square in seventeen, on seven outer moons. |
+| `/map?dock=ringside-exchange&kaamos=holder` | Walk to the counter and the barkeep card carries **🌑 Ask about KAAMOS** — the berth-holder is in, this watch, at this bar. Unforced they drink at a given bar roughly one watch in four. |
+
+**In-play delivery to verify by hand (the canonical order):**
+
+1. **`listed-berth`** — dock at **Ringside Exchange**, walk ashore to the **⚜ DEDICATION PLAQUE** and press
+   **[E]**. Ringside is the one plate in the system that names KAAMOS. (The Deep's plate echoes the sealed
+   berth *unnamed* and correctly hands over nothing.)
+2. **`cold-pod`** — `?kaamos=pod` above, or sweep an outer icy moon (europa, ganymede, callisto, titan,
+   miranda, triton) with the detector until a square rings off metal.
+3. **`vantar-log`** — `/map?secretlab=1&land=1`, force the hidden door, and read the lab console whose log
+   is the **undated** one ("a moon off the charts… the manifest sealed"). It never names the project; the
+   connection to the plate is yours to make.
+4. **`holders-tell`** — the bar seam, `?kaamos=holder` above.
+5. **`bought-coordinate`** — the same bar seam once the thread has begun. The button prices itself
+   (**🌑 Buy the KAAMOS coordinate · 1,200 cr**) because clicking it spends the money.
+6. **`berth-code`** — the same seam once 4 intel are in hand; the button reads **❄ Put the KAAMOS pieces
+   together**, and the resolution names *the shards you actually hold*, never a fixed four.
+
+There is also a **third hand** that leaks arc-1 shards: **Static Marsh**, the station oracle
+(`OracleRant`), can speak `vantar-log`, `holders-tell` or `cold-pod` as a true line at any bar — stand her
+a drink to widen the channel.
+
+**What is deliberately NOT built YET:** the head office under the ice.
+`KaamosLore.RevealSanityShockHook` (40.0) is still consumed by nothing. Both are specified, sliced and
+under construction — see [`features/kaamos-head-office.md`](features/kaamos-head-office.md), issue #411,
+and the owner's 2026-08-03 ruling that the destination is the HEAD OFFICE of the organization.
+
 ### NEBULA MUTUAL (arc 2) and THE CONVERGENCE — `?nebula=` / `?converge=1` (#422)
 
 Arc 2 is the truth behind your resurrections; you gather its fragments by **dying and coming back**, by
@@ -620,22 +831,119 @@ reading the port posters twice, at a bar from a roving **Nebula adjuster**, off 
 from the **clinic's** books. Progress shows in the Captain's ledger as **"▓ NEBULA MUTUAL — N of 5 clauses"**,
 the assembled shard texts readable beneath it (mirrors the KAAMOS readout).
 
+**The one-URL shortcuts (these GRANT the shards):**
+
 - **`?nebula=N`** assembles the first N fragments in canonical order; **`?nebula=all`** assembles every one
-  (5 intel shards + the capstone contract). Watch the ledger readout build, and at N ≥ 4 the one-time
-  **"▓▓ THE POLICY'S TRUE TERMS RESOLVE"** notice fire.
+  (5 intel shards + the capstone contract). At **4 intel** the ledger flips to *"Enough of the small print to
+  earn the contract"* and the bar seam starts offering the capstone.
+- The one-time **"▓▓ THE POLICY'S TRUE TERMS RESOLVE"** notice needs the **capstone contract as well as the
+  intel** (`NebulaLore.KnowsTheTruth` is *both*), and the capstone is fragment **6** in canonical order — so
+  `?nebula=4` and even `?nebula=5` fire nothing, and **`?nebula=all` is the only value that fires it.** (This
+  section used to say "at N ≥ 4"; it was wrong, and `HoldingEveryClauseButNotTheContractIsNotKnowingTheTruth`
+  now pins it.)
+- `/map?nebula=3` is the fastest look at the mid-arc card; `/map?nebula=all` is the end state.
 - **`?converge=1`** is the marquee smoke test: it seeds exactly the joint threshold on **both** arcs
   (3 KAAMOS intel + 3 NEBULA intel) and fires **THE CONVERGENCE** — a full staged reveal card, above
   everything, stating that the sealed ice-moon berth and your brain-backup insurance are the same story.
   It fires **once per universe** (the seen-bit is persisted in the vault); reload and it does not replay.
+  **Note the bar:** 3 NEBULA intel is *below* this arc's own capstone gate of 4, so the convergence card can
+  and normally does arrive **before** `policy-terms` — see the open structural question on
+  [#422](https://github.com/esoinila/SpaceSails/issues/422).
 
-**In-play delivery to verify by hand:**
-- **Die** (get caught by a collector, or fly into a body) → on the resurrection card, a green monospace
-  **glitch flash** ("…DO NOT REVIVE ORIGINAL") assembles `rebirth-glitch`. Getting caught by a **collector**
-  first also shows the **writ glimpse** (`collector-writ`). A **second** death shows the **clinic's second
-  page** (`clinic-ledger`).
-- **Read a `📋 PIRATE INSURANCE` poster twice** (any port hall/bar) → the second read assembles `fine-print`.
-- **At a bar**, when the seam offers **"▓ Ask about NEBULA"**, a roving adjuster gives `adjuster-tell`; once
-  4 intel are in hand the same seam resolves the capstone **`policy-terms`**.
+**The seat (this lets a rare beat be PLAYED, not granted):**
+
+| URL | what you walk |
+| --- | --- |
+| `/map?dock=the-space-bar&nebula=adjuster` | Walk to the counter and the barkeep card carries **▓ Ask about NEBULA** — the Nebula Mutual adjuster is in, this watch, at this bar. Unforced they drink at a given bar roughly one watch in five. |
+
+**In-play delivery to verify by hand (the canonical order):**
+
+1. **`rebirth-glitch`** — **die** (get caught by a collector, or fly into a body). On the resurrection card,
+   a green monospace **glitch flash** ("…DO NOT REVIVE ORIGINAL") assembles it. The flash is seeded off the
+   death, so it varies between rebirths; it shows on **every** rebirth, and the shard is gathered once.
+2. **`fine-print`** — walk up to a **`📋 PIRATE INSURANCE`** poster (any port hall or bar) and press **[E]**.
+   The first read only leaves you the tell (*"Your eye snags on the grey line under it… Come back and read it
+   properly"*); **[E]** again to close, **[E]** a third time to re-open, and the second read assembles it.
+3. **`adjuster-tell`** — the bar seam, `?nebula=adjuster` above. Static Marsh (the station oracle) can also
+   speak this one as a true line.
+4. **`collector-writ`** — get **grappled by a collector** in flight. The writ glimpse rides the DEMAND card,
+   the once, before you choose SUBMIT / BRIBE / RESIST.
+5. **`clinic-ledger`** — die a **second** time in the same universe. The bill's second page rides the wake
+   card. (Its gate is this thread's own retired-captain count, so a New voyage starts naive again.)
+6. **`policy-terms`** — the same bar seam once 4 intel are in hand; the button reads **▓ Put the NEBULA small
+   print together**, because at that step nobody is being asked anything. Neither NEBULA step costs coin.
+
+There is also a **third hand** that leaks arc-2 shards: **Static Marsh**, the station oracle (`OracleRant`),
+can speak `rebirth-glitch`, `adjuster-tell` or `clinic-ledger` as a true line at any bar — stand her a drink
+to widen the channel. Seat her on demand with **`?oracle=1`** (below).
+
+**What is deliberately NOT built:** the sanity throws. `NebulaLore.TruthSanityShockHook` (30.0) and
+`ArcConvergence.ConvergenceSanityShockHook` (64.0) are consumed by nothing, so the two biggest reveals in the
+game cost the captain no nerve at all. See issue #422.
+
+### Already in the bar — `?ashore=1` (#428)
+
+Every bar beat this game has starts with the same walk: ship → airlock → tube → immigration hall → the
+wide north door → the bar. It is a good walk. It is also, on **every single boot**, the thing standing
+between a tester and the beat under test — and in an automated or backgrounded browser tab the page is
+`document.hidden`, so rAF is throttled and WASD never lands. There, the walk is not slow; it is
+**impossible**, and not one bar beat could be smoke-tested at all.
+
+`?ashore=1` boots you docked (default **The Space Bar**; any `?dock=<id>` or `?start=<id>` you pass still
+wins) with the captain **already standing one step inside the bar**, facing into the room, Deck up. It
+seats nobody and grants nothing — it moves the captain, exactly as the walk would have.
+
+```
+/map?oracle=1&ashore=1                            the rant: one URL, one [E]
+/map?ashore=1&nebula=adjuster                     arc 2's best beat, at the counter
+/map?ashore=1&kaamos=holder&dock=ringside-exchange
+/map?ashore=1&bond=1                              stand still; the forced scare opens the cognac beat
+/map?ashore=1&simhours=9&dock=cinder-roost        the Magpie's third stop, at the back room
+```
+
+The position is **derived from the doorway the real walk crosses** (`HavenInterior.BarThreshold`, off the
+hall's north door), never typed in — a boot coordinate is exactly the shape of this project's oldest bug
+class. `TheAshoreBootStandsYouInTheBarTests` audits it against the shipping deck plan: it is standable, it
+is in the bar and not the concourse, it is in the doorway's mouth (you can step back out), **nothing is
+under `[E]` before you move**, every barkeep/patron console is walkable from it, and you can still walk
+home to your own ship.
+
+Pointed at a **pumps-only berth** — a dockable haven with no walkable complex, which clamps you on and
+leaves you on the Nav map — it says so in a DEV pulse rather than teleporting the captain into a bar that
+does not exist. The seven stations that *do* have one are the seven in `HavenInterior.Specs`.
+
+### The station oracle — `?oracle=1` (#425 / #428)
+
+**Solenne “Static” Marsh**, the ranting drunk in the corner: a lapsed Nebula Mutual pattern-auditor who
+listened to the archived dead too long. Most of what she says is beautiful noise; a rare line *"sounds nuts
+but is TRUE"* and can leak a real KAAMOS or NEBULA shard. She is a corner fixture only
+`OracleRant.PresenceChance` (55 %) of watches, so until this cheat existed her whole scene was a coin flip
+to open — and unlike `?kaamos=N` / `?nebula=N`, **nothing ever granted a rant**. `?oracle=1` boots you
+docked at a bar (default **The Space Bar**; combine with `?dock=<id>` for another) and **seats her**,
+whatever her rota says. It hands you the person, never the truth: the lines are the same seeded stream the
+rota would have given.
+
+1. `/map?oracle=1` → boot docked. A toast names where she is.
+2. Walk into the bar and head **aft along the left wall** — her corner is `(−11, HallTopY+19)`, deliberately
+   clear of every other console by more than `[E]`'s reach, so you cannot grab the wrong one.
+3. **[E]** on **`◈ “STATIC” MARSH`** → her card: name, backstory, and the opening rant.
+4. **🌀 Keep listening** turns the dial one line on. At zero drinks ~14 % of lines are true
+   (`OracleRant.BaseTrueChance`), so expect to press it several times.
+5. **🥃 Buy her a drink** (the price is on the button) → she may **wave the glass off** ("not thirsty for
+   THAT vintage, it's ticking wrong") — the #347 offer-first path, and **nothing is debited on a refusal**.
+   An accepted glass costs the bar's drink price, widens the channel (+7 pp true chance per drink, capped at
+   45 %) and draws a fresh line at once.
+6. **THE TELL:** when a line lands, the card may say *"…the room goes quiet. A faint chill."* It fires on
+   most true lines **and on a minority of nonsense** — a hush that lies. The sifting is the point; do not
+   read the glow as confirmation.
+7. **A true line acts.** A `SecretLab` or `Collector` perception is filed to the durable **overheard book**
+   as a *lead you still have to walk out*. A fragment line assembles a real shard into the arc and shows the
+   canonical lore appended — check the **Captain's ledger** for the KAAMOS/NEBULA readout and for the
+   `👂 Static Marsh` line under **🔭 Tips, intel & rumors**.
+
+The reading is per-berth session state: a new dock wipes the dial and the drinks, so a drunk oracle at one
+port does not stay prophetic at the next. `?oracle=1` is **not** a one-shot (unlike `?bond=1`) — she stays
+seated for the whole run, because she is a conversation rather than a single beat.
 
 ### The secret lab — `?secretlab=1` (#409)
 
@@ -752,6 +1060,13 @@ beat. The loop:
 Effects apply through the **existing** contact systems (`ContactLedger.AddGoodwill`, `PourRum`) — a bonded
 stranger becomes a **findable known contact** (they gain a drink/relationship row), never a new parallel path.
 
+**The afterlife** (story pass 2026-08-02): a bond that MAKES something — the cognac, or a whole new contact
+— is now also filed to the durable overheard book as *"🥂 How you met …"*, so it groups under that person in
+the Captain's ledger under **🔭 Tips, intel & rumors**. Open the ledger after the toast and the provenance of
+the friendship is on the record; before, the hero beat lived only in a toast that faded, and nothing anywhere
+said how the two of you came to know each other. A `Comment` or a `Deepen` stays passing, by design — a
+shared word is a grace, not a relationship.
+
 Discovery **persists per game-thread**: once found, a revisit to that body shows the door already revealed.
 To exercise the *discovery* vector itself on an ordinary body, land empty-handed and **probe** (`[E]` on the
 regolith) — the detector shrieks a proximity hint near the door and reveals it on the exact square.
@@ -781,3 +1096,151 @@ every gas giant from Jupiter out carries a self-sustaining fuel haven) is locked
 **Try it:** open `/map?dock=the-deep&fuel=40&credits=9000`. Confirm you boot clamped on at The Deep out
 at Neptune, the tank reads 40 pulses, the purse 9000 cr, and the Trade desk's `⛽ FILL HER UP` is live
 (you're alongside a pump). Then `/map?dock=red-eye` — same, out at Jupiter among the Galilean moons.
+
+## The surface tour — every landing site, one URL each (#585)
+
+Owner, 2026-08-01: *"let's go over all the sites we have not yet tested with the url-arguments."*
+
+Until now that was **impossible for most of them**. `?land=1` takes the first landable body in shuttle reach,
+so from The Tilt every URL in the world reached Miranda and nowhere else — two thirds of the grounds we had
+just rebuilt had no way to be opened and looked at. `?body=<id>` fixes that: it wins the toss outright,
+provided that body is genuinely on the shuttle board from your berth (the cheat may never reach somewhere the
+player could not). Pick the wrong berth and the game tells you what *is* in reach.
+
+The berth must be in the same system as the moon:
+
+| Berth (`?dock=`) | System | Landable moons |
+| --- | --- | --- |
+| `cinder-roost` | Venus | the-clinker |
+| `selene-gate` (or `satellite-factory`) | Earth | luna |
+| `the-space-bar` | Mars | phobos |
+| `red-eye` | Jupiter | europa, ganymede, callisto |
+| `ringside-exchange` | Saturn | titan, enceladus |
+| `the-tilt` | Uranus | miranda |
+| `the-deep` | Neptune | triton |
+
+**All 27 sites.** Each drops you on the open regolith with two sentries in the sling:
+
+```
+Miranda — the canon ground (3)
+  /map?dock=the-tilt&body=miranda&site=0&land=1        The Wild Plain
+  /map?dock=the-tilt&body=miranda&site=1&land=1        The Shadowed Rille
+  /map?dock=the-tilt&body=miranda&site=2&land=1        The Ridge Camp
+
+Luna — the mass-driver ruins (4)
+  /map?dock=selene-gate&body=luna&site=0&land=1        The Wild Plain
+  /map?dock=selene-gate&body=luna&site=1&land=1        The Depot Apron
+  /map?dock=selene-gate&body=luna&site=2&land=1        The Derelict Pad
+  /map?dock=selene-gate&body=luna&site=3&land=1        The Shadowed Rille
+
+Phobos (4)
+  /map?dock=the-space-bar&body=phobos&site=0&land=1    The Wild Plain — THE MONOLITH (#649: the one object, on the one ground)
+  /map?dock=the-space-bar&body=phobos&site=1&land=1    The Ice Fissure
+  /map?dock=the-space-bar&body=phobos&site=2&land=1    The Ridge Camp
+  /map?dock=the-space-bar&body=phobos&site=3&land=1    The Crater Shelf
+
+Jupiter's moons (6)
+  /map?dock=red-eye&body=europa&site=0&land=1          The Wild Plain
+  /map?dock=red-eye&body=europa&site=1&land=1          The Ice Fissure
+  /map?dock=red-eye&body=ganymede&site=0&land=1        The Wild Plain
+  /map?dock=red-eye&body=ganymede&site=1&land=1        The Ridge Camp
+  /map?dock=red-eye&body=callisto&site=0&land=1        The Wild Plain
+  /map?dock=red-eye&body=callisto&site=1&land=1        The Ice Fissure
+
+Saturn's moons (4)
+  /map?dock=ringside-exchange&body=titan&site=0&land=1      The Wild Plain
+  /map?dock=ringside-exchange&body=titan&site=1&land=1      The Quiet Basin
+  /map?dock=ringside-exchange&body=enceladus&site=0&land=1  The Wild Plain
+  /map?dock=ringside-exchange&body=enceladus&site=1&land=1  The Derelict Pad
+
+Triton (4)
+  /map?dock=the-deep&body=triton&site=0&land=1         The Wild Plain
+  /map?dock=the-deep&body=triton&site=1&land=1         The Shadowed Rille
+  /map?dock=the-deep&body=triton&site=2&land=1         The Derelict Pad
+  /map?dock=the-deep&body=triton&site=3&land=1         The Ice Fissure
+
+The Clinker, Venus (2)
+  /map?dock=cinder-roost&body=the-clinker&site=0&land=1     The Wild Plain
+  /map?dock=cinder-roost&body=the-clinker&site=1&land=1     The Depot Apron
+```
+
+### What to look for
+
+The audit (`EverySiteMeetsTheSpecTests`) already checks the geometry on all 27. What it **cannot** check is
+everything in the spec's "not yet enforced" list, which is exactly what a pair of eyes is for:
+
+- Are the shelters **findable** at this field size, or do you die looking?
+- Do the crater rings read as scenery, or do you walk to one thinking it is a building?
+- Does roughly half the ruins paying out feel right, or does it read as "mostly empty"?
+- Does the ground look like a *place*, or like a field with objects scattered on it?
+
+### Add-ons for any of the above
+
+| Argument | What it does |
+| --- | --- |
+| `&air=45` | 45 seconds in the tank — the point-of-no-return warning without a six-minute stroll |
+| `&reevers=4` | four Old Ones on top of you, already aware |
+| `&outpost=1` | guarantee the outpost hut on this ground |
+| `&collectors=20` | a repo boat sets down 20 s in, whatever your heat reads (#583) |
+| `&secretlab=1` | a landable rock with a Vantar lab, hidden door already found (#409) |
+| `&wreck=1` | a derelict wins the toss instead of a moon |
+
+**The secret lab's new space** appears where the hidden door is: the chamber is appended *from the door
+outward toward the field's centre*, 16 du deep by 14 wide — a server spine, lab benches and stasis pods, with
+the door→console lane kept clear. As of #585 that patch of deep field is reserved on every body before
+anything is built, so the chamber can never open into somebody's wall.
+
+## The Hive — reaching an underground facility without playing for it (#585)
+
+Owner, after an evening of walking a 310 × 260 field to reach the one thing under test:
+
+> *"instruct to put the debug cheat start next to the lab so that it can be really tested without playing to find it"* · *"I mean next to the elevator shaft"*
+
+**The hunt is the game** — the clue that names a moon, the tracker's vague wash, the detector climbing from Faint to Screaming, the violet door on a shed marked `▤ MAINTENANCE`. It is also exactly what must not stand between a developer and the feature under test, twenty times an evening.
+
+| URL | Where it puts you |
+| --- | --- |
+| `/map?secretlab=1&land=1` | **at the lift head**, a pace outside its door |
+| `/map?secretlab=1&land=1&floor=1` | on **B1** — the one floor that still holds pressure |
+| `/map?secretlab=1&land=1&floor=4` | on **B4**, dead air, tank running |
+| `/map?secretlab=1&land=1&floor=20` | as deep as that site goes (clamped to its real depth) |
+
+`?floor=` takes a **positive** number read as a depth: `floor=3` means B3. It is clamped to the site's own
+bottom, so a shallow facility cannot be asked for a floor it does not have.
+
+**#592 — it clamps to `TrueDepthOf`, not `DepthOf`.** A rare site has a band nobody listed under the
+floors it admits to, and the point of these cheats is that the feature under test is one URL away — a
+hidden floor you could only reach by first finding a card would be exactly the tax they were invented to
+remove. Ask for a floor below the listed bottom and you land on the unlisted band's own shaft head
+(there is a GAP between the two buildings with nothing dug in it, so the number is snapped past it).
+
+**`/map?secretlab=deep&land=1&floor=24` is the one to use.** The ordinary cheat rock's site is seeded
+like any other and happens to be four floors of records annex with nothing under it, so `?secretlab=1`
+cannot reach #592 at all. `?secretlab=deep` parks a different rock — a 20-floor clinic with an
+unlisted LABORATORY under it, down to the generator's own performance guard, which makes it the
+deepest and most awkward site the game can produce and therefore the right one to test on. The cheat
+is a body id and nothing else; the site is seeded from its name like every other site, and
+`TheUnlistedBandTests` pins that it still hides something.
+
+To find other sites that have one, run the lab — it prints `+ an UNLISTED band to Bn` in each site's
+header:
+
+```bash
+dotnet run --project labs/44-a-lab-about-the-lab/Lab44.csproj -c Release
+```
+
+Both only fire under `?secretlab=1`. An ordinary landing still drops you on the open regolith at the landing band, so this can never quietly become how the game plays.
+
+### What each floor should be
+
+- **the top of every shaft band holds pressure** — the tank stops, the nerve steadies, and the game says so in those words
+- **everything else is dead** — the tank runs, and depth is paid for in air
+- one car serves four floors; at the bottom of a band the panel simply **has no button** below, and the way down is another shaft
+- **nothing is alive down there** — the Old Ones are a regolith tide and are cleared on descent
+
+### Useful combinations
+
+```
+/map?secretlab=1&land=1&floor=2&air=90     a dead floor with ninety seconds in the tank
+/map?secretlab=1&land=1&collectors=20      a repo boat lands while you are underground
+```

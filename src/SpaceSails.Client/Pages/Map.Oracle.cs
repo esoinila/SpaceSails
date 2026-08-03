@@ -31,6 +31,13 @@ public partial class Map
     private bool _oracleOpen;         // her corner card is up
     private string? _oracleNotice;    // the last aside (a refused glass, an empty purse), shown on the card
 
+    // /map?oracle=1 (#428) — the seat cheat. She is a corner fixture only OracleRant.PresenceChance of
+    // watches, so her whole scene was a coin-flip to open and NOTHING granted her lines. Armed at boot, this
+    // rides into HavenInterior.DockedDeck (which plants her console) AND into the two presence gates below,
+    // so the console the deck draws and the answer E gives can never disagree. Not a one-shot: unlike the
+    // bond's forced cognac, the oracle is a whole conversation — the whole visit stays reachable.
+    private bool _oracleForce;
+
     // Fold the reading to the current berth: a new (or no) bar wipes the dial, the drinks and the last line,
     // so a drunk oracle at one port doesn't stay prophetic at the next.
     private void EnsureOracleVisit()
@@ -54,7 +61,7 @@ public partial class Map
         {
             return;
         }
-        if (!HavenInterior.OraclePresent(id, SimTime))
+        if (!HavenInterior.OraclePresent(id, SimTime, _oracleForce))
         {
             ShowPulseMessage("The corner stool's empty — a half-finished drink still fizzing at the wrong frequency. Static's drifted off this watch. Try another. 🌀");
             return;
@@ -145,7 +152,7 @@ public partial class Map
         {
             return;
         }
-        if (!HavenInterior.OraclePresent(id, SimTime))
+        if (!HavenInterior.OraclePresent(id, SimTime, _oracleForce))
         {
             _oracleNotice = "Her stool's empty now — she's drifted off mid-sentence.";
             return;

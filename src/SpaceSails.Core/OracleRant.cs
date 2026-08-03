@@ -87,6 +87,21 @@ public static class OracleRant
         "A lapsed Nebula Mutual pattern-auditor who listened to the archived dead too long, let her own " +
         "policy lapse, and never got her frequency back. She perceives too much on too many channels.";
 
+    /// <summary>
+    /// #528 · THE CORNER, PAINTED. The oracle already has a card; what she did not have was a FACE for it,
+    /// and she is the most describable person in the game — the room half-turned away from her, the drink
+    /// fizzing at the wrong frequency (which is the game's own line, from the empty-stool message).
+    ///
+    /// <para>It is a backdrop rather than a plate: this card is a CONVERSATION the captain stays inside,
+    /// turning the dial line by line, and a modal that opened over it every time would be a card on a card.
+    /// The picture belongs in her card, under her name, where it sits while she talks.</para>
+    ///
+    /// <para>Nothing in the frame says whether she is right. That is the entire mechanic: a true line "sounds
+    /// nuts but IS true" and the sifting is the point, so the painting may never look more or less credible
+    /// on the watch she happens to be right.</para>
+    /// </summary>
+    public const string ArtFile = "art/oracle-rant.jpg";
+
     /// <summary>Sim-seconds the oracle holds one presence state before the rota re-rolls — the same
     /// four-sim-hour watch beat the seated regulars and the Magpie use, so the room shuffles together.</summary>
     public const double WatchSeconds = 4 * 3600;
@@ -122,9 +137,17 @@ public static class OracleRant
     public static long WatchIndex(double simTime) => (long)System.Math.Floor(simTime / WatchSeconds);
 
     /// <summary>Is the oracle at <paramref name="stationId"/> on the watch containing <paramref name="simTime"/>?
-    /// Seeded and deterministic — a corner fixture some watches, a drifted-off empty stool others.</summary>
-    public static bool PresentAt(string stationId, double simTime) =>
-        Unit(Hash(Fold(stationId ?? string.Empty, 0x0C), (ulong)WatchIndex(simTime), 0x5A)) < PresenceChance;
+    /// Seeded and deterministic — a corner fixture some watches, a drifted-off empty stool others.
+    ///
+    /// <para><paramref name="forced"/> is the <c>?oracle=1</c> test seat (#428, the
+    /// <see cref="KaamosFind.HolderAtBar"/>/<see cref="NebulaFind.AdjusterAtBar"/> idiom): she is present at
+    /// THIS bar on THIS watch, whichever bar you docked at. She is a corner fixture only
+    /// <see cref="PresenceChance"/> of watches, so her whole scene — the rant, the drink tie-in, the tell
+    /// glow, the fragment delivery — was a coin-flip to open, and no cheat GRANTED her lines either.
+    /// ("A scene nobody can reach on demand is a scene that ships broken", <c>Map.Sim</c>'s own rule.)</para></summary>
+    public static bool PresentAt(string stationId, double simTime, bool forced = false) =>
+        forced
+        || Unit(Hash(Fold(stationId ?? string.Empty, 0x0C), (ulong)WatchIndex(simTime), 0x5A)) < PresenceChance;
 
     /// <summary>True if a deck patron label is the oracle's — the client's routing gate (mirrors the
     /// Magpie's name match), tolerant of the ◈ prefix and case.</summary>
@@ -143,16 +166,17 @@ public static class OracleRant
     public static OracleLine Speak(string stationId, long watch, int drawIndex, int drinksBought)
     {
         ulong seed = LineSeed(stationId ?? string.Empty, watch, drawIndex, drinksBought);
+        ulong visit = VisitSeed(stationId ?? string.Empty, watch, drinksBought);
         bool isTrue = Unit(Mix(seed, 0x7717_0AC1_E000_0001UL)) < TrueChance(drinksBought);
 
         if (!isTrue)
         {
-            string text = Nonsense[(int)(Mix(seed, 0x0000_5E05_E000_0003UL) % (ulong)Nonsense.Count)];
+            string text = Nonsense[PoolIndex(visit, 0x0000_5E05_E000_0003UL, drawIndex, Nonsense.Count)];
             bool nq = Unit(Mix(seed, 0x0176_5100_0000_00A1UL)) < NonsenseQuietChance;
             return new OracleLine(text, false, OracleTruthKind.None, null, nq);
         }
 
-        OracleTruth t = Truths[(int)(Mix(seed, 0x7211_7000_0000_0002UL) % (ulong)Truths.Count)];
+        OracleTruth t = Truths[PoolIndex(visit, 0x7211_7000_0000_0002UL, drawIndex, Truths.Count)];
         bool tq = Unit(Mix(seed, 0x0176_5100_0000_00A1UL)) < TrueQuietChance;
         return new OracleLine(t.Perception, true, t.Kind, t.FragmentId, tq);
     }
@@ -238,6 +262,63 @@ public static class OracleRant
 
     // ── Pure hashing (splitmix64), self-contained so this file depends on no other Core RNG. Same platform-
     //    stable idiom the patron rota and the Reever idle use — no System.Random, no clock. ──
+
+    // ── The pool walk (the cadence law, 2026-08-02 story pass) ────────────────────────────────────────
+    //
+    // The line pools were originally indexed by a fresh uniform hash per draw. Uniform picking repeats:
+    // sampled over 8 400 draws (7 bars × 60 watches × 20 listens) 3.4 % of draws spoke the line before it
+    // AGAIN, and the worst run was the SAME SENTENCE FOUR TIMES RUNNING. A mystic who repeats herself
+    // verbatim four times does not read as uncanny, she reads as broken software — and the repo's own
+    // cadence criterion ("a deferred card still arrives; every-time cards don't spam") applies to a rant
+    // pool as much as to a card.
+    //
+    // So a draw now walks the pool instead of sampling it: index = (start + stride × draw) mod count with
+    // START and STRIDE seeded per VISIT (station, watch, drinks — NOT the draw) and gcd(stride, count) = 1.
+    // Two consequences, both wanted: consecutive draws can never land the same line (the stride is never
+    // 0 mod count), and a full cycle plays EVERY line in the pool before any of them comes back. Buying her
+    // a drink re-seeds the visit, so the walk reshuffles when the channel widens. Still pure, still
+    // deterministic in exactly the four documented inputs — no clock, no System.Random.
+
+    private static ulong VisitSeed(string stationId, long watch, int drinksBought)
+    {
+        ulong h = Fold(stationId, 0x0C);
+        h = Mix(h, (ulong)watch);
+        h = Mix(h, unchecked((ulong)drinksBought) + 0x2000UL);
+        return h;
+    }
+
+    private static int PoolIndex(ulong visitSeed, ulong salt, int drawIndex, int count)
+    {
+        if (count <= 1)
+        {
+            return 0;
+        }
+        int start = (int)(Mix(visitSeed, salt) % (ulong)count);
+        int stride = CoprimeStride(Mix(visitSeed, salt ^ 0x51ED_270B_0000_0007UL), count);
+        long i = start + ((long)stride * drawIndex);
+        return (int)(((i % count) + count) % count);
+    }
+
+    // A step in 1..count-1 that shares no factor with the pool size, so repeated addition cycles through
+    // every index exactly once before returning to the start (and never sits still).
+    private static int CoprimeStride(ulong h, int count)
+    {
+        int s = 1 + (int)(h % (ulong)(count - 1));
+        for (int guard = 0; guard < count && Gcd(s, count) != 1; guard++)
+        {
+            s = (s % (count - 1)) + 1;
+        }
+        return Gcd(s, count) == 1 ? s : 1; // 1 is coprime with everything — the honest fallback
+    }
+
+    private static int Gcd(int a, int b)
+    {
+        while (b != 0)
+        {
+            (a, b) = (b, a % b);
+        }
+        return a;
+    }
 
     private static ulong LineSeed(string stationId, long watch, int drawIndex, int drinksBought)
     {

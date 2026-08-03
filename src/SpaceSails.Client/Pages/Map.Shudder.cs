@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -94,7 +94,22 @@ public partial class Map
 
         bool deepSite = _surface is not null;                       // a surface / lab / secret-lab landing
         bool haven = _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId);
-        HullShudder.Setting setting = HullShudder.SettingFor(deepSite, haven);
+
+        // #590 · OUT ON THE GROUND IS NOT A DEEP SITE. Owner: "the hull flexing feeling buildings should not
+        // come when on planet / moon ... we should have place specific ones for the sites, not generic ones
+        // of the ship playing on site."
+        //
+        // The flag was already right; the WORDS were not. Every deep-site line names a hull, a room and other
+        // people, because it was written for a sealed site with a crew in it — so on a moon it read as the
+        // ship's voice, which is precisely what it was. A captain standing on open regolith is outside all
+        // three of those things, and alone.
+        // #637 · Correct already — a wreck is not regolith and the `!OnWreck` says so — but it asked the moon
+        // its own question directly, which is the habit the whole occurrence list is made of. Routed through
+        // the one function that knows which door you are on the far side of, so the rule is enforced on
+        // something a caller cannot decline to use. Identical arithmetic off a wreck; unreachable on one.
+        bool onRegolith = _surface is not null && !OnWreck
+            && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
+        HullShudder.Setting setting = HullShudder.SettingOutside(onRegolith, deepSite, haven);
 
         // The bounded escalation (owner: "keep bounded — mostly it IS nothing"): only a deep site that is a
         // secret lab, or a captain whose KAAMOS arc has gone deep, can carry the chill — and even then only

@@ -131,6 +131,49 @@ public static class ShuttleExcursion
         return new ChestLoad(clamped, hold ?? []);
     }
 
+    /// <summary>
+    /// The hold AFTER a chest goes into the ground: the buried lines leave the ship's books, and
+    /// ONLY those lines. <see cref="Pack"/>'s inverse, and the reason it exists — the chest is a
+    /// SNAPSHOT taken at the shuttle door, while the hold keeps living for the whole excursion (a
+    /// cache dug back up, a beach-comber scrap recovered after a panic drop). Wiping the hold at the
+    /// shovel therefore destroyed everything picked up since boarding: it was not in the chest — the
+    /// map card and the "off the books" line both name only the snapshot — and it was no longer
+    /// aboard either. Coin was always deducted honestly (only the pending amount ever left the
+    /// purse); this is cargo's half of the same law.
+    ///
+    /// <para>Deducted per class and floored at zero, so a hold that somehow holds LESS than the
+    /// snapshot (cargo spent on the ground) can never go negative. A class emptied to zero leaves the
+    /// dictionary, as the hold's own bookkeeping expects.</para>
+    /// </summary>
+    /// <param name="hold">The ship's hold right now, units by cargo class.</param>
+    /// <param name="buried">The chest's cargo lines — exactly what went underground.</param>
+    /// <returns>The hold that remains aboard.</returns>
+    public static System.Collections.Generic.IReadOnlyDictionary<string, int> HoldAfterBurying(
+        System.Collections.Generic.IReadOnlyDictionary<string, int> hold,
+        System.Collections.Generic.IReadOnlyList<CacheCargo> buried)
+    {
+        var left = new System.Collections.Generic.Dictionary<string, int>(
+            hold ?? new System.Collections.Generic.Dictionary<string, int>(),
+            System.StringComparer.Ordinal);
+        foreach (CacheCargo line in buried ?? [])
+        {
+            if (!left.TryGetValue(line.CargoClass, out int have))
+            {
+                continue;
+            }
+            int rest = System.Math.Max(0, have - System.Math.Max(0, line.Units));
+            if (rest > 0)
+            {
+                left[line.CargoClass] = rest;
+            }
+            else
+            {
+                left.Remove(line.CargoClass);
+            }
+        }
+        return left;
+    }
+
     // ── #368: the honest board — the nearest ground JUST BEYOND shuttle reach ──
     // Owner (live playtest 2026-07-19, The Red Eye's empty shuttle board, verbatim): "Maybe we should
     // list the nearest landing sites here at shuttle door with their ranges?" … "Like sorry too far, the

@@ -472,7 +472,7 @@ public sealed partial class Map
         RendererInterop.PlayCue("alarm");
         // The cause is KNOWN here, so it is passed rather than rolled: being shot by a professional is not
         // being run down by the pack, and the card used to say it was.
-        TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false, forcedCause: DeathCause.Inspected);
+        TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false, known: DeathCause.Inspected);
     }
 
     /// <summary>Fill the sweepers into the droid buffer. Named by callsign, which is how the renderer knows to
@@ -508,6 +508,17 @@ public sealed partial class Map
         foreach (Sweeper s in _sweepers)
         {
             yield return new MotionTracker.Entity(s.X, s.Y, s.Vx, s.Vy);
+        }
+
+        // #583 / #633 · AND THE REPO CREW, who were on the other branch's fan and would otherwise have
+        // fallen off this one. They WALK, and a motion-only ear hears walking louder than anything else on
+        // this ground — which is the whole warning the player gets that the boat that came down is now
+        // spread out and coming. Same instrument, no special case: they are contacts. This accessor exists
+        // precisely so the ear and the hull can never disagree about who is walking about, so every kind of
+        // figure that moves has to be listed HERE and nowhere else.
+        foreach (Collector c in _collectors)
+        {
+            yield return new MotionTracker.Entity(c.X, c.Y, c.Vx, c.Vy);
         }
     }
 }

@@ -415,6 +415,33 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     it silently never fires. The lesson: *a rule written as its answer stops being true the day the geometry
     moves.* Wired into CI as `HullVentingTests`.
 
+> **Two labs share the numbers 43 and 44.** The branches `main` and `our-own-ship-has-compartments` ran
+> apart for a day and each numbered its next two labs the same way; the reunification merge (#633) kept
+> **all four**, because a lab that is deleted is a measurement that has to be paid for twice. Until they are
+> renumbered, cite them by **directory**, not by number — a comment saying "Lab 43" is ambiguous, and the
+> two you want are `43-miranda-sites` (ground measurement, cited by `SurfaceLayout`, `SurfaceScenery`,
+> `Map.Outpost`) and `43-the-sharpest-point` (hull discharge, cited by `HullCharge`, `SilentRunning`,
+> `StoryBeats`, `Map.ChargeBoard`, `Map.Plot`). Same for 44: `44-a-lab-about-the-lab` (Hive floor wash,
+> cited by `DeckReachability`) and `44-knock-on-the-hull` (the search mechanic, cited by `HullSounding`,
+> `Map.Sounding`).
+
+43. [**What is actually on a landing site?**](43-miranda-sites/README.md) — measures the ground a moon
+    generates, and draws it, because a descent will not render in an automated browser tab. Written when the
+    owner found Miranda's canon site to be the *thinnest* ground on the moon.
+
+44. [**A lab about the lab**](44-a-lab-about-the-lab/README.md) — renders one underground floor of the Hive
+    and washes it with everywhere the captain can actually stand, so a sealed room is an unwashed island with
+    a red cross in it. Written after #587: a handful of rooms drawn, offering a console, and unenterable on 35
+    of the 94 floors. The A\* audit **found** it the day the Hive shipped and could not **explain** it — it
+    prints coordinates, and a coordinate does not tell you which wall put it there, so the evening that
+    followed was one build at a time. The cause was one wall lying across two mouths on the spine's top face,
+    which this lab shows at a glance: on the pre-fix generator luna B1 renders with **0** wash runs inside the
+    right-hand rib against **88** after, and the lift alcove **0** against **8**. Reads the shipping objects
+    only — Core's generator and the CLIENT's own collision field, because #587 was precisely a mismatch
+    between the walls that are drawn and the walls that are walked. The lesson: *an audit that names a
+    coordinate tells you where to start looking; one that draws the floor tells you what to fix* — detection
+    and diagnosis are two different tools, and a project with only one keeps paying for the other.
+
 43. [**The sharpest point**](43-the-sharpest-point/README.md) — the owner asked for a plasma-ball effect on
     the hull discharge and attached a condition: *"if physics supports it."* So the lab asked before anything was
     drawn, and came back with a prettier effect than the one I was going to make, plus a correction to a fiction
