@@ -2352,6 +2352,7 @@ public partial class Map
             _satchelTarget = (door.Target, null, door.Sign);
         }
         _lockedDoor = null;
+        _satchelOutcome = null;
         _showSatchel = true;
     }
 
@@ -2359,6 +2360,7 @@ public partial class Map
     private void OpenSatchel()
     {
         _satchelTarget = null;
+        _satchelOutcome = null;
         _showSatchel = true;
     }
 
@@ -2366,9 +2368,16 @@ public partial class Map
     {
         _showSatchel = false;
         _satchelTarget = null;
+        _satchelOutcome = null;
     }
 
     private bool _showSatchel;
+
+    /// <summary>#680 · What the last failed offer answered, said inside the dialog itself. The pulse HUD
+    /// renders under the modal backdrop's blur, so a refusal routed there is in the DOM and not on the
+    /// screen. Cleared whenever the satchel opens or closes — the line belongs to one conversation at one
+    /// door, not to the pocket.</summary>
+    private string? _satchelOutcome;
 
     /// <summary>What the satchel is currently open AT, if anything: the target, whatever that target needs
     /// to judge an offer, and what to call it on screen.</summary>
@@ -2408,12 +2417,25 @@ public partial class Map
         }
 
         SatchelTry.Outcome outcome = SatchelTry.Offer(item, at.Target, at.Context);
-        ShowPulseMessage(outcome.Line);
 
+        // ── #680 · THE ANSWER IS SAID WHERE THE PLAYER IS LOOKING ──
+        //
+        // Owner, live, in caps: "pressing Try IT on item produces a text that is IMPOSSIBLE to read" /
+        // "it is behind the blurring effect... so we don't tell the story."
+        //
+        // A refusal keeps the satchel open (#614 — a captain comparing three cards should not have to
+        // reopen their pockets), and this method used to pulse the line FIRST and branch after — so every
+        // refusal, the exact sentences #603's law exists for, played to the HUD under the backdrop's blur.
+        // The sim told the story; the z-order ate it. In the DOM is not on the screen (the owner's own
+        // formulation): the one layer the backdrop cannot blur is the dialog's own subtree, so a failed
+        // offer is stored for the dialog to say, and only a success — which closes the modal — pulses.
         if (!outcome.Worked)
         {
+            _satchelOutcome = outcome.Line;
             return;
         }
+
+        ShowPulseMessage(outcome.Line);
 
         // ── #603 · READING A PAPER NEVER SPENDS IT ──
         //
