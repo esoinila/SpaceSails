@@ -2509,6 +2509,10 @@ public partial class Map
     {
         _satchelPage = SatchelPage.Carried;
         _notesEverywhere = false;
+
+        // #697 · And the wallet is folded shut. A folder that reopened expanded would be the card rows it
+        // replaced with an extra line above them, which is the whole row spent for nothing.
+        _walletOpen = false;
     }
 
     /// <summary>#690 · The ground underfoot, named the way the BOOK names it — through
@@ -2656,6 +2660,57 @@ public partial class Map
         ? $"on the floor of B{-ex.Floor}"
         : "on the regolith at your feet";
 
+    // ── #697 · THE WALLET IS ONE THING, AND IT COMES OUT ALL AT ONCE ────────────────────────────────────
+    //
+    // Owner: "Let's also add option to try all ID cards ... by grouping them into a folder in the inventory."
+    // And, on the register the answer is written in: "It is a little throw at the movie ... where he had this
+    // wallet with zillion different contradictory IDs :-D"
+    //
+    // A captain who has worked three sites is carrying several authorities that disagree about who they work
+    // for, and holding them up used to be four presses producing four sentences of which one was worth
+    // reading. The fold is Core's (SatchelTry.OfferWallet, #683's ladder); everything here is the gesture.
+
+    /// <summary>#697 · Whether the wallet is open on the CARRIED page. Folded shut on every open
+    /// (<see cref="TheSatchelOpensOnThePocket"/>) — the cards are one row until the captain asks for them.</summary>
+    private bool _walletOpen;
+
+    /// <summary>#697 · What is in the wallet, which is Core's own grouping of the pocket and never a filter
+    /// written in the dialog: <see cref="Core.Satchel.CompartmentOf"/> is the law about which things are flat,
+    /// and a second answer here would drift the first time a kind changes compartment (#688).</summary>
+    private IReadOnlyList<Core.Satchel.Item> Wallet() =>
+        Core.Satchel.OfKind(_satchel, Core.Satchel.Kind.Authority);
+
+    /// <summary>#697 · Where the whole wallet can be offered at once: whatever the satchel is open AT, when
+    /// that thing reads authorities. The question is Core's — the same <see cref="SatchelTry.CanOffer"/> the
+    /// rows ask (#688) — so the folder can never carry a live offer at something the rows have gone inert
+    /// for.</summary>
+    private (SatchelTry.Target Target, string? Context, string Label)? WalletTarget() =>
+        _satchelTarget is { } at && SatchelTry.CanOffer(Core.Satchel.Kind.Authority, at.Target) ? at : null;
+
+    /// <summary>#697 · FAN THE WALLET AT THE READER. One press, every card, one line.
+    ///
+    /// <para>It performs no state transition of its own. A success ends through exactly the resolution a
+    /// single successful try ends through (<see cref="TheOfferIsAnswered"/>), because a hand-written copy of
+    /// that ending is this repo's first named bug class aimed at a state transition — and the day one of them
+    /// learns to spend something, the other will not.</para></summary>
+    private void TryTheWholeWallet()
+    {
+        if (WalletTarget() is not { } at)
+        {
+            return;
+        }
+
+        IReadOnlyList<Core.Satchel.Item> wallet = Wallet();
+        if (wallet.Count == 0)
+        {
+            return;
+        }
+
+        // No item is charged to the fan: a wallet's success has no single row to spend, and an authority is
+        // never consumed by being read anyway. Core has already decided which card answered.
+        TheOfferIsAnswered(SatchelTry.OfferWallet(wallet, at.Target, at.Context), null, at);
+    }
+
     /// <summary>#603 · Offer one carried thing to whatever the satchel is open at. The outcome is always
     /// SAID — a control that does nothing and says nothing is indistinguishable from a bug.</summary>
     private void TryItem(Core.Satchel.Item item)
@@ -2665,8 +2720,20 @@ public partial class Map
             return;
         }
 
-        SatchelTry.Outcome outcome = SatchelTry.Offer(item, at.Target, at.Context);
+        TheOfferIsAnswered(SatchelTry.Offer(item, at.Target, at.Context), item, at);
+    }
 
+    /// <summary>#603 · What an offer DOES once it has an answer — the one ending both presses share.
+    ///
+    /// <para><paramref name="item"/> is the thing that was held up, or null when the whole wallet was fanned
+    /// (#697): a fan has no single row to charge, and the two consuming branches below can only ever fire for
+    /// a paper or a handful of rounds, neither of which is ever in a wallet. That is what makes "no double
+    /// effects" structural rather than a promise.</para></summary>
+    private void TheOfferIsAnswered(
+        SatchelTry.Outcome outcome,
+        Core.Satchel.Item? item,
+        (SatchelTry.Target Target, string? Context, string Label) at)
+    {
         // ── #680 · THE ANSWER IS SAID WHERE THE PLAYER IS LOOKING ──
         //
         // Owner, live, in caps: "pressing Try IT on item produces a text that is IMPOSSIBLE to read" /
@@ -2699,15 +2766,15 @@ public partial class Map
         // So the document is always shown, in full, every time. The tracker gets plotted on the first read
         // and GrantLabLead no-ops on every one after, which is the honest shape: the knowledge is what is
         // one-shot, not the paper.
-        if (item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
+        if (item is { Kind: Core.Satchel.Kind.Paper } read && at.Target == SatchelTry.Target.Tracker)
         {
             _viewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id)).ToUpperInvariant()}",
+                $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(read.Id)).ToUpperInvariant()}",
                 "",
-                Core.FieldClue.Document(item.Id) + "\n\n" + outcome.Line);
+                Core.FieldClue.Document(read.Id) + "\n\n" + outcome.Line);
 
-            GrantLabLead(DiceRule.Seed($"clue:{item.Id}"));
+            GrantLabLead(DiceRule.Seed($"clue:{read.Id}"));
         }
 
         // ── #603 case 2 · THE ROUNDS GO IN, AND THE GUN REMEMBERS WHAT THEY WERE ──
@@ -2715,17 +2782,17 @@ public partial class Map
         // Six rounds is not a resupply, it is a decision — which gun, and with what. A sentry loaded with
         // the lab round clears a line with one shot and refuses anything already on top of it; one loaded
         // with issue ball does neither. Both facts have to live on the magazine, so the bot carries the kind.
-        if (item.Kind == Core.Satchel.Kind.Rounds && at.Target == SatchelTry.Target.DrySentry
+        if (item is { Kind: Core.Satchel.Kind.Rounds } fed && at.Target == SatchelTry.Target.DrySentry
             && _surface is { } loadEx)
         {
             SurfaceBot? gun = loadEx.Bots.FirstOrDefault(b => b.Deployed && b.Unit == at.Context);
             if (gun is not null)
             {
-                gun.Rounds += item.Count;
-                gun.AmmoId = item.Id;
-                _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count)];
+                gun.Rounds += fed.Count;
+                gun.AmmoId = fed.Id;
+                _satchel = [.. Core.Satchel.Remove(_satchel, fed.Kind, fed.Id, fed.Count)];
 
-                Core.Ammunition.Kind kind = Core.Ammunition.ById(item.Id);
+                Core.Ammunition.Kind kind = Core.Ammunition.ById(fed.Id);
                 if (kind.MinimumRangeDu > 0)
                 {
                     ShowPulseMessage(

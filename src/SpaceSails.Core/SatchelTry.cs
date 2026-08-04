@@ -77,6 +77,159 @@ public static class SatchelTry
         _ => AtTracker(item),
     };
 
+    // ── #697 · THE WALLET IS ONE THING, AND IT COMES OUT ALL AT ONCE ────────────────────────────────────
+    //
+    // Owner: "Let's also add option to try all ID cards ... by grouping them into a folder in the inventory."
+    // And on the register the answer had to be written in: "It is a little throw at the movie ... where he had
+    // this wallet with zillion different contradictory IDs :-D"
+    //
+    // The comedy was already native and nobody had staged it. Every card down here is countersigned, current,
+    // and issued by an office with no standing, and a captain who has worked three sites carries several that
+    // disagree about who they work for. What was missing was the GESTURE — the wallet came out one card at a
+    // time, and four authorities meant four presses producing four sentences of which one was worth reading.
+    //
+    // This FOLDS. It writes no new prose about cards: every sentence a fan can produce at a gate is a sentence
+    // a single try already produced, because the wrong-shaft and wrong-site readings (#679/#683) are the best
+    // storytelling the Hive has and restating them here would be two answers to one question. What the fold
+    // decides is WHICH of them is worth saying.
+
+    /// <summary>
+    /// #697 · Offer the whole wallet at once, and answer with one line.
+    ///
+    /// <para>Three laws, in this order:</para>
+    /// <list type="number">
+    /// <item><b>Something works and the fan is over.</b> The outcome IS that card's own outcome — same
+    /// sentence, same <see cref="Outcome.Worked"/> — so the caller does exactly what a single successful try
+    /// does and there is never a second answer to keep in step with.</item>
+    /// <item><b>Nothing works and the ladder decides.</b> The most informative refusal is the one said, once,
+    /// rather than the first one met: another shaft of THIS site beats another site, which beats a card this
+    /// build cannot read at all.</item>
+    /// <item><b>A door with no reader answers once.</b> Fanning six authorities at a sealed way prints one
+    /// honest sentence, not six, and it still names no card, no shaft and no site — #590 call 2 is not
+    /// something a new control gets to renegotiate.</item>
+    /// </list>
+    ///
+    /// <para>Anything in <paramref name="cards"/> that is not an authority is not in the wallet and is
+    /// ignored, so a caller may hand over the whole pocket and can never have a paper narrated as a card.</para>
+    /// </summary>
+    public static Outcome OfferWallet(IReadOnlyList<Satchel.Item>? cards, Target target, string? context = null)
+    {
+        var wallet = new List<Satchel.Item>();
+        foreach (Satchel.Item c in cards ?? [])
+        {
+            if (c.Kind == Satchel.Kind.Authority)
+            {
+                wallet.Add(c);
+            }
+        }
+
+        if (wallet.Count == 0)
+        {
+            return NothingToFan(target, context);
+        }
+
+        // A wallet of one is not a fan and must not read like one. The dialog never offers the folder for a
+        // single card either — a folder of one is bureaucracy about bureaucracy — and this is the same ruling
+        // one layer down, so the two can never disagree about what the captain just did.
+        if (wallet.Count == 1)
+        {
+            return Offer(wallet[0], target, context);
+        }
+
+        Satchel.Item best = wallet[0];
+        int bestRung = -1;
+        foreach (Satchel.Item card in wallet)
+        {
+            Outcome one = Offer(card, target, context);
+            if (one.Worked)
+            {
+                return one;
+            }
+
+            // Strictly greater: a tie goes to the card the captain found first, which is the only tie-break
+            // that is not a re-sort of somebody's pocket.
+            int rung = Rung(card, target, context);
+            if (rung > bestRung)
+            {
+                (best, bestRung) = (card, rung);
+            }
+        }
+
+        return target switch
+        {
+            // The two FINAL doors. Every card gives the same answer there, so the fold has nothing to rank
+            // and something else to do instead: say once, in the deadpan the thing deserves, that the whole
+            // wallet came out and the door has no organ to have an opinion with.
+            Target.SealedWay => SealedWayLine(
+                $"You go through the wallet a card at a time — {HowMany(wallet.Count)}, every one " +
+                "countersigned, every one current, and no two of them agreeing about who you work for. "),
+            Target.RoomDoor => RoomDoorLine(
+                $"You hold them up one after another, {HowMany(wallet.Count)}, which is " +
+                $"{Word(wallet.Count)} more than this door can read. "),
+            _ => Offer(best, target, context),
+        };
+    }
+
+    /// <summary>#697 · The whole wallet, counted the way a person counts a small thing. <i>"All 2"</i> reads
+    /// like a receipt; a wallet is never big enough to need digits.</summary>
+    private static string HowMany(int n) => n == 2 ? "both of them" : $"all {Word(n)}";
+
+    /// <summary>A small number in words. Past twelve it is a figure again, which is the point at which a
+    /// captain has stopped carrying a wallet and started carrying a filing cabinet.</summary>
+    private static string Word(int n) => n switch
+    {
+        2 => "two",
+        3 => "three",
+        4 => "four",
+        5 => "five",
+        6 => "six",
+        7 => "seven",
+        8 => "eight",
+        9 => "nine",
+        10 => "ten",
+        11 => "eleven",
+        12 => "twelve",
+        _ => n.ToString(System.Globalization.CultureInfo.InvariantCulture),
+    };
+
+    /// <summary>#697 · HOW MUCH A REFUSAL TEACHES — #683's ladder, as a number the fold can sort by. Higher
+    /// wins.
+    ///
+    /// <para>The ranking is about INFORMATION and nothing else. A card for another shaft of this site tells
+    /// the captain which floor of the building they are standing in is worth going back for; a card for
+    /// another site tells them the wallet is for elsewhere and worth keeping (#613); a card this build cannot
+    /// parse tells them only that this is not the thing. That is the order.</para></summary>
+    private static int Rung(Satchel.Item card, Target target, string? wanted)
+    {
+        if (target != Target.ShaftGate || card.Kind != Satchel.Kind.Authority
+            || !UndergroundComplex.AuthorityCard.TryParse(card.Id, out UndergroundComplex.AuthorityCard held))
+        {
+            return 0;
+        }
+
+        return UndergroundComplex.AuthorityCard.TryParse(wanted, out UndergroundComplex.AuthorityCard gate)
+            && string.Equals(held.BodyId, gate.BodyId, StringComparison.Ordinal)
+                ? 2     // Wrong shaft, THIS site — the nearest miss there is, and it names the shaft it runs.
+                : 1;    // Somebody else's building.
+    }
+
+    /// <summary>#697 · An empty wallet. The dialog never shows the folder with nothing in it, which is exactly
+    /// why this has to answer: a control reachable by a save, a keybind or a later caller that says nothing is
+    /// indistinguishable from a bug.
+    ///
+    /// <para>At the two doors that will never open it is the door's OWN sentence, word for word — an empty
+    /// wallet that suddenly started discussing wallets at a sealed way would be hinting that a full one
+    /// matters, and none does.</para></summary>
+    private static Outcome NothingToFan(Target target, string? context) => target switch
+    {
+        Target.SealedWay => SealedWayLine(""),
+        Target.RoomDoor => RoomDoorLine(""),
+        Target.ShaftGate => new(false,
+            "🔒 The wallet is empty. The gate reads authorities and there is not one in it — not for this " +
+            "hole, not for anybody else's."),
+        _ => new(false, "🎫 The wallet is empty. There is nothing in it to hold up to anything."),
+    };
+
     private static Outcome AtShaftGate(Satchel.Item item, string? wanted)
     {
         if (item.Kind != Satchel.Kind.Authority)
@@ -137,29 +290,30 @@ public static class SatchelTry
             "else's business, and does nothing at all.");
     }
 
-    private static Outcome AtSealedWay(Satchel.Item item)
-    {
-        // #590 call 2, held: these doors exist to be walls with a world behind them, and the moment one can
-        // be opened every one of them becomes a puzzle. The refusal is honest and FINAL — it does not hint
-        // that a different card would do it, because none would.
-        string held = item.Kind == Satchel.Kind.Authority
-            ? "You hold the card up to it anyway. "
-            : "";
-        return new(false,
-            $"🔒 {held}There is no reader on this. No slot, no plate, no panel — the bolts go through the " +
-            "frame and into the rock, and they were tightened from a side you are not on. Nothing you " +
-            "could be carrying is the thing this is waiting for, because it is not waiting.");
-    }
+    private static Outcome AtSealedWay(Satchel.Item item) => SealedWayLine(
+        item.Kind == Satchel.Kind.Authority ? "You hold the card up to it anyway. " : "");
 
-    private static Outcome AtRoomDoor(Satchel.Item item)
-    {
-        string held = item.Kind == Satchel.Kind.Authority
-            ? "The card means nothing to it. "
-            : "";
-        return new(false,
-            $"🔒 {held}The lock is mechanical and it was turned by somebody who then walked away with the " +
-            "key. It is not refusing you; it has simply been shut for longer than you have been alive.");
-    }
+    /// <summary>The sealed way's one answer, with whatever the captain just did to it standing in front of it.
+    ///
+    /// <para>#590 call 2, held: these doors exist to be walls with a world behind them, and the moment one can
+    /// be opened every one of them becomes a puzzle. The refusal is honest and FINAL — it does not hint that a
+    /// different card would do it, because none would.</para>
+    ///
+    /// <para>#697 · <paramref name="held"/> is the only thing a fanned wallet is allowed to change here. The
+    /// body is written once so a new control can never grow a second sealed way with different silences.</para></summary>
+    private static Outcome SealedWayLine(string held) => new(false,
+        $"🔒 {held}There is no reader on this. No slot, no plate, no panel — the bolts go through the " +
+        "frame and into the rock, and they were tightened from a side you are not on. Nothing you " +
+        "could be carrying is the thing this is waiting for, because it is not waiting.");
+
+    private static Outcome AtRoomDoor(Satchel.Item item) => RoomDoorLine(
+        item.Kind == Satchel.Kind.Authority ? "The card means nothing to it. " : "");
+
+    /// <summary>The mechanical lock's one answer. Same shape as <see cref="SealedWayLine"/> and for the same
+    /// reason: one body, and a preamble for what was just held up to it.</summary>
+    private static Outcome RoomDoorLine(string held) => new(false,
+        $"🔒 {held}The lock is mechanical and it was turned by somebody who then walked away with the " +
+        "key. It is not refusing you; it has simply been shut for longer than you have been alive.");
 
     private static Outcome AtDrySentry(Satchel.Item item)
     {

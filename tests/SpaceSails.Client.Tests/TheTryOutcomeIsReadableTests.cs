@@ -68,26 +68,46 @@ public sealed class TheTryOutcomeIsReadableTests
     [Fact]
     public void AFailedTryNeverRoutesItsLineToThePulseHud()
     {
-        // The broken shape, stated as its own negation: TryItem pulsed the line FIRST and only then asked
+        // The broken shape, stated as its own negation: the try pulsed the line FIRST and only then asked
         // whether the offer worked — so refusals, which keep the modal open, played behind the frosted
         // glass. The failure path must store the line for the dialog before it returns.
+        //
+        // #697 moved that ending out of TryItem into the one resolution BOTH presses share — the single card
+        // and the fanned wallet — which is where this law now has to hold. That is a strengthening, not a
+        // relocation: there is exactly one place left that can get it wrong.
         string surface = Pages("Map.Surface.cs");
-        int at = surface.IndexOf("private void TryItem(", StringComparison.Ordinal);
-        Assert.True(at >= 0, "Map.Surface.cs no longer has TryItem where this guard can read it.");
+        int at = surface.IndexOf("private void TheOfferIsAnswered(", StringComparison.Ordinal);
+        Assert.True(at >= 0,
+            "Map.Surface.cs no longer has TheOfferIsAnswered where this guard can read it — the offer's " +
+            "ending has moved and #680's law has to move with it.");
         int end = surface.IndexOf("\n    private ", at + 1, StringComparison.Ordinal);
-        string tryItem = surface[at..(end > at ? end : surface.Length)];
+        string answered = surface[at..(end > at ? end : surface.Length)];
 
-        int stored = tryItem.IndexOf("_satchelOutcome = outcome.Line", StringComparison.Ordinal);
-        int worked = tryItem.IndexOf("outcome.Worked", StringComparison.Ordinal);
+        int stored = answered.IndexOf("_satchelOutcome = outcome.Line", StringComparison.Ordinal);
+        int worked = answered.IndexOf("outcome.Worked", StringComparison.Ordinal);
         Assert.True(stored >= 0,
-            "TryItem never stores the outcome for the dialog — the refusal goes back behind the blur (#680).");
-        Assert.True(worked >= 0, "TryItem no longer consults outcome.Worked — this guard needs re-reading.");
+            "the offer's ending never stores the outcome for the dialog — the refusal goes back behind the " +
+            "blur (#680).");
+        Assert.True(worked >= 0,
+            "the offer's ending no longer consults outcome.Worked — this guard needs re-reading.");
 
-        int pulsed = tryItem.IndexOf("ShowPulseMessage(outcome.Line)", StringComparison.Ordinal);
+        int pulsed = answered.IndexOf("ShowPulseMessage(outcome.Line)", StringComparison.Ordinal);
         Assert.True(pulsed < 0 || pulsed > worked,
-            "TryItem pulses the outcome before it knows whether the modal will stay open — the exact " +
+            "the offer pulses its outcome before it knows whether the modal will stay open — the exact " +
             "broken shape #680 was filed on: a refusal keeps the satchel up, and a line pulsed under the " +
             "backdrop is in the DOM and not on the screen.");
+
+        // And every press that can produce an outcome ends here. A press that kept its own ending would be
+        // a second place for #680 to come back (#697).
+        foreach (string press in new[] { "private void TryItem(", "private void TryTheWholeWallet()" })
+        {
+            int from = surface.IndexOf(press, StringComparison.Ordinal);
+            Assert.True(from >= 0, $"Map.Surface.cs no longer has `{press}` where this guard can read it.");
+            string body = surface[from..surface.IndexOf("\n    private ", from + 1, StringComparison.Ordinal)];
+            Assert.True(body.Contains("TheOfferIsAnswered(", StringComparison.Ordinal),
+                $"`{press}` answers an offer without going through the one ending that keeps the line " +
+                "inside the dialog (#680/#697).");
+        }
     }
 
     [Fact]
