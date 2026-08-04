@@ -2349,7 +2349,13 @@ public partial class Map
     {
         if (_lockedDoor is { } door)
         {
-            _satchelTarget = (door.Target, null, door.Sign);
+            // #680 · Say what the thing IS, not just what is painted on it. "Offering it to MEDICAL"
+            // read as a person until the owner asked what it meant — and a line the owner has to ask
+            // about is a line that is not doing its job. The sign stays, the noun arrives.
+            _satchelTarget = (door.Target, null,
+                door.Target == SatchelTry.Target.SealedWay
+                    ? $"the sealed way ({door.Sign})"
+                    : $"the locked {door.Sign} door");
         }
         _lockedDoor = null;
         _satchelOutcome = null;
