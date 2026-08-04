@@ -904,6 +904,52 @@ sealed door, read what this building has already told them, and decide whether t
 offering. The satchel still opens on CARRIED, at a door and everywhere else — the pocket is the primary tool
 and the notebook is one tap away.
 
+**And the wallet is one thing, so it comes out all at once** (#697). Owner: *"Let's also add option to try all
+ID cards ... by grouping them into a folder in the inventory."* — and, on the register the answer had to be
+written in: *"It is a little throw at the movie ... where he had this wallet with zillion different
+contradictory IDs :-D"*
+
+The comedy was already native and nobody had staged it. Every card down here is countersigned, current, and
+issued by an office with no standing, and a captain who has worked three sites carries several that disagree
+about who they work for. What was missing was the **gesture**: the wallet came out one card at a time, so four
+authorities meant four presses producing four sentences, of which one was worth reading.
+
+On the CARRIED page every `Authority` now collapses into one row — **🎫 THE WALLET (3)** — folded shut on every
+open, one tap from the card rows exactly as they were, each keeping its own try and its own 🔍 lens (the faces
+are the best objects in the game, §13.10). *A folder of one is bureaucracy about bureaucracy, so one card is a
+card.* At a door the folder row carries the offer, as its own control beside the toggle — #614's ruling one size
+up: opening a wallet must not be a mis-click away from offering everything in it to a bulkhead. One press fans
+every card and the answer is **one line**:
+
+- **A card works → the outcome IS that card's outcome**, and the fan ends through exactly the resolution a
+  single successful try ends through. Not a copy of that ending — the same one. The no-double-effects claim is
+  then structural rather than a promise: the two consuming branches can only fire for a paper or a handful of
+  rounds, and neither is ever in a wallet.
+- **Nothing works → the ladder decides** (#683). Another shaft of *this* site beats another site, which beats a
+  card this build cannot even read. The most informative refusal is said **once**, instead of three shuffles,
+  and it names the nearest miss because #679's sentence already named it.
+- **A door with no reader answers once.** Fanning six authorities at a sealed way prints one honest sentence,
+  not six, and it names no card, no shaft and no site — #590 call 2 is not something a new control gets to
+  renegotiate. What it *may* do is notice the stack: *"You go through the wallet a card at a time — all six,
+  every one countersigned, every one current, and no two of them agreeing about who you work for."* A reader
+  works through several mutually incompatible authorities without comment, and the game never explains the joke.
+
+The fold is Core's (`SatchelTry.OfferWallet`), pure and deterministic like everything else there, so the dialog
+cannot grow a second ladder to drift the day #683's order is refined. **Precedent:** the lift panel has read the
+whole wallet unprompted since #689 (`LiftPanel(..., AuthorityCardIds())`) — this brings the on-foot TRY to the
+same standard, and the single card stays for deliberate captains.
+
+*(Enforced: `TheWalletIsOneThingTests` — the working card wins from every position in the wallet and answers
+with its own sentence; the ladder's best refusal is the one surfaced, from **every permutation** of the same
+three cards, because what a refusal teaches must not be a fact about which pocket a card fell into; a wallet of
+one answers exactly as that one card does, at every target; the sealed way's body appears exactly **once**
+however thick the wallet, and never matches any single card's line; an empty wallet is answered, and at the two
+FINAL doors it is answered in the door's own words so it cannot hint. Watched go RED against a naive
+first-refusal fold transcribed into Core: **4 of 7**. `TheWalletFansAtTheDoorTests` for the five client shapes —
+the folder row, Core's own grouping behind it, the folded-on-open reset, the press routing through `OfferWallet`
+with no loop of its own, and the shared ending the fan is forbidden from copying. RED against the build that
+shipped #690: **5 of 5**.)*
+
 *(Enforced: `ThePocketsAreThreeCompartmentsTests` — the wallet never fills, the sleeve holds 24 and refuses the
 25th, the bulky twelve keeps its teeth, neither compartment crowds the other, the merge law survives the
 restructure for every kind, and the space-left line is identical for a satchel with six extra cards in it.

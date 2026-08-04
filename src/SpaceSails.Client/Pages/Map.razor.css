@@ -4398,6 +4398,48 @@
     white-space: nowrap;
 }
 
+/* #697 · THE WALLET. One row for every card in the pocket, and the cards one tap under it. It is styled as a
+   heading rather than as an object, because it is not one — it is the pocket the objects are in. */
+.satchel-folder {
+    letter-spacing: 0.05em;
+    background: #1b1c17;
+    border-color: rgba(200, 170, 120, 0.4);
+}
+
+.satchel-folder:hover:not(:disabled) { background: #23241c; }
+
+/* TRY THEM ALL. Its own control beside the folder, never part of it — #614's ruling one size up: opening a
+   wallet must not be a mis-click away from offering everything in it to a door. Amber, like every other
+   control down here that costs you a decision. */
+.satchel-fan {
+    flex: 0 0 auto;
+    padding: 0 0.8rem;
+    font: inherit;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    color: #d8b884;
+    background: #201b12;
+    border: 1px solid rgba(200, 170, 120, 0.45);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-fan:hover {
+    color: #f0dfb8;
+    background: #2a2317;
+    border-color: rgba(200, 170, 120, 0.8);
+}
+
+/* The cards themselves, stepped in so the folder above them reads as the thing they came out of. */
+.satchel-wallet-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-left: 0.9rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid rgba(200, 170, 120, 0.25);
+}
+
 /* #690 · THE NOTES TAB. A pocket and a notebook are both things a satchel holds, so the notebook gets the
    satchel's own frame rather than a second dialog — the whole point is reading your notes WHERE you are, and
    a second modal on top of the door pop-up would be one layer further from the ground. */

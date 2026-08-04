@@ -1905,37 +1905,91 @@
                            (#603's law: looking is free and repeatable); TRY is the deliberate second press
                            that costs you the decision. Putting them on one button would mean a captain who
                            wanted to admire the collar had to risk offering it to a door. *@
+                        @{
+                            IReadOnlyList<SpaceSails.Core.Satchel.Item> wallet = Wallet();
+
+                            RenderFragment<SpaceSails.Core.Satchel.Item> Row = item =>
+                                @<div class="satchel-row">
+                                    @{
+                                        bool canOffer = TargetFor(item) is not null;
+                                        bool canLook = LookAtItem(item) is not null;
+                                    }
+                                    <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
+                                            disabled="@(!canOffer)"
+                                            @onclick="() => TryItem(item)">
+                                        <span class="satchel-item-name">@SatchelLabel(item)</span>
+                                        @if (canOffer)
+                                        {
+                                            <span class="satchel-item-try">
+                                                @(_satchelTarget is null ? "read it →" : "try it →")
+                                            </span>
+                                        }
+                                    </button>
+                                    @if (canLook)
+                                    {
+                                        <button type="button" class="satchel-look"
+                                                title="Look at it properly"
+                                                @onclick="() => OpenItemCard(item)">🔍</button>
+                                    }
+                                    @* #688 · LEAVE IT. Owner: "no way to drop stuff." Its own small control,
+                                       never a mode — for #614's reason one size down, a captain making room
+                                       must not be one mis-click away from offering a relic to a bulkhead. It
+                                       stays available at a door, because a door is exactly where you discover
+                                       your pockets are full. *@
+                                    <button type="button" class="satchel-leave"
+                                            title="Leave it here — it stays where you put it"
+                                            @onclick="() => LeaveItem(item)">🫳</button>
+                                 </div>;
+                        }
+
+                        @* #697 · THE WALLET IS ONE THING. Owner: "Let's also add option to try all ID cards
+                           ... by grouping them into a folder in the inventory." Four authorities used to be
+                           four rows and four presses; they are one row and one press now, and the cards are
+                           one tap under it — untouched, because the faces are the best objects in the game
+                           (#528/#695) and the deliberate single try is the captain's to make.
+
+                           A folder of one is bureaucracy about bureaucracy, so one card is a card. *@
+                        @if (wallet.Count == 1)
+                        {
+                            @Row(wallet[0])
+                        }
+                        else if (wallet.Count > 1)
+                        {
+                            <div class="satchel-row">
+                                <button type="button" class="satchel-item satchel-folder"
+                                        title="@(_walletOpen ? "Fold it shut" : "Go through the cards")"
+                                        @onclick="() => _walletOpen = !_walletOpen">
+                                    <span class="satchel-item-name">
+                                        @(_walletOpen ? "▾" : "▸") 🎫 THE WALLET (@wallet.Count)
+                                    </span>
+                                </button>
+                                @* Two controls, never one — #614's ruling one size up: opening the folder
+                                   must not be a mis-click away from offering everything in it to a door. *@
+                                @if (WalletTarget() is not null)
+                                {
+                                    <button type="button" class="satchel-fan"
+                                            title="Hold every card up to it, one after another"
+                                            @onclick="TryTheWholeWallet">try them all →</button>
+                                }
+                            </div>
+
+                            @if (_walletOpen)
+                            {
+                                <div class="satchel-wallet-cards">
+                                    @foreach (SpaceSails.Core.Satchel.Item card in wallet)
+                                    {
+                                        @Row(card)
+                                    }
+                                </div>
+                            }
+                        }
+
                         @foreach (SpaceSails.Core.Satchel.Item item in _satchel)
                         {
-                            bool canOffer = TargetFor(item) is not null;
-                            bool canLook = LookAtItem(item) is not null;
-                            <div class="satchel-row">
-                                <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
-                                        disabled="@(!canOffer)"
-                                        @onclick="() => TryItem(item)">
-                                    <span class="satchel-item-name">@SatchelLabel(item)</span>
-                                    @if (canOffer)
-                                    {
-                                        <span class="satchel-item-try">
-                                            @(_satchelTarget is null ? "read it →" : "try it →")
-                                        </span>
-                                    }
-                                </button>
-                                @if (canLook)
-                                {
-                                    <button type="button" class="satchel-look"
-                                            title="Look at it properly"
-                                            @onclick="() => OpenItemCard(item)">🔍</button>
-                                }
-                                @* #688 · LEAVE IT. Owner: "no way to drop stuff." Its own small control,
-                                   never a mode — for #614's reason one size down, a captain making room
-                                   must not be one mis-click away from offering a relic to a bulkhead. It
-                                   stays available at a door, because a door is exactly where you discover
-                                   your pockets are full. *@
-                                <button type="button" class="satchel-leave"
-                                        title="Leave it here — it stays where you put it"
-                                        @onclick="() => LeaveItem(item)">🫳</button>
-                            </div>
+                            @if (item.Kind != SpaceSails.Core.Satchel.Kind.Authority)
+                            {
+                                @Row(item)
+                            }
                         }
                     </div>
                 }
