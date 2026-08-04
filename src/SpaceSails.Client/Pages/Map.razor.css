@@ -4208,6 +4208,27 @@
 
 .lift-stop.sealed .lift-stop-air { color: #e0a070; }
 
+/* #689 · PRESENT, GATED, and open to you — the row a captain who found the card has earned. Warm where the
+   sealed row is dry, because this is the one button on the panel that is a reward. */
+.lift-stop.carded {
+    border-style: solid;
+    border-color: rgba(240, 208, 112, 0.45);
+}
+
+.lift-stop.carded .lift-stop-air { color: #f0d070; }
+
+/* The card's own title, on its own line under the floor name — it is a long institutional string and the
+   air column is one nowrap cell. Full width, so it reads as a caption on the button rather than a fourth
+   column nobody left room for. */
+.lift-stop-card {
+    grid-column: 1 / -1;
+    margin-top: 0.15rem;
+    font-size: 0.68rem;
+    line-height: 1.35;
+    letter-spacing: 0.03em;
+    color: #d3bb7d;
+}
+
 /* #603 · THE LOCKED DOOR, and the pockets it reminds you of. Owner: "we should advertise the items list on
    closed locked door pop-up... something like check your items button there that opens inventory." */
 .locked-door {

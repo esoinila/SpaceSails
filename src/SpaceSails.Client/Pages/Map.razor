@@ -1670,6 +1670,7 @@
                         string cls = "lift-stop"
                             + (stop.IsCurrent ? " here" : "")
                             + (stop.Refusal is not null ? " sealed" : "")
+                            + (stop.OpenedBy is not null ? " carded" : "")
                             + (stop.Pressurised ? "" : " dead");
                         <button type="button" class="@cls" disabled="@stop.IsCurrent"
                                 title="@(stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
@@ -1680,6 +1681,12 @@
                                 @if (stop.IsCurrent)
                                 {
                                     <text>◄ you are here</text>
+                                }
+                                else if (stop.OpenedBy is not null)
+                                {
+                                    @* #689 · The positive twin of "🔒 sealed" — the row a captain who went
+                                       and FOUND the thing has earned. Core decides whether it is true. *@
+                                    <text>🎫 opens for you</text>
                                 }
                                 else if (stop.Refusal is not null)
                                 {
@@ -1694,6 +1701,13 @@
                                     <text>dead air</text>
                                 }
                             </span>
+                            @* #689 · …and WHICH paper does it, in the office's own register, so the card in
+                               the satchel and the promise on the panel are the same words. Owner: "there was
+                               no story point about it being needed or used." *@
+                            @if (stop.OpenedBy is { } carriedCard)
+                            {
+                                <span class="lift-stop-card">@carriedCard — the gate will read it</span>
+                            }
                         </button>
                     }
                 </div>

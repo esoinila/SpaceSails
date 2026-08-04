@@ -603,6 +603,25 @@ one line (#590):
   just sits there is indistinguishable from a bug — this ground has shipped that mistake before. Since #679 it
   also says *which kind of wrong*: another shaft of this site, or another site entirely, each named (§13.10).
 
+**And the ACCEPTANCE says why too, in both directions in time** (#689). Owner, having played the whole loop
+on a deep site — found the card, fed the gate, rode past the floor the building admits to: *"It was locked
+until I got it ... there was no story point about it being needed or used. Let's tell that story somehow more
+clearly that it was used in the elevator."* Both halves were written and neither was legible, so by his
+ruling:
+
+- **Before the ride, the row names the card.** With the right paper in the wallet the gated row stops saying
+  `🔒 sealed` and says `🎫 opens for you`, with the card's own title under it and *the gate will read it*.
+  The positive twin of the refusal, decided in Core (`LiftStop.OpenedBy`) so the panel can never promise a
+  reading the gate will not give. Never at the head office, which has no gate to promise anything (#411).
+- **After it, the gate answers on ARRIVAL.** The accepted line used to be said on the frame the panel closes
+  and the floor is torn down and rebuilt — the one instant in the loop when nobody is reading the HUD, which
+  is why the owner never saw it. It is now said when the doors open on the new floor, and said **last** of
+  the arrival's lines, because the pulse has one slot and the routine air line was eating it.
+- **Which gate a ride crosses is a fact about the STOP**, not about the floor the press came from
+  (`GateOpenedByRidingTo` asks the panel rather than doing arithmetic on the captain's own floor). The old
+  derivation never looked at a card at all, and so had the head office — whose gate is deliberately absent —
+  narrating a countersignature nobody was carrying.
+
 A card is a **possession**, so it rides in the vault (`AuthoritiesSection`), not on the excursion: found
 eleven floors under a moon, still in the pocket a month and a world later. The save carries the id and
 nothing else — the title is a seeded property of the world, rebuilt at read time, so a file can never go

@@ -1966,18 +1966,12 @@ public partial class Map
 
         _showLiftPanel = false;
 
-        // Going below this car's own band is the OTHER shaft, and #590's card is what opened it.
-        int nextBand = UndergroundComplex.BandOf(Math.Min(ex.Floor, -1)) + 1;
-        if (stop.Level < 0 && UndergroundComplex.BandOf(stop.Level) == nextBand
-            && ex.HiveShaftsOpened.Add(nextBand))
-        {
-            ShowAndFile(
-                UndergroundComplex.CardAcceptedLine(
-                    new UndergroundComplex.AuthorityCard(ex.Stop.Body.Id, nextBand)), "🎫");
-            ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
-        }
-
-        RideTheLiftTo(ex, stop.Level);
+        // #689 · Going below this car's own band is the OTHER shaft, and #590's card is what opened it — but
+        // the saying of that belongs to the ARRIVAL and not to this line. It used to be said right here, on
+        // the exact frame the panel closes and the floor is rebuilt under the captain's feet, and the owner
+        // played the whole loop without ever seeing it. The blur disease's third organ: not under a modal
+        // this time, under a scene change. The ride carries the stop with it, and the doors say it.
+        RideTheLiftTo(ex, stop.Level, stop);
     }
 
     private void CloseLiftPanel()
@@ -1995,8 +1989,13 @@ public partial class Map
     /// screen. Cleared whenever the panel opens or closes — the line belongs to one stand at one gate.</summary>
     private string? _liftOutcome;
 
-    private void RideTheLiftTo(SurfaceExcursion ex, int level)
+    /// <param name="via">#689 · The button that was pressed, when a button was pressed. A ride that goes
+    /// through the card gate has a story to tell on arrival, and only the panel knows which trip that was —
+    /// the dev floor cheat rides the same car and has no gate to cross.</param>
+    private void RideTheLiftTo(
+        SurfaceExcursion ex, int level, UndergroundComplex.LiftStop? via = null)
     {
+        int fromLevel = ex.Floor;
         bool wasUnderground = ex.Floor < 0;
         ex.Floor = level;
 
@@ -2109,6 +2108,31 @@ public partial class Map
             ShowAndFile(pressurised
                 ? UndergroundComplex.PressurisedLine
                 : UndergroundComplex.DeadAirLine, "\ud83e\udec1");
+        }
+
+        // ── #689 · THE CARD'S FINEST HOUR, SAID WHERE IT CAN BE HEARD ───────────────────────────────────
+        //
+        // Owner, having found the card, fed the gate and ridden past the listed bottom: "It was locked until
+        // I got it ... there was no story point about it being needed or used. Let's tell that story somehow
+        // more clearly that it was used in the elevator or somehow played a part in opening the most bottom
+        // floor."
+        //
+        // The line existed. It was said on the frame the panel closed and the floor was torn down and rebuilt
+        // — the one instant in the whole loop when nobody is reading the HUD. Here the doors are open, the
+        // captain is standing still, and the car is not going anywhere.
+        //
+        // LAST of the arrival's sayings on purpose: the pulse has exactly ONE slot and the last line written
+        // is the one that survives (ShowPulseMessage overwrites). Everything above this is a fact about the
+        // FLOOR — it holds air or it does not, it is on the plan or it is not — and the book keeps every one
+        // of them. This is the fact about the RIDE, it happens once per shaft per excursion, and it is the
+        // one the owner filed an issue about not seeing.
+        if (via is not null
+            && UndergroundComplex.GateOpenedByRidingTo(
+                ex.Stop.Body.Id, fromLevel, level, AuthorityCardIds()) is { } opened
+            && ex.HiveShaftsOpened.Add(opened.Band))
+        {
+            ShowAndFile(UndergroundComplex.CardAcceptedLine(opened), "🎫");
+            ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
         }
 
         ApplyNerveShock(UndergroundComplex.HoldsPressure(level) ? 2.0 : 5.0,
