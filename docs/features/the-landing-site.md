@@ -914,13 +914,16 @@ filter the client cannot route around, the subtitle that no longer subtracts one
 the leave control whose confirmation stays inside the dialog. Watched go RED against this morning's build, 5 of
 5. `TheGroundKnowsWhereYouLeftItTests` (#698) for the store's two new questions — one mark per spot however much
 is on it, floor-scoped both ways, the mark gone when the spot empties and **kept** when something would not fit,
-and the ring's exact edge: every square of it gives, one square further out gives nothing.
+and the ring's exact edge: every square of it gives, one square further out gives nothing. Watched go RED, 2 of
+10, against the two naive readings they exist to rule out (the ring shrunk to the square you stand on; a spot
+list not scoped to a floor); the other eight pin new behaviour and are honestly not red-provable.
 `TheDeckMarksWhatYouLeftTests` (#698) builds the real Hive floor and the real regolith and counts the marks on
 them, pins that a mark inside the interact radius is always inside the recovery ring — so the [E] drawn over it
 is never one the pickup will refuse — and then reads the shipped source for the wiring: every branch of
 `RebuildSurfaceDeck` that builds a deck composes the marks, the drop and the recovery both redraw, and the keybar
 reaches its offer through the same `AnythingInReach` the key does. Watched go RED against the unmarked build,
-13 of 13.)*
+10 of 13 — the three survivors being the three that cannot go red that way (an empty floor carries no marks, the
+mark adds no collision, and the interact-radius arithmetic).)*
 
 13.10 **Some things you carry are worth looking at, and a card describes the LOCK, never the DOOR.**
 
