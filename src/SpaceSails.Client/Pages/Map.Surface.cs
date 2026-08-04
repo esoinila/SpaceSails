@@ -594,6 +594,12 @@ public partial class Map
         public HashSet<int> HiveRoomsEmptied { get; } = [];
         public HashSet<int> HiveFloorsSeen { get; } = [];
 
+        // #688 · WHAT THE CAPTAIN PUT DOWN, AND WHERE. Owner: "no way to drop stuff." Excursion-scoped by
+        // deliberate v1 choice — the world does not keep a ledger of every sheet of paper anybody ever set on
+        // a floor, and the line the captain reads says as much out loud rather than implying a permanence the
+        // sim does not have. Within the walk it is exactly where they left it, which is #615's whole law.
+        public LeftBehind Ground { get; } = new();
+
         // #590 · Which shaft bands this excursion has already talked its way into. Only gates the once-per-
         // shaft beat when a card is accepted; the CARD itself is durable and lives in the vault, because a
         // possession that evaporated when the shuttle lifted would not be a possession.
@@ -2296,10 +2302,17 @@ public partial class Map
 
         // #678 · Said only when something actually went in — "that was the last space" is a fact about a
         // pickup, and on a room that handed over nothing it would be a warning attached to nothing.
-        if (pick.Take is not null && Core.Satchel.IsFull(_satchel))
+        //
+        // #688 · And it is a fact about ONE COMPARTMENT, because after the restructure "the satchel is full"
+        // has no meaning: a sleeve stuffed with manifests says nothing about the pockets, and neither of them
+        // says anything about the wallet, which never fills at all. The warning names what ran out.
+        if (pick.Take is { } went && Core.Satchel.IsFull(_satchel, went.Kind))
         {
-            ShowPulseMessage("🎒 Your hands and pockets are full. Something has to be read, spent or left " +
-                "behind before you can carry anything else out of here.");
+            ShowPulseMessage(Core.Satchel.CompartmentOf(went.Kind) == Core.Satchel.Compartment.Sleeve
+                ? "🎒 That was the last sheet the document sleeve will hold. Something has to be read or " +
+                  "left behind before you can carry any more paper out of here."
+                : "🎒 Your hands and pockets are full. Something has to be spent or left behind before you " +
+                  "can carry anything else out of here.");
         }
 
         // #590 · THE CARD IS NOW A THING YOU HOLD. It runs the shaft below the band it was found in, so the
@@ -2409,6 +2422,23 @@ public partial class Map
         _showSatchel = true;
     }
 
+    /// <summary>#688 · The I key, both ways. Owner: <i>"If I press I when inventory is open, let's close it
+    /// then."</i>
+    ///
+    /// <para>A pocket you open by reflex has to shut by the same reflex. Note which way this closes: a satchel
+    /// opened AT a door still closes on I, because the captain's hand is on the key and not on the fiction —
+    /// and <see cref="CloseSatchel"/> clears the target, so the next I is an honest look at what you have.</para></summary>
+    private void ToggleSatchel()
+    {
+        if (_showSatchel)
+        {
+            CloseSatchel();
+            return;
+        }
+
+        OpenSatchel();
+    }
+
     private void CloseSatchel()
     {
         _showSatchel = false;
@@ -2451,6 +2481,105 @@ public partial class Map
             DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
             card.Label, card.ArtUrl, card.Story);
     }
+
+    /// <summary>#688 · LEAVE IT. Owner, live: <i>"The keycard story is already big, but no way to drop
+    /// stuff."</i>
+    ///
+    /// <para>The satchel had a verb for offering a thing and a verb for looking at one, and none at all for
+    /// putting one down — while the game's own prose kept telling the captain that something had to be
+    /// <i>read, spent or left behind</i>. The only way to make room was to spend something.</para>
+    ///
+    /// <para>It is its own small control per row rather than a mode, for #614's reason one size down: a
+    /// captain making room must never be one mis-click away from offering a relic to a bulkhead. The satchel
+    /// STAYS OPEN — you are putting a thing down in order to pick a thing up — which is exactly why the
+    /// confirmation is stored for the dialog rather than pulsed (#680: the pulse HUD renders under the
+    /// backdrop's blur, so a line sent there is in the DOM and not on the screen).</para>
+    ///
+    /// <para>#615's law, unbroken: leaving never destroys. It is lying on the square the captain is standing
+    /// on, and <see cref="TryPickUpWhatYouLeft"/> hands it straight back.</para></summary>
+    private void LeaveItem(Core.Satchel.Item item)
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        // Rounds go down as the whole stack: six rounds is ONE thing you are carrying (#603), so it is one
+        // thing you set down. Leaving them a round at a time would be inventory management.
+        (int sqX, int sqY) = BeachComber.SquareOf(_avatarX, _avatarY);
+        string standing = WhereYouAreStanding();
+        ex.Ground.Leave(LeftBehind.SpotKey(ex.Floor, sqX, sqY), item);
+        _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count)];
+
+        // ── #688 · A DOCUMENT LEAVES ITS GIST BEHIND IN THE BOOK ──
+        //
+        // Owner refinement on the drop verb: leaving a paper files what it said before the paper leaves the
+        // pocket. A captain does not abandon a pay sheet without having looked at it — what they are putting
+        // down is the SHEET, and the sheet was only ever costing them bulk. The sleeve empties; the knowledge
+        // does not, which is #587's law ("a find that is shown once is a find that is lost") arriving at the
+        // moment the captain lets go.
+        //
+        // FileNote and not ShowAndFile: the satchel is open over the top of this, so the SAYING happens in
+        // the dialog (#686's record-half idiom) and the pulse would play under the backdrop's blur.
+        string? gist = LeftBehind.GistOf(item, standing);
+        if (gist is { Length: > 0 })
+        {
+            FileNote(gist, item.Kind == Core.Satchel.Kind.Dirt ? "🗃" : "📋");
+        }
+
+        _satchelOutcome = LeftBehind.LeaveLine(SatchelLabel(item), standing, gist is not null);
+        RequestVaultSave();
+    }
+
+    /// <summary>#688 · What is at your feet, answered before what is in the walls. Returns true when the press
+    /// was spent on the ground — the console under the captain gets the NEXT one, which is the honest order:
+    /// a thing you put down yourself is not a thing you should have to walk away from to reach.</summary>
+    private bool TryPickUpWhatYouLeft()
+    {
+        if (_surface is not { } ex)
+        {
+            return false;
+        }
+
+        // The square the captain is standing on, and the ring around it. A three-metre grid cell is smaller
+        // than a captain's idea of "where I put it down", and #615's law is only real if the way back is
+        // real — a relic you cannot find again was destroyed, whatever the store says it is holding.
+        (int sqX, int sqY) = BeachComber.SquareOf(_avatarX, _avatarY);
+        string? spot = null;
+        for (int dy = -1; dy <= 1 && spot is null; dy++)
+        {
+            for (int dx = -1; dx <= 1 && spot is null; dx++)
+            {
+                string here = LeftBehind.SpotKey(ex.Floor, sqX + dx, sqY + dy);
+                if (ex.Ground.AnythingAt(here))
+                {
+                    spot = here;
+                }
+            }
+        }
+
+        if (spot is null)
+        {
+            return false;
+        }
+
+        LeftBehind.Recovery back = ex.Ground.PickUp(spot, _satchel);
+        _satchel = [.. back.Pocket];
+
+        // Both halves are named. A recovery that quietly left something on the floor without saying so would
+        // be #678's silent drop one verb later — and this time the captain put it there on purpose.
+        ShowPulseMessage(LeftBehind.FoundAgainLine(
+            [.. back.Taken.Select(SatchelLabel)],
+            [.. back.StillThere.Select(SatchelLabel)]));
+        RequestVaultSave();
+        return true;
+    }
+
+    /// <summary>#688 · Where the captain is, in their own words, for the line that says where a thing was
+    /// left. Underground it is a floor with a number painted on it; up top it is the ground.</summary>
+    private string WhereYouAreStanding() => _surface is { Floor: < 0 } ex
+        ? $"on the floor of B{-ex.Floor}"
+        : "on the regolith at your feet";
 
     /// <summary>#603 · Offer one carried thing to whatever the satchel is open at. The outcome is always
     /// SAID — a control that does nothing and says nothing is indistinguishable from a bug.</summary>
@@ -2541,12 +2670,19 @@ public partial class Map
     /// key, most things are just a look, but a DOCUMENT can always be read as a clue, because the tracker is
     /// on the captain's arm and deciding a paper is a map is something they can do standing anywhere. That
     /// is the owner's own framing: the lead is not granted on pickup, it is granted when the player decides
-    /// the paper means something.</para></summary>
+    /// the paper means something.</para>
+    ///
+    /// <para>#688 · AT A DOOR, ONLY A KEY. Owner: <i>"Let's make a bigger story point about finding any kind
+    /// of key or keycard and only suggest those at doors. Or tools, but not just like some papers."</i> The
+    /// law is Core's (<see cref="SatchelTry.CanOffer"/>) and this is the one place that can route around it,
+    /// so it asks. Nothing about the REFUSALS changed — a captain holding three authorities still gets every
+    /// wrong-shaft and wrong-site reading #679 wrote. What stopped is the game dangling forty live offers at
+    /// a bulkhead to hide the one that mattered.</para></summary>
     private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(Core.Satchel.Item item)
     {
         if (_satchelTarget is { } at)
         {
-            return at;
+            return SatchelTry.CanOffer(item.Kind, at.Target) ? at : null;
         }
 
         // A document can always be read — the tracker is on the captain's arm.
