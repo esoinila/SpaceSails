@@ -4274,6 +4274,19 @@
 
 .satchel-empty { padding: 0.8rem 0; }
 
+/* #680 · The last try's answer, said inside the dialog — the one layer the backdrop cannot blur. Amber
+   like the dialog's frame, not alarm-red: a refusal down here is information, not an emergency. */
+.satchel-outcome {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-left: 3px solid rgba(200, 170, 120, 0.55);
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.7rem;
+    white-space: pre-wrap;
+}
+
 .satchel-items {
     display: flex;
     flex-direction: column;

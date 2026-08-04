@@ -1743,6 +1743,13 @@
                     }
                 </div>
 
+                @* #680 · A failed try answers HERE, inside the modal's own layer — the pulse HUD sits
+                   under the backdrop blur, where the refusal is in the DOM and not on the screen. *@
+                @if (_satchelOutcome is { } said)
+                {
+                    <div class="satchel-outcome">@said</div>
+                }
+
                 @if (_satchel.Count == 0)
                 {
                     <div class="satchel-empty">
