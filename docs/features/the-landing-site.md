@@ -1013,6 +1013,15 @@ send a captain looking for a card that does not exist.
 
 A game where every object earns a full-screen card has no objects that matter.
 
+**And the card wears its own office's face** (#695). Owner, wallet in hand: *"I have 3 ID cards but they all
+have the same gen AI image."* The letterhead had been rolling one of five offices off `hive:card:{body}:{band}`
+since #679 while the picture stayed a single #528 constant, so three cards from three moons opened three
+different sentences over one photograph. There are five faces now — works, liaison, estates, procurement,
+inspectorate — and `AuthorityCardArtUrl(card)` reads **the same roll the title reads**
+(`UndergroundComplex.OfficeOf`, one record carrying both the letterhead and the file) rather than re-deriving
+it, because a second sum for a fact that already has one is this repo's most expensive habit. Compositions in
+`docs/art-manifest-hive.md` §2a; the #528 original stays as the fallback for a card id nothing can parse.
+
 **The thing on the pallet.** Owner: *"kind of horror theme in a Lovecraft way … like finding a massive collar
 designed for Cthulhu's neck :D"*. One per facility, only in the band nobody listed, on its deepest floor —
 and it is **designated, not rolled**, for the same reason the way-down card is (#592): a seeded one-in-N

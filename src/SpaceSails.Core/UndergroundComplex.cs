@@ -1530,20 +1530,45 @@ public static class UndergroundComplex
     /// and recorded there: the line that must not be crossed is a NAV FIX. A site code sorts a wallet; a
     /// bearing and a distance would hand the captain the search the whole Hive is arranged around. It still
     /// never says what the building was for (§13.8), which is the canon that actually matters.</para></summary>
-    public static string CardTitle(AuthorityCard card)
-    {
-        string[] offices =
-        [
-            "OFFICE OF WORKS · SUB-REGISTRY",
-            "MINISTRY LIAISON · UNNUMBERED",
-            "ESTATES · SPECIAL PROJECTS",
-            "PROCUREMENT · SCHEDULE C",
-            "INSPECTORATE · NO STANDING",
-        ];
-        ulong seed = DiceRule.Seed($"hive:card:{card.BodyId}:{card.Band}");
-        return $"🎫 SHAFT {card.Band + 1} · {offices[(int)(seed % (ulong)offices.Length)]} · " +
-            $"{BodyNames.Designation(card.BodyId)} SITE";
-    }
+    public static string CardTitle(AuthorityCard card) =>
+        $"🎫 SHAFT {card.Band + 1} · {OfficeOf(card).Letterhead} · " +
+        $"{BodyNames.Designation(card.BodyId)} SITE";
+
+    /// <summary>#695 · ONE OFFICE, ONE FACE. The office that issued a card is the letterhead printed across
+    /// the top of it AND the photograph laminated into it, and those are the same office because they are
+    /// the same record — not because two pieces of arithmetic were written to agree.
+    ///
+    /// <para>Owner, wallet in hand: <i>"I have 3 ID cards but they all have the same gen AI image."</i> The
+    /// title had rolled one of five offices since #679; the picture was a single constant. Pairing them by
+    /// re-deriving the roll at the art seam would have been the house's most expensive bug class — two
+    /// sources for one fact — waiting for somebody to touch one seed string and not the other.</para></summary>
+    /// <param name="Letterhead">What the office stamps across the top of the card.</param>
+    /// <param name="ArtUrl">The face laminated into it (#695). Degrades cleanly like every other art slot.</param>
+    public readonly record struct CardOffice(string Letterhead, string ArtUrl);
+
+    /// <summary>The five offices a card can be issued by, in the order the roll indexes them. Order is part
+    /// of the save-compatible identity of a card: changing it re-issues every card in every wallet.</summary>
+    private static readonly CardOffice[] TheOffices =
+    [
+        new("OFFICE OF WORKS · SUB-REGISTRY", "art/the-authority-card-works.jpg"),
+        new("MINISTRY LIAISON · UNNUMBERED", "art/the-authority-card-liaison.jpg"),
+        new("ESTATES · SPECIAL PROJECTS", "art/the-authority-card-estates.jpg"),
+        new("PROCUREMENT · SCHEDULE C", "art/the-authority-card-procurement.jpg"),
+        new("INSPECTORATE · NO STANDING", "art/the-authority-card-inspectorate.jpg"),
+    ];
+
+    /// <summary>Every office, for an audit that has to walk them all. Nothing in the game iterates this —
+    /// a card gets exactly one, from <see cref="OfficeOf"/>.</summary>
+    public static IReadOnlyList<CardOffice> CardOffices => TheOffices;
+
+    /// <summary>WHICH office issued this card. The single roll — everything printed on the card, in words or
+    /// in pixels, reads its answer rather than rolling again.</summary>
+    public static CardOffice OfficeOf(AuthorityCard card) =>
+        TheOffices[(int)(DiceRule.Seed($"hive:card:{card.BodyId}:{card.Band}") % (ulong)TheOffices.Length)];
+
+    /// <summary>#695 · The face of THIS card. A pure function of the card's identity — no stored state, so a
+    /// wallet loaded off a save shows the same five faces it showed when the cards were minted.</summary>
+    public static string AuthorityCardArtUrl(AuthorityCard card) => OfficeOf(card).ArtUrl;
 
     /// <summary>The Key haul, said out loud. It names the shaft it runs, because a card whose purpose is a
     /// mystery is a keypad by another route.
@@ -2146,7 +2171,16 @@ public static class UndergroundComplex
             "It was not shut to keep anybody out of there. It was shut to keep it shut.";
     }
 
-    public const string AuthorityCardArtUrl = "art/the-authority-card.jpg";
+    /// <summary>The card face for a card nobody can name — the #528 original, kept when #695 gave every card
+    /// the face of its own issuing office.
+    ///
+    /// <para>No caller reaches it today, and that is a fact rather than an oversight: every seam that opens a
+    /// card has already run <c>AuthorityCard.TryParse</c> before it asks for a picture, and an id that fails
+    /// there gets no card at all rather than a card wearing a stranger's photograph. This is the face for a
+    /// seam that has an authority in front of it and cannot roll — the satchel row already keeps the matching
+    /// text fallback (<i>"🎫 an authority card"</i>), and the art side should not have to invent one under
+    /// pressure. It is deliberately NOT one of the five, so it can never impersonate an office.</para></summary>
+    public const string AuthorityCardFallbackArtUrl = "art/the-authority-card.jpg";
 
     public const string AuthorityCardLabel = "🎫 THE COUNTERSIGNATURE";
 

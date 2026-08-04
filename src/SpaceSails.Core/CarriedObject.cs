@@ -49,7 +49,7 @@ public static class CarriedObject
             Satchel.Kind.Authority
                 when UndergroundComplex.AuthorityCard.TryParse(item.Id, out UndergroundComplex.AuthorityCard c)
                 => new Reveal(
-                    UndergroundComplex.AuthorityCardArtUrl,
+                    UndergroundComplex.AuthorityCardArtUrl(c),
                     UndergroundComplex.AuthorityCardLabel,
                     UndergroundComplex.AuthorityCardStory(c) + "\n\n" + WhatItRuns(c, hereBodyId)),
 
