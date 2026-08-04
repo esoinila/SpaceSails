@@ -265,9 +265,14 @@ public sealed class TheDeckMarksWhatYouLeftTests
     /// <para>The marks are composed by the rebuild, so putting a thing down and picking it back up must each
     /// ask for one. Without this the mark appears whenever some unrelated event next rebuilds the deck —
     /// which is indistinguishable, at the moment the owner looks down, from no mark at all.</para>
+    ///
+    /// <para>#696 · The drop is <c>SetItDown</c> now — <c>LeaveItem</c> is the press, and for a document it
+    /// starts a twenty-second hold before anything reaches the ground. The redraw belongs to the moment the
+    /// thing actually LANDS, which is the far end; pinning it to the press would pin it to a moment when
+    /// there is deliberately nothing on the floor to draw.</para>
     /// </summary>
     [Theory]
-    [InlineData("private void LeaveItem(Core.Satchel.Item item)")]
+    [InlineData("private void SetItDown(SurfaceExcursion ex, Core.Satchel.Item item, string standing)")]
     [InlineData("private bool TryPickUpWhatYouLeft()")]
     public void PuttingAThingDownAndTakingItBackBothRedrawTheDeck(string signature)
     {

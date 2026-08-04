@@ -170,6 +170,47 @@ axis-aligned-only fix would pass a lazy test and still let a pack in through eve
 3.8 **A shelter's promise must be true on the map.** Every spec the tracker points at is built at that spot,
 with walls, a door, a rack and a locker, and a centre that counts as inside.
 
+3.9 **And the tank prices the paperwork, because the tank prices TIME** (#696). Owner, mid-run, designing the
+detective loop's cost model:
+
+> *"How is our detective notebook / picture taking progressing for our ability to process the files etc so we
+> don't need carry them. That is something one would do without using tanked air. It is good game mechanic...
+> we take time to process the loot."*
+
+Processing a find — photographing a document so the sheet can be left, deciding a paper is a map — is
+**twenty seconds of standing still** (§13.9). The whole cost model follows from that one sentence and
+**nothing computes it**:
+
+| where you process it | what it costs |
+| --- | --- |
+| out on the regolith, or on a dead floor | the seconds, and the tank for every one of them (~16 s of air per sheet — held position is the cheapest breathing there is, `Breathing.Still`) |
+| inside a shelter, inside a #608 refuge, on a floor that still holds pressure | only the seconds. The drain is already off there |
+| standing in her tube | only the seconds, and the tank is filling anyway |
+
+The issue's fourth venue — *"aboard ship: the natural place to clear a satchel after an excursion"* — is
+**not** in v1, and this says so rather than implying it. The satchel is an excursion surface: `I` opens it
+only while `_surface` is live, so there is no ship-side pocket to clear one from and nothing here invents a
+ship UI to make the table look complete. What the captain actually has is her tube — walk back into it with a
+full sleeve and every sheet processes free — plus every shelter, refuge and pressurised floor on the ground.
+A satchel at a desk is an owner call, not something to sneak in under a feel pass.
+
+That table is not implemented anywhere. `SuitAir.SourceOf` has answered *where the air comes from* on four
+kinds of ground since #612, the drain is gated on its answer, and the hold does nothing but let sim time pass
+— so the decision *read it here or haul it back to something pressurised* is emergent, and the two systems
+are kept **deaf to each other by guard**: `Processing.cs` may not name the suit, and `SuitAir.cs` may not name
+processing. The second half matters as much as the first: the walk-back arithmetic is the one number a captain
+plans their life around, and it must never acquire an opinion about their filing habits.
+
+**This is the first reason to visit a shelter when you are not dying.** It never had one. It was a place you
+crawled to; it is a field darkroom now, and a captain who works a site properly comes back to it on purpose.
+
+**An air warning fired mid-hold BREAKS the hold**, loudly, and says so. §3.2's rule — air is never a silent
+timer that kills you — has an obvious failure mode the moment the game can ask a captain to stand still for
+twenty seconds: a crossing line playing behind a progress bar the captain is watching fill is that silent
+timer wearing a costume. Each threshold is one-shot per walk, so it is a **beat and not a lockout** — the next
+press starts the same hold again, and finishing a manifest on the reserve is a decision the captain is allowed
+to take.
+
 ## 4 · What is out there
 
 4.1 **About half the ruins hold something.** Empty rooms are load-bearing: if every building paid out,
@@ -891,6 +932,71 @@ back is real (#600's lift proved that an audit can show you can *reach* a thing 
   regolith — the appended-region way the hidden door and the outpost hut are, so no generator and none of the A*
   audits that walk them change. It appears on the drop and clears on the recovery, both of which now redraw:
   a mark that waited for some unrelated rebuild is, at the moment the owner looks down, no mark at all.
+
+**And processing the loot TAKES TIME, which is how the air came to price the where** (#696). Owner, mid-run,
+designing the detective loop's cost model:
+
+> *"How is our detective notebook / picture taking progressing for our ability to process the files etc so we
+> don't need carry them. That is something one would do without using tanked air. It is good game mechanic...
+> **we take time to process the loot**."*
+
+Until this, the loop above had no body. A captain could stand at a door with a full sleeve and empty it into
+the field book in six clicks — gist filed, paper dropped, pocket free — and the world outside the dialog was
+exactly where it had been when they opened it. Knowledge was the whole reward of the ground, and it was being
+collected in a frozen moment.
+
+> **Processing a document is a HOLD: `Processing.SecondsPerDocument` (20 s) of standing still, and the effect
+> fires only at the far end.**
+
+Twenty out of the owner's fifteen-to-thirty. The bottom of that band is a pause nobody plans around; the top
+is where a captain stops taking the decision seriously and starts resenting it. It is a sixtieth of a tank, so
+a sleeve of six worked through on open regolith is two minutes and a tenth of your air — a real bite that
+never on its own kills you.
+
+- **Both halves of the detective loop, at the same price.** Leaving a `Paper` or a `Dirt` via 🫳 (the gist
+  filing above) and reading a paper as a clue at the tracker (§13.10, #603) are the same twenty seconds.
+  Charging for one and giving the other away would teach the captain to read everything on the spot and file
+  nothing, which is the decision the cost model exists to create being deleted by the cost model.
+- **Rounds, cards and relic notes still go down instantly.** There is no gist to a handful of ammunition, so
+  there is nothing to stand still for — and the branch asks `LeftBehind.GistOf`, the same question the gist
+  filing itself asks, so the rows that carry a clock are exactly the rows the hint warns about.
+- **The satchel SHUTS on the way in.** This deliberately reverses the *"the satchel stays open"* call above,
+  and the reason is the mechanic: the teeth are twenty seconds of being **stationary and visible**, the motion
+  tracker keeps running the whole time, and a captain cannot watch a fan through a backdrop blur. The bar fills
+  over the captain's own mark on the one channel bar the surface has always had (#562), wearing 📸 and the
+  warning amber — the rearm is the ship helping you; this is you exposing yourself. #680's law was never *"say
+  it in the dialog"*; it is *say it where the player is looking*, and one method decides that now. Reopen the
+  pocket mid-hold and the pocket says what is under your hands.
+- **Nothing is spent until the far end.** The document is in the sleeve for the whole hold — nothing removed,
+  nothing filed, nothing on the ground — so an interruption has nothing to undo and no retry can double-file.
+- **Four ways to lose it, all of them said.** Stepping off the spot (`StandingToleranceDu`, 1.5 du — a nudge,
+  never a step), riding the lift to another floor, an air alarm (§3.9), and something getting a hand on you.
+  The last is on the SWING and not on the wound: a captain who turns a blow aside has still had an arm come
+  through the space they were photographing into. Lifting off with a hold running says so too, because
+  otherwise the first thing they do at the desk is look for a gist that was never filed.
+- **The far end fires the effect the game already had** — `SetItDown` for a leave, `TheOfferIsAnswered` for a
+  clue. Not a copy of those endings, the same ones (#697's law, one lane later).
+- **The free venues are the ones you can reach with a pocket in your hand**: her tube, every shelter, every
+  #608 refuge, every floor that still holds pressure (§3.9). Not the ship — the satchel is an excursion
+  surface and there is no desk-side pocket, which the air table says out loud instead of implying one.
+- **`?process=0`** makes holds instant, for story tests. There is deliberately no cheat for what a hold costs
+  in air, because nothing computes that.
+
+*(Enforced: `WeTakeTimeToProcessTheLootTests` (Core) — the clock is one number in the owner's band and a real
+slice of a tank; a zero-length hold is finished rather than divided by; the bar filling and the effect firing
+agree on what *finished* means; the stand-still tolerance is a circle and not a box and is smaller than half a
+second of walking; every interruption line still promises the paper is in the sleeve and nothing was filed, and
+the four are four sentences; the hint and the hold read one number; **processing where the air is spends
+nothing and processing on open regolith spends exactly the hold's worth** (16 s per sheet), driven through the
+real `SuitAir` predicate and drain; and the two files may not name each other. Watched go RED against four
+transcriptions — `Done` written with `>`, `Fraction` as a bare division, a per-axis tolerance, and the
+coupling itself in both directions: 2, 2, 1 and 1 red. `ProcessingTheLootTakesTimeTests` (client) for the
+twelve shapes — the press starts a clock instead of filing on the spot, the clue read costs the same, nothing
+is spent until the far end, the far end fires the shared ending after clearing the clock, **the darkroom never
+mentions the tank and is stepped after the suit on the same tick**, walking off and changing floor abandon, all
+three air alarms break the hold, being reached and lifting off break it, the one bar says which slow thing it
+is, the pocket speaks for itself mid-hold, the clock is one number the hint reads, and the QA cheat switches
+the clock and nothing else. Watched go RED against the build that shipped #697: **12 of 12**.)*
 
 **And the I key shuts the pocket it opens** (#688). Owner: *"If I press I when inventory is open, let's close it
 then."* One line of feel, and the kind that is invisible until you are in a corridor with a pack coming and the

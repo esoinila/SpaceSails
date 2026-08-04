@@ -1890,6 +1890,16 @@
                     <div class="satchel-outcome">@said</div>
                 }
 
+                @* #696 · AND A RUNNING HOLD SAYS SO, HERE. The darkroom shuts the satchel on the way in so
+                   the captain can watch the fan, but nothing stops them opening it again with I while the
+                   twenty seconds run — and a pocket that says nothing about the document currently under
+                   their own hands is the dialog lying about itself. Same law as the line above: whatever
+                   surface is up is the surface that has to speak (#680/#686). *@
+                @if (ProcessingUnderway() is { } busy)
+                {
+                    <div class="satchel-outcome">@busy</div>
+                }
+
                 @if (_satchel.Count == 0)
                 {
                     <div class="satchel-empty">
@@ -1935,9 +1945,15 @@
                                        never a mode — for #614's reason one size down, a captain making room
                                        must not be one mis-click away from offering a relic to a bulkhead. It
                                        stays available at a door, because a door is exactly where you discover
-                                       your pockets are full. *@
+                                       your pockets are full.
+
+                                       #696 · And for a DOCUMENT the hint names the seconds, because the
+                                       decision the darkroom exists for — here, or somewhere with air in it —
+                                       cannot be taken by a captain who finds out the price after pressing.
+                                       It reads ProcessingSeconds, which is the Core constant (and the QA
+                                       cheat), so the hint and the clock are one number. *@
                                     <button type="button" class="satchel-leave"
-                                            title="Leave it here — it stays where you put it"
+                                            title="@LeaveHintFor(item)"
                                             @onclick="() => LeaveItem(item)">🫳</button>
                                  </div>;
                         }

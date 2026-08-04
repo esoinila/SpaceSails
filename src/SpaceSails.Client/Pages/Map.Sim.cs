@@ -593,6 +593,25 @@ public partial class Map
                     _airCheatSeconds = Math.Clamp(secs, 1, SuitAir.TankSeconds);
                 }
             }
+            else if (pair.StartsWith("process=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #696 dev cheat: /map?process=0 makes processing a document INSTANT — the darkroom hold
+                // (photographing a sheet so it can be left, reading a paper as a clue) is twenty seconds of
+                // standing still by design, which is the mechanic and is exactly the wrong thing to make a
+                // story test sit through. Any other value sets the clock in sim seconds, so the feel itself
+                // can be tuned from the URL without a rebuild. Combine with dock/site/land:
+                //   /map?dock=the-tilt&site=0&land=1&process=0
+                //
+                // It is the CLOCK and nothing else. There is deliberately no switch here for what the hold
+                // costs in air, because nothing in the game computes that: the hold passes sim time and the
+                // suit prices sim time, and a cheat able to decouple them would be a second answer to the
+                // one question this whole lane exists to leave in one place.
+                string candidate = Uri.UnescapeDataString(pair["process=".Length..]);
+                if (double.TryParse(candidate, NumberStyles.Float, CultureInfo.InvariantCulture, out double hold))
+                {
+                    _processCheatSeconds = Math.Max(0, hold);
+                }
+            }
             else if (pair.StartsWith("collectors=", StringComparison.OrdinalIgnoreCase))
             {
                 // #583 dev cheat: /map?collectors=20 forces a repo boat to follow you down and puts it on the

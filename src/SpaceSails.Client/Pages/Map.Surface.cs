@@ -399,6 +399,50 @@ public partial class Map
         public double AnchorX, AnchorY; // the drill point — stepping away from HERE pauses the bore
     }
 
+    // ── #696 · THE DARKROOM CHANNEL ────────────────────────────────────────────────────────────────────
+    //
+    // Owner: "That is something one would do without using tanked air... we take time to process the loot."
+    //
+    // The third channel, and deliberately the same shape as the other two: an anchor you have to stand on, a
+    // clock, and an effect that fires ONLY at the far end. What makes it different from a dig is that it is
+    // silent — a captain photographing a pay sheet is not swinging a shovel — so the teeth are not noise,
+    // they are the twenty seconds themselves, watched on the fan.
+    //
+    // NOTE WHAT IS NOT ON THIS CLASS: anything about air. The hold passes sim time and StepSuitAir prices
+    // sim time, and the two never speak. A tank field here would be a second answer to a question that is
+    // already answered correctly in one place, on four different kinds of ground (#573/#585/#608/#612).
+    private sealed class ProcessingHold
+    {
+        /// <summary>Which slow thing — the sentences differ, the clock does not.</summary>
+        public required Core.Processing.Work Work { get; init; }
+
+        /// <summary>The document under the captain's hands. It is STILL IN THE SATCHEL: nothing is removed
+        /// and nothing is filed until the far end, which is what makes "an interruption loses nothing"
+        /// structural rather than a promise about tidying up afterwards.</summary>
+        public required Core.Satchel.Item Item { get; init; }
+
+        /// <summary>What to call it on screen, composed once at the start, so the abandon line and the start
+        /// line cannot disagree about what is in the captain's hands.</summary>
+        public required string Label { get; init; }
+
+        /// <summary>Where the boots were when the hold started, and which floor they were on. Drifting off
+        /// this spot — or riding the lift — abandons it.</summary>
+        public double AnchorX { get; init; }
+        public double AnchorY { get; init; }
+        public int Floor { get; init; }
+
+        /// <summary>Sim seconds stood so far.</summary>
+        public double Elapsed { get; set; }
+
+        /// <summary>#691 · Where the thing is being set down, in the captain's own words, captured at the
+        /// START. The captain cannot move during a hold, so this can never go stale — and re-deriving it off
+        /// the avatar at the far end would be a second answer to a question already asked.</summary>
+        public string Standing { get; init; } = "";
+
+        /// <summary>#603 · What the paper is being read AT, for the clue path. Null on a leave.</summary>
+        public (SatchelTry.Target Target, string? Context, string Label)? At { get; init; }
+    }
+
     private sealed class SurfaceExcursion
     {
         public required ShuttleStop Stop { get; init; }
@@ -415,6 +459,12 @@ public partial class Map
         public double DropX, DropY;
         public bool Buried { get; set; }                 // the carried chest went into the ground
         public DigChannel? Channel { get; set; }
+
+        // #696 · The document under the captain's hands right now, if any. It rides on the EXCURSION and not
+        // on the component, so that the one interruption nothing could sensibly listen for — the shuttle
+        // lifting — takes the hold with it rather than leaving a clock ticking over an excursion that no
+        // longer exists. Never saved: a half-photographed sheet is not a possession.
+        public ProcessingHold? Processing { get; set; }
 
         // Lane-1 · the tide clock (owner, 2026-07-18): the deep hands up a Reever every seeded gap, for
         // the whole excursion, with no fixed total. TideSeconds accrues real time; when it crosses the
@@ -681,8 +731,14 @@ public partial class Map
         public bool Carrying => (PendingCoin > 0 || PendingCargo.Count > 0) && !Buried && !ChestDropped;
         public bool Channeling => Channel is not null;
         // #371 Phase 3 / #394: any channel underway (a dig, a door-force, OR the drill) — mutually exclusive.
+        //
+        // #696 · AND THE DARKROOM IS ONE OF THEM. A captain photographing a pay sheet has both hands full;
+        // more to the point, all of these draw the SAME progress bar (#562), so two at once would be one bar
+        // reporting one of them and the captain watching the wrong clock. The exclusion runs both ways —
+        // BeginProcessing refuses while a channel is up, and every [E] that starts a channel already asks
+        // this property.
         public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null
-            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null;
+            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null || Processing is not null;
     }
 
     // ── Boarding: pick a surface, optionally load a chest, and grow the tube IN PLACE. ──
@@ -1157,10 +1213,16 @@ public partial class Map
 
         double home = DistanceToTheTube();
 
+        // #696 · Did an alarm go off on this tick? A captain must never suffocate inside a silent hold, and
+        // a warning that plays while they are watching a progress bar fill is #564's forbidden silent timer
+        // wearing a costume. Collected across the three thresholds and acted on once, below.
+        bool alarmed = false;
+
         // THE LINE. Once, on the step it is crossed, while there is still a decision in it.
         if (!ex.AirWarned && SuitAir.PastPointOfNoReturn(ex.AirSeconds, home))
         {
             ex.AirWarned = true;
+            alarmed = true;
             RendererInterop.PlayCue("alarm");
             ShowPulseMessage(SuitAir.CrossingWarning);
         }
@@ -1170,6 +1232,7 @@ public partial class Map
         if (!ex.ReserveNoted && SuitAir.OnTheReserve(ex.AirSeconds))
         {
             ex.ReserveNoted = true;
+            alarmed = true;
             RendererInterop.PlayCue("alarm");
             ShowPulseMessage(SuitAir.ReserveEngagedLine);
         }
@@ -1181,11 +1244,21 @@ public partial class Map
         if (!ex.AirLowWarned && SuitAir.RunningLow(ex.AirSeconds, home))
         {
             ex.AirLowWarned = true;
+            alarmed = true;
             RendererInterop.PlayCue("alarm");
             if (!ShowAirCardOnce())
             {
                 ShowPulseMessage(SuitAir.LowAirWarning(ex.AirSeconds, home));
             }
+        }
+
+        // #696 · THE ALARM TAKES YOUR HANDS OFF THE PAPER. Note which way this dependency points: the suit
+        // interrupts the darkroom, the darkroom knows nothing about the suit. Each threshold is one-shot per
+        // walk, so this is a BEAT and never a lockout — the next press starts the same hold again, and a
+        // captain who wants to finish reading a manifest on the reserve is allowed to make that decision.
+        if (alarmed)
+        {
+            ProcessingIsInterrupted(Core.Processing.Interruption.Alarm);
         }
 
         if (ex.AirSeconds <= 0)
@@ -2583,10 +2656,31 @@ public partial class Map
             return;
         }
 
+        string standing = WhereYouAreStanding();
+
+        // ── #696 · A DOCUMENT IS NOT DROPPED. IT IS PROCESSED, AND THAT TAKES TIME ──
+        //
+        // Owner: "we take time to process the loot." Leaving a paper files what it SAID (below), which is
+        // the captain photographing it — and that is seconds of standing still, not a click. Only documents
+        // hold: there is no gist to a handful of rounds, so there is nothing to stand still for, and the
+        // question "is there a gist" is asked ONCE, by Core, here and at the far end alike.
+        if (LeftBehind.GistOf(item, standing) is { Length: > 0 })
+        {
+            BeginProcessing(ex, Core.Processing.Work.File, item, standing, at: null);
+            return;
+        }
+
+        SetItDown(ex, item, standing);
+    }
+
+    /// <summary>#688 · The drop itself, once whatever had to happen first has happened. Everything that was
+    /// in <see cref="LeaveItem"/> before #696 put a clock in front of it — unchanged, because the effect at
+    /// the far end of a hold must be the effect the game already had, not a second copy of it.</summary>
+    private void SetItDown(SurfaceExcursion ex, Core.Satchel.Item item, string standing)
+    {
         // Rounds go down as the whole stack: six rounds is ONE thing you are carrying (#603), so it is one
         // thing you set down. Leaving them a round at a time would be inventory management.
         (int sqX, int sqY) = BeachComber.SquareOf(_avatarX, _avatarY);
-        string standing = WhereYouAreStanding();
         ex.Ground.Leave(LeftBehind.SpotKey(ex.Floor, sqX, sqY), item);
         _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count)];
 
@@ -2598,15 +2692,16 @@ public partial class Map
         // does not, which is #587's law ("a find that is shown once is a find that is lost") arriving at the
         // moment the captain lets go.
         //
-        // FileNote and not ShowAndFile: the satchel is open over the top of this, so the SAYING happens in
-        // the dialog (#686's record-half idiom) and the pulse would play under the backdrop's blur.
+        // FileNote and not ShowAndFile: the SAYING is one line and it goes wherever the captain is actually
+        // looking (#680/#686), which is what SayItWhereTheyAreLooking decides. A second pulse for the gist
+        // would be the book reading itself out loud.
         string? gist = LeftBehind.GistOf(item, standing);
         if (gist is { Length: > 0 })
         {
             FileNote(gist, item.Kind == Core.Satchel.Kind.Dirt ? "🗃" : "📋");
         }
 
-        _satchelOutcome = LeftBehind.LeaveLine(SatchelLabel(item), standing, gist is not null);
+        SayItWhereTheyAreLooking(LeftBehind.LeaveLine(SatchelLabel(item), standing, gist is not null));
 
         // #698 · AND THE DECK SAYS SO IMMEDIATELY. Owner: "there was nothing marked onto the map?" The
         // marks are composed by the rebuild, so a drop that did not rebuild would leave the captain looking
@@ -2614,6 +2709,23 @@ public partial class Map
         // same one-append-on-a-memoized-base the bury and the door-force already pay.
         RebuildSurfaceDeck();
         RequestVaultSave();
+    }
+
+    /// <summary>#680 + #696 · Say it where the captain is looking. The law #680 wrote is about the BLUR and
+    /// not about the pulse: with the satchel open over the world a line sent to the HUD is in the DOM and not
+    /// on the screen, and with the satchel shut a line stored for the dialog is nowhere at all.
+    ///
+    /// <para>It became a fork rather than a fact the moment #696 let a leave finish with the dialog closed —
+    /// the hold shuts the satchel so the captain can watch the fan, and they may or may not have opened it
+    /// again by the time the shutter closes. One method, asked by every caller, so no site has to guess.</para></summary>
+    private void SayItWhereTheyAreLooking(string line)
+    {
+        if (_showSatchel)
+        {
+            _satchelOutcome = line;
+            return;
+        }
+        ShowPulseMessage(line);
     }
 
     /// <summary>#688 · What is at your feet, answered before what is in the walls. Returns true when the press
@@ -2668,6 +2780,188 @@ public partial class Map
     private string WhereYouAreStanding() => _surface is { Floor: < 0 } ex
         ? $"on the floor of B{-ex.Floor}"
         : "on the regolith at your feet";
+
+    // ── #696 · THE DARKROOM: PROCESSING THE LOOT TAKES TIME, AND THE AIR PRICES THE WHERE ───────────────
+    //
+    // Owner, mid-run: "How is our detective notebook / picture taking progressing for our ability to process
+    // the files etc so we don't need carry them. That is something one would do without using tanked air. It
+    // is good game mechanic... we take time to process the loot."
+    //
+    // Read the whole of Core.Processing for the design. What this half does is three things and no more:
+    // start a hold, advance it while the boots stay put, and — at the far end — call the effect the game
+    // ALREADY HAD. Nothing here touches the tank. The hold passes sim time; StepSuitAir prices sim time on
+    // whatever ground the captain chose to stand on; the decision "read it here or haul it to the shelter"
+    // falls out of two systems that have never heard of each other. That is the whole ruling.
+    //
+    // THE SATCHEL SHUTS ON THE WAY IN, and it is the one judgement call in this lane worth arguing about.
+    // #691's leave verb kept the dialog open on purpose (you put a thing down in order to pick a thing up)
+    // and that was right while the drop was instantaneous. It is wrong the moment the drop has a body: the
+    // teeth of this mechanic are twenty seconds of being STATIONARY AND VISIBLE, and a captain cannot watch
+    // a motion tracker through a backdrop blur. So the pocket closes, the fan comes back, and the bar fills
+    // over the captain's own mark. #680's law is not "say it in the dialog" — it is "say it where the player
+    // is looking", which is what SayItWhereTheyAreLooking asks every time.
+
+    /// <summary>#696 · How long one document takes, right now. The Core constant, unless the QA cheat has
+    /// switched the clock off — and it is a PROPERTY rather than four call sites, so the sim, the bar, the
+    /// keybar hint and the satchel's own leave hint can never be running different numbers.</summary>
+    private double ProcessingSeconds => _processCheatSeconds ?? Core.Processing.SecondsPerDocument;
+
+    /// <summary>#696 · Take the document out and start the clock. The item is NOT removed and nothing is
+    /// filed: everything happens at the far end, so an interruption has nothing to undo.</summary>
+    private void BeginProcessing(
+        SurfaceExcursion ex,
+        Core.Processing.Work work,
+        Core.Satchel.Item item,
+        string standing,
+        (SatchelTry.Target Target, string? Context, string Label)? at)
+    {
+        string label = SatchelLabel(item);
+
+        // One pair of hands. The satchel shuts on the way in, but the captain can open it again with I and
+        // press the row a second time — and a control that does nothing and says nothing is indistinguishable
+        // from a bug (#603), so the refusal is a sentence.
+        if (ex.Processing is { } already)
+        {
+            SayItWhereTheyAreLooking(Core.Processing.AlreadyBusyLine(already.Work, already.Label));
+            return;
+        }
+
+        // And a shovel already in the ground is the same objection wearing a different glyph: every channel
+        // on this surface draws the ONE progress bar (#562), so two at once is a captain watching a clock
+        // that belongs to something else. The dig, the door-force and the drill all ask this same property
+        // before they start.
+        if (ex.AnyChannel)
+        {
+            return;
+        }
+
+        var hold = new ProcessingHold
+        {
+            Work = work,
+            Item = item,
+            Label = label,
+            AnchorX = _avatarX,
+            AnchorY = _avatarY,
+            Floor = ex.Floor,
+            Standing = standing,
+            At = at,
+        };
+        ex.Processing = hold;
+
+        // The pocket goes away so the fan comes back. See the note above — this is the one place the #691
+        // "satchel stays open" call is deliberately reversed, and the reason is that the vulnerability IS
+        // the mechanic.
+        CloseSatchel();
+
+        // ?process=0 · the QA switch. A story test must not have to wait out a clock designed to be felt,
+        // and a zero-length hold is finished the instant it starts rather than one frame later — a frame is
+        // a tick of air on the regolith, and a cheat that quietly charged for it would make the very guard
+        // this lane ships flap. It also skips the "hold position" line, because a build that tells the
+        // captain to stand still and then does not is a build whose prose has stopped being true.
+        if (ProcessingSeconds <= 0)
+        {
+            CompleteProcessing(ex, hold);
+            return;
+        }
+
+        ShowPulseMessage(Core.Processing.StartLine(work, label, ProcessingSeconds));
+        RendererInterop.PlayCue("blip");
+    }
+
+    /// <summary>#696 · Advance the hold. Stepping off the spot — or riding the lift to another floor —
+    /// abandons it; filling the clock fires the effect.
+    ///
+    /// <para>There is no air arithmetic in this method and there must never be any. StepSurface calls
+    /// StepSuitAir on the same tick with the same dt, whatever this returns, so the hold is priced by where
+    /// the captain is standing without one line here knowing that a tank exists.</para></summary>
+    private void StepProcessing(double dtRealSeconds)
+    {
+        if (_surface is not { Processing: { } hold } ex)
+        {
+            return;
+        }
+
+        if (ex.Floor != hold.Floor
+            || Core.Processing.Wandered(hold.AnchorX, hold.AnchorY, _avatarX, _avatarY))
+        {
+            AbandonProcessing(ex, Core.Processing.Interruption.Walked);
+            return;
+        }
+
+        hold.Elapsed += dtRealSeconds;
+        if (Core.Processing.Done(hold.Elapsed, ProcessingSeconds))
+        {
+            CompleteProcessing(ex, hold);
+        }
+    }
+
+    /// <summary>#696 · The far end. The hold clears FIRST, so the effect it fires runs in a world with no
+    /// hold in it — a leave that re-entered <see cref="LeaveItem"/> would otherwise meet its own clock and
+    /// refuse itself.</summary>
+    private void CompleteProcessing(SurfaceExcursion ex, ProcessingHold hold)
+    {
+        ex.Processing = null;
+        RendererInterop.PlayCue("board");
+
+        if (hold.Work == Core.Processing.Work.Read && hold.At is { } at)
+        {
+            // #603/#697 · Exactly the ending a press has always had, with exactly the arguments the press
+            // would have passed. Not a copy of it — the same method — because a hand-written second ending
+            // is this repo's first named bug class aimed at a state transition.
+            TheOfferIsAnswered(SatchelTry.Offer(hold.Item, at.Target, at.Context), hold.Item, at);
+            return;
+        }
+
+        SetItDown(ex, hold.Item, hold.Standing);
+    }
+
+    /// <summary>#696 · Cancel honestly. Nothing filed, nothing consumed, the paper still in the sleeve — and
+    /// ONE line saying so, because a twenty-second investment that evaporates in silence reads as a lost
+    /// press rather than as a decision the world took away from you.</summary>
+    private void AbandonProcessing(SurfaceExcursion ex, Core.Processing.Interruption why)
+    {
+        if (ex.Processing is not { } hold)
+        {
+            return;
+        }
+
+        ex.Processing = null;
+        SayItWhereTheyAreLooking(Core.Processing.AbandonedLine(hold.Work, hold.Label, why));
+    }
+
+    /// <summary>#696 · What the satchel says while a hold runs, or null when nothing is under the captain's
+    /// hands. Composed in Core so the dialog and the standing prompt cannot grow two vocabularies for one
+    /// clock.</summary>
+    private string? ProcessingUnderway() => _surface is { Processing: { } hold }
+        ? Core.Processing.HoldLine(hold.Work, hold.Label,
+            Core.Processing.SecondsLeft(hold.Elapsed, ProcessingSeconds))
+        : null;
+
+    /// <summary>#696 · What the 🫳 control promises before it is pressed. A DOCUMENT costs seconds, because
+    /// leaving one means photographing it first (#691); anything else is set down and that is all. The
+    /// question "is this a document" is <see cref="LeftBehind.GistOf"/>'s — the SAME call
+    /// <see cref="LeaveItem"/> branches on — so the hint and the press can never disagree about which rows
+    /// have a clock behind them.</summary>
+    private string LeaveHintFor(Core.Satchel.Item item) =>
+        _surface is not null && LeftBehind.GistOf(item, WhereYouAreStanding()) is { Length: > 0 }
+            ? Core.Processing.LeaveHint(ProcessingSeconds)
+            : "Leave it here — it stays where you put it";
+
+    /// <summary>#696 · The interruptions the hold cannot see coming, routed from the systems that CAN.
+    ///
+    /// <para>An air alarm breaks it on purpose. #564's founding rule is that air must never be a silent timer
+    /// that kills you, and a warning that fires while the captain is watching a progress bar fill is exactly
+    /// that timer wearing a costume — so the bar goes away and the alarm has the screen to itself. It fires
+    /// once per walk per threshold (the warnings are one-shot), so it is a beat and never a lockout: the
+    /// captain may start the same hold again on the next press and finish it on the reserve if that is the
+    /// decision they want to take.</para></summary>
+    private void ProcessingIsInterrupted(Core.Processing.Interruption why)
+    {
+        if (_surface is { Processing: not null } ex)
+        {
+            AbandonProcessing(ex, why);
+        }
+    }
 
     // ── #697 · THE WALLET IS ONE THING, AND IT COMES OUT ALL AT ONCE ────────────────────────────────────
     //
@@ -2726,6 +3020,23 @@ public partial class Map
     {
         if (TargetFor(item) is not { } at)
         {
+            return;
+        }
+
+        // ── #696 · DECIDING A PAPER IS A MAP TAKES THE SAME SECONDS AS PHOTOGRAPHING ONE ──
+        //
+        // Owner's ruling covers both halves of the detective loop in one sentence, and it has to: a game
+        // that charged for filing a document and handed the clue reading away free would be teaching the
+        // captain to read everything on the spot and file nothing, which is the exact behaviour the cost
+        // model exists to make a decision.
+        //
+        // The hold is started here and not inside TheOfferIsAnswered, because that method is the ENDING both
+        // presses share (#697) — putting a clock inside it would put a clock in front of a wallet fan too.
+        // Nothing else about the ending moves: the far end calls it with the same three arguments this line
+        // would have.
+        if (_surface is { } ex && item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
+        {
+            BeginProcessing(ex, Core.Processing.Work.Read, item, WhereYouAreStanding(), at);
             return;
         }
 
@@ -4125,6 +4436,11 @@ public partial class Map
         StepSuitAir(dtRealSeconds);     // #564: the tank, the line, and the walk home
         StepTubeRearm(dtRealSeconds);   // #562: the ship feeds your sentries while you stand in her tube
         StepDigChannel(dtRealSeconds);
+        // #696 · The darkroom hold, AFTER the tank. Order matters and it is this way round on purpose: the
+        // air for this tick is charged on whatever ground the captain is standing on before the hold is
+        // allowed to notice the tick at all, so a hold can never finish a frame "for free" and the alarm
+        // that breaks a hold has already fired by the time the bar is asked to fill.
+        StepProcessing(dtRealSeconds);
         AdvanceVacuumClocks(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the vacuum soak
         AdvancePump(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #488: the thrifty road
         ServeStandingPumpOrder();                                                   // #488: …and the corridor last
@@ -5906,6 +6222,13 @@ public partial class Map
             }
             r.LastSwingMs = nowMs;
 
+            // #696 · SOMETHING GOT A HAND ON YOU, AND THE EXPOSURE IS GONE. Placed before the block roll on
+            // purpose: being REACHED is what ends the hold, not being hurt by it. A captain who turns a blow
+            // aside has still had somebody's arm come through the space they were photographing into, and a
+            // darkroom that survived that would be telling them the ground is safer than it is — which is
+            // the whole thing the twenty seconds were bought to say.
+            ProcessingIsInterrupted(Core.Processing.Interruption.Reached);
+
             // The die, seeded off this contact and its swing count so a long fight never repeats itself.
             r.Swings++;
             ulong seed = DiceRule.Seed(r.JitterSeed, $"swing:{r.Swings}");
@@ -6014,6 +6337,15 @@ public partial class Map
         // narrated as nothing is indistinguishable from an escape that never happened. The heat is untouched:
         // outwalking a writ is not settling one, and they know the ship and they will know the next port.
         bool outwalkedTheWrit = ex.CollectorsLanded && _busted is null;
+
+        // #696 · A HOLD THAT THE SHUTTLE ENDS IS STILL AN INTERRUPTION, AND IT IS SAID. Nothing to undo —
+        // the sleeve was never emptied and the book was never written in — but a captain who lifted off in
+        // the middle of photographing a file has to be told the file is still in their pocket and still
+        // unread, or the first thing they do at the desk is look for a gist that was never filed.
+        //
+        // Only here, and deliberately not on the death paths that also clear _surface: a captain being
+        // narrated through the four-stage freeze does not need a line about their paperwork.
+        ProcessingIsInterrupted(Core.Processing.Interruption.LiftedOff);
 
         _surface = null;
         // #612: the next landing works its own air out from scratch, so no crossing line is ever inherited
@@ -6561,16 +6893,19 @@ public partial class Map
 
         return new DeckView.SurfaceHud(
             TrackerCaptions: BuildTrackerCaptions(ex, _hudMarks.Count),
-            // #371 Phase 3 / #562: the one progress bar serves every slow thing — a dig, a forced door, or
-            // the tube racking a magazine. The rearm is last because it is the only one that can be running
-            // while the captain is somewhere the others cannot happen (inside the tube), so it can never
-            // actually contend; ordering it here just keeps the two hands-on channels reading first.
+            // #371 Phase 3 / #562 / #696: the one progress bar serves every slow thing — a dig, a forced
+            // door, a document being photographed, or the tube racking a magazine. The rearm is last because
+            // it is the only one that can be running while the captain is somewhere the others cannot happen
+            // (inside the tube), so it can never actually contend; ordering it here keeps the hands-on
+            // channels reading first.
             DigProgress: ex.Channel?.Progress ?? ex.DoorChannel?.Progress
-                ?? (ex.RearmBotIndex is not null ? ex.RearmProgress : -1),
+                ?? (ex.Processing is { } paper
+                    ? Core.Processing.Fraction(paper.Elapsed, ProcessingSeconds)
+                    : ex.RearmBotIndex is not null ? ex.RearmProgress : -1),
             // #562: and it says which. A shovel over a magazine being racked would be exactly the class of
             // lie this lane exists to fix; the rearm is the ship HELPING you, so it reads cold-green.
-            ChannelGlyph: ex.RearmBotIndex is not null && ex.Channel is null && ex.DoorChannel is null ? "🔫" : "⛏",
-            ChannelIsAid: ex.RearmBotIndex is not null && ex.Channel is null && ex.DoorChannel is null,
+            ChannelGlyph: SurfaceChannelGlyph(ex),
+            ChannelIsAid: SurfaceChannelIsAid(ex),
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
             Blips: _hudBlips,
             Cadence: (int)MotionTracker.CadenceFor(nearest),
@@ -6633,6 +6968,16 @@ public partial class Map
     // you stand" is the rule and nothing on screen ever said so: out on the open regolith, past the pad.
     private string? BuildStandingPrompt(SurfaceExcursion ex)
     {
+        // #696 · A HOLD OUTRANKS THE CHEST. For the seconds it runs, the one thing on the screen that can
+        // still be decided is whether the captain keeps their boots where they are — and the prompt says the
+        // clock, because "hold position" without a number is an instruction to wait for an unknown length of
+        // time while something walks towards you.
+        if (ex.Processing is { } paper)
+        {
+            return $"{Core.Processing.Glyph} PROCESSING — hold position " +
+                $"({Core.Processing.SecondsLeft(paper.Elapsed, ProcessingSeconds):F0} s). Step away and it is lost.";
+        }
+
         if (!ex.Carrying)
         {
             return null; // nothing owed — the ground goes quiet again
@@ -6641,6 +6986,22 @@ public partial class Map
             ? "⛏ CARRYING THE CHEST — press E to BURY IT HERE"
             : "⛏ CARRYING THE CHEST — walk out onto the regolith, then E to bury it";
     }
+
+    /// <summary>#562 + #696 · WHICH slow thing the one bar is showing. A ladder rather than four inline
+    /// conditions at the call site, because the glyph, the tint and the PROGRESS all have to pick the same
+    /// winner — and three copies of one precedence order is the shape that drifts.</summary>
+    private static string SurfaceChannelGlyph(SurfaceExcursion ex) =>
+        ex.Channel is not null || ex.DoorChannel is not null ? "⛏"
+        : ex.Processing is not null ? Core.Processing.Glyph
+        : ex.RearmBotIndex is not null ? "🔫"
+        : "⛏";
+
+    /// <summary>#562 · Is the bar the ship HELPING you (cold green) or you exposing yourself (warning
+    /// amber)? Only the rearm is help. The darkroom is emphatically not: standing still in the open for
+    /// twenty seconds is the cost the whole mechanic is made of, and a soothing colour over it would be the
+    /// picture arguing with the sim.</summary>
+    private static bool SurfaceChannelIsAid(SurfaceExcursion ex) =>
+        ex.Channel is null && ex.DoorChannel is null && ex.Processing is null && ex.RearmBotIndex is not null;
 
     // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
     // the sling it spells out [T] deploy, and a chest in hand spells [G] drop. Affordances never hide.

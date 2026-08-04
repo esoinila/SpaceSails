@@ -135,29 +135,48 @@ public sealed class TheSatchelFeelPassTests
         Assert.True(satchel.Contains("satchel-leave", StringComparison.Ordinal),
             "the leave control has no class of its own — it is riding on the item button or the lens (#688).");
 
-        // #680/#686's law applies to this line too, and it is the easiest one in the game to get wrong: the
-        // satchel STAYS OPEN after leaving something (you are making room to take something), so a
-        // confirmation routed to the pulse HUD renders under the backdrop's blur — in the DOM and not on the
-        // screen.
-        string leave = Method("Map.Surface.cs", "private void LeaveItem(");
-        Assert.True(leave.Contains("_satchelOutcome", StringComparison.Ordinal),
-            "LeaveItem never stores its line for the dialog — the confirmation goes behind the blur (#680).");
+        // #696 · THE DROP MOVED HOUSE, AND EVERY LAW BELOW CAME WITH IT. Processing a document is a HOLD
+        // now ("we take time to process the loot"), so LeaveItem is the press that starts a clock and
+        // SetItDown is the drop the clock ends in — which is also what makes the far end of a hold the
+        // effect the game already had rather than a second copy of it. These guards read the drop wherever
+        // the drop lives; what they must never do is quietly stop asking.
+        string leave = Method("Map.Surface.cs", "private void SetItDown(");
+
+        // #680/#686's law applies to this line too, and it is the easiest one in the game to get wrong: a
+        // confirmation routed to the pulse HUD while the satchel is open renders under the backdrop's blur —
+        // in the DOM and not on the screen. After #696 that stopped being a constant and became a QUESTION
+        // (the hold shuts the pocket, and the captain may or may not have reopened it), so the drop asks one
+        // method which answers it, rather than picking a destination it cannot know is right.
+        Assert.True(leave.Contains("SayItWhereTheyAreLooking(", StringComparison.Ordinal),
+            "the drop no longer routes its line through the one place that knows whether the dialog is up — " +
+            "so it is guessing, and half the time it guesses into the blur (#680/#696).");
         Assert.False(leave.Contains("ShowPulseMessage(", StringComparison.Ordinal),
-            "LeaveItem pulses its line while the modal it was said in is still up — the exact shape #680 " +
-            "was filed on.");
+            "the drop pulses its line directly, which is the exact shape #680 was filed on the moment the " +
+            "satchel happens to be open over it.");
+
+        string says = Method("Map.Surface.cs", "private void SayItWhereTheyAreLooking(");
+        Assert.True(says.Contains("_satchelOutcome", StringComparison.Ordinal)
+            && says.Contains("_showSatchel", StringComparison.Ordinal),
+            "the say-it router does not consult the satchel — the line it places cannot be in the right " +
+            "place except by luck (#680/#696).");
+
         // #688 refinement · Leaving a document files its gist to the field book, and it must file through
-        // the RECORD HALF alone (#686): the satchel is open over the top of this, so ShowAndFile would pulse
-        // the note under the backdrop's blur on its way to the book.
+        // the RECORD HALF alone (#686): the SAYING is one line and the book must not read itself out loud
+        // on the way in.
         Assert.True(leave.Contains("LeftBehind.GistOf(", StringComparison.Ordinal),
-            "LeaveItem never asks what the thing said before putting it down — a paper left is a paper " +
+            "the drop never asks what the thing said before putting it down — a paper left is a paper " +
             "whose gist was thrown away with it (#688).");
         Assert.True(leave.Contains("FileNote(", StringComparison.Ordinal),
-            "LeaveItem never files the gist it composed (#688).");
+            "the drop never files the gist it composed (#688).");
         Assert.False(leave.Contains("ShowAndFile(", StringComparison.Ordinal),
-            "LeaveItem files through ShowAndFile, which pulses under the open satchel's backdrop (#686).");
+            "the drop files through ShowAndFile, which pulses the note as well as filing it (#686).");
 
+        // The drop itself still never closes the pocket. #696 shuts it on the way INTO a hold — deliberately,
+        // because the vulnerability is the mechanic and a captain cannot watch a motion tracker through a
+        // backdrop blur — but a thing set down with no clock in front of it leaves the pockets exactly where
+        // they were, which is #614's ruling and the reason the leave verb exists at all.
         Assert.False(leave.Contains("CloseSatchel()", StringComparison.Ordinal),
-            "leaving a thing closes the satchel — but you leave a thing in order to take another, and " +
+            "setting a thing down closes the satchel — but you leave a thing in order to take another, and " +
             "reopening the pockets between each one is the friction #614 already ruled against.");
 
         string css = File.ReadAllText(Path.Combine(
