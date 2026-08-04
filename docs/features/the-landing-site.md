@@ -185,7 +185,14 @@ Processing a find — photographing a document so the sheet can be left, decidin
 | --- | --- |
 | out on the regolith, or on a dead floor | the seconds, and the tank for every one of them (~16 s of air per sheet — held position is the cheapest breathing there is, `Breathing.Still`) |
 | inside a shelter, inside a #608 refuge, on a floor that still holds pressure | only the seconds. The drain is already off there |
-| aboard her, or in her tube | only the seconds, and the tank is filling anyway |
+| standing in her tube | only the seconds, and the tank is filling anyway |
+
+The issue's fourth venue — *"aboard ship: the natural place to clear a satchel after an excursion"* — is
+**not** in v1, and this says so rather than implying it. The satchel is an excursion surface: `I` opens it
+only while `_surface` is live, so there is no ship-side pocket to clear one from and nothing here invents a
+ship UI to make the table look complete. What the captain actually has is her tube — walk back into it with a
+full sleeve and every sheet processes free — plus every shelter, refuge and pressurised floor on the ground.
+A satchel at a desk is an owner call, not something to sneak in under a feel pass.
 
 That table is not implemented anywhere. `SuitAir.SourceOf` has answered *where the air comes from* on four
 kinds of ground since #612, the drain is gated on its answer, and the hold does nothing but let sim time pass
@@ -969,6 +976,9 @@ never on its own kills you.
   otherwise the first thing they do at the desk is look for a gist that was never filed.
 - **The far end fires the effect the game already had** — `SetItDown` for a leave, `TheOfferIsAnswered` for a
   clue. Not a copy of those endings, the same ones (#697's law, one lane later).
+- **The free venues are the ones you can reach with a pocket in your hand**: her tube, every shelter, every
+  #608 refuge, every floor that still holds pressure (§3.9). Not the ship — the satchel is an excursion
+  surface and there is no desk-side pocket, which the air table says out loud instead of implying one.
 - **`?process=0`** makes holds instant, for story tests. There is deliberately no cheat for what a hold costs
   in air, because nothing computes that.
 
