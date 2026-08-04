@@ -4274,8 +4274,10 @@
 
 .satchel-empty { padding: 0.8rem 0; }
 
-/* #680 · The last try's answer, said inside the dialog — the one layer the backdrop cannot blur. Amber
-   like the dialog's frame, not alarm-red: a refusal down here is information, not an emergency. */
+/* #680/#686 · The last try's answer, said inside the dialog — the one layer the backdrop cannot blur.
+   Amber like the dialog's frame, not alarm-red: a refusal down here is information, not an emergency.
+   One rule for both organs the disease hit: the satchel's TRY and the car panel's refused floor. */
+.lift-outcome,
 .satchel-outcome {
     font-size: 0.85rem;
     line-height: 1.5;
