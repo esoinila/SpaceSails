@@ -2435,6 +2435,7 @@ public partial class Map
         }
         _lockedDoor = null;
         _satchelOutcome = null;
+        TheSatchelOpensOnThePocket();
         _showSatchel = true;
     }
 
@@ -2443,6 +2444,7 @@ public partial class Map
     {
         _satchelTarget = null;
         _satchelOutcome = null;
+        TheSatchelOpensOnThePocket();
         _showSatchel = true;
     }
 
@@ -2471,6 +2473,55 @@ public partial class Map
     }
 
     private bool _showSatchel;
+
+    // ── #690 · THE OTHER THING A SATCHEL HOLDS ──────────────────────────────────────────────────────────
+    //
+    // Owner, designing the paper-shedding loop: "should we have notes / clues section in our inventory ui?"
+    // — and, on the register it should be written in: "it's like our detective notepad :-D".
+    //
+    // The field book (#587) rendered only in the Captain's ledger, a ship-brain surface. #688 made that a
+    // real cost: leaving a paper files its gist to the book, so knowledge was being deliberately moved into
+    // a place unreachable from the ground it came off. Record the essential data, throw out the paper, and
+    // be able to read the record standing in the dark.
+    //
+    // A pocket and a notebook are both things a satchel holds. There is NO second store here: the tab reads
+    // _fieldNotes, the one book (#587's law — one place that can never be forgotten about), through the same
+    // Core projection the ledger renders.
+    private enum SatchelPage
+    {
+        /// <summary>What you are carrying. Always where an open lands — the pocket is the primary tool.</summary>
+        Carried,
+
+        /// <summary>What the ground has told you.</summary>
+        Notes,
+    }
+
+    private SatchelPage _satchelPage = SatchelPage.Carried;
+
+    /// <summary>#690 · Whether the NOTES tab is showing the whole book rather than this ground alone. Defaults
+    /// to this ground: a captain at a door wants what THIS building has told them, not the memoirs.</summary>
+    private bool _notesEverywhere;
+
+    /// <summary>#690 · Every open lands on the pocket, on this ground, whatever the last one was left on. The
+    /// tab choice is not a setting — it is where you were looking a moment ago, and a moment ago is over.
+    /// One method rather than two copies, because a third opener would forget one of these lines.</summary>
+    private void TheSatchelOpensOnThePocket()
+    {
+        _satchelPage = SatchelPage.Carried;
+        _notesEverywhere = false;
+    }
+
+    /// <summary>#690 · The ground underfoot, named the way the BOOK names it — through
+    /// <see cref="Core.FieldNotes.PlaceLabel"/> and never re-derived here, so the filter can never drift off
+    /// the labels <see cref="FileNote"/> wrote. Null off a surface, where there is no ground to be on.</summary>
+    private string? PlaceUnderfoot() =>
+        _surface is { } ex ? Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name) : null;
+
+    /// <summary>#690 · What the NOTES tab shows on this ground: the one book, filtered by the ledger's own
+    /// grouping. Read-only — the book is capped and durable by its own laws and the satchel just holds it
+    /// open.</summary>
+    private IReadOnlyList<Core.FieldNote> NotesFromThisGround() =>
+        Core.FieldNotes.Here(_fieldNotes, PlaceUnderfoot());
 
     /// <summary>#680 · What the last failed offer answered, said inside the dialog itself. The pulse HUD
     /// renders under the modal backdrop's blur, so a refusal routed there is in the DOM and not on the

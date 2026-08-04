@@ -1749,7 +1749,108 @@
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
             <div class="satchel" @onclick:stopPropagation="true">
-                <div class="view-object-title">🎒 WHAT YOU ARE CARRYING</div>
+                <div class="view-object-title">
+                    @(_satchelPage == SatchelPage.Notes ? "📓 WHAT YOU WROTE DOWN" : "🎒 WHAT YOU ARE CARRYING")
+                </div>
+
+                @* #690 · A pocket and a notebook are both things a satchel holds. Owner: "should we have
+                   notes / clues section in our inventory ui?" — and on the register: "it's like our detective
+                   notepad :-D". The field book used to render only at a ship-brain desk, so the captain
+                   standing at a sealed door could not consult their own notes; #688's leave verb made that
+                   acute by filing a paper's gist to exactly that unreachable place. No second store here —
+                   the NOTES page reads _fieldNotes, the one book. *@
+                <div class="satchel-tabs">
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Carried ? "on" : "")"
+                            title="What is in the satchel"
+                            @onclick="() => _satchelPage = SatchelPage.Carried">
+                        🎒 CARRIED@(_satchel.Count > 0 ? $" ({_satchel.Count})" : "")
+                    </button>
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Notes ? "on" : "")"
+                            title="What the ground has told you"
+                            @onclick="() => _satchelPage = SatchelPage.Notes">
+                        📓 NOTES
+                    </button>
+                </div>
+
+                @if (_satchelPage == SatchelPage.Notes)
+                {
+                    @* #690 · Read-only, and default to the ground underfoot: at a door the captain wants what
+                       THIS building has said, not the memoirs. Both filters come out of Core's own grouping
+                       (FieldNotes.Here / PerPlace), so the tab cannot invent a second way to name a place. *@
+                    <div class="satchel-notes-filter">
+                        <button type="button" class="satchel-filter @(_notesEverywhere ? "" : "on")"
+                                title="Only what this body and this site have told you"
+                                @onclick="() => _notesEverywhere = false">📍 this ground</button>
+                        <button type="button" class="satchel-filter @(_notesEverywhere ? "on" : "")"
+                                title="The whole book, ground by ground"
+                                @onclick="() => _notesEverywhere = true">🥾 every ground</button>
+                    </div>
+
+                    @if (_notesEverywhere)
+                    {
+                        <div class="satchel-sub">
+                            Every ground you have turned over, the ones you stood on most recently first.
+                        </div>
+
+                        @if (SpaceSails.Core.FieldNotes.PerPlace(_fieldNotes) is { Count: > 0 } book)
+                        {
+                            <div class="satchel-notes">
+                                @foreach (SpaceSails.Core.FieldFinding found in book)
+                                {
+                                    <div class="satchel-place">🥾 @found.Place</div>
+                                    @foreach (SpaceSails.Core.FieldNote line in found.Lines)
+                                    {
+                                        <div class="satchel-note">@line.Glyph @line.Text</div>
+                                    }
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="satchel-sub">
+                            @* "somewhere" is Core's own word for a ground it cannot name (PlaceLabel), and the
+                               satchel only opens on an excursion anyway — a fallback, not a second format. *@
+                            @(PlaceUnderfoot() ?? "Somewhere") — what was found here, latest first.
+                            The book keeps it. It keeps no opinion about it.
+                        </div>
+
+                        @if (NotesFromThisGround() is { Count: > 0 } here)
+                        {
+                            <div class="satchel-notes">
+                                @foreach (SpaceSails.Core.FieldNote line in here)
+                                {
+                                    <div class="satchel-note">@line.Glyph @line.Text</div>
+                                }
+                            </div>
+                        }
+                        else if (_fieldNotes.Count == 0)
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                Nothing filed for this ground. Either you have not searched it, or it had
+                                nothing to say — the book does not know which, and neither do you.
+                            </div>
+                        }
+                    }
+                }
+                else
+                {
                 <div class="satchel-sub">
                     @if (_satchelTarget is { } at)
                     {
@@ -1838,7 +1939,10 @@
                         }
                     </div>
                 }
+                }
 
+                @* One Close for both pages: the satchel shuts the same way whichever half of it you are
+                   reading, and I still toggles it (#688) regardless of the page. *@
                 <button type="button" class="view-object-close"
                         @onclick="() => Dismiss(CloseSatchel)">Close</button>
             </div>
