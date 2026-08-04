@@ -1915,6 +1915,7 @@ public partial class Map
         //
         // Core owns which buttons exist (UndergroundComplex.LiftPanel) so that the #590 card gate and the
         // #592 silence are ONE pure, tested rule instead of something re-derived in a razor file.
+        _liftOutcome = null;
         _showLiftPanel = true;
         RendererInterop.PlayCue("board");
     }
@@ -1937,15 +1938,22 @@ public partial class Map
         {
             // Said every time — a refusal that goes quiet on the second press reads as a broken button.
             // Filed once, because pressing one gate eleven times is not eleven findings.
+            //
+            // #686 · And said INSIDE the panel. Owner, at this exact gate: "result text is not displayed
+            // so it can be read. It is the same kind of bug as we had with the inventory item use." The
+            // panel stays open on a refusal, and a line pulsed from here plays under the backdrop's blur —
+            // in the DOM and not on the screen (#680's disease, second organ). The book still gets the
+            // record; the saying happens where the player is looking.
             string line = UndergroundComplex.WrongCardLine(-ex.Floor, HeldAuthorities());
             int refusedBand = UndergroundComplex.BandOf(stop.Level);
             if (ex.HiveShaftsRefused.Add(refusedBand))
             {
-                ShowAndFile(line, "🔒");
+                _liftOutcome = line;
+                FileNote(line, "🔒");
             }
             else
             {
-                ShowPulseMessage($"🔒 {refused}");
+                _liftOutcome = $"🔒 {refused}";
             }
             return;
         }
@@ -1966,11 +1974,20 @@ public partial class Map
         RideTheLiftTo(ex, stop.Level);
     }
 
-    private void CloseLiftPanel() => _showLiftPanel = false;
+    private void CloseLiftPanel()
+    {
+        _showLiftPanel = false;
+        _liftOutcome = null;
+    }
 
     /// <summary>#600 · Whether the lift panel is up. The sim keeps running behind it, exactly as it does
     /// behind the valve board.</summary>
     private bool _showLiftPanel;
+
+    /// <summary>#686 · What the last refused button answered, said inside the panel itself. The pulse HUD
+    /// renders under the modal backdrop's blur, so a refusal routed there is in the DOM and not on the
+    /// screen. Cleared whenever the panel opens or closes — the line belongs to one stand at one gate.</summary>
+    private string? _liftOutcome;
 
     private void RideTheLiftTo(SurfaceExcursion ex, int level)
     {
@@ -2809,6 +2826,13 @@ public partial class Map
     private void ShowAndFile(string text, string glyph)
     {
         ShowPulseMessage(text);
+        FileNote(text, glyph);
+    }
+
+    /// <summary>#686 · The record half alone, for a line whose SAYING happens inside an open dialog — the
+    /// pulse would play under that dialog's blur, but the book must still remember.</summary>
+    private void FileNote(string text, string glyph)
+    {
         if (_surface is not { } ex || string.IsNullOrWhiteSpace(text))
         {
             return;

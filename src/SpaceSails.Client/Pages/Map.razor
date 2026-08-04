@@ -1657,6 +1657,13 @@
                     <strong>@SpaceSails.Core.UndergroundComplex.DepthPaint(liftEx.Floor)</strong>.
                 </div>
 
+                @* #686 · A refusing button answers HERE, inside the panel's own layer — the pulse HUD sits
+                   under the backdrop blur, where the refusal is in the DOM and not on the screen. *@
+                @if (_liftOutcome is { } refusedLine)
+                {
+                    <div class="lift-outcome">@refusedLine</div>
+                }
+
                 <div class="lift-stops">
                     @foreach (SpaceSails.Core.UndergroundComplex.LiftStop stop in LiftStops())
                     {
