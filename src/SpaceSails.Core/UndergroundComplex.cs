@@ -160,6 +160,57 @@ public static class UndergroundComplex
         _ => "▣ THE TRANSIT STATION",
     };
 
+    /// <summary>#694 · DOES THIS FLOOR GET THE FACILITY PLATE — the sign beside the shaft that says
+    /// <see cref="TitleOf"/> of <see cref="KindOn"/>?
+    ///
+    /// <para>Owner, standing on B11 of a deep site: <i>"every floor has the text 'The Clinic' on it. Some
+    /// kind of artifact?"</i> It was not an artifact and it was not a leak — the plate simply drew on every
+    /// floor, and a name repeated identically twenty floors deep stops being a name and becomes wallpaper.
+    /// His reaction IS the spec.</para>
+    ///
+    /// <para><b>A building says its name where you ENTER it.</b> That is two floors and only two:</para>
+    /// <list type="bullet">
+    /// <item><b>B1</b> — the lobby. You came down from the surface and the plate tells you what you have
+    /// walked into.</item>
+    /// <item><b>The unlisted band's top floor</b>, where the site has one (#592) — its own lobby, reached by
+    /// a card and a shaft nobody listed, and the one place in the game where the plate names a
+    /// <i>different</i> Kind from everything above it. <c>▣ THE CLINIC</c> first seen under twelve floors of
+    /// <c>RETENTION 40 YR</c> is that whole feature's arithmetic delivered by one sign.</item>
+    /// </list>
+    ///
+    /// <para><b>Not every band head.</b> B5 and B9 are shaft heads too, and they get nothing: a captain
+    /// stepping out there has not entered anything, they have gone deeper into the same place. What earns
+    /// the plate is a Kind you have not been told yet — which is exactly B1 and the unlisted lobby, and the
+    /// reason this cannot be simplified to "is this floor a band top".</para>
+    ///
+    /// <para>The head office needs no exception and gets none: it has twenty-four listed floors and, by
+    /// <see cref="HasUnlistedBand"/>, nothing under them, so <c>▣ THE HEAD OFFICE</c> falls on B1 alone. HQ
+    /// naming itself once, in its own lobby, is more in character than HQ naming itself twenty-four times —
+    /// the head office does not have to keep telling you where you are.</para>
+    ///
+    /// <para>Every other floor is answered by the plate over the car (<c>B11 · LONG STORAGE</c>) and the
+    /// department signage, which is floor identity and always was. Pure, so the law is testable without a
+    /// renderer and the renderer only has to ask.</para></summary>
+    public static bool ShowsFacilityPlate(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        // Outdoors is not a floor of the facility.
+        if (level >= 0)
+        {
+            return false;
+        }
+
+        // B1 — BandTop(0), and written as the head of the first shaft rather than as a typed −1, because
+        // that is what makes it the LOBBY: the floor the surface's own car opens onto.
+        if (level == BandTop(0))
+        {
+            return true;
+        }
+
+        return HasUnlistedBand(bodyId) && level == BandTop(UnlistedBandOf(bodyId));
+    }
+
     /// <summary>#585 · DEPTH IS FREE. Owner, working out the architecture himself:
     ///
     /// <para><i>"since every secret lab can have a depth of it's own we do not need to worry about running out
