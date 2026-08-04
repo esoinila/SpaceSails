@@ -27,6 +27,7 @@ Every expensive bug on this ground had one shape: **two sources of truth for one
 | A test pinning what I wrote, not what shipped | Green tests over a death card nobody could reach |
 | One source, consumed **out of order** (#587) | A wall-builder's cursor walked backwards and sealed the two mouths it was opening — rooms drawn and unreachable on 35 floors |
 | **A guard handed the wrong world, or a threshold that selects everything** | Three independent instances in one afternoon (2026-08-02) — see below |
+| A sentence composed **before** the act it describes (#678) | The pickup line was printed, the room was struck off, and only then was the satchel asked — so a full pocket ate the find and had already claimed it. The same shape as *the sim vs the sentence*, with an ORDER at the bottom of it |
 
 ### The fifth class: a green test that asserts nothing
 
@@ -597,7 +598,8 @@ one line (#590):
 - **Never a code the player types.** You have the card or you do not. A keypad would be out of register with
   everything around it.
 - **The refusal always says why**, and names what you *are* carrying if it is the wrong card. A gate that
-  just sits there is indistinguishable from a bug — this ground has shipped that mistake before.
+  just sits there is indistinguishable from a bug — this ground has shipped that mistake before. Since #679 it
+  also says *which kind of wrong*: another shaft of this site, or another site entirely, each named (§13.10).
 
 A card is a **possession**, so it rides in the vault (`AuthoritiesSection`), not on the excursion: found
 eleven floors under a moon, still in the pocket a month and a world later. The save carries the id and
@@ -710,6 +712,39 @@ Consequences worth keeping:
 pocket rests on — every site has a band 0, so a Key found at the bottom of one always has somewhere to point,
 and a Key room issues a card exactly when there is a shaft below it and never otherwise.)*
 
+**And the pocket never lies about itself** (#678). The rule above — *a card is an object, you picked it up, so
+you have it* — held for the card and was never enforced for the SENTENCE. A live playtest four days later found
+both of its residual halves in one afternoon, and they are the same fault:
+
+| the captain saw | what was actually wrong |
+| --- | --- |
+| *"picked up an identity card"*, then a satchel with two papers and no card | on the bottom band the client's far-site fallback can come up empty, and `KeyLine` narrated *"an authority card, countersigned twice and still active"* anyway. Nothing was minted. The room was consumed |
+| nothing at all — the worst version | at twelve items `Satchel.Add` refuses, and the *"Into your pocket"* line was composed and shown **before** it ran. A full pocket ate the find and had already claimed it |
+
+> **A pickup line may only be printed for something that actually went in. What the pocket cannot take is not
+> consumed — the find stays in the room, and searching it again offers it again.**
+
+The second sentence is the owner's, near enough verbatim: *"If refused the item should stay where it was
+investigated last — not disappear like they do now, or seem to."* It is the enforcement side of #615 (leave
+must not destroy), and it is why the room key is now struck off **after** the pickup resolves rather than by
+the act of looking.
+
+- **The composition moved to Core.** `UndergroundComplex.WhatGoesInThePocket` answers all three questions in
+  one call — what goes in, what is said, whether the room is emptied at all — because the bug was never in any
+  one of those answers, it was in the ORDER four scattered client statements produced them. The client has one
+  `Satchel.Add` now, and it adds the thing the sentence was written about.
+- **`Satchel.CanTake` is asked before the room is turned over**, and it is not `!IsFull`: something already in
+  the pocket merges into the row that is there, so a full satchel still takes six more of a round you carry.
+- **A Key room that minted nothing describes no card.** It pays as an ordinary room does — a counterfoil book,
+  a punch, a lanyard with an empty window — and never once says the captain is holding an authority.
+
+*(Enforced: `ThePocketNeverLiesTests` — every haul × every card shape (own site / another site / none) × an
+empty pocket and a full one, over every floor of ten real sites, with the sweep asserting it actually covered a
+bottom band, an unlisted band and a middle band. The claim is checked against the **real satchel**: a line that
+mentions the pocket must survive `Satchel.Add` actually taking the item, because the broken build was perfectly
+self-consistent — it announced the card, handed it to a satchel that refused it, and struck the room off
+anyway. Watched go RED against today's behaviour transcribed back in: 5 of 6 red.)*
+
 13.10 **Some things you carry are worth looking at, and a card describes the LOCK, never the DOOR.**
 
 Owner: *"we could have gen-AI images of plotwise important items… maybe they say something about what door
@@ -719,16 +754,34 @@ The second half is the whole design problem. "Says what door it opens" is the te
 **quest marker**: an item that names its lock does the captain's thinking, and this facility is built on the
 opposite law. So the rule is:
 
-> A card may say **which shaft**, of **what kind of building**, and **whether it is this building**.
-> It may never say **where that building is**, or anything a tracker could act on.
+> A card may say **which shaft**, of **which site**, and **whether it is this building**.
+> It may never say **where on that ground the way in is**, or anything a tracker could act on.
+
+**The site half of that line was redrawn by the owner in #679**, and it used to read *"it may never say where
+that building is"* — the card named a shaft and an office and nothing else. Owner, holding several: *"a captain
+holding three cards from three moons sees three identical shapes and cannot plan a wallet."* He is right, and
+the old rule was defending the wrong thing. A pass has always had its holder's place of work printed on it; what
+turns an object into an objective is not a NAME, it is a **fix** — a bearing, a distance, a mark on the
+instrument. So the card face carries a site designation in the office's own register
+(`🎫 SHAFT 2 · OFFICE OF WORKS · SUB-REGISTRY · MIRANDA SITE`), the look-card says the same thing in the same
+words, and neither of them says a syllable about where on that ground the head stands. Finding it is still the
+game.
 
 That is the same discipline `SealedWayCard` already keeps — say what it is, never what to do about it. And it
 is what makes #613's foreign card pay: a captain holding a live authority for a shaft they have not found is
 holding a reason to keep flying, not a waypoint.
 
+**A refusal sorts the wallet too** (#679). `SatchelTry.Offer` has answered every try with a reason since #603,
+but the gate gave one sentence to every wrong card there is — so the second card a captain tried taught them
+nothing the first had not, and TRY stopped being a verb. There are four answers now and they are
+distinguishable **from the Line text alone**: the card works; it runs another shaft *of this site*, named; it
+was issued for another site, named; or the way is sealed and nothing you could ever carry opens it. The last of
+those is unchanged on purpose — #590 call 2 — and so is the mechanical room door: a refusal that hinted would
+send a captain looking for a card that does not exist.
+
 | gets a card | does not |
 | --- | --- |
-| an authority card (which shaft; and *"not this one"* when it is foreign) | operational paper — it has its own reader (#603) |
+| an authority card (which shaft, which site; and *"not this one"* when it is foreign) | operational paper — it has its own reader (#603) |
 | the two-stage penetrator | issue ball — it is the round you always have |
 | the thing on the pallet | a file on somebody — leverage, not a display piece |
 
@@ -745,10 +798,15 @@ cannot lift it, and a satchel claiming to contain a three-metre alloy band would
 all over again. And canon holds hardest exactly here, because this is the most tempting object in the game to
 explain the Old Ones with. It does not.
 
-*(Enforced: `TheThingsWorthLookingAtTests` — the shaft is named and the moon never is (verified RED against a
-card that appends the body id), most carried things get no card, exactly one relic per facility on a
+*(Enforced: `TheThingsWorthLookingAtTests` — the shaft **and the site** are named and no nav fix ever is (this
+assertion was inverted by #679: it used to forbid the body id outright, and it was verified RED at the time
+against a card that appended one — the change is the owner's, recorded above, and the surviving half is the
+half that was ever load-bearing), most carried things get no card, exactly one relic per facility on a
 designated real room (verified RED against a rolled placement), the kind was APPENDED so old vaults still
-read, and the canon grep covers every new string.)*
+read, and the canon grep covers every new string. `TheCardCarriesItsOwnStoryTests` holds the new law: every
+card names its site, no two sites print the same row, the satchel row reads `CardTitle` rather than a hand-made
+copy of it, and the four gate answers are pairwise distinguishable — verified RED on the build before it, where
+the wrong shaft and the wrong moon were answered with the same sentence.)*
 
 **A note on the harness.** The relic-room guard first failed against an invented 78 du-wide field, reporting
 zero rooms on *every* floor of *every* site — listed and unlisted alike. A guard that fails on a field the

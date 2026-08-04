@@ -317,7 +317,9 @@ public sealed class TheHiveTests
         {
             foreach (UndergroundComplex.Haul haul in Enum.GetValues<UndergroundComplex.Haul>())
             {
-                text.Add(UndergroundComplex.HaulLine(haul, "miranda", -2, i));
+                text.Add(UndergroundComplex.HaulLine(haul, "miranda", -2, i,
+                    UndergroundComplex.CardInRoom("miranda", -2)));
+                text.Add(UndergroundComplex.HaulLine(haul, "miranda", -2, i, null));
             }
         }
 

@@ -2137,17 +2137,21 @@ public partial class Map
                 break;
             }
         }
-        if (which < 0 || !ex.HiveRoomsEmptied.Add(HiveInterior.RoomKey(ex.Floor, which)))
+        if (which < 0)
+        {
+            return;
+        }
+
+        // #678 · THE ROOM IS NOT CONSUMED UNTIL THE FIND IS. This used to be one line — test the key and mark
+        // it emptied in the same breath — which is exactly why a find the pocket could not take was destroyed
+        // by the act of looking at it. Now the room is only struck off once the pickup has actually happened.
+        int roomKey = HiveInterior.RoomKey(ex.Floor, which);
+        if (ex.HiveRoomsEmptied.Contains(roomKey))
         {
             return;
         }
 
         UndergroundComplex.Haul haul = UndergroundComplex.InRoom(ex.Stop.Body.Id, ex.Floor, which);
-        if (haul == UndergroundComplex.Haul.Equipment)
-        {
-            _credits += 900;
-            RendererInterop.PlayCue("board");
-        }
 
         // Everything found down here is FILED (#587) - this is the place in the game most worth being able to
         // re-read, and a file on a harbourmaster that faded after eight seconds would be a joke.
@@ -2186,27 +2190,44 @@ public partial class Map
             }
         }
 
-        string pocket = haul switch
+        // ── #678 · THE POCKET NEVER LIES ──
+        //
+        // Owner, after a card he had read a pickup line for turned out not to be in the satchel: "we should
+        // have CI test that makes sure all picked items that sound useful are put into the inventory ... If
+        // refused the item should stay where it was investigated last — not disappear like they do now, or
+        // seem to."
+        //
+        // The composition used to live here, in the wrong order: the "Into your pocket" line was built and
+        // shown, the room was already struck off, and only THEN did Satchel.Add get a chance to refuse. At
+        // capacity the find was destroyed and the sentence had already claimed it. It is one pure call now
+        // (UndergroundComplex.WhatGoesInThePocket), which is the only way a test can walk every haul against
+        // every pocket — and it answers all three parts at once: what goes in, what is said, and whether the
+        // room has been emptied at all.
+        string findId = $"hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}";
+        UndergroundComplex.Pickup pick = UndergroundComplex.WhatGoesInThePocket(
+            haul, ex.Stop.Body.Id, found, findId, _satchel);
+
+        string room = UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which, found);
+
+        if (!pick.RoomEmptied)
         {
-            UndergroundComplex.Haul.Records => "  \ud83c\udf92 Into your pocket: operational paper.",
-            UndergroundComplex.Haul.Dirt => "  \ud83c\udf92 Into your pocket: a file on somebody.",
-            UndergroundComplex.Haul.Key when found is { } c && c.BodyId != ex.Stop.Body.Id
-                => "  \ud83c\udf92 Into your pocket: an authority card \u2014 and it is not for this building.",
-            UndergroundComplex.Haul.Key when found is not null
-                => "  \ud83c\udf92 Into your pocket: an authority card.",
-            UndergroundComplex.Haul.Equipment => "  \ud83d\udcb3 Crated and carried out \u2014 it sells, it does not fit a pocket.",
+            // Nothing changes but the sentence. The room is not struck off, so searching it again offers the
+            // same find — which is the enforcement side of #615 (leaving a thing must never destroy it).
+            // The deck is deliberately NOT rebuilt: the console has to still be standing there.
+            ShowAndFile(room + pick.Line, "\ud83d\udd26");
+            RequestVaultSave();   // the field note is a possession too (#587)
+            return;
+        }
 
-            // #614 \u00b7 You cannot lift it and the game must not pretend you can. What goes in the pocket is
-            // the RECORD of it, which is also the only honest thing to have taken: a measurement is exactly
-            // as much of this object as anybody has ever managed to remove from the room.
-            UndergroundComplex.Haul.Relic => "  \ud83c\udf92 Into your pocket: measurements, a photograph, a scraping. "
-                + "The thing itself stays where it is.",
+        ex.HiveRoomsEmptied.Add(roomKey);
 
-            _ => "",
-        };
+        if (haul == UndergroundComplex.Haul.Equipment)
+        {
+            _credits += 900;
+            RendererInterop.PlayCue("board");
+        }
 
-        ShowAndFile(UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which) + pocket,
-            haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
+        ShowAndFile(room + pick.Line, haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
 
         if (haul == UndergroundComplex.Haul.Dirt)
         {
@@ -2225,15 +2246,17 @@ public partial class Map
         //
         // A file on somebody is carried too, but it is never offered to a door: it is leverage on a PERSON,
         // which is the only currency down here you spend on somebody you can go and meet.
-        string findId = $"hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}";
-        if (haul == UndergroundComplex.Haul.Records)
+        //
+        // #678 · ONE ADD, and it is the one the sentence was written about. There used to be four of these
+        // scattered down the method, each deciding for itself what this room hands over — which is how the
+        // authority card came to be added AFTER the full-pocket check and to slip through it entirely.
+        if (pick.Take is { } took)
         {
-            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Paper, findId))];
+            _satchel = [.. Core.Satchel.Add(_satchel, took)];
         }
-        else if (haul == UndergroundComplex.Haul.Relic)
-        {
-            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Relic, findId))];
 
+        if (haul == UndergroundComplex.Haul.Relic)
+        {
             // The card is raised on the spot, unconditionally and every time. This is the one object in the
             // game that a captain will want to look at again the moment they find it, and #528's
             // once-per-excursion gate is for things that RECUR — a rib mouth, a card, a dead floor. There is
@@ -2246,14 +2269,14 @@ public partial class Map
         }
         else if (haul == UndergroundComplex.Haul.Dirt)
         {
-            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Dirt, findId))];
-
             // A file still names a moon on its own — it is about a PERSON and the person is somewhere. Only
             // the operational paper became a thing you have to decide about.
             GrantLabLead(DiceRule.Seed($"lead:hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
         }
 
-        if (Core.Satchel.IsFull(_satchel))
+        // #678 · Said only when something actually went in — "that was the last space" is a fact about a
+        // pickup, and on a room that handed over nothing it would be a warning attached to nothing.
+        if (pick.Take is not null && Core.Satchel.IsFull(_satchel))
         {
             ShowPulseMessage("🎒 Your hands and pockets are full. Something has to be read, spent or left " +
                 "behind before you can carry anything else out of here.");
@@ -2266,23 +2289,19 @@ public partial class Map
         // On the bottom band there is no shaft below to authorise, and rather than hand out an authority for
         // a hole nobody dug, that Key names another moon: the same payoff Records and Dirt give, which keeps
         // the deepest floor of a site pointing outward instead of at itself.
-        if (found is { } card)
+        //
+        // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to really
+        // tell the story here :-D" — the right pair with the sealed way, because the Hive has exactly two
+        // objects about the idea of passage and this is the one that works. It is raised for a card that is
+        // IN THE POCKET and never for one the world declined to mint (#678).
+        if (found is { } card && pick.Take is not null && !ex.HiveAuthorityShown)
         {
-            _satchel = [.. Core.Satchel.Add(_satchel,
-                new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
-
-            // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to
-            // really tell the story here :-D" — the right pair with the sealed way, because the Hive has
-            // exactly two objects about the idea of passage and this is the one that works.
-            if (!ex.HiveAuthorityShown)
-            {
-                ex.HiveAuthorityShown = true;
-                _viewObject = new DeckPlan.ConsoleSpot(
-                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                    UndergroundComplex.AuthorityCardLabel,
-                    UndergroundComplex.AuthorityCardArtUrl,
-                    UndergroundComplex.AuthorityCardStory(card));
-            }
+            ex.HiveAuthorityShown = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.AuthorityCardLabel,
+                UndergroundComplex.AuthorityCardArtUrl,
+                UndergroundComplex.AuthorityCardStory(card));
         }
 
         RebuildSurfaceDeck();

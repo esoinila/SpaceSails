@@ -298,7 +298,8 @@ public sealed class TheUnlistedBandTests
                 for (int room = 0; room < 12; room++)
                 {
                     text.Add(UndergroundComplex.HaulLine(
-                        UndergroundComplex.InRoom(body, level, room), body, level, room));
+                        UndergroundComplex.InRoom(body, level, room), body, level, room,
+                        UndergroundComplex.CardInRoom(body, level)));
                 }
             }
         }
