@@ -121,6 +121,42 @@ public class RevealPlatesArePaintedTests
         AssertPainted("The berth office", UndergroundComplex.BerthOfficeArtUrl);
     }
 
+    /// <summary>
+    /// #695 · EVERY OFFICE ISSUES ITS OWN FACE, AND EVERY FACE IS ON DISK.
+    ///
+    /// <para>Owner, wallet in hand: <i>"I have 3 ID cards but they all have the same gen AI image."</i> Five
+    /// offices, five photographs — and because the art seam is an <c>onerror</c>-hide like every other, an
+    /// office pointed at a JPG nobody painted would show a card with a hole in it and never say so. The whole
+    /// point of the five is that a captain can tell two cards apart at a glance; four faces and a gap is the
+    /// original complaint with extra steps.</para>
+    ///
+    /// <para><b>Proven RED</b> before the paintings were copied in — five missing basenames, one per office.
+    /// The fallback is checked too: it is what a card with an unreadable id falls back to, so it is the one
+    /// picture that must survive the other five being replaced.</para>
+    /// </summary>
+    [Fact]
+    public void EveryOfficeIssuesItsOwnPaintedFace()
+    {
+        // A sweep over an empty list is a green test that asserts nothing (fifth bug class). Pin the five.
+        Assert.Equal(5, UndergroundComplex.CardOffices.Count);
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (UndergroundComplex.CardOffice office in UndergroundComplex.CardOffices)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(office.Letterhead), "an office with no letterhead.");
+            Assert.StartsWith("art/", office.ArtUrl, StringComparison.Ordinal);
+            AssertPainted($"The authority card of {office.Letterhead}", office.ArtUrl);
+            Assert.True(
+                seen.Add(office.ArtUrl),
+                $"{office.Letterhead} shares its photograph with another office — which is the #695 bug " +
+                "(three cards, one face) reintroduced one office at a time.");
+        }
+
+        // And the #528 original, still the face of a card whose id nothing can parse.
+        AssertPainted("The authority card fallback", UndergroundComplex.AuthorityCardFallbackArtUrl);
+        Assert.DoesNotContain(UndergroundComplex.AuthorityCardFallbackArtUrl, seen, StringComparer.Ordinal);
+    }
+
     [Fact]
     public void TheConvergenceIsPainted()
     {

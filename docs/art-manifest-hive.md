@@ -82,8 +82,9 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 
 ## 2. `art/the-authority-card.jpg` — THE COUNTERSIGNATURE ★ owner's ask
 
-- **Slot:** `UndergroundComplex.AuthorityCardArtUrl`, raised by `HiveHaulInteract` on the first
-  `Haul.Key` the captain turns up.
+- **Slot:** `UndergroundComplex.AuthorityCardFallbackArtUrl` — since **#695** this is the FALLBACK face, for a
+  card whose id nothing can parse. Every card the game actually mints takes its office's own portrait (§2a).
+  Originally raised by `HiveHaulInteract` on the first `Haul.Key` the captain turns up.
 - **Why:** the card is the one object down here that still *works*, and it works because an office that
   denies existing never got round to revoking it. That is the whole tone of the facility in a hand prop.
 - **Composition (16:9):** a worn identity card lying on a steel bench under a work lamp, held at a slight
@@ -96,6 +97,53 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
   emptied records room, one rank of shelving just visible and out of focus.
 - **Feeling:** a staff pass for a job nobody will admit was a job. Bureaucratic, not sinister-looking —
   the sinister part is that it is still valid.
+
+## 2a. Five card faces, one per issuing office ★ owner's ask — #695
+
+Owner, wallet in hand: *"I have 3 ID cards but they all have the same gen AI image."*
+
+He is right and the fix was already half-built: `CardTitle` has rolled one of exactly **five offices** off
+`hive:card:{body}:{band}` since #679, and only the picture was a single constant. So there are five pictures
+now, keyed to **the same roll** — `UndergroundComplex.OfficeOf(card)` answers once and both the letterhead and
+the face read its answer. Not two sums that agree; one record with two fields
+(`UndergroundComplex.CardOffice(Letterhead, ArtUrl)`).
+
+- **Slot:** `UndergroundComplex.AuthorityCardArtUrl(card)` — a pure function of the card id, no stored state,
+  so a wallet loaded off a save shows the faces it was minted with. Read by the `HiveHaulInteract` reveal and
+  by `CarriedObject.Card` (the satchel's look-card).
+- **Common brief (all five):** a worn identity card held up in a gloved hand, laminate over a metal core,
+  corners rounded by years in a pocket. A **small institutional portrait** — flat light, plain background, not
+  smiling — kept small and soft so no likeness reads. Stamps, countersignature boxes and an embossed seal
+  rendered as **ink texture and pen-pressure only, no legible letters or numbers anywhere.** House rules §0
+  apply: the card may prove the operation was enormous, funded and inspected, never what it produced.
+- **Why five rather than one:** a captain carrying three cards can now tell them apart *at a glance* — the
+  same job #679's site code does for the wallet list, done in pixels for the card that is open in front of
+  them. Each office's personality is the entire point; a set of five near-identical laminates would be the
+  original complaint with extra steps.
+
+Painted 2026-08-05. The **as-painted** column is what is in the frame, not what was asked for — a regeneration
+works from this, and a spec that describes a picture the folder does not contain is the third named bug class
+with a JPG attached.
+
+| # | Office (the roll's order — **do not reorder**, it re-issues every card in every wallet) | File | As painted |
+|---|---|---|---|
+| 0 | `OFFICE OF WORKS · SUB-REGISTRY` | `art/the-authority-card-works.jpg` | **The grubby one.** A works pass lives in a pocket on a job, and this one has the fingerprints to prove it — thumbprints in three colours of ink across the face, scrawled countersignature lines, a burnt corner. Green bench lamp, parts bins, a pegboard of tools behind it. A sub-registry that stamps everything, and did. |
+| 1 | `MINISTRY LIAISON · UNNUMBERED` | `art/the-authority-card-liaison.jpg` | **The expensive one.** The only card in the set held in a *clean* black glove, in a lit institutional corridor with a door standing open at the end. Grey laminate, a proper embossed seal, ghost field-lines that were filled in once. An office that did not have to explain itself, and did not. |
+| 2 | `ESTATES · SPECIAL PROJECTS` | `art/the-authority-card-estates.jpg` | **The property one.** Held over a drafting table: rolled and tied site drawings, a surveying instrument in its case. Gold leaf flaking off the seal. Special Projects is what an estates department calls a building it is not going to describe, and the drawings are of it. |
+| 3 | `PROCUREMENT · SCHEDULE C` | `art/the-authority-card-procurement.jpg` | **The one that bought things.** A tagged pass on a wire loop against a stack of stencilled shipping crates, its own face a ticked schedule column — somebody signed for every line. Schedule C is a line item; this belonged to whoever cleared it. |
+| 4 | `INSPECTORATE · NO STANDING` | `art/the-authority-card-inspectorate.jpg` | **No standing, and it looks it.** The only card with no room around it at all — a bare bulb and dark, no bench, no desk, nothing that would place the holder anywhere. Worn thin, stamped in three colours by offices that outranked them. Its authority is the one thing on it that has not faded. |
+
+> **On the lettering rule.** House law §0 forbids readable text, and these five keep it — every stamp,
+> signature and field is illegible ink-texture, and the faces are soft enough that no likeness reads. What they
+> DO carry is pseudo-script: scribble that is legibly *handwriting-shaped* without being words, and on the
+> procurement card, crate stencils in the same register. That is a deliberate acceptance, not an oversight —
+> the copy is all written in code and none of it is doubled in the pixels, which is the rule's actual purpose.
+> A regeneration should hold the same line rather than trying for a blank card, which reads as a mock-up.
+
+**Guarded by** `RevealPlatesArePaintedTests.EveryOfficeIssuesItsOwnPaintedFace` (all five on disk, all five
+distinct, the fallback painted and not one of them) and
+`TheHiveCardsTests.TheFaceOfACardIsTheOfficeOnItsLetterhead` (the face and the letterhead are the same roll —
+proven RED against a transcribed second roll off `hive:cardart:{body}:{band}`).
 
 ---
 

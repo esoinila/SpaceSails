@@ -2357,7 +2357,7 @@ public partial class Map
             _viewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                 UndergroundComplex.AuthorityCardLabel,
-                UndergroundComplex.AuthorityCardArtUrl,
+                UndergroundComplex.AuthorityCardArtUrl(card),
                 UndergroundComplex.AuthorityCardStory(card));
         }
 
