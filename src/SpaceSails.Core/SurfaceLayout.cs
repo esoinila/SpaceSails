@@ -51,7 +51,12 @@ public static class SurfaceLayout
     /// area's centre (the old monolith spot), the heart every scheme dresses differently.</summary>
     public readonly record struct Field(
         double LeftX, double RightX, double TopY, double BottomY,
-        double LandingBandY, double AnchorX, double AnchorY);
+        double LandingBandY, double AnchorX, double AnchorY,
+        // #681 · THE COLUMN THE WAY HOME STANDS IN — the tube mouth's x. Handed in for the same reason
+        // LandingBandY is: it is a client LAW that Core has to place around. Without it the generator could
+        // not know where the landing approach was, and duly built a hut across it on two sites (the owner's
+        // ?land=1 drop at (-7, -39) came down inside one). Defaulted so a synthetic test field need not care.
+        double HomeX = 0);
 
     /// <summary>One body's ground: a scheme name (for the deep-area location line and tests), the
     /// interior walls, and the deep landmark(s). The fence, tube, doors, kiosk and the way home are the
@@ -90,7 +95,10 @@ public static class SurfaceLayout
     /// client reads it too.</para></summary>
     public static Field DefaultField { get; } = new(
         LeftX: -160, RightX: 150, TopY: -20, BottomY: -280,
-        LandingBandY: -27, AnchorX: -6, AnchorY: -232);
+        LandingBandY: -27, AnchorX: -6, AnchorY: -232,
+        // #681 · The down-tube's own column (the client's TubeCenterX). Same category of client law as
+        // LandingBandY above, and here for the same reason: a copy kept anywhere else drifts.
+        HomeX: -7);
 
     /// <summary>The safe half-lane kept open at each far edge of the field — no generated feature ever
     /// intrudes here, so a walk-around always exists and the deep is always reachable from the top.</summary>
@@ -105,6 +113,30 @@ public static class SurfaceLayout
     /// moons that have never seen the thing. Bug class 2 — a constant governing the wrong thing — caught
     /// before it could fire.</para></summary>
     public const double AnchorReserveRadius = 15.0;
+
+    /// <summary>#681 · How far below the landing band a shuttle sets boots down on the open regolith — far
+    /// enough out that the ground is a place rather than a doorstep, close enough that the way home is still
+    /// one run. Lives here rather than in the client because the ground has to place AROUND it, and a number
+    /// the generator cannot see is a number the generator will build on.</summary>
+    public const double LandingApproachDu = 12.0;
+
+    /// <summary>#681 · The ground kept clear around that spot. Room to stand, room to turn, room to take the
+    /// first step in any direction — the three rungs of the spawn law, expressed as a radius. Small, because
+    /// every du of keep-out is variety taken away from the rest of the world (#587's lesson).</summary>
+    public const double LandingApproachRadius = 6.0;
+
+    /// <summary>#681 · WHERE A LANDING PUTS THE CAPTAIN, and how much room it needs, as ONE answer.
+    ///
+    /// <para>Owner, on a boot that pinned him in a wall: <i>"I cannot move."</i> The hidden half of that
+    /// report is that nothing had ever reserved the square a landing uses. The lift head has had a claim in
+    /// this ledger since #585 and the shelters since before that; the spot the captain is actually set down
+    /// on had none, so on <c>luna · The Depot Apron</c> a seeded hut was built straight through it and the
+    /// audit found the drop inside its wall.</para>
+    ///
+    /// <para>The client reads this to know where to drop, and the ledger reads it to know what to avoid — one
+    /// fact, two uses, which is the only arrangement this file has ever found to work.</para></summary>
+    public static (double X, double Y, double R) LandingApproach(in Field field) =>
+        (field.HomeX, field.LandingBandY - LandingApproachDu, LandingApproachRadius);
 
     /// <summary>Lay out one landable body's ground. Miranda and Luna are authored; everything else is
     /// seeded deterministically from its id, so no two grounds are the same by construction.</summary>
@@ -142,6 +174,12 @@ public static class SurfaceLayout
         {
             list.Add(slab);
         }
+
+        // #681 · AND THE GROUND A LANDING SETS BOOTS DOWN ON. The last unclaimed patch on the whole field,
+        // and the one every excursion starts and ends on. Every other placer on this ground has kept a claim
+        // here for two issues now; the captain's own square never had one, which is how a hut came to be
+        // standing on it.
+        list.Add(LandingApproach(field));
         return list;
     }
 

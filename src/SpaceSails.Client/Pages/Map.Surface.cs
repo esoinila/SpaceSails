@@ -1987,9 +1987,10 @@ public partial class Map
             // captain lands on cannot drift from the walls that are drawn around it. That drift is exactly
             // what put him in a wall: this used to compute its own position from the RAW seeded head spot
             // while the shed was built at the nudged one.
-            (_avatarX, _avatarY) = MoonSurface.LiftHead(
+            // #681 · …through the one door the captain is ever placed through, so the car has the same net
+            // under it that the landing does. The audit still pins the un-nudged square (#602's own guard).
+            (double carX, double carY) = MoonSurface.LiftHead(
                 ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField()).CarFloor;
-            RebuildSurfaceDeck();
             // #603 \u00b7 And what you came out WITH. Owner: "Also in the brief pop-up of going to the surface...
             // inventory key needs to be advertised." Surfacing is the moment a captain takes stock \u2014 they
             // have just stopped spending air and started counting what it bought \u2014 so it is the one place
@@ -1999,13 +2000,15 @@ public partial class Map
                 : "";
             ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
                 "maintenance shed. The moon is exactly as indifferent as you left it." + carried);
+            // #681: and the placement LAST, so if the net has to catch anybody its line is the one left on
+            // screen. A rescue nobody sees is a bug nobody reports.
+            StandCaptainAt(carX, carY, "the car lets you out into the shed on the surface");
             RequestVaultSave();
             return;
         }
 
         (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
-        (_avatarX, _avatarY) = (sx, sy);
-        RebuildSurfaceDeck();
+        StandCaptainAt(sx, sy, "the car opens onto the floor");   // #681: the same net, underground
         RendererInterop.PlayCue("board");
 
         if (!wasUnderground)
@@ -3107,6 +3110,50 @@ public partial class Map
         ComposeOutpost(ex);          // #563: the hut — its dogged hatch, or the room once it is forced
     }
 
+    /// <summary>
+    /// #681 · THE ONE DOOR THE CAPTAIN IS EVER PUT THROUGH. Owner, on a boot that pinned him inside a wall of
+    /// the deep site's compound: <i>"The second url put me into the wall... I cannot move."</i> — and, while
+    /// stuck there: <i>"Maybe some code to move the character either side instead of spawning it so it cannot
+    /// move?"</i>
+    ///
+    /// <para>Every place the sim <b>places</b> the captain rather than letting them walk — the landing, the
+    /// car coming back up, the tube mouth, the hull's airlock — goes through here. The deck is built first
+    /// (the walls have to exist before anything can ask about them), then the chosen square is handed to
+    /// <see cref="SpawnNudge"/>, and if it is inside collision the captain is walked out to the nearest square
+    /// that is not.</para>
+    ///
+    /// <para><b>And it says so.</b> A rescue that happened quietly is a bug that shipped quietly. The line
+    /// goes to the pulse AND to the excursion log, so a nudged spawn shows up in play and in a report — which
+    /// is the only thing that keeps this from becoming the place generator bugs go to be forgotten. The CI
+    /// ladder (<c>TheLandingPutsYouSomewhereYouCanWALKTests</c>) asserts the square BEFORE this runs, for
+    /// exactly the same reason.</para>
+    ///
+    /// <para>Past <see cref="SpawnNudge.MaxDu"/> it refuses to help and shouts instead. A site with no
+    /// standing room within six paces of its own spawn is built wrong, and papering that over would hand the
+    /// player a working-looking excursion on ground that is not.</para>
+    /// </summary>
+    /// <param name="where">What the sim was trying to do, in the captain's own words — it is what the loud
+    /// failure names, so "the shuttle sets you down at the lift head" beats "spawn".</param>
+    private void StandCaptainAt(double x, double y, string where)
+    {
+        (_avatarX, _avatarY) = (x, y);
+        RebuildSurfaceDeck();
+
+        SpawnNudge.Result spot = SpawnNudge.Clear(x, y, DeckPlan.AvatarRadius, _deckPlan.CollisionField);
+        if (spot.Failed)
+        {
+            ShowAndFile(SpawnNudge.BrokenGroundLine(where), "⚠");
+            return;
+        }
+        if (!spot.Moved)
+        {
+            return;
+        }
+
+        (_avatarX, _avatarY) = (spot.X, spot.Y);
+        ShowAndFile(SpawnNudge.ClearedLine(spot.MovedDu), "🧤");
+    }
+
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
     // mark and the 'dig at the X' console land where the shovel did. A legacy/rumour cache with no stored
     // spot falls back to the deterministic hash-scatter, so every old save still plants a stable ✗.
@@ -3636,8 +3683,8 @@ public partial class Map
         // vacuum next to the ship they came to search. She keeps her own spawn, just inside her airlock.
         if (_surface is { } landed && Derelict.TryParseWreckId(landed.Stop.Body.Id, out _))
         {
-            (_avatarX, _avatarY) = (WreckInterior.SpawnX, WreckInterior.SpawnY);
-            RebuildSurfaceDeck();
+            StandCaptainAt(WreckInterior.SpawnX, WreckInterior.SpawnY,
+                "the boarding tube lets you out into her airlock");
             return;
         }
 
@@ -3659,16 +3706,20 @@ public partial class Map
         // can never quietly become how the game plays.
         if (_secretLabForceBodyId == landedOn.Stop.Body.Id && landedOn.Lab is { HasLab: true })
         {
-            (double hx, double hy) = SecretLab.HeadSpot(
-                landedOn.Stop.Body.Id, landedOn.Site.LayoutSalt, MoonSurface.ExpeditionField());
-
             // A pace outside the shed's door, facing it — not inside, so the walk in is still walked and the
             // door, the label and the console are all exercised the way a player meets them.
-            _avatarX = hx;
-            _avatarY = hy - 7.5;
-            RebuildSurfaceDeck();
+            //
+            // #681 · ASKED OF THE SHED. This used to take the head spot and subtract 7.5 from its Y, which was
+            // a pace clear of the door back when the head was a hand-typed 10 x 8 box — and was the far wall
+            // the moment #606 made it an ordinary hut with a seeded angle. The owner landed inside it:
+            // "The second url put me into the wall... I cannot move." One building, one answer, and the
+            // landing reads it the same way the returning car reads CarFloor.
+            (double hx, double hy) = MoonSurface.LiftHead(
+                landedOn.Stop.Body.Id, landedOn.Site.LayoutSalt, MoonSurface.ExpeditionField()).DoorStep;
+
             ShowPulseMessage(
                 "🧪 DEV ?secretlab=1: set down at the lift head. The shed is in front of you.");
+            StandCaptainAt(hx, hy, "the shuttle sets you down on the lift head's doorstep");
 
             // ...and ?floor=N goes the rest of the way down, because half the open work on this feature is
             // about what a FLOOR looks like rather than about finding the way in.
@@ -3692,9 +3743,13 @@ public partial class Map
             return;
         }
 
-        _avatarX = MoonSurface.SpawnX;
-        _avatarY = MoonSurface.LandingBandY - 12;
-        RebuildSurfaceDeck();
+        // #681 · Asked of the field, not retyped. "SpawnX, LandingBandY − 12" was a spot nothing had ever
+        // reserved, so the generator built a hut through it on two sites and the drop came down inside a wall
+        // — the ordinary landing's version of the same bug the lift head had. SurfaceLayout.LandingApproach
+        // is now the ONE answer: this reads it to know where to drop, and the claim ledger reads it to know
+        // what to keep clear.
+        (double dropX, double dropY, _) = SurfaceLayout.LandingApproach(MoonSurface.ExpeditionField());
+        StandCaptainAt(dropX, dropY, "the shuttle sets you down on the open regolith below the pad");
     }
 
     // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off. They are

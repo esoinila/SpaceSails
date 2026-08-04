@@ -28,6 +28,8 @@ Every expensive bug on this ground had one shape: **two sources of truth for one
 | One source, consumed **out of order** (#587) | A wall-builder's cursor walked backwards and sealed the two mouths it was opening — rooms drawn and unreachable on 35 floors |
 | **A guard handed the wrong world, or a threshold that selects everything** | Three independent instances in one afternoon (2026-08-02) — see below |
 | A sentence composed **before** the act it describes (#678) | The pickup line was printed, the room was struck off, and only then was the satchel asked — so a full pocket ate the find and had already claimed it. The same shape as *the sim vs the sentence*, with an ORDER at the bottom of it |
+| An offset describing a building that had since been **rebuilt** (#681) | `?secretlab=…&land=1` set the captain down 7.5 du below the lift head's middle — a pace clear of the door while the head was a 10 × 8 box, and the far wall the moment #606 made it a rotated hut. *"I cannot move."* On 30 of the 34 site × cheat combinations in the sweep |
+| A square the sim **places** you on that no ledger had ever claimed (#681) | Every other thing on the ground kept a claim; the captain's own landing spot had none, so a seeded hut was built straight through it on two sites |
 
 ### The fifth class: a green test that asserts nothing
 
@@ -932,6 +934,57 @@ facility and without it — segment count, reach against the radii the plan publ
 label at all, and the doors — so it audits the drawn ground rather than the generator's intentions.
 `TheLiftPutsYouSomewhereYouCanSTANDTests` still walks it: the head is bigger and rotated now, and both of
 those are new ways to trap somebody.)*
+
+13.15 **Every square the sim PLACES the captain on must be standable, steppable and connected** (#681).
+
+> *"The second url put me into the wall... I cannot move."*
+
+`/map?secretlab=deep&land=1` pinned the captain inside the wall of the lift head's own hut, HUD fully alive,
+air counting down from 7 h 44, offering a hidden door and a regolith probe to somebody who could not take one
+step. Deterministic — the same wall, every boot.
+
+**Why nothing caught it.** Every reachability audit this project owns starts from a point it *assumes* is
+good: 13.1 floods from the lift, `TheCaptainCanSTANDWhereTheLiftPutsThem` pins the car. The landing spawn
+**is** that assumption. It is the same blind spot that let #600 live — an audit proves you can reach things
+from X, and never once that X is somewhere a person can stand.
+
+**The ladder, weakest to strongest.** All three, because they catch different breaks:
+
+1. **Standable** — the square is in the walkable field. Catches spawn-in-wall.
+2. **Can move** — at least one orthogonal neighbour is walkable. The owner's own ask (*"or a test on spawn
+   that the player can move"*), and strictly stronger: a square can be perfectly clear and still be a **cell**
+   with wall on all four sides, which rung 1 signs off happily.
+3. **Can get home** — the spawn's walkable component holds the way home, the shelter, and the lift head where
+   the ground has one. #600's lesson at minute zero: reachable is not returnable.
+
+They run over **every square the sim places the captain on** — the `?land=1` drop, the `?secretlab=…&land=1`
+doorstep, and the car's surface exit — across every body × landing site × `?secretlab` combination the
+generator admits. *(Enforced: `TheLandingPutsYouSomewhereYouCanWALKTests`.)*
+
+**Two causes, both of them this document's own bug classes.**
+
+- **The offset described a building that had been rebuilt.** The landing computed its own answer — the head
+  spot with 7.5 taken off its Y — and that number was written when the head was a hand-typed 10 × 8 box whose
+  half-height was 4. §13.14 turned the head into an ordinary hut: 14–19.6 du wide, 11–15.4 deep, walls up to
+  3 du of piled regolith, **and a seeded angle**. Seven and a half units below the middle of that is not a
+  doorstep. **A caller doing its own geometry about a building it does not own** is #602 exactly, one head
+  further along; the fix is the same one, `MoonSurface.LiftHeadBox.DoorStep`, the mirror of `CarFloor`.
+- **Nothing had ever claimed the ground a landing lands on.** The shelters have had a keep-out since #585,
+  the lab chamber since #585, the monolith since #649 — and the square the captain is actually set down on had
+  none, so a seeded hut was legally built through it on `luna · The Depot Apron` and `secret-lab-site · The
+  Depot Apron`. `SurfaceLayout.LandingApproach` is one answer read twice: the client asks it where to drop,
+  the claim ledger asks it what to keep clear.
+
+**The net, and why it is not the fix.** Owner, while stuck: *"Maybe some code to move the character either
+side instead of spawning it so it cannot move?"* `SpawnNudge` spirals deterministically outward from a blocked
+square to the nearest standable one, bounded to six paces, and every placement in the client goes through
+`Map.StandCaptainAt`. It is **deterministic** (same blocked spawn → same rescue, or the next report of this
+bug is unchaseable), **bounded** (past six paces the ground is broken rather than tight, and it says so
+loudly instead of papering over), and **it speaks** — a pad hand takes your elbow and walks you clear, in the
+pulse and in the excursion log.
+
+> **The audit asserts the UN-NUDGED square.** A net that silently absorbs placer bugs is how the generator
+> rots behind it — the same way the swept apron hid #574. Net catches the captain; audit catches the bug.
 
 ## Working method
 
