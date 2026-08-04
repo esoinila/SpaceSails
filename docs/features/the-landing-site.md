@@ -1129,6 +1129,52 @@ pulse and in the excursion log.
 > **The audit asserts the UN-NUDGED square.** A net that silently absorbs placer bugs is how the generator
 > rots behind it — the same way the swept apron hid #574. Net catches the captain; audit catches the bug.
 
+13.16 **The building says its name where you ENTER it, and nowhere else** (#694).
+
+> *"every floor has the text 'The Clinic' on it. Some kind of artifact?"* — the owner, on B11 of a
+> thirteen-floor site.
+
+It was not an artifact and it was not a leak. `HiveInterior` drew `TitleOf(KindOn(…))` beside the shaft on
+every floor, and the site's `Kind` is per-site by design — so a name that should have landed once landed
+thirteen times. **The question is the finding.** A sign a player asks about because they suspect the renderer
+has gone wrong is a sign that has stopped saying anything; by the third floor it was wallpaper, and the one
+place where it would have been a story was already spent.
+
+The facility plate now falls on the two floors you arrive on and no others:
+
+- **B1** — the lobby. You came down out of the surface hut and the plate names what you have walked into.
+- **The unlisted band's own shaft head** (§13.7), where the site has one. This is the single place in the
+  game where the plate names a **different** `Kind` from everything above it: `▣ THE CLINIC` first seen under
+  twelve floors of `RETENTION 40 YR` and `DESTRUCTION QUEUE` is that feature's whole arithmetic delivered by
+  one sign, with the captain doing the sum themselves or not at all.
+
+**Not every band head.** B5 and B9 are shaft heads too and they get nothing — a captain stepping out there has
+not entered anything, they have gone deeper into the same place. What earns the plate is a `Kind` you have not
+been told yet, which is why the law is *not* "is this floor a band top".
+
+**Nothing is lost from the where-am-I answer**, because the facility title was never carrying it: the plate
+over the car says `B11 · LONG STORAGE` and whether you can breathe (§13.13), the department livery says which
+kind of floor this is (`LiveryFor`, #605), and both draw on every floor exactly as before. What went is a
+repetition, not an answer.
+
+**The head office takes no exception, and is better for it.** HQ has twenty-four listed floors and, by
+`HasUnlistedBand`, nothing under them — so `▣ THE HEAD OFFICE` falls out of the same law on B1 alone. That is
+also the more in-character reading: the head office does not have to keep telling you where you are.
+
+**The law is Core's, the drawing is the client's.** `UndergroundComplex.ShowsFacilityPlate(bodyId, level)` is
+a pure predicate over the building's own shape — `BandTop` and `HasUnlistedBand`, the same two calls the shafts
+and the #590 cards are cut from — so the rule is testable without a renderer, and a renderer that answered it
+for itself would be one more caller reasoning about a shaft it does not own (§13.15's second cause, one head
+further along).
+
+*(Enforced: `TheFloorTellsYouWhereYouAreTests` — over the scenario's sites plus 120 generated ones, with and
+without unlisted bands, the predicate is true on exactly B1 and the unlisted shaft head and false on every
+other floor and everywhere above ground; the two plates on a hiding site always contradict each other; HQ
+names itself once. `TheFacilityPlateIsALobbySignTests` counts the titles on the **real deck** `FloorDeck`
+returns, so the wiring cannot drift from the law. Watched go **red** against the shipped rule transcribed into
+the predicate — 1 381 floors disagreed, opening with `luna B11: plate DRAWN, wanted absent — ▣ THE CLINIC`,
+which is the owner's own sighting reproduced by the guard.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

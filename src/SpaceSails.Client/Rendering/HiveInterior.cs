@@ -187,7 +187,31 @@ public static class HiveInterior
             ((float)signX, (float)(signY + 5.4), SuitAir.PlateLine(floorAir), 17f,
                 SuitAir.Drawing(floorAir) ? 2 : 1),
         };
-        labels.Add(((float)shaftX - 30f, (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
+        // ── #694 · AND THE FACILITY'S OWN NAME, ON THE FLOORS YOU ENTER IT BY AND NOWHERE ELSE ────────────
+        //
+        // Owner, standing on B11 of a thirteen-floor site: "every floor has the text 'The Clinic' on it.
+        // Some kind of artifact?"
+        //
+        // It was not an artifact and it was not a leak — this line drew unconditionally, so a name that
+        // should have landed once landed thirteen times, and by the third floor it had stopped being a name
+        // and become part of the wallpaper. His question IS the finding: a sign a player asks about because
+        // they suspect the RENDERER is doing something wrong is a sign that is no longer saying anything.
+        //
+        // A building says its name where you ENTER it. That is B1, and — where the site has one — the
+        // unlisted band's own shaft head, which is the single place in the game where this plate names a
+        // different Kind from everything above it: ▣ THE CLINIC under twelve floors of RETENTION 40 YR is
+        // #592's whole arithmetic delivered by one sign, and it was being spent on every floor and therefore
+        // on none. Everywhere else the plate over the car (B11 · LONG STORAGE) and the department livery
+        // already answer which floor this is, which is what they are for.
+        //
+        // THE LAW IS CORE'S, NOT THIS FILE'S. Which floors you arrive on is a fact about the building — it
+        // is BandTop and HasUnlistedBand, the same two calls the shafts and the cards are cut from — and a
+        // renderer that answered it here would be one more caller reasoning about a shaft it does not own.
+        // HiveInterior asks and draws.
+        if (UndergroundComplex.ShowsFacilityPlate(bodyId, level))
+        {
+            labels.Add(((float)shaftX - 30f, (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
+        }
 
         // ── #608 · AND THE REFUGE'S OWN PLATE, IN THE PLATE-BY-THE-LIFT'S OWN LANGUAGE ───────────────────
         //
