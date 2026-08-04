@@ -224,6 +224,147 @@ public sealed class TheLiftPanelTests
         }
     }
 
+    /// <summary>Every floor a car can be pressed from, the surface included — the panel is offered there too,
+    /// and a press from the shed is a press.</summary>
+    private static IEnumerable<int> PressableFrom(string body) =>
+        UndergroundComplex.FloorsOf(body).Append(0);
+
+    [Fact]
+    public void AGatedRowNAMESTheCardThatWillOpenItBeforeTheRide()
+    {
+        // #689 · the "needed" half of the story, told by the panel itself. Owner, having played the whole
+        // loop: "It was locked until I got it ... there was no story point about it being needed or used."
+        // The refusal already names cards (#590); this is its positive twin, and it is Core's to decide so
+        // that the razor cannot invent a promise the gate will not keep.
+        int gatesSeen = 0;
+        foreach (string body in Bodies)
+        {
+            foreach (int level in PressableFrom(body))
+            {
+                int next = UndergroundComplex.BandOf(Math.Min(level, -1)) + 1;
+                if (!UndergroundComplex.SiteHasBand(body, next))
+                {
+                    continue;
+                }
+
+                // #411 · The head office asks for nothing on any floor, so there is no gate here to promise
+                // anything — not even while the captain is carrying this site's own card. The absence IS the
+                // rank difference, and a row saying "the gate will read it" would spend it.
+                var card = new UndergroundComplex.AuthorityCard(body, next);
+                if (UndergroundComplex.IsHeadOffice(body))
+                {
+                    Assert.All(Panel(body, level, card.Id), s => Assert.Null(s.OpenedBy));
+                    continue;
+                }
+
+                // Carrying nothing, or carrying another site's paper: the panel promises nothing.
+                Assert.All(Panel(body, level), s => Assert.Null(s.OpenedBy));
+                Assert.All(
+                    Panel(body, level, new UndergroundComplex.AuthorityCard("somewhere-else", next).Id),
+                    s => Assert.Null(s.OpenedBy));
+
+                // Carrying it: exactly one row says so, it is the gated one, and it says the card's own
+                // title rather than a sentence some other file wrote about it.
+                UndergroundComplex.LiftStop gate =
+                    Assert.Single(Panel(body, level, card.Id), s => s.OpenedBy is not null);
+                Assert.Equal(UndergroundComplex.BandTop(next), gate.Level);
+                Assert.Null(gate.Refusal);
+                Assert.Equal(UndergroundComplex.CardTitle(card), gate.OpenedBy);
+                gatesSeen++;
+            }
+        }
+
+        // A world where nothing is gated would let every assertion above pass by never running: the fifth
+        // named bug class, where the guard is right and the world cannot tell pass from fail.
+        Assert.True(gatesSeen > 20, $"only {gatesSeen} gated rows were examined — this seed set has stopped " +
+            "containing the case the test is about.");
+    }
+
+    [Fact]
+    public void WhichGateARideGoesThroughIsAFactAboutTheSTOPAndNotAboutTheFloorPressedFrom()
+    {
+        // #689 · the beat used to be decided by `BandOf(min(Floor,-1)) + 1` — the band under the floor the
+        // captain was STANDING on — which is a different question from the one that matters: does this trip
+        // cross a gate, and did a card open it. Asked of the stop, the answer is the same from every floor
+        // the button appears on, and it is NO wherever no card was read.
+        int ridesSeen = 0;
+        foreach (string body in Bodies)
+        {
+            foreach (int level in PressableFrom(body))
+            {
+                int next = UndergroundComplex.BandOf(Math.Min(level, -1)) + 1;
+                if (!UndergroundComplex.SiteHasBand(body, next))
+                {
+                    continue;
+                }
+                int shaftHead = UndergroundComplex.BandTop(next);
+                string cardId = new UndergroundComplex.AuthorityCard(body, next).Id;
+
+                if (UndergroundComplex.IsHeadOffice(body))
+                {
+                    continue;   // its own fact, below — the head office answers a different law
+                }
+
+                // Holding the card, EVERY floor this button appears on earns it — the shallow press too.
+                UndergroundComplex.AuthorityCard? opened =
+                    UndergroundComplex.GateOpenedByRidingTo(body, level, shaftHead, [cardId]);
+                Assert.True(opened is not null,
+                    $"{body}: pressed from B{-level}, the ride to B{-shaftHead} goes through the gate and " +
+                    "earns nothing. The beat belongs to the STOP; it must not depend on which floor of the " +
+                    "band the captain happened to be standing on.");
+                Assert.Equal(next, opened!.Value.Band);
+                Assert.Equal(body, opened.Value.BodyId);
+
+                // Not holding it, nothing opened — whatever the arithmetic about bands says. This is the
+                // half that used to be true by accident: the client returned early on a refusal, so a
+                // derivation that never looked at the wallet still behaved. A rule that is right only
+                // because of where it is called from is a rule waiting for its second caller.
+                Assert.True(
+                    UndergroundComplex.GateOpenedByRidingTo(body, level, shaftHead, []) is null,
+                    $"{body}: a captain carrying nothing at all rode from B{-level} to B{-shaftHead} and " +
+                    "the game says a gate read their card.");
+
+                // And an ordinary trip inside this car's own band is not a gate crossing.
+                foreach (UndergroundComplex.LiftStop stop in
+                         Panel(body, level, cardId).Where(s => s.Level != shaftHead))
+                {
+                    Assert.True(
+                        UndergroundComplex.GateOpenedByRidingTo(body, level, stop.Level, [cardId]) is null,
+                        $"{body}: the ordinary trip from B{-level} to {stop.Level} claims a gate.");
+                }
+                ridesSeen++;
+            }
+        }
+
+        Assert.True(ridesSeen > 20, $"only {ridesSeen} gate crossings were examined — this seed set has " +
+            "stopped containing the case the test is about.");
+    }
+
+    [Fact]
+    public void TheHEADOfficeNeverNarratesACardBeingREADBecauseNothingReadsOne()
+    {
+        // #411 · The head office asks the captain for nothing on any floor: the gate is simply ABSENT, and
+        // the absence is the rank difference. The beat's old arithmetic never asked whether a card was
+        // involved — only which band was under the floor pressed from — so riding HQ's own shafts said "its
+        // gate reads the card without hesitating" and named a countersignature the captain was not carrying.
+        // A sentence about an object the sim never handed over: the third named bug class, in the prose.
+        string hq = KaamosLore.IceMoonBodyId;
+        foreach (int level in PressableFrom(hq))
+        {
+            int next = UndergroundComplex.BandOf(Math.Min(level, -1)) + 1;
+            if (!UndergroundComplex.SiteHasBand(hq, next))
+            {
+                continue;
+            }
+            string cardId = new UndergroundComplex.AuthorityCard(hq, next).Id;
+            Assert.True(
+                UndergroundComplex.GateOpenedByRidingTo(
+                    hq, level, UndergroundComplex.BandTop(next), [cardId]) is null,
+                $"the head office narrated a gate reading a card on the ride from B{-level} to " +
+                $"B{-UndergroundComplex.BandTop(next)}. There is no gate here to read one (#411).");
+        }
+    }
+
     [Fact]
     public void ThePanelSaysWhichFloorsCostAir()
     {

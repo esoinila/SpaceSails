@@ -1927,8 +1927,13 @@ public static class UndergroundComplex
     /// <param name="Refusal">Null when the button works. When set, the button is PRESENT and says why it
     /// will not — an absent button and a broken one look identical, and this ground has already shipped that
     /// mistake once.</param>
+    /// <param name="OpenedBy">#689 · The title of the card in the captain's own wallet that this stop's gate
+    /// will read — null on every ordinary button, and null at a gate no card opens. The positive twin of
+    /// <paramref name="Refusal"/>: a sealed row says what is missing, and this one says what is HELD, before
+    /// the ride rather than after it. Core decides it so the panel can never promise a reading the gate will
+    /// not give (#600's rule: Core decides, the razor draws).</param>
     public readonly record struct LiftStop(
-        int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal);
+        int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal, string? OpenedBy = null);
 
     /// <summary>
     /// #600 · What this car's panel offers, standing on <paramref name="level"/>.
@@ -1977,7 +1982,9 @@ public static class UndergroundComplex
         // floor — not because it is careless, but because a hull that is on the board is expected and the
         // building has never had any other kind of visitor. The gate is simply ABSENT, and the absence is
         // the rank difference: the same panel, and only one of them negotiates.
-        bool holdsIt = IsHeadOffice(bodyId) || heldCardIds.Contains(new AuthorityCard(bodyId, next).Id);
+        var gateCard = new AuthorityCard(bodyId, next);
+        bool carded = heldCardIds.Contains(gateCard.Id);
+        bool holdsIt = IsHeadOffice(bodyId) || carded;
         bool unlisted = IsUnlisted(bodyId, BandTop(next));
         if (unlisted && !holdsIt)
         {
@@ -1990,8 +1997,48 @@ public static class UndergroundComplex
             HoldsPressure(BandTop(next)),
             IsCurrent: false,
             holdsIt ? null : "This car does not go lower. The shaft that does is on this floor, and its " +
-                "gate wants an authority this building has not issued in a long time."));
+                "gate wants an authority this building has not issued in a long time.",
+            // #689 · …and when the wallet has the answer in it, the row says so BEFORE the ride. Owner, after
+            // playing the whole loop: "It was locked until I got it ... there was no story point about it
+            // being needed or used." Never at the head office: there is no gate there to read anything, and
+            // that absence is the rank difference (#411) rather than an oversight worth papering over.
+            carded && !IsHeadOffice(bodyId) ? CardTitle(gateCard) : null));
         return stops;
+    }
+
+    /// <summary>#689 · WHICH GATE A RIDE GOES THROUGH — the card it reads, or null for an ordinary trip.
+    ///
+    /// <para>Owner, having played the whole loop on a deep site: <i>"It was locked until I got it ... there
+    /// was no story point about it being needed or used."</i> Half of that is a beat said at the wrong
+    /// moment (the client's job); this is the other half, and it is arithmetic, so it belongs where a test
+    /// can reach it.</para>
+    ///
+    /// <para>The client used to derive it as <c>BandOf(min(Floor, -1)) + 1</c> — the band under the floor
+    /// the press came FROM — which answers a question nobody asked. Whether a ride crosses a gate is a fact
+    /// about the STOP, so this asks the panel: is the button being pressed one that is only on it because
+    /// the captain is carrying the paper for it? That single question also settles two cases the old
+    /// arithmetic got wrong, because it never looked at a card at all:</para>
+    /// <list type="bullet">
+    /// <item>the head office, whose gate is deliberately ABSENT (#411) — it used to narrate a
+    /// countersignature being read by a door that is not there;</item>
+    /// <item>any caller that is not the refusing panel — the old rule was right only because <i>its one
+    /// caller</i> returned early on a refusal, and a rule that is right because of where it is called from
+    /// is a rule waiting for its second caller.</item>
+    /// </list></summary>
+    public static AuthorityCard? GateOpenedByRidingTo(
+        string bodyId, int fromLevel, int toLevel, IReadOnlyCollection<string> heldCardIds)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(heldCardIds);
+
+        foreach (LiftStop stop in LiftPanel(bodyId, fromLevel, heldCardIds))
+        {
+            if (stop.Level == toLevel && stop.OpenedBy is not null)
+            {
+                return new AuthorityCard(bodyId, BandOf(toLevel));
+            }
+        }
+        return null;
     }
 
     // ── #528 · TWO CARDS FOR THE TWO HALVES OF A DOOR ───────────────────────────────────────────────────
