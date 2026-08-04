@@ -129,7 +129,8 @@ public static class MoonSurface
         SurfaceStructure.Spec Hut,
         double HalfW, double HalfH,
         double DoorX, double DoorY,
-        double CarX, double CarY)
+        double CarX, double CarY,
+        double StepX, double StepY)
     {
         public double CentreX => Hut.CentreX;
         public double CentreY => Hut.CentreY;
@@ -148,6 +149,21 @@ public static class MoonSurface
         /// <summary>Where the car sets the captain down: inside the room, a pace in from the door it came up
         /// beside, which is what riding a lift up into a shed actually looks like.</summary>
         public (double X, double Y) CarFloor => (CarX, CarY);
+
+        /// <summary>#681 · Where a LANDING sets the captain down: a pace OUTSIDE the same door, facing it.
+        ///
+        /// <para>The exact mirror of <see cref="CarFloor"/>, and it exists for the exact reason that one
+        /// does. <c>?secretlab=…&amp;land=1</c> computed its own answer — the head spot with 7.5 du taken off
+        /// its Y — and that number was written when the head was a hand-typed 10 x 8 box whose half-height was
+        /// 4. #606 made the head an ordinary hut: 14–19.6 du wide, 11–15.4 deep, walls up to 3 du of piled
+        /// regolith, and a SEEDED ANGLE. Seven and a half deck units below the middle of that is not a pace
+        /// outside the door; on most seeds it is the far wall, and on <c>?secretlab=deep</c> it is the wall
+        /// segment the owner spent an excursion standing inside of.</para>
+        ///
+        /// <para>Same bug class as #602, one head further along: a caller doing its own geometry about a
+        /// building it does not own. So the landing asks the shed where its doorstep is, exactly as the car
+        /// asks it where its floor is, and neither of them keeps a number.</para></summary>
+        public (double X, double Y) DoorStep => (StepX, StepY);
     }
 
     /// <summary>How far in from the doorway the car sets you down, and where the panel is. Far enough inside
@@ -155,6 +171,12 @@ public static class MoonSurface
     /// person stands when they walk in — the #585 report was a button at a room's centre and a captain in the
     /// doorway being told there was nothing here.</summary>
     private const double CarStepIn = 2.4;
+
+    /// <summary>#681 · How far OUTSIDE the door a landing sets you down. Measured from the door's own centre
+    /// like <see cref="CarStepIn"/> is, so it clears the wall's outer face by this much whatever thickness the
+    /// hut was seeded — which is the whole point. Deliberately the same distance in as out: the cheat's
+    /// promise is "a pace outside the shed's door, facing it", and a pace is a pace either way.</summary>
+    private const double DoorStepOut = CarStepIn;
 
     /// <summary>The hut for this body and site, already moved clear of the shelters and the outpost.</summary>
     public static LiftHeadBox LiftHead(string bodyId, string? siteSalt, in SurfaceLayout.Field field)
@@ -176,11 +198,17 @@ public static class MoonSurface
             way.CentreX, way.CentreY,
             // Straight in from the doorway, along the line from the room's middle to it.
             way.CentreX - (ux * (CarStepIn + (env.Thickness / 2))),
-            way.CentreY - (uy * (CarStepIn + (env.Thickness / 2))));
+            way.CentreY - (uy * (CarStepIn + (env.Thickness / 2))),
+            // #681 · …and straight OUT of it, the same distance the other way, so a landing stands on the
+            // doorstep rather than in whichever wall happens to be 7.5 du below the middle of the hut.
+            way.CentreX + (ux * (DoorStepOut + (env.Thickness / 2))),
+            way.CentreY + (uy * (DoorStepOut + (env.Thickness / 2))));
     }
 
     public static SurfaceLayout.Field ExpeditionField() =>
-        new(SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, AnchorX, AnchorY);
+        // #681 · …and the column the way home stands in, so the generator can keep its buildings off the
+        // square a landing puts the captain on. It could not see that spot before and built a hut through it.
+        new(SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, AnchorX, AnchorY, SpawnX);
 
     /// <summary>The beach-comber kit's "reasonable surface square" test (owner, 2026-07-18: bury/probe
     /// anywhere "outside the landing band / walls"). A spot is diggable when it sits on the open regolith —
