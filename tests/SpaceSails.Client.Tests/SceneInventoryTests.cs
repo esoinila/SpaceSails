@@ -245,6 +245,15 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.ArchiveNode] = "the column, aboard about one eligible hull in three " +
                                              "(ArchiveNode.IsAboard) — a fresh wreck plan carries none",
         [DeckPlan.ConsoleKind.ArchiveSwitch] = "the purge handle on that same housing, and only when it is there",
+
+        // #698 · The one kind on this list that no GENERATOR could ever place, on any deck, under any seed:
+        // it marks a square because the CAPTAIN put something down on it. Composed onto whichever deck the
+        // excursion is standing on — Hive floor, derelict steel or open regolith — out of the live
+        // LeftBehind store, and gone again the moment the spot empties. So a freshly built scene carries
+        // none by definition, and the behaviour is pinned on real decks in TheDeckMarksWhatYouLeftTests.
+        [DeckPlan.ConsoleKind.LeftBehind] = "#698 the mark over a square the captain themselves set " +
+                                            "something down on — the excursion's LeftBehind store composes " +
+                                            "it onto any deck, and no static scene can have one",
     };
 
     /// <summary>
