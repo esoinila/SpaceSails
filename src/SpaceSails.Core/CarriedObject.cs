@@ -72,7 +72,13 @@ public static class CarriedObject
     /// <para>The good case is the foreign one. #613 made a Key found at the bottom of a facility issue the
     /// card for a DIFFERENT facility, so a captain can now be carrying a wallet of live authorities for
     /// shafts they have not found. Saying so out loud — <i>this is not for this building</i> — is the line
-    /// that turns that wallet from an inventory oddity into the reason to keep flying.</para></summary>
+    /// that turns that wallet from an inventory oddity into the reason to keep flying.</para>
+    ///
+    /// <para>#679 · AND IT NAMES THE SITE. The first cut of this card said <i>"nothing on it says where that
+    /// is"</i>, which was true of the card as it was then printed and became a LIE the moment #679 put the
+    /// site designation on the face — the sentence and the object disagreeing, which is this repo's third
+    /// named bug class and the one it has shipped most often. The owner's ruling is that a wallet has to be
+    /// sortable; what is still withheld is everything a tracker could act on. A site code is not a plan.</para></summary>
     public static string WhatItRuns(UndergroundComplex.AuthorityCard card, string hereBodyId)
     {
         ArgumentNullException.ThrowIfNull(hereBodyId);
@@ -83,12 +89,13 @@ public static class CarriedObject
                 "whose lift will not admit that shaft exists. The card is older than the omission.";
         }
 
-        return $"It runs shaft {card.Band + 1} of a facility that is not this one.\n\n" +
-            "Nothing on it says where that is. It was never meant to: a pass is carried by somebody who " +
-            "already knows the way to work, and the office that issued it would have regarded printing the " +
-            "address as a security failure. What it does tell you is that the building exists, that it was " +
-            "on the same books as this one, and that as far as its gates are concerned this card is still " +
-            "good.";
+        return $"It runs shaft {card.Band + 1} of {BodyNames.Designation(card.BodyId)} SITE, which is not " +
+            "this one.\n\n" +
+            "That is the whole of what the office was prepared to print: a site code, in its own register, " +
+            "on the assumption that anybody holding the card already knew which door it was for. No plan, no " +
+            "line to walk, and not a word about where on that ground the head stands — but the site has a " +
+            "name, the name is a place, and as far as that building's gates are concerned this card is " +
+            "still good.";
     }
 
     // ── The penetrator ────────────────────────────────────────────────────────────────────────────────────

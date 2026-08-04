@@ -57,20 +57,14 @@ public sealed record ShipMission(
 
     /// <summary>
     /// Turns a scenario body id ("mercury-compute") into a humanized display name ("Mercury
-    /// Compute") without an ephemeris lookup — good enough for the tight mission one-liner. Every
-    /// id used by <see cref="Describe"/> in practice is a real scenario body id, so this never
-    /// needs to be more than a hyphen-split title-case.
+    /// Compute") without an ephemeris lookup — good enough for the tight mission one-liner.
+    ///
+    /// <para>#679: the body of it lives in <see cref="BodyNames"/> now. It was private here while this was
+    /// the only screen in the game that had an id and no ephemeris; the authority card's site designation is
+    /// the second, and a second copy of "what is this body called" is the shape at the top of the landing-site
+    /// spec.</para>
     /// </summary>
-    private static string Humanize(string? bodyId)
-    {
-        if (string.IsNullOrEmpty(bodyId))
-        {
-            return "?";
-        }
-
-        string[] words = bodyId.Split('-', StringSplitOptions.RemoveEmptyEntries);
-        return string.Join(' ', words.Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
-    }
+    private static string Humanize(string? bodyId) => BodyNames.Display(bodyId);
 }
 
 /// <summary>

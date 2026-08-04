@@ -33,13 +33,19 @@ public class TheThingsWorthLookingAtTests
     }
 
     [Fact]
-    public void AnAuthorityCardSaysWhichSHAFTItRuns_AndNeverWhichMOON()
+    public void AnAuthorityCardSaysWhichSHAFTAndWhichSITE_AndNeverWhereOnTheGround()
     {
-        // THE WHOLE RULE, stated once. "Says what door it opens" was the ask; naming the moon would be a
-        // quest marker and would hand the captain the inference the entire Hive is arranged around.
+        // THE WHOLE RULE, stated once — and RE-DRAWN by the owner in #679, which is why this test changed
+        // rather than held. It used to forbid the moon entirely: "naming the moon would be a quest marker."
         //
-        // The card may say: which shaft, of what kind of building, and whether it is this building.
-        // The card may NOT say: where that building is, or anything a tracker could act on.
+        // Owner, holding three of them: "a captain holding three cards from three moons sees three identical
+        // shapes and cannot plan a wallet." So the line moved. It is not "never say where"; it is:
+        //
+        //   The card may say: which shaft, which SITE, and whether it is this building.
+        //   The card may NOT say: where on that ground the way in is, or anything a tracker could act on.
+        //
+        // The distinction is a site code versus a NAV FIX. A code sorts a wallet and buys a reason to fly;
+        // a bearing and a distance would hand back the search the whole Hive is arranged around.
         string[] elsewhere = ["ganymede", "titan", "europa", "callisto", "triton"];
 
         foreach (string moon in elsewhere)
@@ -52,12 +58,20 @@ public class TheThingsWorthLookingAtTests
                 // It states the shaft, in the human numbering the panel and the card title both use.
                 Assert.Contains($"shaft {band + 1}", runs, StringComparison.OrdinalIgnoreCase);
 
-                // It never names the moon it belongs to — not by id, and the id is the only handle we have.
-                Assert.DoesNotContain(moon, runs, StringComparison.OrdinalIgnoreCase);
+                // And the site, in the office's own register — the same designation the title prints, so the
+                // face of the card and the story under it can never come apart.
+                Assert.Contains(BodyNames.Designation(moon), runs, StringComparison.Ordinal);
 
-                // And it is explicit that this is somewhere else, which is the line that turns a wallet of
+                // It is explicit that this is somewhere else, which is the line that turns a wallet of
                 // foreign authorities (#613) into a reason to keep flying rather than an inventory oddity.
                 Assert.Contains("not this one", runs, StringComparison.OrdinalIgnoreCase);
+
+                // What is still withheld: anything an instrument could act on. This is the half of the old
+                // law that survives, and it is the half that was ever load-bearing.
+                foreach (string navFix in new[] { " du", "bearing", "paces", "coordinate", "tracker", "grid" })
+                {
+                    Assert.DoesNotContain(navFix, runs, StringComparison.OrdinalIgnoreCase);
+                }
             }
         }
     }
@@ -83,7 +97,7 @@ public class TheThingsWorthLookingAtTests
             CarriedObject.CollarStory,
             CarriedObject.PenetratorStory,
             CarriedObject.WhatItRuns(new UndergroundComplex.AuthorityCard("ganymede", 2), Here),
-            UndergroundComplex.HaulLine(UndergroundComplex.Haul.Relic, Here, -20, 1),
+            UndergroundComplex.HaulLine(UndergroundComplex.Haul.Relic, Here, -20, 1, null),
         ];
 
         string[] forbidden =

@@ -72,7 +72,41 @@ public static class SatchelTry
             return new(true, "🎫 The gate reads it without hesitating.");
         }
 
-        // The wallet is not a skeleton key — the identity carries the body AND the shaft (#590).
+        // ── #679 · A REFUSAL THAT SORTS THE WALLET ──
+        //
+        // Owner: "We need story telling about whether cards etc work or not." The old sentence —
+        // "countersigned, current, and for another shaft" — was true of every wrong card there is, which
+        // means the second card a captain tried taught them nothing the first had not. TRY is a verb, and
+        // an offer that leaves you knowing exactly what you knew before it is a slot machine.
+        //
+        // So the gate reads the card OUT LOUD, the way a gate would: it says which shaft this one runs, and
+        // when the card belongs to another building it says which site issued it. Both facts are printed on
+        // the thing in the captain's hand (#679's CardTitle) — the gate is not telling them anything they
+        // could not read themselves, it is telling them what it CHECKED.
+        //
+        // The #590 law is untouched: the wallet is not a skeleton key, and nothing here hints that a
+        // different card would open a sealed way.
+        if (UndergroundComplex.AuthorityCard.TryParse(item.Id, out UndergroundComplex.AuthorityCard held))
+        {
+            if (UndergroundComplex.AuthorityCard.TryParse(wanted, out UndergroundComplex.AuthorityCard gate)
+                && string.Equals(held.BodyId, gate.BodyId, StringComparison.Ordinal))
+            {
+                return new(false,
+                    $"🔒 The gate reads it, and reads it correctly: this card runs shaft {held.Band + 1} of " +
+                    "this site — deeper paper than this gate wants, or shallower, but either way not the " +
+                    "authority for the hole in front of you. The countersignatures are fine. The shaft " +
+                    "number is not.");
+            }
+
+            return new(false,
+                $"🔒 The gate reads it, and it is somebody else's business: this one was issued for " +
+                $"{BodyNames.Designation(held.BodyId)} SITE. The same office, the same two hands on the " +
+                "countersignatures, a different hole under a different moon — and this gate has no opinion " +
+                "about any of that. It is looking for its own site code. It does nothing at all.");
+        }
+
+        // A card the gate cannot even parse — an edited save, or a future build's authority. It still says
+        // why, because a silent nothing is indistinguishable from a bug.
         return new(false,
             "🔒 Countersigned, current, and for another shaft. The gate reads it, decides it is somebody " +
             "else's business, and does nothing at all.");

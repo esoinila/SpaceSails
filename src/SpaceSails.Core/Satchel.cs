@@ -146,6 +146,32 @@ public static class Satchel
     /// <summary>Is the pocket too full to take one more distinct thing?</summary>
     public static bool IsFull(IReadOnlyList<Item>? carried) => (carried?.Count ?? 0) >= Capacity;
 
+    /// <summary>#678 · WOULD THIS ONE GO IN? Asked BEFORE the room is turned over, because the answer decides
+    /// whether the find is consumed at all.
+    ///
+    /// <para><see cref="Add"/> refuses politely and says so in a comment — <i>"the caller is expected to say
+    /// so"</i> — and for a year no caller did: the Hive's haul path printed <i>"Into your pocket: an
+    /// authority card"</i>, then called <c>Add</c>, then dropped the result on the floor at capacity with the
+    /// room already marked emptied. The sentence claimed a possession the sim never granted, and the find was
+    /// destroyed. Owner: <i>"If refused the item should stay where it was investigated last — not disappear
+    /// like they do now, or seem to."</i></para>
+    ///
+    /// <para>It is not merely <c>!IsFull</c>: something you are ALREADY carrying always goes in, because
+    /// <see cref="Add"/> merges it into the row that is already there and a full pocket is no obstacle to
+    /// six more rounds of the kind you have. One law, so a caller can never ask the cheap question and get
+    /// the expensive answer wrong.</para></summary>
+    public static bool CanTake(IReadOnlyList<Item>? carried, Item item)
+    {
+        if (item.Count < 1 || item.Id.Length == 0)
+        {
+            return false;   // Add would refuse this outright, so nothing was ever going to enter the pocket.
+        }
+
+        return !IsFull(carried)
+            || (carried ?? []).Any(i => i.Kind == item.Kind
+                && string.Equals(i.Id, item.Id, StringComparison.Ordinal));
+    }
+
     /// <summary>Only rounds stack. A second copy of somebody's file is still one file to you.</summary>
     public static bool Stacks(Kind kind) => kind == Kind.Rounds;
 
