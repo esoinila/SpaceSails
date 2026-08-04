@@ -721,7 +721,7 @@ both of its residual halves in one afternoon, and they are the same fault:
 | the captain saw | what was actually wrong |
 | --- | --- |
 | *"picked up an identity card"*, then a satchel with two papers and no card | on the bottom band the client's far-site fallback can come up empty, and `KeyLine` narrated *"an authority card, countersigned twice and still active"* anyway. Nothing was minted. The room was consumed |
-| nothing at all — the worst version | at twelve items `Satchel.Add` refuses, and the *"Into your pocket"* line was composed and shown **before** it ran. A full pocket ate the find and had already claimed it |
+| nothing at all — the worst version | at the cap `Satchel.Add` refuses (twelve of anything, back then — see the compartments below), and the *"Into your pocket"* line was composed and shown **before** it ran. A full pocket ate the find and had already claimed it |
 
 > **A pickup line may only be printed for something that actually went in. What the pocket cannot take is not
 > consumed — the find stays in the room, and searching it again offers it again.**
@@ -746,6 +746,73 @@ bottom band, an unlisted band and a middle band. The claim is checked against th
 mentions the pocket must survive `Satchel.Add` actually taking the item, because the broken build was perfectly
 self-consistent — it announced the card, handed it to a satchel that refused it, and struck the room off
 anyway. Watched go RED against today's behaviour transcribed back in: 5 of 6 red.)*
+
+**And the satchel has compartments, because a card is flat** (#688). Owner, live on the deep site, laughing:
+*"Oh I run out of space in the inventory. How do I get Bigger pockets ... lol... I find the good keycard but my
+pockets are full and I can not pocket it. Lol, love it. Lets fix it. :-D"* — and, seconds later, *"I think
+bigger pockets for little papers."*
+
+One number governed everything a captain could carry, and it was a number chosen for **bulk**. Twelve is right
+for rounds, crates and relic paperwork, and it was quietly deciding that the best find in the game could be
+refused because you were already holding eleven shipping manifests.
+
+| compartment | what rides in it | how much |
+| --- | --- | --- |
+| **the wallet** | `Authority` | never fills. A card is flat, and it is never refused |
+| **the paper sleeve** | `Paper`, `Dirt` — both are paper in the hand | 24 |
+| **the pockets** | `Rounds`, `Relic`, and any kind appended later | 12, and it keeps every one of its teeth |
+
+Nothing here loosens what #603 built. It is still a pocket and not a warehouse, what is in it is still legible
+at a glance, and the pressure that makes *leave it here* a real decision still sits on the things that actually
+take up room. What changed is that the pressure stopped falling on the two objects in the game that weigh
+nothing — and the subtitle stopped lying: **the space-left line names what it counts**, because one figure
+standing for three compartments is the third named bug class in a subtitle.
+
+**Doors suggest keys, not paperwork** (#688). Owner: *"Let's make a bigger story point about finding any kind
+of key or keycard and only suggest those at doors. Or tools, but not just like some papers."* With the satchel
+open at a sealed way, a room door or a shaft gate, only an authority carries a live **try it →**; papers, files,
+relic notes and rounds render inert there and keep their 🔍 lens. **Not one refusal changed** — the wrong-shaft
+and wrong-site readings (§13.10, #679) are the best storytelling the Hive has, and they are still earned by
+holding up a card that turns out to be for somewhere else. What stopped was the game dangling forty live offers
+at a bulkhead to hide the one that mattered. *Rounds stay inert at a door deliberately: shooting a lock open
+(#610) is an owner call nobody has made, and an offerable round there would pre-wire the answer.*
+
+**And there is a way to put a thing down** (#688). Owner: *"The keycard story is already big, but no way to drop
+stuff."* The satchel had a verb for offering a thing and a verb for looking at one and none at all for letting
+go, while the game's own prose kept saying something had to be *read, spent or left behind*.
+
+> **Leaving never destroys** (#615). What the captain sets down is a find again, lying on the square they are
+> standing on, and pressing [E] there hands it straight back — what will not fit stays on the ground rather
+> than evaporating on the way to it.
+
+- **Its own small control per row**, never a mode — #614's reason one size down: making room must never be one
+  mis-click away from offering a relic to a bulkhead.
+- **The satchel stays open** (you put a thing down in order to pick a thing up), so the confirmation is said
+  **inside the dialog** and never pulsed under its own backdrop (#680/#686).
+- **A document leaves its gist behind in the book.** Leaving a `Paper` or `Dirt` files one field note — its
+  title, its certainty, what it said — before the sheet leaves the pocket. A captain does not abandon a pay
+  sheet without having read it; what they are discarding is the *paper*, and the paper was only ever costing
+  them bulk. Rounds and relic notes file nothing: there is no gist to ammunition, and a book entry for one
+  would be a receipt.
+- **[E] answers your feet before it answers the walls**, ahead of the console dispatch — otherwise a thing set
+  down while standing on a room console could never be reached.
+- **v1 is excursion-scoped, and the line says so out loud**: *"Lift off this rock without it and it stays here
+  with everything else this place kept."* The world does not keep a ledger of every sheet anybody ever set on a
+  floor. Hardening it into the vault is an owner call, not something to sneak in under a feel pass.
+
+**And the I key shuts the pocket it opens** (#688). Owner: *"If I press I when inventory is open, let's close it
+then."* One line of feel, and the kind that is invisible until you are in a corridor with a pack coming and the
+pocket you opened by reflex will not go away by the same reflex.
+
+*(Enforced: `ThePocketsAreThreeCompartmentsTests` — the wallet never fills, the sleeve holds 24 and refuses the
+25th, the bulky twelve keeps its teeth, neither compartment crowds the other, the merge law survives the
+restructure for every kind, and the space-left line is identical for a satchel with six extra cards in it.
+Watched go RED against the single-cap satchel, 6 of 6. `WhatYouLeaveIsStillThereTests` for the drop verb, the
+door filter and the gist — new behaviour, so honestly NOT red-provable; what they pin is that no refusal was
+deleted along with its offer. `TheSatchelFeelPassTests` for the four client shapes — the I toggle, the door
+filter the client cannot route around, the subtitle that no longer subtracts one count from one capacity, and
+the leave control whose confirmation stays inside the dialog. Watched go RED against this morning's build, 5 of
+5.)*
 
 13.10 **Some things you carry are worth looking at, and a card describes the LOCK, never the DOOR.**
 

@@ -4349,6 +4349,28 @@
     border-color: rgba(200, 170, 120, 0.6);
 }
 
+/* #688 · LEAVE IT. The third control on the row, and the coolest of the three on purpose: looking is free,
+   offering is the decision, and putting a thing down is the one that costs you something you already have.
+   Same footprint as the lens so the row still reads as a row. */
+.satchel-leave {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: #9fb0c6;
+    background: #141821;
+    border: 1px solid rgba(150, 170, 200, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-leave:hover {
+    color: #e6dcc8;
+    background: #1b2029;
+    border-color: rgba(150, 170, 200, 0.55);
+}
+
 .satchel-item-try {
     font-size: 0.74rem;
     color: #d8b884;

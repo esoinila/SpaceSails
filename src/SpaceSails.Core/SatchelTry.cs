@@ -37,6 +37,31 @@ public static class SatchelTry
     /// never empty in either case.</summary>
     public readonly record struct Outcome(bool Worked, string Line);
 
+    /// <summary>#688 · Is this thing a way through that somebody shut? The three targets a captain meets
+    /// standing in front of something they cannot walk past.</summary>
+    public static bool IsDoor(Target target) =>
+        target is Target.ShaftGate or Target.SealedWay or Target.RoomDoor;
+
+    /// <summary>
+    /// #688 · DOORS SUGGEST KEYS, NOT PAPERWORK. Owner, live on the deep site: <i>"Let's make a bigger story
+    /// point about finding any kind of key or keycard and only suggest those at doors. Or tools, but not just
+    /// like some papers."</i>
+    ///
+    /// <para>This changes what the satchel OFFERS, and nothing about what it says. Every refusal in this file
+    /// stays exactly as it is — the wrong-shaft and wrong-site readings (#679) are the best storytelling the
+    /// Hive has, and they are earned by holding up an authority that turns out to be for somewhere else. What
+    /// was never storytelling was a shipping manifest carrying a live <b>try it →</b> at a bulkhead: the game
+    /// dangling forty offers at a wall to hide the one that matters.</para>
+    ///
+    /// <para><b>Rounds stay inert at a door on purpose.</b> Shooting a lock open (#610) is an owner call that
+    /// has not been made, and an offerable round at a door would pre-wire an answer to it.</para>
+    ///
+    /// <para>Away from a door nothing narrows: a paper offered to the tracker, rounds tipped into a dry
+    /// sentry. This is a rule about DOORS, not a new law about pockets.</para>
+    /// </summary>
+    public static bool CanOffer(Satchel.Kind kind, Target target) =>
+        !IsDoor(target) || kind == Satchel.Kind.Authority;
+
     /// <summary>
     /// Offer <paramref name="item"/> to <paramref name="target"/>.
     ///

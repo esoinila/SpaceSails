@@ -31,15 +31,31 @@ public sealed class ThePocketNeverLiesTests
 
     private const string Here = "luna";
 
-    /// <summary>A pocket with no space left in it — twelve distinct things, none of them the find.</summary>
+    /// <summary>A pocket with no space left in it — every compartment that CAN fill, filled, and none of it
+    /// the find.
+    ///
+    /// <para>#688 · It used to be twelve papers, back when one number governed everything. It has to be both
+    /// compartments now, or the sweep below would hand a full-pocket case to a satchel with a whole empty
+    /// sleeve in it and never once ask the question — this repo's fifth named bug class, a guard handed a
+    /// world where the case it forbids cannot occur.</para></summary>
     private static IReadOnlyList<Satchel.Item> FullPocket()
     {
         IReadOnlyList<Satchel.Item> bag = [];
-        for (int i = 0; i < Satchel.Capacity; i++)
+        for (int i = 0; i < Satchel.SleeveCapacity; i++)
         {
             bag = Satchel.Add(bag, new Satchel.Item(Satchel.Kind.Paper, $"ballast-{i}"));
         }
-        Assert.True(Satchel.IsFull(bag));
+        for (int i = 0; i < Satchel.PocketCapacity; i++)
+        {
+            bag = Satchel.Add(bag, new Satchel.Item(Satchel.Kind.Relic, $"pallet-{i}"));
+        }
+
+        foreach (Satchel.Kind kind in Enum.GetValues<Satchel.Kind>())
+        {
+            // The wallet is the exception and is meant to be: #688's whole point is that a card is never
+            // refused, so a "full pocket" is full of everything else.
+            Assert.Equal(kind != Satchel.Kind.Authority, Satchel.IsFull(bag, kind));
+        }
         return bag;
     }
 
@@ -125,6 +141,18 @@ public sealed class ThePocketNeverLiesTests
                     continue;
                 }
 
+                if (empty.Take!.Value.Kind == Satchel.Kind.Authority)
+                {
+                    // #688 · THE WALLET NEVER FILLS. A card is flat, so a full satchel is no reason to leave
+                    // the best find in the game lying on a shelf — the room is emptied and the card is in the
+                    // pocket exactly as it would have been on an empty walk. Owner: "I find the good keycard
+                    // but my pockets are full and I can not pocket it. Lol, love it. Lets fix it. :-D"
+                    Assert.Equal(empty, full);
+                    Assert.True(full.RoomEmptied);
+                    Assert.True(Satchel.CanTake(FullPocket(), full.Take!.Value));
+                    continue;
+                }
+
                 Assert.Null(full.Take);
                 Assert.False(full.RoomEmptied,
                     $"{haul} was consumed by a pocket that could not take it — the find is gone.");
@@ -132,7 +160,16 @@ public sealed class ThePocketNeverLiesTests
 
                 // And the room really does still have it: make space, search again, and the same find is
                 // offered. This is the assertion the owner asked for in as many words.
-                IReadOnlyList<Satchel.Item> roomMade = Satchel.Remove(FullPocket(), Satchel.Kind.Paper, "ballast-0");
+                //
+                // #688 · The space has to be made in the compartment the find rides in. Emptying a sheet out
+                // of the sleeve does nothing for a relic on a pallet, and a guard that made the wrong kind of
+                // room would be asserting against a satchel that still cannot take it.
+                Satchel.Item want = empty.Take!.Value;
+                IReadOnlyList<Satchel.Item> roomMade =
+                    Satchel.CompartmentOf(want.Kind) == Satchel.Compartment.Sleeve
+                        ? Satchel.Remove(FullPocket(), Satchel.Kind.Paper, "ballast-0")
+                        : Satchel.Remove(FullPocket(), Satchel.Kind.Relic, "pallet-0");
+                Assert.True(Satchel.CanTake(roomMade, want), $"{haul}: the room made was in the wrong pocket.");
                 UndergroundComplex.Pickup again =
                     UndergroundComplex.WhatGoesInThePocket(haul, Here, card, find, roomMade);
                 Assert.Equal(empty.Take, again.Take);
@@ -159,18 +196,28 @@ public sealed class ThePocketNeverLiesTests
         // simply already yours"), and a guard that missed it would forbid a find the satchel accepts.
         foreach (Satchel.Kind kind in Enum.GetValues<Satchel.Kind>())
         {
-            // A pocket with eleven bits of ballast and ONE of the thing under test, so it is full AND is
-            // already carrying it. Built this way on purpose: the obvious version — twelve papers, then Add
-            // the item — is refused by that Add, so the "already carrying" case never occurs and the test
-            // passes without ever asking the question. That is this repo's fifth named bug class.
+            // A satchel filled to the brim with ballast AND already carrying one of the thing under test, so
+            // its own compartment is full and the merge case is live. Built this way on purpose: the obvious
+            // version — fill it, then Add the item — is refused by that Add, so the "already carrying" case
+            // never occurs and the test passes without ever asking the question. This repo's fifth bug class.
+            //
+            // #688 · Each compartment is left one short and then given the item under test, so the thing is
+            // in there AND the compartment it rides in is full — for every kind, including the ones that now
+            // ride in a different pocket from the ballast.
             IReadOnlyList<Satchel.Item> start = [];
-            for (int i = 0; i < Satchel.Capacity - 1; i++)
+            for (int i = 0; i < Satchel.SleeveCapacity - 1; i++)
             {
                 start = Satchel.Add(start, new Satchel.Item(Satchel.Kind.Paper, $"ballast-{i}"));
             }
+            for (int i = 0; i < Satchel.PocketCapacity - 1; i++)
+            {
+                start = Satchel.Add(start, new Satchel.Item(Satchel.Kind.Relic, $"pallet-{i}"));
+            }
             start = Satchel.Add(start, new Satchel.Item(kind, "already", kind == Satchel.Kind.Rounds ? 6 : 1));
 
-            Assert.True(Satchel.IsFull(start));
+            // The wallet never fills, so for an authority this is a satchel that is full of everything else
+            // and still has room — which is exactly the case the merge law has to survive.
+            Assert.Equal(kind != Satchel.Kind.Authority, Satchel.IsFull(start, kind));
             Assert.True(Satchel.CountOf(start, kind, "already") > 0,
                 $"the {kind} the case is about is not in the pocket — the test proves nothing.");
 
