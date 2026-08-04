@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace SpaceSails.Core;
@@ -72,6 +73,96 @@ public sealed class LeftBehind
     /// <summary>What is lying here, in the order it was set down.</summary>
     public IReadOnlyList<Satchel.Item> At(string spot) =>
         _at.TryGetValue(spot, out List<Satchel.Item>? here) ? here : [];
+
+    // ── #698 · WHAT YOU LEFT HAS TO BE VISIBLE, AND THE RING HAS TO BE ONE RING ────────────────────────
+    //
+    // Owner, on B12 of the clinic, within the hour of #691 shipping: "I dropped 3 files on somebody here
+    // but there was nothing marked onto the map?"
+    //
+    // That is #691's own flagged call coming back — "a left thing is not drawn on the deck; the line says
+    // where, no marker" — and it is #615's law with its teeth out. A captain who sheds weight to make room
+    // is PLANNING TO COME BACK, and a return trip that runs on the memory of one pulsed sentence is not a
+    // way back at all. The store always knew where everything was lying. Nothing on the deck could ask it.
+    //
+    // Two questions get asked now, and they live HERE rather than at the call sites that want them, because
+    // the mark on the deck, the offer on the keybar and the key that does the picking up have to be three
+    // views of ONE fact. A prompt drawn off a different ring from the one the key obeys is this repo's
+    // fifth named bug class — the sim doing one thing while a sentence reports another.
+
+    /// <summary>#698 · How far the recovery reaches, in surface squares either side of the captain's own.
+    /// A three-metre cell is smaller than anybody's idea of "where I put it down", so the verb takes the
+    /// ring — and the mark, the prompt and the key are all measured against this one number.</summary>
+    public const int ReachSquares = 1;
+
+    /// <summary>#698 · The spot within reach that an [E] press would empty, or null. Scans the captain's own
+    /// square and the ring around it, first hit wins, in the fixed row-then-column order the verb has used
+    /// since #691 — so the same stance, asked twice, names the same spot.</summary>
+    public string? SpotInReach(int floor, double worldX, double worldY)
+    {
+        (int sqX, int sqY) = BeachComber.SquareOf(worldX, worldY);
+        for (int dy = -ReachSquares; dy <= ReachSquares; dy++)
+        {
+            for (int dx = -ReachSquares; dx <= ReachSquares; dx++)
+            {
+                string here = SpotKey(floor, sqX + dx, sqY + dy);
+                if (AnythingAt(here))
+                {
+                    return here;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>#698 · Is the captain standing where the ground would give something back? The keybar's
+    /// question, answered by the key's own function, so the offer cannot outlive the verb.</summary>
+    public bool AnythingInReach(int floor, double worldX, double worldY) =>
+        SpotInReach(floor, worldX, worldY) is not null;
+
+    /// <summary>#698 · Every square on ONE floor with something lying on it, in a stable order. This is what
+    /// the deck draws: one mark per SPOT, never one per item — a mark that counted would be an inventory
+    /// panel bolted to the regolith, and the captain already has pockets for that.
+    ///
+    /// <para>Sorted, because a dictionary's own order is an implementation detail, and a deck that lays its
+    /// marks down in a different sequence each rebuild is a deck nobody can test.</para></summary>
+    public IReadOnlyList<(int X, int Y)> SpotsOn(int floor)
+    {
+        var here = new List<(int X, int Y)>();
+        foreach ((string key, List<Satchel.Item> lying) in _at)
+        {
+            if (lying.Count == 0)
+            {
+                continue;
+            }
+
+            string[] parts = key.Split(':');
+            if (parts.Length != 3
+                || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int f)
+                || f != floor
+                || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x)
+                || !int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int y))
+            {
+                continue;
+            }
+
+            here.Add((x, y));
+        }
+
+        here.Sort((a, b) => a.X == b.X ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X));
+        return here;
+    }
+
+    /// <summary>#698 · What the mark on the deck says. A FACT, in the deck's own signage voice — the same
+    /// glyph-then-capitals plate as "🧳 PERSONAL EFFECTS" and "🧰 SOMETHING LEFT HERE" — and deliberately not
+    /// a manifest. It never counts and never names: the captain knows what they put down, and a plate
+    /// reading "3 FILES" would turn a decision into a receipt.</summary>
+    public const string MarkerLabel = "🗎 WHAT YOU LEFT";
+
+    /// <summary>#698 · What the keybar offers while the captain stands in the ring. It REPLACES the ground
+    /// verb rather than joining it, because [E] answers your feet before it answers the walls (#691) — so
+    /// "E — dig / use" is, at this exact spot, no longer true.</summary>
+    public const string ReachPrompt = "E — take back what you left";
 
     /// <summary>What happened when the captain searched a spot they had left things on.</summary>
     /// <param name="Pocket">The satchel after picking up everything that would go in.</param>

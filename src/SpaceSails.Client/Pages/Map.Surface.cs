@@ -2603,6 +2603,12 @@ public partial class Map
         }
 
         _satchelOutcome = LeftBehind.LeaveLine(SatchelLabel(item), standing, gist is not null);
+
+        // #698 · AND THE DECK SAYS SO IMMEDIATELY. Owner: "there was nothing marked onto the map?" The
+        // marks are composed by the rebuild, so a drop that did not rebuild would leave the captain looking
+        // at the ground they just used and seeing the same nothing that produced the complaint. It is the
+        // same one-append-on-a-memoized-base the bury and the door-force already pay.
+        RebuildSurfaceDeck();
         RequestVaultSave();
     }
 
@@ -2619,21 +2625,12 @@ public partial class Map
         // The square the captain is standing on, and the ring around it. A three-metre grid cell is smaller
         // than a captain's idea of "where I put it down", and #615's law is only real if the way back is
         // real — a relic you cannot find again was destroyed, whatever the store says it is holding.
-        (int sqX, int sqY) = BeachComber.SquareOf(_avatarX, _avatarY);
-        string? spot = null;
-        for (int dy = -1; dy <= 1 && spot is null; dy++)
-        {
-            for (int dx = -1; dx <= 1 && spot is null; dx++)
-            {
-                string here = LeftBehind.SpotKey(ex.Floor, sqX + dx, sqY + dy);
-                if (ex.Ground.AnythingAt(here))
-                {
-                    spot = here;
-                }
-            }
-        }
-
-        if (spot is null)
+        //
+        // #698 · THE RING IS ONE RING. This scan used to be written out here, which made the keybar's new
+        // offer ("E — take back what you left") a SECOND transcription of the same geometry — and a prompt
+        // measured off a copy of the law is the bug class this repo has already paid for four times. Core
+        // owns it now; the key and the sentence ask the identical function.
+        if (ex.Ground.SpotInReach(ex.Floor, _avatarX, _avatarY) is not { } spot)
         {
             return false;
         }
@@ -2646,9 +2643,21 @@ public partial class Map
         ShowPulseMessage(LeftBehind.FoundAgainLine(
             [.. back.Taken.Select(SatchelLabel)],
             [.. back.StillThere.Select(SatchelLabel)]));
+
+        // #698 · The mark goes when the spot does — and STAYS when it does not. A recovery that could not
+        // take everything leaves the rest lying there (the one operation whose failure mode must leave the
+        // world as it found it), so the redraw is the honest one either way: the composer reads the store.
+        RebuildSurfaceDeck();
         RequestVaultSave();
         return true;
     }
+
+    /// <summary>#698 · Is the captain inside the recovery ring of a spot with something lying on it? The
+    /// keybar's question, and it is <see cref="LeftBehind.SpotInReach"/> — the SAME call
+    /// <see cref="TryPickUpWhatYouLeft"/> makes — so the offer on the bar and the press it advertises can
+    /// never come apart. Off an excursion there is no ground to have left anything on.</summary>
+    private bool StandingOnWhatYouLeft() =>
+        _surface is { } ex && ex.Ground.AnythingInReach(ex.Floor, _avatarX, _avatarY);
 
     /// <summary>#688 · Where the captain is, in their own words, for the line that says where a thing was
     /// left. Underground it is a floor with a number painted on it; up top it is the ground.</summary>
@@ -3303,6 +3312,7 @@ public partial class Map
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.
             ComposeHeadOfficeFloor(ex);
+            ComposeWhatYouLeft(ex);
             return;
         }
 
@@ -3311,6 +3321,7 @@ public partial class Map
             _deckPlan = WreckInterior.WreckDeck(
                 aboard, _wreckExamined, _wreckSalvaged, SurfaceDroidCount, FillSurfaceDroids,
                 HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
+            ComposeWhatYouLeft(ex);
             return;
         }
 
@@ -3343,7 +3354,24 @@ public partial class Map
         // revealed hidden door and — once forced — replay the appended lab region onto the freshly-built base.
         ComposeSecretLabSite(ex);
         ComposeOutpost(ex);          // #563: the hut — its dogged hatch, or the room once it is forced
+        ComposeWhatYouLeft(ex);      // #698: and whatever the captain themselves put down on this ground
     }
+
+    /// <summary>
+    /// #698 · THE MARK FOR WHAT YOU PUT DOWN. Owner, on B12 of the clinic: <i>"I dropped 3 files on somebody
+    /// here but there was nothing marked onto the map?"</i>
+    ///
+    /// <para>Called on EVERY branch of the rebuild — the Hive's floors, a derelict's steel and the open
+    /// regolith — because a captain can set a thing down on any of them, and a marker that only worked on
+    /// the deck somebody happened to test is #691's flagged call shipped a second time.</para>
+    ///
+    /// <para>One mark per SPOT, from <see cref="LeftBehind.SpotsOn"/>, appended the way the hidden door and
+    /// the outpost hut are — so nothing about the three generators changes, and the A* audits that walk them
+    /// are untouched. It carries no walls, so it cannot block: the owner asked for scenery, and a mark you
+    /// can be pinned against is worse than no mark at all.</para>
+    /// </summary>
+    private void ComposeWhatYouLeft(SurfaceExcursion ex) =>
+        _deckPlan.AppendRegion(LeftMarks.Region(ex.Ground, ex.Floor));
 
     /// <summary>
     /// #681 · THE ONE DOOR THE CAPTAIN IS EVER PUT THROUGH. Owner, on a boot that pinned him inside a wall of
@@ -6557,7 +6585,14 @@ public partial class Map
         // pressing T at a map that showed him nothing. Affordances never hide (#212).
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
-            var aboard = new List<string> { "WASD — move", "E — examine / take" };
+            var aboard = new List<string>
+            {
+                "WASD — move",
+                // #698 · What [E] will actually do, and the ground wins. The recovery runs ahead of console
+                // dispatch (#691), so standing in the ring with "E — examine / take" on the bar is the bar
+                // describing a press it is not going to get.
+                StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt : "E — examine / take",
+            };
 
             // #538 · the sentry remote lives on the HUD, and it never hides: an affordance you cannot see is an
             // affordance you do not have (#212), and this is the one whose absence gets a captain shot.
@@ -6597,7 +6632,19 @@ public partial class Map
         // generic at the one moment it should shout — with the chest in your hands (owner, 2026-07-26: "the
         // press T to bury treasure is not advertised clearly enough on surface… It is the key to survival
         // there", having misremembered the key himself). Carrying → the bar says BURY, in the imperative.
-        var parts = new List<string> { "WASD — move", ex.Carrying ? "⛏ E — BURY THE CHEST HERE" : "E — dig / use" };
+        // #698 · AND WHAT YOU PUT DOWN OUTRANKS BOTH OF THEM. Owner, on B12 of the clinic: "I dropped 3
+        // files on somebody here but there was nothing marked onto the map?" — the deck now carries the
+        // mark, and this is the other half: [E] answers your feet before it answers the walls (#691), so
+        // inside the recovery ring the press is the pickup, whatever else the captain is holding. A bar
+        // that promised BURY THE CHEST while the key handed back a folder would be the sim doing one thing
+        // and a sentence reporting another, which is a bug class this repo has named.
+        var parts = new List<string>
+        {
+            "WASD — move",
+            StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
+                : ex.Carrying ? "⛏ E — BURY THE CHEST HERE"
+                : "E — dig / use",
+        };
         bool carryingBot = ex.Bots.Any(b => !b.Deployed);
         bool deployedUnderfoot = ex.Bots.Any(b => b.Deployed &&
             ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))

@@ -868,6 +868,30 @@ go, while the game's own prose kept saying something had to be *read, spent or l
   with everything else this place kept."* The world does not keep a ledger of every sheet anybody ever set on a
   floor. Hardening it into the vault is an owner call, not something to sneak in under a feel pass.
 
+**And the deck marks it, because a way back that runs on memory is not a way back** (#698). Owner, on B12 of the
+clinic, within the hour of the drop verb shipping: *"I dropped 3 files on somebody here but there was nothing
+marked onto the map?"* That was the judgement call #691 filed open — *"a left thing is not drawn on the deck; the
+line says where, no marker; cheap to add later"* — collected the same afternoon, and he is right that it was
+never a nicety. A captain who sheds weight is **planning to come back**, and #615's law only holds if the way
+back is real (#600's lift proved that an audit can show you can *reach* a thing without ever showing you can get
+*home* to it).
+
+- **🗎 WHAT YOU LEFT** — one mark per **spot**, at the square's own centre, on the current floor or ground. Three
+  files on one square is one mark; the plate never counts and never names them. The captain knows what they put
+  down, and a plate reading "3 FILES" turns a decision into a receipt.
+- **Scenery.** No wall, no structure, no collision segment. Being pinned against your own paperwork would be a
+  worse bug than the missing mark.
+- **`E — take back what you left`** on the keybar the whole time you are in the recovery ring, and it **replaces**
+  the ground verb rather than joining it — because [E] answers your feet before the walls, so *"E — dig / use"*
+  and even *"⛏ E — BURY THE CHEST HERE"* are, at that exact spot, no longer true.
+- **One ring, asked once.** The ring the key obeyed was written out inline in the client. It is
+  `LeftBehind.SpotInReach` now, and the mark, the offer and the press all ask it — a prompt measured off a second
+  transcription of the same geometry is the house's fifth bug class waiting to happen.
+- **Every deck.** Composed on all three branches of the surface rebuild — Hive floor, derelict steel, open
+  regolith — the appended-region way the hidden door and the outpost hut are, so no generator and none of the A*
+  audits that walk them change. It appears on the drop and clears on the recovery, both of which now redraw:
+  a mark that waited for some unrelated rebuild is, at the moment the owner looks down, no mark at all.
+
 **And the I key shuts the pocket it opens** (#688). Owner: *"If I press I when inventory is open, let's close it
 then."* One line of feel, and the kind that is invisible until you are in a corridor with a pack coming and the
 pocket you opened by reflex will not go away by the same reflex.
@@ -888,7 +912,15 @@ door filter and the gist — new behaviour, so honestly NOT red-provable; what t
 deleted along with its offer. `TheSatchelFeelPassTests` for the four client shapes — the I toggle, the door
 filter the client cannot route around, the subtitle that no longer subtracts one count from one capacity, and
 the leave control whose confirmation stays inside the dialog. Watched go RED against this morning's build, 5 of
-5.)*
+5. `TheGroundKnowsWhereYouLeftItTests` (#698) for the store's two new questions — one mark per spot however much
+is on it, floor-scoped both ways, the mark gone when the spot empties and **kept** when something would not fit,
+and the ring's exact edge: every square of it gives, one square further out gives nothing.
+`TheDeckMarksWhatYouLeftTests` (#698) builds the real Hive floor and the real regolith and counts the marks on
+them, pins that a mark inside the interact radius is always inside the recovery ring — so the [E] drawn over it
+is never one the pickup will refuse — and then reads the shipped source for the wiring: every branch of
+`RebuildSurfaceDeck` that builds a deck composes the marks, the drop and the recovery both redraw, and the keybar
+reaches its offer through the same `AnythingInReach` the key does. Watched go RED against the unmarked build,
+13 of 13.)*
 
 13.10 **Some things you carry are worth looking at, and a card describes the LOCK, never the DOOR.**
 
