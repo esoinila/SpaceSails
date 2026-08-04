@@ -553,6 +553,55 @@ somebody still waiting for news, and sometimes what they know.
 12.4 **A dossier never joins the dots.** It may show a continuity researcher shaking hands with a ministry
 delegation. It may not explain. *(Enforced: the prose is grepped.)*
 
+12.5 **The book is readable on foot, standing where it was written** (#690). Owner, mid-run, designing the
+paper-shedding loop: *"should we have notes / clues section in our inventory ui?"* — and, on the register the
+tab is written in: *"it's like our detective notepad :-D"*.
+
+The book rendered in the Captain's ledger and nowhere else — a ship-brain surface, reached by flying home. On
+foot at a sealed door the captain could not consult their own notes. §13.9's leave verb turned that from an
+inconvenience into a cost: leaving a paper **files its gist to the book**, so knowledge was being deliberately
+moved into a place unreachable from the ground it came off. Record the essential data, throw out the paper, and
+be able to read the record standing in the dark.
+
+The satchel has a second page: **🎒 CARRIED | 📓 NOTES**. A pocket and a notebook are both things a satchel
+holds, so it is the satchel's own frame and not a second modal stacked on the door pop-up.
+
+- **One store, and it is the book.** The page reads `_fieldNotes` through the ledger's own Core projections
+  (`FieldNotes.PerPlace`, and `FieldNotes.Here` for one ground). 12.1's law is what makes the book worth
+  reading, and a tab keeping its own copy — *"the notes this excursion filed"* — is the second store this repo
+  has already paid for once. *(Enforced by grep: exactly one collection of `FieldNote` exists in the whole
+  client, and it is `_fieldNotes`.)*
+- **This ground first, every ground one tap deeper.** At a door the captain wants what THIS building has told
+  them, not the memoirs. The filter names the ground through `FieldNotes.PlaceLabel` — the same function that
+  *wrote* those labels — and never re-derives the format, or the tab would match today and drift the first
+  time a place is renamed.
+- **Read-only.** The satchel holds the book open; it does not hold a pen. Capping, de-duplication and
+  persistence are the book's own laws (12.1), and a second set of rules for the same pages is how they stop
+  being true.
+- **Every open lands on CARRIED, on this ground.** The pocket is the primary tool — [I] is pressed by reflex to
+  see what you are holding, and a dialog that remembered you were last reading notes would answer a question
+  nobody asked. Opening **at a door** lands on CARRIED too, with the offer flow exactly as §13.9 left it; the
+  notebook is one tap away, which is the entire point of it being there.
+- **Everything it says renders inside the dialog's own layer** (#680/#686), from birth rather than after a
+  playtest.
+
+**The register is a casebook, not a quest log** — and the empty states are where a tab like this either holds
+its voice or turns into a checklist. Standing somewhere the book has not been opened: *"Nothing filed for this
+ground. Either you have not searched it, or it had nothing to say — the book does not know which, and neither
+do you."* With no notes anywhere: *"The book is blank. It fills the way everything out here fills — one room at
+a time, and only the ones you turn over."* And the this-ground header, which says what the page is and declines
+to be more: *"— what was found here, latest first. The book keeps it. It keeps no opinion about it."* Places,
+facts, and the space between them left to the captain: 12.4 one surface further down.
+
+*(Enforced: `TheBookOpensWhereYouAreStandingTests` in Core — `Here` agrees with `PerPlace` ground for ground,
+orders newest-first, and matches a place as the book WROTE it rather than nearly. `TheNotebookIsInTheSatchelTests`
+in the client for the six source shapes: the second page reading the one book, the book read-only from the
+dialog, the one-store grep, the label the filter is built from, both openers landing on the pocket, and the
+in-dialog saying. Watched go RED against the #688 build, 5 of 6. The sixth is the one-store grep, which pins a
+law that was already true — it was watched go red against a second `List<Core.FieldNote>` transcribed into
+`Map.Surface.cs`. Core went 2 of 4 against a `Here` that read the log itself in written order; the other two
+describe brand-new API and could not be red, which is said here rather than dressed up.)*
+
 ## 13 · The Hive — the ground under the ground
 
 A clandestine underground facility under a landing site, reached by a camouflaged lift head on the surface
@@ -822,6 +871,14 @@ go, while the game's own prose kept saying something had to be *read, spent or l
 **And the I key shuts the pocket it opens** (#688). Owner: *"If I press I when inventory is open, let's close it
 then."* One line of feel, and the kind that is invisible until you are in a corridor with a pack coming and the
 pocket you opened by reflex will not go away by the same reflex.
+
+**And the satchel holds the notebook too** (#690, §12.5). Owner: *"should we have notes / clues section in our
+inventory ui?"* — *"it's like our detective notepad :-D"*. A second page, **🎒 CARRIED | 📓 NOTES**, reading the
+one field book and defaulting to the ground underfoot. It is the direct consequence of the gist-filing above:
+leaving a paper moved what it said into a surface only the ship could reach. Now the captain can stand at a
+sealed door, read what this building has already told them, and decide whether the card in their hand is worth
+offering. The satchel still opens on CARRIED, at a door and everywhere else — the pocket is the primary tool
+and the notebook is one tap away.
 
 *(Enforced: `ThePocketsAreThreeCompartmentsTests` — the wallet never fills, the sleeve holds 24 and refuses the
 25th, the bulky twelve keeps its teeth, neither compartment crowds the other, the merge law survives the

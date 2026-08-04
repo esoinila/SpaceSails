@@ -97,6 +97,29 @@ public static class FieldNotes
         return findings;
     }
 
+    /// <summary>#690 · One ground's page, read out of the same grouping the ledger renders — the satchel's
+    /// NOTES tab standing at a door wants what THIS building has told the captain, not the memoirs.
+    ///
+    /// <para>Deliberately <see cref="PerPlace"/> filtered rather than a second pass over the log: one grouping
+    /// law, one ordering, one place that can be wrong. <paramref name="place"/> is a
+    /// <see cref="PlaceLabel"/> — pass anything else and the book will honestly tell you it has nothing.</para></summary>
+    public static IReadOnlyList<FieldNote> Here(IReadOnlyList<FieldNote>? log, string? place)
+    {
+        if (place is null)
+        {
+            return [];
+        }
+
+        foreach (FieldFinding found in PerPlace(log))
+        {
+            if (string.Equals(found.Place, place, StringComparison.Ordinal))
+            {
+                return found.Lines;
+            }
+        }
+        return [];
+    }
+
     /// <summary>How a place is named in the book: the body and the site, which together are what a captain
     /// would say out loud. Built here so the client cannot invent a second format.</summary>
     public static string PlaceLabel(string? bodyName, string? siteName)

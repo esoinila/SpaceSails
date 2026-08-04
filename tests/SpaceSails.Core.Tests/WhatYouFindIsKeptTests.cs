@@ -89,6 +89,80 @@ public sealed class WhatYouFindIsKeptTests
 }
 
 /// <summary>
+/// #690 · THE BOOK OPENS WHERE YOU ARE STANDING. Owner: <i>"should we have notes / clues section in our
+/// inventory ui?"</i> — and on the register: <i>"it's like our detective notepad :-D"</i>.
+///
+/// <para>The satchel's NOTES tab reads the one field book (#587) and defaults to the ground underfoot,
+/// because a captain at a sealed door wants what THIS building has told them and not the memoirs. The Core
+/// half of that is one projection: the ledger's own grouping, filtered to a place — one grouping law, one
+/// ordering, one place that can be wrong.</para>
+/// </summary>
+public sealed class TheBookOpensWhereYouAreStandingTests
+{
+    private static FieldNote Note(string text, double t, string place) => new(text, t, place, "📄");
+
+    private static IReadOnlyList<FieldNote> Walked()
+    {
+        IReadOnlyList<FieldNote> book = [];
+        book = FieldNotes.Append(book, Note("a roster, half burned", 100, "Miranda · The Ridge Camp"));
+        book = FieldNotes.Append(book, Note("a Luna thing", 500, "Luna · The Depot Apron"));
+        book = FieldNotes.Append(book, Note("bootprints, none leading away", 900, "Miranda · The Ridge Camp"));
+        return book;
+    }
+
+    [Fact]
+    public void ThisGroundGivesBackThisGroundsLinesNewestFirst()
+    {
+        IReadOnlyList<FieldNote> here = FieldNotes.Here(Walked(), "Miranda · The Ridge Camp");
+
+        Assert.Equal(2, here.Count);
+        Assert.Equal("bootprints, none leading away", here[0].Text);   // newest first, as the ledger orders
+        Assert.Equal("a roster, half burned", here[1].Text);
+    }
+
+    [Fact]
+    public void ItIsTheLEDGERSOwnGroupingAndNotASecondReadingOfTheLog()
+    {
+        // The law worth pinning: whatever PerPlace says about a ground, Here says exactly the same thing
+        // about that ground. Two projections that could disagree would be two answers to "what have I found
+        // here" — the repo's first named bug class aimed at a list.
+        IReadOnlyList<FieldNote> book = Walked();
+        foreach (FieldFinding found in FieldNotes.PerPlace(book))
+        {
+            Assert.Equal(
+                found.Lines.Select(l => l.Text),
+                FieldNotes.Here(book, found.Place).Select(l => l.Text));
+        }
+    }
+
+    [Fact]
+    public void AGroundThatHasToldYouNothingSaysNothingRatherThanBlowingUp()
+    {
+        // The empty state the tab is written around: standing somewhere the book has never been opened.
+        Assert.Empty(FieldNotes.Here(Walked(), "Triton · The Sink"));
+        Assert.Empty(FieldNotes.Here(null, "Miranda · The Ridge Camp"));
+        Assert.Empty(FieldNotes.Here([], "Miranda · The Ridge Camp"));
+
+        // Off a surface there is no ground to be on, and the book is honest about it rather than guessing.
+        Assert.Empty(FieldNotes.Here(Walked(), null));
+    }
+
+    [Fact]
+    public void APlaceIsMatchedAsTheBookWROTEItAndNotNearly()
+    {
+        // The filter takes a PlaceLabel. Anything else — a body with no site, a site with no body, a
+        // hand-built near-miss — matches nothing, which is what makes re-deriving the string a bug you can
+        // see rather than one that silently half-works.
+        IReadOnlyList<FieldNote> book = Walked();
+
+        Assert.Equal(2, FieldNotes.Here(book, FieldNotes.PlaceLabel("Miranda", "The Ridge Camp")).Count);
+        Assert.Empty(FieldNotes.Here(book, "Miranda"));
+        Assert.Empty(FieldNotes.Here(book, "The Ridge Camp"));
+        Assert.Empty(FieldNotes.Here(book, "Miranda - The Ridge Camp"));
+    }
+}
+
+/// <summary>
 /// #588 · WHOSE KIT WAS THIS. Owner: <i>"when we find somebody's kit maybe we get gen ai compilation of what
 /// we discover about them... like some top notch scientist being found on far away moon .... what were they
 /// doing there... maybe they are in photos posing with important politicians and officials :-D"</i> — then
