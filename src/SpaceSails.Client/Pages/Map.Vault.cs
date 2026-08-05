@@ -397,6 +397,7 @@ public partial class Map
                 GroundGrewSeen = _groundGrewSeen,     // #563: so does the map-just-grew card
                 TubeRearmSeen = _tubeRearmSeen,       // #562: and the tube-feeds-you card
                 AirCardSeen = _airCardSeen,           // #573: and the tank-is-low card
+                OddBooksRead = [.. _oddBooksRead],    // #701: the shelves whose gist this thread already has
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -865,6 +866,13 @@ public partial class Map
             {
                 _secretLabsFound.Add(body);
             }
+        }
+
+        // #701: and the odd books this thread has already filed a gist for, so a reload never re-files a
+        // shelf the casebook already carries (a pre-#701 save simply lacks the field — an empty list).
+        if (vault.Progress?.OddBooksRead is { } books)
+        {
+            _oddBooksRead = [.. books];
         }
 
         // #317 — the nerve gauge rides the vault losslessly: a captain who fled shaking is still shaking

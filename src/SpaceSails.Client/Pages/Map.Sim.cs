@@ -702,6 +702,35 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["dark=".Length..]).ToLowerInvariant();
                 _lampsOutCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("book=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #701 dev cheat: /map?book=N puts THE ODD BOOK in every would-be-empty room this excursion
+                // searches, so all ten authored entries can be read on demand instead of hunted for at one
+                // would-be-empty room in six. A scene nobody can reach on demand is a scene that ships
+                // broken, and this one is deliberately rare.
+                //
+                //   ?book=1 … ?book=10   force that catalog entry (1 = the oldest sea story, 10 = the fat
+                //                        paperback) — the way to read the whole shelf in one walk
+                //   ?book=on|all|any     force the SEEDED entry, i.e. the shipped selection with the
+                //                        one-in-six gate taken off — the way to see the weighting work
+                //
+                //   /map?secretlab=deep&land=1&floor=2&book=9
+                //
+                // What it deliberately does NOT do is invent a book in an OCCUPIED room. The rule is that a
+                // book is what a would-be-empty room has instead of the empty line; a cheat that laid one on
+                // top of a pallet would have the tester playtesting a room the game cannot produce.
+                string candidate = Uri.UnescapeDataString(pair["book=".Length..]).ToLowerInvariant();
+                if (candidate is "on" or "all" or "any" or "true" or "yes")
+                {
+                    _bookCheat = 0;
+                }
+                else if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                             out int entry)
+                         && entry >= 1 && entry <= Core.OddBooks.Catalog.Count)
+                {
+                    _bookCheat = entry;
+                }
+            }
             else if (pair.StartsWith("watchers=", StringComparison.OrdinalIgnoreCase))
             {
                 // #649 dev cheat: /map?watchers=1 makes the monolith's ground ATTENTIVE this visit and cuts

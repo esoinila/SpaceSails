@@ -145,6 +145,18 @@ public partial class Map
     /// the only thing in this game allowed to answer the question.</summary>
     private bool _lampsOutCheat;
 
+    /// <summary>#701 · The odd books whose GIST this game-thread has already filed
+    /// (<see cref="OddBooks.Entry.Id"/>s). Rides the vault with the rest of the thread's progress, because
+    /// the one-shot is about knowledge and knowledge does not un-happen on a reload. Never consulted on its
+    /// own — it is handed to <see cref="OddBooks.Search"/>, which is the only thing allowed to answer
+    /// whether this reading files anything.</summary>
+    private List<string> _oddBooksRead = [];
+
+    /// <summary>#701 · The <c>?book=</c> dev cheat, null when unset. Never consulted on its own either: it is
+    /// an ARGUMENT to <see cref="OddBooks.Search"/> and never a second answer OR-ed in beside it, which is
+    /// §13.18's rule and the reason <c>?dark=1</c> did not black out the regolith at noon.</summary>
+    private int? _bookCheat;
+
     /// <summary>#708 · IS THE GROUND UNDER THE CAPTAIN'S BOOTS DARK — the one ask, put once, by everything
     /// here that cares. Today that is the renderer and nothing else: the tracker, the sentries and the pack
     /// keep their own rules and are never told, which is the point — a contact crossing behind you in a hall
@@ -2293,6 +2305,44 @@ public partial class Map
         }
 
         UndergroundComplex.Haul haul = UndergroundComplex.InRoom(ex.Stop.Body.Id, ex.Floor, which);
+
+        // ── #701 · THE ODD BOOK ─────────────────────────────────────────────────────────────────────────
+        //
+        // Owner: "a better alternative to finding an empty room. You look around but only one book catches
+        // your attention." Searching a room and finding nothing is the most common outcome in this building
+        // and the least written; one would-be-empty room in six now says something instead.
+        //
+        // It happens BEFORE the pocket, and it returns without ever reaching it, because a book is not a
+        // haul: nothing goes in the satchel, no credits change hands, and — the load-bearing part — THE ROOM
+        // IS NOT STRUCK OFF. The book is still on the shelf, so the console is still standing there and [E]
+        // opens the card again. Re-reading is free; the casebook learns the gist once per book per thread
+        // (#603's law: looking is free, knowledge is one-shot), which Core decides, not this method.
+        //
+        // The shelf line is the ROOM's line and is said by the pulse only; the GIST is what the book is
+        // worth and is the thing the casebook keeps. Filing both would put the same shelf in the book twice
+        // in two registers, and the second search would file it a third time.
+        if (OddBooks.Search(ex.Stop.Body.Id, ex.Floor, which, _oddBooksRead, _bookCheat) is { } shelf)
+        {
+            ShowPulseMessage(shelf.Line);
+
+            // #528's idiom, caption-only: there is no art file for these yet and one that is wired but
+            // unpainted would render an img the browser hides — the lifeboat-muster precedent is a card that
+            // never claims a picture at all.
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                shelf.Title, null, shelf.Card);
+
+            if (shelf.Gist is { } gist)
+            {
+                // FileNote and not ShowAndFile: the saying has already happened, and the pulse would play
+                // under the card's own blur (#686).
+                FileNote(gist, OddBooks.Glyph);
+                _oddBooksRead = [.. shelf.Filed];
+            }
+
+            RequestVaultSave();
+            return;
+        }
 
         // Everything found down here is FILED (#587) - this is the place in the game most worth being able to
         // re-read, and a file on a harbourmaster that faded after eight seconds would be a joke.

@@ -1550,6 +1550,82 @@ proved the same kit **behaviourally** over ten thousand points of open ground ra
 test that would still pass if somebody typed the number in by hand, and was watched go red when they did:
 `facing 0.00: (20.9,-14.7) — sweeper cannot see, suit lights`.)*
 
+13.19 **One would-be-empty room in six holds a book that should not be there** (#701, v1 of the library
+layer).
+
+Owner: *"a better alternative to finding an empty room. You look around but only one book catches your
+attention."* And the framing that states the stakes best: **searching a room and finding nothing is the most
+common outcome in this building and the least written.** A quarter of every floor pays out one sentence about
+fittings. This is that sentence, once in six, becoming something a captain remembers.
+
+**The engine is a department that reads everything, and it is never on screen.** The facility runs a
+books-as-intelligence function — staff who know they are told nothing, reading fiction, myth and fringe
+cosmology, sifting for leaks about the before-worlds (§10). The homage the shape comes from stays unnamed; no
+film title appears anywhere. This is also the canon solution to a feature that could very easily have
+explained things: **the books never explain, and the READING of them is the staff doing exactly the inference
+the player is doing.** They never found the leak either. That fact is nowhere stated and everywhere present.
+
+**The register test, adopted as law by the owner and applied to every one of the ten:** *"the find has to be
+something the player can be delighted to disbelieve."* A fourteenth-century geography of kingdoms that are
+not on any chart passes. Anything with a live court docket and real victims fails it before any other
+consideration applies — not squeamishness, craft: it stops being folklore the player enjoys being wrong about
+and becomes the game *saying something*.
+
+**Three laws, and each is a way the beat dies quietly:**
+
+- **Most empties stay empty.** §10.3 applied one floor down: if there were always something, the walk is a
+  shopping trip. One would-be-empty room in `OddBooks.Rate` = 6, seeded on site + floor + room, so a shelf is
+  that shelf forever and a captain who walks back finds the same thing on it. **Measured, not assumed** —
+  the guard sweeps seventy generated sites and reads the rate off the sweep.
+- **Nothing enters the satchel and the room is never struck off.** A book is read where it stands and left
+  where it stands, which is what makes re-reading possible at all. The room's line is the **shelf line**; [E]
+  opens a caption-only look-card in the #528 idiom (title = the shelf line, body = the card text, no art file
+  — the lifeboat-muster precedent, which never claims a picture rather than wiring one and hiding it on
+  error). No credits, no pocket, no lead.
+- **Looking is free, knowledge is one-shot** (#603). The card comes up every time; the **gist** files to the
+  casebook once per book per game-thread, and per BOOK rather than per room — the same title on a second moon
+  is still one line in the book. The read-list rides the vault beside the found secret labs (#409), because
+  knowledge does not un-happen on a reload. The shelf line is a pulse and is never filed: filing both would
+  put one shelf in the casebook twice, in two registers, on every search.
+
+**The prose is authored and lifted verbatim** — ten entries, each a shelf line, a card and a gist. The house
+frame around the shelf fragment is one sentence, the same for all ten, and the guard proves it is one frame by
+taking the authored fragment back out of it and asking how many different remainders there are. **The two
+reference texts (the mechanics text in its 27th edition, the materials reference in its 31st) count triple on
+a floor that reads for work** — `Kind.Laboratory` and `Kind.TransitStation`, the two kinds whose door
+vocabulary is about numbers and materials rather than about filing, grading or treating people. Everything
+stays reachable everywhere: a fat paperback in a laboratory is a fact about a person, and a weighting that
+became a rule would turn a shelf into a label.
+
+**Nothing on any shelf ever names the monolith, the Old Ones, the Reevers or the found halls** (§13.8, §10) —
+the staff read all of it and found nothing, which is the joke and the dread. Deliberately *not* on the
+reserved list: **cyclopean**. Entry 6 is a weird-tales collection and says *cyclopean cities*, which is the
+game's own register looking back at itself out of a cheap paperback; the reserved words are the ones that
+would make a book name THIS world's canon, not the ones its own genre owns.
+
+**`?book=N` is the door.** All ten on demand — 1..10 forces that catalog entry into every would-be-empty room
+this excursion searches, `?book=on` forces the seeded one. It cannot put a book in an occupied room, because
+a book is what a would-be-empty room has *instead of* the empty line and a tester playtesting a room the game
+cannot produce has learned nothing. A scene nobody can reach on demand is a scene that ships broken.
+
+*(v1. The occupant layer — a work shelf that says what somebody did and a freetime shelf that says who they
+were, §12.3 piece-material rather than a dossier — is the other half of #701 and is not built.)*
+
+*(Enforced. Core: `TheEmptyRoomThatHoldsOneBookTests` — the split measured over 2 700 generated rooms
+(`the odd book turns up in 300 of 1773 would-be-empty rooms (16.9 %) — the law is one in 6 (16.7 %)`), the
+canon grep, every entry proved drawable, the weighting measured (`41.2 %` of work-floor shelves against
+`20.0 %` elsewhere) and both buckets proved to reach all ten. Watched go **red**: against the shipped roll —
+the empty line, every time — at `1773 would-be-empty room(s) swept and not one of them holds a book — the
+feature is dead`; against a transcription that names the canon, at `Found: "monolith"`; against a reading that
+always files, at `300 shelves read, 300 gist(s) filed and only 10 of them different`; and against the
+weighting removed, at `21.6 % of shelves where the work is and 20.0 % elsewhere`. Client:
+`TheShelfIsReadWhereItStandsTests` guards the wiring's SHAPE, which is where this one can only die — the ask
+placed before the pocket and before the room is struck off, the branch proved to contain no
+`HiveRoomsEmptied`, `Satchel.Add`, `_credits` or `GrantLabLead`, the card proved caption-only, and the cheat
+proved to be an argument and never a second answer. Watched go red at
+`_bookCheat appears 3 time(s) in the surface wiring`, at `Found: "HiveRoomsEmptied"`, and at
+`Not found: "shelf.Title, null, shelf.Card"`.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible
