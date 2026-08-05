@@ -85,8 +85,13 @@ public sealed class YouCanWalkTheHiveTests
             var spawn = new DeckReachability.Point(sx, sy);
             var bounds = (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
 
+            // #707 · AND THE AMENITIES, in the same flood rather than in a guard of their own. A canteen is
+            // a room off a rib exactly like every other room down here, so the law that covers it is 13.1
+            // and the audit that covers it is this one — the only thing that had to change is that the list
+            // of targets is a list of PLACES THE FLOOR OFFERS YOU, not a list of one console kind.
             var targets = deck.Consoles
-                .Where(c => c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveLift)
+                .Where(c => c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveLift
+                    or DeckPlan.ConsoleKind.HiveAmenity)
                 .Select(c => new DeckReachability.Point(c.X, c.Y))
                 .ToList();
 
@@ -224,6 +229,50 @@ public sealed class YouCanWalkTheHiveTests
     }
 
     [Fact]
+    public void APRIVATEWashroomBehindAnOpenDoorIsAWashroomYouCanWALKInto()
+    {
+        // ── #707 · THE ONE THING THE FLOOD ABOVE CANNOT SEE ──
+        //
+        // An en-suite has no console in it, deliberately: a private cell carries no plate and there is
+        // nothing in it to work, and inventing an [E] just to give the audit a handle would be the test
+        // shaping the game. So it is not in 13.1's target list — which means it is EXACTLY the shape of
+        // thing this project keeps shipping broken: geometry drawn on a plan that nothing walks.
+        //
+        // It is a room built out of a doorway cut in another room's back wall, which is a new kind of hole
+        // in this generator, and the cell is the only place in the Hive a captain can be asked to pass
+        // through two doors to reach. Both ends of the walk are asserted (#600's lesson: a reachability
+        // test is only as honest as its endpoints), and only the cells whose PARENT opens are walked —
+        // behind a locked plate the cell is a thing you read from the corridor, exactly like the room it
+        // belongs to, and demanding a route into it would be demanding the locked door open.
+        AuditEveryFloor((body, level, deck) =>
+        {
+            UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
+            (double sx, double sy) = HiveInterior.SpawnOn(Field);
+            var spawn = new DeckReachability.Point(sx, sy);
+            var bounds = (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
+
+            foreach (UndergroundComplex.EnSuite cell in floor.EnSuites)
+            {
+                if (!cell.Open)
+                {
+                    continue;
+                }
+                if (!DeckReachability.Standable(cell.X, cell.Y, DeckPlan.AvatarRadius, deck.CollisionField))
+                {
+                    return $"the en-suite off '{cell.Of}' at ({cell.X:F0}, {cell.Y:F0}) is solid wall.";
+                }
+                if (!DeckReachability.CanReach(
+                        spawn, new DeckReachability.Point(cell.X, cell.Y),
+                        deck.CollisionField, DeckPlan.AvatarRadius, bounds))
+                {
+                    return $"the en-suite off '{cell.Of}' cannot be walked to from the lift.";
+                }
+            }
+            return null;
+        }, "spec — a private washroom off a room you can enter is a room you can enter");
+    }
+
+    [Fact]
     public void NothingIsOBSTRUCTEDByTheDoorsThatWillNeverOpen()
     {
         // The owner's third question, and the one with a real trap in it. A locked door is drawn AND backed by
@@ -302,8 +351,13 @@ public sealed class YouCanWalkTheHiveTests
             // sits exactly on 4, so it would have gone red for a change that took nothing away. What the law
             // is about is whether stepping out of the car is worth the ride: a room you can breathe in is
             // very much somewhere to go.
+            // #707 · An amenity room counts for the identical reason the refuge does: it IS one of the
+            // floor's rooms, carved out of the same pool, and counting only HiveHaul would read three
+            // rooms being FURNISHED as a floor being made smaller. Somewhere to eat is very much somewhere
+            // to go.
             int rooms = deck.Consoles.Count(c =>
-                c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveRefuge);
+                c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveRefuge
+                    or DeckPlan.ConsoleKind.HiveAmenity);
             int sealedDoors = deck.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HiveSign);
 
             if (rooms < 4)

@@ -1371,6 +1371,123 @@ returns, so the wiring cannot drift from the law. Watched go **red** against the
 the predicate — 1 381 floors disagreed, opening with `luna B11: plate DRAWN, wanted absent — ▣ THE CLINIC`,
 which is the owner's own sighting reproduced by the guard.)*
 
+13.17 **People worked shifts down here, and the plumbing is where it shows** (#707).
+
+> *"all the secret labs dont have any cantina / bar nor any toilets. We should add those like to the most
+> top most pressurized floor. The toilets should have like bathroom level equipments and the high level
+> important rooms would have their built in bathrooms and be pressurized."* — the owner, the morning after
+> walking a clinic.
+
+It is the cheapest storytelling left in this building and the most damning. Everything down here says
+**budget** — a lined shaft, poured walls, a car still running on somebody's account decades after the last
+invoice — and none of it said **people**. A counter with the bottles gone and a wall of cubicles say people,
+in the only register this ground is allowed to use: what somebody was made to pay for.
+
+**One rule, three rooms, and the rank falls out of it.**
+
+| | where | what is in it |
+| --- | --- | --- |
+| **the upper canteen** | the topmost floor that holds pressure (`TopPressurisedFloor`) | a counter, the service side closed off behind it, three round tops |
+| **the washroom** | the room next door to it | a basin run and three cubicle dividers — *bathroom-grade*, per the owner |
+| **the staff canteen** | the deepest floor the directory **admits to** that still holds pressure (`StaffCanteenFloor`) | four machines against the back wall, tables close together, no counter |
+| **the en-suite** | hung off the back of every *principal* room on a floor that breathes | one pan, no plate |
+
+**The two tiers are an inversion, and the inversion is the design** (owner ruling, 2026-08-05). The upper bar
+is *"publicly accessible and just happens to be in the secret base"* — vendors drink there, normal credits
+work, security is loose **by design**, and it is therefore **tight-lipped**: there are strangers in the room
+and everybody knows it. The deep mess is machines and no bottles and a room where every face is known, so the
+talk there is careless — **loose-lipped**, in exactly the room a stranger cannot stand in. *Safety and
+information trade off opposite to where a player first looks.* The rooms ship here; the social layer that goes
+in them (overhearing the next table, what a face that does not belong costs, the meal line asking for a pass)
+is filed separately by the owner's own scope split.
+
+> **And the bar is why band 0 never wanted a card.** Owner, closing the loop: *"setting access to off the
+> books secret lab to partners all trying to keep things off records would be bureaucratic nightmare of
+> office interorganization bureaucracy so the underground bar just is there with access from surface. It kind
+> of provides cover-story as well."* The mechanic has shipped since #590 — `LiftPanel` has never asked for
+> anything on the first band — and it now has its reason: credentialing every deniable partner across
+> organisations that all deny existing was never going to happen, so the first floor is simply **open**, and
+> the bar is why anybody believes the shed on the surface is what it pretends to be. **Access control starts
+> where the drinks stop**, which is exactly how the card grammar already works. Nothing was built for this.
+> The plate carries the fact (`🍸 CANTEEN 1 · CARRIERS & CONTRACTORS · NO PASS REQUIRED`) and never the
+> reason — it is the one **warm** sign in a building of `DESTRUCTION QUEUE` and `MORTUARY`, and it is the only
+> sign down here that is a lie. *(Enforced: `TheBarPlateSaysNoPassIsNeededAndNeverSaysWHY` checks the plate
+> against the panel it is describing, so the sign cannot outlive the mechanic, and greps the six words that
+> would explain it.)*
+
+**Rank is readable in plumbing.** A plate is *principal* when it names an office or an authority — somewhere a
+decision gets signed — rather than a process, a store, or a room where work is done **to** somebody.
+`COLD STORE 2` is where things are kept, `SUBJECT PREP` is where things are done, `QUOTA OFFICE` is where a
+person sat and ruled on other people; that person had a door of their own and did not queue for the cubicles
+on B1. The cell itself carries **no plate** — a private washroom does not need a sign, and that absence is the
+last word of the tell. And the ratio is the head office, emergent and never stated: **one plate in eight at a
+branch, five in twelve at HQ**, so a captain who has crawled a Hive walks a head-office corridor and sees
+private washrooms on half the doors, with nothing anywhere telling them what that means.
+
+**Nothing is ever plumbed on a floor that cannot breathe, and that is the load-bearing rule.** A canteen, a
+cubicle and an en-suite are all plumbing, and plumbing is for people out of their suits — the owner's own
+general form of it (*"any room that would house like office work would be pressurized by that constraint ...
+any kind of fine motor skill stuff"*), one notch further along. But the reason it is written as a **law** is
+§13.13's: the moment one room down here breathes for a reason that is not `HoldsPressure`, the plate by the
+lift and the gauge on the suit are reading two different maps. **There is one pressure fact in this building
+and every amenity is asked to justify itself against it.** *(Enforced:
+`NOTHINGIsEverPlumbedOnAFloorThatCannotBreathe` over 1 150 floors.)*
+
+**Three placement calls, each overrulable in one line.**
+
+- **The canteen is the nearest room to the car** — the exact opposite of the refuge law (§13.12) and right
+  for the same reason. A refuge earns its existence by being a detour; a bar earns its by being the first
+  door off the lift, because it is the room a haulier with a pallet and forty minutes actually used. No dice:
+  a building puts its catering by the car, and a captain gets to learn that.
+- **The washroom is next door to the canteen**, for the reason a plumber would give — a building runs **one
+  wet stack** and hangs everything that needs a drain off it.
+- **The mess is on a floor the directory lists.** *Deepest*, so the owner's inversion has the distance it
+  needs; *listed*, because catering is a thing a directory knows about and the band nobody listed has no
+  department, no livery and no plate (§13.7). A canteen sign down there would be the building admitting to a
+  floor in the one place it must not. A site too shallow for a second pressurised floor simply has no mess,
+  and the law says so out loud rather than inventing a room to satisfy itself.
+
+**The head office takes no exception and answers in its own vocabulary** (#411). Not a canteen and a washroom
+but `🍸 THE DINING ROOM · GUESTS & DEPUTATIONS` and `🚻 CLOAKS & WASHROOMS` — the coat rack from its own
+arrival card, given a room — and its mess is `🍽 THE STAFF DINING HALL · ESTABLISHMENT ONLY`, which is the
+plate on its own B2. Same one rule, same grammar, a rank nobody has to be told about. The dining room is
+**laid**, for eleven, with the chair at the head pulled out by a hand's width and no date on anything in it.
+
+**The procurement joke ships as one manifest and names nobody.** Owner: *"paperwork that says it is officially
+delivered to and operating at a school far away 🤭 — the procurement comedy in one manifest line (homage
+unnamed; no film titles)."* So it is a **catering** manifest, costed per head, quarterly, for a school roll on
+another world — readable as a fiddle and never as a confession, because the thing this organisation actually
+procures is the one thing nothing in this building may say (§13.8). At the head office the same sheet turns up
+as the copy **the office kept**, which is the rank difference doing the joke's punchline for free.
+*(Enforced: `TheMESSPaperworkIsDeniableAndNamesNOBODY` greps the film, the wink and the emoji;
+`NoAmenityEXPLAINSWhatThisPlaceWasFor` runs §13.8's sixteen forbidden words over every plate, fixture name and
+room line on both grades of building.)*
+
+**Two mistakes this made, both of them already in the table at the top of this document.**
+
+- **A claim ledger that only looks forward.** The en-suite hangs *outward*, off the room's back wall, into
+  ground the room columns either side of a rib reach back toward — so the cell is checked against the ledger
+  **before** it is built, not merely added to it afterwards. It also has to be asked **before its own parent
+  claims its ground**: claim boxes are inflated 1.5 du on every side, so the first cut had every single
+  en-suite in the game sitting inside its own parent's keep-out and refusing itself — 202 floors reading
+  *"1 principal room(s) and 0 en-suite(s)"* with the geometry perfectly correct.
+- **Three round tables at coordinates that meant something else.** `HiveInterior` passed
+  `tables: DeckPlan.Ship.Tables` — the **ship's** cantina tops — so every Hive floor ever drawn has had three
+  rings at `y = +7.5`, forty du above the top of the field and outside the plan entirely. Nobody had reported
+  it because nobody had reason to look up there. The rings belong to a room now.
+
+*(Enforced, Core: `TheHiveAmenitiesTests` over 101 sites and 1 150 floors — exactly one bar on the top
+pressurised floor of every site and none anywhere else, exactly one mess on the deepest listed pressurised
+floor or an honest none, an en-suite off every principal room on a floor that breathes **and off nothing
+else**, every principal plate proved to be a plate some building actually hangs, and carving proved to be a
+**relabel** rather than a removal by counting the doorways that were cut against the places they now lead.
+Watched go **red** on the shipped generator first: `101 of 101 site(s) have nowhere to eat and nowhere to
+wash`, `185 of 1150` floors with no canteen, `202 of 1150` with principal rooms and no cells. Client:
+`YouCanWalkTheHiveTests` floods the amenities as ordinary rooms under §13.1, and
+`APRIVATEWashroomBehindAnOpenDoorIsAWashroomYouCanWALKInto` walks the cells, which that flood cannot see
+because a private washroom has no console in it — proved red by walling its doorway over, opening
+`luna B5: the en-suite off 'CONSENT FILES' cannot be walked to from the lift`.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

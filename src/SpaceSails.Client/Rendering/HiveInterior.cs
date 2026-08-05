@@ -114,6 +114,27 @@ public static class HiveInterior
                 refuge.Sign));
         }
 
+        // ── #707 · THE AMENITIES, DRAWN THE WAY THE REFUGE IS ───────────────────────────────────────────
+        //
+        // Owner: "all the secret labs dont have any cantina / bar nor any toilets."
+        //
+        // Same shape as the refuge below, because it is the same kind of object: a room Core carved out of
+        // the floor's own rooms, with a console for the [E] verb and a plate for the eye. The FIXTURES are
+        // already in floor.Walls — the counter, the cubicle dividers, the machines — so they were drawn and
+        // collided with by the loop at the top of this method, and nothing here has to know their shape.
+        // A renderer that laid out its own bar counter would be one more caller doing geometry about a
+        // building it does not own (§13.15).
+        var tables = new List<(float X, float Y)>();
+        foreach (UndergroundComplex.Amenity a in floor.Amenities)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture));
+            labels.Add(((float)a.X, (float)(a.Y - 7.6), a.Plate));
+            foreach ((double tx, double ty) in a.Tables)
+            {
+                tables.Add(((float)tx, (float)ty));
+            }
+        }
+
         // The lift, on every floor, in the same place.
         (double shaftX, double shaftY) = UndergroundComplex.ShaftAt(field);
         consoles.Add(new(DeckPlan.ConsoleKind.HiveLift,
@@ -240,7 +261,14 @@ public static class HiveInterior
             droidCount: droidCount, fillDroids: fillDroids,
             location: (_, _) => floor.Name,
             doors: [.. doors], shipFixtures: false, followCam: true,
-            tables: DeckPlan.Ship.Tables,
+            // #707 · THE CANTEEN'S OWN TOPS, and not the ship's any more. This read
+            // `tables: DeckPlan.Ship.Tables` — three round tops at the SHIP's cantina coordinates, which on
+            // a Hive floor land at y = +7.5, forty du above the top of the field and outside every floor
+            // this generator has ever drawn. Nobody had reported it because nobody had reason to look up
+            // there, and it is the mirrored-constant shape exactly: a table list borrowed from a building
+            // whose coordinates mean something else. The rings belong to a room now, and the room is on
+            // this floor.
+            tables: [.. tables],
             bigLabels: [.. bigLabels],
             // #605 · The floor's department livery. Null on the band nobody listed, so that concrete is the
             // one place down here left bare — the absence is the tell.

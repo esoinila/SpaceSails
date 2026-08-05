@@ -35,6 +35,11 @@ public sealed class DeckPlan
         // a regolith drum that a whole site has several of, and this is a poured room a safety inspectorate
         // made somebody build, one per dead floor, with nothing in it but air. One kind per verb.
         HiveRefuge,
+        // #707 · The canteen counter, the basin run, the bank of machines. ONE kind for all three, because
+        // they are one verb — stand in a room somebody ate or washed in, and read what is left of it — and
+        // Core already carries which of the three it is, in the plate and the fixture name. Three kinds
+        // would be three cases in the dispatch all answering the same way.
+        HiveAmenity,
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.

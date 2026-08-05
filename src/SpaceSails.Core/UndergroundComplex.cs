@@ -543,7 +543,8 @@ public static class UndergroundComplex
     /// <para>It stops being a haul room when it becomes one: a pressure vessel somebody maintained is not a
     /// drawer to turn over, and the air is what it pays.</para></summary>
     private static List<Refuge> CarveRefuges(
-        string bodyId, int level, List<(double X, double Y)> rooms, double shaftX, double shaftY)
+        string bodyId, int level, List<(double X, double Y, string Plate)> rooms,
+        double shaftX, double shaftY)
     {
         var refuges = new List<Refuge>();
         if (HoldsPressure(level) || rooms.Count == 0)
@@ -584,7 +585,7 @@ public static class UndergroundComplex
         }
 
         int pick = pool[DiceRule.Roll(DiceRule.Seed($"hive:refuge:{bodyId}:{level}"), pool.Count).Face - 1];
-        (double rx, double ry) = rooms[pick];
+        (double rx, double ry, string _) = rooms[pick];
         rooms.RemoveAt(pick);
         refuges.Add(new Refuge(rx, ry, RefugeSign(bodyId, level, 0)));
         return refuges;
@@ -795,6 +796,274 @@ public static class UndergroundComplex
     // lives inside NameOf above, with the rest of the naming, rather than in a wrapper around a body-blind
     // twin of it.
 
+    // ── #707 · THE AMENITIES — SOMEBODY WORKED SHIFTS DOWN HERE ──────────────────────────────────────────
+    //
+    // Owner, the morning after walking a clinic: "all the secret labs dont have any cantina / bar nor any
+    // toilets. We should add those like to the most top most pressurized floor. The toilets should have like
+    // bathroom level equipments and the high level important rooms would have their built in bathrooms and
+    // be pressurized."
+    //
+    // It is the cheapest storytelling left in this building and the most damning. Everything down here says
+    // BUDGET — a lined shaft, poured walls, a lift on somebody's account decades after the last invoice —
+    // and none of it says PEOPLE. A canteen and a wall of cubicles say people, in the only register this
+    // ground is allowed to use: what somebody was made to pay for.
+    //
+    // THE TWO TIERS, which is the owner's ruling of 2026-08-05 and is a design and not a decoration:
+    //
+    //   1. THE UPPER CANTEEN, on the topmost floor that holds pressure. "publicly accessible and just
+    //      happens to be in the secret base" — vendors drink here, normal credits work, and security is
+    //      loose BY DESIGN. Classy, dangerous, and tight-lipped: there are strangers in the room and
+    //      everybody knows it.
+    //   2. THE STAFF CANTEEN, on the deepest floor the building ADMITS to that still holds pressure.
+    //      Machines, no bottles, and a room where every face is known — so the talk is careless in exactly
+    //      the room a stranger cannot stand in.
+    //
+    // And the upper one is the answer to a question the mechanics have been shipping since #590 without one.
+    // Owner, closing the loop: "setting access to off the books secret lab to partners all trying to keep
+    // things off records would be bureaucratic nightmare of office interorganization bureaucracy so the
+    // underground bar just is there with access from surface. It kind of provides cover-story as well."
+    // Band 0 has never wanted a card. Now it has a reason: credentialing every deniable partner across
+    // organisations that all deny existing was never going to happen, so the first floor is simply OPEN, and
+    // the bar is why anybody believes the shed on the surface is what it pretends to be. Access control
+    // starts where the drinks stop. Nothing is built for that here — the plate carries it in four words and
+    // the room prose carries the rest, and neither of them ever explains a thing.
+    //
+    // WHY THE AMENITIES ONLY EXIST ON FLOORS THAT BREATHE, which is the one rule the whole section turns on:
+    // a canteen, a cubicle and an en-suite are all PLUMBING, and plumbing is for people out of their suits.
+    // The owner already ruled the general form of it — "any room that would house like office work would be
+    // pressurized by that constraint ... any kind of fine motor skill stuff" — and eating, washing and
+    // signing things are the same constraint. So there is NO SECOND PRESSURE MAP here and there never will
+    // be: HoldsPressure is asked, and where it says no, nothing is plumbed. A private washroom breathing on
+    // a floor the plate by the lift is calling NO ATMOSPHERE would be two instruments disagreeing about air,
+    // which is the one thing §13.13 says is worse than saying nothing.
+
+    /// <summary>#707 · What an amenity room is FOR. Three, and the difference between the first and the
+    /// third is the whole of the owner's inverted-economics ruling rather than a change of furniture.</summary>
+    public enum Comfort
+    {
+        /// <summary>The bar on the top floor that holds pressure — the one room in the building outsiders
+        /// are in, and the reason nobody at band 0 is ever asked for a card.</summary>
+        UpperCanteen,
+        /// <summary>Cubicles, a basin run and a mirror. Bathroom-grade, per the owner.</summary>
+        Washroom,
+        /// <summary>Machines and close tables, on the deepest floor the directory admits to that still
+        /// breathes. Staff only, and the paperwork says it is somewhere else entirely.</summary>
+        StaffCanteen,
+    }
+
+    /// <summary>One amenity room, taken out of the rooms the floor had already built — same discipline as
+    /// <see cref="Refuge"/>, and for the same reason: a room is already audited walkable from the lift,
+    /// already has a door, and already sits down a rib.</summary>
+    /// <param name="Use">Which of the three it is.</param>
+    /// <param name="X">Centre, in the surface's own coordinates.</param>
+    /// <param name="Y">Centre.</param>
+    /// <param name="Plate">What is stencilled beside the door.</param>
+    /// <param name="Fixture">What the thing in the middle of the room is called, at console size.</param>
+    /// <param name="Tables">Round tops on the floor, drawn in the game's existing table idiom. Empty in a
+    /// washroom, which is the one amenity nobody sits down in.</param>
+    public readonly record struct Amenity(
+        Comfort Use, double X, double Y, string Plate, string Fixture,
+        IReadOnlyList<(double X, double Y)> Tables);
+
+    /// <summary>#707 · A private washroom cell hung off the back of a room that mattered.
+    ///
+    /// <para>Owner: <i>"the high level important rooms would have their built in bathrooms"</i> — and the
+    /// design under it is that RANK IS READABLE IN PLUMBING. A captain who has learned the grammar reads
+    /// "somebody with a name worked in here" off a door to a private cell, the same way sealed SECTOR doors
+    /// read as scale. No card ever says it, and the cell itself carries no plate — a private washroom does
+    /// not need a sign, and that absence is the last word of the tell.</para></summary>
+    /// <param name="X">Centre of the cell.</param>
+    /// <param name="Y">Centre of the cell.</param>
+    /// <param name="Of">The plate of the room it hangs off — the reason it is there.</param>
+    /// <param name="Open">Whether its parent room's own door opens. False behind a locked plate, where the
+    /// cell is a thing you can only read from the corridor, exactly like the room it belongs to.</param>
+    public readonly record struct EnSuite(double X, double Y, string Of, bool Open);
+
+    /// <summary>How deep the en-suite cell hangs off the back of its room, in deck units.</summary>
+    public const double EnSuiteDepth = 5.0;
+
+    /// <summary>Half the cell's height. Comfortably taller than <see cref="DoorHalf"/>, so the doorway cut
+    /// in the parent's back wall always lands inside the cell rather than beside it.</summary>
+    public const double EnSuiteHalfHeight = 4.0;
+
+    /// <summary>#707 · THE TOPMOST FLOOR THAT HOLDS PRESSURE — where the bar is.
+    ///
+    /// <para>Derived rather than typed. It is B1 on every building in the game and writing <c>-1</c> here
+    /// would be a second answer to a question <see cref="HoldsPressure"/> already owns, sitting quietly
+    /// correct until somebody moves a band. Two sources, one of which never hears about a change, is the
+    /// table at the top of this repo's spec.</para></summary>
+    public static int? TopPressurisedFloor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        foreach (int level in FloorsOf(bodyId))
+        {
+            if (HoldsPressure(level))
+            {
+                return level;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>#707 · WHERE THE STAFF CANTEEN IS: the deepest floor the building ADMITS to that still
+    /// holds pressure, and null on a site too shallow to have a second one.
+    ///
+    /// <para><b>Deepest, and listed.</b> Two calls, each worth one line:</para>
+    /// <list type="bullet">
+    /// <item><b>Deepest</b> because the owner's inversion needs distance. The bar is the floor strangers
+    /// walk into off the surface; the mess has to be as far from that as the building goes, so that a face
+    /// nobody knows is a fact about the room rather than a matter of taste.</item>
+    /// <item><b>Listed</b> (<see cref="DepthOf"/>, not <see cref="TrueDepthOf"/>) because catering is a
+    /// thing a directory knows about. The band nobody listed has no department, no livery and no plate —
+    /// #592's whole tell is the ABSENCE down there — and a canteen sign under it would be the building
+    /// admitting to a floor in the one place it must not.</item>
+    /// </list>
+    ///
+    /// <para>Null on a shallow site, and that is the honest answer rather than a gap: a three-floor annex
+    /// has one canteen, because one canteen is the entire catering budget of a three-floor annex.</para></summary>
+    public static int? StaffCanteenFloor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int? top = TopPressurisedFloor(bodyId);
+        int? deepest = null;
+        foreach (int level in FloorsOf(bodyId))
+        {
+            if (HoldsPressure(level) && !IsUnlisted(bodyId, level))
+            {
+                deepest = level;
+            }
+        }
+        return deepest == top ? null : deepest;
+    }
+
+    /// <summary>
+    /// #707 · WHICH DOOR PLATES BELONG TO SOMEBODY RATHER THAN TO SOMETHING — the rooms that get an
+    /// en-suite.
+    ///
+    /// <para>The criterion, so it can be argued with instead of guessed at: <b>a plate is principal when it
+    /// names an OFFICE or an AUTHORITY — somewhere a decision gets signed — rather than a process, a store,
+    /// or a room where work is done TO somebody.</b> COLD STORE 2 is a place things are kept; SUBJECT PREP
+    /// is a place things are done; QUOTA OFFICE is a place a person sits and rules on other people, and
+    /// that person had a door of their own and did not queue for the cubicles on B1.</para>
+    ///
+    /// <para>And the RATIO is the rank difference, emergent and never stated: one plate in eight at a
+    /// branch office, five in twelve at the head office. A captain who has crawled a Hive and then walks a
+    /// head-office corridor sees private washrooms on half the doors, and nothing anywhere tells them what
+    /// that means.</para>
+    ///
+    /// <para>Written as a list of plates taken verbatim out of <see cref="SignsFor"/> rather than as a
+    /// keyword match on the string. A match on "OFFICE" would silently collect MANIFEST OFFICE and QUOTA
+    /// OFFICE and then, the day somebody writes a plate reading POST OFFICE, that too — a rule that selects
+    /// by accident is this repo's fifth bug class wearing a clever hat. Every entry here is proved to exist
+    /// in some kind's vocabulary by <c>EveryPrincipalPlateIsAPlateThisBuildingActuallyHangs</c>.</para></summary>
+    public static bool IsPrincipalRoom(string plate)
+    {
+        ArgumentNullException.ThrowIfNull(plate);
+        foreach (string p in PrincipalPlates)
+        {
+            if (string.Equals(p, plate, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>The plates a person sat behind. See <see cref="IsPrincipalRoom"/> for the criterion.</summary>
+    public static readonly string[] PrincipalPlates =
+    [
+        "CONTINUITY — AUTHORISED ONLY",                       // Laboratory: the one plate that grants
+        "OCCUPATIONAL REVIEW", "QUOTA OFFICE",                 // ProcessingDepot: a panel, and a desk
+        "AUDIT — NO ADMITTANCE",                               // RecordsAnnex
+        "CONSENT FILES",                                       // BlackClinic: somebody countersigned those
+        "MANIFEST OFFICE",                                     // TransitStation
+        // #411 · The head office is mostly people who sign things, and it shows in the plumbing.
+        "OFFICE OF THE REGISTRAR", "ESTABLISHMENT BOARD", "COMMITTEE ROOM 2", "APPROPRIATIONS",
+        "DEPUTATIONS",
+    ];
+
+    /// <summary>What is stencilled beside an amenity's door, and what the fixture in the middle of it is
+    /// called. Both from one place, so the sign on the wall and the console under the captain's hand can
+    /// never come to describe different rooms.
+    ///
+    /// <para>Institutional throughout, and explaining nothing — with one deliberate exception of TONE. The
+    /// branch office's bar plate is the only WARM sign in the building, because it is the only sign in the
+    /// building that is a lie: a rest-house plate on a corridor of DESTRUCTION QUEUE and MORTUARY. NO PASS
+    /// REQUIRED is a fact about band 0 that the lift panel has been shipping since #590, said out loud on a
+    /// wall for the first time and still not explained.</para>
+    ///
+    /// <para>The head office answers the same law in its own vocabulary (#411): not a canteen and a
+    /// washroom but a DINING ROOM and a CLOAKROOM, and its staff hall is for the ESTABLISHMENT — which is
+    /// the word on its own B2 plate. Same rule, same grammar, a rank nobody has to be told about.</para></summary>
+    public static (string Plate, string Fixture) AmenitySigns(string bodyId, Comfort use)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        bool hq = IsHeadOffice(bodyId);
+        return use switch
+        {
+            Comfort.UpperCanteen => hq
+                ? ("🍸 THE DINING ROOM · GUESTS & DEPUTATIONS", "🍸 THE SIDEBOARD")
+                : ("🍸 CANTEEN 1 · CARRIERS & CONTRACTORS · NO PASS REQUIRED", "🍸 THE COUNTER"),
+            Comfort.StaffCanteen => hq
+                ? ("🍽 THE STAFF DINING HALL · ESTABLISHMENT ONLY", "🍽 THE SERVERY")
+                : ("🍽 CANTEEN 2 · STAFF ONLY · PASS TO BE SHOWN", "🍽 THE MACHINES"),
+            _ => hq
+                ? ("🚻 CLOAKS & WASHROOMS", "🚻 THE BASIN RUN")
+                : ("🚻 WASHROOMS · STAFF & VISITORS", "🚻 THE BASIN RUN"),
+        };
+    }
+
+    /// <summary>What one of these rooms says when the captain stands in it. Evidence, and then it stops —
+    /// every one of them is about what somebody was made to pay for and none of them is about what any of
+    /// it was for.</summary>
+    public static string AmenityLine(string bodyId, Comfort use)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        bool hq = IsHeadOffice(bodyId);
+        return (use, hq) switch
+        {
+            (Comfort.UpperCanteen, false) =>
+                "🍸 A long counter, a mirror behind it with the bottles gone, and the stools bolted down in " +
+                "a row. Somebody kept this room WARM: the paint is a colour that appears nowhere else in " +
+                "the building and the tables have been wiped. Whoever came down that shaft with a delivery " +
+                "was fed and watered before they went back up, and nothing on this floor ever asked them " +
+                "for a pass to do it.",
+
+            (Comfort.UpperCanteen, true) =>
+                "🍸 A dining room, and it is LAID. Cloth on the tables, glasses upended on a tray, covers " +
+                "still on the sideboard. Places for eleven, set at the same spacing all the way down, and " +
+                "the chair at the head pulled out by a hand's width. Somebody set this for a date, and the " +
+                "date is not on anything in the room.",
+
+            (Comfort.StaffCanteen, false) =>
+                "🍽 Four machines and not a bottle of anything in the racks: soup, tea, and a wall of the " +
+                "same wrapped biscuit. The tables are close together and the chairs face each other, which " +
+                "is what a room for people who already know each other looks like.\n\n" +
+                "📋 Pinned by the machines, a delivery manifest renewed every quarter without a break — and " +
+                "the address on it is a SCHOOL, on another world entirely, costed per head for a roll of " +
+                "two hundred and forty. Same account number every quarter. Signed for by a name with no " +
+                "initial.",
+
+            (Comfort.StaffCanteen, true) =>
+                "🍽 Long tables, a servery with the shutters down, and trays stacked to the ceiling with " +
+                "nothing between them. Every tray is clean. The rota on the wall is ruled to the end of a " +
+                "year nobody has written in yet.\n\n" +
+                "📋 And the standing order over the servery is the OTHER HALF of a manifest you have read " +
+                "somewhere else: same account number, same quarterly quantity, addressed to a school a very " +
+                "long way from here. This is the copy the office kept.",
+
+            (_, true) =>
+                "🚻 Cloakroom and washrooms. Numbered hooks, none of them used. A basin run in stone rather " +
+                "than steel, and the taps run clear from the first second — somebody flushed this system " +
+                "through, and not decades ago.",
+
+            _ =>
+                "🚻 Cubicles, a basin run, and a mirror with a tally scratched into the corner and mostly " +
+                "rubbed out again. The taps still turn. The water comes through brown for four seconds and " +
+                "then runs clear, which means a pump somewhere under your boots has never once stopped.",
+        };
+    }
+
     /// <summary>The lift shaft's spot — the SAME (x, y) on every floor, so going down is legible and coming
     /// back up is never a search. Sits on the spine corridor at the field's heart.</summary>
     public static (double X, double Y) ShaftAt(in SurfaceLayout.Field field) =>
@@ -819,7 +1088,9 @@ public static class UndergroundComplex
         IReadOnlyList<SurfaceLayout.Landmark> Labels,
         IReadOnlyList<(double X, double Y)> RoomCentres,
         IReadOnlyList<Rib> Ribs,
-        IReadOnlyList<Refuge> Refuges);
+        IReadOnlyList<Refuge> Refuges,
+        IReadOnlyList<Amenity> Amenities,
+        IReadOnlyList<EnSuite> EnSuites);
 
     /// <summary>#587 · A CROSS CORRIDOR, PUBLISHED RATHER THAN INFERRED.
     ///
@@ -849,7 +1120,15 @@ public static class UndergroundComplex
         var doorways = new List<SurfaceLayout.Doorway>();
         var locked = new List<LockedDoor>();
         var labels = new List<SurfaceLayout.Landmark>();
-        var rooms = new List<(double X, double Y)>();
+
+        // #707 · A ROOM CARRIES ITS OWN PLATE THROUGH THE BUILD. It used to be a bare centre, because the
+        // only thing that ever asked a room what it was, was the locked door hung on it — and a room that
+        // opens has never had a sign drawn on it. That is still true on screen and it stopped being true in
+        // the generator the moment rank became readable in plumbing: which rooms get an en-suite, and which
+        // rooms are the wrong ones to turn into a canteen, are both questions about the plate. Carried in the
+        // same list rather than in a second one kept in lockstep beside it, for the obvious reason.
+        var rooms = new List<(double X, double Y, string Plate)>();
+        var ensuites = new List<EnSuite>();
 
         // #585 · A CLAIM LEDGER, DOWN HERE TOO. The A* audit found rooms that were drawn and could not be
         // entered, and the cause is the one this project keeps paying for: two rooms (or a room and the
@@ -1002,7 +1281,8 @@ public static class UndergroundComplex
             }
             walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
 
-            AddRoomsAlong(walls, doorways, locked, rooms, claimed, bodyId, level, i, x, mouth, far, down);
+            AddRoomsAlong(
+                walls, doorways, locked, rooms, ensuites, claimed, bodyId, level, i, x, mouth, far, down);
         }
 
         // #608 · LAST, because a refuge is taken out of the rooms this floor actually managed to build. Any
@@ -1011,10 +1291,234 @@ public static class UndergroundComplex
         // the loop is an index that sometimes names nothing. That is exactly the shape of the bug KeyRoomFor
         // was written to avoid, and a safety regulation may not be the second thing in this file to trip
         // over it.
+        // #707 · …and the amenities, out of the same pool and BEFORE the refuge, so the two can never take
+        // the same room. They never compete in practice — an amenity is only ever plumbed on a floor that
+        // holds pressure and a refuge is only ever carved on one that does not — but the order says so
+        // rather than leaving it to be rediscovered.
+        List<Amenity> amenities = CarveAmenities(bodyId, level, rooms, walls, shaftX, shaftY);
         List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, shaftX, shaftY);
 
+        var centres = new List<(double X, double Y)>(rooms.Count);
+        foreach ((double rx, double ry, string _) in rooms)
+        {
+            centres.Add((rx, ry));
+        }
+
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(level),
-            walls, doorways, locked, labels, rooms, ribList, refuges);
+            walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites);
+    }
+
+    /// <summary>#707 · Hang a washroom cell off the back of a room, if the room is one that earned one and
+    /// the ground behind it is free. Returns true when it built the cell AND the parent's back wall (with a
+    /// doorway cut in it), so the caller knows not to build that wall itself.</summary>
+    private static bool AddEnSuite(
+        List<SurfaceLayout.Wall> walls, List<EnSuite> ensuites,
+        List<(double X0, double Y0, double X1, double Y1)> claimed,
+        int level, string plate, double backX, double cy, int side, bool open)
+    {
+        // The one pressure source, asked here and nowhere else: plumbing is for people out of their suits.
+        if (!HoldsPressure(level) || !IsPrincipalRoom(plate))
+        {
+            return false;
+        }
+
+        double outward = side < 0 ? -EnSuiteDepth : EnSuiteDepth;
+        double farX = backX + outward;
+        double cx0 = Math.Min(backX, farX), cx1 = Math.Max(backX, farX);
+        double cy0 = cy - EnSuiteHalfHeight, cy1 = cy + EnSuiteHalfHeight;
+
+        // #585 · Checked against the ledger BEFORE it is built, not only added to it afterwards. The room
+        // columns either side of a rib are laid in x order and this cell reaches BACK toward a neighbour
+        // that already exists, so a placer that only claims forward is a placer that can bury one.
+        foreach ((double ax0, double ay0, double ax1, double ay1) in claimed)
+        {
+            if (cx0 < ax1 && cx1 > ax0 && cy0 < ay1 && cy1 > ay0)
+            {
+                return false;   // somebody is already standing on it. The room keeps its solid back wall.
+            }
+        }
+        claimed.Add((cx0 - 1.5, cy0 - 1.5, cx1 + 1.5, cy1 + 1.5));
+
+        // The parent's back wall, in two segments with the cell's doorway between them — the whole tell, in
+        // one gap in one wall. The room is 12 du deep, so the segments run from its own corners.
+        walls.Add(new(backX, cy - 6.0, backX, cy - DoorHalf, true));
+        walls.Add(new(backX, cy + DoorHalf, backX, cy + 6.0, true));
+
+        // …and the cell itself: two returns and an end wall.
+        walls.Add(new(backX, cy0, farX, cy0, true));
+        walls.Add(new(backX, cy1, farX, cy1, true));
+        walls.Add(new(farX, cy0, farX, cy1, true));
+
+        // The fixture. One pan against the end wall, which is all a private cell has room for and all it
+        // needs to read as one on a plan.
+        double basinX = backX + (outward * 0.76);
+        walls.Add(new(basinX, cy + 1.0, basinX, cy + 3.2, true));
+
+        ensuites.Add(new EnSuite(backX + (outward / 2.0), cy, plate, open));
+        return true;
+    }
+
+    /// <summary>#707 · The amenity rooms, taken out of the rooms the floor had already built — the same
+    /// discipline as <see cref="CarveRefuges"/>, and for the same three reasons: a room is already audited
+    /// walkable from the lift, already has a door the captain can find, and already sits down a rib.
+    ///
+    /// <para><b>Nearest the car, which is the exact opposite of the refuge law and is right for the same
+    /// reason.</b> A refuge earns its existence by being a detour (#608). A canteen earns its by being the
+    /// first door off the lift: it is the room a haulier with a pallet and forty minutes actually used, and
+    /// a bar you have to go looking for is not a bar anybody drank in on a shift. No dice — a building puts
+    /// its catering by the car, every time, and a captain gets to learn that.</para>
+    ///
+    /// <para><b>And the washroom is beside the canteen</b>, for the reason a plumber would give: a building
+    /// runs ONE wet stack and hangs everything that needs a drain off it. That is the same sentence as the
+    /// en-suites only appearing on floors that breathe, which is why §13's amenity law is one rule and not
+    /// three.</para></summary>
+    private static List<Amenity> CarveAmenities(
+        string bodyId, int level, List<(double X, double Y, string Plate)> rooms,
+        List<SurfaceLayout.Wall> walls, double shaftX, double shaftY)
+    {
+        var built = new List<Amenity>();
+        bool top = TopPressurisedFloor(bodyId) == level;
+        bool mess = StaffCanteenFloor(bodyId) == level;
+        if ((!top && !mess) || rooms.Count == 0)
+        {
+            return built;
+        }
+
+        // #592/#614/#411 · The designated rooms, which may never be taken. The same reservation
+        // CarveRefuges makes and for the same reason: a designated INDEX read off a list that a second
+        // placer shortens is a feature silently dead on some worlds forever, with every test still green.
+        var reserved = new List<int>();
+        foreach ((int Level, int RoomIndex)? designated in
+            new (int, int)?[] { KeyRoomFor(bodyId), RelicRoomFor(bodyId), StandingOrderRoomFor(bodyId) })
+        {
+            if (designated is { } d && d.Level == level)
+            {
+                reserved.Add(d.RoomIndex);
+            }
+        }
+
+        // Candidates, nearest the car first. A principal room is never one: it already has its own
+        // washroom, and a director's office is not where a building puts the vending machines.
+        var pool = new List<int>();
+        var anywhere = new List<int>();
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            if (reserved.Contains(i))
+            {
+                continue;
+            }
+            anywhere.Add(i);
+            if (!IsPrincipalRoom(rooms[i].Plate))
+            {
+                pool.Add(i);
+            }
+        }
+
+        int need = top ? 2 : 1;
+        List<int> from = pool.Count >= need ? pool : anywhere;
+        if (from.Count < need)
+        {
+            return built;   // nothing left to give. The guards say this has never happened.
+        }
+        Nearest(from, rooms, shaftX, shaftY);
+
+        // The canteen takes the nearest room to the car; the washroom takes the room nearest THE CANTEEN,
+        // which is the wet stack rather than a second walk from the lift.
+        int first = from[0];
+        var taken = new List<(int Index, Comfort Use)>
+        {
+            (first, top ? Comfort.UpperCanteen : Comfort.StaffCanteen),
+        };
+        if (top)
+        {
+            from.RemoveAt(0);
+            Nearest(from, rooms, rooms[first].X, rooms[first].Y);
+            taken.Add((from[0], Comfort.Washroom));
+        }
+
+        // Highest index first, so removing one never renumbers another out from under us.
+        taken.Sort((a, b) => b.Index.CompareTo(a.Index));
+        foreach ((int index, Comfort use) in taken)
+        {
+            (double rx, double ry, string _) = rooms[index];
+            rooms.RemoveAt(index);
+            (string plate, string fixtureName) = AmenitySigns(bodyId, use);
+            built.Add(new Amenity(use, rx, ry, plate, fixtureName, Fitting(walls, use, rx, ry)));
+        }
+
+        // Back into the order the plates read in, so a floor's amenity list is canteen-then-washroom rather
+        // than an artefact of the order they happened to be removed in.
+        built.Sort((a, b) => a.Use.CompareTo(b.Use));
+        return built;
+    }
+
+    /// <summary>Sort room indices by how far they are from a point, ties broken by index — <c>List.Sort</c>
+    /// is not stable, and a floor being the same floor every visit is law down here.</summary>
+    private static void Nearest(
+        List<int> which, List<(double X, double Y, string Plate)> rooms, double px, double py)
+    {
+        which.Sort((a, b) =>
+        {
+            double da = Dist2(rooms[a], px, py), db = Dist2(rooms[b], px, py);
+            int by = da.CompareTo(db);
+            return by != 0 ? by : a.CompareTo(b);
+        });
+
+        static double Dist2((double X, double Y, string Plate) room, double px, double py)
+        {
+            double dx = room.X - px, dy = room.Y - py;
+            return (dx * dx) + (dy * dy);
+        }
+    }
+
+    /// <summary>#707 · WHAT IS BOLTED DOWN IN ONE OF THESE ROOMS — a counter, a run of cubicles, a bank of
+    /// machines — returning the round tops that go on the floor with it.
+    ///
+    /// <para>The fixtures are WALLS, in the same list as everything else, so they collide: a bar you can
+    /// walk through is a bar drawn ON a floor rather than one IN a room, and this ground has paid for the
+    /// sim doing one thing while the picture said another three times in one afternoon. Every fixture is
+    /// laid against the room's own back half, so the doorway, the middle of the room and the console in it
+    /// are all left clear — a fixture that seals a room is #585's stranded room with better furniture.</para>
+    ///
+    /// <para>The tables are NOT walls. Round tops are drawn and never collided with anywhere in this game
+    /// (the ship's cantina, a haven bar), and a captain barking their shins on a table on a floor with a
+    /// tank running would be a cruelty nobody asked for.</para></summary>
+    private static IReadOnlyList<(double X, double Y)> Fitting(
+        List<SurfaceLayout.Wall> walls, Comfort use, double cx, double cy)
+    {
+        switch (use)
+        {
+            case Comfort.UpperCanteen:
+                // The counter, and the service side behind it — the one part of any bar the customer never
+                // stands in, closed off exactly the way it would be.
+                walls.Add(new(cx - 5.0, cy + 3.6, cx + 5.0, cy + 3.6, true));
+                walls.Add(new(cx - 5.0, cy + 3.6, cx - 5.0, cy + 6.0, true));
+                walls.Add(new(cx + 5.0, cy + 3.6, cx + 5.0, cy + 6.0, true));
+                return [(cx - 4.5, cy - 2.5), (cx, cy - 4.2), (cx + 4.5, cy - 2.5)];
+
+            case Comfort.StaffCanteen:
+                // Four machines against the back wall and nothing to lean on. The owner's whole point about
+                // this room is what is NOT in it.
+                foreach (double m in new[] { cx - 5.4, cx - 1.8, cx + 1.8, cx + 5.4 })
+                {
+                    walls.Add(new(m - 1.4, cy + 4.4, m + 1.4, cy + 4.4, true));
+                    walls.Add(new(m - 1.4, cy + 4.4, m - 1.4, cy + 6.0, true));
+                    walls.Add(new(m + 1.4, cy + 4.4, m + 1.4, cy + 6.0, true));
+                }
+                // Tables close together and facing each other, which is the other half of that design.
+                return [(cx - 3.6, cy - 2.4), (cx, cy - 2.4), (cx + 3.6, cy - 2.4)];
+
+            default:
+                // Bathroom-grade, per the owner: a basin run along the back and three cubicle dividers. The
+                // stalls have no fronts on the plan — a deck plan draws partitions, and a captain made to
+                // path around three cubicle doors to reach a mirror is being charged for a joke.
+                walls.Add(new(cx - 5.5, cy + 4.2, cx + 5.5, cy + 4.2, true));
+                foreach (double d in new[] { cx - 4.0, cx, cx + 4.0 })
+                {
+                    walls.Add(new(d, cy - 6.0, d, cy - 2.6, true));
+                }
+                return [];
+        }
     }
 
     /// <summary>Rooms down both sides of a rib. About half are locked — the owner's illusion of scale — and a
@@ -1078,7 +1582,8 @@ public static class UndergroundComplex
 
     private static void AddRoomsAlong(
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked,
-        List<(double X, double Y)> rooms, List<(double X0, double Y0, double X1, double Y1)> claimed,
+        List<(double X, double Y, string Plate)> rooms, List<EnSuite> ensuites,
+        List<(double X0, double Y0, double X1, double Y1)> claimed,
         string bodyId, int level, int rib, double x, double mouth, double far, bool down)
     {
         const double roomW = 15.0, roomH = 12.0;
@@ -1108,25 +1613,41 @@ public static class UndergroundComplex
                 {
                     continue;
                 }
-                claimed.Add((x1 - 1.5, y1 - 1.5, x2 + 1.5, y2 + 1.5));
+                string plate = SignFor(bodyId, level, tag);
+                bool shut = Frac(bodyId, tag + ":locked") < 0.5;
 
                 // Three walls and a corridor-facing face with a gap in it.
                 walls.Add(new(x1, y1, x2, y1, true));
                 walls.Add(new(x1, y2, x2, y2, true));
-                walls.Add(new(side < 0 ? x1 : x2, y1, side < 0 ? x1 : x2, y2, true));
+
+                // #707 · …and the back wall, which is the one that says whether anybody important sat here.
+                //
+                // ASKED BEFORE THIS ROOM CLAIMS ITS OWN GROUND, which is the whole of the ordering: the
+                // claim boxes are inflated by 1.5 du on every side, so a cell hung on this room's own back
+                // wall sits inside its PARENT'S keep-out and every single en-suite in the game refused
+                // itself. (Watched happen: 202 floors, "1 principal room(s) and 0 en-suite(s)", with the
+                // geometry perfectly correct.) The cell is checked against everything already standing and
+                // the room is claimed immediately after, so nothing later can be laid on either of them.
+                double backX = side < 0 ? x1 : x2;
+                bool cell = AddEnSuite(walls, ensuites, claimed, level, plate, backX, cy, side, open: !shut);
+                claimed.Add((x1 - 1.5, y1 - 1.5, x2 + 1.5, y2 + 1.5));
+                if (!cell)
+                {
+                    walls.Add(new(backX, y1, backX, y2, true));
+                }
 
                 double faceX = side < 0 ? x2 : x1;
                 walls.Add(new(faceX, y1, faceX, cy - DoorHalf, true));
                 walls.Add(new(faceX, cy + DoorHalf, faceX, y2, true));
 
-                if (Frac(bodyId, tag + ":locked") < 0.5)
+                if (shut)
                 {
-                    locked.Add(new(faceX, cy - DoorHalf, faceX, cy + DoorHalf, SignFor(bodyId, level, tag)));
+                    locked.Add(new(faceX, cy - DoorHalf, faceX, cy + DoorHalf, plate));
                 }
                 else
                 {
                     doorways.Add(new SurfaceLayout.Doorway(faceX, cy - DoorHalf, faceX, cy + DoorHalf));
-                    rooms.Add((cx, cy));
+                    rooms.Add((cx, cy, plate));
                 }
             }
         }

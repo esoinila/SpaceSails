@@ -674,6 +674,12 @@ public partial class Map
         public bool HiveSealedWayShown { get; set; }
         public bool HiveAuthorityShown { get; set; }
 
+        // #707 · Which amenity rooms this excursion has already written up, by the same room key the haul
+        // rooms use. The plate is pulsed every time you stand at the counter — a console that goes silent
+        // reads as broken (#212) — but the write-up is filed ONCE, because leaning on a bar eleven times is
+        // not eleven findings. Exactly the shape the refused-shaft line above already uses.
+        public HashSet<int> HiveAmenitiesRead { get; } = [];
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -3580,6 +3586,57 @@ public partial class Map
             return;
         }
         ShowPulseMessage(RackGaugeLine(ex, RefugeReservoirNow(ex, which)));
+    }
+
+    // ── #707 · THE COUNTER, THE BASINS AND THE MACHINES ─────────────────────────────────────────────────
+    //
+    // Owner: "all the secret labs dont have any cantina / bar nor any toilets."
+    //
+    // ONE verb for all three rooms, because it is one verb: stand in a room somebody ate or washed in and
+    // read what is left of it. There is deliberately nothing to spend and nothing to pick up — this issue
+    // builds the ROOMS, and the social layer that belongs in them (overhearing the next table, the exposure
+    // a stranger's face costs in a room where every face is known, the meal-line ID check) is filed
+    // separately by the owner's own scope split.
+    //
+    // WHICH ROOM IT IS COMES FROM CORE, matched by position exactly the way HiveHaulInteract matches a room
+    // index. Reading it off the console's own label would have been closer to hand and would have been a
+    // second copy of the fixture's name, going quietly wrong the day somebody edits one of the two.
+    private void HiveAmenityInteract()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveAmenity } spot)
+        {
+            return;
+        }
+
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        for (int i = 0; i < floor.Amenities.Count; i++)
+        {
+            UndergroundComplex.Amenity a = floor.Amenities[i];
+            if (Math.Abs(a.X - spot.X) >= 0.5 || Math.Abs(a.Y - spot.Y) >= 0.5)
+            {
+                continue;
+            }
+
+            // FILED, not flashed. The mess's manifest is a lead about somewhere else entirely and the bar's
+            // paint is the only warm thing in the building; both are worth being able to re-read, and a line
+            // that faded in eight seconds would be #587's lesson unlearned. Once per room per excursion.
+            if (ex.HiveAmenitiesRead.Add(HiveInterior.RoomKey(ex.Floor, i)))
+            {
+                ShowAndFile(UndergroundComplex.AmenityLine(ex.Stop.Body.Id, a.Use), "🍽");
+                RequestVaultSave();   // the field note is a possession too (#587)
+            }
+            else
+            {
+                ShowPulseMessage(a.Plate);
+            }
+            return;
+        }
     }
 
     /// <summary>#608 · What a rack — either rack — says when it is asked how it is doing. One reading of one
