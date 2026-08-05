@@ -149,6 +149,40 @@ public static class HiveInterior
             {
                 tables.Add(((float)tx, (float)ty));
             }
+
+            // ── #709 · AND, ON B1 ONLY, SOMEBODY SITTING AT THEM ──────────────────────────────────────
+            //
+            // Owner: "we should have people in the bar... we have cover story" and, in the same breath,
+            // "for now let's keep the people in B1."
+            //
+            // The Hive's first people. WHO and WHETHER are both Core's (CanteenRegulars.Sitting) — the
+            // B1 law is a fact about the building, and a renderer that decided it here would put the
+            // owner's ruling somewhere no test can reach. This asks and draws, exactly as the facility
+            // plate does two hundred lines down (#694).
+            //
+            // They stand ON the table's own spot rather than beside it, because the table IS the seat as
+            // far as the deck is concerned: Core placed those round tops (#707) and a console offset by a
+            // hand-typed du would be one more caller doing geometry about furniture it does not own.
+            foreach (CanteenRegulars.Seated who in CanteenRegulars.Sitting(bodyId, level, a))
+            {
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveRegular, (float)who.X, (float)who.Y, who.Plate));
+            }
+
+            // ── #709 · AND THE CORK BOARD ON THE WALL ─────────────────────────────────────────────────
+            //
+            // Owner: "let's add a bulletin board to the bar." It is where the cast's own working day is
+            // written down — every notice on it belongs to somebody sitting in this room, and nothing
+            // anywhere says so.
+            //
+            // CORE OWNS WHERE, exactly as it owns who sits down. A renderer choosing a spot on a wall would
+            // be doing geometry about a room it does not own (§13.15), and the offsets are picked against the
+            // counter's line and the tables' so the board owns its own patch of floor to be pressed from.
+            if (CanteenBoard.At(bodyId, level, a) is { } board)
+            {
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveBoard, (float)board.X, (float)board.Y, CanteenBoard.Plate));
+            }
         }
 
         // The lift, on every floor, in the same place.
