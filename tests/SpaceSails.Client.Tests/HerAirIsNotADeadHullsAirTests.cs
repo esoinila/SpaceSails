@@ -34,7 +34,7 @@ public sealed class HerAirIsNotADeadHullsAirTests
     /// <summary>What the suit concludes standing at (x, y) aboard a derelict — the whole chain the page
     /// runs, with the excursion on a wreck's floor 0, no shelter and no Hive refuge.</summary>
     private static SuitAir.Supply SupplyAboardAWreckAt(double x, double y) =>
-        SuitAir.SourceOf(
+        SuitAir.SourceOf("miranda", 
             floor: 0,
             insideShelter: false,
             aboard: AwayTeamSide.BackAtTheShuttle(onWreck: true, x, y, AvatarRadius),
@@ -95,11 +95,11 @@ public sealed class HerAirIsNotADeadHullsAirTests
         // the tube it is not. A one-function merge must not have moved the moon's own line.
         Assert.Equal(
             SuitAir.Supply.Tanks,
-            SuitAir.SourceOf(0, false,
+            SuitAir.SourceOf("miranda", 0, false,
                 AwayTeamSide.BackAtTheShuttle(onWreck: false, 0, MoonSurface.SurfaceTopY - 1, AvatarRadius)));
         Assert.Equal(
             SuitAir.Supply.Ship,
-            SuitAir.SourceOf(0, false,
+            SuitAir.SourceOf("miranda", 0, false,
                 AwayTeamSide.BackAtTheShuttle(onWreck: false, 0, MoonSurface.SurfaceTopY + 1, AvatarRadius)));
     }
 

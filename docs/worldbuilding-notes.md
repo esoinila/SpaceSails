@@ -217,6 +217,21 @@ dossier never joins the dots); and the disclosure clock riding the same slow wor
 windows the monolith's foot-offerings use, so what you are shown is a fact about *when you
 went*, not a reward for how hard you looked.
 
+**Shipped (#677, v1 — the band).** `UndergroundComplex` has a found band: on about one site in
+fifty — one in five of the rare sites that already hide a band — two bands under the listed
+bottom, with a **whole band of nothing dug** between the two, because the shaft was driven
+through four floors of rock and broke into what was waiting. The way in is the card idiom
+again, found in the band nobody listed. Past the seam every single thing that makes a facility
+legible is absent: no plate, no department, no livery, no lock, no stencilled distance, no door
+leaf, no drain, no shelf, no lamp. It is **dark** (the floor's own claim), it **holds pressure**
+with nothing anywhere showing plant, its walls are drawn in a **third material that takes no
+palette at all**, and its chambers get **bigger** the deeper you go — the game's learned grammar
+inverted, said by the room scale and by no prose. Almost every chamber is empty; about one in
+nine holds the record of a wall that cannot be brought back. The register is the owner's own —
+*"Horror served as smooth comfy pillow"*: the halls are comfortable, and a pillow means you were
+expected. Cheat `?found=1`. Details: `features/the-landing-site.md` §13.20. **Still open and
+deliberately unbuilt: the disclosure clock, and any inhabitant content.**
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |
@@ -230,4 +245,4 @@ went*, not a reward for how hard you looked.
 | Shuttle boarding sequence | post-M12 | walk to bay → fly shuttle across (rel-velocity drift minigame) → prey interior |
 | Third-person deck camera | post-M12 | deck renderer + avatar-following camera |
 | Phobos, strangest port | after #225 arc | Lab 31 beanstalk numbers -> elevator haven pair at Phobos (#164/#231/#234) |
-| The found halls (fourth world) | after #649 arc | `UndergroundComplex`: rare *found* band beneath a deep dig — pre-existing galleries, chambers growing with depth, its own vocabulary, never explained (§10) |
+| The found halls (fourth world) | **v1 SHIPPED (#677)** | the band itself: `UndergroundComplex` found band, dark, sealed, smooth-walled, chambers growing with depth, `?found=1`. Open: the disclosure clock, and the inhabitants (§10) |

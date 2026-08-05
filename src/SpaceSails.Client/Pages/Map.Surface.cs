@@ -1,5 +1,6 @@
 ﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Pages;
 
@@ -139,6 +140,36 @@ public partial class Map
     private double FanReach() =>
         MotionTracker.UndergroundRange(
             MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), _surface?.Floor ?? 0);
+
+    /// <summary>#708 · The <c>?dark=1</c> boot cheat: the fixtures are out on every floor this excursion
+    /// walks. Never consulted on its own — it is handed to <see cref="UndergroundComplex.IsDark"/>, which is
+    /// the only thing in this game allowed to answer the question.</summary>
+    private bool _lampsOutCheat;
+
+    /// <summary>#701 · The odd books whose GIST this game-thread has already filed
+    /// (<see cref="OddBooks.Entry.Id"/>s). Rides the vault with the rest of the thread's progress, because
+    /// the one-shot is about knowledge and knowledge does not un-happen on a reload. Never consulted on its
+    /// own — it is handed to <see cref="OddBooks.Search"/>, which is the only thing allowed to answer
+    /// whether this reading files anything.</summary>
+    private List<string> _oddBooksRead = [];
+
+    /// <summary>#677 · The <c>?found=1</c> boot cheat: park the rock whose site has halls under it, and hand
+    /// the captain the paperwork that opens every gate on the way down. It changes nothing Core decides —
+    /// the site is seeded off its own body id like every other — so what a tester walks is what a captain
+    /// would walk.</summary>
+    private bool _foundCheat;
+
+    /// <summary>#701 · The <c>?book=</c> dev cheat, null when unset. Never consulted on its own either: it is
+    /// an ARGUMENT to <see cref="OddBooks.Search"/> and never a second answer OR-ed in beside it, which is
+    /// §13.18's rule and the reason <c>?dark=1</c> did not black out the regolith at noon.</summary>
+    private int? _bookCheat;
+
+    /// <summary>#708 · IS THE GROUND UNDER THE CAPTAIN'S BOOTS DARK — the one ask, put once, by everything
+    /// here that cares. Today that is the renderer and nothing else: the tracker, the sentries and the pack
+    /// keep their own rules and are never told, which is the point — a contact crossing behind you in a hall
+    /// your lights cannot reach is the whole feature.</summary>
+    private bool DarkHere() =>
+        _surface is { } ex && UndergroundComplex.IsDark(ex.Stop.Body.Id, ex.Floor, _lampsOutCheat);
 
     // #327 the ship calls home: the mothership's station-keeping hold (sim-seconds) at the moment the
     // captain boarded DOWN — the reference the escalating ladder measures against (OrbitHold). Positive
@@ -668,11 +699,49 @@ public partial class Map
         // point: the second time you step out down there it is just a corridor, and it should be.
         public bool HiveUnlistedSeen { get; set; }
 
+        // #677 · Whether this excursion has already crossed the seam, and already stepped out into the
+        // halls. Two flags and not one, because they are two different events on the same ride and either
+        // can happen without the other on a later trip — a captain who rode straight down on a card they
+        // were already carrying crosses the seam without the shaft ever having been a mystery.
+        public bool HiveSeamCrossed { get; set; }
+        public bool HiveFoundSeen { get; set; }
+
+        // #677 · …and whether the wall has already been raised as a card. There are several records in a
+        // band and they are all the same wall, so the card and the casebook gist are once per excursion the
+        // way the authority card's are — while the POCKET line is said every time, because something goes in
+        // every time and #678's law is that a pickup line is printed for something that actually went in.
+        public bool HiveHallRecordShown { get; set; }
+
         // #528 · Whether this excursion has already had the two reveal cards the Hive earns — the sealed way
         // on, and the first authority card. Once each: a card that pops at every sealed door in a corridor
         // of sealed doors is a slideshow, and the second one is never the beat the first one was.
         public bool HiveSealedWayShown { get; set; }
         public bool HiveAuthorityShown { get; set; }
+
+        // #707 · Which amenity rooms this excursion has already written up, by the same room key the haul
+        // rooms use. The plate is pulsed every time you stand at the counter — a console that goes silent
+        // reads as broken (#212) — but the write-up is filed ONCE, because leaning on a bar eleven times is
+        // not eleven findings. Exactly the shape the refused-shaft line above already uses.
+        public HashSet<int> HiveAmenitiesRead { get; } = [];
+
+        // #709 · Which of the canteen's regulars this excursion has already heard. Keyed off the same room
+        // key the amenities use, offset clear of any real room index, so one person's breath is filed once
+        // and the plate pulses on every visit after.
+        public HashSet<int> HiveRegularsHeard { get; } = [];
+
+        // #709 · Which notice on the cork board comes next. A counter and not a set, because the board is the
+        // one thing down here worth re-reading in ORDER — four notices, one per press, round and round.
+        public int HiveBoardNext { get; set; }
+
+        // #709 · WHICH SHIFT the canteen's people are on. Owner: "let's have some random element of who is in
+        // the bar and where they got to sit down."
+        //
+        // Frozen ONCE, when this excursion's underground floor is drawn, and read by everything afterwards.
+        // The roster turns over with the watch (PatronRota's own, upstairs) — but the deck is built at one
+        // instant and the [E] press happens at another, so reading the clock a second time would let the
+        // figure on screen and the person the game answers about be two different people. That is bug class
+        // three with a face on it, and a watch chosen once cannot drift into it.
+        public long CanteenWatch { get; set; }
 
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
@@ -1059,7 +1128,8 @@ public partial class Map
         {
             // What the FLOOR provides on its own — the identical question HiveInterior's plate asks of the
             // same level, which is why the sign on the wall and the tank on your back cannot come apart.
-            if (SuitAir.SourceOf(ex.Floor, insideShelter: false, aboard: false) == SuitAir.Supply.Room)
+            if (SuitAir.SourceOf(ex.Stop.Body.Id, ex.Floor, insideShelter: false, aboard: false)
+                == SuitAir.Supply.Room)
             {
                 ex.RefugeBreathNoted = false;
                 return;
@@ -1860,6 +1930,7 @@ public partial class Map
     /// it.</para>
     private SuitAir.Supply AirSupplyOf(SurfaceExcursion ex) =>
         SuitAir.SourceOf(
+            ex.Stop.Body.Id,                                 // #677 which building — the halls breathe
             ex.Floor,
             StandingInTheShelter(ex),                        // #573 the deep shelter
             CaptainBeyondReach,                              // her tube — or past a wreck's lock: breathing hers
@@ -2164,9 +2235,21 @@ public partial class Map
         // floor is the pulse line again, because by then the captain has been told and a card per floor
         // would be a card nobody reads.
         bool firstSight = ex.HiveFloorsSeen.Add(level);
-        bool pressurised = UndergroundComplex.HoldsPressure(level);
+        bool pressurised = UndergroundComplex.HoldsPressure(ex.Stop.Body.Id, level);
 
-        if (firstSight && !pressurised && !ex.HiveVacuumWarned)
+        // #677 · NEITHER AIR LINE IS SAID PAST THE SEAM, and the reason is the whole feature. The
+        // pressurised line describes standing lights, a fan still turning and somebody's account decades
+        // after the last invoice — a sentence about PLANT, and about the people who were billed for it. Said
+        // in a gallery it would explain, in one breath, the one thing that must never be explained: where
+        // the air comes from. The authored arrival line states it once ("The air is good. Nothing here says
+        // why.") and after that the gauge and the plate answer, which is what instruments are for.
+        bool hallAir = UndergroundComplex.IsFound(ex.Stop.Body.Id, level);
+
+        if (firstSight && hallAir)
+        {
+            // nothing to say. The suit already knows, and this floor never had an invoice.
+        }
+        else if (firstSight && !pressurised && !ex.HiveVacuumWarned)
         {
             ex.HiveVacuumWarned = true;
             _viewObject = new DeckPlan.ConsoleSpot(
@@ -2208,7 +2291,38 @@ public partial class Map
             ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
         }
 
-        ApplyNerveShock(UndergroundComplex.HoldsPressure(level) ? 2.0 : 5.0,
+        // ── #677 · AND THE TWO SENTENCES THE HALLS GET, WHICH ARE THE LAST THINGS SAID ────────────────────
+        //
+        // The seam first, because it happens in the shaft, on the way; then the arrival, because it happens
+        // when the doors open. Both are the owner's own words, lifted verbatim, and both are LAST for the
+        // reason the gate line above is last: the pulse has one slot and #693 is open, so the climax is
+        // written after everything routine. The book keeps both whatever the screen does.
+        //
+        // The residual is #693's, not this feature's, and it is worth writing down rather than papering
+        // over: on the tick after the doors open, a crossing into pressure can still pulse the generic
+        // supply line over the top of these. That is the same slot the unlisted band's own climax has been
+        // losing since #592 shipped, and the fix is the priority queue that issue is about.
+        if (UndergroundComplex.IsFound(ex.Stop.Body.Id, level))
+        {
+            if (!ex.HiveSeamCrossed)
+            {
+                ex.HiveSeamCrossed = true;
+                ShowAndFile(UndergroundComplex.SeamLine, "\U0001F573");
+            }
+
+            if (!ex.HiveFoundSeen)
+            {
+                ex.HiveFoundSeen = true;
+                ShowAndFile(UndergroundComplex.FoundArrivalLine, "\U0001F573");
+
+                // The same price as the floor nobody listed. It is not bigger, deliberately: nothing down
+                // here threatens, and a site that bills a captain for standing in a comfortable room is a
+                // predator whatever the prose says (§10.4c's ruling, one band further down).
+                ApplyNerveShock(9.0, "a room that was ready before anybody thought to build one");
+            }
+        }
+
+        ApplyNerveShock(UndergroundComplex.HoldsPressure(ex.Stop.Body.Id, level) ? 2.0 : 5.0,
             "a building this expensive, this far down, and this empty");
         RequestVaultSave();
     }
@@ -2276,6 +2390,44 @@ public partial class Map
 
         UndergroundComplex.Haul haul = UndergroundComplex.InRoom(ex.Stop.Body.Id, ex.Floor, which);
 
+        // ── #701 · THE ODD BOOK ─────────────────────────────────────────────────────────────────────────
+        //
+        // Owner: "a better alternative to finding an empty room. You look around but only one book catches
+        // your attention." Searching a room and finding nothing is the most common outcome in this building
+        // and the least written; one would-be-empty room in six now says something instead.
+        //
+        // It happens BEFORE the pocket, and it returns without ever reaching it, because a book is not a
+        // haul: nothing goes in the satchel, no credits change hands, and — the load-bearing part — THE ROOM
+        // IS NOT STRUCK OFF. The book is still on the shelf, so the console is still standing there and [E]
+        // opens the card again. Re-reading is free; the casebook learns the gist once per book per thread
+        // (#603's law: looking is free, knowledge is one-shot), which Core decides, not this method.
+        //
+        // The shelf line is the ROOM's line and is said by the pulse only; the GIST is what the book is
+        // worth and is the thing the casebook keeps. Filing both would put the same shelf in the book twice
+        // in two registers, and the second search would file it a third time.
+        if (OddBooks.Search(ex.Stop.Body.Id, ex.Floor, which, _oddBooksRead, _bookCheat) is { } shelf)
+        {
+            ShowPulseMessage(shelf.Line);
+
+            // #528's idiom, caption-only: there is no art file for these yet and one that is wired but
+            // unpainted would render an img the browser hides — the lifeboat-muster precedent is a card that
+            // never claims a picture at all.
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                shelf.Title, null, shelf.Card);
+
+            if (shelf.Gist is { } gist)
+            {
+                // FileNote and not ShowAndFile: the saying has already happened, and the pulse would play
+                // under the card's own blur (#686).
+                FileNote(gist, OddBooks.Glyph);
+                _oddBooksRead = [.. shelf.Filed];
+            }
+
+            RequestVaultSave();
+            return;
+        }
+
         // Everything found down here is FILED (#587) - this is the place in the game most worth being able to
         // re-read, and a file on a harbourmaster that faded after eight seconds would be a joke.
         // #613 \u00b7 AND SAY WHETHER IT WENT INTO YOUR POCKET. Owner, after clearing a corridor: "now I used e
@@ -2326,7 +2478,11 @@ public partial class Map
         // (UndergroundComplex.WhatGoesInThePocket), which is the only way a test can walk every haul against
         // every pocket — and it answers all three parts at once: what goes in, what is said, and whether the
         // room has been emptied at all.
-        string findId = $"hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}";
+        // #677 · Core mints the id, because the id says which KIND of place the thing came out of and three
+        // separate seams read that later — the pocket line, the satchel row and the look-card. Composed here
+        // as a string literal it was one place; the moment a second class of relic existed it would have
+        // been the client teaching itself a fact about a band it does not own.
+        string findId = UndergroundComplex.FindId(ex.Stop.Body.Id, ex.Floor, which);
         UndergroundComplex.Pickup pick = UndergroundComplex.WhatGoesInThePocket(
             haul, ex.Stop.Body.Id, found, findId, _satchel);
 
@@ -2350,7 +2506,24 @@ public partial class Map
             RendererInterop.PlayCue("board");
         }
 
-        ShowAndFile(room + pick.Line, haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
+        // #677/#603 \u00b7 WHAT THE BOOK KEEPS. Everywhere in the game the pulse line and the casebook line are
+        // the same sentence, because what happened IS what is worth remembering. A record out of the halls
+        // is the exception #603's law was written for: looking is free, knowledge is one-shot, so the screen
+        // gets the event (a rubbing went into a pocket) and the book gets what the captain now KNOWS about a
+        // wall. Filing both would put one wall in the book twice in two registers \u2014 #701's rule, learned on
+        // the shelves \u2014 and there are several of these records in a band.
+        if (UndergroundComplex.CasebookGistOf(haul, ex.Stop.Body.Id, ex.Floor) is { } hallGist)
+        {
+            ShowPulseMessage(room + pick.Line);
+            if (!ex.HiveHallRecordShown)
+            {
+                FileNote(hallGist, "\u2b55");
+            }
+        }
+        else
+        {
+            ShowAndFile(room + pick.Line, haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
+        }
 
         if (haul == UndergroundComplex.Haul.Dirt)
         {
@@ -2380,15 +2553,34 @@ public partial class Map
 
         if (haul == UndergroundComplex.Haul.Relic)
         {
-            // The card is raised on the spot, unconditionally and every time. This is the one object in the
-            // game that a captain will want to look at again the moment they find it, and #528's
-            // once-per-excursion gate is for things that RECUR — a rib mouth, a card, a dead floor. There is
-            // one of these in a facility and most facilities do not have one.
-            _viewObject = new DeckPlan.ConsoleSpot(
-                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                CarriedObject.CollarLabel, CarriedObject.CollarArtUrl, CarriedObject.CollarStory);
+            // The card is raised on the spot. For the thing on the pallet that is unconditional and every
+            // time: it is the one object in the game a captain will want to look at again the moment they
+            // find it, and #528's once-per-excursion gate is for things that RECUR — a rib mouth, a card, a
+            // dead floor. There is one of those in a facility and most facilities do not have one.
+            //
+            // #677 · A HALL RECORD DOES RECUR, so it takes the gate. Several galleries in a band hold one
+            // and they are all the same wall; the fifth full-screen card about it would be a slideshow, and
+            // it is the same call the authority card makes twenty lines below. WHICH card is Core's — the
+            // find's own id knows what it came out of, so this seam can never show a photograph of a pallet
+            // to a captain standing in an empty gallery.
+            CarriedObject.Reveal shown = CarriedObject.RelicReveal(findId);
+            bool recurs = UndergroundComplex.IsHallRecord(findId);
+            if (!recurs || !ex.HiveHallRecordShown)
+            {
+                _viewObject = new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                    shown.Label, shown.ArtUrl, shown.Story);
 
-            ApplyNerveShock(9.0, "standing next to something that was measured for a neck");
+                // The fright is on the FIRST one for the same reason the card is. It is also the same size
+                // as the pallet's and not larger: nothing down here threatens, everything accommodates, and
+                // a place that bills a captain by the room for standing in it is a predator whatever the
+                // prose says. What is frightening about a hall is arithmetic, not attention.
+                ApplyNerveShock(9.0, recurs
+                    ? "putting a tape measure against something that does not answer to one"
+                    : "standing next to something that was measured for a neck");
+            }
+
+            ex.HiveHallRecordShown |= recurs;
         }
         else if (haul == UndergroundComplex.Haul.Dirt)
         {
@@ -3208,7 +3400,12 @@ public partial class Map
             : $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",
 
         // #614 · Named for what you actually have, which is paperwork about a thing you left in a room.
-        Core.Satchel.Kind.Relic => "⭕ measurements of the thing on the pallet",
+        // #677 · …and there are two of those now, told apart by the find's own id and named by the same
+        // authored fragment the look-card is titled with — the odd book's idiom, and it means no row prose
+        // was invented for a hall.
+        Core.Satchel.Kind.Relic => UndergroundComplex.IsHallRecord(item.Id)
+            ? UndergroundComplex.FoundRecordCardLabel
+            : "⭕ measurements of the thing on the pallet",
 
         _ => "🗃 a file on somebody",
     };
@@ -3582,6 +3779,156 @@ public partial class Map
         ShowPulseMessage(RackGaugeLine(ex, RefugeReservoirNow(ex, which)));
     }
 
+    // ── #707 · THE COUNTER, THE BASINS AND THE MACHINES ─────────────────────────────────────────────────
+    //
+    // Owner: "all the secret labs dont have any cantina / bar nor any toilets."
+    //
+    // ONE verb for all three rooms, because it is one verb: stand in a room somebody ate or washed in and
+    // read what is left of it. There is deliberately nothing to spend and nothing to pick up — this issue
+    // builds the ROOMS, and the social layer that belongs in them (overhearing the next table, the exposure
+    // a stranger's face costs in a room where every face is known, the meal-line ID check) is filed
+    // separately by the owner's own scope split.
+    //
+    // WHICH ROOM IT IS COMES FROM CORE, matched by position exactly the way HiveHaulInteract matches a room
+    // index. Reading it off the console's own label would have been closer to hand and would have been a
+    // second copy of the fixture's name, going quietly wrong the day somebody edits one of the two.
+    private void HiveAmenityInteract()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveAmenity } spot)
+        {
+            return;
+        }
+
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        for (int i = 0; i < floor.Amenities.Count; i++)
+        {
+            UndergroundComplex.Amenity a = floor.Amenities[i];
+            if (Math.Abs(a.X - spot.X) >= 0.5 || Math.Abs(a.Y - spot.Y) >= 0.5)
+            {
+                continue;
+            }
+
+            // FILED, not flashed. The mess's manifest is a lead about somewhere else entirely and the bar's
+            // paint is the only warm thing in the building; both are worth being able to re-read, and a line
+            // that faded in eight seconds would be #587's lesson unlearned. Once per room per excursion.
+            if (ex.HiveAmenitiesRead.Add(HiveInterior.RoomKey(ex.Floor, i)))
+            {
+                ShowAndFile(UndergroundComplex.AmenityLine(ex.Stop.Body.Id, a.Use), "🍽");
+                RequestVaultSave();   // the field note is a possession too (#587)
+            }
+            else
+            {
+                ShowPulseMessage(a.Plate);
+            }
+            return;
+        }
+    }
+
+    // ── #709 · STOPPING AT SOMEBODY'S TABLE ──────────────────────────────────────────────────────────────
+    //
+    // Owner: "we should have people in the bar... we have cover story."
+    //
+    // The Hive's first conversation, and deliberately the smallest one the game has. A regular gives you ONE
+    // breath of their working day and nothing else: no menu, no trade, no round to buy, no contact seam. That
+    // restraint is the feature — the upper canteen is where a captain is UNREMARKABLE, and a room that starts
+    // offering things is a room that is paying attention to you.
+    //
+    // NO RISK HERE, ON PURPOSE. #618 rules that talking is what blows a cover — but that is the GUARDS on the
+    // bottom floors, who are not built yet, and whose whole point is that probing them probes back. Band 0 is
+    // the floor whose own sign says NO PASS REQUIRED. Wiring an exposure cost into this conversation now would
+    // pre-empt a ruling that has not been made and would make the one safe room in the building unsafe.
+    //
+    // Filed once per person per excursion, pulsed every time after — the same law the amenity write-up above
+    // uses, and for the same reason: leaning on a table eleven times is not eleven findings, and a console
+    // that goes silent reads as broken (#212).
+    private void HiveRegularInteract()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveRegular } spot)
+        {
+            return;
+        }
+
+        // WHICH PERSON COMES FROM CORE, matched by position — the same discipline HiveAmenityInteract uses
+        // one method up. Reading the line off the console's own label would have been closer to hand and
+        // would have been a second copy of the cast, going quietly wrong the day somebody edits one of them.
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        int seat = 0;
+        foreach (UndergroundComplex.Amenity a in floor.Amenities)
+        {
+            foreach (CanteenRegulars.Seated who in
+                CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
+            {
+                if (Math.Abs(who.X - spot.X) < 0.5 && Math.Abs(who.Y - spot.Y) < 0.5)
+                {
+                    if (ex.HiveRegularsHeard.Add(HiveInterior.RoomKey(ex.Floor, 900 + seat)))
+                    {
+                        ShowAndFile(who.Line, CanteenRegulars.Glyph);
+                        RequestVaultSave();
+                    }
+                    else
+                    {
+                        ShowPulseMessage(who.Plate);
+                    }
+                    return;
+                }
+                seat++;
+            }
+        }
+    }
+
+    // ── #709 · READING THE BOARD ─────────────────────────────────────────────────────────────────────────
+    //
+    // Owner: "let's add a bulletin board to the bar" · "maybe spot the person notifying in the bar."
+    //
+    // ONE NOTICE PER PRESS, in the order they are pinned, then round again. Deliberate: a board that dumped
+    // four notices into one card would be read once and never looked at twice, and the whole point of this
+    // object is that a captain comes BACK to it after meeting the people. The pump notice means nothing until
+    // you have heard the fitter, and everything afterwards.
+    //
+    // NOTHING HERE READS Notice.Pairs. Which regular pinned which notice is the player's to make or to miss,
+    // and a client that hinted would spend the only thing the board has.
+    private void HiveBoardInteract()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveBoard })
+        {
+            return;
+        }
+
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        foreach (UndergroundComplex.Amenity a in floor.Amenities)
+        {
+            var pinned = CanteenBoard.Pinned(ex.Stop.Body.Id, ex.Floor, a);
+            if (pinned.Count == 0)
+            {
+                continue;
+            }
+
+            CanteenBoard.Notice n = pinned[ex.HiveBoardNext % pinned.Count];
+            ex.HiveBoardNext++;
+            ShowAndFile($"{n.Head} — {n.Body}", CanteenBoard.Glyph);
+            RequestVaultSave();   // the field note is a possession too (#587)
+            return;
+        }
+    }
+
     /// <summary>#608 · What a rack — either rack — says when it is asked how it is doing. One reading of one
     /// machine, so the shed on the regolith and the refuge eleven floors down can never describe the same
     /// state in two different ways.</summary>
@@ -3683,9 +4030,15 @@ public partial class Map
         // Routed here, the same way a derelict is, so nothing else in the excursion has to know.
         if (ex.Floor < 0)
         {
+            // #709 · Freeze which shift the canteen is on before the room is drawn, and hand the deck that
+            // number rather than a clock. Everything afterwards — the [E] press, a rebuild after searching a
+            // room — reads the same frozen watch, so the people drawn at the tables stay the people the game
+            // answers about.
+            ex.CanteenWatch = PatronRota.WatchIndex(SimTime);
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
-                3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied);
+                3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied,
+                ex.CanteenWatch);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.
@@ -4358,28 +4711,47 @@ public partial class Map
             (double hx, double hy) = MoonSurface.LiftHead(
                 landedOn.Stop.Body.Id, landedOn.Site.LayoutSalt, MoonSurface.ExpeditionField()).DoorStep;
 
-            ShowPulseMessage(
-                "🧪 DEV ?secretlab=1: set down at the lift head. The shed is in front of you.");
+            ShowPulseMessage(_foundCheat
+                ? "🧪 DEV ?found=1: set down at the lift head, with the wallet already full. Ride down."
+                : "🧪 DEV ?secretlab=1: set down at the lift head. The shed is in front of you.");
             StandCaptainAt(hx, hy, "the shuttle sets you down on the lift head's doorstep");
+
+            // ── #677 · …AND THE PAPERWORK, because the halls are behind two gates and one of them is the
+            // rarest object in the game. Every band this site has gets its card, minted through the SAME
+            // AuthorityCard the rooms mint, put in the SAME satchel the pockets hold — so the lift panel,
+            // the gate, the refusal ladder and the wallet fan all behave exactly as they do for a captain
+            // who earned them. A cheat that seeded a private "you may descend" flag would be testing a
+            // second mechanism that does not ship.
+            if (_foundCheat)
+            {
+                // Every band index the arithmetic admits, and NOT "until one is missing": there is a whole
+                // band with nothing in it between the unlisted floors and the halls, so a loop that stopped
+                // at the first absence would hand out every card except the only one this cheat exists for.
+                int last = UndergroundComplex.BandOf(UndergroundComplex.DeepestPossibleFloor);
+                for (int band = 0; band <= last; band++)
+                {
+                    if (!UndergroundComplex.SiteHasBand(landedOn.Stop.Body.Id, band))
+                    {
+                        continue;
+                    }
+                    var card = new UndergroundComplex.AuthorityCard(landedOn.Stop.Body.Id, band);
+                    _satchel = [.. Core.Satchel.Add(
+                        _satchel, new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
+                }
+            }
 
             // ...and ?floor=N goes the rest of the way down, because half the open work on this feature is
             // about what a FLOOR looks like rather than about finding the way in.
             if (_startingFloorCheat is { } askedFor)
             {
-                // #592 · Clamped to the site's TRUE bottom, not its listed one, so `?floor=20` can reach the
-                // band nobody listed. The whole reason the cheats exist is that the feature under test must
-                // be one URL away, and a hidden floor you can only reach by finding a card first would be
-                // the exact tax they were invented to remove.
+                // #592/#677 · ASKED OF THE BUILDING, not worked out here. This used to clamp to the true
+                // bottom and then snap into the unlisted band's shaft head — correct arithmetic for a
+                // building with ONE gap in it, and a captain set down in solid rock the day there were two
+                // (the band of nothing under the unlisted band, #677). A caller doing its own geometry about
+                // a building it does not own is §13.15's second cause, and this is the third time it has
+                // been the cause of something.
                 string cheatBody = landedOn.Stop.Body.Id;
-                int floor = Math.Max(askedFor, UndergroundComplex.TrueDepthOf(cheatBody));
-
-                // The gap between the two buildings has nothing dug in it; land on the unlisted band's own
-                // shaft head rather than in rock.
-                if (floor < UndergroundComplex.DepthOf(cheatBody))
-                {
-                    floor = Math.Min(floor, UndergroundComplex.BandTop(UndergroundComplex.UnlistedBandOf(cheatBody)));
-                }
-                RideTheLiftTo(landedOn, floor);
+                RideTheLiftTo(landedOn, UndergroundComplex.NearestFloorTo(cheatBody, askedFor));
             }
             return;
         }
@@ -4693,7 +5065,7 @@ public partial class Map
         // it is lit, and nothing outside can work its doors. A DEAD floor does not, which is most of them.
         bool inShelter = onExcursion && _surface is { } shelterEx
             && (ShelterUnderfoot(shelterEx) >= 0
-                || (shelterEx.Floor < 0 && UndergroundComplex.HoldsPressure(shelterEx.Floor)));
+                || (shelterEx.Floor < 0 && UndergroundComplex.HoldsPressure(shelterEx.Stop.Body.Id, shelterEx.Floor)));
         // #637 · AND A DERELICT IS EXPOSED GROUND TOO. This asked the moon's question — "are you above the
         // regolith's top rim at y = −20" — and a wreck's whole deck runs −9..+9, so aboard a hull it was
         // always FALSE: the ambient pressure the entire dread economy runs on never applied inside a ship,

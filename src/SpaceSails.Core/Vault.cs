@@ -306,6 +306,13 @@ public sealed record ProgressSection
     /// first time their tank passes the low mark on a surface. Same law as its siblings: it teaches the
     /// clock once and then the pulse line carries it.</summary>
     public bool AirCardSeen { get; init; }
+
+    /// <summary>#701 — the <see cref="OddBooks.Entry.Id"/>s this thread has already filed a gist for.
+    /// Persisted per-universe (the same idiom as <see cref="SecretLabsFound"/>) because the one-shot law is
+    /// about KNOWLEDGE: looking at a book again is free and always will be, but the casebook learns a thing
+    /// once. Defaults empty — a pre-#701 file simply lacks the field, and a captain who has read a shelf
+    /// they cannot remember reading files it again, which is the harmless direction to be wrong in.</summary>
+    public IReadOnlyList<string> OddBooksRead { get; init; } = [];
 }
 
 // ── The captain's nerve (#317, first slice of #226): the sanity gauge that debuts on the regolith. ──

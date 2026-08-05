@@ -26,7 +26,15 @@ public sealed class DeckView
         // hangs beside the pips for a beat; NerveLedger is the last few, newest first, so the captain can
         // read back what broke them. Owner: "what caused the sanity loss and what we did to regain it."
         string? NerveFlash = null,
-        System.Collections.Generic.IReadOnlyList<string>? NerveLedger = null);
+        System.Collections.Generic.IReadOnlyList<string>? NerveLedger = null,
+        // #708 · IS THIS FLOOR DARK. Handed down as the sim's own answer to the one Core ask
+        // (UndergroundComplex.IsDark), never re-derived here — the #591 one-reach lesson: a renderer working
+        // out for itself what the sim already knows is how two instruments come to disagree. When true the
+        // world is drawn ONLY where the suit's headlights fall (SuitLamp), and the rest is black rather than
+        // dim. Instruments are untouched: the motion fan, the on-grid smudges and the corner gauges are drawn
+        // after the dark is laid down, because a thing you HEAR through a wall in an unlit hall is the entire
+        // point of the feature.
+        bool Dark = false);
 
     /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
     /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan
@@ -192,6 +200,20 @@ public sealed class DeckView
     private static readonly RgbaColor StencilDead = new(232, 150, 84, 245);
 
     private static readonly RgbaColor StoneLine = new(166, 150, 130);
+
+    /// <summary>#677 · THE THIRD MATERIAL — the found halls' walls, and the only ink in the game that is not
+    /// a fact about anybody.
+    ///
+    /// <para>Hull is cold blue-white because a bulkhead is metal somebody paid for; stone is warm and dusty
+    /// because it is the moon you are standing on. This is neither: a flat, chroma-free grey that belongs to
+    /// no palette, no department and no body, drawn heavier than either of them and with no texture,
+    /// hatching or interior line-work of any kind. <b>The absence is the style</b> (§13.20), and it is the
+    /// same thing #649's slab says by having nothing drawn inside its face.</para>
+    ///
+    /// <para>Deliberately NOT bright. Owner: <i>"a material the light does not grip"</i> — so it sits below
+    /// the hull's value rather than above it, and on a floor where the suit's cone is the whole of the seeing
+    /// (#708) that is most of what a captain ever learns about it.</para></summary>
+    private static readonly RgbaColor SeamlessLine = new(150, 150, 150);
     private static readonly RgbaColor WindowLine = new(80, 220, 210, 220);
     private static readonly RgbaColor ConsoleGlow = new(120, 220, 200);
     private static readonly RgbaColor ConsoleNear = new(190, 255, 220);
@@ -253,6 +275,11 @@ public sealed class DeckView
     // #371 Phase 3 · expedition fog-of-war palette. An UNSEEN forced chamber is a dark hatched void (unknown
     // ground behind a freshly-forced door); an EXPLORED one (seen, now out of sight) draws in a cold dim
     // slate; a VISIBLE one draws normally. Echoes ripple in the tracker's own green — "movement was here".
+    // #708 · PITCH. Not the deck's near-black Floor (10,14,22) and not an alpha over it: a floor with no
+    // fixtures on an airless world has nothing to scatter light, so what the lamp misses is not dark grey,
+    // it is nothing. Opaque, so no console glow, no plate and no hull line can bleed through it.
+    private static readonly RgbaColor Pitch = new(0, 0, 0, 255);
+
     private static readonly RgbaColor VoidFill = new(4, 7, 12, 214);
     private static readonly RgbaColor VoidHatch = new(34, 46, 62, 90);
     private static readonly RgbaColor VoidText = new(90, 110, 135, 150);
@@ -265,7 +292,13 @@ public sealed class DeckView
     private static readonly RgbaColor DoorLocked = new(120, 140, 170, 210);// another berth's sealed hatch
     private const double DoorOpenRadius = DeckPlan.DoorOpenRadius; // #465: one number, shared with sight
 
-    private readonly IRenderer _renderer;
+    // #708 · The pen, and the mask that can be slipped over it. `_renderer` is what every draw in this file
+    // writes to; for the world phase of a DARK floor it is the LampMask, and for everything else — the
+    // instruments, the gauges, the captain's own mark — it is the canvas itself. Swapped rather than checked
+    // at eight hundred call sites, for the reason written on LampMask.
+    private readonly IRenderer _canvas;
+    private readonly LampMask _mask;
+    private IRenderer _renderer;
     private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];
     private readonly float[] _scratch = new float[32];
 
@@ -281,8 +314,23 @@ public sealed class DeckView
 
     public DeckView(IRenderer renderer)
     {
+        _canvas = renderer;
+        _mask = new LampMask(renderer);
         _renderer = renderer;
     }
+
+    /// <summary>
+    /// #708 · THE ARM'S-REACH RING — the faint spill of light off your own suit, and the one thing a dark
+    /// floor always shows you.
+    ///
+    /// <para>It is <see cref="DeckPlan.InteractRadius"/> and not a number of its own, because the law it
+    /// exists to keep is #212's: <b>an affordance the game will let you use must never be invisible.</b>
+    /// This is exactly the radius in which pressing [E] does something, so the ring and the reach are the
+    /// same fact said twice, and a captain in a black hall who can work a console can always see it. Type a
+    /// separate number here and the first time somebody tunes one of them the game starts offering
+    /// interactions with nothing drawn under them.</para>
+    /// </summary>
+    private const double LampRingDu = DeckPlan.InteractRadius;
 
     // #424 HULL-SHUDDER · the unison pause. When a shudder fires on a populated interior deck (the ship,
     // a haven bar/hall) the client hands a FROZEN npc-hold time here for the held-breath beat: every present
@@ -298,7 +346,8 @@ public sealed class DeckView
         double panX = 0, double panY = 0, SurfaceHud? surface = null, double? npcHoldTime = null,
         bool crewGlance = false)
     {
-        _renderer.BeginFrame(widthPx, heightPx, Floor);
+        _renderer = _canvas;    // never inherit a mask from a frame that threw
+        _renderer.BeginFrame(widthPx, heightPx, state.Dark ? Pitch : Floor);
 
         float scale = Math.Min(widthPx / 64f, heightPx / 28f);
 
@@ -308,6 +357,16 @@ public sealed class DeckView
         float ox = plan.FollowCam ? widthPx / 2f - (float)state.AvatarX * scale + (float)panX : widthPx / 2f + (float)panX;
         float oy = plan.FollowCam ? heightPx / 2f + (float)state.AvatarY * scale + (float)panY : heightPx / 2f + (float)panY;
         (float X, float Y) P(double dx, double dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
+
+        // #708 · ON A DARK FLOOR THE PEN GOES BEHIND THE LAMP. Everything from here to the sentries is the
+        // WORLD — ground, walls, doors, plates, fixtures, husks, bodies — and on a dark floor none of it
+        // exists outside the headlights. The mask is disarmed again before the instruments, which are not
+        // part of the world and never were.
+        if (state.Dark)
+        {
+            _mask.Arm(state.AvatarX, state.AvatarY, state.HeadingRad, LampRingDu, scale, ox, oy);
+            _renderer = _mask;
+        }
 
         // #371 Phase 3 fog: the visibility state of a point against the forced-chamber overlay — -1 = not in
         // any chamber (draw as normal), 0 = unseen (hidden under the void), 1 = explored (dim), 2 = visible.
@@ -492,14 +551,22 @@ public sealed class DeckView
             // wrecks are steel), so nothing outside the Hive changes by a pixel.
             RgbaColor hull = plan.HullInk is { } made ? new RgbaColor(made.R, made.G, made.B) : HullLine;
 
+            // #677 · …AND A THIRD MATERIAL, WHICH TAKES NO INK FROM EITHER OF THEM. Both branches above read
+            // a palette — the department that painted this corridor, the moon this rock came out of — and a
+            // palette is an ANSWER. The found halls are drawn in one flat constant, ahead of both, because
+            // the day a livery or a body colour reached them the walls would start saying whose they were.
             RgbaColor color = ws == 1 ? ExploredWall
                 : w.IsWindow ? WindowLine
+                : w.IsSeamless ? SeamlessLine
                 : w.IsStone ? stone
                 : w.IsHull ? hull
                 : InnerLine;
             // Stone is drawn as heavy as hull: it is just as solid, and a monolith you could mistake for
-            // rubble is a monolith that stops being the centrepiece of the moon it stands on.
-            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull || w.IsStone ? 2.5f : 1.5f);
+            // rubble is a monolith that stops being the centrepiece of the moon it stands on. Seamless is
+            // heavier than either, because it is the one surface in the game with no line-work inside it and
+            // weight is all the drawing has left to say SOLID with.
+            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color,
+                w.IsSeamless ? 3.5f : w.IsHull || w.IsStone ? 2.5f : 1.5f);
         }
 
         // Automatic airlock doors (the docking tube): shut across the passage until you near them,
@@ -860,6 +927,20 @@ public sealed class DeckView
                 "8px monospace", TextAlign.Center);
         }
 
+        // ── #708 · AND HERE THE DARK IS LAID DOWN. The world is drawn; the mask comes off; the black goes on
+        //    over everything the headlights do not reach, with a hard edge where the cone stops.
+        //
+        //    Everything BELOW this line is drawn over the dark on purpose, and each for its own reason:
+        //    a deployed sentry (it carries a lamp — you can see a light in a dark hall even if you cannot
+        //    see what it lights), the motion fan's smudges and ghosts (an instrument, #591, whose whole
+        //    worth is hearing what you cannot see), the overload countdown (a lit display), the blood and
+        //    the screen-flash (they happen to YOU), the captain's own mark, and the corner gauges.
+        if (state.Dark)
+        {
+            _renderer = _canvas;
+            PaintTheDark(widthPx, heightPx, in state, scale, ox, oy);
+        }
+
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
         // dropping, and its crude two-digit magazine readout riding above (seven-segment red, dim at 00).
         // Drawn ON the grid, not a corner widget — the counter is meant to be read from across the map.
@@ -1000,6 +1081,17 @@ public sealed class DeckView
         // desks inside a few du — so "keep every pair 6 du apart" is not a ship anyone would want to walk.
         // Asking the same function the key asks is the fix, it is one line, and it is right on every deck in
         // the game at once: her own, a derelict's, a station's, the regolith.
+        //
+        // #708 · AND THE LAMP GOES BACK ON THE PEN FOR THEM. Consoles are drawn late — after the fan's
+        // smudges, so a contact heard through a wall is not painted over by a plate — which puts them on the
+        // wrong side of the blackout. They are WORLD, though: a fitting bolted to a wall in an unlit hall is
+        // not visible because it is important. So the world is drawn in two passes and both of them are
+        // behind the headlights, rather than moving the blackout and quietly hiding the instrument.
+        if (state.Dark)
+        {
+            _renderer = _mask;
+        }
+
         DeckPlan.ConsoleSpot? answering = plan.NearestConsoleSpot(state.AvatarX, state.AvatarY);
 
         foreach (DeckPlan.ConsoleSpot console in plan.Consoles)
@@ -1025,6 +1117,8 @@ public sealed class DeckView
                 _renderer.DrawText(sx, sy + 20, "[E]", ConsoleNear, "bold 11px monospace", TextAlign.Center);
             }
         }
+
+        _renderer = _canvas;    // #708 · and off again — everything below is the captain, or an instrument
 
         // The captain.
         (float ax, float ay) = P(state.AvatarX, state.AvatarY);
@@ -1150,6 +1244,7 @@ public sealed class DeckView
             _renderer.DrawText(ox, heightPx - 30, standing, promptColor, "bold 14px monospace", TextAlign.Center);
         }
 
+        _mask.Disarm();     // #708 · the lamp is a per-frame fact; nothing survives the frame it was aimed in
         _renderer.EndFrame();
     }
 
@@ -1224,6 +1319,74 @@ public sealed class DeckView
         t = Math.Clamp(t, 0f, 1f);
         static byte L(byte v, float t) => (byte)(v + (255 - v) * t);
         return new RgbaColor(L(c.R, t), L(c.G, t), L(c.B, t), c.A);
+    }
+
+    // ── #708 · THE DARK, PAINTED ─────────────────────────────────────────────────────────────────────────
+    //
+    // The LampMask decides what gets DRAWN; this decides where it STOPS. A wall that starts under the
+    // captain's boots and runs the width of the field passes the mask honestly — part of it is lit — and
+    // without this it would be drawn all the way into the black. So once the world is down, everything
+    // outside the light is painted over in Pitch.
+    //
+    // It is a fan of opaque wedges rather than one clever polygon-with-a-hole, because a canvas fill rule is
+    // not a thing this renderer's command buffer carries and a hole punched with an even-odd winding is the
+    // sort of drawing that works until somebody's browser disagrees. A wedge is four points and a fill.
+    //
+    // Each wedge runs from an INNER radius out past the farthest corner of the viewport. The inner radius is
+    // the whole of the model, and it is two values: the lamp's reach where the cone points, the arm's-reach
+    // ring everywhere else.
+
+    /// <summary>How finely the fan is stepped. The inner arc's vertices are pushed out by 1/cos(step/2) so
+    /// the chords lie ON the true radius at their midpoints and OUTSIDE it everywhere else — the black
+    /// therefore never creeps inside the light, which would nibble the cone away from its own edge.</summary>
+    private const double MaskStepRad = 4.0 * Math.PI / 180.0;
+
+    private void PaintTheDark(int widthPx, int heightPx, in State state, float scale, float ox, float oy)
+    {
+        float ax = ox + ((float)state.AvatarX * scale);
+        float ay = oy - ((float)state.AvatarY * scale);
+
+        // Far enough to clear the corner of the canvas the captain is standing furthest from, whatever the
+        // pan and whatever the follow-cam is doing.
+        float far = 8f + Math.Max(
+            Math.Max(Corner(0, 0), Corner(widthPx, 0)),
+            Math.Max(Corner(0, heightPx), Corner(widthPx, heightPx)));
+
+        float Corner(float cx, float cy) => MathF.Sqrt(((cx - ax) * (cx - ax)) + ((cy - ay) * (cy - ay)));
+
+        // The captain's facing in SCREEN angle: deck +y is up, screen +y is down, so the sign flips.
+        double axis = -state.HeadingRad;
+        double half = SpaceSails.Core.SuitLamp.ConeHalfAngleDegrees * Math.PI / 180.0;
+        float coneInner = (float)(SpaceSails.Core.SuitLamp.RangeDu * scale);
+        float ringInner = (float)(LampRingDu * scale);
+
+        // Two arcs, and they meet exactly on the cone's edges — so the edge itself is one straight radial
+        // line, drawn to the pixel, which is the line the captain reads a wall appearing at.
+        Fan(axis - half, axis + half, coneInner);                       // down the beam: black past the reach
+        Fan(axis + half, axis - half + (2 * Math.PI), ringInner);       // everywhere else: black past the ring
+
+        void Fan(double from, double to, float inner)
+        {
+            int steps = Math.Max(1, (int)Math.Ceiling((to - from) / MaskStepRad));
+            double step = (to - from) / steps;
+            float push = (float)(1.0 / Math.Cos(step / 2));
+            float outer = far * push;
+
+            for (int i = 0; i < steps; i++)
+            {
+                double a0 = from + (step * i);
+                double a1 = a0 + step;
+                float c0 = (float)Math.Cos(a0), s0 = (float)Math.Sin(a0);
+                float c1 = (float)Math.Cos(a1), s1 = (float)Math.Sin(a1);
+                float ri = inner * push;
+
+                _scratch[0] = ax + (c0 * ri); _scratch[1] = ay + (s0 * ri);
+                _scratch[2] = ax + (c1 * ri); _scratch[3] = ay + (s1 * ri);
+                _scratch[4] = ax + (c1 * outer); _scratch[5] = ay + (s1 * outer);
+                _scratch[6] = ax + (c0 * outer); _scratch[7] = ay + (s0 * outer);
+                _renderer.DrawPolygon(_scratch.AsSpan(0, 8), Pitch, Pitch, 1f);
+            }
+        }
     }
 
     // #563 · How deep the dark reaches in from an unseen bound, in deck units, and how far that depth

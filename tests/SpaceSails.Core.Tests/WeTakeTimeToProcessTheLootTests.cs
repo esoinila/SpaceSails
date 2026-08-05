@@ -214,13 +214,13 @@ public sealed class WeTakeTimeToProcessTheLootTests
         (string what, SuitAir.Supply supply)[] free =
         [
             ("B1 — a floor of the Hive that still holds pressure (#585)",
-                SuitAir.SourceOf(-1, insideShelter: false, aboard: false)),
+                SuitAir.SourceOf("miranda", -1, insideShelter: false, aboard: false)),
             ("a pressure refuge cut into a dead floor (#608)",
-                SuitAir.SourceOf(-2, insideShelter: false, aboard: false, inRefuge: true)),
+                SuitAir.SourceOf("miranda", -2, insideShelter: false, aboard: false, inRefuge: true)),
             ("an emergency shelter on the surface (#573)",
-                SuitAir.SourceOf(0, insideShelter: true, aboard: false)),
+                SuitAir.SourceOf("miranda", 0, insideShelter: true, aboard: false)),
             ("aboard her, or in her tube (#562)",
-                SuitAir.SourceOf(0, insideShelter: false, aboard: true)),
+                SuitAir.SourceOf("miranda", 0, insideShelter: false, aboard: true)),
         ];
 
         foreach ((string what, SuitAir.Supply supply) in free)
@@ -245,7 +245,7 @@ public sealed class WeTakeTimeToProcessTheLootTests
         // Standing still is the cheapest thing a captain can do (Breathing.Still, 0.8), which is why the hold
         // is a bite and not a catastrophe: twenty seconds of held position is sixteen seconds of tank.
         double rate = SuitAir.Breathing.Rate(SuitAir.Breathing.Still, 100, 0, CaptainCondition.MaxHits);
-        SuitAir.Supply supply = SuitAir.SourceOf(0, insideShelter: false, aboard: false);
+        SuitAir.Supply supply = SuitAir.SourceOf("miranda", 0, insideShelter: false, aboard: false);
         Assert.True(SuitAir.Drawing(supply));
 
         double tank = 900.0;

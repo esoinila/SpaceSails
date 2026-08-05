@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Rendering;
 
@@ -27,10 +28,14 @@ public static class HiveInterior
     }
 
     /// <summary>Build one floor's deck.</summary>
+    /// <param name="canteenWatch">#709 · Which shift the canteen's people are on
+    /// (<see cref="PatronRota.WatchIndex"/>). Passed in already frozen rather than read from a clock here, so
+    /// the room that is DRAWN and the room the [E] key later asks about can never be two different rooms.
+    /// Defaults to the first watch, which is what every audit and lab wants: a fixed roster to walk.</param>
     public static DeckPlan FloorDeck(
         string bodyId, int level, in SurfaceLayout.Field field,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
-        IReadOnlyCollection<int> emptiedRooms)
+        IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -43,6 +48,15 @@ public static class HiveInterior
         var doors = new List<DeckPlan.Door>();
         var consoles = new List<DeckPlan.ConsoleSpot>();
         var labels = new List<(float X, float Y, string Text)>();
+
+        // ── #677 · WHICH SIDE OF THE SEAM THIS FLOOR IS ON ──────────────────────────────────────────────
+        //
+        // Asked ONCE, of Core, and then handed to everything below it. Owner's ruling on the halls' senses:
+        // "the pre-existing tunnels would be scary as dark ones and totally different style … it is just
+        // built into the smooth monolith style walls." The renderer's whole contribution to that is a
+        // material, and a material is one bool applied uniformly — a floor half-poured and half-not would be
+        // the seam drawn in the wrong place, which is the one geometric fact this feature has.
+        bool pastTheSeam = UndergroundComplex.IsFound(bodyId, level);
 
         // The structure. Everything down here is MADE — poured, welded, bolted — so it draws in the ship's
         // own pressure-hull ink rather than in the body's stone (#589). That contrast is the point: you have
@@ -60,7 +74,14 @@ public static class HiveInterior
             //
             // Nothing down here is rubble. It was cut, poured and bolted by people with a budget, so it draws
             // like the made thing it is — the brightest structure the game has shown since the ship.
-            walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, IsHull: true));
+            //
+            // #677 · …and past the seam it is none of that. A gallery is not poured and it is not the moon's
+            // rock either, so it takes the third idiom and, with it, no ink from the department livery this
+            // plan may be carrying. The concrete stops at a line and the material changes, which is the whole
+            // sentence the drawing is allowed to say about it.
+            walls.Add(new(
+                (float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2,
+                false, IsHull: !pastTheSeam, IsSeamless: pastTheSeam));
         }
 
         foreach (SurfaceLayout.Doorway d in floor.Doorways)
@@ -112,6 +133,61 @@ public static class HiveInterior
                 (float)refuge.X, (float)refuge.Y, UndergroundComplex.RefugeTankLabel));
             labels.Add(((float)refuge.X, (float)(refuge.Y - UndergroundComplex.RefugeHalfHeight - 2.0),
                 refuge.Sign));
+        }
+
+        // ── #707 · THE AMENITIES, DRAWN THE WAY THE REFUGE IS ───────────────────────────────────────────
+        //
+        // Owner: "all the secret labs dont have any cantina / bar nor any toilets."
+        //
+        // Same shape as the refuge below, because it is the same kind of object: a room Core carved out of
+        // the floor's own rooms, with a console for the [E] verb and a plate for the eye. The FIXTURES are
+        // already in floor.Walls — the counter, the cubicle dividers, the machines — so they were drawn and
+        // collided with by the loop at the top of this method, and nothing here has to know their shape.
+        // A renderer that laid out its own bar counter would be one more caller doing geometry about a
+        // building it does not own (§13.15).
+        var tables = new List<(float X, float Y)>();
+        foreach (UndergroundComplex.Amenity a in floor.Amenities)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture));
+            labels.Add(((float)a.X, (float)(a.Y - 7.6), a.Plate));
+            foreach ((double tx, double ty) in a.Tables)
+            {
+                tables.Add(((float)tx, (float)ty));
+            }
+
+            // ── #709 · AND, ON B1 ONLY, SOMEBODY SITTING AT THEM ──────────────────────────────────────
+            //
+            // Owner: "we should have people in the bar... we have cover story" and, in the same breath,
+            // "for now let's keep the people in B1."
+            //
+            // The Hive's first people. WHO and WHETHER are both Core's (CanteenRegulars.Sitting) — the
+            // B1 law is a fact about the building, and a renderer that decided it here would put the
+            // owner's ruling somewhere no test can reach. This asks and draws, exactly as the facility
+            // plate does two hundred lines down (#694).
+            //
+            // They stand ON the table's own spot rather than beside it, because the table IS the seat as
+            // far as the deck is concerned: Core placed those round tops (#707) and a console offset by a
+            // hand-typed du would be one more caller doing geometry about furniture it does not own.
+            foreach (CanteenRegulars.Seated who in CanteenRegulars.Sitting(bodyId, level, a, canteenWatch))
+            {
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveRegular, (float)who.X, (float)who.Y, who.Plate));
+            }
+
+            // ── #709 · AND THE CORK BOARD ON THE WALL ─────────────────────────────────────────────────
+            //
+            // Owner: "let's add a bulletin board to the bar." It is where the cast's own working day is
+            // written down — every notice on it belongs to somebody sitting in this room, and nothing
+            // anywhere says so.
+            //
+            // CORE OWNS WHERE, exactly as it owns who sits down. A renderer choosing a spot on a wall would
+            // be doing geometry about a room it does not own (§13.15), and the offsets are picked against the
+            // counter's line and the tables' so the board owns its own patch of floor to be pressed from.
+            if (CanteenBoard.At(bodyId, level, a) is { } board)
+            {
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveBoard, (float)board.X, (float)board.Y, CanteenBoard.Plate));
+            }
         }
 
         // The lift, on every floor, in the same place.
@@ -179,7 +255,7 @@ public static class HiveInterior
         // on the suit are physically incapable of saying different things about the same floor.
         double signX = shaftX;
         double signY = shaftY + UndergroundComplex.CorridorHalf;
-        SuitAir.Supply floorAir = SuitAir.SourceOf(level, insideShelter: false, aboard: false);
+        SuitAir.Supply floorAir = SuitAir.SourceOf(bodyId, level, insideShelter: false, aboard: false);
         var bigLabels = new List<(float X, float Y, string Text, float Px, int Tone)>
         {
             ((float)signX, (float)(signY + 10.6), UndergroundComplex.DepthPaint(level), 44f, 0),
@@ -240,7 +316,14 @@ public static class HiveInterior
             droidCount: droidCount, fillDroids: fillDroids,
             location: (_, _) => floor.Name,
             doors: [.. doors], shipFixtures: false, followCam: true,
-            tables: DeckPlan.Ship.Tables,
+            // #707 · THE CANTEEN'S OWN TOPS, and not the ship's any more. This read
+            // `tables: DeckPlan.Ship.Tables` — three round tops at the SHIP's cantina coordinates, which on
+            // a Hive floor land at y = +7.5, forty du above the top of the field and outside every floor
+            // this generator has ever drawn. Nobody had reported it because nobody had reason to look up
+            // there, and it is the mirrored-constant shape exactly: a table list borrowed from a building
+            // whose coordinates mean something else. The rings belong to a room now, and the room is on
+            // this floor.
+            tables: [.. tables],
             bigLabels: [.. bigLabels],
             // #605 · The floor's department livery. Null on the band nobody listed, so that concrete is the
             // one place down here left bare — the absence is the tell.

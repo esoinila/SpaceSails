@@ -29,6 +29,11 @@ public sealed class YouCanWalkTheHiveTests
     [
         "luna", "phobos", "europa", "ganymede", "callisto",
         "titan", "enceladus", "miranda", "triton", "the-clinker",
+
+        // #677 � …and the one rock in the system with GALLERIES under it. Without it every sweep in this
+        // file audits a universe where the found band does not exist and passes for the wrong reason —
+        // which is the fifth named bug class (a guard handed a world that cannot tell pass from fail).
+        UndergroundComplex.FoundBandCheatSiteId,
     ];
 
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
@@ -85,8 +90,13 @@ public sealed class YouCanWalkTheHiveTests
             var spawn = new DeckReachability.Point(sx, sy);
             var bounds = (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
 
+            // #707 · AND THE AMENITIES, in the same flood rather than in a guard of their own. A canteen is
+            // a room off a rib exactly like every other room down here, so the law that covers it is 13.1
+            // and the audit that covers it is this one — the only thing that had to change is that the list
+            // of targets is a list of PLACES THE FLOOR OFFERS YOU, not a list of one console kind.
             var targets = deck.Consoles
-                .Where(c => c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveLift)
+                .Where(c => c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveLift
+                    or DeckPlan.ConsoleKind.HiveAmenity)
                 .Select(c => new DeckReachability.Point(c.X, c.Y))
                 .ToList();
 
@@ -143,9 +153,9 @@ public sealed class YouCanWalkTheHiveTests
         // each asserted STANDABLE first. A goal buried in wall would make CanReach return false and read as
         // "the corridors are broken"; a goal that is somehow standable inside a sealed box would pass a
         // sloppier test on a floor nobody could ever cross.
-        AuditEveryFloor((_, level, deck) =>
+        AuditEveryFloor((body, level, deck) =>
         {
-            if (UndergroundComplex.HoldsPressure(level))
+            if (UndergroundComplex.HoldsPressure(body, level))
             {
                 return null;   // the floor is the refuge
             }
@@ -192,9 +202,9 @@ public sealed class YouCanWalkTheHiveTests
         // for the detour; this measures the walk on the REAL deck, over the real corridors, because a
         // straight-line distance and a route through a facility are not the same number and only one of them
         // is what the captain pays.
-        AuditEveryFloor((_, level, deck) =>
+        AuditEveryFloor((body, level, deck) =>
         {
-            if (UndergroundComplex.HoldsPressure(level))
+            if (UndergroundComplex.HoldsPressure(body, level))
             {
                 return null;
             }
@@ -221,6 +231,50 @@ public sealed class YouCanWalkTheHiveTests
             }
             return null;
         }, "spec — reaching the air is a decision to detour");
+    }
+
+    [Fact]
+    public void APRIVATEWashroomBehindAnOpenDoorIsAWashroomYouCanWALKInto()
+    {
+        // ── #707 · THE ONE THING THE FLOOD ABOVE CANNOT SEE ──
+        //
+        // An en-suite has no console in it, deliberately: a private cell carries no plate and there is
+        // nothing in it to work, and inventing an [E] just to give the audit a handle would be the test
+        // shaping the game. So it is not in 13.1's target list — which means it is EXACTLY the shape of
+        // thing this project keeps shipping broken: geometry drawn on a plan that nothing walks.
+        //
+        // It is a room built out of a doorway cut in another room's back wall, which is a new kind of hole
+        // in this generator, and the cell is the only place in the Hive a captain can be asked to pass
+        // through two doors to reach. Both ends of the walk are asserted (#600's lesson: a reachability
+        // test is only as honest as its endpoints), and only the cells whose PARENT opens are walked —
+        // behind a locked plate the cell is a thing you read from the corridor, exactly like the room it
+        // belongs to, and demanding a route into it would be demanding the locked door open.
+        AuditEveryFloor((body, level, deck) =>
+        {
+            UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
+            (double sx, double sy) = HiveInterior.SpawnOn(Field);
+            var spawn = new DeckReachability.Point(sx, sy);
+            var bounds = (Field.LeftX, Field.BottomY, Field.RightX, Field.LandingBandY);
+
+            foreach (UndergroundComplex.EnSuite cell in floor.EnSuites)
+            {
+                if (!cell.Open)
+                {
+                    continue;
+                }
+                if (!DeckReachability.Standable(cell.X, cell.Y, DeckPlan.AvatarRadius, deck.CollisionField))
+                {
+                    return $"the en-suite off '{cell.Of}' at ({cell.X:F0}, {cell.Y:F0}) is solid wall.";
+                }
+                if (!DeckReachability.CanReach(
+                        spawn, new DeckReachability.Point(cell.X, cell.Y),
+                        deck.CollisionField, DeckPlan.AvatarRadius, bounds))
+                {
+                    return $"the en-suite off '{cell.Of}' cannot be walked to from the lift.";
+                }
+            }
+            return null;
+        }, "spec — a private washroom off a room you can enter is a room you can enter");
     }
 
     [Fact]
@@ -294,7 +348,7 @@ public sealed class YouCanWalkTheHiveTests
     public void AFloorIsWorthTheLiftRide()
     {
         // The complaint that started all of this, stated as a floor-by-floor law: not a two-door apartment.
-        AuditEveryFloor((_, _, deck) =>
+        AuditEveryFloor((body, level, deck) =>
         {
             // #608 · THE REFUGE COUNTS AS A ROOM, because it IS one. It is carved out of the floor's own
             // rooms (one poured box off a rib, with its doorway), so counting only HiveHaul would read a
@@ -302,14 +356,31 @@ public sealed class YouCanWalkTheHiveTests
             // sits exactly on 4, so it would have gone red for a change that took nothing away. What the law
             // is about is whether stepping out of the car is worth the ride: a room you can breathe in is
             // very much somewhere to go.
+            // #707 · An amenity room counts for the identical reason the refuge does: it IS one of the
+            // floor's rooms, carved out of the same pool, and counting only HiveHaul would read three
+            // rooms being FURNISHED as a floor being made smaller. Somewhere to eat is very much somewhere
+            // to go.
             int rooms = deck.Consoles.Count(c =>
-                c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveRefuge);
+                c.Kind is DeckPlan.ConsoleKind.HiveHaul or DeckPlan.ConsoleKind.HiveRefuge
+                    or DeckPlan.ConsoleKind.HiveAmenity);
             int sealedDoors = deck.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HiveSign);
 
             if (rooms < 4)
             {
                 return $"only {rooms} rooms to search.";
             }
+            // #677 · A GALLERY IMPLIES THE REST OF ITSELF BY BEING BIGGER, not by hanging plates on shut
+            // doors. `⟶ SECTOR 7 · 2.4 km` is the cheapest illusion of scale there is, and it is also a
+            // survey, a department and a decision about where somebody's authority stopped — three things
+            // nobody down there ever wrote. So the halls have no sealed doors at all, deliberately, and this
+            // went red at `only 0 sealed doors — nothing implies the rest of it` naming all four floors.
+            // What replaces the stencil is the room scale, and that is asserted in Core.
+            if (UndergroundComplex.IsFound(body, level))
+            {
+                return sealedDoors == 0 ? null
+                    : $"{sealedDoors} stencilled plate(s) in a gallery — somebody surveyed it after all.";
+            }
+
             return sealedDoors < 3 ? $"only {sealedDoors} sealed doors — nothing implies the rest of it." : null;
         }, "spec — a facility, not a flat");
     }

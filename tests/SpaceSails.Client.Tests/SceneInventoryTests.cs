@@ -242,6 +242,17 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.HiveHaul] = "#585 a room worth searching, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveSign] = "#600 department signage, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveRefuge] = "#608 the pressure refuge's rack, one per dead appended floor",
+        [DeckPlan.ConsoleKind.HiveAmenity] = "#707 the canteen counter, the basin run and the bank of " +
+                                             "machines, on the appended underground floors that HOLD " +
+                                             "PRESSURE — the refuge's opposite number, floor for floor",
+        [DeckPlan.ConsoleKind.HiveRegular] = "#709 somebody at a canteen table — the Hive's first people, " +
+                                             "and ONLY on the top pressurised appended floor (the owner's " +
+                                             "B1 ruling). Every floor below is deserted on purpose, which " +
+                                             "is exactly why no general scene sweep reaches one; " +
+                                             "ThereArePeopleInTheBarTests walks the floors that have them",
+        [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
+                                          "the same one floor per site that no general sweep reaches — " +
+                                          "TheBoardInTheBarTests walks it",
         [DeckPlan.ConsoleKind.ArchiveNode] = "the column, aboard about one eligible hull in three " +
                                              "(ArchiveNode.IsAboard) — a fresh wreck plan carries none",
         [DeckPlan.ConsoleKind.ArchiveSwitch] = "the purge handle on that same housing, and only when it is there",
