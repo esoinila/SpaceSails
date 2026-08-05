@@ -50,8 +50,9 @@ what playing found, and only after being proven to fail on the broken behaviour.
 
 - **Base branch is `our-own-ship-has-compartments`, NOT `main`.** All PRs target it. CI (`build-and-test`,
   `ui-gate`) runs on every PR — the workflow has a bare `pull_request:` trigger with no branch filter.
-- Full suite as of this writing: **~2540 Core + ~21 client.** Run it from the repo root with
-  `dotnet test -c Debug`. It takes ~22 minutes.
+- Full suite as of **2026-08-05 evening**: **3085 Core + 362 client + 2 ui-gate**, all green (CI run
+  `31033776630`). Run it from the repo root with `dotnet test -c Debug`. **Core alone is ~18 minutes** — budget
+  for it and start it early; the client suite is ~3.5.
 - The owner playtests from `D:\repo12\spaceSails` with a dev server on **5073**. **Do not touch that working
   tree.** Work in your own worktree under the scratchpad and serve on your own port.
 - `dotnet run` (NOT `watch`) — kill and restart the process per build.
@@ -59,13 +60,31 @@ what playing found, and only after being proven to fail on the broken behaviour.
   `origin/our-own-ship-has-compartments` before branching; three sessions running have had a PR conflict from
   skipping this.
 
-### Landed today (the Hive)
+### Landed 2026-08-02 (the Hive becomes a facility)
 
 The secret lab became a facility: sealed rooms, the visualiser lab, authority cards, an underground tracker
 mode, a band nobody listed, a lift panel that goes UP, department livery and signage, an on-foot satchel with
 TRY, lab ammunition with penetration, an underground death card, per-paper titles, and item reveal cards.
 
 **These have all been played by the owner. They are the least likely place to find something new.**
+
+### Landed 2026-08-05 (the Hive becomes INHABITED) — and none of it has been walked
+
+Six features in two publishes, the second of which (`61e1864`) put all of them on the live build:
+
+| issue | what |
+| --- | --- |
+| **#707** | a bar on the top floor, a wall of cubicles, rank readable in plumbing |
+| **#708** | forward-facing suit headlights, and floors that are genuinely dark |
+| **#701** | one would-be-empty room in six holds a book that should not be there |
+| **#677** | the pour stops at a line — a band nobody *dug*, and the fourth world under it |
+| **#709** | ten strangers in the top-floor bar, and a cork board where their working day is written down |
+| **#721** | the canteen keeps a shift rota; a test-links file read off the real generator |
+
+**Unlike the block above, NOT ONE of these has been played by a person.** That inverts the usual advice: this is
+now the *most* likely place to find something new. Its own plan is
+[`QAHandoff-TheHive.md`](QAHandoff-TheHive.md), with the by-design-not-a-bug list that will otherwise generate
+false findings, and the links are in [`testing-links-the-hive.md`](testing-links-the-hive.md).
 
 ---
 
@@ -174,6 +193,7 @@ it.*
 
 | priority | area | why it is suspect | issues |
 | --- | --- | --- | --- |
+| **0** | **The inhabited Hive — the canteen, the board, the plate, the halls, the dark** | six features shipped 2026-08-05 and **nobody has walked any of them.** By this table's own metric (payoff ≈ time shipped unwalked) it outranks everything below it. Has its own plan: [`QAHandoff-TheHive.md`](QAHandoff-TheHive.md) — **read its by-design list first or you will file false findings** | #707, #708, #701, #677, #709, #721 |
 | **1** | **Boardable derelicts, sectioned hulls, the shuttle hop** | large, geometric, and the exact profile of bug class 1 and 4. The Hive's worst bug (35 floors of sealed doorways) was this same generator family. | #488, #531, #533, #537 |
 | **2** | **The black-ops sweep + keys** | shipped, never played end to end; "hide while somebody else's team sweeps" is stateful and stateful things drift. | #538, #535 |
 | **3** | **Q-ships and the tells** | the tells must be readable BEFORE committing — a tell you can only confirm after the trap is not a tell. | #534 |
@@ -201,8 +221,24 @@ it.*
 These are filed as decisions issues, not build tickets. **Do not build them; sharpen them.** If playing
 surfaces the answer, write the answer into the issue with the evidence.
 
-- **#618 — who is guarding the Hive.** Blocks #602 (numpad calls security) and #605 (the badge). A disguise
-  is worthless without somebody to fool, and nobody has decided whether anyone is still down there.
+> **#618 is no longer on this list.** The owner ruled its three open questions on 2026-08-05 — skeleton staff,
+> guards on the bottom floors summoned by *noise*, and *talking* as what blows the cover. It is now an unbuilt
+> **build** ticket, not an open decision. Full text on the issue; summary in
+> [`QAHandoff-TheHive.md`](QAHandoff-TheHive.md) §6.
+
+- **#719 — a second way out of the lab, and THE ORDERING IS THE RULING.** The stair ships *before* anything is
+  allowed to stop the lift. One radio call ending every escape is a switch, not a threat, and #600 is the scar
+  that says reachable is not returnable. **This gates #618 and #718**, both of which assume an escape that does
+  not exist yet. Not a decision so much as a dependency somebody has to respect.
+- **#715 — illegal heat, owed per ENTITY** and never a shared cheaters list. Open: does it propagate across one
+  entity's own sites, and who are the entities?
+- **#718 — the response ladder.** Hired if the cover holds, rolled back if it does not; the backup as
+  inventory; recognition as the real threshold; the suit as anonymity; the technician who remembers your
+  restore. Open: the trigger, how far back a rollback goes, and whether paper defends against it.
+- **#720 — MINIMUM PRODUCTION BATCH**, the ending where the captain becomes stock. Needs art and the tightest
+  canon rope in the project. Open: trigger, rarity, and whether it is terminal.
+- **#711 — onion covers**, each layer real rather than a lie, and the analyst who peels them by *reading* the
+  record rather than seeing you.
 - **#619 — the refuge that failed.** One derelict refuge as the inference-horror pair to #608.
 - **#620 — admire and discuss.** The collar has a card; nobody can talk about it. Decide whether discussing
   changes anything or is voice only.

@@ -1291,7 +1291,39 @@ Both only fire under `?secretlab=1`. An ordinary landing still drops you on the 
 - **the top of every shaft band holds pressure** — the tank stops, the nerve steadies, and the game says so in those words
 - **everything else is dead** — the tank runs, and depth is paid for in air
 - one car serves four floors; at the bottom of a band the panel simply **has no button** below, and the way down is another shaft
-- **nothing is alive down there** — the Old Ones are a regolith tide and are cleared on descent
+- **nothing is alive down there** — *superseded 2026-08-05.* The Old Ones are still a regolith tide, cleared on
+  descent, but **B1 now has people on it** (#709). See the section below.
+
+### The inhabited Hive (2026-08-05) — #707, #708, #701, #677, #709, #721
+
+Six features landed in one day and everything above predates all of them. **Their links, verified floor numbers
+and what-to-look-for live in [`testing-links-the-hive.md`](testing-links-the-hive.md)** — where every floor
+number was read out of the real generator with Lab 44 rather than assumed — and the test plan is
+[`QAHandoff-TheHive.md`](QAHandoff-TheHive.md).
+
+The short version, because these are the easiest to miss:
+
+```
+/map?secretlab=deep&land=1&floor=1     B1  — the canteen: PEOPLE at the tables, a cork board, washrooms
+/map?secretlab=deep&land=1&floor=17    B17 — the staff mess, pass-only, furnished and empty on purpose
+/map?secretlab=deep&land=1&floor=21    B21 — the unlisted lobby, where the plate names a DIFFERENT building
+/map?secretlab=deep&land=1&floor=4&dark=1   a floor with no lights (#708)
+/map?secretlab=deep&land=1&floor=2&book=9   force a specific odd book (#701)
+/map?found=1&land=1&floor=17           past the seam — the halls nobody dug (#677)
+```
+
+**Three things here contradict older text in this file, and the newer answer wins:**
+
+1. **B1 is populated.** Carriers and contractors at the canteen tables — that room's own plate reads
+   `CARRIERS & CONTRACTORS · NO PASS REQUIRED`. Every floor below is deserted **on purpose**: the population
+   falling to zero is what makes the descent a gradient rather than a corridor length.
+2. **The facility plate is no longer on every floor** (#694). It draws on **B1** and on **the unlisted band's
+   own lobby**, and nowhere else — not even on the other shaft heads.
+3. **The canteen's roster turns over with the SHIFT**, not the visit. Re-entering on the same watch shows the
+   same people in the same chairs; that is correct, not a bug. A different crowd needs sim time to pass.
+
+`?secretlab=deep` is the site for all of the above — a **20-floor clinic with an unlisted band at B21–B24**.
+`?secretlab=1` is only four floors and cannot reach any of the deep content.
 
 ### Useful combinations
 
