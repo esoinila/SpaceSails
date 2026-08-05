@@ -162,9 +162,12 @@ public sealed class TheUnlistedBandTests
             string body = $"probe-moon-{i}";
             if (UndergroundComplex.HasUnlistedBand(body))
             {
+                // #677 · UnlistedBottomOf, because TrueDepthOf can now be a gallery — and a gallery has no
+                // Kind of its own to differ (nothing down there is a kind of building). This went red at
+                // `Expected: Not RecordsAnnex, Actual: RecordsAnnex` the moment a site had halls.
                 Assert.NotEqual(
                     UndergroundComplex.KindFor(body),
-                    UndergroundComplex.KindOn(body, UndergroundComplex.TrueDepthOf(body)));
+                    UndergroundComplex.KindOn(body, UndergroundComplex.UnlistedBottomOf(body)));
             }
         }
     }

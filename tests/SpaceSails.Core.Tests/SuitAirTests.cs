@@ -242,8 +242,8 @@ public class SuitAirTests
         // HoldsPressure is unbounded by design and a law that only holds down to B20 is not a law.
         for (int level = -1; level >= -200; level--)
         {
-            SuitAir.Supply supply = SuitAir.SourceOf(level, insideShelter: false, aboard: false);
-            bool holds = UndergroundComplex.HoldsPressure(level);
+            SuitAir.Supply supply = SuitAir.SourceOf("miranda", level, insideShelter: false, aboard: false);
+            bool holds = UndergroundComplex.HoldsPressure("miranda", level);
 
             Assert.Equal(holds ? SuitAir.Supply.Room : SuitAir.Supply.Tanks, supply);
             Assert.Equal(!holds, SuitAir.Drawing(supply));
@@ -259,7 +259,7 @@ public class SuitAirTests
         }
 
         // On the regolith, with no roof of any kind, the tank is always what you are breathing.
-        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf(0, insideShelter: false, aboard: false));
+        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf("miranda", 0, insideShelter: false, aboard: false));
     }
 
     [Fact]
@@ -271,25 +271,25 @@ public class SuitAirTests
         // routine that can kill a captain.
 
         // A live floor holds whatever is standing on it — it is not overruled by anything.
-        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf(-1, insideShelter: false, aboard: true));
-        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf(-1, insideShelter: true, aboard: true));
+        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf("miranda", -1, insideShelter: false, aboard: true));
+        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf("miranda", -1, insideShelter: true, aboard: true));
 
         // A dead floor is exactly as bare as open regolith. Nothing about being indoors saves you.
-        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf(-2, insideShelter: false, aboard: false));
+        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf("miranda", -2, insideShelter: false, aboard: false));
 
         // #608 · ...unless you are standing in the refuge somebody was made to build. This is the case that
         // broke the first cut of #612: a fourth way to breathe that the drain learned about and the gauge
         // did not, which is a captain sitting in air being told their tank is running out.
-        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf(-2, false, false, inRefuge: true));
-        Assert.False(SuitAir.Drawing(SuitAir.SourceOf(-2, false, false, inRefuge: true)));
+        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf("miranda", -2, false, false, inRefuge: true));
+        Assert.False(SuitAir.Drawing(SuitAir.SourceOf("miranda", -2, false, false, inRefuge: true)));
 
         // And a refuge is a room on a FLOOR — it does not exist on the regolith, where the shelters are.
-        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf(0, false, false, inRefuge: true));
+        Assert.Equal(SuitAir.Supply.Tanks, SuitAir.SourceOf("miranda", 0, false, false, inRefuge: true));
 
         // Up top: a shelter's drum outranks the ship, because you cannot be in both and the shelter is the
         // one you are standing in.
-        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf(0, insideShelter: true, aboard: true));
-        Assert.Equal(SuitAir.Supply.Ship, SuitAir.SourceOf(0, insideShelter: false, aboard: true));
+        Assert.Equal(SuitAir.Supply.Room, SuitAir.SourceOf("miranda", 0, insideShelter: true, aboard: true));
+        Assert.Equal(SuitAir.Supply.Ship, SuitAir.SourceOf("miranda", 0, insideShelter: false, aboard: true));
     }
 
     [Fact]

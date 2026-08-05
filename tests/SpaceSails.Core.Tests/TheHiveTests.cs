@@ -177,20 +177,28 @@ public sealed class TheHiveTests
         // The owner's biggest open question, decided on his behalf and pinned here so it can be overruled in
         // one line. The beat is the point: the first floor lulls you (tank stops, nerve steadies) and every
         // stair below is paid for in air. Uniformly safe is a museum; uniformly hostile is a corridor shooter.
-        Assert.True(UndergroundComplex.HoldsPressure(-1));
-        Assert.False(UndergroundComplex.HoldsPressure(-2));
-        Assert.False(UndergroundComplex.HoldsPressure(-3));
-        Assert.False(UndergroundComplex.HoldsPressure(-4));
+        // #677 · Asked of a building with nothing under it that it did not dig, and it says so out loud: a
+        // found band breathes on every floor, so a site with halls would answer differently down here and be
+        // right to. This law is about the part of the hole somebody paid for.
+        const string plain = "miranda";
+        Assert.False(UndergroundComplex.HasFoundBand(plain),
+            $"{plain} has halls under it now — this law is about the floors the building dug, so pick a site "
+            + "without them rather than weakening the assertions.");
+
+        Assert.True(UndergroundComplex.HoldsPressure(plain, -1));
+        Assert.False(UndergroundComplex.HoldsPressure(plain, -2));
+        Assert.False(UndergroundComplex.HoldsPressure(plain, -3));
+        Assert.False(UndergroundComplex.HoldsPressure(plain, -4));
 
         // Generalised for unbounded depth: it is the TOP OF EVERY SHAFT BAND that still has power, because
         // that is where a facility puts its lobbies. A captain who finds the next shaft gets exactly one
         // floor of relief before the dark again, and relief is always the minority of a deep building.
-        Assert.True(UndergroundComplex.HoldsPressure(-1 - UndergroundComplex.FloorsPerShaft));
+        Assert.True(UndergroundComplex.HoldsPressure(plain, -1 - UndergroundComplex.FloorsPerShaft));
 
         int powered = 0;
         for (int level = -1; level >= -20; level--)
         {
-            if (UndergroundComplex.HoldsPressure(level)) { powered++; }
+            if (UndergroundComplex.HoldsPressure(plain, level)) { powered++; }
         }
         Assert.True(powered * 3 < 20, "too much of the building is a refuge.");
 

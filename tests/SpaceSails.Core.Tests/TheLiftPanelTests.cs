@@ -24,7 +24,7 @@ public sealed class TheLiftPanelTests
     [
         "luna", "phobos", "europa", "ganymede", "callisto",
         "titan", "enceladus", "miranda", "triton", "the-clinker",
-        "secret-lab-site", "secret-lab-site-unlisted",
+        "secret-lab-site", "secret-lab-site-unlisted", UndergroundComplex.FoundBandCheatSiteId,
     ];
 
     private static IReadOnlyList<UndergroundComplex.LiftStop> Panel(string body, int level, params string[] cards) =>
@@ -74,17 +74,24 @@ public sealed class TheLiftPanelTests
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 int band = UndergroundComplex.BandOf(level);
+
+                // #677 · THE NEXT SHAFT, not the next band NUMBER. Under the band nobody listed there is a
+                // whole band with nothing dug in it, so "band + 1" describes a hole rather than a shaft and
+                // this went red at `the panel offers B17, which is neither this car's band nor the one shaft
+                // below it`. What the law was always about is that a car serves its own band and offers ONE
+                // way deeper; which index that is, is arithmetic the building owns.
+                int? below = UndergroundComplex.NextShaftBelow(body, level);
                 foreach (UndergroundComplex.LiftStop stop in Panel(body, level).Where(s => s.Level < 0))
                 {
                     int stopBand = UndergroundComplex.BandOf(stop.Level);
-                    Assert.True(stopBand == band || stopBand == band + 1,
+                    Assert.True(stopBand == band || stopBand == below,
                         $"{body} B{-level}: the panel offers B{-stop.Level}, which is neither this car's " +
                         "band nor the one shaft below it.");
 
                     // Anything outside this car's own band is the OTHER shaft, and is a single entry.
                     if (stopBand != band)
                     {
-                        Assert.Equal(UndergroundComplex.BandTop(band + 1), stop.Level);
+                        Assert.Equal(UndergroundComplex.BandTop(below!.Value), stop.Level);
                     }
                 }
             }
@@ -377,7 +384,7 @@ public sealed class TheLiftPanelTests
                 foreach (UndergroundComplex.LiftStop stop in Panel(body, level))
                 {
                     Assert.Equal(
-                        stop.Level >= 0 || UndergroundComplex.HoldsPressure(stop.Level),
+                        stop.Level >= 0 || UndergroundComplex.HoldsPressure(body, stop.Level),
                         stop.Pressurised);
                 }
             }

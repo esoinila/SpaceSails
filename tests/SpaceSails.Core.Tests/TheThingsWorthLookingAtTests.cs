@@ -156,7 +156,13 @@ public class TheThingsWorthLookingAtTests
 
             // It is on the deepest floor of the band nobody listed — the payoff for reaching somewhere you
             // were not supposed to be able to reach.
-            Assert.Equal(UndergroundComplex.TrueDepthOf(body), level);
+            //
+            // #677 · UnlistedBottomOf, and this assertion is why that function exists. It read TrueDepthOf,
+            // which was the same number for as long as the bottom of the building was the bottom of the
+            // hole; the found band moved the true bottom two bands deeper and this went red at
+            // `Expected: -20, Actual: -12` — the one designated relic in the game being quietly relocated
+            // into a gallery with no pallets and no lights in it.
+            Assert.Equal(UndergroundComplex.UnlistedBottomOf(body), level);
             Assert.True(UndergroundComplex.IsUnlisted(body, level),
                 $"{body}: the relic is on {level}, which is a floor the building admits to");
 
@@ -186,24 +192,44 @@ public class TheThingsWorthLookingAtTests
     public void ThereIsExactlyONERelicInAFacility()
     {
         // It is the payoff for the deepest floor of a hidden band. Two of them would make it scenery.
+        //
+        // #677 · COUNTED OVER THE FLOORS SOMEBODY DUG. The halls share the Relic haul — what goes in the
+        // pocket there is also the RECORD of a thing that stays where it is (#614's law, which is why the
+        // kind is reused rather than appended) — so this went red at `Expected: 1, Actual: 5` the moment
+        // galleries existed. The law being defended is about the PALLET: one crated object per facility,
+        // because a second would make it scenery. A hall record is not that object; it is a tape measure
+        // failing, and there are several of those on purpose.
         SurfaceLayout.Field field = SurfaceLayout.DefaultField;
 
         foreach (string body in Bodies().Where(UndergroundComplex.HasUnlistedBand))
         {
-            int found = 0;
+            int pallets = 0;
+            int records = 0;
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, field);
                 for (int room = 0; room < floor.RoomCentres.Count; room++)
                 {
-                    if (UndergroundComplex.InRoom(body, level, room) == UndergroundComplex.Haul.Relic)
+                    if (UndergroundComplex.InRoom(body, level, room) != UndergroundComplex.Haul.Relic)
                     {
-                        found++;
+                        continue;
+                    }
+                    if (UndergroundComplex.IsFound(body, level))
+                    {
+                        records++;
+                    }
+                    else
+                    {
+                        pallets++;
                     }
                 }
             }
 
-            Assert.Equal(1, found);
+            Assert.Equal(1, pallets);
+
+            // …and the two are never confused, because a find's own id says which kind of place it came out
+            // of. A site with halls has records in them; a site without has none anywhere.
+            Assert.Equal(UndergroundComplex.HasFoundBand(body), records > 0);
         }
     }
 
