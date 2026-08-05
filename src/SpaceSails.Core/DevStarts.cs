@@ -80,6 +80,15 @@ public static class DevStarts
         new("🕳", "The halls nobody dug",
             "Set down at a lift head with the whole wallet, over a laboratory, over a clinic nobody listed, over four floors of rock, over something that was already there (#677).",
             "/map?found=1&land=1"),
+        // #709 / #694 · The same rule one floor up, and one floor down. The canteen is the only room in the
+        // building with people in it, and B21 is the only place the facility plate ever changes its mind —
+        // neither should cost a twenty-floor lift ride to find.
+        new("🍸", "The canteen on B1, with people in it",
+            "150 m down, in the one room this facility admits outsiders to: carriers and contractors at the tables, a cork board on the wall, no pass required (#709).",
+            "/map?secretlab=deep&land=1&floor=1"),
+        new("▣", "The sign that says a different building",
+            "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",
+            "/map?secretlab=deep&land=1&floor=21"),
 
         // --- The bar, the room, and the people in it ------------------------------------------------------
         new("🥂", "The cognac on the fright",

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Rendering;
 
@@ -27,10 +28,14 @@ public static class HiveInterior
     }
 
     /// <summary>Build one floor's deck.</summary>
+    /// <param name="canteenWatch">#709 · Which shift the canteen's people are on
+    /// (<see cref="PatronRota.WatchIndex"/>). Passed in already frozen rather than read from a clock here, so
+    /// the room that is DRAWN and the room the [E] key later asks about can never be two different rooms.
+    /// Defaults to the first watch, which is what every audit and lab wants: a fixed roster to walk.</param>
     public static DeckPlan FloorDeck(
         string bodyId, int level, in SurfaceLayout.Field field,
         int droidCount, Action<double, DeckPlan.Droid[]> fillDroids,
-        IReadOnlyCollection<int> emptiedRooms)
+        IReadOnlyCollection<int> emptiedRooms, long canteenWatch = 0)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -163,7 +168,7 @@ public static class HiveInterior
             // They stand ON the table's own spot rather than beside it, because the table IS the seat as
             // far as the deck is concerned: Core placed those round tops (#707) and a console offset by a
             // hand-typed du would be one more caller doing geometry about furniture it does not own.
-            foreach (CanteenRegulars.Seated who in CanteenRegulars.Sitting(bodyId, level, a))
+            foreach (CanteenRegulars.Seated who in CanteenRegulars.Sitting(bodyId, level, a, canteenWatch))
             {
                 consoles.Add(new(
                     DeckPlan.ConsoleKind.HiveRegular, (float)who.X, (float)who.Y, who.Plate));
