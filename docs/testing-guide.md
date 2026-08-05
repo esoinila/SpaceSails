@@ -500,6 +500,31 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?nerve=N`** | **Seed the nerve gauge at N of 10 whole pips at boot (#428/#480). Clamps to the gauge; `?nerve=10` is the shipped default. The only way to reach a sanity beat without being hunted for minutes first.** |
 | **`?dark=1`** | **Put the FIXTURES OUT on every floor this excursion walks — the suit's forward-facing headlights become the whole of the seeing, and everything outside the cone is BLACK rather than dim (#708). Nothing the game ships declares itself dark yet: the found halls (#677) will be the first and they are not built, so this is the only door to the feature. It changes ONE fact — what `UndergroundComplex.IsDark` answers — and nothing else: collision, air, the pack, the sentries and the motion tracker all behave exactly as they do with the lights on, so you can walk into what you cannot see, and something you cannot see can walk into you. Above ground is never dark (a surface has a sun). Pair with `&secretlab=deep&land=1&floor=4`.** |
 | **`?process=N`** | **How long processing one document takes, in sim seconds — `?process=0` makes it INSTANT (#696). Leaving a paper or a file with 🫳, and reading a paper as a clue at the tracker, are a twenty-second hold of standing still; that IS the mechanic, and it is exactly the wrong thing to make a story test sit through. Any other value tunes the feel from the URL without a rebuild. Pair with `&dock=the-tilt&site=0&land=1`. There is deliberately no switch for what a hold costs in AIR, because nothing computes that: the hold passes sim time and the suit prices sim time, which is the whole of the owner's ruling.** |
+| **`?book=N` / `?book=on`** | **Put THE ODD BOOK in every would-be-empty room this excursion searches (#701). `1`–`10` force that catalog entry, which is how all ten authored texts get read on demand; `on` (or `all`/`any`) forces the SEEDED entry, i.e. the shipped selection with the one-in-six gate taken off, which is how the Laboratory/Transit-station weighting is watched working. It cannot put a book in an OCCUPIED room — a book is what a would-be-empty room has *instead of* the empty line, and a cheat that laid one on top of a pallet would have you playtesting a room the game cannot produce. It is an ARGUMENT to `OddBooks.Search` and never a second answer OR-ed in beside it (the `?dark=1` rule). Pair with `&secretlab=deep&land=1&floor=2`.** |
+
+### Reading the whole shelf — `?book=N` (#701)
+
+One would-be-empty room in six holds a book, which is rare on purpose and unplayable to test. `?book=N` takes
+the gate off:
+
+```
+/map?secretlab=deep&land=1&floor=2&book=1     the oldest sea story
+/map?secretlab=deep&land=1&floor=2&book=4     the catalog slip (the one that is not a book)
+/map?secretlab=deep&land=1&floor=2&book=8     the mechanics text, 27th edition
+/map?secretlab=deep&land=1&floor=2&book=10    the fat paperback
+/map?secretlab=deep&land=1&floor=2&book=on    whatever each room's own seed picked
+```
+
+Walk the floor pressing `[E]` on the search consoles. **What you should see:** rooms that hold a file, a
+crate, a card or the pallet behave exactly as they always did — the cheat changes nothing about them. Rooms
+that would have said *"Stripped to the fittings"* say the shelf line instead and raise a caption-only card.
+**Nothing goes into the satchel, no credits are paid, and the room is NOT struck off** — press `[E]` again and
+the card opens again, which is the point: looking is free. The **casebook** (`[I]` → 📓 NOTES) gains one line
+per book the first time you read it and never a second time, on this thread, ever.
+
+The numbers are `OddBooks.Catalog` order and are part of the contract — 1 is the oldest sea story, 10 is the
+fat paperback. `?book=99` and `?book=nonsense` are ignored rather than clamped, so a typo leaves you playing
+the shipped roll instead of quietly testing entry 10.
 
 ### Dying on purpose — `?death=<cause>` (#621)
 
