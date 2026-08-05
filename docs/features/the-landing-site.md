@@ -1626,6 +1626,60 @@ proved to be an argument and never a second answer. Watched go red at
 `_bookCheat appears 3 time(s) in the surface wiring`, at `Found: "HiveRoomsEmptied"`, and at
 `Not found: "shelf.Title, null, shelf.Card"`.)*
 
+13.20 **There are people in the bar, they are all outsiders, and they stop at B1** (#709, v1 of the social
+layer).
+
+> *"we should have people in the bar... we have cover story"* · *"for now let's keep the people in B1."*
+
+The Hive's first people. #707 built the rooms and explicitly deferred the cast; this is the cast.
+
+**They are in the upper canteen because that room's own sign already said who sits in it.** #707 stencilled
+`CANTEEN 1 · CARRIERS & CONTRACTORS · NO PASS REQUIRED` before anyone had thought about the people, and it
+turned out to have decided them: hauliers, fitters, agency temps, drivers — **outsiders with no more right to
+be in the building than the captain has.** That is why nobody is asked for a card at band 0, and it is what
+makes the job-seeker cover (#618) work: not because it is a good lie, but because *everyone else's is equally
+thin*.
+
+**B1-only is the design, not a limitation.** Staff on every floor would spend the abandoned tone, which is
+load-bearing. Confining them to the top pressurised floor buys three things at once:
+
+- **The cover acquires a natural expiry.** It holds exactly as far as the floor where an outsider plausibly
+  belongs — the world's own shape answering *"what blows the cover"* instead of a rule we invented.
+- **Descent becomes the horror gradient.** Each floor down is quieter and the last person you saw is further
+  behind you. Corridor length was never going to do that; a population falling to zero does it for free.
+- **The empty floors below read as ABSENCE**, not as unfinished content. Once a captain has seen this
+  building with people in it, B7 is a floor somebody left.
+
+**Nobody is interesting, on purpose.** The register test from §13.19, one door along: they are tired, owed
+money, waiting on somebody else's paperwork, or eating. A regular who was mysterious would be a quest-giver
+in a hat, and the room would stop being cover and become a corridor with clues in it. One breath each, filed
+once, plate pulsed thereafter — and **no menu, no trade, no round to buy**. A room that starts offering things
+is a room that is paying attention to you.
+
+**No exposure cost here, deliberately.** #618 rules that *talking is what blows a cover* — but that is the
+guards on the bottom floors, who are not built yet and whose whole point is that probing them probes back.
+Wiring a cost into this conversation would pre-empt a ruling not yet made and would make the one safe room in
+the building unsafe.
+
+**Canon holds hardest here**, because this is now the only room in the Hive where somebody can talk (§13.8).
+The closest any line comes is a remark about hiring that becomes horrifying only if the player has assembled
+something the game never states — and the game never states it.
+
+*(Enforced: `TheCanteenRegularsTests` — nobody outside the upper canteen on the top pressurised floor over
+72 sites; never empty, never a crowd; no shared chair and nobody in the room twice; deterministic; the canon
+grep walks the catalog itself so a line added tomorrow is checked tomorrow. Client:
+`ThereArePeopleInTheBarTests` counts people on the **real deck**, pins every seat against Core's own
+coordinates, and proves nobody is sitting in the lift car.*
+*
+**And the lesson this one cost.** The first sweep passed with **both** Core guards deleted — a washroom has no
+tables and the staff mess is never on the top floor, so the two guards masked each other and no floor the
+generator builds could tell pass from fail. That is the fifth class exactly: the assertions were right and the
+world could not distinguish. The fix is `TheTwoLawsHoldEvenWHERETHEGENERATORCANNOTPUTTHEMYET`, which **forces**
+the conditions with a synthetic `Amenity` rather than hunting for them — and both laws then went red
+independently, at `Collection: [Seated { … ◈ A HAND WHO HAS BEEN HERE LONGER THAN THE CONTRACT SAID … }]`
+sitting in the staff mess, and again on a canteen carved below B1. The client wiring was watched go red at
+`10 floor(s) disagree with the B1 ruling: luna B1: the canteen floor is deserted`.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

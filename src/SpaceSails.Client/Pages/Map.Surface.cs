@@ -704,6 +704,11 @@ public partial class Map
         // not eleven findings. Exactly the shape the refused-shaft line above already uses.
         public HashSet<int> HiveAmenitiesRead { get; } = [];
 
+        // #709 · Which of the canteen's regulars this excursion has already heard. Keyed off the same room
+        // key the amenities use, offset clear of any real room index, so one person's breath is filed once
+        // and the plate pulses on every visit after.
+        public HashSet<int> HiveRegularsHeard { get; } = [];
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -3698,6 +3703,64 @@ public partial class Map
                 ShowPulseMessage(a.Plate);
             }
             return;
+        }
+    }
+
+    // ── #709 · STOPPING AT SOMEBODY'S TABLE ──────────────────────────────────────────────────────────────
+    //
+    // Owner: "we should have people in the bar... we have cover story."
+    //
+    // The Hive's first conversation, and deliberately the smallest one the game has. A regular gives you ONE
+    // breath of their working day and nothing else: no menu, no trade, no round to buy, no contact seam. That
+    // restraint is the feature — the upper canteen is where a captain is UNREMARKABLE, and a room that starts
+    // offering things is a room that is paying attention to you.
+    //
+    // NO RISK HERE, ON PURPOSE. #618 rules that talking is what blows a cover — but that is the GUARDS on the
+    // bottom floors, who are not built yet, and whose whole point is that probing them probes back. Band 0 is
+    // the floor whose own sign says NO PASS REQUIRED. Wiring an exposure cost into this conversation now would
+    // pre-empt a ruling that has not been made and would make the one safe room in the building unsafe.
+    //
+    // Filed once per person per excursion, pulsed every time after — the same law the amenity write-up above
+    // uses, and for the same reason: leaning on a table eleven times is not eleven findings, and a console
+    // that goes silent reads as broken (#212).
+    private void HiveRegularInteract()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveRegular } spot)
+        {
+            return;
+        }
+
+        // WHICH PERSON COMES FROM CORE, matched by position — the same discipline HiveAmenityInteract uses
+        // one method up. Reading the line off the console's own label would have been closer to hand and
+        // would have been a second copy of the cast, going quietly wrong the day somebody edits one of them.
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        int seat = 0;
+        foreach (UndergroundComplex.Amenity a in floor.Amenities)
+        {
+            foreach (CanteenRegulars.Seated who in
+                CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a))
+            {
+                if (Math.Abs(who.X - spot.X) < 0.5 && Math.Abs(who.Y - spot.Y) < 0.5)
+                {
+                    if (ex.HiveRegularsHeard.Add(HiveInterior.RoomKey(ex.Floor, 900 + seat)))
+                    {
+                        ShowAndFile(who.Line, CanteenRegulars.Glyph);
+                        RequestVaultSave();
+                    }
+                    else
+                    {
+                        ShowPulseMessage(who.Plate);
+                    }
+                    return;
+                }
+                seat++;
+            }
         }
     }
 
