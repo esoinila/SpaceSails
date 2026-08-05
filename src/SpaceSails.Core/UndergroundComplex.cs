@@ -160,6 +160,57 @@ public static class UndergroundComplex
         _ => "▣ THE TRANSIT STATION",
     };
 
+    /// <summary>#694 · DOES THIS FLOOR GET THE FACILITY PLATE — the sign beside the shaft that says
+    /// <see cref="TitleOf"/> of <see cref="KindOn"/>?
+    ///
+    /// <para>Owner, standing on B11 of a deep site: <i>"every floor has the text 'The Clinic' on it. Some
+    /// kind of artifact?"</i> It was not an artifact and it was not a leak — the plate simply drew on every
+    /// floor, and a name repeated identically twenty floors deep stops being a name and becomes wallpaper.
+    /// His reaction IS the spec.</para>
+    ///
+    /// <para><b>A building says its name where you ENTER it.</b> That is two floors and only two:</para>
+    /// <list type="bullet">
+    /// <item><b>B1</b> — the lobby. You came down from the surface and the plate tells you what you have
+    /// walked into.</item>
+    /// <item><b>The unlisted band's top floor</b>, where the site has one (#592) — its own lobby, reached by
+    /// a card and a shaft nobody listed, and the one place in the game where the plate names a
+    /// <i>different</i> Kind from everything above it. <c>▣ THE CLINIC</c> first seen under twelve floors of
+    /// <c>RETENTION 40 YR</c> is that whole feature's arithmetic delivered by one sign.</item>
+    /// </list>
+    ///
+    /// <para><b>Not every band head.</b> B5 and B9 are shaft heads too, and they get nothing: a captain
+    /// stepping out there has not entered anything, they have gone deeper into the same place. What earns
+    /// the plate is a Kind you have not been told yet — which is exactly B1 and the unlisted lobby, and the
+    /// reason this cannot be simplified to "is this floor a band top".</para>
+    ///
+    /// <para>The head office needs no exception and gets none: it has twenty-four listed floors and, by
+    /// <see cref="HasUnlistedBand"/>, nothing under them, so <c>▣ THE HEAD OFFICE</c> falls on B1 alone. HQ
+    /// naming itself once, in its own lobby, is more in character than HQ naming itself twenty-four times —
+    /// the head office does not have to keep telling you where you are.</para>
+    ///
+    /// <para>Every other floor is answered by the plate over the car (<c>B11 · LONG STORAGE</c>) and the
+    /// department signage, which is floor identity and always was. Pure, so the law is testable without a
+    /// renderer and the renderer only has to ask.</para></summary>
+    public static bool ShowsFacilityPlate(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        // Outdoors is not a floor of the facility.
+        if (level >= 0)
+        {
+            return false;
+        }
+
+        // B1 — BandTop(0), and written as the head of the first shaft rather than as a typed −1, because
+        // that is what makes it the LOBBY: the floor the surface's own car opens onto.
+        if (level == BandTop(0))
+        {
+            return true;
+        }
+
+        return HasUnlistedBand(bodyId) && level == BandTop(UnlistedBandOf(bodyId));
+    }
+
     /// <summary>#585 · DEPTH IS FREE. Owner, working out the architecture himself:
     ///
     /// <para><i>"since every secret lab can have a depth of it's own we do not need to worry about running out
@@ -1344,8 +1395,15 @@ public static class UndergroundComplex
             "Both of those are decisions.";
     }
 
-    /// <summary>The line for the rest of the hauls.</summary>
-    public static string HaulLine(Haul haul, string bodyId, int level, int roomIndex) => haul switch
+    /// <summary>The line for the rest of the hauls.
+    ///
+    /// <para>#678 · <paramref name="minted"/> is the card the caller ACTUALLY handed over for a
+    /// <see cref="Haul.Key"/> — null when none was, which happens on the bottom band whenever the client's
+    /// far-site fallback comes up empty. It is a required parameter rather than an optional one for the
+    /// reason <see cref="NameOf"/> has no site-blind overload: a defaulted "no card" would be a second answer
+    /// to "what does this room say", silently wrong at exactly the one call site that matters.</para></summary>
+    public static string HaulLine(Haul haul, string bodyId, int level, int roomIndex, AuthorityCard? minted)
+        => haul switch
     {
         Haul.Equipment =>
             "🧪 Bench hardware, crated and never unpacked — the good stuff, bought with somebody's grant and " +
@@ -1356,7 +1414,7 @@ public static class UndergroundComplex
         Haul.Records =>
             "📋 Operational paper: rosters, routes, a shipping schedule with a column nobody has labelled. It " +
             "does not say what was moved. It says exactly how often, and to where.",
-        Haul.Key => KeyLine(bodyId, level),
+        Haul.Key => KeyLine(bodyId, level, minted),
         Haul.Dirt => DirtOn(bodyId, level, roomIndex),
 
         // #614 · The room is described. The thing is NOT explained, here or anywhere: the pulse says what is
@@ -1460,36 +1518,190 @@ public static class UndergroundComplex
     }
 
     /// <summary>What is printed on the card. Institutional, expensive, and explains nothing — the register
-    /// of an office that will not admit to being one.</summary>
-    public static string CardTitle(AuthorityCard card)
-    {
-        string[] offices =
-        [
-            "OFFICE OF WORKS · SUB-REGISTRY",
-            "MINISTRY LIAISON · UNNUMBERED",
-            "ESTATES · SPECIAL PROJECTS",
-            "PROCUREMENT · SCHEDULE C",
-            "INSPECTORATE · NO STANDING",
-        ];
-        ulong seed = DiceRule.Seed($"hive:card:{card.BodyId}:{card.Band}");
-        return $"🎫 SHAFT {card.Band + 1} · {offices[(int)(seed % (ulong)offices.Length)]}";
-    }
+    /// of an office that will not admit to being one.
+    ///
+    /// <para>#679 · AND IT SAYS WHICH SITE. Owner, holding three of them: <i>"a captain holding three cards
+    /// from three moons sees three identical shapes and cannot plan a wallet."</i> He is right, and the fix
+    /// is the least invented thing available: a pass has ALWAYS had the holder's place of work printed on
+    /// it. So the site designation goes on the face, in the office's own register — caps, like everything
+    /// else that office stamps — as the last field of the title.</para>
+    ///
+    /// <para>This is a deliberate softening of §13.10's <i>"never which moon"</i>, made by the owner in #679
+    /// and recorded there: the line that must not be crossed is a NAV FIX. A site code sorts a wallet; a
+    /// bearing and a distance would hand the captain the search the whole Hive is arranged around. It still
+    /// never says what the building was for (§13.8), which is the canon that actually matters.</para></summary>
+    public static string CardTitle(AuthorityCard card) =>
+        $"🎫 SHAFT {card.Band + 1} · {OfficeOf(card).Letterhead} · " +
+        $"{BodyNames.Designation(card.BodyId)} SITE";
 
-    /// <summary>The Key haul, said out loud. It now names the shaft it runs, because a card whose purpose is
-    /// a mystery is a keypad by another route.</summary>
-    public static string KeyLine(string bodyId, int level)
+    /// <summary>#695 · ONE OFFICE, ONE FACE. The office that issued a card is the letterhead printed across
+    /// the top of it AND the photograph laminated into it, and those are the same office because they are
+    /// the same record — not because two pieces of arithmetic were written to agree.
+    ///
+    /// <para>Owner, wallet in hand: <i>"I have 3 ID cards but they all have the same gen AI image."</i> The
+    /// title had rolled one of five offices since #679; the picture was a single constant. Pairing them by
+    /// re-deriving the roll at the art seam would have been the house's most expensive bug class — two
+    /// sources for one fact — waiting for somebody to touch one seed string and not the other.</para></summary>
+    /// <param name="Letterhead">What the office stamps across the top of the card.</param>
+    /// <param name="ArtUrl">The face laminated into it (#695). Degrades cleanly like every other art slot.</param>
+    public readonly record struct CardOffice(string Letterhead, string ArtUrl);
+
+    /// <summary>The five offices a card can be issued by, in the order the roll indexes them. Order is part
+    /// of the save-compatible identity of a card: changing it re-issues every card in every wallet.</summary>
+    private static readonly CardOffice[] TheOffices =
+    [
+        new("OFFICE OF WORKS · SUB-REGISTRY", "art/the-authority-card-works.jpg"),
+        new("MINISTRY LIAISON · UNNUMBERED", "art/the-authority-card-liaison.jpg"),
+        new("ESTATES · SPECIAL PROJECTS", "art/the-authority-card-estates.jpg"),
+        new("PROCUREMENT · SCHEDULE C", "art/the-authority-card-procurement.jpg"),
+        new("INSPECTORATE · NO STANDING", "art/the-authority-card-inspectorate.jpg"),
+    ];
+
+    /// <summary>Every office, for an audit that has to walk them all. Nothing in the game iterates this —
+    /// a card gets exactly one, from <see cref="OfficeOf"/>.</summary>
+    public static IReadOnlyList<CardOffice> CardOffices => TheOffices;
+
+    /// <summary>WHICH office issued this card. The single roll — everything printed on the card, in words or
+    /// in pixels, reads its answer rather than rolling again.</summary>
+    public static CardOffice OfficeOf(AuthorityCard card) =>
+        TheOffices[(int)(DiceRule.Seed($"hive:card:{card.BodyId}:{card.Band}") % (ulong)TheOffices.Length)];
+
+    /// <summary>#695 · The face of THIS card. A pure function of the card's identity — no stored state, so a
+    /// wallet loaded off a save shows the same five faces it showed when the cards were minted.</summary>
+    public static string AuthorityCardArtUrl(AuthorityCard card) => OfficeOf(card).ArtUrl;
+
+    /// <summary>The Key haul, said out loud. It names the shaft it runs, because a card whose purpose is a
+    /// mystery is a keypad by another route.
+    ///
+    /// <para>#678 · IT DESCRIBES THE CARD THE CALLER ACTUALLY MINTED, and there are three of those: the one
+    /// for the shaft under this building, #613's card for ANOTHER site, and — the case that broke it — no
+    /// card at all. It used to ask <see cref="CardInRoom"/> itself and narrate a countersigned authority in
+    /// the captain's hand whenever the answer was null, which was a sentence about an object the sim had not
+    /// handed over. That is the third named bug class, in the residual path of the fix made for it.</para></summary>
+    /// <param name="minted">The card that went into the pocket, or null if none did.</param>
+    public static string KeyLine(string bodyId, int level, AuthorityCard? minted)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        if (CardInRoom(bodyId, level) is not { } card)
+
+        if (minted is not { } card)
         {
-            return "🎫 An authority card, countersigned twice and still active — and issued for a " +
-                "shaft in a building that is not this one. Whoever carried it worked somewhere else, and came " +
-                "here, and did not leave.";
+            // Nothing was minted, so nothing is described. The room still pays what an ordinary room pays —
+            // a look at what somebody did on their way out — and it never once claims you are holding a card.
+            string[] empty =
+            [
+                "🪪 A lanyard on the floor and the holder still clipped to it, and the window in the holder " +
+                "is empty. Whoever ran the shafts off this floor left with the one thing in this room worth " +
+                "taking, and the counterfoil book agrees with them: signed out, never signed back in.",
+
+                "🪪 A drawer of counterfoils, and every stub in it is torn along the same crooked line. The " +
+                "cards themselves went out of this building in somebody's breast pocket. What is left is the " +
+                "half the office kept, which opens nothing and was never meant to.",
+
+                "🪪 A punch, an inking pad gone hard, and a rack of blanks that were never made out to " +
+                "anybody. This is where the authorities were issued. It is not where they ended up.",
+            ];
+            ulong seed = DiceRule.Seed($"hive:nokey:{bodyId}:{level}");
+            return empty[(int)(seed % (ulong)empty.Length)];
         }
+
+        if (!string.Equals(card.BodyId, bodyId, StringComparison.Ordinal))
+        {
+            // #613's wallet, and #679's site code on the face of it: a card that crossed a world in somebody
+            // else's pocket and is still good at gates you have not found yet.
+            return $"🎫 An authority card, countersigned twice and still active: {CardTitle(card)} — and " +
+                "that is a building which is not this one. Whoever carried it worked somewhere else, and " +
+                "came here, and did not leave.";
+        }
+
         return $"🎫 An authority card, countersigned twice and still active: {CardTitle(card)}. This " +
             "building never got the news that its owners stopped paying, and neither did its gates. The " +
             "second shaft is somewhere on these floors, and this runs it.";
     }
+
+    // ── #678 · THE POCKET NEVER LIES ────────────────────────────────────────────────────────────────────
+    //
+    // Owner, after a live playtest: "we should have CI test that makes sure all picked items that sound
+    // useful are put into the inventory ... If refused the item should stay where it was investigated last —
+    // not disappear like they do now, or seem to."
+    //
+    // Two silent drops, one law. The pickup sentence and the pickup were composed in the client in the wrong
+    // order — the line was printed, the room was marked emptied, and only then did Satchel.Add get a chance
+    // to refuse — so a full pocket ate a find while announcing it, and a Key room whose card could not be
+    // minted narrated a countersigned card into a hand that was empty. Both are this repo's third named bug
+    // class: the sim doing one thing while the sentence reports another.
+    //
+    // The composition lives here now, pure, where a test can walk every haul against every pocket. The rule
+    // it enforces, in one line:
+    //
+    //     A PICKUP LINE MAY ONLY BE PRINTED FOR SOMETHING THAT ACTUALLY WENT IN.
+    //
+    // And its other half: what the pocket cannot take is NOT consumed. The room keeps it, and searching
+    // again offers it again — which is the enforcement side of #615 (leave must not destroy).
+
+    /// <summary>#678 · What turning over one room actually yields: the thing that goes in the pocket (null if
+    /// nothing does), the sentence that says so, and whether the room has been emptied at all.</summary>
+    /// <param name="Take">The item to add, or null — nothing to add is not a failure, it is most rooms.</param>
+    /// <param name="Line">The pocket line appended to the haul line. Empty where there is nothing to say.</param>
+    /// <param name="RoomEmptied">False ONLY when the pocket refused the find. The caller must not mark the
+    /// room searched — the find is still lying there.</param>
+    public readonly record struct Pickup(Satchel.Item? Take, string Line, bool RoomEmptied);
+
+    /// <summary>#678 · What goes in the pocket, said in the same breath as the decision to put it there.</summary>
+    /// <param name="haul">What the room holds.</param>
+    /// <param name="hereBodyId">The site being searched — used only to tell a card for THIS building from a
+    /// card for another one, which is the one thing worth saying about an authority as it goes in.</param>
+    /// <param name="minted">For a <see cref="Haul.Key"/>, the card the caller actually minted. Null means no
+    /// card exists to hand over, and then the room says so rather than describing one.</param>
+    /// <param name="findId">The durable id of this find — the seed tag the prose is rebuilt from.</param>
+    /// <param name="carried">What is already in the pocket.</param>
+    public static Pickup WhatGoesInThePocket(
+        Haul haul, string hereBodyId, AuthorityCard? minted, string findId,
+        IReadOnlyList<Satchel.Item>? carried)
+    {
+        ArgumentNullException.ThrowIfNull(hereBodyId);
+        ArgumentNullException.ThrowIfNull(findId);
+
+        Satchel.Item? take = haul switch
+        {
+            Haul.Records => new Satchel.Item(Satchel.Kind.Paper, findId),
+            Haul.Dirt => new Satchel.Item(Satchel.Kind.Dirt, findId),
+
+            // #614 · What goes in the pocket is the RECORD of the thing on the pallet. You cannot lift it,
+            // and a satchel claiming to hold a three-metre alloy band would be the same lie one size up.
+            Haul.Relic => new Satchel.Item(Satchel.Kind.Relic, findId),
+            Haul.Key when minted is { } card => new Satchel.Item(Satchel.Kind.Authority, card.Id),
+            _ => null,
+        };
+
+        if (take is { } wanted && !Satchel.CanTake(carried, wanted))
+        {
+            return new Pickup(null, PocketFullLine, RoomEmptied: false);
+        }
+
+        string line = haul switch
+        {
+            Haul.Records => "  🎒 Into your pocket: operational paper.",
+            Haul.Dirt => "  🎒 Into your pocket: a file on somebody.",
+            Haul.Relic => "  🎒 Into your pocket: measurements, a photograph, a scraping. The thing itself " +
+                "stays where it is.",
+            Haul.Key when minted is { } c && !string.Equals(c.BodyId, hereBodyId, StringComparison.Ordinal)
+                => "  🎒 Into your pocket: an authority card — and it is not for this building.",
+            Haul.Key when minted is not null => "  🎒 Into your pocket: an authority card.",
+            Haul.Equipment => "  💳 Crated and carried out — it sells, it does not fit a pocket.",
+
+            // A stripped room, and a Key room that had no card left to give. Neither has anything to say
+            // about a pocket, and saying nothing is the honest answer for both.
+            _ => "",
+        };
+
+        return new Pickup(take, line, RoomEmptied: true);
+    }
+
+    /// <summary>#678 · What a full pocket says. It is the only refusal in the game that leaves the world
+    /// unchanged, and it has to be unmistakable about that: the find is still there.</summary>
+    public const string PocketFullLine =
+        "  🎒 Your hands and pockets are full, so you put it back exactly where it was lying. It will still " +
+        "be here when you have read, spent or left something behind.";
 
     /// <summary>What the gate says when the card works. Said once, at the moment the car goes deeper than
     /// this shaft was ever dug to.
@@ -1791,8 +2003,13 @@ public static class UndergroundComplex
     /// <param name="Refusal">Null when the button works. When set, the button is PRESENT and says why it
     /// will not — an absent button and a broken one look identical, and this ground has already shipped that
     /// mistake once.</param>
+    /// <param name="OpenedBy">#689 · The title of the card in the captain's own wallet that this stop's gate
+    /// will read — null on every ordinary button, and null at a gate no card opens. The positive twin of
+    /// <paramref name="Refusal"/>: a sealed row says what is missing, and this one says what is HELD, before
+    /// the ride rather than after it. Core decides it so the panel can never promise a reading the gate will
+    /// not give (#600's rule: Core decides, the razor draws).</param>
     public readonly record struct LiftStop(
-        int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal);
+        int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal, string? OpenedBy = null);
 
     /// <summary>
     /// #600 · What this car's panel offers, standing on <paramref name="level"/>.
@@ -1841,7 +2058,9 @@ public static class UndergroundComplex
         // floor — not because it is careless, but because a hull that is on the board is expected and the
         // building has never had any other kind of visitor. The gate is simply ABSENT, and the absence is
         // the rank difference: the same panel, and only one of them negotiates.
-        bool holdsIt = IsHeadOffice(bodyId) || heldCardIds.Contains(new AuthorityCard(bodyId, next).Id);
+        var gateCard = new AuthorityCard(bodyId, next);
+        bool carded = heldCardIds.Contains(gateCard.Id);
+        bool holdsIt = IsHeadOffice(bodyId) || carded;
         bool unlisted = IsUnlisted(bodyId, BandTop(next));
         if (unlisted && !holdsIt)
         {
@@ -1854,8 +2073,48 @@ public static class UndergroundComplex
             HoldsPressure(BandTop(next)),
             IsCurrent: false,
             holdsIt ? null : "This car does not go lower. The shaft that does is on this floor, and its " +
-                "gate wants an authority this building has not issued in a long time."));
+                "gate wants an authority this building has not issued in a long time.",
+            // #689 · …and when the wallet has the answer in it, the row says so BEFORE the ride. Owner, after
+            // playing the whole loop: "It was locked until I got it ... there was no story point about it
+            // being needed or used." Never at the head office: there is no gate there to read anything, and
+            // that absence is the rank difference (#411) rather than an oversight worth papering over.
+            carded && !IsHeadOffice(bodyId) ? CardTitle(gateCard) : null));
         return stops;
+    }
+
+    /// <summary>#689 · WHICH GATE A RIDE GOES THROUGH — the card it reads, or null for an ordinary trip.
+    ///
+    /// <para>Owner, having played the whole loop on a deep site: <i>"It was locked until I got it ... there
+    /// was no story point about it being needed or used."</i> Half of that is a beat said at the wrong
+    /// moment (the client's job); this is the other half, and it is arithmetic, so it belongs where a test
+    /// can reach it.</para>
+    ///
+    /// <para>The client used to derive it as <c>BandOf(min(Floor, -1)) + 1</c> — the band under the floor
+    /// the press came FROM — which answers a question nobody asked. Whether a ride crosses a gate is a fact
+    /// about the STOP, so this asks the panel: is the button being pressed one that is only on it because
+    /// the captain is carrying the paper for it? That single question also settles two cases the old
+    /// arithmetic got wrong, because it never looked at a card at all:</para>
+    /// <list type="bullet">
+    /// <item>the head office, whose gate is deliberately ABSENT (#411) — it used to narrate a
+    /// countersignature being read by a door that is not there;</item>
+    /// <item>any caller that is not the refusing panel — the old rule was right only because <i>its one
+    /// caller</i> returned early on a refusal, and a rule that is right because of where it is called from
+    /// is a rule waiting for its second caller.</item>
+    /// </list></summary>
+    public static AuthorityCard? GateOpenedByRidingTo(
+        string bodyId, int fromLevel, int toLevel, IReadOnlyCollection<string> heldCardIds)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(heldCardIds);
+
+        foreach (LiftStop stop in LiftPanel(bodyId, fromLevel, heldCardIds))
+        {
+            if (stop.Level == toLevel && stop.OpenedBy is not null)
+            {
+                return new AuthorityCard(bodyId, BandOf(toLevel));
+            }
+        }
+        return null;
     }
 
     // ── #528 · TWO CARDS FOR THE TWO HALVES OF A DOOR ───────────────────────────────────────────────────
@@ -1912,7 +2171,16 @@ public static class UndergroundComplex
             "It was not shut to keep anybody out of there. It was shut to keep it shut.";
     }
 
-    public const string AuthorityCardArtUrl = "art/the-authority-card.jpg";
+    /// <summary>The card face for a card nobody can name — the #528 original, kept when #695 gave every card
+    /// the face of its own issuing office.
+    ///
+    /// <para>No caller reaches it today, and that is a fact rather than an oversight: every seam that opens a
+    /// card has already run <c>AuthorityCard.TryParse</c> before it asks for a picture, and an id that fails
+    /// there gets no card at all rather than a card wearing a stranger's photograph. This is the face for a
+    /// seam that has an authority in front of it and cannot roll — the satchel row already keeps the matching
+    /// text fallback (<i>"🎫 an authority card"</i>), and the art side should not have to invent one under
+    /// pressure. It is deliberately NOT one of the five, so it can never impersonate an office.</para></summary>
+    public const string AuthorityCardFallbackArtUrl = "art/the-authority-card.jpg";
 
     public const string AuthorityCardLabel = "🎫 THE COUNTERSIGNATURE";
 

@@ -79,7 +79,8 @@ public sealed class TheAuthorityCardTests
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 Assert.Equal(UndergroundComplex.CardInRoom(body, level), UndergroundComplex.CardInRoom(body, level));
-                Assert.Equal(UndergroundComplex.KeyLine(body, level), UndergroundComplex.KeyLine(body, level));
+                Assert.Equal(UndergroundComplex.KeyLine(body, level, UndergroundComplex.CardInRoom(body, level)),
+                    UndergroundComplex.KeyLine(body, level, UndergroundComplex.CardInRoom(body, level)));
             }
         }
 
@@ -144,7 +145,8 @@ public sealed class TheAuthorityCardTests
         {
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
-                cardWords.Add(UndergroundComplex.KeyLine(body, level));
+                cardWords.Add(UndergroundComplex.KeyLine(body, level, UndergroundComplex.CardInRoom(body, level)));
+                cardWords.Add(UndergroundComplex.KeyLine(body, level, null));
             }
             for (int band = 0; band < 4; band++)
             {
@@ -212,7 +214,8 @@ public sealed class TheAuthorityCardTests
         {
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
-                text.Add(UndergroundComplex.KeyLine(body, level));
+                text.Add(UndergroundComplex.KeyLine(body, level, UndergroundComplex.CardInRoom(body, level)));
+                text.Add(UndergroundComplex.KeyLine(body, level, null));
             }
             for (int band = 0; band < 6; band++)
             {

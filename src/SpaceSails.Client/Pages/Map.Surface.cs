@@ -399,6 +399,50 @@ public partial class Map
         public double AnchorX, AnchorY; // the drill point — stepping away from HERE pauses the bore
     }
 
+    // ── #696 · THE DARKROOM CHANNEL ────────────────────────────────────────────────────────────────────
+    //
+    // Owner: "That is something one would do without using tanked air... we take time to process the loot."
+    //
+    // The third channel, and deliberately the same shape as the other two: an anchor you have to stand on, a
+    // clock, and an effect that fires ONLY at the far end. What makes it different from a dig is that it is
+    // silent — a captain photographing a pay sheet is not swinging a shovel — so the teeth are not noise,
+    // they are the twenty seconds themselves, watched on the fan.
+    //
+    // NOTE WHAT IS NOT ON THIS CLASS: anything about air. The hold passes sim time and StepSuitAir prices
+    // sim time, and the two never speak. A tank field here would be a second answer to a question that is
+    // already answered correctly in one place, on four different kinds of ground (#573/#585/#608/#612).
+    private sealed class ProcessingHold
+    {
+        /// <summary>Which slow thing — the sentences differ, the clock does not.</summary>
+        public required Core.Processing.Work Work { get; init; }
+
+        /// <summary>The document under the captain's hands. It is STILL IN THE SATCHEL: nothing is removed
+        /// and nothing is filed until the far end, which is what makes "an interruption loses nothing"
+        /// structural rather than a promise about tidying up afterwards.</summary>
+        public required Core.Satchel.Item Item { get; init; }
+
+        /// <summary>What to call it on screen, composed once at the start, so the abandon line and the start
+        /// line cannot disagree about what is in the captain's hands.</summary>
+        public required string Label { get; init; }
+
+        /// <summary>Where the boots were when the hold started, and which floor they were on. Drifting off
+        /// this spot — or riding the lift — abandons it.</summary>
+        public double AnchorX { get; init; }
+        public double AnchorY { get; init; }
+        public int Floor { get; init; }
+
+        /// <summary>Sim seconds stood so far.</summary>
+        public double Elapsed { get; set; }
+
+        /// <summary>#691 · Where the thing is being set down, in the captain's own words, captured at the
+        /// START. The captain cannot move during a hold, so this can never go stale — and re-deriving it off
+        /// the avatar at the far end would be a second answer to a question already asked.</summary>
+        public string Standing { get; init; } = "";
+
+        /// <summary>#603 · What the paper is being read AT, for the clue path. Null on a leave.</summary>
+        public (SatchelTry.Target Target, string? Context, string Label)? At { get; init; }
+    }
+
     private sealed class SurfaceExcursion
     {
         public required ShuttleStop Stop { get; init; }
@@ -415,6 +459,12 @@ public partial class Map
         public double DropX, DropY;
         public bool Buried { get; set; }                 // the carried chest went into the ground
         public DigChannel? Channel { get; set; }
+
+        // #696 · The document under the captain's hands right now, if any. It rides on the EXCURSION and not
+        // on the component, so that the one interruption nothing could sensibly listen for — the shuttle
+        // lifting — takes the hold with it rather than leaving a clock ticking over an excursion that no
+        // longer exists. Never saved: a half-photographed sheet is not a possession.
+        public ProcessingHold? Processing { get; set; }
 
         // Lane-1 · the tide clock (owner, 2026-07-18): the deep hands up a Reever every seeded gap, for
         // the whole excursion, with no fixed total. TideSeconds accrues real time; when it crosses the
@@ -594,6 +644,12 @@ public partial class Map
         public HashSet<int> HiveRoomsEmptied { get; } = [];
         public HashSet<int> HiveFloorsSeen { get; } = [];
 
+        // #688 · WHAT THE CAPTAIN PUT DOWN, AND WHERE. Owner: "no way to drop stuff." Excursion-scoped by
+        // deliberate v1 choice — the world does not keep a ledger of every sheet of paper anybody ever set on
+        // a floor, and the line the captain reads says as much out loud rather than implying a permanence the
+        // sim does not have. Within the walk it is exactly where they left it, which is #615's whole law.
+        public LeftBehind Ground { get; } = new();
+
         // #590 · Which shaft bands this excursion has already talked its way into. Only gates the once-per-
         // shaft beat when a card is accepted; the CARD itself is durable and lives in the vault, because a
         // possession that evaporated when the shuttle lifted would not be a possession.
@@ -675,8 +731,14 @@ public partial class Map
         public bool Carrying => (PendingCoin > 0 || PendingCargo.Count > 0) && !Buried && !ChestDropped;
         public bool Channeling => Channel is not null;
         // #371 Phase 3 / #394: any channel underway (a dig, a door-force, OR the drill) — mutually exclusive.
+        //
+        // #696 · AND THE DARKROOM IS ONE OF THEM. A captain photographing a pay sheet has both hands full;
+        // more to the point, all of these draw the SAME progress bar (#562), so two at once would be one bar
+        // reporting one of them and the captain watching the wrong clock. The exclusion runs both ways —
+        // BeginProcessing refuses while a channel is up, and every [E] that starts a channel already asks
+        // this property.
         public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null
-            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null;
+            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null || Processing is not null;
     }
 
     // ── Boarding: pick a surface, optionally load a chest, and grow the tube IN PLACE. ──
@@ -1151,10 +1213,16 @@ public partial class Map
 
         double home = DistanceToTheTube();
 
+        // #696 · Did an alarm go off on this tick? A captain must never suffocate inside a silent hold, and
+        // a warning that plays while they are watching a progress bar fill is #564's forbidden silent timer
+        // wearing a costume. Collected across the three thresholds and acted on once, below.
+        bool alarmed = false;
+
         // THE LINE. Once, on the step it is crossed, while there is still a decision in it.
         if (!ex.AirWarned && SuitAir.PastPointOfNoReturn(ex.AirSeconds, home))
         {
             ex.AirWarned = true;
+            alarmed = true;
             RendererInterop.PlayCue("alarm");
             ShowPulseMessage(SuitAir.CrossingWarning);
         }
@@ -1164,6 +1232,7 @@ public partial class Map
         if (!ex.ReserveNoted && SuitAir.OnTheReserve(ex.AirSeconds))
         {
             ex.ReserveNoted = true;
+            alarmed = true;
             RendererInterop.PlayCue("alarm");
             ShowPulseMessage(SuitAir.ReserveEngagedLine);
         }
@@ -1175,11 +1244,21 @@ public partial class Map
         if (!ex.AirLowWarned && SuitAir.RunningLow(ex.AirSeconds, home))
         {
             ex.AirLowWarned = true;
+            alarmed = true;
             RendererInterop.PlayCue("alarm");
             if (!ShowAirCardOnce())
             {
                 ShowPulseMessage(SuitAir.LowAirWarning(ex.AirSeconds, home));
             }
+        }
+
+        // #696 · THE ALARM TAKES YOUR HANDS OFF THE PAPER. Note which way this dependency points: the suit
+        // interrupts the darkroom, the darkroom knows nothing about the suit. Each threshold is one-shot per
+        // walk, so this is a BEAT and never a lockout — the next press starts the same hold again, and a
+        // captain who wants to finish reading a manifest on the reserve is allowed to make that decision.
+        if (alarmed)
+        {
+            ProcessingIsInterrupted(Core.Processing.Interruption.Alarm);
         }
 
         if (ex.AirSeconds <= 0)
@@ -1915,6 +1994,7 @@ public partial class Map
         //
         // Core owns which buttons exist (UndergroundComplex.LiftPanel) so that the #590 card gate and the
         // #592 silence are ONE pure, tested rule instead of something re-derived in a razor file.
+        _liftOutcome = null;
         _showLiftPanel = true;
         RendererInterop.PlayCue("board");
     }
@@ -1937,43 +2017,58 @@ public partial class Map
         {
             // Said every time — a refusal that goes quiet on the second press reads as a broken button.
             // Filed once, because pressing one gate eleven times is not eleven findings.
+            //
+            // #686 · And said INSIDE the panel. Owner, at this exact gate: "result text is not displayed
+            // so it can be read. It is the same kind of bug as we had with the inventory item use." The
+            // panel stays open on a refusal, and a line pulsed from here plays under the backdrop's blur —
+            // in the DOM and not on the screen (#680's disease, second organ). The book still gets the
+            // record; the saying happens where the player is looking.
             string line = UndergroundComplex.WrongCardLine(-ex.Floor, HeldAuthorities());
             int refusedBand = UndergroundComplex.BandOf(stop.Level);
             if (ex.HiveShaftsRefused.Add(refusedBand))
             {
-                ShowAndFile(line, "🔒");
+                _liftOutcome = line;
+                FileNote(line, "🔒");
             }
             else
             {
-                ShowPulseMessage($"🔒 {refused}");
+                _liftOutcome = $"🔒 {refused}";
             }
             return;
         }
 
         _showLiftPanel = false;
 
-        // Going below this car's own band is the OTHER shaft, and #590's card is what opened it.
-        int nextBand = UndergroundComplex.BandOf(Math.Min(ex.Floor, -1)) + 1;
-        if (stop.Level < 0 && UndergroundComplex.BandOf(stop.Level) == nextBand
-            && ex.HiveShaftsOpened.Add(nextBand))
-        {
-            ShowAndFile(
-                UndergroundComplex.CardAcceptedLine(
-                    new UndergroundComplex.AuthorityCard(ex.Stop.Body.Id, nextBand)), "🎫");
-            ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
-        }
-
-        RideTheLiftTo(ex, stop.Level);
+        // #689 · Going below this car's own band is the OTHER shaft, and #590's card is what opened it — but
+        // the saying of that belongs to the ARRIVAL and not to this line. It used to be said right here, on
+        // the exact frame the panel closes and the floor is rebuilt under the captain's feet, and the owner
+        // played the whole loop without ever seeing it. The blur disease's third organ: not under a modal
+        // this time, under a scene change. The ride carries the stop with it, and the doors say it.
+        RideTheLiftTo(ex, stop.Level, stop);
     }
 
-    private void CloseLiftPanel() => _showLiftPanel = false;
+    private void CloseLiftPanel()
+    {
+        _showLiftPanel = false;
+        _liftOutcome = null;
+    }
 
     /// <summary>#600 · Whether the lift panel is up. The sim keeps running behind it, exactly as it does
     /// behind the valve board.</summary>
     private bool _showLiftPanel;
 
-    private void RideTheLiftTo(SurfaceExcursion ex, int level)
+    /// <summary>#686 · What the last refused button answered, said inside the panel itself. The pulse HUD
+    /// renders under the modal backdrop's blur, so a refusal routed there is in the DOM and not on the
+    /// screen. Cleared whenever the panel opens or closes — the line belongs to one stand at one gate.</summary>
+    private string? _liftOutcome;
+
+    /// <param name="via">#689 · The button that was pressed, when a button was pressed. A ride that goes
+    /// through the card gate has a story to tell on arrival, and only the panel knows which trip that was —
+    /// the dev floor cheat rides the same car and has no gate to cross.</param>
+    private void RideTheLiftTo(
+        SurfaceExcursion ex, int level, UndergroundComplex.LiftStop? via = null)
     {
+        int fromLevel = ex.Floor;
         bool wasUnderground = ex.Floor < 0;
         ex.Floor = level;
 
@@ -1987,9 +2082,10 @@ public partial class Map
             // captain lands on cannot drift from the walls that are drawn around it. That drift is exactly
             // what put him in a wall: this used to compute its own position from the RAW seeded head spot
             // while the shed was built at the nudged one.
-            (_avatarX, _avatarY) = MoonSurface.LiftHead(
+            // #681 · …through the one door the captain is ever placed through, so the car has the same net
+            // under it that the landing does. The audit still pins the un-nudged square (#602's own guard).
+            (double carX, double carY) = MoonSurface.LiftHead(
                 ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField()).CarFloor;
-            RebuildSurfaceDeck();
             // #603 \u00b7 And what you came out WITH. Owner: "Also in the brief pop-up of going to the surface...
             // inventory key needs to be advertised." Surfacing is the moment a captain takes stock \u2014 they
             // have just stopped spending air and started counting what it bought \u2014 so it is the one place
@@ -1999,13 +2095,15 @@ public partial class Map
                 : "";
             ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
                 "maintenance shed. The moon is exactly as indifferent as you left it." + carried);
+            // #681: and the placement LAST, so if the net has to catch anybody its line is the one left on
+            // screen. A rescue nobody sees is a bug nobody reports.
+            StandCaptainAt(carX, carY, "the car lets you out into the shed on the surface");
             RequestVaultSave();
             return;
         }
 
         (double sx, double sy) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
-        (_avatarX, _avatarY) = (sx, sy);
-        RebuildSurfaceDeck();
+        StandCaptainAt(sx, sy, "the car opens onto the floor");   // #681: the same net, underground
         RendererInterop.PlayCue("board");
 
         if (!wasUnderground)
@@ -2085,6 +2183,31 @@ public partial class Map
                 : UndergroundComplex.DeadAirLine, "\ud83e\udec1");
         }
 
+        // ── #689 · THE CARD'S FINEST HOUR, SAID WHERE IT CAN BE HEARD ───────────────────────────────────
+        //
+        // Owner, having found the card, fed the gate and ridden past the listed bottom: "It was locked until
+        // I got it ... there was no story point about it being needed or used. Let's tell that story somehow
+        // more clearly that it was used in the elevator or somehow played a part in opening the most bottom
+        // floor."
+        //
+        // The line existed. It was said on the frame the panel closed and the floor was torn down and rebuilt
+        // — the one instant in the whole loop when nobody is reading the HUD. Here the doors are open, the
+        // captain is standing still, and the car is not going anywhere.
+        //
+        // LAST of the arrival's sayings on purpose: the pulse has exactly ONE slot and the last line written
+        // is the one that survives (ShowPulseMessage overwrites). Everything above this is a fact about the
+        // FLOOR — it holds air or it does not, it is on the plan or it is not — and the book keeps every one
+        // of them. This is the fact about the RIDE, it happens once per shaft per excursion, and it is the
+        // one the owner filed an issue about not seeing.
+        if (via is not null
+            && UndergroundComplex.GateOpenedByRidingTo(
+                ex.Stop.Body.Id, fromLevel, level, AuthorityCardIds()) is { } opened
+            && ex.HiveShaftsOpened.Add(opened.Band))
+        {
+            ShowAndFile(UndergroundComplex.CardAcceptedLine(opened), "🎫");
+            ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
+        }
+
         ApplyNerveShock(UndergroundComplex.HoldsPressure(level) ? 2.0 : 5.0,
             "a building this expensive, this far down, and this empty");
         RequestVaultSave();
@@ -2137,17 +2260,21 @@ public partial class Map
                 break;
             }
         }
-        if (which < 0 || !ex.HiveRoomsEmptied.Add(HiveInterior.RoomKey(ex.Floor, which)))
+        if (which < 0)
+        {
+            return;
+        }
+
+        // #678 · THE ROOM IS NOT CONSUMED UNTIL THE FIND IS. This used to be one line — test the key and mark
+        // it emptied in the same breath — which is exactly why a find the pocket could not take was destroyed
+        // by the act of looking at it. Now the room is only struck off once the pickup has actually happened.
+        int roomKey = HiveInterior.RoomKey(ex.Floor, which);
+        if (ex.HiveRoomsEmptied.Contains(roomKey))
         {
             return;
         }
 
         UndergroundComplex.Haul haul = UndergroundComplex.InRoom(ex.Stop.Body.Id, ex.Floor, which);
-        if (haul == UndergroundComplex.Haul.Equipment)
-        {
-            _credits += 900;
-            RendererInterop.PlayCue("board");
-        }
 
         // Everything found down here is FILED (#587) - this is the place in the game most worth being able to
         // re-read, and a file on a harbourmaster that faded after eight seconds would be a joke.
@@ -2186,27 +2313,44 @@ public partial class Map
             }
         }
 
-        string pocket = haul switch
+        // ── #678 · THE POCKET NEVER LIES ──
+        //
+        // Owner, after a card he had read a pickup line for turned out not to be in the satchel: "we should
+        // have CI test that makes sure all picked items that sound useful are put into the inventory ... If
+        // refused the item should stay where it was investigated last — not disappear like they do now, or
+        // seem to."
+        //
+        // The composition used to live here, in the wrong order: the "Into your pocket" line was built and
+        // shown, the room was already struck off, and only THEN did Satchel.Add get a chance to refuse. At
+        // capacity the find was destroyed and the sentence had already claimed it. It is one pure call now
+        // (UndergroundComplex.WhatGoesInThePocket), which is the only way a test can walk every haul against
+        // every pocket — and it answers all three parts at once: what goes in, what is said, and whether the
+        // room has been emptied at all.
+        string findId = $"hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}";
+        UndergroundComplex.Pickup pick = UndergroundComplex.WhatGoesInThePocket(
+            haul, ex.Stop.Body.Id, found, findId, _satchel);
+
+        string room = UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which, found);
+
+        if (!pick.RoomEmptied)
         {
-            UndergroundComplex.Haul.Records => "  \ud83c\udf92 Into your pocket: operational paper.",
-            UndergroundComplex.Haul.Dirt => "  \ud83c\udf92 Into your pocket: a file on somebody.",
-            UndergroundComplex.Haul.Key when found is { } c && c.BodyId != ex.Stop.Body.Id
-                => "  \ud83c\udf92 Into your pocket: an authority card \u2014 and it is not for this building.",
-            UndergroundComplex.Haul.Key when found is not null
-                => "  \ud83c\udf92 Into your pocket: an authority card.",
-            UndergroundComplex.Haul.Equipment => "  \ud83d\udcb3 Crated and carried out \u2014 it sells, it does not fit a pocket.",
+            // Nothing changes but the sentence. The room is not struck off, so searching it again offers the
+            // same find — which is the enforcement side of #615 (leaving a thing must never destroy it).
+            // The deck is deliberately NOT rebuilt: the console has to still be standing there.
+            ShowAndFile(room + pick.Line, "\ud83d\udd26");
+            RequestVaultSave();   // the field note is a possession too (#587)
+            return;
+        }
 
-            // #614 \u00b7 You cannot lift it and the game must not pretend you can. What goes in the pocket is
-            // the RECORD of it, which is also the only honest thing to have taken: a measurement is exactly
-            // as much of this object as anybody has ever managed to remove from the room.
-            UndergroundComplex.Haul.Relic => "  \ud83c\udf92 Into your pocket: measurements, a photograph, a scraping. "
-                + "The thing itself stays where it is.",
+        ex.HiveRoomsEmptied.Add(roomKey);
 
-            _ => "",
-        };
+        if (haul == UndergroundComplex.Haul.Equipment)
+        {
+            _credits += 900;
+            RendererInterop.PlayCue("board");
+        }
 
-        ShowAndFile(UndergroundComplex.HaulLine(haul, ex.Stop.Body.Id, ex.Floor, which) + pocket,
-            haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
+        ShowAndFile(room + pick.Line, haul == UndergroundComplex.Haul.Dirt ? "\ud83d\uddc3" : "\ud83d\udd26");
 
         if (haul == UndergroundComplex.Haul.Dirt)
         {
@@ -2225,15 +2369,17 @@ public partial class Map
         //
         // A file on somebody is carried too, but it is never offered to a door: it is leverage on a PERSON,
         // which is the only currency down here you spend on somebody you can go and meet.
-        string findId = $"hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}";
-        if (haul == UndergroundComplex.Haul.Records)
+        //
+        // #678 · ONE ADD, and it is the one the sentence was written about. There used to be four of these
+        // scattered down the method, each deciding for itself what this room hands over — which is how the
+        // authority card came to be added AFTER the full-pocket check and to slip through it entirely.
+        if (pick.Take is { } took)
         {
-            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Paper, findId))];
+            _satchel = [.. Core.Satchel.Add(_satchel, took)];
         }
-        else if (haul == UndergroundComplex.Haul.Relic)
-        {
-            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Relic, findId))];
 
+        if (haul == UndergroundComplex.Haul.Relic)
+        {
             // The card is raised on the spot, unconditionally and every time. This is the one object in the
             // game that a captain will want to look at again the moment they find it, and #528's
             // once-per-excursion gate is for things that RECUR — a rib mouth, a card, a dead floor. There is
@@ -2246,17 +2392,24 @@ public partial class Map
         }
         else if (haul == UndergroundComplex.Haul.Dirt)
         {
-            _satchel = [.. Core.Satchel.Add(_satchel, new Core.Satchel.Item(Core.Satchel.Kind.Dirt, findId))];
-
             // A file still names a moon on its own — it is about a PERSON and the person is somewhere. Only
             // the operational paper became a thing you have to decide about.
             GrantLabLead(DiceRule.Seed($"lead:hive:{ex.Stop.Body.Id}:{ex.Floor}:{which}"));
         }
 
-        if (Core.Satchel.IsFull(_satchel))
+        // #678 · Said only when something actually went in — "that was the last space" is a fact about a
+        // pickup, and on a room that handed over nothing it would be a warning attached to nothing.
+        //
+        // #688 · And it is a fact about ONE COMPARTMENT, because after the restructure "the satchel is full"
+        // has no meaning: a sleeve stuffed with manifests says nothing about the pockets, and neither of them
+        // says anything about the wallet, which never fills at all. The warning names what ran out.
+        if (pick.Take is { } went && Core.Satchel.IsFull(_satchel, went.Kind))
         {
-            ShowPulseMessage("🎒 Your hands and pockets are full. Something has to be read, spent or left " +
-                "behind before you can carry anything else out of here.");
+            ShowPulseMessage(Core.Satchel.CompartmentOf(went.Kind) == Core.Satchel.Compartment.Sleeve
+                ? "🎒 That was the last sheet the document sleeve will hold. Something has to be read or " +
+                  "left behind before you can carry any more paper out of here."
+                : "🎒 Your hands and pockets are full. Something has to be spent or left behind before you " +
+                  "can carry anything else out of here.");
         }
 
         // #590 · THE CARD IS NOW A THING YOU HOLD. It runs the shaft below the band it was found in, so the
@@ -2266,23 +2419,19 @@ public partial class Map
         // On the bottom band there is no shaft below to authorise, and rather than hand out an authority for
         // a hole nobody dug, that Key names another moon: the same payoff Records and Dirt give, which keeps
         // the deepest floor of a site pointing outward instead of at itself.
-        if (found is { } card)
+        //
+        // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to really
+        // tell the story here :-D" — the right pair with the sealed way, because the Hive has exactly two
+        // objects about the idea of passage and this is the one that works. It is raised for a card that is
+        // IN THE POCKET and never for one the world declined to mint (#678).
+        if (found is { } card && pick.Take is not null && !ex.HiveAuthorityShown)
         {
-            _satchel = [.. Core.Satchel.Add(_satchel,
-                new Core.Satchel.Item(Core.Satchel.Kind.Authority, card.Id))];
-
-            // #528 · THE COUNTERSIGNATURE. Owner: "the authority card could also have a gen ai image to
-            // really tell the story here :-D" — the right pair with the sealed way, because the Hive has
-            // exactly two objects about the idea of passage and this is the one that works.
-            if (!ex.HiveAuthorityShown)
-            {
-                ex.HiveAuthorityShown = true;
-                _viewObject = new DeckPlan.ConsoleSpot(
-                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                    UndergroundComplex.AuthorityCardLabel,
-                    UndergroundComplex.AuthorityCardArtUrl,
-                    UndergroundComplex.AuthorityCardStory(card));
-            }
+            ex.HiveAuthorityShown = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.AuthorityCardLabel,
+                UndergroundComplex.AuthorityCardArtUrl(card),
+                UndergroundComplex.AuthorityCardStory(card));
         }
 
         RebuildSurfaceDeck();
@@ -2349,9 +2498,17 @@ public partial class Map
     {
         if (_lockedDoor is { } door)
         {
-            _satchelTarget = (door.Target, null, door.Sign);
+            // #680 · Say what the thing IS, not just what is painted on it. "Offering it to MEDICAL"
+            // read as a person until the owner asked what it meant — and a line the owner has to ask
+            // about is a line that is not doing its job. The sign stays, the noun arrives.
+            _satchelTarget = (door.Target, null,
+                door.Target == SatchelTry.Target.SealedWay
+                    ? $"the sealed way ({door.Sign})"
+                    : $"the locked {door.Sign} door");
         }
         _lockedDoor = null;
+        _satchelOutcome = null;
+        TheSatchelOpensOnThePocket();
         _showSatchel = true;
     }
 
@@ -2359,16 +2516,95 @@ public partial class Map
     private void OpenSatchel()
     {
         _satchelTarget = null;
+        _satchelOutcome = null;
+        TheSatchelOpensOnThePocket();
         _showSatchel = true;
+    }
+
+    /// <summary>#688 · The I key, both ways. Owner: <i>"If I press I when inventory is open, let's close it
+    /// then."</i>
+    ///
+    /// <para>A pocket you open by reflex has to shut by the same reflex. Note which way this closes: a satchel
+    /// opened AT a door still closes on I, because the captain's hand is on the key and not on the fiction —
+    /// and <see cref="CloseSatchel"/> clears the target, so the next I is an honest look at what you have.</para></summary>
+    private void ToggleSatchel()
+    {
+        if (_showSatchel)
+        {
+            CloseSatchel();
+            return;
+        }
+
+        OpenSatchel();
     }
 
     private void CloseSatchel()
     {
         _showSatchel = false;
         _satchelTarget = null;
+        _satchelOutcome = null;
     }
 
     private bool _showSatchel;
+
+    // ── #690 · THE OTHER THING A SATCHEL HOLDS ──────────────────────────────────────────────────────────
+    //
+    // Owner, designing the paper-shedding loop: "should we have notes / clues section in our inventory ui?"
+    // — and, on the register it should be written in: "it's like our detective notepad :-D".
+    //
+    // The field book (#587) rendered only in the Captain's ledger, a ship-brain surface. #688 made that a
+    // real cost: leaving a paper files its gist to the book, so knowledge was being deliberately moved into
+    // a place unreachable from the ground it came off. Record the essential data, throw out the paper, and
+    // be able to read the record standing in the dark.
+    //
+    // A pocket and a notebook are both things a satchel holds. There is NO second store here: the tab reads
+    // _fieldNotes, the one book (#587's law — one place that can never be forgotten about), through the same
+    // Core projection the ledger renders.
+    private enum SatchelPage
+    {
+        /// <summary>What you are carrying. Always where an open lands — the pocket is the primary tool.</summary>
+        Carried,
+
+        /// <summary>What the ground has told you.</summary>
+        Notes,
+    }
+
+    private SatchelPage _satchelPage = SatchelPage.Carried;
+
+    /// <summary>#690 · Whether the NOTES tab is showing the whole book rather than this ground alone. Defaults
+    /// to this ground: a captain at a door wants what THIS building has told them, not the memoirs.</summary>
+    private bool _notesEverywhere;
+
+    /// <summary>#690 · Every open lands on the pocket, on this ground, whatever the last one was left on. The
+    /// tab choice is not a setting — it is where you were looking a moment ago, and a moment ago is over.
+    /// One method rather than two copies, because a third opener would forget one of these lines.</summary>
+    private void TheSatchelOpensOnThePocket()
+    {
+        _satchelPage = SatchelPage.Carried;
+        _notesEverywhere = false;
+
+        // #697 · And the wallet is folded shut. A folder that reopened expanded would be the card rows it
+        // replaced with an extra line above them, which is the whole row spent for nothing.
+        _walletOpen = false;
+    }
+
+    /// <summary>#690 · The ground underfoot, named the way the BOOK names it — through
+    /// <see cref="Core.FieldNotes.PlaceLabel"/> and never re-derived here, so the filter can never drift off
+    /// the labels <see cref="FileNote"/> wrote. Null off a surface, where there is no ground to be on.</summary>
+    private string? PlaceUnderfoot() =>
+        _surface is { } ex ? Core.FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name) : null;
+
+    /// <summary>#690 · What the NOTES tab shows on this ground: the one book, filtered by the ledger's own
+    /// grouping. Read-only — the book is capped and durable by its own laws and the satchel just holds it
+    /// open.</summary>
+    private IReadOnlyList<Core.FieldNote> NotesFromThisGround() =>
+        Core.FieldNotes.Here(_fieldNotes, PlaceUnderfoot());
+
+    /// <summary>#680 · What the last failed offer answered, said inside the dialog itself. The pulse HUD
+    /// renders under the modal backdrop's blur, so a refusal routed there is in the DOM and not on the
+    /// screen. Cleared whenever the satchel opens or closes — the line belongs to one conversation at one
+    /// door, not to the pocket.</summary>
+    private string? _satchelOutcome;
 
     /// <summary>What the satchel is currently open AT, if anything: the target, whatever that target needs
     /// to judge an offer, and what to call it on screen.</summary>
@@ -2398,6 +2634,386 @@ public partial class Map
             card.Label, card.ArtUrl, card.Story);
     }
 
+    /// <summary>#688 · LEAVE IT. Owner, live: <i>"The keycard story is already big, but no way to drop
+    /// stuff."</i>
+    ///
+    /// <para>The satchel had a verb for offering a thing and a verb for looking at one, and none at all for
+    /// putting one down — while the game's own prose kept telling the captain that something had to be
+    /// <i>read, spent or left behind</i>. The only way to make room was to spend something.</para>
+    ///
+    /// <para>It is its own small control per row rather than a mode, for #614's reason one size down: a
+    /// captain making room must never be one mis-click away from offering a relic to a bulkhead. The satchel
+    /// STAYS OPEN — you are putting a thing down in order to pick a thing up — which is exactly why the
+    /// confirmation is stored for the dialog rather than pulsed (#680: the pulse HUD renders under the
+    /// backdrop's blur, so a line sent there is in the DOM and not on the screen).</para>
+    ///
+    /// <para>#615's law, unbroken: leaving never destroys. It is lying on the square the captain is standing
+    /// on, and <see cref="TryPickUpWhatYouLeft"/> hands it straight back.</para></summary>
+    private void LeaveItem(Core.Satchel.Item item)
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+
+        string standing = WhereYouAreStanding();
+
+        // ── #696 · A DOCUMENT IS NOT DROPPED. IT IS PROCESSED, AND THAT TAKES TIME ──
+        //
+        // Owner: "we take time to process the loot." Leaving a paper files what it SAID (below), which is
+        // the captain photographing it — and that is seconds of standing still, not a click. Only documents
+        // hold: there is no gist to a handful of rounds, so there is nothing to stand still for, and the
+        // question "is there a gist" is asked ONCE, by Core, here and at the far end alike.
+        if (LeftBehind.GistOf(item, standing) is { Length: > 0 })
+        {
+            BeginProcessing(ex, Core.Processing.Work.File, item, standing, at: null);
+            return;
+        }
+
+        SetItDown(ex, item, standing);
+    }
+
+    /// <summary>#688 · The drop itself, once whatever had to happen first has happened. Everything that was
+    /// in <see cref="LeaveItem"/> before #696 put a clock in front of it — unchanged, because the effect at
+    /// the far end of a hold must be the effect the game already had, not a second copy of it.</summary>
+    private void SetItDown(SurfaceExcursion ex, Core.Satchel.Item item, string standing)
+    {
+        // Rounds go down as the whole stack: six rounds is ONE thing you are carrying (#603), so it is one
+        // thing you set down. Leaving them a round at a time would be inventory management.
+        (int sqX, int sqY) = BeachComber.SquareOf(_avatarX, _avatarY);
+        ex.Ground.Leave(LeftBehind.SpotKey(ex.Floor, sqX, sqY), item);
+        _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count)];
+
+        // ── #688 · A DOCUMENT LEAVES ITS GIST BEHIND IN THE BOOK ──
+        //
+        // Owner refinement on the drop verb: leaving a paper files what it said before the paper leaves the
+        // pocket. A captain does not abandon a pay sheet without having looked at it — what they are putting
+        // down is the SHEET, and the sheet was only ever costing them bulk. The sleeve empties; the knowledge
+        // does not, which is #587's law ("a find that is shown once is a find that is lost") arriving at the
+        // moment the captain lets go.
+        //
+        // FileNote and not ShowAndFile: the SAYING is one line and it goes wherever the captain is actually
+        // looking (#680/#686), which is what SayItWhereTheyAreLooking decides. A second pulse for the gist
+        // would be the book reading itself out loud.
+        string? gist = LeftBehind.GistOf(item, standing);
+        if (gist is { Length: > 0 })
+        {
+            FileNote(gist, item.Kind == Core.Satchel.Kind.Dirt ? "🗃" : "📋");
+        }
+
+        SayItWhereTheyAreLooking(LeftBehind.LeaveLine(SatchelLabel(item), standing, gist is not null));
+
+        // #698 · AND THE DECK SAYS SO IMMEDIATELY. Owner: "there was nothing marked onto the map?" The
+        // marks are composed by the rebuild, so a drop that did not rebuild would leave the captain looking
+        // at the ground they just used and seeing the same nothing that produced the complaint. It is the
+        // same one-append-on-a-memoized-base the bury and the door-force already pay.
+        RebuildSurfaceDeck();
+        RequestVaultSave();
+    }
+
+    /// <summary>#680 + #696 · Say it where the captain is looking. The law #680 wrote is about the BLUR and
+    /// not about the pulse: with the satchel open over the world a line sent to the HUD is in the DOM and not
+    /// on the screen, and with the satchel shut a line stored for the dialog is nowhere at all.
+    ///
+    /// <para>It became a fork rather than a fact the moment #696 let a leave finish with the dialog closed —
+    /// the hold shuts the satchel so the captain can watch the fan, and they may or may not have opened it
+    /// again by the time the shutter closes. One method, asked by every caller, so no site has to guess.</para></summary>
+    private void SayItWhereTheyAreLooking(string line)
+    {
+        if (_showSatchel)
+        {
+            _satchelOutcome = line;
+            return;
+        }
+        ShowPulseMessage(line);
+    }
+
+    /// <summary>#688 · What is at your feet, answered before what is in the walls. Returns true when the press
+    /// was spent on the ground — the console under the captain gets the NEXT one, which is the honest order:
+    /// a thing you put down yourself is not a thing you should have to walk away from to reach.</summary>
+    private bool TryPickUpWhatYouLeft()
+    {
+        if (_surface is not { } ex)
+        {
+            return false;
+        }
+
+        // The square the captain is standing on, and the ring around it. A three-metre grid cell is smaller
+        // than a captain's idea of "where I put it down", and #615's law is only real if the way back is
+        // real — a relic you cannot find again was destroyed, whatever the store says it is holding.
+        //
+        // #698 · THE RING IS ONE RING. This scan used to be written out here, which made the keybar's new
+        // offer ("E — take back what you left") a SECOND transcription of the same geometry — and a prompt
+        // measured off a copy of the law is the bug class this repo has already paid for four times. Core
+        // owns it now; the key and the sentence ask the identical function.
+        if (ex.Ground.SpotInReach(ex.Floor, _avatarX, _avatarY) is not { } spot)
+        {
+            return false;
+        }
+
+        LeftBehind.Recovery back = ex.Ground.PickUp(spot, _satchel);
+        _satchel = [.. back.Pocket];
+
+        // Both halves are named. A recovery that quietly left something on the floor without saying so would
+        // be #678's silent drop one verb later — and this time the captain put it there on purpose.
+        ShowPulseMessage(LeftBehind.FoundAgainLine(
+            [.. back.Taken.Select(SatchelLabel)],
+            [.. back.StillThere.Select(SatchelLabel)]));
+
+        // #698 · The mark goes when the spot does — and STAYS when it does not. A recovery that could not
+        // take everything leaves the rest lying there (the one operation whose failure mode must leave the
+        // world as it found it), so the redraw is the honest one either way: the composer reads the store.
+        RebuildSurfaceDeck();
+        RequestVaultSave();
+        return true;
+    }
+
+    /// <summary>#698 · Is the captain inside the recovery ring of a spot with something lying on it? The
+    /// keybar's question, and it is <see cref="LeftBehind.SpotInReach"/> — the SAME call
+    /// <see cref="TryPickUpWhatYouLeft"/> makes — so the offer on the bar and the press it advertises can
+    /// never come apart. Off an excursion there is no ground to have left anything on.</summary>
+    private bool StandingOnWhatYouLeft() =>
+        _surface is { } ex && ex.Ground.AnythingInReach(ex.Floor, _avatarX, _avatarY);
+
+    /// <summary>#688 · Where the captain is, in their own words, for the line that says where a thing was
+    /// left. Underground it is a floor with a number painted on it; up top it is the ground.</summary>
+    private string WhereYouAreStanding() => _surface is { Floor: < 0 } ex
+        ? $"on the floor of B{-ex.Floor}"
+        : "on the regolith at your feet";
+
+    // ── #696 · THE DARKROOM: PROCESSING THE LOOT TAKES TIME, AND THE AIR PRICES THE WHERE ───────────────
+    //
+    // Owner, mid-run: "How is our detective notebook / picture taking progressing for our ability to process
+    // the files etc so we don't need carry them. That is something one would do without using tanked air. It
+    // is good game mechanic... we take time to process the loot."
+    //
+    // Read the whole of Core.Processing for the design. What this half does is three things and no more:
+    // start a hold, advance it while the boots stay put, and — at the far end — call the effect the game
+    // ALREADY HAD. Nothing here touches the tank. The hold passes sim time; StepSuitAir prices sim time on
+    // whatever ground the captain chose to stand on; the decision "read it here or haul it to the shelter"
+    // falls out of two systems that have never heard of each other. That is the whole ruling.
+    //
+    // THE SATCHEL SHUTS ON THE WAY IN, and it is the one judgement call in this lane worth arguing about.
+    // #691's leave verb kept the dialog open on purpose (you put a thing down in order to pick a thing up)
+    // and that was right while the drop was instantaneous. It is wrong the moment the drop has a body: the
+    // teeth of this mechanic are twenty seconds of being STATIONARY AND VISIBLE, and a captain cannot watch
+    // a motion tracker through a backdrop blur. So the pocket closes, the fan comes back, and the bar fills
+    // over the captain's own mark. #680's law is not "say it in the dialog" — it is "say it where the player
+    // is looking", which is what SayItWhereTheyAreLooking asks every time.
+
+    /// <summary>#696 · How long one document takes, right now. The Core constant, unless the QA cheat has
+    /// switched the clock off — and it is a PROPERTY rather than four call sites, so the sim, the bar, the
+    /// keybar hint and the satchel's own leave hint can never be running different numbers.</summary>
+    private double ProcessingSeconds => _processCheatSeconds ?? Core.Processing.SecondsPerDocument;
+
+    /// <summary>#696 · Take the document out and start the clock. The item is NOT removed and nothing is
+    /// filed: everything happens at the far end, so an interruption has nothing to undo.</summary>
+    private void BeginProcessing(
+        SurfaceExcursion ex,
+        Core.Processing.Work work,
+        Core.Satchel.Item item,
+        string standing,
+        (SatchelTry.Target Target, string? Context, string Label)? at)
+    {
+        string label = SatchelLabel(item);
+
+        // One pair of hands. The satchel shuts on the way in, but the captain can open it again with I and
+        // press the row a second time — and a control that does nothing and says nothing is indistinguishable
+        // from a bug (#603), so the refusal is a sentence.
+        if (ex.Processing is { } already)
+        {
+            SayItWhereTheyAreLooking(Core.Processing.AlreadyBusyLine(already.Work, already.Label));
+            return;
+        }
+
+        // And a shovel already in the ground is the same objection wearing a different glyph: every channel
+        // on this surface draws the ONE progress bar (#562), so two at once is a captain watching a clock
+        // that belongs to something else. The dig, the door-force and the drill all ask this same property
+        // before they start.
+        if (ex.AnyChannel)
+        {
+            return;
+        }
+
+        var hold = new ProcessingHold
+        {
+            Work = work,
+            Item = item,
+            Label = label,
+            AnchorX = _avatarX,
+            AnchorY = _avatarY,
+            Floor = ex.Floor,
+            Standing = standing,
+            At = at,
+        };
+        ex.Processing = hold;
+
+        // The pocket goes away so the fan comes back. See the note above — this is the one place the #691
+        // "satchel stays open" call is deliberately reversed, and the reason is that the vulnerability IS
+        // the mechanic.
+        CloseSatchel();
+
+        // ?process=0 · the QA switch. A story test must not have to wait out a clock designed to be felt,
+        // and a zero-length hold is finished the instant it starts rather than one frame later — a frame is
+        // a tick of air on the regolith, and a cheat that quietly charged for it would make the very guard
+        // this lane ships flap. It also skips the "hold position" line, because a build that tells the
+        // captain to stand still and then does not is a build whose prose has stopped being true.
+        if (ProcessingSeconds <= 0)
+        {
+            CompleteProcessing(ex, hold);
+            return;
+        }
+
+        ShowPulseMessage(Core.Processing.StartLine(work, label, ProcessingSeconds));
+        RendererInterop.PlayCue("blip");
+    }
+
+    /// <summary>#696 · Advance the hold. Stepping off the spot — or riding the lift to another floor —
+    /// abandons it; filling the clock fires the effect.
+    ///
+    /// <para>There is no air arithmetic in this method and there must never be any. StepSurface calls
+    /// StepSuitAir on the same tick with the same dt, whatever this returns, so the hold is priced by where
+    /// the captain is standing without one line here knowing that a tank exists.</para></summary>
+    private void StepProcessing(double dtRealSeconds)
+    {
+        if (_surface is not { Processing: { } hold } ex)
+        {
+            return;
+        }
+
+        if (ex.Floor != hold.Floor
+            || Core.Processing.Wandered(hold.AnchorX, hold.AnchorY, _avatarX, _avatarY))
+        {
+            AbandonProcessing(ex, Core.Processing.Interruption.Walked);
+            return;
+        }
+
+        hold.Elapsed += dtRealSeconds;
+        if (Core.Processing.Done(hold.Elapsed, ProcessingSeconds))
+        {
+            CompleteProcessing(ex, hold);
+        }
+    }
+
+    /// <summary>#696 · The far end. The hold clears FIRST, so the effect it fires runs in a world with no
+    /// hold in it — a leave that re-entered <see cref="LeaveItem"/> would otherwise meet its own clock and
+    /// refuse itself.</summary>
+    private void CompleteProcessing(SurfaceExcursion ex, ProcessingHold hold)
+    {
+        ex.Processing = null;
+        RendererInterop.PlayCue("board");
+
+        if (hold.Work == Core.Processing.Work.Read && hold.At is { } at)
+        {
+            // #603/#697 · Exactly the ending a press has always had, with exactly the arguments the press
+            // would have passed. Not a copy of it — the same method — because a hand-written second ending
+            // is this repo's first named bug class aimed at a state transition.
+            TheOfferIsAnswered(SatchelTry.Offer(hold.Item, at.Target, at.Context), hold.Item, at);
+            return;
+        }
+
+        SetItDown(ex, hold.Item, hold.Standing);
+    }
+
+    /// <summary>#696 · Cancel honestly. Nothing filed, nothing consumed, the paper still in the sleeve — and
+    /// ONE line saying so, because a twenty-second investment that evaporates in silence reads as a lost
+    /// press rather than as a decision the world took away from you.</summary>
+    private void AbandonProcessing(SurfaceExcursion ex, Core.Processing.Interruption why)
+    {
+        if (ex.Processing is not { } hold)
+        {
+            return;
+        }
+
+        ex.Processing = null;
+        SayItWhereTheyAreLooking(Core.Processing.AbandonedLine(hold.Work, hold.Label, why));
+    }
+
+    /// <summary>#696 · What the satchel says while a hold runs, or null when nothing is under the captain's
+    /// hands. Composed in Core so the dialog and the standing prompt cannot grow two vocabularies for one
+    /// clock.</summary>
+    private string? ProcessingUnderway() => _surface is { Processing: { } hold }
+        ? Core.Processing.HoldLine(hold.Work, hold.Label,
+            Core.Processing.SecondsLeft(hold.Elapsed, ProcessingSeconds))
+        : null;
+
+    /// <summary>#696 · What the 🫳 control promises before it is pressed. A DOCUMENT costs seconds, because
+    /// leaving one means photographing it first (#691); anything else is set down and that is all. The
+    /// question "is this a document" is <see cref="LeftBehind.GistOf"/>'s — the SAME call
+    /// <see cref="LeaveItem"/> branches on — so the hint and the press can never disagree about which rows
+    /// have a clock behind them.</summary>
+    private string LeaveHintFor(Core.Satchel.Item item) =>
+        _surface is not null && LeftBehind.GistOf(item, WhereYouAreStanding()) is { Length: > 0 }
+            ? Core.Processing.LeaveHint(ProcessingSeconds)
+            : "Leave it here — it stays where you put it";
+
+    /// <summary>#696 · The interruptions the hold cannot see coming, routed from the systems that CAN.
+    ///
+    /// <para>An air alarm breaks it on purpose. #564's founding rule is that air must never be a silent timer
+    /// that kills you, and a warning that fires while the captain is watching a progress bar fill is exactly
+    /// that timer wearing a costume — so the bar goes away and the alarm has the screen to itself. It fires
+    /// once per walk per threshold (the warnings are one-shot), so it is a beat and never a lockout: the
+    /// captain may start the same hold again on the next press and finish it on the reserve if that is the
+    /// decision they want to take.</para></summary>
+    private void ProcessingIsInterrupted(Core.Processing.Interruption why)
+    {
+        if (_surface is { Processing: not null } ex)
+        {
+            AbandonProcessing(ex, why);
+        }
+    }
+
+    // ── #697 · THE WALLET IS ONE THING, AND IT COMES OUT ALL AT ONCE ────────────────────────────────────
+    //
+    // Owner: "Let's also add option to try all ID cards ... by grouping them into a folder in the inventory."
+    // And, on the register the answer is written in: "It is a little throw at the movie ... where he had this
+    // wallet with zillion different contradictory IDs :-D"
+    //
+    // A captain who has worked three sites is carrying several authorities that disagree about who they work
+    // for, and holding them up used to be four presses producing four sentences of which one was worth
+    // reading. The fold is Core's (SatchelTry.OfferWallet, #683's ladder); everything here is the gesture.
+
+    /// <summary>#697 · Whether the wallet is open on the CARRIED page. Folded shut on every open
+    /// (<see cref="TheSatchelOpensOnThePocket"/>) — the cards are one row until the captain asks for them.</summary>
+    private bool _walletOpen;
+
+    /// <summary>#697 · What is in the wallet, which is Core's own grouping of the pocket and never a filter
+    /// written in the dialog: <see cref="Core.Satchel.CompartmentOf"/> is the law about which things are flat,
+    /// and a second answer here would drift the first time a kind changes compartment (#688).</summary>
+    private IReadOnlyList<Core.Satchel.Item> Wallet() =>
+        Core.Satchel.OfKind(_satchel, Core.Satchel.Kind.Authority);
+
+    /// <summary>#697 · Where the whole wallet can be offered at once: whatever the satchel is open AT, when
+    /// that thing reads authorities. The question is Core's — the same <see cref="SatchelTry.CanOffer"/> the
+    /// rows ask (#688) — so the folder can never carry a live offer at something the rows have gone inert
+    /// for.</summary>
+    private (SatchelTry.Target Target, string? Context, string Label)? WalletTarget() =>
+        _satchelTarget is { } at && SatchelTry.CanOffer(Core.Satchel.Kind.Authority, at.Target) ? at : null;
+
+    /// <summary>#697 · FAN THE WALLET AT THE READER. One press, every card, one line.
+    ///
+    /// <para>It performs no state transition of its own. A success ends through exactly the resolution a
+    /// single successful try ends through (<see cref="TheOfferIsAnswered"/>), because a hand-written copy of
+    /// that ending is this repo's first named bug class aimed at a state transition — and the day one of them
+    /// learns to spend something, the other will not.</para></summary>
+    private void TryTheWholeWallet()
+    {
+        if (WalletTarget() is not { } at)
+        {
+            return;
+        }
+
+        IReadOnlyList<Core.Satchel.Item> wallet = Wallet();
+        if (wallet.Count == 0)
+        {
+            return;
+        }
+
+        // No item is charged to the fan: a wallet's success has no single row to spend, and an authority is
+        // never consumed by being read anyway. Core has already decided which card answered.
+        TheOfferIsAnswered(SatchelTry.OfferWallet(wallet, at.Target, at.Context), null, at);
+    }
+
     /// <summary>#603 · Offer one carried thing to whatever the satchel is open at. The outcome is always
     /// SAID — a control that does nothing and says nothing is indistinguishable from a bug.</summary>
     private void TryItem(Core.Satchel.Item item)
@@ -2407,13 +3023,55 @@ public partial class Map
             return;
         }
 
-        SatchelTry.Outcome outcome = SatchelTry.Offer(item, at.Target, at.Context);
-        ShowPulseMessage(outcome.Line);
-
-        if (!outcome.Worked)
+        // ── #696 · DECIDING A PAPER IS A MAP TAKES THE SAME SECONDS AS PHOTOGRAPHING ONE ──
+        //
+        // Owner's ruling covers both halves of the detective loop in one sentence, and it has to: a game
+        // that charged for filing a document and handed the clue reading away free would be teaching the
+        // captain to read everything on the spot and file nothing, which is the exact behaviour the cost
+        // model exists to make a decision.
+        //
+        // The hold is started here and not inside TheOfferIsAnswered, because that method is the ENDING both
+        // presses share (#697) — putting a clock inside it would put a clock in front of a wallet fan too.
+        // Nothing else about the ending moves: the far end calls it with the same three arguments this line
+        // would have.
+        if (_surface is { } ex && item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
         {
+            BeginProcessing(ex, Core.Processing.Work.Read, item, WhereYouAreStanding(), at);
             return;
         }
+
+        TheOfferIsAnswered(SatchelTry.Offer(item, at.Target, at.Context), item, at);
+    }
+
+    /// <summary>#603 · What an offer DOES once it has an answer — the one ending both presses share.
+    ///
+    /// <para><paramref name="item"/> is the thing that was held up, or null when the whole wallet was fanned
+    /// (#697): a fan has no single row to charge, and the two consuming branches below can only ever fire for
+    /// a paper or a handful of rounds, neither of which is ever in a wallet. That is what makes "no double
+    /// effects" structural rather than a promise.</para></summary>
+    private void TheOfferIsAnswered(
+        SatchelTry.Outcome outcome,
+        Core.Satchel.Item? item,
+        (SatchelTry.Target Target, string? Context, string Label) at)
+    {
+        // ── #680 · THE ANSWER IS SAID WHERE THE PLAYER IS LOOKING ──
+        //
+        // Owner, live, in caps: "pressing Try IT on item produces a text that is IMPOSSIBLE to read" /
+        // "it is behind the blurring effect... so we don't tell the story."
+        //
+        // A refusal keeps the satchel open (#614 — a captain comparing three cards should not have to
+        // reopen their pockets), and this method used to pulse the line FIRST and branch after — so every
+        // refusal, the exact sentences #603's law exists for, played to the HUD under the backdrop's blur.
+        // The sim told the story; the z-order ate it. In the DOM is not on the screen (the owner's own
+        // formulation): the one layer the backdrop cannot blur is the dialog's own subtree, so a failed
+        // offer is stored for the dialog to say, and only a success — which closes the modal — pulses.
+        if (!outcome.Worked)
+        {
+            _satchelOutcome = outcome.Line;
+            return;
+        }
+
+        ShowPulseMessage(outcome.Line);
 
         // ── #603 · READING A PAPER NEVER SPENDS IT ──
         //
@@ -2428,15 +3086,15 @@ public partial class Map
         // So the document is always shown, in full, every time. The tracker gets plotted on the first read
         // and GrantLabLead no-ops on every one after, which is the honest shape: the knowledge is what is
         // one-shot, not the paper.
-        if (item.Kind == Core.Satchel.Kind.Paper && at.Target == SatchelTry.Target.Tracker)
+        if (item is { Kind: Core.Satchel.Kind.Paper } read && at.Target == SatchelTry.Target.Tracker)
         {
             _viewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id)).ToUpperInvariant()}",
+                $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(read.Id)).ToUpperInvariant()}",
                 "",
-                Core.FieldClue.Document(item.Id) + "\n\n" + outcome.Line);
+                Core.FieldClue.Document(read.Id) + "\n\n" + outcome.Line);
 
-            GrantLabLead(DiceRule.Seed($"clue:{item.Id}"));
+            GrantLabLead(DiceRule.Seed($"clue:{read.Id}"));
         }
 
         // ── #603 case 2 · THE ROUNDS GO IN, AND THE GUN REMEMBERS WHAT THEY WERE ──
@@ -2444,17 +3102,17 @@ public partial class Map
         // Six rounds is not a resupply, it is a decision — which gun, and with what. A sentry loaded with
         // the lab round clears a line with one shot and refuses anything already on top of it; one loaded
         // with issue ball does neither. Both facts have to live on the magazine, so the bot carries the kind.
-        if (item.Kind == Core.Satchel.Kind.Rounds && at.Target == SatchelTry.Target.DrySentry
+        if (item is { Kind: Core.Satchel.Kind.Rounds } fed && at.Target == SatchelTry.Target.DrySentry
             && _surface is { } loadEx)
         {
             SurfaceBot? gun = loadEx.Bots.FirstOrDefault(b => b.Deployed && b.Unit == at.Context);
             if (gun is not null)
             {
-                gun.Rounds += item.Count;
-                gun.AmmoId = item.Id;
-                _satchel = [.. Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count)];
+                gun.Rounds += fed.Count;
+                gun.AmmoId = fed.Id;
+                _satchel = [.. Core.Satchel.Remove(_satchel, fed.Kind, fed.Id, fed.Count)];
 
-                Core.Ammunition.Kind kind = Core.Ammunition.ById(item.Id);
+                Core.Ammunition.Kind kind = Core.Ammunition.ById(fed.Id);
                 if (kind.MinimumRangeDu > 0)
                 {
                     ShowPulseMessage(
@@ -2474,12 +3132,19 @@ public partial class Map
     /// key, most things are just a look, but a DOCUMENT can always be read as a clue, because the tracker is
     /// on the captain's arm and deciding a paper is a map is something they can do standing anywhere. That
     /// is the owner's own framing: the lead is not granted on pickup, it is granted when the player decides
-    /// the paper means something.</para></summary>
+    /// the paper means something.</para>
+    ///
+    /// <para>#688 · AT A DOOR, ONLY A KEY. Owner: <i>"Let's make a bigger story point about finding any kind
+    /// of key or keycard and only suggest those at doors. Or tools, but not just like some papers."</i> The
+    /// law is Core's (<see cref="SatchelTry.CanOffer"/>) and this is the one place that can route around it,
+    /// so it asks. Nothing about the REFUSALS changed — a captain holding three authorities still gets every
+    /// wrong-shaft and wrong-site reading #679 wrote. What stopped is the game dangling forty live offers at
+    /// a bulkhead to hide the one that mattered.</para></summary>
     private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(Core.Satchel.Item item)
     {
         if (_satchelTarget is { } at)
         {
-            return at;
+            return SatchelTry.CanOffer(item.Kind, at.Target) ? at : null;
         }
 
         // A document can always be read — the tracker is on the captain's arm.
@@ -2759,6 +3424,13 @@ public partial class Map
     private void ShowAndFile(string text, string glyph)
     {
         ShowPulseMessage(text);
+        FileNote(text, glyph);
+    }
+
+    /// <summary>#686 · The record half alone, for a line whose SAYING happens inside an open dialog — the
+    /// pulse would play under that dialog's blur, but the book must still remember.</summary>
+    private void FileNote(string text, string glyph)
+    {
         if (_surface is not { } ex || string.IsNullOrWhiteSpace(text))
         {
             return;
@@ -3018,6 +3690,7 @@ public partial class Map
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.
             ComposeHeadOfficeFloor(ex);
+            ComposeWhatYouLeft(ex);
             return;
         }
 
@@ -3026,6 +3699,7 @@ public partial class Map
             _deckPlan = WreckInterior.WreckDeck(
                 aboard, _wreckExamined, _wreckSalvaged, SurfaceDroidCount, FillSurfaceDroids,
                 HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
+            ComposeWhatYouLeft(ex);
             return;
         }
 
@@ -3058,6 +3732,67 @@ public partial class Map
         // revealed hidden door and — once forced — replay the appended lab region onto the freshly-built base.
         ComposeSecretLabSite(ex);
         ComposeOutpost(ex);          // #563: the hut — its dogged hatch, or the room once it is forced
+        ComposeWhatYouLeft(ex);      // #698: and whatever the captain themselves put down on this ground
+    }
+
+    /// <summary>
+    /// #698 · THE MARK FOR WHAT YOU PUT DOWN. Owner, on B12 of the clinic: <i>"I dropped 3 files on somebody
+    /// here but there was nothing marked onto the map?"</i>
+    ///
+    /// <para>Called on EVERY branch of the rebuild — the Hive's floors, a derelict's steel and the open
+    /// regolith — because a captain can set a thing down on any of them, and a marker that only worked on
+    /// the deck somebody happened to test is #691's flagged call shipped a second time.</para>
+    ///
+    /// <para>One mark per SPOT, from <see cref="LeftBehind.SpotsOn"/>, appended the way the hidden door and
+    /// the outpost hut are — so nothing about the three generators changes, and the A* audits that walk them
+    /// are untouched. It carries no walls, so it cannot block: the owner asked for scenery, and a mark you
+    /// can be pinned against is worse than no mark at all.</para>
+    /// </summary>
+    private void ComposeWhatYouLeft(SurfaceExcursion ex) =>
+        _deckPlan.AppendRegion(LeftMarks.Region(ex.Ground, ex.Floor));
+
+    /// <summary>
+    /// #681 · THE ONE DOOR THE CAPTAIN IS EVER PUT THROUGH. Owner, on a boot that pinned him inside a wall of
+    /// the deep site's compound: <i>"The second url put me into the wall... I cannot move."</i> — and, while
+    /// stuck there: <i>"Maybe some code to move the character either side instead of spawning it so it cannot
+    /// move?"</i>
+    ///
+    /// <para>Every place the sim <b>places</b> the captain rather than letting them walk — the landing, the
+    /// car coming back up, the tube mouth, the hull's airlock — goes through here. The deck is built first
+    /// (the walls have to exist before anything can ask about them), then the chosen square is handed to
+    /// <see cref="SpawnNudge"/>, and if it is inside collision the captain is walked out to the nearest square
+    /// that is not.</para>
+    ///
+    /// <para><b>And it says so.</b> A rescue that happened quietly is a bug that shipped quietly. The line
+    /// goes to the pulse AND to the excursion log, so a nudged spawn shows up in play and in a report — which
+    /// is the only thing that keeps this from becoming the place generator bugs go to be forgotten. The CI
+    /// ladder (<c>TheLandingPutsYouSomewhereYouCanWALKTests</c>) asserts the square BEFORE this runs, for
+    /// exactly the same reason.</para>
+    ///
+    /// <para>Past <see cref="SpawnNudge.MaxDu"/> it refuses to help and shouts instead. A site with no
+    /// standing room within six paces of its own spawn is built wrong, and papering that over would hand the
+    /// player a working-looking excursion on ground that is not.</para>
+    /// </summary>
+    /// <param name="where">What the sim was trying to do, in the captain's own words — it is what the loud
+    /// failure names, so "the shuttle sets you down at the lift head" beats "spawn".</param>
+    private void StandCaptainAt(double x, double y, string where)
+    {
+        (_avatarX, _avatarY) = (x, y);
+        RebuildSurfaceDeck();
+
+        SpawnNudge.Result spot = SpawnNudge.Clear(x, y, DeckPlan.AvatarRadius, _deckPlan.CollisionField);
+        if (spot.Failed)
+        {
+            ShowAndFile(SpawnNudge.BrokenGroundLine(where), "⚠");
+            return;
+        }
+        if (!spot.Moved)
+        {
+            return;
+        }
+
+        (_avatarX, _avatarY) = (spot.X, spot.Y);
+        ShowAndFile(SpawnNudge.ClearedLine(spot.MovedDu), "🧤");
     }
 
     // ✗ marks the REAL spot (playtest bug #5): a free-form bury recorded the actual dug coords, so the
@@ -3589,8 +4324,8 @@ public partial class Map
         // vacuum next to the ship they came to search. She keeps her own spawn, just inside her airlock.
         if (_surface is { } landed && Derelict.TryParseWreckId(landed.Stop.Body.Id, out _))
         {
-            (_avatarX, _avatarY) = (WreckInterior.SpawnX, WreckInterior.SpawnY);
-            RebuildSurfaceDeck();
+            StandCaptainAt(WreckInterior.SpawnX, WreckInterior.SpawnY,
+                "the boarding tube lets you out into her airlock");
             return;
         }
 
@@ -3612,16 +4347,20 @@ public partial class Map
         // can never quietly become how the game plays.
         if (_secretLabForceBodyId == landedOn.Stop.Body.Id && landedOn.Lab is { HasLab: true })
         {
-            (double hx, double hy) = SecretLab.HeadSpot(
-                landedOn.Stop.Body.Id, landedOn.Site.LayoutSalt, MoonSurface.ExpeditionField());
-
             // A pace outside the shed's door, facing it — not inside, so the walk in is still walked and the
             // door, the label and the console are all exercised the way a player meets them.
-            _avatarX = hx;
-            _avatarY = hy - 7.5;
-            RebuildSurfaceDeck();
+            //
+            // #681 · ASKED OF THE SHED. This used to take the head spot and subtract 7.5 from its Y, which was
+            // a pace clear of the door back when the head was a hand-typed 10 x 8 box — and was the far wall
+            // the moment #606 made it an ordinary hut with a seeded angle. The owner landed inside it:
+            // "The second url put me into the wall... I cannot move." One building, one answer, and the
+            // landing reads it the same way the returning car reads CarFloor.
+            (double hx, double hy) = MoonSurface.LiftHead(
+                landedOn.Stop.Body.Id, landedOn.Site.LayoutSalt, MoonSurface.ExpeditionField()).DoorStep;
+
             ShowPulseMessage(
                 "🧪 DEV ?secretlab=1: set down at the lift head. The shed is in front of you.");
+            StandCaptainAt(hx, hy, "the shuttle sets you down on the lift head's doorstep");
 
             // ...and ?floor=N goes the rest of the way down, because half the open work on this feature is
             // about what a FLOOR looks like rather than about finding the way in.
@@ -3645,9 +4384,13 @@ public partial class Map
             return;
         }
 
-        _avatarX = MoonSurface.SpawnX;
-        _avatarY = MoonSurface.LandingBandY - 12;
-        RebuildSurfaceDeck();
+        // #681 · Asked of the field, not retyped. "SpawnX, LandingBandY − 12" was a spot nothing had ever
+        // reserved, so the generator built a hut through it on two sites and the drop came down inside a wall
+        // — the ordinary landing's version of the same bug the lift head had. SurfaceLayout.LandingApproach
+        // is now the ONE answer: this reads it to know where to drop, and the claim ledger reads it to know
+        // what to keep clear.
+        (double dropX, double dropY, _) = SurfaceLayout.LandingApproach(MoonSurface.ExpeditionField());
+        StandCaptainAt(dropX, dropY, "the shuttle sets you down on the open regolith below the pad");
     }
 
     // #458: how many Old Ones /map?reevers=N asks for on the first landing. 0 = the cheat is off. They are
@@ -3693,6 +4436,11 @@ public partial class Map
         StepSuitAir(dtRealSeconds);     // #564: the tank, the line, and the walk home
         StepTubeRearm(dtRealSeconds);   // #562: the ship feeds your sentries while you stand in her tube
         StepDigChannel(dtRealSeconds);
+        // #696 · The darkroom hold, AFTER the tank. Order matters and it is this way round on purpose: the
+        // air for this tick is charged on whatever ground the captain is standing on before the hold is
+        // allowed to notice the tick at all, so a hold can never finish a frame "for free" and the alarm
+        // that breaks a hold has already fired by the time the bar is asked to fill.
+        StepProcessing(dtRealSeconds);
         AdvanceVacuumClocks(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: the vacuum soak
         AdvancePump(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #488: the thrifty road
         ServeStandingPumpOrder();                                                   // #488: …and the corridor last
@@ -5474,6 +6222,13 @@ public partial class Map
             }
             r.LastSwingMs = nowMs;
 
+            // #696 · SOMETHING GOT A HAND ON YOU, AND THE EXPOSURE IS GONE. Placed before the block roll on
+            // purpose: being REACHED is what ends the hold, not being hurt by it. A captain who turns a blow
+            // aside has still had somebody's arm come through the space they were photographing into, and a
+            // darkroom that survived that would be telling them the ground is safer than it is — which is
+            // the whole thing the twenty seconds were bought to say.
+            ProcessingIsInterrupted(Core.Processing.Interruption.Reached);
+
             // The die, seeded off this contact and its swing count so a long fight never repeats itself.
             r.Swings++;
             ulong seed = DiceRule.Seed(r.JitterSeed, $"swing:{r.Swings}");
@@ -5582,6 +6337,15 @@ public partial class Map
         // narrated as nothing is indistinguishable from an escape that never happened. The heat is untouched:
         // outwalking a writ is not settling one, and they know the ship and they will know the next port.
         bool outwalkedTheWrit = ex.CollectorsLanded && _busted is null;
+
+        // #696 · A HOLD THAT THE SHUTTLE ENDS IS STILL AN INTERRUPTION, AND IT IS SAID. Nothing to undo —
+        // the sleeve was never emptied and the book was never written in — but a captain who lifted off in
+        // the middle of photographing a file has to be told the file is still in their pocket and still
+        // unread, or the first thing they do at the desk is look for a gist that was never filed.
+        //
+        // Only here, and deliberately not on the death paths that also clear _surface: a captain being
+        // narrated through the four-stage freeze does not need a line about their paperwork.
+        ProcessingIsInterrupted(Core.Processing.Interruption.LiftedOff);
 
         _surface = null;
         // #612: the next landing works its own air out from scratch, so no crossing line is ever inherited
@@ -6129,16 +6893,19 @@ public partial class Map
 
         return new DeckView.SurfaceHud(
             TrackerCaptions: BuildTrackerCaptions(ex, _hudMarks.Count),
-            // #371 Phase 3 / #562: the one progress bar serves every slow thing — a dig, a forced door, or
-            // the tube racking a magazine. The rearm is last because it is the only one that can be running
-            // while the captain is somewhere the others cannot happen (inside the tube), so it can never
-            // actually contend; ordering it here just keeps the two hands-on channels reading first.
+            // #371 Phase 3 / #562 / #696: the one progress bar serves every slow thing — a dig, a forced
+            // door, a document being photographed, or the tube racking a magazine. The rearm is last because
+            // it is the only one that can be running while the captain is somewhere the others cannot happen
+            // (inside the tube), so it can never actually contend; ordering it here keeps the hands-on
+            // channels reading first.
             DigProgress: ex.Channel?.Progress ?? ex.DoorChannel?.Progress
-                ?? (ex.RearmBotIndex is not null ? ex.RearmProgress : -1),
+                ?? (ex.Processing is { } paper
+                    ? Core.Processing.Fraction(paper.Elapsed, ProcessingSeconds)
+                    : ex.RearmBotIndex is not null ? ex.RearmProgress : -1),
             // #562: and it says which. A shovel over a magazine being racked would be exactly the class of
             // lie this lane exists to fix; the rearm is the ship HELPING you, so it reads cold-green.
-            ChannelGlyph: ex.RearmBotIndex is not null && ex.Channel is null && ex.DoorChannel is null ? "🔫" : "⛏",
-            ChannelIsAid: ex.RearmBotIndex is not null && ex.Channel is null && ex.DoorChannel is null,
+            ChannelGlyph: SurfaceChannelGlyph(ex),
+            ChannelIsAid: SurfaceChannelIsAid(ex),
             HasDroppedChest: ex.ChestDropped, DropX: ex.DropX, DropY: ex.DropY,
             Blips: _hudBlips,
             Cadence: (int)MotionTracker.CadenceFor(nearest),
@@ -6201,6 +6968,16 @@ public partial class Map
     // you stand" is the rule and nothing on screen ever said so: out on the open regolith, past the pad.
     private string? BuildStandingPrompt(SurfaceExcursion ex)
     {
+        // #696 · A HOLD OUTRANKS THE CHEST. For the seconds it runs, the one thing on the screen that can
+        // still be decided is whether the captain keeps their boots where they are — and the prompt says the
+        // clock, because "hold position" without a number is an instruction to wait for an unknown length of
+        // time while something walks towards you.
+        if (ex.Processing is { } paper)
+        {
+            return $"{Core.Processing.Glyph} PROCESSING — hold position " +
+                $"({Core.Processing.SecondsLeft(paper.Elapsed, ProcessingSeconds):F0} s). Step away and it is lost.";
+        }
+
         if (!ex.Carrying)
         {
             return null; // nothing owed — the ground goes quiet again
@@ -6209,6 +6986,22 @@ public partial class Map
             ? "⛏ CARRYING THE CHEST — press E to BURY IT HERE"
             : "⛏ CARRYING THE CHEST — walk out onto the regolith, then E to bury it";
     }
+
+    /// <summary>#562 + #696 · WHICH slow thing the one bar is showing. A ladder rather than four inline
+    /// conditions at the call site, because the glyph, the tint and the PROGRESS all have to pick the same
+    /// winner — and three copies of one precedence order is the shape that drifts.</summary>
+    private static string SurfaceChannelGlyph(SurfaceExcursion ex) =>
+        ex.Channel is not null || ex.DoorChannel is not null ? "⛏"
+        : ex.Processing is not null ? Core.Processing.Glyph
+        : ex.RearmBotIndex is not null ? "🔫"
+        : "⛏";
+
+    /// <summary>#562 · Is the bar the ship HELPING you (cold green) or you exposing yourself (warning
+    /// amber)? Only the rearm is help. The darkroom is emphatically not: standing still in the open for
+    /// twenty seconds is the cost the whole mechanic is made of, and a soothing colour over it would be the
+    /// picture arguing with the sim.</summary>
+    private static bool SurfaceChannelIsAid(SurfaceExcursion ex) =>
+        ex.Channel is null && ex.DoorChannel is null && ex.Processing is null && ex.RearmBotIndex is not null;
 
     // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
     // the sling it spells out [T] deploy, and a chest in hand spells [G] drop. Affordances never hide.
@@ -6220,7 +7013,14 @@ public partial class Map
         // pressing T at a map that showed him nothing. Affordances never hide (#212).
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
-            var aboard = new List<string> { "WASD — move", "E — examine / take" };
+            var aboard = new List<string>
+            {
+                "WASD — move",
+                // #698 · What [E] will actually do, and the ground wins. The recovery runs ahead of console
+                // dispatch (#691), so standing in the ring with "E — examine / take" on the bar is the bar
+                // describing a press it is not going to get.
+                StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt : "E — examine / take",
+            };
 
             // #538 · the sentry remote lives on the HUD, and it never hides: an affordance you cannot see is an
             // affordance you do not have (#212), and this is the one whose absence gets a captain shot.
@@ -6260,7 +7060,19 @@ public partial class Map
         // generic at the one moment it should shout — with the chest in your hands (owner, 2026-07-26: "the
         // press T to bury treasure is not advertised clearly enough on surface… It is the key to survival
         // there", having misremembered the key himself). Carrying → the bar says BURY, in the imperative.
-        var parts = new List<string> { "WASD — move", ex.Carrying ? "⛏ E — BURY THE CHEST HERE" : "E — dig / use" };
+        // #698 · AND WHAT YOU PUT DOWN OUTRANKS BOTH OF THEM. Owner, on B12 of the clinic: "I dropped 3
+        // files on somebody here but there was nothing marked onto the map?" — the deck now carries the
+        // mark, and this is the other half: [E] answers your feet before it answers the walls (#691), so
+        // inside the recovery ring the press is the pickup, whatever else the captain is holding. A bar
+        // that promised BURY THE CHEST while the key handed back a folder would be the sim doing one thing
+        // and a sentence reporting another, which is a bug class this repo has named.
+        var parts = new List<string>
+        {
+            "WASD — move",
+            StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
+                : ex.Carrying ? "⛏ E — BURY THE CHEST HERE"
+                : "E — dig / use",
+        };
         bool carryingBot = ex.Bots.Any(b => !b.Deployed);
         bool deployedUnderfoot = ex.Bots.Any(b => b.Deployed &&
             ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))

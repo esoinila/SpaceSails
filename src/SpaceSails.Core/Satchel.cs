@@ -107,12 +107,120 @@ public static class Satchel
         }
     }
 
-    /// <summary>#603 · IT IS A POCKET, NOT A WAREHOUSE. Capped so what is in it stays legible at a glance —
-    /// the moment it needs sorting it has stopped being a satchel and become inventory management, which is
-    /// a different game and not this one.
+    // ── #688 · THE SATCHEL HAS COMPARTMENTS, AND ONLY TWO OF THEM CAN FILL ──────────────────────────────
+    //
+    // Owner, live on the deep site: "Oh I run out of space in the inventory. How do I get Bigger pockets ...
+    // lol... I find the good keycard but my pockets are full and I can not pocket it." And seconds later:
+    // "I think bigger pockets for little papers."
+    //
+    // One number used to govern everything a captain could carry, and it was a number chosen for BULK. A
+    // card is flat. A sheet of paper is flat. Twelve is right for rounds, crates and relic paperwork, and it
+    // was quietly deciding that the best find in the game — the countersigned authority for the shaft under
+    // your feet — could be refused because you were already carrying eleven shipping manifests.
+    //
+    // Nothing here loosens the design #603 was built on. It is still a pocket and not a warehouse; what is
+    // in it is still legible at a glance; the pressure that makes "leave it here" a real decision is still
+    // there, sitting on the things that actually take up room.
+
+    /// <summary>Which part of the satchel a thing rides in. The compartment, not the kind, decides what it
+    /// costs to carry — because what costs a captain room is BULK, and a card and a manifest have none.</summary>
+    public enum Compartment
+    {
+        /// <summary>The wallet. Flat, thin, and never full: an authority always goes in.</summary>
+        Wallet,
+
+        /// <summary>The document sleeve — paper and files, both of them paper in the hand.</summary>
+        Sleeve,
+
+        /// <summary>The pockets proper: rounds, relic paperwork, and whatever bulky thing comes next.</summary>
+        Pocket,
+    }
+
+    /// <summary>#603 · IT IS A POCKET, NOT A WAREHOUSE. Twelve bulky things, and it keeps every one of its
+    /// teeth — this is the cap the whole "something has to be read, spent or left behind" pressure rests on.
     ///
     /// <para>Stacks do not count against it: six rounds are one thing you are carrying.</para></summary>
-    public const int Capacity = 12;
+    public const int PocketCapacity = 12;
+
+    /// <summary>#688 · The document sleeve. Owner: <i>"I think bigger pockets for little papers."</i> Paper is
+    /// the thing this game hands out most and the thing that weighs least, and twenty-four sheets is still a
+    /// number — a sleeve you never have to think about would have stopped being a sleeve.</summary>
+    public const int SleeveCapacity = 24;
+
+    /// <summary>Where a kind rides. Appending a new <see cref="Kind"/> puts it in the bulky pocket unless it
+    /// is explicitly listed, which is the safe default: a new thing costs room until somebody decides it is
+    /// flat.</summary>
+    public static Compartment CompartmentOf(Kind kind) => kind switch
+    {
+        Kind.Authority => Compartment.Wallet,
+        Kind.Paper or Kind.Dirt => Compartment.Sleeve,
+        _ => Compartment.Pocket,
+    };
+
+    /// <summary>How much a compartment holds. The wallet's answer is "as many as you find", stated as a
+    /// number so every caller can do the same arithmetic and none of them needs a special case.</summary>
+    public static int CapacityOf(Compartment where) => where switch
+    {
+        Compartment.Wallet => int.MaxValue,
+        Compartment.Sleeve => SleeveCapacity,
+        _ => PocketCapacity,
+    };
+
+    /// <summary>How many distinct things are in one compartment right now.</summary>
+    public static int Used(IReadOnlyList<Item>? carried, Compartment where)
+    {
+        int n = 0;
+        foreach (Item i in carried ?? [])
+        {
+            if (CompartmentOf(i.Kind) == where)
+            {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /// <summary>Room left in one compartment. Never negative — a save written by an older build could be
+    /// over a cap this one lowered, and "minus three spaces" is not a sentence.</summary>
+    public static int SpaceLeft(IReadOnlyList<Item>? carried, Compartment where) =>
+        where == Compartment.Wallet
+            ? int.MaxValue
+            : Math.Max(0, CapacityOf(where) - Used(carried, where));
+
+    /// <summary>Is the part of the satchel this KIND rides in too full to take one more distinct thing?
+    ///
+    /// <para>#688 · It takes a kind now, and it has to: after the restructure "is the satchel full" has no
+    /// answer. A pocket crammed with twelve pallets of relic paperwork is full for a round and empty for a
+    /// manifest, and it is never full for a card.</para></summary>
+    public static bool IsFull(IReadOnlyList<Item>? carried, Kind kind) =>
+        SpaceLeft(carried, CompartmentOf(kind)) <= 0;
+
+    /// <summary>#688 · What the satchel says about its own room, naming what it counts.
+    ///
+    /// <para>The old subtitle said <i>"N spaces left"</i> from one subtraction, and after the restructure that
+    /// number does not exist: what is left depends on what you are about to pick up. A single figure standing
+    /// for three compartments would be this repo's third named bug class in a subtitle — the sim doing one
+    /// thing while a sentence reports another.</para></summary>
+    public static string SpaceLine(IReadOnlyList<Item>? carried)
+    {
+        int sleeve = SpaceLeft(carried, Compartment.Sleeve);
+        int pocket = SpaceLeft(carried, Compartment.Pocket);
+
+        string papers = sleeve switch
+        {
+            0 => "The paper sleeve is full",
+            1 => "Room for one more sheet in the paper sleeve",
+            _ => $"Room for {sleeve} more sheets in the paper sleeve",
+        };
+        string bulk = pocket switch
+        {
+            0 => "the pockets will not take another thing",
+            1 => "one space left in the pockets",
+            _ => $"{pocket} spaces left in the pockets",
+        };
+
+        return $"{papers}, {bulk}. The wallet is flat and never fills — a card always goes in.";
+    }
 
     /// <summary>Put something in. Stacking things merge; the pocket refuses politely when it is full, and
     /// the caller is expected to say so rather than swallow it.</summary>
@@ -134,17 +242,46 @@ public static class Satchel
             return list;
         }
 
-        if (list.Count >= Capacity)
+        if (IsFull(list, item.Kind))
         {
-            return list;   // full. The caller says so; silently dropping a find would be the worse bug.
+            // Full — the compartment THIS thing rides in, which is the only one that has any say. The caller
+            // says so; silently dropping a find would be the worse bug.
+            return list;
         }
 
         list.Add(item);
         return list;
     }
 
-    /// <summary>Is the pocket too full to take one more distinct thing?</summary>
-    public static bool IsFull(IReadOnlyList<Item>? carried) => (carried?.Count ?? 0) >= Capacity;
+    /// <summary>#678 · WOULD THIS ONE GO IN? Asked BEFORE the room is turned over, because the answer decides
+    /// whether the find is consumed at all.
+    ///
+    /// <para><see cref="Add"/> refuses politely and says so in a comment — <i>"the caller is expected to say
+    /// so"</i> — and for a year no caller did: the Hive's haul path printed <i>"Into your pocket: an
+    /// authority card"</i>, then called <c>Add</c>, then dropped the result on the floor at capacity with the
+    /// room already marked emptied. The sentence claimed a possession the sim never granted, and the find was
+    /// destroyed. Owner: <i>"If refused the item should stay where it was investigated last — not disappear
+    /// like they do now, or seem to."</i></para>
+    ///
+    /// <para>It is not merely <c>!IsFull</c>: something you are ALREADY carrying always goes in, because
+    /// <see cref="Add"/> merges it into the row that is already there and a full pocket is no obstacle to
+    /// six more rounds of the kind you have. One law, so a caller can never ask the cheap question and get
+    /// the expensive answer wrong.</para>
+    ///
+    /// <para>#688 · And an AUTHORITY always goes in, full stop. The owner's exact heartbreak — <i>"I find the
+    /// good keycard but my pockets are full and I can not pocket it"</i> — is not a difficulty, it is the game
+    /// throwing away its own best find because of an arithmetic that was never about cards.</para></summary>
+    public static bool CanTake(IReadOnlyList<Item>? carried, Item item)
+    {
+        if (item.Count < 1 || item.Id.Length == 0)
+        {
+            return false;   // Add would refuse this outright, so nothing was ever going to enter the pocket.
+        }
+
+        return !IsFull(carried, item.Kind)
+            || (carried ?? []).Any(i => i.Kind == item.Kind
+                && string.Equals(i.Id, item.Id, StringComparison.Ordinal));
+    }
 
     /// <summary>Only rounds stack. A second copy of somebody's file is still one file to you.</summary>
     public static bool Stacks(Kind kind) => kind == Kind.Rounds;

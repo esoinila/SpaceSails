@@ -150,9 +150,14 @@ public partial class Map
                 // #603 · THE SATCHEL. Owner: "the I key should be advertised in the hud also like we do now
                 // for the other keys." Opened from nowhere in particular it is just a look at what you are
                 // carrying; opened from a locked door it is a list of things to TRY.
+                //
+                // #688 · And it SHUTS with the same key. Owner: "If I press I when inventory is open, let's
+                // close it then." One line of feel, and the kind that is invisible until you are in a
+                // corridor with a pack coming and the pocket you opened by reflex will not go away by the
+                // same reflex.
                 if (_surface is not null)
                 {
-                    OpenSatchel();
+                    ToggleSatchel();
                 }
                 return true;
             case "h" or "H":
@@ -264,6 +269,20 @@ public partial class Map
 
     private void InteractAtConsole()
     {
+        // ── #688 · WHAT IS AT YOUR FEET IS ANSWERED BEFORE WHAT IS IN THE WALLS ──
+        //
+        // Owner: "no way to drop stuff." The satchel can now put a thing down, and #615's law says leaving
+        // must never destroy — so there has to be a way back, and E is the verb that finds things.
+        //
+        // It sits AHEAD of the console dispatch rather than inside the two search verbs, because a captain
+        // who set a relic down while standing on a room console would otherwise be standing on top of their
+        // own possession with no way to reach it. One press deals with the ground; the next one is the
+        // console's, exactly as before.
+        if (TryPickUpWhatYouLeft())
+        {
+            return;
+        }
+
         switch (_deckPlan.NearestConsole(_avatarX, _avatarY))
         {
             case DeckPlan.ConsoleKind.None:

@@ -27,6 +27,9 @@ Every expensive bug on this ground had one shape: **two sources of truth for one
 | A test pinning what I wrote, not what shipped | Green tests over a death card nobody could reach |
 | One source, consumed **out of order** (#587) | A wall-builder's cursor walked backwards and sealed the two mouths it was opening — rooms drawn and unreachable on 35 floors |
 | **A guard handed the wrong world, or a threshold that selects everything** | Three independent instances in one afternoon (2026-08-02) — see below |
+| A sentence composed **before** the act it describes (#678) | The pickup line was printed, the room was struck off, and only then was the satchel asked — so a full pocket ate the find and had already claimed it. The same shape as *the sim vs the sentence*, with an ORDER at the bottom of it |
+| An offset describing a building that had since been **rebuilt** (#681) | `?secretlab=…&land=1` set the captain down 7.5 du below the lift head's middle — a pace clear of the door while the head was a 10 × 8 box, and the far wall the moment #606 made it a rotated hut. *"I cannot move."* On 30 of the 34 site × cheat combinations in the sweep |
+| A square the sim **places** you on that no ledger had ever claimed (#681) | Every other thing on the ground kept a claim; the captain's own landing spot had none, so a seeded hut was built straight through it on two sites |
 
 ### The fifth class: a green test that asserts nothing
 
@@ -166,6 +169,47 @@ axis-aligned-only fix would pass a lazy test and still let a pack in through eve
 
 3.8 **A shelter's promise must be true on the map.** Every spec the tracker points at is built at that spot,
 with walls, a door, a rack and a locker, and a centre that counts as inside.
+
+3.9 **And the tank prices the paperwork, because the tank prices TIME** (#696). Owner, mid-run, designing the
+detective loop's cost model:
+
+> *"How is our detective notebook / picture taking progressing for our ability to process the files etc so we
+> don't need carry them. That is something one would do without using tanked air. It is good game mechanic...
+> we take time to process the loot."*
+
+Processing a find — photographing a document so the sheet can be left, deciding a paper is a map — is
+**twenty seconds of standing still** (§13.9). The whole cost model follows from that one sentence and
+**nothing computes it**:
+
+| where you process it | what it costs |
+| --- | --- |
+| out on the regolith, or on a dead floor | the seconds, and the tank for every one of them (~16 s of air per sheet — held position is the cheapest breathing there is, `Breathing.Still`) |
+| inside a shelter, inside a #608 refuge, on a floor that still holds pressure | only the seconds. The drain is already off there |
+| standing in her tube | only the seconds, and the tank is filling anyway |
+
+The issue's fourth venue — *"aboard ship: the natural place to clear a satchel after an excursion"* — is
+**not** in v1, and this says so rather than implying it. The satchel is an excursion surface: `I` opens it
+only while `_surface` is live, so there is no ship-side pocket to clear one from and nothing here invents a
+ship UI to make the table look complete. What the captain actually has is her tube — walk back into it with a
+full sleeve and every sheet processes free — plus every shelter, refuge and pressurised floor on the ground.
+A satchel at a desk is an owner call, not something to sneak in under a feel pass.
+
+That table is not implemented anywhere. `SuitAir.SourceOf` has answered *where the air comes from* on four
+kinds of ground since #612, the drain is gated on its answer, and the hold does nothing but let sim time pass
+— so the decision *read it here or haul it back to something pressurised* is emergent, and the two systems
+are kept **deaf to each other by guard**: `Processing.cs` may not name the suit, and `SuitAir.cs` may not name
+processing. The second half matters as much as the first: the walk-back arithmetic is the one number a captain
+plans their life around, and it must never acquire an opinion about their filing habits.
+
+**This is the first reason to visit a shelter when you are not dying.** It never had one. It was a place you
+crawled to; it is a field darkroom now, and a captain who works a site properly comes back to it on purpose.
+
+**An air warning fired mid-hold BREAKS the hold**, loudly, and says so. §3.2's rule — air is never a silent
+timer that kills you — has an obvious failure mode the moment the game can ask a captain to stand still for
+twenty seconds: a crossing line playing behind a progress bar the captain is watching fill is that silent
+timer wearing a costume. Each threshold is one-shot per walk, so it is a **beat and not a lockout** — the next
+press starts the same hold again, and finishing a manifest on the reserve is a decision the captain is allowed
+to take.
 
 ## 4 · What is out there
 
@@ -550,6 +594,55 @@ somebody still waiting for news, and sometimes what they know.
 12.4 **A dossier never joins the dots.** It may show a continuity researcher shaking hands with a ministry
 delegation. It may not explain. *(Enforced: the prose is grepped.)*
 
+12.5 **The book is readable on foot, standing where it was written** (#690). Owner, mid-run, designing the
+paper-shedding loop: *"should we have notes / clues section in our inventory ui?"* — and, on the register the
+tab is written in: *"it's like our detective notepad :-D"*.
+
+The book rendered in the Captain's ledger and nowhere else — a ship-brain surface, reached by flying home. On
+foot at a sealed door the captain could not consult their own notes. §13.9's leave verb turned that from an
+inconvenience into a cost: leaving a paper **files its gist to the book**, so knowledge was being deliberately
+moved into a place unreachable from the ground it came off. Record the essential data, throw out the paper, and
+be able to read the record standing in the dark.
+
+The satchel has a second page: **🎒 CARRIED | 📓 NOTES**. A pocket and a notebook are both things a satchel
+holds, so it is the satchel's own frame and not a second modal stacked on the door pop-up.
+
+- **One store, and it is the book.** The page reads `_fieldNotes` through the ledger's own Core projections
+  (`FieldNotes.PerPlace`, and `FieldNotes.Here` for one ground). 12.1's law is what makes the book worth
+  reading, and a tab keeping its own copy — *"the notes this excursion filed"* — is the second store this repo
+  has already paid for once. *(Enforced by grep: exactly one collection of `FieldNote` exists in the whole
+  client, and it is `_fieldNotes`.)*
+- **This ground first, every ground one tap deeper.** At a door the captain wants what THIS building has told
+  them, not the memoirs. The filter names the ground through `FieldNotes.PlaceLabel` — the same function that
+  *wrote* those labels — and never re-derives the format, or the tab would match today and drift the first
+  time a place is renamed.
+- **Read-only.** The satchel holds the book open; it does not hold a pen. Capping, de-duplication and
+  persistence are the book's own laws (12.1), and a second set of rules for the same pages is how they stop
+  being true.
+- **Every open lands on CARRIED, on this ground.** The pocket is the primary tool — [I] is pressed by reflex to
+  see what you are holding, and a dialog that remembered you were last reading notes would answer a question
+  nobody asked. Opening **at a door** lands on CARRIED too, with the offer flow exactly as §13.9 left it; the
+  notebook is one tap away, which is the entire point of it being there.
+- **Everything it says renders inside the dialog's own layer** (#680/#686), from birth rather than after a
+  playtest.
+
+**The register is a casebook, not a quest log** — and the empty states are where a tab like this either holds
+its voice or turns into a checklist. Standing somewhere the book has not been opened: *"Nothing filed for this
+ground. Either you have not searched it, or it had nothing to say — the book does not know which, and neither
+do you."* With no notes anywhere: *"The book is blank. It fills the way everything out here fills — one room at
+a time, and only the ones you turn over."* And the this-ground header, which says what the page is and declines
+to be more: *"— what was found here, latest first. The book keeps it. It keeps no opinion about it."* Places,
+facts, and the space between them left to the captain: 12.4 one surface further down.
+
+*(Enforced: `TheBookOpensWhereYouAreStandingTests` in Core — `Here` agrees with `PerPlace` ground for ground,
+orders newest-first, and matches a place as the book WROTE it rather than nearly. `TheNotebookIsInTheSatchelTests`
+in the client for the six source shapes: the second page reading the one book, the book read-only from the
+dialog, the one-store grep, the label the filter is built from, both openers landing on the pocket, and the
+in-dialog saying. Watched go RED against the #688 build, 5 of 6. The sixth is the one-store grep, which pins a
+law that was already true — it was watched go red against a second `List<Core.FieldNote>` transcribed into
+`Map.Surface.cs`. Core went 2 of 4 against a `Here` that read the log itself in written order; the other two
+describe brand-new API and could not be red, which is said here rather than dressed up.)*
+
 ## 13 · The Hive — the ground under the ground
 
 A clandestine underground facility under a landing site, reached by a camouflaged lift head on the surface
@@ -597,7 +690,27 @@ one line (#590):
 - **Never a code the player types.** You have the card or you do not. A keypad would be out of register with
   everything around it.
 - **The refusal always says why**, and names what you *are* carrying if it is the wrong card. A gate that
-  just sits there is indistinguishable from a bug — this ground has shipped that mistake before.
+  just sits there is indistinguishable from a bug — this ground has shipped that mistake before. Since #679 it
+  also says *which kind of wrong*: another shaft of this site, or another site entirely, each named (§13.10).
+
+**And the ACCEPTANCE says why too, in both directions in time** (#689). Owner, having played the whole loop
+on a deep site — found the card, fed the gate, rode past the floor the building admits to: *"It was locked
+until I got it ... there was no story point about it being needed or used. Let's tell that story somehow more
+clearly that it was used in the elevator."* Both halves were written and neither was legible, so by his
+ruling:
+
+- **Before the ride, the row names the card.** With the right paper in the wallet the gated row stops saying
+  `🔒 sealed` and says `🎫 opens for you`, with the card's own title under it and *the gate will read it*.
+  The positive twin of the refusal, decided in Core (`LiftStop.OpenedBy`) so the panel can never promise a
+  reading the gate will not give. Never at the head office, which has no gate to promise anything (#411).
+- **After it, the gate answers on ARRIVAL.** The accepted line used to be said on the frame the panel closes
+  and the floor is torn down and rebuilt — the one instant in the loop when nobody is reading the HUD, which
+  is why the owner never saw it. It is now said when the doors open on the new floor, and said **last** of
+  the arrival's lines, because the pulse has one slot and the routine air line was eating it.
+- **Which gate a ride crosses is a fact about the STOP**, not about the floor the press came from
+  (`GateOpenedByRidingTo` asks the panel rather than doing arithmetic on the captain's own floor). The old
+  derivation never looked at a card at all, and so had the head office — whose gate is deliberately absent —
+  narrating a countersignature nobody was carrying.
 
 A card is a **possession**, so it rides in the vault (`AuthoritiesSection`), not on the excursion: found
 eleven floors under a moon, still in the pocket a month and a world later. The save carries the id and
@@ -710,6 +823,260 @@ Consequences worth keeping:
 pocket rests on — every site has a band 0, so a Key found at the bottom of one always has somewhere to point,
 and a Key room issues a card exactly when there is a shaft below it and never otherwise.)*
 
+**And the pocket never lies about itself** (#678). The rule above — *a card is an object, you picked it up, so
+you have it* — held for the card and was never enforced for the SENTENCE. A live playtest four days later found
+both of its residual halves in one afternoon, and they are the same fault:
+
+| the captain saw | what was actually wrong |
+| --- | --- |
+| *"picked up an identity card"*, then a satchel with two papers and no card | on the bottom band the client's far-site fallback can come up empty, and `KeyLine` narrated *"an authority card, countersigned twice and still active"* anyway. Nothing was minted. The room was consumed |
+| nothing at all — the worst version | at the cap `Satchel.Add` refuses (twelve of anything, back then — see the compartments below), and the *"Into your pocket"* line was composed and shown **before** it ran. A full pocket ate the find and had already claimed it |
+
+> **A pickup line may only be printed for something that actually went in. What the pocket cannot take is not
+> consumed — the find stays in the room, and searching it again offers it again.**
+
+The second sentence is the owner's, near enough verbatim: *"If refused the item should stay where it was
+investigated last — not disappear like they do now, or seem to."* It is the enforcement side of #615 (leave
+must not destroy), and it is why the room key is now struck off **after** the pickup resolves rather than by
+the act of looking.
+
+- **The composition moved to Core.** `UndergroundComplex.WhatGoesInThePocket` answers all three questions in
+  one call — what goes in, what is said, whether the room is emptied at all — because the bug was never in any
+  one of those answers, it was in the ORDER four scattered client statements produced them. The client has one
+  `Satchel.Add` now, and it adds the thing the sentence was written about.
+- **`Satchel.CanTake` is asked before the room is turned over**, and it is not `!IsFull`: something already in
+  the pocket merges into the row that is there, so a full satchel still takes six more of a round you carry.
+- **A Key room that minted nothing describes no card.** It pays as an ordinary room does — a counterfoil book,
+  a punch, a lanyard with an empty window — and never once says the captain is holding an authority.
+
+*(Enforced: `ThePocketNeverLiesTests` — every haul × every card shape (own site / another site / none) × an
+empty pocket and a full one, over every floor of ten real sites, with the sweep asserting it actually covered a
+bottom band, an unlisted band and a middle band. The claim is checked against the **real satchel**: a line that
+mentions the pocket must survive `Satchel.Add` actually taking the item, because the broken build was perfectly
+self-consistent — it announced the card, handed it to a satchel that refused it, and struck the room off
+anyway. Watched go RED against today's behaviour transcribed back in: 5 of 6 red.)*
+
+**And the satchel has compartments, because a card is flat** (#688). Owner, live on the deep site, laughing:
+*"Oh I run out of space in the inventory. How do I get Bigger pockets ... lol... I find the good keycard but my
+pockets are full and I can not pocket it. Lol, love it. Lets fix it. :-D"* — and, seconds later, *"I think
+bigger pockets for little papers."*
+
+One number governed everything a captain could carry, and it was a number chosen for **bulk**. Twelve is right
+for rounds, crates and relic paperwork, and it was quietly deciding that the best find in the game could be
+refused because you were already holding eleven shipping manifests.
+
+| compartment | what rides in it | how much |
+| --- | --- | --- |
+| **the wallet** | `Authority` | never fills. A card is flat, and it is never refused |
+| **the paper sleeve** | `Paper`, `Dirt` — both are paper in the hand | 24 |
+| **the pockets** | `Rounds`, `Relic`, and any kind appended later | 12, and it keeps every one of its teeth |
+
+Nothing here loosens what #603 built. It is still a pocket and not a warehouse, what is in it is still legible
+at a glance, and the pressure that makes *leave it here* a real decision still sits on the things that actually
+take up room. What changed is that the pressure stopped falling on the two objects in the game that weigh
+nothing — and the subtitle stopped lying: **the space-left line names what it counts**, because one figure
+standing for three compartments is the third named bug class in a subtitle.
+
+**Doors suggest keys, not paperwork** (#688). Owner: *"Let's make a bigger story point about finding any kind
+of key or keycard and only suggest those at doors. Or tools, but not just like some papers."* With the satchel
+open at a sealed way, a room door or a shaft gate, only an authority carries a live **try it →**; papers, files,
+relic notes and rounds render inert there and keep their 🔍 lens. **Not one refusal changed** — the wrong-shaft
+and wrong-site readings (§13.10, #679) are the best storytelling the Hive has, and they are still earned by
+holding up a card that turns out to be for somewhere else. What stopped was the game dangling forty live offers
+at a bulkhead to hide the one that mattered. *Rounds stay inert at a door deliberately: shooting a lock open
+(#610) is an owner call nobody has made, and an offerable round there would pre-wire the answer.*
+
+**And there is a way to put a thing down** (#688). Owner: *"The keycard story is already big, but no way to drop
+stuff."* The satchel had a verb for offering a thing and a verb for looking at one and none at all for letting
+go, while the game's own prose kept saying something had to be *read, spent or left behind*.
+
+> **Leaving never destroys** (#615). What the captain sets down is a find again, lying on the square they are
+> standing on, and pressing [E] there hands it straight back — what will not fit stays on the ground rather
+> than evaporating on the way to it.
+
+- **Its own small control per row**, never a mode — #614's reason one size down: making room must never be one
+  mis-click away from offering a relic to a bulkhead.
+- **The satchel stays open** (you put a thing down in order to pick a thing up), so the confirmation is said
+  **inside the dialog** and never pulsed under its own backdrop (#680/#686).
+- **A document leaves its gist behind in the book.** Leaving a `Paper` or `Dirt` files one field note — its
+  title, its certainty, what it said — before the sheet leaves the pocket. A captain does not abandon a pay
+  sheet without having read it; what they are discarding is the *paper*, and the paper was only ever costing
+  them bulk. Rounds and relic notes file nothing: there is no gist to ammunition, and a book entry for one
+  would be a receipt.
+- **[E] answers your feet before it answers the walls**, ahead of the console dispatch — otherwise a thing set
+  down while standing on a room console could never be reached.
+- **v1 is excursion-scoped, and the line says so out loud**: *"Lift off this rock without it and it stays here
+  with everything else this place kept."* The world does not keep a ledger of every sheet anybody ever set on a
+  floor. Hardening it into the vault is an owner call, not something to sneak in under a feel pass.
+
+**And the deck marks it, because a way back that runs on memory is not a way back** (#698). Owner, on B12 of the
+clinic, within the hour of the drop verb shipping: *"I dropped 3 files on somebody here but there was nothing
+marked onto the map?"* That was the judgement call #691 filed open — *"a left thing is not drawn on the deck; the
+line says where, no marker; cheap to add later"* — collected the same afternoon, and he is right that it was
+never a nicety. A captain who sheds weight is **planning to come back**, and #615's law only holds if the way
+back is real (#600's lift proved that an audit can show you can *reach* a thing without ever showing you can get
+*home* to it).
+
+- **🗎 WHAT YOU LEFT** — one mark per **spot**, at the square's own centre, on the current floor or ground. Three
+  files on one square is one mark; the plate never counts and never names them. The captain knows what they put
+  down, and a plate reading "3 FILES" turns a decision into a receipt.
+- **Scenery.** No wall, no structure, no collision segment. Being pinned against your own paperwork would be a
+  worse bug than the missing mark.
+- **`E — take back what you left`** on the keybar the whole time you are in the recovery ring, and it **replaces**
+  the ground verb rather than joining it — because [E] answers your feet before the walls, so *"E — dig / use"*
+  and even *"⛏ E — BURY THE CHEST HERE"* are, at that exact spot, no longer true.
+- **One ring, asked once.** The ring the key obeyed was written out inline in the client. It is
+  `LeftBehind.SpotInReach` now, and the mark, the offer and the press all ask it — a prompt measured off a second
+  transcription of the same geometry is the house's fifth bug class waiting to happen.
+- **Every deck.** Composed on all three branches of the surface rebuild — Hive floor, derelict steel, open
+  regolith — the appended-region way the hidden door and the outpost hut are, so no generator and none of the A*
+  audits that walk them change. It appears on the drop and clears on the recovery, both of which now redraw:
+  a mark that waited for some unrelated rebuild is, at the moment the owner looks down, no mark at all.
+
+**And processing the loot TAKES TIME, which is how the air came to price the where** (#696). Owner, mid-run,
+designing the detective loop's cost model:
+
+> *"How is our detective notebook / picture taking progressing for our ability to process the files etc so we
+> don't need carry them. That is something one would do without using tanked air. It is good game mechanic...
+> **we take time to process the loot**."*
+
+Until this, the loop above had no body. A captain could stand at a door with a full sleeve and empty it into
+the field book in six clicks — gist filed, paper dropped, pocket free — and the world outside the dialog was
+exactly where it had been when they opened it. Knowledge was the whole reward of the ground, and it was being
+collected in a frozen moment.
+
+> **Processing a document is a HOLD: `Processing.SecondsPerDocument` (20 s) of standing still, and the effect
+> fires only at the far end.**
+
+Twenty out of the owner's fifteen-to-thirty. The bottom of that band is a pause nobody plans around; the top
+is where a captain stops taking the decision seriously and starts resenting it. It is a sixtieth of a tank, so
+a sleeve of six worked through on open regolith is two minutes and a tenth of your air — a real bite that
+never on its own kills you.
+
+- **Both halves of the detective loop, at the same price.** Leaving a `Paper` or a `Dirt` via 🫳 (the gist
+  filing above) and reading a paper as a clue at the tracker (§13.10, #603) are the same twenty seconds.
+  Charging for one and giving the other away would teach the captain to read everything on the spot and file
+  nothing, which is the decision the cost model exists to create being deleted by the cost model.
+- **Rounds, cards and relic notes still go down instantly.** There is no gist to a handful of ammunition, so
+  there is nothing to stand still for — and the branch asks `LeftBehind.GistOf`, the same question the gist
+  filing itself asks, so the rows that carry a clock are exactly the rows the hint warns about.
+- **The satchel SHUTS on the way in.** This deliberately reverses the *"the satchel stays open"* call above,
+  and the reason is the mechanic: the teeth are twenty seconds of being **stationary and visible**, the motion
+  tracker keeps running the whole time, and a captain cannot watch a fan through a backdrop blur. The bar fills
+  over the captain's own mark on the one channel bar the surface has always had (#562), wearing 📸 and the
+  warning amber — the rearm is the ship helping you; this is you exposing yourself. #680's law was never *"say
+  it in the dialog"*; it is *say it where the player is looking*, and one method decides that now. Reopen the
+  pocket mid-hold and the pocket says what is under your hands.
+- **Nothing is spent until the far end.** The document is in the sleeve for the whole hold — nothing removed,
+  nothing filed, nothing on the ground — so an interruption has nothing to undo and no retry can double-file.
+- **Four ways to lose it, all of them said.** Stepping off the spot (`StandingToleranceDu`, 1.5 du — a nudge,
+  never a step), riding the lift to another floor, an air alarm (§3.9), and something getting a hand on you.
+  The last is on the SWING and not on the wound: a captain who turns a blow aside has still had an arm come
+  through the space they were photographing into. Lifting off with a hold running says so too, because
+  otherwise the first thing they do at the desk is look for a gist that was never filed.
+- **The far end fires the effect the game already had** — `SetItDown` for a leave, `TheOfferIsAnswered` for a
+  clue. Not a copy of those endings, the same ones (#697's law, one lane later).
+- **The free venues are the ones you can reach with a pocket in your hand**: her tube, every shelter, every
+  #608 refuge, every floor that still holds pressure (§3.9). Not the ship — the satchel is an excursion
+  surface and there is no desk-side pocket, which the air table says out loud instead of implying one.
+- **`?process=0`** makes holds instant, for story tests. There is deliberately no cheat for what a hold costs
+  in air, because nothing computes that.
+
+*(Enforced: `WeTakeTimeToProcessTheLootTests` (Core) — the clock is one number in the owner's band and a real
+slice of a tank; a zero-length hold is finished rather than divided by; the bar filling and the effect firing
+agree on what *finished* means; the stand-still tolerance is a circle and not a box and is smaller than half a
+second of walking; every interruption line still promises the paper is in the sleeve and nothing was filed, and
+the four are four sentences; the hint and the hold read one number; **processing where the air is spends
+nothing and processing on open regolith spends exactly the hold's worth** (16 s per sheet), driven through the
+real `SuitAir` predicate and drain; and the two files may not name each other. Watched go RED against four
+transcriptions — `Done` written with `>`, `Fraction` as a bare division, a per-axis tolerance, and the
+coupling itself in both directions: 2, 2, 1 and 1 red. `ProcessingTheLootTakesTimeTests` (client) for the
+twelve shapes — the press starts a clock instead of filing on the spot, the clue read costs the same, nothing
+is spent until the far end, the far end fires the shared ending after clearing the clock, **the darkroom never
+mentions the tank and is stepped after the suit on the same tick**, walking off and changing floor abandon, all
+three air alarms break the hold, being reached and lifting off break it, the one bar says which slow thing it
+is, the pocket speaks for itself mid-hold, the clock is one number the hint reads, and the QA cheat switches
+the clock and nothing else. Watched go RED against the build that shipped #697: **12 of 12**.)*
+
+**And the I key shuts the pocket it opens** (#688). Owner: *"If I press I when inventory is open, let's close it
+then."* One line of feel, and the kind that is invisible until you are in a corridor with a pack coming and the
+pocket you opened by reflex will not go away by the same reflex.
+
+**And the satchel holds the notebook too** (#690, §12.5). Owner: *"should we have notes / clues section in our
+inventory ui?"* — *"it's like our detective notepad :-D"*. A second page, **🎒 CARRIED | 📓 NOTES**, reading the
+one field book and defaulting to the ground underfoot. It is the direct consequence of the gist-filing above:
+leaving a paper moved what it said into a surface only the ship could reach. Now the captain can stand at a
+sealed door, read what this building has already told them, and decide whether the card in their hand is worth
+offering. The satchel still opens on CARRIED, at a door and everywhere else — the pocket is the primary tool
+and the notebook is one tap away.
+
+**And the wallet is one thing, so it comes out all at once** (#697). Owner: *"Let's also add option to try all
+ID cards ... by grouping them into a folder in the inventory."* — and, on the register the answer had to be
+written in: *"It is a little throw at the movie ... where he had this wallet with zillion different
+contradictory IDs :-D"*
+
+The comedy was already native and nobody had staged it. Every card down here is countersigned, current, and
+issued by an office with no standing, and a captain who has worked three sites carries several that disagree
+about who they work for. What was missing was the **gesture**: the wallet came out one card at a time, so four
+authorities meant four presses producing four sentences, of which one was worth reading.
+
+On the CARRIED page every `Authority` now collapses into one row — **🎫 THE WALLET (3)** — folded shut on every
+open, one tap from the card rows exactly as they were, each keeping its own try and its own 🔍 lens (the faces
+are the best objects in the game, §13.10). *A folder of one is bureaucracy about bureaucracy, so one card is a
+card.* At a door the folder row carries the offer, as its own control beside the toggle — #614's ruling one size
+up: opening a wallet must not be a mis-click away from offering everything in it to a bulkhead. One press fans
+every card and the answer is **one line**:
+
+- **A card works → the outcome IS that card's outcome**, and the fan ends through exactly the resolution a
+  single successful try ends through. Not a copy of that ending — the same one. The no-double-effects claim is
+  then structural rather than a promise: the two consuming branches can only fire for a paper or a handful of
+  rounds, and neither is ever in a wallet.
+- **Nothing works → the ladder decides** (#683). Another shaft of *this* site beats another site, which beats a
+  card this build cannot even read. The most informative refusal is said **once**, instead of three shuffles,
+  and it names the nearest miss because #679's sentence already named it.
+- **A door with no reader answers once.** Fanning six authorities at a sealed way prints one honest sentence,
+  not six, and it names no card, no shaft and no site — #590 call 2 is not something a new control gets to
+  renegotiate. What it *may* do is notice the stack: *"You go through the wallet a card at a time — all six,
+  every one countersigned, every one current, and no two of them agreeing about who you work for."* A reader
+  works through several mutually incompatible authorities without comment, and the game never explains the joke.
+
+The fold is Core's (`SatchelTry.OfferWallet`), pure and deterministic like everything else there, so the dialog
+cannot grow a second ladder to drift the day #683's order is refined. **Precedent:** the lift panel has read the
+whole wallet unprompted since #689 (`LiftPanel(..., AuthorityCardIds())`) — this brings the on-foot TRY to the
+same standard, and the single card stays for deliberate captains.
+
+*(Enforced: `TheWalletIsOneThingTests` — the working card wins from every position in the wallet and answers
+with its own sentence; the ladder's best refusal is the one surfaced, from **every permutation** of the same
+three cards, because what a refusal teaches must not be a fact about which pocket a card fell into; a wallet of
+one answers exactly as that one card does, at every target; the sealed way's body appears exactly **once**
+however thick the wallet, and never matches any single card's line; an empty wallet is answered, and at the two
+FINAL doors it is answered in the door's own words so it cannot hint. Watched go RED against a naive
+first-refusal fold transcribed into Core: **4 of 7**. `TheWalletFansAtTheDoorTests` for the five client shapes —
+the folder row, Core's own grouping behind it, the folded-on-open reset, the press routing through `OfferWallet`
+with no loop of its own, and the shared ending the fan is forbidden from copying. RED against the build that
+shipped #690: **5 of 5**.)*
+
+*(Enforced: `ThePocketsAreThreeCompartmentsTests` — the wallet never fills, the sleeve holds 24 and refuses the
+25th, the bulky twelve keeps its teeth, neither compartment crowds the other, the merge law survives the
+restructure for every kind, and the space-left line is identical for a satchel with six extra cards in it.
+Watched go RED against the single-cap satchel, 6 of 6. `WhatYouLeaveIsStillThereTests` for the drop verb, the
+door filter and the gist — new behaviour, so honestly NOT red-provable; what they pin is that no refusal was
+deleted along with its offer. `TheSatchelFeelPassTests` for the four client shapes — the I toggle, the door
+filter the client cannot route around, the subtitle that no longer subtracts one count from one capacity, and
+the leave control whose confirmation stays inside the dialog. Watched go RED against this morning's build, 5 of
+5. `TheGroundKnowsWhereYouLeftItTests` (#698) for the store's two new questions — one mark per spot however much
+is on it, floor-scoped both ways, the mark gone when the spot empties and **kept** when something would not fit,
+and the ring's exact edge: every square of it gives, one square further out gives nothing. Watched go RED, 2 of
+10, against the two naive readings they exist to rule out (the ring shrunk to the square you stand on; a spot
+list not scoped to a floor); the other eight pin new behaviour and are honestly not red-provable.
+`TheDeckMarksWhatYouLeftTests` (#698) builds the real Hive floor and the real regolith and counts the marks on
+them, pins that a mark inside the interact radius is always inside the recovery ring — so the [E] drawn over it
+is never one the pickup will refuse — and then reads the shipped source for the wiring: every branch of
+`RebuildSurfaceDeck` that builds a deck composes the marks, the drop and the recovery both redraw, and the keybar
+reaches its offer through the same `AnythingInReach` the key does. Watched go RED against the unmarked build,
+10 of 13 — the three survivors being the three that cannot go red that way (an empty floor carries no marks, the
+mark adds no collision, and the interact-radius arithmetic).)*
+
 13.10 **Some things you carry are worth looking at, and a card describes the LOCK, never the DOOR.**
 
 Owner: *"we could have gen-AI images of plotwise important items… maybe they say something about what door
@@ -719,20 +1086,47 @@ The second half is the whole design problem. "Says what door it opens" is the te
 **quest marker**: an item that names its lock does the captain's thinking, and this facility is built on the
 opposite law. So the rule is:
 
-> A card may say **which shaft**, of **what kind of building**, and **whether it is this building**.
-> It may never say **where that building is**, or anything a tracker could act on.
+> A card may say **which shaft**, of **which site**, and **whether it is this building**.
+> It may never say **where on that ground the way in is**, or anything a tracker could act on.
+
+**The site half of that line was redrawn by the owner in #679**, and it used to read *"it may never say where
+that building is"* — the card named a shaft and an office and nothing else. Owner, holding several: *"a captain
+holding three cards from three moons sees three identical shapes and cannot plan a wallet."* He is right, and
+the old rule was defending the wrong thing. A pass has always had its holder's place of work printed on it; what
+turns an object into an objective is not a NAME, it is a **fix** — a bearing, a distance, a mark on the
+instrument. So the card face carries a site designation in the office's own register
+(`🎫 SHAFT 2 · OFFICE OF WORKS · SUB-REGISTRY · MIRANDA SITE`), the look-card says the same thing in the same
+words, and neither of them says a syllable about where on that ground the head stands. Finding it is still the
+game.
 
 That is the same discipline `SealedWayCard` already keeps — say what it is, never what to do about it. And it
 is what makes #613's foreign card pay: a captain holding a live authority for a shaft they have not found is
 holding a reason to keep flying, not a waypoint.
 
+**A refusal sorts the wallet too** (#679). `SatchelTry.Offer` has answered every try with a reason since #603,
+but the gate gave one sentence to every wrong card there is — so the second card a captain tried taught them
+nothing the first had not, and TRY stopped being a verb. There are four answers now and they are
+distinguishable **from the Line text alone**: the card works; it runs another shaft *of this site*, named; it
+was issued for another site, named; or the way is sealed and nothing you could ever carry opens it. The last of
+those is unchanged on purpose — #590 call 2 — and so is the mechanical room door: a refusal that hinted would
+send a captain looking for a card that does not exist.
+
 | gets a card | does not |
 | --- | --- |
-| an authority card (which shaft; and *"not this one"* when it is foreign) | operational paper — it has its own reader (#603) |
+| an authority card (which shaft, which site; and *"not this one"* when it is foreign) | operational paper — it has its own reader (#603) |
 | the two-stage penetrator | issue ball — it is the round you always have |
 | the thing on the pallet | a file on somebody — leverage, not a display piece |
 
 A game where every object earns a full-screen card has no objects that matter.
+
+**And the card wears its own office's face** (#695). Owner, wallet in hand: *"I have 3 ID cards but they all
+have the same gen AI image."* The letterhead had been rolling one of five offices off `hive:card:{body}:{band}`
+since #679 while the picture stayed a single #528 constant, so three cards from three moons opened three
+different sentences over one photograph. There are five faces now — works, liaison, estates, procurement,
+inspectorate — and `AuthorityCardArtUrl(card)` reads **the same roll the title reads**
+(`UndergroundComplex.OfficeOf`, one record carrying both the letterhead and the file) rather than re-deriving
+it, because a second sum for a fact that already has one is this repo's most expensive habit. Compositions in
+`docs/art-manifest-hive.md` §2a; the #528 original stays as the fallback for a card id nothing can parse.
 
 **The thing on the pallet.** Owner: *"kind of horror theme in a Lovecraft way … like finding a massive collar
 designed for Cthulhu's neck :D"*. One per facility, only in the band nobody listed, on its deepest floor —
@@ -745,10 +1139,15 @@ cannot lift it, and a satchel claiming to contain a three-metre alloy band would
 all over again. And canon holds hardest exactly here, because this is the most tempting object in the game to
 explain the Old Ones with. It does not.
 
-*(Enforced: `TheThingsWorthLookingAtTests` — the shaft is named and the moon never is (verified RED against a
-card that appends the body id), most carried things get no card, exactly one relic per facility on a
+*(Enforced: `TheThingsWorthLookingAtTests` — the shaft **and the site** are named and no nav fix ever is (this
+assertion was inverted by #679: it used to forbid the body id outright, and it was verified RED at the time
+against a card that appended one — the change is the owner's, recorded above, and the surviving half is the
+half that was ever load-bearing), most carried things get no card, exactly one relic per facility on a
 designated real room (verified RED against a rolled placement), the kind was APPENDED so old vaults still
-read, and the canon grep covers every new string.)*
+read, and the canon grep covers every new string. `TheCardCarriesItsOwnStoryTests` holds the new law: every
+card names its site, no two sites print the same row, the satchel row reads `CardTitle` rather than a hand-made
+copy of it, and the four gate answers are pairwise distinguishable — verified RED on the build before it, where
+the wrong shaft and the wrong moon were answered with the same sentence.)*
 
 **A note on the harness.** The relic-room guard first failed against an invented 78 du-wide field, reporting
 zero rooms on *every* floor of *every* site — listed and unlisted alike. A guard that fails on a field the
@@ -874,6 +1273,103 @@ facility and without it — segment count, reach against the radii the plan publ
 label at all, and the doors — so it audits the drawn ground rather than the generator's intentions.
 `TheLiftPutsYouSomewhereYouCanSTANDTests` still walks it: the head is bigger and rotated now, and both of
 those are new ways to trap somebody.)*
+
+13.15 **Every square the sim PLACES the captain on must be standable, steppable and connected** (#681).
+
+> *"The second url put me into the wall... I cannot move."*
+
+`/map?secretlab=deep&land=1` pinned the captain inside the wall of the lift head's own hut, HUD fully alive,
+air counting down from 7 h 44, offering a hidden door and a regolith probe to somebody who could not take one
+step. Deterministic — the same wall, every boot.
+
+**Why nothing caught it.** Every reachability audit this project owns starts from a point it *assumes* is
+good: 13.1 floods from the lift, `TheCaptainCanSTANDWhereTheLiftPutsThem` pins the car. The landing spawn
+**is** that assumption. It is the same blind spot that let #600 live — an audit proves you can reach things
+from X, and never once that X is somewhere a person can stand.
+
+**The ladder, weakest to strongest.** All three, because they catch different breaks:
+
+1. **Standable** — the square is in the walkable field. Catches spawn-in-wall.
+2. **Can move** — at least one orthogonal neighbour is walkable. The owner's own ask (*"or a test on spawn
+   that the player can move"*), and strictly stronger: a square can be perfectly clear and still be a **cell**
+   with wall on all four sides, which rung 1 signs off happily.
+3. **Can get home** — the spawn's walkable component holds the way home, the shelter, and the lift head where
+   the ground has one. #600's lesson at minute zero: reachable is not returnable.
+
+They run over **every square the sim places the captain on** — the `?land=1` drop, the `?secretlab=…&land=1`
+doorstep, and the car's surface exit — across every body × landing site × `?secretlab` combination the
+generator admits. *(Enforced: `TheLandingPutsYouSomewhereYouCanWALKTests`.)*
+
+**Two causes, both of them this document's own bug classes.**
+
+- **The offset described a building that had been rebuilt.** The landing computed its own answer — the head
+  spot with 7.5 taken off its Y — and that number was written when the head was a hand-typed 10 × 8 box whose
+  half-height was 4. §13.14 turned the head into an ordinary hut: 14–19.6 du wide, 11–15.4 deep, walls up to
+  3 du of piled regolith, **and a seeded angle**. Seven and a half units below the middle of that is not a
+  doorstep. **A caller doing its own geometry about a building it does not own** is #602 exactly, one head
+  further along; the fix is the same one, `MoonSurface.LiftHeadBox.DoorStep`, the mirror of `CarFloor`.
+- **Nothing had ever claimed the ground a landing lands on.** The shelters have had a keep-out since #585,
+  the lab chamber since #585, the monolith since #649 — and the square the captain is actually set down on had
+  none, so a seeded hut was legally built through it on `luna · The Depot Apron` and `secret-lab-site · The
+  Depot Apron`. `SurfaceLayout.LandingApproach` is one answer read twice: the client asks it where to drop,
+  the claim ledger asks it what to keep clear.
+
+**The net, and why it is not the fix.** Owner, while stuck: *"Maybe some code to move the character either
+side instead of spawning it so it cannot move?"* `SpawnNudge` spirals deterministically outward from a blocked
+square to the nearest standable one, bounded to six paces, and every placement in the client goes through
+`Map.StandCaptainAt`. It is **deterministic** (same blocked spawn → same rescue, or the next report of this
+bug is unchaseable), **bounded** (past six paces the ground is broken rather than tight, and it says so
+loudly instead of papering over), and **it speaks** — a pad hand takes your elbow and walks you clear, in the
+pulse and in the excursion log.
+
+> **The audit asserts the UN-NUDGED square.** A net that silently absorbs placer bugs is how the generator
+> rots behind it — the same way the swept apron hid #574. Net catches the captain; audit catches the bug.
+
+13.16 **The building says its name where you ENTER it, and nowhere else** (#694).
+
+> *"every floor has the text 'The Clinic' on it. Some kind of artifact?"* — the owner, on B11 of a
+> thirteen-floor site.
+
+It was not an artifact and it was not a leak. `HiveInterior` drew `TitleOf(KindOn(…))` beside the shaft on
+every floor, and the site's `Kind` is per-site by design — so a name that should have landed once landed
+thirteen times. **The question is the finding.** A sign a player asks about because they suspect the renderer
+has gone wrong is a sign that has stopped saying anything; by the third floor it was wallpaper, and the one
+place where it would have been a story was already spent.
+
+The facility plate now falls on the two floors you arrive on and no others:
+
+- **B1** — the lobby. You came down out of the surface hut and the plate names what you have walked into.
+- **The unlisted band's own shaft head** (§13.7), where the site has one. This is the single place in the
+  game where the plate names a **different** `Kind` from everything above it: `▣ THE CLINIC` first seen under
+  twelve floors of `RETENTION 40 YR` and `DESTRUCTION QUEUE` is that feature's whole arithmetic delivered by
+  one sign, with the captain doing the sum themselves or not at all.
+
+**Not every band head.** B5 and B9 are shaft heads too and they get nothing — a captain stepping out there has
+not entered anything, they have gone deeper into the same place. What earns the plate is a `Kind` you have not
+been told yet, which is why the law is *not* "is this floor a band top".
+
+**Nothing is lost from the where-am-I answer**, because the facility title was never carrying it: the plate
+over the car says `B11 · LONG STORAGE` and whether you can breathe (§13.13), the department livery says which
+kind of floor this is (`LiveryFor`, #605), and both draw on every floor exactly as before. What went is a
+repetition, not an answer.
+
+**The head office takes no exception, and is better for it.** HQ has twenty-four listed floors and, by
+`HasUnlistedBand`, nothing under them — so `▣ THE HEAD OFFICE` falls out of the same law on B1 alone. That is
+also the more in-character reading: the head office does not have to keep telling you where you are.
+
+**The law is Core's, the drawing is the client's.** `UndergroundComplex.ShowsFacilityPlate(bodyId, level)` is
+a pure predicate over the building's own shape — `BandTop` and `HasUnlistedBand`, the same two calls the shafts
+and the #590 cards are cut from — so the rule is testable without a renderer, and a renderer that answered it
+for itself would be one more caller reasoning about a shaft it does not own (§13.15's second cause, one head
+further along).
+
+*(Enforced: `TheFloorTellsYouWhereYouAreTests` — over the scenario's sites plus 120 generated ones, with and
+without unlisted bands, the predicate is true on exactly B1 and the unlisted shaft head and false on every
+other floor and everywhere above ground; the two plates on a hiding site always contradict each other; HQ
+names itself once. `TheFacilityPlateIsALobbySignTests` counts the titles on the **real deck** `FloorDeck`
+returns, so the wiring cannot drift from the law. Watched go **red** against the shipped rule transcribed into
+the predicate — 1 381 floors disagreed, opening with `luna B11: plate DRAWN, wanted absent — ▣ THE CLINIC`,
+which is the owner's own sighting reproduced by the guard.)*
 
 ## Working method
 

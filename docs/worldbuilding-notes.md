@@ -165,6 +165,58 @@ not route design.*
   **HQ outclasses them**, and it should outclass them in the same vocabulary, so a player who
   has crawled a Hive recognises the rank difference without being told it.
 
+## 10. The fourth world, and the halls beneath it (owner ruling, 2026-08-04)
+
+*Extends §2 (fourth humanity) and §8 (the monolith site) into one cosmology, and names the
+material for #649's "Giants on the Playground" arc. Method note: this is the Iron Sky method —
+collect the real world's strange claims and use them as lore. The quarry is the owner's
+**VennsRabbitHole** encyclopedia (github.com/esoinila/VennsRabbitHole, private; the Hermes
+"Rabbit Hole Monk" collects and provenances it from YouTube): Hopi emergence narratives — the
+Sipapu as constructed levels, the claimed 1963 elder testimony of "cities beneath the ones
+destroyed", present-tense below-keepers — the 1909 Arizona Gazette iron-door account, Tartaria
+tunnel narratives, Derinkuyu, Lake Van's drowned walls, the Giza deep-SAR survey. Claims carry
+provenance there; here they are fiction.*
+
+- **This is the fourth run, and the first three were ended** — by fire, then by ice, then by
+  flood (the Hopi count). §2's "Ancient Apocalypse flavor" gets its structure from this: the
+  resets were not weather that the ancients happened to survive. They were *ends*, and
+  something decided them.
+- **The caretakers are the giants on the playground.** §2's background ancients and §8's
+  watchers are the same parties: they watch the fourth civilization while the question of what
+  to do with it — transition, or wipe — is being decided. The monolith's attention (the
+  school-play beat) is what that deciding looks like from the ground: parental, not predatory,
+  and with a verdict pending. Per standing law this is never stated, never confirmed, and no
+  card ever joins these dots.
+- **Some have always been allowed to survive underground, in massive halls.** Every prior end
+  spared a remnant, and the remnant went under. Out on the moons this is the material: digs
+  that break into volume that was *already there* — galleries that pre-exist the facility,
+  chambers that get **bigger** as you go down, fire-marks in rooms no ventilation shaft
+  anyone can find would serve, dry floors with no pumps. The operation's own paperwork changes
+  tone where the poured concrete stops. Nobody writes down what they think it means.
+- **The horror is the disclosure schedule.** As the day of decision approaches, the fourth is
+  *let* to know more and more about what is under its feet. Every find must carry both
+  readings at once: the mundane one (the new sounder resolves deeper; the resurvey team is
+  simply better than the last one was) and the other one (this was always here, and it is
+  being **shown** to us, because the time to know it has come). If any card ever settles which
+  reading is true, the horror dies — this is the Reever law applied to archaeology.
+- **Deep enough, or far enough, you are told things you might not be able to live happily
+  with.** The arc's escalation is not bigger rooms; it is the dawning shape of the
+  arrangement — that the halls have always been provisioned, that somebody has always been
+  spared into them, and what that implies about everybody who wasn't. All of it by inference,
+  none of it on a plate.
+- **Boundaries.** The halls' builders are not the Old Ones, not the Reevers, and not confirmed
+  to be anything — the Reever origin stays its own separate, uncommitted inference. The
+  monolith stays unique (§8): a hall is a hall and never borrows the word. KAAMOS (§9) does
+  not know either; the head office deals in filings, not answers.
+
+Game hooks, in the grammar the game already owns: a rare **found** band beneath a deep dig —
+a different class from the band nobody listed (landing-site doc §13.7), which is human all the
+way down; the imported-door idiom (landing-site doc §11.4) sealed by *us* on something we
+found; below-keepers appearing present-tense only in somebody else's dossier (§12.4 — a
+dossier never joins the dots); and the disclosure clock riding the same slow world-side
+windows the monolith's foot-offerings use, so what you are shown is a fact about *when you
+went*, not a reward for how hard you looked.
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |
@@ -178,3 +230,4 @@ not route design.*
 | Shuttle boarding sequence | post-M12 | walk to bay → fly shuttle across (rel-velocity drift minigame) → prey interior |
 | Third-person deck camera | post-M12 | deck renderer + avatar-following camera |
 | Phobos, strangest port | after #225 arc | Lab 31 beanstalk numbers -> elevator haven pair at Phobos (#164/#231/#234) |
+| The found halls (fourth world) | after #649 arc | `UndergroundComplex`: rare *found* band beneath a deep dig — pre-existing galleries, chambers growing with depth, its own vocabulary, never explained (§10) |

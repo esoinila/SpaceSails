@@ -68,19 +68,20 @@ public class TheWinteringHallTests
 
         Assert.Equal(
             UndergroundComplex.StandingOrderLine,
-            UndergroundComplex.HaulLine(UndergroundComplex.Haul.Records, Hq, room.Value.Level, room.Value.RoomIndex));
+            UndergroundComplex.HaulLine(UndergroundComplex.Haul.Records, Hq, room.Value.Level, room.Value.RoomIndex,
+                null));
 
         // …and every OTHER Records room in the building still reads as ordinary operational paper, or the
         // designation has leaked into the whole facility.
         string ordinary = UndergroundComplex.HaulLine(
-            UndergroundComplex.Haul.Records, Hq, room.Value.Level, room.Value.RoomIndex + 1);
+            UndergroundComplex.Haul.Records, Hq, room.Value.Level, room.Value.RoomIndex + 1, null);
         Assert.NotEqual(UndergroundComplex.StandingOrderLine, ordinary);
 
         // No branch office has one.
         Assert.Null(UndergroundComplex.StandingOrderRoomFor("miranda"));
         Assert.NotEqual(
             UndergroundComplex.StandingOrderLine,
-            UndergroundComplex.HaulLine(UndergroundComplex.Haul.Records, "miranda", -3, 0));
+            UndergroundComplex.HaulLine(UndergroundComplex.Haul.Records, "miranda", -3, 0, null));
     }
 
     /// <summary>#614's law, on the one document in this arc a captain can carry out: a card may say WHAT and

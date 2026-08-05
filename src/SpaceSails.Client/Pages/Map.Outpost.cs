@@ -54,6 +54,13 @@ public partial class Map
 
     private double? _airCheatSeconds;
 
+    // #696 dev cheat (?process=N): how long one document takes to process, in sim seconds — 0 for instant.
+    // Null is the shipped feel (Core.Processing.SecondsPerDocument). Twenty seconds of standing still is the
+    // whole point of the mechanic and exactly the wrong thing to make a story test sit through, and a test
+    // that waits out a clock designed to be FELT is a test that gets deleted the first time it flakes.
+    // Combine with dock/site/land: /map?dock=the-tilt&site=0&land=1&process=0
+    private double? _processCheatSeconds;
+
     // #585 dev cheat (?body=ID): which body ?land=1 should put the shuttle on, regardless of what happens to
     // be nearest. Without it only the berth's closest moon was ever reachable by URL.
     private string? _forcedLandingBodyId;

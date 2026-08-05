@@ -1657,12 +1657,20 @@
                     <strong>@SpaceSails.Core.UndergroundComplex.DepthPaint(liftEx.Floor)</strong>.
                 </div>
 
+                @* #686 · A refusing button answers HERE, inside the panel's own layer — the pulse HUD sits
+                   under the backdrop blur, where the refusal is in the DOM and not on the screen. *@
+                @if (_liftOutcome is { } refusedLine)
+                {
+                    <div class="lift-outcome">@refusedLine</div>
+                }
+
                 <div class="lift-stops">
                     @foreach (SpaceSails.Core.UndergroundComplex.LiftStop stop in LiftStops())
                     {
                         string cls = "lift-stop"
                             + (stop.IsCurrent ? " here" : "")
                             + (stop.Refusal is not null ? " sealed" : "")
+                            + (stop.OpenedBy is not null ? " carded" : "")
                             + (stop.Pressurised ? "" : " dead");
                         <button type="button" class="@cls" disabled="@stop.IsCurrent"
                                 title="@(stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
@@ -1673,6 +1681,12 @@
                                 @if (stop.IsCurrent)
                                 {
                                     <text>◄ you are here</text>
+                                }
+                                else if (stop.OpenedBy is not null)
+                                {
+                                    @* #689 · The positive twin of "🔒 sealed" — the row a captain who went
+                                       and FOUND the thing has earned. Core decides whether it is true. *@
+                                    <text>🎫 opens for you</text>
                                 }
                                 else if (stop.Refusal is not null)
                                 {
@@ -1687,6 +1701,13 @@
                                     <text>dead air</text>
                                 }
                             </span>
+                            @* #689 · …and WHICH paper does it, in the office's own register, so the card in
+                               the satchel and the promise on the panel are the same words. Owner: "there was
+                               no story point about it being needed or used." *@
+                            @if (stop.OpenedBy is { } carriedCard)
+                            {
+                                <span class="lift-stop-card">@carriedCard — the gate will read it</span>
+                            }
                         </button>
                     }
                 </div>
@@ -1728,20 +1749,156 @@
     {
         <div class="view-object-backdrop" @onclick="() => Dismiss(CloseSatchel)">
             <div class="satchel" @onclick:stopPropagation="true">
-                <div class="view-object-title">🎒 WHAT YOU ARE CARRYING</div>
-                <div class="satchel-sub">
-                    @if (_satchelTarget is { } at)
+                <div class="view-object-title">
+                    @(_satchelPage == SatchelPage.Notes ? "📓 WHAT YOU WROTE DOWN" : "🎒 WHAT YOU ARE CARRYING")
+                </div>
+
+                @* #690 · A pocket and a notebook are both things a satchel holds. Owner: "should we have
+                   notes / clues section in our inventory ui?" — and on the register: "it's like our detective
+                   notepad :-D". The field book used to render only at a ship-brain desk, so the captain
+                   standing at a sealed door could not consult their own notes; #688's leave verb made that
+                   acute by filing a paper's gist to exactly that unreachable place. No second store here —
+                   the NOTES page reads _fieldNotes, the one book. *@
+                <div class="satchel-tabs">
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Carried ? "on" : "")"
+                            title="What is in the satchel"
+                            @onclick="() => _satchelPage = SatchelPage.Carried">
+                        🎒 CARRIED@(_satchel.Count > 0 ? $" ({_satchel.Count})" : "")
+                    </button>
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Notes ? "on" : "")"
+                            title="What the ground has told you"
+                            @onclick="() => _satchelPage = SatchelPage.Notes">
+                        📓 NOTES
+                    </button>
+                </div>
+
+                @if (_satchelPage == SatchelPage.Notes)
+                {
+                    @* #690 · Read-only, and default to the ground underfoot: at a door the captain wants what
+                       THIS building has said, not the memoirs. Both filters come out of Core's own grouping
+                       (FieldNotes.Here / PerPlace), so the tab cannot invent a second way to name a place. *@
+                    <div class="satchel-notes-filter">
+                        <button type="button" class="satchel-filter @(_notesEverywhere ? "" : "on")"
+                                title="Only what this body and this site have told you"
+                                @onclick="() => _notesEverywhere = false">📍 this ground</button>
+                        <button type="button" class="satchel-filter @(_notesEverywhere ? "on" : "")"
+                                title="The whole book, ground by ground"
+                                @onclick="() => _notesEverywhere = true">🥾 every ground</button>
+                    </div>
+
+                    @if (_notesEverywhere)
                     {
-                        <text>Offering it to <strong>@at.Label</strong>. Pick something.</text>
+                        <div class="satchel-sub">
+                            Every ground you have turned over, the ones you stood on most recently first.
+                        </div>
+
+                        @if (SpaceSails.Core.FieldNotes.PerPlace(_fieldNotes) is { Count: > 0 } book)
+                        {
+                            <div class="satchel-notes">
+                                @foreach (SpaceSails.Core.FieldFinding found in book)
+                                {
+                                    <div class="satchel-place">🥾 @found.Place</div>
+                                    @foreach (SpaceSails.Core.FieldNote line in found.Lines)
+                                    {
+                                        <div class="satchel-note">@line.Glyph @line.Text</div>
+                                    }
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
                     }
                     else
                     {
+                        <div class="satchel-sub">
+                            @* "somewhere" is Core's own word for a ground it cannot name (PlaceLabel), and the
+                               satchel only opens on an excursion anyway — a fallback, not a second format. *@
+                            @(PlaceUnderfoot() ?? "Somewhere") — what was found here, latest first.
+                            The book keeps it. It keeps no opinion about it.
+                        </div>
+
+                        @if (NotesFromThisGround() is { Count: > 0 } here)
+                        {
+                            <div class="satchel-notes">
+                                @foreach (SpaceSails.Core.FieldNote line in here)
+                                {
+                                    <div class="satchel-note">@line.Glyph @line.Text</div>
+                                }
+                            </div>
+                        }
+                        else if (_fieldNotes.Count == 0)
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                Nothing filed for this ground. Either you have not searched it, or it had
+                                nothing to say — the book does not know which, and neither do you.
+                            </div>
+                        }
+                    }
+                }
+                else
+                {
+                <div class="satchel-sub">
+                    @if (_satchelTarget is { } at)
+                    {
+                        @* #688 · At a door the list has gone quiet except for the keys, and a row of inert
+                           controls that never says why is #603's founding sin one layer up. So the door says
+                           what it reads. It names no card and hints at no wallet — it says what a lock is. *@
+                        <text>
+                            Offering it to <strong>@at.Label</strong>.
+                            @if (SpaceSails.Core.SatchelTry.IsDoor(at.Target))
+                            {
+                                <text>It reads authorities and nothing else — a countersigned card, or nothing at all.</text>
+                            }
+                            else
+                            {
+                                <text>Pick something.</text>
+                            }
+                        </text>
+                    }
+                    else
+                    {
+                        @* #688 · The subtitle names what it counts. One figure for three compartments was a
+                           sentence that could not be true — a sleeve stuffed with manifests says nothing
+                           about the pockets, and neither of them says anything about the wallet, which never
+                           fills at all. Core does the arithmetic so the dialog and the pocket cannot
+                           disagree about the same satchel. *@
                         <text>
                             Everything found out here, and it stays yours between visits.
-                            @(SpaceSails.Core.Satchel.Capacity - _satchel.Count) space@(SpaceSails.Core.Satchel.Capacity - _satchel.Count == 1 ? "" : "s") left.
+                            @SpaceSails.Core.Satchel.SpaceLine(_satchel)
                         </text>
                     }
                 </div>
+
+                @* #680 · A failed try answers HERE, inside the modal's own layer — the pulse HUD sits
+                   under the backdrop blur, where the refusal is in the DOM and not on the screen. *@
+                @if (_satchelOutcome is { } said)
+                {
+                    <div class="satchel-outcome">@said</div>
+                }
+
+                @* #696 · AND A RUNNING HOLD SAYS SO, HERE. The darkroom shuts the satchel on the way in so
+                   the captain can watch the fan, but nothing stops them opening it again with I while the
+                   twenty seconds run — and a pocket that says nothing about the document currently under
+                   their own hands is the dialog lying about itself. Same law as the line above: whatever
+                   surface is up is the surface that has to speak (#680/#686). *@
+                @if (ProcessingUnderway() is { } busy)
+                {
+                    <div class="satchel-outcome">@busy</div>
+                }
 
                 @if (_satchel.Count == 0)
                 {
@@ -1758,33 +1915,104 @@
                            (#603's law: looking is free and repeatable); TRY is the deliberate second press
                            that costs you the decision. Putting them on one button would mean a captain who
                            wanted to admire the collar had to risk offering it to a door. *@
-                        @foreach (SpaceSails.Core.Satchel.Item item in _satchel)
-                        {
-                            bool canOffer = TargetFor(item) is not null;
-                            bool canLook = LookAtItem(item) is not null;
-                            <div class="satchel-row">
-                                <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
-                                        disabled="@(!canOffer)"
-                                        @onclick="() => TryItem(item)">
-                                    <span class="satchel-item-name">@SatchelLabel(item)</span>
-                                    @if (canOffer)
-                                    {
-                                        <span class="satchel-item-try">
-                                            @(_satchelTarget is null ? "read it →" : "try it →")
-                                        </span>
+                        @{
+                            IReadOnlyList<SpaceSails.Core.Satchel.Item> wallet = Wallet();
+
+                            RenderFragment<SpaceSails.Core.Satchel.Item> Row = item =>
+                                @<div class="satchel-row">
+                                    @{
+                                        bool canOffer = TargetFor(item) is not null;
+                                        bool canLook = LookAtItem(item) is not null;
                                     }
+                                    <button type="button" class="satchel-item @(canOffer ? "" : "inert")"
+                                            disabled="@(!canOffer)"
+                                            @onclick="() => TryItem(item)">
+                                        <span class="satchel-item-name">@SatchelLabel(item)</span>
+                                        @if (canOffer)
+                                        {
+                                            <span class="satchel-item-try">
+                                                @(_satchelTarget is null ? "read it →" : "try it →")
+                                            </span>
+                                        }
+                                    </button>
+                                    @if (canLook)
+                                    {
+                                        <button type="button" class="satchel-look"
+                                                title="Look at it properly"
+                                                @onclick="() => OpenItemCard(item)">🔍</button>
+                                    }
+                                    @* #688 · LEAVE IT. Owner: "no way to drop stuff." Its own small control,
+                                       never a mode — for #614's reason one size down, a captain making room
+                                       must not be one mis-click away from offering a relic to a bulkhead. It
+                                       stays available at a door, because a door is exactly where you discover
+                                       your pockets are full.
+
+                                       #696 · And for a DOCUMENT the hint names the seconds, because the
+                                       decision the darkroom exists for — here, or somewhere with air in it —
+                                       cannot be taken by a captain who finds out the price after pressing.
+                                       It reads ProcessingSeconds, which is the Core constant (and the QA
+                                       cheat), so the hint and the clock are one number. *@
+                                    <button type="button" class="satchel-leave"
+                                            title="@LeaveHintFor(item)"
+                                            @onclick="() => LeaveItem(item)">🫳</button>
+                                 </div>;
+                        }
+
+                        @* #697 · THE WALLET IS ONE THING. Owner: "Let's also add option to try all ID cards
+                           ... by grouping them into a folder in the inventory." Four authorities used to be
+                           four rows and four presses; they are one row and one press now, and the cards are
+                           one tap under it — untouched, because the faces are the best objects in the game
+                           (#528/#695) and the deliberate single try is the captain's to make.
+
+                           A folder of one is bureaucracy about bureaucracy, so one card is a card. *@
+                        @if (wallet.Count == 1)
+                        {
+                            @Row(wallet[0])
+                        }
+                        else if (wallet.Count > 1)
+                        {
+                            <div class="satchel-row">
+                                <button type="button" class="satchel-item satchel-folder"
+                                        title="@(_walletOpen ? "Fold it shut" : "Go through the cards")"
+                                        @onclick="() => _walletOpen = !_walletOpen">
+                                    <span class="satchel-item-name">
+                                        @(_walletOpen ? "▾" : "▸") 🎫 THE WALLET (@wallet.Count)
+                                    </span>
                                 </button>
-                                @if (canLook)
+                                @* Two controls, never one — #614's ruling one size up: opening the folder
+                                   must not be a mis-click away from offering everything in it to a door. *@
+                                @if (WalletTarget() is not null)
                                 {
-                                    <button type="button" class="satchel-look"
-                                            title="Look at it properly"
-                                            @onclick="() => OpenItemCard(item)">🔍</button>
+                                    <button type="button" class="satchel-fan"
+                                            title="Hold every card up to it, one after another"
+                                            @onclick="TryTheWholeWallet">try them all →</button>
                                 }
                             </div>
+
+                            @if (_walletOpen)
+                            {
+                                <div class="satchel-wallet-cards">
+                                    @foreach (SpaceSails.Core.Satchel.Item card in wallet)
+                                    {
+                                        @Row(card)
+                                    }
+                                </div>
+                            }
+                        }
+
+                        @foreach (SpaceSails.Core.Satchel.Item item in _satchel)
+                        {
+                            @if (item.Kind != SpaceSails.Core.Satchel.Kind.Authority)
+                            {
+                                @Row(item)
+                            }
                         }
                     </div>
                 }
+                }
 
+                @* One Close for both pages: the satchel shuts the same way whichever half of it you are
+                   reading, and I still toggles it (#688) regardless of the page. *@
                 <button type="button" class="view-object-close"
                         @onclick="() => Dismiss(CloseSatchel)">Close</button>
             </div>

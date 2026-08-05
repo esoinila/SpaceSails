@@ -110,6 +110,101 @@ public sealed class TheFloorTellsYouWhereYouAreTests
     }
 
     [Fact]
+    public void TheBuildingSaysItsNameOnlyWhereYouENTERIt()
+    {
+        // #694 · Owner, on B11 of a deep site: "every floor has the text 'The Clinic' on it. Some kind of
+        // artifact?" It was not an artifact — the facility plate simply drew on every floor — and his
+        // reaction is the finding: a name repeated identically twenty floors deep reads as a rendering bug,
+        // adds nothing after the lobby, and spends the one place where it would have been a story.
+        //
+        // The law: the plate falls on the floors you ENTER the building by. B1, where you arrive from the
+        // surface; and the unlisted band's own shaft head, where it names a DIFFERENT Kind from the twelve
+        // floors above it. Nowhere else — including B5 and B9, which are shaft heads and not doorways.
+        var wrong = new List<string>();
+        foreach (string body in Sweep())
+        {
+            int unlistedLobby = UndergroundComplex.HasUnlistedBand(body)
+                ? UndergroundComplex.BandTop(UndergroundComplex.UnlistedBandOf(body))
+                : int.MinValue;
+
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                bool want = level == -1 || level == unlistedLobby;
+                bool got = UndergroundComplex.ShowsFacilityPlate(body, level);
+                if (want != got)
+                {
+                    wrong.Add(
+                        $"  {body} B{-level}: plate {(got ? "DRAWN" : "absent")}, wanted " +
+                        $"{(want ? "DRAWN" : "absent")} — {UndergroundComplex.TitleOf(UndergroundComplex.KindOn(body, level))}");
+                }
+            }
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} floor(s) disagree with the lobby law:\n{string.Join("\n", wrong.Take(24))}");
+
+        // And nothing above ground: the surface is not a floor of the facility.
+        foreach (string body in Sweep())
+        {
+            foreach (int above in new[] { 0, 1, 5 })
+            {
+                Assert.False(UndergroundComplex.ShowsFacilityPlate(body, above),
+                    $"{body}: the facility plate reached level {above}, which is outdoors.");
+            }
+        }
+    }
+
+    [Fact]
+    public void TheUnlistedLOBBYIsTheOnlyPlateThatContradictsTheOneAbove()
+    {
+        // Why the second floor is worth the exception at all. Everywhere the plate draws twice, the two
+        // plates must say DIFFERENT things — otherwise it is the same wallpaper problem two floors apart.
+        // "▣ THE CLINIC" first seen under twelve floors of RETENTION 40 YR is #592's whole arithmetic
+        // delivered by one sign, and KindOn already guarantees the words differ; this pins that the plate
+        // draws exactly where that guarantee pays.
+        foreach (string body in Sweep().Where(UndergroundComplex.HasUnlistedBand))
+        {
+            var plated = UndergroundComplex.FloorsOf(body)
+                .Where(l => UndergroundComplex.ShowsFacilityPlate(body, l))
+                .ToList();
+
+            Assert.Equal(2, plated.Count);
+            Assert.NotEqual(
+                UndergroundComplex.TitleOf(UndergroundComplex.KindOn(body, plated[0])),
+                UndergroundComplex.TitleOf(UndergroundComplex.KindOn(body, plated[1])));
+            Assert.True(UndergroundComplex.IsUnlisted(body, plated[1]));
+        }
+    }
+
+    [Fact]
+    public void TheHeadOfficeNamesItselfONCEAndTakesNoException()
+    {
+        // #411 · Twenty-four listed floors and, by HasUnlistedBand, nothing under them — so HQ falls out of
+        // the same law with exactly one plate, in its own lobby, and needs no special case in the renderer
+        // or here. It is also better in character: the head office does not have to keep telling you where
+        // you are.
+        string hq = KaamosLore.IceMoonBodyId;
+        Assert.Equal(UndergroundComplex.Kind.HeadOffice, UndergroundComplex.KindFor(hq));
+        Assert.False(UndergroundComplex.HasUnlistedBand(hq));
+
+        var plated = UndergroundComplex.FloorsOf(hq)
+            .Where(l => UndergroundComplex.ShowsFacilityPlate(hq, l))
+            .ToList();
+        Assert.Equal([-1], plated);
+        Assert.Equal("▣ THE HEAD OFFICE", UndergroundComplex.TitleOf(UndergroundComplex.KindOn(hq, -1)));
+    }
+
+    /// <summary>The scenario's own sites plus enough generated ones that both shapes — with an unlisted band
+    /// and without — are certainly in the sweep, and the shallow sites are too.</summary>
+    private static IEnumerable<string> Sweep()
+    {
+        var all = Bodies.Concat(Enumerable.Range(0, 120).Select(i => $"probe-moon-{i}")).ToList();
+        Assert.Contains(all, UndergroundComplex.HasUnlistedBand);
+        Assert.Contains(all, b => !UndergroundComplex.HasUnlistedBand(b));
+        return all;
+    }
+
+    [Fact]
     public void NothingAboveGroundIsPainted()
     {
         // The surface is not a floor of the facility and must not inherit its livery.

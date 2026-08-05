@@ -43,7 +43,12 @@ public sealed class DeckPlan
         // legible in the list itself. HER OWN SCUTTLING CHARGES (the derelicts have carried a panel since
         // #488; a ship is a ship), and #538's lab security: the door, the board that governs it, the alarm
         // and the key card that answers to it.
-        ShipScuttle, LabDoor, LabDoorBoard, LabAlarm, LabKeyCard }
+        ShipScuttle, LabDoor, LabDoorBoard, LabAlarm, LabKeyCard,
+        // #698 · WHAT THE CAPTAIN THEMSELVES PUT DOWN. Owner, on B12 of the clinic: "I dropped 3 files on
+        // somebody here but there was nothing marked onto the map?" One mark per SPOT — never per item —
+        // appended onto whatever deck the excursion is standing on, and the only console in the game whose
+        // [E] is answered before the dispatch ever reaches this enum (#691: your feet before the walls).
+        LeftBehind }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.

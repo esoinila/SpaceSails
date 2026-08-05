@@ -20,18 +20,21 @@ public sealed class TheSatchelTests
     {
         // Capped so what is in it stays legible at a glance. The moment it needs sorting it has stopped
         // being a satchel and become inventory management, which is a different game and not this one.
+        //
+        // #688 · The cap that matters is now the one on BULK, and the ballast has to be bulky to meet it —
+        // paper rides in its own bigger sleeve, so twelve manifests no longer fill anything.
         IReadOnlyList<Satchel.Item> bag = [];
-        for (int i = 0; i < Satchel.Capacity + 6; i++)
+        for (int i = 0; i < Satchel.PocketCapacity + 6; i++)
         {
-            bag = Satchel.Add(bag, new Satchel.Item(Satchel.Kind.Paper, $"paper-{i}"));
+            bag = Satchel.Add(bag, new Satchel.Item(Satchel.Kind.Relic, $"pallet-{i}"));
         }
 
-        Assert.Equal(Satchel.Capacity, bag.Count);
-        Assert.True(Satchel.IsFull(bag));
+        Assert.Equal(Satchel.PocketCapacity, bag.Count);
+        Assert.True(Satchel.IsFull(bag, Satchel.Kind.Relic));
 
         // And it refuses politely rather than silently dropping the LAST thing you found, which would be
         // the crueller failure — you would never know what you had lost.
-        Assert.Contains(bag, i => i.Id == "paper-0");
+        Assert.Contains(bag, i => i.Id == "pallet-0");
     }
 
     [Fact]

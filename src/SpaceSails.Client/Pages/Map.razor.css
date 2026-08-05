@@ -4208,6 +4208,27 @@
 
 .lift-stop.sealed .lift-stop-air { color: #e0a070; }
 
+/* #689 · PRESENT, GATED, and open to you — the row a captain who found the card has earned. Warm where the
+   sealed row is dry, because this is the one button on the panel that is a reward. */
+.lift-stop.carded {
+    border-style: solid;
+    border-color: rgba(240, 208, 112, 0.45);
+}
+
+.lift-stop.carded .lift-stop-air { color: #f0d070; }
+
+/* The card's own title, on its own line under the floor name — it is a long institutional string and the
+   air column is one nowrap cell. Full width, so it reads as a caption on the button rather than a fourth
+   column nobody left room for. */
+.lift-stop-card {
+    grid-column: 1 / -1;
+    margin-top: 0.15rem;
+    font-size: 0.68rem;
+    line-height: 1.35;
+    letter-spacing: 0.03em;
+    color: #d3bb7d;
+}
+
 /* #603 · THE LOCKED DOOR, and the pockets it reminds you of. Owner: "we should advertise the items list on
    closed locked door pop-up... something like check your items button there that opens inventory." */
 .locked-door {
@@ -4274,6 +4295,21 @@
 
 .satchel-empty { padding: 0.8rem 0; }
 
+/* #680/#686 · The last try's answer, said inside the dialog — the one layer the backdrop cannot blur.
+   Amber like the dialog's frame, not alarm-red: a refusal down here is information, not an emergency.
+   One rule for both organs the disease hit: the satchel's TRY and the car panel's refused floor. */
+.lift-outcome,
+.satchel-outcome {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-left: 3px solid rgba(200, 170, 120, 0.55);
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.7rem;
+    white-space: pre-wrap;
+}
+
 .satchel-items {
     display: flex;
     flex-direction: column;
@@ -4334,10 +4370,163 @@
     border-color: rgba(200, 170, 120, 0.6);
 }
 
+/* #688 · LEAVE IT. The third control on the row, and the coolest of the three on purpose: looking is free,
+   offering is the decision, and putting a thing down is the one that costs you something you already have.
+   Same footprint as the lens so the row still reads as a row. */
+.satchel-leave {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: #9fb0c6;
+    background: #141821;
+    border: 1px solid rgba(150, 170, 200, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-leave:hover {
+    color: #e6dcc8;
+    background: #1b2029;
+    border-color: rgba(150, 170, 200, 0.55);
+}
+
 .satchel-item-try {
     font-size: 0.74rem;
     color: #d8b884;
     white-space: nowrap;
+}
+
+/* #697 · THE WALLET. One row for every card in the pocket, and the cards one tap under it. It is styled as a
+   heading rather than as an object, because it is not one — it is the pocket the objects are in. */
+.satchel-folder {
+    letter-spacing: 0.05em;
+    background: #1b1c17;
+    border-color: rgba(200, 170, 120, 0.4);
+}
+
+.satchel-folder:hover:not(:disabled) { background: #23241c; }
+
+/* TRY THEM ALL. Its own control beside the folder, never part of it — #614's ruling one size up: opening a
+   wallet must not be a mis-click away from offering everything in it to a door. Amber, like every other
+   control down here that costs you a decision. */
+.satchel-fan {
+    flex: 0 0 auto;
+    padding: 0 0.8rem;
+    font: inherit;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    color: #d8b884;
+    background: #201b12;
+    border: 1px solid rgba(200, 170, 120, 0.45);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-fan:hover {
+    color: #f0dfb8;
+    background: #2a2317;
+    border-color: rgba(200, 170, 120, 0.8);
+}
+
+/* The cards themselves, stepped in so the folder above them reads as the thing they came out of. */
+.satchel-wallet-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-left: 0.9rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid rgba(200, 170, 120, 0.25);
+}
+
+/* #690 · THE NOTES TAB. A pocket and a notebook are both things a satchel holds, so the notebook gets the
+   satchel's own frame rather than a second dialog — the whole point is reading your notes WHERE you are, and
+   a second modal on top of the door pop-up would be one layer further from the ground. */
+.satchel-tabs {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.satchel-tab {
+    flex: 1 1 0;
+    padding: 0.4rem 0.6rem;
+    font: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: #8fa2bb;
+    background: #12161d;
+    border: 1px solid rgba(200, 170, 120, 0.18);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-tab:hover { color: #e6dcc8; border-color: rgba(200, 170, 120, 0.45); }
+
+/* The page you are on is lit; the other one is a door you can see. */
+.satchel-tab.on {
+    color: #e6dcc8;
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.6);
+}
+
+/* This ground / every ground. Smaller than the page tabs and to one side, because it is a filter on the
+   notebook and not a third place to be. */
+.satchel-notes-filter {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.satchel-filter {
+    padding: 0.25rem 0.6rem;
+    font: inherit;
+    font-size: 0.72rem;
+    color: #7b8ca3;
+    background: transparent;
+    border: 1px solid rgba(150, 170, 200, 0.2);
+    border-radius: 1rem;
+    cursor: pointer;
+}
+
+.satchel-filter:hover { color: #e6dcc8; border-color: rgba(150, 170, 200, 0.5); }
+
+.satchel-filter.on {
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-color: rgba(200, 170, 120, 0.55);
+}
+
+/* min-height: 0 because the book is the one list in this dialog that can be genuinely long — eighty notes
+   across a dozen grounds — and a flex child defaults to min-height: auto, which refuses to shrink below its
+   content and would push Close off the bottom of a 92vh dialog rather than scrolling. */
+.satchel-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* The ledger's own 🥾 heading, one size down: a ground with its finds under it. */
+.satchel-place {
+    margin-top: 0.4rem;
+    font-size: 0.74rem;
+    letter-spacing: 0.05em;
+    color: #d8b56a;
+}
+
+.satchel-place:first-child { margin-top: 0; }
+
+/* A line off the ground, kept verbatim. Read-only on purpose — the book is capped and durable by its own
+   laws (#587) and the satchel only holds it open. */
+.satchel-note {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #cfd8e5;
+    background: #12161d;
+    border-left: 2px solid rgba(150, 170, 200, 0.28);
+    border-radius: 0.2rem;
 }
 
 /* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen

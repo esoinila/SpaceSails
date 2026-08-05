@@ -63,6 +63,9 @@
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\archive-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\oracle-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\bond-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- #695 — the five office faces of an authority card, and the #528 original kept as the fallback, so
+         EveryOfficeIssuesItsOwnPaintedFace can hold each office's ArtUrl to a file that is actually there. -->
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\the-authority-card*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
