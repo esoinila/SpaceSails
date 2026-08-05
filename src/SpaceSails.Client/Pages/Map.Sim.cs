@@ -686,6 +686,22 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["outpost=".Length..]).ToLowerInvariant();
                 _outpostCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("dark=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #708 dev cheat: /map?dark=1 puts the fixtures out on every floor of this excursion, so the
+                // suit's headlights are the whole of the seeing. Nothing the game ships declares itself dark
+                // yet — the found halls (#677) will be the first, and they are not built — and a feature that
+                // nobody can reach on demand is a feature that ships broken. So this is the door to it.
+                //
+                // It changes ONE fact and nothing else: what UndergroundComplex.IsDark answers. Collision,
+                // air, the pack, the sentries, the tracker and every gate down there behave exactly as they
+                // do with the lights on, because none of them are told. You can walk into what you cannot
+                // see, and something you cannot see can walk into you.
+                //
+                //   /map?secretlab=deep&land=1&floor=4&dark=1
+                string candidate = Uri.UnescapeDataString(pair["dark=".Length..]).ToLowerInvariant();
+                _lampsOutCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("watchers=", StringComparison.OrdinalIgnoreCase))
             {
                 // #649 dev cheat: /map?watchers=1 makes the monolith's ground ATTENTIVE this visit and cuts
@@ -2127,7 +2143,10 @@ public partial class Map
                 // #480: the gauge never moves anonymously — the flash names the pip that just went, the
                 // ledger keeps the last few so "what broke me?" has an answer after the fact.
                 NerveFlash: LiveNerveFlash,
-                NerveLedger: NerveLedgerLines),
+                NerveLedger: NerveLedgerLines,
+                // #708: the ONE darkness ask, put to Core and handed down — the renderer never works it out
+                // for itself (the #591 one-reach lesson).
+                Dark: DarkHere()),
                 _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
         }
     }

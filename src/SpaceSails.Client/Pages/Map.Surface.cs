@@ -140,6 +140,18 @@ public partial class Map
         MotionTracker.UndergroundRange(
             MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu), _surface?.Floor ?? 0);
 
+    /// <summary>#708 · The <c>?dark=1</c> boot cheat: the fixtures are out on every floor this excursion
+    /// walks. Never consulted on its own — it is handed to <see cref="UndergroundComplex.IsDark"/>, which is
+    /// the only thing in this game allowed to answer the question.</summary>
+    private bool _lampsOutCheat;
+
+    /// <summary>#708 · IS THE GROUND UNDER THE CAPTAIN'S BOOTS DARK — the one ask, put once, by everything
+    /// here that cares. Today that is the renderer and nothing else: the tracker, the sentries and the pack
+    /// keep their own rules and are never told, which is the point — a contact crossing behind you in a hall
+    /// your lights cannot reach is the whole feature.</summary>
+    private bool DarkHere() =>
+        _surface is { } ex && UndergroundComplex.IsDark(ex.Stop.Body.Id, ex.Floor, _lampsOutCheat);
+
     // #327 the ship calls home: the mothership's station-keeping hold (sim-seconds) at the moment the
     // captain boarded DOWN — the reference the escalating ladder measures against (OrbitHold). Positive
     // = boarded with a real kept-orbit hold; 0 = boarded onto an orbit no one is keeping (a standing red

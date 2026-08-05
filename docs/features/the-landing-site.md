@@ -1488,6 +1488,68 @@ wash`, `185 of 1150` floors with no canteen, `202 of 1150` with principal rooms 
 because a private washroom has no console in it — proved red by walling its doorway over, opening
 `luna B5: the en-suite off 'CONSENT FILES' cannot be walked to from the lift`.)*
 
+13.18 **A floor may be DARK, and on a dark floor the suit's headlights are the whole of the seeing** (#708).
+
+Owner's ruling 2026-08-05: *"For dark levels our suit should have forward facing headlights ... the
+pre-existing tunnels would be scary as dark ones and totally different style."*
+
+**Darkness is a property a floor states about itself**, in exactly the way `HoldsPressure` states whether the
+same floor can be breathed — and for the same reason §13.13 gives. The moment two things in this building can
+each hold an opinion about whether the lights are on, the plate by the lift and the picture on the screen are
+reading two different maps. So there is one ask, `UndergroundComplex.IsDark(bodyId, level, lampsOut)`, and
+everything that cares calls it: the renderer, the boot cheat, and any sim that ever wants to know (nothing
+does today). **The cheat is an ARGUMENT to that ask and never a second answer OR-ed in beside it at a call
+site** — an `||` at a call site is precisely how a second source of truth gets built one honest line at a
+time, and this one would have blacked out the regolith at noon.
+
+**No shipped floor is dark, and that is the point.** Every listed floor keeps its failing facility light and
+the instrument-lit look it has always had; the customer is the FOUND BAND (#677) — galleries that pre-exist
+the shaft, with no fixtures, no wiring and no ventilation anybody can find — and it will answer in one line
+when it is built. Until then the only way in is `?dark=1`, because a scene nobody can reach on demand is a
+scene that ships broken. **Dead-air floors are not dark and do not flicker:** a flicker is a fixture reporting
+that it is dying, a floor that cannot be breathed is not a floor whose lamps have failed, and wiring the two
+together would have made the suit gauge and the ceiling say the same thing twice.
+
+**The cone is the sweepers' lamp, and it has no numbers of its own.** 20 du inside a 70° cone —
+`InspectionTeam.LampRange` and `LampConeHalfAngleDegrees`, the black-ops team's kit since #538. A lamp is a
+lamp; inventing a second pair of numbers for the captain's would mean the two lights in this game were
+different equipment for no reason anybody could name, and the first time both cones were drawn on one deck
+the difference would read as a bug. The **arm's-reach ring** is deliberately not part of it: it is not a lamp,
+it is the radius in which you can put your hands on something, so it is `DeckPlan.InteractRadius` — which
+makes it #212's law in geometry, **an affordance the game will let you use is never invisible.**
+
+**On a top-down plan, turning your body becomes an act of LOOKING** — the drawing carrying the fact the way
+the monolith's shadow carries height (§10). Walls appear at the cone's edge as you turn. **Collision is
+unchanged**: you can walk into what you cannot see, and something you cannot see can walk into you.
+
+**The instruments are not part of the world and are never touched.** The motion fan, its wall-smudges (§13.6,
+#591) and its ghosts are drawn *after* the dark is laid down and read identically with the lights out —
+hearing a contact cross behind you, outside the cone, in a hall your lights will never reach, is the entire
+reason to put the lights out at all. A **deployed sentry** is drawn over the dark too, and its rules are its
+own: it sees what it sees, fires when it fires, and its counter is readable across a black floor. You can see
+a light in an unlit hall; what you cannot see is what it is lighting.
+
+**Three calls, each overrulable in one line.** The cone does **not** stop at bulkheads yet (a raycast per wall
+per frame, for a floor that today only exists behind a cheat — filed, not forgotten). **First person (F) is
+out of scope and stays as it is**: it is a raycaster whose field of view is `HalfFov = 0.62` rad, 71°, which
+is the lamp's 70° to within a degree — it already shows almost exactly what the headlights light, and making
+it dark would be a job about *falloff with distance*, not about a cone. And the **ordinary floors are
+untouched**, which is not a promise but a guard.
+
+*(Enforced. Client: `TheHeadlightsAreTheWholeOfTheSeeingTests` drives the REAL `DeckView.Draw` on a real
+`HiveInterior.FloorDeck` through a recording renderer and asks whether the ink ever lands outside the light —
+not dim, **absent** — sorting the canvas-anchored chrome out by nudging the pan and seeing what moved, rather
+than carrying a list of HUD things to excuse. Watched go **red** against the renderer with the flag plumbed
+and honoured by nobody: `222 of 226 primitive(s) drawn in the dark, outside the cone`, and
+`every facing drew the same amount of building (226, 226, 226, 226)`. The instrument guard was proved red by
+teaching the renderer one word — skip the smudge in the dark — opening `5 smudge ring(s) with the lights on,
+1 with them out`. Core: `TheDarkIsAPropertyOfTheFloorTests` — no shipped floor dark, the cheat proved to be an
+argument and not an `||` (**red** at `4 above-ground level(s) blacked out by the cheat: 0, 1, 3, 12`),
+darkness proved to be a different law from dead air, from depth and from the unlisted band, and the two lamps
+proved the same kit **behaviourally** over ten thousand points of open ground rather than by comparing two constants — which is a
+test that would still pass if somebody typed the number in by hand, and was watched go red when they did:
+`facing 0.00: (20.9,-14.7) — sweeper cannot see, suit lights`.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

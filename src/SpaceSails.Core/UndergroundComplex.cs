@@ -435,6 +435,57 @@ public static class UndergroundComplex
     public static bool HoldsPressure(int level) =>
         level < 0 && (-level - 1) % FloorsPerShaft == 0;
 
+    // ── #708 · DARKNESS IS A PROPERTY OF A FLOOR ─────────────────────────────────────────────────────────
+    //
+    // Owner's ruling 2026-08-05, filed with the headlights: darkness is NOT a filter somebody switches on
+    // over the top of the game. It is a fact a floor states about itself, in exactly the way HoldsPressure
+    // states whether the same floor can be breathed — and for exactly the same reason. The moment two things
+    // in this building can each hold an opinion about whether the lights are on, the plate by the lift and
+    // the picture on the screen are reading two different maps, and this ground has already paid for that
+    // mistake once (§13.13, the pressure fact).
+    //
+    // So there is ONE ask, and everything that cares calls it: the renderer, the boot cheat, and whatever sim
+    // eventually wants to know (nothing does today — a sentry's rules are its own, §13.18). The cheat is an
+    // ARGUMENT to the ask, never a second answer OR-ed in beside it at a call site, because an `||` at a call
+    // site is precisely how a second source of truth gets built one honest line at a time.
+
+    /// <summary>
+    /// #708 · Whether this floor is DARK: no fixtures, no failing facility light, nothing at all — the suit's
+    /// headlights (<see cref="SuitLamp"/>) are the whole of the seeing there is.
+    ///
+    /// <para>The one ask. Nowhere else in this game gets to decide this.</para>
+    ///
+    /// <para><b>Above ground is never dark.</b> A surface has a sun, a sky and the #563 falloff into the
+    /// unseen bound; darkness is a property of somewhere with a roof on it, and a cheat that blacked out the
+    /// regolith would be testing a different feature.</para>
+    /// </summary>
+    /// <param name="lampsOut">The <c>?dark=1</c> boot cheat: kill the fixtures on every floor of this
+    /// excursion. No shipped floor declares darkness yet (see <see cref="DeclaresDarkness"/>), so this is the
+    /// only way to reach the feature today — and a scene nobody can reach on demand is a scene that ships
+    /// broken.</param>
+    public static bool IsDark(string bodyId, int level, bool lampsOut = false) =>
+        level < 0 && (lampsOut || DeclaresDarkness(bodyId, level));
+
+    /// <summary>
+    /// #708/#677 · Whether a floor declares itself dark of its own accord.
+    ///
+    /// <para><b>No shipped floor does, and that is deliberate.</b> Every listed floor down here has failing
+    /// facility light and the instrument-lit look it has always had; changing that would change every Hive
+    /// anybody has ever played, to solve a problem those floors do not have. The customer is the FOUND BAND
+    /// (#677) — galleries that pre-exist the shaft, with no fixtures, no wiring and no ventilation anybody
+    /// can find — and it will answer here, in one line, when it is built.</para>
+    ///
+    /// <para>Dead-air floors are NOT dark and do not flicker. A flicker is a fixture reporting that it is
+    /// dying; a floor that cannot be breathed is not a floor whose lamps have failed, and wiring the two
+    /// together would have made the suit gauge and the ceiling say the same thing twice.</para>
+    /// </summary>
+    public static bool DeclaresDarkness(string bodyId, int level)
+    {
+        _ = bodyId;
+        _ = level;
+        return false;
+    }
+
     // ── #608 · THE REFUGES — A DEAD FLOOR IS A FLOOR OF SUIT-WORK, AND SUITS RUN OUT ─────────────────────
     //
     // Owner, in the order he said it, after suffocating on B2: "I thought there is air in the base?" ...
