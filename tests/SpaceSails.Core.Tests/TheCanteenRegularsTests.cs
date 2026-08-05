@@ -168,10 +168,11 @@ public sealed class TheCanteenRegularsTests
     }
 
     [Fact]
-    public void ItIsAFactAboutTheWORLDAndNotAboutTheVisit()
+    public void WithinOneSHIFTTheRoomIsTheSameRoomEveryTimeYouLookAtIt()
     {
-        // Seeded off the site's own id, like everything else down here: the same regulars on every visit and
-        // in every session, or the room is a slot machine.
+        // Determinism where it matters. Walk out of the canteen and back in on the same watch and it must be
+        // the same three people in the same three chairs — a room that reshuffles while you are standing in
+        // it is a slot machine, and worse, the [E] key would answer about somebody who has moved.
         foreach (string body in Bodies)
         {
             if (UndergroundComplex.TopPressurisedFloor(body) is not { } level)
@@ -182,11 +183,63 @@ public sealed class TheCanteenRegularsTests
             foreach (UndergroundComplex.Amenity a in UndergroundComplex.Build(body, level, Field).Amenities
                 .Where(a => a.Use == UndergroundComplex.Comfort.UpperCanteen))
             {
-                Assert.Equal(
-                    CanteenRegulars.Sitting(body, level, a),
-                    CanteenRegulars.Sitting(body, level, a));
+                foreach (long watch in new long[] { 0, 1, 7, 1234 })
+                {
+                    Assert.Equal(
+                        CanteenRegulars.Sitting(body, level, a, watch),
+                        CanteenRegulars.Sitting(body, level, a, watch));
+                }
             }
         }
+    }
+
+    [Fact]
+    public void ACROSSShiftsTheRoomACTUALLYCHANGES()
+    {
+        // #709 · The owner's ask: "let's have some random element of who is in the bar and where they got to
+        // sit down." Before this the roster was seeded off the site alone, so a moon had the same three people
+        // in the same three chairs forever — furniture, not a canteen.
+        //
+        // THIS IS THE GUARD FOR THAT, and it is measured rather than asserted at one point: a roster that
+        // varied on one site and one watch pair could pass by luck. It sweeps every site across many watches
+        // and demands real churn in BOTH halves — who is in, and where they sat.
+        int bodiesChecked = 0;
+
+        foreach (string body in Sweep())
+        {
+            if (UndergroundComplex.TopPressurisedFloor(body) is not { } level)
+            {
+                continue;
+            }
+
+            foreach (UndergroundComplex.Amenity a in UndergroundComplex.Build(body, level, Field).Amenities
+                .Where(a => a.Use == UndergroundComplex.Comfort.UpperCanteen))
+            {
+                var rosters = new HashSet<string>(StringComparer.Ordinal);
+                var seatings = new HashSet<string>(StringComparer.Ordinal);
+
+                for (long watch = 0; watch < 24; watch++)
+                {
+                    var sat = CanteenRegulars.Sitting(body, level, a, watch);
+                    rosters.Add(string.Join("|", sat.Select(s => s.Plate).OrderBy(s => s, StringComparer.Ordinal)));
+                    seatings.Add(string.Join("|", sat.Select(s => $"{s.Plate}@{s.X:F1},{s.Y:F1}")));
+                }
+
+                // WHO is in: several different crowds over a day of watches.
+                Assert.True(rosters.Count >= 4,
+                    $"{body}: only {rosters.Count} different crowd(s) across 24 watches — the room is furniture.");
+
+                // WHERE they sat: strictly more variety than the rosters alone, because the same two people
+                // may swap chairs. This is the half the owner asked for second and it is the easier one to
+                // forget to seed.
+                Assert.True(seatings.Count >= rosters.Count,
+                    $"{body}: {seatings.Count} seating(s) for {rosters.Count} crowd(s) — chairs are not moving.");
+
+                bodiesChecked++;
+            }
+        }
+
+        Assert.True(bodiesChecked > 20, $"only {bodiesChecked} canteens swept — nothing was proved.");
     }
 
     [Fact]

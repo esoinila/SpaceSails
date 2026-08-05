@@ -95,6 +95,52 @@ public sealed class ThereArePeopleInTheBarTests
     }
 
     [Fact]
+    public void TheDeckHonoursTheSHIFTItWasHandedAndNeverReadsAClock()
+    {
+        // #709 · The wiring guard for the rota. FloorDeck is handed a frozen watch; if it ignored the argument
+        // (or read a clock of its own) the room DRAWN would stop matching the room the [E] key answers about,
+        // which is bug class three with a face on it.
+        foreach (string body in Bodies)
+        {
+            if (UndergroundComplex.TopPressurisedFloor(body) is not { } level)
+            {
+                continue;
+            }
+
+            UndergroundComplex.Amenity canteen = UndergroundComplex
+                .Build(body, level, MoonSurface.ExpeditionField()).Amenities
+                .Single(a => a.Use == UndergroundComplex.Comfort.UpperCanteen);
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (long watch = 0; watch < 12; watch++)
+            {
+                var drawn = HiveInterior
+                    .FloorDeck(body, level, MoonSurface.ExpeditionField(), 0, (_, _) => { }, [], watch)
+                    .Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.HiveRegular)
+                    .Select(c => (c.X, c.Y, c.Label))
+                    .ToList();
+
+                var expected = CanteenRegulars.Sitting(body, level, canteen, watch)
+                    .Select(s => ((float)s.X, (float)s.Y, s.Plate))
+                    .ToList();
+
+                Assert.Equal(expected.Count, drawn.Count);
+                foreach ((float x, float y, string plate) in expected)
+                {
+                    Assert.Contains((x, y, plate), drawn);
+                }
+
+                seen.Add(string.Join("|", drawn.Select(d => $"{d.Label}@{d.X:F1},{d.Y:F1}")
+                    .OrderBy(s => s, StringComparer.Ordinal)));
+            }
+
+            // And the argument is load-bearing: twelve watches must not all draw one identical room.
+            Assert.True(seen.Count > 1,
+                $"{body}: FloorDeck drew the same canteen for all 12 watches — the shift is being ignored.");
+        }
+    }
+
+    [Fact]
     public void TheBoardHangsOnTheSameOneFloorAndCoreChoseTheSpot()
     {
         // #709 · The cork board's wiring. Same B1 law as the people, and the spot must be CORE's arithmetic

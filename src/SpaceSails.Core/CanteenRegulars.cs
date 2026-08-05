@@ -34,14 +34,36 @@ namespace SpaceSails.Core;
 /// the captain has.</b> That is precisely why nobody asks anybody for a card at band 0, and it is what makes
 /// the cover work: not because it is a good lie, but because <i>everyone else's is equally thin.</i></para>
 ///
+/// <h3>Who is in and where they sit turns over with the SHIFT (#709, owner 2026-08-05)</h3>
+///
+/// <para>Owner: <i>"let's have some random element of who is in the bar and where they got to sit down."</i>
+/// The room was seeded off the site alone, so a moon had the same three people in the same three chairs
+/// forever — which reads as furniture rather than as a canteen.</para>
+///
+/// <para><b>It is a ROTA, not a dice roll</b>, and it reuses the bar's own watch upstairs
+/// (<see cref="Interior.PatronRota.WatchSeconds"/> — one answer to "how long is a shift", not a second
+/// number that must agree with the first). The board on the wall of this very room says
+/// <c>ROTA — WEEK 31</c>; people coming and going with the shift is the most in-fiction randomness
+/// available, and it costs one seed component.</para>
+///
+/// <para><b>Why a watch INDEX and never a raw clock.</b> The caller must freeze which shift it is when the
+/// floor is drawn and hand that same number to every later question about the room. Passing a live time
+/// would let the deck be built in one shift and the [E] press land in the next — the drawn room and the
+/// pressed room disagreeing about who is at which table, which is this project's third named bug class (the
+/// sim doing one thing while the picture reports another). A watch that is chosen once cannot drift.</para>
+///
+/// <para>Deterministic within a shift, so re-entering the same room in the same watch shows the same people
+/// in the same chairs, and the guards can still pin it. Randomness across shifts, determinism inside
+/// one.</para>
+///
 /// <h3>The laws</h3>
 ///
 /// <list type="number">
 /// <item><b>Top pressurised floor only.</b> Never the staff mess deeper down (that room is pass-only and its
 /// people are a different question), never a washroom, never anywhere else. The owner's ruling, enforced here
 /// rather than in the renderer.</item>
-/// <item><b>Seeded off the site's own id</b>, so a moon has the people it has — the same regulars on every
-/// visit and in every session, like everything else down here.</item>
+/// <item><b>Seeded off the site AND the shift</b>, never off the visit. A moon has the people that moon has on
+/// that watch — the same room on re-entry, a different room next shift, and no call to any clock in here.</item>
 /// <item><b>Nobody explains anything.</b> §13.8 holds hardest in the one room where somebody could talk. The
 /// talk is about freight, signatures, shifts, pay and the machines. Not one line says what the facility is
 /// for, and the closest any of them comes is a remark about hiring that only becomes horrifying if the player
@@ -141,8 +163,10 @@ public static class CanteenRegulars
     /// <param name="bodyId">The site.</param>
     /// <param name="level">The floor being built.</param>
     /// <param name="amenity">The room, as Core carved it (#707) — its tables are the seats.</param>
+    /// <param name="watch">Which shift this is — <see cref="Interior.PatronRota.WatchIndex"/> of the sim
+    /// clock, and deliberately a WATCH rather than a raw time. See the class docs.</param>
     public static IReadOnlyList<Seated> Sitting(
-        string bodyId, int level, UndergroundComplex.Amenity amenity)
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -167,9 +191,9 @@ public static class CanteenRegulars
             return [];
         }
 
-        // How many turned up. At least one — the owner asked for people in the bar, and an empty canteen is
-        // a thing this building already has twenty floors of.
-        ulong seed = DiceRule.Seed($"hive:canteen:{bodyId}");
+        // How many turned up THIS SHIFT. At least one — the owner asked for people in the bar, and an empty
+        // canteen is a thing this building already has twenty floors of.
+        ulong seed = DiceRule.Seed($"hive:canteen:{bodyId}", watch);
         int here = DiceRule.Roll(seed, seats).Face;
 
         var sat = new List<Seated>(here);
@@ -179,10 +203,10 @@ public static class CanteenRegulars
         for (int i = 0; i < here; i++)
         {
             int table = PickUnused(
-                DiceRule.Roll(DiceRule.Seed($"hive:canteen:table:{bodyId}:{i}"), amenity.Tables.Count).Face - 1,
+                DiceRule.Roll(DiceRule.Seed($"hive:canteen:table:{bodyId}:{i}", watch), amenity.Tables.Count).Face - 1,
                 amenity.Tables.Count, usedTables);
             int who = PickUnused(
-                DiceRule.Roll(DiceRule.Seed($"hive:canteen:who:{bodyId}:{i}"), Cast.Length).Face - 1,
+                DiceRule.Roll(DiceRule.Seed($"hive:canteen:who:{bodyId}:{i}", watch), Cast.Length).Face - 1,
                 Cast.Length, usedCast);
 
             (double tx, double ty) = amenity.Tables[table];

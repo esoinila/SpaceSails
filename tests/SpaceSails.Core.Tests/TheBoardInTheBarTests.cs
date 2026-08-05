@@ -143,9 +143,11 @@ public sealed class TheBoardInTheBarTests
             {
                 (double bx, double by) = CanteenBoard.At(body, level, a)!.Value;
 
+                // EVERY table, not merely the occupied ones. Since the rota (#709) the roster and the seating
+                // turn over with the shift, so any table may hold somebody on some watch — checking only the
+                // watch-0 occupants would be a guard that passes today and ships a crowded console tomorrow.
                 var others = new List<(double X, double Y, string What)> { (a.X, a.Y, "the fixture console") };
-                others.AddRange(CanteenRegulars.Sitting(body, level, a)
-                    .Select(s => (s.X, s.Y, s.Plate)));
+                others.AddRange(a.Tables.Select(t => (t.X, t.Y, "a table")));
 
                 foreach ((double ox, double oy, string what) in others)
                 {

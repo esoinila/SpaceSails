@@ -1,5 +1,6 @@
 ﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Pages;
 
@@ -731,6 +732,16 @@ public partial class Map
         // #709 · Which notice on the cork board comes next. A counter and not a set, because the board is the
         // one thing down here worth re-reading in ORDER — four notices, one per press, round and round.
         public int HiveBoardNext { get; set; }
+
+        // #709 · WHICH SHIFT the canteen's people are on. Owner: "let's have some random element of who is in
+        // the bar and where they got to sit down."
+        //
+        // Frozen ONCE, when this excursion's underground floor is drawn, and read by everything afterwards.
+        // The roster turns over with the watch (PatronRota's own, upstairs) — but the deck is built at one
+        // instant and the [E] press happens at another, so reading the clock a second time would let the
+        // figure on screen and the person the game answers about be two different people. That is bug class
+        // three with a face on it, and a watch chosen once cannot drift into it.
+        public long CanteenWatch { get; set; }
 
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
@@ -3857,7 +3868,7 @@ public partial class Map
         foreach (UndergroundComplex.Amenity a in floor.Amenities)
         {
             foreach (CanteenRegulars.Seated who in
-                CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a))
+                CanteenRegulars.Sitting(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch))
             {
                 if (Math.Abs(who.X - spot.X) < 0.5 && Math.Abs(who.Y - spot.Y) < 0.5)
                 {
@@ -4019,9 +4030,15 @@ public partial class Map
         // Routed here, the same way a derelict is, so nothing else in the excursion has to know.
         if (ex.Floor < 0)
         {
+            // #709 · Freeze which shift the canteen is on before the room is drawn, and hand the deck that
+            // number rather than a clock. Everything afterwards — the [E] press, a rebuild after searching a
+            // room — reads the same frozen watch, so the people drawn at the tables stay the people the game
+            // answers about.
+            ex.CanteenWatch = PatronRota.WatchIndex(SimTime);
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
-                3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied);
+                3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied,
+                ex.CanteenWatch);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.
