@@ -56,11 +56,30 @@ public static class CarriedObject
             Satchel.Kind.Rounds when item.Id == Ammunition.LabTwoStage.Id
                 => new Reveal(PenetratorArtUrl, PenetratorLabel, PenetratorStory),
 
-            Satchel.Kind.Relic => new Reveal(CollarArtUrl, CollarLabel, CollarStory),
+            Satchel.Kind.Relic => RelicReveal(item.Id),
 
             _ => null,
         };
     }
+
+    /// <summary>#677 · WHICH relic-class card, asked of the find's own id.
+    ///
+    /// <para>There are two of these now and they could not be less alike: a band of alloy on a pallet that
+    /// somebody crated, invoiced and left the lights on over, and a section of wall that nobody made. This
+    /// branch used to be one constant and would have shown a photograph of a pallet to a captain standing in
+    /// a gallery with nothing in it, which is the third named bug class — the sim holding one thing while the
+    /// picture reports another.</para>
+    ///
+    /// <para>Asked of the ID rather than of a body and a level, because the satchel keeps the id and nothing
+    /// else: a row that re-derived a floor's band for itself would be a second answer to a question
+    /// <see cref="UndergroundComplex.FindId"/> already settled the moment the thing went in the pocket. An
+    /// empty <see cref="Reveal.ArtUrl"/> is the caption-only idiom (#528, the lifeboat muster, the odd book):
+    /// a card that never claims a picture rather than one that wires an unpainted file and hides it on
+    /// error.</para></summary>
+    public static Reveal RelicReveal(string findId) =>
+        UndergroundComplex.IsHallRecord(findId)
+            ? new Reveal("", UndergroundComplex.FoundRecordCardLabel, UndergroundComplex.FoundRecordCard)
+            : new Reveal(CollarArtUrl, CollarLabel, CollarStory);
 
     /// <summary>#614 · THE LOCK, NOT THE DOOR.
     ///

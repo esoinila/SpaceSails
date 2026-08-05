@@ -138,10 +138,24 @@ public partial class Map
     /// stopped it having a hidden band, the cheat would quietly stop reaching the feature it exists for.</para></summary>
     private const string SecretLabDeepCheatBodyId = "secret-lab-site-unlisted";
 
-    private static BodyDefinition SecretLabSiteBody(string berthId, bool deep) => new()
+    /// <summary>#677 · The <c>?found=1</c> rock, chosen the same way <see cref="SecretLabDeepCheatBodyId"/>
+    /// was: a site's whole shape is seeded off its BODY ID, so reaching the halls from a URL is a matter of
+    /// parking a rock with the right name rather than of overriding a Core fact from the client.
+    ///
+    /// <para>This one is a seven-floor LABORATORY with an unlisted CLINIC under it (B9–B12) and a band of
+    /// galleries under a whole band of nothing (B17–B20) — the full chain, in one rock, which is what makes
+    /// it the right one to test on. The suffix is the search that found it and is not decoration: the
+    /// generator's own dice decide which ids hide anything, and about one in fifty does.</para>
+    ///
+    /// <para>Read from Core rather than typed here, unlike its two older siblings: five places have to agree
+    /// about this id (the cheat and four sweeps that would otherwise audit a universe with no galleries in
+    /// it), and five copies of a magic string is the habit this repo's spec opens with a table of.</para></summary>
+    private const string SecretLabFoundCheatBodyId = UndergroundComplex.FoundBandCheatSiteId;
+
+    private static BodyDefinition SecretLabSiteBody(string berthId, string id, string name) => new()
     {
-        Id = deep ? SecretLabDeepCheatBodyId : SecretLabCheatBodyId,
-        Name = deep ? "The Deep Hermit's Rock" : "The Hermit's Rock",
+        Id = id,
+        Name = name,
         ParentId = berthId,
         Mu = 0,
         BodyRadiusM = ExpeditionSite.BodyRadiusMeters,
@@ -747,6 +761,28 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["watchers=".Length..]).ToLowerInvariant();
                 _watchersCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("found=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #677 dev cheat: /map?found=1 parks the one rock in the game whose site has a band nobody
+                // dug under a band nobody listed, sets you down at the lift head, and puts every authority
+                // this site ever issued in your wallet — including the last one, which is the way past the
+                // seam. About one site in fifty has halls, and the way in is a card somebody left in a room
+                // eleven floors down; "a scene nobody can reach on demand is a scene that ships broken" has
+                // never applied harder than it does here.
+                //
+                // It implies ?secretlab=1, because there is no other way down. Pair it with ?floor=N to ride
+                // straight to a gallery: /map?found=1&land=1&floor=17.
+                //
+                // What it deliberately does NOT do is invent a band. The rock's whole shape — its depth, its
+                // kinds, its hidden band and its halls — is seeded off its body id like every other site in
+                // the system, so what a tester walks is exactly what a captain would walk if they found it.
+                string candidate = Uri.UnescapeDataString(pair["found=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _foundCheat = true;
+                    secretlabCheat = true;
+                }
+            }
             else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
             {
                 // #409 dev cheat: /map?secretlab=1 spawns a plain LANDABLE rock parked in shuttle range at the
@@ -757,6 +793,7 @@ public partial class Map
                 // fast path.)
                 string candidate = Uri.UnescapeDataString(pair["secretlab=".Length..]).ToLowerInvariant();
                 secretlabCheat = candidate is "1" or "true" or "yes" or "deep";
+
 
                 // #592 · ?secretlab=deep parks a rock whose site HAS a band nobody listed. The ordinary
                 // cheat rock's site is seeded like any other and happens to be four floors of records annex
@@ -1054,8 +1091,19 @@ public partial class Map
             string berthId = DockedStarts.TryGetValue(berthKey, out string? mappedBerth) ? mappedBerth : berthKey;
             if (scenario.Bodies.Any(b => b.Id == berthId))
             {
-                scenario = scenario with { Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId, secretlabDeep)] };
-                _secretLabForceBodyId = secretlabDeep ? SecretLabDeepCheatBodyId : SecretLabCheatBodyId;
+                // #677 · Three rocks now, one cheat shape. `?found=1` is the deepest of them and it implies
+                // `?secretlab=1`, because there is no other way down: the halls hang off a band nobody
+                // listed, which hangs off a facility, which is reached through a shed.
+                (string rockId, string rockName) = _foundCheat
+                    ? (SecretLabFoundCheatBodyId, "The Hermit's Deep Rock")
+                    : secretlabDeep
+                        ? (SecretLabDeepCheatBodyId, "The Deep Hermit's Rock")
+                        : (SecretLabCheatBodyId, "The Hermit's Rock");
+                scenario = scenario with
+                {
+                    Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId, rockId, rockName)],
+                };
+                _secretLabForceBodyId = rockId;
                 dockCheat = berthId; // clamp onto the berth the rock co-orbits, so it's in reach at spawn
             }
         }

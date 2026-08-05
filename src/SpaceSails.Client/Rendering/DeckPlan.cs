@@ -81,9 +81,24 @@ public sealed class DeckPlan
     /// Ridge Camp that is 16 of 25 segments drawn in the ship's cold pressure-hull stroke. The flag was
     /// never wrong — a monolith IS solid and a fallen span is not — it was the INK that was wrong. Same
     /// distinction, different material.</para></param>
+    /// <param name="IsSeamless">#677 · THE THIRD IDIOM. Not a made pressure boundary and not a body's stone
+    /// — a continuous, unbroken surface that carries no texture, no joints and no palette at all.
+    ///
+    /// <para>The game has exactly two wall materials and both of them say who built the thing: hull ink is
+    /// poured, welded, bolted and paid for; stone ink is the body's own rock in the body's own colour. The
+    /// found halls (#677) are neither, so they are drawn as neither. <b>The absence of texture IS the
+    /// style</b> — owner's ruling: <i>"it is just built into the smooth monolith style walls"</i> — which on
+    /// a crude top-down grid reads exactly as wrong as it should, because every other wall in the game
+    /// belongs to somebody.</para>
+    ///
+    /// <para>It takes NO ink from <see cref="DeckPlan.HullInk"/> or <see cref="DeckPlan.StoneInk"/>, and that
+    /// refusal is the load-bearing half: a palette is a fact about a moon or a department, and either one
+    /// applied here would quietly answer the question the whole feature exists to leave open. The precedent
+    /// is #649's slab, which says <i>no seam</i> by having no interior line-work rather than by being
+    /// labelled.</para></param>
     public readonly record struct Wall(
         float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull, bool Unseen = false,
-        bool IsStone = false);
+        bool IsStone = false, bool IsSeamless = false);
 
     /// <summary>An airlock door across a passage. An automatic door slides open as the avatar nears
     /// (a top-down flourish; it never blocks — the passage is always walkable). A <c>Locked</c> door

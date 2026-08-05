@@ -223,13 +223,20 @@ public static class SuitAir
     /// air, being told in colour that their tank was running out. <b>Anything that ever becomes a new place
     /// to breathe is added HERE, once, and every surface follows.</b></para>
     /// </summary>
+    /// <param name="bodyId">#677 · WHICH MOON's building. Whether a floor breathes stopped being arithmetic
+    /// on a level the day a band of galleries nobody dug turned out to hold pressure on every floor of
+    /// itself, so the one predicate has to be told where it is standing. Required, and there is deliberately
+    /// no overload without it: an optional body would be a second answer, silently right everywhere except
+    /// the four floors that matter.</param>
     /// <param name="floor">The excursion's floor: 0 or above is the regolith, negative is the Hive.</param>
     /// <param name="insideShelter">Standing inside an emergency shelter's drum.</param>
     /// <param name="aboard">Past the tube's surface-end door — hers, not yours.</param>
     /// <param name="inRefuge">#608 · Standing in a pressure refuge cut into a dead floor.</param>
-    public static Supply SourceOf(int floor, bool insideShelter, bool aboard, bool inRefuge = false)
+    public static Supply SourceOf(
+        string bodyId, int floor, bool insideShelter, bool aboard, bool inRefuge = false)
     {
-        if (floor < 0 && (UndergroundComplex.HoldsPressure(floor) || inRefuge))
+        ArgumentNullException.ThrowIfNull(bodyId);
+        if (floor < 0 && (UndergroundComplex.HoldsPressure(bodyId, floor) || inRefuge))
         {
             return Supply.Room;
         }

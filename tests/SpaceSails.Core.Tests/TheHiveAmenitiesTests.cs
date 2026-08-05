@@ -183,7 +183,7 @@ public sealed class TheHiveAmenitiesTests
             if (UndergroundComplex.StaffCanteenFloor(body) is { } mess)
             {
                 deep++;
-                Assert.True(UndergroundComplex.HoldsPressure(mess), $"{body}: the mess cannot breathe.");
+                Assert.True(UndergroundComplex.IsPlumbed(body, mess), $"{body}: the mess cannot breathe.");
                 Assert.True(mess < UndergroundComplex.TopPressurisedFloor(body),
                     $"{body}: the mess is not below the bar.");
                 Assert.False(UndergroundComplex.IsUnlisted(body, mess),
@@ -216,20 +216,29 @@ public sealed class TheHiveAmenitiesTests
         // reason that is not HoldsPressure, the plate by the lift and the suit gauge are reading two
         // different maps, and §13.13 exists because that is worse than saying nothing at all. There is one
         // pressure fact in this building and every amenity is asked to justify itself against it.
-        AuditEveryFloor((_, level, floor) =>
+        //
+        // #677 · AND IT IS ASKED THROUGH IsPlumbed, which is that fact plus one: the galleries nobody dug
+        // BREATHE and are not plumbed. The two are not in tension — a canteen, a cubicle and a duct are all
+        // things somebody was made to pay for, and there is no invoice down there — but it means the audit
+        // covers a second case now, a floor with air and nothing that provides it, and the message says
+        // which of the two it caught.
+        AuditEveryFloor((body, level, floor) =>
         {
-            if (UndergroundComplex.HoldsPressure(level))
+            if (UndergroundComplex.IsPlumbed(body, level))
             {
                 return null;
             }
+            string why = UndergroundComplex.IsFound(body, level)
+                ? "a gallery nobody dug — its air has no plant and may never be shown one"
+                : "a vacuum floor";
             if (floor.Amenities.Count > 0)
             {
-                return $"{floor.Amenities.Count} amenity room(s) on a vacuum floor.";
+                return $"{floor.Amenities.Count} amenity room(s) on {why}.";
             }
             return floor.EnSuites.Count > 0
-                ? $"{floor.EnSuites.Count} en-suite(s) plumbed into vacuum."
+                ? $"{floor.EnSuites.Count} en-suite(s) plumbed into {why}."
                 : null;
-        }, "spec — the amenities breathe because HoldsPressure says the floor does, and for no other reason");
+        }, "spec — the amenities breathe because IsPlumbed says the floor does, and for no other reason");
     }
 
     [Fact]
@@ -251,7 +260,7 @@ public sealed class TheHiveAmenitiesTests
             // …and the other direction: every principal room on a floor that breathes HAS one. The cell is
             // skipped when the ground behind the room is already claimed (the ledger is law, #585), so this
             // is also the guard that says that fallback has never once fired on the shipped field.
-            if (!UndergroundComplex.HoldsPressure(level))
+            if (!UndergroundComplex.IsPlumbed(body, level))
             {
                 return null;
             }
@@ -496,8 +505,25 @@ public sealed class TheHiveAmenitiesTests
         // everybody to scroll past it. What is this feature's business is that carving takes nothing away:
         // every doorway the generator cut is still a door into somewhere, as a room to search, a refuge, or
         // a canteen. Doorways.Count is the count before any carving, so the sum is exact.
-        AuditEveryFloor((_, _, floor) =>
+        AuditEveryFloor((body, level, floor) =>
         {
+            // #677 · A GALLERY HAS NO DOORWAY TO CONSERVE. Every doorway in this building is drawn as an
+            // IMPORTED violet leaf — the one channel that means "somebody flew this here" — so the halls cut
+            // none at all and the wall simply stops. The conservation sum below is therefore not the law that
+            // applies down there; what is, is that nothing was carved out of them in the first place, which
+            // is the same claim by its other name. Watched go red at
+            // `generated-moon-9 B13: 0 doors were cut and only 16 of them lead anywhere.`
+            if (UndergroundComplex.IsFound(body, level))
+            {
+                bool intact = floor.Doorways.Count == 0
+                    && floor.Amenities.Count == 0
+                    && floor.Refuges.Count == 0
+                    && floor.RoomCentres.Count > 0;
+                return intact ? null
+                    : $"a gallery with {floor.Doorways.Count} doorway(s), {floor.Amenities.Count} amenity "
+                        + $"room(s), {floor.Refuges.Count} refuge(s) and {floor.RoomCentres.Count} chamber(s).";
+            }
+
             int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count;
             if (places != floor.Doorways.Count)
             {

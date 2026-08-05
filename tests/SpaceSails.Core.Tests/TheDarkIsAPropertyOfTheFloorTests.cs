@@ -21,6 +21,11 @@ public sealed class TheDarkIsAPropertyOfTheFloorTests
     [
         "luna", "phobos", "europa", "ganymede", "callisto",
         "titan", "enceladus", "miranda", "triton", "the-clinker",
+
+        // #677 · …and the one rock in the system with GALLERIES under it. Without it every sweep in this
+        // file audits a universe where the found band does not exist and passes for the wrong reason —
+        // which is the fifth named bug class (a guard handed a world that cannot tell pass from fail).
+        UndergroundComplex.FoundBandCheatSiteId,
     ];
 
     private static IEnumerable<(string Body, int Level)> EveryFloor() =>
@@ -29,22 +34,31 @@ public sealed class TheDarkIsAPropertyOfTheFloorTests
     // ── The floor's own fact ─────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// NOTHING THE GAME SHIPS IS DARK. Every listed floor of every clandestine site keeps its failing
-    /// facility light and the instrument-lit look it has always had. The found halls (#677) will be the first
-    /// thing down here to declare otherwise, and they are not built; until then the only way in is the cheat.
-    /// This is the "ordinary floors unchanged" half of the issue, pinned at the source rather than at a
-    /// screenshot.
+    /// THE ONLY FLOORS THAT GO DARK ON THEIR OWN ARE THE ONES NOBODY DUG (#677). Every floor the FACILITY
+    /// built — listed or not — keeps its failing light and the instrument-lit look it has always had; every
+    /// gallery past the seam has never had a fixture in it.
+    ///
+    /// <para>This test used to read "nothing the game ships is dark", which was true for exactly as long as
+    /// #708's customer had not arrived. It is written as an EQUIVALENCE rather than as a count, because the
+    /// two ways this dies are opposite and both silent: the halls quietly losing their darkness, and darkness
+    /// quietly spreading onto floors that have lamps. Either shows up here naming the floors.</para>
     /// </summary>
     [Fact]
-    public void NoFloorTheGameSHIPSIsDarkOfItsOwnAccord()
+    public void THEONLYFloorsDarkOfTheirOwnAccordAreTheOnesNobodyDug()
     {
-        var dark = EveryFloor()
-            .Where(f => UndergroundComplex.IsDark(f.Body, f.Level))
-            .Select(f => $"{f.Body} B{-f.Level}")
+        var wrong = EveryFloor()
+            .Where(f => UndergroundComplex.IsDark(f.Body, f.Level)
+                != UndergroundComplex.IsFound(f.Body, f.Level))
+            .Select(f => $"{f.Body} B{-f.Level} "
+                + (UndergroundComplex.IsFound(f.Body, f.Level) ? "(a gallery, and it is LIT)" : "(went dark)"))
             .ToList();
 
-        Assert.True(dark.Count == 0,
-            $"{dark.Count} shipped floor(s) went dark on their own: {string.Join(", ", dark.Take(12))}");
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} floor(s) disagree with the seam: {string.Join(", ", wrong.Take(12))}");
+
+        // And the sweep has to have SEEN some halls, or it proved only that ordinary floors are lit.
+        int galleries = EveryFloor().Count(f => UndergroundComplex.IsFound(f.Body, f.Level));
+        Assert.True(galleries > 0, "no site in this sweep has halls under it — this proved half a law.");
     }
 
     /// <summary>
@@ -93,7 +107,7 @@ public sealed class TheDarkIsAPropertyOfTheFloorTests
     {
         (string Name, Func<string, int, bool> Rule)[] impostors =
         [
-            ("a floor that cannot be breathed", (_, l) => !UndergroundComplex.HoldsPressure(l)),
+            ("a floor that cannot be breathed", (b, l) => !UndergroundComplex.HoldsPressure(b, l)),
             ("a floor deep enough to feel like a cave", (_, l) => l <= -8),
             ("the band nobody listed", UndergroundComplex.IsUnlisted),
         ];
