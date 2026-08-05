@@ -30,6 +30,11 @@ public sealed class TheHudSaysWhereTheAirComesFromTests
     [
         "luna", "phobos", "europa", "ganymede", "callisto",
         "titan", "enceladus", "miranda", "triton", "the-clinker",
+
+        // #677 � …and the one rock in the system with GALLERIES under it. Without it every sweep in this
+        // file audits a universe where the found band does not exist and passes for the wrong reason —
+        // which is the fifth named bug class (a guard handed a world that cannot tell pass from fail).
+        UndergroundComplex.FoundBandCheatSiteId,
     ];
 
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
@@ -70,7 +75,7 @@ public sealed class TheHudSaysWhereTheAirComesFromTests
 
                 // What the SUIT will say while standing here — the sim's own predicate, asked exactly the
                 // way Map.Surface's drain asks it of the floor.
-                SuitAir.Supply floorAir = SuitAir.SourceOf(level, insideShelter: false, aboard: false);
+                SuitAir.Supply floorAir = SuitAir.SourceOf(body, level, insideShelter: false, aboard: false);
                 string expected = SuitAir.PlateLine(floorAir);
                 int expectedTone = SuitAir.Drawing(floorAir) ? ToneRunning : ToneHeld;
 

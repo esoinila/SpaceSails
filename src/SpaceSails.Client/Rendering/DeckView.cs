@@ -200,6 +200,20 @@ public sealed class DeckView
     private static readonly RgbaColor StencilDead = new(232, 150, 84, 245);
 
     private static readonly RgbaColor StoneLine = new(166, 150, 130);
+
+    /// <summary>#677 · THE THIRD MATERIAL — the found halls' walls, and the only ink in the game that is not
+    /// a fact about anybody.
+    ///
+    /// <para>Hull is cold blue-white because a bulkhead is metal somebody paid for; stone is warm and dusty
+    /// because it is the moon you are standing on. This is neither: a flat, chroma-free grey that belongs to
+    /// no palette, no department and no body, drawn heavier than either of them and with no texture,
+    /// hatching or interior line-work of any kind. <b>The absence is the style</b> (§13.20), and it is the
+    /// same thing #649's slab says by having nothing drawn inside its face.</para>
+    ///
+    /// <para>Deliberately NOT bright. Owner: <i>"a material the light does not grip"</i> — so it sits below
+    /// the hull's value rather than above it, and on a floor where the suit's cone is the whole of the seeing
+    /// (#708) that is most of what a captain ever learns about it.</para></summary>
+    private static readonly RgbaColor SeamlessLine = new(150, 150, 150);
     private static readonly RgbaColor WindowLine = new(80, 220, 210, 220);
     private static readonly RgbaColor ConsoleGlow = new(120, 220, 200);
     private static readonly RgbaColor ConsoleNear = new(190, 255, 220);
@@ -537,14 +551,22 @@ public sealed class DeckView
             // wrecks are steel), so nothing outside the Hive changes by a pixel.
             RgbaColor hull = plan.HullInk is { } made ? new RgbaColor(made.R, made.G, made.B) : HullLine;
 
+            // #677 · …AND A THIRD MATERIAL, WHICH TAKES NO INK FROM EITHER OF THEM. Both branches above read
+            // a palette — the department that painted this corridor, the moon this rock came out of — and a
+            // palette is an ANSWER. The found halls are drawn in one flat constant, ahead of both, because
+            // the day a livery or a body colour reached them the walls would start saying whose they were.
             RgbaColor color = ws == 1 ? ExploredWall
                 : w.IsWindow ? WindowLine
+                : w.IsSeamless ? SeamlessLine
                 : w.IsStone ? stone
                 : w.IsHull ? hull
                 : InnerLine;
             // Stone is drawn as heavy as hull: it is just as solid, and a monolith you could mistake for
-            // rubble is a monolith that stops being the centrepiece of the moon it stands on.
-            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color, w.IsHull || w.IsStone ? 2.5f : 1.5f);
+            // rubble is a monolith that stops being the centrepiece of the moon it stands on. Seamless is
+            // heavier than either, because it is the one surface in the game with no line-work inside it and
+            // weight is all the drawing has left to say SOLID with.
+            DrawSeg(P(w.X1, w.Y1), P(w.X2, w.Y2), color,
+                w.IsSeamless ? 3.5f : w.IsHull || w.IsStone ? 2.5f : 1.5f);
         }
 
         // Automatic airlock doors (the docking tube): shut across the passage until you near them,

@@ -216,8 +216,27 @@ public static class OddBooks
     public static bool HoldsOne(string bodyId, int level, int roomIndex)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return UndergroundComplex.InRoom(bodyId, level, roomIndex) == UndergroundComplex.Haul.Nothing
+        return ShelvesStandHere(bodyId, level)
+            && UndergroundComplex.InRoom(bodyId, level, roomIndex) == UndergroundComplex.Haul.Nothing
             && DiceRule.Roll(DiceRule.Seed($"hive:oddbook:{bodyId}:{level}:{roomIndex}"), Rate).Face == 1;
+    }
+
+    /// <summary>#677 · IS THERE A SHELF ON THIS FLOOR AT ALL — the one question both the roll and the cheat
+    /// ask, so the halls cannot be reached by either.
+    ///
+    /// <para>A shelf is a FACILITY object. The whole engine behind this feature is a department that reads
+    /// everything, and a department is staff, a budget, a requisition and a room somebody was given. None of
+    /// that exists in the band nobody dug (#677, §13.20): the emptiness there is load-bearing squared, and a
+    /// paperback in a gallery would be the single most explaining object the game could put in one — it would
+    /// say somebody LIVED there, and which century they came from.</para>
+    ///
+    /// <para>Asked in ONE place because <see cref="Search"/>'s cheat path bypasses <see cref="HoldsOne"/>
+    /// entirely: two guards would be two answers, and the one that got missed would be the one a tester
+    /// typing <c>?book=6</c> in a hall walked straight through.</para></summary>
+    public static bool ShelvesStandHere(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return !UndergroundComplex.IsFound(bodyId, level);
     }
 
     /// <summary>Everything one search of a shelf room answers, in one pure call.
@@ -245,8 +264,8 @@ public static class OddBooks
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
-        bool wouldBeEmpty =
-            UndergroundComplex.InRoom(bodyId, level, roomIndex) == UndergroundComplex.Haul.Nothing;
+        bool wouldBeEmpty = ShelvesStandHere(bodyId, level)
+            && UndergroundComplex.InRoom(bodyId, level, roomIndex) == UndergroundComplex.Haul.Nothing;
         bool here = forced is { } f
             ? wouldBeEmpty && (f == 0 || (f >= 1 && f <= Catalog.Count))
             : HoldsOne(bodyId, level, roomIndex);

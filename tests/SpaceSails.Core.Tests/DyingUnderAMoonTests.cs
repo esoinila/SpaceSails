@@ -133,7 +133,7 @@ public sealed class DyingUnderAMoonTests
             Assert.Contains($"{UndergroundComplex.MetresDown(level):F0} m", card, StringComparison.Ordinal);
             int refuge = UndergroundComplex.BandTop(UndergroundComplex.BandOf(level));
             Assert.Contains(UndergroundComplex.NameOf("miranda", refuge), card, StringComparison.Ordinal);
-            Assert.True(UndergroundComplex.HoldsPressure(refuge),
+            Assert.True(UndergroundComplex.HoldsPressure("miranda", refuge),
                 $"B{-level}: the card points at B{-refuge} as the nearest air and it does not hold pressure.");
 
             // And the tank, so the margin is a number rather than a feeling.
@@ -167,13 +167,17 @@ public sealed class DyingUnderAMoonTests
     {
         // The card is for the first DEAD floor. A band top is a refuge and gets the relief line instead —
         // that beat is the lie that makes the rest of the building work (#585) and must not be stepped on.
+        // #677 · Asked of a site with nothing under its unlisted band. The band-top law below is about the
+        // building the building DUG; every floor of a found band breathes, so a site with halls would answer
+        // differently on some of these levels and be right to.
+        Assert.False(UndergroundComplex.HasFoundBand("miranda"));
         foreach (int level in new[] { -1, -5, -9, -13 })
         {
-            Assert.True(UndergroundComplex.HoldsPressure(level));
+            Assert.True(UndergroundComplex.HoldsPressure("miranda", level));
         }
         foreach (int level in new[] { -2, -3, -4, -6, -7, -8 })
         {
-            Assert.False(UndergroundComplex.HoldsPressure(level));
+            Assert.False(UndergroundComplex.HoldsPressure("miranda", level));
         }
     }
 }

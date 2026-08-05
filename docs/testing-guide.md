@@ -498,9 +498,37 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?ashore=1`** | **Boot docked AND ALREADY STANDING IN THE BAR — the ship → airlock → tube → immigration hall → bar walk already walked (#428). Every bar beat begins with that walk; in a hidden/automated tab it cannot be walked at all. Pairs with `?dock=` / `?start=`, and with every bar cheat.** |
 | **`?watchers=1`** | **Open the MONOLITH GROUND'S attentive window and cut the dwell from forty seconds to two, so the strange-things-happen beat (#649) can be watched on demand. Stand at the stone. It is rare by design — one visit-window in three, and then only if you stay — and this changes the GATES and nothing else, so what you see is what a captain sees. Pair with `&dock=the-space-bar&body=phobos&site=0&land=1`, and with `&reevers=3` for the variant that needs a pack on the field.** |
 | **`?nerve=N`** | **Seed the nerve gauge at N of 10 whole pips at boot (#428/#480). Clamps to the gauge; `?nerve=10` is the shipped default. The only way to reach a sanity beat without being hunted for minutes first.** |
-| **`?dark=1`** | **Put the FIXTURES OUT on every floor this excursion walks — the suit's forward-facing headlights become the whole of the seeing, and everything outside the cone is BLACK rather than dim (#708). Nothing the game ships declares itself dark yet: the found halls (#677) will be the first and they are not built, so this is the only door to the feature. It changes ONE fact — what `UndergroundComplex.IsDark` answers — and nothing else: collision, air, the pack, the sentries and the motion tracker all behave exactly as they do with the lights on, so you can walk into what you cannot see, and something you cannot see can walk into you. Above ground is never dark (a surface has a sun). Pair with `&secretlab=deep&land=1&floor=4`.** |
+| **`?dark=1`** | **Put the FIXTURES OUT on every floor this excursion walks — the suit's forward-facing headlights become the whole of the seeing, and everything outside the cone is BLACK rather than dim (#708). The FOUND HALLS (#677) declare themselves dark and are the only floors that do, so this is how every OTHER floor is seen in the dark — and how the cone is exercised without hunting for the one site in fifty that has galleries. It changes ONE fact — what `UndergroundComplex.IsDark` answers — and nothing else: collision, air, the pack, the sentries and the motion tracker all behave exactly as they do with the lights on, so you can walk into what you cannot see, and something you cannot see can walk into you. Above ground is never dark (a surface has a sun). Pair with `&secretlab=deep&land=1&floor=4`.** |
 | **`?process=N`** | **How long processing one document takes, in sim seconds — `?process=0` makes it INSTANT (#696). Leaving a paper or a file with 🫳, and reading a paper as a clue at the tracker, are a twenty-second hold of standing still; that IS the mechanic, and it is exactly the wrong thing to make a story test sit through. Any other value tunes the feel from the URL without a rebuild. Pair with `&dock=the-tilt&site=0&land=1`. There is deliberately no switch for what a hold costs in AIR, because nothing computes that: the hold passes sim time and the suit prices sim time, which is the whole of the owner's ruling.** |
 | **`?book=N` / `?book=on`** | **Put THE ODD BOOK in every would-be-empty room this excursion searches (#701). `1`–`10` force that catalog entry, which is how all ten authored texts get read on demand; `on` (or `all`/`any`) forces the SEEDED entry, i.e. the shipped selection with the one-in-six gate taken off, which is how the Laboratory/Transit-station weighting is watched working. It cannot put a book in an OCCUPIED room — a book is what a would-be-empty room has *instead of* the empty line, and a cheat that laid one on top of a pallet would have you playtesting a room the game cannot produce. It is an ARGUMENT to `OddBooks.Search` and never a second answer OR-ed in beside it (the `?dark=1` rule). Pair with `&secretlab=deep&land=1&floor=2`.** |
+| **`?found=1`** | **Park the one rock in the system with a band NOBODY DUG under the band nobody listed (#677), set down at the lift head, and start with every authority this site ever issued already in the wallet — including the last one, which is the way past the seam. About one site in fifty has galleries and the way in is a card somebody left in a room eleven floors down, so without this the feature is unreachable in practice. It implies `?secretlab=1` (there is no other way down). It overrides no Core fact: the rock's whole shape — its depth, its two kinds, its unlisted band and its halls — is seeded off its body id (`UndergroundComplex.FoundBandCheatSiteId`) exactly like every other site, so what you walk is what a captain would walk. The cards are minted through the real `AuthorityCard` and put in the real satchel, so the panel, the gate, the refusal ladder and the wallet fan all behave as they do for somebody who earned them. Pair with `&land=1`, and with `&floor=17` to ride straight to the first gallery.** *(It is also a button in the front door's **⚙ DEV START SITES** list — 🕳 “The halls nobody dug”.)* |
+
+### Walking the found halls — `?found=1` (#677)
+
+Two gates and a band of solid rock stand between a landing and a gallery. This is the whole walk-through:
+
+```
+/map?found=1&land=1                 the lift head, wallet full — ride down and read the building
+/map?found=1&land=1&floor=9         B9, the band nobody listed (a clinic under a laboratory)
+/map?found=1&land=1&floor=12        its deepest floor — the thing on the pallet is in room one
+/map?found=1&land=1&floor=17        the FIRST gallery: dark, sealed, and nothing says why
+/map?found=1&land=1&floor=20        the deepest gallery — the chambers are visibly bigger here
+/map?found=1&land=1&floor=14        a floor inside the band of NOTHING: you land in the galleries
+```
+
+**What you should see.** The lift panel from B12 shows no button below it until you look in your wallet — the
+building does not admit the shaft exists, and neither does its panel. Riding it says the seam line once
+(*"The pour stops. Not at a wall — at a line…"*) and then the arrival line once (*"The car has no button for
+this floor…"*). On the floor: **no light but the suit's cone**, the air gauge parked on **PRESSURISED · TANK
+STOPPED**, walls in a flat grey that is neither the department livery above nor any moon's stone, **no doors**
+(the wall simply stops at each chamber mouth), **no plates**, no `⟶ SECTOR n · 2.4 km`, no refuge, no canteen,
+no cubicle, and no book on any shelf. Nearly every chamber says *"Nothing. Not stripped — nothing was ever
+here."* About one in nine holds a record: a rubbing goes in the pocket, the wall stays, and the casebook keeps
+one line about a tape measure failing. Ride down through B18–B20 and count the chambers — there are half as
+many and each is half again as large, which is the only sentence the plan is allowed to say.
+
+Pair with `&dark=0` — there is no such switch, and there does not need to be: these floors are dark because
+they declare it, and `?dark=1` is for the ordinary ones.
 
 ### Reading the whole shelf — `?book=N` (#701)
 

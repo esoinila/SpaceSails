@@ -93,9 +93,9 @@ public sealed class TheRefugesUndergroundTests
     {
         // THE acceptance criterion, and the only one the owner stated as an absolute: "there should be like
         // at least one air replenish station in each of the airless labs underground... for pure safety".
-        AuditEveryFloor((_, level, floor) =>
+        AuditEveryFloor((body, level, floor) =>
         {
-            if (UndergroundComplex.HoldsPressure(level))
+            if (UndergroundComplex.HoldsPressure(body, level))
             {
                 return null;
             }
@@ -111,8 +111,8 @@ public sealed class TheRefugesUndergroundTests
         // corridor that already has air is an instrument disagreeing with the room — and worse, it would
         // teach a captain that the plate means "here and nowhere else", which on the floor below is a lie
         // that costs a tank.
-        AuditEveryFloor((_, level, floor) =>
-            !UndergroundComplex.HoldsPressure(level) || floor.Refuges.Count == 0
+        AuditEveryFloor((body, level, floor) =>
+            !UndergroundComplex.HoldsPressure(body, level) || floor.Refuges.Count == 0
                 ? null
                 : $"{floor.Refuges.Count} refuge(s) on a floor that already holds pressure.",
             "a floor that holds pressure needs no refuge");
@@ -178,9 +178,9 @@ public sealed class TheRefugesUndergroundTests
         // refuges, because a refuge is a room's worth of building rather than a deletion). What is asserted
         // HERE is the harder floor under it: however tight a seeded floor is, taking the refuge never leaves
         // a lift ride that opens on nothing to do.
-        AuditEveryFloor((_, level, floor) =>
+        AuditEveryFloor((body, level, floor) =>
         {
-            if (UndergroundComplex.HoldsPressure(level) || floor.RoomCentres.Count >= 1)
+            if (UndergroundComplex.HoldsPressure(body, level) || floor.RoomCentres.Count >= 1)
             {
                 return null;
             }
@@ -309,7 +309,7 @@ public sealed class TheRefugesUndergroundTests
         // pointed underground). The plate is an inspectorate's: a number, an occupancy, and an instruction.
         for (int level = -2; level > -20; level--)
         {
-            if (UndergroundComplex.HoldsPressure(level))
+            if (UndergroundComplex.HoldsPressure("miranda", level))
             {
                 continue;
             }

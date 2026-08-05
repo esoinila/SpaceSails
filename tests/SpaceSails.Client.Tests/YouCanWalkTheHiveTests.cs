@@ -29,6 +29,11 @@ public sealed class YouCanWalkTheHiveTests
     [
         "luna", "phobos", "europa", "ganymede", "callisto",
         "titan", "enceladus", "miranda", "triton", "the-clinker",
+
+        // #677 � …and the one rock in the system with GALLERIES under it. Without it every sweep in this
+        // file audits a universe where the found band does not exist and passes for the wrong reason —
+        // which is the fifth named bug class (a guard handed a world that cannot tell pass from fail).
+        UndergroundComplex.FoundBandCheatSiteId,
     ];
 
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
@@ -148,9 +153,9 @@ public sealed class YouCanWalkTheHiveTests
         // each asserted STANDABLE first. A goal buried in wall would make CanReach return false and read as
         // "the corridors are broken"; a goal that is somehow standable inside a sealed box would pass a
         // sloppier test on a floor nobody could ever cross.
-        AuditEveryFloor((_, level, deck) =>
+        AuditEveryFloor((body, level, deck) =>
         {
-            if (UndergroundComplex.HoldsPressure(level))
+            if (UndergroundComplex.HoldsPressure(body, level))
             {
                 return null;   // the floor is the refuge
             }
@@ -197,9 +202,9 @@ public sealed class YouCanWalkTheHiveTests
         // for the detour; this measures the walk on the REAL deck, over the real corridors, because a
         // straight-line distance and a route through a facility are not the same number and only one of them
         // is what the captain pays.
-        AuditEveryFloor((_, level, deck) =>
+        AuditEveryFloor((body, level, deck) =>
         {
-            if (UndergroundComplex.HoldsPressure(level))
+            if (UndergroundComplex.HoldsPressure(body, level))
             {
                 return null;
             }
@@ -343,7 +348,7 @@ public sealed class YouCanWalkTheHiveTests
     public void AFloorIsWorthTheLiftRide()
     {
         // The complaint that started all of this, stated as a floor-by-floor law: not a two-door apartment.
-        AuditEveryFloor((_, _, deck) =>
+        AuditEveryFloor((body, level, deck) =>
         {
             // #608 · THE REFUGE COUNTS AS A ROOM, because it IS one. It is carved out of the floor's own
             // rooms (one poured box off a rib, with its doorway), so counting only HiveHaul would read a
@@ -364,6 +369,18 @@ public sealed class YouCanWalkTheHiveTests
             {
                 return $"only {rooms} rooms to search.";
             }
+            // #677 · A GALLERY IMPLIES THE REST OF ITSELF BY BEING BIGGER, not by hanging plates on shut
+            // doors. `⟶ SECTOR 7 · 2.4 km` is the cheapest illusion of scale there is, and it is also a
+            // survey, a department and a decision about where somebody's authority stopped — three things
+            // nobody down there ever wrote. So the halls have no sealed doors at all, deliberately, and this
+            // went red at `only 0 sealed doors — nothing implies the rest of it` naming all four floors.
+            // What replaces the stencil is the room scale, and that is asserted in Core.
+            if (UndergroundComplex.IsFound(body, level))
+            {
+                return sealedDoors == 0 ? null
+                    : $"{sealedDoors} stencilled plate(s) in a gallery — somebody surveyed it after all.";
+            }
+
             return sealedDoors < 3 ? $"only {sealedDoors} sealed doors — nothing implies the rest of it." : null;
         }, "spec — a facility, not a flat");
     }

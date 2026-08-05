@@ -44,6 +44,15 @@ public static class HiveInterior
         var consoles = new List<DeckPlan.ConsoleSpot>();
         var labels = new List<(float X, float Y, string Text)>();
 
+        // ── #677 · WHICH SIDE OF THE SEAM THIS FLOOR IS ON ──────────────────────────────────────────────
+        //
+        // Asked ONCE, of Core, and then handed to everything below it. Owner's ruling on the halls' senses:
+        // "the pre-existing tunnels would be scary as dark ones and totally different style … it is just
+        // built into the smooth monolith style walls." The renderer's whole contribution to that is a
+        // material, and a material is one bool applied uniformly — a floor half-poured and half-not would be
+        // the seam drawn in the wrong place, which is the one geometric fact this feature has.
+        bool pastTheSeam = UndergroundComplex.IsFound(bodyId, level);
+
         // The structure. Everything down here is MADE — poured, welded, bolted — so it draws in the ship's
         // own pressure-hull ink rather than in the body's stone (#589). That contrast is the point: you have
         // just left a world built out of what was under your boots and walked into something imported whole.
@@ -60,7 +69,14 @@ public static class HiveInterior
             //
             // Nothing down here is rubble. It was cut, poured and bolted by people with a budget, so it draws
             // like the made thing it is — the brightest structure the game has shown since the ship.
-            walls.Add(new((float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2, false, IsHull: true));
+            //
+            // #677 · …and past the seam it is none of that. A gallery is not poured and it is not the moon's
+            // rock either, so it takes the third idiom and, with it, no ink from the department livery this
+            // plan may be carrying. The concrete stops at a line and the material changes, which is the whole
+            // sentence the drawing is allowed to say about it.
+            walls.Add(new(
+                (float)w.X1, (float)w.Y1, (float)w.X2, (float)w.Y2,
+                false, IsHull: !pastTheSeam, IsSeamless: pastTheSeam));
         }
 
         foreach (SurfaceLayout.Doorway d in floor.Doorways)
@@ -234,7 +250,7 @@ public static class HiveInterior
         // on the suit are physically incapable of saying different things about the same floor.
         double signX = shaftX;
         double signY = shaftY + UndergroundComplex.CorridorHalf;
-        SuitAir.Supply floorAir = SuitAir.SourceOf(level, insideShelter: false, aboard: false);
+        SuitAir.Supply floorAir = SuitAir.SourceOf(bodyId, level, insideShelter: false, aboard: false);
         var bigLabels = new List<(float X, float Y, string Text, float Px, int Tone)>
         {
             ((float)signX, (float)(signY + 10.6), UndergroundComplex.DepthPaint(level), 44f, 0),

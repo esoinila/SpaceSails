@@ -330,7 +330,8 @@ public static class UndergroundComplex
         return DiceRule.Roll(DiceRule.Seed($"hive:unlisted:{bodyId}"), UnlistedOneInN).Face == 1;
     }
 
-    /// <summary>How far down a captain can ACTUALLY walk — the listed depth, plus the band nobody listed.
+    /// <summary>How far down a captain can ACTUALLY walk — the listed depth, plus the band nobody listed,
+    /// plus (#677) the band nobody dug.
     ///
     /// <para>Every audit, every renderer and every lab wants this one: an unlisted floor is still a floor,
     /// and a topology nothing walks is a topology nobody has checked. Only the things that speak FOR the
@@ -338,7 +339,26 @@ public static class UndergroundComplex
     public static int TrueDepthOf(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return HasUnlistedBand(bodyId) ? BandBottom(UnlistedBandOf(bodyId)) : DepthOf(bodyId);
+        if (HasFoundBand(bodyId))
+        {
+            return BandBottom(FoundBandOf(bodyId));
+        }
+        return HasUnlistedBand(bodyId) ? UnlistedBottomOf(bodyId) : DepthOf(bodyId);
+    }
+
+    /// <summary>#592/#677 · The deepest floor of the band nobody listed — the bottom of the BUILDING, which
+    /// stopped being the same number as <see cref="TrueDepthOf"/> the day something under it turned out not
+    /// to be a building at all.
+    ///
+    /// <para>Written down rather than inlined because two callers need exactly this and would otherwise each
+    /// reach for <c>TrueDepthOf</c>: the thing on the pallet (<see cref="RelicRoomFor"/>, which belongs to
+    /// the operation and not to the halls) and the guards. When #677 moved the true bottom two bands deeper,
+    /// a <c>TrueDepthOf</c> here would have quietly relocated the one designated relic in the game into a
+    /// gallery nobody built.</para></summary>
+    public static int UnlistedBottomOf(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return BandBottom(UnlistedBandOf(bodyId));
     }
 
     /// <summary>#592 · WHICH band is the one nobody listed.
@@ -369,8 +389,103 @@ public static class UndergroundComplex
         return HasUnlistedBand(bodyId) && level < 0 && BandOf(level) == UnlistedBandOf(bodyId);
     }
 
-    /// <summary>#592 · EVERY FLOOR THIS SITE ACTUALLY HAS, top to bottom — the listed ones, then the gap
-    /// where nothing was dug, then the band nobody listed.
+    // ── #677 · THE BAND NOBODY DUG ───────────────────────────────────────────────────────────────────────
+    //
+    // Owner ruling 2026-08-04, recorded in worldbuilding-notes.md §10: this is humanity's FOURTH run, the
+    // prior three were ENDED, and every end spared a remnant underground, in massive halls. Out on the moons
+    // that is this: a dig that breaks into volume which was ALREADY THERE.
+    //
+    // It is a different CLASS of thing from the band nobody listed (#592, §13.7), and the whole feature turns
+    // on the difference. The unlisted band is human all the way down — poured, surveyed, invoiced, and hidden
+    // from the staff who paid for it. This one was never ours. So:
+    //
+    //   * it is one band BELOW the unlisted band, with a WHOLE BAND of nothing dug between them — §13.7's gap
+    //     idiom one rung further along. The unlisted band's gap is the remainder of a band the listed building
+    //     stopped inside; this gap is four floors of untouched rock that a shaft was driven straight through;
+    //   * the way in is the #590 card idiom again, found in the band nobody listed — the paper telling the
+    //     truth about a building that is not;
+    //   * nothing down there is a facility. No plate, no department, no livery, no sealed SECTOR doors, no
+    //     locked rooms, no plumbing, no fixtures of any kind. The renderer's ink and the room scale do the
+    //     storytelling and not one sentence explains anything (§13.8, §13.20).
+    //
+    // CANON, harder here than anywhere in the game: nothing names a builder, an age or a purpose; the word
+    // reserved by §8 never appears; and BOTH readings of §10 — the instruments simply got better / this was
+    // always here and is being SHOWN to us — have to survive every line. If any string ever settles which,
+    // the horror dies.
+
+    /// <summary>#677 · How many of the sites that already hide a band have something under THAT, and it is
+    /// deliberately rarer than <see cref="UnlistedOneInN"/>.
+    ///
+    /// <para>One in five of the sites that already keep a secret from their own staff. Measured rather than
+    /// asserted (<c>TheFoundBandTests</c> sweeps the generator and reads the rate off the sweep), and the
+    /// measured incidence is lower still, because only the shallower half of the hiding sites has room under
+    /// it for another shaft inside the performance guard — see below.</para></summary>
+    public const int FoundOneInN = 5;
+
+    /// <summary>#677 · THE SITE THE <c>?found=1</c> CHEAT PARKS, and the reason a body id lives in Core.
+    ///
+    /// <para>A site's whole shape — its depth, its kinds, its unlisted band and its halls — is seeded off its
+    /// BODY ID, so reaching this feature from a URL is a matter of parking a rock with the right name rather
+    /// than of overriding a Core fact from the client. This name is a seven-floor laboratory with an unlisted
+    /// clinic under it and galleries under a whole band of nothing: the full chain, in one rock. The suffix is
+    /// the search that found it and not decoration — about one id in fifty has halls.</para>
+    ///
+    /// <para>It sits here rather than beside the cheat because <b>five places have to agree about it</b>: the
+    /// cheat itself, and four sweeps that would otherwise be auditing a universe with no galleries in it and
+    /// passing vacuously. Five copies of a magic string is this repo's most expensive habit, and the deep rock
+    /// already costs two. Pinned by <c>TheFoundBandTests</c>: if the seeding ever stops giving this id halls,
+    /// the cheat and every one of those sweeps go red together and say why.</para></summary>
+    public const string FoundBandCheatSiteId = "secret-lab-site-halls-116";
+
+    /// <summary>#677 · Does this site have a band nobody dug? Seeded off its own id, like everything else
+    /// about a site's shape, so it is a fact about the world and not about the visit.</summary>
+    public static bool HasFoundBand(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        // It hangs off the band nobody listed, so a site with nothing to hide has nothing under that either.
+        // (The head office is already excluded by HasUnlistedBand, and for the reason recorded there: the
+        // directory is complete and the rank difference IS the absence.)
+        if (!HasUnlistedBand(bodyId))
+        {
+            return false;
+        }
+
+        // And only where the whole arrangement — a band of nothing, then a band of halls — still fits above
+        // the generator's own floor. This is HasUnlistedBand's second guard one rung further along, and it is
+        // a PERFORMANCE bound rather than a design one (#585): a band clamped to nothing is not a band.
+        if (BandTop(FoundBandOf(bodyId)) <= DeepestPossibleFloor)
+        {
+            return false;
+        }
+
+        return DiceRule.Roll(DiceRule.Seed($"hive:found:{bodyId}"), FoundOneInN).Face == 1;
+    }
+
+    /// <summary>#677 · WHICH band the halls are, and why it is <b>two</b> bands under the listed bottom's own.
+    ///
+    /// <para>The band nobody listed fills its band, so the next one down would be flush against it — one
+    /// shaft's floor and the next shaft's ceiling, which is how a BUILDING continues. What has to read here
+    /// is that the digging stopped and something else began, so there is a whole band between them with
+    /// nothing in it: the shaft was driven through four floors' worth of rock and broke into what was
+    /// waiting. §13.7's gap, one rung further, and the only rung where the gap is the point rather than an
+    /// artefact of where a depth happened to stop.</para></summary>
+    public static int FoundBandOf(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return UnlistedBandOf(bodyId) + 2;
+    }
+
+    /// <summary>#677 · Is this floor one of the ones nobody built?</summary>
+    public static bool IsFound(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return HasFoundBand(bodyId) && level < 0 && BandOf(level) == FoundBandOf(bodyId);
+    }
+
+    /// <summary>#592/#677 · EVERY FLOOR THIS SITE ACTUALLY HAS, top to bottom — the listed ones, then the gap
+    /// where nothing was dug, then the band nobody listed, then the band of nothing under THAT, then the
+    /// galleries nobody dug at all.
     ///
     /// <para>The one place that knows the shape. Audits, the renderer and the labs all walk this rather
     /// than counting from a depth, because with a gap in the middle "−1 down to the bottom" is no longer
@@ -393,6 +508,62 @@ public static class UndergroundComplex
         {
             yield return level;
         }
+
+        if (!HasFoundBand(bodyId))
+        {
+            yield break;
+        }
+        int found = FoundBandOf(bodyId);
+        for (int level = BandTop(found); level >= BandBottom(found); level--)
+        {
+            yield return level;
+        }
+    }
+
+    /// <summary>#677 · THE NEXT SHAFT THAT EXISTS below this floor, or null where there is none.
+    ///
+    /// <para>Everything that used to ask <c>BandOf(level) + 1</c> asks this instead, and the reason is the
+    /// band of nothing: the band immediately under the one nobody listed has no floors in it at all, so a
+    /// card minted for "the next band" would authorise a hole nobody dug and the panel would offer a button
+    /// to rock. One walk over <see cref="SiteHasBand"/>, in one place, rather than two callers each teaching
+    /// themselves the shape of a building that now has two gaps in it.</para></summary>
+    public static int? NextShaftBelow(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int last = BandOf(DeepestPossibleFloor);
+        for (int band = BandOf(Math.Min(level, -1)) + 1; band <= last; band++)
+        {
+            if (SiteHasBand(bodyId, band))
+            {
+                return band;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>#677 · The real floor a caller asking for <paramref name="wanted"/> should be put on: the
+    /// floor of this site nearest to it, and never a floor in a gap where nothing was dug.
+    ///
+    /// <para>Written here because the dev floor cheat used to do this arithmetic itself — clamp to the true
+    /// depth, then snap into the unlisted band's head — which is a caller reasoning about the shape of a
+    /// building it does not own (§13.15's second cause). It was right about a building with one gap in it
+    /// and would have set a captain down in solid rock the day there were two. Ties go DEEPER, because a
+    /// cheat asking for a floor between two buildings is asking for the lower one.</para></summary>
+    public static int NearestFloorTo(string bodyId, int wanted)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int best = -1;
+        int bestGap = int.MaxValue;
+        foreach (int level in FloorsOf(bodyId))
+        {
+            int gap = Math.Abs(level - wanted);
+            if (gap <= bestGap)
+            {
+                bestGap = gap;
+                best = level;
+            }
+        }
+        return best;
     }
 
     /// <summary>#585 · THE SHAFTS ARE THE LIMIT — the owner's own observation, turned into the mechanic.
@@ -426,14 +597,41 @@ public static class UndergroundComplex
     public static bool IsBandBottom(string bodyId, int level) =>
         level == BandFloor(bodyId, BandOf(level)) && level > TrueDepthOf(bodyId);
 
-    /// <summary>Which floors still hold atmosphere.
+    /// <summary>Which floors still hold atmosphere. THE one pressure fact in this building (§13.13), and
+    /// everything that shows it — the drain, the gauge, the plate by the car — asks this and nothing else.
     ///
     /// <para>Owner's biggest open question, answered with a beat in it: a floor with power lulls you and the
     /// rest costs you. Extended for unbounded depth by making it the TOP OF EVERY SHAFT BAND — that is where
     /// a facility puts its lobbies — so a captain who finds the next shaft gets one floor of relief before the
-    /// dark again. It keeps a very deep site playable without ever making it safe.</para></summary>
-    public static bool HoldsPressure(int level) =>
-        level < 0 && (-level - 1) % FloorsPerShaft == 0;
+    /// dark again. It keeps a very deep site playable without ever making it safe.</para>
+    ///
+    /// <para><b>#677 · And it takes the BODY now, which is the whole cost of the halls.</b> Every floor of
+    /// the band nobody dug holds pressure — all of it, all the way down, and nothing anywhere shows the plant
+    /// that does it. Whether a floor breathes therefore stopped being arithmetic on a level and became a fact
+    /// about the site, and there is deliberately NO level-only overload left: one would be a second answer to
+    /// the one question §13.13 exists to keep single, silently right on every floor of every building except
+    /// the four this feature is about. The compiler made every caller say which moon it is standing under,
+    /// which is the strongest guard available.</para></summary>
+    public static bool HoldsPressure(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return level < 0 && ((-level - 1) % FloorsPerShaft == 0 || IsFound(bodyId, level));
+    }
+
+    /// <summary>#677 · IS ANYTHING PLUMBED ON THIS FLOOR — the question every amenity, cubicle and en-suite
+    /// asks, and the one place the answer differs from <see cref="HoldsPressure"/>.
+    ///
+    /// <para>§13.17's law is that plumbing is for people out of their suits, and it is asked against the one
+    /// pressure fact so that no room down here can ever breathe for a reason the plate by the lift does not
+    /// know about. The halls breathe and are not plumbed, and those are not in tension: a canteen, a cubicle
+    /// and a duct are all things somebody was made to PAY for, and there is no invoice down there. The air in
+    /// a found gallery is not provided by anything the cone can find — that is the entire sensation (§13.20)
+    /// — so a grille in one would be the building explaining the one thing it must never explain.</para></summary>
+    public static bool IsPlumbed(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return HoldsPressure(bodyId, level) && !IsFound(bodyId, level);
+    }
 
     // ── #708 · DARKNESS IS A PROPERTY OF A FLOOR ─────────────────────────────────────────────────────────
     //
@@ -478,13 +676,14 @@ public static class UndergroundComplex
     /// <para>Dead-air floors are NOT dark and do not flicker. A flicker is a fixture reporting that it is
     /// dying; a floor that cannot be breathed is not a floor whose lamps have failed, and wiring the two
     /// together would have made the suit gauge and the ceiling say the same thing twice.</para>
+    ///
+    /// <para><b>#677 · The customer arrived.</b> The band nobody dug is the one thing in the game that
+    /// declares itself dark, and it is one line, exactly as #708 promised. Owner's ruling: <i>"the
+    /// pre-existing tunnels would be scary as dark ones and totally different style"</i> — no fixtures, no
+    /// wiring, nothing that ever held a lamp. The facility's failing light stops at the poured concrete;
+    /// past the seam the dark is ORIGINAL, and the cone is the whole of the seeing.</para>
     /// </summary>
-    public static bool DeclaresDarkness(string bodyId, int level)
-    {
-        _ = bodyId;
-        _ = level;
-        return false;
-    }
+    public static bool DeclaresDarkness(string bodyId, int level) => IsFound(bodyId, level);
 
     // ── #608 · THE REFUGES — A DEAD FLOOR IS A FLOOR OF SUIT-WORK, AND SUITS RUN OUT ─────────────────────
     //
@@ -598,9 +797,9 @@ public static class UndergroundComplex
         double shaftX, double shaftY)
     {
         var refuges = new List<Refuge>();
-        if (HoldsPressure(level) || rooms.Count == 0)
+        if (HoldsPressure(bodyId, level) || rooms.Count == 0)
         {
-            return refuges;   // a pressurised floor IS the refuge
+            return refuges;   // a pressurised floor IS the refuge — and every gallery is one (#677)
         }
 
         // #592 · The one room that may never be taken. On a site with a band nobody listed, room 0 of the
@@ -676,7 +875,12 @@ public static class UndergroundComplex
             return "SURFACE";
         }
 
-        if (IsUnlisted(bodyId, level))
+        // #592/#677 · Two very different floors answer with the same four words, and that is the honest
+        // answer for both: there is no plate. One has none because the building refuses to admit the floor
+        // exists; the other has none because nothing down there was ever labelled by anybody. Inventing a
+        // second phrase for the halls would be the game telling the captain which of those they are standing
+        // on, which is the one thing #677 may never do.
+        if (IsUnlisted(bodyId, level) || IsFound(bodyId, level))
         {
             return $"B{-level} · NO PLATE";
         }
@@ -787,7 +991,10 @@ public static class UndergroundComplex
     public static BodyPalette.Ink? LiveryFor(string bodyId, int level)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        if (level >= 0 || IsUnlisted(bodyId, level))
+
+        // #677 · …and null again on the band nobody dug, for a harder version of the same reason. A livery is
+        // paint a department put on its own corridor. Nobody painted these, and there is no department.
+        if (level >= 0 || IsUnlisted(bodyId, level) || IsFound(bodyId, level))
         {
             return null;
         }
@@ -948,7 +1155,10 @@ public static class UndergroundComplex
         ArgumentNullException.ThrowIfNull(bodyId);
         foreach (int level in FloorsOf(bodyId))
         {
-            if (HoldsPressure(level))
+            // #677 · IsPlumbed, not HoldsPressure. The bar goes on the topmost floor that breathes AND has a
+            // wet stack; the halls breathe and have no plant of any kind, and on a shallow site they would
+            // otherwise be eligible for a counter and three round tops.
+            if (IsPlumbed(bodyId, level))
             {
                 return level;
             }
@@ -979,7 +1189,10 @@ public static class UndergroundComplex
         int? deepest = null;
         foreach (int level in FloorsOf(bodyId))
         {
-            if (HoldsPressure(level) && !IsUnlisted(bodyId, level))
+            // #677 · …and never in the halls, which the directory could not list if it wanted to. IsPlumbed
+            // already refuses them; the IsUnlisted clause stays because a floor can be listed-and-unplumbed
+            // for the OTHER reason (§13.7's whole tell is the absence of a plate, not of a drain).
+            if (IsPlumbed(bodyId, level) && !IsUnlisted(bodyId, level))
             {
                 deepest = level;
             }
@@ -1295,6 +1508,29 @@ public static class UndergroundComplex
         // and the signage stack above it (HiveInterior) now answers the bigger question in the same wall
         // space. Three plates on one wall is a wall nobody reads.
 
+        // ── #677 · HOW BIG THE CHAMBERS ARE ON THIS FLOOR, decided ONCE and handed to both builders.
+        //
+        // The wall builder and the room builder must be given the same number for the same reason they are
+        // already given the same centres function (#585): the doorway a room cuts and the gap its corridor
+        // leaves are one gap, and two copies of a scale would open a door onto a wall on every floor of every
+        // hall in the game.
+        //
+        // CAPPED BY THE GROUND, not by a guess. Two ribs' facing room columns must not meet, so the widest a
+        // chamber may grow is half the closest rib spacing this field actually produced, less the corridor it
+        // opens off. Below that the claim ledger would simply drop rooms — correct, and silent, which is the
+        // shape of bug this file's spec opens with a table of.
+        double roomScale = RoomScaleOn(bodyId, level);
+        if (roomScale > 1.0 && ribList.Count > 1)
+        {
+            double closest = double.MaxValue;
+            for (int i = 1; i < ribList.Count; i++)
+            {
+                closest = Math.Min(closest, ribList[i].X - ribList[i - 1].X);
+            }
+            double widest = (closest / 2.0) - CorridorHalf;
+            roomScale = Math.Min(roomScale, Math.Max(1.0, widest / RoomWidthDu));
+        }
+
         // ── THE RIBS. Cross corridors off the spine, with rooms flanking them.
         for (int i = 0; i < ribXs.Count; i++)
         {
@@ -1318,13 +1554,18 @@ public static class UndergroundComplex
             // a facility and the collision field was a set of sealed boxes beside a sealed tube. Two walls on
             // one line, each correct on its own, and neither aware of the other — the same shape as every
             // expensive bug on this ground.
-            RibFace(walls, x - CorridorHalf, mouth, far, bodyId, level, i, -1, down);
-            RibFace(walls, x + CorridorHalf, mouth, far, bodyId, level, i, +1, down);
+            RibFace(walls, x - CorridorHalf, mouth, far, bodyId, level, i, -1, down, roomScale);
+            RibFace(walls, x + CorridorHalf, mouth, far, bodyId, level, i, +1, down, roomScale);
 
             // The rib's far end. #585: it is ALWAYS closed — by a sealed door with a distance on it, or by a
             // plain wall. It was 40/60 before, and a corridor that simply stops in mid-air is the same
             // topology bug one level down ("a door is missing here towards down").
-            if (Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.55)
+            //
+            // #677 · NEVER a sealed mouth in the halls. `⟶ SECTOR 7 · 2.4 km` is a plate somebody stencilled,
+            // and a stencil is a department, a survey and a decision about where somebody's authority stops.
+            // Down here the passage simply ends in the same material as everything else, and the captain gets
+            // no number to reason with — which is worse, and is the point.
+            if (!IsFound(bodyId, level) && Frac(bodyId, $"hive:{level}:rib-far:{i}") < 0.55)
             {
                 double km = 0.8 + (Frac(bodyId, $"hive:{level}:rib-km:{i}") * 3.4);
                 locked.Add(new(x - CorridorHalf, far, x + CorridorHalf, far,
@@ -1333,7 +1574,8 @@ public static class UndergroundComplex
             walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
 
             AddRoomsAlong(
-                walls, doorways, locked, rooms, ensuites, claimed, bodyId, level, i, x, mouth, far, down);
+                walls, doorways, locked, rooms, ensuites, claimed, bodyId, level, i, x, mouth, far, down,
+                roomScale);
         }
 
         // #608 · LAST, because a refuge is taken out of the rooms this floor actually managed to build. Any
@@ -1355,7 +1597,7 @@ public static class UndergroundComplex
             centres.Add((rx, ry));
         }
 
-        return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(level),
+        return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites);
     }
 
@@ -1365,10 +1607,12 @@ public static class UndergroundComplex
     private static bool AddEnSuite(
         List<SurfaceLayout.Wall> walls, List<EnSuite> ensuites,
         List<(double X0, double Y0, double X1, double Y1)> claimed,
-        int level, string plate, double backX, double cy, int side, bool open)
+        string bodyId, int level, string plate, double backX, double cy, int side, bool open)
     {
-        // The one pressure source, asked here and nowhere else: plumbing is for people out of their suits.
-        if (!HoldsPressure(level) || !IsPrincipalRoom(plate))
+        // The one pressure source, asked through the one plumbing question: a cell is for people out of their
+        // suits AND for a building that had a wet stack to hang it off. The halls breathe and have neither
+        // (#677) — a pan in a gallery would be the most explaining object in the game.
+        if (!IsPlumbed(bodyId, level) || !IsPrincipalRoom(plate))
         {
             return false;
         }
@@ -1440,7 +1684,11 @@ public static class UndergroundComplex
         // placer shortens is a feature silently dead on some worlds forever, with every test still green.
         var reserved = new List<int>();
         foreach ((int Level, int RoomIndex)? designated in
-            new (int, int)?[] { KeyRoomFor(bodyId), RelicRoomFor(bodyId), StandingOrderRoomFor(bodyId) })
+            new (int, int)?[]
+            {
+                KeyRoomFor(bodyId), RelicRoomFor(bodyId), StandingOrderRoomFor(bodyId),
+                FoundKeyRoomFor(bodyId),   // #677 · the way down to the halls is a designation too
+            })
         {
             if (designated is { } d && d.Level == level)
             {
@@ -1578,9 +1826,9 @@ public static class UndergroundComplex
     /// <summary>#585 · Where the rooms sit along a rib. ONE function, called by the wall builder and by the
     /// room builder, because the doorway a room cuts and the gap its corridor leaves must be the same gap.
     /// They were computed twice and agreed about nothing.</summary>
-    private static List<double> RoomCentresAlong(double mouth, double far, bool down)
+    private static List<double> RoomCentresAlong(double mouth, double far, bool down, double roomScale)
     {
-        const double roomH = 12.0;
+        double roomH = RoomHeightDu * roomScale;
         double span = Math.Abs(far - mouth);
         int count = Math.Max(1, (int)(span / (roomH + 3)) - 1);
 
@@ -1596,9 +1844,9 @@ public static class UndergroundComplex
     /// <summary>One side of a rib corridor, built as segments with a gap at every room door.</summary>
     private static void RibFace(
         List<SurfaceLayout.Wall> walls, double x, double mouth, double far,
-        string bodyId, int level, int rib, int side, bool down)
+        string bodyId, int level, int rib, int side, bool down, double roomScale)
     {
-        var doors = RoomCentresAlong(mouth, far, down);
+        var doors = RoomCentresAlong(mouth, far, down, roomScale);
         double lo = Math.Min(mouth, far), hi = Math.Max(mouth, far);
 
         var cuts = new List<(double Lo, double Hi)>();
@@ -1631,14 +1879,62 @@ public static class UndergroundComplex
     /// number are the same number.</para></summary>
     public const double DoorHalf = 3.2;
 
+    /// <summary>#585/#677 · THE ROOM MODULE — how wide and how deep one room off a rib is, at the scale a
+    /// facility builds at.
+    ///
+    /// <para>These were two <c>const</c>s inside <see cref="AddRoomsAlong"/> and a third inside
+    /// <see cref="RoomCentresAlong"/>, which was exactly as safe as it sounds: the door a room cuts and the
+    /// gap its corridor leaves are the SAME gap (#585's lesson), and the moment one floor in the game wanted
+    /// bigger chambers there would have been two places to grow and one of them would have been missed. One
+    /// module, published, and everything that scales it scales it once.</para></summary>
+    public const double RoomWidthDu = 15.0;
+
+    /// <summary>Room depth along its rib. See <see cref="RoomWidthDu"/>.</summary>
+    public const double RoomHeightDu = 12.0;
+
+    /// <summary>#677 · HOW MUCH BIGGER A GALLERY GETS PER FLOOR DOWN, and it is the one number the halls'
+    /// geometry is allowed to state.
+    ///
+    /// <para>The whole game has taught the opposite: deeper is tighter, because a facility's cost per cubic
+    /// metre goes up with every metre of overburden and the people paying for it knew that. Down here it
+    /// inverts, and the renderer says so without one word of prose — <b>room scale increasing with depth</b>,
+    /// which on a top-down plan is the only sentence a plan can speak. The four floors run 1.00, 1.10, 1.21,
+    /// 1.33 of the module above, so the deepest gallery has getting on for twice the floor area of the first
+    /// and about half as many chambers on it.</para>
+    ///
+    /// <para><b>Derived, never typed, and capped by the ground it is standing on.</b> Nothing here writes a
+    /// room's dimensions: they are <see cref="RoomWidthDu"/>/<see cref="RoomHeightDu"/> — the facility's own
+    /// module, the same one every floor above uses — taken to the power of how far into the band you are.
+    /// And <see cref="Build"/> clamps the ratio against the actual rib spacing of the actual field, so the
+    /// growth stops where two facing chambers would meet rather than at a number somebody guessed.</para></summary>
+    public const double FoundGrowthPerFloor = 1.10;
+
+    /// <summary>#677 · How much bigger than the module this floor's chambers are. 1.0 everywhere the building
+    /// built itself; compounding with depth in the halls.</summary>
+    public static double RoomScaleOn(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        if (!IsFound(bodyId, level))
+        {
+            return 1.0;
+        }
+        return Math.Pow(FoundGrowthPerFloor, BandTop(FoundBandOf(bodyId)) - level);
+    }
+
     private static void AddRoomsAlong(
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked,
         List<(double X, double Y, string Plate)> rooms, List<EnSuite> ensuites,
         List<(double X0, double Y0, double X1, double Y1)> claimed,
-        string bodyId, int level, int rib, double x, double mouth, double far, bool down)
+        string bodyId, int level, int rib, double x, double mouth, double far, bool down, double roomScale)
     {
-        const double roomW = 15.0, roomH = 12.0;
-        List<double> centres = RoomCentresAlong(mouth, far, down);
+        double roomW = RoomWidthDu * roomScale, roomH = RoomHeightDu * roomScale;
+
+        // #677 · Down here the rooms are the only thing that has to be different, and everything else about
+        // them falls out of that: a gallery is not a room with a plate on it, so it has no plate, no lock and
+        // no sign. A door that says CONSENT FILES on a floor nobody built would be the loudest lie in the
+        // game — it would name a purpose, and a purpose implies somebody who had one.
+        bool found = IsFound(bodyId, level);
+        List<double> centres = RoomCentresAlong(mouth, far, down, roomScale);
 
         for (int i = 0; i < centres.Count; i++)
         {
@@ -1664,8 +1960,8 @@ public static class UndergroundComplex
                 {
                     continue;
                 }
-                string plate = SignFor(bodyId, level, tag);
-                bool shut = Frac(bodyId, tag + ":locked") < 0.5;
+                string plate = found ? "" : SignFor(bodyId, level, tag);
+                bool shut = !found && Frac(bodyId, tag + ":locked") < 0.5;
 
                 // Three walls and a corridor-facing face with a gap in it.
                 walls.Add(new(x1, y1, x2, y1, true));
@@ -1680,7 +1976,8 @@ public static class UndergroundComplex
                 // geometry perfectly correct.) The cell is checked against everything already standing and
                 // the room is claimed immediately after, so nothing later can be laid on either of them.
                 double backX = side < 0 ? x1 : x2;
-                bool cell = AddEnSuite(walls, ensuites, claimed, level, plate, backX, cy, side, open: !shut);
+                bool cell = AddEnSuite(
+                    walls, ensuites, claimed, bodyId, level, plate, backX, cy, side, open: !shut);
                 claimed.Add((x1 - 1.5, y1 - 1.5, x2 + 1.5, y2 + 1.5));
                 if (!cell)
                 {
@@ -1697,7 +1994,15 @@ public static class UndergroundComplex
                 }
                 else
                 {
-                    doorways.Add(new SurfaceLayout.Doorway(faceX, cy - DoorHalf, faceX, cy + DoorHalf));
+                    // #677 · A GALLERY HAS NO DOOR IN IT, only a way through. Every doorway in this building
+                    // is drawn as an IMPORTED leaf — the violet that means "this was flown here", which is
+                    // the whole of #592's material language — so hanging one in a hall would say, in the one
+                    // channel the game reserves for it, that somebody shipped it in and fitted it. The wall
+                    // simply stops, and the gap is the gap the wall builder already left.
+                    if (!found)
+                    {
+                        doorways.Add(new SurfaceLayout.Doorway(faceX, cy - DoorHalf, faceX, cy + DoorHalf));
+                    }
                     rooms.Add((cx, cy, plate));
                 }
             }
@@ -1845,10 +2150,34 @@ public static class UndergroundComplex
     /// field-free designation may safely name is the one every floor has. Room 0 cannot collide with
     /// <see cref="KeyRoomFor"/> either: that one sits on the LISTED bottom, and a site only has a relic when
     /// its true depth runs deeper than the depth it admits to.</para></summary>
+    /// <remarks>#677 · <see cref="UnlistedBottomOf"/> and not <c>TrueDepthOf</c>. The thing on the pallet
+    /// belongs to the OPERATION — somebody crated it, somebody left the lights on over it — so it sits on the
+    /// deepest floor the operation dug. The day something deeper turned out not to have been dug by anybody,
+    /// a <c>TrueDepthOf</c> here would have moved the one designated relic in the game two bands down into a
+    /// gallery with no lights and no pallets in it, and every test would still have passed.</remarks>
     public static (int Level, int RoomIndex)? RelicRoomFor(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return HasUnlistedBand(bodyId) ? (TrueDepthOf(bodyId), 0) : null;
+        return HasUnlistedBand(bodyId) ? (UnlistedBottomOf(bodyId), 0) : null;
+    }
+
+    /// <summary>#677 · WHERE THE WAY DOWN TO THE HALLS IS, designated for exactly the reason
+    /// <see cref="KeyRoomFor"/> is: a Key is one face in nine, and a seeded band that happened to roll none
+    /// would leave a site's halls unreachable not for that visit but forever, with nothing on screen ever
+    /// saying so and every test still green.
+    ///
+    /// <para>It is room 0 of the band nobody listed's own SHAFT HEAD — the floor a captain steps out onto
+    /// when the plate finally names a different building (#694). Not its bottom floor, which is already
+    /// spoken for by <see cref="RelicRoomFor"/>, and not the listed bottom, which is already
+    /// <see cref="KeyRoomFor"/>. Three designations, three floors, no collision.</para>
+    ///
+    /// <para>Every other Key in that band mints the same card anyway (<see cref="CardInRoom"/> asks
+    /// <see cref="NextShaftBelow"/>, which steps over the band of nothing) — this one only guarantees that at
+    /// least one exists. The paper telling the truth about a building that is not, one rung further.</para></summary>
+    public static (int Level, int RoomIndex)? FoundKeyRoomFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return HasFoundBand(bodyId) ? (BandTop(UnlistedBandOf(bodyId)), 0) : null;
     }
 
     /// <summary>
@@ -1899,6 +2228,32 @@ public static class UndergroundComplex
         if (StandingOrderRoomFor(bodyId) is { } order && level == order.Level && roomIndex == order.RoomIndex)
         {
             return Haul.Records;
+        }
+
+        // #677 · And the one room that holds the way down to the halls.
+        if (FoundKeyRoomFor(bodyId) is { } hall && level == hall.Level && roomIndex == hall.RoomIndex)
+        {
+            return Haul.Key;
+        }
+
+        // ── #677 · AND THE HALLS, WHERE ALMOST NOTHING IS IN ALMOST EVERY ROOM ────────────────────────────
+        //
+        // The emptiness is load-bearing everywhere on this ground (§10.3) and down here it is the whole
+        // sensation: a place kept ready, and nobody in it. So the roll is not a weighting of the facility's
+        // roll — it is a different roll with almost nothing in it.
+        //
+        // What is deliberately ABSENT and why, because each absence is a canon law rather than a balance
+        // call: no EQUIPMENT (nobody procured anything down here, and a crate would name a supplier); no
+        // RECORDS and no DIRT (both are paperwork, and paperwork is an institution — a file on somebody in a
+        // hall would say who kept it); no KEY (the entry card is the last card, and a second one would make
+        // the halls a building with a directory). What is left is what a surveyor could actually carry out
+        // of a place like this, which is a MEASUREMENT.
+        if (IsFound(bodyId, level))
+        {
+            return DiceRule.Roll(DiceRule.Seed($"hive:hall-haul:{bodyId}:{level}:{roomIndex}"),
+                    FoundRecordOneInN).Face == 1
+                ? Haul.Relic
+                : Haul.Nothing;
         }
 
         int face = DiceRule.Roll(DiceRule.Seed($"hive:haul:{bodyId}:{level}:{roomIndex}"), 9).Face;
@@ -1975,8 +2330,26 @@ public static class UndergroundComplex
     /// reason <see cref="NameOf"/> has no site-blind overload: a defaulted "no card" would be a second answer
     /// to "what does this room say", silently wrong at exactly the one call site that matters.</para></summary>
     public static string HaulLine(Haul haul, string bodyId, int level, int roomIndex, AuthorityCard? minted)
-        => haul switch
     {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        // ── #677 · THE HALLS HAVE THEIR OWN TWO ANSWERS AND NO OTHERS ────────────────────────────────────
+        //
+        // Taken before the switch below rather than as two more arms inside it, because the thing that must
+        // never happen is a haul reaching the facility's DEFAULT arm down here: "stripped to the fittings…
+        // whoever cleared this room did it carefully and did it in a hurry" is a sentence about STAFF, and
+        // there was no staff. A default arm is how that sentence would arrive — silently, on the day
+        // somebody adds a Haul value and does not think about a floor nobody built.
+        if (IsFound(bodyId, level))
+        {
+            // A record find says nothing about its room. Everything there is to say is the pocket line and
+            // the card, both authored; a sentence invented here to fill the gap would be the one thing this
+            // feature forbids.
+            return haul == Haul.Relic ? "" : FoundEmptyRoomLine;
+        }
+
+        return haul switch
+        {
         Haul.Equipment =>
             "🧪 Bench hardware, crated and never unpacked — the good stuff, bought with somebody's grant and " +
             "abandoned with the lights on. It will fetch a great deal from people who will not ask.",
@@ -1999,7 +2372,20 @@ public static class UndergroundComplex
         _ =>
             "🚪 Stripped to the fittings. Whoever cleared this room did it carefully and did it in a hurry, " +
             "which are two different things and both of them are here.",
-    };
+        };
+    }
+
+    /// <summary>#677/#603 · What the CASEBOOK keeps out of one room, or null where the pulse line is already
+    /// the whole of the record.
+    ///
+    /// <para>Only the halls answer, and only for a record: looking is free and knowledge is one-shot, so the
+    /// book keeps what the captain now KNOWS about a wall rather than the sentence about putting a rubbing in
+    /// a pocket. Every other room in the game files its own line and always has.</para></summary>
+    public static string? CasebookGistOf(Haul haul, string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return haul == Haul.Relic && IsFound(bodyId, level) ? FoundRecordGist : null;
+    }
 
     /// <summary>What the panel says when this car has gone as deep as it goes. It does not hint, it does not
     /// unlock, and there is no button that was hiding: the building simply continues past what this shaft was
@@ -2073,7 +2459,10 @@ public static class UndergroundComplex
     public static bool SiteHasBand(string bodyId, int band) =>
         band >= 0
         && (BandTop(band) >= DepthOf(bodyId)
-            || (HasUnlistedBand(bodyId) && band == UnlistedBandOf(bodyId)));
+            || (HasUnlistedBand(bodyId) && band == UnlistedBandOf(bodyId))
+            // #677 · …and the halls, which are not a band of this building at all. The band BETWEEN them is
+            // deliberately not here: nothing was dug in it, so nothing may ever authorise it or offer it.
+            || (HasFoundBand(bodyId) && band == FoundBandOf(bodyId)));
 
     /// <summary>#590 · WHICH card a Key room holds: the one for the shaft band immediately below the floor
     /// you found it on. Not a roll — a fact about the building, and the most legible possible rule, because
@@ -2085,8 +2474,11 @@ public static class UndergroundComplex
     public static AuthorityCard? CardInRoom(string bodyId, int level)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        int next = BandOf(level) + 1;
-        return SiteHasBand(bodyId, next) ? new AuthorityCard(bodyId, next) : null;
+
+        // #677 · The next shaft that EXISTS, not the next band number. Under the band nobody listed there is
+        // a band with nothing in it, and a card for a hole nobody dug is exactly the lie #613 was filed
+        // about — a countersigned authority for a floor the building cannot open onto.
+        return NextShaftBelow(bodyId, level) is { } next ? new AuthorityCard(bodyId, next) : null;
     }
 
     /// <summary>What is printed on the card. Institutional, expensive, and explains nothing — the register
@@ -2254,6 +2646,12 @@ public static class UndergroundComplex
         {
             Haul.Records => "  🎒 Into your pocket: operational paper.",
             Haul.Dirt => "  🎒 Into your pocket: a file on somebody.",
+
+            // #677 · A record out of the halls is the SAME law as the pallet — what goes in the pocket is the
+            // record of a thing that stays — said in the owner's own words, and it carries no leading indent
+            // because the room it came out of has nothing of its own to say first (HaulLine returns empty
+            // there, deliberately). Told apart by the find's own id, minted once by FindId.
+            Haul.Relic when IsHallRecord(findId) => FoundRecordFindLine,
             Haul.Relic => "  🎒 Into your pocket: measurements, a photograph, a scraping. The thing itself " +
                 "stays where it is.",
             Haul.Key when minted is { } c && !string.Equals(c.BodyId, hereBodyId, StringComparison.Ordinal)
@@ -2446,6 +2844,101 @@ public static class UndergroundComplex
         "🕳 No plate by the lift, no department, no number painted anywhere. The building has floors it " +
         "does not count, and you are standing on one.";
 
+    // ── #677 · WHAT THE HALLS SAY, WHICH IS ALMOST NOTHING ───────────────────────────────────────────────
+    //
+    // EVERY STRING BELOW IS THE OWNER'S, LIFTED VERBATIM. Nothing in this file may reword one, and nothing
+    // anywhere may add to them: the prose down here is the whole of the feature's voice, and a sentence
+    // written to fill a gap is the sentence that explains something. Where the generator has nothing
+    // authored to say — the room line of a gallery that holds a record, for instance — it says NOTHING, on
+    // purpose, and the card does the describing.
+    //
+    // The three canon walls these are written under (§10, §13.20), checked by grep in TheFoundBandTests:
+    //
+    //   1. the word §8 reserves never appears down here, in any string, ever;
+    //   2. nothing names a builder, an age, a purpose, or the Old Ones and the Reevers;
+    //   3. BOTH readings survive every line — the mundane one (better instruments, a better resurvey team)
+    //      and the other one (this was always here and is being SHOWN to us). The moment one sentence
+    //      settles which, the horror dies, and that is the Reever law applied to archaeology.
+    //
+    // The register, in the owner's own four words: HORROR SERVED AS SMOOTH COMFY PILLOW. Nothing down there
+    // threatens; everything accommodates. The dread is entirely in the implication — a pillow means you were
+    // expected.
+
+    /// <summary>#677 · Said once per excursion, on the ride that crosses out of the poured shaft. The one
+    /// sentence in the game about the boundary between the two worlds, and it describes a MATERIAL and stops.
+    ///
+    /// <para>Authored, verbatim. It is deliberately not decorated with a glyph the way the pulse lines around
+    /// it are: the book's own column carries one, and the sentence is the owner's.</para></summary>
+    public const string SeamLine =
+        "The pour stops. Not at a wall — at a line, clean as a tide mark, and past it the tunnel keeps " +
+        "going in a material the light does not grip.";
+
+    /// <summary>#677 · Said once per excursion, stepping out onto the first gallery. Four sentences, three
+    /// of them facts a suit could measure and the fourth an absence.
+    ///
+    /// <para>Placed LAST of the arrival's sayings, which is #693's open problem worked around rather than
+    /// solved: the pulse has one slot and the last write wins, so the climax goes last. Authored,
+    /// verbatim.</para></summary>
+    public const string FoundArrivalLine =
+        "The car has no button for this floor. It stops anyway. The air is good. Nothing here says why.";
+
+    /// <summary>#677 · What a gallery says when there is nothing in it, which is almost every gallery.
+    /// It REPLACES the facility's stripped line, which must never be said down here — somebody clearing a
+    /// room in a hurry is a sentence about staff, and there was no staff. Authored, verbatim.</summary>
+    public const string FoundEmptyRoomLine =
+        "Nothing. Not stripped — nothing was ever here. The room is clean the way a prepared room is clean.";
+
+    /// <summary>#677 · How many galleries in this many hold a record worth carrying out. The rest are the
+    /// line above, and the ratio is the point: the emptiness is load-bearing squared down here.</summary>
+    public const int FoundRecordOneInN = 9;
+
+    /// <summary>#677 · The pickup line for a record find — #614's law exactly: what goes in the pocket is the
+    /// RECORD of a thing that stays where it is, because a satchel claiming to hold a wall would be the third
+    /// named bug class one size up. Authored, verbatim, and it carries no leading indent because the room it
+    /// belongs to has nothing of its own to say first.</summary>
+    public const string FoundRecordFindLine =
+        "🎒 Into your pocket: measurements, a photograph, a rubbing. The wall keeps the rest.";
+
+    /// <summary>#677 · What the casebook keeps. #603's law — looking is free, knowledge is one-shot — so the
+    /// BOOK gets this and the pulse gets the find line, and one wall never appears in the book twice in two
+    /// registers (#701's rule, learned on the shelves). Authored, verbatim.</summary>
+    public const string FoundRecordGist =
+        "a wall with no seam, faintly warm — the tape measure fails to give it scale";
+
+    /// <summary>#677 · The look-card's title: the authored gist inside the house frame, exactly the way
+    /// <c>OddBooks.CardTitle</c> puts an authored shelf fragment inside its own. No new prose is written for
+    /// a caption that would otherwise have to invent one.</summary>
+    public static string FoundRecordCardLabel => $"⭕ {FoundRecordGist}";
+
+    /// <summary>#677 · The card body. Caption-only, in the #528 idiom the odd book and the lifeboat muster
+    /// already keep: there is no painted art for this and a wired-but-unpainted image is a card claiming a
+    /// picture it does not have. Authored, verbatim — evidence, and then it stops.</summary>
+    public const string FoundRecordCard =
+        "A section of wall, recorded because it cannot be brought back: continuous, seamless, faintly warm. " +
+        "The tape measure in the photograph is there to give it a scale, and fails.";
+
+    /// <summary>#677 · THE DURABLE ID OF ONE FIND, minted in one place.
+    ///
+    /// <para>It carries which kind of place it came out of, in its prefix, and that is what lets the two
+    /// relic-class objects in the game tell themselves apart wherever they are met — in the pocket line, in
+    /// the satchel row, and on the look-card — without any of those three re-deriving a floor's band for
+    /// itself. A carried thing is asked what it IS, once, and the answer travels with it.</para></summary>
+    public static string FindId(string bodyId, int level, int roomIndex)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return $"{(IsFound(bodyId, level) ? HallFindPrefix : "hive")}:{bodyId}:{level}:{roomIndex}";
+    }
+
+    /// <summary>The prefix a find out of the halls wears. Not "hive": the whole point is that it is not one.</summary>
+    public const string HallFindPrefix = "hall";
+
+    /// <summary>#677 · Did this find come out of a gallery nobody dug? Asked of the id rather than of a body
+    /// and a level, because the satchel keeps the id and nothing else — a row that had to re-derive a band
+    /// from a parsed level would be the same fact computed in a second place, which is what this file's own
+    /// spec opens with a table of.</summary>
+    public static bool IsHallRecord(string? findId) =>
+        findId is not null && findId.StartsWith(HallFindPrefix + ":", StringComparison.Ordinal);
+
     // ── #609 · THE ONE THING YOU MUST NOT MISS ──────────────────────────────────────────────────────────
     //
     // Owner, after suffocating on B2: "I thought there is air in the base?" ... "there should be a warning
@@ -2616,11 +3109,13 @@ public static class UndergroundComplex
         int deepest = BandFloor(bodyId, band);
         for (int f = BandTop(band); f >= deepest; f--)
         {
-            stops.Add(new(f, NameOf(bodyId, f), HoldsPressure(f), f == level, null));
+            stops.Add(new(f, NameOf(bodyId, f), HoldsPressure(bodyId, f), f == level, null));
         }
 
-        int next = band + 1;
-        if (!SiteHasBand(bodyId, next))
+        // #677 · The next shaft that EXISTS. Under the band nobody listed there is a whole band with nothing
+        // dug in it, so `band + 1` would have the panel refusing — by name, in a sentence — to take the
+        // captain to solid rock, and a card minted for it would authorise a hole.
+        if (NextShaftBelow(bodyId, level) is not { } next)
         {
             return stops;   // nothing under this shaft at all; the panel simply ends
         }
@@ -2633,16 +3128,21 @@ public static class UndergroundComplex
         var gateCard = new AuthorityCard(bodyId, next);
         bool carded = heldCardIds.Contains(gateCard.Id);
         bool holdsIt = IsHeadOffice(bodyId) || carded;
-        bool unlisted = IsUnlisted(bodyId, BandTop(next));
-        if (unlisted && !holdsIt)
+
+        // #592/#677 · Two different silences, one rule. The building does not admit the unlisted band exists,
+        // so its panel does not either; and NOTHING admits the halls exist, least of all a lift directory.
+        // A refusal that named either shaft would give the secret away in the one sentence it cannot survive,
+        // so on both of those floors the panel looks exactly like the panel at the bottom of an ordinary site.
+        bool undeclared = IsUnlisted(bodyId, BandTop(next)) || IsFound(bodyId, BandTop(next));
+        if (undeclared && !holdsIt)
         {
-            return stops;   // #592: the building does not admit this exists, and neither does its panel
+            return stops;
         }
 
         stops.Add(new(
             BandTop(next),
             holdsIt ? "↓ THE OTHER SHAFT" : "↓ THE OTHER SHAFT — SEALED",
-            HoldsPressure(BandTop(next)),
+            HoldsPressure(bodyId, BandTop(next)),
             IsCurrent: false,
             holdsIt ? null : "This car does not go lower. The shaft that does is on this floor, and its " +
                 "gate wants an authority this building has not issued in a long time.",

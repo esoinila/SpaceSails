@@ -74,6 +74,12 @@ public static class DevStarts
         new("🔬", "The secret lab behind the hidden door",
             "A landable rock in shuttle range hiding a Vantar lab, its hidden door already found — force it and read what shouldn't exist (#409).",
             "/map?secretlab=1"),
+        // #677 · The one place in the game a captain could otherwise never find. About one site in fifty has
+        // galleries under it and the way in is a card eleven floors down, so the front door gets a button:
+        // owner's own rule for this section, "these special places to start should be shown in the UI".
+        new("🕳", "The halls nobody dug",
+            "Set down at a lift head with the whole wallet, over a laboratory, over a clinic nobody listed, over four floors of rock, over something that was already there (#677).",
+            "/map?found=1&land=1"),
 
         // --- The bar, the room, and the people in it ------------------------------------------------------
         new("🥂", "The cognac on the fright",

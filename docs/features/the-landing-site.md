@@ -1626,7 +1626,173 @@ proved to be an argument and never a second answer. Watched go red at
 `_bookCheat appears 3 time(s) in the surface wiring`, at `Found: "HiveRoomsEmptied"`, and at
 `Not found: "shelf.Title, null, shelf.Card"`.)*
 
-13.20 **There are people in the bar, they are all outsiders, and they stop at B1** (#709, v1 of the social
+13.20 **A rare deep site has a band NOBODY DUG, and past the seam nothing belongs to anybody** (#677, v1 of
+the found halls).
+
+Owner ruling 2026-08-04, recorded in `worldbuilding-notes.md` §10. This is humanity's fourth run; the prior
+three were ENDED, by fire then ice then flood, and every end spared a remnant **underground, into massive
+halls**. Out on the moons that is this: a dig that breaks into volume which was *already there*.
+
+**It is a different CLASS of thing from the band nobody listed (§13.7), and keeping the two apart is most of
+the work.** That one is human all the way down — poured, surveyed, invoiced, and hidden from the staff who
+paid for it. This one was never ours, so every single thing that makes a facility legible is absent from it:
+no plate, no department, no livery, no locked door, no stencilled distance, no drain, no shelf, no lamp.
+
+**The register, in the owner's own four words.** On the air-with-no-visible-means ruling: *"Horror served as
+smooth comfy pillow 🤭 … love that"*. The halls are **comfortable**. Nothing down there threatens; everything
+accommodates — good air, warm, smooth underfoot, a place kept ready. The dread is entirely in the implication:
+**a pillow means you were expected.** It is the same parental-not-predatory law the monolith watch runs on
+(§10.4c), delivered through amenity instead of attention — and it pairs with #707's realism pass above the
+seam, where the facility's plumbing EXPLAINS itself and the halls' comfort never does. It is also why standing
+in one **costs nothing extra**: a site that bills a captain by the room for being in a comfortable place is a
+predator whatever the prose says.
+
+**One band below the unlisted band, with a WHOLE BAND OF NOTHING between them.** §13.7's gap is the remainder
+of a band the listed building happened to stop inside. This gap is the point: the unlisted band *fills* its
+band, so the next one down would be flush against it — one shaft's floor and the next shaft's ceiling, which
+is how a BUILDING continues. Four floors of untouched rock is what says the digging stopped and something else
+began. `FoundBandOf` is `UnlistedBandOf + 2`; `FloorsOf` and `TrueDepthOf` carry it the way they carried
+§13.7; and nothing may ever authorise or offer a button to the band between — `SiteHasBand` says no, and
+`NextShaftBelow` steps over it, which is the one call every gate and every card asks now instead of
+`BandOf(level) + 1`.
+
+> **And the bottom of the building stopped being the bottom of the hole.** `UnlistedBottomOf` exists for one
+> assertion: the thing on the pallet (§13.10) is crated, invoiced and has the lights left on over it, so it
+> belongs on the deepest floor somebody DUG. Written as `TrueDepthOf` — which it was — it moved two bands down
+> into a gallery the moment this shipped, and every existing test stayed green.
+
+**The way down is §13.5's card idiom one rung further: a card found in the band nobody listed.** Designated
+(`FoundKeyRoomFor` — room 0 of the unlisted band's own shaft head, the floor where the plate finally names a
+different building, §13.16) for exactly the reason §13.7's is: a Key is one face in nine, and a band that
+rolled none would leave a site's halls unreachable not for that visit but forever, with nothing on screen ever
+saying so. Every other Key in that band mints the same card anyway. **The panel never admits the shaft
+exists** — the same silence §13.7 keeps, for the harder version of the same reason.
+
+**Rare, and the rate is measured.** One site in five of the ones that already hide a band — and because only
+the shallower half of those has room under it for another shaft inside the performance guard, the measured
+incidence is **17.2 %** of eligible sites, **8.1 %** of the sites that hide a band, and **1.87 %** of every
+site the generator makes. All three are read off a 4 000-site sweep and printed by the guard, because a rate
+nobody measured is a rate nobody chose (§13.12's lesson).
+
+**The four senses, each a §10 law made physical:**
+
+- **DARK**, and it is the floor's own claim. `DeclaresDarkness` answers true here and nowhere else — §13.18's
+  promised one-liner, and its customer. The facility's failing light stops at the poured concrete; past the
+  seam the dark is *original*, and the suit's cone is the whole of the seeing.
+- **AIR, unexplained.** Every gallery holds pressure, through the ONE pressure fact (§13.13) — which is why
+  `HoldsPressure` now takes the BODY, with no level-only overload left: whether a floor breathes stopped being
+  arithmetic on a number, and the compiler made all thirty-one callers say which moon they were standing
+  under. The gauge reads `PRESSURISED · TANK STOPPED`, and **nothing anywhere shows plant**: `IsPlumbed` is
+  that one pressure fact plus one, and it says no, so not one duct, grille, pump, fixture, cell, counter or
+  refuge is ever built down there. Both readings survive: passive geology / *the halls have always been
+  provisioned*.
+- **SMOOTH WALLS — the third idiom.** Owner: *"it is just built into the smooth monolith style walls."* The
+  game has two wall materials and both say who built the thing: `IsHull` is poured and takes the DEPARTMENT
+  LIVERY as its ink (#605), `IsStone` is the moon's own rock and takes the BODY's colour (#589). Either one
+  here would quietly answer the question the feature exists to leave open, so `DeckPlan.Wall.IsSeamless` is
+  drawn in **one flat constant that belongs to no palette at all**, heavier than either, with no texture,
+  hatching or interior line-work — **the absence of texture IS the style**, which on this crude grid reads
+  exactly as wrong as it should. The precedent is §10.4b's slab, which says *no seam* by having nothing drawn
+  inside its face. **The word `monolith` never appears in any hall string** (§8 — the word is reserved); the
+  player makes the connection the way they make every connection in this game.
+- **AND NO DOOR LEAF.** Every doorway in this building is drawn *imported violet* — the one channel that means
+  somebody flew a thing here and fitted it (§13.7's material language) — so the galleries cut none at all. The
+  wall simply stops at each chamber mouth, and a rib ends in the same material as everything else rather than
+  in `⟶ SECTOR 7 · 2.4 km`, which is a survey, a department and a decision about where somebody's authority
+  stopped. A captain gets no number to reason with, which is worse, and is the point.
+
+**The geometry inverts the grammar.** The whole game has taught that deeper is tighter, because cost per cubic
+metre rises with every metre of overburden and the people paying knew it. Down here it inverts, and the
+renderer's **room scale** says so without one word of prose. `FoundGrowthPerFloor` = 1.10, compounding with
+depth into the band (1.00, 1.10, 1.21, 1.33), applied to the facility's own room module — which is published
+now (`RoomWidthDu`/`RoomHeightDu`) instead of being three `const`s inside two functions, because the doorway a
+room cuts and the gap its corridor leaves are the SAME gap (§13.2's family). The deepest gallery has getting
+on for twice the floor area of the first and **about half as many chambers on it**. Nothing is typed: the
+ratio is capped by the *actual rib spacing of the actual field*, so the growth stops where two facing chambers
+would meet rather than at a number somebody guessed.
+
+**What it pays: a measurement, and almost always nothing.** Measured at **11.4 %** of chambers over an
+18 000-room sweep — one in nine, against `FoundRecordOneInN`. The rest are the authored empty line. What is
+absent is each its own canon rule rather than a balance call: **no equipment** (a crate names a supplier),
+**no records and no files on people** (paperwork is an institution, and a file would say who kept it), **no
+card past the entry** (a second would make the halls a building with a directory). The record itself is
+§13.10's law one class of object further along — what goes in the pocket is the RECORD of a thing that stays —
+and the two relic-class objects tell themselves apart by the id the find is minted with (`FindId`,
+`IsHallRecord`), so the look-card, the satchel row and the pocket line can never show a photograph of a pallet
+to a captain standing in an empty gallery. The card is caption-only in the #528 idiom, and the **casebook keeps
+the gist** rather than the sentence (§13.19's rule: looking is free, knowledge is one-shot).
+
+**The odd book does not run here, and the cheat cannot put one there either** (§13.19). A shelf is a FACILITY
+object — the engine behind it is a department that reads everything, and a department is staff, a budget, a
+requisition and a room somebody was given. A paperback in a gallery would be the most explaining object the
+game could put in one: it would say somebody LIVED there, and which century they came from. Guarded in ONE
+place (`OddBooks.ShelvesStandHere`), because `Search`'s forced path bypasses `HoldsOne` entirely and the guard
+that got missed would be the one a tester typing `?book=6` in a hall walked straight through.
+
+**The prose is the owner's and is lifted verbatim.** Six strings, checked character-for-character, because the
+way this feature dies is one helpful sentence written to fill a gap. Where the generator has nothing authored
+to say — the room line of a gallery that holds a record — **it says nothing**, on purpose, and the card does
+the describing. The facility's own empty-room line (*"Stripped to the fittings. Whoever cleared this room did
+it carefully…"*) may never appear down here: it is a sentence about STAFF, and there was no staff. That is why
+the halls' two answers are taken BEFORE `HaulLine`'s switch rather than as two more arms inside it — a default
+arm is how that sentence would arrive, silently, the day somebody adds a `Haul` value.
+
+**Two sayings, both last.** The seam line on the ride (*"The pour stops. Not at a wall — at a line, clean as a
+tide mark…"*) and the arrival line on the first gallery (*"The car has no button for this floor. It stops
+anyway. The air is good. Nothing here says why."*), each once per excursion, written after every routine
+saying for the reason §13.5's gate line is: the pulse has one slot and the last write wins. **Neither air line
+is said past the seam** — the pressurised one describes standing lights, a fan still turning and somebody's
+account decades after the last invoice, which is a sentence about PLANT and about the people who were billed
+for it. The authored line states the air once and the gauge answers after that. *The residual is #693's and
+not this feature's: on the tick after the doors open, a crossing into pressure can still pulse the generic
+supply line over the top of these — the same slot §13.7's own climax has been losing since it shipped.*
+
+**`?found=1` is the door.** About one site in fifty has galleries and the way in is a card eleven floors down,
+so the cheat parks the one rock whose seeded shape has the full chain in it and hands over every authority the
+site ever issued — minted through the real `AuthorityCard`, into the real satchel, so the panel, the gate, the
+refusal ladder and the wallet fan behave exactly as they do for somebody who earned them. The rock is a body
+ID and nothing else (`UndergroundComplex.FoundBandCheatSiteId`, read by the cheat and by four sweeps that
+would otherwise audit a universe with no galleries in it), which is the right shape and also the fragile one,
+so it is pinned. *A scene nobody can reach on demand ships broken.*
+
+**And `?floor=N` stopped doing its own arithmetic.** It used to clamp to the true bottom and then snap into
+the unlisted band's shaft head — correct for a building with ONE gap in it, and a captain set down in solid
+rock the day there were two. `NearestFloorTo` is the building's own answer now. This is §13.15's second cause
+for the third time.
+
+**Two things this v1 deliberately does NOT build**, both filed and neither snuck in: the **disclosure clock**
+(what a captain is shown riding the slow world-side windows, so what you find is a fact about *when you went*)
+and any **inhabitant** content. §13.19's judgement call applies again — a feature that ships its own second
+half unasked is a feature nobody reviewed.
+
+*(Enforced. Core: `TheFoundBandTests` — the rate measured off a 4 000-site sweep and proved strictly rarer
+than §13.7's; the whole band of nothing, with every floor of it proved absent, unauthorisable and unofferable;
+the pallet proved to stay in the building that paid for it; the way down designated, colliding with neither
+other designation, and proved to mint the card for the shaft two bands under it; the panel's silence and its
+carded row; darkness as an equivalence over every floor; the air held and the plumbing refused, driven through
+the real `SuitAir` predicate; no plate, no livery, no lock, no stencil, no imported leaf — and still four
+chambers and every wall inside the field; the room scale proved derived and the drawn floors proved to have
+bigger-and-fewer chambers; the haul measured; the record's pocket line, caption-only card and casebook gist;
+the odd book refused for the roll AND for all eleven cheat values over 800 chambers; the canon grep over
+forty-six forbidden words and 200-plus strings; the facility's stripped line proved absent for EVERY `Haul`
+value the enum has; the six authored strings verbatim; and the cheat rock pinned. Client:
+`TheHallsAreDrawnInAThirdIdiomTests` drives the real `DeckView` through a recording pen — every wall past the
+seam inked in the constant, none above it, the livery proved unable to reach them, and no door leaf, plate or
+livery on the deck at all. `YouCanWalkTheHiveTests` floods the galleries under §13.1 like any other floor,
+because `FloorsOf` carries them and the cheat rock is in its body list.*
+
+*Watched go **RED**, ten reverts, each against the behaviour it replaced: darkness back to §13.18's shipped
+`false` → `4 floor(s) disagree with the seam: … B17 (a gallery, and it is LIT)`; plumbing following pressure
+again → `probe-moon-116 B17: a gallery with plumbing in it`; the shelf guard removed → the book turns up in a
+gallery; the halls falling through to the facility's arm → `Expected: Not "🚪 Stripped to the fittings…"`; the
+scale flattened → `Expected: 1.331, Actual: 1`; the pallet back on `TrueDepthOf` → `Expected: -12, Actual:
+-20`, in two files; the card back on `BandOf(level) + 1` → `probe-moon-116 B9: the designated way down minted
+no card — the halls are unreachable`; the find id forgetting its prefix → the wall's record answers with the
+pallet's photograph; the reserved word transcribed into the empty line → `Found: "monolith" in: …`; and the
+wall flag plumbed and honoured by nobody → `secret-lab-site-halls-116 B17: 120 of 120 wall(s) drawn in the
+facility's material`, with `0 seamless stroke(s) drawn for 120 seamless wall(s)`.)*
+
+13.21 **There are people in the bar, they are all outsiders, and they stop at B1** (#709, v1 of the social
 layer).
 
 > *"we should have people in the bar... we have cover story"* · *"for now let's keep the people in B1."*
@@ -1680,7 +1846,7 @@ independently, at `Collection: [Seated { … ◈ A HAND WHO HAS BEEN HERE LONGER
 sitting in the staff mess, and again on a canteen carved below B1. The client wiring was watched go red at
 `10 floor(s) disagree with the B1 ruling: luna B1: the canteen floor is deserted`.)*
 
-13.21 **The board on the canteen wall, and the person whose notice it is** (#709).
+13.22 **The board on the canteen wall, and the person whose notice it is** (#709).
 
 > *"let's add a bulletin board to the bar"* · *"maybe spot the person notifying in the bar."*
 
