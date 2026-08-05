@@ -1680,6 +1680,50 @@ independently, at `Collection: [Seated { … ◈ A HAND WHO HAS BEEN HERE LONGER
 sitting in the staff mess, and again on a canteen carved below B1. The client wiring was watched go red at
 `10 floor(s) disagree with the B1 ruling: luna B1: the canteen floor is deserted`.)*
 
+13.21 **The board on the canteen wall, and the person whose notice it is** (#709).
+
+> *"let's add a bulletin board to the bar"* · *"maybe spot the person notifying in the bar."*
+
+The second sentence is the feature. **Every notice on the cork is pinned by somebody sitting in that room**,
+and nothing in the game ever says so:
+
+| on the board | at a table |
+| --- | --- |
+| `PUMP 2 — written up 12/4, 19/4, 2/5, 16/5. Still listed OPEN.` | the fitter: *"it's been singing since spring"* |
+| `COUNTERSIGNATURES — the signatory is away. No date has been given to us either.` | the carrier: *"third day sat here"* |
+| `ROTA WEEK 31 — disregard the first name and use the second.` | the temp: *"they put a different one on the rota"* |
+| `STORES — no soil samplers in stock. Do not query the description on your docket.` | the woman doing invoices: *"my pallet jack is a soil sampler"* |
+
+**The pairing is data, not dialogue.** `Notice.Pairs` is never rendered, never spoken and never filed — it
+exists so the room is *internally true*, and the player either notices or does not. Same register as the odd
+books and the funding trail: **consistency is offered and the answer never is.** Which means the only thing
+holding the feature up is that the authoring is actually consistent — so that is what the guard checks, and
+it is the one guard here that matters.
+
+**It makes the cover story into an object.** *"They're always hiring — nobody ever says what for"* stops being
+a line a stranger says and becomes `HIRING — GENERAL HANDS. No experience necessary. Weekly pay, cleared
+weekly. Apply at the desk. Bring nothing.` #618's job-seeker cover now has a notice on a wall behind it.
+
+**One notice per press, round and round**, rather than a card with four on it. The board's whole value is that
+a captain comes *back* to it: the pump notice means nothing until you have heard the fitter, and everything
+afterwards. A single dump would be read once and never looked at again.
+
+**The text stands alone without art.** Generated notices (owner: *"gen AI advertisements of jobs and missing
+things"*) go on top as an enhancement — because a board that is blank when an asset is missing is a board that
+breaks the first time a manifest drifts.
+
+**Core owns where it hangs.** Offsets chosen against the counter's line (`cy + 3.6`) and the tables at the
+front, so the board owns its own patch of floor to be pressed from — a renderer picking a spot on a wall would
+be doing geometry about a room it does not own (§13.15).
+
+*(Enforced: `TheBoardInTheBarTests` — every notice pairs with a member of the cast and every one of the cast
+has exactly one notice; **no notice ever names its author**; the B1 law forced with a synthetic `Amenity`, not
+hunted for; four different notices per site, the same four every visit; the 2 du console clearance checked
+against the fixture console *and* every seated person; the canon grep. Client:
+`ThereArePeopleInTheBarTests.TheBoardHangsOnTheSameOneFloorAndCoreChoseTheSpot` proves the renderer takes
+Core's coordinates unmodified. The pairing guard was watched go **red** at
+`Not found: "◈ A PERSON WHO IS NOT IN THE ROOM"` — a notice pinned by somebody who is not in the building.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

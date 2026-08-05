@@ -95,6 +95,41 @@ public sealed class ThereArePeopleInTheBarTests
     }
 
     [Fact]
+    public void TheBoardHangsOnTheSameOneFloorAndCoreChoseTheSpot()
+    {
+        // #709 · The cork board's wiring. Same B1 law as the people, and the spot must be CORE's arithmetic
+        // rather than a renderer's nudge — the offsets were picked against the counter's line and the tables',
+        // and a client that adjusted them would hang the board somewhere nothing has ever checked.
+        foreach (string body in Bodies)
+        {
+            int? top = UndergroundComplex.TopPressurisedFloor(body);
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                var boards = DeckFor(body, level).Consoles
+                    .Where(c => c.Kind == DeckPlan.ConsoleKind.HiveBoard)
+                    .ToList();
+
+                if (level != top)
+                {
+                    Assert.Empty(boards);
+                    continue;
+                }
+
+                DeckPlan.ConsoleSpot board = Assert.Single(boards);
+                Assert.Equal(CanteenBoard.Plate, board.Label);
+
+                UndergroundComplex.Amenity canteen = UndergroundComplex
+                    .Build(body, level, MoonSurface.ExpeditionField()).Amenities
+                    .Single(a => a.Use == UndergroundComplex.Comfort.UpperCanteen);
+                (double wantX, double wantY) = CanteenBoard.At(body, level, canteen)!.Value;
+
+                Assert.Equal((float)wantX, board.X);
+                Assert.Equal((float)wantY, board.Y);
+            }
+        }
+    }
+
+    [Fact]
     public void NobodyIsStandingInsideAWallOrOnTopOfTheLift()
     {
         // #681's standing lesson, one object along: a figure the sim draws must be somewhere a person could

@@ -45,6 +45,10 @@ public sealed class DeckPlan
         // round-buying economy (Map.Quests), and none of that is true of a haulier who has been waiting three
         // days for a signature. One kind per verb — stop at a table, hear one breath of somebody's working day.
         HiveRegular,
+        // #709 · The cork board on the canteen wall. Its own kind and NOT a HiveSign: a sign is a door that
+        // will not open and says what is behind it, and this is paper somebody pinned up — read one notice at
+        // a time, filed, and worth coming back to when you have met the people in the room.
+        HiveBoard,
         // THE ARCHIVE NODE (docs/features/the-archive-node.md): the column you go and look at, and the
         // handle stencilled on its housing. TWO kinds for one object, because they are two different
         // decisions — looking costs a throw, and pulling must stay possible without one.

@@ -470,6 +470,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.HiveRegular:
                 HiveRegularInteract(); // #709: stop at a table on B1 and hear one breath of somebody's day
                 break;
+            case DeckPlan.ConsoleKind.HiveBoard:
+                HiveBoardInteract();   // #709: one notice off the cork board — whose it is, is your problem
+                break;
             case DeckPlan.ConsoleKind.MonolithFoot:
                 MonolithFootInteract(); // #586: whatever somebody left at the foot this window
                 break;

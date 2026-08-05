@@ -250,6 +250,9 @@ public sealed class SceneInventoryTests
                                              "B1 ruling). Every floor below is deserted on purpose, which " +
                                              "is exactly why no general scene sweep reaches one; " +
                                              "ThereArePeopleInTheBarTests walks the floors that have them",
+        [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
+                                          "the same one floor per site that no general sweep reaches — " +
+                                          "TheBoardInTheBarTests walks it",
         [DeckPlan.ConsoleKind.ArchiveNode] = "the column, aboard about one eligible hull in three " +
                                              "(ArchiveNode.IsAboard) — a fresh wreck plan carries none",
         [DeckPlan.ConsoleKind.ArchiveSwitch] = "the purge handle on that same housing, and only when it is there",

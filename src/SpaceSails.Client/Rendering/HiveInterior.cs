@@ -152,6 +152,21 @@ public static class HiveInterior
                 consoles.Add(new(
                     DeckPlan.ConsoleKind.HiveRegular, (float)who.X, (float)who.Y, who.Plate));
             }
+
+            // ── #709 · AND THE CORK BOARD ON THE WALL ─────────────────────────────────────────────────
+            //
+            // Owner: "let's add a bulletin board to the bar." It is where the cast's own working day is
+            // written down — every notice on it belongs to somebody sitting in this room, and nothing
+            // anywhere says so.
+            //
+            // CORE OWNS WHERE, exactly as it owns who sits down. A renderer choosing a spot on a wall would
+            // be doing geometry about a room it does not own (§13.15), and the offsets are picked against the
+            // counter's line and the tables' so the board owns its own patch of floor to be pressed from.
+            if (CanteenBoard.At(bodyId, level, a) is { } board)
+            {
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveBoard, (float)board.X, (float)board.Y, CanteenBoard.Plate));
+            }
         }
 
         // The lift, on every floor, in the same place.

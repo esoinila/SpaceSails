@@ -709,6 +709,10 @@ public partial class Map
         // and the plate pulses on every visit after.
         public HashSet<int> HiveRegularsHeard { get; } = [];
 
+        // #709 · Which notice on the cork board comes next. A counter and not a set, because the board is the
+        // one thing down here worth re-reading in ORDER — four notices, one per press, round and round.
+        public int HiveBoardNext { get; set; }
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -3761,6 +3765,47 @@ public partial class Map
                 }
                 seat++;
             }
+        }
+    }
+
+    // ── #709 · READING THE BOARD ─────────────────────────────────────────────────────────────────────────
+    //
+    // Owner: "let's add a bulletin board to the bar" · "maybe spot the person notifying in the bar."
+    //
+    // ONE NOTICE PER PRESS, in the order they are pinned, then round again. Deliberate: a board that dumped
+    // four notices into one card would be read once and never looked at twice, and the whole point of this
+    // object is that a captain comes BACK to it after meeting the people. The pump notice means nothing until
+    // you have heard the fitter, and everything afterwards.
+    //
+    // NOTHING HERE READS Notice.Pairs. Which regular pinned which notice is the player's to make or to miss,
+    // and a client that hinted would spend the only thing the board has.
+    private void HiveBoardInteract()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveBoard })
+        {
+            return;
+        }
+
+        UndergroundComplex.FloorPlan floor =
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField());
+        foreach (UndergroundComplex.Amenity a in floor.Amenities)
+        {
+            var pinned = CanteenBoard.Pinned(ex.Stop.Body.Id, ex.Floor, a);
+            if (pinned.Count == 0)
+            {
+                continue;
+            }
+
+            CanteenBoard.Notice n = pinned[ex.HiveBoardNext % pinned.Count];
+            ex.HiveBoardNext++;
+            ShowAndFile($"{n.Head} — {n.Body}", CanteenBoard.Glyph);
+            RequestVaultSave();   // the field note is a possession too (#587)
+            return;
         }
     }
 
