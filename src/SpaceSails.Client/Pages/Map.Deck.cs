@@ -464,6 +464,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.HiveRefuge:
                 HiveRefugeInteract(); // #608: read the pressure refuge's rack on a dead floor
                 break;
+            case DeckPlan.ConsoleKind.HiveAmenity:
+                HiveAmenityInteract(); // #707: stand at the counter, the basins or the machines
+                break;
             case DeckPlan.ConsoleKind.MonolithFoot:
                 MonolithFootInteract(); // #586: whatever somebody left at the foot this window
                 break;

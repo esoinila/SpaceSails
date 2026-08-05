@@ -242,6 +242,9 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.HiveHaul] = "#585 a room worth searching, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveSign] = "#600 department signage, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveRefuge] = "#608 the pressure refuge's rack, one per dead appended floor",
+        [DeckPlan.ConsoleKind.HiveAmenity] = "#707 the canteen counter, the basin run and the bank of " +
+                                             "machines, on the appended underground floors that HOLD " +
+                                             "PRESSURE — the refuge's opposite number, floor for floor",
         [DeckPlan.ConsoleKind.ArchiveNode] = "the column, aboard about one eligible hull in three " +
                                              "(ArchiveNode.IsAboard) — a fresh wreck plan carries none",
         [DeckPlan.ConsoleKind.ArchiveSwitch] = "the purge handle on that same housing, and only when it is there",
