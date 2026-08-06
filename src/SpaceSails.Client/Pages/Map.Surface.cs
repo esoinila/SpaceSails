@@ -842,6 +842,16 @@ public partial class Map
         await DescentPhaseAsync("clearing the bay…");
         AdvanceShuttleClock(stop.TravelSeconds); // the flight down (abstracted by the tube) costs the clock
 
+        // #733 · …and the mothership FLIES that crossing now instead of standing still through it, so a
+        // free-flying ship whose track really was diving ends the flight there rather than tunnelling
+        // through the rock. Nothing further belongs under a captain who has just been collected by a
+        // surface: welding a ground and a tube behind the freeze-frame would be building the wrong scene.
+        if (_busted is not null)
+        {
+            _shuttleDescending = false;
+            return;
+        }
+
         // #370: is this landing the away-team's gig site? If so the excursion arms the expedition (no tide,
         // diced beats, the away clock) instead of a normal surface visit.
         bool isExpeditionSite = _expedition is { } plan && plan.SiteBodyId == stop.Body.Id;

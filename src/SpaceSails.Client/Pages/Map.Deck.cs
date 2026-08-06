@@ -834,17 +834,14 @@ public partial class Map
         // #480: a night's bunk gives WHOLE pips back and says so, like every other relief.
         ApplyNerveRelief(result.Nerve - _nerve);
 
-        // A night's rest advances the sim clock a modest, fixed amount — re-stamp the loitering ship at the
-        // new time and re-pin to any dock (mirrors AdvanceShuttleClock's clock-cost idiom, minus the shuttle
-        // cache watch). Not a cinematic — the clock simply moves on while you sleep.
-        double newT = SimTime + CabinComforts.SleepSimSeconds;
-        _ship = _ship with { SimTime = newT };
-        SimTime = newT;
-        _lastSleepSimTime = newT; // well-rested from the moment you wake
-        if (_dockedHavenId is not null)
-        {
-            HoldAtDock(); // stay pinned to the station's drift across the sleep
-        }
+        // A night's rest advances the sim clock a modest, fixed amount — the SHARED loiter-clock idiom
+        // (AdvanceShuttleClock's, minus the shuttle cache watch): clamped, she rides the berth's drift;
+        // free-flying, she coasts her conic for the hour. Not a cinematic — the clock simply moves on
+        // while you sleep. #733: this used to freeze the hull in place for a whole sim-hour, which is the
+        // same lie that flew the HQ quick start into Enceladus — the second copy of it, kept here in the
+        // one place the comment already admitted it was a copy.
+        AdvanceLoiterClock(CabinComforts.SleepSimSeconds);
+        _lastSleepSimTime = SimTime; // well-rested from the moment you wake
 
         RendererInterop.PlayCue("rum"); // a soft chime to mark the rest (reuses the galley's gentle cue)
         RequestVaultSave();             // the nerve moved and time passed — persist it
