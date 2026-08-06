@@ -24,11 +24,15 @@ public sealed class TheSilentFindsGetACardTests
 
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;
 
-    /// <summary>A spread of ordinary bodies — some hide a band, most do not, and the sweep needs both.</summary>
+    /// <summary>A spread of ordinary bodies — some hide a band, most do not, and the sweep needs both — plus
+    /// both cheat rocks. <see cref="UndergroundComplex.FoundBandCheatSiteId"/> is the awkward one and is here
+    /// on purpose: it has TWO gaps in it (an unlisted band, then rock, then the galleries nobody dug), so it
+    /// is the site where "the top of a band" and "the lobby of the band nobody listed" come apart most.</summary>
     private static readonly string[] Bodies =
     [
         "luna", "phobos", "europa", "ganymede", "callisto",
-        "titan", "enceladus", "miranda", "triton", "the-clinker", CheatRock,
+        "titan", "enceladus", "miranda", "triton", "the-clinker",
+        CheatRock, UndergroundComplex.FoundBandCheatSiteId,
     ];
 
     // ── THE PLATE ────────────────────────────────────────────────────────────────────────────────────────
