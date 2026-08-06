@@ -177,6 +177,48 @@ predates this manifest and is already wired; it is listed here only so nobody pa
   organic. Cold, still, enormous: a place built for people and containing none.
 - **Painted 2026-08-02.** Clean of lettering.
 
+## 4a. The two silent finds ★ owner's ask — #725
+
+Owner's audit question, walking the four handoff floors: *"Are we giving enough attention to plot-significant
+finds? They should have a Gen-AI image and their own dialog by our standards."* THE SHAFT and DEAD AIR met it.
+The two the handoff doc actually sends playtesters to did not: **B21's corrected plate** — #592's whole
+arithmetic in one sign — was a wall stencil, and **B17's staff mess** was map furniture. A player who walks
+past a stencil at deck-plan zoom has missed the reveal of the arc, and the game never knows.
+
+Both cards are the shape §0 allows and not the other one: they **show harder and refuse to conclude.** Neither
+adds a subtitle, a hint or a verb, and neither may ever quote the plate's text — it varies by site kind, and a
+card that transcribed a sign the renderer draws would double the copy in the pixels' own register.
+
+### `art/the-plate.jpg` — ▣ THE PLATE
+
+- **Slot:** `UndergroundComplex.UnlistedLobbyArtUrl`, raised once per excursion on the first arrival at
+  `IsUnlistedLobby` — #694's plate law minus the entrance lobby, so it is the band lobby and nothing else.
+- **As painted (2026-08-06):** a bare-pour lobby wall cut into raw rock, one caged lamp on a gooseneck, a
+  folding chair with somebody's coat and a flask beside it. On the wall, a **wide patch of newer green paint
+  laid over a larger pale rectangle**, and a **small blank steel plate** screwed on over the patch — two
+  coats and two decisions, in that order, readable at a glance. The lift door stands open to the right, warm
+  and empty. **No lettering anywhere:** the plate is blank steel, which is exactly right, because the copy
+  says the plate is not the name of anything you rode down through and the picture must not settle what it
+  says instead.
+- **Feeling:** a crew that stencils for a living, sent down here to change an answer. Good work, both times.
+
+### `art/the-staff-mess.jpg` — 🍽 THE STAFF MESS
+
+- **Slot:** `UndergroundComplex.StaffMessArtUrl`, raised once per excursion on **entering the room** — the
+  only room-entry card in the game. `Amenity.Contains` (→ `RefugeHolds`) is the containment law.
+- **As painted (2026-08-06):** a concrete canteen under working fluorescent strips. A bank of four vending
+  machines along one wall, **lit and stocked**; a serving counter with stacked trays and cutlery squared into
+  their racks; steel tables with the chairs pushed in level. A heavy door at the far end with a **green pass
+  reader still live** beside it. One dropped napkin on the floor, and nothing else out of place. **No
+  lettering:** the machines' fronts are goods and glow, no brands, no prices.
+- **Feeling:** the shift has not come, and the machines are not the kind that wonder. §0's rule holds without
+  effort here — nothing in the frame is organic, and the horror is that the room is *tidy*.
+
+**Guarded by** `RevealPlatesArePaintedTests.TheTwoSilentFindsArePainted` (both on disk, neither borrowing a
+sibling's canvas), `TheSilentFindsGetACardTests` (which floor, which room, and the prose verbatim) and
+`TheSilentFindsAreRaisedOnceTests` (one caller each, each fenced by its own latch, and the mess's box holding
+exactly the machines the deck draws).
+
 ## 5. Plot items get a card of their own ★ owner's ask — #614
 
 Owner: *"we could have gen-AI images of plotwise important items… maybe they say something about what door

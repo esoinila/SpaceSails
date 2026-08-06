@@ -211,6 +211,17 @@ public static class UndergroundComplex
         return HasUnlistedBand(bodyId) && level == BandTop(UnlistedBandOf(bodyId));
     }
 
+    /// <summary>#725 · IS THIS THE LOBBY OF THE BAND NOBODY LISTED — the one floor in the game where the
+    /// plate beside the shaft names a different kind of building from every floor above it.
+    ///
+    /// <para>Written as <see cref="ShowsFacilityPlate"/> MINUS the entrance lobby, which is the whole of it:
+    /// the plate law already answers "does a building say its name here", and it says yes in exactly two
+    /// places. Take B1 away and what is left is the corrected wall. Nothing here re-derives a band — a second
+    /// copy of that arithmetic is the named bug class this file opens with a table of, and #694's own doc
+    /// comment is explicit that this cannot be simplified to "is this floor a band top" either.</para></summary>
+    public static bool IsUnlistedLobby(string bodyId, int level) =>
+        ShowsFacilityPlate(bodyId, level) && level != BandTop(0);
+
     /// <summary>#585 · DEPTH IS FREE. Owner, working out the architecture himself:
     ///
     /// <para><i>"since every secret lab can have a depth of it's own we do not need to worry about running out
@@ -1121,7 +1132,14 @@ public static class UndergroundComplex
     /// washroom, which is the one amenity nobody sits down in.</param>
     public readonly record struct Amenity(
         Comfort Use, double X, double Y, string Plate, string Fixture,
-        IReadOnlyList<(double X, double Y)> Tables);
+        IReadOnlyList<(double X, double Y)> Tables)
+    {
+        /// <summary>#725 · Is the captain standing in this room? <see cref="RefugeHolds"/>, because an
+        /// amenity is one of the floor's own rooms taken over — the same poured box, with the same square
+        /// corners — and a second containment box written here would be a room whose walls the sim and the
+        /// picture disagreed about. One law, asked in one place, exactly as the refuge does it.</summary>
+        public bool Contains(double x, double y) => RefugeHolds(X, Y, x, y);
+    }
 
     /// <summary>#707 · A private washroom cell hung off the back of a room that mattered.
     ///
@@ -2843,6 +2861,51 @@ public static class UndergroundComplex
     public const string UnlistedFloorLine =
         "🕳 No plate by the lift, no department, no number painted anywhere. The building has floors it " +
         "does not count, and you are standing on one.";
+
+    // ── #725 · THE TWO LOUDEST SILENT FINDS ──────────────────────────────────────────────────────────────
+    //
+    // Owner's audit question: "are we giving enough attention to plot-significant finds? They should have a
+    // Gen-AI image and their own dialog by our standards." Walking the four handoff floors, two were met
+    // (THE SHAFT, DEAD AIR) and the two the handoff doc actually sends playtesters to were SILENT — a wall
+    // stencil and a room of furniture, both missable at deck-plan zoom by a player who has just walked past
+    // the reveal of the arc.
+    //
+    // Both cards are the allowed shape and not the other one: they SHOW HARDER AND REFUSE TO CONCLUDE. The
+    // plate card describes two coats of paint and a screwed-on sign and ends without naming what was under
+    // the first coat; the mess card describes squared chairs and warm machines and ends on the machines. No
+    // subtitle, no hint, no verb. TheHiveTests.NothingDownHereEXPLAINSAnything is one deck up, and neither of
+    // these goes round it.
+    //
+    // NEITHER MAY NAME THE PLATE'S TEXT. It varies by site kind (TitleOf/KindOn) and a card that quoted it
+    // would be prose transcribing a sign the renderer draws — the same fact in two places, one of which never
+    // hears about a change.
+
+    public const string UnlistedLobbyArtUrl = "art/the-plate.jpg";
+
+    public const string UnlistedLobbyLabel = "▣ THE PLATE";
+
+    /// <summary>The first arrival on the unlisted band's own lobby floor. #592's whole arithmetic delivered
+    /// by one sign, and the sign is never quoted. Authored, verbatim.</summary>
+    public const string UnlistedLobbyCard =
+        "The car opens on a lobby with no department and no livery — bare pour, one lamp, somebody's chair. " +
+        "Beside the shaft there is a plate, and the plate has been done twice: a wide patch of newer paint " +
+        "first, laid over something larger, and then the small name screwed on over that. Good work, both " +
+        "times — a crew that stencils for a living, sent down here to change an answer. It is not the name " +
+        "of anything you rode down through. You read it again. It says what it said. Above you, twenty " +
+        "floors file and grade and answer to one name; the wall down here has been corrected.";
+
+    public const string StaffMessArtUrl = "art/the-staff-mess.jpg";
+
+    public const string StaffMessLabel = "🍽 THE STAFF MESS";
+
+    /// <summary>The first entry into the staff canteen's room — a ROOM beat and not a floor beat, because
+    /// the floor it is on is an ordinary floor and the room is the find. Authored, verbatim.</summary>
+    public const string StaffMessCard =
+        "A mess for the staff: machines on the wall still holding their temperature, chairs squared to the " +
+        "tables the way a crew squares them at the end of a shift it expects to repeat. The door wanted a " +
+        "pass shown. Inside there is nobody to show it to, and nothing out of place — no tray abandoned, no " +
+        "chair shoved back, no note. Whatever ended here was not sudden, or it was tidied. The machines hum " +
+        "and keep their hours. The shift has not come, and the machines are not the kind that wonder.";
 
     // ── #677 · WHAT THE HALLS SAY, WHICH IS ALMOST NOTHING ───────────────────────────────────────────────
     //

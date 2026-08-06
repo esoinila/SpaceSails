@@ -137,6 +137,22 @@ rock, and then a sign that says the building is something else.
 Check also that **B5, B9, B13 and B17 have no facility plate** — they are shaft heads, not doorways, and the
 law is deliberately *not* "every band top".
 
+### 3a · …and the card the payoff earns (#725)
+
+The plate was a wall stencil, and a player at deck-plan zoom could walk past the reveal of the arc with the
+game none the wiser. The first arrival on B21 now stops the world with **▣ THE PLATE** (`art/the-plate.jpg`):
+a lobby with no department and no livery, and a sign screwed on over a wide patch of newer paint.
+
+```
+/map?secretlab=deep&land=1&floor=21    B21 — the card, on the first arrival of the excursion
+```
+
+Once per excursion, exactly like 🫁 DEAD AIR. Which floor it belongs to is `UndergroundComplex.IsUnlistedLobby`
+— #694's own plate law minus the entrance lobby — so it can never fire on B1, and never on B5/B9/B13/B17.
+**The card never quotes the plate**: the text varies by site kind, so a card that transcribed a sign the
+renderer draws would be the same fact in two places, as well as the one sentence that turns the find into an
+answer. Guarded by `TheSilentFindsGetACardTests` (Core) and `TheSilentFindsAreRaisedOnceTests` (client).
+
 ## 4 · The amenities, and rank readable in plumbing (#707)
 
 ```
@@ -151,6 +167,22 @@ demands a pass, there is no till, and the fixtures are vending machines — *"wh
 On both floors, look for **en-suite cells** hung off the back of principal rooms — a door to a private
 washroom, with no plate on it. That absence is the tell: somebody with a name worked in there. Read the
 en-suites as *apartments* and the building stops having employed people and starts having housed them.
+
+### 4a · …and the room nobody eats in gets a card (#725)
+
+B17's mess was map furniture — four machines, three tables and a plate — and pressing **E** was the only way
+to be told anything about it. **Walking in** now raises 🍽 **THE STAFF MESS** (`art/the-staff-mess.jpg`).
+
+```
+/map?secretlab=deep&land=1&floor=17    B17 — walk into the mess room; the card lands on entry
+```
+
+**A room beat and not a floor beat**, which makes it the only one of its kind down here: the floor is an
+ordinary floor and the *room* is the find. So it is the refuge idiom — poll the position, ask Core whether
+the room holds you — with `UndergroundComplex.Amenity.Contains` delegating to `RefugeHolds`, the same
+containment law the refuges run on. Once per excursion; the card must **not** reopen when you close it and
+walk on. The trigger box is guarded against the whole floor's console list, so it can never reach the room
+across the corridor.
 
 ## 5 · The odd book in the empty room (#701)
 

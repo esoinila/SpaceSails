@@ -121,6 +121,24 @@ public class RevealPlatesArePaintedTests
         AssertPainted("The berth office", UndergroundComplex.BerthOfficeArtUrl);
     }
 
+    [Fact]
+    public void TheTwoSilentFindsArePainted()
+    {
+        // #725 · The corrected plate and the room nobody eats in. Both were SILENT — the whole issue is that
+        // the two finds the handoff doc sends playtesters to had no picture and no beat — so a card wired
+        // over a JPG that is not in the folder would leave them exactly as silent as they started, with the
+        // onerror-hide making sure nobody found out. Proven RED by pointing UnlistedLobbyArtUrl at
+        // art/the-plate-nope.jpg.
+        AssertPainted("The corrected plate", UndergroundComplex.UnlistedLobbyArtUrl);
+        AssertPainted("The staff mess", UndergroundComplex.StaffMessArtUrl);
+
+        // …and neither borrowed a sibling's canvas, which is how a "painted" card ends up showing the
+        // wrong room.
+        Assert.NotEqual(UndergroundComplex.UnlistedLobbyArtUrl, UndergroundComplex.StaffMessArtUrl);
+        Assert.NotEqual(UndergroundComplex.UnlistedLobbyArtUrl, UndergroundComplex.VacuumArtUrl);
+        Assert.NotEqual(UndergroundComplex.StaffMessArtUrl, UndergroundComplex.VacuumArtUrl);
+    }
+
     /// <summary>
     /// #695 · EVERY OFFICE ISSUES ITS OWN FACE, AND EVERY FACE IS ON DISK.
     ///
