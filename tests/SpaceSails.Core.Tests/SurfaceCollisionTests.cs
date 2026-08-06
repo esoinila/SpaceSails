@@ -34,6 +34,92 @@ public class SurfaceCollisionTests
         Assert.Equal(0.5, y, 6);    // the along-wall axis still slides
     }
 
+    // ── #724 · THE DOORWAY CASES, in a wall list you can read in one glance ──────────────────────────────
+    //
+    // The law is stated on real generated Hive floors, in the client's AJambIsNotASealedDoorTests — that is
+    // the test that would catch a generator laying doorways nobody can use. These are its SYNTHETIC
+    // companions: four walls of hand-typed geometry whose whole point is that the reader can see the shape
+    // being argued about, and which pin the two halves the honest world cannot state as sharply — that the
+    // funnel FIRES at an opening, and that it does NOT fire anywhere else.
+
+    // The same slab, cut: a doorway from y=-1.6 to y=+1.6 in a wall standing at x=0. The captain's body is
+    // 1.4 du across, so the mouth is more than twice their width and nothing here is a squeeze.
+    private static readonly SurfaceCollision.Segment[] SlabWithADoor =
+    [
+        new SurfaceCollision.Segment(0, -8, 0, -1.6),
+        new SurfaceCollision.Segment(0, 1.6, 0, 8),
+    ];
+
+    [Fact]
+    public void Slide_ABodyWidthOffADoorwayCut_WalksThroughItInsteadOfPinningOnTheJamb()
+    {
+        // The owner's thirty-five presses. Standing a whole body-width past the jamb — no part of the body
+        // over the mouth but its very edge — and pressing ONLY the axis through the door.
+        const double press = 0.15;
+        foreach (int hand in new[] { -1, 1 })
+        {
+            double x = -3, y = hand * (1.6 + Radius);   // the edge of the body is on the edge of the cut
+            for (int i = 0; i < 200 && x < 0.5; i++)
+            {
+                (x, y) = SurfaceCollision.Slide(x, y, press, 0, Radius, SlabWithADoor);
+            }
+            Assert.True(x > 0, $"pinned on the jamb at ({x}, {y}) — the door is 3.2 du wide and the body is 1.4");
+        }
+    }
+
+    [Fact]
+    public void Slide_IntoOpenWall_StillGetsYouAbsolutelyNothing()
+    {
+        // The other half, and the one that keeps this from being "walk through walls". Head-on into the
+        // UNCUT slab, nowhere near an end: the body walks up until its own width stops it and then never
+        // moves again — and above all it never drifts SIDEWAYS. A wall that quietly shuffled you along its
+        // face looking for a way round would be a facility with no walls in it.
+        double x = -0.9, y = 0;
+        for (int i = 0; i < 200; i++)
+        {
+            (x, y) = SurfaceCollision.Slide(x, y, 0.15, 0, Radius, VerticalWall);
+            Assert.Equal(0, y, 9);       // not one hair of unasked-for sideways travel, ever
+            Assert.True(x < -Radius, $"the body walked into the slab, reaching x={x}");
+        }
+
+        // …and once it is against the face it is DONE: the last hundred presses moved it nowhere at all.
+        double settled = x;
+        (x, y) = SurfaceCollision.Slide(x, y, 0.15, 0, Radius, VerticalWall);
+        Assert.Equal(settled, x, 9);
+        Assert.Equal(0, y, 9);
+    }
+
+    [Fact]
+    public void Slide_StandingInTheDoorwayPressingOnTheJamb_HoldsInsteadOfJittering()
+    {
+        // Standing IN the mouth of the door and pressing along the wall, into the jamb above: open ground
+        // lies equally to either hand (that is what being in a doorway means), so there is nothing to
+        // prefer, and a mover that picked one would flicker between them for as long as the key was held.
+        // It holds — and holding here is also the honest answer, because the thing ahead really is a jamb.
+        (double x, double y) = SurfaceCollision.Slide(0, 0.85, dx: 0, dy: 0.15, Radius, SlabWithADoor);
+        Assert.Equal(0, x, 6);
+        Assert.Equal(0.85, y, 6);
+    }
+
+    [Fact]
+    public void Slide_NeverCoversMoreGroundThanTheStepItWasGiven()
+    {
+        // The feel guarantee. Redirecting a refused step must never be a way to travel FASTER than walking —
+        // the shuffle is the same length as the press, spent on the other axis.
+        var rng = new Random(724);
+        for (int i = 0; i < 20_000; i++)
+        {
+            double x = (rng.NextDouble() * 8) - 4, y = (rng.NextDouble() * 8) - 4;
+            double dx = (rng.NextDouble() * 0.6) - 0.3, dy = (rng.NextDouble() * 0.6) - 0.3;
+            (double nx, double ny) = SurfaceCollision.Slide(x, y, dx, dy, Radius, SlabWithADoor);
+
+            double moved = System.Math.Sqrt(((nx - x) * (nx - x)) + ((ny - y) * (ny - y)));
+            double asked = System.Math.Sqrt((dx * dx) + (dy * dy));
+            Assert.True(moved <= asked + 1e-9,
+                $"a blocked step covered {moved} du on a {asked} du press, from ({x},{y}) by ({dx},{dy})");
+        }
+    }
+
     [Fact]
     public void HasLineOfSight_IsBrokenByAWallBetween_ClearWhenNoWallStands()
     {

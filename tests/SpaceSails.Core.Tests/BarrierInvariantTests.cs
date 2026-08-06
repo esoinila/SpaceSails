@@ -291,6 +291,12 @@ public class BarrierInvariantTests
         // less than what Blocked says about the candidate spot: X is tried from where you stand, then Y is
         // tried from the X-resolved spot. Anything else — a refusal with no wall, or a wall with no refusal
         // — is the movement reader drifting away from the wall list.
+        //
+        // #724 · WITH ONE STATED EXCEPTION, and it is stated here rather than quietly excluded. When the
+        // split carries NEITHER axis the step is not thrown away any more: the body shuffles along the face
+        // toward a doorway if one is within reach, which is the whole of the fix for a captain pinned on a
+        // jamb. That case is the ONLY licence — the axis answers are still exactly Blocked's answers
+        // whenever an axis moved at all — and the shuffle is held to its own three laws below.
         for (int seed = 3001; seed <= 3150; seed++)
         {
             SurfaceCollision.Segment[] walls = WallField(seed);
@@ -304,14 +310,37 @@ public class BarrierInvariantTests
                 (double nx, double ny) = SurfaceCollision.Slide(x, y, dx, dy, Radius, walls);
 
                 bool xIsStone = SurfaceCollision.Blocked(x + dx, y, Radius, walls);
-                Assert.True(nx == (xIsStone ? x : x + dx),
-                    $"seed {seed}: the X axis was {(xIsStone ? "not " : "")}refused with Blocked saying " +
-                    $"{xIsStone} at ({x + dx:R},{y:R})");
+                double splitX = xIsStone ? x : x + dx;
+                bool yIsStone = SurfaceCollision.Blocked(splitX, y + dy, Radius, walls);
+                double splitY = yIsStone ? y : y + dy;
 
-                bool yIsStone = SurfaceCollision.Blocked(nx, y + dy, Radius, walls);
-                Assert.True(ny == (yIsStone ? y : y + dy),
-                    $"seed {seed}: the Y axis was {(yIsStone ? "not " : "")}refused with Blocked saying " +
-                    $"{yIsStone} at ({nx:R},{y + dy:R})");
+                if (splitX != x || splitY != y)
+                {
+                    Assert.True(nx == splitX,
+                        $"seed {seed}: the X axis was {(xIsStone ? "not " : "")}refused with Blocked saying " +
+                        $"{xIsStone} at ({x + dx:R},{y:R})");
+                    Assert.True(ny == splitY,
+                        $"seed {seed}: the Y axis was {(yIsStone ? "not " : "")}refused with Blocked saying " +
+                        $"{yIsStone} at ({splitX:R},{y + dy:R})");
+                    continue;
+                }
+
+                // Both axes refused. Either the body held, or it shuffled — and a shuffle must be
+                // PERPENDICULAR to the press (it is the free hand, never a shortcut along the way you were
+                // already going), NO LONGER than the press (redirected, never faster), and OUT OF THE STONE
+                // like every other destination this primitive ever returns.
+                if (nx == x && ny == y)
+                {
+                    continue;
+                }
+                double mx = nx - x, my = ny - y;
+                Assert.False(SurfaceCollision.Blocked(nx, ny, Radius, walls),
+                    $"seed {seed}: the sidestep from ({x:R},{y:R}) put the body inside stone at ({nx:R},{ny:R})");
+                Assert.True(Math.Sqrt((mx * mx) + (my * my)) <= Math.Sqrt((dx * dx) + (dy * dy)) + 1e-9,
+                    $"seed {seed}: the sidestep from ({x:R},{y:R}) covered more ground than the press asked for");
+                Assert.True(Math.Abs((mx * dx) + (my * dy)) < 1e-9,
+                    $"seed {seed}: the sidestep from ({x:R},{y:R}) was not perpendicular to the press " +
+                    $"({dx:R},{dy:R}) — it moved ({mx:R},{my:R})");
             }
         }
     }
