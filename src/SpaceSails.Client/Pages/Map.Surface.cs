@@ -6289,7 +6289,11 @@ public partial class Map
         double t, double baseFacing)
     {
         (double jx, double jy) = ReeverIdle.JitterAt(r.JitterSeed, t);
-        (r.X, r.Y) = SurfaceCollision.Slide(r.AnchorX, r.AnchorY, jx, jy, radius, walls);
+        // #724 · A SHIVER LOOKS FOR NOTHING. The gait is Stagger both because this is an Old One (the
+        // owner's ruling) and because a cosmetic mean-zero twitch that could funnel itself sideways into a
+        // doorway would be a still body slowly walking off through the door it happened to be idling beside.
+        (r.X, r.Y) = SurfaceCollision.Slide(
+            r.AnchorX, r.AnchorY, jx, jy, radius, walls, SurfaceCollision.Gait.Stagger);
         r.Facing = baseFacing + ReeverIdle.FacingTwitchAt(r.JitterSeed, t);
     }
 

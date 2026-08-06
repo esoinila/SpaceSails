@@ -308,8 +308,14 @@ public sealed partial class Map
         }
 
         double step = speed * dt;
+        // #724 · A SWEEPER IS A PERSON. Owner's ruling was about the Old Ones — "lets not help reevers
+        // move in any easier" — and the same session's #729 refinement says why these are the other side of
+        // that line: "maybe the guards can use A* also so they do not come off as reevers or kind of crazy
+        // scary." A thing that moves sensibly down here is somebody on a payroll, and the player is meant to
+        // read that off the motion before any card says so. So the black-ops team finds doorways.
         (double nx, double ny) = SurfaceCollision.Slide(
-            s.X, s.Y, dx / distance * step, dy / distance * step, DeckPlan.AvatarRadius, walls);
+            s.X, s.Y, dx / distance * step, dy / distance * step, DeckPlan.AvatarRadius, walls,
+            SurfaceCollision.Gait.Person);
 
         s.Vx = dt > 0 ? (nx - s.X) / dt : 0;
         s.Vy = dt > 0 ? (ny - s.Y) / dt : 0;

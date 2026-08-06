@@ -238,9 +238,15 @@ public class WallIndexTests
             Assert.False(SurfaceCollision.Blocked(3, 4, Radius, empty));
             Assert.True(SurfaceCollision.HasLineOfSight(-9, -9, 9, 9, empty));
             Assert.True(SentryBot.CanEngage(0, 0, 5, 5, empty));
-            (double x, double y) = SurfaceCollision.Slide(1, 2, 0.5, -0.5, Radius, empty);
-            Assert.Equal(1.5, x, 12);
-            Assert.Equal(1.5, y, 12);
+            // #724 · both gaits, because an empty index must be the same nothing to a person and to an
+            // Old One — the gait decides what happens at a wall, and here there is none.
+            foreach (SurfaceCollision.Gait gait in
+                     new[] { SurfaceCollision.Gait.Person, SurfaceCollision.Gait.Stagger })
+            {
+                (double x, double y) = SurfaceCollision.Slide(1, 2, 0.5, -0.5, Radius, empty, gait);
+                Assert.Equal(1.5, x, 12);
+                Assert.Equal(1.5, y, 12);
+            }
         }
     }
 

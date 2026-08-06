@@ -5,6 +5,12 @@ namespace SpaceSails.Core.Tests;
 /// Old Ones share (owner, live 2026-07-18: "let's not let the Reevers move through walls here… Now the
 /// reevers see through wall and move through them"): a Reever bump-and-slides on a wall exactly as a boot
 /// does, and cannot see (nor therefore track) a captain hidden behind stone.
+///
+/// <para>#724 · With ONE difference, ruled by the owner and pinned below: a person finds a doorway they are
+/// standing a jamb's width off, and an Old One does not. It is a <see cref="SurfaceCollision.Gait"/> handed
+/// to the same primitive, never a second primitive — so every case here names whose gait it is stating a
+/// law about, and <see cref="TheTwoGaitsDifferInTheDoorwayAndInAbsolutelyNothingElse"/> holds the seam to
+/// that one difference and no other.</para>
 /// </summary>
 public class SurfaceCollisionTests
 {
@@ -14,12 +20,19 @@ public class SurfaceCollisionTests
 
     private const double Radius = 0.7; // DeckPlan.AvatarRadius — the captain's own body
 
+    /// <summary>#724 · Who is walking. Named so every case below says out loud whose gait it states a law
+    /// about: the two are no longer interchangeable, and a test that quietly used the wrong one would pass
+    /// while proving something about the wrong half of the cast.</summary>
+    private const SurfaceCollision.Gait Boots = SurfaceCollision.Gait.Person;
+
+    private const SurfaceCollision.Gait Shamble = SurfaceCollision.Gait.Stagger;
+
     [Fact]
     public void Slide_StopsAtAWall_DoesNotClipThrough()
     {
         // Just left of the wall's collision band, a per-frame step straight at it is refused: the body
         // holds where it stands rather than clipping into (or through) the stone.
-        (double x, double y) = SurfaceCollision.Slide(-0.9, 0, dx: 0.5, dy: 0, Radius, VerticalWall);
+        (double x, double y) = SurfaceCollision.Slide(-0.9, 0, dx: 0.5, dy: 0, Radius, VerticalWall, Boots);
         Assert.Equal(-0.9, x, 6);   // the into-wall X move was blocked
         Assert.Equal(0, y, 6);
     }
@@ -29,9 +42,162 @@ public class SurfaceCollisionTests
     {
         // Pushing diagonally into the wall (right + up): the into-wall X is refused but the along-wall Y
         // still carries — the captain's own grazing move, not a dead stop.
-        (double x, double y) = SurfaceCollision.Slide(-0.85, 0, dx: 0.3, dy: 0.5, Radius, VerticalWall);
+        (double x, double y) = SurfaceCollision.Slide(-0.85, 0, dx: 0.3, dy: 0.5, Radius, VerticalWall, Boots);
         Assert.Equal(-0.85, x, 6);  // the into-wall axis is blocked
         Assert.Equal(0.5, y, 6);    // the along-wall axis still slides
+    }
+
+    // ── #724 · THE DOORWAY CASES, in a wall list you can read in one glance ──────────────────────────────
+    //
+    // The law is stated on real generated Hive floors, in the client's AJambIsNotASealedDoorTests — that is
+    // the test that would catch a generator laying doorways nobody can use. These are its SYNTHETIC
+    // companions: four walls of hand-typed geometry whose whole point is that the reader can see the shape
+    // being argued about, and which pin the two halves the honest world cannot state as sharply — that the
+    // funnel FIRES at an opening, and that it does NOT fire anywhere else.
+
+    // The same slab, cut: a doorway from y=-1.6 to y=+1.6 in a wall standing at x=0. The captain's body is
+    // 1.4 du across, so the mouth is more than twice their width and nothing here is a squeeze.
+    private static readonly SurfaceCollision.Segment[] SlabWithADoor =
+    [
+        new SurfaceCollision.Segment(0, -8, 0, -1.6),
+        new SurfaceCollision.Segment(0, 1.6, 0, 8),
+    ];
+
+    [Fact]
+    public void Slide_ABodyWidthOffADoorwayCut_WalksThroughItInsteadOfPinningOnTheJamb()
+    {
+        // The owner's thirty-five presses. Standing a whole body-width past the jamb — no part of the body
+        // over the mouth but its very edge — and pressing ONLY the axis through the door.
+        const double press = 0.15;
+        foreach (int hand in new[] { -1, 1 })
+        {
+            double x = -3, y = hand * (1.6 + Radius);   // the edge of the body is on the edge of the cut
+            for (int i = 0; i < 200 && x < 0.5; i++)
+            {
+                (x, y) = SurfaceCollision.Slide(x, y, press, 0, Radius, SlabWithADoor, Boots);
+            }
+            Assert.True(x > 0, $"pinned on the jamb at ({x}, {y}) — the door is 3.2 du wide and the body is 1.4");
+        }
+    }
+
+    [Fact]
+    public void Slide_AnOldOneAtTheSameJamb_STAYSPinned_BecauseThatIsWhatItIs()
+    {
+        // ── #724 · THE OWNER'S RULING, AS A LAW ────────────────────────────────────────────────────────
+        //
+        // "Lets not help reevers move in any easier if possible, but other than that lets merge away."
+        // (2026-08-06, on #724.) And, from the same week on #729: "let's not make them walk too sensibly…
+        // they have their own reever-mind-issues, the kind of way they walk is nice and spooky now."
+        //
+        // This is the case immediately above, atom for atom, with ONE word changed — the gait. It is
+        // written as the same walk deliberately: if the funnel ever leaks out of the person's side of the
+        // seam, the only way to notice is a case that differs from a passing one by nothing else.
+        //
+        // The stagger is not an oversight to be tidied up later. It is the horror, and it is the skill
+        // surface a captain out of rounds plays against: you shed a shambler on an obstacle exactly because
+        // the shambler cannot get round it. A green tick here is the design, not a limitation.
+        const double press = 0.15;
+        foreach (int hand in new[] { -1, 1 })
+        {
+            double x = -3, y = hand * (1.6 + Radius);
+            for (int i = 0; i < 200 && x < 0.5; i++)
+            {
+                (x, y) = SurfaceCollision.Slide(x, y, press, 0, Radius, SlabWithADoor, Shamble);
+            }
+            Assert.True(x < 0,
+                $"an Old One found the doorway and came through at ({x}, {y}) — it has been helped, and the "
+                    + "owner ruled it must not be");
+            Assert.Equal(hand * (1.6 + Radius), y, 9);   // …and it did not even drift along the face
+        }
+    }
+
+    [Fact]
+    public void TheTwoGaitsDifferInTheDoorwayAndInAbsolutelyNothingElse()
+    {
+        // The seam is ONE law with one parameter, and this is what that has to mean: over thousands of
+        // steps against the same stone, a person and an Old One may only ever part company on a step the
+        // axis split refused OUTRIGHT — the doorway case. Any other divergence is the law having quietly
+        // forked, which is the thing a single shared primitive exists to prevent.
+        var rng = new Random(72_400);
+        int parted = 0;
+        for (int i = 0; i < 40_000; i++)
+        {
+            double x = (rng.NextDouble() * 10) - 5, y = (rng.NextDouble() * 10) - 5;
+            double dx = (rng.NextDouble() * 0.6) - 0.3, dy = (rng.NextDouble() * 0.6) - 0.3;
+
+            (double px, double py) = SurfaceCollision.Slide(x, y, dx, dy, Radius, SlabWithADoor, Boots);
+            (double sx, double sy) = SurfaceCollision.Slide(x, y, dx, dy, Radius, SlabWithADoor, Shamble);
+            if (px == sx && py == sy)
+            {
+                continue;
+            }
+            parted++;
+
+            // Where they DO differ, the Old One is the one that held: its answer is the old law exactly.
+            Assert.Equal(x, sx, 12);
+            Assert.Equal(y, sy, 12);
+            // …and the split really had refused BOTH axes, which is the only door the funnel comes through.
+            Assert.True(SurfaceCollision.Blocked(x + dx, y, Radius, SlabWithADoor),
+                $"the gaits parted on a step whose X was free, from ({x},{y}) by ({dx},{dy})");
+            Assert.True(SurfaceCollision.Blocked(x, y + dy, Radius, SlabWithADoor),
+                $"the gaits parted on a step whose Y was free, from ({x},{y}) by ({dx},{dy})");
+        }
+
+        // And the sweep must actually have SEEN the case, or it is a green tick over nothing.
+        Assert.True(parted > 100, $"only {parted} step(s) ever reached the doorway case — this proved nothing");
+    }
+
+    [Fact]
+    public void Slide_IntoOpenWall_StillGetsYouAbsolutelyNothing()
+    {
+        // The other half, and the one that keeps this from being "walk through walls". Head-on into the
+        // UNCUT slab, nowhere near an end: the body walks up until its own width stops it and then never
+        // moves again — and above all it never drifts SIDEWAYS. A wall that quietly shuffled you along its
+        // face looking for a way round would be a facility with no walls in it.
+        double x = -0.9, y = 0;
+        for (int i = 0; i < 200; i++)
+        {
+            (x, y) = SurfaceCollision.Slide(x, y, 0.15, 0, Radius, VerticalWall, Boots);
+            Assert.Equal(0, y, 9);       // not one hair of unasked-for sideways travel, ever
+            Assert.True(x < -Radius, $"the body walked into the slab, reaching x={x}");
+        }
+
+        // …and once it is against the face it is DONE: the last hundred presses moved it nowhere at all.
+        double settled = x;
+        (x, y) = SurfaceCollision.Slide(x, y, 0.15, 0, Radius, VerticalWall, Boots);
+        Assert.Equal(settled, x, 9);
+        Assert.Equal(0, y, 9);
+    }
+
+    [Fact]
+    public void Slide_StandingInTheDoorwayPressingOnTheJamb_HoldsInsteadOfJittering()
+    {
+        // Standing IN the mouth of the door and pressing along the wall, into the jamb above: open ground
+        // lies equally to either hand (that is what being in a doorway means), so there is nothing to
+        // prefer, and a mover that picked one would flicker between them for as long as the key was held.
+        // It holds — and holding here is also the honest answer, because the thing ahead really is a jamb.
+        (double x, double y) = SurfaceCollision.Slide(0, 0.85, dx: 0, dy: 0.15, Radius, SlabWithADoor, Boots);
+        Assert.Equal(0, x, 6);
+        Assert.Equal(0.85, y, 6);
+    }
+
+    [Fact]
+    public void Slide_NeverCoversMoreGroundThanTheStepItWasGiven()
+    {
+        // The feel guarantee. Redirecting a refused step must never be a way to travel FASTER than walking —
+        // the shuffle is the same length as the press, spent on the other axis.
+        var rng = new Random(724);
+        for (int i = 0; i < 20_000; i++)
+        {
+            double x = (rng.NextDouble() * 8) - 4, y = (rng.NextDouble() * 8) - 4;
+            double dx = (rng.NextDouble() * 0.6) - 0.3, dy = (rng.NextDouble() * 0.6) - 0.3;
+            (double nx, double ny) = SurfaceCollision.Slide(x, y, dx, dy, Radius, SlabWithADoor, Boots);
+
+            double moved = System.Math.Sqrt(((nx - x) * (nx - x)) + ((ny - y) * (ny - y)));
+            double asked = System.Math.Sqrt((dx * dx) + (dy * dy));
+            Assert.True(moved <= asked + 1e-9,
+                $"a blocked step covered {moved} du on a {asked} du press, from ({x},{y}) by ({dx},{dy})");
+        }
     }
 
     [Fact]

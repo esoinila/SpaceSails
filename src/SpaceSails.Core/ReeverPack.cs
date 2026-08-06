@@ -81,7 +81,8 @@ public static class ReeverPack
 
             double push = PersonalSpace - dist;
             (double nx, double ny) = SurfaceCollision.Slide(
-                pack[i].X, pack[i].Y, ux * push, uy * push, radius, walls);
+                pack[i].X, pack[i].Y, ux * push, uy * push, radius, walls,
+                SurfaceCollision.Gait.Stagger);   // #724 · a shove is not a walk, and these are Old Ones
             pack[i] = (nx, ny);
         }
     }
@@ -129,7 +130,8 @@ public static class ReeverPack
 
                     double push = PersonalSpace - dist;
                     (double nx, double ny) = SurfaceCollision.Slide(
-                        pack[j].X, pack[j].Y, ux * push, uy * push, radius, walls);
+                        pack[j].X, pack[j].Y, ux * push, uy * push, radius, walls,
+                        SurfaceCollision.Gait.Stagger);   // #724 · a shove is not a walk, and these are Old Ones
                     pack[j] = (nx, ny);
                 }
             }
