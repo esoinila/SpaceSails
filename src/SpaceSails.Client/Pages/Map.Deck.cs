@@ -342,7 +342,13 @@ public partial class Map
                 ShowPulseMessage(TakePill());
                 break;
             case DeckPlan.ConsoleKind.Bunk:
-                ShowPulseMessage(SleepInBunk());
+                // #733: the bunk can now come back empty-handed — a hull whose track reached a surface
+                // during the hour is already behind the busted freeze-frame, and has nothing to say about
+                // how well she slept. An empty toast over a death card is still a toast.
+                if (SleepInBunk() is { Length: > 0 } rested)
+                {
+                    ShowPulseMessage(rested);
+                }
                 break;
             case DeckPlan.ConsoleKind.Vent:
                 // #523 · The console's own label still says CAPACITOR, not air. What changed is that the
@@ -840,7 +846,13 @@ public partial class Map
         // while you sleep. #733: this used to freeze the hull in place for a whole sim-hour, which is the
         // same lie that flew the HQ quick start into Enceladus — the second copy of it, kept here in the
         // one place the comment already admitted it was a copy.
-        AdvanceLoiterClock(CabinComforts.SleepSimSeconds);
+        if (AdvanceLoiterClock(CabinComforts.SleepSimSeconds))
+        {
+            // She was on a track that reached a surface inside the hour, and now the freeze-frame is up.
+            // No chime and no "you wake steadier" line over the top of it: a sentence saying one thing
+            // while the sim did another is the bug class this project has paid for most often.
+            return "";
+        }
         _lastSleepSimTime = SimTime; // well-rested from the moment you wake
 
         RendererInterop.PlayCue("rum"); // a soft chime to mark the rest (reuses the galley's gentle cue)
