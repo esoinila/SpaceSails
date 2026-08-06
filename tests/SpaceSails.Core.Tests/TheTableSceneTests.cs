@@ -112,8 +112,15 @@ public sealed class TheTableSceneTests
                         var tops = CanteenRegulars.Tables(body, level, a, watch);
                         var sat = CanteenRegulars.Sitting(body, level, a, watch);
 
-                        Assert.Equal(a.Tables.Count, tops.Count);
-                        Assert.Equal(sat.Count, tops.Count(t => t.Taken));
+                        // #751 · …plus the cabinets, which are tops in this room like any other and hang off
+                        // the HALL rather than off its floor: their chairs are extra and are deliberately
+                        // not in the hall's own eighty (TheCantinaHallTests measures that).
+                        Assert.Equal(a.Tables.Count + (a.Hall?.Cabinets.Count ?? 0), tops.Count);
+
+                        // #751 · …and the NAMED cast, which is all Sitting() has ever answered about. The
+                        // hall's background patrons are a third tier on the same list and are Sitting()'s
+                        // business no more than the furniture is.
+                        Assert.Equal(sat.Count, tops.Count(t => t.Taken && !t.Stranger));
                         occupied += sat.Count;
                         checkedTops += tops.Count;
 

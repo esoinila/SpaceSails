@@ -55,6 +55,11 @@ public static class CanteenTable
 
         /// <summary>First week, and already answering to somebody else's name.</summary>
         Temp,
+
+        /// <summary>#751 · One of the hall's BACKGROUND PATRONS — a face in the crowd that is the cover.
+        /// A thin scene and deliberately so: small talk, the round, your leave. No asks, no jobs. The depth
+        /// stays with the named regulars, and the hall is still ALIVE to the social system.</summary>
+        Stranger,
     }
 
     // ── WHO IS AT THE TABLE, read off the plate Core already wrote ────────────────────────────────────
@@ -148,6 +153,9 @@ public static class CanteenTable
         Who.Hand => "There's the seat. Nobody's in it.",
         Who.Fitter => "Sit. Mind the grease.",
         Who.Temp => "Oh — sure. I mean, yes. Sit.",
+        // #751 · A stranger's wave-in is a shrug and a chair moved two inches, which is exactly what it is
+        // in a room of eighty people who have never seen you and will not remember you.
+        Who.Stranger => "Chair's free.",
         _ => "",
     };
 
@@ -212,6 +220,17 @@ public static class CanteenTable
     /// this table for the watch, and the field book keeps the slip.</summary>
     public const string DirtLine =
         "Put that away. Not because I care — because the counter has eyes and you just taught it your face.";
+
+    /// <summary>#751 · What a file on somebody does to a table the counter cannot see. The same slip, the
+    /// same person, a different room — and the whole difference is stated by the counterpart rather than by
+    /// a rule anybody reads out.</summary>
+    public const string QuietLine =
+        "They read it properly, which nobody does out there. Then they put it face down and leave their " +
+        "hand on it. \"Say the rest.\"";
+
+    /// <summary>#751 · What the field book keeps of that. It records what happened, never the mechanic.</summary>
+    public const string CabinetLeverageNote =
+        "You put a file on a table in a room with one door, and the conversation did not stop.";
 
     /// <summary>The deep authority card, on a table where nobody at it has ever seen one. The Hand goes
     /// quiet, and their ask stops being a favour and becomes fear.</summary>
@@ -423,6 +442,34 @@ public static class CanteenTable
             moves);
     }
 
+    /// <summary>
+    /// #751 · A STRANGER'S TABLE — the thin scene, on the very same machine.
+    ///
+    /// <para>Three moves and no fourth. Small talk (their bark, drawn by <see cref="CanteenRegulars"/> per
+    /// patron per watch), buy the round (the +1 applies exactly as it does anywhere — a stranger's table is
+    /// where you warm up cheap), and take your leave. <b>Ask-about-work is not on it</b>, and that is the
+    /// design rather than an omission: a hall where every one of eighty faces has a job to hand out is a
+    /// quest hub, and the room's whole job is to be a room.</para>
+    ///
+    /// <para>Everything about it is <see cref="Encounter"/>'s — which is the claim this file has been making
+    /// since #746, now tested by a second kind of counterpart existing at all.</para>
+    /// </summary>
+    /// <param name="plate">Who they read as, as the deck drew them.</param>
+    public static Encounter.Scene StrangerScene(string plate) => new(
+        $"canteen:table:{Who.Stranger}".ToLowerInvariant(),
+        plate ?? "",
+        Setting,
+        WaveIn(Who.Stranger),
+        [
+            new(SmallTalk, LabelOf(SmallTalk)),
+            new(Round, LabelOf(Round), Encounter.Requirement.Credits, RoundPrice),
+            new(Leave, LabelOf(Leave), Says: LeaveLine),
+        ]);
+
+    /// <summary>#751 · One line of a stranger's day: the bark they were dealt this watch, and nothing
+    /// else — no state, no modifier, no memory. It is a room being a room.</summary>
+    public static Answer StrangerSaid(string bark) => new(bark ?? "");
+
     /// <summary>The plate this counterpart reads as, without the glyph.</summary>
     public static string PlateOf(Who who) => who switch
     {
@@ -542,10 +589,28 @@ public static class CanteenTable
     /// <param name="item">What went on the table.</param>
     /// <param name="who">Who is sitting at it — the deep card only lands on the Hand, because they are the
     /// only one at this table who knows what it is worth.</param>
-    public static Answer PutOnTheTable(Satchel.Item item, Who who)
+    /// <param name="quiet">#751 · Whether this table is in a CABINET. The LOUD reading of a file is not a
+    /// fact about the paper, it is a fact about the ROOM — <i>"the counter has eyes"</i> — so in a room with
+    /// no line of sight to the counter it does not apply. See <see cref="QuietLine"/>.</param>
+    public static Answer PutOnTheTable(Satchel.Item item, Who who, bool quiet = false)
     {
         if (item.Kind == Satchel.Kind.Dirt)
         {
+            // ── #751 · THE QUIET RULE ────────────────────────────────────────────────────────────────
+            //
+            // Owner: "have cabinet-spaces for sensitive negotiations." This is what makes one — not a
+            // label on a door, but the one mechanic in the game that a room can switch off.
+            //
+            // #746's LOUD closure has always been about the counter rather than about the slip: "not
+            // because I care — because the counter has eyes and you just taught it your face." A cabinet
+            // is a room the counter cannot see, so the sentence does not apply in it, and NOTHING here
+            // closes. The player is never told; they put a file down in a cabinet one day and the ask is
+            // still there afterwards, and the card they read on the way in already said why.
+            if (quiet)
+            {
+                return new(QuietLine, Note: CabinetLeverageNote);
+            }
+
             // The line IS the note. Inventing a second sentence about the same slip would be two voices
             // describing one event, and the one the captain heard is the one worth keeping.
             return new(DirtLine, ClosesTheAsk: true, Note: DirtLine);

@@ -707,6 +707,14 @@ public partial class Map
         public bool HiveUnlistedPlateShown { get; set; }
         public bool HiveStaffMessShown { get; set; }
 
+        // #751 · …and the two rooms the hall rule adds, in the same family and with the same latch
+        // discipline. THE HALL is the B1 cantina walked into for the first time; THE CABINET is ANY of the
+        // three doors along its back wall, once TOTAL and never once per door — three identical cards in a
+        // row would spend the beat on the second one. The field book's own line about a cabinet files
+        // alongside the card, off the same latch, so they can never double up or race.
+        public bool HiveCantinaHallShown { get; set; }
+        public bool HiveCabinetShown { get; set; }
+
         // #677 · Whether this excursion has already crossed the seam, and already stepped out into the
         // halls. Two flags and not one, because they are two different events on the same ride and either
         // can happen without the other on a later trip — a captain who rode straight down on a card they
@@ -4014,6 +4022,99 @@ public partial class Map
         }
     }
 
+    // ── #751 · THE HALL, AND THE DOORS ALONG THE BACK OF IT ──────────────────────────────────────────────
+    //
+    // Owner: these rooms are story-grade — they get first-entry CARDS with gen-AI art, the same one-shot
+    // pattern as THE PLATE and THE STAFF MESS. So this is #725's idiom, verbatim: poll the position, ask
+    // CORE whether a room holds you, raise the card once and never again this excursion.
+    //
+    // TWO ROOMS ON ONE POLL, and the order is the order a captain meets them: you cannot be in a cabinet
+    // without having been in the hall, so the hall's card is raised first and the cabinet's on a later tick.
+    // One card at a time — #680: a second card raised in the same frame renders under the first one's
+    // backdrop and its blur.
+    //
+    // AND THE CABINET FILES ITS NOTE OFF THE SAME LATCH. The card is the moment and the note is the book's
+    // compressed record of it; two latches would be two ways for one event to be remembered, and a save in
+    // between would eventually show one without the other.
+    private (string Body, int Floor)? _hallFor;
+    private UndergroundComplex.Amenity? _hallRoom;
+
+    private void CheckCantinaHallUnderfoot()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0 || _viewObject is not null)
+        {
+            return;
+        }
+
+        // Both beats spent, and the poll stands down for the rest of the excursion. The hall's own card is
+        // asked of CORE rather than of the flag alone, because there is one building where it never fires
+        // at all (the head office's dining room, #411) — and a poll that waited for a card that is never
+        // coming would run for the whole walk.
+        bool hallDue = !ex.HiveCantinaHallShown
+            && UndergroundComplex.ShowsCantinaHallCard(ex.Stop.Body.Id, ex.Floor);
+        if (!hallDue && ex.HiveCabinetShown)
+        {
+            return;
+        }
+
+        // Cached against (body, floor) for the reason #725's own comment gives: Build lays a whole floor
+        // out, and running it inside the step loop would be a generator call every tick for as long as the
+        // captain is underground.
+        if (_hallFor != (ex.Stop.Body.Id, ex.Floor))
+        {
+            _hallFor = (ex.Stop.Body.Id, ex.Floor);
+            _hallRoom = null;
+            foreach (UndergroundComplex.Amenity a in
+                UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Amenities)
+            {
+                if (a.Use == UndergroundComplex.Comfort.UpperCanteen && a.Hall is not null)
+                {
+                    _hallRoom = a;
+                    break;
+                }
+            }
+        }
+
+        if (_hallRoom is not { } hallRoom || hallRoom.Hall is not { } hall
+            || !hallRoom.Contains(_avatarX, _avatarY))
+        {
+            return;
+        }
+
+        // WHICH BUILDING'S HALL EARNS THE CARD IS CORE'S CALL (see hallDue above). The card names the sign
+        // on the door — CANTEEN 1 · CARRIERS & CONTRACTORS — and the head office's dining room is a
+        // different room with a different register and an arrival card of its own (#411).
+        if (hallDue)
+        {
+            ex.HiveCantinaHallShown = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.CantinaHallLabel,
+                UndergroundComplex.CantinaHallArtUrl,
+                UndergroundComplex.CantinaHallCard);
+            RendererInterop.PlayCue("reveal");
+            // No save: nothing durable changed. The latch is excursion-scoped like every one of its
+            // siblings (#725) — a captain who lands again is walking in for the first time again.
+            return;   // one beat at a time
+        }
+
+        if (!ex.HiveCabinetShown && hall.CabinetAt(_avatarX, _avatarY) is not null)
+        {
+            ex.HiveCabinetShown = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.CabinetLabel,
+                UndergroundComplex.CabinetArtUrl,
+                UndergroundComplex.CabinetCard);
+            // FileNote and NOT ShowAndFile: the card is up, and a pulse under an open card's backdrop is
+            // the exact bug #680 was filed on. The book still remembers.
+            FileNote(UndergroundComplex.CabinetNote, UndergroundComplex.CabinetGlyph);
+            RendererInterop.PlayCue("reveal");
+            // …and THIS one saves, because the field book is durable and the note is now in it.
+            RequestVaultSave();
+        }
+    }
+
     // ── #709 · STOPPING AT SOMEBODY'S TABLE ──────────────────────────────────────────────────────────────
     //
     // Owner: "we should have people in the bar... we have cover story."
@@ -4218,7 +4319,9 @@ public partial class Map
             // number rather than a clock. Everything afterwards — the [E] press, a rebuild after searching a
             // room — reads the same frozen watch, so the people drawn at the tables stay the people the game
             // answers about.
-            ex.CanteenWatch = PatronRota.WatchIndex(SimTime);
+            // #751 · …or the one a tester pinned with ?watch=N. Applied HERE, at the one place the watch is
+            // ever frozen, so the cheat cannot become a second answer to "which shift is this".
+            ex.CanteenWatch = _watchCheat ?? PatronRota.WatchIndex(SimTime);
             _deckPlan = HiveInterior.FloorDeck(
                 ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField(),
                 3 + ReeverEngineCeiling + MaxCollectors, FillSurfaceDroids, ex.HiveRoomsEmptied,
@@ -5031,6 +5134,7 @@ public partial class Map
         AdvanceVacuumExposure(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: vacuum is ground
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
         CheckStaffMessUnderfoot();    // #725: …and the one room down here that is a find rather than a route
+        CheckCantinaHallUnderfoot();  // #751: the hall, and the doors along the back of it
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon

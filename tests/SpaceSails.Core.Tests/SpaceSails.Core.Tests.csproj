@@ -71,6 +71,10 @@
          onerror-hide would make sure nobody found out. TheTwoSilentFindsArePainted holds each to a file. -->
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\the-plate.jpg" Link="artsource\the-plate.jpg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\the-staff-mess.jpg" Link="artsource\the-staff-mess.jpg" CopyToOutputDirectory="PreserveNewest" />
+    <!-- #751 — the hall and the cabinet. Both are first-entry cards over the same onerror-hide seam, so a
+         canvas that never got copied in would leave the two loudest rooms on B1 showing a hole and saying
+         nothing about it. TheHallAndTheCabinetArePainted holds each constant to a file. -->
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\b1-*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

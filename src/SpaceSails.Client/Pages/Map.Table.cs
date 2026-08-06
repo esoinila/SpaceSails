@@ -42,6 +42,11 @@ public partial class Map
     /// once, by the landing, to walk the last leg into the canteen.</summary>
     private bool _tableSceneCheat;
 
+    /// <summary>#751 QA · <c>?watch=N</c> — pin which shift the hall is on, so a tester can walk into the
+    /// heaving one and the empty one without waiting four sim-hours between looks. Null off the cheat, in
+    /// which case the watch is <see cref="PatronRota.WatchIndex"/> of the sim clock exactly as before.</summary>
+    private long? _watchCheat;
+
     /// <summary>
     /// #746 QA · Stand the captain IN the upper canteen when <c>?tablescene=1</c> asked for it.
     ///
@@ -93,6 +98,15 @@ public partial class Map
 
         /// <summary>Chairs nobody is in.</summary>
         public required int Free { get; init; }
+
+        /// <summary>#751 · Their bark, for a background patron — drawn by Core per patron per watch, and
+        /// carried here because it is the only thing a stranger has to say.</summary>
+        public string? Bark { get; init; }
+
+        /// <summary>#751 · Whether this table is in a CABINET, which is the one fact the quiet rule reads.
+        /// Core's own (<see cref="CanteenRegulars.TableSeat.Quiet"/>) — a client flag would be a second
+        /// answer to a question about a room the client does not own.</summary>
+        public bool Quiet { get; init; }
 
         /// <summary>#680 · What the last move answered, said HERE and nowhere else.</summary>
         public string? Outcome { get; set; }
@@ -177,7 +191,11 @@ public partial class Map
                     continue;
                 }
 
-                CanteenTable.Who who = CanteenTable.WhoIs(top.Plate);
+                // #751 · WHICH TIER, off Core's own list. A background patron is a Stranger and gets the
+                // thin scene; one of the ten named regulars is matched by their plate exactly as before.
+                CanteenTable.Who who = top.Stranger
+                    ? CanteenTable.Who.Stranger
+                    : CanteenTable.WhoIs(top.Plate);
                 if (who == CanteenTable.Who.None || top.Free <= 0 || top.Plate is not { } plate)
                 {
                     return false;   // somebody who is not a scene, or a top with nowhere left to sit.
@@ -188,9 +206,13 @@ public partial class Map
                     Key = TableKey(ex, top.Index),
                     Who = who,
                     Plate = plate,
-                    Scene = CanteenTable.SceneFor(who, ex.TableTempOverheard),
+                    Scene = who == CanteenTable.Who.Stranger
+                        ? CanteenTable.StrangerScene(plate)
+                        : CanteenTable.SceneFor(who, ex.TableTempOverheard),
                     Seats = top.Seats,
                     Free = top.Free,
+                    Bark = top.Line,
+                    Quiet = top.Quiet,
                 };
                 RendererInterop.PlayCue("reveal");
                 StateHasChanged();
@@ -369,8 +391,12 @@ public partial class Map
         {
             case CanteenTable.SmallTalk:
             case CanteenTable.SmallTalkAgain:
+                // #751 · A stranger says the one thing they were dealt this watch. Core drew it (per
+                // patron, per watch); this only hands it back.
                 TableAnswered(ex, t, moveId,
-                    CanteenTable.MadeSmallTalk(t.Who, moveId == CanteenTable.SmallTalkAgain));
+                    t.Who == CanteenTable.Who.Stranger
+                        ? CanteenTable.StrangerSaid(t.Bark ?? "")
+                        : CanteenTable.MadeSmallTalk(t.Who, moveId == CanteenTable.SmallTalkAgain));
                 return;
 
             case CanteenTable.Round:
@@ -451,7 +477,9 @@ public partial class Map
             return;
         }
 
-        CanteenTable.Answer said = CanteenTable.PutOnTheTable(item, t.Who);
+        // #751 · …and WHERE. The LOUD closure is a fact about the room, not about the paper: in a cabinet
+        // the counter has no eyes, so nothing closes. Core decides that; this hands it the one bit.
+        CanteenTable.Answer said = CanteenTable.PutOnTheTable(item, t.Who, t.Quiet);
         t.Showing = false;
 
         // The one thing on this table that counts as a MODIFIER gets remembered, keyed like every other

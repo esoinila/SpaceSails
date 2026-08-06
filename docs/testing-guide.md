@@ -505,6 +505,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?found=1`** | **Park the one rock in the system with a band NOBODY DUG under the band nobody listed (#677), set down at the lift head, and start with every authority this site ever issued already in the wallet — including the last one, which is the way past the seam. About one site in fifty has galleries and the way in is a card somebody left in a room eleven floors down, so without this the feature is unreachable in practice. It implies `?secretlab=1` (there is no other way down). It overrides no Core fact: the rock's whole shape — its depth, its two kinds, its unlisted band and its halls — is seeded off its body id (`UndergroundComplex.FoundBandCheatSiteId`) exactly like every other site, so what you walk is what a captain would walk. The cards are minted through the real `AuthorityCard` and put in the real satchel, so the panel, the gate, the refusal ladder and the wallet fan all behave as they do for somebody who earned them. Pair with `&land=1`, and with `&floor=17` to ride straight to the first gallery.** *(It is also a button in the front door's **⚙ DEV START SITES** list — 🕳 “The halls nobody dug”.)* |
 | **`?tablescene=1`** | **BOOT THE TABLE SCENE (#746) — the B1 canteen of a deep site, with people in it, one URL from the front door. Walk to a table with somebody at it, press `[E]`, and ask to join. It implies the whole route (`?secretlab=deep&land=1&floor=1`) rather than adding a fourth spelling of it, sets the captain down IN the canteen, and turns `?autowalk=1` on because the last leg is a walk across a room. It does NOT force who is at the tables: the rota is seeded off the site and the watch like any other shift (#709), and a cheat that seated THE HAND for you would be testing a room that does not ship — if this watch has no Hand in it, that is the room, and the next shift is a reload away. Three of #709's cast are scenes (the hand, the fitter, the temp); everybody else keeps their one breath.** |
 | **`?roll=hi` / `?roll=lo`** | **FORCE THE ENCOUNTER BAND (#746). `hi` makes every rolled move land YES, `lo` makes it NO — AND THE SCENE MOVES; `mid` forces YES, BUT. Owner, in the issue: *"testing is a feature."* It overrides the BAND and never the roll — the dice still cast, the named modifier stack still reads truthfully on the panel, and the scene that plays out is the scene a captain would get, because a cheat that showed you a different scene would be worse than no cheat at all. The only rolled move today is THE HAND's ask about work, so `?tablescene=1&roll=lo` is how the refusal's three consequences (the table hardens, the fitter opens, the temp overheard it) get watched on demand. Pair with `&tablescene=1`.** |
+| **`?watch=N`** | **PIN WHICH SHIFT THE HALL IS ON (#751). The B1 cantina hall holds eighty and how many of its twenty tables are taken varies BY WATCH — a heaving day watch, a small-hours watch of a dozen souls — and **nothing in the game announces which one you walked into**: that is the design, and it is exactly the kind of design a tester cannot see without waiting four sim-hours between looks. A watch is four sim-hours (`PatronRota.WatchSeconds`) and six of them are a day, so `?watch=2` is the middle of the day and `?watch=5` is the small hours; compare the two and the whole feature is on the screen. Owner, twice over: *"testing is a feature."* It pins the watch INDEX and nothing else — who is in the room and where they sat are still the rota's own answer for that shift (#709), so what you walk into is the room a captain would get, never a rigged one. Pair with `&tablescene=1`.** |
 
 ### Walking the found halls — `?found=1` (#677)
 
@@ -1307,8 +1308,9 @@ number was read out of the real generator with Lab 44 rather than assumed — an
 The short version, because these are the easiest to miss:
 
 ```
-/map?secretlab=deep&land=1&floor=1     B1  — the canteen: PEOPLE at the tables, a cork board, washrooms
-/map?secretlab=deep&land=1&floor=17    B17 — the staff mess, pass-only, furnished and empty on purpose
+/map?secretlab=deep&land=1&floor=1     B1  — the CANTINA HALL (#751): eighty seats, three cabinets, a board
+/map?tablescene=1&watch=2              …the same hall on the heaving watch (&watch=5 for the small one)
+/map?secretlab=deep&land=1&floor=17    B17 — the staff mess, pass-only, hall-sized, and empty on purpose
 /map?secretlab=deep&land=1&floor=21    B21 — the unlisted lobby, where the plate names a DIFFERENT building
 /map?secretlab=deep&land=1&floor=4&dark=1   a floor with no lights (#708)
 /map?secretlab=deep&land=1&floor=2&book=9   force a specific odd book (#701)
@@ -1323,7 +1325,12 @@ The short version, because these are the easiest to miss:
 2. **The facility plate is no longer on every floor** (#694). It draws on **B1** and on **the unlisted band's
    own lobby**, and nowhere else — not even on the other shaft heads.
 3. **The canteen's roster turns over with the SHIFT**, not the visit. Re-entering on the same watch shows the
-   same people in the same chairs; that is correct, not a bug. A different crowd needs sim time to pass.
+   same people in the same chairs; that is correct, not a bug. A different crowd needs sim time to pass — or
+   `?watch=N`, which is what that cheat is for.
+4. **B1's canteen is a HALL now** (#751) — eighty seats, twenty round tops in a 2/4/6 mix, a long bar counter,
+   poured pillars, and **three CABINETS** down the back wall. How full it is varies **by watch** and nothing
+   announces which one you are in: `?watch=2` heaves, `?watch=5` echoes. **B17's staff mess is hall-class
+   too**, sized to seat the whole complement at one sitting — and it is empty on every watch, forever.
 
 `?secretlab=deep` is the site for all of the above — a **20-floor clinic with an unlisted band at B21–B24**.
 `?secretlab=1` is only four floors and cannot reach any of the deep content.

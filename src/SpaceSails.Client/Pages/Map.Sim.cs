@@ -828,6 +828,25 @@ public partial class Map
                     _startingFloorCheat = -1;   // B1 — the top pressurised floor, where the owner put them
                 }
             }
+            else if (pair.StartsWith("watch=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #751 dev cheat: /map?watch=N pins which SHIFT the Hive's canteen is on.
+                //
+                // The whole of #751's watch-density design is a room that heaves at one hour and echoes at
+                // another with nothing anywhere announcing which — which is exactly the kind of feature a
+                // tester cannot see without waiting four sim-hours per look. Owner's own framing, twice
+                // over: "testing is a feature".
+                //
+                // It pins the WATCH INDEX and nothing else. Who is in the room and where they sat are still
+                // the rota's own answer for that shift (#709), so what a tester walks into is the room a
+                // captain would get on that shift — never a rigged one.
+                string candidate = Uri.UnescapeDataString(pair["watch=".Length..]);
+                if (long.TryParse(candidate, System.Globalization.NumberStyles.Integer,
+                        CultureInfo.InvariantCulture, out long pinned) && pinned >= 0)
+                {
+                    _watchCheat = pinned;
+                }
+            }
             else if (pair.StartsWith("roll=", StringComparison.OrdinalIgnoreCase))
             {
                 // #746 dev cheat: /map?roll=hi forces every encounter band to YES, /map?roll=lo to NO-AND.

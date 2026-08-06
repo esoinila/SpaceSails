@@ -353,6 +353,38 @@ public sealed class TheTableSceneIsOneRoomTests
         Assert.Contains("roll=hi", guide, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #751 · …AND THE WATCH IS A LEVER, because the hall's whole design is invisible without one.
+    ///
+    /// <para>How full the cantina hall is varies by shift and <b>nothing in the game announces which shift
+    /// you walked into</b> — that is the feature. Which makes it exactly the kind of thing a tester cannot
+    /// see: a watch is four sim-hours, and <c>SimTime</c> barely advances on a regolith (#469), so without
+    /// <c>?watch=N</c> the second mood of the room is unreachable in practice.</para>
+    ///
+    /// <para>It must be applied at the ONE place the watch is ever frozen, or it becomes a second answer to
+    /// "which shift is this" and the drawn room and the pressed room can disagree — #709's own warning.</para>
+    /// </summary>
+    [Fact]
+    public void THE_WATCH_IsPinnableOnDemandAndTheGuideSaysHow()
+    {
+        string sim = Source("Pages", "Map.Sim.cs");
+        Assert.Contains("watch=", sim, StringComparison.Ordinal);
+        Assert.Contains("_watchCheat = pinned", sim, StringComparison.Ordinal);
+
+        // Applied where the excursion freezes its watch, and nowhere else.
+        string surface = Source("Pages", "Map.Surface.cs");
+        Assert.Contains("ex.CanteenWatch = _watchCheat ?? PatronRota.WatchIndex(SimTime);",
+            surface, StringComparison.Ordinal);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(surface, @"ex\.CanteenWatch = "));
+
+        string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
+        Assert.Contains("?watch=N", guide, StringComparison.Ordinal);
+
+        string hive = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-links-the-hive.md"));
+        Assert.Contains("watch=2", hive, StringComparison.Ordinal);
+        Assert.Contains("watch=5", hive, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void THE_CHITS_PAYOFF_IsWiredToTheRoomThePassExistsFor()
     {

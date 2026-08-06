@@ -219,6 +219,48 @@ sibling's canvas), `TheSilentFindsGetACardTests` (which floor, which room, and t
 `TheSilentFindsAreRaisedOnceTests` (one caller each, each fenced by its own latch, and the mess's box holding
 exactly the machines the deck draws).
 
+## 4b. The hall, and the doors along the back of it ★ owner's ask — #751
+
+Owner, 2026-08-06: *"The Canteen is way too small… It needs to house like 80 customers… I am thinking like Mos
+Eisley Space port size bar,"* and, an hour later, *"Definitely want to make the B1 bar be fancy ... and have
+cabinet-spaces for sensitive negotiations."*
+
+Both rooms are story-grade and take §4a's pattern exactly: a first-entry card, once per excursion, raised by
+standing in the room rather than by pressing anything. The hall's card is about **money** and the cabinet's is
+about **memory**; neither is about what the building is for, and §0's canon rule holds without effort because
+neither room has anything to do with what is below.
+
+### `art/b1-cantina-hall.jpg` — 🍸 THE HALL
+
+- **Slot:** `UndergroundComplex.CantinaHallArtUrl`, raised once per excursion on **entering the B1 cantina
+  hall**. `Amenity.Contains` is the containment law and, for a hall, that is the hall's own carved box
+  (`UndergroundComplex.Hall.Contains`) rather than a room-sized one.
+- **Composition:** a *fancy* company canteen at Mos Eisley scale, underground. Poured concrete structure, but
+  laid out like a hotel dining room somebody over-funded: twenty round tops in a 2/4/6 mix with **cloth on
+  them**, a long bar counter down the far wall, poured pillars with **brass collars** breaking the sightlines,
+  and light that was chosen rather than installed. Working people in work clothes at most of the tables,
+  eating, nobody looking at the viewer. Along the back wall, a **row of three padded doors**. Muted
+  desaturated palette, painterly, warm key light off the counter. **No lettering, no logos, no numbers.**
+- **Feeling:** #601's funding trail as a room. The money does not mind being seen feeding contractors; it
+  minds being asked. Nobody in frame finds any of it strange.
+
+### `art/b1-cabinet.jpg` — 🚪 THE CABINET
+
+- **Slot:** `UndergroundComplex.CabinetArtUrl`, raised once **total** (never once per door) on entering any of
+  the three cabinets. `UndergroundComplex.Hall.CabinetAt` is the containment law.
+- **Composition:** a small enclosed side room off the hall. Six chairs around one round table wiped past
+  clean, one heavy **padded door** shut, no window and no line of sight out. On the wall a **plain wall
+  telephone with no dial**, square on and unremarked. Empty of people. Even light, catalogue-flat, nothing
+  spooky — the room is furniture, and the dimensions of what it is *for* are the whole of the horror.
+  **No lettering.**
+- **Feeling:** a room with no memory, in a building whose entire output is records.
+
+**Canon note:** the telephone with no dial is canon furniture of a cabinet from here on — it receives and
+never dials. It has no mechanics and nothing anywhere explains it.
+
+**Guarded by** `RevealPlatesArePaintedTests.TheHallAndTheCabinetArePainted` (both on disk, neither borrowing a
+sibling's canvas) and `TheCantinaHallTests` (which room, once, and the prose verbatim).
+
 ## 5. Plot items get a card of their own ★ owner's ask — #614
 
 Owner: *"we could have gen-AI images of plotwise important items… maybe they say something about what door

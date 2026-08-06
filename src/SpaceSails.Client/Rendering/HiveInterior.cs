@@ -149,7 +149,12 @@ public static class HiveInterior
         foreach (UndergroundComplex.Amenity a in floor.Amenities)
         {
             consoles.Add(new(DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture));
-            labels.Add(((float)a.X, (float)(a.Y - 7.6), a.Plate));
+            // #751 · A hall's plate is stencilled beside its DOOR, which is on whichever face the rib is
+            // on — so Core says where, exactly as it says where the board hangs. The 7.6 du offset below is
+            // measured off a 15 x 12 room and would hang the sign in mid-floor in a room fifty du deep.
+            labels.Add(a.Hall is { } signed
+                ? ((float)signed.PlateX, (float)signed.PlateY, a.Plate)
+                : ((float)a.X, (float)(a.Y - 7.6), a.Plate));
             // ── #709/#746 · THE TOPS, AND — ON B1 ONLY — SOMEBODY SITTING AT THEM ─────────────────────
             //
             // Owner: "we should have people in the bar... we have cover story" and, in the same breath,
@@ -165,6 +170,11 @@ public static class HiveInterior
             // They stand ON the table's own spot rather than beside it, because the table IS the seat as
             // far as the deck is concerned: Core placed those round tops (#707) and a console offset by a
             // hand-typed du would be one more caller doing geometry about furniture it does not own.
+            //
+            // #751 · …and it is the same one call now that the room holds eighty. THREE TIERS COME OUT OF
+            // IT — the named regulars, the background patrons that fill the hall by the watch, and the
+            // cabinets' empty tops — and this loop cannot tell them apart, which is the point: a patron is
+            // a plate at a coordinate, drawn like any console dot, with nothing to run per frame.
             foreach (CanteenRegulars.TableSeat top in CanteenRegulars.Tables(bodyId, level, a, canteenWatch))
             {
                 tables.Add(((float)top.X, (float)top.Y));
@@ -172,6 +182,28 @@ public static class HiveInterior
                 {
                     consoles.Add(new(
                         DeckPlan.ConsoleKind.HiveRegular, (float)top.X, (float)top.Y, plate));
+                }
+            }
+
+            // ── #751 · THE CABINETS, PLATED ────────────────────────────────────────────────────────────
+            //
+            // Owner: "have cabinet-spaces for sensitive negotiations." A row of doors down the back wall of
+            // a hall, each with what it is stencilled beside it — and the plate is the whole of how you get
+            // one: BY ARRANGEMENT · ASK AT THE COUNTER. No console: there is nothing in a cabinet to work,
+            // and the card fires by standing in it (the refuge idiom, same as the staff mess).
+            if (a.Hall is { } theHall)
+            {
+                // Read from the hall side, in front of the door — never from inside the cabinet, and never
+                // from the far side of the outer wall. Which side that is comes off the hall's own box
+                // rather than a sign the renderer guessed at: the cabinets stand against whichever wall the
+                // rib put them on, and this file does not know which one that was.
+                double hallMidX = (theHall.X0 + theHall.X1) / 2.0;
+                foreach (UndergroundComplex.Cabinet cabinet in theHall.Cabinets)
+                {
+                    double inward = cabinet.X > hallMidX ? -1.0 : 1.0;
+                    labels.Add((
+                        (float)(cabinet.X + (inward * (cabinet.HalfW + 2.0))),
+                        (float)cabinet.Y, cabinet.Plate));
                 }
             }
 

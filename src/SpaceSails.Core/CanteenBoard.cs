@@ -147,8 +147,17 @@ public static class CanteenBoard
     public static (double X, double Y)? At(string bodyId, int level, UndergroundComplex.Amenity amenity)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return Pinned(bodyId, level, amenity).Count == 0
-            ? null
+        if (Pinned(bodyId, level, amenity).Count == 0)
+        {
+            return null;
+        }
+
+        // #751 · A HALL PUBLISHES ITS OWN SPOT. The offsets below are measured off a 15 x 12 room's counter
+        // and tables; in a room fifty du deep, whose door is on whichever face the rib happens to be on,
+        // they would hang the rota in the middle of the floor or inside the bar. The hall knows where its
+        // door is — it is the only thing that does — so it says, and this reads.
+        return amenity.Hall is { } hall
+            ? (hall.BoardX, hall.BoardY)
             : (amenity.X + OffsetX, amenity.Y + OffsetY);
     }
 

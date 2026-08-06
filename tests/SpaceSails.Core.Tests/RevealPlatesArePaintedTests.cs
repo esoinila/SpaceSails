@@ -139,6 +139,25 @@ public class RevealPlatesArePaintedTests
         Assert.NotEqual(UndergroundComplex.StaffMessArtUrl, UndergroundComplex.VacuumArtUrl);
     }
 
+    [Fact]
+    public void TheHallAndTheCabinetArePainted()
+    {
+        // #751 · The two rooms the hall rule adds, and they are story-grade by the owner's own ruling:
+        // "these rooms are story-grade — they get first-entry CARDS with gen-AI art." Same trap as #725's
+        // pair: the art seam is an onerror-hide, so a card pointed at a JPG nobody copied in shows a hole
+        // and never says so. Proven RED by pointing CabinetArtUrl at art/b1-cabinet-nope.jpg:
+        //   The cabinet names art/b1-cabinet-nope.jpg, which is not in wwwroot/art. The onerror-hide law
+        //   means a missing painting NEVER shows up in the browser — it just leaves a hole in the card.
+        AssertPainted("The cantina hall", UndergroundComplex.CantinaHallArtUrl);
+        AssertPainted("The cabinet", UndergroundComplex.CabinetArtUrl);
+
+        // …and neither borrowed a sibling's canvas. The hall and the mess are the two customers of one carve
+        // and would be the easiest pair in the game to point at one picture.
+        Assert.NotEqual(UndergroundComplex.CantinaHallArtUrl, UndergroundComplex.CabinetArtUrl);
+        Assert.NotEqual(UndergroundComplex.CantinaHallArtUrl, UndergroundComplex.StaffMessArtUrl);
+        Assert.NotEqual(UndergroundComplex.CabinetArtUrl, UndergroundComplex.StaffMessArtUrl);
+    }
+
     /// <summary>
     /// #695 · EVERY OFFICE ISSUES ITS OWN FACE, AND EVERY FACE IS ON DISK.
     ///
