@@ -782,6 +782,12 @@ public partial class Map
         // after it is lunch.
         public bool MessChitBeatShown { get; set; }
 
+        // #752 · …and whether the cage's gate has already read it. Same family, same reason: the first time
+        // a piece of paper you talked somebody out of gets you through a door is the beat, and every trip
+        // after it is the commute. Not keyed by band — the chit opens exactly one gate (Core's rule), so a
+        // set of bands would be a set that never holds two things.
+        public bool ChitGateBeatShown { get; set; }
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -2119,10 +2125,14 @@ public partial class Map
         RendererInterop.PlayCue("board");
     }
 
-    /// <summary>#600 · The buttons on this car's panel, from where the captain is standing.</summary>
+    /// <summary>#600 · The buttons on this car's panel, from where the captain is standing.
+    ///
+    /// <para>#752 · The whole satchel goes in, and not a second list of ids: the cage's gate reads the
+    /// day-labour chit, and whether the captain has cover is a fact about what they are CARRYING
+    /// (<c>CanteenTable.Cover</c>) — asked of the same pocket the player can open and look in.</para></summary>
     private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
         _surface is { } ex
-            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, AuthorityCardIds())
+            ? UndergroundComplex.LiftPanel(ex.Stop.Body.Id, ex.Floor, AuthorityCardIds(), _satchel)
             : [];
 
     /// <summary>#600 · A button was pressed. A refusing button says why and the car does not move — a button
@@ -2355,11 +2365,32 @@ public partial class Map
         // one the owner filed an issue about not seeing.
         if (via is not null
             && UndergroundComplex.GateOpenedByRidingTo(
-                ex.Stop.Body.Id, fromLevel, level, AuthorityCardIds()) is { } opened
+                ex.Stop.Body.Id, fromLevel, level, AuthorityCardIds(), _satchel) is { } opened
             && ex.HiveShaftsOpened.Add(opened.Band))
         {
             ShowAndFile(UndergroundComplex.CardAcceptedLine(opened), "🎫");
             ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
+        }
+
+        // ── #752 · …AND THE OTHER PAPER'S ARRIVAL, WHICH IS THE JOB FINISHING ─────────────────────────────
+        //
+        // The Hand's line was "take this to the lift and don't be clever near the counter". This is the lift
+        // having heard of it. Said in the same place and for the same reasons as the card's beat above — when
+        // the DOORS OPEN, never on the frame the panel closes and the floor is rebuilt (#689/#680), and after
+        // the routine air line, because the one pulse slot keeps the last thing written.
+        //
+        // No nerve shock: the card's gate is a dead office still saluting, which is frightening. A gate that
+        // reads a timesheet and waves you through is the least frightening thing this building has done, and
+        // giving it the same 3.0 would say the opposite of what the sentence says.
+        //
+        // Once per excursion, and the GIST is filed with it: the beat is what happened, the gist is what the
+        // paper turned out to be worth, and #618's guards downstairs read the chit itself rather than either.
+        if (via is { OpenedByChit: true } && !ex.ChitGateBeatShown)
+        {
+            ex.ChitGateBeatShown = true;
+            ShowAndFile(CanteenTable.ChitGateLine, CanteenTable.ChitGlyph);
+            FileNote(CanteenTable.ChitGateGist, CanteenTable.ChitGlyph);
+            RequestVaultSave();
         }
 
         // ── #677 · AND THE TWO SENTENCES THE HALLS GET, WHICH ARE THE LAST THINGS SAID ────────────────────
