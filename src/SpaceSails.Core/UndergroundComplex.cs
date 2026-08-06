@@ -1130,15 +1130,250 @@ public static class UndergroundComplex
     /// <param name="Fixture">What the thing in the middle of the room is called, at console size.</param>
     /// <param name="Tables">Round tops on the floor, drawn in the game's existing table idiom. Empty in a
     /// washroom, which is the one amenity nobody sits down in.</param>
+    /// <param name="Hall">#751 · The hall this amenity IS, when it is one — a room that left the standard
+    /// grammar. Null for the ordinary three-top canteen and for every washroom.</param>
     public readonly record struct Amenity(
         Comfort Use, double X, double Y, string Plate, string Fixture,
-        IReadOnlyList<(double X, double Y)> Tables)
+        IReadOnlyList<(double X, double Y)> Tables,
+        Hall? Hall = null)
     {
         /// <summary>#725 · Is the captain standing in this room? <see cref="RefugeHolds"/>, because an
         /// amenity is one of the floor's own rooms taken over — the same poured box, with the same square
         /// corners — and a second containment box written here would be a room whose walls the sim and the
-        /// picture disagreed about. One law, asked in one place, exactly as the refuge does it.</summary>
-        public bool Contains(double x, double y) => RefugeHolds(X, Y, x, y);
+        /// picture disagreed about. One law, asked in one place, exactly as the refuge does it.
+        ///
+        /// <para>#751 · …unless it is a HALL, in which case the box is the hall's own — carved, published,
+        /// and the very same rectangle the walls were laid on. A hall is thirty times the floor area of the
+        /// module, so a refuge-sized containment box would have said "you are not in the canteen" from
+        /// almost everywhere inside the canteen.</para></summary>
+        public bool Contains(double x, double y) => Hall is { } hall
+            ? hall.Contains(x, y)
+            : RefugeHolds(X, Y, x, y);
+    }
+
+    // ── #751 · THE HALL RULE — WHEN AN AMENITY STOPS BEING A ROOM ─────────────────────────────────────
+    //
+    // Owner, 2026-08-06: "The Canteen is way too small… It needs to house like 80 customers… I am thinking
+    // like Mos Eisley Space port size bar." And, an hour later, the second customer: "The canteen for only
+    // staff can also be a lot bigger ... usually people eat lunch at same time so the whole staff using it
+    // should about fit in."
+    //
+    // TWO ROOMS, ONE CARVE. They are opposite rooms in every way that matters — one heaves with strangers on
+    // a day watch, the other has been empty since before the captain was born — and they are the SAME
+    // geometry problem: a seat count that the standard 15 x 12 module cannot hold. So there is exactly one
+    // hall carver (CarveHall), it takes a SEAT TARGET, and the two customers differ only in what number they
+    // hand it. A second copy of this for the mess is the shape of bug the table at the top of this file is
+    // a list of.
+    //
+    // WHY IT IS A RIB'S ROOM COLUMN AND NOT A BOX DROPPED ON THE FLOOR PLAN. #585's law is that the doorway
+    // a room cuts and the gap its corridor leaves are ONE gap, computed once. A hall drawn as its own
+    // rectangle would have had to cut its own doors — a second answer to a question RibFace already owns,
+    // and the disease that sealed every room in the building for a day. Instead the hall simply IS the
+    // ground the rib's room column stood on: its front wall is the rib's own face, already built, already
+    // cut with a doorway at every room slot the corridor has. The hall has two doors and the corridor has
+    // two gaps and they are the same two openings, because nothing ever made a second set.
+    //
+    // WHAT IT COSTS THE FLOOR, STATED. A hall eats the two room slots of one column, and the claim ledger
+    // is told about the box before any other placer runs, so nothing is ever laid on top of it and no room
+    // is silently dropped. The floor loses two rooms and gains a hall; that is the trade, it is stated
+    // here, and TheCantinaHallTests measures it rather than trusting this paragraph.
+
+    /// <summary>#751 · One enclosed side room off a hall — <b>CABINET · BY ARRANGEMENT</b>.
+    ///
+    /// <para>Owner: <i>"Definitely want to make the B1 bar be fancy ... and have cabinet-spaces for
+    /// sensitive negotiations."</i> Six chairs, one door, and no line of sight to the counter — and that
+    /// last clause is the whole mechanic, because #746's file-on-the-table is LOUD precisely because
+    /// <i>"the counter has eyes"</i>. A room the counter cannot see is a room where it does not.</para>
+    ///
+    /// <para>Empty of people in v1. They are geometry plus a rule; #731's walkers will put somebody in
+    /// one.</para></summary>
+    /// <param name="Number">1-based, as the plate reads.</param>
+    /// <param name="X">Centre.</param>
+    /// <param name="Y">Centre.</param>
+    /// <param name="HalfW">Half-width of the enclosed box.</param>
+    /// <param name="HalfH">Half-height.</param>
+    /// <param name="Table">The one round top in it, at its own centre.</param>
+    public readonly record struct Cabinet(
+        int Number, double X, double Y, double HalfW, double HalfH, (double X, double Y) Table)
+    {
+        /// <summary>Is the captain inside this cabinet? The box the walls were laid on, and nothing
+        /// else.</summary>
+        public bool Contains(double x, double y) =>
+            Math.Abs(x - X) <= HalfW && Math.Abs(y - Y) <= HalfH;
+
+        /// <summary>What is stencilled beside its door.</summary>
+        public string Plate => CabinetPlate(Number);
+    }
+
+    /// <summary>#751 · A hall: the box, what it seats, and the cabinets off it.</summary>
+    /// <param name="X0">Left edge, in the surface's own coordinates.</param>
+    /// <param name="Y0">Bottom edge.</param>
+    /// <param name="X1">Right edge.</param>
+    /// <param name="Y1">Top edge.</param>
+    /// <param name="SeatTarget">How many the hall was asked to seat — the owner's eighty for the cantina,
+    /// <see cref="ImpliedComplement"/> for the mess. The bill of tops is derived from it and the guards
+    /// measure the tops rather than reading this.</param>
+    /// <param name="Cabinets">The enclosed side rooms. Empty on a mess — nobody negotiates anything in a
+    /// room the shift stopped coming to.</param>
+    /// <param name="BoardX">Where THE BOARD hangs — by the door, which is where a rota goes. Carried on the
+    /// hall rather than computed from a fixed offset, because a hall's door is on whichever face the rib is
+    /// on and a renderer guessing at that would be doing geometry about a room it does not own.</param>
+    /// <param name="BoardY">The same.</param>
+    /// <param name="PlateX">Where the room's own stencilled plate reads from — down the door wall, a
+    /// quarter of the way along, clear of the board. Same reason as <paramref name="BoardX"/>.</param>
+    /// <param name="PlateY">The same.</param>
+    public readonly record struct Hall(
+        double X0, double Y0, double X1, double Y1, int SeatTarget, IReadOnlyList<Cabinet> Cabinets,
+        double BoardX = 0, double BoardY = 0, double PlateX = 0, double PlateY = 0)
+    {
+        /// <summary>Is the captain inside the hall? Cabinets are inside it, by construction.</summary>
+        public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+
+        /// <summary>Which cabinet holds this spot, or null for the hall floor itself.</summary>
+        public Cabinet? CabinetAt(double x, double y)
+        {
+            foreach (Cabinet c in Cabinets)
+            {
+                if (c.Contains(x, y))
+                {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
+
+    /// <summary>#751 · What is stencilled beside a cabinet's door. Numbered, and it says how you get one:
+    /// not off a menu.</summary>
+    public static string CabinetPlate(int number) =>
+        $"CABINET {number} · BY ARRANGEMENT · ASK AT THE COUNTER";
+
+    /// <summary>#751 · How many a cabinet seats. SIX, on every one of them, and it is not a taste: the
+    /// cabinet's own card and the field book both count the chairs out loud (<i>"six chairs, one door"</i>),
+    /// and a cabinet that seated four would make a card lie about a room the captain is standing in.</summary>
+    public const int CabinetSeats = 6;
+
+    /// <summary>#751 · How many cabinets a cantina hall has. Three is a row of doors along a back wall —
+    /// enough that the row reads as a FACILITY for the thing rather than as one odd room.</summary>
+    public const int CabinetsPerHall = 3;
+
+    /// <summary>
+    /// #751 · HOW MANY PEOPLE THIS BUILDING IS FOR — the establishment, derived from the building's own
+    /// stock and never typed.
+    ///
+    /// <para>Owner: <i>"usually people eat lunch at same time so the whole staff using it should about fit
+    /// in."</i> That makes the mess's size a question about STAFFING, and this is the only place the game
+    /// answers it — because staffing questions keep arriving (#618's guards, #717's rosters) and two answers
+    /// to one of them is the table at the top of this file.</para>
+    ///
+    /// <para><b>The arithmetic, so it can be argued with.</b> A floor of this building IS a department —
+    /// <see cref="DepartmentOf"/> gives exactly one plate per floor, and the lift panel has been printing it
+    /// since #605. A department is a desk, a store, the plant that serves them and the hands that work all
+    /// three: <see cref="HeadsPerDepartment"/>. So the complement is the departments the building admits to,
+    /// times that. A twenty-storey clinic runs eighty people; a five-floor annex runs twenty, and its mess is
+    /// smaller for an honest reason rather than because somebody typed a smaller number.</para>
+    ///
+    /// <para><b>LISTED floors only</b>, which is the line worth reading twice. <see cref="DepthOf"/> is what
+    /// the directory admits to; the band nobody listed has no department, no plate and no livery (#592's
+    /// whole tell is that absence) — so it has nobody on the books either. Whoever is down there is not on
+    /// this payroll, and the catering budget says so without one word of prose.</para>
+    /// </summary>
+    public static int ImpliedComplement(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return -DepthOf(bodyId) * HeadsPerDepartment;
+    }
+
+    /// <summary>#751 · What one department is, in people: a desk, a store, the plant that serves them, and
+    /// the hands. FLAGGED for the owner's tuning — it is the one number <see cref="ImpliedComplement"/>
+    /// cannot derive from the building, because the building never wrote a payroll down.</summary>
+    public const int HeadsPerDepartment = 4;
+
+    /// <summary>
+    /// #751 · HOW MANY THE B1 CANTINA HALL SEATS. The owner's own figure — <i>"It needs to house like 80
+    /// customers"</i> — and it is a statement about the COVER rather than about the staff: eighty carriers
+    /// eating on the company's coin, none of whom ask what the cage carries, is #707's lie rendered as a
+    /// crowd. FLAGGED for tuning.
+    /// </summary>
+    public const int CantinaHallSeats = 80;
+
+    /// <summary>#751 · Is this amenity carved as a hall? Both canteens are; a washroom never is (nobody
+    /// eats a shift's lunch in the cubicles).</summary>
+    public static bool IsHallClass(Comfort use) =>
+        use is Comfort.UpperCanteen or Comfort.StaffCanteen;
+
+    /// <summary>#751 · What a hall of this kind is asked to seat. The two customers of one carve, and the
+    /// only line in the file where they differ.</summary>
+    public static int HallSeatsFor(string bodyId, Comfort use)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return use == Comfort.StaffCanteen ? ImpliedComplement(bodyId) : CantinaHallSeats;
+    }
+
+    /// <summary>#751 · The three sizes of round top a caterer buys, smallest first. The owner's own three
+    /// (#746, <i>"tables should seat 2/4/more, not all pairs"</i>), stated as a list so a guard can pin them
+    /// without knowing the arithmetic that fills a hall with them.</summary>
+    public static readonly IReadOnlyList<int> HallTopSizes = [2, 4, 6];
+
+    /// <summary>
+    /// #751 · THE BILL OF FURNITURE — how many of each size a hall seating <paramref name="seatTarget"/>
+    /// buys, and in what order they are laid out.
+    ///
+    /// <para><b>Designed, not rolled, and that is load-bearing.</b> A seeded 2/4/6 per top has a standard
+    /// deviation of seven seats over twenty tables, so a hall asked for eighty would ship anywhere between
+    /// sixty-five and ninety-five and the guard would be measuring a die. A caterer does not roll dice: they
+    /// buy a stock — three tops in ten seat two, four seat four, three seat six — and the floor plan decides
+    /// where each one goes. The stock's average is exactly four, so the total is exactly the target and the
+    /// mix is exactly the owner's three.</para>
+    ///
+    /// <para>The ORDER is seeded off the site (never off the watch — #746's law: a canteen does not
+    /// re-furnish itself every shift), so two halls of the same size are laid out differently and neither
+    /// reads as three zones of identical furniture.</para>
+    /// </summary>
+    /// <param name="bodyId">The site, which decides only the arrangement.</param>
+    /// <param name="use">Which hall, so the cantina and the mess of one site differ.</param>
+    /// <param name="seatTarget">How many the hall must seat. Rounded up to a whole top.</param>
+    public static IReadOnlyList<int> HallSeatBill(string bodyId, Comfort use, int seatTarget)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        // Four is the stock's average, so the table count falls straight out of the target. Rounded UP: a
+        // mess that seats the shift less one is a mess that does not seat the shift.
+        int tables = Math.Max(HallTopSizes.Count, (seatTarget + 3) / 4);
+
+        // Three in ten either side of the middle. Equal counts of twos and sixes is what makes the total
+        // land exactly on four per top — every 6 is paid for by a 2.
+        int wings = Math.Max(1, (int)Math.Round(tables * 0.3, MidpointRounding.AwayFromZero));
+        while ((2 * wings) + 1 > tables)
+        {
+            wings--;    // a tiny hall still gets one of each, and never more tops than it has
+        }
+
+        var bill = new List<int>(tables);
+        for (int i = 0; i < wings; i++)
+        {
+            bill.Add(2);
+        }
+        for (int i = 0; i < wings; i++)
+        {
+            bill.Add(6);
+        }
+        while (bill.Count < tables)
+        {
+            bill.Add(4);
+        }
+
+        // …and shuffled into place with a seeded swap walk, so the twos are not all by the door. Same
+        // skip-forward discipline the rest of this ground uses: a deterministic permutation, never a
+        // re-roll loop.
+        for (int i = bill.Count - 1; i > 0; i--)
+        {
+            int j = DiceRule.Roll(
+                DiceRule.Seed($"hive:hall:bill:{bodyId}:{(int)use}:{i}"), i + 1).Face - 1;
+            (bill[i], bill[j]) = (bill[j], bill[i]);
+        }
+
+        return bill;
     }
 
     /// <summary>#707 · A private washroom cell hung off the back of a room that mattered.
@@ -1549,6 +1784,35 @@ public static class UndergroundComplex
             roomScale = Math.Min(roomScale, Math.Max(1.0, widest / RoomWidthDu));
         }
 
+        // ── #751 · THE HALL, FIRST, BECAUSE IT IS THE ONLY PLACER THAT CANNOT BE REFUSED ────────────────
+        //
+        // Carved BEFORE the rib loop and claimed immediately, so everything after it — rooms, en-suites,
+        // refuges — sees the box and steps around it. The alternative was to carve it last and delete the
+        // walls of whatever it had swallowed, which is the same thing said in a way that can go wrong.
+        //
+        // The floor pays for it in exactly two room slots (the column the hall stands on), and nothing else
+        // on the floor is dropped: CarveHall clamps its own outer edge short of the next rib's chambers and
+        // short of the lift alcove rather than trusting the ledger to notice afterwards.
+        (int Rib, int Side)? hallSlot = HallSlotFor(bodyId, level, ribList, field, shaftX, shaftY, roomScale);
+        HallSite? hallSite = null;
+        if (hallSlot is { } slot)
+        {
+            (double hmouth, double hfar) = RibReach(field, shaftY, ribList[slot.Rib].Down);
+            hallSite = CarveHall(
+                walls, bodyId, level, ribList, slot.Rib, slot.Side, hmouth, hfar,
+                shaftX, left, right, roomScale);
+            if (hallSite is { } built)
+            {
+                claimed.Add((
+                    built.Hall.X0 - 1.5, built.Hall.Y0 - 1.5,
+                    built.Hall.X1 + 1.5, built.Hall.Y1 + 1.5));
+            }
+            else
+            {
+                hallSlot = null;   // the ground would not take one. The floor keeps its ordinary canteen.
+            }
+        }
+
         // ── THE RIBS. Cross corridors off the spine, with rooms flanking them.
         for (int i = 0; i < ribXs.Count; i++)
         {
@@ -1557,11 +1821,7 @@ public static class UndergroundComplex
             {
                 continue;   // that entry is the lift alcove's mouth, not a corridor
             }
-            double far = down
-                ? Math.Max(field.BottomY + margin, shaftY - 52)
-                : Math.Min(field.LandingBandY - margin, shaftY + 52);
-
-            double mouth = down ? shaftY - CorridorHalf : shaftY + CorridorHalf;
+            (double mouth, double far) = RibReach(field, shaftY, down);
 
             // #585 · THE RIB'S OWN WALLS ARE CUT WHERE ROOMS OPEN OFF THEM. Owner: "a door is missing here
             // towards down", and his A* suggestion found it everywhere at once — 94 floors, not one room
@@ -1591,9 +1851,12 @@ public static class UndergroundComplex
             }
             walls.Add(new(x - CorridorHalf, far, x + CorridorHalf, far, true));
 
+            // #751 · …and on the column the hall is standing on, no rooms at all. The rib's own face is
+            // still built above (RibFace), with its doorway at every slot — those gaps ARE the hall's doors,
+            // and they are the same gaps the corridor has because nothing ever cut a second set.
             AddRoomsAlong(
                 walls, doorways, locked, rooms, ensuites, claimed, bodyId, level, i, x, mouth, far, down,
-                roomScale);
+                roomScale, hallSlot is { } taken && taken.Rib == i ? taken.Side : 0);
         }
 
         // #608 · LAST, because a refuge is taken out of the rooms this floor actually managed to build. Any
@@ -1606,7 +1869,7 @@ public static class UndergroundComplex
         // the same room. They never compete in practice — an amenity is only ever plumbed on a floor that
         // holds pressure and a refuge is only ever carved on one that does not — but the order says so
         // rather than leaving it to be rediscovered.
-        List<Amenity> amenities = CarveAmenities(bodyId, level, rooms, walls, shaftX, shaftY);
+        List<Amenity> amenities = CarveAmenities(bodyId, level, rooms, walls, shaftX, shaftY, hallSite);
         List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, shaftX, shaftY);
 
         var centres = new List<(double X, double Y)>(rooms.Count);
@@ -1617,6 +1880,277 @@ public static class UndergroundComplex
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites);
+    }
+
+    /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,
+    /// because the wall builder, the room builder and now the hall carver all have to be given the same two
+    /// numbers — and this was three copies of the same two lines the moment the hall arrived.</summary>
+    private static (double Mouth, double Far) RibReach(in SurfaceLayout.Field field, double shaftY, bool down)
+    {
+        double margin = SurfaceLayout.EdgeMargin + 6;
+        return down
+            ? (shaftY - CorridorHalf, Math.Max(field.BottomY + margin, shaftY - 52))
+            : (shaftY + CorridorHalf, Math.Min(field.LandingBandY - margin, shaftY + 52));
+    }
+
+    /// <summary>#751 · A carved hall, on its way to becoming an <see cref="Amenity"/>.</summary>
+    /// <param name="Hall">The box and its cabinets, as published on the plan.</param>
+    /// <param name="X">Where the fixture console stands — in front of the counter, on clear floor.</param>
+    /// <param name="Y">The same.</param>
+    /// <param name="Tops">The round tops on the hall floor. Cabinet tops are NOT in here: a cabinet's chairs
+    /// are extra, and the hall's own seat law is measured on this list.</param>
+    private readonly record struct HallSite(
+        Hall Hall, double X, double Y, IReadOnlyList<(double X, double Y)> Tops);
+
+    // ── #751 · THE HALL'S OWN MODULE ─────────────────────────────────────────────────────────────────
+    //
+    // Nothing below is a size somebody liked the look of. Every number is either the facility's own module
+    // (RoomWidthDu / RoomHeightDu), the doorway both this room and its corridor are cut to (DoorHalf), or a
+    // clearance stated as what it is for.
+
+    /// <summary>#751 · How many round tops the facility's own room module holds — three, which is what
+    /// <see cref="Fitting"/> has put in a canteen since #707. It is the constant that turns a room's floor
+    /// area into a table PITCH without anybody typing one.</summary>
+    public const int HallTopsPerModule = 3;
+
+    /// <summary>#751 · How far apart a hall's round tops stand, at the density the game's own canteens
+    /// already use: one top per (module area ÷ <see cref="HallTopsPerModule"/>), squared back into a
+    /// spacing. A hall on tight ground packs closer than this; it never spreads wider.</summary>
+    public static double HallTopPitchDu =>
+        Math.Sqrt(RoomWidthDu * RoomHeightDu / HallTopsPerModule);
+
+    /// <summary>#751 · The clear strip inside the hall's doors. Nothing is laid in it — a doorway a captain
+    /// has to path around a table to use is #585's stranded room with better furniture.</summary>
+    public const double HallDoorAisleDu = 4.0;
+
+    /// <summary>#751 · How deep the cabinets run off the hall's outer wall.</summary>
+    public const double HallCabinetDepthDu = 10.0;
+
+    /// <summary>#751 · The band at the hall's far wall that THE COUNTER and its service side own — the one
+    /// part of a bar the customer never stands in, closed off exactly the way it would be (#707).</summary>
+    public const double HallCounterBandDu = 5.0;
+
+    /// <summary>#751 · How much of a hall's own edge is left clear of furniture.</summary>
+    public const double HallEdgePadDu = 2.0;
+
+    /// <summary>
+    /// #751 · WHICH COLUMN THE HALL STANDS ON — the same criterion #707 already uses for the canteen, asked
+    /// one step earlier.
+    ///
+    /// <para>"Nearest the car, every time": a building puts its catering by the lift, and a bar you have to
+    /// go looking for is not a bar anybody drank in on a shift. The old carve chose the nearest ROOM out of
+    /// the rooms the floor had built; a hall has to be chosen before any room exists, so this asks the same
+    /// question of the room SLOTS — the very positions <see cref="RoomCentresAlong"/> is about to place. Same
+    /// answer, computed from the same arithmetic, one pass earlier.</para>
+    /// </summary>
+    private static (int Rib, int Side)? HallSlotFor(
+        string bodyId, int level, List<Rib> ribs, in SurfaceLayout.Field field,
+        double shaftX, double shaftY, double roomScale)
+    {
+        if (!IsHallFloor(bodyId, level) || ribs.Count == 0)
+        {
+            return null;
+        }
+
+        double roomW = RoomWidthDu * roomScale;
+        (int Rib, int Side)? best = null;
+        double bestD2 = double.MaxValue;
+
+        for (int i = 0; i < ribs.Count; i++)
+        {
+            (double mouth, double far) = RibReach(field, shaftY, ribs[i].Down);
+            List<double> ys = RoomCentresAlong(mouth, far, ribs[i].Down, roomScale);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                double cx = ribs[i].X + (side * (CorridorHalf + (roomW / 2)));
+                foreach (double cy in ys)
+                {
+                    double dx = cx - shaftX, dy = cy - shaftY;
+                    double d2 = (dx * dx) + (dy * dy);
+                    if (d2 < bestD2)
+                    {
+                        (best, bestD2) = ((i, side), d2);
+                    }
+                }
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>#751 · Does this floor get a hall at all? The two customers of the carve, asked in one
+    /// place: the floor the bar is on, and the floor the mess is on.</summary>
+    public static bool IsHallFloor(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return TopPressurisedFloor(bodyId) == level || StaffCanteenFloor(bodyId) == level;
+    }
+
+    /// <summary>#751 · Which hall this floor's is. The mess wins where a site is shallow enough for the two
+    /// to land on the same floor — but <see cref="StaffCanteenFloor"/> returns null in exactly that case, so
+    /// this is belt and braces rather than a rule.</summary>
+    private static Comfort HallUseOn(string bodyId, int level) =>
+        TopPressurisedFloor(bodyId) == level ? Comfort.UpperCanteen : Comfort.StaffCanteen;
+
+    /// <summary>
+    /// #751 · THE HALL, CARVED. Returns null when the ground will not take one, in which case the floor
+    /// keeps the ordinary three-top canteen and a guard says so out loud.
+    ///
+    /// <para>Laid out in the hall's own two axes so nothing here has to think about which way the rib
+    /// points: <b>u</b> runs outward from the rib's face, <b>v</b> runs down the rib from the spine. The
+    /// front wall (u = 0) and the near wall (v = 0) are not built at all — they are the rib's face and the
+    /// spine's face, already standing, already cut. That is the whole of the one-gap law here: the hall
+    /// cannot open a door in the wrong place because it never opens one.</para>
+    /// </summary>
+    private static HallSite? CarveHall(
+        List<SurfaceLayout.Wall> walls, string bodyId, int level, List<Rib> ribs, int ribIndex, int side,
+        double mouth, double far, double shaftX, double leftEnd, double rightEnd, double roomScale)
+    {
+        Comfort use = HallUseOn(bodyId, level);
+        double ribX = ribs[ribIndex].X;
+        double roomW = RoomWidthDu * roomScale;
+
+        // ── HOW FAR OUT THE GROUND GOES. Clamped against the things that are already spoken for rather
+        //    than against a guess: the next rib's chambers, the lift alcove where the hall shares a spine
+        //    face with it, and the spine's own end cap.
+        double limit = side > 0 ? rightEnd - HallEdgePadDu : leftEnd + HallEdgePadDu;
+        foreach (Rib other in ribs)
+        {
+            if (side > 0 && other.X > ribX)
+            {
+                limit = Math.Min(limit, other.X - CorridorHalf - roomW - 1.5);
+            }
+            else if (side < 0 && other.X < ribX)
+            {
+                limit = Math.Max(limit, other.X + CorridorHalf + roomW + 1.5);
+            }
+        }
+        if (!ribs[ribIndex].Down)
+        {
+            // The lift alcove hangs off the TOP face, so only a rib that runs UP can meet it. #585 was a
+            // wall lying across a mouth; a hall laid over the alcove would be the same mistake with the
+            // captain's own way home inside it.
+            limit = side > 0
+                ? Math.Min(limit, shaftX - ShaftHalf - 1.5)
+                : Math.Max(limit, shaftX + ShaftHalf + 1.5);
+        }
+
+        double faceX = ribX + (side * CorridorHalf);
+        double available = Math.Abs(limit - faceX);
+        double length = Math.Abs(far - mouth);
+
+        // ── WHAT THE HALL NEEDS. The tops come first: the seat target decides the bill, the bill decides
+        //    how many tops, and the tops decide how deep the room has to be at the pitch the game's own
+        //    canteens already use.
+        // …and the cabinets are the cantina's alone. The mess is the room the shift stopped coming to; a
+        // door for sensitive negotiations in it would be furnishing a joke nobody is in the room to make.
+        bool cabs = use == Comfort.UpperCanteen;
+        double cabBand = cabs ? HallCabinetDepthDu : 0.0;
+
+        int tops = HallSeatBill(bodyId, use, HallSeatsFor(bodyId, use)).Count;
+        double pitch = HallTopPitchDu;
+        double vSpan = length - (2 * HallEdgePadDu) - HallCounterBandDu - HallEdgePadDu;
+        int rowsAtPitch = Math.Max(1, (int)(vSpan / pitch));
+        int colsNeeded = (tops + rowsAtPitch - 1) / rowsAtPitch;
+        double wanted = HallDoorAisleDu + (colsNeeded * pitch) + HallEdgePadDu + cabBand;
+
+        double width = Math.Min(available, wanted);
+
+        // A hall that cannot hold its own doorways, its aisle and a table strip is not a hall. Saying so
+        // and standing down is the honest answer; a guard asserts it never actually happens.
+        double minWidth = HallDoorAisleDu + cabBand + HallEdgePadDu + (2 * DoorHalf);
+        if (width < minWidth || vSpan < 4 * DoorHalf)
+        {
+            return null;
+        }
+
+        // ── FROM (u, v) TO THE FIELD'S OWN COORDINATES, in one place. ───────────────────────────────────
+        bool down = ribs[ribIndex].Down;
+        double X(double u) => faceX + (side * u);
+        double Y(double v) => down ? mouth - v : mouth + v;
+
+        double x0 = Math.Min(X(0), X(width)), x1 = Math.Max(X(0), X(width));
+        double y0 = Math.Min(Y(0), Y(length)), y1 = Math.Max(Y(0), Y(length));
+
+        // ── THE THREE WALLS THE HALL OWNS. (The fourth and fifth are the rib's face and the spine's.)
+        walls.Add(new(X(width), Y(0), X(width), Y(length), true));        // the outer wall
+        walls.Add(new(X(0), Y(length), X(width), Y(length), true));       // the far wall
+
+        // ── THE COUNTER · a long bar wall along the far end, with the service side shut off behind it.
+        double counterV = length - HallCounterBandDu;
+        double counterU0 = HallDoorAisleDu;
+        double counterU1 = width - cabBand - HallEdgePadDu;
+        walls.Add(new(X(counterU0), Y(counterV), X(counterU1), Y(counterV), true));
+        walls.Add(new(X(counterU0), Y(counterV), X(counterU0), Y(length), true));
+        walls.Add(new(X(counterU1), Y(counterV), X(counterU1), Y(length), true));
+
+        // ── THE CABINETS · a row of doors down the hall's outer wall.
+        var cabinets = new List<Cabinet>(CabinetsPerHall);
+        if (cabs)
+        {
+            double band = (length - (2 * HallEdgePadDu)) / CabinetsPerHall;
+            double cabU0 = width - HallCabinetDepthDu;
+            for (int c = 0; c < CabinetsPerHall; c++)
+            {
+                double vLo = HallEdgePadDu + (c * band) + 1.0;
+                double vHi = HallEdgePadDu + ((c + 1) * band) - 1.0;
+                double vMid = (vLo + vHi) / 2.0;
+
+                // Three sides and a face with one gap in it — the same shape every room down here has, and
+                // the gap is the same DoorHalf the corridor and the en-suites are cut to.
+                walls.Add(new(X(cabU0), Y(vLo), X(width), Y(vLo), true));
+                walls.Add(new(X(cabU0), Y(vHi), X(width), Y(vHi), true));
+                walls.Add(new(X(cabU0), Y(vLo), X(cabU0), Y(vMid - DoorHalf), true));
+                walls.Add(new(X(cabU0), Y(vMid + DoorHalf), X(cabU0), Y(vHi), true));
+
+                double ccU = (cabU0 + width) / 2.0;
+                cabinets.Add(new Cabinet(
+                    c + 1, (X(cabU0) + X(width)) / 2.0, Y(vMid),
+                    HallCabinetDepthDu / 2.0, (vHi - vLo) / 2.0,
+                    (X(ccU), Y(vMid))));
+            }
+        }
+
+        // ── THE TOPS · a grid in what is left, at whatever pitch the ground allows up to the module's own.
+        double uLo = HallDoorAisleDu;
+        double uHi = width - cabBand - HallEdgePadDu;
+        double tvLo = HallEdgePadDu;
+        double tvHi = counterV - (2 * HallEdgePadDu);
+        double uw = Math.Max(pitch, uHi - uLo), vh = Math.Max(pitch, tvHi - tvLo);
+
+        int cols = Math.Clamp((int)Math.Round(Math.Sqrt(tops * uw / vh), MidpointRounding.AwayFromZero), 1, tops);
+        int rows = (tops + cols - 1) / cols;
+
+        var laid = new List<(double X, double Y)>(tops);
+        for (int t = 0; t < tops; t++)
+        {
+            double u = uLo + ((((t % cols) + 0.5) / cols) * uw);
+            double v = tvLo + ((((t / cols) + 0.5) / rows) * vh);
+            laid.Add((X(u), Y(v)));
+        }
+
+        // ── THE PILLARS · poured, load-bearing, and honest: this rock is heavy. Placed on the grid's own
+        //    seams so they break sightlines without ever standing on a chair.
+        double ph = Math.Min(0.9, Math.Min(uw / cols, vh / rows) / 5.0);
+        for (int p = 1; p < Math.Min(cols, 4); p++)
+        {
+            double u = uLo + ((p / (double)cols) * uw);
+            double v = tvLo + (((p % 2 == 0 ? 1 : 2) / 3.0) * vh);
+            walls.Add(new(X(u - ph), Y(v - ph), X(u + ph), Y(v - ph), true));
+            walls.Add(new(X(u - ph), Y(v + ph), X(u + ph), Y(v + ph), true));
+            walls.Add(new(X(u - ph), Y(v - ph), X(u - ph), Y(v + ph), true));
+            walls.Add(new(X(u + ph), Y(v - ph), X(u + ph), Y(v + ph), true));
+        }
+
+        // The board hangs half-way down the door wall and the plate reads a quarter of the way along it, so
+        // neither crowds the other and both are things you meet on the way in rather than across the room.
+        return new HallSite(
+            new Hall(
+                x0, y0, x1, y1, HallSeatsFor(bodyId, use), cabinets,
+                X(HallDoorAisleDu / 2.0), Y(length / 2.0),
+                X(HallDoorAisleDu / 2.0), Y(length * 0.25)),
+            X((uLo + uHi) / 2.0), Y(counterV - HallEdgePadDu),
+            laid);
     }
 
     /// <summary>#707 · Hang a washroom cell off the back of a room, if the room is one that earned one and
@@ -1687,12 +2221,57 @@ public static class UndergroundComplex
     /// three.</para></summary>
     private static List<Amenity> CarveAmenities(
         string bodyId, int level, List<(double X, double Y, string Plate)> rooms,
-        List<SurfaceLayout.Wall> walls, double shaftX, double shaftY)
+        List<SurfaceLayout.Wall> walls, double shaftX, double shaftY, HallSite? hall)
     {
         var built = new List<Amenity>();
         bool top = TopPressurisedFloor(bodyId) == level;
         bool mess = StaffCanteenFloor(bodyId) == level;
-        if ((!top && !mess) || rooms.Count == 0)
+        if (!top && !mess)
+        {
+            return built;
+        }
+
+        // #751 · THE HALL IS THE CANTEEN, where one was carved. It is not taken out of the room pool at all
+        // — it is the ground the pool's own column stood on, claimed before any room was laid — so the only
+        // thing left for this method to do on a hall floor is to give it its plate and (on the top floor)
+        // find the washroom a wet stack away from it.
+        Comfort hallUse = top ? Comfort.UpperCanteen : Comfort.StaffCanteen;
+        if (hall is { } site)
+        {
+            (string hallPlate, string hallFixture) = AmenitySigns(bodyId, hallUse);
+            built.Add(new Amenity(
+                hallUse, site.X, site.Y, hallPlate, hallFixture, site.Tops, site.Hall));
+
+            if (!top || rooms.Count == 0)
+            {
+                return built;
+            }
+
+            var near = new List<int>();
+            for (int i = 0; i < rooms.Count; i++)
+            {
+                if (!IsPrincipalRoom(rooms[i].Plate) && !ReservedRoom(bodyId, level, i))
+                {
+                    near.Add(i);
+                }
+            }
+            if (near.Count == 0)
+            {
+                return built;
+            }
+
+            Nearest(near, rooms, site.X, site.Y);
+            int washroom = near[0];
+            (double wx, double wy, string _) = rooms[washroom];
+            rooms.RemoveAt(washroom);
+            (string wplate, string wfixture) = AmenitySigns(bodyId, Comfort.Washroom);
+            built.Add(new Amenity(
+                Comfort.Washroom, wx, wy, wplate, wfixture, Fitting(walls, Comfort.Washroom, wx, wy)));
+            built.Sort((a, b) => a.Use.CompareTo(b.Use));
+            return built;
+        }
+
+        if (rooms.Count == 0)
         {
             return built;
         }
@@ -1700,27 +2279,13 @@ public static class UndergroundComplex
         // #592/#614/#411 · The designated rooms, which may never be taken. The same reservation
         // CarveRefuges makes and for the same reason: a designated INDEX read off a list that a second
         // placer shortens is a feature silently dead on some worlds forever, with every test still green.
-        var reserved = new List<int>();
-        foreach ((int Level, int RoomIndex)? designated in
-            new (int, int)?[]
-            {
-                KeyRoomFor(bodyId), RelicRoomFor(bodyId), StandingOrderRoomFor(bodyId),
-                FoundKeyRoomFor(bodyId),   // #677 · the way down to the halls is a designation too
-            })
-        {
-            if (designated is { } d && d.Level == level)
-            {
-                reserved.Add(d.RoomIndex);
-            }
-        }
-
         // Candidates, nearest the car first. A principal room is never one: it already has its own
         // washroom, and a director's office is not where a building puts the vending machines.
         var pool = new List<int>();
         var anywhere = new List<int>();
         for (int i = 0; i < rooms.Count; i++)
         {
-            if (reserved.Contains(i))
+            if (ReservedRoom(bodyId, level, i))
             {
                 continue;
             }
@@ -1767,6 +2332,27 @@ public static class UndergroundComplex
         // than an artefact of the order they happened to be removed in.
         built.Sort((a, b) => a.Use.CompareTo(b.Use));
         return built;
+    }
+
+    /// <summary>#592/#614/#411 · Is this room index DESIGNATED — reserved for a find that must exist? The
+    /// same reservation <see cref="CarveRefuges"/> makes and for the same reason: a designated INDEX read off
+    /// a list that a second placer shortens is a feature silently dead on some worlds forever, with every
+    /// test still green. Lifted out of <see cref="CarveAmenities"/> when #751 gave it a second caller.</summary>
+    private static bool ReservedRoom(string bodyId, int level, int index)
+    {
+        foreach ((int Level, int RoomIndex)? designated in
+            new (int, int)?[]
+            {
+                KeyRoomFor(bodyId), RelicRoomFor(bodyId), StandingOrderRoomFor(bodyId),
+                FoundKeyRoomFor(bodyId),   // #677 · the way down to the halls is a designation too
+            })
+        {
+            if (designated is { } d && d.Level == level && d.RoomIndex == index)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>Sort room indices by how far they are from a point, ties broken by index — <c>List.Sort</c>
@@ -1943,7 +2529,8 @@ public static class UndergroundComplex
         List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked,
         List<(double X, double Y, string Plate)> rooms, List<EnSuite> ensuites,
         List<(double X0, double Y0, double X1, double Y1)> claimed,
-        string bodyId, int level, int rib, double x, double mouth, double far, bool down, double roomScale)
+        string bodyId, int level, int rib, double x, double mouth, double far, bool down, double roomScale,
+        int hallSide = 0)
     {
         double roomW = RoomWidthDu * roomScale, roomH = RoomHeightDu * roomScale;
 
@@ -1960,6 +2547,23 @@ public static class UndergroundComplex
 
             for (int side = -1; side <= 1; side += 2)
             {
+                // #751 · The hall is standing on this column. Nothing is built here — no chamber walls, no
+                // plate, no lock — and the rib's face above keeps its doorway at this very slot, which is
+                // how the hall comes to have a door without ever cutting one.
+                if (side == hallSide)
+                {
+                    // …but the doorway is PUBLISHED, in the same list as every other door down here, so the
+                    // hall's entrances are drawn as the imported leaves they are and an audit can find them
+                    // without knowing anything about halls.
+                    double hallFaceX = x + (side * CorridorHalf);
+                    if (!found)
+                    {
+                        doorways.Add(new SurfaceLayout.Doorway(
+                            hallFaceX, cy - DoorHalf, hallFaceX, cy + DoorHalf));
+                    }
+                    continue;
+                }
+
                 string tag = $"hive:{level}:{rib}:{i}:{side}";
                 double cx = x + (side * (CorridorHalf + (roomW / 2)));
 
@@ -2906,6 +3510,70 @@ public static class UndergroundComplex
         "pass shown. Inside there is nobody to show it to, and nothing out of place — no tray abandoned, no " +
         "chair shoved back, no note. Whatever ended here was not sudden, or it was tidied. The machines hum " +
         "and keep their hours. The shift has not come, and the machines are not the kind that wonder.";
+
+    // ── #751 · THE TWO STORY-GRADE ROOMS THE HALL RULE ADDS ──────────────────────────────────────────────
+    //
+    // Owner: these rooms are story-grade — they get first-entry CARDS with gen-AI art, the same one-shot
+    // pattern as THE PLATE and THE STAFF MESS (#725/#743). Prose authored, wired VERBATIM, and neither of
+    // them says what the building is for: the hall's card is about MONEY (a company that feeds contractors
+    // like a hotel), and the cabinet's is about MEMORY (a room that has none). §13.8 holds.
+
+    /// <summary>#751 · The B1 cantina hall, painted.</summary>
+    public const string CantinaHallArtUrl = "art/b1-cantina-hall.jpg";
+
+    /// <summary>#751 · What the card is called.</summary>
+    public const string CantinaHallLabel = "🍸 THE HALL";
+
+    /// <summary>#751 · First entry into the B1 cantina hall. Authored, verbatim.
+    ///
+    /// <para>The register is #601's funding trail said as a room: a suspiciously nice company canteen on a
+    /// nowhere rock is money that does not mind being SEEN feeding contractors, only being asked. Nobody in
+    /// the frame finds it strange, which is the whole horror technique of this set.</para></summary>
+    public const string CantinaHallCard =
+        "Carriers' canteen, the sign says, and the room says something else: linen on the tables, brass on " +
+        "the pillars, light somebody chose. On a rock with no name on any chart, the company feeds its " +
+        "contractors like a hotel feeds guests it wants to keep — and nobody at the tables finds that " +
+        "strange, because the pay is on the nail, the coffee is real, and questions are the one thing on " +
+        "the menu that costs. Along the back wall, a row of doors. Cabinets, by arrangement. The hall is " +
+        "loud. The doors are why.";
+
+    /// <summary>#751 · The cabinet, painted.</summary>
+    public const string CabinetArtUrl = "art/b1-cabinet.jpg";
+
+    /// <summary>#751 · What the card is called.</summary>
+    public const string CabinetLabel = "🚪 THE CABINET";
+
+    /// <summary>#751 · The glyph the cabinet's filed line wears — the door, because a door with nothing
+    /// written on it is the whole of what one of these rooms is from the hall side.</summary>
+    public const string CabinetGlyph = "🚪";
+
+    /// <summary>#751 · First entry into ANY cabinet — once total, never once per door. Authored, verbatim.
+    ///
+    /// <para>The telephone with no dial is canon furniture of a cabinet from here on: it receives and never
+    /// dials, it has no mechanics, and nothing anywhere explains it.</para></summary>
+    public const string CabinetCard =
+        "Six chairs, a table wiped past clean, and a door padded like a vault that dogs shut from inside. " +
+        "The hall outside is loud the way a sea is loud — a noise you can hide a sentence in, but every " +
+        "face out there sits in the counter's long memory. In here there is no memory: whatever crosses " +
+        "this table crosses it once and leaves in the pockets it came in. There is a telephone on the wall. " +
+        "It has no dial. Rooms like this are not on the menu — you arrange them, or you are brought.";
+
+    /// <summary>#751 · What the field book keeps of a cabinet. The card is the moment; this is the book's
+    /// compressed record of it, and it is the only place the MECHANIC is ever stated — by observation, never
+    /// by tooltip.</summary>
+    public const string CabinetNote =
+        "A cabinet off the hall: six chairs, one door, and no line of sight to the counter. Rooms like " +
+        "this are why the hall is loud.";
+
+    /// <summary>#751 · Does THIS floor's hall earn the cantina card? The card's first four words name the
+    /// sign on the door — <c>CANTEEN 1 · CARRIERS &amp; CONTRACTORS</c> — so it belongs to the branch
+    /// office's bar and never to the head office's dining room, which has a plate, a register and an
+    /// arrival card of its own (#411). Asked here, so no client ever decides it.</summary>
+    public static bool ShowsCantinaHallCard(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return !IsHeadOffice(bodyId) && TopPressurisedFloor(bodyId) == level;
+    }
 
     // ── #677 · WHAT THE HALLS SAY, WHICH IS ALMOST NOTHING ───────────────────────────────────────────────
     //

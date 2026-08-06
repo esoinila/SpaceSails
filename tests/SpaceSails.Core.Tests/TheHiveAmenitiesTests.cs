@@ -524,7 +524,39 @@ public sealed class TheHiveAmenitiesTests
                         + $"room(s), {floor.Refuges.Count} refuge(s) and {floor.RoomCentres.Count} chamber(s).";
             }
 
-            int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count;
+            // #751 · A HALL IS ONE PLACE WITH MORE THAN ONE DOOR, and the sum has to say so out loud.
+            //
+            // The hall stands on a rib's whole room COLUMN, so the corridor's face has a gap at every slot
+            // that column had — two of them, on this generator — and the hall publishes both, because they
+            // are the same two gaps the corridor already leaves (#585's one-gap law is the reason the carve
+            // never cuts a door of its own). The conservation claim is unchanged: every doorway still leads
+            // somewhere. What changed is that one of the somewheres is reached by two of them.
+            int extraHallDoors = 0;
+            foreach (UndergroundComplex.Amenity a in floor.Amenities)
+            {
+                if (a.Hall is not { } hall)
+                {
+                    continue;
+                }
+                int doors = 0;
+                foreach (SurfaceLayout.Doorway d in floor.Doorways)
+                {
+                    if ((Math.Abs(d.X1 - hall.X0) < 0.001 || Math.Abs(d.X1 - hall.X1) < 0.001)
+                        && d.Y1 >= hall.Y0 - 0.001 && d.Y2 <= hall.Y1 + 0.001)
+                    {
+                        doors++;
+                    }
+                }
+                if (doors == 0)
+                {
+                    return "a hall was carved with no doorway published at all — its entrances would be "
+                        + "gaps nothing knows about.";
+                }
+                extraHallDoors += doors - 1;
+            }
+
+            int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count
+                + extraHallDoors;
             if (places != floor.Doorways.Count)
             {
                 return $"{floor.Doorways.Count} doors were cut and only {places} of them lead anywhere.";

@@ -199,6 +199,56 @@ says it, once, last of the arrival's lines:
   the arrival is still the card's own beat and its 3.0 nerve shock. No shock on the chit's — a gate that
   reads a timesheet and waves you through is the least frightening thing this building has done.
 
+## 1b · ADDED (#751) — the CANTINA HALL, its cabinets, and the watch that decides the mood
+
+```
+/map?tablescene=1                      the hall, on whatever shift the sim clock is on
+/map?tablescene=1&watch=2              …the HEAVING watch — most of twenty tables taken
+/map?tablescene=1&watch=5              …the SMALL watch — a handful of souls and too much room
+/map?secretlab=deep&land=1&floor=17    B17: the staff mess, at the size of the shift that never came
+```
+
+Owner, 2026-08-06: *"The Canteen is way too small… It needs to house like 80 customers… I am thinking like Mos
+Eisley Space port size bar"*, then *"Definitely want to make the B1 bar be fancy ... and have cabinet-spaces
+for sensitive negotiations"*, then *"The canteen for only staff can also be a lot bigger."*
+
+**What changed.** The B1 canteen left the standard room grammar and is carved as a **HALL** — it stands on a
+whole rib room-column, its front wall is the rib's own face, and its two doorways are the two gaps that
+corridor already had (#585's one-gap law: the hall never cuts a door of its own). Twenty round tops in the
+owner's 2/4/6 mix, **eighty seats**, THE COUNTER as a long bar wall at the far end, THE BOARD by the door, and
+poured pillars breaking the sightlines.
+
+**`?watch=N` is the new lever, and it is the only way to see the design.** Nothing in the game announces
+whether the hall is busy: you walk in, and the room tells you. A watch is four sim-hours and six of them are a
+day, so `watch=2` is the middle of the day and `watch=5` is the small hours. Compare the two and the mood is
+the whole feature. It pins the watch index and nothing else — who is in and where they sat are still the
+rota's own answer for that shift, so what you walk into is the room a captain would get.
+
+**Three tiers at the tables.**
+
+| tier | what pressing `[E]` gets you |
+| --- | --- |
+| the ten **named regulars** (#709/#717) | unchanged — the wave-in, the full #746 scene, the chit |
+| **background patrons** (#751) | a THIN scene: small talk (one of fourteen barks, drawn per patron per watch), **buy the round** (the +1 applies normally), take your leave. No asks, no jobs |
+| **cabinets** | empty in v1 — geometry plus a rule. #731's walkers will put somebody in one |
+
+**The cabinets, and the one mechanic they carry.** Three enclosed rooms down the hall's back wall, plated
+`CABINET n · BY ARRANGEMENT · ASK AT THE COUNTER`, six chairs each — **and their eighteen chairs are not part
+of the hall's eighty.** Walk into one and you get **🚪 THE CABINET** (a card, once per excursion) and a line in
+the field book. What it teaches, by observation and never by tooltip: #746's file-on-the-table is LOUD because
+*"the counter has eyes"* — and a cabinet is a room the counter cannot see, so putting a file down in one does
+**not** close ask-about-work. Same slip, same person, different room.
+
+**First entry into the hall** raises **🍸 THE HALL** (once per excursion). It belongs to the branch office's
+`CANTEEN 1` — the head office's dining room has its own register and its own arrival card (#411).
+
+**B17's staff mess is hall-class too, and it is the same carve** — one implementation, two customers, and the
+only line where they differ is the seat target. The mess's is derived: `ImpliedComplement(body)` = the floors
+the directory **admits to**, times four heads a department. A twenty-storey clinic runs eighty people, a
+five-floor annex twenty, and the band nobody listed has nobody on the books at all. **The mess is empty on
+every watch, forever** — that is #743's sentence (*"the shift has not come"*) at architectural scale, and the
+only new thing it says is its size, which it says by being walked across.
+
 ## 2 · The board, and whose notice is whose (#709)
 
 ```
@@ -345,6 +395,7 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `&death=suffocated` | boot into the death you want to read |
 | `&credits=50000` | price anything without grinding for it |
 | `&roll=hi|lo` | force the encounter band at a table (#746) |
+| `&watch=N` | pin which SHIFT the hall is on (#751) — `2` heaves, `5` echoes, six to a day |
 
 ## What has NO link yet, because it is not built
 
