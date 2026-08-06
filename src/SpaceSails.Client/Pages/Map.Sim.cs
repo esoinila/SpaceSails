@@ -187,6 +187,11 @@ public partial class Map
     private bool _started;
     private bool _worldReady;
 
+    // #726 · static, so it outlives the component: the whole point is to remember across the Map
+    // instances the router keeps building. Exposed internally so the guard can drive the same object
+    // the page does rather than a copy of its rule.
+    internal static readonly BootRegistryAnnouncement BerthRosterAnnouncement = new();
+
     // #318 false-hang follow-up: the coarse boot phase the loading door shows RIGHT NOW. The world build
     // runs a few seconds of synchronous planning (traffic generation) which, on the ~100×-slower dev
     // (Debug WASM) bundle, reads as a frozen tab if nothing paints. Each phase sets this then yields so
@@ -1127,7 +1132,15 @@ public partial class Map
         _ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
         // #288: print the enumerable registry of every dockable berth to the browser console on boot, so
         // the bench never guesses an id — /map?dock=<id> boots already clamped on at any of these.
-        Console.WriteLine($"[SpaceSails] Dockable berths — /map?dock=<id>: {string.Join(", ", DockableHavens.AllIds(_ephemeris))}");
+        // #726: this is per-COMPONENT boot, and the router builds a new Map every time you arrive at
+        // /map — so walking Home → Map → Home → Map printed the identical list four times over. Say it
+        // only when it is news (see BootRegistryAnnouncement); a different scenario still announces its
+        // own berths, a second lap round the same world does not.
+        string berthRoster = $"[SpaceSails] Dockable berths — /map?dock=<id>: {string.Join(", ", DockableHavens.AllIds(_ephemeris))}";
+        if (BerthRosterAnnouncement.IsNews(berthRoster))
+        {
+            Console.WriteLine(berthRoster);
+        }
         // Tuesday plan PR-A: the scenario's off-the-charts bodies (e.g. the derelict roadster). They
         // stay dark until an intel-fed scan (or a dev reveal cheat) charts them.
         _hiddenBodyIds.Clear();
