@@ -78,6 +78,30 @@ public static class Encounter
         /// <summary>Needs a move already made at this table this watch — the house's ways learned before the
         /// ask, the second line of somebody's story after the first.</summary>
         PriorMoveThisWatch,
+
+        /// <summary>
+        /// #749 · An ANSWER to something they said, earlier in THIS conversation.
+        ///
+        /// <para>The one requirement that is not a door. The others are things you have not earned yet and
+        /// are shown refused, with the reason on them (#603): a price you cannot pay is information. This one
+        /// is a <b>sentence nobody has spoken</b>, and a reply to a sentence nobody has spoken is not a
+        /// control that is disabled — it is not there. Hence two departures from
+        /// <see cref="PriorMoveThisWatch"/>, and both of them are the same fact said twice:</para>
+        ///
+        /// <list type="number">
+        /// <item><b>THE SCENE, not the watch.</b> <see cref="Exists"/> and <see cref="Available"/> read the
+        /// moves made in THIS sitting. Standing up ends the conversation; the room remembers that you asked,
+        /// and the room is right to, but you cannot walk back and answer an offer that was made to somebody
+        /// who has since left the table.</item>
+        /// <item><b>Absent, not refused.</b> <see cref="OnTheTable"/> leaves it out of the panel until the
+        /// line has been said. Owner, filing #749: <i>"a reply you can give before the sentence exists reads
+        /// as menu, not conversation."</i></item>
+        /// </list>
+        ///
+        /// <para>The offer's answers at the fitter's table are this. So is every "…and who might that be?"
+        /// a checkpoint will ever grow: content, on the framework's own type, with no new code.</para>
+        /// </summary>
+        ReplyToPriorMove,
     }
 
     /// <summary>
@@ -90,7 +114,8 @@ public static class Encounter
     /// <param name="Item">Which kind of thing must be in the satchel, for
     /// <see cref="Requirement.SatchelItem"/>. Null otherwise.</param>
     /// <param name="After">The move id that must already have been made, for
-    /// <see cref="Requirement.PriorMoveThisWatch"/>. Null otherwise.</param>
+    /// <see cref="Requirement.PriorMoveThisWatch"/> and <see cref="Requirement.ReplyToPriorMove"/> — for the
+    /// second of those it is the move that made them SAY the thing this one answers. Null otherwise.</param>
     /// <param name="Rolled">Whether the outcome is decided by the dice. False means the outcome is FIXED —
     /// and that is a design statement wherever it appears, not an unfinished roll: honest work offered
     /// plainly is not a check, and neither is leaving a table politely.</param>
@@ -279,13 +304,45 @@ public static class Encounter
     /// on any scene, including one nobody has written yet.</summary>
     public const string Leave = "leave";
 
+    /// <summary>
+    /// #749 · Does this move EXIST yet — is it a thing on the table to be pressed at all?
+    ///
+    /// <para>Asked of every move before the panel draws it. Only <see cref="Requirement.ReplyToPriorMove"/>
+    /// can answer no: everything else is a door, and a door you cannot open is still a door you can see.</para>
+    /// </summary>
+    /// <param name="move">The move.</param>
+    /// <param name="madeThisScene">Move ids already made in THIS sitting — the conversation, not the watch.
+    /// A reply is scoped to the sentence it answers, and the sentence was said to whoever was in the chair.</param>
+    public static bool Exists(Move move, IReadOnlyCollection<string>? madeThisScene) =>
+        move.Needs != Requirement.ReplyToPriorMove
+        || (move.After is { } after && madeThisScene is not null && madeThisScene.Contains(after));
+
+    /// <summary>#749 · The moves that are ON THE TABLE right now, in the scene's own order. What a panel
+    /// draws — and it is a call rather than a rule the markup applies, so the guard stop and the canteen
+    /// cannot end up with two different ideas of when an answer exists.</summary>
+    public static IReadOnlyList<Move> OnTheTable(Scene scene, IReadOnlyCollection<string>? madeThisScene)
+    {
+        var shown = new List<Move>(scene.Moves?.Count ?? 0);
+        foreach (Move m in scene.Moves ?? [])
+        {
+            if (Exists(m, madeThisScene))
+            {
+                shown.Add(m);
+            }
+        }
+        return shown;
+    }
+
     /// <summary>Can this move be made right now?</summary>
     /// <param name="move">The move.</param>
     /// <param name="credits">The purse.</param>
     /// <param name="carried">The satchel.</param>
     /// <param name="madeThisWatch">Move ids already made at this scene this watch.</param>
+    /// <param name="madeThisScene">Move ids already made in THIS sitting. A reply reads this and never the
+    /// watch: the room remembering that you once asked is not the same as somebody having just spoken.</param>
     public static bool Available(
-        Move move, int credits, IReadOnlyList<Satchel.Item>? carried, IReadOnlyCollection<string>? madeThisWatch)
+        Move move, int credits, IReadOnlyList<Satchel.Item>? carried, IReadOnlyCollection<string>? madeThisWatch,
+        IReadOnlyCollection<string>? madeThisScene = null)
         => move.Needs switch
         {
             Requirement.Credits => credits >= move.Credits,
@@ -296,6 +353,9 @@ public static class Encounter
                 : (carried?.Count ?? 0) > 0,
             Requirement.PriorMoveThisWatch =>
                 move.After is { } after && madeThisWatch is not null && madeThisWatch.Contains(after),
+            // One law, one place: a reply that exists is a reply you may make. Answering costs nothing —
+            // it is the sentence being on the table at all that was ever in question.
+            Requirement.ReplyToPriorMove => Exists(move, madeThisScene),
             _ => true,
         };
 
