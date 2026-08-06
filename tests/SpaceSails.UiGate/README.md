@@ -53,6 +53,26 @@ The gate auto-detects the payload straight off the served `wwwroot` — an AOT `
 ~18 MB vs ~1.5 MB interpreted — so a plain local `dotnet publish` (interpreted, ~100× slower boot) gets a
 much looser ceiling instead of false-failing. Nothing to set in CI; no game code touched.
 
+## The tall-card gate (issue #735) — `TallCardTests`
+
+The 2026-08-06 smoke run found the Enceladus restore card rendering its one button, *"Board the
+rustbucket"*, **below the fold**: the modal did not scroll, the backdrop did not dismiss, and the player
+was stuck on a story card until they resized the browser. That is #680's law one level up — *in the DOM is
+not on the screen* — and it is the second question only a real layout can answer, so it lives here.
+
+Three tests, all driven through the real `?death=impact` boot (#621's cheat stages the genuine death
+pipeline), at **390 × 700** — a phone in portrait, because the owner's second screen is a phone and every
+viewport there is shorter than the desktop window this failed on:
+
+1. the restore card's primary action lies **inside** the screen (hit-box + Playwright actionability);
+2. a card taller than the screen is **capped and scrolls inside itself**, and its action row is still on
+   screen with the card scrolled back to the top (it is pinned, not merely reachable);
+3. **Enter** presses the single visible action of an open card — keys typed at whatever the app itself
+   focused, so the path under test is the player's, not the harness's.
+
+Test 2 asserts its own premise first (the card really is taller than 700 px) so a future edit that makes
+the card short cannot leave these guards passing while proving nothing.
+
 ## Run it locally
 
 ```bash

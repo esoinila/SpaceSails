@@ -5223,7 +5223,7 @@
                             <div class="busted-roll">Collector: @rl.Defender.Describe()</div>
                         }
                         <div class="busted-quote">"Nice try. Now it costs extra." — they take the submission terms plus a harsher cut.</div>
-                        <button type="button" class="btn btn-danger busted-close" @onclick="BustedResistLostConfirm">Brace for it</button>
+                        <button type="button" class="btn btn-danger busted-close" @onclick="() => PressAndRefocus(BustedResistLostConfirm)">Brace for it</button>
                         break;
 
                     case BustedEncounter.Stage.Bolivia:
@@ -5284,7 +5284,7 @@
                                law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
                                was quietly going round it. Both faults are one fix: read the seam. *@
                             <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
-                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
                         </div>
                         break;
 
@@ -5305,7 +5305,7 @@
                                only thing that ever killed you, wrong now that the five blows decide. *@
                             <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
                             <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
-                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
                         </div>
                         break;
 
@@ -5319,7 +5319,7 @@
                             </div>
                             <div class="busted-freeze-caption">"…and here we thought this was the easy money."</div>
                             <div class="busted-quote">One massive volley. The freeze-frame holds. Sepia.</div>
-                            <button type="button" class="btn btn-light busted-close" @onclick="BustedResurrect">…wake up</button>
+                            <button type="button" class="btn btn-light busted-close" @onclick="() => PressAndRefocus(BustedResurrect)">…wake up</button>
                         </div>
                         break;
 

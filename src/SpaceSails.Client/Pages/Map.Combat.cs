@@ -2268,7 +2268,18 @@ public partial class Map
         StateHasChanged();
     }
 
-    private void BustedResistLostConfirm() => BustedSubmit(harsher: true);
+    // #735 · Stage-guarded for the same reason the wake is (see BustedResurrect): once Enter presses this
+    // button too, a keystroke on a focused button can arrive as BOTH a key handler and the browser's own
+    // click — and a confiscation applied twice is the collector taking the cut twice off one press.
+    private void BustedResistLostConfirm()
+    {
+        if (_busted is not { Phase: BustedEncounter.Stage.ResistLost })
+        {
+            return;
+        }
+
+        BustedSubmit(harsher: true);
+    }
 
     // A Bolivia beat: fold the choice, roll it, advance. After the last beat, tally and decide.
     private void BustedBoliviaChoose(string choiceId)
@@ -2319,7 +2330,15 @@ public partial class Map
     // survives (it lives off-ship — other lanes). Never a dead save.
     private void BustedResurrect()
     {
-        if (_busted is not { } b)
+        // #735 · …and only OUT OF THE FREEZE. The guard used to be "is there a death open at all", which was
+        // true right up until Enter joined the mouse on this button: a keystroke on a focused button fires
+        // the keydown handler AND the browser's own click, so the wake could be asked for twice — and a
+        // second wake is a second clinic bill, a second succession and a second captain, off one press. The
+        // stage is the fact that decides, so the stage is what is asked. Every road in is one of these three.
+        if (_busted is not { } b
+            || b.Phase is not (BustedEncounter.Stage.FreezeFrame
+                or BustedEncounter.Stage.Impact
+                or BustedEncounter.Stage.SurfaceEnd))
         {
             return;
         }

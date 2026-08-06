@@ -307,6 +307,13 @@ public partial class Map
         await RefocusMap();
     }
 
+    // #735 · The same seam, under the name the other kind of caller means. A card button that ADVANCES a
+    // card rather than closing it (the freeze beat's "…wake up" walks the death card to its next stage)
+    // needs the keyboard handed back just as badly: the button it was clicked on leaves the DOM with the
+    // stage, focus falls to <body>, and the next stage's Enter then has nowhere to land. One line, no
+    // second copy of the idiom — Dismiss is not renamed because fifty call sites do mean "dismiss".
+    private Task PressAndRefocus(Action act) => Dismiss(act);
+
     private static string Canonical(string key) => key switch
     {
         "W" or "ArrowUp" => "w",
@@ -2481,6 +2488,16 @@ public partial class Map
         // #633 · The StoryBeats CARD is modal too, and Esc has to reach it. The PLATE (the edge flash) is
         // deliberately NOT listed: it steals nothing and retires itself, so there is nothing for Esc to take.
         if (_storyCard is not null) { CloseStoryCard(); return true; }
+        // #735 · The told-once cards — the convergence reveal and the first-ground family (the lesson, the
+        // map-just-grew card, the tube rearm, the low-air warning). Every one of them already dismisses on
+        // a backdrop click and carries its own way-out button, so dismissal is allowed here and Esc was
+        // simply never wired to them; a card that takes the screen and ignores the cancel key is the
+        // #351 complaint again, one lane over.
+        if (_convergenceRevealOpen) { CloseConvergenceReveal(); return true; }
+        if (_groundLessonOpen) { CloseGroundLesson(); return true; }
+        if (_groundGrewOpen) { CloseGroundGrew(); return true; }
+        if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
+        if (_airCardOpen) { CloseAirCard(); return true; }
         // #746 · The table. Above the bar cards for the reason the whole scene turns on: LEAVING IS FREE and
         // always available, and a keyboard cancel that could not reach the one panel whose design law is
         // "you may always stand up" would be the game contradicting itself with a keystroke.
@@ -2514,6 +2531,76 @@ public partial class Map
         if (_kioskCard is not null) { CloseKioskCard(); return true; }
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
+        if (_celebration is not null) { DismissCelebration(); return true; }
+        return false;
+    }
+
+    // #735 · THE KEYBOARD'S WAY ON. Esc above is the keyboard CANCEL; this is the keyboard YES — Enter
+    // presses the visible primary action of a card that has exactly one.
+    //
+    // It exists because of the bug that named the issue: a story card grew taller than the screen, its one
+    // button rendered below the fold, and the player was stuck on it until they resized the browser. The
+    // card family's layout law (Map.razor.css, #735) keeps that button on the screen; this is the second
+    // road to the same button, and the one a keyboard — or a test harness — can take.
+    //
+    // Two disciplines, both of them refusals:
+    //
+    //   * ONLY CARDS THAT ASK NOTHING. A card with SUBMIT / BRIBE / RESIST on it is a question, and a key
+    //     that answers a question for the captain is worse than no key at all. Those fall through and Enter
+    //     does nothing. This is where somebody will one day be tempted to add a "default" — don't.
+    //   * THE DEATH CARD IS ACKNOWLEDGED, NOT DISMISSED. It is listed here and deliberately NOT in the Esc
+    //     chain above: it carries no ✕ and its backdrop swallows clicks, because the game does not let you
+    //     wave a death away. Enter presses the button that is already the only way on.
+    private bool TryConfirmTopOverlay()
+    {
+        // The death card draws above everything in the game, so it answers the key before anything else.
+        if (_busted is { } bust)
+        {
+            switch (bust.Phase)
+            {
+                // The freeze beat — one button, "…wake up", and it is the only road out of the sepia.
+                case BustedEncounter.Stage.FreezeFrame:
+                case BustedEncounter.Stage.Impact:
+                case BustedEncounter.Stage.SurfaceEnd:
+                    BustedResurrect();
+                    return true;
+                case BustedEncounter.Stage.ResistLost:
+                    BustedResistLostConfirm();
+                    return true;
+                // The wake, the receipt, and the three ways a catch can end: one acknowledgement each. The
+                // restore card (Resurrected) is the tall one this whole issue is about.
+                case BustedEncounter.Stage.Resurrected:
+                case BustedEncounter.Stage.Confiscated:
+                case BustedEncounter.Stage.BribedOff:
+                case BustedEncounter.Stage.ResistWon:
+                case BustedEncounter.Stage.Fled:
+                    CloseBusted();
+                    return true;
+                // Demand and Bolivia are questions. Enter does not answer them.
+                default:
+                    return false;
+            }
+        }
+
+        // …then the same order the Esc chain reads in, so "the top-most card" means one thing in this file
+        // and not two. Only the single-action cards are listed; every card that offers a CHOICE is absent
+        // on purpose, and its absence is the feature.
+        if (_revealCard is not null) { CloseRevealCard(); return true; }
+        if (_storyCard is not null) { CloseStoryCard(); return true; }
+        if (_convergenceRevealOpen) { CloseConvergenceReveal(); return true; }
+        if (_groundLessonOpen) { CloseGroundLesson(); return true; }
+        if (_groundGrewOpen) { CloseGroundGrew(); return true; }
+        if (_tubeRearmOpen) { CloseTubeRearm(); return true; }
+        if (_airCardOpen) { CloseAirCard(); return true; }
+        if (_expeditionRevealCard is not null) { _expeditionRevealCard = null; return true; }
+        if (_expeditionBriefCard is not null) { _expeditionBriefCard = null; return true; }
+        if (_treasureMapCard is not null) { _treasureMapCard = null; return true; }
+        if (_ventReadCard is not null) { CloseVentReadCard(); return true; }
+        if (_archiveCard is not null) { CloseArchiveCard(); return true; }
+        if (_wreckLook is not null) { CloseWreckLook(); return true; }
+        if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
+        if (_kioskCard is not null) { CloseKioskCard(); return true; }
+        if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
         return false;
     }
@@ -2590,6 +2677,19 @@ public partial class Map
                 return;
             }
             SwitchDesk(ShipDesk.Captain);
+            return;
+        }
+
+        // #735 · Enter presses the visible primary action of an open card — the keyboard YES, next to the
+        // keyboard CANCEL below. Checked BEFORE the flight keys for the same reason Esc is: while a card
+        // has the screen, the keys belong to the card. Nothing open to confirm and Enter falls through to
+        // the helm, which does not bind it either — so this is a key the game had spare.
+        if (e.Key is "Enter" or "NumpadEnter")
+        {
+            if (TryConfirmTopOverlay())
+            {
+                StateHasChanged();
+            }
             return;
         }
 
