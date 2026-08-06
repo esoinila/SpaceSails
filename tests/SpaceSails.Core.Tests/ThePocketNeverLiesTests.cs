@@ -54,7 +54,13 @@ public sealed class ThePocketNeverLiesTests
         {
             // The wallet is the exception and is meant to be: #688's whole point is that a card is never
             // refused, so a "full pocket" is full of everything else.
-            Assert.Equal(kind != Satchel.Kind.Authority, Satchel.IsFull(bag, kind));
+            //
+            // #746 · Asked of the COMPARTMENT, not of one kind. The wallet holds two things now — an
+            // authority and a day-labour chit — and naming a kind here made this guard a statement about
+            // which cards happened to exist the day it was written rather than about the law it guards,
+            // which is "the flat pocket never fills" and never was "Authority is special".
+            Assert.Equal(
+                Satchel.CompartmentOf(kind) != Satchel.Compartment.Wallet, Satchel.IsFull(bag, kind));
         }
         return bag;
     }
@@ -215,9 +221,11 @@ public sealed class ThePocketNeverLiesTests
             }
             start = Satchel.Add(start, new Satchel.Item(kind, "already", kind == Satchel.Kind.Rounds ? 6 : 1));
 
-            // The wallet never fills, so for an authority this is a satchel that is full of everything else
-            // and still has room — which is exactly the case the merge law has to survive.
-            Assert.Equal(kind != Satchel.Kind.Authority, Satchel.IsFull(start, kind));
+            // The wallet never fills, so for anything that rides in it this is a satchel that is full of
+            // everything else and still has room — which is exactly the case the merge law has to survive.
+            // #746 · Asked of the compartment, for the reason FullPocket's own copy of this line records.
+            Assert.Equal(
+                Satchel.CompartmentOf(kind) != Satchel.Compartment.Wallet, Satchel.IsFull(start, kind));
             Assert.True(Satchel.CountOf(start, kind, "already") > 0,
                 $"the {kind} the case is about is not in the pocket — the test proves nothing.");
 

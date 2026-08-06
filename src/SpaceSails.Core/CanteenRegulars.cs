@@ -168,13 +168,115 @@ public static class CanteenRegulars
     public static IReadOnlyList<Seated> Sitting(
         string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
     {
+        var sat = new List<Seated>();
+        foreach ((int table, int who) in Seating(bodyId, level, amenity, watch))
+        {
+            (double tx, double ty) = amenity.Tables[table];
+            sat.Add(new Seated(tx, ty, Cast[who].Plate, Cast[who].Line));
+        }
+
+        return sat;
+    }
+
+    // ── #746 · THE TABLES HAVE SEATS, AND THE SAME LAW SAYS WHO IS IN THEM ────────────────────────────────
+    //
+    // Owner, 2026-08-06: "tables should seat 2/4/more, not all pairs" — and, one sentence later, the reason
+    // it matters mechanically rather than decoratively: "asking to sit is missing."
+    //
+    // A seat count is only worth having if somebody can ask whether one is free, and the moment two callers
+    // can answer that question this repo has its most expensive bug class back (two sources for one fact —
+    // the drawn room and the pressed room disagreeing, #709's own warning). So the renderer does not walk
+    // Amenity.Tables and separately ask who is Sitting: it asks THIS, once, and gets the tops, their seat
+    // counts and their occupancy in the same list, off the same frozen watch.
+
+    /// <summary>How many a round top seats. Two, four or six — the owner's own three (#746), stated as a
+    /// list so a guard can pin them without knowing the arithmetic that picks one.</summary>
+    public static readonly IReadOnlyList<int> SeatCounts = [2, 4, 6];
+
+    /// <summary>One round top in an amenity: where it is, how many it seats, and who — if anybody — is in
+    /// one of those seats this watch.</summary>
+    /// <param name="Index">Its ordinal in the amenity's own table list, so a caller can key state off it.</param>
+    /// <param name="X">Centre, in the surface's own coordinates.</param>
+    /// <param name="Y">Centre.</param>
+    /// <param name="Seats">2, 4 or 6 — furniture, seeded off the building and never off the shift.</param>
+    /// <param name="Plate">Who is at it, or null for an empty table.</param>
+    /// <param name="Line">What they say, or null.</param>
+    public readonly record struct TableSeat(
+        int Index, double X, double Y, int Seats, string? Plate, string? Line)
+    {
+        /// <summary>Somebody is at this table.</summary>
+        public bool Taken => Plate is not null;
+
+        /// <summary>Chairs nobody is in. One regular per top today (<see cref="Sitting"/> never doubles
+        /// up), so this is the seat count less at most one — and it is the number "ask to join" reads.</summary>
+        public int Free => Seats - (Taken ? 1 : 0);
+    }
+
+    /// <summary>
+    /// #746 · How many a given round top seats.
+    ///
+    /// <para>Seeded off the SITE, the room's use and the top's ordinal — and deliberately NOT off the watch.
+    /// A canteen does not re-furnish itself every shift, and a table that seated six at breakfast and two at
+    /// supper would be the picture and the sim disagreeing about a thing the player can count.</para>
+    /// </summary>
+    public static int SeatsAt(string bodyId, UndergroundComplex.Amenity amenity, int tableIndex)
+    {
         ArgumentNullException.ThrowIfNull(bodyId);
+        ulong seed = DiceRule.Seed(
+            $"hive:canteen:seats:{bodyId}:{(int)amenity.Use}:{tableIndex}", 0);
+        return SeatCounts[DiceRule.Roll(seed, SeatCounts.Count).Face - 1];
+    }
+
+    /// <summary>
+    /// #746 · EVERY ROUND TOP IN THE ROOM, with its seats and its occupancy — the one fact the renderer
+    /// draws and the one fact the [E] press asks. Same frozen watch (#709), so the chair on the screen and
+    /// the chair the game offers you are the same chair.
+    /// </summary>
+    /// <param name="bodyId">The site.</param>
+    /// <param name="level">The floor.</param>
+    /// <param name="amenity">The room, as Core carved it (#707).</param>
+    /// <param name="watch">The shift, frozen when the floor was drawn.</param>
+    public static IReadOnlyList<TableSeat> Tables(
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        var who = new Dictionary<int, int>();
+        foreach ((int table, int cast) in Seating(bodyId, level, amenity, watch))
+        {
+            who[table] = cast;
+        }
+
+        var tops = new List<TableSeat>(amenity.Tables.Count);
+        for (int i = 0; i < amenity.Tables.Count; i++)
+        {
+            (double tx, double ty) = amenity.Tables[i];
+            bool sat = who.TryGetValue(i, out int cast);
+            tops.Add(new TableSeat(
+                i, tx, ty, SeatsAt(bodyId, amenity, i),
+                sat ? Cast[cast].Plate : null,
+                sat ? Cast[cast].Line : null));
+        }
+
+        return tops;
+    }
+
+    /// <summary>WHO IS AT WHICH TABLE, as indices — the one rota, called by <see cref="Sitting"/> and by
+    /// <see cref="Tables"/>. It was inlined in Sitting until #746 needed the table's ORDINAL as well as its
+    /// coordinates; matching a person back to a top by comparing two doubles would have been a second answer
+    /// to "who is sitting where", which is the thing this class's own docs warn about hardest.</summary>
+    private static List<(int Table, int Who)> Seating(
+        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        var seating = new List<(int Table, int Who)>();
 
         // The washroom and the deep staff mess get nobody. The mess is pass-only and the people who would be
         // in it are #618's question, not this one; the washroom is the one amenity nobody sits down in.
         if (amenity.Use != UndergroundComplex.Comfort.UpperCanteen)
         {
-            return [];
+            return seating;
         }
 
         // And only on the floor the owner put them on. UpperCanteen is only ever carved on the top
@@ -182,13 +284,13 @@ public static class CanteenRegulars
         // carves a second canteen the B1 ruling must not quietly stop being true.
         if (UndergroundComplex.TopPressurisedFloor(bodyId) != level)
         {
-            return [];
+            return seating;
         }
 
         int seats = Math.Min(amenity.Tables.Count, MostAtOnce);
         if (seats <= 0)
         {
-            return [];
+            return seating;
         }
 
         // How many turned up THIS SHIFT. At least one — the owner asked for people in the bar, and an empty
@@ -196,7 +298,6 @@ public static class CanteenRegulars
         ulong seed = DiceRule.Seed($"hive:canteen:{bodyId}", watch);
         int here = DiceRule.Roll(seed, seats).Face;
 
-        var sat = new List<Seated>(here);
         var usedTables = new List<int>(here);
         var usedCast = new List<int>(here);
 
@@ -205,15 +306,14 @@ public static class CanteenRegulars
             int table = PickUnused(
                 DiceRule.Roll(DiceRule.Seed($"hive:canteen:table:{bodyId}:{i}", watch), amenity.Tables.Count).Face - 1,
                 amenity.Tables.Count, usedTables);
-            int who = PickUnused(
+            int cast = PickUnused(
                 DiceRule.Roll(DiceRule.Seed($"hive:canteen:who:{bodyId}:{i}", watch), Cast.Length).Face - 1,
                 Cast.Length, usedCast);
 
-            (double tx, double ty) = amenity.Tables[table];
-            sat.Add(new Seated(tx, ty, Cast[who].Plate, Cast[who].Line));
+            seating.Add((table, cast));
         }
 
-        return sat;
+        return seating;
     }
 
     /// <summary>Take the rolled index, or the next free one after it. Two people on one chair and one person

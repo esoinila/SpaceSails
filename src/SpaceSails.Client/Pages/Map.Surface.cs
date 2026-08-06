@@ -751,6 +751,37 @@ public partial class Map
         // three with a face on it, and a watch chosen once cannot drift into it.
         public long CanteenWatch { get; set; }
 
+        // ── #746 · WHAT HAS HAPPENED AT WHICH TABLE, THIS WATCH ───────────────────────────────────────
+        //
+        // Owner, 2026-08-06: "asking to sit is missing... offer-a-drink needs to matter."
+        //
+        // Every one of these is keyed "watch:floor:tableIndex" (see Map.Table.cs's TableKey) rather than by
+        // position, because a table has an ordinal and a pair of doubles is a guess. WATCH-SCOPED by design:
+        // the shift turning over is the room forgetting, which is what makes a fumbled ask survivable and a
+        // bought round worth buying NOW rather than banking.
+        //
+        // Excursion-scoped like every other Hive flag above. The things that must OUTLIVE the walk — the
+        // chit, and the name it was written under — are deliberately not here at all: they are in the
+        // satchel, which is durable, and CanteenTable.Cover reads them. A "you have cover" boolean kept
+        // beside the possession that IS the cover would be this repo's most expensive bug class with a flag
+        // on it.
+        public HashSet<string> TableRounds { get; } = [];     // a round was bought at that table
+        public HashSet<string> TableMoves { get; } = [];      // "key:who:moveId" — moves already made there
+        public HashSet<string> TableAskShut { get; } = [];    // a LOUD file closed ask-about-work there
+        public HashSet<string> TableHardened { get; } = [];   // an ask was fumbled there (−1 on the next)
+
+        // …and the three facts the NO-AND scatters across the ROOM rather than across one table. Not keyed
+        // by table on purpose: the fitter being worth asking and the temp having overheard are the SCENE
+        // moving, and the scene is the room.
+        public bool TableFitterOpen { get; set; }
+        public bool TableTempOverheard { get; set; }
+        public bool TableHouseWays { get; set; }
+
+        // #743/#746 · Whether the staff mess has already had its chit beat. Once per excursion, in the DEAD
+        // AIR family: the first time you show a pass to an empty room and eat is the beat, and every time
+        // after it is lunch.
+        public bool MessChitBeatShown { get; set; }
+
         // #588 · Which rooms' kit this excursion has turned up, and whether the person has assembled.
         public HashSet<int> KitPieces { get; } = [];
         public bool DossierShown { get; set; }
@@ -3447,6 +3478,10 @@ public partial class Map
             ? UndergroundComplex.FoundRecordCardLabel
             : "⭕ measurements of the thing on the pallet",
 
+        // #746 · The day-labour chit, printed as it is printed. Both ways of getting it are the same piece
+        // of paper — the name in the book downstairs is not on the card, which is the whole horror of it.
+        Core.Satchel.Kind.Chit => $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}",
+
         _ => "🗃 a file on somebody",
     };
 
@@ -3898,7 +3933,12 @@ public partial class Map
 
     private void CheckStaffMessUnderfoot()
     {
-        if (_surface is not { } ex || ex.Floor >= 0 || ex.HiveStaffMessShown || _viewObject is not null)
+        // #746 · TWO beats live in this room now, and they are not the same beat. The room's own card is the
+        // FIND (once, #743); showing the chit to it is what somebody with a reason to be here does, and a
+        // captain who walked through this room on an earlier floor-crawl and only later talked their way onto
+        // the cage crew must still get it. So the poll runs until BOTH have had their turn.
+        if (_surface is not { } ex || ex.Floor >= 0 || _viewObject is not null
+            || (ex.HiveStaffMessShown && ex.MessChitBeatShown))
         {
             return;
         }
@@ -3920,13 +3960,26 @@ public partial class Map
 
         if (_messRoom is { } mess && mess.Contains(_avatarX, _avatarY))
         {
-            ex.HiveStaffMessShown = true;
-            _viewObject = new DeckPlan.ConsoleSpot(
-                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                UndergroundComplex.StaffMessLabel,
-                UndergroundComplex.StaffMessArtUrl,
-                UndergroundComplex.StaffMessCard);
-            RendererInterop.PlayCue("reveal");
+            if (!ex.HiveStaffMessShown)
+            {
+                ex.HiveStaffMessShown = true;
+                _viewObject = new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                    UndergroundComplex.StaffMessLabel,
+                    UndergroundComplex.StaffMessArtUrl,
+                    UndergroundComplex.StaffMessCard);
+                RendererInterop.PlayCue("reveal");
+                return;   // one beat at a time — see below
+            }
+
+            // #746 · …and if you are carrying the cage crew's chit, you eat. ADDITIVE, and deliberately
+            // second: #743's card is the find, and this is what somebody with a reason to be here does next.
+            //
+            // NEVER IN THE SAME FRAME AS THE CARD. This line is PULSED, and a pulse played while a card is up
+            // renders under that card's backdrop and its blur — #680, exactly. The poll survives the card
+            // (see the guard at the top), so the beat lands on the tick after the captain closes it, still
+            // standing in the room, with nothing over the top of it.
+            ShowMessChitBeat(ex);
         }
     }
 
@@ -4873,6 +4926,10 @@ public partial class Map
                 // been the cause of something.
                 string cheatBody = landedOn.Stop.Body.Id;
                 RideTheLiftTo(landedOn, UndergroundComplex.NearestFloorTo(cheatBody, askedFor));
+
+                // #746 · …and ?tablescene=1 goes the last leg too, because the scene under test is a
+                // conversation at a table and the lift head is the other end of the floor from it.
+                StandInTheCanteenIfAsked(landedOn);
             }
             return;
         }

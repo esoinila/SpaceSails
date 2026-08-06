@@ -659,7 +659,13 @@ public partial class Map
                 HiveAmenityInteract(); // #707: stand at the counter, the basins or the machines
                 break;
             case DeckPlan.ConsoleKind.HiveRegular:
-                HiveRegularInteract(); // #709: stop at a table on B1 and hear one breath of somebody's day
+                // #746 · ASK TO JOIN comes first: at a table with a free seat and one of the three regulars
+                // in it, [E] sits you down and opens the scene. Everybody else in #709's cast keeps their
+                // one breath, which is what a canteen full of quest-givers would have cost us.
+                if (!TryOpenTable())
+                {
+                    HiveRegularInteract(); // #709: one breath of somebody's day, and nothing else
+                }
                 break;
             case DeckPlan.ConsoleKind.HiveBoard:
                 HiveBoardInteract();   // #709: one notice off the cork board — whose it is, is your problem

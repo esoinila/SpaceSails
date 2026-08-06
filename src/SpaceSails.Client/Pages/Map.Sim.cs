@@ -379,6 +379,7 @@ public partial class Map
         bool convergeCheat = false; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
         DeathCause? deathCheat = null; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
+        bool tableSceneCheat = false; // #746 /map?tablescene=1: boot the B1 canteen with the table scene in reach
         var uri = new Uri(Navigation.Uri);
 
         // #729 · /map?autowalk=1 — click the deck on a surface excursion or a Hive floor and the captain
@@ -795,6 +796,48 @@ public partial class Map
                     secretlabCheat = true;
                 }
             }
+            else if (pair.StartsWith("tablescene=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #746 dev cheat: /map?tablescene=1 boots THE TABLE SCENE — the B1 canteen of a deep site,
+                // with people in it, one URL from the front door.
+                //
+                // "A scene nobody can reach on demand is a scene that ships broken", and this one is behind
+                // more doors than anything else we have shipped: find a rock with a lab, land on it, find the
+                // shed, ride the lift, walk to the canteen, find a table with one of THREE regulars at it. So
+                // it implies the whole route (?secretlab=deep&land=1&floor=1) rather than adding a fourth
+                // spelling of it, and it turns ?autowalk=1 on because the last leg is a walk across a room.
+                //
+                // It does NOT force who is at the tables. The rota is seeded off the site and the watch like
+                // any other shift (#709) — a cheat that seated the Hand for you would be testing a room that
+                // does not ship. If this watch has no Hand in it, that IS the room: come back next shift, or
+                // reload for a different one.
+                string candidate = Uri.UnescapeDataString(pair["tablescene=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    tableSceneCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the top pressurised floor, where the owner put them
+                }
+            }
+            else if (pair.StartsWith("roll=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #746 dev cheat: /map?roll=hi forces every encounter band to YES, /map?roll=lo to NO-AND.
+                // Owner's own framing of it in the issue: "testing is a feature".
+                //
+                // It overrides the BAND and never the roll. The dice still cast, the modifier stack still
+                // reads truthfully on screen, and the scene that plays is the scene a captain would get —
+                // a cheat that showed you a different scene would be worse than no cheat at all.
+                string candidate = Uri.UnescapeDataString(pair["roll=".Length..]).ToLowerInvariant();
+                _rollCheat = candidate switch
+                {
+                    "hi" or "high" or "yes" => Encounter.Band.Yes,
+                    "mid" or "but" => Encounter.Band.YesBut,
+                    "lo" or "low" or "no" => Encounter.Band.NoAnd,
+                    _ => null,
+                };
+            }
             else if (pair.StartsWith("secretlab=", StringComparison.OrdinalIgnoreCase))
             {
                 // #409 dev cheat: /map?secretlab=1 spawns a plain LANDABLE rock parked in shuttle range at the
@@ -1094,6 +1137,16 @@ public partial class Map
                 ring.ParentId!, impactRailTime, spinPeriod, spinPhase);
             dockCheat = "ringside-exchange"; // clamp onto the port under threat, in reach of the rock
         }
+        if (tableSceneCheat)
+        {
+            // #746 · The last leg of ?tablescene=1 is a walk across a canteen, and clicking where you want
+            // to be is how this repo tests a room. Turned on HERE rather than in the parser branch, because
+            // ?autowalk= is read off the query before the loop runs (Core's own parser) and a flag set in
+            // two places is a flag that will disagree with itself.
+            _autoWalkCheat = true;
+            _tableSceneCheat = true;
+        }
+
         if (secretlabCheat)
         {
             // #409: append a plain landable Moon-kind rock co-orbiting the berth (the ellipse-cheat idiom),
@@ -2428,6 +2481,10 @@ public partial class Map
         // #633 · The StoryBeats CARD is modal too, and Esc has to reach it. The PLATE (the edge flash) is
         // deliberately NOT listed: it steals nothing and retires itself, so there is nothing for Esc to take.
         if (_storyCard is not null) { CloseStoryCard(); return true; }
+        // #746 · The table. Above the bar cards for the reason the whole scene turns on: LEAVING IS FREE and
+        // always available, and a keyboard cancel that could not reach the one panel whose design law is
+        // "you may always stand up" would be the game contradicting itself with a keystroke.
+        if (_table is not null) { CloseTable(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }

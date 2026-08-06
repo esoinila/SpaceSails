@@ -1743,6 +1743,99 @@
         </div>
     }
 
+    @* #746 · THE TABLE. You asked to sit; they waved you in; these are your moves.
+
+       Same overlay family as the barkeep's counter card (deck-offer-card) and the same backdrop as every
+       other modal down here — because it IS the same object: a conversation with somebody, with a row of
+       things you could say. The guard stop, when it comes, renders through this exact block with a different
+       Encounter.Scene in it.
+
+       #680's LAW, APPLIED FROM BIRTH: every outcome is rendered HERE, in the panel's own subtree — the one
+       layer the backdrop cannot blur. Not one move pulses its line while this panel is up. The only pulse in
+       the whole scene is TAKE YOUR LEAVE, and that one is correct precisely because the panel is gone. *@
+    @if (_table is { } tab)
+    {
+        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseTable)">
+            <div class="deck-offer-card table-card" @onclick:stopPropagation="true">
+                <div class="deck-offer-giver">@tab.Plate</div>
+
+                @* The seats are the reason you may sit here at all (#746/#739), so the panel says them.
+                   Core's numbers, not the renderer's — the same call that drew the top. *@
+                <div class="table-seats small">
+                    @tab.Scene.Setting — seats @tab.Seats, @(tab.Free == 1 ? "one chair free" : $"{tab.Free} chairs free")
+                </div>
+
+                @* #680 · THE ANSWER, INSIDE THE DIALOG. *@
+                @if (tab.Outcome is { Length: > 0 } saidAtTable)
+                {
+                    <div class="table-outcome">@saidAtTable</div>
+                }
+                @* §5.0's homage: the player watches the numbers add up. Shown only when dice actually
+                   decided something — a modifier stack printed under a fixed outcome would be theatre. *@
+                @if (tab.Math is { Length: > 0 } tableMath)
+                {
+                    <div class="table-math small">🎲 @tableMath</div>
+                }
+
+                <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
+
+                <div class="deck-offer-actions table-actions">
+                    @* #746 · ASKING TO SIT IS ITS OWN BEAT — the one the owner said was missing. Until it is
+                       pressed, the only two things a stranger standing at somebody's table may do are ask
+                       for the chair and walk away. *@
+                    @if (!tab.Joined)
+                    {
+                        <button type="button" class="btn btn-sm btn-warning"
+                                title="Ask for the empty chair"
+                                @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Join)">@SpaceSails.Core.CanteenTable.AskToJoin</button>
+                        <button type="button" class="btn btn-sm btn-outline-light"
+                                title="Think better of it. It costs nothing."
+                                @onclick="() => Dismiss(CloseTable)">@SpaceSails.Core.CanteenTable.LabelOf(SpaceSails.Core.CanteenTable.Leave)</button>
+                    }
+                    @foreach (SpaceSails.Core.Encounter.Move move in tab.Joined ? tab.Scene.Moves : [])
+                    {
+                        SpaceSails.Core.Encounter.Move m = move;
+                        bool open = TableMoveOnOffer(m);
+                        @* The fitter's ask is HIGHLIGHTED once the hand has waved you toward it — the
+                           NO-AND's second effect, and the only thing in this panel that is styling rather
+                           than state. *@
+                        <button type="button"
+                                class="btn btn-sm @(TableMoveIsUrged(m) ? "btn-warning" : "btn-outline-light")"
+                                disabled="@(!open)"
+                                title="@(open ? m.Label : TableMoveRefusal(m))"
+                                @onclick="() => TableMoveClicked(m.Id)">@m.Label</button>
+                    }
+                </div>
+
+                @* Putting something on the table fans the pocket open right here — a second press, never a
+                   mode, for #614's reason: a captain deciding WHAT to put down must not be one mis-click
+                   from having put something down. *@
+                @if (tab.Joined && tab.Showing)
+                {
+                    <div class="table-showables">
+                        @if (_satchel.Count == 0)
+                        {
+                            <div class="satchel-empty">Nothing in your pockets to put down.</div>
+                        }
+                        @foreach (SpaceSails.Core.Satchel.Item carried in TableShowables())
+                        {
+                            SpaceSails.Core.Satchel.Item show = carried;
+                            <button type="button" class="satchel-item table-showable"
+                                    title="Put it on the table where everyone can see it"
+                                    @onclick="() => TableShow(show)">
+                                <span class="satchel-item-name">@SatchelLabel(show)</span>
+                            </button>
+                        }
+                    </div>
+                }
+
+                <button type="button" class="view-object-close"
+                        title="Stand up. It costs nothing and it never will."
+                        @onclick="() => Dismiss(CloseTable)">Close</button>
+            </div>
+        </div>
+    }
+
     @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
        instrument it is a list of things to TRY, and every answer is definite. *@
     @if (_showSatchel)
