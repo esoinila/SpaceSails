@@ -29,6 +29,12 @@ public class BarrierInvariantTests
     /// point: one body size, one wall list.</summary>
     private const double Radius = 0.7;
 
+    /// <summary>#724 · These invariants are stated about the CAPTAIN's gait, deliberately: it is the one
+    /// with the extra move in it, so it is the harder claim. An Old One's step is the same primitive with
+    /// the doorway sidestep withheld, and that it withholds it — and withholds nothing else — is pinned in
+    /// SurfaceCollisionTests.</summary>
+    private const SurfaceCollision.Gait Boots = SurfaceCollision.Gait.Person;
+
     /// <summary>The longest step a Reever can ever take in one frame: <c>ReeverSpeed</c> 5.6 du/s against
     /// the client's <c>Math.Min(dt, 0.1)</c> clamp. It matters that this is under the body's DIAMETER
     /// (1.4 du) — a mover that cannot travel its own width in a step cannot pass through a slab without
@@ -307,7 +313,7 @@ public class BarrierInvariantTests
                 double dx = Span(rng) / FieldHalf * Radius;   // a per-frame nudge, never longer than a body
                 double dy = Span(rng) / FieldHalf * Radius;
 
-                (double nx, double ny) = SurfaceCollision.Slide(x, y, dx, dy, Radius, walls);
+                (double nx, double ny) = SurfaceCollision.Slide(x, y, dx, dy, Radius, walls, Boots);
 
                 bool xIsStone = SurfaceCollision.Blocked(x + dx, y, Radius, walls);
                 double splitX = xIsStone ? x : x + dx;
@@ -365,7 +371,7 @@ public class BarrierInvariantTests
                 }
                 double dx = Span(rng) / FieldHalf * Radius, dy = Span(rng) / FieldHalf * Radius;
 
-                (double nx, double ny) = SurfaceCollision.Slide(x, y, dx, dy, Radius, walls);
+                (double nx, double ny) = SurfaceCollision.Slide(x, y, dx, dy, Radius, walls, Boots);
 
                 Assert.False(SurfaceCollision.Blocked(nx, ny, Radius, walls),
                     $"seed {seed}: a boot slid from clear ground ({x:R},{y:R}) into stone at ({nx:R},{ny:R})");
@@ -481,7 +487,7 @@ public class BarrierInvariantTests
                 }
                 (double px, double py) = (cx, cy);
                 (cx, cy) = SurfaceCollision.Slide(
-                    cx, cy, (targetX - cx) / len * 0.35, (targetY - cy) / len * 0.35, Radius, slab);
+                    cx, cy, (targetX - cx) / len * 0.35, (targetY - cy) / len * 0.35, Radius, slab, Boots);
                 Assert.False(SurfaceCollision.Blocked(cx, cy, Radius, slab),
                     $"angle {i}: a captain approaching at {theta:R} rad ended inside the slab at ({cx:R},{cy:R})");
                 // #435's honest law, stated per frame: the span is never crossed. Reaching the far side is
@@ -547,7 +553,12 @@ public class BarrierInvariantTests
             Assert.False(SurfaceCollision.Blocked(3, 4, Radius, none));
             Assert.True(SurfaceCollision.HasLineOfSight(-9, -9, 9, 9, none));
             Assert.True(SentryBot.CanEngage(0, 0, 5, 5, none));
-            Assert.Equal((4.0, 6.0), SurfaceCollision.Slide(3, 4, 1, 2, Radius, none));
+            // #724 · open ground is open ground for the whole cast: the gait only ever decides what
+            // happens at a wall, so with no walls at all both answers must be the plain step.
+            Assert.Equal((4.0, 6.0),
+                SurfaceCollision.Slide(3, 4, 1, 2, Radius, none, SurfaceCollision.Gait.Person));
+            Assert.Equal((4.0, 6.0),
+                SurfaceCollision.Slide(3, 4, 1, 2, Radius, none, SurfaceCollision.Gait.Stagger));
             Assert.Equal(
                 ReeverChase.Step(-5, -5, 5, 5, 0.4, 1e6),
                 ReeverChase.Step(-5, -5, 5, 5, 0.4, 1e6, none, Radius));

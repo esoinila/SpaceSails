@@ -38,6 +38,23 @@ public static class ReeverChase
     /// against stone and the run must find another way round.</summary>
     private const double StallFraction = 0.25;
 
+    /// <summary>#724 · THE GAIT AN OLD ONE WALKS, named once so every step in this file passes the same
+    /// answer and none of them can drift apart.
+    ///
+    /// <para><b>Owner ruling, 2026-08-06, verbatim:</b> <i>"Lets not help reevers move in any easier if
+    /// possible, but other than that lets merge away."</i> #724 taught the collision to funnel a body a
+    /// jamb's width off a doorway INTO it, because a captain pinned on a jamb reads as a sealed door. An Old
+    /// One pinned on a jamb reads as an Old One — and the owner had already ruled on that, on #729:
+    /// <i>"let's not make them walk too sensibly... they have their own reever-mind-issues, the kind of way
+    /// they walk is nice and spooky now. How they tend to form that big mob."</i> The stagger is
+    /// load-bearing horror AND a skill surface: a captain out of rounds sheds a shambler on an obstacle
+    /// precisely because the shambler cannot get round it.</para>
+    ///
+    /// <para>The handrail below is a different thing and it stays. That is #324's fix for a chase that DIED
+    /// at a wall, and it is deliberately crude — a blind lurch to one hand, then the other, against a wall
+    /// it has already walked into. It does not find doors; it merely refuses to stop hunting.</para></summary>
+    private const SurfaceCollision.Gait Stagger = SurfaceCollision.Gait.Stagger;
+
     /// <summary>PR-324 · The wall-obeying chase. As the plain <see cref="Step(double,double,double,double,double,double)"/>,
     /// but the step is a <see cref="SurfaceCollision.Slide"/> against <paramref name="walls"/> at the given
     /// <paramref name="radius"/> — the SAME bump-and-slide the captain's own boots make — so a Reever
@@ -71,7 +88,7 @@ public static class ReeverChase
         double nx, ny;
         if (walls is { Count: > 0 })
         {
-            (nx, ny) = SurfaceCollision.Slide(reeverX, reeverY, moveX, moveY, radius, walls);
+            (nx, ny) = SurfaceCollision.Slide(reeverX, reeverY, moveX, moveY, radius, walls, Stagger);
 
             // The direct run is spent on the stone — try the wall itself as a handrail, preferred hand
             // first, then the other. Whichever moves, it takes; if neither does, it is boxed in and holds.
@@ -82,14 +99,14 @@ public static class ReeverChase
                 double perpX = -dy / dist * stepDistance * hand;
                 double perpY = dx / dist * stepDistance * hand;
 
-                (double ax, double ay) = SurfaceCollision.Slide(reeverX, reeverY, perpX, perpY, radius, walls);
+                (double ax, double ay) = SurfaceCollision.Slide(reeverX, reeverY, perpX, perpY, radius, walls, Stagger);
                 if (!Spent(reeverX, reeverY, ax, ay, stepDistance))
                 {
                     (nx, ny) = (ax, ay);
                 }
                 else
                 {
-                    (double bx, double by) = SurfaceCollision.Slide(reeverX, reeverY, -perpX, -perpY, radius, walls);
+                    (double bx, double by) = SurfaceCollision.Slide(reeverX, reeverY, -perpX, -perpY, radius, walls, Stagger);
                     if (!Spent(reeverX, reeverY, bx, by, stepDistance))
                     {
                         (nx, ny) = (bx, by);

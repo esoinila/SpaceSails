@@ -17,6 +17,11 @@ namespace SpaceSails.Core;
 /// <see cref="Slide"/> rather than a second copy of it in the client. It had been the same handful of lines
 /// typed twice since PR-324, and the first change either copy ever needed would have parted the boots from
 /// the Old Ones. The doorway fix was that change.</para>
+///
+/// <para>#724 · The boots and the shamble now DIFFER in exactly one respect, and it is a
+/// <see cref="Gait"/> handed in at the call, never a second law: a person finds a doorway they are standing
+/// beside, an Old One does not. Everything else — what counts as stone, what a graze does, what the eye can
+/// see through — remains identical for everyone, which is the whole point of there being one primitive.</para>
 /// </summary>
 public static class SurfaceCollision
 {
@@ -111,14 +116,20 @@ public static class SurfaceCollision
     /// pixels apart — so it reads as <b>the door is sealed</b>, in the one game whose locked doors are
     /// load-bearing storytelling.</para>
     ///
-    /// <para>So a step the split refuses OUTRIGHT is not thrown away: the body shuffles ALONG the face
-    /// instead, toward the opening, if one is within reach of it — <see cref="SideStepTowardTheGap"/>. That
-    /// is the same "keep the free axis" the graze already does, for the case where the free axis is the one
-    /// you did not press. It never fires on open wall (there is no gap to find, so every probe is stone and
-    /// the body holds), it never fires when a gap lies equally to both hands (nothing to prefer, and a
-    /// captain standing in a doorway pressing into its jamb must not jitter), and the shuffle is exactly as
-    /// long as the step that was refused — redirected, never faster.</para></summary>
-    public static (double X, double Y) Slide(double x, double y, double dx, double dy, double radius, IReadOnlyList<Segment>? walls)
+    /// <para>So a step the split refuses OUTRIGHT is not thrown away — <b>for a body that walks like a
+    /// person</b>: it shuffles ALONG the face instead, toward the opening, if one is within reach of it
+    /// (<see cref="SideStepTowardTheGap"/>). That is the same "keep the free axis" the graze already does,
+    /// for the case where the free axis is the one you did not press. It never fires on open wall (there is
+    /// no gap to find, so every probe is stone and the body holds), it never fires when a gap lies equally
+    /// to both hands (nothing to prefer, and a captain standing in a doorway pressing into its jamb must
+    /// not jitter), and the shuffle is exactly as long as the step that was refused — redirected, never
+    /// faster.</para>
+    ///
+    /// <para><paramref name="gait"/> is who is walking, and it is the ONLY thing that differs between the
+    /// cast. One seam, one parameter — the law is not forked, and no mover can quietly acquire a talent by
+    /// being routed through a second copy of the collision.</para></summary>
+    public static (double X, double Y) Slide(
+        double x, double y, double dx, double dy, double radius, IReadOnlyList<Segment>? walls, Gait gait)
     {
         if (walls is null || walls.Count == 0)
         {
@@ -130,7 +141,37 @@ public static class SurfaceCollision
         {
             return (nx, ny);   // an axis carried: the PR-324 graze, unchanged to the last bit
         }
-        return SideStepTowardTheGap(x, y, dx, dy, radius, walls);
+        return gait == Gait.Person
+            ? SideStepTowardTheGap(x, y, dx, dy, radius, walls)
+            : (nx, ny);        // a stagger pins on the jamb, and that is the point of it
+    }
+
+    /// <summary>#724 · WHO IS WALKING. The wall law is one law; what differs is whether the body pressed
+    /// against a jamb has the wit to find the door beside it.
+    ///
+    /// <para><b>Owner ruling, 2026-08-06, verbatim:</b> <i>"Lets not help reevers move in any easier if
+    /// possible, but other than that lets merge away."</i> — filed on #724, and of a piece with the ruling
+    /// recorded on #729: <i>"let's not make them walk too sensibly... they have their own reever-mind-issues,
+    /// the kind of way they walk is nice and spooky now. How they tend to form that big mob."</i> An Old One
+    /// blundering into a jamb and staying there is not a bug in this game; it is the horror, and it is the
+    /// dodge-skill surface a captain out of rounds plays against — you shed a shambler on an obstacle
+    /// because the shambler cannot get round it.</para>
+    ///
+    /// <para>The owner counts three gaits in the cast — <i>"Reevers stagger (failed restores), guards parade
+    /// (somebody's employees), the captain scrambles"</i> — but only two answers exist HERE, because a
+    /// parade and a scramble are both a person meeting a door. Turn discipline and route-finding belong to
+    /// the walker above; this decides one thing.</para></summary>
+    public enum Gait
+    {
+        /// <summary>Does not find the door. What the collision has always done, and what the Old Ones keep:
+        /// pressed square on stone, the step is spent and the body stays. FIRST so it is the zero value —
+        /// a mover that never says which it is gets the shamble, never the talent.</summary>
+        Stagger = 0,
+
+        /// <summary>Walks like a person: a body a jamb's width off an opening is funnelled into it. The
+        /// captain, and anything else on somebody's payroll that has to look like it belongs in a corridor.
+        /// </summary>
+        Person = 1,
     }
 
     /// <summary>#724 · How far off the mouth of an opening a body will still be funnelled into it, as a
