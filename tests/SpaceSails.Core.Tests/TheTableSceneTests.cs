@@ -327,7 +327,13 @@ public sealed class TheTableSceneTests
         // The owner's smoke test, as an assertion: take the downstairs job, politely dodge the rest. Every
         // field but the line is at its default, and it is spelled out field by field on purpose — a dodge
         // that quietly hardened a table would pass any assertion written as "the answer is not null".
-        CanteenTable.Answer dodge = CanteenTable.ScaffoldDodged();
+        //
+        // #749: asked THROUGH THE MOVE, which is the path the panel takes. A guard that asked a function
+        // nobody presses would have gone on passing while the press said nothing at all — which is exactly
+        // what it did.
+        Encounter.Move dodgeMove = CanteenTable.SceneFor(CanteenTable.Who.Fitter).Moves
+            .Single(m => m.Id == CanteenTable.DodgeScaffold);
+        CanteenTable.Answer dodge = CanteenTable.SaidPlainly(dodgeMove);
         Assert.Equal(CanteenTable.ScaffoldDodgedLine, dodge.Line);
         Assert.False(dodge.GrantsChit);
         Assert.False(dodge.UnderAnotherName);
@@ -345,6 +351,77 @@ public sealed class TheTableSceneTests
         {
             Assert.True(Encounter.CanAlwaysLeave(CanteenTable.SceneFor(who)),
                 $"the {who}'s table has grown a price on standing up.");
+        }
+    }
+
+    /// <summary>
+    /// #749 · THE OFFER'S ANSWERS DO NOT EXIST UNTIL THE OFFER HAS BEEN SPOKEN — this sitting.
+    ///
+    /// <para>Owner, having played it: <i>"a reply you can give before the sentence exists reads as menu, not
+    /// conversation."</i> Both halves are asserted, because both halves were wrong: the answers were DRAWN
+    /// before the fitter had said anything (greyed, with "Not yet." on them), and the gate they were on was
+    /// the WATCH, so sitting down a second time handed you two live buttons answering a sentence the man had
+    /// last said to somebody who then stood up and left.</para>
+    /// </summary>
+    [Fact]
+    public void THE_OFFERS_ANSWERS_AreNotOnTheTableUntilHeHasMadeTheOfferThisSitting()
+    {
+        Encounter.Scene fitter = CanteenTable.SceneFor(CanteenTable.Who.Fitter);
+        string[] answers = [CanteenTable.TakeScaffold, CanteenTable.DodgeScaffold];
+
+        IReadOnlyList<Encounter.Move> before = Encounter.OnTheTable(fitter, []);
+        foreach (string id in answers)
+        {
+            Assert.DoesNotContain(before, m => m.Id == id);
+        }
+
+        // …and NOTHING ELSE went missing with them. A requirement you have not met is a door, and a door is
+        // drawn and refused out loud (#603) — hiding those would trade one silent panel for another.
+        foreach (Encounter.Move m in fitter.Moves)
+        {
+            if (Array.IndexOf(answers, m.Id) < 0)
+            {
+                Assert.Contains(before, shown => shown.Id == m.Id);
+            }
+        }
+
+        IReadOnlyList<Encounter.Move> after = Encounter.OnTheTable(fitter, [CanteenTable.Work]);
+        foreach (string id in answers)
+        {
+            Assert.Contains(after, m => m.Id == id);
+            Encounter.Move move = fitter.Moves.Single(m => m.Id == id);
+
+            // THIS SITTING and never the watch. The room remembering that somebody once asked about work at
+            // this table is not the same fact as a man having just made you an offer, and the whole bug was
+            // one being read for the other: a purse full of credits and a watch full of history still leave
+            // an unspoken sentence unanswerable.
+            Assert.False(Encounter.Available(move, 9_999, null, madeThisWatch: [CanteenTable.Work],
+                madeThisScene: []),
+                $"{id} can be pressed on the strength of an ask made in an earlier sitting.");
+            Assert.True(Encounter.Available(move, 0, null, madeThisWatch: [], madeThisScene: [CanteenTable.Work]));
+        }
+    }
+
+    /// <summary>#749 · Every answer at this table CARRIES its line or has a resolver that does — because the
+    /// panel presses moves, not names. The dodge is the one that proved it: it spoke only because a client
+    /// author had written its id a case, and the next free move anybody adds would have been mute.</summary>
+    [Fact]
+    public void A_FIXED_OUTCOME_CARRIES_ITS_OWN_LINE_SoAnyPanelCanSayItWithoutKnowingTheMove()
+    {
+        Encounter.Move dodge = CanteenTable.SceneFor(CanteenTable.Who.Fitter).Moves
+            .Single(m => m.Id == CanteenTable.DodgeScaffold);
+        Assert.False(dodge.Rolled);
+        Assert.Equal(CanteenTable.ScaffoldDodgedLine, dodge.Says);
+        Assert.Equal(CanteenTable.ScaffoldDodgedLine, CanteenTable.SaidPlainly(dodge).Line);
+
+        // And the framework's own free exit, on every scene this file builds — the other fixed outcome, and
+        // the one that would be noticed in an afternoon if it ever went quiet.
+        foreach (CanteenTable.Who who in
+            new[] { CanteenTable.Who.Hand, CanteenTable.Who.Fitter, CanteenTable.Who.Temp })
+        {
+            Encounter.Move leave = CanteenTable.SceneFor(who).Moves
+                .Single(m => m.Id == Encounter.Leave);
+            Assert.Equal(CanteenTable.LeaveLine, CanteenTable.SaidPlainly(leave).Line);
         }
     }
 

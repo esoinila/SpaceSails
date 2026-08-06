@@ -1792,7 +1792,11 @@
                                 title="Think better of it. It costs nothing."
                                 @onclick="() => Dismiss(CloseTable)">@SpaceSails.Core.CanteenTable.LabelOf(SpaceSails.Core.CanteenTable.Leave)</button>
                     }
-                    @foreach (SpaceSails.Core.Encounter.Move move in tab.Joined ? tab.Scene.Moves : [])
+                    @* #749 · ONLY WHAT IS ON THE TABLE. A move you have not earned is still drawn and still
+                       refused out loud (#603); a move that is an ANSWER to a sentence nobody has spoken yet
+                       is not drawn at all, because you cannot decline an offer that was never made. Core's
+                       own call, so a checkpoint rendering through this block gets the same law. *@
+                    @foreach (SpaceSails.Core.Encounter.Move move in tab.Joined ? TableMovesOnTheTable() : [])
                     {
                         SpaceSails.Core.Encounter.Move m = move;
                         bool open = TableMoveOnOffer(m);

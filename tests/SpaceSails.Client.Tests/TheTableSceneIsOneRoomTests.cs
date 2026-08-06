@@ -184,6 +184,73 @@ public sealed class TheTableSceneIsOneRoomTests
             StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #749 · THE PANEL DRAWS WHAT IS ON THE TABLE, and asks Core which that is.
+    ///
+    /// <para>The other half of #749's first defect, at the end of the wire the owner was looking at. Core's
+    /// law (<c>THE_OFFERS_ANSWERS_AreNotOnTheTable…</c>) is worth nothing if the markup walks the scene's
+    /// whole move list anyway — which is precisely what it did, drawing the fitter's two answers greyed with
+    /// "Not yet." on them before he had said a word.</para>
+    /// </summary>
+    [Fact]
+    public void THE_PANEL_DrawsOnlyTheMovesThatExistYetAndAsksCoreWhichThoseAre()
+    {
+        string block = TableBlock();
+
+        // The markup asks a question; it does not compute the answer, and it no longer walks every move the
+        // scene has ever had.
+        Assert.Contains("TableMovesOnTheTable()", block, StringComparison.Ordinal);
+        Assert.DoesNotContain("tab.Scene.Moves", block, StringComparison.Ordinal);
+
+        // …and the question is Core's, over the SITTING's own memory. A client that kept its own idea of when
+        // an answer exists would hand the guard stop a different rule than the canteen (#746's whole claim).
+        string table = Source("Pages", "Map.Table.cs");
+        Assert.Contains("Encounter.OnTheTable(", table, StringComparison.Ordinal);
+        Assert.Contains("t.Said", table, StringComparison.Ordinal);
+
+        // The refusal path stays for everything that is a DOOR: a disabled control still says why (#603).
+        Assert.Contains("TableMoveRefusal(m)", block, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// #749/#680 · EVERY MOVE WITH A LINE SPEAKS IT — including the ones nobody wrote a case for.
+    ///
+    /// <para>The dodge's authored reply reached the screen only because a client author had written
+    /// <c>case CanteenTable.DodgeScaffold:</c> by hand; the dispatch had never once read
+    /// <c>Encounter.Move.Says</c>, the framework's own "the outcome is FIXED" field and the field a guard
+    /// stop's content will be written on. Everything not enumerated fell off the end of that switch in
+    /// silence, which is #680 with the volume at zero.</para>
+    ///
+    /// <para>This asserts the CHAIN, link by link, because that is as far as a source guard can carry a line
+    /// to a screen: the move carries it (Core pins that), the dispatch hands whatever it carries to the one
+    /// ending, that ending writes <c>t.Outcome</c> (the guard below), and the panel renders <c>tab.Outcome</c>
+    /// inside its own subtree (the guard above).</para>
+    /// </summary>
+    [Fact]
+    public void A_FIXED_OUTCOME_SPEAKS_BecauseTheMoveCarriesTheLineAndNotBecauseOfItsName()
+    {
+        string table = Source("Pages", "Map.Table.cs");
+
+        int at = table.IndexOf("private void TableMove(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "Map.Table.cs no longer has TableMove where this guard can read it.");
+        int end = table.IndexOf("\n    /// <summary>", at, StringComparison.Ordinal);
+        string dispatch = table[at..(end > at ? end : table.Length)];
+
+        // The dispatch reads what the move CARRIES…
+        Assert.Contains("move.Says", dispatch, StringComparison.Ordinal);
+        Assert.Contains("CanteenTable.SaidPlainly(move)", dispatch, StringComparison.Ordinal);
+
+        // …and no longer knows the dodge's name at all. One id hand-cased into speaking is one content file
+        // away from being the only one that does.
+        Assert.DoesNotContain("CanteenTable.DodgeScaffold", table, StringComparison.Ordinal);
+
+        // And it says it the only way anything is said at this table: through the one ending, in the panel.
+        int says = dispatch.IndexOf("move.Says", StringComparison.Ordinal);
+        int answered = dispatch.IndexOf("TableAnswered", says, StringComparison.Ordinal);
+        Assert.True(answered > says,
+            "the fixed-outcome path no longer routes through TableAnswered — #680's one ending.");
+    }
+
     /// <summary>One method's body, cut around an offset — the idiom #680's guards introduced. Backwards to
     /// the nearest member declaration, forwards to the next one.</summary>
     private static string MethodBodyAround(string source, int at)
@@ -218,7 +285,9 @@ public sealed class TheTableSceneIsOneRoomTests
         foreach (string call in new[]
         {
             "CanteenTable.MadeSmallTalk(", "CanteenTable.BoughtTheRound(", "CanteenTable.ScaffoldTaken(",
-            "CanteenTable.ScaffoldDodged(", "CanteenTable.HandAsksAboutWork(",
+            // #749 · The dodge is no longer named here, and that is the fix: it comes back through
+            // SaidPlainly, which is every fixed outcome in the game and not one string somebody remembered.
+            "CanteenTable.SaidPlainly(", "CanteenTable.HandAsksAboutWork(",
             "CanteenTable.FitterAsksAboutWork(", "CanteenTable.PutOnTheTable(",
         })
         {

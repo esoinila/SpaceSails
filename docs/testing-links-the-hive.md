@@ -131,6 +131,14 @@ first · `−1` your nerve is marked (read off the gauge's own rungs, so the mod
 disagree) · `−1` you already fumbled an ask here. **Nerve is the social resource too** — YES-BUT and NO-AND
 each spend a pip through the ordinary gauge, never a parallel meter.
 
+**An answer only exists once the sentence does (#749).** Sit at the fitter and look at the moves: `Take the
+scaffold job` and `Not my trade — but thanks` are **not in the panel at all** until `Ask about work` has made
+him say *"South face scaffold, four watches, pay at the end of each. Wind's free."* — **this sitting**. Stand
+up and sit back down and they are gone again; the room still remembers you asked (that is the watch's job),
+but the offer was made to somebody who then left the table. Everything you have merely not *earned* is still
+drawn and still refused out loud (`Keep talking`, greyed, says why) — the difference is the difference between
+a locked door and a question nobody asked.
+
 **Watch the refusal, because it is the busiest outcome in the scene.** `?tablescene=1&roll=lo`, then ask the
 Hand about work: the table hardens for the watch, the **fitter's** ask lights up, and the **temp's** second
 line becomes available without a round — they overheard. That is what "no, *and*" means here.

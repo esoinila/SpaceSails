@@ -379,11 +379,15 @@ public static class CanteenTable
         }
         else if (who == Who.Fitter)
         {
+            // #749 · THE ANSWERS ARE ANSWERS. Both of these are replies to one sentence — "South face
+            // scaffold, four watches, pay at the end of each" — and until he has said it there is nothing to
+            // reply to, so they are not in the panel at all. They used to be shown greyed with "Not yet." on
+            // them, which is a menu with two items you may not order (found by playing it, #749).
             moves.Add(new(Work, LabelOf(Work), Says: FitterWorkLine));
             moves.Add(new(TakeScaffold, LabelOf(TakeScaffold),
-                Encounter.Requirement.PriorMoveThisWatch, After: Work));
+                Encounter.Requirement.ReplyToPriorMove, After: Work));
             moves.Add(new(DodgeScaffold, LabelOf(DodgeScaffold),
-                Encounter.Requirement.PriorMoveThisWatch, After: Work, Says: ScaffoldDodgedLine));
+                Encounter.Requirement.ReplyToPriorMove, After: Work, Says: ScaffoldDodgedLine));
         }
 
         // Last, and free, and on every scene this file will ever build.
@@ -477,11 +481,22 @@ public static class CanteenTable
     /// <summary>Taking the scaffold job.</summary>
     public static Answer ScaffoldTaken() => new(FitterWorkLine, Note: ScaffoldTakenNote);
 
-    /// <summary>#746 · THE POLITE DODGE, and the law it carries: <b>it costs nothing and changes nothing.</b>
-    /// Every field of the answer but the line is at its default, on purpose — the owner smoke-tests this by
-    /// hand ("politely dodge the jobs that don't"), and a dodge that quietly spent a pip or hardened a table
-    /// would fail that test without anybody noticing for a month.</summary>
-    public static Answer ScaffoldDodged() => new(ScaffoldDodgedLine);
+    /// <summary>
+    /// #749 · THE ANSWER TO A MOVE WHOSE OUTCOME IS FIXED: what it says, and nothing else.
+    ///
+    /// <para>The framework's <see cref="Encounter.Move.Says"/> — "the outcome is FIXED, and here is the line
+    /// it is fixed to" — made into this file's <see cref="Answer"/>. It exists so a panel can hand back a
+    /// reply it has never heard of: the client that presses a move looks at what the move CARRIES rather than
+    /// at a list of ids somebody remembered to write down, which is how the polite dodge came to be the only
+    /// free move in the game that spoke.</para>
+    ///
+    /// <para><b>THE POLITE DODGE IS THIS, and the law it carries is the default of every other field:
+    /// it costs nothing and changes nothing.</b> The owner smoke-tests it by hand ("politely dodge the jobs
+    /// that don't"), and a dodge that quietly spent a pip or hardened a table would fail that test without
+    /// anybody noticing for a month — so there is nowhere for a cost to be added except by hand, here, to
+    /// every fixed outcome in the game at once.</para>
+    /// </summary>
+    public static Answer SaidPlainly(Encounter.Move move) => new(move.Says ?? "");
 
     /// <summary>Standing up. Free, and it files nothing.</summary>
     public static Answer TookTheirLeave() => new(LeaveLine);

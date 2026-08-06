@@ -112,6 +112,15 @@ public partial class Map
         /// answer to it rather than a caption that was always there. A panel that opened straight into the
         /// moves would have skipped the only part of this scene the issue is named after.</para></summary>
         public bool Joined { get; set; }
+
+        /// <summary>#749 · What has been said in THIS sitting, by move id.
+        ///
+        /// <para>Deliberately beside <c>ex.TableMoves</c> rather than instead of it, because they are two
+        /// different facts and the bug was reading one for the other. The excursion's set is what the ROOM
+        /// remembers for the watch — a round stood, an ask fumbled, a file put down — and it must outlive
+        /// standing up. This one is the CONVERSATION, and it dies with the panel: you cannot answer an offer
+        /// that was made before you left the table, because the man made it to somebody who then stood up.</para></summary>
+        public HashSet<string> Said { get; } = [];
     }
 
     /// <summary>What a table's watch-scoped state is keyed on. An ORDINAL and never a position: two doubles
@@ -244,7 +253,10 @@ public partial class Map
                 made.Add(m.Id);
             }
         }
-        return Encounter.Available(move, _credits, _satchel, made);
+        // #749 · Both sets, and they are not the same set. The watch's is what the room remembers; the
+        // sitting's is what has actually been SAID in front of you, which is the only thing an answer can be
+        // an answer to.
+        return Encounter.Available(move, _credits, _satchel, made, t.Said);
     }
 
     /// <summary>Why a move is not on offer. #603's founding law one layer up: a control that does nothing
@@ -269,6 +281,13 @@ public partial class Map
     //
     // Three one-liners so the razor never has to hold a SurfaceExcursion or a TableTalk in a local. Same
     // discipline the rest of this page uses: the markup asks questions, it does not compute answers.
+
+    /// <summary>#749 · The moves that are ON THE TABLE — the ones that exist to be pressed at all. Core's
+    /// own call, so the day a checkpoint renders through this same block it cannot have a different idea of
+    /// when an answer exists. Everything the captain has simply not earned is still HERE and still refused
+    /// out loud (#603); what is missing is only what nobody has said yet.</summary>
+    private IReadOnlyList<Encounter.Move> TableMovesOnTheTable() =>
+        _table is { } t ? Encounter.OnTheTable(t.Scene, t.Said) : [];
 
     /// <summary>Is this move on offer?</summary>
     private bool TableMoveOnOffer(Encounter.Move move) =>
@@ -367,18 +386,24 @@ public partial class Map
                 TableAnswered(ex, t, moveId, CanteenTable.ScaffoldTaken());
                 return;
 
-            case CanteenTable.DodgeScaffold:
-                // THE DODGE IS FREE. No coin, no pip, no hardening, no flag — the answer Core hands back has
-                // every field at its default and this branch adds nothing to it. The owner smoke-tests this
-                // by hand; a dodge that quietly cost something would pass every test in the repo.
-                TableAnswered(ex, t, moveId, CanteenTable.ScaffoldDodged());
-                return;
-
             case CanteenTable.Work:
                 TableAsksAboutWork(ex, t, move);
                 return;
 
             default:
+                // #749/#680 · A FIXED OUTCOME IS STILL AN ANSWER, and it speaks because the move CARRIES a
+                // line — never because somebody wrote its id a case down here.
+                //
+                // This is the path the dodge falls down, and it is the whole of the fix: the switch above
+                // used to enumerate ids and drop everything else off the end in silence, so
+                // Encounter.Move.Says — the framework's own "the outcome is FIXED" field, the one a guard
+                // stop's content will be written on — reached the screen for exactly the moves a client
+                // author had remembered. THE DODGE IS STILL FREE: the answer built here has every field but
+                // the line at its default, which is the nothing the owner smoke-tests by hand.
+                if (move.Says is { Length: > 0 })
+                {
+                    TableAnswered(ex, t, moveId, CanteenTable.SaidPlainly(move));
+                }
                 return;
         }
     }
@@ -450,6 +475,9 @@ public partial class Map
     private void TableAnswered(SurfaceExcursion ex, TableTalk t, string moveId, CanteenTable.Answer said)
     {
         ex.TableMoves.Add(MoveKey(t, moveId));
+        // #749 · …and the conversation's own memory, which is what an ANSWER is allowed to answer. The room
+        // keeps the first for the watch; this one stands up when you do.
+        t.Said.Add(moveId);
 
         if (said.GrantsChit)
         {
