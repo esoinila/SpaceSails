@@ -50,8 +50,9 @@ what playing found, and only after being proven to fail on the broken behaviour.
 
 - **Base branch is `our-own-ship-has-compartments`, NOT `main`.** All PRs target it. CI (`build-and-test`,
   `ui-gate`) runs on every PR — the workflow has a bare `pull_request:` trigger with no branch filter.
-- Full suite as of this writing: **~2540 Core + ~21 client.** Run it from the repo root with
-  `dotnet test -c Debug`. It takes ~22 minutes.
+- Full suite as of **2026-08-05 evening**: **3085 Core + 362 client + 2 ui-gate**, all green (CI run
+  `31033776630`). Run it from the repo root with `dotnet test -c Debug`. **Core alone is ~18 minutes** — budget
+  for it and start it early; the client suite is ~3.5.
 - The owner playtests from `D:\repo12\spaceSails` with a dev server on **5073**. **Do not touch that working
   tree.** Work in your own worktree under the scratchpad and serve on your own port.
 - `dotnet run` (NOT `watch`) — kill and restart the process per build.
@@ -59,13 +60,31 @@ what playing found, and only after being proven to fail on the broken behaviour.
   `origin/our-own-ship-has-compartments` before branching; three sessions running have had a PR conflict from
   skipping this.
 
-### Landed today (the Hive)
+### Landed 2026-08-02 (the Hive becomes a facility)
 
 The secret lab became a facility: sealed rooms, the visualiser lab, authority cards, an underground tracker
 mode, a band nobody listed, a lift panel that goes UP, department livery and signage, an on-foot satchel with
 TRY, lab ammunition with penetration, an underground death card, per-paper titles, and item reveal cards.
 
 **These have all been played by the owner. They are the least likely place to find something new.**
+
+### Landed 2026-08-05 (the Hive becomes INHABITED) — and none of it has been walked
+
+Six features in two publishes, the second of which (`61e1864`) put all of them on the live build:
+
+| issue | what |
+| --- | --- |
+| **#707** | a bar on the top floor, a wall of cubicles, rank readable in plumbing |
+| **#708** | forward-facing suit headlights, and floors that are genuinely dark |
+| **#701** | one would-be-empty room in six holds a book that should not be there |
+| **#677** | the pour stops at a line — a band nobody *dug*, and the fourth world under it |
+| **#709** | ten strangers in the top-floor bar, and a cork board where their working day is written down |
+| **#721** | the canteen keeps a shift rota; a test-links file read off the real generator |
+
+**Unlike the block above, NOT ONE of these has been played by a person.** That inverts the usual advice: this is
+now the *most* likely place to find something new. Its own plan is
+[`QAHandoff-TheHive.md`](QAHandoff-TheHive.md), with the by-design-not-a-bug list that will otherwise generate
+false findings, and the links are in [`testing-links-the-hive.md`](testing-links-the-hive.md).
 
 ---
 
@@ -127,9 +146,13 @@ satchel, `T` plants a sentry, `G` drops the chest.
 ```
 /map?kaamos=N        the KAAMOS plotline (features/KaamosPlotline.md)
 /map?kaamos=bounce   its FRONT DOOR — the freight agent whose docket the board keeps returning (#635)
+  ⚠ berth-less seed: bare, it stops at the save picker. Pair it — /map?kaamos=bounce&ashore=1&start=the-tilt
+  puts you IN a bar with Gilt-Eye holding the docket (verified 2026-08-06). Same for ?nebula=all.
 /map?kaamos=hq&land=1  the head office under the ice: the route already ridden, boots on the ground (#411)
   …&floor=23          B23 THE WINTERING HALL · &floor=24 THE BERTH OFFICE · &floor=12 THE STANDING ORDER
-/map?nebula=all      the nebula arc (features/NebulaArc.md)
+  (2026-08-06: this quick start used to lithobrake the parked ship into Enceladus — fixed by #744; if a
+  death card fires on boot here again, that is a regression of the LoiterClock law, not weather)
+/map?nebula=all      the nebula arc (features/NebulaArc.md) — berth-less seed, see ?kaamos=bounce note
 /map?bond=1          the bond
 /map?converge=1      arc convergence
 /map?deflection=1    a live deflection gig
@@ -145,6 +168,7 @@ nearly impossible to reach on purpose.
 
 | cheat | what it does |
 | --- | --- |
+| `?autowalk=1` | **click the deck and the captain WALKS there** (#738, 2026-08-06) — A\* over the same walls the boots obey, same air/nerve/threat bill, WASD cancels, honest refusal when no path. THE tool for playtesting floors: "walk to the locker, press E" is two actions instead of forty. |
 | `?floor=N` | ride straight down to B*N* in a Hive; clamped to the site's own bottom |
 | `?air=N` | start the excursion with *N* seconds of tank instead of a full one |
 | `?collectors=N` | force a repo boat to follow you down and land *N* seconds in, whatever the heat gauge says — the scene is deliberately rare and mid-mission, i.e. *"nearly impossible to playtest on purpose"* |
@@ -174,6 +198,7 @@ it.*
 
 | priority | area | why it is suspect | issues |
 | --- | --- | --- | --- |
+| **0** | **The inhabited Hive — the canteen, the board, the plate, the halls, the dark** | six features shipped 2026-08-05 and **nobody has walked any of them.** By this table's own metric (payoff ≈ time shipped unwalked) it outranks everything below it. Has its own plan: [`QAHandoff-TheHive.md`](QAHandoff-TheHive.md) — **read its by-design list first or you will file false findings** | #707, #708, #701, #677, #709, #721 |
 | **1** | **Boardable derelicts, sectioned hulls, the shuttle hop** | large, geometric, and the exact profile of bug class 1 and 4. The Hive's worst bug (35 floors of sealed doorways) was this same generator family. | #488, #531, #533, #537 |
 | **2** | **The black-ops sweep + keys** | shipped, never played end to end; "hide while somebody else's team sweeps" is stateful and stateful things drift. | #538, #535 |
 | **3** | **Q-ships and the tells** | the tells must be readable BEFORE committing — a tell you can only confirm after the trap is not a tell. | #534 |
@@ -201,8 +226,24 @@ it.*
 These are filed as decisions issues, not build tickets. **Do not build them; sharpen them.** If playing
 surfaces the answer, write the answer into the issue with the evidence.
 
-- **#618 — who is guarding the Hive.** Blocks #602 (numpad calls security) and #605 (the badge). A disguise
-  is worthless without somebody to fool, and nobody has decided whether anyone is still down there.
+> **#618 is no longer on this list.** The owner ruled its three open questions on 2026-08-05 — skeleton staff,
+> guards on the bottom floors summoned by *noise*, and *talking* as what blows the cover. It is now an unbuilt
+> **build** ticket, not an open decision. Full text on the issue; summary in
+> [`QAHandoff-TheHive.md`](QAHandoff-TheHive.md) §6.
+
+- **#719 — a second way out of the lab, and THE ORDERING IS THE RULING.** The stair ships *before* anything is
+  allowed to stop the lift. One radio call ending every escape is a switch, not a threat, and #600 is the scar
+  that says reachable is not returnable. **This gates #618 and #718**, both of which assume an escape that does
+  not exist yet. Not a decision so much as a dependency somebody has to respect.
+- **#715 — illegal heat, owed per ENTITY** and never a shared cheaters list. Open: does it propagate across one
+  entity's own sites, and who are the entities?
+- **#718 — the response ladder.** Hired if the cover holds, rolled back if it does not; the backup as
+  inventory; recognition as the real threshold; the suit as anonymity; the technician who remembers your
+  restore. Open: the trigger, how far back a rollback goes, and whether paper defends against it.
+- **#720 — MINIMUM PRODUCTION BATCH**, the ending where the captain becomes stock. Needs art and the tightest
+  canon rope in the project. Open: trigger, rarity, and whether it is terminal.
+- **#711 — onion covers**, each layer real rather than a lie, and the analyst who peels them by *reading* the
+  record rather than seeing you.
 - **#619 — the refuge that failed.** One derelict refuge as the inference-horror pair to #608.
 - **#620 — admire and discuss.** The collar has a card; nobody can talk about it. Decide whether discussing
   changes anything or is voice only.
@@ -230,8 +271,13 @@ and what the screen said. A finding without a reproduction is a rumour.
 
 ### Two traps specific to this environment
 
-- **An MCP-driven browser tab is `document.hidden`** — rAF is throttled and timers are clamped, so `?land=1`
-  hangs mid-descent and any timing number measured there is worthless. You cannot drive the game that way.
-  Test by reasoning against the code and by targeted harnesses, or ask the owner to foreground a tab.
+- **An MCP-driven browser tab is hidden only when its window is** *(corrected 2026-08-06 — a full day was
+  played through MCP)*: with the Chrome window visible (even partially), `?land=1` completes, the on-foot sim
+  runs, and whole floors can be walked — pair it with `?autowalk=1` and clicks replace key-spam. The freeze
+  cases are a **fully occluded window** and a **locked Windows session** (both stop rAF dead and imitate a
+  game hang — diagnose with a rAF-vs-setTimeout probe and `Get-Process LogonUI` before filing anything).
+  Timing/perf numbers from an automated tab remain worthless either way; boot pegs the main thread 25–60 s
+  per URL, so retry screenshots rather than concluding a crash.
 - **Do not run the full suite or a build while the owner is playtesting** — it fights for the same file locks
-  (`Stop-Process -Name testhost -Force` clears a jam).
+  (`Stop-Process -Name testhost -Force` clears a jam — but NEVER a blanket `Stop-Process` on `dotnet`: on
+  2026-08-06 that killed the dev server twice and another crew's suite runs mid-flight).

@@ -8,10 +8,20 @@ namespace SpaceSails.Core;
 /// exactly as it stops a boot, and a slab of stone between hunter and quarry breaks the chase.
 ///
 /// <para>Crude by design — the deck-plan's own idiom, no pathfinding library and no raycasting engine.
-/// <see cref="Slide"/> is axis-separated bump-and-slide (the very move <c>DeckPlan.Move</c> makes for the
-/// captain); <see cref="HasLineOfSight"/> is an exact segment-vs-segment test of the sightline against
-/// the wall segments. Both take the SAME <see cref="Segment"/> list the renderer draws, so there is one
-/// source of truth and a Core test can pin it.</para>
+/// <see cref="Slide"/> is axis-separated bump-and-slide, with #724's sidestep at a doorway;
+/// <see cref="HasLineOfSight"/> is an exact segment-vs-segment test of the sightline against the wall
+/// segments. Both take the SAME <see cref="Segment"/> list the renderer draws, so there is one source of
+/// truth and a Core test can pin it.</para>
+///
+/// <para>#724 · And <c>DeckPlan.Move</c> — the captain's own step — is now literally a call to
+/// <see cref="Slide"/> rather than a second copy of it in the client. It had been the same handful of lines
+/// typed twice since PR-324, and the first change either copy ever needed would have parted the boots from
+/// the Old Ones. The doorway fix was that change.</para>
+///
+/// <para>#724 · The boots and the shamble now DIFFER in exactly one respect, and it is a
+/// <see cref="Gait"/> handed in at the call, never a second law: a person finds a doorway they are standing
+/// beside, an Old One does not. Everything else — what counts as stone, what a graze does, what the eye can
+/// see through — remains identical for everyone, which is the whole point of there being one primitive.</para>
 /// </summary>
 public static class SurfaceCollision
 {
@@ -94,8 +104,32 @@ public static class SurfaceCollision
     /// <summary>Bump-and-slide a body from (<paramref name="x"/>, <paramref name="y"/>) by
     /// (<paramref name="dx"/>, <paramref name="dy"/>), stopping at walls but sliding along them — the
     /// exact axis-separated move <c>DeckPlan.Move</c> makes for the avatar: try X, then try Y from the
-    /// X-resolved spot, so a diagonal into a wall grazes along it instead of stopping dead.</summary>
-    public static (double X, double Y) Slide(double x, double y, double dx, double dy, double radius, IReadOnlyList<Segment>? walls)
+    /// X-resolved spot, so a diagonal into a wall grazes along it instead of stopping dead.
+    ///
+    /// <para>#724 · AND A DOORWAY IS NOT A WALL. The axis split above is a slide only for a step that HAS a
+    /// free axis. A captain walking straight down a corridor at a door has none — the whole step is the
+    /// blocked axis — and every doorway in the Hive is approached down a corridor at a right angle, so this
+    /// is the most-travelled collision in the building. The owner walked into it: <i>"I pressed D thirty-five
+    /// times against the wall with zero movement, and the screen gives no hint the door is half a step
+    /// north."</i> The cut is 6.4 du of clear opening and a body is 1.4 du across, so nothing was narrow;
+    /// the body was simply a hair off the mouth, and on the deck-plan zoom a jamb and a doorway are a few
+    /// pixels apart — so it reads as <b>the door is sealed</b>, in the one game whose locked doors are
+    /// load-bearing storytelling.</para>
+    ///
+    /// <para>So a step the split refuses OUTRIGHT is not thrown away — <b>for a body that walks like a
+    /// person</b>: it shuffles ALONG the face instead, toward the opening, if one is within reach of it
+    /// (<see cref="SideStepTowardTheGap"/>). That is the same "keep the free axis" the graze already does,
+    /// for the case where the free axis is the one you did not press. It never fires on open wall (there is
+    /// no gap to find, so every probe is stone and the body holds), it never fires when a gap lies equally
+    /// to both hands (nothing to prefer, and a captain standing in a doorway pressing into its jamb must
+    /// not jitter), and the shuffle is exactly as long as the step that was refused — redirected, never
+    /// faster.</para>
+    ///
+    /// <para><paramref name="gait"/> is who is walking, and it is the ONLY thing that differs between the
+    /// cast. One seam, one parameter — the law is not forked, and no mover can quietly acquire a talent by
+    /// being routed through a second copy of the collision.</para></summary>
+    public static (double X, double Y) Slide(
+        double x, double y, double dx, double dy, double radius, IReadOnlyList<Segment>? walls, Gait gait)
     {
         if (walls is null || walls.Count == 0)
         {
@@ -103,7 +137,94 @@ public static class SurfaceCollision
         }
         double nx = Blocked(x + dx, y, radius, walls) ? x : x + dx;
         double ny = Blocked(nx, y + dy, radius, walls) ? y : y + dy;
-        return (nx, ny);
+        if (nx != x || ny != y)
+        {
+            return (nx, ny);   // an axis carried: the PR-324 graze, unchanged to the last bit
+        }
+        return gait == Gait.Person
+            ? SideStepTowardTheGap(x, y, dx, dy, radius, walls)
+            : (nx, ny);        // a stagger pins on the jamb, and that is the point of it
+    }
+
+    /// <summary>#724 · WHO IS WALKING. The wall law is one law; what differs is whether the body pressed
+    /// against a jamb has the wit to find the door beside it.
+    ///
+    /// <para><b>Owner ruling, 2026-08-06, verbatim:</b> <i>"Lets not help reevers move in any easier if
+    /// possible, but other than that lets merge away."</i> — filed on #724, and of a piece with the ruling
+    /// recorded on #729: <i>"let's not make them walk too sensibly... they have their own reever-mind-issues,
+    /// the kind of way they walk is nice and spooky now. How they tend to form that big mob."</i> An Old One
+    /// blundering into a jamb and staying there is not a bug in this game; it is the horror, and it is the
+    /// dodge-skill surface a captain out of rounds plays against — you shed a shambler on an obstacle
+    /// because the shambler cannot get round it.</para>
+    ///
+    /// <para>The owner counts three gaits in the cast — <i>"Reevers stagger (failed restores), guards parade
+    /// (somebody's employees), the captain scrambles"</i> — but only two answers exist HERE, because a
+    /// parade and a scramble are both a person meeting a door. Turn discipline and route-finding belong to
+    /// the walker above; this decides one thing.</para></summary>
+    public enum Gait
+    {
+        /// <summary>Does not find the door. What the collision has always done, and what the Old Ones keep:
+        /// pressed square on stone, the step is spent and the body stays. FIRST so it is the zero value —
+        /// a mover that never says which it is gets the shamble, never the talent.</summary>
+        Stagger = 0,
+
+        /// <summary>Walks like a person: a body a jamb's width off an opening is funnelled into it. The
+        /// captain, and anything else on somebody's payroll that has to look like it belongs in a corridor.
+        /// </summary>
+        Person = 1,
+    }
+
+    /// <summary>#724 · How far off the mouth of an opening a body will still be funnelled into it, as a
+    /// multiple of its own radius. TWO radii — one body-width — which is the width the owner's own report
+    /// names (<i>"if your y is a body-width off the doorway's cut"</i>) and the only width with a meaning:
+    /// at any offset inside it some part of the body is still over the opening, so the opening is a thing
+    /// the captain is visibly standing in front of rather than beside.</summary>
+    private const double GapReachInRadii = 2.0;
+
+    /// <summary>How finely that reach is sounded. Eight looks along a face the body is already pressed
+    /// against, and only on a frame that was going to be a dead stop anyway.</summary>
+    private const int GapProbes = 8;
+
+    /// <summary>#724 · The refused step, spent sideways. Sounds across the face the body is pressed into —
+    /// perpendicular to the step, both hands, out to one body-width — and takes the FIRST offset at which
+    /// the way ahead opens. Only the end of a wall can answer: along open stone every probe is the same
+    /// stone, so a wall stays a wall and walking into it still gets you nothing.</summary>
+    private static (double X, double Y) SideStepTowardTheGap(
+        double x, double y, double dx, double dy, double radius, IReadOnlyList<Segment> walls)
+    {
+        double step = System.Math.Sqrt((dx * dx) + (dy * dy));
+        if (step < 1e-9)
+        {
+            return (x, y);   // asked to stand still, and standing still it is
+        }
+
+        // The two hands: perpendicular to the way the body was trying to go.
+        double hx = -dy / step, hy = dx / step;
+        double ax = x + dx, ay = y + dy;   // the spot the stone refused
+        double reach = radius * GapReachInRadii;
+
+        for (int i = 1; i <= GapProbes; i++)
+        {
+            double off = reach * i / GapProbes;
+            bool left = !Blocked(ax + (hx * off), ay + (hy * off), radius, walls);
+            bool right = !Blocked(ax - (hx * off), ay - (hy * off), radius, walls);
+            if (left == right)
+            {
+                // Both stone: sound further out. Both OPEN: the body is between two ways through with
+                // nothing to choose between them (it is standing IN a doorway, pressing on the jamb) —
+                // and a mover that picked one would flicker. It holds.
+                if (left)
+                {
+                    return (x, y);
+                }
+                continue;
+            }
+
+            double sign = left ? 1 : -1;
+            double tx = x + (hx * step * sign), ty = y + (hy * step * sign);
+            return Blocked(tx, ty, radius, walls) ? (x, y) : (tx, ty);
+        }
+        return (x, y);   // open wall as far as a body-width either way: there is no door here
     }
 
     /// <summary>Crude grid line-of-sight: can a watcher at (<paramref name="ax"/>, <paramref name="ay"/>)

@@ -656,18 +656,63 @@ public partial class Map
         PayCompletedQuests();
     }
 
-    // The shuttle round-trip's clock cost: advance the sim clock and re-stamp the loitering ship at the
-    // new time (frozen in place — the shuttle moved, not the mothership). Re-pin to the dock if berthed.
+    // The shuttle round-trip's clock cost. #733: this used to re-stamp the loitering ship at the new time
+    // and leave her exactly where she was — "frozen in place; the shuttle moved, not the mothership" — and
+    // that freeze is what flew the HQ quick start into Enceladus, seconds after the ground card, on every
+    // single boot. The whole argument is in LoiterClock; the short version is that "in place" is a claim
+    // about the SHIP's frame while every position in this game is written in the Sun's, so a clock that
+    // moved while she did not teleported her backwards along her own rail and let the moon run her down.
     private void AdvanceShuttleClock(double travelSeconds)
     {
-        double newT = SimTime + Math.Max(0.0, travelSeconds);
-        _ship = new ShipState(_ship.Position, _ship.Velocity, newT, _ship.Charge);
-        SimTime = newT;
-        if (_dockedHavenId is not null)
+        if (AdvanceLoiterClock(travelSeconds))
         {
-            HoldAtDock();
+            return; // the crossing ended in a strike — the freeze-frame owns the moment, nothing else runs
         }
         RunCacheDiscoveryWatch();
+    }
+
+    /// <summary>
+    /// #733 · The clock cost of something the captain is doing that is NOT flying the ship — the shuttle's
+    /// round trip, a night in the bunk — paid by the hull as well as by the calendar. Returns true when the
+    /// coast ended in a surface strike (by then the busted freeze-frame is already staged).
+    ///
+    /// <para>A CLAMPED ship keeps the old shape, and always should have: the berth owns her position, so
+    /// the clock moves and <see cref="HoldAtDock"/> re-pins her onto the station's drift — which is exactly
+    /// what <c>OnTick</c>'s docked branch does every frame. That branch is why a docked loiter was never
+    /// buggy, and it is the whole reason <c>?secretlab=deep&amp;land=1</c> survived where the head office
+    /// did not: one cheat leaves you clamped, the other lets you go.</para>
+    ///
+    /// <para>A FREE-FLYING ship now flies the cost, ballistically, through the shared Core law. If her
+    /// conic really does reach a surface in that time the strike is handed to <see cref="TriggerImpact"/>
+    /// exactly as the live loop would have handed it over — never tunnelled, and never invented.</para>
+    /// </summary>
+    private bool AdvanceLoiterClock(double seconds)
+    {
+        double cost = Math.Max(0.0, seconds);
+
+        if (_dockedHavenId is not null || _simulator is null || _ephemeris is null || cost <= 0.0)
+        {
+            double stamped = SimTime + cost;
+            _ship = new ShipState(_ship.Position, _ship.Velocity, stamped, _ship.Charge);
+            SimTime = stamped;
+            if (_dockedHavenId is not null)
+            {
+                HoldAtDock();
+            }
+            return false;
+        }
+
+        LoiterClock.Coast coast = LoiterClock.Advance(_simulator, _ephemeris, _ship, cost);
+        _ship = coast.Ship;
+        SimTime = _ship.SimTime;
+
+        if (coast.Struck is { } hit && _busted is null)
+        {
+            TriggerImpact(hit);
+            return true;
+        }
+
+        return false;
     }
 
     private void ToggleDock()

@@ -1890,6 +1890,39 @@ against the fixture console *and* every seated person; the canon grep. Client:
 Core's coordinates unmodified. The pairing guard was watched go **red** at
 `Not found: "◈ A PERSON WHO IS NOT IN THE ROOM"` — a notice pinned by somebody who is not in the building.)*
 
+13.23 **The shovel is something the GROUND has, not something the key does** (#723).
+
+> *"The shovel rings off bedrock a foot down — too hard to dig here. Try another square."* — read on B1 ·
+> ADMINISTRATION, pressurised, 150 m under the regolith, at the canteen's west face.
+
+Bare-handed `E` on a Hive corridor ran the beach-comber probe: the animation, the dug-square mark on the
+rockcrete, and that sentence. **Both halves lie.** There is no bedrock under a floor somebody invoiced — and
+*"try another square"* is an **invitation**, telling the captain that some square down here *does* dig when
+nothing was ever buried on any square of any corridor of the building. The kit's own first-time card had
+already drawn the line: the shovel is for *"out on the open regolith."*
+
+**Why it happened is the thing that makes the Hive cheap.** A floor reuses the surface's own coordinate
+envelope — *it is not beside the field, it is under it* — so the spine corridor's (x, y) is also a perfectly
+good square of open regolith, and a diggability test made of `x` and `y` alone had no way to tell them apart.
+`IsDiggableGround` takes the **floor** now: a spot is a place on a level, never a bare pair of numbers.
+
+**Gated on the ground, not on the keypress** (the owner's option A over the cheaper "fix the sentence"). The
+verb does not exist underground, so nothing enters the shovel path at all: no probe, no mark, no line. Empty
+hands and nothing in reach falls through to the same honest nothing `E` gives on any other deck, and the
+too-hard line stays exactly where bedrock genuinely is. One fact — `MoonSurface.ShovelWorksOnThisFloor`, which
+asks the level and nothing else — answers the `[E]` handler, the standing prompt, the key bar (which had been
+shouting *"⛏ E — BURY THE CHEST HERE"* over a corridor) and the tracker caption that taught the press in the
+first place, so none of the four can drift out of step with the other three. Same shape as §13.6: underground
+is a fact the instrument asks about, not a mode somebody remembers to check.
+
+*(Enforced: `TheShovelStaysOnTheSurfaceTests` — every spot the captain presses `E` on, on every floor of every
+clandestine site in the system, plus a full standable flood of the report's own pressurised B1. Each test
+carries its **control**: the same coordinates asked at level 0, where they must dig. Without it the guard
+would pass just as happily on a world whose corridors had wandered outside the field rim and were being
+refused for the wrong reason — the fifth bug class, a guard handed a world that cannot tell pass from fail.
+Watched go **red** on the old behaviour at `18747 of 19311 squares on a pressurised poured floor take a
+shovel`.)*
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

@@ -438,16 +438,29 @@ public sealed class DeckPlan
 
     // --- Collision ---
 
-    public (double X, double Y) Move(double x, double y, double dx, double dy)
-    {
-        double nx = Collides(x + dx, y) ? x : x + dx;
-        double ny = Collides(nx, y + dy) ? y : y + dy;
-        return (nx, ny);
-    }
+    /// <summary>The captain's step, and it is now literally the Core one.
+    ///
+    /// <para>#724 · This method used to RE-TYPE <see cref="SurfaceCollision.Slide"/> line for line — the same
+    /// axis-separated bump-and-slide, spelled out a second time in the client. Two copies of a law are one
+    /// law and one bug waiting: the boots and the Old Ones would have parted company the moment either copy
+    /// was touched, and the doorway fix is exactly such a touch. So the duplicate is gone and the avatar
+    /// walks by the same primitive every other mover on this ground already obeyed.</para>
+    ///
+    /// <para>#724 · <see cref="SurfaceCollision.Gait.Person"/> is stated here, ONCE, and it is the only
+    /// place in the game the captain's body is stepped. Everything they do on foot arrives through this
+    /// method — the WASD walk, first person's tank controls, and (#738) every sub-step of a clicked AutoWalk
+    /// route — so the funnel is theirs on all three without any of the three having to know it exists. The
+    /// Old Ones step through the same primitive and hand it <see cref="SurfaceCollision.Gait.Stagger"/>, per
+    /// the owner's ruling. The difference between the boots and the shamble is this one word.</para>
+    /// </summary>
+    public (double X, double Y) Move(double x, double y, double dx, double dy) =>
+        SurfaceCollision.Slide(x, y, dx, dy, AvatarRadius, CollisionField, SurfaceCollision.Gait.Person);
 
-    // PR-324 · The avatar's own collision is now the shared Core check (SurfaceCollision), the very same
-    // one the surface Reevers obey — one wall law for everyone on the walked ground.
-    private bool Collides(double x, double y) => SurfaceCollision.Blocked(x, y, AvatarRadius, CollisionField);
+    /// <summary>PR-324 · The avatar's own collision is the shared Core check (<see cref="SurfaceCollision"/>),
+    /// the very same one the surface Reevers obey — one wall law for everyone on the walked ground. Public
+    /// since #724 folded <see cref="Move"/> into Core: this is the only thing left in the client that names
+    /// the captain's body against the deck's stone, and the deck audit asks it by name.</summary>
+    public bool Collides(double x, double y) => SurfaceCollision.Blocked(x, y, AvatarRadius, CollisionField);
 
     public static double DistanceToSegment(double px, double py, double x1, double y1, double x2, double y2) =>
         SurfaceCollision.DistanceToSegment(px, py, x1, y1, x2, y2);
