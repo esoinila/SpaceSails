@@ -380,6 +380,13 @@ public partial class Map
         DeathCause? deathCheat = null; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
         var revealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         var uri = new Uri(Navigation.Uri);
+
+        // #729 · /map?autowalk=1 — click the deck on a surface excursion or a Hive floor and the captain
+        // WALKS there, at walking speed, through the ordinary collision. Read through Core's own parser
+        // rather than another branch in the loop below, so the flag the testing guide documents, the flag
+        // the gate reads and the flag the tests assert on are one fact instead of three spellings of it.
+        _autoWalkCheat = AutoWalk.EnabledIn(uri.Query);
+
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
         {
             if (pair.StartsWith("scenario=", StringComparison.OrdinalIgnoreCase))
@@ -2806,6 +2813,22 @@ public partial class Map
 
     private void OnPointerDown(PointerEventArgs e)
     {
+        // #729 · ON THE WALKED DECK, A CLICK IS A PLACE ON THE FLOOR. The canvas underneath is the same
+        // element the ecliptic uses, so without this the picker below would hit-test the click against
+        // planets and contacts that are not on screen at all and open a body menu over a moon floor. Gated
+        // on the cheat, so with ?autowalk=1 off every pointer path in the game is byte-for-byte what it was.
+        if (AutoWalkAvailable)
+        {
+            _suppressClickMenu = false; // no map menu can be open over a moon floor — never eat the first click
+            _dragging = true;
+            _dragMoved = false;
+            _lastPointerX = e.ClientX;
+            _lastPointerY = e.ClientY;
+            _downClientX = e.ClientX;
+            _downClientY = e.ClientY;
+            return;
+        }
+
         // A click that only dismisses an open menu must not immediately open the next one.
         _suppressClickMenu = _bodyMenuBody is not null || _shipMenuId is not null
             || _corridorMenuLane is not null || _skyMenuWorld is not null || _pickMenu is not null;
@@ -2898,6 +2921,15 @@ public partial class Map
         // a genuine click (no pan movement, and not the click that dismissed another menu).
         bool click = _dragging && !_dragMoved && !_suppressClickMenu;
         _dragging = false;
+
+        // #729 · …and a genuine click on that floor is a walk order. A DRAG is still a pan of the deck plan
+        // (OnPointerMove), so the captain can shove the view around without setting off across the room.
+        if (click && AutoWalkAvailable)
+        {
+            ClickToWalkAt(e.OffsetX, e.OffsetY);
+            return;
+        }
+
         if (!click || _activeDesk != ShipDesk.Sensors || _deckMode)
         {
             return;
