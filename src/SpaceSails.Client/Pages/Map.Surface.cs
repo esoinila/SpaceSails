@@ -699,6 +699,14 @@ public partial class Map
         // point: the second time you step out down there it is just a corridor, and it should be.
         public bool HiveUnlistedSeen { get; set; }
 
+        // #725 · Whether this excursion has already had THE PLATE card, and whether it has already had THE
+        // STAFF MESS. Two flags in the DEAD AIR family and for its reason: the first time is the find and
+        // every time after is a lobby and a canteen, which is exactly what they should become. Excursion-
+        // scoped like every one of their siblings above — a captain who lands again is walking in for the
+        // first time again, and that is the same ruling the vacuum warning already makes.
+        public bool HiveUnlistedPlateShown { get; set; }
+        public bool HiveStaffMessShown { get; set; }
+
         // #677 · Whether this excursion has already crossed the seam, and already stepped out into the
         // halls. Two flags and not one, because they are two different events on the same ride and either
         // can happen without the other on a later trip — a captain who rode straight down on a card they
@@ -2217,6 +2225,28 @@ public partial class Map
                     UndergroundComplex.KindOn(ex.Stop.Body.Id, level)),
                 "\U0001F573");
             ApplyNerveShock(9.0, "a building with floors it does not count");
+        }
+
+        // ── #725 · …AND THE SIGN THAT SAYS IT, WHICH HAD NO FRAME ──────────────────────────────────────
+        //
+        // Owner's audit: "are we giving enough attention to plot-significant finds? They should have a
+        // Gen-AI image and their own dialog by our standards." The corrected plate is the whole arc's
+        // arithmetic in one object and it was a wall stencil — missable at deck-plan zoom by a player who
+        // has just walked past the reveal, with the game none the wiser.
+        //
+        // WHICH FLOOR IS CORE'S ANSWER (IsUnlistedLobby, off #694's own plate law) rather than a band sum
+        // done again in a client. The card is per-excursion once, exactly like DEAD AIR above it, and it
+        // takes the _viewObject slot uncontested: the top of every band holds pressure, so the air card can
+        // never want the same frame, and the establishing card was spent floors ago.
+        if (UndergroundComplex.IsUnlistedLobby(ex.Stop.Body.Id, level) && !ex.HiveUnlistedPlateShown)
+        {
+            ex.HiveUnlistedPlateShown = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.UnlistedLobbyLabel,
+                UndergroundComplex.UnlistedLobbyArtUrl,
+                UndergroundComplex.UnlistedLobbyCard);
+            RendererInterop.PlayCue("reveal");
         }
 
         // \u2500\u2500 #609 \u00b7 WHETHER YOU CAN BREATHE HERE IS A CARD, NOT A TOAST \u2500\u2500
@@ -3830,6 +3860,66 @@ public partial class Map
         }
     }
 
+    // ── #725 · THE ROOM NOBODY EATS IN, NOTICED ON THE WAY IN ────────────────────────────────────────────
+    //
+    // Owner's audit: "are we giving enough attention to plot-significant finds? They should have a Gen-AI
+    // image and their own dialog by our standards." The staff mess was map furniture — a plate, four machines
+    // and three tables — and a captain who walked through it without pressing E got nothing at all.
+    //
+    // A ROOM BEAT AND NOT A FLOOR BEAT, which is the one thing that makes it different from every other card
+    // down here. The floor it sits on is an ordinary floor; the find is a door and what is behind it. So this
+    // is the refuge idiom (poll the position, ask Core whether the room holds you) rather than the lift
+    // idiom, and the containment law is UndergroundComplex's own — Amenity.Contains delegates to RefugeHolds,
+    // so the box the card fires in is the box the walls are drawn on.
+    //
+    // WHICH ROOM COMES FROM CORE: the floor plan's own StaffCanteen amenity, which CarveAmenities only ever
+    // makes on StaffCanteenFloor. Nothing here re-asks which floor that is — a second answer to a question
+    // Core already owns is the table at the top of UndergroundComplex.cs.
+    //
+    // Once per excursion, like DEAD AIR: the first time is the find, and after that it is a canteen.
+    //
+    // AND IT IS ASKED ONCE PER FLOOR, not once per frame. UndergroundComplex.Build lays a whole floor out;
+    // running it inside the step loop would be a generator call every tick for as long as the captain is
+    // underground, which is the cost the renderer already pays exactly once. Cached against (body, floor)
+    // because Build is pure and deterministic per that pair — the same reason a floor is the same floor
+    // every visit.
+    private (string Body, int Floor)? _messRoomFor;
+    private UndergroundComplex.Amenity? _messRoom;
+
+    private void CheckStaffMessUnderfoot()
+    {
+        if (_surface is not { } ex || ex.Floor >= 0 || ex.HiveStaffMessShown || _viewObject is not null)
+        {
+            return;
+        }
+
+        if (_messRoomFor != (ex.Stop.Body.Id, ex.Floor))
+        {
+            _messRoomFor = (ex.Stop.Body.Id, ex.Floor);
+            _messRoom = null;
+            foreach (UndergroundComplex.Amenity a in
+                UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Amenities)
+            {
+                if (a.Use == UndergroundComplex.Comfort.StaffCanteen)
+                {
+                    _messRoom = a;
+                    break;
+                }
+            }
+        }
+
+        if (_messRoom is { } mess && mess.Contains(_avatarX, _avatarY))
+        {
+            ex.HiveStaffMessShown = true;
+            _viewObject = new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
+                UndergroundComplex.StaffMessLabel,
+                UndergroundComplex.StaffMessArtUrl,
+                UndergroundComplex.StaffMessCard);
+            RendererInterop.PlayCue("reveal");
+        }
+    }
+
     // ── #709 · STOPPING AT SOMEBODY'S TABLE ──────────────────────────────────────────────────────────────
     //
     // Owner: "we should have people in the bar... we have cover story."
@@ -4821,6 +4911,7 @@ public partial class Map
         AdvanceFire(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds));         // #524: and the fire eats
         AdvanceVacuumExposure(Math.Clamp(dtRealSeconds, 0.0, MaxSurfaceStepSeconds)); // #488: vacuum is ground
         CheckVentPayoffUnderfoot();   // #488: the room shows what the vacuum left — when you walk into it
+        CheckStaffMessUnderfoot();    // #725: …and the one room down here that is a find rather than a route
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon

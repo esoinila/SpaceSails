@@ -66,6 +66,11 @@
     <!-- #695 — the five office faces of an authority card, and the #528 original kept as the fallback, so
          EveryOfficeIssuesItsOwnPaintedFace can hold each office's ArtUrl to a file that is actually there. -->
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\the-authority-card*.jpg" Link="artsource\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- #725 — the two silent finds. Both were filed as beats with no picture at all, so a card wired over
+         a JPG that is not in the folder would leave them exactly as silent as they started and the
+         onerror-hide would make sure nobody found out. TheTwoSilentFindsArePainted holds each to a file. -->
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\the-plate.jpg" Link="artsource\the-plate.jpg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\SpaceSails.Client\wwwroot\art\the-staff-mess.jpg" Link="artsource\the-staff-mess.jpg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
