@@ -306,19 +306,21 @@ public partial class Map
         if (moveId == CanteenTable.Leave)
         {
             CanteenTable.Answer bye = CanteenTable.TookTheirLeave();
-            _table.Outcome = bye.Line;
             CloseTable();
-            ShowPulseMessage(bye.Line);   // the panel is going away — the pulse is the only surface left
+            // The ONE pulse in this scene, and it is correct precisely because the panel has just gone:
+            // there is no dialog subtree left to say it in. #680 is about which surface the player is
+            // looking at, never about pulses being wrong.
+            ShowPulseMessage(bye.Line);
             return;
         }
 
-        // Asking for the chair. No roll, no cost, and the wave-in is the ANSWER to it — said inside the
-        // panel like every other answer at this table (#680).
+        // Asking for the chair. No roll, no cost — and the wave-in is the ANSWER to it, said inside the
+        // panel like every other answer at this table (#680). Nothing durable changed, so nothing is saved:
+        // a captain who reloads is standing at the table again, which is where they were.
         if (moveId == CanteenTable.Join)
         {
             t.Joined = true;
             t.Outcome = t.Scene.Opening;
-            RequestVaultSave();
             return;
         }
 
