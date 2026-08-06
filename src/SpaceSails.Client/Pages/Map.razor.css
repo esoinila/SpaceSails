@@ -4613,3 +4613,72 @@
     z-index: calc(var(--z-desks-popups) + 30);
     opacity: 0.92;
 }
+
+/* ── #746 · THE TABLE SCENE ───────────────────────────────────────────────────────────────────────────
+   The barkeep card's family (deck-offer-card), with a cooler edge: a company canteen is not a bar, and the
+   warm amber of a berth's counter would say the wrong thing about a room where everybody is on somebody
+   else's clock. Wider than an offer card because a table has a row of MOVES rather than one pitch. */
+.table-card {
+    border-color: rgba(160, 200, 220, 0.45);
+    box-shadow: 0 0.5rem 2rem rgba(40, 90, 120, 0.2), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+    max-width: min(40rem, 94vw);
+    text-align: left;
+
+    /* It wears the offer card's SKIN but not its anchoring. The offer card pins itself 9rem down the deck;
+       this one sits inside the modal backdrop's own flex centring, and it can GROW — the satchel fans open
+       inside it. A panel with a hard `top` runs off the bottom of a laptop screen the moment it does, which
+       is how a control becomes unreachable without a single test noticing. */
+    position: static;
+    transform: none;
+    max-height: 100%;
+    overflow-y: auto;
+    cursor: auto;
+}
+
+.table-card .deck-offer-giver {
+    color: #bfe0f0;
+}
+
+.table-seats {
+    color: #8fa4b8;
+    margin-bottom: 0.6rem;
+}
+
+/* #680 · THE ANSWER, INSIDE THE DIALOG. Styled like the satchel's own outcome row for the reason #680's
+   guard states out loud: an unstyled answer in a styled dialog is a bug report waiting to be filed. */
+.table-outcome {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-left: 3px solid rgba(200, 170, 120, 0.55);
+    border-radius: 0.25rem;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.6rem;
+    white-space: pre-wrap;
+}
+
+/* The dice, spelled out. Quiet — the sum is evidence, not the event. */
+.table-math {
+    color: #9fb4c8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    margin-bottom: 0.6rem;
+}
+
+/* The moves wrap: five or six of them will not sit on one line in a 40rem card, and a row that overflows
+   its own card is how a control becomes unreachable on a laptop. */
+.table-actions {
+    flex-wrap: wrap;
+}
+
+.table-showables {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.7rem;
+}
+
+.table-showable {
+    width: 100%;
+    text-align: left;
+}

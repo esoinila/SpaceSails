@@ -93,6 +93,72 @@ So testing it needs *time to pass*, not a page refresh:
 - The shift is **frozen when the floor is drawn** and every later question reads that same number, so the
   figures drawn and the person the game talks about can never come apart.
 
+## 1a · ADDED (#746) — sitting down at a table, and the job that goes downstairs
+
+```
+/map?tablescene=1                      the whole route, booted — B1, in the canteen, autowalk on
+/map?tablescene=1&roll=lo              …and every rolled ask refused, so the scene MOVES on demand
+/map?tablescene=1&roll=hi              …and every rolled ask lands
+```
+
+`?tablescene=1` implies `?secretlab=deep&land=1&floor=1`, sets the captain down **inside** the upper canteen
+rather than at the lift head, and turns `?autowalk=1` on — the last leg of this scene is a walk across a room,
+and clicking where you want to be is how this repo tests one.
+
+**What to look for.** The round tops now carry **SEAT COUNTS** — 2, 4 or 6, seeded off the building and never
+off the shift, so a table does not re-furnish itself between watches. Walk to a top with somebody at it and
+press **[E]**: if they are one of the three wired regulars and a chair is free, you **ask to join** and the
+table panel opens with their wave-in line. Everybody else in #709's cast keeps their one-breath tap, which is
+deliberate — a canteen where every stranger has a conversation tree is a corridor with quest-givers in it.
+
+The panel's moves are **small talk · buy the round (12 cr) · put something on the table · ask about work ·
+take your leave**. Every answer is rendered **inside the panel** (#680's law: the pulse HUD sits under a modal
+backdrop's blur, and this scene is nothing but text). The one line that is pulsed is *taking your leave*, and
+that is correct precisely because the panel is gone by then.
+
+**The three of them are three answers:**
+
+| who | what they are |
+| --- | --- |
+| `◈ A HAND WHO HAS BEEN HERE LONGER THAN THE CONTRACT SAID` | **the door.** Their ask-about-work is the only rolled move at this table |
+| `◈ A FITTER, OFF A MAINTENANCE CONTRACT` | **the dead end.** Honest scaffold work, never rolled, and the polite dodge (`Not my trade — but thanks`) costs *nothing* |
+| `◈ AN AGENCY TEMP, FIRST WEEK` | **no job, but the house's ways.** Their second line needs a round bought first, and knowing it is the +1 on the Hand's ask |
+
+**The roll** is `DiceRule`, keyed (site, floor, counterpart, move, attempt), through three Fail-Forward bands —
+**YES** / **YES, BUT** / **NO — AND THE SCENE MOVES.** Modifiers are situational and named on screen: `+1` a
+round bought at this table this watch · `+1` the right paper on the table · `+1` the house's ways learned
+first · `−1` your nerve is marked (read off the gauge's own rungs, so the modifier and the readout can never
+disagree) · `−1` you already fumbled an ask here. **Nerve is the social resource too** — YES-BUT and NO-AND
+each spend a pip through the ordinary gauge, never a parallel meter.
+
+**Watch the refusal, because it is the busiest outcome in the scene.** `?tablescene=1&roll=lo`, then ask the
+Hand about work: the table hardens for the watch, the **fitter's** ask lights up, and the **temp's** second
+line becomes available without a round — they overheard. That is what "no, *and*" means here.
+
+**Putting something on the table** (any satchel item) is a conversational move:
+
+- a **file on somebody** is LOUD — ask-about-work closes at that table for the watch and the field book keeps
+  the slip. (`&floor=1` plus a file picked up on a deeper floor, or just carry one down.)
+- the **SHAFT 4** authority card (band 3 or deeper) makes the Hand go quiet and auto-resolves their ask as
+  YES-BUT. Fear, not friendship.
+- anything else made of paper is weather on another moon.
+
+**The payoff is a wallet card.** A successful ask grants the **DAY-LABOUR CHIT** (`🎟 DAY-LABOUR CHIT ·
+CARRIERS & CONTRACTORS · CAGE CREW · SHOW AT THE CAGE`), and on a YES-BUT it is written in the book under a
+name the Hand picked — the same paper, a different **fact**, and the fact rides the chit's own identity in the
+satchel rather than a flag beside it (#718 will pull that thread). The chit **is** the cover state Core
+answers about (`CanteenTable.Cover`), which is what #618's guards will read.
+
+**One visible payoff today**, in the room the pass exists for:
+
+```
+/map?tablescene=1  → get the chit → &floor=17 (the staff mess, #743)
+```
+
+Walk into B17's mess carrying the chit and you get a one-time beat and a pip back — **additive**, never a
+replacement: #743's own room card still fires first, and the chit beat lands on the tick after you close it,
+so nothing is ever said under an open card.
+
 ## 2 · The board, and whose notice is whose (#709)
 
 ```
@@ -238,6 +304,7 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `&book=N` | force catalog entry N of the odd books (#701) |
 | `&death=suffocated` | boot into the death you want to read |
 | `&credits=50000` | price anything without grinding for it |
+| `&roll=hi|lo` | force the encounter band at a table (#746) |
 
 ## What has NO link yet, because it is not built
 

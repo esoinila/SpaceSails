@@ -150,28 +150,29 @@ public static class HiveInterior
         {
             consoles.Add(new(DeckPlan.ConsoleKind.HiveAmenity, (float)a.X, (float)a.Y, a.Fixture));
             labels.Add(((float)a.X, (float)(a.Y - 7.6), a.Plate));
-            foreach ((double tx, double ty) in a.Tables)
-            {
-                tables.Add(((float)tx, (float)ty));
-            }
-
-            // ── #709 · AND, ON B1 ONLY, SOMEBODY SITTING AT THEM ──────────────────────────────────────
+            // ── #709/#746 · THE TOPS, AND — ON B1 ONLY — SOMEBODY SITTING AT THEM ─────────────────────
             //
             // Owner: "we should have people in the bar... we have cover story" and, in the same breath,
-            // "for now let's keep the people in B1."
+            // "for now let's keep the people in B1." Then, #746: "tables should seat 2/4/more, not all
+            // pairs" — which is only worth having if somebody can ask whether a seat is FREE.
             //
-            // The Hive's first people. WHO and WHETHER are both Core's (CanteenRegulars.Sitting) — the
-            // B1 law is a fact about the building, and a renderer that decided it here would put the
-            // owner's ruling somewhere no test can reach. This asks and draws, exactly as the facility
-            // plate does two hundred lines down (#694).
+            // ONE CALL FOR BOTH. This used to walk a.Tables for the round tops and then separately ask
+            // CanteenRegulars.Sitting who was at them, which is two sources for one fact — the exact shape
+            // #709's own docs warn about (the drawn room and the pressed room disagreeing). Core now
+            // answers with the tops, their seat counts and their occupancy in one list, off the same
+            // frozen watch, and the [E] press asks that same function. The renderer decides nothing.
             //
             // They stand ON the table's own spot rather than beside it, because the table IS the seat as
             // far as the deck is concerned: Core placed those round tops (#707) and a console offset by a
             // hand-typed du would be one more caller doing geometry about furniture it does not own.
-            foreach (CanteenRegulars.Seated who in CanteenRegulars.Sitting(bodyId, level, a, canteenWatch))
+            foreach (CanteenRegulars.TableSeat top in CanteenRegulars.Tables(bodyId, level, a, canteenWatch))
             {
-                consoles.Add(new(
-                    DeckPlan.ConsoleKind.HiveRegular, (float)who.X, (float)who.Y, who.Plate));
+                tables.Add(((float)top.X, (float)top.Y));
+                if (top.Plate is { } plate)
+                {
+                    consoles.Add(new(
+                        DeckPlan.ConsoleKind.HiveRegular, (float)top.X, (float)top.Y, plate));
+                }
             }
 
             // ── #709 · AND THE CORK BOARD ON THE WALL ─────────────────────────────────────────────────

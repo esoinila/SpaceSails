@@ -63,6 +63,18 @@ public static class Satchel
         /// is carried because a captain who has seen it is a different captain, and because the day somebody
         /// finally wants to talk about what is down here, this is the thing on the table.</para></summary>
         Relic,
+
+        /// <summary>#746 · A CHIT. Somebody wrote you onto a crew list, and this is the piece of paper that
+        /// says so to a door.
+        ///
+        /// <para>Appended, never inserted, for <see cref="Relic"/>'s reason one line up: the ordinal is what a
+        /// saved satchel stores.</para>
+        ///
+        /// <para>It is deliberately not an <see cref="Authority"/>. An authority is countersigned by an office
+        /// and runs a shaft; a chit is a foreman's word, and the whole point of it is that it works on the
+        /// strength of somebody vouching for you rather than on the strength of a stamp. They ride the same
+        /// flat compartment because a wallet is where a person keeps both.</para></summary>
+        Chit,
     }
 
     /// <summary>One thing in the pocket.</summary>
@@ -152,7 +164,10 @@ public static class Satchel
     /// flat.</summary>
     public static Compartment CompartmentOf(Kind kind) => kind switch
     {
-        Kind.Authority => Compartment.Wallet,
+        // #746 · A chit is a wallet card. Flat, thin, and the wallet never fills — the same ruling #688 made
+        // for authorities, and for the same reason: the paper that gets you through a door is never the thing
+        // an arithmetic about BULK should be allowed to refuse.
+        Kind.Authority or Kind.Chit => Compartment.Wallet,
         Kind.Paper or Kind.Dirt => Compartment.Sleeve,
         _ => Compartment.Pocket,
     };
