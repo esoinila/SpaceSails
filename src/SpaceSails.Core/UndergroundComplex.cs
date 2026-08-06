@@ -3136,8 +3136,14 @@ public static class UndergroundComplex
     /// <paramref name="Refusal"/>: a sealed row says what is missing, and this one says what is HELD, before
     /// the ride rather than after it. Core decides it so the panel can never promise a reading the gate will
     /// not give (#600's rule: Core decides, the razor draws).</param>
+    /// <param name="OpenedByChit">#752 · WHICH paper is doing it. Set only when the thing in the wallet that
+    /// opens this gate is the day-labour chit rather than the countersignature card, because the two are read
+    /// by the gate in completely different voices — one is an office still obeying an office nobody can find,
+    /// the other is a tired man reading a timesheet. The row draws the same either way; the ARRIVAL does not,
+    /// and the ride carries the stop with it, so the discrimination belongs on the stop.</param>
     public readonly record struct LiftStop(
-        int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal, string? OpenedBy = null);
+        int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal, string? OpenedBy = null,
+        bool OpenedByChit = false);
 
     /// <summary>
     /// #600 · What this car's panel offers, standing on <paramref name="level"/>.
@@ -3156,9 +3162,18 @@ public static class UndergroundComplex
     /// not admit to, the button is not there at all unless the card is already held. A refusal that names a
     /// shaft would announce the secret in the one sentence it cannot survive — so on the last listed floor
     /// the panel looks exactly like the panel at the true bottom of an ordinary site.</para>
+    ///
+    /// <para><b>#752 · the chit.</b> The gate off the FIRST band — the cage, the one the day crew rides —
+    /// also reads the day-labour chit, if the captain went and got hired for it. See the block inside.</para>
     /// </summary>
+    /// <param name="carried">#752 · The satchel itself, so the panel can ask <see cref="CanteenTable.Cover"/>
+    /// whether the captain has a reason to be in the cage. The COVER state is the chit's own PRESENCE (#746)
+    /// and is read here rather than re-derived: a second spelling of "has cover" is the thing that drifts
+    /// from what the player is carrying. Null is simply an empty satchel, so every older caller is unchanged.
+    /// </param>
     public static IReadOnlyList<LiftStop> LiftPanel(
-        string bodyId, int level, IReadOnlyCollection<string> heldCardIds)
+        string bodyId, int level, IReadOnlyCollection<string> heldCardIds,
+        IReadOnlyList<Satchel.Item>? carried = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(heldCardIds);
@@ -3202,18 +3217,47 @@ public static class UndergroundComplex
             return stops;
         }
 
+        // ── #752 · AND THE OTHER PAPER, WHICH IS NOT A CLEARANCE AT ALL ─────────────────────────────────
+        //
+        // Owner, playing #748 to its promised end: the Hand hands over the chit with "take this to the lift
+        // and don't be clever near the counter", and the lift had never heard of it. The sentence the job was
+        // hired to finish stopped one door short of the door it was about.
+        //
+        // Two papers, two doors, one gate. The countersignature card is a CLEARANCE — an office that stopped
+        // existing still vouching for whoever holds it — and it keeps every band it ever opened, untouched
+        // below. The chit is COVER: a name on the cage crew's list, worth exactly the trip the cage makes.
+        // So it opens the gate off the FIRST band and nothing else. That is not caution about scope, it is
+        // what the paper says: a day-labour chit is a reason to be in the cage, never clearance to the rest
+        // of a building whose gates answer to an office nobody can find.
+        //
+        // And it never breaks the two silences above, because it cannot reach them: this runs after the
+        // undeclared band has already returned empty-handed. A chit is a job somebody wrote you down for,
+        // and nobody writes day labour onto a floor the building denies having.
+        bool chitOpens = !holdsIt
+            && BandOf(Math.Min(level, -1)) == 0
+            && CanteenTable.Cover.Held(carried);
+        bool opens = holdsIt || chitOpens;
+
         stops.Add(new(
             BandTop(next),
-            holdsIt ? "↓ THE OTHER SHAFT" : "↓ THE OTHER SHAFT — SEALED",
+            opens ? "↓ THE OTHER SHAFT" : "↓ THE OTHER SHAFT — SEALED",
             HoldsPressure(bodyId, BandTop(next)),
             IsCurrent: false,
-            holdsIt ? null : "This car does not go lower. The shaft that does is on this floor, and its " +
+            opens ? null : "This car does not go lower. The shaft that does is on this floor, and its " +
                 "gate wants an authority this building has not issued in a long time.",
             // #689 · …and when the wallet has the answer in it, the row says so BEFORE the ride. Owner, after
             // playing the whole loop: "It was locked until I got it ... there was no story point about it
             // being needed or used." Never at the head office: there is no gate there to read anything, and
             // that absence is the rank difference (#411) rather than an oversight worth papering over.
-            carded && !IsHeadOffice(bodyId) ? CardTitle(gateCard) : null));
+            //
+            // #752 · …or the chit, in its own printed words, wearing the glyph the satchel row wears. The
+            // card wins where both are carried: it is the deeper permission, it opens this gate and every
+            // other one, and a captain who found it should be told about THAT paper. One row per floor —
+            // the panel is a set of buttons and a button that appeared twice would be a building with two
+            // of the same door in it.
+            carded && !IsHeadOffice(bodyId) ? CardTitle(gateCard)
+                : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}" : null,
+            OpenedByChit: chitOpens));
         return stops;
     }
 
@@ -3236,15 +3280,22 @@ public static class UndergroundComplex
     /// caller</i> returned early on a refusal, and a rule that is right because of where it is called from
     /// is a rule waiting for its second caller.</item>
     /// </list></summary>
+    /// <param name="carried">#752 · The satchel, so the panel asked here is the panel the captain pressed —
+    /// a chit row exists only on a panel that was shown the wallet, and a rule that reads a DIFFERENT panel
+    /// than the one that was pressed is the seam this function was written to close.</param>
     public static AuthorityCard? GateOpenedByRidingTo(
-        string bodyId, int fromLevel, int toLevel, IReadOnlyCollection<string> heldCardIds)
+        string bodyId, int fromLevel, int toLevel, IReadOnlyCollection<string> heldCardIds,
+        IReadOnlyList<Satchel.Item>? carried = null)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(heldCardIds);
 
-        foreach (LiftStop stop in LiftPanel(bodyId, fromLevel, heldCardIds))
+        foreach (LiftStop stop in LiftPanel(bodyId, fromLevel, heldCardIds, carried))
         {
-            if (stop.Level == toLevel && stop.OpenedBy is not null)
+            // #752 · …and it is a CARD that is being read, not the day-labour chit. Both papers put a title
+            // in OpenedBy, and only one of them is a countersignature; a ride the chit opened must not
+            // narrate an office vouching for the captain, because no office did.
+            if (stop.Level == toLevel && stop.OpenedBy is not null && !stop.OpenedByChit)
             {
                 return new AuthorityCard(bodyId, BandOf(toLevel));
             }

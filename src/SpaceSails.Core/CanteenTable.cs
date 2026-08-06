@@ -336,6 +336,28 @@ public static class CanteenTable
     /// meal, not a bunk — and it is the one relief this building has ever offered. FLAGGED for tuning.</summary>
     public const int MessBeatPips = 1;
 
+    // ── #752 · THE GATE, WITH THE CHIT IN YOUR HAND ───────────────────────────────────────────────────
+    //
+    // The Hand says "take this to the lift and don't be clever near the counter", and until now the lift had
+    // never heard of it: the sealed row answered beautifully and never once looked at the wallet, so the
+    // sentence the job was hired to finish stopped one door short of the door it was about.
+    //
+    // These are the two sentences that finish it — one said when the doors open, one written in the book —
+    // and the tone is the whole point. The countersignature card is answered by an office that outlived its
+    // owners and is still vouching for whoever holds the paper. The chit is answered by a man doing a shift.
+
+    /// <summary>#752 · What the cage's gate makes of a day-labour chit, said when the doors open on the band
+    /// below. Nothing salutes and nothing recognises you: the paperwork simply balances.</summary>
+    public const string ChitGateLine =
+        "The gate reads the chit the way a tired man reads a timesheet: date, crew, done. The cage takes " +
+        "you down as freight takes the cage — on somebody's account, no questions carried.";
+
+    /// <summary>#752 · And what the field book makes of it. Not "the gate opened" — the book keeps what the
+    /// paper turned out to be worth, which is the only reading of it that matters on the floor it just put
+    /// you on.</summary>
+    public const string ChitGateGist =
+        "The chit works. Downstairs is a place you are now paid to be.";
+
     // ── THE SCENE ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>What the setting is called, for <see cref="Encounter.Scene.Setting"/>. The room's own sign

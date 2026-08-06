@@ -157,7 +157,7 @@ name the Hand picked — the same paper, a different **fact**, and the fact ride
 satchel rather than a flag beside it (#718 will pull that thread). The chit **is** the cover state Core
 answers about (`CanteenTable.Cover`), which is what #618's guards will read.
 
-**One visible payoff today**, in the room the pass exists for:
+**A second payoff**, in the room the pass exists for:
 
 ```
 /map?tablescene=1  → get the chit → &floor=17 (the staff mess, #743)
@@ -166,6 +166,38 @@ answers about (`CanteenTable.Cover`), which is what #618's guards will read.
 Walk into B17's mess carrying the chit and you get a one-time beat and a pip back — **additive**, never a
 replacement: #743's own room card still fires first, and the chit beat lands on the tick after you close it,
 so nothing is ever said under an open card.
+
+**…and the ending the scene was hired for (#752): take it to the lift.** The Hand's YES line says *"take this
+to the lift and don't be clever near the counter"*, so the walk finishes at the car:
+
+```
+/map?tablescene=1&roll=hi  → sit at the Hand → small talk → buy the round → ask about work
+                           → walk back to the lift → [E] → the OTHER SHAFT row
+```
+
+With the chit in the wallet the sealed row **changes in place**, into #692's affordance and not a new kind of
+button: `↓ THE OTHER SHAFT` · `🎫 opens for you` · `🎟 DAY-LABOUR CHIT · CARRIERS & CONTRACTORS · CAGE CREW ·
+SHOW AT THE CAGE — the gate will read it`. Press it and the car goes down to **the cage band's top floor**
+— B5 on this rock, and derived from Core's own band arithmetic (`BandTop(NextShaftBelow(…))`) rather than
+typed anywhere, so a site shaped differently gets its own answer. When the doors open the panel's own voice
+says it, once, last of the arrival's lines:
+
+> The gate reads the chit the way a tired man reads a timesheet: date, crew, done. The cage takes you down as
+> freight takes the cage — on somebody's account, no questions carried.
+
+…and the field book keeps the reading: *"The chit works. Downstairs is a place you are now paid to be."*
+
+**What must NOT change, and is worth checking on the same boot:**
+
+- **without** the chit (`&roll=lo`, or just walk to the lift first) the row is `↓ THE OTHER SHAFT — SEALED` ·
+  `🔒 sealed`, and pressing it still answers, in the panel, with the refusal it has given since #590.
+- the chit opens **that** gate and no other: ride to B5, press the row for the shaft below it, and it is
+  sealed exactly as it always was. A day-labour chit is cover, not a clearance.
+- the band nobody listed stays unlisted. Carrying the chit down to B20 does not put a button on the panel —
+  #592's silence is not a lock the chit can pick.
+- the countersignature card still wins the row it shares: carry the card and the row names the **card**, and
+  the arrival is still the card's own beat and its 3.0 nerve shock. No shock on the chit's — a gate that
+  reads a timesheet and waves you through is the least frightening thing this building has done.
 
 ## 2 · The board, and whose notice is whose (#709)
 
