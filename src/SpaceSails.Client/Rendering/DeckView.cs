@@ -312,6 +312,39 @@ public sealed class DeckView
     private string[] _botCounters = System.Array.Empty<string>();
     private double[] _botCounterChanged = System.Array.Empty<double>();
 
+    /// <summary>
+    /// #729 · WHERE THE FLOOR IS ON THE GLASS — the deck view's own projection, named and handed out.
+    ///
+    /// <para>Click-to-walk has to answer the inverse question (this pixel is WHICH square metre of deck?),
+    /// and the one way to get that wrong is to write the arithmetic down twice. This project has already
+    /// paid for that class three times in one afternoon — unaudited client geometry literals, drawn one way
+    /// and reasoned about another — so <see cref="Draw"/> reads its scale and origin from here, and so does
+    /// the click. A pen and a pointer that disagree about where the wall is would send the captain walking
+    /// at something they never pointed at.</para>
+    /// </summary>
+    public readonly record struct Placement(float Scale, float Ox, float Oy)
+    {
+        /// <summary>Canvas pixel → deck units. The exact inverse of the <c>P()</c> the renderer draws with:
+        /// deck +Y is UP on screen, which is the sign that makes this worth having in one place.</summary>
+        public (double X, double Y) ToDeck(double px, double py) =>
+            ((px - Ox) / Scale, (Oy - py) / Scale);
+    }
+
+    /// <summary>The projection this plan is drawn under at this size, with this pan. A whole-plan tactical
+    /// frame (bare ship / lone room) centres on the plan origin; a docked complex — or a moon field, or a
+    /// hive floor — is far too long for the fixed frame, so it scrolls to keep the avatar centred
+    /// (FollowCam). Manual pan still nudges either.</summary>
+    public static Placement PlacementFor(
+        DeckPlan plan, int widthPx, int heightPx, double avatarX, double avatarY, double panX, double panY)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        float scale = Math.Min(widthPx / 64f, heightPx / 28f);
+        return new Placement(
+            scale,
+            plan.FollowCam ? widthPx / 2f - ((float)avatarX * scale) + (float)panX : (widthPx / 2f) + (float)panX,
+            plan.FollowCam ? heightPx / 2f + ((float)avatarY * scale) + (float)panY : (heightPx / 2f) + (float)panY);
+    }
+
     public DeckView(IRenderer renderer)
     {
         _canvas = renderer;
@@ -349,13 +382,8 @@ public sealed class DeckView
         _renderer = _canvas;    // never inherit a mask from a frame that threw
         _renderer.BeginFrame(widthPx, heightPx, state.Dark ? Pitch : Floor);
 
-        float scale = Math.Min(widthPx / 64f, heightPx / 28f);
-
-        // A whole-plan tactical frame (bare ship / lone room) centres on the plan origin; a docked
-        // complex is far too long for the fixed frame, so it scrolls to keep the avatar centred
-        // (FollowCam). Manual pan still nudges either.
-        float ox = plan.FollowCam ? widthPx / 2f - (float)state.AvatarX * scale + (float)panX : widthPx / 2f + (float)panX;
-        float oy = plan.FollowCam ? heightPx / 2f + (float)state.AvatarY * scale + (float)panY : heightPx / 2f + (float)panY;
+        Placement place = PlacementFor(plan, widthPx, heightPx, state.AvatarX, state.AvatarY, panX, panY);
+        float scale = place.Scale, ox = place.Ox, oy = place.Oy;
         (float X, float Y) P(double dx, double dy) => (ox + (float)dx * scale, oy - (float)dy * scale);
 
         // #708 · ON A DARK FLOOR THE PEN GOES BEHIND THE LAMP. Everything from here to the sentries is the

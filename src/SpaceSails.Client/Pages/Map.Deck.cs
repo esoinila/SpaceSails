@@ -115,7 +115,135 @@ public partial class Map
     {
         _deckMode = !_deckMode;
         _deckKeys.Clear();
+        CancelAutoWalk(false);
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════════════════
+    //  #729 · CLICK-TO-WALK. Owner, mid-playtest: "Maybe for testing purposes an automatic walk feature
+    //  with point-at to walk-to using say A* might be useful. So our testing does not hang on slow MCP
+    //  speed to browser." And minutes later, the part that makes it a feature rather than scaffolding:
+    //  "we could disable that later in game or consider it as a feature also… like an alternative way to
+    //  move to a spot even behind automatic doors."
+    //
+    //  The whole design fits in one sentence: THE WORLD IS NEVER TOLD IT IS BEING DRIVEN. Core's AutoWalk
+    //  hands out a direction and a distance budget; every one of those sub-steps is spent through
+    //  _deckPlan.Move — the same stepper WASD spends — inside the same MoveAvatar the same frame loop
+    //  calls, so the air, the nerve, the tracker, the auto-doors and the Old Ones all keep running and none
+    //  of them can tell the difference. A cheat that teleported, or walked faster, would un-test exactly
+    //  what walking exists to test (#600's lift: reaching is not returning).
+    // ═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+    /// <summary>#729 · The live route, or null. Session-only and never saved: it is an ORDER the captain
+    /// gave, not a fact about the world, and a saved game that resumed mid-walk would be moving somebody
+    /// who put the controller down.</summary>
+    private AutoWalk? _autoWalk;
+
+    /// <summary>The deck the route was planned over. A route is only meaningful on the walls it was
+    /// planned against, so a floor change (the lift, a landing, a wing welded on) drops it rather than
+    /// walking the captain along corridors that no longer exist.</summary>
+    private DeckPlan? _autoWalkDeck;
+
+    /// <summary>#729 · <c>?autowalk=1</c>. A dev cheat until the owner rules on always-on — and the gate is
+    /// deliberately ONE bool passed into Core's planner, because that is the seam a touch UI adopts
+    /// unmodified: the day tap-to-move ships, the only thing that changes is what is passed here.</summary>
+    private bool _autoWalkCheat;
+
+    /// <summary>Is a click on the glass a walk order right now? Only on the WALKED views — a surface
+    /// excursion or a Hive floor, top-down, with the cheat on. Off the cheat this is false everywhere, so
+    /// every pointer path in the game behaves exactly as it did before this feature existed.</summary>
+    private bool AutoWalkAvailable => _autoWalkCheat && _deckMode && !_fpMode && _surface is not null;
+
+    /// <summary>Drop the route. <paramref name="tellThem"/> only when the captain did it on purpose — a
+    /// route dropped because the floor changed under it needs no receipt.</summary>
+    private void CancelAutoWalk(bool tellThem)
+    {
+        if (_autoWalk is { Active: true } route)
+        {
+            route.Cancel();
+            if (tellThem)
+            {
+                ShowPulseMessage(AutoWalk.CancelledLine);
+            }
+        }
+        _autoWalk = null;
+        _autoWalkDeck = null;
+    }
+
+    /// <summary>
+    /// A click on the deck canvas: turn the pixel into a place on the floor and set off walking.
+    ///
+    /// <para>The pixel → deck-unit conversion goes through <see cref="DeckView.PlacementFor"/>, the very
+    /// projection the renderer draws with. Writing that arithmetic down a second time here is this repo's
+    /// first named bug class (unaudited client geometry literals), and it would send the captain walking at
+    /// something they never pointed at.</para>
+    ///
+    /// <para>The goal is SNAPPED to whatever fixture the click landed on, so arrival is adjacent to the
+    /// thing rather than on top of a patch of floor near it — which is what makes [E] live the moment the
+    /// walk stops, and turns "walk to the locker, press E" into two automation actions instead of forty.</para>
+    /// </summary>
+    private void ClickToWalkAt(double clickPx, double clickPy)
+    {
+        if (!AutoWalkAvailable)
+        {
+            return;
+        }
+
+        // The shudder shake is deliberately NOT in this pan: it is a transient throw of the whole frame,
+        // not a fact about where the floor is, and a captain pointing at a doorway during a tremor means
+        // the doorway.
+        DeckView.Placement place = DeckView.PlacementFor(
+            _deckPlan, _viewportWidth, _viewportHeight, _avatarX, _avatarY, _deckPanX, _deckPanY);
+        (double gx, double gy) = place.ToDeck(clickPx, clickPy);
+        (gx, gy) = SnapWalkTargetToFixture(gx, gy);
+
+        var from = new DeckReachability.Point(_avatarX, _avatarY);
+        var to = new DeckReachability.Point(gx, gy);
+        AutoWalk.Attempt attempt = AutoWalk.Plan(
+            _autoWalkCheat, from, to, _deckPlan.CollisionField, DeckPlan.AvatarRadius,
+            AutoWalk.BoundsFor(_deckPlan.CollisionSegments, from, to));
+
+        if (attempt.Route is null)
+        {
+            // The refusal IS the assertion the reachability audits make, said out loud to a person. Silence
+            // here would read as a broken button, which is the one thing a new input must never do.
+            if (attempt.Refusal is { } line)
+            {
+                ShowPulseMessage(line);
+            }
+            return;
+        }
+
+        _autoWalk = attempt.Route;
+        _autoWalkDeck = _deckPlan;
+    }
+
+    /// <summary>#729 · What the captain actually pointed at. A console within arm's reach of the click wins
+    /// (walk to the thing, not to the tile beside it); failing that, a door close to the click is taken as
+    /// "go through there", since an auto-door is a place you aim for and never an obstacle. Otherwise the
+    /// bare ground, exactly where the finger went.</summary>
+    private (double X, double Y) SnapWalkTargetToFixture(double gx, double gy)
+    {
+        if (_deckPlan.NearestConsoleSpot(gx, gy) is { } spot)
+        {
+            return (spot.X, spot.Y);
+        }
+
+        foreach (DeckPlan.Door door in _deckPlan.Doors)
+        {
+            double mx = (door.X1 + door.X2) / 2.0, my = (door.Y1 + door.Y2) / 2.0;
+            if (((gx - mx) * (gx - mx)) + ((gy - my) * (gy - my)) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+            {
+                return (mx, my);
+            }
+        }
+        return (gx, gy);
+    }
+
+    /// <summary>How many sub-steps one frame may spend. A frame's budget is speed × dt (dt clamped to
+    /// 0.1 s), and no sub-step is longer than <see cref="AutoWalk.MaxSubStepDu"/>, so the very worst frame
+    /// the client can hand out needs five of these. Eight is the headroom, and it exists only so a bug
+    /// upstream can never turn one frame into an unbounded loop.</summary>
+    private const int AutoWalkSubStepsPerFrame = 8;
 
     // Movement keys are held-state (smooth walk); E interacts; Q returns to the map. Returns
     // true when the key was consumed by the deck so it can't also fire a thrust pulse.
@@ -127,6 +255,11 @@ public partial class Map
             case "a" or "A" or "ArrowLeft":
             case "s" or "S" or "ArrowDown":
             case "d" or "D" or "ArrowRight":
+                // #729 · THE KEYS ALWAYS WIN, and they win HERE — on the press itself, before the frame
+                // that follows it spends a single sub-step of the route. Cancelling anywhere further down
+                // (in MoveAvatar, say) would let the walk finish the leg it was on, and "it kept going for
+                // half a second after I grabbed the controls" is exactly the feel this must never have.
+                CancelAutoWalk(true);
                 _deckKeys.Add(Canonical(key));
                 return true;
             case "f" or "F":
@@ -216,6 +349,58 @@ public partial class Map
                 RefreshAshore();
             }
             return;
+        }
+
+        // ── #729 · THE ROUTE, WALKED THROUGH THE SAME LEGS ──
+        //
+        // Everything below this block is the hand-walk, and everything in it is the auto-walk, and the only
+        // difference between them is where (dx, dy) came from. The move itself is _deckPlan.Move either way,
+        // the frame it happens in is this one either way, and StepSurface runs immediately after either way
+        // — which is why the air bill, the Old Ones' closing, the tracker's ring and the doors' proximity
+        // all come out identical. There is no "auto-walk mode" anywhere else in this codebase, deliberately.
+        //
+        // The frame's budget (speed × dt) is spent in sub-steps rather than one long move, because Move
+        // resolves a diagonal axis-separately and a long one probes a corner that is not on the planned
+        // line at all. No wobble is applied: the rum tilts a HEADING somebody is holding, and a route is
+        // not steered by hand.
+        if (_autoWalk is { Active: true } route && ReferenceEquals(_autoWalkDeck, _deckPlan))
+        {
+            double budget = CurrentWalkSpeed * dt;
+            for (int spent = 0; spent < AutoWalkSubStepsPerFrame && budget > 1e-9; spent++)
+            {
+                if (!route.TryStep(_avatarX, _avatarY, budget, out double sdx, out double sdy))
+                {
+                    break;
+                }
+
+                (double wasX, double wasY) = (_avatarX, _avatarY);
+                (_avatarX, _avatarY) = _deckPlan.Move(_avatarX, _avatarY, sdx, sdy);
+                if (Math.Abs(_avatarX - wasX) + Math.Abs(_avatarY - wasY) <= 1e-9)
+                {
+                    // The plan and the ground disagreed. Stop and SAY so — a walk that grinds in place
+                    // against a wall is a bug wearing a feature's clothes, and the captain would spend a
+                    // tank of air watching it happen.
+                    route.Snag();
+                    ShowPulseMessage(AutoWalk.SnagLine);
+                    break;
+                }
+
+                _avatarHeading = Math.Atan2(sdy, sdx);
+                budget -= Math.Sqrt((sdx * sdx) + (sdy * sdy));
+            }
+
+            RefreshAshore();
+            if (!route.Active)
+            {
+                _autoWalk = null;
+                _autoWalkDeck = null;
+            }
+            return;
+        }
+
+        if (_autoWalk is not null && !ReferenceEquals(_autoWalkDeck, _deckPlan))
+        {
+            CancelAutoWalk(false);   // the floor changed under the route (the lift, a landing, a new wing)
         }
 
         double dx = 0, dy = 0;
@@ -858,6 +1043,7 @@ public partial class Map
     {
         _fpMode = !_fpMode;
         _deckKeys.Clear();
+        CancelAutoWalk(false); // #729: first person is tank controls and has no floor to click on
     }
 
     // The 🔭 hook the intel card (and the quest card) carries: aim a prioritized area scan at where
