@@ -210,12 +210,37 @@ public static class MoonSurface
         // square a landing puts the captain on. It could not see that spot before and built a hut through it.
         new(SurfaceLeftX, SurfaceRightX, SurfaceTopY, SurfaceBottomY, LandingBandY, AnchorX, AnchorY, SpawnX);
 
+    /// <summary>
+    /// #723 · IS THE SHOVEL ONE OF THIS FLOOR'S VERBS AT ALL? Asked before any coordinate, because the
+    /// coordinates cannot answer it: a Hive floor deliberately reuses this very envelope — "it is not
+    /// beside the field, it is under it" (<see cref="SpaceSails.Core.UndergroundComplex"/>) — so the spine
+    /// corridor of B1 carries the same (x, y) as a square of open regolith and clears the rim test below
+    /// with room to spare.
+    ///
+    /// <para>Underground there is no ground. There is a floor somebody invoiced: poured rockcrete inside a
+    /// funded facility, with no bedrock a foot down and nothing ever buried through it on any square of any
+    /// corridor of the building. The kit's own first-time card draws the line — the shovel is for <i>"out
+    /// on the open regolith"</i> — and this is that line written where the verb is chosen.</para>
+    ///
+    /// <para>The question is the LEVEL and only the level: <c>level &lt; 0</c> is the underground
+    /// convention the whole game already speaks (<c>UndergroundComplex.HoldsPressure</c>, <c>IsDark</c>,
+    /// <c>MetresDown</c>, and the excursion's own <c>Floor</c>), so nothing new is stored and nothing can
+    /// drift out of step with it.</para>
+    /// </summary>
+    public static bool ShovelWorksOnThisFloor(int level) => level >= 0;
+
     /// <summary>The beach-comber kit's "reasonable surface square" test (owner, 2026-07-18: bury/probe
     /// anywhere "outside the landing band / walls"). A spot is diggable when it sits on the open regolith —
     /// deeper than the landing band (so the fused landing pad and the way home stay off-limits) and inside
     /// the field's fenced rim. Wall/maze squares never reach this: the shared collision keeps the avatar
-    /// out of them, so a spot the captain can stand on and pass this check is genuine open ground.</summary>
-    public static bool IsDiggableGround(double x, double y) =>
+    /// out of them, so a spot the captain can stand on and pass this check is genuine open ground.
+    ///
+    /// <para>#723 · …and it takes the FLOOR, because a spot is a place on a level and never a bare pair of
+    /// numbers. A caller cannot ask about ground any more without saying which ground it means, which is
+    /// what stops the [E] key, the standing prompt and the key bar from each deciding for
+    /// themselves.</para></summary>
+    public static bool IsDiggableGround(double x, double y, int level) =>
+        ShovelWorksOnThisFloor(level) &&
         y < LandingBandY && y > SurfaceBottomY &&
         x > SurfaceLeftX && x < SurfaceRightX;
 

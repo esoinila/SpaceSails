@@ -4216,6 +4216,27 @@ public partial class Map
         {
             return;
         }
+
+        // ── #723 · THE SHOVEL IS SOMETHING THE GROUND HAS, NOT SOMETHING THE KEY DOES ──
+        //
+        // Found by playing, on B1 of a Hive: [E] with empty hands in a pressurised spine corridor 150 m
+        // down ran the beach-comber probe, left the orange dug square on the rockcrete, and at the canteen's
+        // west face said "the shovel rings off bedrock a foot down — too hard to dig here. Try another
+        // square." Both halves lie. There is no bedrock under a floor somebody invoiced — and "try another
+        // square" is an INVITATION: it tells the captain that some square down here does dig, when nothing
+        // can ever be buried on any square of any corridor of the building.
+        //
+        // The owner's answer was to gate the verb on the GROUND rather than on the keypress, so this is the
+        // FIRST question the bare-ground [E] asks — ahead of the settling window too, because a captain who
+        // dug on the regolith and then took the lift down would otherwise be told the earth beneath a
+        // rockcrete corridor needed a breath to settle. Indoors the shovel is not in the candidate list at
+        // all and the press falls through to the same honest nothing [E] gives on any other deck; the
+        // too-hard line below still belongs to genuine surface squares, which is where bedrock genuinely is.
+        if (!MoonSurface.ShovelWorksOnThisFloor(ex.Floor))
+        {
+            return;
+        }
+
         if (DigSettling)
         {
             // #452: the shovel just came out of this ground. A held [E] must not immediately start the next
@@ -4224,7 +4245,7 @@ public partial class Map
             return;
         }
         // Safe up in the tube / aboard, or up on the landing band — no digging the fused pad.
-        if (!MoonSurface.IsDiggableGround(_avatarX, _avatarY))
+        if (!MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor))
         {
             ShowPulseMessage(ex.Carrying
                 ? "The landing pad's fused rockcrete — no burying here. Carry it out onto the regolith."
@@ -7354,7 +7375,10 @@ public partial class Map
         {
             return null; // nothing owed — the ground goes quiet again
         }
-        return MoonSurface.IsDiggableGround(_avatarX, _avatarY)
+        // #723 · The floor rides along, so this line stops promising a burial on a Hive corridor. Underground
+        // it now reads "walk out onto the regolith" — which is the honest instruction down there, because the
+        // way to bury a chest 150 m under a facility is the lift.
+        return MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor)
             ? "⛏ CARRYING THE CHEST — press E to BURY IT HERE"
             : "⛏ CARRYING THE CHEST — walk out onto the regolith, then E to bury it";
     }
@@ -7438,10 +7462,16 @@ public partial class Map
         // inside the recovery ring the press is the pickup, whatever else the captain is holding. A bar
         // that promised BURY THE CHEST while the key handed back a folder would be the sim doing one thing
         // and a sentence reporting another, which is a bug class this repo has named.
+        // #723 · …and that is precisely what this bar was doing underground. It offered "E — dig" on poured
+        // rockcrete, and with a chest in the sling it shouted BURY THE CHEST HERE over a corridor where the
+        // key now — correctly — does nothing at all. So the floor is asked first, of the same one fact the
+        // key is gated on. Above ground nothing moves: the pad is not diggable either, but it is one step
+        // from ground that is, so the chest keeps the imperative #440 asked for.
         var parts = new List<string>
         {
             "WASD — move",
             StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
+                : !MoonSurface.ShovelWorksOnThisFloor(ex.Floor) ? "E — use"
                 : ex.Carrying ? "⛏ E — BURY THE CHEST HERE"
                 : "E — dig / use",
         };
@@ -7491,13 +7521,14 @@ public partial class Map
         // The dig affordance, honest to the sling (playtest bug #1 / owner ruling #9: the ground must SAY
         // what's possible). Carrying → bury anywhere you stand; empty → the beach-comber probe, a real
         // fishing expedition, never a dead end. An own ✗ in this ground always earns its own lift line.
-        if (ex.Carrying)
+        // #723 · …and it is only an affordance where the verb exists. This is the line that sent a captain
+        // pressing [E] on a spine corridor: teaching the shovel on a floor whose ground is poured rockcrete
+        // is teaching a key that will not answer. The same one fact the key and the bar are gated on.
+        if (MoonSurface.ShovelWorksOnThisFloor(ex.Floor))
         {
-            lines.Add("⛏ E on the regolith — bury the chest where you stand");
-        }
-        else
-        {
-            lines.Add("🪛 E on the regolith — probe for shallow treasure");
+            lines.Add(ex.Carrying
+                ? "⛏ E on the regolith — bury the chest where you stand"
+                : "🪛 E on the regolith — probe for shallow treasure");
         }
         if (ownMarkCount > 0)
         {
