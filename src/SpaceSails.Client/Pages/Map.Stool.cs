@@ -150,17 +150,35 @@ public partial class Map
     private IReadOnlyList<Encounter.Move> StoolMovesOnTheTable() =>
         _stool is { } s ? Encounter.OnTheTable(s.Scene, s.Said) : [];
 
-    /// <summary>Can this move be made? Core's requirement check, plus the one fact Core's
-    /// <see cref="Encounter.Available"/> cannot fold into a REPLY: a rung that costs coin needs the coin.
-    /// Drawn and REFUSED (#212/#603), never silently missing.</summary>
+    /// <summary>
+    /// Can this move be made right now? Core's requirement check, plus the two facts about a LADDER that
+    /// <see cref="Encounter.Available"/> does not decide for a scene whose rungs are all
+    /// <c>Requirement.Free</c> replies.
+    ///
+    /// <para><b>A rung that costs coin needs the coin</b>, and <b>a rung is climbed once.</b> The second one
+    /// was found by playing it: every rung here is a fixed outcome with a line on it, so
+    /// <see cref="Encounter.Available"/> said yes to all of them for ever — and STAND HER ONE could be
+    /// pressed as many times as you liked, debiting 7 cr and re-telling the same sentence each time. A
+    /// conversation whose sentences can be re-said is not a conversation, and a paid one is a leak.</para>
+    ///
+    /// <para><see cref="TheStools.Wait"/> is the exception, and it is the whole verb of sitting there: you
+    /// may wait as long as you like, and the room answers differently each beat.</para>
+    ///
+    /// <para>Both are DRAWN AND REFUSED, never silently missing — #212's affordances-never-hide, and #603's
+    /// rule that a control which does nothing is worse than one that says why.</para>
+    /// </summary>
     private bool StoolMoveOnOffer(Encounter.Move move) =>
         _stool is { } s
         && Encounter.Available(move, _credits, _satchel, s.Said, s.Said)
-        && _credits >= move.Credits;
+        && _credits >= move.Credits
+        && (move.Id == TheStools.Wait || !s.Said.Contains(move.Id));
 
-    /// <summary>Why a drawn move is refused, in words. The only thing that can refuse one here is money.</summary>
+    /// <summary>Why a drawn move is refused, in words — because a refusal a player cannot read is the one
+    /// kind of "no" this game does not allow itself (#212/#603).</summary>
     private string StoolMoveRefusal(Encounter.Move move) =>
-        $"{move.Credits} cr, and you have {_credits}.";
+        _stool is { } s && s.Said.Contains(move.Id)
+            ? "You have already said that."
+            : $"{move.Credits} cr, and you have {_credits}.";
 
     /// <summary>A move, pressed with the MOUSE — and the way home when it shuts the panel. The seam
     /// <c>Dismiss</c> documents: a click leaves focus on a button that has just stopped existing, and the
@@ -237,6 +255,26 @@ public partial class Map
             RequestVaultSave();
         }
 
+        // #757's wave-off, at a counter. Letting it lie ENDS THE VISIT rather than the sitting: she turns
+        // back to her cup, the stool is yours again, and the panel never blinks — it was one occupation of
+        // one seat all along. The outcome line stays exactly as it is, because what she said on the way out
+        // is the last thing that happened and must not be wiped by the state change that follows it.
+        if (moveId == TheStools.LetItLie)
+        {
+            BackToYourOwnStool(s);
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>#756 · She turns back to her cup, and the stool is just a stool again. Free, like every
+    /// refusal in this game.</summary>
+    private void BackToYourOwnStool(StoolSeat s)
+    {
+        s.WithNeighbour = false;
+        s.Scene = TheStools.TheStool(s.Index);
+        s.Said.Clear();
         StateHasChanged();
     }
 

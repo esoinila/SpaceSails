@@ -149,8 +149,15 @@
     margin-bottom: 0.8rem;
 }
 
+/* #780 · …AND IT WRAPS. Found by playing it, which is the only way this was ever going to be found: with a
+   stool taken and the neighbour talking, this row carries the menu toggle, two or three rungs of her ladder,
+   "get down off the stool" and "Done" — and a no-wrap flex row simply OVERLAPPED them, so four buttons drew
+   on top of each other and none of them could be read. The table card learned the same lesson at #746
+   (.table-actions) and named it there; a law that has to be remembered per card is a law that gets
+   forgotten on the next card, so it moves up to the family. Nothing that fits on one line moves. */
 .deck-offer-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
     justify-content: center;
 }

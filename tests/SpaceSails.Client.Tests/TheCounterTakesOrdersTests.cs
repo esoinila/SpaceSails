@@ -227,6 +227,45 @@ public sealed class TheCounterTakesOrdersTests
     }
 
     [Fact]
+    public void ARungIsClimbedOnce_AndLettingItLieEndsTheVisitRatherThanTheSitting()
+    {
+        // FOUND BY PLAYING IT, in a browser, at /map?stool=1&neighbour=1 — which is the only way it was ever
+        // going to be found. Every rung of her ladder is a Requirement.Free reply carrying a fixed line, so
+        // Encounter.Available said YES to all of them for ever: STAND HER ONE could be pressed as many times
+        // as you liked, debiting 7 cr and re-telling the same sentence each time. A conversation whose
+        // sentences can be re-said is not a conversation, and a paid one is a leak.
+        //
+        // RED PROOF: drop the `!s.Said.Contains(move.Id)` clause and this fails.
+        string offer = Method("Map.Stool.cs", "private bool StoolMoveOnOffer(");
+        Assert.Contains("!s.Said.Contains(move.Id)", offer, StringComparison.Ordinal);
+        Assert.Contains("_credits >= move.Credits", offer, StringComparison.Ordinal);
+
+        // …and WAIT is the exception, because waiting is the whole verb of sitting there and the room
+        // answers differently every beat. A climbed-once law that swallowed Wait would turn the stool into a
+        // one-press fixture.
+        Assert.Contains("move.Id == TheStools.Wait", offer, StringComparison.Ordinal);
+
+        // Refused OUT LOUD and not silently missing (#212/#603): the button is still drawn, and its title
+        // says which of the two refusals it is.
+        Assert.Contains("already said that", Method("Map.Stool.cs", "private string StoolMoveRefusal("),
+            StringComparison.OrdinalIgnoreCase);
+
+        // #757's wave-off, at a counter: letting it lie ends the VISIT and not the sitting. The stool is
+        // yours again and the panel never blinks — one occupation of one seat all along.
+        string pressed = Method("Map.Stool.cs", "private void StoolMove(");
+        Assert.Contains("BackToYourOwnStool(s);", pressed, StringComparison.Ordinal);
+
+        string back = Method("Map.Stool.cs", "private void BackToYourOwnStool(");
+        Assert.Contains("s.WithNeighbour = false;", back, StringComparison.Ordinal);
+        Assert.Contains("s.Said.Clear();", back, StringComparison.Ordinal);
+        // …it does NOT touch the outcome slot: what she said on the way out is the last thing that happened,
+        // and wiping it would be #680's bug committed by the fix for something else.
+        Assert.DoesNotContain("_barNotice", back, StringComparison.Ordinal);
+        // …nor does it get you off the stool, which is a different verb with a different button.
+        Assert.DoesNotContain("_stool = null", back, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TheStoolDevStartsWalkTheWholeRouteAndForceBothAnswers()
     {
         // Owner's standing rule, and #693's: a scene nobody can reach on demand is a scene that ships
