@@ -278,6 +278,29 @@ venting not reducing the charge value.
 **Broken looks like:** the sweep never completing, no scope-wall tile gaining a live track despite
 a plausible sweep, a tile rendering blank/broken art, or the tracked ring never appearing on the map.
 
+### 13a. Leaving while the telescope is still being wired (#765)
+
+No cheat needed to reach this one, which is exactly the point: Map.razor renders the tracking post
+**always** (`FullScreen="true"`, `d-none` off-desk, so a desk switch can never destroy the ledger), so
+the post starts wiring itself on the map's *first* render — while the renderer module is still being
+imported and the world is still being built.
+
+1. Open the browser console, then load `/map` (Debug WASM is ideal: the boot takes tens of seconds).
+2. While the loading door is still up — before the map appears — click **SpaceSails** in the nav bar,
+   or press browser Back, to leave the page mid-boot.
+3. Confirm the console stays clean. In particular: **no** `crit: WebAssemblyRenderer[100] Unhandled
+   exception rendering component`, and no renderer.js "no canvas element with id" throw.
+4. Repeat with a voyage that already holds a track (run §13 first, save, then **Continue** and leave
+   mid-boot) — a non-empty ledger is what makes the abandoned wiring pass reach for a card canvas by id.
+5. Discriminator — prove the guard is not just "never runs": load `/map`, let the boot **finish**, press
+   `2`, run a sweep, and confirm the scope-wall tiles still animate at full frame rate. A telescope that
+   stopped when nobody had left it would show dead black tiles here.
+
+**Broken looks like:** any `WebAssemblyRenderer[100]` in the console after leaving a boot; a renderer.js
+"no canvas element with id" throw; or — the quiet version — the frame rate falling a little further with
+every `/map` you abandon, which is a discarded tracking post still riding `FrameTick` because it
+subscribed itself *after* its own `Dispose` had run.
+
 ---
 
 ## 14. Local space trade
