@@ -1027,6 +1027,23 @@ public partial class Map
                     _ => null,
                 };
             }
+            else if (pair.StartsWith("park=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #759 dev cheat: /map?park=1 boots THE PARK — the same B1 route as ?counter=1, with the
+                // last leg walked through the gate at the end of the hall's own corridor instead of to the
+                // counter. Owner's standing rule ("testing is a feature"), and this room needs it more than
+                // most: the park is on the far side of the largest room in the game, behind a wall you can
+                // see through and cannot walk through, and finding it by accident takes a while.
+                string candidate = Uri.UnescapeDataString(pair["park=".Length..]).ToLowerInvariant();
+                if (candidate is "1" or "true" or "yes")
+                {
+                    _parkCheat = true;
+                    secretlabCheat = true;
+                    secretlabDeep = true;
+                    _landCheat = true;
+                    _startingFloorCheat = -1;   // B1 — the only floor in the building with a park behind it
+                }
+            }
             else if (pair.StartsWith("approach=", StringComparison.OrdinalIgnoreCase))
             {
                 // #757 dev cheat: /map?approach=1 makes the next WAIT at a table you took alone bring

@@ -253,6 +253,43 @@ the mess is hall-class and full of tops, and not one of them offers "take this t
 not admitted to is not a room you sit down in, and Core's own B1 ruling (`CanteenRegulars.PeopleSitHere`)
 decides that rather than a clause in the renderer.
 
+## 1b-2 · ADDED (#759) — THE PARK BEHIND THE BAR, and the hall at two to four times its old size
+
+```
+/map?park=1                            the whole route, booted — B1, standing INSIDE the park
+/map?counter=1                         …the same wall from the other side: the counter, with the glass behind it
+/map?tablescene=1                      …and the hall itself, which now has 2–4× the floor it had
+```
+
+Owner, 2026-08-08: *"on map the park needs to Exist there next to the bar. It is an indoor park where the
+fresh stuff is grown that is served here on the plate"* — and, on the hall beside it, *"it is like cramped…
+At least double or triple it."*
+
+**What to look for, standing in the park.**
+
+| | what you should see |
+| --- | --- |
+| **the floor** | green — `art/b1-park-walk.jpg` under the vector grid, laid in **panels** across the room so a 16:9 frame is never stretched to 6:1 |
+| **the window wall** | the near wall, along the whole width of the hall, drawn in the **window ink** (the blue-white the ship's bridge glass uses) and not the poured hull line. Walk into it: you stop. You can see the hall through it and you can never enter that way |
+| **the gate** | the ONE way in — the far end of the hall's own rib corridor, which used to be a dead end with a sealed sign on it |
+| **the beds** | raised boxes, solid, stencilled `🌱 BED n · <CROP> · TO CANTEEN 1`: table greens, stew root, breakfast tomato, soft herbs, salad stock, and six coffee trees on trial |
+| **the walk** | gravel curves — the path bends three times down the room, and every bed was laid *around* it rather than the path threaded between beds |
+| **the benches** | six steel benches, one on the outside of every bend, plated `🪑 A STEEL BENCH` |
+| **the masts** | five floodlight posts against the far wall: the artificial day, as objects |
+| **the lone figure** | one plate on the bench furthest from the gate. Nothing to press, on purpose |
+| **the field book** | one line files on the first step in, once per excursion — *ATTENDANCE IS RECORDED* is a sentence here, not a system |
+
+**The food connection is a stencil and nothing else.** The beds say `TO CANTEEN 1`; the counter's own sign
+says `CANTEEN 1`. One bed is stencilled for the stew, which the card under the glass sources *"from as far
+down as we are willing to say"* — and it is growing ten metres from the table it is served at. Nothing
+anywhere points that out.
+
+**The hall, in the same pass.** It stands on a rib that now reaches further than any other rib in the
+building, and its tables are laid at three times the floor-per-top a room module gives — so the shipped sites
+run **5 800–7 100 du²** where they used to run 1 500–2 700. On a site whose ribs all run one way the hall
+moves off the rib beside the lift, because that column has the lift alcove in front of it and could never have
+grown: the rule is now *nearest the car, of the slots that can actually hold it*.
+
 ## 1c · ADDED (#757) — taking a free table, waiting at it, and who comes of it
 
 ```
@@ -490,6 +527,7 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `&watch=N` | pin which SHIFT the hall is on (#751) — `2` heaves, `5` echoes, six to a day |
 | `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — plated **SIT DOWN**, and the panel wears the table (#783) |
 | `&approach=1\|0` | force whether sitting a while brings somebody over (#757); `0` is the told nobody-came beat |
+| `?park=1` | boot standing INSIDE the park behind the bar (#759) — green floor, window wall, beds, benches |
 | `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
 | `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
 

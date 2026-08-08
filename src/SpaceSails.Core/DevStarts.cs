@@ -118,6 +118,17 @@ public static class DevStarts
             "The same stool with the neighbour forced OFF. Wait as long as you like: the seat beside you "
             + "answers, in words, that nothing is going to happen. That is the beat, not a bug (#756).",
             "/map?stool=1&neighbour=0"),
+        // #759 · THE PARK BEHIND THE BAR. Owner: "on map the park needs to Exist there next to the bar. It
+        // is an indoor park where the fresh stuff is grown that is served here on the plate." It is the
+        // largest room in the game and it stands behind a wall you can see through and cannot walk through,
+        // so the row puts a tester inside it rather than leaving them to find the one gate.
+        new("🌳", "The park behind the bar",
+            "B1 of a deep site, standing on the gravel INSIDE the park: green floor art underfoot, the "
+            + "window wall back into the canteen (drawn as glass — you can see the hall, you cannot walk "
+            + "into it), raised beds stencilled for the counter, steel benches down the curve, floodlight "
+            + "masts against the far wall. The field book files the attendance line on the first step "
+            + "(#759).",
+            "/map?park=1"),
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),

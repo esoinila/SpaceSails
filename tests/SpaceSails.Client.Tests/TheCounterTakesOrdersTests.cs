@@ -501,9 +501,19 @@ public sealed class TheCounterTakesOrdersTests
             // #780 · TWO PICTURES NOW, AND THEIR ORDER IS HALF THE FEATURE. The hall's own floor art first
             // and the counter's spot art second — DeckView walks this array in order, so a counter laid down
             // first would be papered back over by the room and neither picture would be seen.
-            if (deck.Backdrops.Length != 2)
+            //
+            // #759 · …and behind the glass there is a THIRD room, whose own floor wears its own picture cut
+            // into panels (Core's ParkArtPanels) across a room six times wider than it is deep. The two
+            // pictures this guard is about are still the first two and still in that order; the park's are
+            // COUNTED rather than ignored, so a renderer that drew four of the hall's is still caught.
+            int parkPanels = UndergroundComplex.Build(body, level, Field).Park is { } green
+                ? UndergroundComplex.ParkArtPanels(green).Count
+                : 0;
+
+            if (deck.Backdrops.Length != 2 + parkPanels)
             {
-                wrong.Add($"  {body} B{-level}: {deck.Backdrops.Length} backdrop(s) on the hall floor, wanted 2.");
+                wrong.Add($"  {body} B{-level}: {deck.Backdrops.Length} backdrop(s) on the hall floor, and "
+                    + $"the rooms on it account for {2 + parkPanels}.");
                 continue;
             }
 
@@ -511,6 +521,14 @@ public sealed class TheCounterTakesOrdersTests
             if (bd.Url != UndergroundComplex.CantinaHallArtUrl)
             {
                 wrong.Add($"  {body} B{-level}: the floor wears “{bd.Url}”.");
+                continue;
+            }
+            foreach (DeckPlan.Backdrop beyond in deck.Backdrops.Skip(2))
+            {
+                if (beyond.Url != UndergroundComplex.ParkArtUrl)
+                {
+                    wrong.Add($"  {body} B{-level}: an unaccounted picture “{beyond.Url}” is on the floor.");
+                }
             }
 
             // The rectangle is the hall's OWN box — top-left at (X0, Y1), because deck +y is up and that is
@@ -631,8 +649,17 @@ public sealed class TheCounterTakesOrdersTests
         List<Mark> marks = Frame(deck);
 
         List<Mark> images = [.. marks.Where(m => m.Kind == "image")];
-        Assert.True(images.Count == 2, $"{images.Count} image(s) drawn on the hall floor, wanted exactly 2.");
+        // #759 · The two pictures below are the hall's and the counter's, in that order. Everything after
+        // them is the PARK's floor, behind the glass — counted off Core's own cut, so this cannot pass on a
+        // renderer that quietly drew four of the hall's instead.
+        int parkPanels = UndergroundComplex.ParkArtPanels(
+            UndergroundComplex.Build("europa", UndergroundComplex.TopPressurisedFloor("europa")!.Value, Field)
+                .Park!.Value).Count;
+
+        Assert.True(images.Count == 2 + parkPanels,
+            $"{images.Count} image(s) drawn on the floor, and the rooms on it account for {2 + parkPanels}.");
         Assert.Equal(UndergroundComplex.CantinaHallArtUrl, images[0].Url);
+        Assert.All(images.Skip(2), m => Assert.Equal(UndergroundComplex.ParkArtUrl, m.Url));
         Assert.True(images[0].W > 0 && images[0].H > 0, "the art was drawn with no area.");
         Assert.True(Math.Abs(images[0].Alpha - UndergroundComplex.HallArtAlpha) < 0.001f,
             $"drawn at alpha {images[0].Alpha}.");
