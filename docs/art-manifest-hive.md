@@ -308,7 +308,8 @@ one by publishing a `SpotArt` where it is carved — the park's windows (#759) a
 ### `art/b1-short-rest.jpg` — 🥾 THE SHORT REST (resting)
 
 - **Slot:** `SittingAlone.RestingArtUrl`, the SECOND state of the same panel — `ArtFor(resting: true)`, which
-  `SittingAlone.IsARest` decides: a pour bought at the counter still in hand, **or** a quiet watch. Owner,
+  `SittingAlone.SitReadsAsRelaxed` decides: a pour bought at the counter still in hand (#784's own
+  `APourInFrontOfYou`, the one reading there is), **or** a quiet watch. Owner,
   live: *"Definitely a cold drink and legs up on adjacent chair and some notebooks / papers on table when we
   rest there and some mystic looking food."*
 - **Composition:** the same table and the same chair — **your boots up on it**, laces trailing. A tall sweating
@@ -326,6 +327,13 @@ review: the filed line names a cold glass sweating into your hand, and the trigg
 own facts). The boots are the rest and are always there; the glass is the purchase and is named only when
 somebody bought one. Whether a rest *heals* anything is #784's lane; this pair of pictures and the lines
 beside them are the register, not the mechanic.
+
+**Seam with #784, stated once:** `Map.CaptainIsRestingAtATable` is *"is the captain at a solo table"* — the
+short rest's own trigger, true on every solo sit. `SittingAlone.SitReadsAsRelaxed` is *"does this sit read as
+relaxed"* — words and pictures only. A back-to-the-wall watch still gives your breath back; it is simply not
+the sentence about boots, and not the picture of them. The **pour** has ONE reading and it is #784's
+(`Map.APourInFrontOfYou`), because a panel keeping its own window could say *"the cold glass sweat into your
+hand"* on a beat the rest engine had already decided there was no pour.
 
 **Guarded by** `RevealPlatesArePaintedTests.TheTablesTwoStatesArePainted` (both on disk, neither borrowing the
 counter's canvas) and `YouCanSitAtAnEmptyTableTests.THE_SIT_PANEL_DrawsTheTableItIsAPanelFor` (in the card's

@@ -179,8 +179,8 @@ public static class SittingAlone
         "You put the chair back the way it was. The minute is over, and it was a good minute.";
 
     /// <summary>
-    /// #783 · IS THIS SIT A REST? The one answer, so the panel, the prose and the picture cannot come to
-    /// three different ones — and so #784's crew has something to consume rather than a fourth.
+    /// #783 · DOES THIS SIT READ AS RELAXED? The one answer, so the panel's opening line, its goodbye
+    /// and its picture cannot come to three different ones.
     ///
     /// <para>Owner's own condition, quoted: <i>"with a bought drink in hand, OR on a quiet watch."</i> Quiet
     /// is <see cref="BusyAt"/>'s own threshold — the same line that decides which silence a fruitless wait
@@ -192,27 +192,18 @@ public static class SittingAlone
     /// </summary>
     /// <param name="drinkInHand">Whether a pour bought at the counter is still in the captain's hand.</param>
     /// <param name="watch">The shift, frozen when the floor was drawn (#709).</param>
-    public static bool IsARest(bool drinkInHand, long watch) => drinkInHand || Fill(watch) < BusyAt;
+    public static bool SitReadsAsRelaxed(bool drinkInHand, long watch) =>
+        drinkInHand || Fill(watch) < BusyAt;
 
-    /// <summary>How long a pour bought at the counter is still IN YOUR HAND — long enough to carry it across
-    /// a hall and sit down with it, short enough that a glass bought an hour ago is not still cold. FLAGGED
-    /// for the owner's tuning; it is the whole width of the counter-to-table ritual.
-    ///
-    /// <para>THE GAP, stated plainly: #756/#772's counter does not hand you an OBJECT. A purchase pours
-    /// through the nerve model and leaves a timestamp, so "a drink in hand" is the freshest honest reading of
-    /// that timestamp rather than a satchel item. The day drinks are carried, this constant is the thing to
-    /// delete.</para></summary>
-    public const double DrinkInHandMs = 180_000;
-
-    /// <summary>Is the last pour still in the captain's hand? Pure, so the client hands it two numbers and
-    /// this file owns the law — and so a guard can walk the boundary instead of a browser.
-    ///
-    /// <para>Both ends are closed on purpose. A captain who has never bought one (<c>double.MinValue</c>, the
-    /// sentinel the client starts at) would read as holding one forever under a bare subtraction; and a pour
-    /// stamped LATER than the clock reading it — which is what a frame timestamp that has not started yet
-    /// looks like — is not a drink in your hand either, it is arithmetic.</para></summary>
-    public static bool DrinkStillInHand(double nowMs, double lastPourMs) =>
-        lastPourMs > double.MinValue && nowMs >= lastPourMs && nowMs - lastPourMs < DrinkInHandMs;
+    // WHOSE DRINK, AND WHOSE REST — the seam with #784, stated once so nobody collapses the two.
+    //
+    // #784 ships the short rest as a MECHANIC: every solo sit is one (Map.CaptainIsRestingAtATable), and how
+    // much it gives back is doubled by a pour in front of you (Map.APourInFrontOfYou, which is the client's
+    // one reading of the counter's tot — this file deliberately keeps no second window of its own, because
+    // a panel that said "cold glass" while the rest engine said "no pour" is the fault canon review already
+    // caught in this very scene). What THIS file decides is narrower and is about WORDS AND PICTURES ONLY:
+    // whether the sit READS as relaxed. A back-to-the-wall watch is still a short rest for the body; it is
+    // simply not the sentence about boots and it is not the picture of them.
 
     /// <summary>The rest's own opening, in the one of its two forms the captain's hand decides. THE GLASS IS
     /// ONLY MENTIONED WHEN THERE IS A GLASS — canon review's ruling, and the #740 law under it: a sentence
@@ -228,18 +219,18 @@ public static class SittingAlone
     /// <para>THE ONE PLACE the opening sentence is chosen. <see cref="TheTable"/>'s opening is this call and
     /// not a second copy of this ternary, because a scene whose first line disagreed with the line the panel
     /// prints is this project's third named bug class with prose in it.</para></summary>
-    public static string SitLine(bool resting, bool drinkInHand) =>
-        !resting ? TookTheTableLine
+    public static string SitLine(bool relaxed, bool drinkInHand) =>
+        !relaxed ? TookTheTableLine
         : drinkInHand ? RelaxedOpening(true) + " " + TheDrinkLine
         : RelaxedOpening(false);
 
     /// <summary>…and the same question asked of the ROOM instead of a flag: what does sitting down say on
     /// this watch, with or without a glass in your hand.</summary>
     public static string SatDown(bool drinkInHand, long watch) =>
-        SitLine(IsARest(drinkInHand, watch), drinkInHand);
+        SitLine(SitReadsAsRelaxed(drinkInHand, watch), drinkInHand);
 
     /// <summary>What getting up says. The rest earns its own goodbye; the watch keeps #757's.</summary>
-    public static string StoodUp(bool resting) => resting ? StoodUpRelaxedLine : StoodUpLine;
+    public static string StoodUp(bool relaxed) => relaxed ? StoodUpRelaxedLine : StoodUpLine;
 
     // ── #783 · AND WHAT THE PANEL SHOWS YOU ───────────────────────────────────────────────────────────
     //
@@ -256,7 +247,7 @@ public static class SittingAlone
     public const string RestingArtUrl = "art/b1-short-rest.jpg";
 
     /// <summary>Which of the two the panel wears.</summary>
-    public static string ArtFor(bool resting) => resting ? RestingArtUrl : WaitingArtUrl;
+    public static string ArtFor(bool relaxed) => relaxed ? RestingArtUrl : WaitingArtUrl;
 
     /// <summary>
     /// #757 · YOUR OWN TABLE, as an <see cref="Encounter.Scene"/> — two moves and no third.
@@ -265,18 +256,18 @@ public static class SittingAlone
     /// the counter's business (#756's lane, and this scene must not grow a second answer to it), and every
     /// other move at a table is something you say to somebody.</para>
     /// </summary>
-    /// <param name="resting">#783 · Whether this sitting is a REST — which decides the opening line, the
-    /// line you get up on, and the picture the panel wears. <see cref="IsARest"/> is the one place that is
-    /// decided; this only carries the answer into the scene.</param>
+    /// <param name="relaxed">#783 · Whether this sitting READS AS RELAXED — which decides the opening line,
+    /// the line you get up on, and the picture the panel wears. <see cref="SitReadsAsRelaxed"/> is the one
+    /// place that is decided; this only carries the answer into the scene.</param>
     /// <param name="drinkInHand">Whether there is a bought pour in hand, which adds its own sentence.</param>
-    public static Encounter.Scene TheTable(bool resting = false, bool drinkInHand = false) => new(
+    public static Encounter.Scene TheTable(bool relaxed = false, bool drinkInHand = false) => new(
         "canteen:table:alone",
         OwnTablePlate,
         Setting,
-        SitLine(resting, drinkInHand),
+        SitLine(relaxed, drinkInHand),
         [
             new(Wait, LabelOf(Wait)),
-            new(Stand, LabelOf(Stand), Says: StoodUp(resting)),
+            new(Stand, LabelOf(Stand), Says: StoodUp(relaxed)),
         ]);
 
     // ── WHETHER ANYBODY COMES ─────────────────────────────────────────────────────────────────────────

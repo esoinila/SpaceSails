@@ -469,7 +469,7 @@ public sealed class YouCanTakeATableAloneTests
             "It feels good to sit down", SittingAlone.RelaxedSitLine, StringComparison.Ordinal);
         Assert.StartsWith(
             "It feels good to sit down",
-            SittingAlone.TheTable(resting: true).Opening,
+            SittingAlone.TheTable(relaxed: true).Opening,
             StringComparison.Ordinal);
     }
 
@@ -521,7 +521,7 @@ public sealed class YouCanTakeATableAloneTests
     /// fifth-bug-class trap is a threshold that selects everything or nothing, so this walks the watches the
     /// game actually has and fails if either register is unreachable.</para>
     ///
-    /// <para><b>Proven RED</b> by setting <c>IsARest</c> to <c>drinkInHand</c> alone: <i>no watch in the day
+    /// <para><b>Proven RED</b> by setting <c>SitReadsAsRelaxed</c> to <c>drinkInHand</c> alone: <i>no watch in the day
     /// is quiet enough to be a rest — the quiet-watch half of the owner's OR selects nothing.</i></para>
     /// </summary>
     [Fact]
@@ -531,7 +531,7 @@ public sealed class YouCanTakeATableAloneTests
         long busiest = 0, quietest = 0;
         for (long w = 0; w < Watches; w++)
         {
-            if (SittingAlone.IsARest(false, w))
+            if (SittingAlone.SitReadsAsRelaxed(false, w))
             {
                 rests++;
             }
@@ -557,8 +557,8 @@ public sealed class YouCanTakeATableAloneTests
             "is the same bug in the other direction.");
 
         // The busiest watch is a WATCH… until there is a glass in your hand, which is the owner's OR.
-        Assert.False(SittingAlone.IsARest(false, busiest));
-        Assert.True(SittingAlone.IsARest(true, busiest));
+        Assert.False(SittingAlone.SitReadsAsRelaxed(false, busiest));
+        Assert.True(SittingAlone.SitReadsAsRelaxed(true, busiest));
 
         // …and the sentences follow that one answer rather than restating it.
         Assert.Equal(SittingAlone.TookTheTableLine, SittingAlone.SatDown(false, busiest));
@@ -599,29 +599,7 @@ public sealed class YouCanTakeATableAloneTests
         Assert.Equal(SittingAlone.StoodUpLine, SittingAlone.StoodUp(false));
         Assert.Equal(
             SittingAlone.StoodUpRelaxedLine,
-            SittingAlone.TheTable(resting: true).Moves.Single(m => m.Id == SittingAlone.Stand).Says);
-    }
-
-    /// <summary>#783 · A BOUGHT POUR IS IN YOUR HAND FOR A WHILE AND THEN IT IS NOT. The counter (#756/#772)
-    /// hands over no object, so the drink is a timestamp — and a captain who has never bought one must not
-    /// read as holding one, which is what the <c>double.MinValue</c> case is about.</summary>
-    [Fact]
-    public void A_BOUGHT_POUR_IsInYourHandForAWhileAndThenIsNot()
-    {
-        Assert.True(SittingAlone.DrinkInHandMs > 0);
-
-        // Never bought one. The sentinel Map.Deck.cs starts _lastRumMs at — and the one that would read as
-        // "in hand" forever if this were a bare subtraction.
-        Assert.False(SittingAlone.DrinkStillInHand(0, double.MinValue));
-        Assert.False(SittingAlone.DrinkStillInHand(1_000_000, double.MinValue));
-
-        Assert.True(SittingAlone.DrinkStillInHand(1_000_000, 1_000_000));
-        Assert.True(SittingAlone.DrinkStillInHand(1_000_000 + SittingAlone.DrinkInHandMs - 1, 1_000_000));
-        Assert.False(SittingAlone.DrinkStillInHand(1_000_000 + SittingAlone.DrinkInHandMs, 1_000_000));
-
-        // …and a pour stamped later than the clock reading it is not a drink in your hand, it is arithmetic:
-        // that is what a frame timestamp that has not started yet looks like from here.
-        Assert.False(SittingAlone.DrinkStillInHand(0, 50_000));
+            SittingAlone.TheTable(relaxed: true).Moves.Single(m => m.Id == SittingAlone.Stand).Says);
     }
 
     /// <summary>#783 · TWO STATES, TWO PICTURES — and the panel is told which by the same flag the prose is

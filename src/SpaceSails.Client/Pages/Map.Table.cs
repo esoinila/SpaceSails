@@ -150,19 +150,24 @@ public partial class Map
         /// of the verb. It is the one fact the panel needs that is not on the scene.</summary>
         public bool Solo { get; set; }
 
-        /// <summary>#783 · Whether this sitting is a REST rather than a watch — boots up on the spare chair,
-        /// which is a different sentence, a different goodbye and a different picture.
-        /// <see cref="SittingAlone.IsARest"/> decides it; this carries the answer, so the prose and the art
-        /// cannot come to two different views of the same minute.</summary>
-        public bool Resting { get; set; }
+        /// <summary>#783 · Whether this sitting READS AS RELAXED — boots up on the spare chair, which is a
+        /// different sentence, a different goodbye and a different picture.
+        /// <see cref="SittingAlone.SitReadsAsRelaxed"/> decides it; this carries the answer, so the prose and
+        /// the art cannot come to two different views of the same minute.
+        ///
+        /// <para>NOT the same question as #784's <see cref="CaptainIsRestingAtATable"/>, and deliberately
+        /// named apart from it: every solo sit is a short REST for the body (that is #784's mechanic), while
+        /// this is whether the sit reads relaxed in WORDS AND PICTURES. A back-to-the-wall watch still gives
+        /// your breath back; it is simply not the sentence about boots.</para></summary>
+        public bool Relaxed { get; set; }
 
         /// <summary>#783 · …and whether there is a bought pour in it, which adds the drink's own line.</summary>
         public bool DrinkInHand { get; set; }
 
         /// <summary>#783 · The picture the panel wears, or null for a table that is somebody else's. Owner,
         /// live at a taken table: <i>"the pop up could have Gen AI here."</i> Two states, two images, off the
-        /// one <see cref="Resting"/> answer above.</summary>
-        public string? ArtUrl => Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Resting) : null;
+        /// one <see cref="Relaxed"/> answer above.</summary>
+        public string? ArtUrl => Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Relaxed) : null;
 
         /// <summary>How many the top seats, and how many chairs are still empty — the fact that let you
         /// ask to join in the first place, kept so the panel can say it.</summary>
@@ -209,21 +214,6 @@ public partial class Map
         /// that was made before you left the table, because the man made it to somebody who then stood up.</para></summary>
         public HashSet<string> Said { get; } = [];
     }
-
-    /// <summary>
-    /// #783 · IS THERE A BOUGHT POUR IN THE CAPTAIN'S HAND?
-    ///
-    /// <para>The counter (#756/#772) does not hand over an OBJECT: a purchase routes through
-    /// <c>PourRum</c>, which moves the nerve and leaves <c>_lastRumMs</c> behind. So the freshest honest
-    /// reading of "you are carrying a drink" is that timestamp, and the WINDOW is Core's
-    /// (<see cref="SittingAlone.DrinkInHandMs"/>) rather than a number typed here — the counter-to-table
-    /// ritual is content, and content lives in Core.</para>
-    ///
-    /// <para>Exposed as a named property so #784's crew has ONE thing to consume when rest becomes
-    /// mechanical, instead of a second reading of the same clock.</para>
-    /// </summary>
-    private bool DrinkStillInHand =>
-        SittingAlone.DrinkStillInHand(_lastTimestampMs ?? 0, _lastRumMs);
 
     /// <summary>What a table's watch-scoped state is keyed on. An ORDINAL and never a position: two doubles
     /// compared with a tolerance is a guess, and Core hands the ordinal over for free.</summary>
@@ -365,9 +355,13 @@ public partial class Map
 
                 // #783 · WHICH REGISTER THIS SIT IS IN, decided once, by Core, off the room and the glass.
                 // Owner: "with a bought drink in hand, or on a quiet watch, the sit becomes the other thing."
-                bool drink = DrinkStillInHand;
-                bool resting = SittingAlone.IsARest(drink, ex.CanteenWatch);
-                Encounter.Scene sat = SittingAlone.TheTable(resting, drink);
+                // #783/#784 · ONE reading of the counter's pour, and it is #784's — Map.Seated.cs owns the
+                // window, excludes a drunk captain and is the same fact the short rest doubles its rate on.
+                // A second window here would let the panel say "cold glass" on a beat the rest engine had
+                // already decided there was no pour, which is the fault canon review caught in this scene.
+                bool drink = APourInFrontOfYou;
+                bool relaxed = SittingAlone.SitReadsAsRelaxed(drink, ex.CanteenWatch);
+                Encounter.Scene sat = SittingAlone.TheTable(relaxed, drink);
 
                 _table = new TableTalk
                 {
@@ -382,7 +376,7 @@ public partial class Map
                     Free = Math.Max(0, top.Seats - 1),
                     Quiet = top.Quiet,
                     Solo = true,
-                    Resting = resting,
+                    Relaxed = relaxed,
                     DrinkInHand = drink,
                     // Nobody to ask. #746's ask-to-join beat is the answer to a person, and there is not one
                     // here — the table is simply taken, and the taking is the scene's opening line.
@@ -782,10 +776,10 @@ public partial class Map
     private void BackToYourOwnTable(SurfaceExcursion ex, TableTalk t)
     {
         t.Solo = true;
-        t.DrinkInHand = DrinkStillInHand;
-        t.Resting = SittingAlone.IsARest(t.DrinkInHand, ex.CanteenWatch);
+        t.DrinkInHand = APourInFrontOfYou;
+        t.Relaxed = SittingAlone.SitReadsAsRelaxed(t.DrinkInHand, ex.CanteenWatch);
         t.Plate = SittingAlone.OwnTablePlate;
-        t.Scene = SittingAlone.TheTable(t.Resting, t.DrinkInHand);
+        t.Scene = SittingAlone.TheTable(t.Relaxed, t.DrinkInHand);
         t.Said.Clear();
         t.Showing = false;
         t.Free = Math.Min(t.Seats, t.Free + 1);

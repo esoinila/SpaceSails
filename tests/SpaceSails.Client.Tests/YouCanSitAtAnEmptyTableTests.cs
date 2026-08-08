@@ -420,7 +420,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
     /// <summary>
     /// #783 · WHICH PICTURE AND WHICH SENTENCE COME OUT OF THE ONE ANSWER.
     ///
-    /// <para>The register is <see cref="SittingAlone.IsARest"/>'s, decided once when the captain sits, and
+    /// <para>The register is <see cref="SittingAlone.SitReadsAsRelaxed"/>'s, decided once when the captain sits, and
     /// the opening line is the SCENE's rather than a constant the client reached for. That is the whole
     /// anti-mismatch law here: a client free to pin one of the two registers by hand is a client free to
     /// print "you put your boots up on the spare chair" over a picture of an empty one.</para>
@@ -436,26 +436,29 @@ public sealed class YouCanSitAtAnEmptyTableTests
         Assert.True(take >= 0, "Map.Table.cs has no TryTakeTable.");
         string body = table[take..table.IndexOf("\n    /// <summary>Stand up.", take, StringComparison.Ordinal)];
 
-        Assert.Contains("SittingAlone.IsARest(", body, StringComparison.Ordinal);
-        Assert.Contains("SittingAlone.TheTable(resting, drink)", body, StringComparison.Ordinal);
+        Assert.Contains("SittingAlone.SitReadsAsRelaxed(", body, StringComparison.Ordinal);
+        Assert.Contains("SittingAlone.TheTable(relaxed, drink)", body, StringComparison.Ordinal);
         Assert.Contains("Outcome = sat.Opening", body, StringComparison.Ordinal);
         Assert.DoesNotContain("SittingAlone.TookTheTableLine", body, StringComparison.Ordinal);
         Assert.DoesNotContain("RelaxedSitLine", body, StringComparison.Ordinal);
 
         // The picture is chosen off the SAME flag, in Core, and never in the markup.
-        Assert.Contains("SittingAlone.ArtFor(Resting)", table, StringComparison.Ordinal);
+        Assert.Contains("SittingAlone.ArtFor(Relaxed)", table, StringComparison.Ordinal);
 
-        // The drink is the counter's own state, read through Core's window — not a second clock in here.
-        Assert.Contains("SittingAlone.DrinkStillInHand(", table, StringComparison.Ordinal);
-        Assert.Contains("_lastRumMs", table, StringComparison.Ordinal);
-        Assert.DoesNotContain("90_000", table, StringComparison.Ordinal);
-        Assert.DoesNotContain("180_000", table, StringComparison.Ordinal);
+        // THE DRINK IS ASKED OF #784, NOT ANSWERED AGAIN HERE. Map.Seated.cs owns the one reading of the
+        // counter's pour (its window, and its exclusion of a drunk captain), and it is the same fact the
+        // short rest doubles its rate on — so a panel that kept a second window could print "the cold glass
+        // sweat into your hand" on a beat the rest engine had already decided there was no pour.
+        Assert.Contains("APourInFrontOfYou", table, StringComparison.Ordinal);
+        Assert.DoesNotContain("_lastRumMs", table, StringComparison.Ordinal);
+        Assert.DoesNotContain("_rumTots", table, StringComparison.Ordinal);
+        Assert.DoesNotContain("_lastTimestampMs", table, StringComparison.Ordinal);
 
         // …and when she leaves, the register is ASKED again rather than remembered — a glass goes warm.
         int back = table.IndexOf("private void BackToYourOwnTable(", StringComparison.Ordinal);
         Assert.True(back >= 0, "the table stops being yours again — BackToYourOwnTable is gone.");
         string again = table[back..table.IndexOf("\n    /// <summary>", back, StringComparison.Ordinal)];
-        Assert.Contains("SittingAlone.IsARest(", again, StringComparison.Ordinal);
-        Assert.Contains("SittingAlone.TheTable(t.Resting, t.DrinkInHand)", again, StringComparison.Ordinal);
+        Assert.Contains("SittingAlone.SitReadsAsRelaxed(", again, StringComparison.Ordinal);
+        Assert.Contains("SittingAlone.TheTable(t.Relaxed, t.DrinkInHand)", again, StringComparison.Ordinal);
     }
 }
