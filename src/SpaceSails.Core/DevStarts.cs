@@ -130,9 +130,15 @@ public static class DevStarts
         new("🌑", "PROJEKTI KAAMOS — assembled",
             "Every fragment of the sealed ice-moon plot already gathered: the intel readout, the reach notice, the berth-code (#411).",
             "/map?kaamos=all"),
-        new("🧠", "NEBULA MUTUAL — assembled",
-            "Arc 2 complete: the cold archive, the brain-backup's true origin, and the policy's true terms (#422).",
+        // #663 / #652 · The two rows this lane owes a playtester, because a moment nobody can open on purpose
+        // is a moment that ships broken (Map.Sim's own rule). The first is the arc-news beat on arc 2; the
+        // second is the honest road's lasting half, which until now was a sentence with nobody behind it.
+        new("🧠", "NEBULA MUTUAL — assembled, and it BREAKS",
+            "Arc 2 complete: the cold archive, the brain-backup's true origin, the policy's true terms — and the moment the world notices, on the wire, in a filing clerk's flattest voice (#422, #663).",
             "/map?nebula=all"),
+        new("🤝", "The honest road, and who signs it",
+            "Aboard a derelict that died of a drive failure. Read two stations, then the cargo console: FILE THE REPORT, name the cause right, and the assessor who countersigns it has a name and stays on your contact ledger (#488, #652).",
+            "/map?wreck=drivefailure&land=1"),
         new("🛰", "THE CONVERGENCE",
             "Just enough of BOTH arcs to fire the marquee one-time reveal from a single URL — the two rabbit holes crossing (#422).",
             "/map?converge=1"),

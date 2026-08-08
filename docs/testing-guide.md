@@ -654,6 +654,7 @@ manifest) → the cargo console → file the report naming a cause, or strip her
 | **Some wrecks lie** | On a staged loss or an infested hull, the choice card offers a plausible WRONG cause until you have read both the log and the manifest. |
 | **Both roads quote real numbers** | The file button names the fee; the strip button names the whole value. Stripping must always pay more *today*. |
 | **Stripped cargo is HOT** | It rides home stamped `salvage` through the same ledger a plundered pod uses. |
+| **The honest road earns a NAME** (#652) | `/map?wreck=drivefailure&land=1` → read two stations → cargo console → **FILE THE REPORT**, naming `DriveFailure`. The 📋 FILED card now names who countersigned it (*"…countersigned the finding and put their own name under yours"* — one of six assessors, seeded from the hull, so the same wreck always hands you the same person), the same sentence lands in the log, and that assessor is on the **contact ledger** with goodwill afterwards — vaulted like every other relationship. Read her **wrong** and there is no name at all: a bad report is worse than no report. |
 | **No regolith-isms** | No motion tracker, no dig/sentry keybar, no Reever tide clawing out of her deck plates. She is a ship, not a moon. |
 
 > **The infested hull is the one to playtest by hand.** Four Old Ones are already aboard, deep aft and
@@ -939,6 +940,7 @@ the assembled shard texts readable beneath it (mirrors the KAAMOS readout).
 | URL | what you walk |
 | --- | --- |
 | `/map?dock=the-space-bar&nebula=adjuster` | Walk to the counter and the barkeep card carries **▓ Ask about NEBULA** — the Nebula Mutual adjuster is in, this watch, at this bar. Unforced they drink at a given bar roughly one watch in five. |
+| `/map?nebula=all` | **Arc 2 reaches the wire (#663).** The truth resolves, and with it 📰 **THE STORY BREAKS** — the same beat arc 1 raises on the berth-listing edge. Check the **Comms ticker / Galley feed**: a flat filing-office note about Nebula Mutual re-lodging its standard terms, no objections entered, annexes available on request. It never says "you", never names a plot, and the card's caption is the point — *"one figure walks away from the screen instead of toward it, because the policy is not news to them."* |
 
 **In-play delivery to verify by hand (the canonical order):**
 

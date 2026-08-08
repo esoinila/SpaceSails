@@ -290,6 +290,21 @@ public static class NebulaLore
     public const string TruthLedgerLine =
         "▓ The policy's true terms resolve. You are not insured against death — you are filed under it.";
 
+    /// <summary>#663 · ARC 2 ON THE WIRE — the twin of <c>CyclerWindow.BerthListedHeadline</c>, and the same
+    /// trick. <c>StoryBeats.Beat.ArcNewsBreaks</c> shipped with a canvas, a cadence and no caller at all;
+    /// arc 1 got its break on the berth-listing edge, and arc 2 still had none — so the whole of NEBULA
+    /// MUTUAL happened privately, in the captain's own reading, and the world never once acknowledged it.
+    ///
+    /// <para>The register is the entire point. The wire does not announce that a policy is a warehouse; it
+    /// files a routine regulatory note, in the flattest voice a filing clerk has, and says nothing whatever
+    /// about what is in the annexes. The captain is the only person watching who knows what they are — which
+    /// is exactly what the beat's own caption was written for: <i>"one figure walks away from the screen
+    /// instead of toward it, because it is not news to them."</i></para></summary>
+    public const string TermsRefiledHeadline =
+        "Filing office notice: Nebula Mutual has re-lodged its standard subscriber terms, unamended, for a " +
+        "fourteenth consecutive period. No objections were entered. The schedule of annexes remains " +
+        "available to policyholders on request.";
+
     /// <summary>The line the first read of a 📋 PIRATE INSURANCE poster leaves the captain with — the tell
     /// that arrives one beat early (#380's law), in the captain's own voice rather than as a parenthesised
     /// instruction. It has to keep saying "come back and read it", because the SECOND read is the beat and a

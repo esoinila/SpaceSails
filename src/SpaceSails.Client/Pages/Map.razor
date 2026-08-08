@@ -1619,9 +1619,13 @@
                 {
                     <div class="tm-bearing">🔥 It is in the hold, and it is hot. A collector will know it on sight.</div>
                 }
-                @if (salvageOutcome.ContactEarned)
+                @* #652 · The half that outlives the payout, WITH A NAME ON IT. This line used to read
+                   "Somebody now owes you a straight answer" and there was no somebody: nothing recorded who,
+                   nothing persisted, nothing took your call. The assessor is on the ContactLedger now (and
+                   therefore in the vault), and the card says whose name is under the finding. *@
+                @if (salvageOutcome.ContactEarned && _wreckContact is { Length: > 0 } signedBy)
                 {
-                    <div class="tm-bearing">🤝 Somebody now owes you a straight answer.</div>
+                    <div class="tm-bearing">@Derelict.ContactLine(signedBy)</div>
                 }
                 <button type="button" class="btn btn-warning btn-sm mt-2"
                         @onclick="() => Dismiss(DismissWreckOutcome)">Back to the shuttle</button>

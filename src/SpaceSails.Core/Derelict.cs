@@ -529,6 +529,56 @@ public static class Derelict
                   "somebody now owes you a straight answer.");
     }
 
+    // ── #652 · THE HALF THAT OUTLIVED NOTHING ────────────────────────────────────────────────────────
+    //
+    // Owner's own framing of why the honest road exists (2026-07-28): "Honest salvage and CONTACTS THAT MAY
+    // PROVIDE IN FUTURE, or fast win immediately." Four of the five things a decision spends were real and
+    // spendable — credits, heat, hot cargo, the crew's opinion. The fifth was a boolean nobody read: the
+    // card said "somebody now owes you a straight answer" and there was no somebody. A promise the game
+    // cannot name is a promise it has not made, and a player who works that out has been handed the answer
+    // to the one decision in the lane that was supposed to be hard.
+    //
+    // This is #652's option 1, the cheapest of the three it lays out, and deliberately ONLY that: the
+    // contact gets a NAME and goes on the ledger the game already keeps. No new behaviour, no new
+    // reputation track, no rebalanced fractions (those are FLAGGED separately and are not this lane's).
+    // What it buys is that the sentence stops being a lie and the count becomes a thing the player watches
+    // grow — and, being on the ContactLedger, it round-trips through the vault for free.
+
+    /// <summary>What one straight filing is worth as goodwill, booked through the ledger's existing
+    /// <c>AddGoodwill</c> seam — the same non-transactional warming a round at the bar buys. Small on
+    /// purpose: this is somebody remembering you favourably, not a favour already owed.</summary>
+    public const int ContactGoodwill = 2;
+
+    /// <summary>The people who countersign findings. Shout-names in the ledger's own idiom ("MADAM COIL",
+    /// "THE FIXER"), because that is the key <see cref="ContactLedger"/> and the bar consoles share. They
+    /// are assessors and adjusters rather than characters: an honest filing earns you a professional who
+    /// remembers, and the game does not yet claim more than that.</summary>
+    private static readonly (string Id, string Name)[] Assessors =
+    [
+        ("ASSESSOR PRYNNE", "Assessor Prynne"),
+        ("ASSESSOR VEKKONEN", "Assessor Vekkonen"),
+        ("ADJUSTER HALLORAN", "Adjuster Halloran"),
+        ("ASSESSOR IGE", "Assessor Ige"),
+        ("ADJUSTER SARTO", "Adjuster Sarto"),
+        ("ASSESSOR BAKHTIAR", "Assessor Bakhtiar"),
+    ];
+
+    /// <summary>Who countersigned THIS finding. Pure and seeded from the hull's own name, so the same wreck
+    /// always produces the same assessor — a captain who files on the <i>Maren Vey</i> twice does not meet
+    /// two different people, and a test can state the answer exactly.</summary>
+    public static (string Id, string Name) ContactFor(in Wreck wreck)
+    {
+        ulong seed = DiceRule.Seed("salvage-contact", 0L);
+        seed = DiceRule.Seed(seed, wreck.Id.Length > 0 ? wreck.Id : wreck.ShipName);
+        return Assessors[(int)(seed % (ulong)Assessors.Length)];
+    }
+
+    /// <summary>What the captain is told, at the moment the filing clears. It names the person and stops —
+    /// it does not promise a mechanic, because the mechanic is that somebody is now in the book.</summary>
+    public static string ContactLine(string name) =>
+        $"🤝 {name} countersigned the finding and put their own name under yours. Nobody does that for a " +
+        "captain they expect to hear about again in the wrong way.";
+
     /// <summary>The two roads, stated plainly for the choice card — the honest one and the quiet one.
     /// Quotes the actual numbers so the captain is never guessing what they are choosing between.</summary>
     public static string DescribeChoice(in Wreck wreck, SalvageChoice choice)
