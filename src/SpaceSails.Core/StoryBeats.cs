@@ -141,8 +141,10 @@ public static class StoryBeats
         _ => 0.0,
     };
 
-    /// <summary>Card or plate. The rule of thumb: if the player was already standing still, they can have a
-    /// modal; if something is moving toward them, they get a plate.</summary>
+    /// <summary>Card, plate, or hosted. The rule of thumb: if the player was already standing still, they can
+    /// have a modal; if something is moving toward them, they get a plate; and if the moment already HAS a
+    /// card — the caller's own, showing this beat's painting — the beat is hosted and the seam shows
+    /// nothing (#777).</summary>
     public static Presentation PresentationOf(Beat beat) => beat switch
     {
         Beat.FirstShotFired => Presentation.Plate,   // it happens mid-fight; it must not take the keyboard
