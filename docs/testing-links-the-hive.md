@@ -256,9 +256,10 @@ decides that rather than a clause in the renderer.
 ## 1c · ADDED (#757) — taking a free table, waiting at it, and who comes of it
 
 ```
-/map?tablescene=free                   boots standing AT a top with nobody at it — press [E] to take it
-/map?tablescene=free&approach=1        …and the next WAIT brings somebody across the hall
-/map?tablescene=free&watch=5&approach=0  …and the small watch where nobody is coming, and the room says so
+/map?tablescene=free                   boots standing AT a top with nobody at it — press [E] to SIT DOWN
+/map?tablescene=free&approach=1        …and the next SIT A WHILE brings somebody across the hall
+/map?tablescene=free&watch=5&approach=0  …the quiet watch: nobody is coming, and the sit is a SHORT REST (#783)
+/map?tablescene=free&watch=2&approach=0  …the heaving watch, where the same sit is back-to-the-wall (#783)
 ```
 
 Owner, live in the hall: *"I have empty table but I cannot sit down"*, and, minutes later, *"the normal way to
@@ -269,26 +270,33 @@ did not refuse, did not answer, and never reached the dispatch.
 **What to look at, in order.**
 
 1. **Every top is pressable now.** A top with somebody at it says their plate (ask to join, #746); a top with
-   nobody at it says `🪑 A FREE TABLE`. **One dot per TABLE, never one per chair** — a six-seat top and a
-   two-seat top are one prompt each. The seat is the spot you walked to; nothing teleports you onto the
-   furniture.
-2. **`[E]` takes the table.** The panel opens with your own plate on it, the chair count one short (you are in
-   one of them), and two moves: **Wait** and **Take your leave**.
-3. **WAIT is the verb.** Owner: *"Suppose I just want to sit down and wait to be disturbed?"* Sitting alone is
-   a choice to be **findable**. Each press is a beat inside the frozen watch (the shift never moves — the
-   drawn room and the pressed room stay one room), and the room answers.
-4. **The wrong watch is a scene too.** `&watch=5&approach=0`: press Wait as often as you like and the hall
+   nobody at it says `🪑 A FREE TABLE — SIT DOWN`. **One dot per TABLE, never one per chair** — a six-seat
+   top and a two-seat top are one prompt each. The seat is the spot you walked to; nothing teleports you onto
+   the furniture.
+2. **`[E]` sits you down, and the panel says so FIRST (#783).** Before a single verb: *"You sit down. The table
+   is yours."* Then your own plate, **a picture of the table you are at**, the chair count one short (you are
+   in one of them), and two moves: **SIT A WHILE — see who comes** and **Stand up**. Owner, live and confused
+   on the shipped build: *"What does the WAIT option mean here?"* — twice. It should not need asking now.
+3. **TWO REGISTERS, and the room picks (#783).** On a busy watch the sit is a watch: back to the wall, hands
+   where they can be seen, over `art/b1-your-own-table.jpg` — the empty chair opposite, which *is* the wait
+   beat. On a **quiet** watch (`&watch=5`), or with a **pour bought at the counter still in your hand**, it is
+   a **SHORT REST**: boots up on that same chair, over `art/b1-short-rest.jpg`, and standing up afterwards
+   says something different too. Buy a drink at `?counter=1` first and even the heaving watch turns.
+4. **SITTING A WHILE is the verb.** Owner: *"Suppose I just want to sit down and wait to be disturbed?"*
+   Sitting alone is a choice to be **findable**. Each press is a beat inside the frozen watch (the shift never
+   moves — the drawn room and the pressed room stay one room), and the room answers.
+5. **The wrong watch is a scene too.** `&watch=5&approach=0`: press it as often as you like and the hall
    tells you, in different words each beat, that nothing is going to happen. A **busy** hall's silence and an
    **emptied** hall's silence are different sentences and never borrow each other's words — that is the whole
    beat, and it is the one thing most likely to be mistaken for a bug.
-5. **The approach inverts the roles.** `&approach=1`: a haulier with her coat still on crosses the hall and
+6. **The approach inverts the roles.** `&approach=1`: a haulier with her coat still on crosses the hall and
    asks for the chair. Owner's own shape — *"1. ask to sit down, 2. maybe offer to buy me a drink, 3. tell me
    what they have in mind… think Gandalf knocking on Bilbo's door."* Pull the chair out, let her buy (or turn
    it down — **either answer opens the next rung**, because refusing a drink is still having heard the offer),
    then ask what is on her mind. **Not tonight** sends her away for free and leaves you the table.
-6. **What she wants lands on something that exists.** Her lead points at the Hand who has been here longest,
+7. **What she wants lands on something that exists.** Her lead points at the Hand who has been here longest,
    who writes the names, on the chit the cage's gate already reads (#746 → #752). It goes in the field book.
-7. **A cabinet is the opposite choice.** Take a cabinet top and wait: **nobody ever comes**, on any watch, at
+8. **A cabinet is the opposite choice.** Take a cabinet top and wait: **nobody ever comes**, on any watch, at
    any beat — and the lines say why without stating a rule. The counter has eyes everywhere except in there,
    and so does everybody else.
 
@@ -480,8 +488,8 @@ it agrees with the HUD, because §13.13's whole law is that those two may never 
 | `&credits=50000` | price anything without grinding for it |
 | `&roll=hi|lo` | force the encounter band at a table (#746) |
 | `&watch=N` | pin which SHIFT the hall is on (#751) — `2` heaves, `5` echoes, six to a day |
-| `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — the table you can now take |
-| `&approach=1\|0` | force whether waiting at it brings somebody over (#757); `0` is the told nobody-came beat |
+| `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — plated **SIT DOWN**, and the panel wears the table (#783) |
+| `&approach=1\|0` | force whether sitting a while brings somebody over (#757); `0` is the told nobody-came beat |
 | `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
 | `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
 

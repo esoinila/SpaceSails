@@ -1772,6 +1772,22 @@
             <div class="deck-offer-card table-card" @onclick:stopPropagation="true">
                 <div class="deck-offer-giver">@tab.Plate</div>
 
+                @* #783 · THE TABLE YOU ARE AT, DRAWN ON THE PANEL YOU ARE AT IT THROUGH. Owner, live at a
+                   taken table: "the pop up could have Gen AI here." Same seam #756 put the counter's own desk
+                   on the barkeep card through — an image in the card's own flow, ABOVE the prose and never
+                   behind it, which is how #782's contrast law is kept by construction here: no text sits on
+                   the picture at all, so there is nothing to be unreadable over.
+
+                   TWO STATES, TWO PICTURES. The empty chair opposite IS the wait beat; boots up on that same
+                   chair with a cold glass is the other thing sitting down can be (#783's relaxation
+                   register). Which one shows is SittingAlone's own answer, off the same flag the opening
+                   line is chosen with — a panel that picked its own would be free to draw an empty chair
+                   under a sentence about your feet being on it. *@
+                @if (tab.ArtUrl is { } tableArt)
+                {
+                    <img class="table-art" src="@tableArt" alt="" aria-hidden="true" />
+                }
+
                 @* The seats are the reason you may sit here at all (#746/#739), so the panel says them.
                    Core's numbers, not the renderer's — the same call that drew the top. *@
                 <div class="table-seats small">

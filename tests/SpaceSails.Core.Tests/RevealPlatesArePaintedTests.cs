@@ -159,6 +159,36 @@ public class RevealPlatesArePaintedTests
     }
 
     /// <summary>
+    /// #783 · THE TABLE YOU TOOK WEARS ITS OWN TWO PICTURES — and both are on disk.
+    ///
+    /// <para>Owner, live at a taken table: <i>"the pop up could have Gen AI here"</i>, and then the second
+    /// state: <i>"let's make it look like we are taking a short rest at the table."</i> The sit panel is an
+    /// <c>onerror</c>-hide like every other art seam in this game, so a state pointed at a JPG nobody copied
+    /// in is a hole in the panel that nothing anywhere reports.</para>
+    ///
+    /// <para><b>Proven RED</b> before the two jpgs were copied into <c>wwwroot/art</c>: <i>The table you took
+    /// names art/b1-your-own-table.jpg, which is not in wwwroot/art.</i></para>
+    /// </summary>
+    [Fact]
+    public void TheTablesTwoStatesArePainted()
+    {
+        AssertPainted("The table you took", SittingAlone.WaitingArtUrl);
+        AssertPainted("The short rest at that table", SittingAlone.RestingArtUrl);
+
+        // Two states, two canvases. The whole point of the second image is that a captain can see the
+        // difference between waiting and resting without reading a word.
+        Assert.NotEqual(SittingAlone.WaitingArtUrl, SittingAlone.RestingArtUrl);
+
+        // …and neither borrowed the counter's desk, which is the neighbour they would be pointed at first —
+        // one room, two art seams, twenty paces apart.
+        string? desk = Interior.CounterService
+            .For("europa", UndergroundComplex.Comfort.UpperCanteen)?.DeskArtUrl;
+        Assert.False(string.IsNullOrWhiteSpace(desk), "the branch counter stopped wearing its desk.");
+        Assert.NotEqual(SittingAlone.WaitingArtUrl, desk);
+        Assert.NotEqual(SittingAlone.RestingArtUrl, desk);
+    }
+
+    /// <summary>
     /// #695 · EVERY OFFICE ISSUES ITS OWN FACE, AND EVERY FACE IS ON DISK.
     ///
     /// <para>Owner, wallet in hand: <i>"I have 3 ID cards but they all have the same gen AI image."</i> Five
