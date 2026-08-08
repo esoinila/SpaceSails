@@ -1229,11 +1229,20 @@ public static class UndergroundComplex
     /// because a renderer choosing which picture goes on which floor would be a second opinion about a room
     /// it does not own — the discipline <paramref name="BoardX"/> and <paramref name="PlateX"/> already
     /// answer to. Null leaves the floor bare, which is every hall nobody has painted yet.</param>
+    /// <param name="Spots">#780 · The hall's FURNITURE, painted over its own boxes — the counter, and
+    /// whatever fixture the next issue carves. Drawn over <paramref name="ArtUrl"/> and under every vector
+    /// mark, at <see cref="SpotArtAlpha"/>. Empty on a hall with nothing painted in it, which is not a
+    /// missing feature: a room's ambience and a room's furniture are two different claims and a hall may
+    /// make either without making the other.</param>
     public readonly record struct Hall(
         double X0, double Y0, double X1, double Y1, int SeatTarget, IReadOnlyList<Cabinet> Cabinets,
         double BoardX = 0, double BoardY = 0, double PlateX = 0, double PlateY = 0,
-        string? ArtUrl = null)
+        string? ArtUrl = null, IReadOnlyList<SpotArt>? Spots = null)
     {
+        /// <summary>#780 · The furniture pictures, never null — a caller drawing a room must not have to
+        /// ask whether "no spots" means an empty list or a missing one.</summary>
+        public IReadOnlyList<SpotArt> Painted => Spots ?? [];
+
         /// <summary>Is the captain inside the hall? Cabinets are inside it, by construction.</summary>
         public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
 
@@ -2092,6 +2101,22 @@ public static class UndergroundComplex
         walls.Add(new(X(counterU0), Y(counterV), X(counterU0), Y(length), true));
         walls.Add(new(X(counterU1), Y(counterV), X(counterU1), Y(length), true));
 
+        // #780 · …and THE PICTURE OF IT, over the same three walls' own box. Owner: "see how in the space
+        // bars we have the image of bar desk at the spot where the bar desk is." Built HERE, out of the very
+        // (u, v) the segments above were built from, so the frame and the furniture cannot drift apart —
+        // the alternative was a renderer measuring a counter it did not carve, which is the mistake that has
+        // set this project's captain down inside a wall twice. Only where a counter actually serves: the
+        // washroom has no bar, and a picture of one over a room's back wall would be the game saying
+        // something about that room that is not true.
+        var spots = new List<SpotArt>(1);
+        if (CounterArtFor(bodyId, use) is { } deskArt)
+        {
+            spots.Add(new SpotArt(
+                deskArt,
+                Math.Min(X(counterU0), X(counterU1)), Math.Min(Y(counterV), Y(length)),
+                Math.Max(X(counterU0), X(counterU1)), Math.Max(Y(counterV), Y(length))));
+        }
+
         // ── THE CABINETS · a row of doors down the hall's outer wall.
         var cabinets = new List<Cabinet>(CabinetsPerHall);
         if (cabs)
@@ -2157,7 +2182,7 @@ public static class UndergroundComplex
                 x0, y0, x1, y1, HallSeatsFor(bodyId, use), cabinets,
                 X(HallDoorAisleDu / 2.0), Y(length / 2.0),
                 X(HallDoorAisleDu / 2.0), Y(length * 0.25),
-                HallArtFor(bodyId, use)),
+                HallArtFor(bodyId, use), spots),
             X((uLo + uHi) / 2.0), Y(counterV - HallEdgePadDu),
             laid);
     }
@@ -3605,6 +3630,68 @@ public static class UndergroundComplex
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         return use == Comfort.UpperCanteen && !IsHeadOffice(bodyId) ? CantinaHallArtUrl : null;
+    }
+
+    // ── #756/#780 · THE PICTURE OF THE THING, AT THE THING ────────────────────────────────────────────
+    //
+    // Owner, live playtest 2026-08-08: "see how in the space bars we have the image of bar desk at the spot
+    // where the bar desk is."
+    //
+    // He is describing the ship, and he is right that the hall was only half doing it. #756 gave the floor a
+    // HALL-WIDE backdrop — one picture stretched over the whole room, which is ambience — while the bar-desk
+    // art it shipped in the same PR was only ever on the service card. So the room you walked was a wide
+    // room with a wall drawn across the end of it, and the counter was a line.
+    //
+    // A SPOT IS THE SECOND KIND OF ROOM ART, and the difference is not size, it is what it claims. Hall art
+    // says WHERE YOU ARE. Spot art says WHAT IS THERE — a piece of furniture, drawn over its own box, hard
+    // enough at the edges to read as an object you could walk up to. The ship has said this since the 3D
+    // renovation and never needed a word for it; the hall needs one because a hall has furniture in it that
+    // Core carves and a renderer must not measure.
+    //
+    // PUBLISHED, NOT DERIVED. The box comes out of CarveHall at the moment the counter's walls are laid, off
+    // the very same (u, v) the wall segments are built from — so a hall carved a du wider moves its picture
+    // with its bar and no caller anywhere re-measures a room it does not own (§13.15's second cause, which
+    // this project has paid for four times). #759's park windows and any fixture after them wear one by
+    // adding a Spot where the fixture is carved, and nothing else at all.
+
+    /// <summary>#780 · One piece of a hall's furniture, painted over its own carved box.</summary>
+    /// <param name="Url">The picture. Degrades like every other art slot — no file, no frame.</param>
+    /// <param name="X0">Left edge, in the surface's own coordinates.</param>
+    /// <param name="Y0">Bottom edge.</param>
+    /// <param name="X1">Right edge.</param>
+    /// <param name="Y1">Top edge.</param>
+    public readonly record struct SpotArt(string Url, double X0, double Y0, double X1, double Y1);
+
+    /// <summary>#780 · The bar desk itself: long polished top, brass rail, the backlit shelves behind it and
+    /// the stools bolted down along the front. The very picture the counter's own service card wears
+    /// (<c>Interior.CounterService</c>), now also standing where the counter stands.</summary>
+    public const string CounterArtUrl = "art/b1-bar-desk.jpg";
+
+    /// <summary>#780 · How opaque a FIXTURE's picture is drawn — deliberately harder than
+    /// <see cref="HallArtAlpha"/>, and a shade harder than the ship's own 0.9f room backdrops.
+    ///
+    /// <para>One constant, and the reasoning is the whole of the owner's note. The hall's 0.72 is right for
+    /// a floor: it is ambience under a grid, and the grid has to win. A counter is not ambience. It is the
+    /// object you walked across the room to stand at, it is five deck-units deep in an eighty-seat hall, and
+    /// at 0.72 over hall art it would have read as a slightly different patch of wallpaper — a second
+    /// picture where the eye wanted a piece of furniture. So the spot is nearly solid: it has EDGES, it
+    /// occludes the floor art under it, and it stops at the exact line the counter's wall is drawn on. The
+    /// vector overlay still goes over the top of it, which is the one thing this alpha may never cost — the
+    /// walls, the plates, the console dot and the captain are all still legible on the counter.</para></summary>
+    public const float SpotArtAlpha = 0.96f;
+
+    /// <summary>#780 · Which picture stands where a hall's counter stands, or null where the room's bar is
+    /// not a bar anybody is served at.
+    ///
+    /// <para>ONE QUESTION, ASKED THE SAME WAY <see cref="HallArtFor"/> is asked. It answers for exactly the
+    /// halls whose counter <c>Interior.CounterService.For</c> serves at — the branch office's upper canteen
+    /// — because a bar desk drawn on the floor of a room where nothing is poured would be the deck telling a
+    /// story the card refuses to tell. The head office's dining room has a SIDEBOARD and not a bar, and its
+    /// picture has not been shot; a mess has neither.</para></summary>
+    public static string? CounterArtFor(string bodyId, Comfort use)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return use == Comfort.UpperCanteen && !IsHeadOffice(bodyId) ? CounterArtUrl : null;
     }
 
     /// <summary>#751 · What the card is called.</summary>

@@ -35,6 +35,11 @@ public static class CounterService
     /// verb arrives it does not arrive at a different price than the tables quote.</summary>
     public const int RoundRate = 12;
 
+    /// <summary>#780 · Where the card's photographs live. Five of the six were shot; COMPANY COFFEE was not,
+    /// and stays a line of text on purpose — it is the one thing on this card that is not a treat, and a
+    /// glossy plate of it would be the only joke here that landed the wrong way.</summary>
+    private const string ArtDir = "art/";
+
     /// <summary>The card under the glass on the counter top, in the order it reads: the two honest things
     /// first, then the tray, then the three you were warned about.</summary>
     private static readonly Drink[] BranchCard =
@@ -43,20 +48,25 @@ public static class CounterService
             "Bottomless, and on the account. Nobody has found the bottom.", 2),
 
         new("b1-cage-breakfast", "CAGE CREW'S BREAKFAST", DrinkCategory.Food,
-            "Fried, anonymous, and engineered to stay down in low gravity.", 6),
+            "Fried, anonymous, and engineered to stay down in low gravity.", 6,
+            ArtDir + "food-cage-breakfast.jpg"),
 
         new("b1-subbasement-stew", "SUB-BASEMENT STEW", DrinkCategory.Food,
-            "Ingredients sourced from as far down as we are willing to say.", 5),
+            "Ingredients sourced from as far down as we are willing to say.", 5,
+            ArtDir + "food-subbasement-stew.jpg"),
 
         new("b1-local-pour", "THE LOCAL POUR", DrinkCategory.Specialty,
             "Distilled on site. The still is somewhere below B4, which is also all anybody knows about "
-            + "below B4.", 7),
+            + "below B4.", 7,
+            ArtDir + "drink-local-pour.jpg"),
 
         new("b1-bottom-shelf", "THE BOTTOM SHELF", DrinkCategory.Gin,
-            "We don't go down there. The bottle does.", 9),
+            "We don't go down there. The bottle does.", 9,
+            ArtDir + "drink-bottom-shelf.jpg"),
 
         new("b1-long-drop", "THE LONG DROP", DrinkCategory.Gin,
-            "A double. Goes down easy. Comes up never.", 12),
+            "A double. Goes down easy. Comes up never.", 12,
+            ArtDir + "drink-long-drop.jpg"),
     ];
 
     /// <summary>The whole card, for tests and the canon prose sweep.</summary>

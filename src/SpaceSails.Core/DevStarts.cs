@@ -105,6 +105,19 @@ public static class DevStarts
             "B1 of a deep site, standing at THE COUNTER. Press E: the service card opens on the menu — "
             + "coffee, a fry-up, and three pours that joke about the deep. Buying answers on the card (#756).",
             "/map?counter=1"),
+        // #756 · THE HIGH CHAIRS. Owner, live: "there should be high chairs so sitting at the bar desk is
+        // also possible." Two rows, for #757's own reason: whether the one beside you turns is a seeded roll
+        // sitting behind a seeded occupancy, so without a lever the she-speaks beat is reachable only by
+        // luck and the told silence only by more of it. Both halves are the feature.
+        new("🪑🍸", "Up on a stool, and somebody turns",
+            "B1 of a deep site, already seated at THE COUNTER: the card wears the window wall and the park "
+            + "beyond it, the menu is still under your elbow, and WAIT turns the one on the next stool — she "
+            + "never asks to sit, because she is already sitting (#756).",
+            "/map?stool=1&neighbour=1"),
+        new("🪑🤐", "…and the counter where nobody turns",
+            "The same stool with the neighbour forced OFF. Wait as long as you like: the seat beside you "
+            + "answers, in words, that nothing is going to happen. That is the beat, not a bug (#756).",
+            "/map?stool=1&neighbour=0"),
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),

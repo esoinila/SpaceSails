@@ -179,6 +179,27 @@ public static class HiveInterior
                     (float)(painted.X1 - painted.X0), (float)(painted.Y1 - painted.Y0),
                     UndergroundComplex.HallArtAlpha));
             }
+
+            // ── #780 · AND THE FURNITURE, ON TOP OF THE FLOOR IT STANDS ON ────────────────────────────
+            //
+            // Owner, live: "see how in the space bars we have the image of bar desk at the spot where the
+            // bar desk is." AFTER the hall's own art in this list and never before it, because DeckView
+            // walks Backdrops in order — a counter painted first would have the room's wallpaper laid back
+            // over it, which is one picture drawn twice and neither of them seen. Still under every vector
+            // mark, which is the one law this whole seam exists to keep.
+            //
+            // The rectangle is Core's and the alpha is Core's; this loop measures nothing. It converts a box
+            // (X0,Y0,X1,Y1) into the ship's own top-left+W+H convention, and that is the entire contribution
+            // a renderer is allowed to make to a room somebody else carved.
+            foreach (UndergroundComplex.SpotArt spot in a.Hall is { } furnished ? furnished.Painted : [])
+            {
+                backdrops.Add(new(
+                    spot.Url,
+                    (float)spot.X0, (float)spot.Y1,
+                    (float)(spot.X1 - spot.X0), (float)(spot.Y1 - spot.Y0),
+                    UndergroundComplex.SpotArtAlpha));
+            }
+
             // #751 · A hall's plate is stencilled beside its DOOR, which is on whichever face the rib is
             // on — so Core says where, exactly as it says where the board hangs. The 7.6 du offset below is
             // measured off a 15 x 12 room and would hang the sign in mid-floor in a room fifty du deep.

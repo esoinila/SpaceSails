@@ -707,6 +707,7 @@ public partial class Map
         _barNotice = null;
         _showBarMenu = false;
         _pendingContactDrink = null; // a half-open offer moment does not survive stepping back from the bar
+        _stool = null;               // #756 · and you are not still on a stool at a counter you walked away from
     }
 
     // The oracle's corner card is one of the same mutually-exclusive doorway family — opening the counter or a

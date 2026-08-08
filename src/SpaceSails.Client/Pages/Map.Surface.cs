@@ -5457,14 +5457,30 @@ public partial class Map
         foreach (UndergroundComplex.Amenity a in
             UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Amenities)
         {
-            if (Core.Interior.CounterService.For(ex.Stop.Body.Id, a.Use) is null)
+            if (Core.Interior.CounterService.For(ex.Stop.Body.Id, a.Use) is not { } counter)
             {
                 continue;
             }
 
+            StandCaptainAt(a.X, a.Y, "you step up to the counter");
+
+            // #756 · …and ?stool=1 walks the last, last leg: the card is opened and a stool is taken, so the
+            // posture this issue is about is one URL away rather than one URL and two presses. Through the
+            // very handlers [E] and the button reach, so what a tester lands in is what a captain gets —
+            // including WHICH seat is free, which is the room's answer off the frozen watch and never the
+            // cheat's own.
+            if (_stoolCheat)
+            {
+                OpenCounterService(counter);
+                TakeAStool();
+                ShowPulseMessage(
+                    "🧪 DEV ?stool=1: up on a stool at THE COUNTER, menu and all. Press Wait — and add "
+                    + "?neighbour=1 to make the one beside you turn, or ?neighbour=0 to hear the silence.");
+                return;
+            }
+
             ShowPulseMessage(
                 "🧪 DEV ?counter=1: THE COUNTER, in reach. Press E to open the card and order something.");
-            StandCaptainAt(a.X, a.Y, "you step up to the counter");
             return;
         }
     }

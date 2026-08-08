@@ -262,6 +262,35 @@ adding a row to `HallArtFor` — the park (#759) and the head office's dining ro
   ONE behind it**. No legible lettering.
 - **Feeling:** skeleton canon (#618) said as furniture. The counter does its own serving, which is worse.
 
+**#780 — the same file now has a SECOND slot, and that is the point.** Owner, live: *"see how in the space
+bars we have the image of bar desk at the spot where the bar desk is."* The desk is drawn on the **deck** as
+well, over the counter's own carved box (`UndergroundComplex.Hall.Spots`, at `SpotArtAlpha` 0.96 — harder than
+the hall's floor art at 0.72, because a counter is an OBJECT with edges and not the room's ambience). One
+picture, two jobs: the panel you order through and the furniture you walk up to. Any fixture after it wears
+one by publishing a `SpotArt` where it is carved — the park's windows (#759) are next in line.
+
+### `art/b1-park-behind-windows.jpg` — 🌳 THE VIEW FROM THE STOOL
+
+- **Slot:** `Interior.TheStools.SeatedArtUrl`, drawn on the **counter service card** in place of the bar desk
+  **while the captain is up on a stool** (#756). Owner: *"I do not see the park through the bar windows?"* —
+  standing you are looking at the counter, seated you are looking over it, so the picture follows the posture.
+  This is the park's first appearance in the game; #759 keeps the rest of it.
+- **Composition:** a window wall behind the counter, and beyond the glass real grass in mown courses under a
+  painted sky. No people, no signage, no legible lettering.
+- **Feeling:** the most expensive thing in the building, and nobody in the room looks at it. Nothing in the
+  game ever says what a green is doing under a hundred and fifty metres of rock (§13.8), and the caption says
+  only what it IS.
+
+### The card under the glass, photographed — 🍽🥃 FIVE MENU ITEMS
+
+- **Slot:** `Drink.ArtUrl` (#780), a thumbnail beside the row on the counter's menu. Optional per item, and
+  optional on purpose: COMPANY COFFEE has none and every haven bar's card stays text, so a row without a
+  picture draws as a row and not as a hole.
+- **Files:** `art/food-cage-breakfast.jpg`, `art/food-subbasement-stew.jpg`, `art/drink-local-pour.jpg`,
+  `art/drink-bottom-shelf.jpg`, `art/drink-long-drop.jpg`.
+- **Feeling:** the menu jokes about the deep and is never right about it. The photographs are appetising in
+  the way a company canteen's photographs are appetising, which is its own joke.
+
 ### `art/b1-cabinet.jpg` — 🚪 THE CABINET
 
 - **Slot:** `UndergroundComplex.CabinetArtUrl`, raised once **total** (never once per door) on entering any of
