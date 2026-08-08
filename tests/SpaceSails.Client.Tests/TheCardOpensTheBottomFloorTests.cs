@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using SpaceSails.Core;
 
 namespace SpaceSails.Client.Tests;
 
@@ -67,18 +70,76 @@ public sealed class TheCardOpensTheBottomFloorTests
             "private void RideTheLiftTo(",
             "private (double X, double Y) SecretLabHeadSpot(");
 
-        Assert.True(ride.Contains("CardAcceptedLine", StringComparison.Ordinal),
-            "the arrival never says the card-accepted line — the beat has nowhere left to land (#689).");
+        Assert.True(ride.Contains("UndergroundComplex.ArrivalBeat.CardAccepted", StringComparison.Ordinal),
+            "the arrival never handles the card-accepted beat — the beat has nowhere left to land (#689).");
 
-        // …and LAST of the arrival's sayings. ShowPulseMessage keeps ONE slot and the last write wins, so a
-        // beat placed above the routine air line is a beat the air line erases. This is the whole reason the
-        // owner filed the issue, expressed as an ordering.
-        int air = ride.IndexOf("UndergroundComplex.PressurisedLine", StringComparison.Ordinal);
-        int card = ride.IndexOf("CardAcceptedLine", StringComparison.Ordinal);
-        Assert.True(air >= 0, "the arrival's air line has moved; this guard's ordering check is blind now.");
-        Assert.True(card > air,
-            "the card-accepted beat is said BEFORE the arrival's routine air line, which overwrites the one " +
-            "pulse slot. The line would be filed and never seen — the bug, again (#689).");
+        // …and it no longer has to be written LAST of the arrival's sayings, which is what this guard used
+        // to pin. That was a contract living in a comment: ShowPulseMessage kept one slot, the last write
+        // won, and every future author had to know to write below the routine air line. #693 replaced it
+        // with a law — the sayings are composed once in Core with a RANK, and the slot refuses a lesser
+        // line wherever it is written.
+        Assert.True(!ride.Contains("CardAcceptedLine", StringComparison.Ordinal),
+            "the ride says the card-accepted line itself again, which puts the ordering discipline back " +
+            "where #693 took a law out of it (UndergroundComplex.ArrivalSayings composes the arrival).");
+    }
+
+    [Fact]
+    public void TheAcceptedBeatOutranksTheRoutineAirLineWhereverItIsWritten()
+    {
+        // #693 · The ordering above, as the law that replaced it, asked of the shipping composition and the
+        // shipping slot. #692 had to ship "last of the arrival's sayings" as a comment plus an ordering test
+        // because there was nothing else to say it in; this is the something else.
+        int crossings = 0;
+        foreach (string body in new[]
+                 {
+                     "luna", "phobos", "europa", "ganymede", "callisto", "titan", "enceladus", "miranda",
+                     "triton", "the-clinker", "secret-lab-site", "secret-lab-site-unlisted",
+                 })
+        {
+            var wallet = new HashSet<string>();
+            for (int band = 0;
+                 band <= UndergroundComplex.BandOf(UndergroundComplex.DeepestPossibleFloor);
+                 band++)
+            {
+                if (UndergroundComplex.SiteHasBand(body, band))
+                {
+                    wallet.Add(new UndergroundComplex.AuthorityCard(body, band).Id);
+                }
+            }
+
+            foreach (int from in UndergroundComplex.FloorsOf(body))
+            {
+                foreach (UndergroundComplex.LiftStop stop in
+                         UndergroundComplex.LiftPanel(body, from, wallet))
+                {
+                    if (stop.OpenedBy is null || stop.OpenedByChit || stop.IsCurrent
+                        || stop.Refusal is not null)
+                    {
+                        continue;
+                    }
+
+                    IReadOnlyList<UndergroundComplex.Saying> sayings = UndergroundComplex.ArrivalSayings(
+                        body, from, stop.Level,
+                        new UndergroundComplex.ArrivalMemory(WasUnderground: true), stop, wallet);
+                    if (!sayings.Any(s => s.Beat == UndergroundComplex.ArrivalBeat.CardAccepted))
+                    {
+                        continue;
+                    }
+
+                    crossings++;
+                    PulseSlot slot = PulseSlot.Empty;
+                    foreach (UndergroundComplex.Saying s in sayings)
+                    {
+                        slot = slot.Write(s.Text, s.Rank, 0.0);
+                    }
+
+                    Assert.NotEqual(UndergroundComplex.PressurisedLine, slot.Message);
+                    Assert.NotEqual(UndergroundComplex.DeadAirLine, slot.Message);
+                }
+            }
+        }
+
+        Assert.True(crossings > 5, $"only {crossings} carded crossing(s) in the sweep — this proves little.");
     }
 
     [Fact]

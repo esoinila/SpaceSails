@@ -3971,6 +3971,194 @@ public static class UndergroundComplex
         return null;
     }
 
+    // ── #693 · WHAT THE DOORS OPENING HAS TO SAY, AND IN WHAT ORDER OF IMPORTANCE ────────────────────────
+    //
+    // An arrival on a floor can have five things to say at once: the car dropped, the plan has no such floor,
+    // the air is good or gone, a gate read a paper, the pour stopped. The HUD's pulse has ONE slot, and until
+    // #693 the rule was "last write wins" — so which of the five a player actually read was decided by the
+    // order three separate blocks in a razor file happened to be written in. Three of those blocks carried a
+    // comment explaining that they were deliberately last. #592's climax — the first words on a floor that
+    // does not exist, the biggest sentence in the feature — was not one of them, and had been eaten by the
+    // routine pressurisation line since the day it shipped.
+    //
+    // So the arrival composes here, once, with a RANK on each saying, and PulseSlot's law picks the winner.
+    // The list is still in narrative order, because the BOOK keeps every one of them and reads top to bottom;
+    // but nothing depends on that order any more, which is the whole point and is guarded as such (the house
+    // bug class: a list built by appending is not a list in order).
+    //
+    // What stays in the client: the cards, the nerve, the flags, the save. Those are effects on a world Core
+    // does not have. This is the SAYING, and a saying is prose with a rank on it.
+
+    /// <summary>#693 · Which of the arrival's sayings this is, so the client can hang the effects that belong
+    /// to it — a card, a nerve shock, a flag — off the one list rather than re-deciding the conditions.</summary>
+    public enum ArrivalBeat
+    {
+        /// <summary>The car left the surface and kept going. The one beat of scale before any plan is drawn.</summary>
+        Descending,
+
+        /// <summary>#592 · The doors part on a floor the lobby's plan does not have.</summary>
+        Unlisted,
+
+        /// <summary>#609 · The first dead floor of an excursion — the one that also stops the world with a
+        /// card, because whether you can breathe here is not a toast.</summary>
+        DeadAirFirst,
+
+        /// <summary>#609 · Every later floor's air line, whichever way it goes.</summary>
+        Air,
+
+        /// <summary>#689 · A gate read the countersignature card and the car went deeper than this shaft was
+        /// ever dug to.</summary>
+        CardAccepted,
+
+        /// <summary>#752 · A gate read the day-labour chit, which is a tired man with a list and not an
+        /// office that stopped answering its post.</summary>
+        ChitGate,
+
+        /// <summary>#677 · The pour stopped at a line. Said in the shaft, on the way.</summary>
+        Seam,
+
+        /// <summary>#677 · The first gallery. Four sentences, three of them measurable and the fourth an
+        /// absence.</summary>
+        Found,
+    }
+
+    /// <summary>#693 · One thing this arrival has to say, what to file it under, and how much it matters.</summary>
+    /// <param name="Beat">Which saying it is (the client hangs its effects off this).</param>
+    /// <param name="Text">The prose, ready to say and to file.</param>
+    /// <param name="Glyph">The book's own column mark for it.</param>
+    /// <param name="Rank">Who wins the one pulse slot. See <see cref="PulseRank"/>.</param>
+    /// <param name="Gate">The card the gate read, on <see cref="ArrivalBeat.CardAccepted"/> and nowhere
+    /// else. Carried on the saying so the caller can mark the shaft as narrated without spelling out a
+    /// second time which band a ride ended in — that arithmetic has already been done once, above.</param>
+    public readonly record struct Saying(
+        ArrivalBeat Beat, string Text, string Glyph, PulseRank Rank, AuthorityCard? Gate = null);
+
+    /// <summary>#693 · What this excursion has already heard, so a beat that is said once is said once.
+    ///
+    /// <para>Every field is a fact the client already keeps on its <c>SurfaceExcursion</c>; passing them in
+    /// rather than re-deriving them keeps the once-ness and the SAYING in one place, which is the thing that
+    /// had drifted.</para></summary>
+    /// <param name="WasUnderground">Whether the car started below the surface.</param>
+    /// <param name="FirstSightOfThisFloor">Whether this excursion has stood on this floor before.</param>
+    /// <param name="VacuumWarned">Whether the dead-air card has already been spent this excursion.</param>
+    /// <param name="UnlistedSeen">Whether #592's climax has already been said this excursion.</param>
+    /// <param name="ChitBeatSpent">Whether the chit's gate has already been narrated this excursion.</param>
+    /// <param name="SeamCrossed">Whether the pour's edge has already been narrated this excursion.</param>
+    /// <param name="FoundSeen">Whether the first gallery has already been narrated this excursion.</param>
+    /// <param name="ShaftsNarrated">Which bands' gates have already told their card story this excursion.</param>
+    public readonly record struct ArrivalMemory(
+        bool WasUnderground = false,
+        bool FirstSightOfThisFloor = true,
+        bool VacuumWarned = false,
+        bool UnlistedSeen = false,
+        bool ChitBeatSpent = false,
+        bool SeamCrossed = false,
+        bool FoundSeen = false,
+        IReadOnlyCollection<int>? ShaftsNarrated = null);
+
+    /// <summary>
+    /// #693 · EVERYTHING THIS ARRIVAL HAS TO SAY, ranked, in narrative order.
+    ///
+    /// <para>The caller says all of them — the book keeps every one — and lets <see cref="PulseSlot"/> decide
+    /// which is on the screen. A caller that reorders this list must get the same line on screen; that is the
+    /// law, and it is what makes the ordering comments that used to live in the client unnecessary.</para>
+    ///
+    /// <para>Empty on a ride to the surface: coming up is the shed, the moon and what you are carrying out of
+    /// it, which is one line the client composes out of the satchel it owns.</para>
+    /// </summary>
+    /// <param name="via">The button that was pressed, when a button was pressed. Only a ride through the
+    /// panel can cross a gate — the dev floor cheat rides the same car and has no gate to cross.</param>
+    public static IReadOnlyList<Saying> ArrivalSayings(
+        string bodyId, int fromLevel, int toLevel, ArrivalMemory memory, LiftStop? via,
+        IReadOnlyCollection<string> heldCardIds, IReadOnlyList<Satchel.Item>? carried = null)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(heldCardIds);
+
+        var said = new List<Saying>();
+        if (toLevel >= 0)
+        {
+            return said;
+        }
+
+        if (!memory.WasUnderground)
+        {
+            said.Add(new(ArrivalBeat.Descending, DescendingLine, "\U0001F6C3", PulseRank.Beat));
+        }
+
+        // #592 · THE FLOOR THAT IS NOT ON THE PLAN, and the reason this function exists. It says the operation
+        // upstairs was enormous, funded, staffed and inspected, and that this was under it, and that the
+        // people upstairs did not know. It does not say what it was for. CLIMAX, and it has never once won
+        // the slot it was written for.
+        if (IsUnlisted(bodyId, toLevel) && !memory.UnlistedSeen)
+        {
+            said.Add(new(
+                ArrivalBeat.Unlisted,
+                UnlistedArrivalLine(-DepthOf(bodyId), KindFor(bodyId), KindOn(bodyId, toLevel)),
+                "\U0001F573",
+                PulseRank.Climax));
+        }
+
+        // #677 · NEITHER AIR LINE IS SAID PAST THE SEAM. The pressurised line describes plant and somebody's
+        // account decades after the last invoice; said in a gallery it would explain, in one breath, the one
+        // thing that must never be explained. The authored arrival line states it once and after that the
+        // gauge and the plate answer, which is what instruments are for.
+        if (memory.FirstSightOfThisFloor && !IsFound(bodyId, toLevel))
+        {
+            bool pressurised = HoldsPressure(bodyId, toLevel);
+            if (!pressurised && !memory.VacuumWarned)
+            {
+                // #609 · The first one is a BEAT and it comes with a card: depth is priced in air, and the
+                // owner suffocated on B2 finding that out from a toast that had already faded.
+                said.Add(new(ArrivalBeat.DeadAirFirst, DeadAirLine, "🫁", PulseRank.Beat));
+            }
+            else
+            {
+                // …and every one after it is the weather. Status, which is what it has always been and what
+                // it was never allowed to stand on top of.
+                said.Add(new(
+                    ArrivalBeat.Air, pressurised ? PressurisedLine : DeadAirLine, "🫁",
+                    PulseRank.Status));
+            }
+        }
+
+        // #689 · THE CARD'S FINEST HOUR. A fact about the RIDE rather than about the floor, said once per
+        // shaft per excursion, and the beat the owner filed an issue about never seeing.
+        if (via is not null
+            && GateOpenedByRidingTo(bodyId, fromLevel, toLevel, heldCardIds, carried) is { } opened
+            && !(memory.ShaftsNarrated?.Contains(opened.Band) ?? false))
+        {
+            said.Add(new(
+                ArrivalBeat.CardAccepted, CardAcceptedLine(opened), "🎫", PulseRank.Beat, opened));
+        }
+
+        // #752 · …and the other paper's arrival, which is the job finishing. A gate that reads a timesheet
+        // and waves you through is the least frightening thing this building has done.
+        if (via is { OpenedByChit: true } && !memory.ChitBeatSpent)
+        {
+            said.Add(new(
+                ArrivalBeat.ChitGate, CanteenTable.ChitGateLine, CanteenTable.ChitGlyph, PulseRank.Beat));
+        }
+
+        // #677 · The seam first, because it happens in the shaft, on the way; then the arrival, because it
+        // happens when the doors open. Both authored verbatim, both CLIMAX. Two climaxes in one arrival is
+        // allowed and settled by the ordinary tie-break — among equals the last written wins — which is
+        // exactly the reading order the owner wrote them in.
+        if (IsFound(bodyId, toLevel))
+        {
+            if (!memory.SeamCrossed)
+            {
+                said.Add(new(ArrivalBeat.Seam, SeamLine, "\U0001F573", PulseRank.Climax));
+            }
+            if (!memory.FoundSeen)
+            {
+                said.Add(new(ArrivalBeat.Found, FoundArrivalLine, "\U0001F573", PulseRank.Climax));
+            }
+        }
+
+        return said;
+    }
+
     // ── #528 · TWO CARDS FOR THE TWO HALVES OF A DOOR ───────────────────────────────────────────────────
     //
     // Owner, standing at a rib's far end: "I see there is a nice lock here at the end of the corridor....

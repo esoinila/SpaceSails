@@ -226,8 +226,10 @@ public partial class Map
     private double _lastPulseSimTime = -PulseCooldownSeconds; // so the very first pulse isn't rejected
     private int _reactionMassPulses = 500;
     private const double PulseCooldownSeconds = 1.0;
-    private string? _pulseMessage;
-    private double _pulseMessageExpiresMs;
+    // #693 · THE ONE SLOT, WITH A LAW ON IT. Was a bare string plus an expiry, overwritten by whoever wrote
+    // last — which made the order of three blocks in Map.Surface load-bearing and left #592's climax losing
+    // to the routine air line. PulseSlot (Core, and therefore sweepable) keeps the rank alongside the words.
+    private PulseSlot _pulse = PulseSlot.Empty;
     private const double AdaptiveWarpThreshold = 100; // below this, the historic fixed-1 s loop
     private const double AdaptiveWarpQuantum = 60;    // matches NpcTimeStep; frame-invariant
     private const double DaySeconds = 86400;
@@ -800,6 +802,43 @@ public partial class Map
                 if (candidate is "1" or "true" or "yes")
                 {
                     _foundCheat = true;
+                    secretlabCheat = true;
+                }
+            }
+            else if (pair.StartsWith("card=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #693 dev cheat: /map?card=next puts ONE authority in the wallet — the one the gate in front
+                // of you reads.
+                //
+                // The #692 report ended with the honest note that its own hero row could not be playtested:
+                // "reaching the row needs an authority card in the wallet and no dev cheat mints one." The
+                // only thing that did was ?found=1, which also parks a different rock and hands over the
+                // WHOLE wallet — so the carded lift row, the gate refusal one band lower, and the accepted
+                // beat when the doors open have never been reachable on an ordinary site at all. A scene
+                // nobody can reach on demand is a scene that ships broken.
+                //
+                //   ?card=next    the band under wherever you are set down — the gate you are standing at
+                //   ?card=N       band N specifically, for the ladder (a card that opens the WRONG gate is
+                //                 the refusal line, and it has its own guard and no way to see it)
+                //   ?card=all     every band the site has, which is ?found=1's wallet on any rock
+                //
+                //   /map?secretlab=deep&land=1&floor=1&card=next
+                //
+                // The issue proposed ?card=<bodyId>#<band>, which is the card's own id — and that is exactly
+                // what this must NOT take. A body typed into a URL is a body the landing may not be on, and a
+                // band typed for it is one that site may not have; the cheat would mint a card no gate on the
+                // ground reads and the tester would be playtesting an empty pocket. So it names a BAND, it is
+                // minted for the body actually landed on, and a band the site does not have mints nothing and
+                // says so. (Also: '#' ends a URL — the id form cannot survive a query string anyway.)
+                //
+                // It implies ?secretlab=1, because a wallet is only worth anything where there is a lift, and
+                // it never chooses the rock: pair it with ?secretlab=deep or ?found=1 for those grounds.
+                string candidate = Uri.UnescapeDataString(pair["card=".Length..]).ToLowerInvariant();
+                if (candidate is "next" or "all"
+                    || (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                            out int band) && band >= 0))
+                {
+                    _cardCheat = candidate;
                     secretlabCheat = true;
                 }
             }
@@ -2067,10 +2106,7 @@ public partial class Map
             ReprojectTrajectory();
         }
 
-        if (_pulseMessage is not null && highResTimestampMs > _pulseMessageExpiresMs)
-        {
-            _pulseMessage = null;
-        }
+        _pulse = _pulse.Expire(highResTimestampMs);
 
         // Thunder on the rising edge of an arc (M10 polish) — once per arcing episode.
         bool arcing = _plasma is not null && _ship.Charge >= ArcChargeThreshold;
@@ -2887,16 +2923,21 @@ public partial class Map
         RendererInterop.PlayCue("vent");
     }
 
-    private void ShowPulseMessage(string message)
-    {
-        _pulseMessage = message;
-        // Owner 2026-07-18 ("it autodisappears which is not convenient"): a line lingers long enough to
-        // READ — the dwell scales with its length (≈45 ms/char) so the words a player paid a round to
-        // hear aren't gone before they land. Short status pulses keep the old brisk 1.5 s floor; long
-        // intel lines get up to ~8 s. (The durable "overheard" book is the real record; this is the doorbell.)
-        double dwell = Math.Clamp((message?.Length ?? 0) * 45.0, 1500.0, 8000.0);
-        _pulseMessageExpiresMs = (_lastTimestampMs ?? 0) + dwell;
-    }
+    /// <summary>Say it on the HUD's one pulse line.
+    ///
+    /// <para>#693 · <paramref name="rank"/> is what the line IS, and it decides who wins that slot when
+    /// several want it in the same breath: a lower-ranked line may not displace a higher-ranked one that is
+    /// still held (<see cref="PulseSlot"/>). It defaults to <see cref="PulseRank.Status"/>, which is what
+    /// every instrument, price and refusal in the game is — the ranks exist for the handful of authored
+    /// sentences a whole feature was built to say, and a status line dressed up as a climax to make it win
+    /// is the same bug with better manners.</para>
+    ///
+    /// <para>The dwell is unchanged (owner 2026-07-18, "it autodisappears which is not convenient"): a line
+    /// lingers long enough to READ, scaled by its length, so the words a player paid a round to hear aren't
+    /// gone before they land. The durable "overheard" book is the real record; this is the doorbell.</para>
+    /// </summary>
+    private void ShowPulseMessage(string message, PulseRank rank = PulseRank.Status) =>
+        _pulse = _pulse.Write(message, rank, _lastTimestampMs ?? 0);
     private bool _dragMoved;
     private double _downClientX, _downClientY;
 

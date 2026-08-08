@@ -1923,6 +1923,51 @@ refused for the wrong reason — the fifth bug class, a guard handed a world tha
 Watched go **red** on the old behaviour at `18747 of 19311 squares on a pressurised poured floor take a
 shovel`.)*
 
+13.24 **An arrival composes its sayings with a RANK, and the one pulse slot keeps the biggest** (#693).
+
+> *"#592's `UnlistedArrivalLine` — the CLIMAX of #592, the first words on the floor that does not exist — is
+> overwritten by the routine pressurisation/air line on the same arrival. The biggest sentence in the feature
+> has been losing to boilerplate since it shipped."* — owner, filing #693
+
+The HUD's pulse line has exactly **one** slot and the last write won. Stepping out of the car can have five
+things to say at once — the car dropped, the plan has no such floor, the air is good or gone, a gate read a
+paper, the pour stopped — so *which one a player actually read* was decided by the order three blocks in
+`Map.Surface.RideTheLiftTo` happened to be written in. Three of them carried a comment saying they were
+deliberately **last**; #592's climax did not, and lost to *"the doors part on warm air and standing lights"*
+every single time. #689's beat had already been shipped with an ordering test (#692) for the same reason,
+which is what a missing law looks like from the inside: **a contract that lives in comments is not one.**
+
+The law is two pieces:
+
+- **`PulseRank`** — `Status` (instruments, prices, refusals, weather — the default, and what everything
+  written before #693 is), `Beat` (something happened once and the book will keep it), `Climax` (the sentence
+  a whole feature was built to say). The rank is about what a line **is**, never about how loud it is; a
+  status line dressed as a climax to make it win is the same bug with better manners.
+- **`PulseSlot`** — *a lower-ranked line may not displace a higher-ranked one that is still held; among
+  equals the last written wins.* The **hold is short on purpose**: `MinDwellMs`, the pulse's own floor, and
+  not the winner's full dwell. A climax can dwell eight seconds, and eight seconds in which a pressed button
+  answers nothing on screen is §13.10's *"in the DOM is not on the screen"* wearing this fix as a disguise.
+  The lines that race for this slot race in the same frame or the tick after it.
+
+And the arrival is **composed once, in Core** (`UndergroundComplex.ArrivalSayings`), returning the ranked
+sayings in narrative order with the beat each one is. The client says all of them — **the book keeps every
+one, in the order they were said, whatever the screen does** — and hangs the cards, the nerve, the flags and
+the save off the beat. No call site has to know what the call sites after it are going to say, which is the
+whole point: the per-site ordering discipline #692 had to invent is gone, and its ordering test is now a rank
+test.
+
+*(Enforced: `ThePulseKeepsTheBiggestSentenceTests` sweeps **every floor arrival the generator admits** — every
+site, every from-floor, with the wallet and without it — and asserts the highest-ranked saying is the one on
+screen; plus a **permutation** guard, because the claim of a priority is that composing order is free, and
+"a list built by appending is not a list in order" (§13.2) is this repo's own named bug class. Watched go
+**red** on the old last-write-wins rule at `144 of 1319 arrivals put the wrong sentence on screen` and
+`europa B5: the floor that is not on the plan says '🕳 The doors part on a floor that is not on the …' and the
+screen kept '🎫 You find the other shaft…' instead`.)*
+
+**Reaching it.** `?card=next` mints the authority for the gate you will be standing at, so the carded row,
+the accepted beat and the wrong-card refusal are one URL away — #692 shipped all three and could not look at
+any of them. See `docs/testing-guide.md`.
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

@@ -88,7 +88,10 @@ public partial class Map
 
         if (ex.Floor == UndergroundComplex.WinteringHallLevel)
         {
-            ShowAndFile(UndergroundComplex.WinteringHallLine, "❄");
+            // #693 · CLIMAX. It is raised before the arrival's own sayings and it is the heaviest throw in
+            // the game (40 nerve, one call site, ever) — under "last write wins" the routine air line on the
+            // same arrival stood on top of it, exactly as it stood on top of #592's.
+            ShowAndFile(UndergroundComplex.WinteringHallLine, "❄", PulseRank.Climax);
             _viewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                 UndergroundComplex.WinteringHallLabel,

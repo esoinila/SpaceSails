@@ -86,6 +86,13 @@ public static class DevStarts
         new("🍸", "The canteen on B1, with people in it",
             "150 m down, in the one room this facility admits outsiders to: carriers and contractors at the tables, a cork board on the wall, no pass required (#709).",
             "/map?secretlab=deep&land=1&floor=1"),
+        // #693 · The card's own row, which until here nobody could look at without a real Key hunt. #692
+        // shipped the gated button, the promise it makes and the beat it pays off, and closed with the note
+        // that none of the three had been seen in a browser — "a scene nobody can reach on demand is a scene
+        // that ships broken", written into the same file that then could not follow it.
+        new("🎫", "The lift row the card unlocks",
+            "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
+            "/map?secretlab=deep&land=1&floor=1&card=next"),
         new("▣", "The sign that says a different building",
             "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",
             "/map?secretlab=deep&land=1&floor=21"),

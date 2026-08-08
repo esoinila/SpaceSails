@@ -2202,12 +2202,12 @@
         </div>
     }
 
-    @* Deck / first-person pulse toast: the Nav HUD that normally hosts _pulseMessage is hidden while
+    @* Deck / first-person pulse toast: the Nav HUD that normally hosts the pulse line is hidden while
        you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
        standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
-    @if (_deckMode && _pulseMessage is not null)
+    @if (_deckMode && _pulse.Message is not null)
     {
-        <div class="deck-pulse-toast">@_pulseMessage</div>
+        <div class="deck-pulse-toast">@_pulse.Message</div>
     }
 
     @* A bar stranger's contract, slid across the table (go-ashore quests, M-Q1): shown over the deck
@@ -3881,9 +3881,9 @@
                     <div class="text-danger fw-bold">⚡ ARCING — visible system-wide</div>
                 }
             }
-            @if (_pulseMessage is not null)
+            @if (_pulse.Message is not null)
             {
-                <div class="text-warning">@_pulseMessage</div>
+                <div class="text-warning">@_pulse.Message</div>
             }
             @if (_captureEngaged)
             {
