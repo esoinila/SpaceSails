@@ -190,7 +190,7 @@ public sealed partial class Map
         _soundQuietly = !_soundQuietly;
         _sounding = null;   // the gear changed under it; the reading it was buying no longer means anything
 
-        ShowPulseMessage(HullSounding.OfferLine(SoundingGear));
+        SayItWhereTheyAreLooking(HullSounding.OfferLine(SoundingGear));   // #736: the remote is up — answer on it
         LogAutopilotEvent(_soundQuietly
             ? "✊ Quiet search: knuckles only. Slower, shorter, and nobody hears it."
             : "📡 Sounder: quick and wide, and audible the length of her.");

@@ -89,16 +89,18 @@ public partial class Map
         MarkSecretLabFound(ex.Stop.Body.Id);
         RebuildSurfaceDeck(); // re-composes with the now-revealed ⚙ HIDDEN DOOR console on the ground
         RendererInterop.PlayCue("reveal");
-        ShowPulseMessage(
-            "📡 The detector SHRIEKS and holds — not a coin, not scrap: a SEALED DOOR, buried flush with the " +
-            "regolith where no door has any right to be. Someone hid this. Force it open ([E] at the door) — " +
-            "or walk away and pretend you never found it.");
 
         // #528 · THE GROUND STOPS BEING GROUND. The only find in the beach-comber lane that is not a thing
         // you pick up, and it was a sentence that faded in a second and a half — under a decision (force it,
         // or walk away and pretend you never found it) that is one of the sharpest in the game. Core owns
         // the words; the picture shows the door and nothing about what is behind it.
-        ShowRevealCard(SecretLab.DoorPlate.Title, SecretLab.DoorPlate.ArtFile, SecretLab.DoorPlate.Caption);
+        //
+        // #736 · And the sentence that names the DECISION ("force it open — or walk away") rides the card,
+        // because the card comes up on the same sweep and the decision is the thing the captain has to read.
+        ShowRevealCard(SecretLab.DoorPlate.Title, SecretLab.DoorPlate.ArtFile, SecretLab.DoorPlate.Caption,
+            outcome: "📡 The detector SHRIEKS and holds — not a coin, not scrap: a SEALED DOOR, buried flush " +
+                "with the regolith where no door has any right to be. Someone hid this. Force it open ([E] " +
+                "at the door) — or walk away and pretend you never found it.");
         return true;
     }
 
@@ -391,19 +393,22 @@ public partial class Map
         {
             SpawnReevers(roll.PackSize);
             RendererInterop.PlayCue("alarm");
-            ShowPulseMessage(
-                $"🖥 {coreLogText}   ▪   {dice} — and behind you the dormant thing's eyes come open. " +
-                $"{roll.PackSize} of them, standing off their benches. It salvages YOU. Get to the tube — RUN.");
 
             // #528 · THE HIVE'S LOUDEST MOMENT, and it had no frame at all — the other branch of this very
             // roll ends in a painted selfie against this same room. Raised only here, strictly AFTER the D20
             // has resolved and been shown, so it can never be a tell: the captain already knows which way it
             // went before the picture arrives. The salvage branch keeps its selfie and gets no card, because
             // a card on both would be a card on a card.
+            //
+            // #736 · The die, the count and the order to RUN ride the card. The house law is that the die is
+            // SHOWN; a d20 shown under a backdrop's blur is a die nobody can argue with, which is the exact
+            // thing showing it exists to prevent.
             ShowRevealCard(
                 SecretLab.TheyStandPlate.Title,
                 SecretLab.TheyStandPlate.ArtFile,
-                SecretLab.TheyStandPlate.Caption);
+                SecretLab.TheyStandPlate.Caption,
+                outcome: $"🖥 {coreLogText}   ▪   {dice} — and behind you the dormant thing's eyes come open. " +
+                    $"{roll.PackSize} of them, standing off their benches. It salvages YOU. Get to the tube — RUN.");
         }
         RequestVaultSave(); // the nerve moved (and maybe the purse) — persist it
     }

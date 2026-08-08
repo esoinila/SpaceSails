@@ -281,10 +281,15 @@ public partial class Map
         // no picture of its own — the dossier's art is the dossier's. One canvas for all four covers, on the
         // wrecks' anti-tell law (Derelict.LogArtFile): the objects are the same four in every hut, and
         // EffectsLine already carries the whole of the difference.
+        //
+        // #736 · The plate carries EffectsLine as its outcome, because EffectsLine is the whole of what makes
+        // one hut different from another and the picture is deliberately the same in all four. Filed above
+        // and read here: the book keeps it, and the card the press raised says it where the eye already is.
         ShowRevealCard(
             SurfaceOutpost.EffectsPlate.Title,
             SurfaceOutpost.EffectsPlate.ArtFile,
-            SurfaceOutpost.EffectsPlate.Caption);
+            SurfaceOutpost.EffectsPlate.Caption,
+            outcome: SurfaceOutpost.EffectsLine(cover));
 
         // Reading somebody's last effects on a floor they did not walk off costs a little nerve. Small: the
         // place is long cold, and the captain is a pirate. It is the recognition that stings, not the fright.

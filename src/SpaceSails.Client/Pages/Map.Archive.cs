@@ -263,17 +263,21 @@ public sealed partial class Map
             _heat = EncounterRule.RaiseHeat(_heat, -PurgeHeatCleared, SimTime);
         }
 
-        ShowPulseMessage("⏻ " + ArchiveNode.PurgeLine);
         RendererInterop.PlayCue("board");
 
         // #528 · The one irreversible act in the game, and it was a toast. A plate is not a confirmation
         // dialog — it fires AFTER the handle has gone over, which is the one place a picture can be as quiet
         // as this feature needs and still exist. The four visions each got a painting on the way in; the
         // moment the noise stops had nothing. Core owns the words, and they name nobody, as always.
+        //
+        // #736 · …and the sentence that says WHAT THE HANDLE DID rides the plate, because the plate goes up
+        // on this same press and everything under it is behind a blur. A picture of a room going quiet, with
+        // the line that says the room went quiet dimmed out behind it, is half a beat.
         ShowRevealCard(
             ArchiveNode.PurgedPlate.Title,
             ArchiveNode.PurgedPlate.ArtFile,
-            ArchiveNode.PurgedPlate.Caption);
+            ArchiveNode.PurgedPlate.Caption,
+            outcome: "⏻ " + ArchiveNode.PurgeLine);
         RebuildWreckDeck();   // the legend still reads, and now it reads "pulled"
         RequestVaultSave();
     }

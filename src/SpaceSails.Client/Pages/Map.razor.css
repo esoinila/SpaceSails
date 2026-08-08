@@ -4297,11 +4297,20 @@
 
 .satchel-empty { padding: 0.8rem 0; }
 
-/* #680/#686 · The last try's answer, said inside the dialog — the one layer the backdrop cannot blur.
-   Amber like the dialog's frame, not alarm-red: a refusal down here is information, not an emergency.
-   One rule for both organs the disease hit: the satchel's TRY and the car panel's refused floor. */
+/* #680/#686/#736 · The last act's answer, said inside the pop-up that was acted on — the one layer the
+   backdrop cannot blur. Amber like the dialogs' own frames, not alarm-red: an answer down here is
+   information, not an emergency.
+
+   ONE RULE FOR EVERY ORGAN THE DISEASE HIT, which is the whole point of #736 having been filed as a sweep
+   rather than a third bug: the satchel's TRY (#680), the car panel's refused floor (#686), the raised card's
+   arithmetic (#736's Gilt-Eye repro — .reveal-outcome), and the boards a captain argues with, which stay
+   open by design and so can never pulse (.panel-outcome: the hatch keypad, the alarm panel, the door board,
+   the captain's remote). A new pop-up that grows an answer takes one of these two class names and inherits
+   the law with the look. */
 .lift-outcome,
-.satchel-outcome {
+.satchel-outcome,
+.reveal-outcome,
+.panel-outcome {
     font-size: 0.85rem;
     line-height: 1.5;
     color: #d8b56a;
@@ -4310,6 +4319,15 @@
     border-radius: 0.25rem;
     padding: 0.5rem 0.7rem;
     white-space: pre-wrap;
+}
+
+/* The two that sit inside a card whose other rows are centred (the title, the caption, the keypad): an
+   outcome is a sentence to READ, not a legend, so it takes the card's full width and reads from the left.
+   Both hosts are column flexboxes, so stretch is already the default — this only says so out loud. */
+.reveal-outcome,
+.panel-outcome {
+    align-self: stretch;
+    text-align: left;
 }
 
 .satchel-items {
