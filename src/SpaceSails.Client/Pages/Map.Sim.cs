@@ -829,6 +829,30 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["watchers=".Length..]).ToLowerInvariant();
                 _watchersCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("arrivalphase=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #742 dev cheat: /map?kaamos=hq&arrivalphase=N winds the sim clock to arrival phase N of
+                // the ice moon's own orbit BEFORE the head-office park is built, so the ride lets her go on
+                // the phase you named instead of whichever one boot-time happened to be.
+                //
+                // It exists because #742 was a ONE-IN-24 bug: the window opens every 40 days and stands
+                // open for two, so the arrival phase is free, and phase 2/24 (epoch 9,866 s) was the one
+                // that put the parked hull into Enceladus at +9.54 h while the captain was 23 floors down.
+                // Nobody could reach that on demand — you booted, got phase 0, saw nothing wrong, and
+                // shipped it. This is the door to the bad one.
+                //
+                //   /map?kaamos=hq&arrivalphase=2           park on the phase that used to lithobrake
+                //   /map?kaamos=hq&arrivalphase=2&land=1&floor=23   …and go down the lift while she holds
+                //
+                // 0…23; anything else is ignored rather than clamped, because a silently-corrected phase
+                // index is a tester reading the wrong row of the sweep.
+                string candidate = Uri.UnescapeDataString(pair["arrivalphase=".Length..]);
+                if (int.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out int ph)
+                    && ph >= 0 && ph < CyclerWindow.ArrivalPhases)
+                {
+                    _arrivalPhaseCheat = ph;
+                }
+            }
             else if (pair.StartsWith("found=", StringComparison.OrdinalIgnoreCase))
             {
                 // #677 dev cheat: /map?found=1 parks the one rock in the game whose site has a band nobody
@@ -1848,21 +1872,34 @@ public partial class Map
         {
             return CoMovingBy(dockBody, 3_000); // just off the ~1 km station, well within dock reach
         }
+        // Every one of these is a FREE park: the ship is let go alongside, not clamped on, so she flies
+        // whatever orbit the standoff's direction gives her. #742 — laid along the Sun's radius, the
+        // Enceladus spawn struck the ice at +9.17 h on one arrival phase of its 24, and the Europa spawn
+        // struck Europa at +12.00 h on one of its own. That second one is the part nobody had looked for:
+        // the ice moon was the REPORTED case, never the only one, because the geometry belongs to the
+        // construction and not to Enceladus. CoOrbitalBy lays the standoff along the body's own track, and
+        // the arrival phase stops deciding anything at either of them.
         return id switch
         {
-            "jupiter" => CoMovingBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
-            "saturn" => CoMovingBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
-            "enceladus" => CoMovingBy("enceladus", 5e6),      // (test) co-moving alongside Enceladus, ~5 Hill radii out (#136)
-            "wreck" => CoMovingBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
+            "jupiter" => CoOrbitalBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
+            "saturn" => CoOrbitalBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
+            "enceladus" => CoOrbitalBy("enceladus", 5e6),      // (test) co-moving alongside Enceladus, ~5 Hill radii out (#136)
+            "wreck" => CoOrbitalBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
             _ => InitializeShipState(),
         };
     }
 
     // A ship state co-moving with a body at boot (SimTime 0), a given distance radially outward from it
     // (from the Sun's frame). offsetMeters 0 sits right on the body; a few thousand metres clears a
-    // station, ~1e7+ a moon. Delegates to the shared BerthState.CoMoving construction (#269).
+    // station, ~1e7+ a moon. Delegates to the shared BerthState.CoMoving construction (#269). This is the
+    // CLAMPED idiom — the docked starts above, where the berth owns the position the moment we arrive.
     private ShipState CoMovingBy(string bodyId, double offsetMeters)
         => BerthState.CoMoving(_ephemeris!, bodyId, 0, offsetMeters);
+
+    // …and the FREE one (#742): the same standoff laid along the body's own track about its parent, so a
+    // ship nobody is holding stays where she was let go instead of flying off on a slightly wrong ellipse.
+    private ShipState CoOrbitalBy(string bodyId, double offsetMeters)
+        => BerthState.CoOrbital(_ephemeris!, bodyId, 0, offsetMeters);
 
     // The Captain's "🧭 Set course to a start point…" button: bring the chooser back up mid-run so a
     // locale can be (re)picked from the chart-room, not just at boot. ApplyStart is re-entrant, so the

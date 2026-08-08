@@ -853,6 +853,23 @@ patron like any other haul. Then the **cycler window** — a real grid over sim 
 | `/map?kaamos=hq&land=1&floor=24` | **B24 · THE BERTH OFFICE** — the console that has never stopped filing. |
 | `/map?kaamos=hq&land=1&floor=12&nerve=10` | **B12 · THE STANDING ORDER** — search the first room off the nearest rib for the one sheet worth carrying out. |
 | `/map?kaamos=all&ashore=1` | The other end: the berth-code resolves at the bar seam, the ❄❄ notice fires, 📰 **THE STORY BREAKS** raises the arc-news card, and a housekeeping line lands on the wire. |
+| `/map?kaamos=hq&arrivalphase=2&land=1&floor=23` | **#742 · the arrival phase that used to drift into the moon.** `&arrivalphase=N` (0–23) winds the clock to phase N of Enceladus's 32.9 h orbit before the arc lets her go, so the one-in-24 placement is bootable on demand instead of waited for. |
+
+**#742 — the arrival phase nobody chose.** The window opens every 40 days and stands open for two, so *which*
+phase of the moon's orbit the ride lets you go on is free. It used to decide whether you kept your ship. The
+park was laid along the **Sun-outward** direction and handed the moon's velocity, which in Saturn's frame is
+not a park at all but a different ellipse — semi-major axis wandering 2.193e8 … 2.592e8 m against the moon's
+2.38037e8, period 104,768 … 134,641 s against the moon's 118,387 (up to **13.7 % off**) — so periapsis and
+apoapsis *bracketed the rail the moon runs on*, and the period mismatch then walked the hull round that rail
+until the two crossings met. **Phase 2/24 (epoch 9,866 s) struck the ice at +9.54 h**; 3/24 and 14/24 passed
+at 3.157e5 and 5.816e5 m, one and two surface radii. The park is now laid along the moon's **own track**
+(`BerthState.CoOrbital`) — the moon's own conic, phase-shifted — so no phase can be the unlucky one.
+
+| what to do | what you should see |
+| --- | --- |
+| `/map?kaamos=hq&arrivalphase=2`, then ⏩ warp a sim day | The standoff holds near 1e7 m and the range readout stays there. Pre-fix, the ⚠ *orbit degrading — periapsis under the surface* banner came up and the hull was inside Enceladus by +9.54 h. |
+| `/map?kaamos=hq&arrivalphase=2&land=1&floor=23` | The wintering-hall beat, ridden all the way down and back, with a ship still up there to come back to. This exact URL used to be the death. |
+| Sweep `&arrivalphase=` 0 … 23 | Every one behaves the same. That sameness *is* the fix — the phase no longer decides anything. Phases 3 and 14 were the other two that grazed. |
 
 Things to check: right-clicking Enceladus with no berth-code shows **no** cycler row at all (the fiction may
 not arrive before the arc does); with the code but no run it is visible-but-disabled and says why; with the

@@ -54,6 +54,23 @@ public static class CyclerWindow
     /// used — the tested spawn, physics preserved.</summary>
     public const double ArrivalOffsetMeters = 1.0e7;
 
+    /// <summary>#742 · How many ARRIVAL PHASES the window admits — the resolution at which the ice moon's
+    /// own orbit is sampled when asking "and what if the ride let her go HERE instead?".
+    ///
+    /// <para>It is 24 because that is one an hour and a bit round a 32.9 h orbit, fine enough that no
+    /// geometry hides between two samples and coarse enough to fly all of them in a test. The window opens
+    /// every 40 days and stands open for two, so which of the 24 a captain gets is not a choice anyone
+    /// makes — which is exactly why every one of them has to be safe, and why the guard sweeps all 24
+    /// rather than spot-checking the one somebody happened to boot into.</para></summary>
+    public const int ArrivalPhases = 24;
+
+    /// <summary>The sim epoch at which arrival phase <paramref name="phase"/> lands, given the moon's own
+    /// orbital period. The period is an ARGUMENT and not a constant here on purpose: a moon's number
+    /// belongs to the moon, and a copy of it filed under the cycler is the house's oldest bug — a MOON
+    /// constant living somewhere that is not the moon. Callers read it off the ephemeris body.</summary>
+    public static double ArrivalPhaseEpoch(double moonPeriodSeconds, int phase) =>
+        Math.Abs(moonPeriodSeconds) * (((phase % ArrivalPhases) + ArrivalPhases) % ArrivalPhases) / ArrivalPhases;
+
     /// <summary>Which window this sim time falls in or before — the index on the grid. Windows open at
     /// integer multiples of <see cref="PeriodSeconds"/>.</summary>
     private static double OpeningAtOrBefore(double simTime) =>
