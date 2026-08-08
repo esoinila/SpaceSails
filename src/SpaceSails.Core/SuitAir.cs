@@ -92,6 +92,25 @@ public static class SuitAir
         return $"{h}h{m:00}";
     }
 
+    /// <summary>#740 · THE TANK AS THE CAPTAIN READS IT — the one string anything on screen is allowed to
+    /// print when it wants to say how much air is left.
+    ///
+    /// <para>The suit runs on two clocks and always has: <see cref="TankSeconds"/> is the PLAY budget, spent
+    /// against the same compressed surface clock as everything else, and <see cref="PrimaryHours"/> is what
+    /// the fiction says the same tank holds. <see cref="SuitClock"/> is the conversion, and every surface
+    /// that has ever quoted air has gone through it — except one. The DEAD AIR card did its own arithmetic
+    /// on the raw budget and printed <i>"you have 21 min 01 s"</i> at a captain whose gauge, two seconds
+    /// later on the same floor, read <b>AIR 8h09</b>. Same tank, same instant, off by a factor of twenty
+    /// three, and #612's law is that the instruments may never disagree about air.</para>
+    ///
+    /// <para>The two-places-computing-one-fact shape is the thing to remove, not the sum, so the reserve
+    /// branch <see cref="Readout"/> already wrote twice lives here now and the card asks for it. Anything
+    /// that ever wants to say a number of minutes of air asks HERE.</para></summary>
+    public static string Clock(double airLeftSeconds) =>
+        OnTheReserve(airLeftSeconds)
+            ? $"RESERVE {(int)Math.Ceiling(airLeftSeconds / ReserveSeconds * ReserveMinutes)}m"
+            : SuitClock(airLeftSeconds);
+
     /// <summary>The line as the primary gives out and the secondary pack cuts in — once, loudly.</summary>
     public const string ReserveEngagedLine =
         "🫁 PRIMARY EXHAUSTED — the secondary pack cuts in. Thirty minutes, and it is the last thirty you " +
@@ -317,11 +336,7 @@ public static class SuitAir
     {
         if (!Drawing(supply))
         {
-            string held = airLeftSeconds <= 0
-                ? "EMPTY"
-                : OnTheReserve(airLeftSeconds)
-                    ? $"RESERVE {(int)Math.Ceiling(airLeftSeconds / ReserveSeconds * ReserveMinutes)}m"
-                    : SuitClock(airLeftSeconds);
+            string held = airLeftSeconds <= 0 ? "EMPTY" : Clock(airLeftSeconds);
             return supply == Supply.Ship
                 ? $"AIR {held} · FILLING — you are on her air, not the tank."
                 : $"AIR {held} · SEALED — you are breathing the room, not the tank.";
@@ -332,9 +347,7 @@ public static class SuitAir
             return "AIR — EMPTY";
         }
 
-        string clock = OnTheReserve(airLeftSeconds)
-            ? $"RESERVE {(int)Math.Ceiling(airLeftSeconds / ReserveSeconds * ReserveMinutes)}m"
-            : SuitClock(airLeftSeconds);
+        string clock = Clock(airLeftSeconds);
 
         return BandFor(airLeftSeconds, distanceHomeDu) switch
         {
