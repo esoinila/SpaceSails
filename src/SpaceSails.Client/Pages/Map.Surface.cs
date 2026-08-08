@@ -2338,7 +2338,11 @@ public partial class Map
                          ShaftsNarrated: ex.HiveShaftsOpened),
                      via, AuthorityCardIds(), _satchel))
         {
-            ShowAndFile(saying.Text, saying.Glyph, saying.Rank);
+            // #768 · HELD, NOT SAID — because this same loop raises cards (the dead-air warning below, the
+            // gate's own face) and the block above it may already have raised the first-descent card. Every
+            // one of them lands a backdrop on top of whatever is on the pulse. The book gets the line now,
+            // in the order it was said; the screen gets the winner when the captain closes the card.
+            HoldAndFile(saying.Text, saying.Glyph, saying.Rank);
 
             switch (saying.Beat)
             {
@@ -2425,6 +2429,12 @@ public partial class Map
 
         ApplyNerveShock(UndergroundComplex.HoldsPressure(ex.Stop.Body.Id, level) ? 2.0 : 5.0,
             "a building this expensive, this far down, and this empty");
+
+        // #768 · …AND NOW THE ARRIVAL KNOWS WHETHER IT PUT A CARD IN FRONT OF ITSELF. Every card this
+        // arrival can raise has been raised by here, so this is the only place that can honestly ask. Doors
+        // that opened on nothing but prose pulse the winner immediately — the shipped behaviour, unchanged.
+        // Doors that also raised a card keep it, and the ✕ on that card is what finally says it.
+        ReleaseHeldSayingsUnlessACardStopsTheWorld();
         RequestVaultSave();
     }
 
@@ -3825,6 +3835,66 @@ public partial class Map
     {
         ShowPulseMessage(text, rank);
         FileNote(text, glyph);
+    }
+
+    // ── #768 · WHEN THE EVENT THAT SPEAKS ALSO RAISES A CARD ───────────────────────────────────────────
+    //
+    // #693 gave the one pulse slot a law, and left one loss it could not settle: an ARRIVAL that raises a
+    // card says its lines and then puts a full-screen backdrop in front of them. The first-descent card
+    // (#585) over the gate-accepted beat (#689) is the case the owner filed; the repo boat's plate (#583)
+    // over its own arrival line is the same shape. No rank helps — the line is not losing to a bigger line,
+    // it is losing to the whole HUD, and the dwell runs out behind the blur while the captain reads the card.
+    //
+    // So an event that may raise a card HOLDS its sayings (PulseHold, Core — the same rank law, minus the
+    // clock, because the lines were composed in one breath) and the card's dismissal lets the winner go. The
+    // book still keeps every one of them at the moment they were said: what is deferred is the DOORBELL, not
+    // the record, and not the event.
+    //
+    // Deliberately NOT a general queue: #693 declined that and it stays declined. An event that raises no
+    // card releases on the spot, which is an ordinary pulse and indistinguishable from one.
+
+    /// <summary>#768 · Say it AND keep it — but not yet, if a card is about to stand in front of it. The book
+    /// gets it now; the screen gets the winner when the card closes. Pair every caller with
+    /// <see cref="ReleaseHeldSayingsUnlessACardStopsTheWorld"/> once the event's cards have been raised.</summary>
+    private void HoldAndFile(string text, string glyph, PulseRank rank = PulseRank.Status)
+    {
+        _held = _held.Hold(text, rank);
+        FileNote(text, glyph);
+    }
+
+    /// <summary>#768 · The same, for a line the book does not keep — a warning about the here and now rather
+    /// than a durable find.</summary>
+    private void HoldSaying(string text, PulseRank rank = PulseRank.Status) =>
+        _held = _held.Hold(text, rank);
+
+    /// <summary>#768 · Is something in front of the captain that a pulse would play UNDER? The two full-screen
+    /// cards, asked of the world as it now stands rather than predicted from the conditions that raise
+    /// them — a copy of those conditions is a second rule to keep in step, and this one cannot be wrong.</summary>
+    private bool ACardStopsTheWorld => _viewObject is not null || _revealCard is not null;
+
+    /// <summary>#768 · The end of an event that had things to say: if nothing is in front of the captain the
+    /// held winner is simply pulsed, here and now, exactly as it always was. If a card IS up, it stays held
+    /// and <see cref="ReleaseHeldSayings"/> says it when that card is dismissed.</summary>
+    private void ReleaseHeldSayingsUnlessACardStopsTheWorld()
+    {
+        if (ACardStopsTheWorld)
+        {
+            return;
+        }
+        ReleaseHeldSayings();
+    }
+
+    /// <summary>#768 · The card is gone — say what it was standing on. Called from every road out of a card,
+    /// which is why all of them go through CloseViewObject / CloseRevealCard and none of them clear the field
+    /// by hand. A released line takes its ordinary dwell and may be outranked afterwards like any other: a
+    /// held line is a line that has not been said yet, never a line with special powers.</summary>
+    private void ReleaseHeldSayings()
+    {
+        if (!_held.Any)
+        {
+            return;
+        }
+        (_pulse, _held) = _held.ReleaseInto(_pulse, _lastTimestampMs ?? 0);
     }
 
     /// <summary>#686 · The record half alone, for a line whose SAYING happens inside an open dialog — the
@@ -6743,7 +6813,11 @@ public partial class Map
                 && Distance(c.X, c.Y, _avatarX, _avatarY) < 24)
             {
                 ex.CollectorShelterNoted = true;
-                ShowPulseMessage(CollectorLanding.ShelterIsNotSanctuaryLine);
+
+                // #768 · HELD: the siege plate goes up two lines below, and this is the one sentence in the
+                // scene that tells a captain the shelter they are standing in will not save them. It is a
+                // rule of the world learned once — a Beat — and it was being said under a backdrop.
+                HoldSaying(CollectorLanding.ShelterIsNotSanctuaryLine, PulseRank.Beat);
 
                 // #528 · AND THE PICTURE DOES THE SAME JOB THE LINE DOES: it shows them SETTLED, not
                 // attacking. Nothing in this frame is a fight. The clock is your tank, and what makes it
@@ -6752,6 +6826,7 @@ public partial class Map
                     CollectorLanding.SiegePlate.Title,
                     CollectorLanding.SiegePlate.ArtFile,
                     CollectorLanding.SiegePlate.Caption);
+                ReleaseHeldSayingsUnlessACardStopsTheWorld();   // #768 — it does; the shelter line waits
             }
 
             if (reachable && CollectorLanding.HasYou(c.X, c.Y, _avatarX, _avatarY))
@@ -6791,11 +6866,17 @@ public partial class Map
         }
 
         RendererInterop.PlayCue("alarm");
-        ShowPulseMessage(CollectorLanding.ArrivalLine(ex.CollectorCallsign));
+
+        // #768 · HELD, because the plate below goes up in the same breath and both of these would play under
+        // its backdrop — the same family as the Hive's arrival, arising the same way: the world acting, not a
+        // press on a pop-up. The RANK is what decides which one the captain is left with, and it is a
+        // judgement about what the lines ARE: a boat you did not call setting down beside yours is a thing
+        // that happened once and the book will keep (Beat); the hail that follows it is radio (Status).
+        HoldSaying(CollectorLanding.ArrivalLine(ex.CollectorCallsign), PulseRank.Beat);
         if (!ex.CollectorsHailed)
         {
             ex.CollectorsHailed = true;
-            ShowPulseMessage(CollectorLanding.HailLine);
+            HoldSaying(CollectorLanding.HailLine);
         }
 
         // #528 · THE ONLY WARNING THE PLAYER GETS. Four loaded lines narrate this pursuit and every one of
@@ -6807,6 +6888,7 @@ public partial class Map
             CollectorLanding.ArrivalPlate.Title,
             CollectorLanding.ArrivalPlate.ArtFile,
             CollectorLanding.ArrivalPlate.Caption);
+        ReleaseHeldSayingsUnlessACardStopsTheWorld();   // #768 — it does, so the two lines wait for the ✕
 
         // It is a fright, and a specific one: the ground just stopped being only about the Old Ones.
         ApplyNerveShock(4.0, "a boat you did not call, setting down beside yours");

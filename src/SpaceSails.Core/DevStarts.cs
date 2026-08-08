@@ -93,6 +93,13 @@ public static class DevStarts
         new("🎫", "The lift row the card unlocks",
             "B1 of a deep site with exactly the authority the gate downstairs reads already in the wallet. Walk to the car: the sealed row now names the paper in your pocket, and the beat lands when the doors open (#693, #689).",
             "/map?secretlab=deep&land=1&floor=1&card=next"),
+        // #768 · THE MOMENT A CARD STANDS ON A SENTENCE. The same paper as the row above, pressed from the
+        // SURFACE instead of from B1 — which is the one ride that raises the first-descent card (#585) and
+        // crosses a gate (#689) on the same arrival. It could not be reached on demand at all before #693's
+        // ?card= cheat, and it is the exact frame the owner filed the issue about.
+        new("🃏", "The card that lands on top of the beat",
+            "The surface of a deep site with the authority the first gate reads already in the wallet. Into the shed, press the row that is no longer sealed, and ride from daylight straight through the gate: the first-descent card stops the world — and the gate's own beat is waiting on the pulse when you close it, instead of having played under it (#768, #693).",
+            "/map?secretlab=deep&land=1&card=next"),
         new("▣", "The sign that says a different building",
             "B21 of a twenty-floor clinic — the unlisted band's own lobby, where the plate beside the shaft names something else entirely (#694, #592).",
             "/map?secretlab=deep&land=1&floor=21"),

@@ -230,6 +230,11 @@ public partial class Map
     // last — which made the order of three blocks in Map.Surface load-bearing and left #592's climax losing
     // to the routine air line. PulseSlot (Core, and therefore sweepable) keeps the rank alongside the words.
     private PulseSlot _pulse = PulseSlot.Empty;
+
+    // #768 · …AND THE SAYINGS THAT NEVER GOT AS FAR AS THE SLOT, because the same event raised a CARD over
+    // them. The ranks cannot help there: the loser is not a lesser line, it is the whole HUD behind a
+    // backdrop. The arrival holds them here and the card's dismissal lets the winner go (PulseHold, Core).
+    private PulseHold _held = PulseHold.Empty;
     private const double AdaptiveWarpThreshold = 100; // below this, the historic fixed-1 s loop
     private const double AdaptiveWarpQuantum = 60;    // matches NpcTimeStep; frame-invariant
     private const double DaySeconds = 86400;

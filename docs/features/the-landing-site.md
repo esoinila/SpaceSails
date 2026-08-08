@@ -1981,6 +1981,55 @@ screen kept '🎫 You find the other shaft…' instead`.)*
 the accepted beat and the wrong-card refusal are one URL away — #692 shipped all three and could not look at
 any of them. See `docs/testing-guide.md`.
 
+13.25 **An arrival that raises a CARD holds its sayings, and the card's dismissal plays the winner** (#768).
+
+> *"On a from-the-surface ride straight through a gate, #585's first-descent CARD raises on the same arrival,
+> and the gate-accepted pulse line plays UNDER its backdrop."* — the residual #693 declined, filed as #768
+
+§13.24 settles a pulse losing to a pulse. It cannot settle the other loss, and the other loss is total: the
+same arrival that composes the sayings also raises a **full-screen card**, so the winner of the one slot spends
+its whole dwell behind a blurred backdrop and there is nothing left when the captain closes it. No rank helps —
+the line is not losing to a bigger line, it is losing to the **whole HUD**. §13.10's family, arising from the
+world acting rather than from a press on a pop-up, which is why #736's *"answer on the pop-up that was
+pressed"* sweep could not reach it either: nothing was pressed.
+
+**The shape: a hold, scoped to exactly this situation.** `PulseHold` (Core) keeps one sentence back —
+
+- **the same law, minus the clock.** *A lower-ranked held line may not displace a higher-ranked one; among
+  equals the last held wins.* There is no clock inside a breath: an arrival composes its sayings in one frame,
+  so the rank is the whole of it. What survives the card is therefore **exactly the sentence that would have
+  been on screen had no card been raised**, and that equivalence — hold-then-release against write-them-all —
+  is what the sweep asserts, so there is one law about the slot and not two.
+- **a release, not a queue.** #693 declined a queue and it stays declined: this is not a lifecycle the pulse's
+  400-odd call sites share. An event that raises no card releases on the spot, which is an ordinary pulse and
+  indistinguishable from one. The released line goes through `PulseSlot.Write`, so it takes its ordinary
+  length-scaled dwell and can be outranked a breath later like anything else — **a held line is a line that
+  has not been said yet, never a line with special powers.**
+- **the book is untouched.** Every saying is filed at the moment it was said, in the order it was said. What
+  is deferred is the doorbell, never the record and never the event.
+
+The client half is three clauses: `RideTheLiftTo` holds instead of pulsing; it releases **after** the last card
+it can raise, because that is the only point at which "is something in front of the captain?" can be asked of
+the world rather than predicted from a copy of the conditions; and `CloseViewObject` / `CloseRevealCard` free
+what the card was standing on. Every road out of a card — Esc, Enter, `E` again, the backdrop, the button —
+already went through those two methods, and now nothing anywhere clears the field by hand.
+
+Two more members of the family went the same way: the repo boat's arrival line and callsign behind its
+arrival plate, and the *shelter is not a sanctuary* warning behind the siege plate (#583) — the one sentence
+in that scene that tells a captain the pressure vessel they are standing in will not save them.
+
+*(Enforced: `TheHeldSayingOutlivesTheCardTests` (Core) sweeps every from-the-surface ride that crosses a gate,
+plus every arrival the generator admits for the hold/pulse equivalence and a permutation guard, and pins the
+released line's dwell against §13.24's. `TheArrivalHoldsItsLineForTheCardTests` (Client) is the source-shape
+half, including **a method that holds always releases** — a hold with no release is a sentence lost for good,
+which is a worse bug than the one this fixes. Watched go **red**: with the hold made a no-op, i.e. the shipped
+behaviour, `10 of 10 carded descents lost their beat to their own card` and `1319 arrival(s) hold a different
+sentence than they would have pulsed`; with only the rank clause taken out, `144 arrival(s)`; with the client
+files reverted, all six wiring guards.)*
+
+**Reaching it.** `/map?secretlab=deep&land=1&card=next` — the shed, with the first gate's authority already in
+the wallet. Ride straight down from daylight and the card and the beat arrive together.
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible
