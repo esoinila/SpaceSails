@@ -2146,6 +2146,15 @@
                 {
                     <div class="view-object-caption">@cap</div>
                 }
+                @* #774 · WHAT THE ACT ACTUALLY FOUND, on the card the act raised — the reveal card's row
+                   (#736) on the other full-screen card, because the surface raises this one. The
+                   dossier is the case it was grown for: the assembly said two to four sentences and fired
+                   every one of them as a pulse UNDER this backdrop, so the captain closed a card onto
+                   nothing. A region, not a slot: they all fit, and nothing has to be picked. *@
+                @if (vo.Outcome is { Length: > 0 } voOutcome)
+                {
+                    <div class="reveal-outcome">@voOutcome</div>
+                }
                 <button type="button" class="view-object-close" title="Put it back down and step away" @onclick="() => Dismiss(CloseViewObject)">Close</button>
             </div>
         </div>

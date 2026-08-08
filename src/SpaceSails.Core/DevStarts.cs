@@ -68,6 +68,14 @@ public static class DevStarts
             "The far end of the run, off The Deep. A landing stage gone to rust and silence — something set down here and stayed (#585).",
             "/map?dock=the-deep&body=triton&site=2&land=1"),
 
+        // #774 · WHOSE KIT WAS THIS, with everything it has to say. The dossier is the rarest beat on the
+        // regolith — three papers rooms inside ONE excursion, at one room in eight — and its four-sentence
+        // form, the one the card had to be able to carry, is two more one-in-three rolls behind that. It was
+        // the scene the issue is about and there was no way to stand in front of it.
+        new("🗂", "Whose kit was this — the whole dossier",
+            "A hut out on the edge lane with somebody's effects still in it. Press E and the picture comes together on the first piece: the card carries all of it — the name, the family who have been waiting nine years, what they know, and the phrase that opens a door somewhere else (#774, #588).",
+            "/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"),
+
         new("⛏", "An away-team gig, already accepted",
             "A mining rock parked in shuttle range with the job on the books — the shortest road to boots on the regolith (#370).",
             "/map?expedition=mining"),

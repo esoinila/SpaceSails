@@ -225,11 +225,12 @@ public static class FieldDossier
     /// <summary>Does bringing this family word open a thread worth pulling? Not always — most of the time it
     /// is simply a decent thing you can do, and a game where every kindness pays out is not offering you a
     /// choice at all.</summary>
-    public static bool KinKnowsSomething(string bodyId, string siteSalt, int roomIndex)
+    /// <param name="forced">#774's dev seat — see <see cref="HasIntroduction"/>.</param>
+    public static bool KinKnowsSomething(string bodyId, string siteSalt, int roomIndex, bool forced = false)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(siteSalt);
-        return DiceRule.Roll(DiceRule.Seed($"kin:lead:{bodyId}:{siteSalt}:{roomIndex}"), 3).Face == 1;
+        return forced || DiceRule.Roll(DiceRule.Seed($"kin:lead:{bodyId}:{siteSalt}:{roomIndex}"), 3).Face == 1;
     }
 
     /// <summary>The hint that this one goes somewhere. Vague on purpose — it narrows a search, it does not
@@ -252,11 +253,137 @@ public static class FieldDossier
 
     /// <summary>Does this room's kit carry an in at all? Most do not; an in you find every time is a menu
     /// option rather than a discovery, and the whole value is that it feels like luck.</summary>
-    public static bool HasIntroduction(string bodyId, string siteSalt, int roomIndex)
+    /// <param name="forced">#774's dev seat: yes, whatever the roll says. The assembly is the rarest beat on
+    /// the regolith (three papers rooms in one excursion, at one room in eight) and its FULL form needs two
+    /// more one-in-three rolls on top of that — so the four-sentence version, the one the whole issue is
+    /// about, is unreachable on demand without this.</param>
+    public static bool HasIntroduction(string bodyId, string siteSalt, int roomIndex, bool forced = false)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(siteSalt);
-        return DiceRule.Roll(DiceRule.Seed($"intro:has:{bodyId}:{siteSalt}:{roomIndex}"), 3).Face == 1;
+        return forced || DiceRule.Roll(DiceRule.Seed($"intro:has:{bodyId}:{siteSalt}:{roomIndex}"), 3).Face == 1;
+    }
+
+    // ── #774 · THE ASSEMBLY SAYS TWO TO FOUR THINGS, AND THEY ARE READ ON THE CARD ──────────────────────
+    //
+    // The bug this replaces: the client raised the dossier card and then fired the sentences below it as
+    // ordinary pulses — two to four of them, in one breath, all at the same rank — so every one of them
+    // played under the card's own blurred backdrop and the captain closed the card onto nothing. #768's hold
+    // is the wrong remedy for it and was refused as such: a hold releases ONE winner, and picking a winner
+    // out of a same-rank sequence by which line was written last is exactly the contract #693 killed.
+    //
+    // The right remedy is #736's law — compose the sentences ONTO the card the act raised, the one layer a
+    // backdrop cannot blur. A card has a REGION rather than a slot, so all four fit and there is no winner
+    // to pick, and the ordering question stops being about survival and becomes a question about READING.
+    //
+    // Which is answered here, in Core, beside the predicates that decide whether each sentence exists at all
+    // (#634's law: a sentence composed in the client is a sentence that can drift away from the sim).
+
+    /// <summary>What a sentence out of somebody's kit IS. <b>The order these members are declared in is the
+    /// order the card reads them in</b>, and it is an order of MEANING, not of composition:
+    ///
+    /// <para>You work out WHO before you can carry news of them; you learn who is WAITING before you can
+    /// learn what that person knows; and the in that fell out of the kit comes last because it is the only
+    /// one of the four that is not about the dead — it is a favour owed somewhere else entirely.</para>
+    ///
+    /// <para>Nothing may read this order off the order the sayings were appended. That is the whole point:
+    /// <see cref="Debrief"/> deliberately composes them backwards and <see cref="InTheOrderTheyAreRead"/>
+    /// puts them right, so append order cannot decide anything even by accident.</para></summary>
+    public enum Beat
+    {
+        /// <summary>The name, the discipline, and who carried them out here.</summary>
+        WhoTheyWere,
+
+        /// <summary>Somebody is still waiting for word. The errand, and it is entirely the captain's choice.</summary>
+        WhoIsWaiting,
+
+        /// <summary>…and that somebody knows something nobody would ever tell a pirate.</summary>
+        WhatTheFamilyKnows,
+
+        /// <summary>A name to drop, and the door it opens.</summary>
+        TheIn,
+    }
+
+    /// <summary>One sentence the assembly produces: what it is, the glyph the field book files it under, and
+    /// the words. <paramref name="Text"/> is <b>exactly</b> what goes into the book — the card may dress it,
+    /// the record never does.</summary>
+    public readonly record struct Saying(Beat Beat, string Glyph, string Text);
+
+    /// <summary>The first thing said over an assembled kit: a name, out of the pieces.</summary>
+    public static string WhoTheyWereLine(in Person who) =>
+        $"🗂 {who.Name} — a specialist in {who.Discipline}, carried out here by " +
+        $"{who.Employer}. The kit is theirs, all of it, and now you know their name.";
+
+    /// <summary>Everything this room's kit has to say, in the order it is read.</summary>
+    /// <param name="everySaying">#774's dev seat: take both one-in-three gates off, so the four-sentence
+    /// assembly — the one the card has to be able to carry — can be looked at on demand.</param>
+    public static IReadOnlyList<Saying> Debrief(
+        string bodyId, string siteSalt, int roomIndex, bool everySaying = false)
+    {
+        Person who = Who(bodyId, siteSalt, roomIndex);
+
+        // COMPOSED BACKWARDS, ON PURPOSE. A list that happens to be built in the right order proves nothing
+        // about the rule that orders it, and this repo has already shipped one bug (#693, the killed
+        // contract) that lived entirely in the gap between those two things.
+        var said = new List<Saying>();
+        if (HasIntroduction(bodyId, siteSalt, roomIndex, everySaying))
+        {
+            said.Add(new Saying(Beat.TheIn, "🎟", IntroductionLine(InTheKit(bodyId, siteSalt, roomIndex))));
+        }
+        if (KinKnowsSomething(bodyId, siteSalt, roomIndex, everySaying))
+        {
+            said.Add(new Saying(Beat.WhatTheFamilyKnows, "🔎", LeadHint(bodyId, siteSalt, roomIndex)));
+        }
+        said.Add(new Saying(Beat.WhoIsWaiting, "📇", KinLine(who, WhoIsWaiting(bodyId, siteSalt, roomIndex))));
+        said.Add(new Saying(Beat.WhoTheyWere, "🗂", WhoTheyWereLine(who)));
+
+        return InTheOrderTheyAreRead(said);
+    }
+
+    /// <summary>Put a handful of sayings in the order a captain reads them — by walking <see cref="Beat"/>'s
+    /// declared members, never by taking the collection as it came. Public because the guard that pins the
+    /// law has to be able to hand it the same sayings in every possible order and get one answer back.</summary>
+    public static IReadOnlyList<Saying> InTheOrderTheyAreRead(IEnumerable<Saying> said)
+    {
+        ArgumentNullException.ThrowIfNull(said);
+
+        var pool = new List<Saying>(said);
+        var ordered = new List<Saying>(pool.Count);
+        foreach (Beat beat in Enum.GetValues<Beat>())
+        {
+            foreach (Saying one in pool)
+            {
+                if (one.Beat == beat)
+                {
+                    ordered.Add(one);
+                }
+            }
+        }
+        return ordered;
+    }
+
+    /// <summary>The debrief as the CARD carries it — every sentence, in reading order, one paragraph each.
+    ///
+    /// <para>The only thing this adds to a sentence is its own glyph, and only when the sentence does not
+    /// already open with one: three of the four are written with theirs (the file, the card index, the
+    /// ticket) and the family's lead is bare prose that the book files under 🔎. No words are invented
+    /// here — a card that narrated its own contents would be the book reading itself out loud.</para></summary>
+    public static string DebriefBlock(IEnumerable<Saying> said)
+    {
+        ArgumentNullException.ThrowIfNull(said);
+
+        var block = new System.Text.StringBuilder();
+        foreach (Saying one in InTheOrderTheyAreRead(said))
+        {
+            if (block.Length > 0)
+            {
+                block.Append("\n\n");
+            }
+            block.Append(one.Text.StartsWith(one.Glyph, StringComparison.Ordinal)
+                ? one.Text
+                : $"{one.Glyph} {one.Text}");
+        }
+        return block.ToString();
     }
 
     private static string Pick(string[] pool, string tag) => pool[Index(pool.Length, tag)];

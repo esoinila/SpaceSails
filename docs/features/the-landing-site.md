@@ -2030,6 +2030,58 @@ files reverted, all six wiring guards.)*
 **Reaching it.** `/map?secretlab=deep&land=1&card=next` — the shed, with the first gate's authority already in
 the wallet. Ride straight down from daylight and the card and the beat arrive together.
 
+13.26 **An event with FOUR things to say composes them onto its own card** (#774).
+
+> *"`AssembleSomebody` raises the dossier card and then fires 2–4 `ShowAndFile` lines UNDER it… the hold is
+> the WRONG remedy here — it releases one winner, and these four are a same-rank sequence whose survivor
+> would be decided by append order, the exact contract #693 killed."* — the owner, filing #774 off the
+> #768/#773 crew's verification
+
+§13.25 settles a card standing on ONE sentence. The field dossier (#588) stands on four: the person the kit
+assembles into, the next of kin who have been waiting nine years, what that family turns out to know, and
+the phrase that opens a door somewhere else — all composed in one breath, all at the same rank, every one of
+them pulsed under the card's own backdrop and filed where nobody was looking. A fifth is possible: the moon
+the family's knowledge names (#585), announced from inside the same method with the card already up.
+
+**Why the hold cannot help, written down so nobody re-proposes it.** A hold releases ONE winner. Among equals
+the winner is the last one held, which means the sentence the captain keeps is decided by the order somebody
+typed the calls in — §13.2's own named bug class, and the contract §13.24 was written to kill. The hold is
+right for an arrival, which composes sayings the world happened to produce at the same instant; it is wrong
+for a DEBRIEF, which is one thing said in four sentences.
+
+**The shape.** #736's law instead — *the result of an act is readable on the pop-up the act raised* — with
+the one change that makes it fit: the card's outcome is a **region, not a slot**. All four fit, so there is
+no winner to pick, and the ordering question stops being about survival and becomes a question about reading.
+
+- **The sentences and their order live in Core**, beside the rolls that decide whether each exists at all
+  (#634's law: a sentence composed in the client can drift away from the sim). `FieldDossier.Beat` declares
+  the order — *who they were → who is waiting → what that family knows → the in* — and it is an order of
+  MEANING: you work out who before you can carry news of them, you learn who is waiting before you can learn
+  what they know, and the in comes last because it is the only one that is not about the dead.
+- **Nothing may read that order off the order the sayings were composed in.** `Debrief` composes them
+  backwards on purpose and `InTheOrderTheyAreRead` walks the enum, so append order cannot decide anything
+  even by accident.
+- **The book is untouched.** Same sentences, same glyphs, same order, filed at the same moments — including
+  the named moon, which is still banked between the family's hint and the in. What changed is where a
+  sentence is READ, never what is recorded.
+- **The object card grew an outcome row**, the reveal card's own (#736), because the surface's full-screen
+  cards are `ConsoleSpot`s. `SayItWhereTheyAreLooking` now knows about it — and answers there FIRST, because
+  both cards share a backdrop class and the object card is written later in `Map.razor`, which is the case
+  the outpost's effects console reaches for real: one press raises the effects plate and the dossier over it.
+
+*(Enforced: `TheDossierIsReadOnItsOwnCardTests` (Core) sweeps 360 assemblies over six grounds — every
+sentence on the card, the reading order strictly ascending, every permutation of a real assembly's sayings
+coming back identical, and the filing rebuilt longhand from the primitives the shipped code called.
+Anti-vacuous: the sweep is asserted to contain assemblies of two, three AND four sentences.
+`TheDossierCardCarriesItsOwnSayingsTests` (Client) is the source-shape half. Watched go **red**: with the
+card carrying nothing — i.e. the shipped behaviour — `960 of 960 sentence(s) the assembly says are not on its
+card`; with the ordering rule reverted to the list as it came, `1908 composition order(s) changed what the
+card reads` and five of eight failing; with the four client files reverted, all seven wiring guards.)*
+
+**Reaching it.** `/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1` — the hut on the edge lane, and the
+dossier assembles on the first piece of kit with every sentence it can carry. Three papers rooms in one
+excursion at one room in eight, times two one-in-three rolls, is why it needed a door.
+
 ## Working method
 
 The one that actually found these: **boot every scene and look at it.** Nearly every bug above was invisible

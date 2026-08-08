@@ -768,6 +768,26 @@ public partial class Map
                 string candidate = Uri.UnescapeDataString(pair["outpost=".Length..]).ToLowerInvariant();
                 _outpostCheat = candidate is "1" or "true" or "yes";
             }
+            else if (pair.StartsWith("kit=", StringComparison.OrdinalIgnoreCase))
+            {
+                // #774 dev cheat: /map?kit=1 assembles the FIELD DOSSIER (#588) on the FIRST piece of
+                // somebody's kit this excursion turns up, and with every sentence it can carry.
+                //
+                // It exists because the assembly is the rarest beat on the regolith and its full form is
+                // rarer still: three papers rooms inside one excursion at one room in eight, and then two
+                // more one-in-three rolls for what the family knows and the in that fell out of the kit.
+                // That four-sentence version is the scene #774 is about, and nobody could reach it on demand
+                // to look at it — which is this file's own rule about a scene that ships broken.
+                //
+                // It moves those GATES and nothing else: the stranger, the family, the hint, the in and the
+                // moon they name are the seeded ones for the room you actually completed, so what a tester
+                // reads is a dossier a captain can genuinely be handed.
+                //
+                //   /map?dock=the-tilt&site=0&land=1&outpost=1&kit=1
+                //   …walk to the hut and press E on SOMEBODY'S EFFECTS.
+                string candidate = Uri.UnescapeDataString(pair["kit=".Length..]).ToLowerInvariant();
+                _kitCheat = candidate is "1" or "true" or "yes";
+            }
             else if (pair.StartsWith("dark=", StringComparison.OrdinalIgnoreCase))
             {
                 // #708 dev cheat: /map?dark=1 puts the fixtures out on every floor of this excursion, so the
